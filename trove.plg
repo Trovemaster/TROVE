@@ -1,0 +1,159 @@
+--------------------Configuration: trove - Win32 Debug--------------------
+Begining build with project "C:\sergei\programs\trove\trove.dsp", at root.
+Active configuration is Win32 (x86) Console Application (based on Win32 (x86) Console Application)
+
+Project's tools are:
+			"Fortran 90 Compiler for 80x86" with flags "/include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" "
+			"Win32 Resource Compiler" with flags "/l 0x809 /d "_DEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Debug/trove.bsc" "
+			"COFF Linker for 80x86" with flags "kernel32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/trove.pdb" /debug /machine:I386 /out:"Debug/trove.exe" /pdbtype:sept "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating temp file "C:\Users\sibarey\AppData\Local\Temp\RSPB8A7.tmp" with contents </include:"Debug/" /compile_only /nologo /debug:full /optimize:0 /warn:nofileopt /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF50.PDB" 
+"C:\sergei\programs\trove\timer.f90"
+"C:\sergei\programs\trove\lapack.f90"
+"C:\sergei\programs\trove\moltype.f90"
+"C:\sergei\programs\trove\mol_abcd.f90"
+"C:\sergei\programs\trove\mol_ch3oh.f90"
+"C:\sergei\programs\trove\mol_xy.f90"
+"C:\sergei\programs\trove\mol_xy2.f90"
+"C:\sergei\programs\trove\mol_xy3.f90"
+"C:\sergei\programs\trove\mol_xy4.f90"
+"C:\sergei\programs\trove\mol_zxy2.f90"
+"C:\sergei\programs\trove\molecules.f90"
+"C:\sergei\programs\trove\me_numer.f90"
+"C:\sergei\programs\trove\me_bnd.f90"
+"C:\sergei\programs\trove\fields.f90"
+"C:\sergei\programs\trove\diag.f90"
+"C:\sergei\programs\trove\perturbation.f90"
+"C:\sergei\programs\trove\tran.f90"
+"C:\sergei\programs\trove\dipole.f90"
+"C:\sergei\programs\trove\refinement.f90"
+"C:\sergei\programs\trove\trove.f90"
+>
+Creating temp file "C:\Users\sibarey\AppData\Local\Temp\RSPB8B8.tmp" with contents <kernel32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/trove.pdb" /debug /machine:I386 /out:"Debug/trove.exe" /pdbtype:sept 
+.\Debug\trove.obj
+.\Debug\accuracy.obj
+.\Debug\diag.obj
+.\Debug\dipole.obj
+.\Debug\fields.obj
+.\Debug\input.obj
+.\Debug\lapack.obj
+.\Debug\me_bnd.obj
+.\Debug\me_numer.obj
+.\Debug\me_rot.obj
+.\Debug\me_str.obj
+.\Debug\mol_abcd.obj
+.\Debug\mol_ch3oh.obj
+.\Debug\mol_xy.obj
+.\Debug\mol_xy2.obj
+.\Debug\mol_xy3.obj
+.\Debug\mol_xy4.obj
+.\Debug\mol_zxy2.obj
+.\Debug\molecules.obj
+.\Debug\moltype.obj
+.\Debug\perturbation.obj
+.\Debug\refinement.obj
+.\Debug\symmetry.obj
+.\Debug\timer.obj
+.\Debug\tran.obj>
+Creating command line "link.exe @C:\Users\sibarey\AppData\Local\Temp\RSPB8B8.tmp" 
+Compiling Fortran...
+C:\sergei\programs\trove\timer.f90
+C:\sergei\programs\trove\timer.f90(21) : Error: The module file cannot be read.  Its format requires a more recent F90 compiler.   [ACCURACY]
+  use accuracy
+------^
+C:\sergei\programs\trove\timer.f90(31) : Error: A kind type parameter must be a compile-time constant.   [RK]
+  real(rk)           :: maxmemory   =   0 ! Maximal memory allocated 
+-------^
+C:\sergei\programs\trove\timer.f90(32) : Error: A kind type parameter must be a compile-time constant.   [RK]
+  real(rk)           :: memory_limit =   100000.0 ! Gb
+-------^
+C:\sergei\programs\trove\timer.f90(48) : Error: A kind type parameter must be a compile-time constant.   [IK]
+    integer(ik)             :: stack_p    ! For active timers, position in the stack
+------------^
+C:\sergei\programs\trove\timer.f90(54) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: t_nested(table_size) ! Stack of currently active timers
+----------^
+C:\sergei\programs\trove\timer.f90(55) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: t_appear(table_size) ! Appearance order for the timers
+----------^
+C:\sergei\programs\trove\timer.f90(56) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: t_count  = 0         ! Number of defined timers
+----------^
+C:\sergei\programs\trove\timer.f90(57) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: t_active = 0         ! Number of currently active timers
+----------^
+C:\sergei\programs\trove\timer.f90(66) : Error: A kind type parameter must be a compile-time constant.   [IK]
+    integer(ik)             :: stack_p    ! For active units, position in the stack
+------------^
+C:\sergei\programs\trove\timer.f90(67) : Error: A kind type parameter must be a compile-time constant.   [IK]
+    integer(ik)             :: slot     ! Number of times the unit was invoked
+------------^
+C:\sergei\programs\trove\timer.f90(75) : Error: This name does not have a type, and must have an explicit type.   [CL]
+    character(len=cl)       :: name       ! Timer name
+------------------^
+C:\sergei\programs\trove\timer.f90(75) : Error: A specification expression is invalid.
+    character(len=cl)       :: name       ! Timer name
+^
+C:\sergei\programs\trove\timer.f90(76) : Error: A kind type parameter must be a compile-time constant.   [IK]
+    integer(ik)             :: stack_p    ! For active arrays, position in the stack
+------------^
+C:\sergei\programs\trove\timer.f90(77) : Error: A kind type parameter must be a compile-time constant.   [IK]
+    integer(ik)             :: slot       ! Number of times the unit was invoked
+------------^
+C:\sergei\programs\trove\timer.f90(83) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: array_appear(tarray_size) ! Appearance order for the i/o-unit
+----------^
+C:\sergei\programs\trove\timer.f90(84) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: array_count =  0         ! Number of defined io units (we will start counting from unit=10)
+----------^
+C:\sergei\programs\trove\timer.f90(85) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: array_active = 0         ! Number of currently active units
+----------^
+C:\sergei\programs\trove\timer.f90(90) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: io_appear(table_size) ! Appearance order for the i/o-unit
+----------^
+C:\sergei\programs\trove\timer.f90(91) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: io_count =  0         ! Number of defined io units (we will start counting from unit=10)
+----------^
+C:\sergei\programs\trove\timer.f90(92) : Error: A kind type parameter must be a compile-time constant.   [IK]
+  integer(ik)       :: io_active = 0         ! Number of currently active units
+----------^
+C:\sergei\programs\trove\timer.f90(106) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)          :: pos  ! Timer position
+--------------^
+C:\sergei\programs\trove\timer.f90(141) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)        :: pos        ! Timer position
+--------------^
+C:\sergei\programs\trove\timer.f90(190) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)        :: ord
+--------------^
+C:\sergei\programs\trove\timer.f90(191) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)        :: pos, kid_pos
+--------------^
+C:\sergei\programs\trove\timer.f90(194) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)        :: omitted
+--------------^
+C:\sergei\programs\trove\timer.f90(321) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)                  :: pos
+--------------^
+C:\sergei\programs\trove\timer.f90(383) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik), intent(out)     :: slot  ! Unit slot
+--------------^
+C:\sergei\programs\trove\timer.f90(385) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)          :: pos  ! Unit position
+--------------^
+C:\sergei\programs\trove\timer.f90(427) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)        :: pos        ! unit position
+--------------^
+C:\sergei\programs\trove\timer.f90(459) : Error: A kind type parameter must be a compile-time constant.   [IK]
+      integer(ik)                  :: pos
+--------------^
+(756) : Severe: Too many errors, exiting
+Error executing df.exe.
+
+
+
+trove.exe - 30 error(s), 0 warning(s)

@@ -1,0 +1,64 @@
+24.01.2014
+pot_xy2 : new PES h2s_dvr3d
+fileds : vib-rot only with split 
+pot_abcd : a number of implementations for linear molecule C2H2 
+
+22.12.2014
+mol_abcd: symmetry for C2H2 to be the same as E and E' (5 and 6)
+
+16.8.2014
+perturbation.f90: remove undetermined me_t for iclass=Nlcass
+me_t(iprim,jprim) = me_t(iprim,jprim)*Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes)) ->
+me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+
+
+04.08.2014
+perturbation.f90: Andrey's method of transforming to the contracted  by classes first and only then making the product of classes 
+to obtain the contracted matrix. Hopefully this will resolve the mane  bottle neck. The on-the-fly-method was replaced by 
+precomputing and storing matrix elements. 
+
+28.07.2014
+perturbation.f90: added iroot_in in the prediagonaliztion step in order to resolve the problem with clusters, when there were
+wrong states included into the symm-dependent group and fixed this situation. 
+
+28.07.2014
+perturbation.f90: "Non-diagonal element between different symmetries is too large", remove this conditional stop 
+                  for linear molecules if any of gamma>4, i.e. E symmetry. 
+
+28.07.2014
+perturbation.f90: Test PThamiltonianMat_contracted_reduced, activated
+
+29.07.2014
+perturbation.f90: option postprocees is added for PThamiltonianMat_contracted_reduced
+
+23.02.2015
+Current D2h(M) was not working with H2O2 and was replaced with the previous version from 10.09.2013. 
+The no-euler is still not working although was ok in Feb 2013. 
+
+23.02.2015
+The bug in the vib-splting section was fixed. 
+
+28.02.2015
+ - The new ZMAT type x,y (103) is implemented to be used with linear coordinates
+ - no-diagonalization is simplified but reducing the memory requirement when constructing and diagonalizing the matrix 
+   and optimizing the dipoles. 
+
+03.03.2015
+ - dipole: the parallelization inside the main ilevelF loop changed to parallelization of ilevelF
+
+07.03.2015
+ - change to my_fmt to avoid openmp segm. faults
+
+13.03.2015
+ - Started programming Dnh for n even. The n=2 case seems to be working for C2H2
+
+21.03.2015
+ - D4h is working, but D6-8h not
+
+27.03.2015
+ AMES1 dipole for SO2 implemented
+
+
+
+
+
