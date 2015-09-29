@@ -170,6 +170,14 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_morse
          !
+     case('POTEN_C2H2_7') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7
+         !
+     case('POTEN_C2H2_STREYMILLS') 
+         !
+         MLpotentialfunc =>  MLpoten_c2h2_streymills
+         !
      case('POTEN_H2O2_KOPUT_UNIQUE') 
          !
          MLpotentialfunc => MLpoten_h2o2_koput_unique
@@ -403,6 +411,10 @@ end function ML_MEPfunc
     case('ZXY3_SYM')
        !
        MLextF_func => MLdms2xyz_zxy3_sym
+       !
+    case('DIPOLE_C2H4_4M') 
+       !
+       MLextF_func => MLdipole ! dummy dipole does not work
        !
     case('DIPOLE','USER','GENERAL','DIPOLE_USER')
        !

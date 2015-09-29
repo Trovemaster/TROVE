@@ -51,6 +51,7 @@ module plasma
     !
     if (verbose>=4) call TimerStart('plasma_sytrdx: diagonalization')
     !
+    w = 0 
     !
     Ethres = 1000000.0d0
     !

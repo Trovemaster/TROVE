@@ -58,7 +58,32 @@ The bug in the vib-splting section was fixed.
 27.03.2015
  AMES1 dipole for SO2 implemented
 
+24.04.2015 
+ C(M) treatment in contr_prediag is simplyfied, symmetry is A.
 
+15.05.2015
+The vibrational angular momentum is implemented for the Harmmonic basis:
+The reduced problem solved for the reduced Hamiltonian is then post-processed
+by diaogonalizing the Lz^2 matrix for the degenerate states only. 
+This procedure can be invoked by the new keyword vib_momentum. 
 
+The vib-angular momenta can be controlled by NVibmomentum X, where X  is the largest value. 
 
+16.05.2015
+A new PES for C2H2 based on the 7-coordinates is implemented. 
+c2h2_7
 
+02.06.2015
+The lvib is now a part of the basis set definition
+
+07.06.2015
+ Derivatives of (103) in cartesian2local corrected  
+
+10.06.2015
+ Added a selection by the contr-polyad in the Lvib-section
+ 
+17.07.2015
+ A new transformation C2H4_2BETA_1TAU is added
+
+21.09.2015
+ contr_descr writing bug for Lvib is fixed

@@ -1,0 +1,2 @@
+A new PES for C2H2 based on the 7-coordinates is implemented. 
+c2h2_7

@@ -59,7 +59,7 @@ module lapack
     module procedure lapack_ginverse_double
   end interface ! lapack_ginverse
 
-  integer,parameter:: verbose = 6
+  integer,parameter:: verbose = 3
   real(rk),parameter :: singtol = -1.0d-12 ! 100.0d0*spacing(1.0d0)
   !
   contains
@@ -490,7 +490,7 @@ module lapack
     allocate(work(lwork))
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
-    call dsyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
+    call ssyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
     !
     if (int(work(1))>size(work)) then 
       !

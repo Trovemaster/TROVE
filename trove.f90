@@ -152,7 +152,7 @@
       !
       if (trim(job%IOcontr_action)=='READ') then
         !
-        call PTcheck_point_contracted_space('READ')
+        call PTcheck_point_contracted_space('READ') 
         !
       elseif (action%convert_vibme) then
         !

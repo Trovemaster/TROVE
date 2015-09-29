@@ -110,7 +110,7 @@ module mol_c2h4
       'ML_coordinate_transform_C2H4 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_coordinate_transform_C2H4 error: bad coordinate type'
       !
-    case('ZMAT_2BETA_1TAU')
+    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU')
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
         !
@@ -644,6 +644,139 @@ module mol_c2h4
         !
       end select
       !
+    case('C2H4_2BETA_1TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_C2H4 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('D2H','D2H(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_C2H4 error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (2) ! C2a == (34)(56)
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(2)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          dst(6) = src(7)
+          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          dst(10) =  -src(10)
+          dst(11) =  -src(11)
+          dst(12) = src(12)
+          !
+        case (3) ! C2b == (35)(46)(12)
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(5)
+          dst(4) = src(2)
+          dst(5) = src(3)
+          dst(6) = src(8)
+          dst(7) = src(9)
+          dst(8) = src(6)
+          dst(9) = src(7)
+          dst(10) = -src(11)
+          dst(11) = -src(10)
+          dst(12) = src(12)
+          !
+        case (4) ! C2c == (36)(45)(12)
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(2)
+          dst(6) = src(9)
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(6)
+          dst(10) = src(11)
+          dst(11) = src(10)
+          dst(12) = src(12)
+          !
+        case (5) ! sigma_ab == E*
+          !
+          dst(1) = src(1)
+          dst(2) = src(2)
+          dst(3) = src(3)
+          dst(4) = src(4)
+          dst(5) = src(5)
+          dst(6) = src(6)
+          dst(7) = src(7)
+          dst(8) = src(8)
+          dst(9) = src(9)
+          dst(10) = -src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)
+          !
+        case (6) ! sigma_ac == (34)(56)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(2)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          dst(6) = src(7)
+          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          dst(10) = src(10)
+          dst(11) = src(11)
+          dst(12) = -src(12)
+          !
+        case (7) ! sigma_bc == (35)(46)(12)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(5)
+          dst(4) = src(2)
+          dst(5) = src(3)
+          dst(6) = src(8)
+          dst(7) = src(9)
+          dst(8) = src(6)
+          dst(9) = src(7)
+          dst(10) = src(11)
+          dst(11) = src(10)
+          dst(12) = -src(12)
+          !
+        case (8) ! i == (36)(45)(12)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(2)
+          dst(6) = src(9)
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(6)
+          dst(10) = -src(11)
+          dst(11) = -src(10)
+          dst(12) = -src(12)
+          !
+        end select
+        !
+      end select
+      !
     case('R_ALPHA_4TAU')
       !
       select case(trim(molec%symmetry))
@@ -925,7 +1058,7 @@ module mol_c2h4
       stop 'ML_rotsymmetry_C2H4 error: bad coordinate type'
       !
       !
-    case('ZMAT_2BETA_1TAU')
+    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !

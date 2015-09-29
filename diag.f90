@@ -1,6 +1,6 @@
 module diag
  
-!dec$ define arpack_ = 1
+!dec$ define arpack_ = 0
 !dec$ define blacs_  = 0
 !dec$ define mpi_    = 0
 !dec$ define omparpack_ = 0

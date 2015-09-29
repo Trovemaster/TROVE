@@ -7,7 +7,7 @@ module me_str
   public ME_morse,ME_harmonic
 
 
-  integer(ik), parameter :: verbose     = 4                          ! Verbosity level
+  integer(ik), parameter :: verbose     = 3                          ! Verbosity level
 
 !
   contains

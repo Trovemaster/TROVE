@@ -143,6 +143,7 @@ module perturbation
      real(rk),pointer            :: grot(:,:,:) 
      real(rk),pointer            :: gcor(:,:,:) 
      real(rk),pointer            :: extF(:,:) 
+     real(rk),pointer            :: L2(:,:,:)  ! Vibrational angular momentum L2
      type(PTcoeffsT),pointer :: prim_func(:)
      type(PTcoeffsT),pointer :: prim_dfunc(:)
      integer(ik),pointer         :: kindex(:,:)   ! distribution of the points between modes
@@ -169,6 +170,7 @@ module perturbation
       type(PTcoeffT),pointer :: gvib(:,:)
       type(PTcoeffT),pointer :: grot(:,:)
       type(PTcoeffT),pointer :: gcor(:,:)
+      type(PTcoeffT),pointer :: L2(:,:)   ! vibrational angulal momentum L2
       type(PTcoeffT),pointer :: rot (:)
       type(PTcoeffT),pointer :: vib(:,:)
       type(PTcoeffT),pointer :: extF(:)   ! arbitrary external field or function, e.g. dipole moment
@@ -263,7 +265,9 @@ module perturbation
       type(PTcoeffsT),pointer    :: Htotal       ! Total hamiltonian matrix for the variational calcs.
       type(PTintcoeffsT),pointer :: quanta       ! To store the eigenvalue assignment
       type(PTcoeffsT),pointer    :: Ewhole       ! Resutls of the diagonalization of the Htotal hamiltonian matrix
+      type(PTcoeffsT),pointer    :: Hclass       ! To store the reduced Hamiltonian  
       type(PTcoeffsT),pointer    :: largest      ! To store the value of the largest coefficient 
+      type(PTintcoeffsT),pointer :: lquant       ! Resutls of the diagonalization of the Htotal hamiltonian matrix
       type(PTintcoeffsT),pointer :: polyad_n     ! Polyad quantum numbers of Htotal will be stored in polyad_n
       !
                                                            ! define this value relative to the calculation accuracy 
@@ -342,6 +346,7 @@ module perturbation
       integer(ik)         :: ilarge_coeff    ! the address of the largest coeff. in the expansion of the eigenvector
       real(rk)            :: largest_coeff     ! the largest coeff. in the expansion of the eigenvector
       integer(ik),pointer :: normal(:)       ! assignment - normal mode
+      integer(ik)         :: lquant          ! l-qauntum number: vibrational angular momentum
    end type PTlevelT  
 
 
@@ -1094,7 +1099,7 @@ module perturbation
     !
     ! Fields needed for the variational problem
     !
-    allocate (PT%Htotal,PT%Ewhole,PT%largest,PT%polyad_n,PT%quanta,stat=alloc)
+    allocate (PT%Htotal,PT%Ewhole,PT%largest,PT%polyad_n,PT%quanta,PT%lquant,PT%Hclass,stat=alloc)
     if (alloc/=0) then
        write (out,"(' Error ',i9,' Htotal ',i9)") alloc
        stop 'PTactive_space_init, Htotal - out of memory'
@@ -1110,12 +1115,16 @@ module perturbation
         write (out,"('Size of the variational matrix  = ',i7,' out of ',i7,' elements.')") dimen,PT%Maxcoeffs
     endif
     !
-    allocate (PT%Htotal%coeffs(dimen,dimen),PT%Ewhole%coeffs(dimen,1),PT%largest%coeffs(dimen,1),&
-              PT%polyad_n%icoeffs(dimen,2),PT%quanta%icoeffs(dimen,0:PT%Nmodes),stat=alloc)
-    if (alloc/=0) then
-       write (out,"(' Error ',i9,' Htotal/coeffs ',i9)") alloc
-       stop 'PTactive_space_init, Htotal/coeffs - out of memory'
-    end if
+    allocate (PT%Htotal%coeffs(dimen,dimen),PT%Ewhole%coeffs(dimen,1),PT%largest%coeffs(dimen,1),PT%Hclass%coeffs(dimen,dimen),&
+              PT%polyad_n%icoeffs(dimen,2),PT%quanta%icoeffs(dimen,0:PT%Nmodes),PT%lquant%icoeffs(dimen,1),stat=alloc)
+
+    call ArrayStart('PTactive_space_init:Htotal' ,alloc,1_ik,kind(PT%Htotal%coeffs),size(PT%Htotal%coeffs,kind=hik))
+    call ArrayStart('PTactive_space_init:Hclass' ,alloc,1_ik,kind(PT%Hclass%coeffs),size(PT%Hclass%coeffs,kind=hik))
+    call ArrayStart('PTactive_space_init:Ewhole' ,alloc,size(PT%Ewhole%coeffs),kind(PT%Ewhole%coeffs))
+    call ArrayStart('PTactive_space_init:largest' ,alloc,size(PT%largest%coeffs),kind(PT%largest%coeffs))
+    call ArrayStart('PTactive_space_init:polyad_n' ,alloc,size(PT%polyad_n%icoeffs),kind(PT%polyad_n%icoeffs))
+    call ArrayStart('PTactive_space_init:quanta' ,alloc,size(PT%quanta%icoeffs),kind(PT%quanta%icoeffs))
+    call ArrayStart('PTactive_space_init:lquant' ,alloc,size(PT%lquant%icoeffs),kind(PT%lquant%icoeffs))
     !
     ! Ener0 
     !
@@ -1126,15 +1135,15 @@ module perturbation
     end if
     !
     allocate (PT%Ener0%coeffs(1,PT%Maxcoeffs),stat=alloc)
-    if (alloc/=0) then
-       write (out,"(' Error ',i9,' Ener0/coeffs ',i9)") alloc
-       stop 'PTactive_space_init, Ener0/coeffs - out of memory'
-    end if
+    !
+    call ArrayStart('PTactive_space_init:Ener0' ,alloc,size(PT%Ener0%coeffs),kind(PT%Ener0%coeffs))
     !
     ! assign the target energies with the primite basis set values
     ! and the eigenvectors with the primitive basis set vectors
     !
-    PT%Htotal%coeffs = 0 
+    PT%Htotal%coeffs = 0
+    PT%Hclass%coeffs = 0
+    PT%lquant%icoeffs = 0 
     !
     do ib = 1,dimen
       !
@@ -1147,6 +1156,8 @@ module perturbation
       PT%largest%coeffs(ib,1) = 1.0_rk
       !
       PT%Htotal%coeffs(ib,ib) = 1.0_ark
+      !
+      PT%Hclass%coeffs(ib,ib) = 1.0_ark
       !
     enddo
     !
@@ -1239,11 +1250,25 @@ module perturbation
     if (associated(PT%RangeOrder)) deallocate(PT%RangeOrder)
 
     if (associated(PT%Htotal)) deallocate(PT%Htotal)
+    if (associated(PT%Hclass)) deallocate(PT%Hclass)
     if (associated(PT%Ewhole)) deallocate(PT%Ewhole)
     if (associated(PT%largest)) deallocate(PT%largest)
     if (associated(PT%polyad_n)) deallocate(PT%polyad_n)
     if (associated(PT%quanta)) deallocate(PT%quanta)
-    if (associated(PT%Ener0)) deallocate(PT%Ener0)
+    if (associated(PT%lquant)) deallocate(PT%lquant)
+    if (associated(PT%Ener0)) then
+       ! 
+       deallocate(PT%Ener0)
+       !
+       call ArrayStop('PTactive_space_init:Htotal'  )
+       call ArrayStop('PTactive_space_init:Hclass'  )
+       call ArrayStop('PTactive_space_init:Ewhole'  )
+       call ArrayStop('PTactive_space_init:largest' )
+       call ArrayStop('PTactive_space_init:polyad_n')
+       call ArrayStop('PTactive_space_init:quanta'  ) 
+       call ArrayStop('PTactive_space_init:lquant'  )
+       !
+    endif
     !
     if (job%verbose>=6) write(out,"(/'PTactive_space_deinit/end')") 
 
@@ -1607,7 +1632,9 @@ module perturbation
               !
               kgamma = contr(kclass)%eigen(v_search(kclass))%isym
               !
-              lquant = lquant + sym%lquant(kgamma)
+              !lquant = lquant + sym%lquant(kgamma)
+              !
+              lquant = lquant + contr(kclass)%eigen(v_search(kclass))%lquant 
               ! 
             enddo
             !
@@ -1692,7 +1719,9 @@ module perturbation
               !
               kgamma = contr(kclass)%eigen(v_search(kclass-1))%isym
               !
-              lquant = lquant + sym%lquant(kgamma)
+              !lquant = lquant + sym%lquant(kgamma)
+              !
+              lquant = lquant + contr(kclass)%eigen(v_search(kclass))%lquant
               ! 
             enddo
             !
@@ -2437,8 +2466,13 @@ module perturbation
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread
+    !
+    real(rk),allocatable  :: mat(:,:),mat_(:,:)
+    double precision,parameter :: alpha = 1.0d0,beta=0.0d0
  
     type(PTcoeffs_arkT)    :: overlap(PT%Nspecies,sym%Noper)
+    real(rk)               :: zpe,largest_coeff
+    integer(ik)            :: ilargest_coeff
 
     if (job%verbose>=2) call TimerStart('Contraction & symmetrization')
     !
@@ -2580,6 +2614,21 @@ module perturbation
          !
          dimen = size(PT%Htotal%coeffs,dim=1)
          !
+         diag_='SYEV'
+         !
+         if (FLl2_coeffs) then
+           !
+           call PThamiltonianMat(jrot=-1_ik,nroots=nroots,diagonalizer_=diag_)
+           !
+           if (nroots<1) then 
+             !
+             write(out,"('No eigensolutions found')") 
+             stop 'No eigensolutions found'
+             !
+           endif
+           ! 
+         endif
+         !
          ! count the Harmonic levels with Eharmonic < ecut
          !
          nroots = 0 
@@ -2593,6 +2642,26 @@ module perturbation
            endif
            !
          enddo
+         !
+       elseif (FLl2_coeffs.and.job%bset(kmode)%lvib) then 
+         !
+         ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
+         ! to learn the symmetric properties of the contracted basis function. 
+         ! In this trivial case there is no contraction and the "contracted" basis functions 
+         ! are exactly the primitive basis functions. 
+         !
+         dimen = size(PT%Htotal%coeffs,dim=1)
+         !
+         diag_='SYEV'
+         !
+         call PThamiltonianMat(jrot=-2_ik,nroots=nroots,diagonalizer_=diag_)
+         !
+         if (nroots<1) then 
+           !
+           write(out,"('No eigensolutions found')") 
+           stop 'No eigensolutions found'
+           !
+         endif
          !
        else 
          !
@@ -2654,10 +2723,13 @@ module perturbation
        !
        allocate (count_index(nroots,Ndeg),count_degen(nroots),transform(sym%Noper,Ndeg,mpoints), & 
                  sample_vector(dimen),tmat(Ndeg,sym%maxdegen,Ndeg),fv(dimen),stat=alloc)
-       if (alloc/=0) then
-          write (out,"(' Error ',i9,' trying to allocate transform-field')") alloc
-          stop 'PTcontracted_prediagonalization, transform -  out of memory'
-       end if
+                 !
+       call ArrayStart('PTcontracted:count_index' ,alloc,size(count_index),kind(count_index))
+       call ArrayStart('PTcontracted:count_degen' ,alloc,size(count_degen),kind(count_degen))
+       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+       call ArrayStart('PTcontracted:sample_vector' ,alloc,size(sample_vector),kind(sample_vector))
+       call ArrayStart('PTcontracted:tmat' ,alloc,size(tmat),kind(tmat))
+       call ArrayStart('PTcontracted:fv' ,alloc,size(fv),kind(fv))
        !
        contr(iclasses)%ilevel = 0 
        contr(iclasses)%ideg = 0 
@@ -2748,10 +2820,18 @@ module perturbation
        allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
                  transform_t(mpoints),&
                  transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
-       if (alloc/=0) then
-          write (out,"(' Error ',i9,' trying to allocate points-fields')") alloc
-          stop 'PTcontracted_prediagonalization, points -  out of memory'
-       end if
+                 !
+       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
+       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
+       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
+       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
+       !
+       allocate (mat(sym%maxdegen,sym%maxdegen),mat_(sym%maxdegen,dimen),stat=alloc)
+       !
+       call ArrayStart('PTcontracted:mat' ,alloc,size(mat),kind(mat))
+       call ArrayStart('PTcontracted:mat' ,alloc,size(mat_),kind(mat_))
+       !
+       if (job%verbose>=5) call MemoryReport
        !
        ! loop over the contracted solution to assign the symmetry to each level
        !
@@ -2802,6 +2882,20 @@ module perturbation
          ! check if a co-degenerate component is already out and remove 
          if ( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold .and. iroot-1/=iroot_in ) then 
             cycle 
+         endif
+         !
+         ! check the vibrational angular momentum values threshold 
+         !if ( ( bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs).and.( PT%lquant%icoeffs(iroot,1)>job%MaxVibMomentum_contr) ) then
+         !   !
+         !   cycle 
+         !   !
+         !endif
+         !
+         ! check the vibrational angular momentum values threshold 
+         if ( (FLl2_coeffs).and.( PT%lquant%icoeffs(iroot,1)>job%MaxVibMomentum_contr) ) then
+            !
+            cycle 
+            !
          endif
          !
          if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold )  then
@@ -2863,6 +2957,8 @@ module perturbation
          info = 0
          !
          do ideg=1,Nelem
+           !
+           if (job%sym_C) exit
            !
            do ioper = 1,sym%Noper
              do jpoint=1,mpoints
@@ -3054,6 +3150,8 @@ module perturbation
              contr(iclasses)%eigen(ilevel)%value   = PT%Ewhole%coeffs(iroot,1)
              contr(iclasses)%eigen(ilevel)%nu(:)   = PT%quanta%icoeffs(iroot,:)
              contr(iclasses)%eigen(ilevel)%largest_coeff   = PT%largest%coeffs(iroot,1)
+             contr(iclasses)%eigen(ilevel)%lquant  = sym%lquant(gamma)
+             contr(iclasses)%eigen(ilevel)%ilarge_coeff = 1
              !
              ! assume at this stage that the normal quanta are identical with the local quanta
              !
@@ -3158,10 +3256,64 @@ module perturbation
                enddo 
              enddo
              !
+             if (ilevel==1) then
+               !
+               zpe = contr(iclasses)%eigen(1)%value
+               !
+             endif
+             !
+             ! This part was to transform the H-reduced matrix to the representation 
+             ! of Lz^2 and then to use its diagonal matrix elements as the energy-estimates.
+             ! Now a different approach is used with the Lz^2 matrix fully diagonal as obtained at the 
+             ! Hmat-reduced stage by diagonalizing Lz^2 for the degenerate states only. 
+             !
+             if (.false..and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs) then
+                 !
+                 if (ilevel==1) then
+                   !
+                   zpe = 1e9
+                   !
+                   do i=1,dimen 
+                      zpe = min(PT%Hclass%coeffs(i,i),zpe)
+                   enddo
+                   !
+                 endif
+                 !
+                 ! transformation to the symmetrized basis: 
+                 !
+                 !call dgemm('T','N',level_degen,dimen,dimen,alpha,& 
+                 !            cf%vect,dimen,&
+                 !            PT%Hclass,dimen,beta,&
+                 !            mat,dimen)
+                 !   
+                 !call dgemm('N','N',level_degen,level_degen,dimen,alpha,&
+                 !           mat,dimen,&
+                 !           cf%vect,dimen,beta,&
+                 !           mat_,dimen)
+                 !
+                 mat_(1:level_degen,:) = matmul(transpose(cf%vect),PT%Hclass%coeffs)
+                 mat (1:level_degen,1:level_degen) = matmul(mat_(1:level_degen,:),cf%vect)
+                 !
+                 !PT%lquant%icoeffs(ilevel,1) = contr(iclasses)%iroot(ilevel,1)
+                 !
+                 contr(iclasses)%eigen(ilevel)%value   = mat(1,1)
+                 contr(iclasses)%eigen(ilevel)%lquant  = PT%lquant%icoeffs(contr(iclasses)%iroot(ilevel,1),1)
+                 !
+                 ! redefine the assignement based on the largest coeff o fhe new basis 
+                 !
+                 largest_coeff = maxval(cf%vect(:,1)**2,dim=1)-small_
+                 ilargest_coeff = maxloc(cf%vect(:,1)**2,dim=1,mask=cf%vect(:,1)**2.ge.largest_coeff)
+                 contr(iclasses)%eigen(ilevel)%nu(:)     = PT%active_space%icoeffs(:,ilargest_coeff)
+                 contr(iclasses)%eigen(ilevel)%normal(:) = contr(iclasses)%eigen(ilevel)%nu(:)
+                 contr(iclasses)%eigen(ilevel)%largest_coeff   = largest_coeff
+                 contr(iclasses)%eigen(ilevel)%ilarge_coeff = ilargest_coeff
+                 !
+             endif
+             !
              if (job%verbose>=2) then 
                !
-               write(out,"(i7,f18.8,2i4,2x,a4,<nmodes>i4)") ilevel,cf%value-contr(iclasses)%eigen(1)%value,&
-                                                            cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:)
+               write(out,"(i7,f18.8,2i4,2x,a4,<nmodes>i4,1x,i4)") ilevel,cf%value-zpe,&
+                                                            cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:),contr(iclasses)%eigen(ilevel)%lquant 
                !
              end if 
              !
@@ -3177,8 +3329,17 @@ module perturbation
          iattempts = 0
          !
        enddo icount_loop
+       !      
        !
        Ncount = ilevel
+       !
+       if (bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs) then
+         !
+         ! Sort according the energy increasing 
+         !
+         call sort_contr_eigen(Ncount,dimen)
+         !
+       endif 
        !
        dimen = size(PT%Htotal%coeffs,dim=1)
        !
@@ -3309,7 +3470,21 @@ module perturbation
        if (allocated(chi_t)) deallocate(chi_t)
        if (allocated(transform_t)) deallocate(transform_t)
        if (allocated(transform_maxval)) deallocate(transform_maxval) 
-       if (allocated(numpoints)) deallocate(numpoints) 
+       if (allocated(numpoints)) deallocate(numpoints)
+       if (allocated(mat)) deallocate(mat)
+       if (allocated(mat_)) deallocate(mat_) 
+       !
+       call ArrayStop('PTcontracted:count_index')
+       call ArrayStop('PTcontracted:count_degen')
+       call ArrayStop('PTcontracted:transform')
+       call ArrayStop('PTcontracted:sample_vector')
+       call ArrayStop('PTcontracted:tmat')
+       call ArrayStop('PTcontracted:fv')
+       call ArrayStop('PTcontracted:chi_t')
+       call ArrayStop('PTcontracted:transform_t')
+       call ArrayStop('PTcontracted:transform_maxval')
+       call ArrayStop('PTcontracted:numpoints')
+       call ArrayStop('PTcontracted:mat')
        !
        ispecies = 0
        !
@@ -3374,6 +3549,99 @@ module perturbation
     if (job%verbose>=2) call TimerStop('Contraction & symmetrization')
     !
     contains 
+
+
+    subroutine sort_contr_eigen(Nlevels,dimen)
+      !
+      integer(ik),intent(in) :: Nlevels,dimen
+      real(rk) :: energy
+      integer(ik) :: ilevel,jlevel,alloc,iroot,ideg
+      type(PTlevelT) :: eigen_t   ! temporal object used for sorting 'eigen'
+
+         !
+         allocate (eigen_t%vect(dimen,sym%maxdegen),&
+                   eigen_t%nu(0:PT%Nmodes),&
+                   eigen_t%normal(0:PT%Nmodes),stat=alloc)
+         !
+         call ArrayStart('eigen_t%vect',alloc,size(eigen_t%vect),kind(eigen_t%vect))
+         call ArrayStart('eigen_t%vect',alloc,size(eigen_t%nu),kind(eigen_t%nu))
+         call ArrayStart('eigen_t%vect',alloc,size(eigen_t%normal),kind(eigen_t%normal))
+         !
+         do ilevel =1,Nlevels
+           !
+           energy = contr(iclasses)%eigen(ilevel)%value
+           !
+           do jlevel =ilevel+1,Nlevels
+             !
+             if (energy>contr(iclasses)%eigen(jlevel)%value) then 
+               !
+               energy        = contr(iclasses)%eigen(jlevel)%value
+               !
+               eigen_t%value = contr(iclasses)%eigen(jlevel)%value
+               contr(iclasses)%eigen(jlevel)%value = contr(iclasses)%eigen(ilevel)%value
+               contr(iclasses)%eigen(ilevel)%value = eigen_t%value
+               !
+               eigen_t%isym = contr(iclasses)%eigen(jlevel)%isym
+               contr(iclasses)%eigen(jlevel)%isym = contr(iclasses)%eigen(ilevel)%isym
+               contr(iclasses)%eigen(ilevel)%isym = eigen_t%isym
+               !
+               eigen_t%gamma = contr(iclasses)%eigen(jlevel)%gamma
+               contr(iclasses)%eigen(jlevel)%gamma = contr(iclasses)%eigen(ilevel)%gamma
+               contr(iclasses)%eigen(ilevel)%gamma = eigen_t%gamma
+               !
+               eigen_t%degeneracy = contr(iclasses)%eigen(jlevel)%degeneracy
+               contr(iclasses)%eigen(jlevel)%degeneracy = contr(iclasses)%eigen(ilevel)%degeneracy
+               contr(iclasses)%eigen(ilevel)%degeneracy = eigen_t%degeneracy
+               !
+               eigen_t%vect = contr(iclasses)%eigen(jlevel)%vect
+               contr(iclasses)%eigen(jlevel)%vect = contr(iclasses)%eigen(ilevel)%vect
+               contr(iclasses)%eigen(ilevel)%vect = eigen_t%vect
+               !
+               eigen_t%ilarge_coeff = contr(iclasses)%eigen(jlevel)%ilarge_coeff
+               contr(iclasses)%eigen(jlevel)%ilarge_coeff = contr(iclasses)%eigen(ilevel)%ilarge_coeff
+               contr(iclasses)%eigen(ilevel)%ilarge_coeff = eigen_t%ilarge_coeff
+               !
+               eigen_t%largest_coeff = contr(iclasses)%eigen(jlevel)%largest_coeff
+               contr(iclasses)%eigen(jlevel)%largest_coeff = contr(iclasses)%eigen(ilevel)%largest_coeff
+               contr(iclasses)%eigen(ilevel)%largest_coeff = eigen_t%largest_coeff
+               !
+               eigen_t%normal = contr(iclasses)%eigen(jlevel)%normal
+               contr(iclasses)%eigen(jlevel)%normal = contr(iclasses)%eigen(ilevel)%normal
+               contr(iclasses)%eigen(ilevel)%normal = eigen_t%normal
+               !
+               eigen_t%nu = contr(iclasses)%eigen(jlevel)%nu
+               contr(iclasses)%eigen(jlevel)%nu = contr(iclasses)%eigen(ilevel)%nu
+               contr(iclasses)%eigen(ilevel)%nu = eigen_t%nu
+               !
+               eigen_t%lquant = contr(iclasses)%eigen(jlevel)%lquant
+               contr(iclasses)%eigen(jlevel)%lquant = contr(iclasses)%eigen(ilevel)%lquant
+               contr(iclasses)%eigen(ilevel)%lquant = eigen_t%lquant
+               !
+             endif 
+             !
+           enddo
+           !
+         enddo
+         !
+         iroot = 0 
+         !
+         do ilevel =1,Nlevels
+           do ideg = 1,contr(iclasses)%eigen(ilevel)%degeneracy 
+             !
+             iroot = iroot +1 
+             contr(iclasses)%ilevel(iroot) = ilevel
+             contr(iclasses)%ideg(iroot)   = ideg
+             contr(iclasses)%iroot(ilevel,ideg) = iroot
+             !
+           enddo
+         enddo   
+         !
+         deallocate (eigen_t%vect,eigen_t%nu,eigen_t%normal)
+         !
+         call ArrayStop('eigen_t%vect')
+         !   
+ end subroutine sort_contr_eigen
+
 
  recursive subroutine PTpolintark(n,xa, ya, x, y, dy)
      !
@@ -3441,7 +3709,7 @@ module perturbation
        real(rk)                   :: lvib,mat_q(PT%Nmodes),mat_p(PT%Nmodes),smat(sym%maxdegen,sym%maxdegen),evib(sym%maxdegen)
        character(len=cl)  :: job_is
        integer(ik)        :: dimen_p,nroots,iroot,bsize,k2,imoment,ideg,jdeg,jroot,ndeg
-       integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,MaxExpOrder,extF_rank,nmodes
+       integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,MaxExpOrder,extF_rank,nmodes,L2vib_N
        real(rk),allocatable :: tmat(:,:),mat_tt(:,:)
        real(rk),allocatable :: mat_t(:,:)
        real(rk),allocatable :: me_t(:,:)
@@ -3461,7 +3729,7 @@ module perturbation
        job_is = 'vib'
        !
        bsize = job%bset(im1)%range(2)
-       call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N)
+       call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
        !
        MaxExpOrder= max(potorder,kinorder,extForder)
        !
@@ -3840,9 +4108,13 @@ module perturbation
      real(ark),intent(out)   :: chi_t(:,:,:)
      integer(ik)             :: jpoint,i,ipoint_t,imode,ioper,pshift
      real(ark)               :: chi(PT%Nmodes),f_t,chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
-     logical                 ::  go
+     logical                 :: go
      !
      ! choose the geometry that we use to check the symmetry
+     !
+     if (job%sym_C) return
+     !
+     if (job%verbose>=5) call TimerStart('PTselect_sample_points')
      !
      do imode = 1,PT%Nmodes
        !
@@ -3922,6 +4194,8 @@ module perturbation
        !
      enddo 
      !$omp end parallel do
+     !
+     if (job%verbose>=5) call TimerStop('PTselect_sample_points')
      !
      if (verbose>=4) write(out,"(' ... PTselect_sample_points - done!')")   
 
@@ -4327,10 +4601,7 @@ module perturbation
     contr_bset_initialized = .true.
     !
   end subroutine PT_conctracted_rotational_bset
-
-
-  
-
+  !
   !
   subroutine reconstruct_transf_matrix(Ndeg,mpoints,phi_src,tmat,info)
 
@@ -4341,8 +4612,9 @@ module perturbation
     real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
     real(ark)               :: t_vect(Ndeg)
 
-    integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n
+    integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n,nthreads,tid,nsize,alloc
     double precision,allocatable  :: a(:,:),b(:,:),s(:),work(:)
+    integer(ik) :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
     !
     if (job%verbose>=6) call TimerStart('reconstruct_transf_matrix')
     !
@@ -4356,43 +4628,81 @@ module perturbation
     if (Ndeg>mpoints) then 
       write(out,"('reconstruct_transf_matrix: sample_points < ndeg: ',2i)") mpoints,ndeg
       stop 'sample_points is too small?'
-    endif 
+    endif
     !
-    !$omp parallel private(a,b,s,work,alloc_p) shared(tmat)
-    allocate(a(Ndeg*mpoints,Ndeg**2),b(Ndeg*mpoints,1),s(min(m,n)),work(iw),stat=alloc_p)
-    if (alloc_p/=0) then
-        write (out,"(' reconstruct_transf_matrix: ',i9,' trying to allocate array for a and b')") alloc_p
-        stop 'reconstruct_transf_matrix, a and b  - out of memory'
-    end if
+    nthreads = 1
     !
-    !$omp do private(ioper,ieq,ipoint,ideg,keq,ig,jg,ndeg2,info_t,t_vect,rank) reduction(max:info) schedule(static) 
+    ! collect number of threads
+    !
+    !     Start parallel region
+    !omp parallel private(nthreads,tid)
+    !!
+    !!  Obtain thread number
+    !tid = OMP_GET_THREAD_NUM()
+    !!
+    !!     Only master thread does this
+    !if (tid==0) then
+    !    !
+    !    nthreads = OMP_GET_NUM_THREADS()
+    !    if (job%verbose>=6) PRINT *, 'Number of threads = ', NTHREADS
+    !    !
+    !endif 
+    !omp end parallel
+    !
+    !alloc = 0
+    !
+    !nsize = Ndeg*mpoints*Ndeg**2*nthreads
+    !call ArrayStart('reconstruct_transf:a',alloc,nsize,rk)
+    !nsize = Ndeg*mpoints*nthreads
+    !call ArrayStart('reconstruct_transf:b',alloc,nsize,rk)
+    !nsize = iw*nthreads
+    !call ArrayStart('reconstruct_transf:w',alloc,nsize,rk)
+    !
+    !omp parallel private(a,b,s,work,alloc_p) shared(tmat)
+    !
+    allocate(a(Ndeg*mpoints,Ndeg**2),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:a',alloc_p,1_ik,rk,size(a,kind=hik))
+    allocate(b(Ndeg*mpoints,1),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:b',alloc_p,1_ik,rk,size(b,kind=hik))
+    allocate(s(min(m,n)),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:s',alloc_p,1_ik,rk,size(s,kind=hik))
+    allocate(work(iw),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:w',alloc_p,1_ik,rk,size(work,kind=hik))
+    !
+    !if (alloc_p/=0) then
+    !    write (out,"(' reconstruct_transf_matrix: ',i9,' trying to allocate array for a and b')") alloc_p
+    !    stop 'reconstruct_transf_matrix, a and b  - out of memory'
+    !end if
+    !
+    !omp do private(ioper,ieq,ipoint,ideg,keq,ig,jg,ndeg2,info_t,t_vect,rank) reduction(max:info) schedule(static) 
     do ioper=1,sym%Noper
       !
       info_t = 0
       !
-      ieq = 0 
       a = 0
+      !
+      !$omp parallel do private(ipoint,ideg,ieq,ig,jg,keq) shared(b,a)
       do ipoint = 1,mpoints
         do ideg = 1,Ndeg
           !
-          ieq = ieq + 1
+          ieq = ideg + (ipoint-1)*Ndeg
           !
           b(ieq,1) = phi_src(ioper,ideg,ipoint)
           !
-          keq = 0 
           do ig = 1,Ndeg
             do jg = 1,Ndeg
               !
-              keq = keq + 1
+              keq = jg + Ndeg*(ig-1)
+              !
               if (ig==ideg) then 
                 a(ieq,keq) = phi_src(1,jg,ipoint)
-                !
               endif    
             enddo
           enddo
         enddo 
         !
       enddo
+      !$omp end parallel do
       !
       if (verbose>=6) then
         !
@@ -4420,15 +4730,9 @@ module perturbation
       !
       if (verbose>=5) write(out,"('reconst_tr_m: dgelss')")
       !
-      !if (job%verbose>=6) call TimerStart('reconstruct_tr:gelss')
-      !
       call dgelss(m,n,1,a(1:m,1:n),m,b(1:m,1:1),m,s,-1.0d-12, rank, work, iw, info_t)
       !
       if (verbose>=5) write(out,"('reconst_tr_m: dgelss...done!')")
-      !
-      ! call lapack_gelss(a(:,:),b(:,:),info_t)
-      !
-      !if (job%verbose>=6) call TimerStop('reconstruct_tr:gelss')
       !
       if (info_t<0) then 
         write(out,"('reconstruct_transf_matrix: (',i,') probably not sufficient sample_points: ',i)") info_t,mpoints
@@ -4439,29 +4743,25 @@ module perturbation
         !
         info = max(info,2)
         !
-        !if (job%verbose>=6) then 
-        !  write(out,"('reconst_tr_m: the effect. rank is too small, the points have to be reselected: ')") 
-        !endif
-        !
-        !return
-        !exit 
-        !
       endif 
       !
-      ieq = 0 
+      !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)
       do ideg = 1,Ndeg
         do jdeg = 1,Ndeg
           !
-          ieq = ieq + 1
+          ieq = jdeg + Ndeg*(ideg-1)
           !
           tmat(ioper,ideg,jdeg) = real(b(ieq,1),ark)
           !
         enddo 
       enddo
+      !$omp end parallel do
       !
       ! check
       !
+      !$omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static) 
       do ipoint = 1,mpoints
+         !
          t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
          !
          do ideg=1,ndeg
@@ -4478,12 +4778,20 @@ module perturbation
          enddo
          !
       enddo
+      !$omp end parallel do
       !
     enddo 
-    !$omp enddo
+    !omp enddo
     !
     deallocate(a,b,work,s)    
-    !$omp end parallel
+    !omp end parallel
+    !
+    if (job%verbose>=6) call MemoryReport
+    !
+    call ArrayStop('reconstruct_transf:a')
+    call ArrayStop('reconstruct_transf:b')
+    call ArrayStop('reconstruct_transf:s')
+    call ArrayStop('reconstruct_transf:w')
     !
     if (info==2) then 
       !
@@ -4521,9 +4829,22 @@ module perturbation
     real(ark)                :: Numireps_inf,Numireps_
     integer(ik)              :: ielem_,ielem_inf
     !
-    if (job%verbose>=6) call TimerStart('Degenerate symmetrization')
-    !
     if (verbose>=4) write(out,"('degenerate_symmetrization...')") 
+    !
+    if (job%sym_C) then
+      !
+      Nirr(1) = Nelem
+      !
+      transform = 0
+      do ielem = 1,Nelem
+         transform(ielem,1,ielem) = 1.0_ark
+      enddo
+      !
+      return
+      !
+    endif 
+    !
+    if (job%verbose>=5) call TimerStart('Degenerate symmetrization')
     !
     transform = 0 
     info = 0 
@@ -4542,10 +4863,10 @@ module perturbation
        !
     endif 
     !
-    call reconstruct_transf_matrix(Nelem,mpoints,phi_src(1:sym%Noper,1:Nelem,1:mpoints),tmat_t,info)
+    call reconstruct_transf_matrix(Nelem,mpoints,phi_src,tmat_t,info)
     !
     if (info/=0) then 
-      if (job%verbose>=6) call TimerStop('Degenerate symmetrization')
+      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
       return
     endif 
     !
@@ -4652,7 +4973,7 @@ module perturbation
          write(out,"('                    Nirr : ',<sym%Nrepresen>i9   )") Nirr(1:isym)
          info = 1
          !
-         if (job%verbose>=6) call TimerStop('Degenerate symmetrization')
+         if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
          !
          !return
          !
@@ -5036,7 +5357,7 @@ module perturbation
 
     !deallocate(a,b)
 
-    if (job%verbose>=6) call TimerStop('Degenerate symmetrization')
+    if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
     !
     if (verbose>=4) write(out,"('...degenerate_symmetrization - done!')") 
 
@@ -13745,7 +14066,7 @@ module perturbation
     !
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
-    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax
+    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
     real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),matclass(:,:,:),hrot_t(:,:)
@@ -13786,7 +14107,7 @@ module perturbation
       !
       allocate(extF_N(max(extF_rank,1)))
       !
-      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N)
+      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
       !
       PT%Nterms%poten = poten_N
       PT%Nterms%gvib = gvib_N
@@ -15042,7 +15363,7 @@ module perturbation
     !
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
-    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax
+    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N
     integer(ik)        :: iclasses,ilevel,ideg,jdeg,alloc,dimen,iterm,k1,k2,Ndeg
     real(rk),allocatable :: grot_t(:,:),extF_t(:,:),hvib_t(:,:)
     !
@@ -15107,7 +15428,7 @@ module perturbation
       !
       allocate(extF_N(max(extF_rank,1)))
       !
-      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N)
+      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
       !
       ! Some parts of the Hamiltonian are not needed if J=0 (neither grot nor gcor).
       ! We adopt treat_rotation to switch it on/off
@@ -19391,7 +19712,7 @@ end subroutine read_contr_ind
     !type(FLbasissetT),intent(in)  :: bs(0:PT%Nmodes)
     !
     integer(ik)        :: PotOrder,KinOrder,extForder,MaxExpOrder
-    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax
+    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,L2vib_N,Ncoeffs,jmax
     integer(ik)        :: extF_rank
     integer(ik)        :: imu,k1,k2,alloc,isize,ispecies,imode,bsize
     integer(ik),allocatable :: extF_N(:)
@@ -19406,7 +19727,7 @@ end subroutine read_contr_ind
       !
       allocate(extF_N(max(extF_rank,0)))
       !
-      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N)
+      call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
       !
       PT%Nterms%poten = poten_N
       PT%Nterms%gvib = gvib_N
@@ -19423,7 +19744,7 @@ end subroutine read_contr_ind
         treat_rotation = .false.
       endif 
       !
-      Ncoeffs = max(poten_N,gvib_N,grot_N,gcor_N)
+      Ncoeffs = max(poten_N,gvib_N,grot_N,gcor_N,L2vib_N)
       MaxExpOrder= max(potorder,kinorder,extForder)
       PT%Nterms%maximal = Ncoeffs
       !
@@ -19531,6 +19852,29 @@ end subroutine read_contr_ind
             !
          enddo
       enddo
+      !
+      ! Vibrational angular momentum L2
+      !
+      if (FLl2_coeffs) then
+        !
+        allocate (me%L2(PT%Nmodes,PT%Nmodes),stat=alloc)
+        !
+        job_is = 'L2_vib'
+        do k1 = 1,PT%Nmodes
+           do k2 = 1,PT%Nmodes
+              !
+              allocate (me%L2(k1,k2)%coeff(L2vib_N,0:bsize,0:bsize),&
+                        me%L2(k1,k2)%iorder(L2vib_N),stat=alloc)
+              call ArrayStart('me%fields%coeff',alloc,size(me%L2(k1,k2)%coeff),kind(me%L2(k1,k2)%coeff))
+              call FLread_coeff_matelem(job_is,k1,k2,me%L2(k1,k2)%coeff(:,:,:))
+              !
+              me%L2(k1,k2)%iorder = 0 
+              me%L2(k1,k2)%Ncoeff = L2vib_N
+              !
+           enddo
+        enddo
+        !
+      endif
       !
       ! external field partr - optional 
       !
@@ -19691,7 +20035,7 @@ end subroutine read_contr_ind
 
 
 
- !
+   !
    ! Matrix elements calculations of the fields on the product of the primitive (1D) eigenfunctions
    ! <v1v2v3...| fields |w1w2w3...>, where fields = V, T_vib, T_rot, ot T_cor
    !
@@ -20056,6 +20400,101 @@ end subroutine read_contr_ind
 
 
 
+   !
+   ! Matrix elements calculations of the fields on the product of the primitive (1D) eigenfunctions
+   ! <v1v2v3...| L2 |w1w2w3...>, where L2 is the total vibrational angular moment
+   !
+   recursive function PT_L2_matrixelements(norder,nu_i,nu_j) result(mat_elem)
+
+      integer(ik),intent(in)        :: norder,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
+      real(rk)                      :: mat_elem
+
+      integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
+      integer(ik)                   :: vl,vr,ispecies
+      real(rk)                      :: gvib_t,mat(PT%Nmodes)
+      type(PTcoeffT),pointer        :: fl
+
+         !
+         ! Extract large amplitude quantum numbers
+         !
+         vl = nu_i(PT%Nmodes) ; vr = nu_j(PT%Nmodes)
+         !
+         gvib_t = 0 
+         !
+         if (nu_i(0)==nu_j(0)) then 
+            !
+            if (PTvibrational_me_calc) then 
+              ! 
+              ! Vibrational part of the kinetic operator g_vib
+              !
+              do k1 = 1,PT%Nmodes
+                 do k2 = 1,PT%Nmodes
+                    !
+                    fl => me%L2(k1,k2)
+                    !
+                    do iterm = 1,fl%Ncoeff
+                       !
+                       k(:) = FLIndexQ(:,iterm)
+                       !
+                       ! Check if the current iterm belongs to the current perturb. order
+                       !
+                       if (fl%iorder(iterm)==norder) then 
+                          !
+                          do ispecies = 1,PT%Nspecies
+                             !
+                             do i = 1,PT%mode_ispecies(ispecies)
+                                !
+                                imode = PT%mode_species(ispecies,i)
+                                !
+                                if (imode==PT%Nmodes) then
+                                   !
+                                   mat(imode) = fl%coeff(iterm,vl,vr)
+                                   !
+                                else
+                                   !
+                                   if    (k1/=imode.and.k2/=imode) then 
+                                     !
+                                     mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                     !
+                                   elseif (k1==imode.and.k2/=imode) then
+                                     !
+                                     mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                                     !
+                                   elseif (k1/=imode.and.k2==imode) then
+                                     !
+                                     mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                     !
+                                   else !   if (k1==imode.and.k2==imode) then
+                                     !
+                                     mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                     !
+                                   endif
+                                   !
+                                   !
+                                endif
+                                !
+                             enddo 
+                             ! 
+                          enddo
+                          !
+                          gvib_t = gvib_t + product(mat(:))
+                          !
+                       endif
+                       !
+                    enddo
+                    ! 
+                 enddo
+              enddo
+              !
+            endif
+            !
+         endif 
+         !
+         mat_elem = gvib_t
+         !
+         !if (verbose>=6) write(out,"('PT_L2_matrixelements/end')") 
+
+   end function PT_L2_matrixelements
 
 
 
@@ -26498,19 +26937,23 @@ end subroutine read_contr_ind
     character(len=cl):: diagonalizer_used
     real(rk)  :: upper_ener
     !
-    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),ib,jb,i,j,k_j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,k_j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
     !
     type(PTcoeffsT),pointer    ::  cf
     !
-    real(rk) :: mat_elem,MaxEigenvects,termvalue,ZPE
+    real(rk) :: mat_elem,MaxEigenvects,termvalue,ZPE,mat_elem_
     !
     double precision :: vrange(2)
-    real(rk),allocatable :: b(:),a(:,:)
-    integer  :: nroot_t
+    real(rk),allocatable :: b(:),a(:,:),c(:,:),d(:,:),e(:)
+    integer  :: nroot_t,lquant
     double precision,allocatable :: work(:)
     integer,allocatable :: iwork(:)
     integer          :: info,lwork,liwork
     character(len=1)   :: rng
+    double precision   :: alpha = 1.0d0,beta=0.0d0
+    integer(ik),allocatable       :: count_index(:,:),count_degen(:)
+    integer(ik)        :: icount,ideg,jdeg,jroot,iroot_in,iroot,Ndeg,Ncount
+    real(rk)           :: largest_coeff
     !
     Nmodes = PT%Nmodes
     !
@@ -26549,17 +26992,21 @@ end subroutine read_contr_ind
         write (out,"('Size of the variational matrix  = ',i7,' out of ',i7,' elements.')") dimen,PT%Maxcoeffs
     endif
     !
-    !
     allocate (a(dimen,dimen),b(dimen),stat=alloc)
-    if (alloc/=0) then
-       write (out,"(' PTdiagonalization/Error  ',i9,' trying to allocate array for a and b')") alloc
-       stop 'PTdiagonalization, a and b  - out of memory'
-    end if
+    call ArrayStart('PThamiltonianMat_a',alloc,size(a),kind(a))
+    call ArrayStart('PThamiltonianMat_b',alloc,size(b),kind(b))
+    !
+    ! vibrational angular momentum
+    !
+    if (jrot<0) then
+     allocate (c(dimen,dimen),stat=alloc)
+     call ArrayStart('PThamiltonianMat_c',alloc,size(c),kind(c))
+    endif
     !
     if (job%verbose>=3) then 
        write(out,"(/'Primitive matrix elements calculations...')")
     endif
-  !
+    !
     !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a) schedule(static)
     do i = 1,dimen
       !
@@ -26579,7 +27026,7 @@ end subroutine read_contr_ind
           !
           all( nu_j(1:)>=PT%range(1,1:) ).and. all( nu_j(1:)<=PT%range(2,1:) ) ) then
           !
-          if (FLrotation.and.Jrot/=0) then
+          if (FLrotation.and.Jrot>0) then
             !
             if (trove%DVR) then 
               !
@@ -26591,7 +27038,7 @@ end subroutine read_contr_ind
               !
             endif 
             !
-          else 
+          else
             !
             ! J-free calculations
             !
@@ -26599,6 +27046,32 @@ end subroutine read_contr_ind
               mat_elem = PTmatrixelements_dvr(nu_i,nu_j)
             else 
               mat_elem = PTmatrixelements(0,nu_i,nu_j) 
+            endif
+            !
+            !if (FLl2_coeffs.and.dimen>25) then
+            ! !
+            ! mat_elem = PT_L2_matrixelements(0,nu_i,nu_j)
+            ! !
+            !endif
+            !
+            if (jrot<0) then
+              !
+              if (trove%DVR) then 
+                write(out,"('L2@DVR is not implemented in PThamiltonianMat')")
+                stop 'L2@DVR is not implemented in PThamiltonianMat'
+                !
+               else
+                !
+                !c(i,j) = mat_elem
+                !c(j,i) = c(i,j)
+                !
+                mat_elem_ = PT_L2_matrixelements(0,nu_i,nu_j)
+                !
+                c(i,j) = mat_elem_
+                c(j,i) = c(i,j)
+                !
+              endif
+              !
             endif
             !
           endif 
@@ -26750,7 +27223,7 @@ end subroutine read_contr_ind
     ! 
     ! and Reporting the final results 
     !
-    write(out,"(/'Variational eigenvalues:',/'    i       value        quanta')") 
+    write(out,"(/'Variational eigenvalues:',/'      i        value       quanta')") 
     !
     do ib=1,nroots
        !
@@ -26765,8 +27238,7 @@ end subroutine read_contr_ind
           nu_j(:) = PT%active_space%icoeffs(:,jb)
           if (job%verbose>=7) write(out,"(2i8,f19.8,30i4)") ib,jb,a(jb,ib), & 
                        (nu_j(i0),i0=0,min(PT%Nmodes,30))
-
-
+          !
        enddo
        !
        nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
@@ -26781,7 +27253,244 @@ end subroutine read_contr_ind
     enddo
     !
     PT%Ewhole%coeffs(:,1) = b(:)
+    !
+    !if (FLl2_coeffs.and.dimen>25) then
+    !    !
+    !    do i = 1,nroots
+    !      !
+    !      PT%lquant%icoeffs(i,1) = nint(sqrt(abs(b(i))),ik)
+    !      !
+    !    enddo
+    !    !
+    !endif
+    !
+    !
+    ! Define Vibrational angular momenta
+    !
+    if (jrot<0) then
+        !
+        PT%Hclass%coeffs = c
+        !
+        ! transform the matrix elements of the vib. angular momeenum 
+        ! to the new basis of eigenfunctions of H-reduced and store in C-matrix
+        !
+        call dgemm('T','N',dimen,dimen,dimen,alpha,& 
+                    cf%coeffs,dimen,&
+                    c,dimen,beta,&
+                    a,dimen)
+        !   
+        call dgemm('N','N',dimen,dimen,dimen,alpha,&
+                   a,dimen,&
+                   cf%coeffs,dimen,beta,&
+                   c,dimen)
+                   !
+        !
+        ! Now c-matrix should be block-diagonal: diagonal for non-degenerate and 
+        ! non-diagonal for the clusters of degenerate states.
+        ! 
+        ! Here we count the degenerate srates and form groups from the corresponding eigenfunctions
+        !
+        allocate (count_index(dimen,dimen),count_degen(dimen),stat=alloc)
+        !
+        count_index = 0
+        count_index(1,1) = 1
+        count_degen(1) = 1
+        !
+        icount = 1
+        ideg = 1
+        iroot_in = 1
+        !
+        do iroot = 2,nroots
+          !
+          nu = PT%quanta%icoeffs(iroot,:)
+          ipol = PTpolyadRules(nu)
+          !
+          ! apply the polyad- and cluster-thresholds only for the non-Harmonic basis 
+          !
+          if ( ipol>job%Npolyads_contr.and.&
+               .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in)  ) then
+               !
+             cycle 
+             !
+          endif
+          !
+          if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold )  then
+            !
+            ideg = ideg + 1
+            !
+          else
+            !
+            ideg = 1
+            icount = icount + 1
+            !
+          endif 
+          !
+          count_index(icount,ideg) = iroot
+          count_degen(icount) = ideg
+          !
+          if (job%verbose>=6) write(out,"('iroot,icount,ideg = ',3i5)") iroot,icount,ideg
+          !
+          ! last iroot takin in
+          iroot_in = iroot
+          !
+        enddo
+        !
+        Ncount = icount
+        !
+        iroot = iroot_in
+        !
+        lwork = 50*maxval(count_degen,dim=1)
+        !
+        if (job%verbose>=6) write(out,"('maxdeg, lwork',2i8)") maxval(count_degen,dim=1),lwork
+        !
+        allocate(work(lwork))
+        !
+        a = 0
+        ! 
+        ! for each degenerate cluster (incl. Ndeg=1) build a small 
+        ! Lquant matraix NdegxNdeg and diagonalize
+        ! This should produce a diagonal Lquant (ang. vibr. mometna) matrix
+        !
+        do icount = 1,Ncount
+           !
+           Ndeg  = count_degen(icount)
+           !
+           allocate (d(Ndeg,Ndeg),e(Ndeg),stat=alloc)
+           call ArrayStart('PThamiltonianMat_d',alloc,size(d),kind(d))
+           call ArrayStart('PThamiltonianMat_d',alloc,size(e),kind(e))
+           !
+           do ideg = 1,Ndeg
+             !
+             iroot = count_index(icount,ideg)
+             !
+             do jdeg = 1,Ndeg
+               !
+               jroot = count_index(icount,jdeg)
+               !
+               d(ideg,jdeg) = c(iroot,jroot)
+               !
+             enddo
+           enddo
+           !
+           call lapack_dsyev(d,e)
+           !
+           !call dsyev('V','U',Ndeg,d,Ndeg,e,work,lwork,info)
+           !
+           do ideg = 1,Ndeg
+             !
+             iroot = count_index(icount,ideg)
+             !
+             forall (jdeg=1:Ndeg) a(count_index(icount,jdeg),iroot) = d(jdeg,ideg)
+             !
+           enddo
+           !
+           deallocate (d,e)
+           call ArrayStop('PThamiltonianMat_d')
+           !
+        enddo
+        !
+        deallocate(work)
+        deallocate (count_index,count_degen)
+        !
+        ! Transform to the eigenfunctions to the L-representtation, where
+        ! Lz^2 is diagonal 
+        !
+        !   
+        call dgemm('N','N',dimen,dimen,dimen,alpha,&
+                   cf%coeffs,dimen,&
+                   a,dimen,beta,&
+                   c,dimen)
+
+        cf%coeffs = c
+        !
+        ! check if L2 is diagonal by transforming the primite 
+        ! matrix elemenets of L2 to the new representation 
+        !
+        call dgemm('T','N',dimen,dimen,dimen,alpha,& 
+                    cf%coeffs,dimen,&
+                    PT%Hclass%coeffs,dimen,beta,&
+                    a,dimen)
+        !   
+        call dgemm('N','N',dimen,dimen,dimen,alpha,&
+                   a,dimen,&
+                   cf%coeffs,dimen,beta,&
+                   c,dimen)
+
+        !
+        do i=1,nroots
+          !
+          ! Here we check the diagonality 
+          !
+          largest_coeff = 0
+          !
+          if (i>1) largest_coeff = maxval(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk) 
+          !
+          if ((largest_coeff>sqrt(small_).and.Jrot==-1).or.(largest_coeff>1e5*sqrt(small_).and.Jrot<-1)) then 
+            !
+            write(out,"('PThamiltonianMat: non-diagonal lquant elements are too large ',g18.4,' i = ',i5,' ; lquant2 =  ',f14.6)") largest_coeff,i,c(i,i)
+            stop 'PThamiltonianMat:  non-diagonal lquant '
+            !
+          endif
+          !
+          ! Check the diagonal elements if they make sense (positive)
+          !
+          if (c(i,i)<-sqrt(small_)) then 
+            write(out,"('PThamiltonianMat: lquant should not be negative:',f18.4,' i = ',i4)") c(i,i),i
+            stop 'PThamiltonianMat: illegal lquant '
+          endif
+          !
+          !PT%lquant%icoeffs(i,1) = nint(sqrt(abs(PT%Ewhole%coeffs(i,1))),ik)
+          PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i))),ik)
+          !PT%Ewhole%coeffs(i,1) = c(i,i)
+          !
+          ! Re-assign the new eigenfunctions which are also basis functions 
+          !
+          !largest_coeff = maxval(cf%coeffs(:,i)**2,dim=1)-small_
+          !MaxTerm = maxloc(cf%coeffs(:,i)**2,dim=1,mask=cf%coeffs(:,i)**2.ge.largest_coeff)
+          !
+          !nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
+          !PT%quanta%icoeffs(i,:) = nu_i(:)
+          !
+          !PT%largest%coeffs(i,1) = sqrt(largest_coeff)
+          !
+        enddo
+        !
+        ! sort the einvalues ann eigenvectors with the energy 
+        !
+        do i =1,-nroots
+          !
+          termvalue = PT%Ewhole%coeffs(i,1)
+          !
+          do j =i+1,nroots
+            !
+            if (termvalue>PT%Ewhole%coeffs(j,1)) then 
+              !
+              termvalue = PT%Ewhole%coeffs(j,1)
+              PT%Ewhole%coeffs(j,1) = PT%Ewhole%coeffs(i,1)
+              PT%Ewhole%coeffs(i,1) = termvalue
+              !
+              lquant = PT%lquant%icoeffs(j,1)
+              PT%lquant%icoeffs(j,1) = PT%lquant%icoeffs(i,1)
+              PT%lquant%icoeffs(i,1) = lquant
+              !
+              b(:)   = a(:,j)
+              a(:,j) = a(:,j)
+              a(:,j) = b(:)
+              !
+            endif 
+            !
+          enddo
+          !
+        enddo
+        !
+        deallocate(c)
+        call ArrayStop('PThamiltonianMat_c')
+        !
+    endif
+    !
     deallocate(a,b)
+    call ArrayStop('PThamiltonianMat_a')
+    call ArrayStop('PThamiltonianMat_b')
     !
     if (job%verbose>=4) write(out,"('PThamiltonianMat/end')") 
     !
