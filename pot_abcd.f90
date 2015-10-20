@@ -18,8 +18,7 @@ module pot_abcd
 
 
   contains
-
-  !
+  
   !
   ! Defining potential energy function 
   !
