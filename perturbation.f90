@@ -8888,10 +8888,13 @@ module perturbation
        endif
        
        read(chkptIO) dimen, nroots
+       
        write(out, '(/a,1x,i8,1x,a,1x,i8)') 'read eigenvectors for dimen=', dimen, 'and nroots=', nroots
+       
        !Allocate maxcontrib and maxterm
        allocate (maxTerm(nroots),maxcontrib(nroots))
        call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+       
        read(chkptIO) energy(1:nroots)
        read(chkptIO) buff(1:13)
        if(buff(1:13)/='Start contrib') then
@@ -8902,7 +8905,7 @@ module perturbation
        do ielem=1,nroots
        		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
        		if(info<0) exit
-       		write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=', maxcontrib(ielem)
+       		 if (job%verbose>=6) write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=', maxcontrib(ielem)
     
        enddo
        
@@ -9661,39 +9664,44 @@ module perturbation
         write (out,"(/'Variational solution - irreducible representation',/'  Gamma    i       value             j  k  t   quanta')") 
      endif
      !
-     ! Find the largest coefficients - designed for the parallelization
-     !
-     allocate (maxTerm(nroots),maxcontrib(nroots))
-     call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-     !
-     maxTerm  = 1
-     !
-     !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
-     do iroot=1,nroots
+     
+     ! Find the largest coefficients only if not provided from external diagonalization.
+     if(trim(job%diagonalizer)/='READ-ENERGIES') then
+     
+     	allocate (maxTerm(nroots),maxcontrib(nroots))
+     	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+    	maxTerm  = 1
+     
+     
+        !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
+        do iroot=1,nroots
+          !
+          MaxEigenvects  = small_
+          !
+          if (.not.no_diagonalization) then 
+            !
+            do jroot=1,dimen_s
+                 if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
+                     MaxEigenvects = abs( mat(jroot,iroot) )
+                     maxTerm(iroot) = jroot
+                 endif
+            enddo
+              !
+            maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
+            !
+          else
+            ! 
+            maxTerm(iroot) = ivec(iroot)
+            maxcontrib(iroot)  = 1.0_rk
+            !
+          endif
        !
-       MaxEigenvects  = small_
-       !
-       if (.not.no_diagonalization) then 
-         !
-         do jroot=1,dimen_s
-            if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
-                MaxEigenvects = abs( mat(jroot,iroot) )
-                maxTerm(iroot) = jroot
-            endif
-         enddo
-         !
-         maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
-         !
-       else
-         ! 
-         maxTerm(iroot) = ivec(iroot)
-         maxcontrib(iroot)  = 1.0_rk
-         !
-       endif
-       !
-     enddo
+        enddo
      !$omp end parallel do
      !
+     
+     endif
+     
      if (no_diagonalization) then 
        !
        deallocate(ivec)
@@ -9863,7 +9871,8 @@ module perturbation
              !
            else 
              !
-             if (.not.no_diagonalization) vec_t(:) = mat(:,iroot)
+             !
+             if (.not.no_diagonalization.and..not.job%ignore_vectors) vec_t(:) = mat(:,iroot) 
              !
            endif
            !
@@ -9875,14 +9884,15 @@ module perturbation
            !
            ! Find the largest coefficient maxTerm in the contracted representaion:
            !
-           if (.not.no_diagonalization) then 
+           if (.not.no_diagonalization.and..not.job%ignore_vectors) then 
              !
              MaxEigenvects = maxval(vec_t(:)**2,dim=1)-small_
              ilarge_coef_t = maxloc(vec_t(:)**2,dim=1,mask=vec_t(:)**2.ge.MaxEigenvects)
              !
            else
              !
-             MaxEigenvects = 1.0_rk
+             if (.not.no_diagonalization) MaxEigenvects = 1.0_rk
+             if (.not.job%ignore_vectors) MaxEigenvects = maxcontrib(iroot)
              ilarge_coef_t = maxTerm(iroot)
              !
            endif
@@ -9914,7 +9924,7 @@ module perturbation
            !
            call TimerStart('Storing eigenvectors')
            !
-           if (.not.no_diagonalization.and..not.job%IOeigen_compress) then
+           if (.not.no_diagonalization.and..not.job%IOeigen_compress.and..not.job%ignore_vectors) then
              !
              write(IOunit_vector,rec=irecord) vec_t
              !
@@ -25668,21 +25678,24 @@ end subroutine read_contr_ind
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
-       call IOStart(trim(unitfname),chkptIO)
-       inquire(iolength=rec_len) f_t
-       !
-       if (job%IOvector_symm) then 
-         rec_len = rec_len*max(Ntotal(igamma),1)
-       else
-         rec_len = rec_len*PT%Maxcontracts
-       endif 
-       !
-       write(char_j,"(i2)") igamma
-       !
-       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
-       !
-       open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+       if(.not.job%ignore_vectors) then
+	       write(unitfname,"('Eigenvectors for ',i2)") igamma
+	       call IOStart(trim(unitfname),chkptIO)
+	       inquire(iolength=rec_len) f_t
+	       !
+	       if (job%IOvector_symm) then 
+		 rec_len = rec_len*max(Ntotal(igamma),1)
+	       else
+		 rec_len = rec_len*PT%Maxcontracts
+	       endif 
+	       !
+	       write(char_j,"(i2)") igamma
+	       !
+	       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
+	       !
+	
+		open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+       endif
        !
        !if (.not.job%select_gamma(igamma)) cycle
        !
@@ -25931,10 +25944,11 @@ end subroutine read_contr_ind
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
-       call IOStart(trim(unitfname),chkptIO)
+       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i2)") igamma
        !
-       close(chkptIO,status='keep') 
+       if(.not.job%ignore_vectors) call IOStart(trim(unitfname),chkptIO)
+       !
+       if(.not.job%ignore_vectors)close(chkptIO,status='keep') 
        !
        write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
        call IOStart(trim(unitfname),chkptIO)
