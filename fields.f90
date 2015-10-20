@@ -16213,10 +16213,10 @@ end subroutine check_read_save_none
              !
              ! debug !!!
              !
-             !if (abs(f2-f1)>1e6) then 
-             !   write(out,"('DEBUG SY: f1-f2 is too large',2e20.12)") f1,f2
-             !   stop 'DEBUG SY: f1-f2 is too large'
-             !endif 
+             if (abs(f2-f1)>1e6) then 
+               write(out,"('DEBUG SY: f1-f2 is too large',2e20.12)") f1,f2
+                stop 'DEBUG SY: f1-f2 is too large'
+             endif 
              !
              f = ( f2-f1 )/(h)
              !
