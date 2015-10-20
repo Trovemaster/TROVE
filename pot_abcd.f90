@@ -20,6 +20,7 @@ module pot_abcd
   contains
   
   !
+  !
   ! Defining potential energy function 
   !
   ! This type is for ABCD-molecules, Morse+cos+Taylor type of expansion 
@@ -86,7 +87,6 @@ module pot_abcd
    if (verbose>=6) write(out,"('MLpoten_hsoh/end')") 
  
  end function MLpoten_hsoh
-
 
   !
   ! Defining potential energy function 
