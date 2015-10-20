@@ -326,6 +326,7 @@ module fields
                                                  ! for 'EULER-BASED' the rotational symmetry is defined based on the euler angles transformations
       logical             :: contrci_me_fast = .false.
       integer(ik)         :: MaxVibMomentum_contr    ! maximal L (vibang) for the contraction
+      logical		  :: ignore_vectors = .false.
       !
    end type FLcalcsT
 
@@ -1111,7 +1112,7 @@ module fields
            case('SYEV','SYEVR','SYEVD','SYEVX','SEUPD','PSEUPD','SYEV4','SYEVR4','SYEVR-4TO8','SYEV-4TO8','SYEV-KROT','SYEVR-KROT','SYEV-E-PT','SYEVR-E-PT',&
                 'SYEV-BS-PT','SYEVR-BS-PT','SYEV-KROT-BS-PT','SYEVR-KROT-BS-PT','SYEV-KROT-EN-PT','SYEV-KROT-EN','SYEVR-KROT-EN-PT','ULEN',&
                 'DSTEVX','DSTEVR','DSTEVD','DSTEV','DSTEVX-P','DSTEVR-P','DSTEVD-P','DSTEV-P','DSYEV-ILP','DSYEVR-ILP','DSYEVD-ILP','DSYEVX-ILP','READ-EIGEN',&
-                'SYEV0','PROPACK','READ-EIGEN-GRID','PLASMA_DSYTRDX','ENERGY=DIAGONAL','NO-DIAGONALIZATION','READ-EIGEN-GRID4')
+                'SYEV0','PROPACK','READ-EIGEN-GRID','PLASMA_DSYTRDX','ENERGY=DIAGONAL','NO-DIAGONALIZATION','READ-EIGEN-GRID4','READ-ENERGIES')
              !
              job%diagonalizer = trim(w)
              !
@@ -1123,6 +1124,12 @@ module fields
                 !
                 call readu(w)
                 job%solution_file = trim(w)
+                !
+             endif
+             !
+             if (trim(w)=='READ-ENERGIES') then 
+                !
+                job%ignore_vectors = .true.
                 !
              endif
              !

@@ -6372,7 +6372,7 @@ module perturbation
         write (out,"(/'Size of the contracted matrix  = ',i7)") dimen
     endif
     !
-    if (trim(job%diagonalizer(1:10))=='READ-EIGEN'.or.trim(job%mat_readwrite)=='READ'.or.trim(job%mat_readwrite)=='READ-LOWER') then 
+    if (trim(job%diagonalizer(1:10))=='READ-EIGEN'.or.trim(job%mat_readwrite)=='READ'.or.trim(job%mat_readwrite)=='READ-LOWER'.or.trim(job%diagonalizer(1:13))=='READ-ENERGIES') then 
       !
       if (job%verbose>=3) write(out,"('Diagonalization...')")
       !
@@ -6403,28 +6403,34 @@ module perturbation
         !
         dimen_s = PT%Max_sym_levels(isym)
         !
-        matsize = int(dimen_s,hik)*int(dimen_s,hik)
-        if (job%verbose>=4) write(out,"('Allocate array b',i,'x',i,' = ',i)") dimen_s,dimen_s,matsize
-        allocate (a(dimen_s,dimen_s),bterm(dimen_s,2),stat=alloc)
-        !
-        a = 0
-        !
-        call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
-        !
-        bterm = 1
-        !
-        if (job%verbose>=4) call MemoryReport
-        !
-        if (job%verbose>=1) then 
-           write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
-        endif
+        !----------Only allocate if we are putting vectors into memory---------------!
+        if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
+		matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
+		if (job%verbose>=4) write(out,"('Allocate array b',i,'x',i,' = ',i)") dimen_s,job%nroots(isym),matsize
+		allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
+		!
+		a = 0
+		!
+		call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
+		!
+		bterm = 1
+		!
+		if (job%verbose>=4) call MemoryReport
+		!
+		if (job%verbose>=1) then 
+		   write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
+		endif
+	endif
         !
         call diagonalization_contract(jrot,isym,dimen_s,a,zpe,rlevel,total_roots,bterm,k_row(isym,1:dimen_s)) 
         !
-        deallocate (bterm)
+        !Only deallocate if we arent Reading the energy checkpoint files.
+        if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then !Only deallocate if we allocated
+        	deallocate (bterm)
         !
-        deallocate (a)
-        call ArrayStop('PThamiltonian_contract:b')
+        	deallocate (a)
+        	call ArrayStop('PThamiltonian_contract:b')
+        endif
         !
       enddo
       !
@@ -8861,6 +8867,50 @@ module perturbation
        call diag_ulen(mat(1:dimen_s,1:dimen_s),energy(1:dimen_s))
        nroots = dimen_s
        !
+     case('READ-ENERGIES') !New Read Energy checkpoint files
+       !
+       energy(:) = 0.0_rk
+       !
+       write(out, '(/a,1x,i4,1x,a,1x,i4)') 'read eigenvectors for j=', jrot, 'and symmetry=', gamma
+       !
+       write(unitfname,"('solution for j = ',i6,' sym = ',i4)") jrot,gamma
+       call IOStart(trim(unitfname),chkptIO)
+       !
+       write(jchar, '(i4)') jrot
+       write(symchar, '(i4)') gamma
+       
+       !---Read energy file nroots and dimen_s
+       filename = 'energies'//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))//'.chk'
+       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trim(filename),iostat=info)
+       read(chkptIO) buff(1:14)
+       if(buff(1:14)/='Start energies') then
+       	stop 'Invalid energies checkpoint file-energy'
+       endif
+       
+       read(chkptIO) dimen, nroots
+       
+       write(out, '(/a,1x,i8,1x,a,1x,i8)') 'read eigenvectors for dimen=', dimen, 'and nroots=', nroots
+       
+       !Allocate maxcontrib and maxterm
+       allocate (maxTerm(nroots),maxcontrib(nroots))
+       call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+       
+       read(chkptIO) energy(1:nroots)
+       read(chkptIO) buff(1:13)
+       if(buff(1:13)/='Start contrib') then
+       	stop 'Invalid energies checkpoint file-contrib'
+       endif
+
+       !---read contribs
+       do ielem=1,nroots
+       		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
+       		if(info<0) exit
+       		 if (job%verbose>=6) write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=', maxcontrib(ielem)
+    
+       enddo
+       
+       write(out,"('Done reading energy file!!!')")
+       close(chkptIO)
      case('READ-EIGEN') 
        !
        write(unitfname,"('solution for j = ',i6,' sym = ',i4)") jrot,gamma
@@ -9614,39 +9664,44 @@ module perturbation
         write (out,"(/'Variational solution - irreducible representation',/'  Gamma    i       value             j  k  t   quanta')") 
      endif
      !
-     ! Find the largest coefficients - designed for the parallelization
-     !
-     allocate (maxTerm(nroots),maxcontrib(nroots))
-     call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-     !
-     maxTerm  = 1
-     !
-     !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
-     do iroot=1,nroots
+     
+     ! Find the largest coefficients only if not provided from external diagonalization.
+     if(trim(job%diagonalizer)/='READ-ENERGIES') then
+     
+     	allocate (maxTerm(nroots),maxcontrib(nroots))
+     	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+    	maxTerm  = 1
+     
+     
+        !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
+        do iroot=1,nroots
+          !
+          MaxEigenvects  = small_
+          !
+          if (.not.no_diagonalization) then 
+            !
+            do jroot=1,dimen_s
+                 if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
+                     MaxEigenvects = abs( mat(jroot,iroot) )
+                     maxTerm(iroot) = jroot
+                 endif
+            enddo
+              !
+            maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
+            !
+          else
+            ! 
+            maxTerm(iroot) = ivec(iroot)
+            maxcontrib(iroot)  = 1.0_rk
+            !
+          endif
        !
-       MaxEigenvects  = small_
-       !
-       if (.not.no_diagonalization) then 
-         !
-         do jroot=1,dimen_s
-            if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
-                MaxEigenvects = abs( mat(jroot,iroot) )
-                maxTerm(iroot) = jroot
-            endif
-         enddo
-         !
-         maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
-         !
-       else
-         ! 
-         maxTerm(iroot) = ivec(iroot)
-         maxcontrib(iroot)  = 1.0_rk
-         !
-       endif
-       !
-     enddo
+        enddo
      !$omp end parallel do
      !
+     
+     endif
+     
      if (no_diagonalization) then 
        !
        deallocate(ivec)
@@ -9816,7 +9871,8 @@ module perturbation
              !
            else 
              !
-             if (.not.no_diagonalization) vec_t(:) = mat(:,iroot)
+             !
+             if (.not.no_diagonalization.and..not.job%ignore_vectors) vec_t(:) = mat(:,iroot) 
              !
            endif
            !
@@ -9828,14 +9884,15 @@ module perturbation
            !
            ! Find the largest coefficient maxTerm in the contracted representaion:
            !
-           if (.not.no_diagonalization) then 
+           if (.not.no_diagonalization.and..not.job%ignore_vectors) then 
              !
              MaxEigenvects = maxval(vec_t(:)**2,dim=1)-small_
              ilarge_coef_t = maxloc(vec_t(:)**2,dim=1,mask=vec_t(:)**2.ge.MaxEigenvects)
              !
            else
              !
-             MaxEigenvects = 1.0_rk
+             if (.not.no_diagonalization) MaxEigenvects = 1.0_rk
+             if (.not.job%ignore_vectors) MaxEigenvects = maxcontrib(iroot)
              ilarge_coef_t = maxTerm(iroot)
              !
            endif
@@ -9867,7 +9924,7 @@ module perturbation
            !
            call TimerStart('Storing eigenvectors')
            !
-           if (.not.no_diagonalization.and..not.job%IOeigen_compress) then
+           if (.not.no_diagonalization.and..not.job%IOeigen_compress.and..not.job%ignore_vectors) then
              !
              write(IOunit_vector,rec=irecord) vec_t
              !
@@ -25621,21 +25678,24 @@ end subroutine read_contr_ind
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
-       call IOStart(trim(unitfname),chkptIO)
-       inquire(iolength=rec_len) f_t
-       !
-       if (job%IOvector_symm) then 
-         rec_len = rec_len*max(Ntotal(igamma),1)
-       else
-         rec_len = rec_len*PT%Maxcontracts
-       endif 
-       !
-       write(char_j,"(i2)") igamma
-       !
-       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
-       !
-       open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+       if(.not.job%ignore_vectors) then
+	       write(unitfname,"('Eigenvectors for ',i2)") igamma
+	       call IOStart(trim(unitfname),chkptIO)
+	       inquire(iolength=rec_len) f_t
+	       !
+	       if (job%IOvector_symm) then 
+		 rec_len = rec_len*max(Ntotal(igamma),1)
+	       else
+		 rec_len = rec_len*PT%Maxcontracts
+	       endif 
+	       !
+	       write(char_j,"(i2)") igamma
+	       !
+	       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
+	       !
+	
+		open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+       endif
        !
        !if (.not.job%select_gamma(igamma)) cycle
        !
@@ -25884,10 +25944,11 @@ end subroutine read_contr_ind
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
-       call IOStart(trim(unitfname),chkptIO)
+       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i2)") igamma
        !
-       close(chkptIO,status='keep') 
+       if(.not.job%ignore_vectors) call IOStart(trim(unitfname),chkptIO)
+       !
+       if(.not.job%ignore_vectors)close(chkptIO,status='keep') 
        !
        write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
        call IOStart(trim(unitfname),chkptIO)
