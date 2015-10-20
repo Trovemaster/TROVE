@@ -16211,6 +16211,13 @@ end subroutine check_read_save_none
              !
              h = astep(1,imode)+astep(2,imode)
              !
+             ! debug !!!
+             !
+             !if (abs(f2-f1)>1e6) then 
+             !   write(out,"('DEBUG SY: f1-f2 is too large',2e20.12)") f1,f2
+             !   stop 'DEBUG SY: f1-f2 is too large'
+             !endif 
+             !
              f = ( f2-f1 )/(h)
              !
              !f_t = 0.5_ark*(f2-f1)
