@@ -6372,7 +6372,7 @@ module perturbation
         write (out,"(/'Size of the contracted matrix  = ',i7)") dimen
     endif
     !
-    if (trim(job%diagonalizer(1:10))=='READ-EIGEN'.or.trim(job%mat_readwrite)=='READ'.or.trim(job%mat_readwrite)=='READ-LOWER') then 
+    if (trim(job%diagonalizer(1:10))=='READ-EIGEN'.or.trim(job%mat_readwrite)=='READ'.or.trim(job%mat_readwrite)=='READ-LOWER'.or.trim(job%diagonalizer(1:13))=='READ-ENERGIES') then 
       !
       if (job%verbose>=3) write(out,"('Diagonalization...')")
       !
@@ -6403,28 +6403,34 @@ module perturbation
         !
         dimen_s = PT%Max_sym_levels(isym)
         !
-        matsize = int(dimen_s,hik)*int(dimen_s,hik)
-        if (job%verbose>=4) write(out,"('Allocate array b',i,'x',i,' = ',i)") dimen_s,dimen_s,matsize
-        allocate (a(dimen_s,dimen_s),bterm(dimen_s,2),stat=alloc)
-        !
-        a = 0
-        !
-        call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
-        !
-        bterm = 1
-        !
-        if (job%verbose>=4) call MemoryReport
-        !
-        if (job%verbose>=1) then 
-           write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
-        endif
+        !----------Only allocate if we are putting vectors into memory---------------!
+        if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
+		matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
+		if (job%verbose>=4) write(out,"('Allocate array b',i,'x',i,' = ',i)") dimen_s,job%nroots(isym),matsize
+		allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
+		!
+		a = 0
+		!
+		call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
+		!
+		bterm = 1
+		!
+		if (job%verbose>=4) call MemoryReport
+		!
+		if (job%verbose>=1) then 
+		   write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
+		endif
+	endif
         !
         call diagonalization_contract(jrot,isym,dimen_s,a,zpe,rlevel,total_roots,bterm,k_row(isym,1:dimen_s)) 
         !
-        deallocate (bterm)
+        !Only deallocate if we arent Reading the energy checkpoint files.
+        if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then !Only deallocate if we allocated
+        	deallocate (bterm)
         !
-        deallocate (a)
-        call ArrayStop('PThamiltonian_contract:b')
+        	deallocate (a)
+        	call ArrayStop('PThamiltonian_contract:b')
+        endif
         !
       enddo
       !
@@ -8861,6 +8867,47 @@ module perturbation
        call diag_ulen(mat(1:dimen_s,1:dimen_s),energy(1:dimen_s))
        nroots = dimen_s
        !
+     case('READ-ENERGIES') !New Read Energy checkpoint files
+       !
+       energy(:) = 0.0_rk
+       !
+       write(out, '(/a,1x,i4,1x,a,1x,i4)') 'read eigenvectors for j=', jrot, 'and symmetry=', gamma
+       !
+       write(unitfname,"('solution for j = ',i6,' sym = ',i4)") jrot,gamma
+       call IOStart(trim(unitfname),chkptIO)
+       !
+       write(jchar, '(i4)') jrot
+       write(symchar, '(i4)') gamma
+       
+       !---Read energy file nroots and dimen_s
+       filename = 'energies'//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))//'.chk'
+       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trim(filename),iostat=info)
+       read(chkptIO) buff(1:14)
+       if(buff(1:14)/='Start energies') then
+       	stop 'Invalid energies checkpoint file-energy'
+       endif
+       
+       read(chkptIO) dimen, nroots
+       write(out, '(/a,1x,i8,1x,a,1x,i8)') 'read eigenvectors for dimen=', dimen, 'and nroots=', nroots
+       !Allocate maxcontrib and maxterm
+       allocate (maxTerm(nroots),maxcontrib(nroots))
+       call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+       read(chkptIO) energy(1:nroots)
+       read(chkptIO) buff(1:13)
+       if(buff(1:13)/='Start contrib') then
+       	stop 'Invalid energies checkpoint file-contrib'
+       endif
+
+       !---read contribs
+       do ielem=1,nroots
+       		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
+       		if(info<0) exit
+       		write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=', maxcontrib(ielem)
+    
+       enddo
+       
+       write(out,"('Done reading energy file!!!')")
+       close(chkptIO)
      case('READ-EIGEN') 
        !
        write(unitfname,"('solution for j = ',i6,' sym = ',i4)") jrot,gamma
