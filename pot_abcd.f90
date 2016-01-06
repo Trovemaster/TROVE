@@ -10,7 +10,7 @@ module pot_abcd
 
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
-  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_streymills
+  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB
   
   private
  
@@ -1317,6 +1317,254 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
   end subroutine MLdms_hooh_MB
 
+! HCCH Dipole using R,r1,r2,alpha1,alpha2,tau coordinates
+!define cartesian components of the dipole moment in space-fixed system
+ !
+ ! mu_x has transformation properties of cos(tau) and r2+r3, a1+a2
+ ! mu_y has transformation properties of cos(tau) and r2-r3  a1-a2
+ ! mu_z has transformation properties of sin(tau) and r2-r3  a1-a2
+ !
+ recursive subroutine MLdms_HCCH_MB(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v12(3),v31(3)
+    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
+                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
+    !
+    integer(ik),parameter :: lspace = 150
+    integer(ik) :: ierror,rank0
+    real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
+    real(ark)    :: cosalpha1,cosalpha2,x1(3),x2(3),x3(3),n30,v2(3),v3(3),v20,v30
+    character(len=cl)  :: txt
+
+    !
+    !
+    txt = 'Error: MLdms_HCCH_MB'
+    !
+    !write(out,"(i6)") molec%natoms
+    !
+    !write(out,"(/'O',3x,3f14.8)") xyz(1,:)
+    !write(out,"( 'O',3x,3f14.8)") xyz(2,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(3,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(4,:)
+    !
+    x1(:) = xyz(1,:)-xyz(2,:)
+    x2(:) = xyz(3,:)-xyz(1,:)
+    x3(:) = xyz(4,:)-xyz(2,:)
+    !
+    r1 = sqrt(sum(x1(:)**2))
+    r2 = sqrt(sum(x2(:)**2))
+    r3 = sqrt(sum(x3(:)**2))
+    !
+    cosalpha1 = sum(-x1(:)*x2(:))/(r1*r2)
+    cosalpha2 = sum( x1(:)*x3(:))/(r1*r3)
+    !
+    alpha1 = aacos(cosalpha1,txt)
+    alpha2 = aacos(cosalpha2,txt)
+    !
+    n3(:) = -x1(:)/sqrt(sum(x1(:)**2))
+    !
+    n30 = sum(n3*n3)
+    !
+    n3(:) = n3/sqrt(n30)
+    !
+    v2(:) = MLvector_product(x2(:),n3(:))
+    !
+    !amend normalisationv2v2 factor to account for linear geometries
+    !won't be properly normalised
+    v2(:) = v2(:)/r2
+    !
+    v3(:) = MLvector_product(n3(:),x3(:))
+    v3(:) = v3(:)/r3
+    !
+    v20 = sum(v2*v2)
+    v30 = sum(v3*v3)
+    !
+    tau = 0
+    !
+    if (v20>small_.and.v30>small_) then
+       !
+       v2 = v2/sqrt(v20)
+       v3 = v3/sqrt(v30)
+       !
+       costau =-sum(v2*v3)
+       !
+       tau = aacos(costau,txt)
+       !
+    elseif (v20<small_.and.v30>small_) then
+       ! if v3 defined but v2 isn't
+       v3 = v3/sqrt(v30)
+       !
+    elseif (v20>small_.and.v30<small_) then
+       ! if v2 defined but v3 isn't
+       v2 = v2/sqrt(v20)
+       !
+    else
+      !
+      tau = 0
+      !
+    endif
+    !
+    e2(:) = -MLvector_product(v2(:),n3(:))
+    !
+    e3(:) = MLvector_product(v3(:),n3(:))
+    !
+    !planar
+    if (abs(tau-pi)<(small_).or.abs(tau+pi)<(small_)) then
+      !
+      n2(:)=-e2(:)
+      !
+    elseIf (abs(tau)<small_) then
+      !
+      !If either e2 or e3 or both are undefined (i.e. if tau=0)
+      !This is true for both linear and quasi-linear geometries
+      !also true for tau=0 but both bonds non-linear!
+      !
+      If (v20<small_.and.v30>small_) then
+         !
+         n1(:) = e3(:)
+         !
+      !If v3 is undefined but v2 is defined
+      elseIf (v30<small_.and.v20>small_) then
+        !
+        n1(:) = e2(:)
+        !
+      elseIf (v30<small_.and.v20<small_) then
+        !
+        !If both v3 and v2 are undefined then it is linear
+        !In this case we assign as arbitrary direction for n1 and n2
+        n1 = (/ 1.0_ark,0.0_ark,0.0_ark /)
+        !
+      else
+        !
+        !If v2 is undefined but v3 is defined
+        n1(:)=e2(:)
+        !
+      End If
+      !
+    else
+      !needs renormalising -> 1/SQRT(2)
+      n1(:) =  (e2(:) + e3(:))*0.5_ark
+      n2(:) =  (e2(:) - e3(:))*0.5_ark
+      !
+    endif
+    !
+    if (sum(n1(:)*n1(:))>small_) then
+      !
+      !if n2 is undefined due to one of the angles being 180 degrees, then define it as vector product of n1 & n3
+      !
+      n1(:) = n1(:)/SQRT(sum(n1(:)*n1(:)))
+      n2(:) = MLvector_product(n3(:),n1(:))
+      !
+    elseif (sum(n2(:)**2)>small_) then
+      !
+      n2(:) = n2(:)/SQRT(sum(n2(:)*n2(:)))
+      n1(:) = MLvector_product(n2(:),n3(:))
+      !
+    else
+      ! 
+      write(6,"(' both n1 and n2 are  0 : n1 = ',3g12.5,' n2 = ',3g12.5)") n1,n2
+      !stop ' n1 = n2 = 0 '
+      !
+    endif
+    !
+    tmat(1,:) = n1(:)
+    tmat(2,:) = n2(:)
+    tmat(3,:) = n3(:)
+    !
+    tau_ = tau
+    !
+    !if (v12(2)>small_) tau_ = 2.0_ark*pi + tau
+    !
+    re1(1:3)     = extF%coef(1,1:3)
+    re2(1:3)     = extF%coef(2,1:3)
+    alphae(1:3) = extF%coef(3,1:3)/rad 
+    !
+    beta1(1:3)   = extF%coef(4,1:3)
+    beta2(1:3)   = extF%coef(5,1:3)
+    !
+    y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
+    y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
+    y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
+    y(4,:) = (alpha1 - alphae(:))
+    y(5,:) = (alpha2 - alphae(:))
+    !
+    y(6,:) = tau_
+    !
+    !y(6,:) = cos(2.0_ark*tau_)
+    !
+    mu = 0
+    !
+    do imu = 1, 3
+       !
+       do iterm =  7, extF%nterms(imu)
+          !
+          ind(1:6) = extF%term(1:6, iterm, imu)
+          xi(1:6) = y(1:6,imu) ** ind(1:6)
+          !
+          mu_t = product(xi(1:molec%ncoords))
+          !
+          if (ind(2)/=ind(3).or.ind(4)/=ind(5)) then 
+            !
+            ind(2) = extF%term(3, iterm, imu)
+            ind(3) = extF%term(2, iterm, imu)
+            ind(4) = extF%term(5, iterm, imu)
+            ind(5) = extF%term(4, iterm, imu)
+            !
+            xi(2:5) = y(2:5,imu) ** ind(2:5)
+            !
+            f_t = 1.0_ark
+            if (imu/=1)  f_t = -1.0_ark
+            !
+            mu_t = mu_t + f_t*product(xi(1:molec%ncoords))
+            !
+          endif
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu)*mu_t
+          !
+       end do
+       !
+    end do
+    !
+    mu(1) = mu(1)*cos(tau_*0.5_ark)
+    mu(2) = mu(2)*sin(tau_*0.5_ark)
+    !
+    tmat = transpose(tmat)
+    !
+    call MLlinurark(3,tmat,mu,f,ierror)
+    !
+    if (ierror>0) then
+      !
+      tmat_rk = tmat
+      dip_rk(:,1) = mu(:)
+      !
+      call dgelss(3,3,1,tmat_rk,3,dip_rk,3,tsing,tol,rank0,wspace,lspace,ierror)
+      !
+      f(:) = real(dip_rk(:,1),ark)
+      !
+      if (ierror>0) then
+        !
+        print *,ierror,tmat,mu
+        write(out,"('MLdms_HCCH_MB: dgelss error = ',i)") ierror
+        stop 'MLdms_HCCH_MB: dgelss error'
+        !
+      endif
+      !
+    endif
+    !
+    !f(1:3) = matmul(tmat,mu)
+    !
+    !f = mu
+    !
+  end subroutine MLdms_HCCH_MB
+
+
 
 function MLpoten_v_c2h2_katy(ncoords,natoms,local,xyz,force) result(f)
    !
@@ -1640,109 +1888,14 @@ function MLpoten_v_c2h2_mlt(ncoords,natoms,local,xyz,force) result(f)
  end function MLpoten_v_c2h2_mlt
 
 
-subroutine potC2H2_diff_V(n,local,xyz,dF)
+subroutine potC2H2_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     !
     implicit none
     !
     integer(ik),intent(in)  :: n
-    real(ark),intent(in)  :: local(:),xyz(4,3)
+    real(ark),intent(in)  :: y1,y2,y3,y4,y5,y6,y7
     real(ark),intent(out) :: dF(n)
-      !
-      integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7
-      integer(ik)  :: Nangles 
-      !
-      character(len=cl)  :: txt = 'MLpoten_c2h2_7'
-      !
-      Nangles = molec%Nangles
-      !
-      pd=pi/180.0_ark
-      e1=molec%force(1)
-      e2=molec%force(2)
-      e4=pi
-      e6=pi
-      !
-      a1 = molec%force(3)
-      a2 = molec%force(4)
-      !
-      x1    = local(1)
-      x2    = local(2)
-      x3    = local(3)
-      !
-      if (molec%zmatrix(3)%connect(4)==101) then 
-         !
-         y4 = local(4)
-         y5 = local(5)
-         !
-         y6 = local(6)
-         y7 = local(7)
-         !
-      elseif (molec%zmatrix(3)%connect(4)==103) then
-         !
-         b1(:) = xyz(3,:)-xyz(1,:)
-         b0(:) = xyz(2,:)-xyz(1,:)
-         b2(:) = xyz(4,:)-xyz(2,:)
-         !
-         x2 =  sqrt(sum(b1(:)**2))
-         x1 =  sqrt(sum(b0(:)**2))
-         x3 =  sqrt(sum(b2(:)**2))
-         !
-         b1 =  b1(:)/x2
-         b0 =  b0(:)/x1
-         b2 =  b2(:)/x3
-         !
-         w1(:) = MLvector_product(b1,b0)
-         w2(:) = MLvector_product(b2,b0)
-         !
-         cosalpha2 = sum(b0(:)*b2(:))
-         !
-         alpha2 = aacos(-cosalpha2,txt)
-         !
-         !if (alpha1>pi*0.5d0) w1 = -w1
-         !if (alpha2>pi*0.5d0) w2 = -w2
-         !
-         sindelta1x = -w1(1)
-         sindelta1y = -w1(2)
-         sindelta2x = -w2(1)
-         sindelta2y = -w2(2)
-         !
-         !sindelta1x = -w1(2)
-         !sindelta1y = -w1(1)
-         !sindelta2x = -w2(2)
-         !sindelta2y =  w2(1)
-         !
-         y4 = aasin(sindelta1x,txt)
-         y5 = aasin(sindelta1y,txt)
-         y6 = aasin(sindelta2x,txt)
-         y7 = aasin(sindelta2y,txt)
-         !
-         !y4 = b1(1)
-         !y5 = b1(2)
-         !y6 = b2(1)
-         !y7 = b2(2)
-         !
-         !y4 = local(4)
-         !y5 = local(5)
-         !
-         !y6 = local(6)
-         !y7 = local(7)
-         !
-      else 
-        !
-        write(out,"('MLpoten_c2h2_7: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
-        stop 'only designed for zmat=103' 
-        !
-      endif
-      !
-      !y4    = local(4)
-      !y5    = local(5)
-      !y6    = local(6)
-      !y7    = local(7)
-      !
-      y1=1.0_ark-exp(-a1*(x1-e1))
-      y2=1.0_ark-exp(-a2*(x2-e2))
-      y3=1.0_ark-exp(-a2*(x3-e2))
+
       !
       dF(1:4) = 0
       !
@@ -2331,7 +2484,439 @@ subroutine potC2H2_diff_V(n,local,xyz,dF)
   end subroutine  potC2H2_diff_V
 
 
- function MLpoten_c2h2_7(ncoords,natoms,local,xyz,force) result(f) 
+subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+    !
+    implicit none
+    !
+    integer(ik),intent(in)  :: n
+    real(ark),intent(in)  :: y1,y2,y3,y4,y5,y6,y7
+    real(ark),intent(out) :: dF(n)
+
+      !
+      dF(:) = 0
+      dF(5) = 1.0_ark
+      dF(6) = y3+y2
+      dF(7) = y1
+
+      dF(8) = y6**2+y5**2+y7**2+y4**2
+      dF(9) = y5*y7+y4*y6
+      dF(10) = y2*y3
+      dF(11) = y3**2+y2**2
+      dF(12) = (y3+y2)*y1
+      dF(13) = y1**2
+
+      dF(14) = (y6**2+y7**2)*y2+(y5**2+y4**2)*y3
+      dF(15) = (y4*y6+y5*y7)*y2+(y4*y6+y5*y7)*y3
+      dF(16) = (y5**2+y4**2)*y2+(y6**2+y7**2)*y3
+      dF(17) = y2**2*y3+y2*y3**2
+      dF(18) = y2**3+y3**3
+      dF(19) = (y4*y6+y5*y7)*y1
+      dF(20) = (y4**2+y5**2+y6**2+y7**2)*y1
+      dF(21) = y1*y2*y3
+      dF(22) = (y2**2+y3**2)*y1
+      dF(23) = (y2+y3)*y1**2
+      dF(24) = y1**3
+
+      dF(25) = -2._ark*y4*y5*y6*y7+y4**2*y7**2+y5**2*y6**2
+      dF(26) = 2._ark*y4*y5*y6*y7+y4**2*y6**2+y5**2*y7**2
+      dF(27) = y4**3*y6+y4**2*y5*y7+(y5**2*y6+y6*y7**2+y6**3)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5
+      dF(28) = y5**4+y7**4+y6**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2
+      dF(29) = (y4*y6+y5*y7)*y3*y2
+      dF(30) = (y4**2+y6**2+y7**2+y5**2)*y3*y2
+      dF(31) = (y6**2+y7**2)*y2**2+(y4**2+y5**2)*y3**2
+      dF(32) = (y4*y6+y5*y7)*y2**2+(y4*y6+y5*y7)*y3**2
+      dF(33) = (y4**2+y5**2)*y2**2+(y6**2+y7**2)*y3**2
+      dF(34) = y2**2*y3**2
+      dF(35) = y2**3*y3+y2*y3**3
+      dF(36) = y2**4+y3**4
+      dF(37) = ((y6**2+y7**2)*y2+(y4**2+y5**2)*y3)*y1
+      dF(38) = ((y4*y6+y5*y7)*y2+(y4*y6+y5*y7)*y3)*y1
+      dF(39) = ((y4**2+y5**2)*y2+(y6**2+y7**2)*y3)*y1
+      dF(40) = (y2**2*y3+y2*y3**2)*y1
+      dF(41) = (y3**3+y2**3)*y1
+      dF(42) = (y4*y6+y5*y7)*y1**2
+      dF(43) = (y4**2+y6**2+y7**2+y5**2)*y1**2
+      dF(44) = y1**2*y2*y3
+      dF(45) = (y2**2+y3**2)*y1**2
+      dF(46) = (y2+y3)*y1**3
+      dF(47) = y1**4
+
+      dF(48) = (y4**4+2._ark*y4**2*y5**2+y5**4)*y2+(2._ark*y6**2*y7**2+y6**4+y7**4)*y3
+      dF(49) = (2._ark*y4*y5*y6*y7+y5**2*y7**2+y4**2*y6**2)*y2+(2._ark*y4*y5*y6*y7+y5**2*y7**2+y4**2*y6**2)*y3
+      dF(50) = (2._ark*y6**2*y7**2+y6**4+y7**4)*y2+(y4**4+2._ark*y4**2*y5**2+y5**4)*y3
+      dF(51) = (y4*y5**2*y6+y4**3*y6+y5**3*y7+y4**2*y5*y7)*y2+((y6*y7**2+y6**3)*y4+(y6**2*y7+y7**3)*y5)*y3
+      dF(52) = ((y6*y7**2+y6**3)*y4+(y6**2*y7+y7**3)*y5)*y2+(y4*y5**2*y6+y4**3*y6+y5**3*y7+y4**2*y5*y7)*y3
+      dF(53) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y2+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3
+      dF(54) = (y6**2+y7**2)*y3*y2**2+(y4**2+y5**2)*y3**2*y2
+      dF(55) = (y5*y7+y4*y6)*y3*y2**2+(y5*y7+y4*y6)*y3**2*y2
+      dF(56) = (y4**2+y5**2)*y3*y2**2+(y6**2+y7**2)*y3**2*y2
+      dF(57) = (y6**2+y7**2)*y2**3+(y4**2+y5**2)*y3**3
+      dF(58) = (y5*y7+y4*y6)*y2**3+(y5*y7+y4*y6)*y3**3
+      dF(59) = (y4**2+y5**2)*y2**3+(y6**2+y7**2)*y3**3
+      dF(60) = y2**3*y3**2+y2**2*y3**3
+      dF(61) = y2**4*y3+y2*y3**4
+      dF(62) = y2**5+y3**5
+      dF(63) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y1
+      dF(64) = (2._ark*y4*y5*y6*y7+y5**2*y7**2+y4**2*y6**2)*y1
+      dF(65) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y1
+      dF(66) = (y4**4+y7**4+2._ark*y4**2*y5**2+y6**4+y5**4+2._ark*y6**2*y7**2)*y1
+      dF(67) = (y5*y7+y4*y6)*y3*y2*y1
+      dF(68) = (y4**2+y5**2+y7**2+y6**2)*y3*y2*y1
+      dF(69) = ((y6**2+y7**2)*y2**2+(y4**2+y5**2)*y3**2)*y1
+      dF(70) = ((y5*y7+y4*y6)*y2**2+(y5*y7+y4*y6)*y3**2)*y1
+      dF(71) = ((y4**2+y5**2)*y2**2+(y6**2+y7**2)*y3**2)*y1
+      dF(72) = y1*y2**2*y3**2
+      dF(73) = (y2**3*y3+y2*y3**3)*y1
+      dF(74) = (y2**4+y3**4)*y1
+      dF(75) = ((y6**2+y7**2)*y2+(y4**2+y5**2)*y3)*y1**2
+      dF(76) = ((y5*y7+y4*y6)*y2+(y5*y7+y4*y6)*y3)*y1**2
+      dF(77) = ((y4**2+y5**2)*y2+(y6**2+y7**2)*y3)*y1**2
+      dF(78) = (y2**2*y3+y2*y3**2)*y1**2
+      dF(79) = (y2**3+y3**3)*y1**2
+      dF(80) = (y5*y7+y4*y6)*y1**3
+      dF(81) = (y4**2+y5**2+y7**2+y6**2)*y1**3
+      dF(82) = y1**3*y2*y3
+      dF(83) = (y2**2+y3**2)*y1**3
+      dF(84) = (y2+y3)*y1**4
+      dF(85) = y1**5
+
+      dF(86) = y4**3*y6**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y5**3*y7**3
+      dF(87) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6**3*y7+2._ark*y6*y7**3)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2
+      dF(88) = y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7
+      dF(89) = (-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(y6**4-y7**4)*y5**2
+      dF(90) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5
+      dF(91) = y5**6+y6**6+y7**6+3._ark*y4**2*y5**4+y4**6+3._ark*y4**4*y5**2+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4
+      dF(92) = (y4**2+y5**2)*y2**4+(y6**2+y7**2)*y3**4
+      dF(93) = (y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4
+      dF(94) = (y6**2+y7**2)*y2**4+(y4**2+y5**2)*y3**4
+      dF(95) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3*y2
+      dF(96) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3*y2
+      dF(97) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y7**3+y6**2*y7)*y5)*y3*y2
+      dF(98) = (y4**4+y7**4+y6**4+y5**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3*y2
+      dF(99) = (y4**2+y5**2)*y3*y2**3+(y6**2+y7**2)*y3**3*y2
+      dF(100) = (y5*y7+y4*y6)*y3*y2**3+(y5*y7+y4*y6)*y3**3*y2
+      dF(101) = (y6**2+y7**2)*y3*y2**3+(y4**2+y5**2)*y3**3*y2
+      dF(102) = y2*y3**5+y2**5*y3
+      dF(103) = (y7**4+y6**4+2._ark*y6**2*y7**2)*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2
+      dF(104) = ((y6**3+y6*y7**2)*y4+(y7**3+y6**2*y7)*y5)*y2**2+(y4**2*y5*y7+y4*y5**2*y6+y4**3*y6+y5**3*y7)*y3**2
+      dF(105) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y2**2+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3**2
+      dF(106) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y2**2+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3**2
+      dF(107) = (y4**2*y5*y7+y4*y5**2*y6+y4**3*y6+y5**3*y7)*y2**2+((y6**3+y6*y7**2)*y4+(y7**3+y6**2*y7)*y5)*y3**2
+      dF(108) = (2._ark*y4**2*y5**2+y5**4+y4**4)*y2**2+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3**2
+      dF(109) = (y5*y7+y4*y6)*y3**2*y2**2
+      dF(110) = (y4**2+y5**2+y7**2+y6**2)*y3**2*y2**2
+      dF(111) = y2**3*y3**3
+      dF(112) = y2**4*y3**2+y2**2*y3**4
+      dF(113) = y2**6+y3**6
+      dF(114) = ((y4**2*y5*y7+y4*y5**2*y6+y4**3*y6+y5**3*y7)*y2+((y6**3+y6*y7**2)*y4+(y7**3+y6**2*y7)*y5)*y3)*y1
+      dF(115) = ((y5*y7+y4*y6)*y2**3+(y5*y7+y4*y6)*y3**3)*y1
+      dF(116) = ((y7**4+y6**4+2._ark*y6**2*y7**2)*y2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3)*y1
+      dF(117) = (((y6**3+y6*y7**2)*y4+(y7**3+y6**2*y7)*y5)*y2+(y4**2*y5*y7+y4*y5**2*y6+y4**3*y6+y5**3*y7)*y3)*y1
+      dF(118) = ((y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y2+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3)*y1
+      dF(119) = ((y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y2+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3)*y1
+      dF(120) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y2+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3)*y1
+      dF(121) = ((y6**2+y7**2)*y3*y2**2+(y4**2+y5**2)*y3**2*y2)*y1
+      dF(122) = ((y4**2+y5**2)*y3*y2**2+(y6**2+y7**2)*y3**2*y2)*y1
+      dF(123) = ((y5*y7+y4*y6)*y3*y2**2+(y5*y7+y4*y6)*y3**2*y2)*y1
+      dF(124) = ((y6**2+y7**2)*y2**3+(y4**2+y5**2)*y3**3)*y1
+      dF(125) = ((y4**2+y5**2)*y2**3+(y6**2+y7**2)*y3**3)*y1
+      dF(126) = (y2**3*y3**2+y2**2*y3**3)*y1
+      dF(127) = (y2**4*y3+y2*y3**4)*y1
+      dF(128) = (y2**5+y3**5)*y1
+      dF(129) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y1**2
+      dF(130) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y1**2
+      dF(131) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y7**3+y6**2*y7)*y5)*y1**2
+      dF(132) = (y4**4+y7**4+y6**4+y5**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y1**2
+      dF(133) = ((y4**2+y5**2)*y2**2+(y6**2+y7**2)*y3**2)*y1**2
+      dF(134) = ((y5*y7+y4*y6)*y2**2+(y5*y7+y4*y6)*y3**2)*y1**2
+      dF(135) = ((y6**2+y7**2)*y2**2+(y4**2+y5**2)*y3**2)*y1**2
+      dF(136) = (y3**4+y2**4)*y1**2
+      dF(137) = (y5*y7+y4*y6)*y3*y2*y1**2
+      dF(138) = (y4**2+y5**2+y7**2+y6**2)*y3*y2*y1**2
+      dF(139) = y1**2*y2**2*y3**2
+      dF(140) = (y2**3*y3+y2*y3**3)*y1**2
+      dF(141) = ((y4**2+y5**2)*y2+(y6**2+y7**2)*y3)*y1**3
+      dF(142) = ((y6**2+y7**2)*y2+(y4**2+y5**2)*y3)*y1**3
+      dF(143) = ((y5*y7+y4*y6)*y2+(y5*y7+y4*y6)*y3)*y1**3
+      dF(144) = (y3**3+y2**3)*y1**3
+      dF(145) = (y2*y3**2+y2**2*y3)*y1**3
+      dF(146) = (y5*y7+y4*y6)*y1**4
+      dF(147) = (y4**2+y5**2+y7**2+y6**2)*y1**4
+      dF(148) = (y3**2+y2**2)*y1**4
+      dF(149) = y1**4*y2*y3
+      dF(150) = (y2+y3)*y1**5
+      dF(151) = y1**6
+
+      dF(152) = (y5**2+y4**2)*y2**5+(y7**2+y6**2)*y3**5
+      dF(153) = (y5*y7+y4*y6)*y2**5+(y5*y7+y4*y6)*y3**5
+      dF(154) = (y7**2+y6**2)*y2**5+(y5**2+y4**2)*y3**5
+      dF(155) = y3**7+y2**7
+      dF(156) = (y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y2+(3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y3
+      dF(157) = ((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y2+(y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y3
+      dF(158) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y2+(y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y3
+      dF(159) = ((y7**4-y6**4)*y4**2+(-4._ark*y6*y7**3-4._ark*y6**3*y7)*y5*y4+(y6**4-y7**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3
+      dF(160) = ((y6**2*y7**2+y6**4)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y6**2*y7**2+y7**4)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
+      dF(161) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3
+      dF(162) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+((y6**2*y7**2+y7**4)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**2*y7**2+y6**4)*y5**2)*y3
+      dF(163) = ((-y7**2+y6**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y2+((y6**4-y7**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(y7**4-y6**4)*y5**2)*y3
+      dF(164) = (y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y2+((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y3
+      dF(165) = (3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y2+(y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y3
+      dF(166) = (y5**2+y4**2)*y3*y2**4+(y7**2+y6**2)*y3**4*y2
+      dF(167) = (y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2
+      dF(168) = (y7**2+y6**2)*y3*y2**4+(y5**2+y4**2)*y3**4*y2
+      dF(169) = y2*y3**6+y2**6*y3
+      dF(170) = (y7**4+y6**4+2._ark*y6**2*y7**2)*y3*y2**2+(y5**4+y4**4+2._ark*y4**2*y5**2)*y3**2*y2
+      dF(171) = ((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y3*y2**2+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3**2*y2
+      dF(172) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3*y2**2+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3**2*y2
+      dF(173) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3*y2**2+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3**2*y2
+      dF(174) = (y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3*y2**2+((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y3**2*y2
+      dF(175) = (y5**4+y4**4+2._ark*y4**2*y5**2)*y3*y2**2+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3**2*y2
+      dF(176) = (y5*y7+y4*y6)*y3**2*y2**3+(y5*y7+y4*y6)*y3**3*y2**2
+      dF(177) = (y7**2+y6**2)*y3**2*y2**3+(y5**2+y4**2)*y3**3*y2**2
+      dF(178) = y2**2*y3**5+y2**5*y3**2
+      dF(179) = (y7**4+y6**4+2._ark*y6**2*y7**2)*y2**3+(y5**4+y4**4+2._ark*y4**2*y5**2)*y3**3
+      dF(180) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y2**3+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3**3
+      dF(181) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y2**3+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3**3
+      dF(182) = (y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y2**3+((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y3**3
+      dF(183) = (y5**4+y4**4+2._ark*y4**2*y5**2)*y2**3+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3**3
+      dF(184) = ((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y2**3+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3**3
+      dF(185) = (y5**2+y4**2)*y3**2*y2**3+(y7**2+y6**2)*y3**3*y2**2
+      dF(186) = y2**4*y3**3+y2**3*y3**4
+      dF(187) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y6**4)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2)*y1
+      dF(188) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1
+      dF(189) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y1
+      dF(190) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y7**4)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**2*y7**2+y6**4)*y5**2)*y1
+      dF(191) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y5**4*y6+y6*y7**4+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y1
+      dF(192) = (y4**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y6**6+y7**6+y5**6)*y1
+      dF(193) = ((y5**2+y4**2)*y2**4+(y7**2+y6**2)*y3**4)*y1
+      dF(194) = ((y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4)*y1
+      dF(195) = ((y7**2+y6**2)*y2**4+(y5**2+y4**2)*y3**4)*y1
+      dF(196) = (y3**6+y2**6)*y1
+      dF(197) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3*y2*y1
+      dF(198) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y5**2*y6+y6**3)*y4+y5**3*y7+(y7**3+y6**2*y7)*y5)*y3*y2*y1
+      dF(199) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3*y2*y1
+      dF(200) = (y4**4+y7**4+y5**4+y6**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3*y2*y1
+      dF(201) = ((y7**2+y6**2)*y3*y2**3+(y5**2+y4**2)*y3**3*y2)*y1
+      dF(202) = ((y5*y7+y4*y6)*y3*y2**3+(y5*y7+y4*y6)*y3**3*y2)*y1
+      dF(203) = (y2**5*y3+y2*y3**5)*y1
+      dF(204) = ((y7**4+y6**4+2._ark*y6**2*y7**2)*y2**2+(y5**4+y4**4+2._ark*y4**2*y5**2)*y3**2)*y1
+      dF(205) = (((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y2**2+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3**2)*y1
+      dF(206) = ((y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y2**2+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3**2)*y1
+      dF(207) = ((y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y2**2+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3**2)*y1
+      dF(208) = ((y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y2**2+((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y3**2)*y1
+      dF(209) = ((y5**4+y4**4+2._ark*y4**2*y5**2)*y2**2+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3**2)*y1
+      dF(210) = (y6**2+y7**2+y4**2+y5**2)*y3**2*y2**2*y1
+      dF(211) = (y5*y7+y4*y6)*y3**2*y2**2*y1
+      dF(212) = (y2**4*y3**2+y2**2*y3**4)*y1
+      dF(213) = ((y5**2+y4**2)*y3*y2**3+(y7**2+y6**2)*y3**3*y2)*y1
+      dF(214) = y1*y2**3*y3**3
+      dF(215) = ((y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y2+(y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y3)*y1**2
+      dF(216) = (((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y2+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3)*y1**2
+      dF(217) = ((y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y2+(y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y3)*y1**2
+      dF(218) = ((y5*y7+y4*y6)*y2**3+(y5*y7+y4*y6)*y3**3)*y1**2
+      dF(219) = ((y7**2+y6**2)*y2**3+(y5**2+y4**2)*y3**3)*y1**2
+      dF(220) = ((y7**4+y6**4+2._ark*y6**2*y7**2)*y2+(y5**4+y4**4+2._ark*y4**2*y5**2)*y3)*y1**2
+      dF(221) = ((y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y2+((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y3)*y1**2
+      dF(222) = ((y5**4+y4**4+2._ark*y4**2*y5**2)*y2+(y7**4+y6**4+2._ark*y6**2*y7**2)*y3)*y1**2
+      dF(223) = ((y7**2+y6**2)*y3*y2**2+(y5**2+y4**2)*y3**2*y2)*y1**2
+      dF(224) = ((y5*y7+y4*y6)*y3*y2**2+(y5*y7+y4*y6)*y3**2*y2)*y1**2
+      dF(225) = ((y5**2+y4**2)*y3*y2**2+(y7**2+y6**2)*y3**2*y2)*y1**2
+      dF(226) = ((y5**2+y4**2)*y2**3+(y7**2+y6**2)*y3**3)*y1**2
+      dF(227) = (y2**2*y3**3+y2**3*y3**2)*y1**2
+      dF(228) = (y2**4*y3+y2*y3**4)*y1**2
+      dF(229) = (y2**5+y3**5)*y1**2
+      dF(230) = (y4**2*y7**2+y5**2*y6**2-2._ark*y4*y5*y6*y7)*y1**3
+      dF(231) = (y4**2*y6**2+y5**2*y7**2+2._ark*y4*y5*y6*y7)*y1**3
+      dF(232) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y5**2*y6+y6**3)*y4+y5**3*y7+(y7**3+y6**2*y7)*y5)*y1**3
+      dF(233) = (y4**4+y7**4+y5**4+y6**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y1**3
+      dF(234) = (y5*y7+y4*y6)*y3*y2*y1**3
+      dF(235) = (y6**2+y7**2+y4**2+y5**2)*y3*y2*y1**3
+      dF(236) = ((y7**2+y6**2)*y2**2+(y5**2+y4**2)*y3**2)*y1**3
+      dF(237) = ((y5*y7+y4*y6)*y2**2+(y5*y7+y4*y6)*y3**2)*y1**3
+      dF(238) = ((y5**2+y4**2)*y2**2+(y7**2+y6**2)*y3**2)*y1**3
+      dF(239) = y1**3*y2**2*y3**2
+      dF(240) = (y2**3*y3+y2*y3**3)*y1**3
+      dF(241) = (y2**4+y3**4)*y1**3
+      dF(242) = (y3**3+y2**3)*y1**4
+      dF(243) = ((y7**2+y6**2)*y2+(y5**2+y4**2)*y3)*y1**4
+      dF(244) = ((y5*y7+y4*y6)*y2+(y5*y7+y4*y6)*y3)*y1**4
+      dF(245) = ((y5**2+y4**2)*y2+(y7**2+y6**2)*y3)*y1**4
+      dF(246) = (y2*y3**2+y2**2*y3)*y1**4
+      dF(247) = (y6**2+y7**2+y4**2+y5**2)*y1**5
+      dF(248) = (y5*y7+y4*y6)*y1**5
+      dF(249) = y1**5*y2*y3
+      dF(250) = (y2**2+y3**2)*y1**5
+      dF(251) = (y3+y2)*y1**6
+      dF(252) = y1**7
+
+      dF(253) = y5**4*y6**4+y4**4*y7**4-4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2-4._ark*y4**3*y5*y6*y7**3
+      dF(254) = y5**8+y7**8+14._ark*y6**4*y7**4+y6**8+14._ark*y4**4*y5**4+y4**8
+      dF(255) = y4**6*y5*y7/3._ark+y4**5*y5**2*y6-4._ark/3._ark*y4**4*y5**3*y7-4._ark/3._ark*y4**3*y5**4*y6+y4**2*y5**5*y7+(y6**5*y7**2-4._ark/3._ark*y6**3*y7**4+y5**6*y6/3._ark+y6*y7**6/3._ark)*y4+(-4._ark/3._ark*y6**4*y7**3+y6**2*y7**5+y6**6*y7/3._ark)*y5
+      dF(256) = y4**7*y6+7._ark*y4**4*y5**3*y7+7._ark*y4**3*y5**4*y6+(y6**7+7._ark*y6**3*y7**4)*y4+y5**7*y7+(y7**7+7._ark*y6**4*y7**3)*y5
+      dF(257) = (y6**3*y7-y6*y7**3)*y5*y4**3+(y6*y7**3-y6**3*y7)*y5**3*y4
+      dF(258) = 3._ark*y4**5*y6*y7**2+y4**4*y5*y7**3+((5._ark*y6**3-9._ark*y6*y7**2)*y5**2+y6*y7**4+5._ark*y6**3*y7**2)*y4**3+((5._ark*y7**3-9._ark*y6**2*y7)*y5**3+(3._ark*y7**5-9._ark*y6**2*y7**3)*y5)*y4**2+(y5**4*y6**3+(-9._ark*y6**3*y7**2+3._ark*y6**5)*y5**2)*y4+3._ark*y5**5*y6**2*y7+(y6**4*y7+5._ark*y6**2*y7**3)*y5**3
+      dF(259) = y4**6*y7**2+3._ark*y4**4*y5**2*y6**2-8._ark*y4**3*y5**3*y6*y7+(y7**6+3._ark*y6**4*y7**2+3._ark*y5**4*y7**2)*y4**2-8._ark*y4*y5*y6**3*y7**3+y5**6*y6**2+(y6**6+3._ark*y6**2*y7**4)*y5**2
+      dF(260) = y4**6*y6**2+3._ark*y4**5*y5*y6*y7+3._ark*y4**4*y5**2*y6**2+2._ark*y4**3*y5**3*y6*y7+(3._ark*y6**4*y7**2+y6**6+3._ark*y5**4*y7**2)*y4**2+(3._ark*y5**5*y6*y7+(3._ark*y6*y7**5+2._ark*y6**3*y7**3+3._ark*y6**5*y7)*y5)*y4+y5**6*y7**2+(3._ark*y6**2*y7**4+y7**6)*y5**2
+      dF(261) = y4**5*y6*y7**2+y4**4*y5*y6**2*y7+((2._ark*y6**3-4._ark*y6*y7**2)*y5**2+2._ark*y6**3*y7**2)*y4**3+((2._ark*y7**3-4._ark*y6**2*y7)*y5**3+(y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+(y5**4*y6*y7**2+(y6*y7**4+y6**5-4._ark*y6**3*y7**2)*y5**2)*y4+2._ark*y5**3*y6**2*y7**3+y5**5*y6**2*y7
+      dF(262) = y4**4*y6**2*y7**2+(-4._ark*y6**2*y7**2+y7**4+y6**4)*y5**2*y4**2+y5**4*y6**2*y7**2
+      dF(263) = y4**2*y5**6-2._ark*y4**4*y5**4+y6**6*y7**2-2._ark*y6**4*y7**4+y6**2*y7**6+y4**6*y5**2
+      dF(264) = (-3._ark*y6*y7**2+y6**3)*y4**5+((-5._ark*y6**3+15._ark*y6*y7**2)*y5**2+y6**5-5._ark*y6**3*y7**2)*y4**3+((-5._ark*y7**3+15._ark*y6**2*y7)*y5**3+(-3._ark*y7**5+15._ark*y6**2*y7**3)*y5)*y4**2+(15._ark*y6**3*y7**2-3._ark*y6**5)*y5**2*y4+(-3._ark*y6**2*y7+y7**3)*y5**5+(y7**5-5._ark*y6**2*y7**3)*y5**3
+      dF(265) = y4**4*y6**4+4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2+4._ark*y4**3*y5*y6*y7**3+y5**4*y7**4
+      dF(266) = -y4**5*y5*y6*y7+(-y6**2+y7**2)*y5**2*y4**4+2._ark*y4**3*y5**3*y6*y7+((-y7**2+y6**2)*y5**4+y6**2*y7**4-y6**4*y7**2)*y4**2+(-y5**5*y6*y7+(-y6*y7**5+2._ark*y6**3*y7**3-y6**5*y7)*y5)*y4+(-y6**2*y7**4+y6**4*y7**2)*y5**2
+      dF(267) = (3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2**2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3**2
+      dF(268) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2**2+((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3**2
+      dF(269) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2**2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3**2
+      dF(270) = (y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2**2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3**2
+      dF(271) = (y5**2+y4**2)*y2**6+(y7**2+y6**2)*y3**6
+      dF(272) = (y7**2+y6**2)*y2**6+(y5**2+y4**2)*y3**6
+      dF(273) = y3**8+y2**8
+      dF(274) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y3*y2
+      dF(275) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3*y2
+      dF(276) = ((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(-y7**4+y6**4)*y5**2)*y3*y2
+      dF(277) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3*y2
+      dF(278) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3*y2
+      dF(279) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y3*y2
+      dF(280) = (y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3*y2**3+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**3*y2
+      dF(281) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**3+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**3*y2
+      dF(282) = (y5*y7+y4*y6)*y3*y2**5+(y5*y7+y4*y6)*y3**5*y2
+      dF(283) = (y7**2+y6**2)*y3*y2**5+(y5**2+y4**2)*y3**5*y2
+      dF(284) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2**2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3**2
+      dF(285) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2**2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3**2
+      dF(286) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2**2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3**2
+      dF(287) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(288) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(289) = (y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2**2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3**2
+      dF(290) = (y6**4+y5**4+y7**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3**2*y2**2
+      dF(291) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y3**2*y2**2
+      dF(292) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2*y2**2
+      dF(293) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2*y2**2
+      dF(294) = (y5**2+y4**2)*y3**2*y2**4+(y7**2+y6**2)*y3**4*y2**2
+      dF(295) = (y6**4+y7**4+2._ark*y6**2*y7**2)*y3*y2**3+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**3*y2
+      dF(296) = ((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3*y2**3+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**3*y2
+      dF(297) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3*y2**3+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**3*y2
+      dF(298) = (2._ark*y4**2*y5**2+y5**4+y4**4)*y3*y2**3+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3**3*y2
+      dF(299) = (y5*y7+y4*y6)*y3**3*y2**3
+      dF(300) = (y4**2+y5**2+y7**2+y6**2)*y3**3*y2**3
+      dF(301) = (y6**4+y7**4+2._ark*y6**2*y7**2)*y2**4+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**4
+      dF(302) = (2._ark*y4**2*y5**2+y5**4+y4**4)*y2**4+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3**4
+      dF(303) = ((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y2**4+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**4
+      dF(304) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2**4+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**4
+      dF(305) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2**4+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**4
+      dF(306) = (y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y2**4+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**4
+      dF(307) = (y7**2+y6**2)*y3**2*y2**4+(y5**2+y4**2)*y3**4*y2**2
+      dF(308) = (y5*y7+y4*y6)*y3**2*y2**4+(y5*y7+y4*y6)*y3**4*y2**2
+      dF(309) = y2**4*y3**4
+      dF(310) = (y5**2+y4**2)*y3*y2**5+(y7**2+y6**2)*y3**5*y2
+      dF(311) = y2**5*y3**3+y2**3*y3**5
+      dF(312) = (y5*y7+y4*y6)*y2**6+(y5*y7+y4*y6)*y3**6
+      dF(313) = y2**6*y3**2+y2**2*y3**6
+      dF(314) = y2**7*y3+y2*y3**7
+      dF(315) = ((3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3)*y1
+      dF(316) = ((y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3)*y1
+      dF(317) = ((y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3)*y1
+      dF(318) = (((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3)*y1
+      dF(319) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3)*y1
+      dF(320) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y2**3+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**3)*y1
+      dF(321) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
+      dF(322) = ((y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3)*y1
+      dF(323) = (((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3)*y1
+      dF(324) = ((y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3)*y1
+      dF(325) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
+      dF(326) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2*y2)*y1
+      dF(327) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y3*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2*y2)*y1
+      dF(328) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3*y2**2+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**2*y2)*y1
+      dF(329) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3*y2**2+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2*y2)*y1
+      dF(330) = ((y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3*y2**2+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**2*y2)*y1
+      dF(331) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y3*y2**2+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3**2*y2)*y1
+      dF(332) = ((y5**2+y4**2)*y3**2*y2**3+(y7**2+y6**2)*y3**3*y2**2)*y1
+      dF(333) = ((y5*y7+y4*y6)*y3**2*y2**3+(y5*y7+y4*y6)*y3**3*y2**2)*y1
+      dF(334) = ((y7**2+y6**2)*y3**2*y2**3+(y5**2+y4**2)*y3**3*y2**2)*y1
+      dF(335) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2**3+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**3)*y1
+      dF(336) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2**3+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**3)*y1
+      dF(337) = ((y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y2**3+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**3)*y1
+      dF(338) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y2**3+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**3)*y1
+      dF(339) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y2**3+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3**3)*y1
+      dF(340) = (y2**3*y3**4+y2**4*y3**3)*y1
+      dF(341) = ((y7**2+y6**2)*y3*y2**4+(y5**2+y4**2)*y3**4*y2)*y1
+      dF(342) = ((y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2)*y1
+      dF(343) = ((y5**2+y4**2)*y3*y2**4+(y7**2+y6**2)*y3**4*y2)*y1
+      dF(344) = ((y7**2+y6**2)*y2**5+(y5**2+y4**2)*y3**5)*y1
+      dF(345) = ((y5*y7+y4*y6)*y2**5+(y5*y7+y4*y6)*y3**5)*y1
+      dF(346) = ((y5**2+y4**2)*y2**5+(y7**2+y6**2)*y3**5)*y1
+      dF(347) = (y2**5*y3**2+y2**2*y3**5)*y1
+      dF(348) = (y2**6*y3+y2*y3**6)*y1
+      dF(349) = (y2**7+y3**7)*y1
+      dF(350) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1**2
+      dF(351) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y1**2
+      dF(352) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(353) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(354) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y1**2
+      dF(355) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y1**2
+      dF(356) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2)*y1**2
+      dF(357) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2**2+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2)*y1**2
+      dF(358) = ((y5**2+y4**2)*y2**4+(y7**2+y6**2)*y3**4)*y1**2
+      dF(359) = (y6**4+y5**4+y7**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3*y2*y1**2
+      dF(360) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3*y2*y1**2
+      dF(361) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y3*y2*y1**2
+      dF(362) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2*y1**2
+      dF(363) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2)*y1**2
+      dF(364) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y2**2+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**2)*y1**2
+      dF(365) = ((y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y2**2+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**2)*y1**2
+      dF(366) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y2**2+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3**2)*y1**2
+      dF(367) = (y5*y7+y4*y6)*y3**2*y2**2*y1**2
+      dF(368) = (y4**2+y5**2+y7**2+y6**2)*y3**2*y2**2*y1**2
+      dF(369) = ((y7**2+y6**2)*y3*y2**3+(y5**2+y4**2)*y3**3*y2)*y1**2
+      dF(370) = ((y5*y7+y4*y6)*y3*y2**3+(y5*y7+y4*y6)*y3**3*y2)*y1**2
+      dF(371) = ((y5**2+y4**2)*y3*y2**3+(y7**2+y6**2)*y3**3*y2)*y1**2
+      dF(372) = y1**2*y2**3*y3**3
+      dF(373) = ((y7**2+y6**2)*y2**4+(y5**2+y4**2)*y3**4)*y1**2
+      dF(374) = ((y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4)*y1**2
+      dF(375) = (y2**2*y3**4+y2**4*y3**2)*y1**2
+      dF(376) = (y2**5*y3+y2*y3**5)*y1**2
+      dF(377) = (y2**6+y3**6)*y1**2
+      dF(378) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y2+(y6**4+y7**4+2._ark*y6**2*y7**2)*y3)*y1**3
+      dF(379) = ((y5**2+y4**2)*y2**3+(y7**2+y6**2)*y3**3)*y1**3
+      dF(380) = ((y5*y7+y4*y6)*y2**3+(y5*y7+y4*y6)*y3**3)*y1**3
+      dF(381) = ((y7**2+y6**2)*y2**3+(y5**2+y4**2)*y3**3)*y1**3
+      dF(382) = (y3**5+y2**5)*y1**3
+      dF(383) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3)*y1**3
+      dF(384) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y2+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3)*y1**3
+      dF(385) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3)*y1**3
+      dF(386) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3)*y1**3
+      dF(387) = ((y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y2+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3)*y1**3
+      dF(388) = ((y5**2+y4**2)*y3*y2**2+(y7**2+y6**2)*y3**2*y2)*y1**3
+      dF(389) = ((y5*y7+y4*y6)*y3*y2**2+(y5*y7+y4*y6)*y3**2*y2)*y1**3
+      dF(390) = ((y7**2+y6**2)*y3*y2**2+(y5**2+y4**2)*y3**2*y2)*y1**3
+      dF(391) = (y2*y3**4+y2**4*y3)*y1**3
+      dF(392) = (y2**2*y3**3+y2**3*y3**2)*y1**3
+      dF(393) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y1**4
+      dF(394) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y1**4
+      dF(395) = (y6**4+y5**4+y7**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y1**4
+      dF(396) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y1**4
+      dF(397) = (y5*y7+y4*y6)*y3*y2*y1**4
+      dF(398) = (y4**2+y5**2+y7**2+y6**2)*y3*y2*y1**4
+      dF(399) = ((y7**2+y6**2)*y2**2+(y5**2+y4**2)*y3**2)*y1**4
+      dF(400) = ((y5*y7+y4*y6)*y2**2+(y5*y7+y4*y6)*y3**2)*y1**4
+      dF(401) = ((y5**2+y4**2)*y2**2+(y7**2+y6**2)*y3**2)*y1**4
+      dF(402) = y1**4*y2**2*y3**2
+      dF(403) = (y2**3*y3+y2*y3**3)*y1**4
+      dF(404) = (y2**4+y3**4)*y1**4
+      dF(405) = (y3**3+y2**3)*y1**5
+      dF(406) = ((y7**2+y6**2)*y2+(y5**2+y4**2)*y3)*y1**5
+      dF(407) = ((y5*y7+y4*y6)*y2+(y5*y7+y4*y6)*y3)*y1**5
+      dF(408) = ((y5**2+y4**2)*y2+(y7**2+y6**2)*y3)*y1**5
+      dF(409) = (y2*y3**2+y2**2*y3)*y1**5
+      dF(410) = (y4**2+y5**2+y7**2+y6**2)*y1**6
+      dF(411) = (y5*y7+y4*y6)*y1**6
+      dF(412) = y1**6*y2*y3
+      dF(413) = (y2**2+y3**2)*y1**6
+      dF(414) = (y2+y3)*y1**7
+      dF(415) = y1**8
+      !
+  end subroutine  potC2H2_D8h_diff_V
+
+
+ function MLpoten_c2h2_7_xyz(ncoords,natoms,local,xyz,force) result(f) 
    !
    integer(ik),intent(in) ::  ncoords,natoms
    real(ark),intent(in)   ::  local(ncoords)
@@ -2342,22 +2927,356 @@ subroutine potC2H2_diff_V(n,local,xyz,dF)
     integer(ik),parameter :: n = 578
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
-     !
-     call potC2H2_diff_V(n,local,xyz,dF)
-     !
-     f = 0
-     !
-     nmax = min(size(force),molec%parmax)
-     !
-     do i = 5,nmax
+      !
+      integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      integer(ik)  :: Nangles 
+      !
+      character(len=cl)  :: txt = 'MLpoten_c2h2_7'
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=molec%force(1)
+      e2=molec%force(2)
+      e4=pi
+      e6=pi
+      !
+      a1 = molec%force(3)
+      a2 = molec%force(4)
+      !
+      x1    = local(1)
+      x2    = local(2)
+      x3    = local(3)
+      !
+      if (molec%zmatrix(3)%connect(4)==101) then 
+         !
+         stop 'MLpoten_c2h2_7_xyz 101 is not implemented'
+         !
+         y4 = local(4)
+         y5 = local(5)
+         !
+         y6 = local(6)
+         y7 = local(7)
+         !
+      elseif (molec%zmatrix(3)%connect(4)==102) then
+         !
+         stop 'MLpoten_c2h2_7_xyz 102 is not implemented'
+         !
+         b1(:) = xyz(3,:)-xyz(1,:)
+         b0(:) = xyz(2,:)-xyz(1,:)
+         b2(:) = xyz(4,:)-xyz(2,:)
+         !
+         x2 =  sqrt(sum(b1(:)**2))
+         x1 =  sqrt(sum(b0(:)**2))
+         x3 =  sqrt(sum(b2(:)**2))
+         !
+         b1 =  b1(:)/x2
+         b0 =  b0(:)/x1
+         b2 =  b2(:)/x3
+         !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         cosalpha2 = sum(b0(:)*b2(:))
+         !
+         alpha2 = aacos(-cosalpha2,txt)
+         !
+         !if (alpha1>pi*0.5d0) w1 = -w1
+         !if (alpha2>pi*0.5d0) w2 = -w2
+         !
+         sindelta1x = -w1(1)
+         sindelta1y = -w1(2)
+         sindelta2x = -w2(1)
+         sindelta2y = -w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         !y4 = aasin(sindelta1x,txt)
+         !y5 = aasin(sindelta1y,txt)
+         !y6 = aasin(sindelta2x,txt)
+         !y7 = aasin(sindelta2y,txt)
+         !
+         y4 = sindelta1x
+         y5 = sindelta1y
+         y6 = sindelta2x
+         y7 = sindelta2y
+         !
+         !y4 = b1(1)
+         !y5 = b1(2)
+         !y6 = b2(1)
+         !y7 = b2(2)
+         !
+         !y4 = local(4)
+         !y5 = local(5)
+         !
+         !y6 = local(6)
+         !y7 = local(7)
+         !
+      elseif (molec%zmatrix(3)%connect(4)==103) then
+         !
+         c1(:) = xyz(3,:)-xyz(1,:)
+         c0(:) = xyz(2,:)-xyz(1,:)
+         c2(:) = xyz(4,:)-xyz(2,:)
+         !
+         x2 =  sqrt(sum(c1(:)**2))
+         x1 =  sqrt(sum(c0(:)**2))
+         x3 =  sqrt(sum(c2(:)**2))
+         !
+         b1 =  c1(:)/x2
+         b0 =  c0(:)/x1
+         b2 =  c2(:)/x3
+         !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         cosalpha2 = sum(b0(:)*b2(:))
+         !
+         alpha2 = aacos(-cosalpha2,txt)
+         !
+         !if (alpha1>pi*0.5d0) w1 = -w1
+         !if (alpha2>pi*0.5d0) w2 = -w2
+         !
+         sindelta1x = -w1(1)
+         sindelta1y = -w1(2)
+         sindelta2x = -w2(1)
+         sindelta2y = -w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         y2 = -c1(3)-e2
+         y3 =  c2(3)-e2
+         !
+         y4 = b1(1)
+         y5 = b1(2)
+         y6 = b2(1)
+         y7 = b2(2)
+         !
+         !y4 = local(4)
+         !y5 = local(5)
+         !
+         !y6 = local(6)
+         !y7 = local(7)         !
+      else 
+        !
+        write(out,"('MLpoten_c2h2_7_xyz: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
+        stop 'only designed for zmat=103' 
+        !
+      endif
+      !
+      !y4    = local(4)
+      !y5    = local(5)
+      !y6    = local(6)
+      !y7    = local(7)
+      !
+      y1=1.0_ark-exp(-a1*(x1-e1))
+      !y2=1.0_ark-exp(-a2*(x2-e2))
+      !y3=1.0_ark-exp(-a2*(x3-e2))
+      !
+      call potC2H2_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      !
+      f = 0
+      !
+      nmax = min(size(force),molec%parmax)
+      !
+      do i = 5,nmax
+        !
+        !k = molec%pot_ind(1,i)
+        !
+        f = f + force(i)*dF(i)
        !
-       !k = molec%pot_ind(1,i)
+      enddo
+      !
+ end function MLpoten_c2h2_7_xyz
+
+
+
+ function MLpoten_c2h2_7(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+    !
+    integer(ik),parameter :: n = 415
+    integer(ik) :: i,k,nmax
+    real(ark) :: dF(n)
+      !
+      integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7
+      integer(ik)  :: Nangles 
+      !
+      character(len=cl)  :: txt = 'MLpoten_c2h2_7'
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=molec%force(1)
+      e2=molec%force(2)
+      e4=pi
+      e6=pi
+      !
+      a1 = molec%force(3)
+      a2 = molec%force(4)
+      !
+      x1    = local(1)
+      x2    = local(2)
+      x3    = local(3)
+      !
+      if (molec%zmatrix(3)%connect(4)==101) then 
+         !
+         y4 = local(4)
+         y5 = local(5)
+         !
+         y6 = local(6)
+         y7 = local(7)
+         !
+      elseif (molec%zmatrix(3)%connect(4)==102) then
+         !
+         b1(:) = xyz(3,:)-xyz(1,:)
+         b0(:) = xyz(2,:)-xyz(1,:)
+         b2(:) = xyz(4,:)-xyz(2,:)
+         !
+         x2 =  sqrt(sum(b1(:)**2))
+         x1 =  sqrt(sum(b0(:)**2))
+         x3 =  sqrt(sum(b2(:)**2))
+         !
+         b1 =  b1(:)/x2
+         b0 =  b0(:)/x1
+         b2 =  b2(:)/x3
+         !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         cosalpha2 = sum(b0(:)*b2(:))
+         !
+         alpha2 = aacos(-cosalpha2,txt)
+         !
+         !if (alpha1>pi*0.5d0) w1 = -w1
+         !if (alpha2>pi*0.5d0) w2 = -w2
+         !
+         sindelta1x = -w1(1)
+         sindelta1y = -w1(2)
+         sindelta2x = -w2(1)
+         sindelta2y = -w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         !y4 = aasin(sindelta1x,txt)
+         !y5 = aasin(sindelta1y,txt)
+         !y6 = aasin(sindelta2x,txt)
+         !y7 = aasin(sindelta2y,txt)
+         !
+         y4 = sindelta1x
+         y5 = sindelta1y
+         y6 = sindelta2x
+         y7 = sindelta2y
+         !
+         !y4 = b1(1)
+         !y5 = b1(2)
+         !y6 = b2(1)
+         !y7 = b2(2)
+         !
+         !y4 = local(4)
+         !y5 = local(5)
+         !
+         !y6 = local(6)
+         !y7 = local(7)
+         !
+      elseif (molec%zmatrix(3)%connect(4)==103) then
+         !
+         b1(:) = xyz(3,:)-xyz(1,:)
+         b0(:) = xyz(2,:)-xyz(1,:)
+         b2(:) = xyz(4,:)-xyz(2,:)
+         !
+         x2 =  sqrt(sum(b1(:)**2))
+         x1 =  sqrt(sum(b0(:)**2))
+         x3 =  sqrt(sum(b2(:)**2))
+         !
+         b1 =  b1(:)/x2
+         b0 =  b0(:)/x1
+         b2 =  b2(:)/x3
+         !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         cosalpha2 = sum(b0(:)*b2(:))
+         !
+         alpha2 = aacos(-cosalpha2,txt)
+         !
+         !if (alpha1>pi*0.5d0) w1 = -w1
+         !if (alpha2>pi*0.5d0) w2 = -w2
+         !
+         sindelta1x = -w1(1)
+         sindelta1y = -w1(2)
+         sindelta2x = -w2(1)
+         sindelta2y = -w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         y4 = aasin(sindelta1x,txt)
+         y5 = aasin(sindelta1y,txt)
+         y6 = aasin(sindelta2x,txt)
+         y7 = aasin(sindelta2y,txt)
+         !
+         !y4 = b1(1)
+         !y5 = b1(2)
+         !y6 = b2(1)
+         !y7 = b2(2)
+         !
+         !y4 = local(4)
+         !y5 = local(5)
+         !
+         !y6 = local(6)
+         !y7 = local(7)         !
+      else 
+        !
+        write(out,"('MLpoten_c2h2_7: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
+        stop 'only designed for zmat=103' 
+        !
+      endif
+      !
+      !y4    = local(4)
+      !y5    = local(5)
+      !y6    = local(6)
+      !y7    = local(7)
+      !
+      y1=1.0_ark-exp(-a1*(x1-e1))
+      y2=1.0_ark-exp(-a2*(x2-e2))
+      y3=1.0_ark-exp(-a2*(x3-e2))
+      !
+      call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      !
+      f = 0
+      !
+      nmax = min(size(force),molec%parmax)
+      !
+      do i = 5,nmax
+        !
+        !k = molec%pot_ind(1,i)
+        !
+        f = f + force(i)*dF(i)
        !
-       f = f + force(i)*dF(i)
-       !
-     enddo
-     !
+      enddo
+      !
  end function MLpoten_c2h2_7
+
+
 
 function MLpoten_c2h2_streymills(ncoords,natoms,local,xyz,force) result(f)
    !

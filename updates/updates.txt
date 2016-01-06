@@ -87,3 +87,11 @@ The lvib is now a part of the basis set definition
 
 21.09.2015
  contr_descr writing bug for Lvib is fixed
+
+22.11.2015
+ Added print_poten and print_kinetic also when the poten or kinetic fields are READ
+ Added a kinetic_skip to skip the kinetic part in hamltonian.chk in order to allow POTEN READ AND KINETIC NONE/SAVE
+
+29.12,2015
+ The symmeties Dnh(M) for n even have been implemenetd for n>2 and for rotation. 
+ 

@@ -174,6 +174,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_7
          !
+     case('POTEN_C2H2_7_XYZ') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_xyz
+         !
      case('POTEN_C2H2_STREYMILLS') 
          !
          MLpotentialfunc =>  MLpoten_c2h2_streymills
@@ -395,6 +399,12 @@ end function ML_MEPfunc
     case('HOOH_MB')
        !
        MLextF_func => MLdms_hooh_MB
+       !
+       ! Molecular Bond representaion of the DMS of HCCH
+       !
+    case('HCCH_MB')
+       !
+       MLextF_func => MLdms_hcch_MB
        !
     case('COORDINATES')
        !

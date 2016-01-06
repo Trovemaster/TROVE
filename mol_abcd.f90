@@ -311,8 +311,8 @@ module mol_abcd
       Nangles = molec%Nangles
       !
       re1   = molec%req(1)
-      re2   = molec%req(2)
-      re3   = molec%req(3)
+      re2   = abs(molec%req(2))
+      re3   = abs(molec%req(3))
       !
       rho = 0 
       !
@@ -331,7 +331,7 @@ module mol_abcd
       elseif (Nangles==0.and.molec%Ndihedrals>3) then 
         !
         ae1   = pi+(-molec%taueq(1)+molec%taueq(2)) 
-        ae2   = pi+(-molec%taueq(3)+molec%taueq(4)) 
+        ae2   = pi+(-molec%taueq(3)+molec%taueq(4))
         !
       else
         write(out,"('ML_b0_ABCD: case undefined')")
@@ -1836,14 +1836,14 @@ module mol_abcd
                 dst(1) = src(1)
                 dst(2) = src(2)
                 dst(3) = src(3)
-                dst(4) = q1x*cos(phi_n)+q1y*sin(phi_n)
-                dst(5) =-q1x*sin(phi_n)+q1y*cos(phi_n)
-                dst(6) = q2x*cos(phi_n)+q2y*sin(phi_n)
-                dst(7) =-q2x*sin(phi_n)+q2y*cos(phi_n)
+                dst(4) = q1x*cos(phi_n)-q1y*sin(phi_n)
+                dst(5) = q1x*sin(phi_n)+q1y*cos(phi_n)
+                dst(6) = q2x*cos(phi_n)-q2y*sin(phi_n)
+                dst(7) = q2x*sin(phi_n)+q2y*cos(phi_n)
                 !
               elseif (ioper<=2+2*N_Cn+NC2) then !  C'2
                 !
-                irot =ioper-(2+2*N_Cn)
+                irot =ioper-(2+2*N_Cn)-1
                 !
                 phi_n = phi*irot*2.0_ark
                 !
@@ -1857,9 +1857,11 @@ module mol_abcd
                 !
               elseif (ioper<=2+2*N_Cn+2*NC2) then !  C2"
                 !
-                irot =ioper-(2+2*N_Cn+NC2)
+                irot =ioper-(2+2*N_Cn+NC2)-1
                 !
-                phi_n =(-phi*0.5+phi*irot)*2.0_ark
+                !phi_n =(irot*2.0_ark-1.0_ark)*phi*0.5_ark
+                !
+                phi_n = phi*(2*irot+1)
                 !
                 dst(1) = src(1)
                 dst(2) = src(3)
@@ -1892,10 +1894,10 @@ module mol_abcd
                 dst(1) = src(1)
                 dst(2) = src(3)
                 dst(3) = src(2)
-                dst(4) = (q2x*cos(phi_n)-q2y*sin(phi_n))
-                dst(5) = (q2x*sin(phi_n)+q2y*cos(phi_n))
-                dst(6) = (q1x*cos(phi_n)-q1y*sin(phi_n))
-                dst(7) = (q1x*sin(phi_n)+q1y*cos(phi_n))
+                dst(4) =  (q2x*cos(phi_n)-q2y*sin(phi_n))
+                dst(5) =  (q2x*sin(phi_n)+q2y*cos(phi_n))
+                dst(6) =  (q1x*cos(phi_n)-q1y*sin(phi_n))
+                dst(7) =  (q1x*sin(phi_n)+q1y*cos(phi_n))
                 !
               elseif (ioper<=4+4*N_Cn+2*NC2) then !  sigmah
                 !
@@ -1909,31 +1911,34 @@ module mol_abcd
                 !
               elseif (ioper<=4+4*N_Cn+3*NC2) then !  sigmav
                 !
-                irot = ioper-(4+4*N_Cn+2*NC2)
+                irot = ioper-(4+4*N_Cn+2*NC2)-1
                 !
                 phi_n = phi*irot*2.0_ark
                 !
                 dst(1) = src(1)
                 dst(2) = src(2)
                 dst(3) = src(3)
-                dst(4) = ( q1x*cos(phi_n)+q1y*sin(phi_n))
-                dst(5) = ( q1x*sin(phi_n)-q1y*cos(phi_n))
-                dst(6) = ( q2x*cos(phi_n)+q2y*sin(phi_n))
-                dst(7) = ( q2x*sin(phi_n)-q2y*cos(phi_n))
+                dst(4) =  (q1x*cos(phi_n)+q1y*sin(phi_n))
+                dst(5) =  (q1x*sin(phi_n)-q1y*cos(phi_n))
+                dst(6) =  (q2x*cos(phi_n)+q2y*sin(phi_n))
+                dst(7) =  (q2x*sin(phi_n)-q2y*cos(phi_n))
                 !
               elseif (ioper<=4+4*N_Cn+4*NC2) then !  sigmad
                 !
-                irot = ioper-(4+4*N_Cn+3*NC2)
+                irot = ioper-(4+4*N_Cn+3*NC2)-1
                 !
-                phi_n = (-phi*0.5+phi*irot)*2.0_ark
+                phi_n = (2*irot+1)*phi
+                !
+                !irot = ioper-(4+4*N_Cn+3*NC2)
+                !phi_n = (-phi*0.5+phi*irot)*2.0_ark
                 !
                 dst(1) = src(1)
                 dst(2) = src(2)
                 dst(3) = src(3)
-                dst(4) = ( q1x*cos(phi_n)+q1y*sin(phi_n))
-                dst(5) = ( q1x*sin(phi_n)-q1y*cos(phi_n))
-                dst(6) = ( q2x*cos(phi_n)+q2y*sin(phi_n))
-                dst(7) = ( q2x*sin(phi_n)-q2y*cos(phi_n))
+                dst(4) =  (q1x*cos(phi_n)+q1y*sin(phi_n))
+                dst(5) =  (q1x*sin(phi_n)-q1y*cos(phi_n))
+                dst(6) =  (q2x*cos(phi_n)+q2y*sin(phi_n))
+                dst(7) =  (q2x*sin(phi_n)-q2y*cos(phi_n))
                 !
               else
                 !
@@ -2124,33 +2129,69 @@ module mol_abcd
        k_ = mod(K+N_Cn,N_Cn)
        l = k_ ; if (k_>N_Cn) l = sym%N-k_
        !
-       if (mod(K+N_Cn,N_Cn)==0) then
+       if (mod(sym%N,2)==1) then
           !
-          if     (tau==0.and.mod(k+2,2)==0) then 
-             gamma = 1 
-          elseif (tau==1.and.mod(k+2,2)==0) then 
-             gamma = 2
-          elseif (tau==0.and.mod(k+2,2)/=0) then 
-             gamma = 4
-          elseif (tau==1.and.mod(k+2,2)/=0) then 
-             gamma = 3
+          if (mod(K+N_Cn,N_Cn)==0) then
+             !
+             if     (tau==0.and.mod(k+2,2)==0) then 
+                gamma = 1 
+             elseif (tau==1.and.mod(k+2,2)==0) then 
+                gamma = 2
+             elseif (tau==0.and.mod(k+2,2)/=0) then 
+                gamma = 4
+             elseif (tau==1.and.mod(k+2,2)/=0) then 
+                gamma = 3
+             else
+                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+             endif
+             !
+          elseif (tau<=1.and.k<=j) then
+             !
+             ideg = tau +1
+             !
+             if     (mod(k+2,2)==0) then 
+                 gamma = 4+2*l-1
+             else
+                 gamma = 4+2*l
+             endif
+             !
           else
-             stop 'ML_rotsymmetry_XY2-Dnh: illegal k,tau (K mod N  = 0)'
+               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
           endif
           !
-       elseif (tau<=1.and.k<=j) then
+       else ! even Dnh
           !
-          ideg = tau +1
-          !
-          if     (mod(k+2,2)==0) then 
-              gamma = 4+2*l-1
+          if (mod(K+N_Cn,N_Cn)==0) then
+             !
+             if     (tau==0.and.mod(k+2,2)==0) then 
+                gamma = 1 
+             elseif (tau==1.and.mod(k+2,2)==0) then 
+                gamma = 2
+             elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                gamma = 4
+             elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                gamma = 3
+             else
+                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+             endif
+             !
+          elseif (tau<=1.and.k<=j) then
+             !
+             ideg = tau +1
+             !
+             gamma = 8+2*l-1
+             !
+             !if     (mod(k+2,2)==0) then 
+             !    gamma = 8+2*l-1
+             !else
+             !    gamma = 8+2*l
+             !endif
+             !
           else
-              gamma = 4+2*l
+               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
           endif
           !
-       else
-            stop 'ML_rotsymmetry_XY2-Dnh: illegal k,tau (K mod N  /= 0)'
-       endif 
+       endif
        !
     end select
     !

@@ -3647,13 +3647,19 @@ module fields
        if (trim(job%IOj0matel_action)=='NONE'.and.job%vib_contract) job%IOj0matel_action = 'READ'
    end if 
    !
-   if (.not.basis_defined) then 
+   if (.not.symmetry_defined) then 
       !
       call SymmetryInitialize(job%sym_group)
       !
       symmetry_defined = .true.
       !
    endif
+   !
+   if (job%verbose>=5) then
+     !
+     call print_symmetries
+     !    
+   endif  
    !
    if (.not.refer_defined) then 
       !
@@ -3786,7 +3792,36 @@ module fields
    !
    ! Check if everything defined 
    !
-   if (job%verbose>=4) write(out,"('FLReadInput/end')")   
+   if (job%verbose>=4) write(out,"('FLReadInput/end')")  
+   !
+   contains
+   !
+   subroutine print_symmetries
+     integer(ik) :: igamma,iclass,ioper,ielem
+     !
+     write(out,"(/'Symmetry:',a)") trim(sym%group)
+     !    
+     write(out,"(/'Characters')")
+     !
+     do igamma = 1,sym%Nrepresen
+       do iclass = 1,sym%Nclasses
+          write(out,"(i4,1x,i4,1x,f16.8)") igamma,iclass,sym%characters(igamma,iclass)
+      enddo 
+     enddo
+     !
+     write(out,"(/'Irreps:')")
+     !
+     do igamma = 1,sym%Nrepresen
+       !
+       do ioper = 1,sym%Noper
+          do ielem = 1,sym%degen(igamma)
+            write(out,"(i4,1x,i4,1x,i4,1x,10f16.8)") igamma,ioper,ielem,sym%irr(igamma,ioper)%repres(ielem,:)
+          enddo
+       enddo 
+       !
+     enddo 
+     !
+   end subroutine print_symmetries
    !
 end subroutine FLReadInput
 
@@ -4705,10 +4740,12 @@ end subroutine check_read_save_none
     ! If the kinetic operator fields have been stored we can just read them from the hard disk and leave...
     !
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
-        trim(trove%IO_potential)=='READ'.or.&
+        !trim(trove%IO_potential)=='READ'.or.&
         trim(trove%IO_kinetic)=='READ') then 
         !
-        call FLcheck_point_Hamiltonian('KINETIC_READ') 
+        call FLcheck_point_Hamiltonian('KINETIC_READ')
+        !
+        call print_kinetic
         !
         return 
         !
@@ -4986,107 +5023,7 @@ end subroutine check_read_save_none
       !
     endif
     !
-    if (job%verbose>=7.or.(job%verbose>=2.and.manifold==0)) then
-        write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
-        !
-        do k1 = 1,Nmodes
-           do k2 = 1,Nmodes
-              do i = 1,trove%g_vib(k1,k2)%Ncoeff
-                 do irho = 0,Npoints
-                   if (k2<=3.and.k1<=3) then 
-                     write(out,"(20x,4i5,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
-                                                   trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
-                   elseif (k2<=3) then
-                     write(out,"(20x,4i5,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),trove%g_cor(k1,k2)%field(i,irho)
-                   else 
-                     write(out,"(20x,4i5, e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                   endif
-                 enddo
-              enddo
-           enddo
-        enddo
-        !
-        if (job%verbose>5) then 
-          !
-          write(out,"(/'b0 and db0 matrices:')") 
-          do iatom = 1,trove%Natoms
-                !
-                if (manifold==0) then
-                  write(out,"(i5,3f18.8)") iatom,trove%b0(iatom,:,0)
-                else
-                  !
-                  do irho = 0,Npoints
-                    !
-                    write(out,"(2i5,12f18.8)") iatom,irho,trove%b0(iatom,:,irho),trove%db0(iatom,:,irho,1),trove%db0(iatom,:,irho,2),trove%db0(iatom,:,irho,3)
-                    !
-                  enddo
-                endif 
-          enddo
-          !
-          write(out,"(/'Amatrho matrices:')") 
-          do iatom = 1,trove%Natoms
-             do imode = 1,Nmodes
-                do irho = 0,Npoints
-                  !
-                  write(out,"(3i5,3f18.8)") iatom,imode,irho,trove%Amatrho(iatom,:,imode,irho)
-                  !
-                enddo
-            enddo
-          enddo
-          !
-          write(out,"(/'dAmatrho matrices:')") 
-          do iatom = 1,trove%Natoms
-             do imode = 1,Nmodes
-                do irho = 0,Npoints
-                  !
-                  write(out,"(i5,9f18.8)") irho,trove%dAmatrho(iatom,:,imode,irho,1),trove%dAmatrho(iatom,:,imode,irho,2),trove%dAmatrho(iatom,:,imode,irho,3)
-                  !
-                enddo
-            enddo
-          enddo
-          !
-          write(out,"(/'Bmatrho matrices:')") 
-          do iatom = 1,trove%Natoms
-             do imode = 1,Nmodes
-                do irho = 0,Npoints
-                  !
-                  write(out,"(i5,3f18.8)") irho,trove%Bmatrho(imode,iatom,:,irho)
-                  !
-                enddo
-            enddo
-          enddo
-          !
-          if (manifold/=0) then
-            write(out,"(/'dBmatrho matrices:')") 
-            do iatom = 1,trove%Natoms
-               do imode = 1,Nmodes
-                  do irho = 0,Npoints
-                    !
-                    write(out,"(i5,6f18.8)") irho,trove%dBmatrho(imode,iatom,:,irho,1),trove%dBmatrho(imode,iatom,:,irho,2)
-                    !
-                  enddo
-              enddo
-            enddo
-            !
-          endif
-          !
-        endif
-        !
-        write(out,"('Normal quadratic pot. parameteres   qwforce:')")
-        !
-        if (trove%Coordinates(1,1)=='NORMAL') then
-           !
-           do k1 = 1,Nmodes
-              do k2 = 1,k1
-                 do irho = 0,Npoints
-                    write(out,"(20x,3i5,d18.8)") irho,k1,k2,trove%qwforce(k1,k2,irho)
-                 enddo
-              enddo
-           enddo
-           !
-        endif
-        !
-    endif ! job%verbose >= 5
+    call print_kinetic
     !
     if (job%verbose>=4) call MemoryReport
     !
@@ -5097,6 +5034,122 @@ end subroutine check_read_save_none
     if (job%verbose>=4) write(out,"('FLinitilize_Kinetic/end')")   
     !
   end subroutine FLinitilize_Kinetic
+
+
+    !
+    subroutine print_kinetic
+       !
+       implicit none
+       !
+       integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
+       !
+       Nmodes = trove%Nmodes
+       Npoints = trove%Npoints
+       !
+       if (job%verbose>=7.or.(job%verbose>=2.and.manifold==0)) then
+           write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
+           !
+           do k1 = 1,Nmodes
+              do k2 = 1,Nmodes
+                 do i = 1,trove%g_vib(k1,k2)%Ncoeff
+                    do irho = 0,Npoints
+                      if (k2<=3.and.k1<=3) then 
+                        write(out,"(20x,4i5,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
+                                                      trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
+                      elseif (k2<=3) then
+                        write(out,"(20x,4i5,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),trove%g_cor(k1,k2)%field(i,irho)
+                      else 
+                        write(out,"(20x,4i5, e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
+                      endif
+                    enddo
+                 enddo
+              enddo
+           enddo
+           !
+           if (job%verbose>5) then 
+             !
+             write(out,"(/'b0 and db0 matrices:')") 
+             do iatom = 1,trove%Natoms
+                   !
+                   if (manifold==0) then
+                     write(out,"(i5,3f18.8)") iatom,trove%b0(iatom,:,0)
+                   else
+                     !
+                     do irho = 0,Npoints
+                       !
+                       write(out,"(2i5,12f18.8)") iatom,irho,trove%b0(iatom,:,irho),trove%db0(iatom,:,irho,1),trove%db0(iatom,:,irho,2),trove%db0(iatom,:,irho,3)
+                       !
+                     enddo
+                   endif 
+             enddo
+             !
+             write(out,"(/'Amatrho matrices:')") 
+             do iatom = 1,trove%Natoms
+                do imode = 1,Nmodes
+                   do irho = 0,Npoints
+                     !
+                     write(out,"(3i5,3f18.8)") iatom,imode,irho,trove%Amatrho(iatom,:,imode,irho)
+                     !
+                   enddo
+               enddo
+             enddo
+             !
+             write(out,"(/'dAmatrho matrices:')") 
+             do iatom = 1,trove%Natoms
+                do imode = 1,Nmodes
+                   do irho = 0,Npoints
+                     !
+                     write(out,"(i5,9f18.8)") irho,trove%dAmatrho(iatom,:,imode,irho,1),trove%dAmatrho(iatom,:,imode,irho,2),trove%dAmatrho(iatom,:,imode,irho,3)
+                     !
+                   enddo
+               enddo
+             enddo
+             !
+             write(out,"(/'Bmatrho matrices:')") 
+             do iatom = 1,trove%Natoms
+                do imode = 1,Nmodes
+                   do irho = 0,Npoints
+                     !
+                     write(out,"(i5,3f18.8)") irho,trove%Bmatrho(imode,iatom,:,irho)
+                     !
+                   enddo
+               enddo
+             enddo
+             !
+             if (manifold/=0) then
+               write(out,"(/'dBmatrho matrices:')") 
+               do iatom = 1,trove%Natoms
+                  do imode = 1,Nmodes
+                     do irho = 0,Npoints
+                       !
+                       write(out,"(i5,6f18.8)") irho,trove%dBmatrho(imode,iatom,:,irho,1),trove%dBmatrho(imode,iatom,:,irho,2)
+                       !
+                     enddo
+                 enddo
+               enddo
+               !
+             endif
+             !
+           endif
+           !
+           write(out,"('Normal quadratic pot. parameteres   qwforce:')")
+           !
+           if (trove%Coordinates(1,1)=='NORMAL') then
+              !
+              do k1 = 1,Nmodes
+                 do k2 = 1,k1
+                    do irho = 0,Npoints
+                       write(out,"(20x,3i5,d18.8)") irho,k1,k2,trove%qwforce(k1,k2,irho)
+                    enddo
+                 enddo
+              enddo
+              !
+           endif
+           !
+       endif ! job%verbose 
+       !
+    end subroutine print_kinetic
+
 
 
   !
@@ -6624,7 +6677,10 @@ end subroutine check_read_save_none
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
         trim(trove%IO_potential)=='READ') then 
         !
+        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
         call FLcheck_point_Hamiltonian('POTENTIAL_READ') 
+        !
+        if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) call print_poten
         !
         return 
         !
@@ -6878,34 +6934,7 @@ end subroutine check_read_save_none
     !
     if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) then
        !
-       write(out,"('pseudo-potential and potential parameteres:')")
-       !
-       do i = 1,max(trove%pseudo%Ncoeff,trove%poten%Ncoeff)
-          !
-          if (i<=min(trove%pseudo%Ncoeff,trove%poten%Ncoeff)) then 
-             !
-             do irho=0,Npoints,1
-                write(out,"(20x,2i5,2f24.8,30i4)") irho,i,trove%pseudo%field(i,irho),trove%poten%field(i,irho),&
-                                                 (FLIndexQ(imode,i),imode=1,min(30,Nmodes))
-             enddo
-             !
-          elseif (i<trove%pseudo%Ncoeff) then 
-             !
-             do irho=0,Npoints,1
-                !
-                write(out,"(20x,2i5,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,Nmodes))
-                !
-             enddo
-             !
-          else
-             !
-             do irho=0,Npoints,1
-                write(out,"(20x,2i5,24x,f24.8,30i4)") irho,i,trove%poten%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,Nmodes))
-             enddo
-             !
-          endif
-          !
-       enddo
+       if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) call print_poten
        !
     endif
     !
@@ -6938,6 +6967,41 @@ end subroutine check_read_save_none
       !
     end subroutine par_switch
 
+
+    subroutine print_poten
+     !
+     integer(ik) :: i,irho
+        !
+        write(out,"('pseudo-potential and potential parameteres:')")
+        !
+        do i = 1,max(trove%pseudo%Ncoeff,trove%poten%Ncoeff)
+           !
+           if (i<=min(trove%pseudo%Ncoeff,trove%poten%Ncoeff)) then 
+              !
+              do irho=0,trove%Npoints,1
+                 write(out,"(20x,2i5,2f24.8,30i4)") irho,i,trove%pseudo%field(i,irho),trove%poten%field(i,irho),&
+                                                  (FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+              enddo
+              !
+           elseif (i<trove%pseudo%Ncoeff) then 
+              !
+              do irho=0,trove%Npoints,1
+                 !
+                 write(out,"(20x,2i5,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+                 !
+              enddo
+              !
+           else
+              !
+              do irho=0,trove%Npoints,1
+                 write(out,"(20x,2i5,24x,f24.8,30i4)") irho,i,trove%poten%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+              enddo
+              !
+           endif
+           !
+        enddo
+        !     
+    end subroutine print_poten 
 
     logical function par_check(par,kindex)
       !
@@ -7493,11 +7557,11 @@ end subroutine check_read_save_none
     real(ark)   :: vec1,vec2,B,d1_dy_i_x(3),d2_dy_i_x(3),a1,a2,a3,b_t(3)
 
     integer(ik) ::  Nmodes,Natoms,Nbonds,Nangles,Ndihedrals
-    integer(ik) ::  ibond,iangle,ida(trove%Natoms,trove%Natoms,trove%Natoms) 
-    integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,iq,J,m,n,o,p,a,mnop(4),i,kappa,icoord
+    integer(ik) ::  ibond,iangle,ida(trove%Natoms,trove%Natoms,trove%Natoms),iatom
+    integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,iq,J,m,n,o,p,a,mnop(4),i,kappa,icoord,k1,k2
     !
     real(ark)   :: a_t1(3),a_t2(3),a_t3(3),delta,deltaf(trove%Natoms,trove%Natoms),zetaf(trove%Natoms,trove%Natoms,trove%Natoms),dB(3,3),tau_sign,dnorm_da1,dnorm_da2,dnorm_da3,norm_2
-    real(ark)   :: cosa1,cosa2,cosa3,sina1,sina2,sina3,cosu,cosv,sinu,sinv,u(3),v(3),w(3),cart_vec(3,3),sindelta,phi,e1(3),e2(3)
+    real(ark)   :: cosa1,cosa2,cosa3,sina1,sina2,sina3,cosu,cosv,sinu,sinv,u(3),v(3),w(3),cart_vec(3,3),sindelta,phi,e1(3),e2(3),f_t
     !
     if (job%verbose>=7) write(out,"(/'Bmat_generation/start  ')") 
 
@@ -7824,9 +7888,6 @@ end subroutine check_read_save_none
              !
           endif
           !
-          e1(:) = MLvector_product(cart_vec(kappa,:),u)
-          e2(:) = MLvector_product(cart_vec(kappa,:),v)
-          !
           icoord = Nbonds+Nangles+iangle
           !
           !Bmat(icoord,n1,:) =-( e2(:) + sin(phi)*e1(:))/(r1*cos(phi))
@@ -7836,10 +7897,6 @@ end subroutine check_read_save_none
           Bmat(icoord,n1,:) = ( e2(:) - sin(phi)*u(:))/(r1*cos(phi))
           Bmat(icoord,n2,:) =-( e1(:) + sin(phi)*v(:))/(r2*cos(phi))
           Bmat(icoord,n0,:) =-( Bmat(icoord,n1,:) + Bmat(icoord,n2,:) )
-          !
-          !if (kappa==2) then
-          !   Bmat(icoord,:,:) = -Bmat(icoord,:,:)
-          !endif 
           !
        case(102) ! The special bond-angle for the linear molecule case confined to the plane
           !
@@ -7884,17 +7941,23 @@ end subroutine check_read_save_none
           !   !
           !endif
           !
-          e1(:) = MLvector_product(cart_vec(kappa,:),u)
-          e2(:) = MLvector_product(cart_vec(kappa,:),v)
+          e1(:) = -MLvector_product(cart_vec(kappa,:),u)
+          e2(:) = -MLvector_product(cart_vec(kappa,:),v)
           !
           icoord = Nbonds+Nangles+iangle
           !
+          !Bmat(icoord,n1,:) = ( e2(:) - sin(phi)*u(:))/(r1*cos(phi))
+          !Bmat(icoord,n2,:) =-( e1(:) + sin(phi)*v(:))/(r2*cos(phi))
+          !Bmat(icoord,n0,:) =-( Bmat(icoord,n1,:) + Bmat(icoord,n2,:) )
+          !
           Bmat(icoord,n1,:) = e2(:)/r1 - sindelta*u(:)/r1
-          Bmat(icoord,n2,:) =-e1(:)/r2 - sindelta*v(:)/r2
+          Bmat(icoord,n2,:) =-e1(:)/r2 + sindelta*v(:)/r2
           !
           Bmat(icoord,n0,:) =-( Bmat(icoord,n1,:) + Bmat(icoord,n2,:) )
           !
-          !Bmat(icoord,:,kappa) = 0 
+          call diff_local2cartesian(icoord,a0,Bmat_t)
+          !
+          Bmat(icoord,:,:) = Bmat_t(:,:)
           !
        case(103) ! The special bond-angles for the linear molecule case 
           !
@@ -7926,12 +7989,23 @@ end subroutine check_read_save_none
           !Bmat(icoord,n1,:) = deltaf(kappa,:)/r1 - phi/r1**3*a_t1(:)
           !Bmat(icoord,n2,:) =-Bmat(icoord,n1,:)
           !
-          Bmat(icoord,n1,:) = ( deltaf(kappa,:) - u(kappa)*u(:) )/r1
-          Bmat(icoord,n0,:) = -Bmat(icoord,n1,:)
+          !Bmat(icoord,n1,:) = ( deltaf(kappa,:) - u(kappa)*u(:) )/r1
+          !Bmat(icoord,n0,:) = -Bmat(icoord,n1,:)
           !
-          !Bmat(icoord,n1,:) =-e1(:)/r2 - sindelta*v(:)/r2
+          call diff_local2cartesian(icoord,a0,Bmat_t)
           !
-          !Bmat(icoord,n0,:) =-( Bmat(icoord,n1,:) + Bmat(icoord,n2,:) ) 
+          Bmat(icoord,:,:) = Bmat_t(:,:)
+          !
+          do ibond = 1,Nbonds
+             !
+             k1 = trove%bonds(ibond,1)
+             k2 = trove%bonds(ibond,2)
+             !
+             if (k1/=n1.and.k2/=n1) cycle
+             !
+             call diff_local2cartesian(icoord,a0,Bmat_t)
+             !
+          enddo
           !
        case(-5) ! type -2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
           !
@@ -8005,6 +8079,40 @@ end subroutine check_read_save_none
     enddo
     !
     if (job%verbose>=7) write(out,"('Bmat_generation/stop')") 
+    !
+    contains 
+
+    subroutine diff_local2cartesian(icoord,a0,Bmat)
+ 
+      integer(ik),intent(in):: icoord
+      real(ark),intent(in)  ::  a0(trove%Natoms,3)
+      real(ark),intent(out) ::  Bmat(trove%Natoms,3) 
+
+      real(ark)             :: xi_p(trove%Ncoords),xi_m(trove%Ncoords),deltax,xna(trove%Natoms,3)
+      integer(ik)           :: iatom,ix
+
+          !
+          xna = a0
+          !
+          deltax = trove%fdstep(1)
+          !
+          do iatom = 1,Natoms
+             do ix = 1,3
+                !
+                xna(iatom,ix)  = a0(iatom,ix) + deltax
+                call FLfromcartesian2local(xna,xi_p)
+                !
+                xna(iatom,ix)  = a0(iatom,ix) - deltax
+                call FLfromcartesian2local(xna,xi_m)
+                !
+                Bmat(iatom,ix) = 0.5_ark*(xi_p(icoord)-xi_m(icoord))/deltax
+                !
+                xna(iatom,ix)  = a0(iatom,ix)
+                !
+             enddo
+          enddo    
+
+    end subroutine diff_local2cartesian
     !
  end subroutine Bmat_generation
 
@@ -11833,6 +11941,8 @@ end subroutine check_read_save_none
         call numerovRestore
       case ('KINETIC_READ')
         call checkpointRestore_kinetic
+      case ('KINETIC_SKIP')
+        call checkpointSkip_kinetic
       case ('POTENTIAL_READ')
         call checkpointRestore_potential
       case ('EXTERNAL_READ')
@@ -11948,21 +12058,6 @@ end subroutine check_read_save_none
         !
         write(chkptIO) trove%poten%me 
         !
-        if (FLextF_coeffs) then
-          !
-          write(chkptIO) 'ext_f'
-          !
-          do imu = 1,extF%rank
-             !
-             fl => trove%extF(imu)
-             !
-             write(chkptIO) fl%Ncoeff
-             write(chkptIO) fl%me 
-             !
-          enddo
-          !
-        endif
-        !
         if (FLL2_coeffs) then
           !
           write(chkptIO) 'L2_vib'
@@ -11979,6 +12074,21 @@ end subroutine check_read_save_none
           enddo
           !
         endif 
+        !
+        if (FLextF_coeffs) then
+          !
+          write(chkptIO) 'ext_f'
+          !
+          do imu = 1,extF%rank
+             !
+             fl => trove%extF(imu)
+             !
+             write(chkptIO) fl%Ncoeff
+             write(chkptIO) fl%me 
+             !
+          enddo
+          !
+        endif
         !
         write(chkptIO) 'End Basis set'
         close(chkptIO,status='keep')
@@ -12178,11 +12288,18 @@ end subroutine check_read_save_none
            do k2 = 1,Nmodes
               !
               fl => trove%g_vib(k1,k2)
+              !
+              if (fl%Ncoeff/= Tcoeff) then 
+                write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2I8)")  fl%Ncoeff,Tcoeff
+                stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
+              end if 
+              !
               fl%Ncoeff = Tcoeff
               !
               allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
               call ArrayStart('trove%g_vib%me',alloc,size(fl%me),kind(fl%me))
               read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
+              !
               !read(chkptIO) fl%iorder !(fl%Ncoeff)
               !
            enddo
@@ -12249,35 +12366,6 @@ end subroutine check_read_save_none
         !read(chkptIO) fl%iorder           !(trove%poten%Ncoeff)
         !
         !
-        ! External field function 
-        !
-        if (FLextF_coeffs) then
-          !
-          if (.not.associated(trove%extF)) then 
-            allocate (trove%extF(extF%rank),stat=alloc)
-            if (alloc/=0)  stop 'chk_Restore_extF, extF-fields - out of memory'
-          endif 
-          !
-          read(chkptIO) buf(1:5)
-          if (buf(1:5)/='ext_f') then
-            write (out,"(' Checkpoint file ',a,' has bogus label ext_f ',a)") trove%chk_fname, buf(1:6)
-            stop 'check_point_Hamiltonian - bogus file format ext_f'
-          end if
-          !
-          do imu = 1,extF%rank
-             !
-             fl => trove%extF(imu)
-             !
-             read(chkptIO) fl%Ncoeff
-             !
-             allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-             call ArrayStart('trove%exfF%me',alloc,size(fl%me),kind(fl%me))
-             read(chkptIO) fl%me
-             !
-          enddo
-          !
-        endif 
-        !
         ! L2 field function 
         !
         if (FLL2_coeffs) then
@@ -12306,8 +12394,38 @@ end subroutine check_read_save_none
                 read(chkptIO) fl%me
                 !
              enddo
-          enddo          !
+          enddo
+          !
+        endif 
+        !
+        ! External field function 
+        !
+        if (FLextF_coeffs) then
+          !
+          if (.not.associated(trove%extF)) then 
+            allocate (trove%extF(extF%rank),stat=alloc)
+            if (alloc/=0)  stop 'chk_Restore_extF, extF-fields - out of memory'
           endif 
+          !
+          read(chkptIO) buf(1:5)
+          if (buf(1:5)/='ext_f') then
+            write (out,"(' Checkpoint file ',a,' has bogus label ext_f ',a)") trove%chk_fname, buf(1:6)
+            stop 'check_point_Hamiltonian - bogus file format ext_f'
+          end if
+          !
+          do imu = 1,extF%rank
+             !
+             fl => trove%extF(imu)
+             !
+             read(chkptIO) fl%Ncoeff
+             !
+             allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+             call ArrayStart('trove%exfF%me',alloc,size(fl%me),kind(fl%me))
+             read(chkptIO) fl%me
+             !
+          enddo
+          !
+        endif 
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='End B'.and.buf(1:5)/='ext_f'.and.buf(1:5)/='L2_vib') then
@@ -12598,6 +12716,9 @@ end subroutine check_read_save_none
         integer(ik)        :: chkptIO,alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2
+        real(rk)             :: factor
+        !
+        integer(ik) :: n(2,8), m(2,8) , l(2,8), i, iterm, k(trove%Nmodes)
         !
         unitfname ='Check point of the Hamiltonian'
         call IOStart(trim(unitfname),chkptIO)
@@ -12754,35 +12875,303 @@ end subroutine check_read_save_none
         !
         read(chkptIO) fl%field
         read(chkptIO) fl%iorder
-
+        !
         if (FLl2_coeffs) then 
-           !
-           read(chkptIO) buf(1:6)
-           if (buf(1:6)/='L2_vib') then
-             write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
-             stop 'check_point_Hamiltonian - bogus file format L2_vib'
-           end if
-           !
-           read(chkptIO) Tcoeff
-           !
-           do k1 = 1,Nmodes
-              do k2 = 1,Nmodes
+          !
+          read(chkptIO) buf(1:1)
+          !
+          backspace(chkptIO)
+          !
+          if (buf(1:1)/='L'.and..false.) then
+            !
+            if (trove%lincoord==0.or.trove%Nmodes/=7) then 
+              !
+              write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+              stop 'check_point_Hamiltonian - bogus file format L2_vib'
+              !
+            endif
+            !
+            ! THIS IS A TEMPORAL HACK FOR C2H2 CURVELINEAR COORDINATES 
+            !
+            write (out,"(' THIS IS A TEMPORAL HACK FOR C2H2 CURVELINEAR COORDINATES')")
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,Nmodes
+                  !
+                  fl => trove%L2_vib(k1,k2)
+                  fl%Ncoeff = Tcoeff
+                  !
+                  call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+                  !
+                  fl%field = 0
+                  fl%iorder = 0
+                  !
+               enddo
+            enddo
+            !
+            factor = 1.0_rk 
+            !
+            !real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
+            !
+            n(1,1) = 4 ; n(2,1) = 5 ; m(1,1) = 5 ; m(2,1) = 5 ; l(1,1) = 2 ; l(2,1) = 0 
+            n(1,2) = 4 ; n(2,2) = 5 ; m(1,2) = 4 ; m(2,2) = 4 ; l(1,2) = 0 ; l(2,2) = 2 
+            n(1,3) = 4 ; n(2,3) = 5 ; m(1,3) = 4 ; m(2,3) = 5 ; l(1,3) = 1 ; l(2,3) = 1
+                                      
+            n(1,4) = 6 ; n(2,4) = 7 ; m(1,4) = 7 ; m(2,4) = 7 ; l(1,4) = 2 ; l(2,4) = 0 
+            n(1,5) = 6 ; n(2,5) = 7 ; m(1,5) = 6 ; m(2,5) = 6 ; l(1,5) = 0 ; l(2,5) = 2
+            n(1,6) = 6 ; n(2,6) = 7 ; m(1,6) = 6 ; m(2,6) = 7 ; l(1,6) = 1 ; l(2,6) = 1 
+            !
+            do iterm = 1,fl%Ncoeff
+               !
+               k(:) = FLIndexQ(:,iterm)
+               !
+               if ( sum(k(:))/=2 ) cycle
+               !
+               do i = 1,6 
+                 ! 
+                 if ( k(n(1,i))==l(1,i).and.k(n(2,i))==l(2,i) ) then 
+                    trove%L2_vib(m(1,i),m(2,i))%field  = -factor
+                    if ( l(1,i) == l(2,i) ) then 
+                      trove%L2_vib(m(1,i),m(2,i))%field  = factor
+                      trove%L2_vib(m(2,i),m(1,i))%field  = factor
+                    endif
+                 endif
                  !
-                 fl => trove%L2_vib(k1,k2)
-                 fl%Ncoeff = Tcoeff
-                 !
-                 call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
-                 read(chkptIO) fl%field     
-                 read(chkptIO) fl%iorder 
-                 !
-              enddo
-           enddo
-           !
+               enddo
+               !
+            enddo
+            !
+          else
+            !
+            read(chkptIO) buf(1:6)
+            !
+            if (buf(1:6)/='L2_vib') then
+               !
+               write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+               stop 'check_point_Hamiltonian - bogus file format L2_vib'
+               !
+            endif
+            !
+            read(chkptIO) Tcoeff
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,Nmodes
+                  !
+                  fl => trove%L2_vib(k1,k2)
+                  fl%Ncoeff = Tcoeff
+                  !
+                  call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+                  read(chkptIO) fl%field     
+                  read(chkptIO) fl%iorder 
+                  !
+               enddo
+            enddo
+             !
+          endif
+          !
         endif
         !
         call MemoryReport
         !
       end subroutine checkpointRestore_kinetic
+
+
+
+      subroutine checkpointSkip_kinetic
+
+        character(len=15) :: buf
+        character(len=25) :: buf25
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO,alloc,Tcoeff
+        type(FLpolynomT),pointer    :: fl
+        integer(ik)               :: Natoms,Nmodes,Npoints,k1,k2,isize
+        real(rk),allocatable     :: array(:)
+        integer(ik),allocatable  :: iarray(:)
+        !
+        unitfname ='Check point of the Hamiltonian'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trove%chk_hamil_fname)
+        !
+        read(chkptIO) buf25
+        if (buf25/='Start Hamiltonian objects') then
+          write (out,"(' Checkpoint file ',a,' has bogus header: ',a)") trove%chk_hamil_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format (1)'
+        end if
+        !
+        Natoms = trove%Natoms
+        Nmodes = trove%Nmodes
+        Npoints = trove%Npoints
+        !
+        if (.not.associated(trove%Amatrho).or..not.associated(trove%dAmatrho).or. &
+            .not.associated(trove%Bmatrho).or..not.associated(trove%dBmatrho)) then 
+           !
+           write (out,"('basisRestore:  Amatrho-fields have to be allocated by now; maybe FLsetMolecule was no run yet')") 
+           stop 'basisRestore, Amatrho-Bmatrho fields have to been alllocated before'
+           !
+        endif 
+        !
+        read(chkptIO) buf(1:7)
+        if (buf(1:7)/='Amatrho') then
+          write (out,"(' Checkpoint file ',a,' has bogus label Amatrho ',a)") trove%chk_fname, buf(1:7)
+          stop 'check_point_Hamiltonian - bogus file format Amatrho'
+        end if
+        !
+        isize = size(trove%Amatrho)
+        allocate(array(isize),stat=alloc)
+        read(chkptIO) array
+        deallocate(array)
+        !
+        read(chkptIO) buf(1:8)
+        if (buf(1:8)/='dAmatrho') then
+          write (out,"(' Checkpoint file ',a,' has bogus label dAmatrho ',a)") trove%chk_fname, buf(1:8)
+          stop 'check_point_Hamiltonian - bogus file format dAmatrho'
+        end if
+        !
+        isize = size(trove%dAmatrho)
+        allocate(array(isize),stat=alloc)
+        read(chkptIO) array
+        deallocate(array)
+        !
+        read(chkptIO) buf(1:7)
+        if (buf(1:7)/='Bmatrho') then
+          write (out,"(' Checkpoint file ',a,' has bogus label Bmatrho ',a)") trove%chk_fname, buf(1:7)
+          stop 'check_point_Hamiltonian - bogus file format Bmatrho'
+        end if
+        !
+        isize = size(trove%Bmatrho)
+        allocate(array(isize),stat=alloc)
+        read(chkptIO) array
+        deallocate(array)
+        !
+        read(chkptIO) buf(1:8)
+        if (buf(1:8)/='dBmatrho') then
+          write (out,"(' Checkpoint file ',a,' has bogus label dBmatrho ',a)") trove%chk_fname, buf(1:8)
+          stop 'check_point_Hamiltonian - bogus file format dBmatrho'
+        end if
+        !
+        isize = size(trove%dBmatrho)
+        allocate(array(isize),stat=alloc)
+        read(chkptIO) array
+        deallocate(array)
+        !
+        read(chkptIO) buf(1:5)
+        if (buf(1:5)/='g_vib') then
+          write (out,"(' Checkpoint file ',a,' has bogus label g_vib ',a)") trove%chk_fname, buf(1:5)
+          stop 'check_point_Hamiltonian - bogus file format g_vib'
+        end if
+        !
+        isize = size(trove%g_vib(1,1)%field)
+        allocate(array(isize),stat=alloc)
+        !
+        isize = size(trove%g_vib(1,1)%iorder)
+        allocate(iarray(isize),stat=alloc)
+        !
+        read(chkptIO) Tcoeff
+        !
+        do k1 = 1,Nmodes
+           do k2 = 1,Nmodes
+              !
+              read(chkptIO) array     
+              read(chkptIO) iarray
+              !
+           enddo
+        enddo
+        !
+        read(chkptIO) buf(1:5)
+        if (buf(1:5)/='g_rot') then
+          write (out,"(' Checkpoint file ',a,' has bogus label g_rot ',a)") trove%chk_fname, buf(1:5)
+          stop 'check_point_Hamiltonian - bogus file format g_rot'
+        end if
+        !
+        read(chkptIO) Tcoeff
+        !
+        do k1 = 1,3
+           do k2 = 1,3
+              !
+              read(chkptIO) array     
+              read(chkptIO) iarray
+              !
+           enddo
+        enddo
+        !
+        read(chkptIO) buf(1:5)
+        if (buf(1:5)/='g_cor') then
+          write (out,"(' Checkpoint file ',a,' has bogus label g_cor ',a)") trove%chk_fname, buf(1:6)
+          stop 'check_point_Hamiltonian - bogus file format g_cor'
+        end if
+        !
+        read(chkptIO) Tcoeff
+        !
+        do k1 = 1,Nmodes
+           do k2 = 1,3
+              !
+              read(chkptIO) array     
+              read(chkptIO) iarray
+              !
+           enddo
+        enddo
+        !
+        read(chkptIO) buf(1:6)
+        if (buf(1:6)/='pseudo') then
+          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_fname, buf(1:6)
+          stop 'check_point_Hamiltonian - bogus file format poten'
+        end if
+        !
+        read(chkptIO) Tcoeff
+        !
+        read(chkptIO) array     
+        read(chkptIO) iarray
+        !
+        if (FLl2_coeffs) then 
+          !
+          read(chkptIO) buf(1:1)
+          !
+          backspace(chkptIO)
+          !
+          if (buf(1:1)/='L') then
+            !
+            if (trove%lincoord==0.or.trove%Nmodes/=7) then 
+              !
+              write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+              stop 'check_point_Hamiltonian - bogus file format L2_vib'
+              !
+            endif
+            !
+          else
+            !
+            read(chkptIO) buf(1:6)
+            !
+            if (buf(1:6)/='L2_vib') then
+               !
+               write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+               stop 'check_point_Hamiltonian - bogus file format L2_vib'
+               !
+            endif
+            !
+            read(chkptIO) Tcoeff
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,Nmodes
+                  !
+                  read(chkptIO) array     
+                  read(chkptIO) iarray
+                  !
+               enddo
+            enddo
+             !
+          endif
+          !
+        endif
+        !
+        deallocate(array)
+        deallocate(iarray)
+        !
+        call MemoryReport
+        !
+      end subroutine checkpointSkip_kinetic
+
+
+
       !
       subroutine checkpointRestore_potential
 
@@ -18831,7 +19220,7 @@ end subroutine check_read_save_none
                    a_t(3),a_t1(3),a_t2(3),a_t3(3),delta,B,vec1,vec2,dvec1(3),dvec2(3),r1,r2,r3,cosu,cosv,sinu,sinv,&
                    u(3),v(3),w(3),cosdelta,phi
 
-    integer(ik) ::  ibond,iangle,kappa
+    integer(ik) ::  ibond,iangle,kappa,zeta,k1,k2
     integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,J
      !
      ! geometrically defined coordinates 
@@ -19094,6 +19483,36 @@ end subroutine check_read_save_none
           !   r(trove%Nbonds+trove%Nangles+iangle) = -r(trove%Nbonds+trove%Nangles+iangle)
           !endif 
           !
+       case(102) ! The special bond-angles for the linear molecule case 
+          !
+          ! 1 and 2 are the two outer atoms and n0 is the central atom
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n0 = trove%dihedrals(iangle,2)
+          n2 = trove%dihedrals(iangle,3)
+          !
+          ! Cartesian component we build the two special angles for
+          !
+          kappa = trove%dihedrals(iangle,4)
+          !
+          a_t1(:) = cartesian(n1,:) - cartesian(n0,:)
+          a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          r2 =  sqrt(sum(a_t2(:)**2))
+          !
+          u =  a_t1(:)/r1
+          v =  a_t2(:)/r2
+          !
+          w(:) = MLvector_product(u,v)
+          !
+          ! special angle is -arcsin( kappa . [uxv] ), 
+          ! i.e. the scalar product kappa.w is a kappa component of w
+          !
+          sindelta = w(kappa)
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = sindelta
+          !
        case(103) ! The special bond-angles for the linear molecule case 
           !
           ! 1 and 2 are the two outer atoms and n0 is the central atom
@@ -19110,14 +19529,36 @@ end subroutine check_read_save_none
           a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
           !
           r1 =  sqrt(sum(a_t1(:)**2))
-          r2 =  sqrt(sum(a_t2(:)**2))          !
-          ! Cartesian component we build the two special angles for
+          r2 =  sqrt(sum(a_t2(:)**2))
           !
           u =  a_t1(:)/r1
+          v =  a_t2(:)/r2
           !
-          phi = u(kappa)
+          w(:) = MLvector_product(u,v)
           !
-          r(trove%Nbonds+trove%Nangles+iangle) = phi
+          ! special angle is -arcsin( kappa . [uxv] ), 
+          ! i.e. the scalar product kappa.w is a kappa component of w
+          !
+          sindelta = w(kappa)
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = sindelta
+          !
+          zeta = trove%zmatrix(n1)%connect(3)
+          !
+          do ibond = 1,trove%Nbonds
+             !
+             k1 = trove%bonds(ibond,1)
+             k2 = trove%bonds(ibond,2)
+             !
+             if (k1/=n1.and.k2/=n1) cycle
+             !
+             r(ibond) = a_t1(zeta)
+             !
+             r(ibond) = sum(a_t1(:)*a_t2(:))
+             !
+             !if (trove%b0(n1,zeta,0)<0) r(ibond) = -a_t1(zeta)
+             !
+          enddo
           ! 
        end select 
        !

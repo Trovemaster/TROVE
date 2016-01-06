@@ -9661,7 +9661,7 @@ module perturbation
      if (job%verbose>=1) then 
         !write (out,"(//'Size of the symmetrized hamiltonian = ',i7)") dimen_s
         !write (out,"(/'Symmetrized solution:',/'  Gamma    i       value            j  k  t   quanta')") 
-        write (out,"(/'Variational solution - irreducible representation',/'  Gamma    i       value             j  k  t   quanta')") 
+        write (out,"(/'Variational solution - irreducible representation',/'  Gamma     i       value             j  k  t   quanta')") 
      endif
      !
      
@@ -26719,7 +26719,8 @@ end subroutine read_contr_ind
            contr(iclasses)%eigen(ilevel)%degeneracy = sym%degen(isym)
            contr(iclasses)%eigen(ilevel)%value = value
            contr(iclasses)%eigen(ilevel)%largest_coeff = largest_coeff
-
+           contr(iclasses)%eigen(ilevel)%lquant = sym%lquant(isym)
+           !
            contr(iclasses)%eigen(ilevel)%nu(0:PT%Nmodes) = nu(0:PT%Nmodes)
            contr(iclasses)%eigen(ilevel)%normal(0:PT%Nmodes) = normal(0:PT%Nmodes)
            !
@@ -27442,6 +27443,7 @@ end subroutine read_contr_ind
              iroot = count_index(icount,ideg)
              !
              forall (jdeg=1:Ndeg) a(count_index(icount,jdeg),iroot) = d(jdeg,ideg)
+             !PT%Ewhole%coeffs(iroot,1) = e(ideg)
              !
            enddo
            !
@@ -27483,8 +27485,12 @@ end subroutine read_contr_ind
           ! Here we check the diagonality 
           !
           largest_coeff = 0
+          MaxTerm = 1
           !
-          if (i>1) largest_coeff = maxval(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk) 
+          if (i>1) then 
+            largest_coeff = maxval(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk) 
+            MaxTerm = maxloc(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk)
+          endif
           !
           if ((largest_coeff>sqrt(small_).and.Jrot==-1).or.(largest_coeff>1e5*sqrt(small_).and.Jrot<-1)) then 
             !
@@ -27513,6 +27519,10 @@ end subroutine read_contr_ind
           !PT%quanta%icoeffs(i,:) = nu_i(:)
           !
           !PT%largest%coeffs(i,1) = sqrt(largest_coeff)
+          !
+          !nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
+          !
+          !write(out,"(i7,f18.8,<Nmodes>i3,2x,i3)") i,PT%Ewhole%coeffs(i,1)-ZPE,nu_i(1:),PT%lquant%icoeffs(i,1)
           !
         enddo
         !
