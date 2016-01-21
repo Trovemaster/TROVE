@@ -12289,10 +12289,10 @@ end subroutine check_read_save_none
               !
               fl => trove%g_vib(k1,k2)
               !
-              if (fl%Ncoeff/= Tcoeff) then 
-                write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2I8)")  fl%Ncoeff,Tcoeff
-                stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
-              end if 
+              !if (fl%Ncoeff/= Tcoeff) then 
+              !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2I8)")  fl%Ncoeff,Tcoeff
+              !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
+              !end if 
               !
               fl%Ncoeff = Tcoeff
               !
