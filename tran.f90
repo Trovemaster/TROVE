@@ -1003,7 +1003,7 @@ contains
     implicit none
 
     integer(ik),intent(in) :: Jrot
-    integer(ik)        :: alloc,nroots
+    integer(ik)        :: alloc,nroots,i
     integer(ik)        :: iroot,ilevel,gamma,Jval(1)
 
        !
@@ -1015,6 +1015,14 @@ contains
           write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i)") jrot 
           stop 'TRconvert_repres_J0_to_contr: illegal jrot'
        end if
+       !
+       ! make all modes to be one class  
+       if (job%convert_model_j0) then 
+         PTNclasses = 1
+         do i=1,FLNmodes
+            job%bset(i)%class = 1
+         enddo
+       endif
        !
        if(PTNclasses/=1) then
           write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i)") PTNclasses 
@@ -1044,6 +1052,7 @@ contains
        job%contrfile%dvr        = 'j0'//trim(job%contrfile%dvr)
        !
        call PTdefine_contr_from_eigenvect(Neigenroots,Neigenlevels,eigen(:))
+       !
        ! 
  end subroutine TRconvert_repres_J0_to_contr
 
@@ -1088,8 +1097,8 @@ contains
          stop 'TRconvert_matel_j0_eigen: illegal PTNclasses'
       end if
       !
-      if (trim(job%IOkinet_action)/='CONVERT'.and.trim(job%IOextF_action)/='CONVERT') then
-          write(out,"('TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM, at least one must be set to CONVERT')")
+      if (trim(job%IOkinet_action)/='CONVERT'.and.trim(job%IOextF_action)/='CONVERT'.AND..not.job%convert_model_j0) then
+          write(out,"('TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM, at least one must be set to CONVERT or EIGENfunc SAVE CONVERT')")
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
       !

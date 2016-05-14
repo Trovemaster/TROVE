@@ -29472,6 +29472,17 @@ end subroutine read_contr_ind
        !
        integer(ik)             :: alloc,iroot,ilevel,ideg
        !
+       if (associated(contr(1)%ilevel)) then 
+          deallocate (contr(1)%ilevel,contr(1)%ideg,&
+                    contr(1)%iroot,&
+                    contr(1)%eigen,&
+                    contr(1)%ilevel_chk,&
+                    contr(1)%prim_bs%icoeffs,stat=alloc)
+          if (alloc/=0) then
+            stop 'PTdefine_contr_from_eigenvect, ilevel -  deallocation error'
+          end if
+       endif
+       !
        allocate (contr(1)%ilevel(nroots),contr(1)%ideg(nroots),&
                  contr(1)%iroot(Neigenlevels,sym%Maxdegen),&
                  contr(1)%eigen(nroots),&
@@ -29540,7 +29551,11 @@ end subroutine read_contr_ind
        !
        ! Saving the contracted basis set vectors and all auxilery informaion.
        !
-       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==1)) then
+       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==1).or.job%convert_model_j0) then
+         !
+         if (job%convert_model_j0) then 
+           PT%Nclasses = 1
+         endif
          !
          call PTcheck_point_contracted_space('SAVE')
          !

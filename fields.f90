@@ -326,7 +326,8 @@ module fields
                                                  ! for 'EULER-BASED' the rotational symmetry is defined based on the euler angles transformations
       logical             :: contrci_me_fast = .false.
       integer(ik)         :: MaxVibMomentum_contr    ! maximal L (vibang) for the contraction
-      logical		  :: ignore_vectors = .false.
+      logical		      :: ignore_vectors = .false.
+      logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
       !
    end type FLcalcsT
 
@@ -2011,14 +2012,33 @@ module fields
                !
                call readu(w)
                !
-               if (trim(w)/='COMPRESS'.or.all(trim(job%IOeigen_action)/=(/'APPEND','SAVE'/))) then
-                call report("Unexpected 3d argument in eigenfuc",.true.)
-               endif
-               !
-               job%IOeigen_compress = .true.
-               !
-               if (nitems>=4) call readf(job%compress)
-               !
+               if (trim(w)=='COMPRESS') then
+                 !
+                 if (all(trim(job%IOeigen_action)/=(/'APPEND','SAVE'/))) then
+                  call report("Unexpected 3d argument in eigenfuc",.true.)
+                 endif
+                 !
+                 job%IOeigen_compress = .true.
+                 !
+                 if (nitems>=4) call readf(job%compress)
+                 !
+               elseif (trim(w)=='CONVERT') then
+                 !
+                 if (all(trim(job%IOeigen_action)/=(/'SAVE'/))) then
+                  call report("Unexpected 3d argument in eigenfuc",.true.)
+                 endif
+                 !
+                 job%convert_model_j0 = .true.
+                 !
+                 if (job%vib_contract) then
+                   !
+                   write(out,"('EIGENFUNC SAVE CONVERT cannot be used with MODEL J=0')")
+                   call report("illegal usage of  eigenfuc",.true.)
+                   !
+                 endif
+                 !
+               end if
+               ! 
              endif
              !
            case('CONTRACT','CONTR','CONTRACTED')
@@ -2964,6 +2984,9 @@ module fields
              !
              i = 0
              !
+             intensity%gns = 0
+             if( trim(intensity%action)=='TM') intensity%gns = 1 
+             !
              do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
@@ -2981,14 +3004,22 @@ module fields
                !
              enddo
              !
-             if (i/=sym%Nrepresen) then 
-               !
-               write (out,"('FLinput: illegal number entries in gns: ',i8,' /= ',i8)") i,sym%Nrepresen
-               stop 'FLinput - illegal number entries in gns'
-               !
-             endif 
+             !if (i/=sym%Nrepresen) then 
+             !  !
+             !  write (out,"('FLinput: illegal number entries in gns: ',i8,' /= ',i8)") i,sym%Nrepresen
+             !  stop 'FLinput - illegal number entries in gns'
+             !  !
+             !endif 
              !
            case('SELECTION','SELECTION_RULES','SELECT','PAIRS')
+             !
+             ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
+             do i=1,sym%Nrepresen,2
+               intensity%isym_pairs(i  ) = (i+1)/2
+               intensity%isym_pairs(i+1) = (i+1)/2
+             enddo
+             !
+             if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
              !
              i = 0
              !
@@ -3000,11 +3031,9 @@ module fields
                !
              enddo
              !
-             if (i/=sym%Nrepresen) then 
-               !
+             if (i<10.and.i/=sym%Nrepresen) then 
                write (out,"('FLinput: illegal number entries in SELECTION: ',i8,' /= ',i8)") i,sym%Nrepresen
                stop 'FLinput - illegal number entries in SELECTION'
-               !
              endif 
              !
            case('ZPE')
@@ -3780,7 +3809,12 @@ module fields
         !
       endif 
       !
-   endif 
+   endif
+   !
+   if ( job%convert_model_j0.and.job%bset(0)%range(1)>0 ) then
+     write (out,"('EIGENFUNC SAVE CONVERT cannot be used with jrot>0')") jrot
+     stop 'EIGENFUNC SAVE CONVERT cannot be used with jrot>0'
+   endif
    !
    trove%jmax = jrot 
    !

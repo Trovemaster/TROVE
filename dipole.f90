@@ -357,7 +357,7 @@ contains
     character(len=1) :: branch
     character(len=wl) :: my_fmt,my_fmt_tm
     !
-    real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3)
+    real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3), intens_cm_molecule
     !
     call TimerStart('Intensity calculations')
     !
@@ -379,6 +379,7 @@ contains
     !
     beta = planck * vellgt / (boltz * intensity%temperature)
     intens_cm_mol  = 8.0d-36 * pi**3* avogno / (3.0_rk * planck * vellgt)
+    intens_cm_molecule  = 8.0d-36 * pi**3/ (3.0_rk * planck * vellgt)
     A_coef_s_1     =64.0d-36 * pi**4  / (3.0_rk * planck)
     !
     nJ = size(Jval)
@@ -1368,7 +1369,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              !
              if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
@@ -1482,7 +1483,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr**2 * intens_cm_mol * boltz_fc
+             absorption_int = linestr**2 * intens_cm_molecule * boltz_fc
              !
              if (linestr>=intensity%threshold%intensity) then 
                !
@@ -2580,7 +2581,7 @@ contains
     character(len=cl):: unitfname,filename
     character(4)     :: jchar
     !
-    real(rk)     :: boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp
+    real(rk)     :: boltz_fc, beta, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
     !
     call TimerStart('Intensity calculations')
     !
@@ -2597,6 +2598,7 @@ contains
     !
     beta = planck * vellgt / (boltz * intensity%temperature)
     intens_cm_mol  = 8.0d-36 * pi**3* avogno / (3.0_rk * planck * vellgt)
+    intens_cm_molecule  = 8.0d-36 * pi**3 / (3.0_rk * planck * vellgt)
     A_coef_s_1     =64.0d-36 * pi**4  / (3.0_rk * planck)
     !
     nJ = size(Jval)
@@ -3688,7 +3690,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              !
              if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
@@ -3774,7 +3776,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              if (linestr>=intensity%threshold%intensity) then 
                !

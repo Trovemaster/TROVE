@@ -192,6 +192,15 @@
       !
       call PThamiltonian_contract(j)
       !
+      ! convert to j=0 representation as part of the first step j=0 calculation
+      !
+      if (job%convert_model_j0) then
+        !
+        call TRconvert_repres_J0_to_contr(j)
+        call TRconvert_matel_j0_eigen(j)
+        !
+      endif
+      !
       call TimerStop('TROVE')
       !
       call MemoryReport
