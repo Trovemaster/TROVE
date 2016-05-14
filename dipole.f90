@@ -740,6 +740,8 @@ contains
       !
       if (unitF==-1) stop 'This file is not supposed to be accessed'
       !
+      indI = eigen(ilevelF)%icoeff ! ???????
+      !
       if (nsizeF<=dimenmax_ram.and.iram(indF,igammaF)<ram_size(indF,igammaF)) then
         !
         iram(indF,igammaF) = iram(indF,igammaF) + 1

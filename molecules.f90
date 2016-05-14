@@ -22,7 +22,7 @@ module molecules
   use pot_zxy3
   use pot_xy4
   use pot_ch3oh
-  use pot_c2h4
+  use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
   use symmetry,     only : sym
@@ -234,6 +234,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c3_mladenovic
          !
+    case('POTEN_C3_R_THETA') 
+         !
+         MLpotentialfunc => MLpoten_c3_R_theta
+         !
     case('POTEN_H2S_DVR3D') 
          !
          MLpotentialfunc => MLpoten_h2s_dvr3d
@@ -281,6 +285,10 @@ module molecules
     case('POTEN_C2H4_88') 
          !
          MLpotentialfunc => MLpoten_c2h4_88
+         !
+    case('POTEN_C2H4_886666') 
+         !
+         MLpotentialfunc => MLpoten_c2h4_886666
          !
     case('POTEN_ZXY3_SYM') 
          !
@@ -424,7 +432,7 @@ end function ML_MEPfunc
        !
     case('DIPOLE_C2H4_4M') 
        !
-       MLextF_func => MLdipole ! dummy dipole does not work
+       MLextF_func => ML_dipole_c2h4_4m_dummy  ! dummy dipole does not work
        !
     case('DIPOLE','USER','GENERAL','DIPOLE_USER')
        !

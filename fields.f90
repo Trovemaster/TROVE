@@ -19800,7 +19800,7 @@ end subroutine check_read_save_none
 
  subroutine FLinit_External_field_andrey
 
- !expand external field (function) components in Taylor series on xi coordinates
+    !expand external field (function) components in Taylor series on xi coordinates
 
     integer(ik) :: npoints, nmodes, imu, iterm, imode, jmode, ipoint, maxorder, alloc, nterms, &
                    imu_maxord, irank
@@ -20112,10 +20112,9 @@ end subroutine check_read_save_none
        subroutine get_func(rank,nmodes, ipoint, xi, func)
           use accuracy, only: ik, ark
           use moltype, only: extF
-          integer(ik) :: rank,nmodes
-          integer(ik) :: ipoint
-          real(ark)   :: xi(nmodes)
-          real(ark)   :: func(rank)
+          integer(ik),intent(in) :: rank,nmodes,ipoint
+          real(ark),intent(in)   :: xi(nmodes)
+          real(ark),intent(out)  :: func(rank)
        end subroutine get_func
     end interface
     !
@@ -20195,7 +20194,7 @@ end subroutine check_read_save_none
 
  !return dipole moment cartesian component curr_imu for xi coordinates specified;
 
-    integer(ik), intent(in) :: rank,nmodes, ipoint
+    integer(ik), intent(in) :: rank,nmodes,ipoint
     real(ark), intent(in)   :: xi(nmodes)
     real(ark),intent(out)   :: mu_xyz(1:rank)
     !

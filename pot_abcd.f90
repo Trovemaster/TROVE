@@ -1332,27 +1332,33 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
     real(ark),intent(out)  ::  f(rank)
     !
-    integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v12(3),v31(3)
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3)
     real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
                              beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
     !
     integer(ik),parameter :: lspace = 150
-    integer(ik) :: ierror,rank0
+    integer(ik) :: ierror,rank0,info
     real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
-    real(ark)    :: cosalpha1,cosalpha2,x1(3),x2(3),x3(3),n30,v2(3),v3(3),v20,v30
+    real(ark)    :: cosalpha1,cosalpha2,x1(3),x2(3),x3(3),n30,v2(3),v3(3),v20,v30,n0(3),e20,e30
     character(len=cl)  :: txt
-
     !
     !
     txt = 'Error: MLdms_HCCH_MB'
     !
-    !write(out,"(i6)") molec%natoms
-    !
-    !write(out,"(/'O',3x,3f14.8)") xyz(1,:)
-    !write(out,"( 'O',3x,3f14.8)") xyz(2,:)
-    !write(out,"( 'H',3x,3f14.8)") xyz(3,:)
-    !write(out,"( 'H',3x,3f14.8)") xyz(4,:)
+    !xyz_(1,1)=-0.017734242
+    !xyz_(1,2)=-0.0183397
+    !xyz_(1,3)=-1.134903609
+    !xyz_(2,1)=0.041027921
+    !xyz_(2,2)=0.006163171
+    !xyz_(2,3)=1.13187384
+    !xyz_(3,1)=-0.013711712
+    !xyz_(3,2)=0.125514884
+    !xyz_(3,3)=-3.132837078
+    !xyz_(4,1)=-0.263864708
+    !xyz_(4,2)=0.019585304
+    !xyz_(4,3)=3.168940968
+    !-0.06208661    0.03255714    0.00256929     -77.209450006   334.7231997638  0.9999997247    14576   1.2     1.06    1.09    175     170     110
     !
     x1(:) = xyz(1,:)-xyz(2,:)
     x2(:) = xyz(3,:)-xyz(1,:)
@@ -1368,7 +1374,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     alpha1 = aacos(cosalpha1,txt)
     alpha2 = aacos(cosalpha2,txt)
     !
-    n3(:) = -x1(:)/sqrt(sum(x1(:)**2))
+    n3(:) = -x1(:)/r1
     !
     n30 = sum(n3*n3)
     !
@@ -1376,19 +1382,37 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     v2(:) = MLvector_product(x2(:),n3(:))
     !
-    !amend normalisationv2v2 factor to account for linear geometries
-    !won't be properly normalised
-    v2(:) = v2(:)/r2
-    !
     v3(:) = MLvector_product(n3(:),x3(:))
-    v3(:) = v3(:)/r3
     !
     v20 = sum(v2*v2)
     v30 = sum(v3*v3)
+
+    if (abs(r(4))>1e-4   ) then
+      continue
+    endif
+
+
+    if (abs(r(5))>1e-4   ) then
+      continue
+    endif
+
+    if (abs(r(6))>1e-4  ) then
+      continue
+    endif
+
+
+    if (abs(r(4))>1e-4 .and. abs(r(6))>1e-4  ) then
+      continue
+    endif
+
+
+    if (abs(r(5))>1e-4 .and. abs(r(7))>1e-4  ) then
+      continue
+    endif
+
     !
-    tau = 0
-    !
-    if (v20>small_.and.v30>small_) then
+    !setting tau
+    if (v20>sqrt(small_).and.v30>sqrt(small_)) then !both v2 and v3 defined
        !
        v2 = v2/sqrt(v20)
        v3 = v3/sqrt(v30)
@@ -1397,80 +1421,84 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
        !
        tau = aacos(costau,txt)
        !
-    elseif (v20<small_.and.v30>small_) then
-       ! if v3 defined but v2 isn't
+    elseif (v20<sqrt(small_).and.v30>sqrt(small_)) then !v2 undefined
+       !
        v3 = v3/sqrt(v30)
+       tau=0
        !
-    elseif (v20>small_.and.v30<small_) then
-       ! if v2 defined but v3 isn't
+    elseif (v20>sqrt(small_).and.v30<sqrt(small_)) then !v3 undefined
        v2 = v2/sqrt(v20)
+       tau=0
        !
-    else
-      !
-      tau = 0
-      !
+    else !both undefined
+       !
+       tau = 0
+       !
     endif
+    !End of setting tau
     !
     e2(:) = -MLvector_product(v2(:),n3(:))
     !
     e3(:) = MLvector_product(v3(:),n3(:))
     !
-    !planar
-    if (abs(tau-pi)<(small_).or.abs(tau+pi)<(small_)) then
+    e20 = sum(e2*e2)
+    e30 = sum(e3*e3)
+    !
+    n1 = 0
+    n2 = 0
+    !
+    !setting n1 and n2
+    if (abs(tau-pi)<sqrt(small_).or.abs(tau+pi)<sqrt(small_)) then !tau=pi planar
       !
       n2(:)=-e2(:)
       !
-    elseIf (abs(tau)<small_) then
+    elseif(e30>small_.and.e20>small_) then
       !
-      !If either e2 or e3 or both are undefined (i.e. if tau=0)
-      !This is true for both linear and quasi-linear geometries
-      !also true for tau=0 but both bonds non-linear!
+      n1(:) =  (e2(:) + e3(:))
+      n2(:) =  (e2(:) - e3(:))
       !
-      If (v20<small_.and.v30>small_) then
-         !
-         n1(:) = e3(:)
-         !
-      !If v3 is undefined but v2 is defined
-      elseIf (v30<small_.and.v20>small_) then
-        !
-        n1(:) = e2(:)
-        !
-      elseIf (v30<small_.and.v20<small_) then
-        !
-        !If both v3 and v2 are undefined then it is linear
-        !In this case we assign as arbitrary direction for n1 and n2
-        n1 = (/ 1.0_ark,0.0_ark,0.0_ark /)
-        !
-      else
-        !
-        !If v2 is undefined but v3 is defined
-        n1(:)=e2(:)
-        !
-      End If
+    elseif (e20<small_.and.e30>small_) then !v3 defined
       !
-    else
-      !needs renormalising -> 1/SQRT(2)
-      n1(:) =  (e2(:) + e3(:))*0.5_ark
-      n2(:) =  (e2(:) - e3(:))*0.5_ark
+      n1(:) = e3(:)
+      !
+    elseif (e30<small_.and.e20>small_) then !v2 defined
+      !
+      n1(:) = e2(:)
+      !
+    elseif (e30<small_.and.e20<small_) then  !both v2 and v3 undefined
+      !
+      !define arbitrary direction for n1
+      !
+      n1 = (/ 1.0_ark,0.0_ark,0.0_ark /)
+      !
+    else 
+      !
+      stop 'MLdms_HCCH_MB: you should not be here'
       !
     endif
     !
-    if (sum(n1(:)*n1(:))>small_) then
-      !
-      !if n2 is undefined due to one of the angles being 180 degrees, then define it as vector product of n1 & n3
+    !if (e2(2)>0.or.e3(2)>0) then
+    !  n1 = -n1
+    !endif
+    !
+    !if (v2(2)>0.or.v3(2)>0) then
+    !  n2 = -n2
+    !endif
+    !
+    if (sum(n1(:)*n1(:))>small_) then !n1 defined
       !
       n1(:) = n1(:)/SQRT(sum(n1(:)*n1(:)))
       n2(:) = MLvector_product(n3(:),n1(:))
       !
-    elseif (sum(n2(:)**2)>small_) then
+    elseif (sum(n2(:)**2)>small_) then !n2 defined
       !
       n2(:) = n2(:)/SQRT(sum(n2(:)*n2(:)))
       n1(:) = MLvector_product(n2(:),n3(:))
       !
-    else
-      ! 
+    else !both n1 and n2 are still undefined
+      !
       write(6,"(' both n1 and n2 are  0 : n1 = ',3g12.5,' n2 = ',3g12.5)") n1,n2
-      !stop ' n1 = n2 = 0 '
+      stop ' n1 = n2 = 0 '
       !
     endif
     !
@@ -1480,11 +1508,9 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     tau_ = tau
     !
-    !if (v12(2)>small_) tau_ = 2.0_ark*pi + tau
-    !
     re1(1:3)     = extF%coef(1,1:3)
     re2(1:3)     = extF%coef(2,1:3)
-    alphae(1:3) = extF%coef(3,1:3)/rad 
+    alphae(1:3) = extF%coef(3,1:3)/rad
     !
     beta1(1:3)   = extF%coef(4,1:3)
     beta2(1:3)   = extF%coef(5,1:3)
@@ -1492,14 +1518,17 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
     y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
     y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
-    y(4,:) = (alpha1 - alphae(:))
-    y(5,:) = (alpha2 - alphae(:))
     !
-    y(6,:) = tau_
+    y(4,:) = (alphae(:) - alpha1)
+    y(5,:) = (alphae(:) - alpha2)
     !
-    !y(6,:) = cos(2.0_ark*tau_)
+    !y(4,:) = sin(alphae(:)) - sin(alpha1)
+    !y(5,:) = sin(alphae(:)) - sin(alpha2)
     !
-    mu = 0
+    y(6,:) = cos(tau_)
+    !
+    mu=0
+    mu_t=0
     !
     do imu = 1, 3
        !
@@ -1508,9 +1537,9 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
           ind(1:6) = extF%term(1:6, iterm, imu)
           xi(1:6) = y(1:6,imu) ** ind(1:6)
           !
-          mu_t = product(xi(1:molec%ncoords))
+          mu_t = product(xi(1:6))
           !
-          if (ind(2)/=ind(3).or.ind(4)/=ind(5)) then 
+          if (ind(2)/=ind(3).or.ind(4)/=ind(5)) then
             !
             ind(2) = extF%term(3, iterm, imu)
             ind(3) = extF%term(2, iterm, imu)
@@ -1522,11 +1551,18 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
             f_t = 1.0_ark
             if (imu/=1)  f_t = -1.0_ark
             !
-            mu_t = mu_t + f_t*product(xi(1:molec%ncoords))
+            mu_t = mu_t + f_t*product(xi(1:6))
+            !
             !
           endif
           !
+          !if (imu==1) mu(imu) = mu(1)*cos(tau_*0.5_ark)
+          !if (imu==2) mu(imu) = mu(2)*sin(tau_*0.5_ark)
+          !
           mu(imu) = mu(imu) + extF%coef(iterm, imu)*mu_t
+          ! 
+          !if (imu==1) mu(imu) = mu(1)*cos(tau_*0.5_ark)
+          !if (imu==2) mu(imu) = mu(2)*sin(tau_*0.5_ark)
           !
        end do
        !
@@ -1535,34 +1571,58 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     mu(1) = mu(1)*cos(tau_*0.5_ark)
     mu(2) = mu(2)*sin(tau_*0.5_ark)
     !
+    !write(out,"('tmat start')")
+    !
+    !if (verbose>=6) write(out,"('tmat')")
+    !if (verbose>=6) write(out,*) tmat
+
     tmat = transpose(tmat)
+
+    !if (verbose>=6) write(out,"('tmat trans')")
+    !if (verbose>=6) write(out,*) tmat
+    !if (verbose>=6) write(out,"('trans tmat')") tmat
+    !tmat = inv(tmat)
+    !if (verbose>=6) write(out,"('inv tmat')") tmat
     !
-    call MLlinurark(3,tmat,mu,f,ierror)
+    dimen=3
     !
-    if (ierror>0) then
-      !
-      tmat_rk = tmat
-      dip_rk(:,1) = mu(:)
-      !
-      call dgelss(3,3,1,tmat_rk,3,dip_rk,3,tsing,tol,rank0,wspace,lspace,ierror)
-      !
-      f(:) = real(dip_rk(:,1),ark)
-      !
-      if (ierror>0) then
-        !
-        print *,ierror,tmat,mu
-        write(out,"('MLdms_HCCH_MB: dgelss error = ',i)") ierror
-        stop 'MLdms_HCCH_MB: dgelss error'
-        !
-      endif
-      !
+    !call MLinvmatark(tmat(1:dimen,1:dimen),tmatout(1:dimen,1:dimen),dimen,info)
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+    continue 
+    !
+    if (abs(r(4))>1e-4   ) then
+      continue
+    endif
+
+
+    if (abs(r(5))>1e-4   ) then
+      continue
+    endif
+
+    if (abs(r(6))>1e-4  ) then
+      continue
+    endif
+
+
+    if (abs(r(4))>1e-4 .and. abs(r(6))>1e-4  ) then
+      continue
+    endif
+
+
+    if (abs(r(5))>1e-4 .and. abs(r(7))>1e-4  ) then
+      continue
     endif
     !
-    !f(1:3) = matmul(tmat,mu)
+    !if (verbose>=6) write(out,"('f is tmat times mu')") f
+    !if (verbose>=6) write(out,"('mu')") mu
     !
-    !f = mu
+    !f(1:2) = f(2:1:-1)
     !
-  end subroutine MLdms_HCCH_MB
+    end subroutine MLdms_HCCH_MB
+
+
 
 
 
@@ -3006,6 +3066,15 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y6 = sindelta2x
          y7 = sindelta2y
          !
+         if (trim(molec%coords_transform)=='R-R1-R2-TX-TY-TX-TY') then
+           ! 
+           y4 =-sindelta1y
+           y5 = sindelta1x
+           y6 =-sindelta2y
+           y7 = sindelta2x
+           !
+         endif
+         !
          !y4 = b1(1)
          !y5 = b1(2)
          !y6 = b2(1)
@@ -3183,6 +3252,16 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y5 = sindelta1y
          y6 = sindelta2x
          y7 = sindelta2y
+         !
+         !
+         if (trim(molec%coords_transform)=='R-R1-R2-TX-TY-TX-TY') then
+           ! 
+           y4 =-sindelta1y
+           y5 = sindelta1x
+           y6 =-sindelta2y
+           y7 = sindelta2x
+           !
+         endif
          !
          !y4 = b1(1)
          !y5 = b1(2)

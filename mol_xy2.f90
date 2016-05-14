@@ -1115,8 +1115,8 @@ module mol_xy2
     real(ark),intent(in)      :: src(natoms)
     real(ark),intent(out)     :: dst(natoms)
     !
-    integer(ik) :: nsrc,Nrot,irot,N_Cn,ioper_
-    real(ark)   :: phi,q1,q2,r,theta,phi_n,a,b,e,o,repres(sym%Noper,2,2)
+    integer(ik) :: nsrc,Nrot,irot,N_Cn,ioper_,NC2
+    real(ark)   :: phi,q1,q2,r,theta,phi_n,a,b,e,o,repres(sym%Noper,2,2),qx,qy
     !
     if (verbose>=5) write(out,"('ML_symmetry_transformation_XY2/start')") 
     !
@@ -1623,89 +1623,205 @@ module mol_xy2
           r = sqrt(q1**2+q2**2)
           theta = atan2(q2,q1)
           !
-          if (ioper==1) then ! E 
-            !
-            dst = src
-            !
-          elseif (ioper<=1+2*N_Cn) then !  Cinf
-            !
-            ioper_ =ioper-1 
-            irot = (ioper_+1)/2
-            !
-            phi_n = phi*irot
-            !
-            ! Second oper in a class is with negative phi
-            if ( mod(ioper_,2)==0 ) phi_n = -phi_n
-            !
-            dst(1) = src(1)
-            dst(2) = src(2)
-            dst(3) = q1*cos(phi_n)-q2*sin(phi_n)
-            dst(4) = q1*sin(phi_n)+q2*cos(phi_n)
-            !
-          elseif (ioper<=1+2*N_Cn+Nrot) then !  C'2
-            !
-            irot = ioper-(1+2*N_Cn)
-            !
-            phi_n = phi*irot
-            !
-            dst(1) = src(2)
-            dst(2) = src(1)
-            dst(3) = q1*cos(phi_n)+q2*sin(phi_n)
-            dst(4) = q1*sin(phi_n)-q2*cos(phi_n)
-            !
-          elseif (ioper==1+2*N_Cn+Nrot+1) then ! sigmah
-            !
-            dst(1) = src(2)
-            dst(2) = src(1)
-            dst(3) = src(3)
-            dst(4) = src(4)
-            !
-          elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn) then !  Sinf
-            !
-            ioper_ = ioper-(1+2*N_Cn+Nrot+1)
-            !
-            irot = (ioper_+1)/2
-            !
-            phi_n = phi*irot
-            !
-            ! Second oper in a class is with negative phi
-            if (mod(ioper_,2)==0)  phi_n = -phi_n
-            !
-            dst(1) = src(2)
-            dst(2) = src(1)
-            dst(3) = (q1*cos(phi_n)-q2*sin(phi_n))
-            dst(4) = (q1*sin(phi_n)+q2*cos(phi_n))
-            !
-          elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
-            !
-            irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
-            !
-            phi_n = phi*irot
-            !
-            dst(1) = src(1)
-            dst(2) = src(2)
-            dst(3) = ( q1*cos(phi_n)+q2*sin(phi_n))
-            dst(4) = ( q1*sin(phi_n)-q2*cos(phi_n))
-            !
-          else
-            !
-            write (out,"('ML_symmetry_transformation_XY2  in Dinfty: operation ',i8,' unknown')") ioper
-            stop 'ML_symmetry_transformation_XY2 Dinfty - bad operation. type'
- 
-          endif 
-          !
-          !do ioper_=1,sym%Noper/2
-          !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-          !  repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
-          !enddo
-          !
-          do ioper_=1,sym%Noper
-            repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-            !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
-          enddo
-          !
-          !dst(3) = repres(ioper,1,1)*src(3)+repres(ioper,1,2)*src(4)
-          !dst(4) = repres(ioper,2,1)*src(3)+repres(ioper,2,2)*src(4)
+          if (mod(sym%N,2)==1) then 
+             !
+             if (ioper==1) then ! E 
+               !
+               dst = src
+               !
+             elseif (ioper<=1+2*N_Cn) then !  Cinf
+               !
+               ioper_ =ioper-1 
+               irot = (ioper_+1)/2
+               !
+               phi_n = phi*irot
+               !
+               ! Second oper in a class is with negative phi
+               if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) = q1*cos(phi_n)-q2*sin(phi_n)
+               dst(4) = q1*sin(phi_n)+q2*cos(phi_n)
+               !
+             elseif (ioper<=1+2*N_Cn+Nrot) then !  C'2
+               !
+               irot = ioper-(1+2*N_Cn)
+               !
+               phi_n = phi*irot
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = q1*cos(phi_n)+q2*sin(phi_n)
+               dst(4) = q1*sin(phi_n)-q2*cos(phi_n)
+               !
+             elseif (ioper==1+2*N_Cn+Nrot+1) then ! sigmah
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = src(3)
+               dst(4) = src(4)
+               !
+             elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn) then !  Sinf
+               !
+               ioper_ = ioper-(1+2*N_Cn+Nrot+1)
+               !
+               irot = (ioper_+1)/2
+               !
+               phi_n = phi*irot
+               !
+               ! Second oper in a class is with negative phi
+               if (mod(ioper_,2)==0)  phi_n = -phi_n
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = (q1*cos(phi_n)-q2*sin(phi_n))
+               dst(4) = (q1*sin(phi_n)+q2*cos(phi_n))
+               !
+             elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+               !
+               irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
+               !
+               phi_n = phi*irot
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) = ( q1*cos(phi_n)+q2*sin(phi_n))
+               dst(4) = ( q1*sin(phi_n)-q2*cos(phi_n))
+               !
+             else
+               !
+               write (out,"('ML_symmetry_transformation_XY2  in Dinfty: operation ',i8,' unknown')") ioper
+               stop 'ML_symmetry_transformation_XY2 Dinfty - bad operation. type'
+         
+             endif 
+             !
+             !do ioper_=1,sym%Noper/2
+             !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
+             !  repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
+             !enddo
+             !
+             do ioper_=1,sym%Noper
+               repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
+               !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
+             enddo
+             !
+             !dst(3) = repres(ioper,1,1)*src(3)+repres(ioper,1,2)*src(4)
+             !dst(4) = repres(ioper,2,1)*src(3)+repres(ioper,2,2)*src(4)
+             !
+          else ! even n 
+             !
+             NC2 = sym%N/2
+             N_Cn = sym%N/2-1
+             !
+             qx= src(3)
+             qy= src(4)
+             !
+             if (ioper==1) then ! E 
+               !
+               dst = src
+               !
+             elseif (ioper<=1+2*N_Cn+1) then ! Cn x 2 x(n/2-1), C2 only once
+               !
+               ioper_ =ioper-1 
+               irot = (ioper_+1)/2
+               !
+               phi_n = phi*irot
+               !
+               ! Second oper in a class is with negative phi
+               if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) = qx*cos(phi_n)-qy*sin(phi_n)
+               dst(4) = qx*sin(phi_n)+qy*cos(phi_n)
+               !
+             elseif (ioper<=2+2*N_Cn+NC2) then !  C'2
+               !
+               irot =ioper-(2+2*N_Cn)-1
+               !
+               phi_n = phi*irot*2.0_ark
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = qx*cos(phi_n)+qy*sin(phi_n)
+               dst(4) = qx*sin(phi_n)-qy*cos(phi_n)
+               !
+             elseif (ioper<=2+2*N_Cn+2*NC2) then !  C2"
+               !
+               irot =ioper-(2+2*N_Cn+NC2)-1
+               !
+               !phi_n =(irot*2.0_ark-1.0_ark)*phi*0.5_ark
+               !
+               phi_n = phi*(2*irot+1)
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = qx*cos(phi_n)+qy*sin(phi_n)
+               dst(4) = qx*sin(phi_n)-qy*cos(phi_n)
+               !
+             elseif (ioper==3+2*N_Cn+2*NC2) then ! i
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) =-qx
+               dst(4) =-qy
+               !
+             elseif (ioper<=3+4*N_Cn+2*NC2) then !  2xnxSn
+               !
+               ioper_ =ioper-(3+2*N_Cn+2*NC2)
+               irot = (ioper_+1)/2
+               !
+               phi_n = phi*irot
+               !
+               ! Second oper in a class is with negative phi
+               if (mod(ioper_,2)==0)  phi_n = -phi_n
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) =  (qx*cos(phi_n)-qy*sin(phi_n))
+               dst(4) =  (qx*sin(phi_n)+qy*cos(phi_n))
+               !
+             elseif (ioper<=4+4*N_Cn+2*NC2) then !  sigmah
+               !
+               dst(1) = src(2)
+               dst(2) = src(1)
+               dst(3) = qx
+               dst(4) = qy
+               !
+             elseif (ioper<=4+4*N_Cn+3*NC2) then !  sigmav
+               !
+               irot = ioper-(4+4*N_Cn+2*NC2)-1
+               !
+               phi_n = phi*irot*2.0_ark
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) =  (qx*cos(phi_n)+qy*sin(phi_n))
+               dst(4) =  (qx*sin(phi_n)-qy*cos(phi_n))
+               !
+             elseif (ioper<=4+4*N_Cn+4*NC2) then !  sigmad
+               !
+               irot = ioper-(4+4*N_Cn+3*NC2)-1
+               !
+               phi_n = (2*irot+1)*phi
+               !
+               !irot = ioper-(4+4*N_Cn+3*NC2)
+               !phi_n = (-phi*0.5+phi*irot)*2.0_ark
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) =  (qx*cos(phi_n)+qy*sin(phi_n))
+               dst(4) =  (qx*sin(phi_n)-qy*cos(phi_n))
+               !
+             else
+               !
+               write (out,"('ML_symmetry_transformation_abcd  in Dinfty: operation ',i8,' unknown')") ioper
+               stop 'ML_symmetry_transformation_abcd Dinfty - bad operation. type'
+         
+             endif 
+             !
+          endif
           !
        end select 
        !
