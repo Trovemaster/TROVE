@@ -585,7 +585,8 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
-   character(len=cl) :: w,Molecule,pot_coeff_type,exfF_coeff_type,chk_type
+   character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
+   character(len=wl) :: w
    real(rk)    :: lfact,f_t
    integer(ik) :: i,iatom,imode,natoms,alloc,Nparam,iparam,i_t
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
@@ -981,6 +982,7 @@ module fields
              job%vib_rot_contr = .true.
              !
              job%IOmatelem_divide = .true.
+             job%IOextF_divide  = .true.
              !
              job%iswap(1) = 0
              job%iswap(2) = 1e6
@@ -3023,7 +3025,7 @@ module fields
              !
              i = 0
              !
-             do while (trim(w)/="".and.i<sym%Nrepresen)
+             do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
                !
@@ -3031,9 +3033,9 @@ module fields
                !
              enddo
              !
-             if (i<10.and.i/=sym%Nrepresen) then 
-               write (out,"('FLinput: illegal number entries in SELECTION: ',i8,' /= ',i8)") i,sym%Nrepresen
-               stop 'FLinput - illegal number entries in SELECTION'
+             if (sym%Nrepresen<=8.and.i/=sym%Nrepresen) then 
+               write (out,"('FLinput: illegal number entries in SELECTION for Nrepresen<=8',i8,' /= ',i8)") i,sym%Nrepresen
+               stop 'FLinput - illegal number entries in SELECTION, Nentries<>Nrepresen'
              endif 
              !
            case('ZPE')

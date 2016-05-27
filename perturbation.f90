@@ -15990,61 +15990,104 @@ module perturbation
             !
             if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
             !
-            write(chkptIO) imu
+            if (.not.job%IOextF_divide) then 
+              write(chkptIO) imu
+            else
+              !
+              call open_divided_slice(imu,'extF',job%extmat_suffix,chkptIO_)
+              !           
+            endif
             !
             do isymcoeff =1,PT%Maxsymcoeffs
               !
               Ndeg = PT%Index_deg(isymcoeff)%size1
               !
-              extF_t = 0
+              if (job%vib_rot_contr) extF_t = 0
               !
               call calc_extF_contr_matrix(imu,isymcoeff,extF_t)
               !
               if (job%vib_rot_contr) then 
                  !
-                 !$omp parallel do private(ideg,jdeg) shared(hvib_t) schedule(dynamic)
-                 do ideg=1,Ndeg
-                   do jdeg=1,ideg-1   
-                     extF_t(isymcoeff+jdeg-1,ideg) = extF_t(isymcoeff+ideg-1,jdeg)
+                 if (job%vib_rot_contr) then 
+                   !
+                   !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(extF_t) schedule(dynamic)
+                   do ideg=1,Ndeg
+                      icontr = PT%icase2icontr(isymcoeff,ideg)
+                      do jdeg=1,ideg-1
+                         jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                         extF_t(icontr,jdeg) = extF_t(jcontr,ideg)
+                     enddo
                    enddo
-                 enddo
-                 !$omp end parallel do
-                 !
-                 if (job%IOextF_divide) then 
+                   !$omp end parallel do
                    !
-                   call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,Ndeg,extF_t)
-                   !
-                 else
-                   !
-                   write(chkptIO) extF_t(1:mdimen,1:Ndeg)
+                   if (job%IOextF_divide) then
+                     write(chkptIO_) extF_t(1:mdimen,1:Ndeg)
+                   endif
                    !
                  endif
+
+                 !omp parallel do private(ideg,jdeg) shared(hvib_t) schedule(dynamic)
+                 !do ideg=1,Ndeg
+                 !  do jdeg=1,ideg-1   
+                 !    extF_t(isymcoeff+jdeg-1,ideg) = extF_t(isymcoeff+ideg-1,jdeg)
+                 !  enddo
+                 !enddo
+                 !omp end parallel do
+                 !
+                 !if (job%IOextF_divide) then 
+                 !  !
+                 !  call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,Ndeg,extF_t)
+                 !  !
+                 !else
+                 !  !
+                 !  write(chkptIO) extF_t(1:mdimen,1:Ndeg)
+                 !  !
+                 !endif
                  !
               endif
               !
             enddo
             !
-            if (job%vib_rot_contr) then 
-               !
-               !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
-               do icoeff=1,mdimen
-                 do jcoeff=1,icoeff-1
-                   extF_t(icoeff,jcoeff) = extF_t(jcoeff,icoeff)
-                 enddo
-               enddo
-               !$omp end parallel do
-               !
-               if (job%IOextF_divide) then 
-                 !
-                 call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,mdimen,extF_t)
-                 !
-               else
-                 !
-                 write(chkptIO) extF_t
-                 !
-               endif
-               !
+            if (.not.job%vib_rot_contr) then 
+              !
+              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
+              do icoeff=1,mdimen
+                do jcoeff=1,icoeff-1
+                  extF_t(jcoeff,icoeff) = extF_t(icoeff,jcoeff)
+                enddo
+              enddo
+              !$omp end parallel do
+              !
+              write(chkptIO) extF_t
+              !
             endif
+            !
+            if (job%IOextF_divide) then 
+              write(chkptIO_) 'extF'
+              close(chkptIO_)
+            endif
+            !
+            !if (job%vib_rot_contr) then 
+            !   !
+            !   !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
+            !   do icoeff=1,mdimen
+            !     do jcoeff=1,icoeff-1
+            !       extF_t(icoeff,jcoeff) = extF_t(jcoeff,icoeff)
+            !     enddo
+            !   enddo
+            !   !$omp end parallel do
+            !   !
+            !   if (job%IOextF_divide) then 
+            !     !
+            !     call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,mdimen,extF_t)
+            !     !
+            !   else
+            !     !
+            !     write(chkptIO) extF_t
+            !     !
+            !   endif
+            !   !
+            !endif
             !
             if (job%verbose>=4) write(out,"('...done')",advance='YES') 
             !

@@ -1151,6 +1151,11 @@ contains
          sym%label(irep  ) = 'E'//trim(adjustl(Kchar))//'g'
          sym%label(irep+1) = 'E'//trim(adjustl(Kchar))//'u'
          !
+         if (k>=10) then
+           sym%label(irep  ) = trim(adjustl(Kchar))//'g'
+           sym%label(irep+1) = trim(adjustl(Kchar))//'u'
+         endif
+         !
          sym%characters(irep  ,1) = 2.0_ark
          sym%characters(irep+1,1) = 2.0_ark
          !
