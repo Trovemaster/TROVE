@@ -14719,7 +14719,7 @@ module perturbation
                !
             endif
             !
-            if (.not.(job%IOmatelem_divide.and.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
+            if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
               !
               if (job%verbose>=2) write(out,"(/'Potential function...')")
               if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i)") poten_N
@@ -16652,7 +16652,7 @@ module perturbation
       !
       real(rk),intent(out)   :: grot(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses)
+      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
       integer(ik) :: iterm_uniq,Maxcontracts
       !
@@ -16663,9 +16663,13 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
         !$omp& iterm_uniq,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
+          !
+          energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+          !
+          if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
           !
           matelem = 0
           !
@@ -16723,7 +16727,7 @@ module perturbation
       integer(ik),intent(in) :: k1,k2,isymcoeff
       real(rk),intent(out) :: gcor(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),prod0,coef_thresh,matelem0
+      real(rk) :: matelem,me_class0(PT%Nclasses),prod0,coef_thresh,matelem0,energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
       integer(ik) :: iterm_uniq,imode,imode_,Maxcontracts
       !
@@ -16737,9 +16741,13 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,matelem,iclass,imode,imode_,icomb,iterm,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,matelem,iclass,imode,imode_,icomb,iterm,kclass,nu_i,nu_j,&
         !$omp& ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
+           !
+           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           !
+           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
            !
            matelem = 0
            !
@@ -16789,7 +16797,7 @@ module perturbation
                    prod0 = 1.0_rk
                  endif
                  !
-                 matelem0 = 0.0
+                 matelem0 = 0.0_rk
                  n = icomb_nclasses(icomb)
                  do iterm=1, nterms
                    do iclass_n=1, n
@@ -16833,7 +16841,7 @@ module perturbation
       integer(ik),intent(in) :: isymcoeff
       real(rk),intent(out) :: hvib(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0,energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
       integer(ik) :: iterm_uniq,jclass,imode,jmode,imode_,jmode_,Maxcontracts
       !
@@ -16847,9 +16855,13 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
         !$omp&         ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
+           !
+           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           !
+           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
            !        
            matelem = 0
            !
@@ -17033,7 +17045,7 @@ module perturbation
       !
       real(rk),intent(out)   :: extF(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses)
+      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
       integer(ik) :: iterm_uniq,Maxcontracts
       !
@@ -17045,9 +17057,13 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
         !$omp&         iterm_uniq,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
+           !
+           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           !
+           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
            !        
            matelem = 0
            !

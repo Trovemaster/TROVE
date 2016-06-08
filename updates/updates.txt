@@ -116,3 +116,12 @@ The lvib is now a part of the basis set definition
 
  15.05.2016
  Symmetries of Dnh are changed to 10g,10u,11g,11u etc to keep the format of 3 chars for symmetries
+
+ 26.05.2016
+  - vib_ci for extF - bug fixed
+  - the PES type _7 is replaced by D8h-one
+
+30.05.2016
+ - if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then: and to or
+
+

@@ -67,6 +67,7 @@ module fields
      real(rk)  :: general        ! Energy cutoff for everything
      real(rk)  :: primt          ! Energy cutoff for primitives
      real(rk)  :: contr         ! Energy cutoff for contratced basis functions 
+     real(rk)  :: matelem         ! Energy cutoff for contratced matrix elements in the matelem section
      integer(ik) :: polyad     ! Polyad cutoff for primit. functs. in contratced basis functions 
      !
    end type  FLenercutT  
@@ -624,6 +625,7 @@ module fields
    job%enercutoff%general = enermax_
    job%enercutoff%contr   = enermax_
    job%enercutoff%primt   = enermax_
+   job%enercutoff%matelem = enermax_
 
 
    job%coeff_thresh = coeff_thresh_
@@ -850,6 +852,7 @@ module fields
          job%enercutoff%general = job%enercut
          job%enercutoff%contr   = job%enercut
          job%enercutoff%primt   = job%enercut
+         job%enercutoff%matelem = job%enercut
          !
        case("PRIMITIVES")
          !
@@ -880,6 +883,7 @@ module fields
              job%enercutoff%general = job%enercut
              job%enercutoff%contr   = job%enercut
              job%enercutoff%primt   = job%enercut
+             job%enercutoff%matelem = job%enercut
              !
            case ("POTENCUT")
              !
@@ -923,6 +927,10 @@ module fields
            case ("ENERCUT_PRIMITIVE","ENERCUT_PRIMIT","ENERCUT_PRIM")
              !
              call readf(job%enercutoff%primt)
+             !
+           case ("ENERCUT_MATELEM","ENERMAX_MATELEM")
+             !
+             call readf(job%enercutoff%matelem)
              !
            case ("SYMM_TOLER")
              !
