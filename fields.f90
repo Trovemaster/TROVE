@@ -1950,7 +1950,7 @@ module fields
          !
          call readf(job%zpe)
          !
-       case("CHECK_POINT")
+       case("CHECK_POINT","CHECKPOINT")
          !
          call readu(w)
          !
@@ -3026,7 +3026,7 @@ module fields
              ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
              do i=1,sym%Nrepresen,2
                intensity%isym_pairs(i  ) = (i+1)/2
-               intensity%isym_pairs(i+1) = (i+1)/2
+               if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
              enddo
              !
              if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
@@ -5090,7 +5090,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=7.or.(job%verbose>=2.and.manifold==0)) then
+       if (job%verbose>=7.or.(job%verbose>=4.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes

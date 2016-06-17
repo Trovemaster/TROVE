@@ -1644,74 +1644,147 @@ contains
  !
  subroutine restore_vib_matrix_elements 
    !
+   implicit none 
+   !
    integer(ik)        :: chkptIO,alloc
    character(len=cl)  :: job_is
 
    character(len=20)  :: buf20
+   character(len=4)   :: buf4
+   character(len=4)   :: jchar
+   
    integer(ik)        :: ncontr_t,imu,imu_t
    integer(hik)       :: matsize,rootsize,rootsize2
-
-
-   !dec$ if (dipole_debug > 1)
-      write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from file', trim(job%extFmat_file)
-   !dec$ end if
+   !
+   real(rk),allocatable  :: dipole_(:,:)
+   !
+   character(len=cl) :: filename
+   !
+   if (job%verbose>=4) then 
+     if (.not.job%IOextF_divide) then
+       !
+       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from chk', trim(job%extFmat_file)
+       !
+     else
+       !
+       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from files', trim(job%extmat_suffix)
+       !
+     endif
+     !
+   endif 
    !
    job_is ='external field contracted matrix elements for J=0'
    call IOStart(trim(job_is),chkptIO)
    !
-   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%extFmat_file)
+   if (.not.job%IOextF_divide) then
+      !
+      if (job%verbose>=4) write(out, '(a, 1x, a)') 'chl = file', trim(job%extFmat_file)
+      !
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%extFmat_file)
+      !
+      read(chkptIO) buf20
+      if (buf20/='Start external field') then
+        write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") job%extFmat_file,buf20
+        stop 'restore_vib_matrix_elements - bogus file format'
+      end if
+      !
+      read(chkptIO) ncontr_t
+      !
+      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+        write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
+        write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
+        stop 'restore_vib_matrix_elements - in file - illegal ncontracts '
+      end if
+      !
+   endif
    !
-   read(chkptIO) buf20
-   if (buf20/='Start external field') then
-     write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") job%extFmat_file,buf20
-     stop 'restore_vib_matrix_elements - bogus file format'
-   end if
+   ncontr_t = bset_contr(1)%Maxcontracts
    !
-   read(chkptIO) ncontr_t
-   !
-   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-     write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
-     stop 'restore_vib_matrix_elements - in file - illegal ncontracts '
-   end if
+   if (job%verbose>=5) write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
    !
    rootsize  = int(ncontr_t*(ncontr_t+1)/2,hik)
    rootsize2 = int(ncontr_t*ncontr_t,hik)
    !
-   !dec$ if (dipole_debug > 3)
-      write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
-   !dec$ end if
-   !
    matsize = rootsize2*3
+   !
+   if (job%verbose>=5) write(out,"(/'allocate dipole_me matrix with ',i9,' elements...')") matsize
    allocate(dipole_me(ncontr_t,ncontr_t,3),stat=alloc)
    call ArrayStart('dipole_me',alloc,1,kind(dipole_me),matsize)
    !
+   allocate(dipole_(ncontr_t,ncontr_t),stat=alloc)
+   call ArrayStart('dipole_',alloc,1,kind(dipole_),matsize)
+   !
    do imu = 1,3
      !
-     read(chkptIO) imu_t
-     if (imu_t/=imu) then
-       write (out,"(' restore_vib_matrix_elements ',a,' has bogus imu - restore_vib_matrix_elements: ',i8,'/=',i8)") imu_t,imu
-       stop 'restore_vib_matrix_elements - bogus imu restore_vib_matrix_elements'
-     end if
+     if (job%verbose>=4) write(out,'("imu = ",i3)') imu 
      !
-     read(chkptIO) dipole_me(:,:,imu)
+     if (job%IOextF_divide) then
+       !
+       write(jchar, '(i4)') imu
+       !
+       filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+       !
+       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf4
+         stop 'restore_vib_matrix_elements - bogus file format'
+       end if
+       !
+     else
+       !
+       read(chkptIO) imu_t
+       if (imu_t/=imu) then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus imu - restore_vib_matrix_elements: ',i8,'/=',i8)") imu_t,imu
+         stop 'restore_vib_matrix_elements - bogus imu restore_vib_matrix_elements'
+       end if
+       !
+     endif
+     !
+     if (job%verbose>=5) write(out,"('read dipole_ ...')",advance='NO')
+     !
+     read(chkptIO) dipole_
+     !
+     if (job%verbose>=5) write(out,"('copy to dipole_me ...')",advance='NO')
+     !
+     dipole_me(1:ncontr_t,1:ncontr_t,imu) = dipole_(1:ncontr_t,1:ncontr_t)
+     !
+     if (job%verbose>=5) write(out,"(' done')",advance='YES')
+     !
+     if (job%IOextF_divide) then
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+         stop 'restore_vib_matrix_elements - bogus file format'
+       end if
+       !
+       close(chkptIO,status='keep')
+       !
+     endif
      !
    enddo
    !
-   read(chkptIO) buf20(1:18)
-   if (buf20(1:18)/='End external field') then
-     write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
-     stop 'restore_vib_matrix_elements - bogus file format'
-   end if
+   deallocate(dipole_)
+   call ArrayStop('dipole_')
    !
-   close(chkptIO,status='keep')
-
-   !dec$ if (dipole_debug > 1)
-      write(out, '(/a)') 'done'
-   !dec$ end if
-
+   if (.not.job%IOextF_divide) then
+     !
+     read(chkptIO) buf20(1:18)
+     if (buf20(1:18)/='End external field') then
+       write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
+       stop 'restore_vib_matrix_elements - bogus file format'
+     end if
+     !
+     close(chkptIO,status='keep')
+     !
+   endif
+   !
+   if (job%verbose>=4)   write(out, '(a/)') '...done'
    !
  end subroutine restore_vib_matrix_elements
+ !
  !
  function cg(j0, k0, dj, dk)
 

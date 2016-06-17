@@ -1074,8 +1074,8 @@ module mol_c2h4
         ideg = 1
         !
         if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
-        if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
-        if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
+        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
         if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
         !
       case('D2H')

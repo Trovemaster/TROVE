@@ -1256,7 +1256,7 @@ contains
       !
       if (trim(job%IOj0matel_action)=='SAVE') then
         !
-        if (.not.job%IOmatelem_divide.or.job%iswap(1)==1) then 
+        if (.not.job%IOmatelem_divide.or.job%iswap(1)<=1) then 
           !
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)

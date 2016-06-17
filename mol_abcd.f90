@@ -281,10 +281,10 @@ module mol_abcd
           !
           dst(1:3) = src(1:)+molec%local_eq(1:3)
           !
-          dst(4) =-src(5)-molec%local_eq(5)
-          dst(5) = src(4)+molec%local_eq(4)
-          dst(6) = src(7)+molec%local_eq(7)
-          dst(7) =-src(6)-molec%local_eq(6)
+          dst(4) = src(5)+molec%local_eq(5)
+          dst(5) =-src(4)-molec%local_eq(4)
+          dst(6) =-src(7)-molec%local_eq(7)
+          dst(7) = src(6)+molec%local_eq(6)
           !
        endif
        !

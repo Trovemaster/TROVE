@@ -124,4 +124,8 @@ The lvib is now a part of the basis set definition
 30.05.2016
  - if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then: and to or
 
+08.06.2016
+ - enercut_matelem allows to skip matrix elements in matelem with energies above this threshold
 
+09.06.2016
+ - D10h type PES, 6th order, is re-implemented for tx-ty coordinates, C2H2

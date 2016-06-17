@@ -2044,6 +2044,46 @@ module perturbation
    end function PTcontrenergy_zero
 !
 
+   ! a version which starts from class=1, not zero 
+   !
+   function PTcontrenergy_zero_1(cnu) result (e_t) 
+
+     integer(ik),intent(in)    :: cnu(1:PT%Nclasses)
+     !
+     real(rk)                  :: e_t
+
+     integer(ik)               :: iclasses
+     !
+     if (verbose>=7) write(out,"(/'PTcontrenergy_zero_1/start')") 
+       !
+       e_t = 0 
+       !
+       if (contr_bset_initialized) then 
+         !
+         do iclasses = 1,PT%Nclasses
+           !
+           if (cnu(iclasses)>size( contr(iclasses)%eigen(:) ) ) then 
+              e_t = huge(1.0_rk)
+              return 
+           endif  
+           !
+           e_t = e_t + contr(iclasses)%eigen(cnu(iclasses))%value
+           ! 
+         enddo
+         !
+         e_t = e_t - PT%zpe_contr
+         !
+       else 
+         !
+         write(out,"('PTcontrenergy_zero_1: contracted bset was not initialized')") 
+         stop 'PTcontrenergy_zero_1: contracted bset was not initialized'
+         !
+       endif 
+       !
+     if (verbose>=7) write(out,"('PTcontrenergy_zero_1/end')") 
+     !
+   end function PTcontrenergy_zero_1
+
 
 ! 
 ! Rotational quanta J,K,tau are presented as a 1d array
@@ -15450,6 +15490,7 @@ module perturbation
                                 pseudo_icomb_nterms(:,:,:), pseudo_icomb_iterm(:,:,:,:,:), &
                                 extF_icomb_nterms(:,:,:), extF_icomb_iterm(:,:,:,:,:)
 
+    real(rk), allocatable :: enermax_classes(:)
 
     real(rk), allocatable :: gvib_icomb_coefs(:,:,:,:)
     real(rk), allocatable :: grot_icomb_coefs(:,:,:,:)
@@ -15622,7 +15663,7 @@ module perturbation
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
             !
             if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 + ',i3,'^2  = ',i5,' chk-slices')") PT%Nmodes,PT%Nmodes,9+3*PT%Nmodes+PT%Nmodes**2
-            if (job%verbose>=4) write(out,"('  islise = 0 (gvib and poten), 1-9 (Grot), 10-',i3,' (Gcor) ')") 9+3*PT%Nmodes,9+3*PT%Nmodes+1
+            if (job%verbose>=4) write(out,"('  islise = 0 (gvib and poten), 1-9 (Grot), 10-',i3,' (Gcor) ')") 9+3*PT%Nmodes
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4/)") iterm1,iterm2
             !
           endif
@@ -15660,7 +15701,7 @@ module perturbation
               if ( job%IOmatelem_divide ) then 
                 if (islice<iterm1.or.iterm2<islice) cycle
                 !
-                call open_divided_slice(islice,'grot',job%matelem_suffix,chkptIO_)
+                call open_divided_slice(islice,'g_rot',job%matelem_suffix,chkptIO_)
                 !
               endif
               !
@@ -15707,13 +15748,19 @@ module perturbation
                 !$omp end parallel do
                 !
                 if (trim(job%IOkinet_action)=='SAVE') then
-                   write(chkptIO) grot_t
+                  !
+                  if (job%IOmatelem_divide) then
+                     write(chkptIO_) grot_t
+                  else
+                     write(chkptIO) grot_t
+                  endif
+                  !
                 endif
                 !
               endif
               !
               if (job%IOmatelem_divide) then 
-                write(chkptIO_) 'grot'
+                write(chkptIO_) 'g_rot'
                 close(chkptIO_)
               endif
               !
@@ -15740,7 +15787,7 @@ module perturbation
               if ( job%IOmatelem_divide ) then 
                 if (islice<iterm1.or.iterm2<islice) cycle
                 !
-                call open_divided_slice(islice,'gcor',job%matelem_suffix,chkptIO_)
+                call open_divided_slice(islice,'g_cor',job%matelem_suffix,chkptIO_)
                 !
               endif
               !
@@ -15787,13 +15834,19 @@ module perturbation
                 !$omp end parallel do
                 !
                 if (trim(job%IOkinet_action)=='SAVE') then
-                    write(chkptIO) grot_t
+                  !
+                  if (job%IOmatelem_divide) then
+                     write(chkptIO_) grot_t
+                  else
+                     write(chkptIO) grot_t
+                  endif
+                  !
                 endif
                 !
               endif
               !
               if (job%IOmatelem_divide) then 
-                write(chkptIO_) 'gcor'
+                write(chkptIO_) 'g_cor'
                 close(chkptIO_)
               endif
               !
@@ -15810,9 +15863,9 @@ module perturbation
         !
         ! Vibrational part 
         !
-        islice = (PT%Nmodes+3)*3+1
+        !islice = (PT%Nmodes+3)*3+1
         !
-        if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.(iterm1<=islice.and.islice<=iterm2).or.iterm1+iterm2==0) ) then 
+        if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.iterm1==0) ) then 
           !
           ! ----------------- FBR ------------------
           !
@@ -15834,7 +15887,7 @@ module perturbation
              !
           endif
           !
-          if ( job%IOmatelem_divide.and.job%vib_rot_contr ) then
+          if ( job%vib_rot_contr ) then
             !
             ! write hvib to the first "slice"
             islice = 0 
@@ -15905,7 +15958,11 @@ module perturbation
               enddo
               !$omp end parallel do
               !
-              write(chkptIO) hvib_t
+              !write(chkptIO) hvib_t
+              !
+              if (trim(job%IOkinet_action)=='SAVE') then
+                   write(chkptIO) hvib_t
+              endif
               !
             endif 
             !
@@ -15927,7 +15984,7 @@ module perturbation
           deallocate(hvib_t)
           call ArrayStop('hvib-fields')
           !
-          if (job%IOmatelem_divide.and.job%vib_rot_contr) then
+          if (job%vib_rot_contr) then
             write(chkptIO_) 'hvib'
             close(chkptIO_)
           endif
@@ -16058,7 +16115,11 @@ module perturbation
               enddo
               !$omp end parallel do
               !
-              write(chkptIO) extF_t
+              if (job%IOmatelem_divide) then
+                 write(chkptIO_) extF_t
+              else
+                 write(chkptIO) extF_t
+              endif
               !
             endif
             !
@@ -16213,8 +16274,8 @@ module perturbation
     !
     subroutine initialize_class_contr_objects
        !
-       integer(ik) :: nmodes,nclasses,info,iclass,maxncontr,jclass,imode,icomb,n,extF_rank
-       real(rk) :: coef_thresh
+       integer(ik) :: nmodes,nclasses,info,iclass,maxncontr,jclass,imode,icomb,n,extF_rank,ideg,icontr,isymcoeff
+       real(rk) :: coef_thresh,energy_i
        character(cl) :: func_tag_, sclass, skey
        integer(hik)  :: matsize
        !
@@ -16527,6 +16588,35 @@ module perturbation
           !
        endif
        !
+       ! define the maximal energy within each isymmcoeff combination for different ideg, 
+       ! which will be needed for enercut_matelem
+       !
+       if (allocated(enermax_classes)) deallocate(enermax_classes) 
+       !
+       allocate(enermax_classes(PT%Maxsymcoeffs),stat=info)
+       call ArrayStart('PTcontracted_matelem_class_fast:enermax_classes',info,1,kind(enermax_classes),size(enermax_classes,kind=hik))
+       !
+       enermax_classes = 0
+       !
+       do isymcoeff = 1,PT%Maxsymcoeffs
+         !
+         enermax_classes(isymcoeff) = 0
+         !
+         icontr = PT%icase2icontr(isymcoeff,1)
+         !
+         enermax_classes(isymcoeff) = PTcontrenergy_zero(PT%icontr_cnu(:,icontr))
+         !
+         do ideg = 2,PT%Index_deg(isymcoeff)%size1
+           !
+           icontr = PT%icase2icontr(isymcoeff,ideg)
+           !
+           energy_i = PTcontrenergy_zero(PT%icontr_cnu(:,icontr))
+           !
+           enermax_classes(isymcoeff) = min(energy_i,enermax_classes(isymcoeff))
+           !
+         enddo
+       enddo      
+       !
        call MemoryReport
        !
     end subroutine initialize_class_contr_objects
@@ -16547,9 +16637,10 @@ module perturbation
       call ArrayStop('PTcontracted_matelem_class_fast:iclass_nmodes')
       call ArrayStop('PTcontracted_matelem_class_fast:iclass_imode')
   
-      deallocate(dimen_classes,nu_classes)
+      deallocate(dimen_classes,nu_classes,enermax_classes)
       call ArrayStop('PTcontracted_matelem_class_fast:dimen_classes')
       call ArrayStop('PTcontracted_matelem_class_fast:nu_classes')
+      call ArrayStop('PTcontracted_matelem_class_fast:enermax_classes')
   
       deallocate(icomb_nclasses, icomb_iclass)
   
@@ -16654,7 +16745,7 @@ module perturbation
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,Maxcontracts
+      integer(ik) :: iterm_uniq,Maxcontracts,jsymcoeff
       !
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
@@ -16663,13 +16754,14 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
         !$omp& iterm_uniq,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
           !
-          energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+          jsymcoeff = PT%icontr2icase(jcontr,1)
+          energy_j = enermax_classes(jsymcoeff)
           !
-          if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
+          if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
           !
           matelem = 0
           !
@@ -16729,7 +16821,7 @@ module perturbation
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),prod0,coef_thresh,matelem0,energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,imode,imode_,Maxcontracts
+      integer(ik) :: iterm_uniq,imode,imode_,Maxcontracts,jsymcoeff
       !
       !
       nmodes = PT%Nmodes
@@ -16741,13 +16833,14 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,matelem,iclass,imode,imode_,icomb,iterm,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,imode,imode_,icomb,iterm,kclass,nu_i,nu_j,&
         !$omp& ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
            !
-           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           jsymcoeff = PT%icontr2icase(jcontr,1)
+           energy_j = enermax_classes(jsymcoeff)
            !
-           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
+           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
            !
            matelem = 0
            !
@@ -16843,7 +16936,7 @@ module perturbation
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0,energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,jclass,imode,jmode,imode_,jmode_,Maxcontracts
+      integer(ik) :: iterm_uniq,jclass,imode,jmode,imode_,jmode_,Maxcontracts,jsymcoeff,jdeg
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -16855,13 +16948,14 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
         !$omp&         ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
-           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           jsymcoeff = PT%icontr2icase(jcontr,1)
+           energy_j = enermax_classes(jsymcoeff)
            !
-           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
+           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
            !        
            matelem = 0
            !
@@ -17047,7 +17141,7 @@ module perturbation
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,Maxcontracts
+      integer(ik) :: iterm_uniq,Maxcontracts,jsymcoeff
       !
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
@@ -17057,13 +17151,14 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
         !$omp&         iterm_uniq,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
-           energy_j = PTcontrenergy_zero(nu_classes(:,jcontr))
+           jsymcoeff = PT%icontr2icase(jcontr,1)
+           energy_j = enermax_classes(jsymcoeff)
            !
-           if (icontr/=jcontr.and.energy_j>job%enercutoff%matelem) cycle
+           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
            !        
            matelem = 0
            !
@@ -17496,10 +17591,11 @@ subroutine read_contr_ind(ncontr, nclasses, dimen_classes, nu_classes)
   endif
 
   read(IOunit) ncontr, nclasses
-
+  !
   if (allocated(nu_classes)) deallocate(nu_classes)
   if (allocated(dimen_classes)) deallocate(dimen_classes)
-  allocate(nu_classes(nclasses,ncontr), dimen_classes(nclasses), stat=info)
+  !
+  allocate(nu_classes(nclasses,ncontr), dimen_classes(nclasses),stat=info)
   if (info/=0) then
     write(out, '(/a/a,2(1x,i6))') &
     'read_contr_ind error: nu_classes(nclasses,ncontr), dimen_classes(nclasses), - out of memory', &
@@ -29530,6 +29626,8 @@ end subroutine read_contr_ind
        type(PTeigenT),intent(in)  :: eigen(:)
        !
        integer(ik)             :: alloc,iroot,ilevel,ideg
+       !
+       nullify(contr(1)%ilevel)
        !
        if (associated(contr(1)%ilevel)) then 
           deallocate (contr(1)%ilevel,contr(1)%ideg,&
