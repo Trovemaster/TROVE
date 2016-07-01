@@ -15587,6 +15587,16 @@ module perturbation
         !
       endif 
       !
+      ! we can allow skipping the kinetic part completely if only the external function
+      ! is required 
+      !
+      if (trim(job%IOkinet_action)=='NONE'.and.treat_exfF) then
+        !
+        treat_vibration = .false.
+        treat_rotation = .false.
+        !
+      endif 
+      !
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
@@ -15767,7 +15777,7 @@ module perturbation
             enddo
           enddo
           !
-          if (job%verbose>=2) write(out,"(/'...done!')")
+          if (job%verbose>=2) write(out,"('...done!')")
           !
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
@@ -15857,7 +15867,7 @@ module perturbation
           deallocate(grot_t)
           call ArrayStop('grot-gcor-fields')
           !
-          if (job%verbose>=2) write(out,"(/'...done!')")
+          if (job%verbose>=2) write(out,"('...done!')")
           !
         endif
         !
@@ -16007,14 +16017,14 @@ module perturbation
         !
         if (treat_exfF) then 
           !
+          if (job%verbose>=2) write(out,"(/'External function...')")
+          !
           fitting%iparam(2) = min(fitting%iparam(2),extF_rank)
           fitting%iparam(1) = max(fitting%iparam(1),1)
           !
           if (.not.job%IOextF_divide) then
             !
             fitting%iparam = (/1,extF_rank/)
-            !
-            if (job%verbose>=2) write(out,"(/'External function...')")
             !
             if (jrot/=0) then     
                write (out,"(/'PTcontracted_matelem_class: contr. matrix elements can be calculated only at J = 0')") 
@@ -16115,7 +16125,7 @@ module perturbation
               enddo
               !$omp end parallel do
               !
-              if (job%IOmatelem_divide) then
+              if (job%IOextF_divide) then
                  write(chkptIO_) extF_t
               else
                  write(chkptIO) extF_t
@@ -16157,6 +16167,8 @@ module perturbation
           deallocate(extF_t)
           call ArrayStop('extF-fields')
           if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
+          !
+          if (job%verbose>=2) write(out,"('...done!')")
           !
         endif
         !
@@ -29627,7 +29639,7 @@ end subroutine read_contr_ind
        !
        integer(ik)             :: alloc,iroot,ilevel,ideg
        !
-       nullify(contr(1)%ilevel)
+       nullify(contr(1)%ilevel,contr(1)%ideg,contr(1)%iroot,contr(1)%eigen,contr(1)%ilevel_chk,contr(1)%prim_bs%icoeffs)
        !
        if (associated(contr(1)%ilevel)) then 
           deallocate (contr(1)%ilevel,contr(1)%ideg,&

@@ -1707,12 +1707,12 @@ contains
    !
    matsize = rootsize2*3
    !
-   if (job%verbose>=5) write(out,"(/'allocate dipole_me matrix with ',i9,' elements...')") matsize
+   if (job%verbose>=5) write(out,"(/'allocate 4 dipole_me matrices with ',i22,' elements each...')") rootsize2
    allocate(dipole_me(ncontr_t,ncontr_t,3),stat=alloc)
    call ArrayStart('dipole_me',alloc,1,kind(dipole_me),matsize)
    !
    allocate(dipole_(ncontr_t,ncontr_t),stat=alloc)
-   call ArrayStart('dipole_',alloc,1,kind(dipole_),matsize)
+   call ArrayStart('dipole_',alloc,1,kind(dipole_),rootsize2)
    !
    do imu = 1,3
      !

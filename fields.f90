@@ -19587,6 +19587,10 @@ end subroutine check_read_save_none
           !
           r(trove%Nbonds+trove%Nangles+iangle) = sindelta
           !
+          ! xyz
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
+          !
           zeta = trove%zmatrix(n1)%connect(3)
           !
           do ibond = 1,trove%Nbonds
@@ -19598,7 +19602,7 @@ end subroutine check_read_save_none
              !
              r(ibond) = a_t1(zeta)
              !
-             r(ibond) = sum(a_t1(:)*a_t2(:))
+             !r(ibond) = sum(a_t1(:)*a_t2(:))
              !
              !if (trove%b0(n1,zeta,0)<0) r(ibond) = -a_t1(zeta)
              !
