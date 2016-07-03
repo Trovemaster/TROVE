@@ -2112,15 +2112,20 @@ module fields
                !
                job%IOmatelem_divide = .true.
                !
-               job%iswap(1) = 0
-               job%iswap(2) = 1e6
+               job%iswap(1) = 1
+               job%iswap(2) = (trove%Nmodes+3)*3+trove%Nmodes**2+1
+               !
+               if (job%contrci_me_fast) then 
+                 job%iswap(1) = 0
+                 job%iswap(2) = 1e6
+               endif
                !
                if (Nitems>3) then
                   call readi(job%iswap(1))
                   call readi(job%iswap(2))
                endif
                !
-               if (trim(w)=='STITCH') job%iswap(1)=0
+               if (trim(w)=='STITCH') job%iswap(:)=0
                !
              endif
              !

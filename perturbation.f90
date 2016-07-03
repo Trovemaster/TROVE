@@ -14271,7 +14271,7 @@ module perturbation
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.(job%iswap(1)==1.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) )) then
           !
           if (FLrotation.and.jrot/=0) then 
             write (out,"(' IOkinet_action = SAVE is not working for J/=0 ')") 
@@ -14425,9 +14425,12 @@ module perturbation
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+PT%Nmodes**2)
             !
-            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 + ',i3,'^2  = ',i5,' chk-slices')") PT%Nmodes,PT%Nmodes,9+3*PT%Nmodes+PT%Nmodes**2
-            if (job%verbose>=4) write(out,"('  islise = 0 (gvib stitching), 1-9 (Grot), 10-',i3,' (Gcor), ',i3,'-',i3,' (Gvib), and ',i3,' (Poten) ')") 9+3*PT%Nmodes,9+3*PT%Nmodes+1,9+3*PT%Nmodes+PT%Nmodes**2,9+3*PT%Nmodes+PT%Nmodes**2+1
+            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 = ',i5,' chk-slices')") PT%Nmodes,9+3*PT%Nmodes+1
+            if (job%verbose>=4) write(out,"('  islice = 0 (gvib+poten stitching), 1-9 (Grot), 10-',i3,' (Gcor), ',i3,'-',i3,' (Gvib), and ',i3,' (Poten) ')") 9+3*PT%Nmodes,9+3*PT%Nmodes+1,9+3*PT%Nmodes+PT%Nmodes**2,9+3*PT%Nmodes+PT%Nmodes**2+1
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4)") iterm1,iterm2
+            if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
+            if (job%verbose>=4) write(out,"('  Vibrational chk-s obtained separately must be combined using MATELEM SAVE STITCH or MATELEM SAVE 0 0')")
+            if (job%verbose>=4) write(out,"('  For all slices run and stitched in one go use MATELEM SAVE SPLIT ')")
             !
           endif
           !
@@ -14724,6 +14727,56 @@ module perturbation
             enddo
             !
             !hvib_t = -0.5_rk*hvib_t
+
+
+
+
+            !
+            if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
+              !
+              if (job%verbose>=2) write(out,"(/'Potential function...')")
+              if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i)") poten_N
+              !
+              gvib_t = 0
+              !
+              do iterm = 1,poten_N
+                  !
+                  if (job%verbose>=4) write(out,"('iterm = ',i8)") iterm
+                  !
+                  call calc_contract_matrix_elements_II(iterm,1,1,me%poten%coeff(iterm,:,:),fvib_t,poten_contr_matelem_single_term)
+                  !
+                  !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
+                  do icoeff=1,mdimen
+                    do jcoeff=1,icoeff
+                      gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
+                    enddo
+                  enddo
+                  !$omp end parallel do
+                  !
+              enddo
+              !
+            endif
+            !
+            !
+            if (job%IOmatelem_divide.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
+              !
+              !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
+              do icoeff=1,mdimen
+                do jcoeff=1,icoeff-1
+                  gvib_t(icoeff,jcoeff) = gvib_t(jcoeff,icoeff)
+                enddo
+              enddo
+              !$omp end parallel do
+              !
+              islice = (PT%Nmodes+3)*3+PT%Nmodes**2+1
+              !
+              call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
+              !
+              if (job%IOmatelem_divide.and.job%iswap(1)==1) job%iswap(1)=0
+              !
+            endif
+            !
+            ! Read, stitch and store the vibrational part only 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) then
                !
@@ -14759,51 +14812,13 @@ module perturbation
                !
             endif
             !
-            if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
-              !
-              if (job%verbose>=2) write(out,"(/'Potential function...')")
-              if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i)") poten_N
-              !
-              gvib_t = 0
-              !
-              do iterm = 1,poten_N
-                  !
-                  if (job%verbose>=4) write(out,"('iterm = ',i8)") iterm
-                  !
-                  call calc_contract_matrix_elements_II(iterm,1,1,me%poten%coeff(iterm,:,:),fvib_t,poten_contr_matelem_single_term)
-                  !
-                  !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
-                  do icoeff=1,mdimen
-                    do jcoeff=1,icoeff
-                      gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
-                    enddo
-                  enddo
-                  !$omp end parallel do
-                  !
-              enddo
-              !
-            endif
-            !
             ! now we can switch off IOmatelem_divide and compute the vibrational energies 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) job%IOmatelem_divide = .false.
             !
+            ! combining and symmetrizing 
             !
-            if (job%IOmatelem_divide.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
-              !
-              !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
-              do icoeff=1,mdimen
-                do jcoeff=1,icoeff-1
-                  gvib_t(icoeff,jcoeff) = gvib_t(jcoeff,icoeff)
-                enddo
-              enddo
-              !$omp end parallel do
-              !
-              islice = (PT%Nmodes+3)*3+PT%Nmodes**2+1
-              !
-              call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
-              !
-            else
+            if ( .not.( job%IOmatelem_divide.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1 ) ) then
               !
               !$omp parallel do private(icoeff,jcoeff) schedule(dynamic)
               do icoeff=1,mdimen
@@ -15672,9 +15687,12 @@ module perturbation
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
             !
-            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 + ',i3,'^2  = ',i5,' chk-slices')") PT%Nmodes,PT%Nmodes,9+3*PT%Nmodes+PT%Nmodes**2
-            if (job%verbose>=4) write(out,"('  islise = 0 (gvib and poten), 1-9 (Grot), 10-',i3,' (Gcor) ')") 9+3*PT%Nmodes
+            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 1 + 3 x 3 + ',i3,'x 3  = ',i5,' chk-slices')") PT%Nmodes,1+9+3*PT%Nmodes
+            if (job%verbose>=4) write(out,"('  islice = 0 (gvib and poten), 1-9 (Grot), 10-',i3,' (Gcor) ')") 9+3*PT%Nmodes
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4/)") iterm1,iterm2
+            if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
+            if (job%verbose>=4) write(out,"('  Vibrational chk-s correspond to slice 0; for vibrational only use MATELEM SAVE 0 0')")
+            if (job%verbose>=4) write(out,"('  For all slices run and stitched in one go use MATELEM SAVE SPLIT ')")
             !
           endif
           !
@@ -29720,7 +29738,7 @@ end subroutine read_contr_ind
        !
        ! Saving the contracted basis set vectors and all auxilery informaion.
        !
-       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==1).or.job%convert_model_j0) then
+       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)<=1).or.job%convert_model_j0) then
          !
          if (job%convert_model_j0) then 
            PT%Nclasses = 1
