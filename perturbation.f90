@@ -7633,6 +7633,13 @@ module perturbation
           allocate(gcor(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
           call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
           !
+          ! For fast-ci the N-modes derivativea are aleady combined into one object which is assocaited with k1=1 
+          !
+          if (job%contrci_me_fast.and.k1>1) then 
+             gcor(k1,k2)%me = 0
+             cycle 
+          endif
+          !
           read(chkptIO_) mat_
           !
           gcor(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
@@ -15807,7 +15814,10 @@ module perturbation
           !
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
-          do k1 = 1,PT%Nmodes
+          !do k1 = 1,PT%Nmodes
+            !
+            k1 = 1
+            !
             do k2 = 1,3
               !
               islice = islice + 1
@@ -15880,7 +15890,7 @@ module perturbation
               !
             enddo
             !
-          enddo
+          !enddo
           !
           deallocate(grot_t)
           call ArrayStop('grot-gcor-fields')
@@ -16887,10 +16897,9 @@ module perturbation
                    nu_j = nu_classes(kclass,jcontr)
                    ilambda = iclass_ilambda(imode,kclass,iclass)
                    iterm_uniq = gcor_icomb_iterm(kclass,iterm,icomb,imode_,k2)
-                   me_class0(kclass) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda) &
-                                     - gcor_me(kclass)%me(iterm_uniq,nu_j,nu_i,0,ilambda)
+                   me_class0(kclass) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
                   enddo
-                 matelem = matelem + product(me_class0(1:nclasses)) * gcor_icomb_coefs(iterm,icomb,imode_,k2)
+                  matelem = matelem + product(me_class0(1:nclasses)) * gcor_icomb_coefs(iterm,icomb,imode_,k2)
                endif
                !
                do icomb=1, ncomb
@@ -16910,8 +16919,7 @@ module perturbation
                    nu_j = nu_classes(kclass,jcontr)
                    ilambda = iclass_ilambda(imode,kclass,iclass)
                    iterm_uniq = gcor_icomb_iterm(kclass,1,0,imode_,k2)
-                   me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda) &
-                                       - gcor_me(kclass)%me(iterm_uniq,nu_j,nu_i,0,ilambda)
+                   me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
                  enddo
                  if (n0>0) then
                    prod0 = product(me_class0(1:n0))
@@ -16929,8 +16937,7 @@ module perturbation
                      nu_j = nu_classes(kclass,jcontr)
                      ilambda = iclass_ilambda(imode,kclass,iclass)
                      iterm_uniq = gcor_icomb_iterm(kclass,iterm,icomb,imode_,k2)
-                     me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda) &
-                                         - gcor_me(kclass)%me(iterm_uniq,nu_j,nu_i,0,ilambda)
+                     me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
                    enddo
                    if (n>0) then
                      matelem0 = matelem0 + product(me_class0(1:n)) * gcor_icomb_coefs(iterm,icomb,imode_,k2)
@@ -17009,9 +17016,9 @@ module perturbation
                        me_class0(kclass) = gvib_me(kclass)%me(iterm_uniq,nu_i,nu_j,ilambda,imu)
                      enddo
                      !
-                     f_t = gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
-                     f_t = product(me_class0(1:nclasses))
-                     f_t = product(me_class0(1:nclasses)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
+                     !f_t = gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
+                     !f_t = product(me_class0(1:nclasses))
+                     !f_t = product(me_class0(1:nclasses)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
                      !
                      matelem = matelem + product(me_class0(1:nclasses)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
                    endif
@@ -31564,7 +31571,7 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   !
   ! compute matrix elements between products of 1D functions
   !
-  me_contr = 0.0
+  me_contr = 0
   if (trim(func_tag)=='Vpot') then
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
@@ -31671,7 +31678,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
   ! compute matrix elements between products of 1D functions
 
   me_contr = 0.0
-  if (trim(func_tag)=='Tvib'.or.trim(func_tag)=='Tcor') then
+  if (trim(func_tag)=='Tvib') then
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -31692,6 +31699,34 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
         enddo
         me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
       enddo
+    enddo
+  elseif (trim(func_tag)=='Tcor') then
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      !
+      do jprim=1, nprim
+        !
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        do jmode=imode1, imode2
+          ispecies = job%bset(jmode)%species
+          !
+          if (jmode==imode) then
+            do iterm=1, nterms
+              me_terms(jmode,iterm) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))&
+                                     -me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+            enddo
+          else
+            do iterm=1, nterms
+              me_terms(jmode,iterm) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+            enddo
+          endif
+          !
+        enddo
+        !
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+        !
+      enddo
+      !
     enddo
   else
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p1 error: unknown type of operator =', trim(func_tag)
