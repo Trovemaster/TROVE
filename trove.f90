@@ -176,7 +176,10 @@
       ! 
       ! Convert the J=0 basis set and mat.elements to the contracted represent. 
       !
-      if (action%convert_vibme) call TRconvert_matel_j0_eigen(j)
+      if (action%convert_vibme) then 
+         call TRconvert_matel_j0_eigen(j)
+         return 
+      endif
       !
       if (job%contrci_me_fast) then 
         !

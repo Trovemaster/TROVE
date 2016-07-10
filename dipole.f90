@@ -15,7 +15,7 @@ module dipole
 
 
  use tran,         only : TReigenvec_unit, bset_contr, read_contrind, & 
-                          read_eigenval,index_correlation,eigen,Neigenlevels
+                          read_eigenval,index_correlation,eigen,Neigenlevels,istate2ilevel
 
  private
  public dm_tranint,dm_analysis_density
@@ -339,7 +339,7 @@ contains
     integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
     real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vecPack(:),vec_(:)
-    real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:)
+    real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:),max_intens_state(:)
     integer(ik), pointer :: Jeigenvec_unit(:,:)
     type(DmatT),pointer  :: vec_ram(:,:)
     type(DkmatT),pointer :: ijterm(:)
@@ -356,6 +356,10 @@ contains
     !
     character(len=1) :: branch
     character(len=wl) :: my_fmt,my_fmt_tm
+    !
+    character(cl)           :: filename, ioname
+    character(4)            :: jchar,gchar
+    integer(ik)             :: iounit
     !
     real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3), intens_cm_molecule
     !
@@ -851,6 +855,17 @@ contains
     allocate(half_linestr(dimenmax,nJ,sym%Maxdegen,3),stat=info)
     !
     call ArrayStart('half_linestr',info,size(half_linestr),kind(half_linestr))
+    !
+    ! in case of the TM-pruning the maximal intensity of each state will be estimated and stored
+    !
+    if (intensity%pruning) then
+      !
+      allocate(max_intens_state(nlevels),stat=info)
+      call ArrayStart('max_intens_state',info,size(max_intens_state),kind(max_intens_state))
+      !
+      max_intens_state = 0
+      !
+    endif
     !
     !  The matrix where some of the eigenvectors will be stored
     !
@@ -1514,6 +1529,15 @@ contains
              !
              endif 
              !
+             ! estiimate the maximal intensity for each state needed for the TM-pruning of the basis set
+             !
+             if (intensity%pruning) then 
+               !
+               max_intens_state(ilevelF) = max(max_intens_state(ilevelF),absorption_int)
+               max_intens_state(ilevelI) = max(max_intens_state(ilevelI),absorption_int)
+               !
+             endif
+             !
          end select
          !
       end do Flevels_loop
@@ -1594,6 +1618,47 @@ contains
     !
     call TimerStop('Intensity loop')
     !
+    ! write out the list of states with maximal intensities
+    !
+    if (intensity%pruning) then 
+      !
+      ioname = 'max state intensities'
+      !
+      call IOstart(trim(ioname),iounit)
+      !
+      do indI = 1, nJ
+         !
+         do igammaI = 1,sym%Nrepresen
+           !
+           write(jchar, '(i4)') jval(indI)
+           write(gchar, '(i2)') igammaI
+           !
+           filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+           !
+           open(unit = iounit, action = 'write',status='replace',file = filename)
+           !
+           do irootI = 1, bset_contr(indI)%nsize(igammaI)
+             !
+             ilevelI = istate2ilevel(indI,igammaI,irootI)
+             !
+             energyI = 0 ; absorption_int = 0
+             if (ilevelI/=0) then 
+               energyI =  eigen(ilevelI)%energy
+               absorption_int = max_intens_state(ilevelI)
+             endif
+             !
+             write(iounit,"(i5,i3,1x,i9,2x,f20.12,2x,e15.8)") jval(indI),igammaI,irootI,energyI,absorption_int
+             !
+           enddo
+           !
+           close(iounit)
+           !
+         enddo
+         !
+      enddo
+      !
+    endif 
+    !
     deallocate(vecI, vecPack, vec, icoeffI)
     call ArrayStop('intensity-vectors')
     !
@@ -1630,6 +1695,13 @@ contains
     !
     deallocate(isaved)
     call ArrayStop('isaved')
+    !
+    if (intensity%pruning) then
+      !
+      deallocate(max_intens_state)
+      call ArrayStop('max_intens_state')
+      !
+    endif
     !
     call TimerStop('Intensity calculations')
     !

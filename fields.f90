@@ -301,7 +301,10 @@ module fields
       character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
       character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
 
-
+       
+      real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
+      real(rk)            :: TMenermin  = 0     ! Minimal energy to apply the TMcutoff for 
+      logical             :: TMpruning = .false. ! TM-prune if TMcutoff > 0
       character(len=cl)   :: solution_file     = 'solution_'  ! file where we store the contracted mat. elemens of the Hamiltonian
       real(rk)            :: degen_threshold         ! a threshold to find degenerate values
       logical             :: test_diag        ! switch on the test (memory demanding) diagonalization of the hamiltonian 
@@ -980,6 +983,19 @@ module fields
              !
              job%contrci_me_fast = .true.
              trove%IO_contrCI = "SAVE"
+             !
+           case ("VIBINTENSITY","TM","TM_CUTOFF")
+             !
+             call readf(job%TMcutoff)
+             if (job%TMcutoff>0.0_ark) job%TMpruning = .true.
+             !
+           case ("TM_ENERMIN")
+             !
+             call readf(job%TMenermin)
+             !
+           case ("TM_PRINUNG","TMPRINUNG")
+             !
+             job%TMpruning = .true.
              !
            case ("CLUSTER")
              !
@@ -2994,6 +3010,10 @@ module fields
            case('QSTAT','PARTITION','PART_FUNC')
              !
              call readf(intensity%part_func)
+             !
+           case('PRUNING')
+             !              
+             intensity%pruning = .true.
              !
            case('GNS')
              !

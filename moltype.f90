@@ -227,8 +227,9 @@ module moltype
      character(cl)       :: swap_file  ="compress"   ! where swap the compacted eigenvectors to
      integer(ik)         :: int_increm = 1e9 ! used to print out the lower energies needed to select int_increm intensities
      real(rk)         :: factor = 1.0d0   ! factor <1 to be applied the maxsize of the vector adn thus to be shrunk 
-     real(rk)         :: wallclock    ! wallclock limit, needed to estmate how many transitions can be processed within one job
-     logical          :: reduced      ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
+     real(rk)         :: wallclock          ! wallclock limit, needed to estmate how many transitions can be processed within one job
+     logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
+     logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      !
  end type MLIntensityT
 

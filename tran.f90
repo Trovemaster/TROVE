@@ -19,7 +19,7 @@ module tran
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
         bset_contr,eigen, index_correlation,Neigenlevels, &
-        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
+        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel
 
  type bset_contrT
     integer(ik)                 :: jval            ! rotational quantum number that correspond to the contr. basis set
@@ -55,7 +55,8 @@ module tran
  integer(ik)                 :: Neigenroots   ! number of 'eigen' roots to be processed 
  integer(ik)                 :: extF_rank     ! 
  integer(ik),pointer         :: TRicontr_cnu(:,:)     ! store cnu  vs icontr index
- integer(ik),pointer         :: Ncontr02icase0(:,:)  ! from icontr0 to icase0, limits of the contracted active space: (i,1) = icontr1, (i,2) = icontr2
+ integer(ik),pointer         :: Ncontr02icase0(:,:)   ! from icontr0 to icase0, limits of the contracted active space: (i,1) = icontr1, (i,2) = icontr2
+ integer(ik),pointer         :: istate2ilevel(:,:,:)  !  correlate the state number in the eigen...chk with ilevel 
  !
  !character(cl), parameter :: eigen_vectr = 'eigen_vectors', eigen_quant = 'eigen_quanta', eigen_descr = 'eigen_descr'
 
@@ -444,8 +445,8 @@ contains
 
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,   &
-                               iounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
-    integer(ik),allocatable :: ilevel_new(:,:,:),ktau_rot(:,:),isym(:)
+                               iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
+    integer(ik),allocatable :: ktau_rot(:,:),isym(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
     !
@@ -455,7 +456,8 @@ contains
     !
     logical                 :: passed
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
-    integer(ik)             :: jind_t,maxdeg,gamma
+    integer(ik)             :: jind_t,maxdeg,gamma,jval_,irec_, igamma_, ilevel_
+    real(rk)                :: energy_, state_intensity
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
     ! 
@@ -487,8 +489,13 @@ contains
     !
     ! create a temp. array needed for filtering out levels
     !
-    allocate(isym(0:nclasses),ilevel_new(njval,sym%Nrepresen,nroots_t),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
-    ilevel_new = 0 
+    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
+    !
+    allocate(istate2ilevel(njval,sym%Nrepresen,nroots_t),stat=info) 
+    !
+    call ArrayStart('istate2ilevel',info,size(istate2ilevel),kind(istate2ilevel))
+    !
+    istate2ilevel = 0
     !
     nroots  = 0
     nlevels = 0 
@@ -515,6 +522,19 @@ contains
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename)
+          !
+          ! for the TM-based basis set pruning open the chk-file with the vibrational intensities 
+          !
+          if (job%TMpruning)  then 
+             !
+             filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+             !
+             write(ioname, '(a, i4,2x,i2)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
+             !
+             call IOstart(trim(ioname), jounit)
+             open(unit = jounit, action = 'read',status='old' , file = filename)
+             !
+          endif
           !
           ! Check the fingerprint of the computed eigenvectors. 
           !
@@ -554,11 +574,35 @@ contains
              !
              call filter(energy,igamma,passed)
              !
+             if (job%TMpruning)  then 
+                !
+                read(jounit, *) jval_, igamma_, ilevel_, energy_, state_intensity
+                !
+                if (jval_/=jval(jind).or.igamma_/=igamma.or.ilevel_/=ilevel) then 
+                  !
+                  write(out,"('eigen_intens.chk error: ineteger records do not agree with eigen_descr:' )")
+                  write(out,"('jind =  ',2i5,', igamma = ',2i4,'  ilevel =  ',2i8 )") jval_,jval(jind),igamma_,igamma,ilevel_,ilevel
+                  stop 'eigen_intens.chk error: records do not agree with eigen_descr'
+                  !
+                endif
+                !
+                if (energy_>small_.and.abs(energy-energy_)>sqrt(small_)) then 
+                  !
+                  write(out,"('eigen_intens.chk error: energy  does not agree with eigen_descr:' )")
+                  write(out,"('energy =  ',2f20.12)") energy_,energy
+                  stop 'eigen_intens.chk error: energy  does not agree with eigen_descr'
+                  !
+                endif
+                !
+                if (state_intensity<job%TMcutoff.and.energy-job%ZPE>job%TMenermin) passed = .false.
+                !
+             endif
+             !
              if (passed) then 
                 if (ideg==1) then 
                     !
                     nlevels = nlevels + 1
-                    ilevel_new(jind,igamma,ilevel) = nlevels
+                    istate2ilevel(jind,igamma,ilevel) = nlevels
                     !
                 endif
                 !
@@ -579,6 +623,7 @@ contains
           end do
           !
           close(iounit)
+          close(jounit)
           !
        enddo
     enddo
@@ -700,13 +745,16 @@ contains
              !
              !if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
              !
-             call filter(energy,igamma,passed)
+             passed = .true.
+             if (istate2ilevel(jind,igamma,ilevel)==0) passed = .false.
+             !
+             !call filter(energy,igamma,passed)
              !
              if (passed) then
                 !
                 ! 'nlevels' runs over the levels (i.e. one 'ilevel' for all denerate components)
                 !
-                nlevels = ilevel_new(jind,igamma,ilevel)
+                nlevels = istate2ilevel(jind,igamma,ilevel)
                 !
                 eigen(nlevels)%irec(ideg)  = irec
                 !
@@ -792,6 +840,9 @@ contains
           eigen(ilevel) = eigen_t
           energy        = eigen(ilevel)%energy
           !
+          istate2ilevel(eigen(ilevel)%jind,eigen(ilevel)%igamma,eigen(ilevel)%ilevel) = ilevel
+          istate2ilevel(eigen(jlevel)%jind,eigen(jlevel)%igamma,eigen(jlevel)%ilevel) = jlevel
+          !
         endif 
         !
       enddo
@@ -809,7 +860,7 @@ contains
       enddo
     enddo
     !
-    deallocate(ilevel_new,ktau_rot,isym) 
+    deallocate(ktau_rot,isym) 
     !
     if (job%verbose>=2) write(out,"('...done!')")
     !
@@ -1390,6 +1441,8 @@ contains
         islice = 9
         !
         do k1 = 1,FLNmodes
+          !
+          if (job%contrci_me_fast.and.k1>1) cycle
           !
           do k2 = 1,3
             !

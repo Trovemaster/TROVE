@@ -15694,8 +15694,8 @@ module perturbation
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
             !
-            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 1 + 3 x 3 + ',i3,'x 3  = ',i5,' chk-slices')") PT%Nmodes,1+9+3*PT%Nmodes
-            if (job%verbose>=4) write(out,"('  islice = 0 (gvib and poten), 1-9 (Grot), 10-',i3,' (Gcor) ')") 9+3*PT%Nmodes
+            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 1 + 3 x 3 + 3  = 12 chk-slices')")
+            if (job%verbose>=4) write(out,"('  islice = 0 (gvib and poten), 1-9 (Grot), 10-12 (Gcor) ')")
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4/)") iterm1,iterm2
             if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
             if (job%verbose>=4) write(out,"('  Vibrational chk-s correspond to slice 0; for vibrational only use MATELEM SAVE 0 0')")
@@ -15725,6 +15725,8 @@ module perturbation
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
           islice = 0
+          !
+          if (job%verbose>=2) call TimerStart('calc_grot_contr_matrix')
           !
           do k1 = 1,3
             do k2 = 1,3
@@ -15800,7 +15802,10 @@ module perturbation
               endif
               !
             enddo
+            !
           enddo
+          !
+          if (job%verbose>=2) call TimerStop('calc_grot_contr_matrix')
           !
           if (job%verbose>=2) write(out,"('...done!')")
           !
@@ -15814,83 +15819,83 @@ module perturbation
           !
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
-          !do k1 = 1,PT%Nmodes
+          if (job%verbose>=2) call TimerStart('calc_gcor_contr_matrix')
+          !
+          k1 = 1
+          !
+          do k2 = 1,3
             !
-            k1 = 1
+            islice = islice + 1
             !
-            do k2 = 1,3
+            if ( job%IOmatelem_divide ) then 
+              if (islice<iterm1.or.iterm2<islice) cycle
               !
-              islice = islice + 1
+              call open_divided_slice(islice,'g_cor',job%matelem_suffix,chkptIO_)
               !
-              if ( job%IOmatelem_divide ) then 
-                if (islice<iterm1.or.iterm2<islice) cycle
-                !
-                call open_divided_slice(islice,'g_cor',job%matelem_suffix,chkptIO_)
-                !
-              endif
+            endif
+            !
+            if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
+            !
+            grot_t = 0
+            !
+            do isymcoeff =1,PT%Maxsymcoeffs
               !
-              if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
+              Ndeg = PT%Index_deg(isymcoeff)%size1
               !
-              grot_t = 0
+              if (job%vib_rot_contr) grot_t = 0
               !
-              do isymcoeff =1,PT%Maxsymcoeffs
-                !
-                Ndeg = PT%Index_deg(isymcoeff)%size1
-                !
-                if (job%vib_rot_contr) grot_t = 0
-                !
-                call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
-                !
-                if (job%vib_rot_contr) then 
-                  !
-                  !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
-                  do ideg=1,Ndeg
-                     icontr = PT%icase2icontr(isymcoeff,ideg)
-                     do jdeg=1,ideg-1
-                        jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                        grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
-                     enddo
-                  enddo
-                  !$omp end parallel do
-                  !
-                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
-                      write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
-                  endif
-                  !
-                endif
-                !
-              enddo
+              call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
               !
-              if (.not.job%vib_rot_contr) then 
+              if (job%vib_rot_contr) then 
                 !
-                !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
-                do icoeff=1,mdimen
-                  do jcoeff=1,icoeff-1
-                    grot_t(jcoeff,icoeff) = -grot_t(icoeff,jcoeff)
-                  enddo
+                !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
+                do ideg=1,Ndeg
+                   icontr = PT%icase2icontr(isymcoeff,ideg)
+                   do jdeg=1,ideg-1
+                      jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                      grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
+                   enddo
                 enddo
                 !$omp end parallel do
                 !
-                if (trim(job%IOkinet_action)=='SAVE') then
-                  !
-                  if (job%IOmatelem_divide) then
-                     write(chkptIO_) grot_t
-                  else
-                     write(chkptIO) grot_t
-                  endif
-                  !
+                if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                    write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                 endif
                 !
-              endif
-              !
-              if (job%IOmatelem_divide) then 
-                write(chkptIO_) 'g_cor'
-                close(chkptIO_)
               endif
               !
             enddo
             !
-          !enddo
+            if (.not.job%vib_rot_contr) then 
+              !
+              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
+              do icoeff=1,mdimen
+                do jcoeff=1,icoeff-1
+                  grot_t(jcoeff,icoeff) = -grot_t(icoeff,jcoeff)
+                enddo
+              enddo
+              !$omp end parallel do
+              !
+              if (trim(job%IOkinet_action)=='SAVE') then
+                !
+                if (job%IOmatelem_divide) then
+                   write(chkptIO_) grot_t
+                else
+                   write(chkptIO) grot_t
+                endif
+                !
+              endif
+              !
+            endif
+            !
+            if (job%IOmatelem_divide) then 
+              write(chkptIO_) 'g_cor'
+              close(chkptIO_)
+            endif
+            !
+          enddo
+          !
+          if (job%verbose>=2) call TimerStop('calc_gcor_contr_matrix')
           !
           deallocate(grot_t)
           call ArrayStop('grot-gcor-fields')
@@ -15935,7 +15940,14 @@ module perturbation
           !
           hvib_t = 0
           !
+          if (job%verbose>=2) call TimerStart('calc_gvib_contr_matrix')
+          !
+          if (job%verbose>=4) write(out,"(/'  |',100('-'),'|')")
+          if (job%verbose>=4) write(out,"('  |',i8)",advance='NO')
+          !
           do isymcoeff =1,PT%Maxsymcoeffs
+            !
+            if (job%verbose>=4.and.mod(isymcoeff,int(PT%Maxsymcoeffs/100))==0) write(out,"('-')",advance='NO')
             !
             Ndeg = PT%Index_deg(isymcoeff)%size1
             !
@@ -15983,6 +15995,10 @@ module perturbation
             endif
             !
           enddo
+          !
+          if (job%verbose>=4) write(out,"('| 100% done')",advance='YES') 
+          !
+          if (job%verbose>=2) call TimerStop('calc_gvib_contr_matrix')
           !
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE')) then 
             !
@@ -16997,9 +17013,9 @@ module perturbation
            matelem = 0
            !
            do iclass=1, nclasses
-             do jclass=1, nclasses
-               do imode=1, iclass_nmodes(iclass)
-                 imode_ = iclass_imode(imode,iclass)
+             do imode=1, iclass_nmodes(iclass)
+               imode_ = iclass_imode(imode,iclass)
+               do jclass=1, nclasses
                  do jmode=1, iclass_nmodes(jclass)
                    jmode_ = iclass_imode(jmode,jclass)
                    !
@@ -17028,7 +17044,7 @@ module perturbation
                      nterms = gvib_icomb_nterms(icomb,imode_,jmode_)
                      if (nterms<=0) cycle
                      !
-                     ! orthogonality of contracted functions ASK ANDREY ABOUT iclass_n - undefined!
+                     ! orthogonality of contracted functions
                      if ( any( (/( iclass_ilambda(imode,icomb_iclass0(iclass_n,icomb),iclass)==0 .and. &
                                    iclass_ilambda(jmode,icomb_iclass0(iclass_n,icomb),jclass)==0 .and. &
                                    nu_classes(icomb_iclass0(iclass_n,icomb),icontr)/=nu_classes(icomb_iclass0(iclass_n,icomb),jcontr), &
@@ -17044,12 +17060,13 @@ module perturbation
                        iterm_uniq = gvib_icomb_iterm(kclass,1,0,imode_,jmode_)
                        me_class0(iclass_n) = gvib_me(kclass)%me(iterm_uniq,nu_i,nu_j,ilambda,imu)
                      enddo
-                     if (n0>0) then
+                     !
+                     !if (n0>0) then
                        prod0 = product(me_class0(1:n0))
                        if (abs(prod0)<coef_thresh) cycle
-                     else
-                       prod0 = 1.0_rk
-                     endif
+                     !else
+                     !  prod0 = 1.0_rk
+                     !endif
                      !
                      matelem0 = 0
                      n = icomb_nclasses(icomb)
