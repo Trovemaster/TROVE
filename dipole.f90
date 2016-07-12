@@ -1750,7 +1750,7 @@ contains
    !
    if (.not.job%IOextF_divide) then
       !
-      if (job%verbose>=4) write(out, '(a, 1x, a)') 'chl = file', trim(job%extFmat_file)
+      if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%extFmat_file)
       !
       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%extFmat_file)
       !

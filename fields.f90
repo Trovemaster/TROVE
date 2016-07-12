@@ -67,7 +67,8 @@ module fields
      real(rk)  :: general        ! Energy cutoff for everything
      real(rk)  :: primt          ! Energy cutoff for primitives
      real(rk)  :: contr         ! Energy cutoff for contratced basis functions 
-     real(rk)  :: matelem         ! Energy cutoff for contratced matrix elements in the matelem section
+     real(rk)  :: matelem         !  Energy cutoff for contratced matrix elements in the matelem section
+     real(rk)  ::  DeltaE=0      ! Energgy cutoff based on teh difference between the row-Energy and column-Energy
      integer(ik) :: polyad     ! Polyad cutoff for primit. functs. in contratced basis functions 
      !
    end type  FLenercutT  
@@ -934,6 +935,10 @@ module fields
            case ("ENERCUT_MATELEM","ENERMAX_MATELEM")
              !
              call readf(job%enercutoff%matelem)
+             !
+           case ("ENERCUT_DELTA","ENERMAX_DELTA")
+             !
+             call readf(job%enercutoff%DeltaE)
              !
            case ("SYMM_TOLER")
              !
@@ -5115,7 +5120,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=7.or.(job%verbose>=4.and.manifold==0)) then
+       if (job%verbose>=7.or.(job%verbose>=5.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes

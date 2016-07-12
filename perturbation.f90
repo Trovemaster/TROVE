@@ -7628,8 +7628,6 @@ module perturbation
           !
           islice = islice + 1
           !
-          call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
-          !
           allocate(gcor(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
           call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
           !
@@ -7639,6 +7637,8 @@ module perturbation
              gcor(k1,k2)%me = 0
              cycle 
           endif
+          !
+          call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
           !
           read(chkptIO_) mat_
           !
@@ -9810,7 +9810,7 @@ module perturbation
          !
          if (all(nu==normal).and..false.) then 
            !
-           write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3,")",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//',")",f9.2)') & 
+           write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3," )",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//'," )",f9.2)') & 
                       sym%label(gamma),iroot,termvalue,&
                       cgamma(0),jrot,k,tau, &
                       cgamma(1:PT%Nclasses), &
@@ -9818,7 +9818,7 @@ module perturbation
            !
          else
             !
-            write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3,")",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//',")",1x,f9.2,1x,"(",'//fmt%Nmodes//',")",1x,"(",'//fmt%Nclasses0//',")")') & 
+            write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3," )",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//'," )",1x,f9.2,1x,"(",'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//'," )")') & 
                        sym%label(gamma),iroot,termvalue,&
                        cgamma(0),jrot,k,tau, &
                        cgamma(1:PT%Nclasses), &
@@ -15942,12 +15942,12 @@ module perturbation
           !
           if (job%verbose>=2) call TimerStart('calc_gvib_contr_matrix')
           !
-          if (job%verbose>=4) write(out,"(/'  |',100('-'),'|')")
-          if (job%verbose>=4) write(out,"('  |',i8)",advance='NO')
+          if (job%verbose>=4) write(out,"(/' hvib...',i12)") PT%Maxsymcoeffs
+          !if (job%verbose>=4) write(out,"('  |',i8)",advance='NO')
           !
           do isymcoeff =1,PT%Maxsymcoeffs
             !
-            if (job%verbose>=4.and.mod(isymcoeff,int(PT%Maxsymcoeffs/100))==0) write(out,"('-')",advance='NO')
+            if (job%verbose>=4.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
             !
             Ndeg = PT%Index_deg(isymcoeff)%size1
             !
@@ -15996,7 +15996,7 @@ module perturbation
             !
           enddo
           !
-          if (job%verbose>=4) write(out,"('| 100% done')",advance='YES') 
+          !if (job%verbose>=4) write(out,"('| 100% done')") 
           !
           if (job%verbose>=2) call TimerStop('calc_gvib_contr_matrix')
           !
@@ -16987,13 +16987,14 @@ module perturbation
       integer(ik),intent(in) :: isymcoeff
       real(rk),intent(out) :: hvib(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0,energy_j
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0,energy_j,energy_i
       integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
       integer(ik) :: iterm_uniq,jclass,imode,jmode,imode_,jmode_,Maxcontracts,jsymcoeff,jdeg
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
       coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
       !
       Maxcontracts = PT%Maxcontracts
       !
@@ -17008,7 +17009,7 @@ module perturbation
            jsymcoeff = PT%icontr2icase(jcontr,1)
            energy_j = enermax_classes(jsymcoeff)
            !
-           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
+           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
            !        
            matelem = 0
            !
@@ -17062,6 +17063,7 @@ module perturbation
                      enddo
                      !
                      !if (n0>0) then
+                       prod0 = 1.0_rk
                        prod0 = product(me_class0(1:n0))
                        if (abs(prod0)<coef_thresh) cycle
                      !else
@@ -27988,7 +27990,8 @@ end subroutine read_contr_ind
     if (iroot/=dimen) then 
       !
       write(out,"('PThamiltonianMat_reduced: iroot /= dimen:',2i)") iroot,dimen
-      stop 'PThamiltonianMat_reduced: iroot /= dimen' 
+      !
+      !stop 'PThamiltonianMat_reduced: iroot /= dimen' 
       !
     endif
     !
