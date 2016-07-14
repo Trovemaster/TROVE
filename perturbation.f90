@@ -2912,7 +2912,7 @@ module perturbation
          ! apply the polyad- and cluster-thresholds only for the non-Harmonic basis 
          !
          if ( ipol>job%Npolyads_contr.and.spread>job%cluster.and. &
-              .not.( bs_t(kmode)%postprocess.and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and..not.trove%DVR ).and.&
+              .not.( bs_t(kmode)%postprocess.and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model/=1000.and..not.trove%DVR ).and.&
               .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in ) ) then
             !
             cycle 
@@ -15488,7 +15488,7 @@ module perturbation
     !
     real(rk)           :: f_t
     integer(ik)        :: isize,iroot
-    integer(ik)        :: dimen_p,chkptIO,extF_rank,chkptIO_
+    integer(ik)        :: dimen_p,chkptIO,extF_rank,chkptIO_,dampIO_
     integer(hik)       :: rootsize,matsize
     !
     logical            :: treat_rotation =.false.  ! switch off/on the rotation 
@@ -15496,12 +15496,13 @@ module perturbation
     logical            :: treat_exfF=.false.       ! switch off/on the external field 
     !
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
-    character(len=cl)  :: job_is,buf,jchar1,jchar2
+    character(len=cl)  :: job_is,buf,jchar1,jchar2,filename
     !
     integer(ik)        :: imu,Ncomb,junit,Nslices,Nswap,mdimen,mdimen_,icontr,jcontr
     integer(ik)        :: icoeff,icase,ilambda,jcoeff,idvr,iterm1,iterm2,islice,isymcoeff
     integer(ik),allocatable  :: extF_N(:)
     character(len=4) :: jchar
+    character(len=18):: buf18
     !
     integer(ik), allocatable :: dimen_classes(:), nu_classes(:,:), iclass_nmodes(:), iclass_imode(:,:), iclass_ilambda(:,:,:), &
                                 icomb_nclasses(:), icomb_iclass(:,:), icomb_nclasses0(:), icomb_iclass0(:,:), &
@@ -15694,7 +15695,7 @@ module perturbation
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
             !
-            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 1 + 3 x 3 + 3  = 12 chk-slices')")
+            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 1 + 3 x 3 + 3  = 1+12 chk-slices')")
             if (job%verbose>=4) write(out,"('  islice = 0 (gvib and poten), 1-9 (Grot), 10-12 (Gcor) ')")
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4/)") iterm1,iterm2
             if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
@@ -15836,6 +15837,21 @@ module perturbation
             !
             if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
             !
+            ! damping or/and starting from the previously damped record of the matelem-checkpoints
+            !
+            if (job%matelem_append.or.job%IOmatelem_damp) then
+              !
+              if (job%vib_rot_contr) then
+                !
+                write(out,"('Appending or damping is not working with the vib-rot contraction scheme, remove them from input')")
+                stop 'Appending or damping is not working with the vib-rot'
+                !
+              endif
+              !
+              call open_damp_slice(islice,'g_cor',job%matelem_suffix,dampIO_)
+              !
+            endif
+            !
             grot_t = 0
             !
             do isymcoeff =1,PT%Maxsymcoeffs
@@ -15844,27 +15860,60 @@ module perturbation
               !
               if (job%vib_rot_contr) grot_t = 0
               !
-              call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
+              if (job%matelem_append) then
+                 !
+                 do ideg=1,Ndeg
+                   !
+                   icontr = PT%icase2icontr(isymcoeff,ideg)
+                   !
+                   read(dampIO_) icontr,grot_t(icontr,1:icontr)
+                   if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
+                     write(out,"('Wrong record ',i9,' /= ',i9,' in the damp-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
+                     stop 'Wrong record in the damp-file'
+                   endif
+                   !
+                 enddo
+                 !
+                 if (isymcoeff==job%iappend) job%matelem_append = .false.
+                 !
+              else ! no-append means calculation 
+                 !
+                 call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
+                 !
+              endif 
+              !
               !
               if (job%vib_rot_contr) then 
-                !
-                !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
-                do ideg=1,Ndeg
-                   icontr = PT%icase2icontr(isymcoeff,ideg)
-                   do jdeg=1,ideg-1
-                      jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                      grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
-                   enddo
-                enddo
-                !$omp end parallel do
-                !
-                if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
-                    write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
-                endif
-                !
+                  !
+                  !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
+                  do ideg=1,Ndeg
+                     icontr = PT%icase2icontr(isymcoeff,ideg)
+                     do jdeg=1,ideg-1
+                        jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                        grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
+                     enddo
+                  enddo
+                  !$omp end parallel do
+                  !
+                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                      write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
+                  endif
+                  !
+              elseif (job%IOmatelem_damp.and..not.job%matelem_append) then 
+                  !
+                  do ideg=1,Ndeg
+                    !
+                    icontr = PT%icase2icontr(isymcoeff,ideg)
+                    !
+                    write(dampIO_) icontr,grot_t(icontr,1:icontr)
+                    !
+                  enddo
+                  !
               endif
               !
             enddo
+            !
+            if (job%IOmatelem_damp) close(dampIO_)
             !
             if (.not.job%vib_rot_contr) then 
               !
@@ -15938,6 +15987,23 @@ module perturbation
             !
           endif
           !
+          ! damping or/and starting from the previously damped record of the matelem-checkpoints
+          !
+          if (job%matelem_append.or.job%IOmatelem_damp) then
+            !
+            if (job%vib_rot_contr) then
+              !
+              write(out,"('Appending or damping is not working with the vib-rot contraction scheme, remove them from input')")
+              stop 'Appending or damping is not working with the vib-rot'
+              !
+            endif
+            !
+            islice = 0
+            !
+            call open_damp_slice(islice,'h_vib',job%matelem_suffix,dampIO_)
+            !
+          endif
+          !
           hvib_t = 0
           !
           if (job%verbose>=2) call TimerStart('calc_gvib_contr_matrix')
@@ -15953,7 +16019,27 @@ module perturbation
             !
             if (job%vib_rot_contr) hvib_t = 0
             !
-            call calc_gvib_contr_matrix(isymcoeff,hvib_t)
+            if (job%matelem_append) then
+               !
+               do ideg=1,Ndeg
+                 !
+                 icontr = PT%icase2icontr(isymcoeff,ideg)
+                 !
+                 read(dampIO_) icontr,hvib_t(icontr,1:icontr)
+                 if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
+                   write(out,"('Wrong record ',i9,' /= ',i9,' in the damp-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
+                   stop 'Wrong record in the damp-file'
+                 endif
+                 !
+               enddo
+               !
+               if (isymcoeff==job%iappend) job%matelem_append = .false.
+               !
+            else ! no-append means calculation 
+               !
+               call calc_gvib_contr_matrix(isymcoeff,hvib_t)
+               !
+            endif 
             !
             ! store the matrix elements 
             !
@@ -15992,9 +16078,21 @@ module perturbation
                     !
                endif
                !
+           elseif (job%IOmatelem_damp.and..not.job%matelem_append) then 
+               !
+               do ideg=1,Ndeg
+                 !
+                 icontr = PT%icase2icontr(isymcoeff,ideg)
+                 !
+                 write(dampIO_) icontr,hvib_t(icontr,1:icontr)
+                 !
+               enddo
+               !
             endif
             !
           enddo
+          !
+          if (job%IOmatelem_damp) close(dampIO_)
           !
           !if (job%verbose>=4) write(out,"('| 100% done')") 
           !
@@ -16275,6 +16373,35 @@ module perturbation
       !
       !
   contains 
+    !
+    !
+    subroutine open_damp_slice(islice,name,suffix,chkptIO)
+        !
+        integer(ik),intent(in) :: islice
+        character(len=*),intent(in) :: name,suffix
+        integer(ik),intent(out)     :: chkptIO
+        character(len=4) :: jchar
+        character(len=cl) :: filename
+          !
+          write(job_is,"('damp matrix')")
+          !
+          call IOStart(trim(job_is),chkptIO)
+          !
+          write(jchar, '(i4)') islice
+          !
+          filename = trim(suffix)//trim(adjustl(jchar))//'_damp.chk'
+          !
+          if (job%matelem_append.and.job%IOmatelem_damp) then 
+            open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
+          elseif(job%IOmatelem_damp) then
+            open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
+          else
+            open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+          endif
+          !
+    end subroutine open_damp_slice
+    !
+    !
     !
     subroutine open_divided_slice(islice,name,suffix,chkptIO)
         !
@@ -29671,7 +29798,7 @@ end subroutine read_contr_ind
         read(iunit) imat_t(0:PT%Nclasses,1:ncontr)
         !
         deallocate(imat_t)
-         !
+        !
       end select
       !
     end subroutine PTstore_icontr_cnu

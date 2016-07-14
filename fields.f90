@@ -283,9 +283,12 @@ module fields
       logical             :: IOvector_symm = .true.    ! store eigen-vectors in the symmetrized iired. representation 
       logical             :: IOeigen_compress = .false.   ! compress the computed eigenvectors using the threshold factor coeff_thresh
       logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
-      logical             :: IOExtF_divide = .false.     ! divide the ExtF checkpoint into pieces 
-      logical             :: IOfitpot_divide = .false.     ! divide the ExtF checkpoint into pieces 
+      logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
+      logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
       character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
+      logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
+      logical             :: IOmatelem_damp               ! damp into a temperal file an for append later 
+      integer(ik)         :: iappend                      ! Record in the matelem matrix to append after
       !
       type(FLeigenfile)   :: eigenfile
       type(FLeigenfile)   :: contrfile
@@ -2089,7 +2092,7 @@ module fields
              !
              call readu(w)
              !
-             if (all(trim(w)/=(/'READ','SAVE','NONE','VIB','CONVERT'/))) then 
+             if (all(trim(w)/=(/'READ','SAVE','NONE','VIB','CONVERT','APPEND'/))) then 
                !
                write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
                stop 'FLinput -illegal key in CHECK_POINT'
@@ -2104,6 +2107,20 @@ module fields
                 action%convert_vibme = .true.
                 !
                 !job%IOj0matel_action = trim('SAVE')
+                !
+             endif 
+             !
+             if (trim(w)=='APPEND') then 
+                !
+                job%matelem_append = .true.
+                !
+                if (Nitems>3) then
+                   call readi(job%iappend)
+                else
+                   call report (" The reccord to append after is missing",.true.)
+                endif
+                !
+                job%IOkinet_action = trim('SAVE')
                 !
              endif 
              !
@@ -2127,7 +2144,7 @@ module fields
              !
              ! an addional key to specify SAVE/READ 
              !
-             if (Nitems>2) then
+             if (Nitems>2.or.(job%matelem_append.and.Nitems>3)) then
                call readu(w)
                if (all(trim(w)/=(/'DIVIDE','SPLIT','STITCH'/))) call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
                !
@@ -2147,6 +2164,12 @@ module fields
                endif
                !
                if (trim(w)=='STITCH') job%iswap(:)=0
+               !
+             endif
+             !
+             if (item<Nitems) then 
+               call readu(w)
+               if (trim(w)=='DAMP'.or.'FLASH') job%IOmatelem_damp = .true.
                !
              endif
              !
