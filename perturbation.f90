@@ -15488,7 +15488,7 @@ module perturbation
     !
     real(rk)           :: f_t
     integer(ik)        :: isize,iroot
-    integer(ik)        :: dimen_p,chkptIO,extF_rank,chkptIO_,dampIO_
+    integer(ik)        :: dimen_p,chkptIO,extF_rank,chkptIO_,dumpIO_
     integer(hik)       :: rootsize,matsize
     !
     logical            :: treat_rotation =.false.  ! switch off/on the rotation 
@@ -15837,18 +15837,18 @@ module perturbation
             !
             if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
             !
-            ! damping or/and starting from the previously damped record of the matelem-checkpoints
+            ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
             !
-            if (job%matelem_append.or.job%IOmatelem_damp) then
+            if (job%matelem_append.or.job%IOmatelem_dump) then
               !
               if (job%vib_rot_contr) then
                 !
-                write(out,"('Appending or damping is not working with the vib-rot contraction scheme, remove them from input')")
-                stop 'Appending or damping is not working with the vib-rot'
+                write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+                stop 'Appending or dumping is not working with the vib-rot'
                 !
               endif
               !
-              call open_damp_slice(islice,'g_cor',job%matelem_suffix,dampIO_)
+              call open_dump_slice(islice,'g_cor',job%matelem_suffix,dumpIO_)
               !
             endif
             !
@@ -15866,10 +15866,10 @@ module perturbation
                    !
                    icontr = PT%icase2icontr(isymcoeff,ideg)
                    !
-                   read(dampIO_) icontr,grot_t(icontr,1:icontr)
+                   read(dumpIO_) icontr,grot_t(icontr,1:icontr)
                    if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
-                     write(out,"('Wrong record ',i9,' /= ',i9,' in the damp-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
-                     stop 'Wrong record in the damp-file'
+                     write(out,"('Wrong record ',i9,' /= ',i9,' in the dump-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
+                     stop 'Wrong record in the dump-file'
                    endif
                    !
                  enddo
@@ -15899,13 +15899,13 @@ module perturbation
                       write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                   endif
                   !
-              elseif (job%IOmatelem_damp.and..not.job%matelem_append) then 
+              elseif (job%IOmatelem_dump.and..not.job%matelem_append) then 
                   !
                   do ideg=1,Ndeg
                     !
                     icontr = PT%icase2icontr(isymcoeff,ideg)
                     !
-                    write(dampIO_) icontr,grot_t(icontr,1:icontr)
+                    write(dumpIO_) icontr,grot_t(icontr,1:icontr)
                     !
                   enddo
                   !
@@ -15913,7 +15913,7 @@ module perturbation
               !
             enddo
             !
-            if (job%IOmatelem_damp) close(dampIO_)
+            if (job%IOmatelem_dump) close(dumpIO_)
             !
             if (.not.job%vib_rot_contr) then 
               !
@@ -15987,20 +15987,20 @@ module perturbation
             !
           endif
           !
-          ! damping or/and starting from the previously damped record of the matelem-checkpoints
+          ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
           !
-          if (job%matelem_append.or.job%IOmatelem_damp) then
+          if (job%matelem_append.or.job%IOmatelem_dump) then
             !
             if (job%vib_rot_contr) then
               !
-              write(out,"('Appending or damping is not working with the vib-rot contraction scheme, remove them from input')")
-              stop 'Appending or damping is not working with the vib-rot'
+              write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+              stop 'Appending or dumping is not working with the vib-rot'
               !
             endif
             !
             islice = 0
             !
-            call open_damp_slice(islice,'h_vib',job%matelem_suffix,dampIO_)
+            call open_dump_slice(islice,'h_vib',job%matelem_suffix,dumpIO_)
             !
           endif
           !
@@ -16025,15 +16025,13 @@ module perturbation
                  !
                  icontr = PT%icase2icontr(isymcoeff,ideg)
                  !
-                 read(dampIO_) icontr,hvib_t(icontr,1:icontr)
+                 read(dumpIO_) icontr,hvib_t(icontr,1:icontr)
                  if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
-                   write(out,"('Wrong record ',i9,' /= ',i9,' in the damp-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
-                   stop 'Wrong record in the damp-file'
+                   write(out,"('Wrong record ',i9,' /= ',i9,' in the vib dump-chk file ')") icontr,PT%icase2icontr(isymcoeff,ideg)
+                   stop 'Wrong record in the dump-file'
                  endif
                  !
                enddo
-               !
-               if (isymcoeff==job%iappend) job%matelem_append = .false.
                !
             else ! no-append means calculation 
                !
@@ -16078,21 +16076,23 @@ module perturbation
                     !
                endif
                !
-           elseif (job%IOmatelem_damp.and..not.job%matelem_append) then 
+            elseif (job%IOmatelem_dump.and..not.job%matelem_append) then 
                !
                do ideg=1,Ndeg
                  !
                  icontr = PT%icase2icontr(isymcoeff,ideg)
                  !
-                 write(dampIO_) icontr,hvib_t(icontr,1:icontr)
+                 write(dumpIO_) icontr,hvib_t(icontr,1:icontr)
                  !
                enddo
                !
             endif
             !
+            if (isymcoeff==job%iappend) job%matelem_append = .false.
+            !
           enddo
           !
-          if (job%IOmatelem_damp) close(dampIO_)
+          if (job%IOmatelem_dump) close(dumpIO_)
           !
           !if (job%verbose>=4) write(out,"('| 100% done')") 
           !
@@ -16375,7 +16375,7 @@ module perturbation
   contains 
     !
     !
-    subroutine open_damp_slice(islice,name,suffix,chkptIO)
+    subroutine open_dump_slice(islice,name,suffix,chkptIO)
         !
         integer(ik),intent(in) :: islice
         character(len=*),intent(in) :: name,suffix
@@ -16383,23 +16383,23 @@ module perturbation
         character(len=4) :: jchar
         character(len=cl) :: filename
           !
-          write(job_is,"('damp matrix')")
+          write(job_is,"('dump matrix')")
           !
           call IOStart(trim(job_is),chkptIO)
           !
           write(jchar, '(i4)') islice
           !
-          filename = trim(suffix)//trim(adjustl(jchar))//'_damp.chk'
+          filename = trim(suffix)//trim(adjustl(jchar))//'_dump.chk'
           !
-          if (job%matelem_append.and.job%IOmatelem_damp) then 
+          if (job%matelem_append.and.job%IOmatelem_dump) then 
             open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
-          elseif(job%IOmatelem_damp) then
+          elseif(job%IOmatelem_dump) then
             open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
           else
             open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
           endif
           !
-    end subroutine open_damp_slice
+    end subroutine open_dump_slice
     !
     !
     !

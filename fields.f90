@@ -287,7 +287,7 @@ module fields
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
       character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
       logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
-      logical             :: IOmatelem_damp               ! damp into a temperal file an for append later 
+      logical             :: IOmatelem_dump               ! dump into a temperal file an for append later 
       integer(ik)         :: iappend                      ! Record in the matelem matrix to append after
       !
       type(FLeigenfile)   :: eigenfile
@@ -2169,7 +2169,7 @@ module fields
              !
              if (item<Nitems) then 
                call readu(w)
-               if (trim(w)=='DAMP'.or.'FLASH') job%IOmatelem_damp = .true.
+               if (trim(w)=='DUMP') job%IOmatelem_dump = .true.
                !
              endif
              !
