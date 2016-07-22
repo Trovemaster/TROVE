@@ -17352,7 +17352,7 @@ module perturbation
            iterm = 1
            if (ExtF_icomb_nterms(icomb,1,1)>0) then
              if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
-               matelem = matelem + ExtF_icomb_coefs(iterm,icomb,1,1)
+               matelem = matelem + ExtF_icomb_coefs(iterm,icomb,k1,1)
              endif
            endif
            !
@@ -17377,7 +17377,7 @@ module perturbation
                  me_class0(iclass_n) = ExtF_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
                enddo
                if (n>0) then
-                 matelem = matelem + product(me_class0(1:n)) * ExtF_icomb_coefs(iterm,icomb,1,1)
+                 matelem = matelem + product(me_class0(1:n)) * ExtF_icomb_coefs(iterm,icomb,k1,1)
                endif
              enddo
              !
