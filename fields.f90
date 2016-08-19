@@ -284,11 +284,15 @@ module fields
       logical             :: IOeigen_compress = .false.   ! compress the computed eigenvectors using the threshold factor coeff_thresh
       logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
       logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
+      logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
       character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
       logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
       logical             :: IOmatelem_dump               ! dump into a temperal file an for append later 
       integer(ik)         :: iappend                      ! Record in the matelem matrix to append after
+      logical             :: extmatelem_append               ! append the matrix elements after the record (basis function) 
+      logical             :: IOextmatelem_dump               ! dump into a temperal file an for append later 
+      integer(ik)         :: iextappend                      ! Record in the matelem matrix to append after
       !
       type(FLeigenfile)   :: eigenfile
       type(FLeigenfile)   :: contrfile
@@ -2310,7 +2314,7 @@ module fields
              !
              call readu(w)
              !
-             if ( all( trim(w)/=(/'READ','SAVE','MATELEM','NONE','CONVERT'/) ) ) then
+             if ( all( trim(w)/=(/'READ','SAVE','MATELEM','NONE','CONVERT','APPEND','STITCH'/) ) ) then
                !
                write (out,"('FLinput: illegal key in EXTMATELEM :',a)") trim(w)
                stop 'FLinput -illegal key in EXTMATELEM'
@@ -2338,19 +2342,52 @@ module fields
                !
              endif 
              !
+             if (trim(w)=='APPEND') then 
+                !
+                job%extmatelem_append = .true.
+                !
+                if (Nitems>3) then
+                   call readi(job%iextappend)
+                else
+                   call report (" The reccord to append after is missing",.true.)
+                endif
+                !
+                job%IOj0ext_action = trim('SAVE')
+                !
+             endif 
+             !
              if (trim(job%IOextF_action)=='SAVE') FLextF_matelem = .true.
              !
              ! an addional key to specify SAVE/READ 
              !
-             if (Nitems>2) then
+             if (Nitems>2.or.(job%extmatelem_append.and.Nitems>3)) then
+               !
                call readu(w)
-               if (all(trim(w)/=(/'DIVIDE','SPLIT'/))) call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-               job%IOextF_divide = .true.
+               if (any(trim(w)==(/'DIVIDE','SPLIT'/))) then 
+                 !
+                 job%IOextF_divide = .true.
+                 !
+               elseif ( trim(w)=='STITCH' ) then
+                 !
+                 job%IOextF_divide = .true.
+                 job%IOextF_stitch = .true.
+                 !
+               else
+                 !
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+                 !
+               endif 
                !
                if (Nitems>3) then
                   call readi(fitting%iparam(1))
                   call readi(fitting%iparam(2))
                endif
+               !
+             endif
+             !
+             if (item<Nitems) then 
+               call readu(w)
+               if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
                !
              endif
              !
@@ -7150,6 +7187,8 @@ end subroutine check_read_save_none
       !
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
+      call print_coeff
+      !
       return
       !
     endif
@@ -7396,8 +7435,11 @@ end subroutine check_read_save_none
       !
     enddo ! parithy cycle
     !
-    ! check the smoothness and fix if necessary 
+    ! report coefficients 
     !
+    call print_coeff
+    !
+    ! check the smoothness and fix if necessary 
     !
     do imu = 1, extF%rank
       !
@@ -7407,29 +7449,10 @@ end subroutine check_read_save_none
       !
       call check_field_smoothness(fl,'CHECK',npoints,'FLinit_External_field'//trim(txt))
       !
-      call check_field_smoothness(fl,'FIX',npoints,'FLinit_External_field'//trim(txt))
+      !call check_field_smoothness(fl,'FIX',npoints,'FLinit_External_field'//trim(txt))
       !
     enddo
     !
-    !print expansion coefficients and expansion points
-    !
-    if (job%verbose>=5) then
-       !
-       Ncoeff = nterms_max
-       !
-       write(out, '(/1x, a, 1x, a, 1x, a, <Ncoeff>(8x, i5))') &
-       'ipoint', 'imu', 'iterm->', (iterm, iterm = 1,nterms_max)
-       !
-       do imu = 1, extF%rank
-         do irho = 0, npoints
-             !
-             Ncoeff = trove%extF(imu)%Ncoeff
-             !
-             write(out, '(1x, i6, 2x, i4, 8x, <Ncoeff>(1x, es12.4))') &
-             irho, imu, (trove%extF(imu)%field(iterm,irho), iterm = 1,Ncoeff)
-          end do
-       end do
-    end if
     !
     call TimerStop('External')
     !
@@ -7442,6 +7465,37 @@ end subroutine check_read_save_none
     endif
     
   contains
+  
+  
+  
+   subroutine print_coeff  
+  
+      integer(ik) :: imu,irho,Ncoeff,npoints,nterms_max
+  
+      !print expansion coefficients and expansion points
+      !
+      if (job%verbose<5) return 
+      !
+      nterms_max = trove%extF(1)%Ncoeff
+      Ncoeff = nterms_max
+      npoints   = trove%Npoints
+      !
+      write(out, '(/1x, a, 1x, a, 1x, a, <Ncoeff>(8x, i5))') &
+      'ipoint', 'imu', 'iterm->', (iterm, iterm = 1,nterms_max)
+      !
+      do imu = 1, extF%rank
+        do irho = 0, npoints
+            !
+            Ncoeff = trove%extF(imu)%Ncoeff
+            !
+            write(out, '(1x, i6, 2x, i4, 8x, <Ncoeff>(1x, es12.4))') &
+            irho, imu, (trove%extF(imu)%field(iterm,irho), iterm = 1,Ncoeff)
+         end do
+      end do
+
+     end subroutine print_coeff  
+
+  
     
     subroutine par_switch(par)
       !
@@ -12200,6 +12254,7 @@ end subroutine check_read_save_none
         type(Basis1DT),pointer    ::  bs
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Nmodes,Npoints,k1,k2,Tcoeff,isize,jmax_t,i,imu
+        integer(hik)         :: totalsize 
         real(ark),allocatable :: matelements_t(:,:,:,:),ener0_t(:)
         real(ark)             :: b_param_t(1:3)
         logical :: create_new_rot_basis = .false.
@@ -12517,7 +12572,12 @@ end subroutine check_read_save_none
              read(chkptIO) fl%Ncoeff
              !
              allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-             call ArrayStart('trove%exfF%me',alloc,size(fl%me),kind(fl%me))
+             !
+             totalsize = int(fl%Ncoeff,hik)*int(bs%Size+1_hik,hik)*int(bs%Size+1_hik,hik)
+             !
+             if (job%verbose>=6) write(out,"('Allocating trove%exfF%me:',i12,' x ',i9,' x ',i9,' = ',i14)") fl%Ncoeff,bs%Size+1,bs%Size+1,totalsize
+             !
+             call ArrayStart('trove%exfF%me',alloc,1_ik,kind(fl%me),totalsize)
              read(chkptIO) fl%me
              !
           enddo

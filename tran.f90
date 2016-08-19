@@ -1529,18 +1529,6 @@ contains
           !
         else
           !
-          ! Prepare the checkpoint file
-          !
-          job_is ='external field contracted matrix elements for J=0'
-          call IOStart(trim(job_is),chkptIO)
-          !
-          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
-          write(chkptIO) 'Start external field'
-          !
-          ! store the matrix elements 
-          !
-          write(chkptIO) Neigenroots
-          !
           job_is ='external field contracted matrix elements for J=0'
           call IOStart(trim(job_is),iunit)
           !
@@ -1561,6 +1549,22 @@ contains
             write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
             stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
           end if
+          !
+        endif
+        !
+        if (.not.job%IOextF_divide.or.job%IOextF_stitch) then 
+          !
+          ! Prepare the checkpoint file
+          !
+          job_is ='external field contracted matrix elements for J=0'
+          call IOStart(trim(job_is),chkptIO)
+          !
+          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
+          write(chkptIO) 'Start external field'
+          !
+          ! store the matrix elements 
+          !
+          write(chkptIO) Neigenroots
           !
         endif
         !
@@ -1621,14 +1625,14 @@ contains
           !!$omp end parallel do
           !
           !
-          if (job%IOextF_divide) then
-            !
-            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
-            !
-          else
+          if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
             write(chkptIO) imu
             write(chkptIO) mat_s
+            !
+          else
+            !
+            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
             !
           endif
           !
@@ -1639,11 +1643,6 @@ contains
         !
         if (.not.job%IOextF_divide) then
           !
-          write(chkptIO) 'End external field'
-          !
-          !job_is ='external field contracted matrix elements for J=0'
-          !call IOStart(trim(job_is),iunit)
-          !
           read(iunit) buf20(1:18)
           if (buf20(1:18)/='End external field') then
             write (out,"(' restore_Extvib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
@@ -1651,6 +1650,16 @@ contains
           end if
           !
           close(iunit,status='keep')
+          !
+          !job_is ='external field contracted matrix elements for J=0'
+          !call IOStart(trim(job_is),iunit)
+          !
+        endif
+        !
+        if (job%IOextF_stitch) then
+          !
+          write(chkptIO) 'End external field'
+          close(chkptIO,status='keep')
           !
         endif
         !

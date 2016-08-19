@@ -16207,32 +16207,63 @@ module perturbation
               !           
             endif
             !
+            if (job%matelem_append.or.job%IOmatelem_dump) then
+              !
+              if (job%vib_rot_contr) then
+                !
+                write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+                stop 'Appending or dumping is not working with the vib-rot'
+                !
+              endif
+              !
+              call open_dump_slice(islice,'extF_',job%matelem_suffix,dumpIO_)
+              !
+            endif
+            !
             do isymcoeff =1,PT%Maxsymcoeffs
               !
               Ndeg = PT%Index_deg(isymcoeff)%size1
               !
               if (job%vib_rot_contr) extF_t = 0
               !
-              call calc_extF_contr_matrix(imu,isymcoeff,extF_t)
+              if (job%extmatelem_append) then
+                 !
+                 do ideg=1,Ndeg
+                   !
+                   icontr = PT%icase2icontr(isymcoeff,ideg)
+                   !
+                   read(dumpIO_) icontr,grot_t(icontr,1:icontr)
+                   if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
+                     write(out,"('Wrong record ',i9,' /= ',i9,' in the dump-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
+                     stop 'Wrong record in the dump-file'
+                   endif
+                   !
+                 enddo
+                 !
+                 if (isymcoeff==job%iextappend) job%matelem_append = .false.
+                 !
+              else ! no-append means calculation 
+                 !
+                 call calc_extF_contr_matrix(imu,isymcoeff,extF_t)
+                 !
+              endif 
+              !
+              !call calc_extF_contr_matrix(imu,isymcoeff,extF_t)
               !
               if (job%vib_rot_contr) then 
                  !
-                 if (job%vib_rot_contr) then 
-                   !
-                   !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(extF_t) schedule(dynamic)
-                   do ideg=1,Ndeg
-                      icontr = PT%icase2icontr(isymcoeff,ideg)
-                      do jdeg=1,ideg-1
-                         jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                         extF_t(icontr,jdeg) = extF_t(jcontr,ideg)
-                     enddo
+                 !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(extF_t) schedule(dynamic)
+                 do ideg=1,Ndeg
+                    icontr = PT%icase2icontr(isymcoeff,ideg)
+                    do jdeg=1,ideg-1
+                       jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                       extF_t(icontr,jdeg) = extF_t(jcontr,ideg)
                    enddo
-                   !$omp end parallel do
-                   !
-                   if (job%IOextF_divide) then
-                     write(chkptIO_) extF_t(1:mdimen,1:Ndeg)
-                   endif
-                   !
+                 enddo
+                 !$omp end parallel do
+                 !
+                 if (job%IOextF_divide) then
+                   write(chkptIO_) extF_t(1:mdimen,1:Ndeg)
                  endif
 
                  !omp parallel do private(ideg,jdeg) shared(hvib_t) schedule(dynamic)
@@ -16252,10 +16283,23 @@ module perturbation
                  !  write(chkptIO) extF_t(1:mdimen,1:Ndeg)
                  !  !
                  !endif
+
+                  !
+              elseif (job%IOextmatelem_dump.and..not.job%extmatelem_append) then 
+                 !
+                 do ideg=1,Ndeg
+                   !
+                   icontr = PT%icase2icontr(isymcoeff,ideg)
+                   !
+                   write(dumpIO_) icontr,extF_t(icontr,1:icontr)
+                   !
+                 enddo
                  !
               endif
               !
             enddo
+            !
+            if (job%IOextmatelem_dump) close(dumpIO_)
             !
             if (.not.job%vib_rot_contr) then 
               !
@@ -17350,7 +17394,7 @@ module perturbation
            ! zero-order expansion term
            icomb = 0
            iterm = 1
-           if (ExtF_icomb_nterms(icomb,1,1)>0) then
+           if (ExtF_icomb_nterms(icomb,k1,1)>0) then
              if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
                matelem = matelem + ExtF_icomb_coefs(iterm,icomb,k1,1)
              endif
@@ -17358,7 +17402,7 @@ module perturbation
            !
            do icomb=1, ncomb
              !
-             nterms = ExtF_icomb_nterms(icomb,1,1)
+             nterms = ExtF_icomb_nterms(icomb,k1,1)
              if (nterms<=0) cycle
              !
              ! orthogonality of contracted functions
@@ -17373,7 +17417,7 @@ module perturbation
                  kclass = icomb_iclass(iclass_n,icomb)
                  nu_i = nu_classes(kclass,icontr)
                  nu_j = nu_classes(kclass,jcontr)
-                 iterm_uniq = ExtF_icomb_iterm(kclass,iterm,icomb,1,1)
+                 iterm_uniq = ExtF_icomb_iterm(kclass,iterm,icomb,k1,1)
                  me_class0(iclass_n) = ExtF_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
                enddo
                if (n>0) then
