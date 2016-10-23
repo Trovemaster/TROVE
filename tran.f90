@@ -1656,7 +1656,7 @@ contains
           !
         endif
         !
-        if (job%IOextF_stitch) then
+        if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
           !
           write(chkptIO) 'End external field'
           close(chkptIO,status='keep')

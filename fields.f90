@@ -2352,7 +2352,7 @@ module fields
                    call report (" The reccord to append after is missing",.true.)
                 endif
                 !
-                job%IOj0ext_action = trim('SAVE')
+                job%IOextF_action = trim('SAVE')
                 !
              endif 
              !
@@ -2372,13 +2372,17 @@ module fields
                  job%IOextF_divide = .true.
                  job%IOextF_stitch = .true.
                  !
+               elseif ( trim(w)=='DUMP' ) then
+                 !
+                 if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
+                 !
                else
                  !
                  call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
                  !
                endif 
                !
-               if (Nitems>3) then
+               if (job%IOextF_divide.and.Nitems>3) then
                   call readi(fitting%iparam(1))
                   call readi(fitting%iparam(2))
                endif

@@ -15848,7 +15848,7 @@ module perturbation
                 !
               endif
               !
-              call open_dump_slice(islice,'g_cor',job%matelem_suffix,dumpIO_)
+              call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
               !
             endif
             !
@@ -16000,7 +16000,7 @@ module perturbation
             !
             islice = 0
             !
-            call open_dump_slice(islice,'h_vib',job%matelem_suffix,dumpIO_)
+            call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
             !
           endif
           !
@@ -16207,7 +16207,7 @@ module perturbation
               !           
             endif
             !
-            if (job%matelem_append.or.job%IOmatelem_dump) then
+            if (job%matelem_append.or.job%IOextmatelem_dump) then
               !
               if (job%vib_rot_contr) then
                 !
@@ -16216,7 +16216,7 @@ module perturbation
                 !
               endif
               !
-              call open_dump_slice(islice,'extF_',job%matelem_suffix,dumpIO_)
+              call open_dump_slice(islice,'extF_',job%extmat_suffix,job%extmatelem_append,job%IOextmatelem_dump,dumpIO_)
               !
             endif
             !
@@ -16232,7 +16232,7 @@ module perturbation
                    !
                    icontr = PT%icase2icontr(isymcoeff,ideg)
                    !
-                   read(dumpIO_) icontr,grot_t(icontr,1:icontr)
+                   read(dumpIO_) icontr,extF_t(icontr,1:icontr)
                    if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
                      write(out,"('Wrong record ',i9,' /= ',i9,' in the dump-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
                      stop 'Wrong record in the dump-file'
@@ -16240,7 +16240,7 @@ module perturbation
                    !
                  enddo
                  !
-                 if (isymcoeff==job%iextappend) job%matelem_append = .false.
+                 if (isymcoeff==job%iextappend) job%extmatelem_append = .false.
                  !
               else ! no-append means calculation 
                  !
@@ -16419,10 +16419,11 @@ module perturbation
   contains 
     !
     !
-    subroutine open_dump_slice(islice,name,suffix,chkptIO)
+    subroutine open_dump_slice(islice,name,suffix,append,dump,chkptIO)
         !
         integer(ik),intent(in) :: islice
         character(len=*),intent(in) :: name,suffix
+        logical,intent(in) :: append,dump
         integer(ik),intent(out)     :: chkptIO
         character(len=4) :: jchar
         character(len=cl) :: filename
@@ -16435,16 +16436,15 @@ module perturbation
           !
           filename = trim(suffix)//trim(adjustl(jchar))//'_dump.chk'
           !
-          if (job%matelem_append.and.job%IOmatelem_dump) then 
+          if (append.and.dump) then 
             open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
-          elseif(job%IOmatelem_dump) then
+          elseif(dump) then
             open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
           else
             open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
           endif
           !
     end subroutine open_dump_slice
-    !
     !
     !
     subroutine open_divided_slice(islice,name,suffix,chkptIO)

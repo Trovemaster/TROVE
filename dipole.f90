@@ -8,7 +8,7 @@ module dipole
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
  use fields,       only : manifold,job,analysis,bset
- use timer,        only : IOstart,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,TimerProbe,memory_limit,memory_now
+ use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,TimerProbe,memory_limit,memory_now
  use molecules,    only : MLcoord_direct,MLrotsymmetry_generate,ddlmn_conj,dlmn,Phi_rot,calc_phirot
  use moltype,      only : molec, extF, intensity, three_j
  use symmetry,     only : sym
@@ -865,6 +865,29 @@ contains
       !
       max_intens_state = 0
       !
+      do indI = 1, nJ
+         !
+         do igammaI = 1,sym%Nrepresen
+           !
+           write(jchar, '(i4)') jval(indI)
+           write(gchar, '(i2)') igammaI
+           !
+           filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+           !
+           ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
+           !
+           call IOstart(trim(ioname),iounit)
+           !
+           open(unit = iounit, action = 'write',status='replace',file = filename)
+           !
+         enddo
+         !
+      enddo
+      !
+    else 
+      ! 
+      allocate(max_intens_state(1),stat=info)
+      !
     endif
     !
     !  The matrix where some of the eigenvectors will be stored
@@ -1156,7 +1179,7 @@ contains
       !
       !loop over final states
       !
-      !$omp parallel private(vecF,vec_,alloc_p)
+      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state)
       allocate(vecF(dimenmax_),vec_(dimenmax),stat = alloc_p)
       if (alloc_p/=0) then
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
@@ -1612,6 +1635,43 @@ contains
          !
       endif
       !
+      if (intensity%pruning) then 
+        !
+        do indF = 1, nJ
+           !
+           do igammaF = 1,sym%Nrepresen
+             !
+             write(jchar, '(i4)') jval(indF)
+             write(gchar, '(i2)') igammaF
+             !
+             filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+             !
+             ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
+             !
+             call IOstart(trim(ioname),iounit)
+             !
+             rewind(iounit)
+             !
+             do irootF = 1, bset_contr(indF)%nsize(igammaF)
+               !
+               ilevelF = istate2ilevel(indF,igammaF,irootF)
+               !
+               energyF = 0 ; absorption_int = 0
+               if (ilevelF/=0) then 
+                 energyF =  eigen(ilevelF)%energy
+                 absorption_int = max_intens_state(ilevelF)
+               endif
+               !
+               write(iounit,"(i5,i3,1x,i9,2x,f20.12,2x,e15.8)") jval(indF),igammaF,irootF,energyF,absorption_int
+               !
+             enddo
+             !
+           enddo
+           !
+        enddo
+        !
+      endif 
+      !
       if (job%verbose>=5) call TimerReport
       !
     end do Ilevels_loop
@@ -1635,23 +1695,13 @@ contains
            !
            filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
            !
-           open(unit = iounit, action = 'write',status='replace',file = filename)
+           ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
            !
-           do irootI = 1, bset_contr(indI)%nsize(igammaI)
-             !
-             ilevelI = istate2ilevel(indI,igammaI,irootI)
-             !
-             energyI = 0 ; absorption_int = 0
-             if (ilevelI/=0) then 
-               energyI =  eigen(ilevelI)%energy
-               absorption_int = max_intens_state(ilevelI)
-             endif
-             !
-             write(iounit,"(i5,i3,1x,i9,2x,f20.12,2x,e15.8)") jval(indI),igammaI,irootI,energyI,absorption_int
-             !
-           enddo
+           call IOstart(trim(ioname),iounit)
            !
-           close(iounit)
+           close(unit = iounit,status='keep')
+           !
+           call IOstop(trim(ioname))
            !
          enddo
          !
