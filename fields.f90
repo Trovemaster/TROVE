@@ -340,6 +340,7 @@ module fields
       integer(ik)         :: MaxVibMomentum_contr    ! maximal L (vibang) for the contraction
       logical		      :: ignore_vectors = .false.
       logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
+      logical             :: exomol_format  = .false.     ! exomol format of intensity output 
       !
    end type FLcalcsT
 
@@ -3075,6 +3076,10 @@ module fields
            case('TEMPERATURE')
              !
              call readf(intensity%temperature)
+             !
+           case('EXOMOL')
+             !
+             job%exomol_format = .true.
              !
            case('QSTAT','PARTITION','PART_FUNC')
              !
@@ -7720,6 +7725,25 @@ end subroutine check_read_save_none
     !
     if (job%verbose>=7) write(out,"(/'Bmat_generation/start  ')") 
 
+
+    !
+    ! for (102) and (103) cases fo numerical derivatives 
+    ! instead of more acurate analytical 
+    !
+    if (any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103)) then
+      !
+      do icoord = 1,trove%Ncoords
+        !
+        call diff_local2cartesian(icoord,a0,Bmat_t)
+        !
+        Bmat(icoord,:,:) = Bmat_t(:,:)
+        !
+      enddo
+      !
+      return 
+      !
+    endif
+    !
     ! for easy reference 
     !
     Nmodes = trove%Nmodes
@@ -7752,8 +7776,6 @@ end subroutine check_read_save_none
     cart_vec(1,:)  = (/1.0_ark,0.0_ark,0.0_ark/)
     cart_vec(2,:)  = (/0.0_ark,1.0_ark,0.0_ark/)
     cart_vec(3,:)  = (/0.0_ark,0.0_ark,1.0_ark/)
-    !
-    Bmat = 0
     !
     ida = 0 ! check if the corresponding derivative d alpha(1,2,3)/d Xna has been defined
     !
@@ -8116,6 +8138,10 @@ end subroutine check_read_save_none
           !
        case(103) ! The special bond-angles for the linear molecule case 
           !
+          ! This derivative is now done numerically, the rest can be skipped 
+          !
+          !cycle 
+          !
           ! 1 and 2 are the two outer atoms and n0 is the central atom
           !
           n1 = trove%dihedrals(iangle,1)
@@ -8158,7 +8184,8 @@ end subroutine check_read_save_none
              !
              if (k1/=n1.and.k2/=n1) cycle
              !
-             call diff_local2cartesian(icoord,a0,Bmat_t)
+             call   diff_local2cartesian(ibond,a0,Bmat_t)
+             Bmat(ibond,:,:) = Bmat_t(:,:)
              !
           enddo
           !
@@ -8251,7 +8278,7 @@ end subroutine check_read_save_none
           !
           deltax = trove%fdstep(1)
           !
-          do iatom = 1,Natoms
+          do iatom = 1,trove%Natoms
              do ix = 1,3
                 !
                 xna(iatom,ix)  = a0(iatom,ix) + deltax

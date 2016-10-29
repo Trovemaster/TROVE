@@ -3447,7 +3447,7 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y6 = local(6)
          y7 = local(7)
          !
-      elseif (molec%zmatrix(3)%connect(4)>=102) then
+      elseif (molec%zmatrix(3)%connect(4)>=102.and.trim(molec%coords_transform)=='R-R1-R2-TX-TY-TX-TY') then
          !
          call MLfromlocal2cartesian(1_ik,local,r_na)
          !
@@ -3474,6 +3474,28 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y6 = c2(1)
          y7 = c2(2)
          !
+      elseif (molec%zmatrix(3)%connect(4)==103.and.trim(molec%coords_transform)=='R-R1-R2-X-Y-X-Y') then 
+         !
+         y4 = local(4)
+         y5 = local(5)
+         !
+         y6 = local(6)
+         y7 = local(7)
+         !
+         call MLfromlocal2cartesian(1_ik,local,r_na)
+         !
+         c1(:) = r_na(3,:)-r_na(1,:)
+         c0(:) = r_na(2,:)-r_na(1,:)
+         c2(:) = r_na(4,:)-r_na(2,:)
+         !
+         x2 = -c1(3)
+         x3 =  c2(3)
+         !
+         y4 = c1(1)
+         y5 = c1(2)
+         y6 = c2(1)
+         y7 = c2(2)
+         !
       else 
         !
         write(out,"('MLpoten_c2h2_7_xyz: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
@@ -3487,8 +3509,12 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       !y7    = local(7)
       !
       y1=1.0_ark-exp(-a1*(x1-e1))
-      y2=1.0_ark-exp(-a2*(x2-e2))
-      y3=1.0_ark-exp(-a2*(x3-e2))
+      !
+      !y2=1.0_ark-exp(-a2*(x2-e2))
+      !y3=1.0_ark-exp(-a2*(x3-e2))
+      !
+      y2=( x2-e2)
+      y3=( x3-e2)
       !
       call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF) 
       !

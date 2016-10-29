@@ -279,12 +279,37 @@ module mol_abcd
           !
        else
           !
-          dst(1:3) = src(1:)+molec%local_eq(1:3)
+          dst(1:3) = src(1:3)+molec%local_eq(1:3)
           !
           dst(4) = src(5)+molec%local_eq(5)
           dst(5) =-src(4)-molec%local_eq(4)
           dst(6) =-src(7)-molec%local_eq(7)
           dst(7) = src(6)+molec%local_eq(6)
+          !
+       endif
+       !
+    case('R-R1-R2-X-Y-X-Y')
+       !
+       if (direct) then 
+          !
+          dst(1) = dsrc(1)
+          dst(2) =-dsrc(2)
+          dst(3) = dsrc(3)
+          !
+          dst(4) = dsrc(4)
+          dst(5) = dsrc(5)
+          dst(6) = dsrc(6)
+          dst(7) = dsrc(7)
+          !
+       else
+          !
+          dst(1) = src(1)+molec%local_eq(1)
+          dst(2) =-src(2)-molec%local_eq(2)
+          dst(3) = src(3)+molec%local_eq(3)
+          dst(4) = src(4)+molec%local_eq(4)
+          dst(5) = src(5)+molec%local_eq(5)
+          dst(6) = src(6)+molec%local_eq(6)
+          dst(7) = src(7)+molec%local_eq(7)
           !
        endif
        !
@@ -2386,6 +2411,195 @@ module mol_abcd
        end select 
 
 
+
+       !
+    case('R-R1-R2-X-Y-X-Y')
+       ! 
+       select case(trim(molec%symmetry))
+       case default
+         write (out,"('ML_symmetry_transformation_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+         stop 'ML_symmetry_transformation_abcd - bad symm. type'
+         !
+       case('CS','CS(M)')
+          !
+          dst = src
+          !
+          if (ioper>=1+2*N_Cn+Nrot+1) then
+            !
+            dst(1) = src(1)
+            dst(2) = src(3)
+            dst(3) = src(2)
+            dst(6) = src(4)
+            dst(7) = src(5)
+            dst(4) = src(6)
+            dst(5) = src(7)
+            !
+          endif 
+           !
+       case('DNH','DNH(M)')
+          !
+          ! Number of eq. rotations 
+          Nrot = sym%N
+          !
+          ! Number of Cn classes 
+          N_Cn = sym%N/2
+          !
+          phi = 2.0_ark*pi/real(Nrot,ark)
+          !
+          q1x= src(4)
+          q1y= src(5)
+          q2x= src(6)
+          q2y= src(7)
+          !
+          ! for odd Dnh groups
+          !
+          if (mod(sym%N,2)==1) then 
+              !
+              write(out,"('symmetries odd-DNH for R-R1-R2-X-Y-X-Y not implemented')")
+              !
+              stop 'odd DNH for R-R1-R2-X-Y-X-Y not implemented'
+              !
+          else ! for even Dnh groups
+              !
+              !q1x= 1
+              !q1y= 1
+              !q2x= 2
+              !q2y= 2
+              !
+              NC2 = sym%N/2
+              N_Cn = sym%N/2-1
+              !
+              if (ioper==1) then ! E 
+                !
+                dst = src
+                !
+              elseif (ioper<=1+2*N_Cn+1) then ! Cn x 2 x(n/2-1), C2 only once
+                !
+                ioper_ =ioper-1 
+                irot = (ioper_+1)/2
+                !
+                phi_n = phi*irot
+                !
+                ! Second oper in a class is with negative phi
+                if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+                !
+                dst(1) = src(1)
+                dst(2) = src(2)
+                dst(3) = src(3)
+                dst(4) = q1x*cos(phi_n)-q1y*sin(phi_n)
+                dst(5) = q1x*sin(phi_n)+q1y*cos(phi_n)
+                dst(6) = q2x*cos(phi_n)-q2y*sin(phi_n)
+                dst(7) = q2x*sin(phi_n)+q2y*cos(phi_n)
+                !
+              elseif (ioper<=2+2*N_Cn+NC2) then !  C'2
+                !
+                irot =ioper-(2+2*N_Cn)-1
+                !
+                phi_n = phi*irot*2.0_ark
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(4) = q2x*cos(phi_n)+q2y*sin(phi_n)
+                dst(5) = q2x*sin(phi_n)-q2y*cos(phi_n)
+                dst(6) = q1x*cos(phi_n)+q1y*sin(phi_n)
+                dst(7) = q1x*sin(phi_n)-q1y*cos(phi_n)
+                !
+              elseif (ioper<=2+2*N_Cn+2*NC2) then !  C2"
+                !
+                irot =ioper-(2+2*N_Cn+NC2)-1
+                !
+                !phi_n =(irot*2.0_ark-1.0_ark)*phi*0.5_ark
+                !
+                phi_n = phi*(2*irot+1)
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(4) = q2x*cos(phi_n)+q2y*sin(phi_n)
+                dst(5) = q2x*sin(phi_n)-q2y*cos(phi_n)
+                dst(6) = q1x*cos(phi_n)+q1y*sin(phi_n)
+                dst(7) = q1x*sin(phi_n)-q1y*cos(phi_n)
+                !
+              elseif (ioper==3+2*N_Cn+2*NC2) then ! i
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(4) =-q2x
+                dst(5) =-q2y
+                dst(6) =-q1x
+                dst(7) =-q1y
+                !
+              elseif (ioper<=3+4*N_Cn+2*NC2) then !  2xnxSn
+                !
+                ioper_ =ioper-(3+2*N_Cn+2*NC2)
+                irot = (ioper_+1)/2
+                !
+                phi_n = phi*irot
+                !
+                ! Second oper in a class is with negative phi
+                if (mod(ioper_,2)==0)  phi_n = -phi_n
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(4) =  (q2x*cos(phi_n)-q2y*sin(phi_n))
+                dst(5) =  (q2x*sin(phi_n)+q2y*cos(phi_n))
+                dst(6) =  (q1x*cos(phi_n)-q1y*sin(phi_n))
+                dst(7) =  (q1x*sin(phi_n)+q1y*cos(phi_n))
+                !
+              elseif (ioper<=4+4*N_Cn+2*NC2) then !  sigmah
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(4) = q2x
+                dst(5) = q2y
+                dst(6) = q1x
+                dst(7) = q1y
+                !
+              elseif (ioper<=4+4*N_Cn+3*NC2) then !  sigmav
+                !
+                irot = ioper-(4+4*N_Cn+2*NC2)-1
+                !
+                phi_n = phi*irot*2.0_ark
+                !
+                dst(1) = src(1)
+                dst(2) = src(2)
+                dst(3) = src(3)
+                dst(4) =  (q1x*cos(phi_n)+q1y*sin(phi_n))
+                dst(5) =  (q1x*sin(phi_n)-q1y*cos(phi_n))
+                dst(6) =  (q2x*cos(phi_n)+q2y*sin(phi_n))
+                dst(7) =  (q2x*sin(phi_n)-q2y*cos(phi_n))
+                !
+              elseif (ioper<=4+4*N_Cn+4*NC2) then !  sigmad
+                !
+                irot = ioper-(4+4*N_Cn+3*NC2)-1
+                !
+                phi_n = (2*irot+1)*phi
+                !
+                !irot = ioper-(4+4*N_Cn+3*NC2)
+                !phi_n = (-phi*0.5+phi*irot)*2.0_ark
+                !
+                dst(1) = src(1)
+                dst(2) = src(2)
+                dst(3) = src(3)
+                dst(4) =  (q1x*cos(phi_n)+q1y*sin(phi_n))
+                dst(5) =  (q1x*sin(phi_n)-q1y*cos(phi_n))
+                dst(6) =  (q2x*cos(phi_n)+q2y*sin(phi_n))
+                dst(7) =  (q2x*sin(phi_n)-q2y*cos(phi_n))
+                !
+              else
+                !
+                write (out,"('ML_symmetry_transformation_abcd  in Dinfty: operation ',i8,' unknown')") ioper
+                stop 'ML_symmetry_transformation_abcd Dinfty - bad operation. type'
+         
+              endif 
+              !
+          endif
+          !
+       end select 
        !
     case('R-PHI-TAU-REF','R-PHI-TAU')
        !

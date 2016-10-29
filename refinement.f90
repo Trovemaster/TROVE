@@ -1345,7 +1345,7 @@ contains
             !
             ! Print the updated parameters. 
             !
-            write(out,"(/'Correction to potential paramters:')")
+            write(out,"(/'Correction to potential parameters:')")
             !
             ! 'list'
             !

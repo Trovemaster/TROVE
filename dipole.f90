@@ -335,8 +335,9 @@ contains
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
     logical        :: passed,passed_
     logical        :: vector_diagonal = .false.
+    integer(ik)    :: ID_I
     !
-    integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:)
+    integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:),iID(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
     real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vecPack(:),vec_(:)
     real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:),max_intens_state(:)
@@ -890,6 +891,68 @@ contains
       !
     endif
     !
+    ! We can construct a unique ID for exomol format for all states using the formula 
+    ! ID = ilevel(J) + Nvib*(2(J-1)+1), 
+    ! where Nvib = bset_contr(1)%Maxcontracts is the size of the vibrational basis and the number of states at J=0.
+    ! Thus we only need to introduce Nstates_before(J) = Nvib*(2(J-1)+1)
+    !
+    !  - prepare the states file:
+    !
+    ! loop over initial states for current J-values for the exomol-format only
+    !
+    if (job%exomol_format) then
+      !
+      write(out,"(/a/)") 'States file in the Exomol format'
+      !
+      allocate(iID(nlevels),stat=info)
+      call ArrayStart('iID',info,size(iID),kind(iID))
+      !
+      do jind = 1, nJ
+        !
+        nsizeI = 0
+        !
+        do igamma = 1,sym%Nrepresen
+          !
+          do ilevelI = 1,nlevels
+             !
+             indI = eigen(ilevelI)%jind
+             igammaI  = eigen(ilevelI)%igamma
+             !
+             if (indI/=jind.or.igamma/=igammaI) cycle
+             !
+             dimenI = bset_contr(indI)%Maxcontracts
+             !
+             !energy, quanta, and gedeneracy order of the initial state
+             !
+             jI = eigen(ilevelI)%jval
+             energyI = eigen(ilevelI)%energy-intensity%ZPE
+             quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
+             normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+             !
+             ID_I = eigen(ilevelI)%ilevel + nsizeI
+             !
+             if (jI>0) ID_I = ID_I + bset_contr(1)%Maxcontracts*(2*jI-1)
+             !
+             ! store level's ID
+             !
+             iID(ilevelI) = ID_I
+             !
+             write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,2x,<nclasses>a3,1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+             ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
+             eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
+             eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
+             !
+            enddo
+            !
+            nsizeI =  nsizeI + bset_contr(jind)%nsize(igamma)
+            !
+        enddo
+        !
+      enddo
+      !
+    endif
+    !
+    !
     !  The matrix where some of the eigenvectors will be stored
     !
     if (job%verbose>=5) call MemoryReport
@@ -920,9 +983,13 @@ contains
       !
       case('ABSORPTION','EMISSION')
        !
-       write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
-                   &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
-                   &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
+       if (job%exomol_format) then 
+         !
+         write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
+                     &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
+                     &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
+                     !
+      endif
       !
       case('TM')
        !
@@ -1416,7 +1483,12 @@ contains
                !
                !
                !$omp critical
-               if (job%verbose>=4) then 
+               if (job%exomol_format) then
+                 !
+                 write(out, "( i12,1x,i12,1x,2(1x,es16.8),' ||')")&
+                              iID(ilevelF),iID(ilevelI),A_einst,nu_if     
+                              !
+               elseif (job%verbose>=4) then 
                  !
                 !write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
                 !             &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
@@ -1437,6 +1509,8 @@ contains
                               eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
                               itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
                               linestr_deg(1:ndegI,1:ndegF)
+                              !
+                              !                       
                else
                  !
                  write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
@@ -1453,8 +1527,7 @@ contains
                               A_einst,absorption_int,&
                               eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
                               !itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
-                              !linestr_deg(1:ndegI,1:ndegF)                            
-                              !
+                              !linestr_deg(1:ndegI,1:ndegF)                                   !
                endif
                !$omp end critical
                !             
@@ -1581,7 +1654,7 @@ contains
       !endif
       !
       if (job%verbose>=3) then
-          write(out,"('--- ',t4,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'h.||')") itransit,real_time,1.0_rk/time_per_line,total_time_predict
+          write(out,"('--- ',t4,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
       if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=4) then
@@ -1742,6 +1815,11 @@ contains
     !
     deallocate(istored)
     call ArrayStop('istored')
+    !
+    if (allocated(iID) ) then 
+      deallocate(iID)
+      call ArrayStop('iID')
+    endif
     !
     deallocate(isaved)
     call ArrayStop('isaved')
