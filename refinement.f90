@@ -470,6 +470,8 @@ contains
          allocate (sigma(npts),stat=info)
          call ArrayStart('eps',info,size(sigma),kind(sigma))
          !
+         a_wats = fitting%watson
+         !
        endif 
        !
        ! The last object to allocate - the lapack related work array
@@ -543,6 +545,7 @@ contains
          !
          do i=1,npts
            if (wtall(i)>small_) sigma(i) = sigma(i)/sqrt(wtall(i))
+           !if (wtall(i)>small_) sigma(i) = sigma(i)/sqrt(fitting%obs(i)%weight)
          enddo
          !
          wtsum = 1.0_rk ! sqrt(sum(sigma(1:en_npts)**2))
@@ -1295,7 +1298,7 @@ contains
                !
                if (fitting%robust>small_) then
                  !
-                 call robust_fit(numpar,a_wats,sigma(1:npts),eps(1:npts),wtall(1:npts))
+                 call robust_fit(numpar,fitting%robust,sigma(1:npts),eps(1:npts),wtall(1:npts))
                  !
                  ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
 				 !

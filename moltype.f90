@@ -1087,6 +1087,31 @@ module moltype
            !
            continue
            !
+        case(104)
+           !
+           idihedral = idihedral + 1
+           !
+           zeta = molec%zmatrix(iatom)%connect(3)
+           !
+           idelta = 0
+           kappa(3) = zeta
+           do ikappa = 1,3
+             if (ikappa==zeta) cycle
+             idelta = idelta + 1
+             kappa(idelta) = ikappa
+           enddo
+           !
+           n1 = 0
+           !
+           n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+           n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral+1)
+           !
+           n1(kappa(3)) = sqrt(rbond**2-(n1(kappa(1))**2+n1(kappa(2))**2))
+           !
+           x(iatom,:) = x(p1,:)+n1(:)*(-1.0_rk)**((idihedral+1)/2)
+           !
+           continue
+           !
         end select 
         !
      enddo

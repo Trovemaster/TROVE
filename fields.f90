@@ -368,6 +368,7 @@ module fields
      real(rk)             :: factor = 1.0_rk
      real(rk)             :: target_rms = 1e-8
      real(rk)             :: robust = 0
+     real(rk)             :: watson = 1.0d0
      character(len=cl)    :: method = 'FAST'
      character(len=cl)    :: geom_file = 'pot.fit'
      character(len=cl)    :: output_file = 'fitting'
@@ -1581,7 +1582,7 @@ module fields
                   NAngles = NAngles - 1
                   Ndihedrals = Ndihedrals + 2
                   !
-               case(102) 
+               case(102,104) 
                   !
                   ! special case of an angle for a linear molecule
                   !
@@ -3317,6 +3318,10 @@ module fields
              !
              call readf(fitting%robust)
              !
+           case('WATSON')
+             !
+             call readf(fitting%watson)
+             !
            case('TARGET_RMS')
              !
              call readf(fitting%target_rms)
@@ -4163,7 +4168,7 @@ end subroutine check_read_save_none
         n_t = trove%dihedrals(ibond,1)
         do io = 2,4 
           if (trove%dihedrals(ibond,io)==n_t) then
-             if (trove%zmatrix(n_t)%connect(4)==101.or.trove%zmatrix(n_t)%connect(4)==102.or.trove%zmatrix(n_t)%connect(4)==103) cycle
+             if (any(trove%zmatrix(n_t)%connect(4)==(/101,102,103,104/))) cycle
              write(out,"('FLsetMolecule: ',i4,' dihedral angle connections belong to the same atom: ',3i4)") & 
                           ibond,trove%dihedrals(ibond,:)
              stop 'FLsetMolecule - bad dihedrals angle connections'
@@ -4771,7 +4776,7 @@ end subroutine check_read_save_none
              angles(NAngles,3) = trove%zmatrix(iatom)%connect(4)
              !
              !
-          case(101,103) 
+          case(101,103,104) 
              !
              ! special case of angles for a linear molecule
              !
@@ -5189,7 +5194,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=7.or.(job%verbose>=5.and.manifold==0)) then
+       if (job%verbose>=6.or.(job%verbose>=4.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes
@@ -7727,10 +7732,10 @@ end subroutine check_read_save_none
 
 
     !
-    ! for (102) and (103) cases fo numerical derivatives 
+    ! for (102) and (103,104) cases fo numerical derivatives 
     ! instead of more acurate analytical 
     !
-    if (any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103)) then
+    if (any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104)) then
       !
       do icoord = 1,trove%Ncoords
         !
@@ -19751,6 +19756,25 @@ end subroutine check_read_save_none
              !if (trove%b0(n1,zeta,0)<0) r(ibond) = -a_t1(zeta)
              !
           enddo
+          !
+          case(104) ! The special bond-angles for the linear molecule case 
+          !
+          ! 1 and 2 are the two outer atoms and n0 is the central atom
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n0 = trove%dihedrals(iangle,2)
+          n2 = trove%dihedrals(iangle,3)
+          !
+          ! Cartesian component we build the two special angles for
+          !
+          kappa = trove%dihedrals(iangle,4)
+          !
+          a_t1(:) = cartesian(n1,:) - cartesian(n0,:)
+          a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
+          !
+          ! xyz
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
           ! 
        end select 
        !

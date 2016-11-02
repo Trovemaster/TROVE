@@ -3474,6 +3474,58 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y6 = c2(1)
          y7 = c2(2)
          !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         cosalpha2 = sum(b0(:)*b2(:))
+         !
+         alpha2 = aacos(-cosalpha2,txt)
+         !
+         !if (alpha1>pi*0.5d0) w1 = -w1
+         !if (alpha2>pi*0.5d0) w2 = -w2
+         !
+         sindelta1x = -w1(1)
+         sindelta1y = -w1(2)
+         sindelta2x = -w2(1)
+         sindelta2y = -w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         !y4 = aasin(sindelta1x,txt)
+         !y5 = aasin(sindelta1y,txt)
+         !y6 = aasin(sindelta2x,txt)
+         !y7 = aasin(sindelta2y,txt)
+         !
+         y4 =-sindelta1y
+         y5 = sindelta1x
+         y6 = sindelta2y
+         y7 =-sindelta2x
+         !
+      elseif (molec%zmatrix(3)%connect(4)==103.and.trim(molec%coords_transform)=='R-Z1-Z2-X-Y-X-Y') then 
+         !
+         y4 = local(4)
+         y5 = local(5)
+         !
+         y6 = local(6)
+         y7 = local(7)
+         !
+         call MLfromlocal2cartesian(1_ik,local,r_na)
+         !
+         c1(:) = r_na(3,:)-r_na(1,:)
+         c0(:) = r_na(2,:)-r_na(1,:)
+         c2(:) = r_na(4,:)-r_na(2,:)
+         !
+         x2 = -c1(3)
+         x3 =  c2(3)
+         !
+         y4 = c1(1)
+         y5 = c1(2)
+         y6 = c2(1)
+         y7 = c2(2)
+         !
       elseif (molec%zmatrix(3)%connect(4)==103.and.trim(molec%coords_transform)=='R-R1-R2-X-Y-X-Y') then 
          !
          y4 = local(4)
@@ -3549,6 +3601,7 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
       real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
       real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles 
       !
       character(len=cl)  :: txt = 'MLpoten_c2h2_7'
@@ -3576,104 +3629,80 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
          y6 = local(6)
          y7 = local(7)
          !
-      elseif (molec%zmatrix(3)%connect(4)>=102) then
+      elseif (molec%zmatrix(3)%connect(4)==102) then
          !
-         if (sum(xyz(:,:)**2)<sqrt(small_)) then 
-           !
-           x1    = local(1)
-           x2    = local(2)
-           x3    = local(3)
-           !
-           if (trim(molec%coords_transform)=='R-R1-R2-TX-TY-TX-TY') then
-             !
-             y4 =-local(5)
-             y5 = local(4)
-             !
-             y6 = local(7)
-             y7 =-local(6)
-             !
-           else
-             !
-             y4 = local(4)
-             y5 = local(5)
-             !
-             y6 = local(6)
-             y7 = local(7)
-             !
-           endif
-           !
-        else
-           !
-           b1(:) = xyz(3,:)-xyz(1,:)
-           b0(:) = xyz(2,:)-xyz(1,:)
-           b2(:) = xyz(4,:)-xyz(2,:)
-           !
-           x2 =  sqrt(sum(b1(:)**2))
-           x1 =  sqrt(sum(b0(:)**2))
-           x3 =  sqrt(sum(b2(:)**2))
-           !
-           b1 =  b1(:)/x2
-           b0 =  b0(:)/x1
-           b2 =  b2(:)/x3
-           !
-           w1(:) = MLvector_product(b1,b0)
-           w2(:) = MLvector_product(b2,b0)
-           !
-           cosalpha2 = sum(b0(:)*b2(:))
-           !
-           alpha2 = aacos(-cosalpha2,txt)
-           !
-           !if (alpha1>pi*0.5d0) w1 = -w1
-           !if (alpha2>pi*0.5d0) w2 = -w2
-           !
-           sindelta1x = -w1(1)
-           sindelta1y = -w1(2)
-           sindelta2x = -w2(1)
-           sindelta2y = -w2(2)
-           !
-           !sindelta1x = -w1(2)
-           !sindelta1y = -w1(1)
-           !sindelta2x = -w2(2)
-           !sindelta2y =  w2(1)
-           !
-           !y4 = aasin(sindelta1x,txt)
-           !y5 = aasin(sindelta1y,txt)
-           !y6 = aasin(sindelta2x,txt)
-           !y7 = aasin(sindelta2y,txt)
-           !
-           y4 = sindelta1x
-           y5 = sindelta1y
-           y6 = sindelta2x
-           y7 = sindelta2y
-           !
-         endif
+         call MLfromlocal2cartesian(1_ik,local,r_na)
          !
+         b1(:) = r_na(3,:)-r_na(1,:)
+         b0(:) = r_na(2,:)-r_na(1,:)
+         b2(:) = r_na(4,:)-r_na(2,:)
          !
-         !if (trim(molec%coords_transform)=='R-R1-R2-TX-TY-TX-TY') then
-         !  ! 
-         !  y4 =-sindelta1y
-         !  y5 = sindelta1x
-         !  y6 = sindelta2y
-         !  y7 =-sindelta2x
-         !  !
-         !endif
+         x2 =  sqrt(sum(b1(:)**2))
+         x1 =  sqrt(sum(b0(:)**2))
+         x3 =  sqrt(sum(b2(:)**2))
          !
-         !y4 = b1(1)
-         !y5 = b1(2)
-         !y6 = b2(1)
-         !y7 = b2(2)
+         b1 =  b1(:)/x2
+         b0 =  b0(:)/x1
+         b2 =  b2(:)/x3
          !
-         !y4 = local(4)
-         !y5 = local(5)
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
          !
-         !y6 = local(6)
-         !y7 = local(7)
+         !sindelta1x = w1(1)
+         !sindelta1y = w1(2)
+         !sindelta2x = w2(1)
+         !sindelta2y = w2(2)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         !y4 = aasin(sindelta1x,txt)
+         !y5 = aasin(sindelta1y,txt)
+         !y6 = aasin(sindelta2x,txt)
+         !y7 = aasin(sindelta2y,txt)
+         !
+         y4 =-w1(2)
+         y5 = w1(1)
+         y6 =-w2(2)
+         y7 = w2(1)
          !
       else 
-        !
-        write(out,"('MLpoten_c2h2_7: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
-        stop 'only designed for zmat=103' 
-        !
+         !
+         call MLfromlocal2cartesian(1_ik,local,r_na)
+         !
+         !
+         b1(:) = r_na(3,:)-r_na(1,:)
+         b0(:) = r_na(2,:)-r_na(1,:)
+         b2(:) = r_na(4,:)-r_na(2,:)
+         !
+         x2 =  sqrt(sum(b1(:)**2))
+         x1 =  sqrt(sum(b0(:)**2))
+         x3 =  sqrt(sum(b2(:)**2))
+         !
+         b1 =  b1(:)/x2
+         b0 =  b0(:)/x1
+         b2 =  b2(:)/x3
+         !
+         w1(:) = MLvector_product(b1,b0)
+         w2(:) = MLvector_product(b2,b0)
+         !
+         !sindelta1x = -w1(2)
+         !sindelta1y = -w1(1)
+         !sindelta2x = -w2(2)
+         !sindelta2y =  w2(1)
+         !
+         !y4 = aasin(sindelta1x,txt)
+         !y5 = aasin(sindelta1y,txt)
+         !y6 = aasin(sindelta2x,txt)
+         !y7 = aasin(sindelta2y,txt)
+         !
+         y4 =-w1(2)
+         y5 = w1(1)
+         y6 =-w2(2)
+         y7 = w2(1)
+         !
       endif
       !
       !y4    = local(4)
