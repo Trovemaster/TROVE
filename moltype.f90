@@ -802,7 +802,11 @@ module moltype
        !
        iatom = 3
        !
-       if (molec%zmatrix(iatom)%connect(4)<101) then
+       J = molec%zmatrix(iatom)%connect(4)
+       !
+       select case (J)
+         !
+       case (1:101)
          !
          p1 = molec%zmatrix(iatom)%connect(1)
          p2 = molec%zmatrix(iatom)%connect(2)
@@ -814,7 +818,7 @@ module moltype
          !
          x(3,:) = x(p1,:)+n2(:)*r(2)
          !
-       elseif (molec%zmatrix(iatom)%connect(4)<=102) then
+       case (102)
          !
          idihedral = idihedral + 1
          !
@@ -843,7 +847,7 @@ module moltype
          !
          x(iatom,:) = x(p1,:)+rbond*n1(:)
          !
-       else 
+       case (103)
          !
          idihedral = idihedral + 1
          !
@@ -870,7 +874,123 @@ module moltype
          !
          x(iatom,:) = x(p1,:)+n1(:)
          !
-       endif    
+       case (104)
+         !
+         idihedral = idihedral + 1
+         !
+         zeta = molec%zmatrix(iatom)%connect(3)
+         !
+         idelta = 0
+         kappa(3) = zeta
+         do ikappa = 1,3
+           if (ikappa==zeta) cycle
+           idelta = idelta + 1
+           kappa(idelta) = ikappa
+         enddo
+         !
+         n1 = 0
+         !
+         n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         idihedral = idihedral + 1
+         n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         rbond = r(iatom-1)
+         !
+         n1(kappa(3)) =-sqrt(rbond**2-(n1(kappa(1))**2+n1(kappa(2))**2))
+         !
+         p1 = molec%zmatrix(iatom)%connect(1)
+         !
+         x(iatom,:) = x(p1,:)+n1(:)
+         !
+       case (105)
+         !
+         idihedral = idihedral + 1
+         !
+         zeta = molec%zmatrix(iatom)%connect(3)
+         !
+         idelta = 0
+         kappa(3) = zeta
+         do ikappa = 1,3
+           if (ikappa==zeta) cycle
+           idelta = idelta + 1
+           kappa(idelta) = ikappa
+         enddo
+         !
+         n1 = 0
+         !
+         n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         idihedral = idihedral + 1
+         n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         rbond = r(iatom-1)
+         !
+         n1(kappa(3)) =-sqrt(1.0_ark-(n1(kappa(1))**2+n1(kappa(2))**2))
+         !
+         p1 = molec%zmatrix(iatom)%connect(1)
+         !
+         x(iatom,:) = x(p1,:)+n1(:)*rbond
+         !
+       case (106)
+         !
+         idihedral = idihedral + 1
+         !
+         zeta = molec%zmatrix(iatom)%connect(3)
+         !
+         idelta = 0
+         kappa(3) = zeta
+         do ikappa = 1,3
+           if (ikappa==zeta) cycle
+           idelta = idelta + 1
+           kappa(idelta) = ikappa
+         enddo
+         !
+         n1 = 0
+         !
+         n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         idihedral = idihedral + 1
+         n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         rbond = r(iatom-1)
+         !
+         n1(kappa(3)) =-sqrt(1.0_ark-(n1(kappa(1))**2+n1(kappa(2))**2))
+         !
+         p1 = molec%zmatrix(iatom)%connect(1)
+         !
+         x(iatom,:) = x(p1,:)+n1(:)*rbond
+         !
+       case (107)
+         !
+         idihedral = idihedral + 1
+         !
+         zeta = molec%zmatrix(iatom)%connect(3)
+         !
+         idelta = 0
+         kappa(3) = zeta
+         do ikappa = 1,3
+           if (ikappa==zeta) cycle
+           idelta = idelta + 1
+           kappa(idelta) = ikappa
+         enddo
+         !
+         n1 = 0
+         !
+         n1(kappa(1)) =-r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         idihedral = idihedral + 1
+         n1(kappa(2)) =-r(molec%Nbonds+molec%Nangles+idihedral)
+         !
+         rbond = r(iatom-1)
+         !
+         n1(kappa(3)) =-sqrt(rbond**2-(n1(kappa(1))**2+n1(kappa(2))**2))
+         !
+         p1 = molec%zmatrix(iatom)%connect(1)
+         !
+         x(iatom,:) = x(p1,:)+n1(:)         
+         !
+       end select
        !
      endif
      !
@@ -1087,6 +1207,29 @@ module moltype
            !
            continue
            !
+        case(105)
+           !
+           idihedral = idihedral + 1
+           !
+           zeta = molec%zmatrix(iatom)%connect(3)
+           !
+           idelta = 0
+           kappa(3) = zeta
+           do ikappa = 1,3
+             if (ikappa==zeta) cycle
+             idelta = idelta + 1
+             kappa(idelta) = ikappa
+           enddo
+           !
+           n1 = 0
+           !
+           n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+           n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral+1)
+           !
+           n1(kappa(3)) = r(iatom-1)
+           !
+           x(iatom,:) = x(p1,:)+n1(:)
+           !
         case(104)
            !
            idihedral = idihedral + 1
@@ -1108,9 +1251,55 @@ module moltype
            !
            n1(kappa(3)) = sqrt(rbond**2-(n1(kappa(1))**2+n1(kappa(2))**2))
            !
-           x(iatom,:) = x(p1,:)+n1(:)*(-1.0_rk)**((idihedral+1)/2)
+           x(iatom,:) = x(p1,:)+n1(:)
            !
-           continue
+        case(106)
+           !
+           idihedral = idihedral + 1
+           !
+           zeta = molec%zmatrix(iatom)%connect(3)
+           !
+           idelta = 0
+           kappa(3) = zeta
+           do ikappa = 1,3
+             if (ikappa==zeta) cycle
+             idelta = idelta + 1
+             kappa(idelta) = ikappa
+           enddo
+           !
+           n1 = 0
+           !
+           n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+           n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral+1)
+           !
+           n1(kappa(3)) = sqrt(1.0_ark-(n1(kappa(1))**2+n1(kappa(2))**2))
+           !
+           x(iatom,:) = x(p1,:)+rbond*n1(:)
+           !
+           continue           
+           !
+        case(107)
+           !
+           idihedral = idihedral + 1
+           !
+           zeta = molec%zmatrix(iatom)%connect(3)
+           !
+           idelta = 0
+           kappa(3) = zeta
+           do ikappa = 1,3
+             if (ikappa==zeta) cycle
+             idelta = idelta + 1
+             kappa(idelta) = ikappa
+           enddo
+           !
+           n1 = 0
+           !
+           n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral)
+           n1(kappa(2)) = r(molec%Nbonds+molec%Nangles+idihedral+1)
+           !
+           n1(kappa(3)) = sqrt(rbond**2-(n1(kappa(1))**2+n1(kappa(2))**2))
+           !
+           x(iatom,:) = x(p1,:)+n1(:)
            !
         end select 
         !

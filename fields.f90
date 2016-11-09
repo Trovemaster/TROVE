@@ -217,6 +217,12 @@ module fields
       character(len=cl)   :: chk_fname = 'prim_bset.chk'   ! file name to store the primitive basis set data 
       character(len=cl)   :: chk_numerov_fname = 'numerov_bset.chk'   ! file name to store the numerov basis set data 
       character(len=cl)   :: chk_hamil_fname   = 'hamiltonian.chk'   ! file name to store the primitive basis set data 
+      character(len=cl)   :: chk_poten_fname   = 'potential.chk'     ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_kinet_fname   = 'kinetic.chk'       ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_external_fname   = 'external.chk'       ! file name to store the expansion parameters 
+      !
+      logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
+      logical             :: checkpoint_iorder  = .false.
       !
    end type JobT
    !
@@ -1575,14 +1581,14 @@ module fields
                   !
                   NAngles = NAngles + 2
                   !
-               case(101,103) 
+               case(101,103,105) 
                   !
                   ! special case of angles for a linear molecule
                   !
                   NAngles = NAngles - 1
                   Ndihedrals = Ndihedrals + 2
                   !
-               case(102,104) 
+               case(102,104,106,107) 
                   !
                   ! special case of an angle for a linear molecule
                   !
@@ -1998,6 +2004,18 @@ module fields
              call readu(trove%IO_hamiltonian)
              !
              call check_read_save_none(trove%IO_hamiltonian,w)
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               if (trim(w)=='SEPARATE') then
+                  trove%separate_store = .true.
+               else
+                   call report (" Illegal record after hamilton",.true.)
+               endif
+               !
+             endif 
              !
            case('PRIMITIVE_HAMILTONIAN','PRIM_HAMILTONIAN','PRIM_MATELEM')
              !
@@ -4168,7 +4186,7 @@ end subroutine check_read_save_none
         n_t = trove%dihedrals(ibond,1)
         do io = 2,4 
           if (trove%dihedrals(ibond,io)==n_t) then
-             if (any(trove%zmatrix(n_t)%connect(4)==(/101,102,103,104/))) cycle
+             if (any(trove%zmatrix(n_t)%connect(4)==(/101,102,103,104,105,106,107/))) cycle
              write(out,"('FLsetMolecule: ',i4,' dihedral angle connections belong to the same atom: ',3i4)") & 
                           ibond,trove%dihedrals(ibond,:)
              stop 'FLsetMolecule - bad dihedrals angle connections'
@@ -4776,7 +4794,7 @@ end subroutine check_read_save_none
              angles(NAngles,3) = trove%zmatrix(iatom)%connect(4)
              !
              !
-          case(101,103,104) 
+          case(101,103,104,105,106,107) 
              !
              ! special case of angles for a linear molecule
              !
@@ -7735,8 +7753,9 @@ end subroutine check_read_save_none
     ! for (102) and (103,104) cases fo numerical derivatives 
     ! instead of more acurate analytical 
     !
-    if (any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104)) then
-      !
+    if ( any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
+         any(trove%dihedtype(:)==107) ) then
+       !
       do icoord = 1,trove%Ncoords
         !
         call diff_local2cartesian(icoord,a0,Bmat_t)
@@ -12127,13 +12146,27 @@ end subroutine check_read_save_none
         call basisRestore
         call numerovRestore
       case ('KINETIC_READ')
+        !
         call checkpointRestore_kinetic
+        !
+        if (trove%separate_store) call checkpointRestore_kinetic_ascii
+        !
       case ('KINETIC_SKIP')
         call checkpointSkip_kinetic
       case ('POTENTIAL_READ')
-        call checkpointRestore_potential
+        !
+        if (trove%separate_store) then 
+          call checkpointRestore_potential_ascii
+        else
+          call checkpointRestore_potential
+        endif
+        !
       case ('EXTERNAL_READ')
-        call checkpointRestore_external
+        if (trove%separate_store) then
+          call checkpointRestore_external_ascii
+        else
+          call checkpointRestore_external
+        endif
     end select
     call TimerStop('FLcheck_point_Hamiltonian')
 
@@ -12784,7 +12817,7 @@ end subroutine check_read_save_none
       subroutine HamiltonianSave
 
         character(len=cl)  :: unitfname
-        integer(ik)        :: Nmodes,k1,k2,chkptIO
+        integer(ik)        :: Nmodes,k1,k2,chkptIO,chkptIO_pot,chkptIO_kin,chkptIO_ext,i,iterm,npoints
         type(FLpolynomT),pointer    :: fl
         logical     :: i_opened
         !
@@ -12799,10 +12832,36 @@ end subroutine check_read_save_none
         !
         open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=trove%chk_hamil_fname)
         !
+        if (trove%separate_store) then
+           !
+           unitfname ='Check point of the potential'
+           call IOStart(trim(unitfname),chkptIO_pot)
+           inquire (chkptIO_pot,opened=i_opened)
+           if (i_opened) close(chkptIO_pot)
+           open(chkptIO_pot,action='write',position='rewind',status='replace',file=trove%chk_poten_fname)
+           !
+           unitfname ='Check point of the kinetic'
+           call IOStart(trim(unitfname),chkptIO_kin)
+           inquire (chkptIO_kin,opened=i_opened)
+           if (i_opened) close(chkptIO_kin)
+           open(chkptIO_kin,action='write',position='rewind',status='replace',file=trove%chk_kinet_fname)
+           !
+           if (trim(trove%IO_ext_coeff)=='SAVE') then
+             !
+             unitfname ='Check point of the external'
+             call IOStart(trim(unitfname),chkptIO_ext)
+             inquire (chkptIO_ext,opened=i_opened)
+             if (i_opened) close(chkptIO_ext)
+             open(chkptIO_ext,action='write',position='rewind',status='replace',file=trove%chk_external_fname)
+             !
+           endif
+           !
+        endif
+        !
         write(chkptIO) 'Start Hamiltonian objects'
         !
         Nmodes = trove%Nmodes
-        !
+        Npoints = trove%npoints
         !
         write(chkptIO) 'Amatrho'
         write(chkptIO) trove%Amatrho
@@ -12874,10 +12933,127 @@ end subroutine check_read_save_none
           enddo
         endif
         !
+        if (trove%separate_store) then
+          !
+          write(chkptIO_kin,"(2i9,10x,a)") trove%g_vib(1,1)%Npoints,trove%g_vib(1,1)%Ncoeff,"<- g_vib Npoints,Ncoeff"
+          !
+          do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+              !
+              fl => trove%g_vib(k1,k2) 
+              !
+              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%field)
+              !
+            enddo
+          enddo
+          !
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8)") 987654321,0,0,0,0.0_ark
+          !
+          write(chkptIO_kin,"(2i9,10x,a)") trove%g_rot(1,1)%Npoints,trove%g_rot(1,1)%Ncoeff,"<- g_rot Npoints,Ncoeff"
+          !
+          do k1 = 1,3
+            do k2 = 1,3
+              !
+              fl => trove%g_rot(k1,k2) 
+              !
+              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%field)
+              !
+            enddo
+          enddo
+          !
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+          !
+          write(chkptIO_kin,"(2i9,10x,a)") trove%g_cor(1,1)%Npoints,trove%g_cor(1,1)%Ncoeff,"<- g_cor Npoints,Ncoeff"
+          !
+          do k1 = 1,Nmodes
+            do k2 = 1,3
+              !
+              fl => trove%g_cor(k1,k2) 
+              !
+              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%field)
+              !
+            enddo
+          enddo
+          !
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+          !
+          fl => trove%pseudo
+          !
+          write(chkptIO_kin,"(2i9,10x,a)") trove%pseudo%Npoints,trove%pseudo%Ncoeff,"<- pseudo Npoints,Ncoeff"
+          !
+          call write_ascii(0_ik,0_ik,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%field)
+          !
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+          !
+          if (FLl2_coeffs) then
+            !
+            write(chkptIO_kin,"(2i9,10x,a)") trove%pseudo%Npoints,trove%pseudo%Ncoeff,"<- L2_vib Npoints,Ncoeff"
+            !
+            do k1 = 1,Nmodes
+              do k2 = 1,Nmodes
+                !
+                fl => trove%L2_vib(k1,k2) 
+                !
+                call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%field)
+                !
+              enddo
+            enddo
+            !
+            write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+            !
+          endif
+          !
+          write(chkptIO_kin,"(a)") 'End of kinetic'
+          !
+          close(chkptIO_kin,status='keep')
+          !
+        endif
+        !
+        !
+        ! Potential energy part
+        !
         write(chkptIO) 'poten'
         write(chkptIO) trove%poten%Ncoeff
         write(chkptIO) trove%poten%field
         write(chkptIO) trove%poten%iorder
+        !
+        if (trove%separate_store) then
+          !
+          write(chkptIO_pot,"(2i9,10x,a)") trove%poten%Npoints,trove%poten%Ncoeff,"<- Npoints,Ncoeff"
+          !
+          fl => trove%poten
+          !
+          do iterm = 1,fl%Ncoeff
+            !
+            do i = 0,fl%Npoints
+              !
+              if (abs(fl%field(iterm,i))>small_) then
+                !
+                write(chkptIO_pot,"(i8,1x,i8,1x,e23.16)") iterm,i,fl%field(iterm,i)
+                !
+              endif
+              !
+            enddo
+            !
+          enddo
+          !
+          write(chkptIO_pot,"(i11,1x,i5,e18.11)") 987654321,0,0.0_ark
+          !
+          !if ( trove%checkpoint_iorder ) then 
+          !  !
+          !  do iterm = 1,trove%poten%Ncoeff
+          !    !
+          !    write(chkptIO_pot,"(i8,1x,i5)") iterm,trove%poten%iorder(iterm)
+          !    !
+          !  enddo
+          !  !
+          !endif
+          !
+          write(chkptIO_pot,"(a)") 'End of potential'
+          !
+          close(chkptIO_pot,status='keep')
+          !
+        endif
         !
         write(chkptIO) 'End Hamiltonian objects'
         !
@@ -12893,13 +13069,79 @@ end subroutine check_read_save_none
              !
           enddo
           !
-          write(chkptIO) 'End External object'          
+          write(chkptIO) 'End External object'
+          !
+          if (trove%separate_store) then
+            !
+            write(chkptIO_ext,"(3i9,10x,a)") trove%extF(1)%Npoints,trove%extF(1)%Ncoeff,extF%rank,"<- Npoints,Ncoeff,Rank"
+            !
+            do k1 = 1,extF%rank
+              !
+              do iterm = 1,trove%extF(1)%Ncoeff
+                !
+                fl => trove%extF(k1)
+                !
+                do i = 0,trove%extF(1)%Npoints
+                  !
+                  if (abs(fl%field(iterm,i))>small_) then
+                    !
+                    write(chkptIO_ext,"(i8,1x,i8,1x,i8,1x,f23.16)") k1,iterm,i,fl%field(iterm,i)
+                    !
+                  endif
+                  !
+                enddo
+                !
+              enddo
+              !
+            enddo
+            !
+            write(chkptIO_ext,"(i11,1x,i5,1x,i8,1x,e18.11)") 987654321,0,0,0.0_ark
+            !
+            !if ( trove%checkpoint_iorder ) then 
+            !  !
+            !  do k1 = 1,extF%rank
+            !    !
+            !    do iterm = 1,trove%extF(1)%Ncoeff
+            !      !
+            !      write(chkptIO_ext,"(i8,1x,i8,1x,i5)") k1,iterm,trove%extF(k1)%iorder(iterm)
+            !      !
+            !    enddo
+            !    !
+            !  enddo
+            !  !
+            !endif
+            !
+            write(chkptIO_ext,"(a)") 'End of external'
+            !
+            close(chkptIO_ext,status='keep')
+            !
+          endif          
           !
         endif
         !
         close(chkptIO,status='keep')
         !
       end subroutine HamiltonianSave
+      !
+      subroutine write_ascii(k1,k2,Ncoeff,Npoints,chkptIO_kin,field)
+        !
+        integer(ik),intent(in) :: k1,k2,Ncoeff,Npoints,chkptIO_kin
+        real(ark),intent(in)   :: field(1:Ncoeff,0:Npoints)
+        integer(ik) :: iterm,i
+          !
+          do iterm = 1,Ncoeff
+            do i = 0,Npoints
+              !
+              if (abs(field(iterm,i))>small_) then 
+                !
+                write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e23.16)") k1,k2,iterm,i,real(field(iterm,i),rk)
+                !
+              endif
+              !
+             enddo
+          enddo
+          !
+      end subroutine write_ascii
       !
       subroutine checkpointRestore_kinetic
 
@@ -12989,7 +13231,11 @@ end subroutine check_read_save_none
                stop 'chk_Restore_kin, L2_vib-field - out of memory'
            end if
            !
-        endif 
+        endif
+        !
+        ! read from separate file in ASCII format if required 
+        !
+        if (trove%separate_store) return
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='g_vib') then
@@ -13167,6 +13413,189 @@ end subroutine check_read_save_none
         call MemoryReport
         !
       end subroutine checkpointRestore_kinetic
+
+
+      subroutine checkpointRestore_kinetic_ascii
+
+        character(len=14) :: buf
+        character(len=25) :: buf25
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO,alloc,Tcoeff
+        type(FLpolynomT),pointer    :: fl
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints
+        real(rk)             :: factor
+        real(ark)            :: field_
+
+        !
+        integer(ik) :: n(2,8), m(2,8) , l(2,8), i, iterm, k(trove%Nmodes)
+        !
+        unitfname ='Check point of the kinetic'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
+        !
+        Natoms = trove%Natoms
+        Nmodes = trove%Nmodes
+        Npoints = trove%Npoints
+        !
+        if (.not.associated(trove%g_vib).or..not.associated(trove%g_rot).or. &
+            .not.associated(trove%g_cor)) then 
+           !
+           !write (out,"('basisRestore:  g-fields have to be allocated by now; maybe _checkpointRestore_kinetic_ascii_ was no run yet')") 
+           !stop 'basisRestore, g-fields has to be alllocated before'
+           !
+           allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
+           if (alloc/=0) then
+               write (out,"('chk_Restore_kin-Error ',i9,' trying to allocate g-fields')") alloc
+               stop 'chk_Restore_kin, g-fields - out of memory'
+           end if
+           !
+        endif 
+        !
+        if (FLl2_coeffs.and..not.associated(trove%L2_vib)) then 
+           !
+           allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
+           if (alloc/=0) then
+               write (out,"('chk_Restore_kin-Error ',i9,' trying to allocate L2_vib-field')") alloc
+               stop 'chk_Restore_kin, L2_vib-field - out of memory'
+           end if
+           !
+        endif
+        !
+        ! start reading 
+        !
+        read(chkptIO,*) Tpoints,Tcoeff
+        !
+        if (Tpoints/=Npoints) stop "gvib-ASCII-chk npoints is wrong"
+        !
+        do k1 = 1,Nmodes
+          do k2 = 1,Nmodes
+            !
+            fl => trove%g_vib(k1,k2)
+            fl%Ncoeff = Tcoeff
+            !
+            call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
+            !
+          enddo
+        enddo
+        !
+        do_gvib : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_
+           !
+           if (k1==987654321) exit do_gvib
+           !
+           trove%g_vib(k1,k2)%field(iterm,i) = field_
+           !
+        enddo do_gvib
+        !
+        read(chkptIO,*) Tpoints,Tcoeff
+        !
+        if (Tpoints/=Npoints) stop "grot-ASCII-chk npoints is wrong"
+        !
+        do k1 = 1,3
+          do k2 = 1,3
+            !
+            fl => trove%g_rot(k1,k2)
+            fl%Ncoeff = Tcoeff
+            !
+            call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
+            !
+          enddo
+        enddo
+        !
+        do_grot : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_
+           !
+           if (k1==987654321) exit do_grot
+           !
+           trove%g_rot(k1,k2)%field(iterm,i) = field_
+           !
+        enddo do_grot
+        !
+        read(chkptIO,*) Tpoints,Tcoeff
+        !
+        if (Tpoints/=Npoints) stop "g_cor-ASCII-chk npoints is wrong"
+        !
+        do k1 = 1,Nmodes
+          do k2 = 1,3
+            !
+            fl => trove%g_cor(k1,k2)
+            fl%Ncoeff = Tcoeff
+            !
+            call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
+            !
+          enddo
+        enddo
+        !
+        do_gcor : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_
+           !
+           if (k1==987654321) exit do_gcor
+           !
+           trove%g_cor(k1,k2)%field(iterm,i) = field_
+           !
+        enddo do_gcor
+        !
+        read(chkptIO,*) Tpoints,Tcoeff
+        !
+        if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
+        !
+        fl => trove%pseudo
+        fl%Ncoeff = Tcoeff
+        !
+        call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
+        !
+        do_pseu : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_
+           !
+           if (k1==987654321) exit do_pseu
+           !
+           trove%pseudo%field(iterm,i) = field_
+           !
+        enddo do_pseu
+        !
+        if (FLl2_coeffs) then 
+          !
+          read(chkptIO,*) Tpoints,Tcoeff
+          !
+          if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
+          !
+          do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+              !
+              fl => trove%L2_vib(k1,k2)
+              fl%Ncoeff = Tcoeff
+              !
+              call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+              !
+            enddo
+          enddo
+          !
+          do_L2vib : do 
+             !
+             read(chkptIO,*) k1,k2,iterm,i,field_
+             !
+             if (k1==987654321) exit do_L2vib
+             !
+             trove%L2_vib(k1,k2)%field(iterm,i) = field_
+             !
+          enddo do_L2vib
+          !
+        endif
+        !
+        read(chkptIO,"(a14)") buf
+        !
+        if (buf/='End of kinetic') then
+          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
+        end if
+        !
+        call MemoryReport
+        !
+      end subroutine checkpointRestore_kinetic_ascii
 
 
 
@@ -13405,6 +13834,66 @@ end subroutine check_read_save_none
         !
       end subroutine checkpointRestore_potential
       !
+
+      !
+      subroutine checkpointRestore_potential_ascii
+
+        character(len=16) :: buf
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO,alloc
+        type(FLpolynomT),pointer    :: fl
+        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i
+        real(ark) :: field_
+        !
+
+        unitfname ='Check point of the potential'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_poten_fname)
+        !
+        if (.not.associated(trove%poten)) then 
+           !
+           allocate (trove%poten,stat=alloc) 
+           if (alloc/=0) then
+               write (out,"('chk_Restore_pot_ascii-Error ',i9,' trying to allocate poten-field')") alloc
+               stop 'chk_Restore_pot_ascii, poten-field - out of memory'
+           end if
+           !
+        endif
+        !
+        ! start reading 
+        !
+        read(chkptIO,*) Npoints,Ncoeff
+        !
+        if (Npoints/=trove%Npoints) stop "poten-ASCII-chk npoints is wrong"
+        !
+        fl => trove%poten
+        fl%Ncoeff = Ncoeff
+        !
+        call polynom_initialization(trove%poten,trove%NPotOrder,Ncoeff,trove%Npoints,'poten')
+        !
+        do_pot : do 
+           !
+           read(chkptIO,*) iterm,i,field_
+           !
+           if (iterm==987654321) exit do_pot
+           !
+           fl%field(iterm,i) = field_
+           !
+        enddo do_pot
+        !
+        read(chkptIO,"(a16)") buf
+        !
+        if (buf/='End of potential') then
+          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
+        end if
+        !
+      end subroutine checkpointRestore_potential_ascii
+
+
+
+
+
       !
       subroutine checkpointRestore_external
 
@@ -13440,7 +13929,6 @@ end subroutine check_read_save_none
            fl => trove%extF(imu)
            fl%Ncoeff = nterms
            !
-           fl => trove%extF(imu)
            call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
            read(chkptIO) fl%field     
            read(chkptIO) fl%iorder 
@@ -13458,6 +13946,69 @@ end subroutine check_read_save_none
         !
       end subroutine checkpointRestore_external
       !      
+
+      subroutine checkpointRestore_external_ascii
+      
+
+        character(len=15) :: buf
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO,alloc
+        type(FLpolynomT),pointer    :: fl
+        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i,imu,nterms,nrank
+        real(ark) :: field_
+        !
+
+        unitfname ='Check point of the external'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_external_fname)
+        !
+        if (.not.associated(trove%extF)) then 
+           !
+           allocate (trove%extF(extF%rank),stat=alloc)
+           if (alloc/=0) then
+               write (out,"(' Error ',i9,' trying to allocate extF-field')") alloc
+               stop 'chk_Restore, extF-field - out of memory'
+           end if
+           !
+        endif 
+        !
+        ! start reading 
+        !
+        read(chkptIO,*) Npoints,nterms,nrank
+        !
+        if (nrank/=extF%rank) stop "external-ASCII-chk rank is wrong"
+        !
+        if (Npoints/=trove%Npoints) stop "external-ASCII-chk npoints is wrong"
+        !
+        do imu = 1,extF%rank
+           !
+           fl => trove%extF(imu)
+           fl%Ncoeff = nterms
+           !
+           call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
+           !
+        enddo
+        !
+        do_ext : do 
+           !
+           read(chkptIO,*) imu,iterm,i,field_
+           !
+           if (imu==987654321) exit do_ext
+           !
+           trove%extF(imu)%field(iterm,i) = field_
+           !
+        enddo do_ext
+        !
+        read(chkptIO,"(a15)") buf
+        !
+        if (buf/='End of external') then
+          write (out,"(' Checkpoint file ',a,' has bogus label external-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format ext-ASCII'
+        end if
+        !
+      end subroutine checkpointRestore_external_ascii
+
+
       !
    end subroutine FLcheck_point_Hamiltonian
    !
@@ -19411,7 +19962,7 @@ end subroutine check_read_save_none
     real(ark)   :: rcon(trove%Natoms,trove%Natoms),tau_sign
     real(ark)   :: tau,cosa1,cosa2,cosa3,sindelta,norm_2,cosa,&
                    a_t(3),a_t1(3),a_t2(3),a_t3(3),delta,B,vec1,vec2,dvec1(3),dvec2(3),r1,r2,r3,cosu,cosv,sinu,sinv,&
-                   u(3),v(3),w(3),cosdelta,phi
+                   u(3),v(3),w(3),cosdelta,phi,rmat(3,3)
 
     integer(ik) ::  ibond,iangle,kappa,zeta,k1,k2
     integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,J
@@ -19706,7 +20257,7 @@ end subroutine check_read_save_none
           !
           r(trove%Nbonds+trove%Nangles+iangle) = sindelta
           !
-       case(103) ! The special bond-angles for the linear molecule case 
+       case(103,105) ! The special bond-angles for the linear molecule case 
           !
           ! 1 and 2 are the two outer atoms and n0 is the central atom
           !
@@ -19727,18 +20278,15 @@ end subroutine check_read_save_none
           u =  a_t1(:)/r1
           v =  a_t2(:)/r2
           !
-          w(:) = MLvector_product(u,v)
-          !
-          ! special angle is -arcsin( kappa . [uxv] ), 
-          ! i.e. the scalar product kappa.w is a kappa component of w
-          !
-          sindelta = w(kappa)
-          !
-          r(trove%Nbonds+trove%Nangles+iangle) = sindelta
-          !
           ! xyz
           !
           r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
+          !
+          if (j==105) then
+            !
+            r(trove%Nbonds+trove%Nangles+iangle) = u(kappa)
+            !
+          endif
           !
           zeta = trove%zmatrix(n1)%connect(3)
           !
@@ -19757,7 +20305,7 @@ end subroutine check_read_save_none
              !
           enddo
           !
-          case(104) ! The special bond-angles for the linear molecule case 
+       case(104) ! The special bond-angles for the linear molecule case 
           !
           ! 1 and 2 are the two outer atoms and n0 is the central atom
           !
@@ -19775,6 +20323,74 @@ end subroutine check_read_save_none
           ! xyz
           !
           r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
+          !
+       case(106) ! The special bond-angles for the linear molecule case 
+          !
+          ! 1 and 2 are the two outer atoms and n0 is the central atom
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n0 = trove%dihedrals(iangle,2)
+          n2 = trove%dihedrals(iangle,3)
+          !
+          ! Cartesian component we build the two special angles for
+          !
+          kappa = trove%dihedrals(iangle,4)
+          !
+          a_t1(:) = cartesian(n1,:) - cartesian(n0,:)
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          !
+          ! xyz
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)/r1
+          !
+       case(107) ! The special bond-angles for the linear molecule case 
+          !
+          ! 1 and 2 are the two outer atoms and n0 is the central atom
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n0 = trove%dihedrals(iangle,2)
+          n2 = trove%dihedrals(iangle,3)
+          !
+          ! Cartesian component we build the two special angles for
+          !
+          kappa = trove%dihedrals(iangle,4)
+          !
+          a_t1(:) = cartesian(n1,:) - cartesian(n0,:)
+          a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          r2 =  sqrt(sum(a_t2(:)**2))
+          !
+          !u =  (/0.0_ark,1.0_ark,0.0_ark/)
+          !
+          v =  a_t2(:)/r2
+          !
+          u(1) = 0 
+          u(3) = v(2)/sqrt(v(2)**2+v(3)**2)
+          u(2) =-v(3)/sqrt(v(2)**2+v(3)**2)
+          !
+          r2 =  sqrt(sum(u(:)**2))
+          !
+          if (v(3)<0) v = -v 
+          !
+          w(:) = MLvector_product(u,v)
+          !
+          rmat(1,:) = w(:)
+          rmat(2,:) = u(:)
+          rmat(3,:) = v(:)
+          !
+          a_t1(:) =matmul(rmat,a_t1(:))
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          !
+          ! xyz
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
+          !
+          if (abs(v(2))>small_.or.abs(v(1))>small_) then 
+            continue
+          endif
           ! 
        end select 
        !

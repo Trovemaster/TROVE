@@ -178,6 +178,18 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_7_xyz
          !
+     case('POTEN_C2H2_7_R_RR_NNNN') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_rr_nnnn
+         !
+     case('POTEN_C2H2_7_R_RR_XY') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_rr_xy
+         !
+     case('POTEN_C2H2_7_R_ZZ_NNNN') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_zz_nnnn
+         !
      case('POTEN_C2H2_STREYMILLS') 
          !
          MLpotentialfunc =>  MLpoten_c2h2_streymills
