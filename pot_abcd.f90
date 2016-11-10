@@ -10,7 +10,7 @@ module pot_abcd
 
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
-  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy
+  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4
   
   private
  
@@ -3557,6 +3557,83 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       !
  end function MLpoten_c2h2_7
 
+
+ function MLpoten_c2h2_7_q1q2q3q4(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+    !
+    integer(ik),parameter :: n = 415
+    integer(ik) :: i,k,nmax
+    real(ark) :: dF(n)
+      !
+      integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: r_na(4,3)
+      integer(ik)  :: Nangles 
+      !
+      character(len=cl)  :: txt = 'MLpoten_c2h2_7_q1q2q3q4'
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=molec%force(1)
+      e2=molec%force(2)
+      e4=pi
+      e6=pi
+      !
+      a1 = molec%force(3)
+      a2 = molec%force(4)
+      !
+      x1    = local(1)
+      x2    = local(2)
+      x3    = local(3)
+      !
+      call MLfromlocal2cartesian(1_ik,local,r_na)
+      !
+      b1(:) = r_na(3,:)-r_na(1,:)
+      b0(:) = r_na(2,:)-r_na(1,:)
+      b2(:) = r_na(4,:)-r_na(2,:)
+      !
+      x2 =  sqrt(sum(b1(:)**2))
+      x1 =  sqrt(sum(b0(:)**2))
+      x3 =  sqrt(sum(b2(:)**2))
+      !
+      b1 =  b1(:)/x2
+      b0 =  b0(:)/x1
+      b2 =  b2(:)/x3
+      !
+      w1(:) = MLvector_product(b1,b0)
+      w2(:) = MLvector_product(b2,b0)
+      !
+      y4 =-w1(2)
+      y5 = w1(1)
+      y6 =-w2(2)
+      y7 = w2(1)
+      !
+      y1=1.0_ark-exp(-a1*(x1-e1))
+      y2=1.0_ark-exp(-a2*(x2-e2))
+      y3=1.0_ark-exp(-a2*(x3-e2))
+      !
+      call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      !
+      f = 0
+      !
+      nmax = min(size(force),molec%parmax)
+      !
+      do i = 5,nmax
+        !
+        !k = molec%pot_ind(1,i)
+        !
+        f = f + force(i)*dF(i)
+       !
+      enddo
+      !
+ end function MLpoten_c2h2_7_q1q2q3q4
 
 
  function MLpoten_c2h2_7_r_rr_nnnn(ncoords,natoms,local,xyz,force) result(f) 

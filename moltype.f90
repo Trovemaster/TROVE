@@ -839,7 +839,7 @@ module moltype
          idihedral = idihedral + 1
          n1(kappa(1)) =-r(molec%Nbonds+molec%Nangles+idihedral)
          !
-         n1(kappa(3)) =-sqrt(1.0_ark-(n1(kappa(1))**2+n1(kappa(2))**2))
+         n1(kappa(3)) =-sqrt( 1.0_ark-( n1(kappa(1))**2+n1(kappa(2))**2 ) )
          !
          rbond = r(iatom-1)
          !
@@ -1176,7 +1176,7 @@ module moltype
            n1(kappa(1)) = r(molec%Nbonds+molec%Nangles+idihedral+1)
            n1(kappa(2)) =-r(molec%Nbonds+molec%Nangles+idihedral)
            !
-           n1(kappa(3)) =sqrt(1.0_ark-(n1(kappa(1))**2+n1(kappa(2))**2))
+           n1(kappa(3)) =sqrt( 1.0_ark-( n1(kappa(1))**2+n1(kappa(2))**2 ) )
            !
            x(iatom,:) = x(p1,:)+rbond*n1(:)
            !
