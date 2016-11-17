@@ -1588,7 +1588,7 @@ module fields
                   NAngles = NAngles - 1
                   Ndihedrals = Ndihedrals + 2
                   !
-               case(102,104,106,107) 
+               case(102,104,106,107,108) 
                   !
                   ! special case of an angle for a linear molecule
                   !
@@ -4186,7 +4186,7 @@ end subroutine check_read_save_none
         n_t = trove%dihedrals(ibond,1)
         do io = 2,4 
           if (trove%dihedrals(ibond,io)==n_t) then
-             if (any(trove%zmatrix(n_t)%connect(4)==(/101,102,103,104,105,106,107/))) cycle
+             if (any(trove%zmatrix(n_t)%connect(4)==(/101,102,103,104,105,106,107,108/))) cycle
              write(out,"('FLsetMolecule: ',i4,' dihedral angle connections belong to the same atom: ',3i4)") & 
                           ibond,trove%dihedrals(ibond,:)
              stop 'FLsetMolecule - bad dihedrals angle connections'
@@ -4794,7 +4794,7 @@ end subroutine check_read_save_none
              angles(NAngles,3) = trove%zmatrix(iatom)%connect(4)
              !
              !
-          case(101,103,104,105,106,107) 
+          case(101,103,104,105,106,107,108) 
              !
              ! special case of angles for a linear molecule
              !
@@ -7754,7 +7754,7 @@ end subroutine check_read_save_none
     ! instead of more acurate analytical 
     !
     if ( any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
-         any(trove%dihedtype(:)==107) ) then
+         any(trove%dihedtype(:)==107).or.any(trove%dihedtype(:)==108) ) then
        !
       do icoord = 1,trove%Ncoords
         !
@@ -20388,9 +20388,60 @@ end subroutine check_read_save_none
           !
           r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)
           !
-          if (abs(v(2))>small_.or.abs(v(1))>small_) then 
-            continue
-          endif
+       case(108) ! The special bond-angles for the linear molecule case 
+          !
+          ! 1 and 2 are the two outer atoms and n0 is the central atom
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n0 = trove%dihedrals(iangle,2)
+          n2 = trove%dihedrals(iangle,3)
+          !
+          ! Cartesian component we build the two special angles for
+          !
+          kappa = trove%dihedrals(iangle,4)
+          !
+          a_t1(:) = cartesian(n1,:) - cartesian(n0,:)
+          a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          r2 =  sqrt(sum(a_t2(:)**2))
+          !
+          v =  a_t2(:)/r2
+          !
+          u(1) = 0 
+          u(3) = v(2)/sqrt(v(2)**2+v(3)**2)
+          u(2) =-v(3)/sqrt(v(2)**2+v(3)**2)
+          !
+          r2 =  sqrt(sum(u(:)**2))
+          !
+          if (v(3)<0) v = -v 
+          !
+          w(:) = MLvector_product(u,v)
+          !
+          rmat(1,:) = w(:)
+          rmat(2,:) = u(:)
+          rmat(3,:) = v(:)
+          !
+          a_t1(:) =matmul(rmat,a_t1(:))
+          !
+          r1 =  sqrt(sum(a_t1(:)**2))
+          !
+          ! xyz
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = a_t1(kappa)       
+          !
+          zeta = trove%zmatrix(n1)%connect(3)
+          !
+          do ibond = 1,trove%Nbonds
+             !
+             k1 = trove%bonds(ibond,1)
+             k2 = trove%bonds(ibond,2)
+             !
+             if (k1/=n1.and.k2/=n1) cycle
+             !
+             r(ibond) = a_t1(zeta)
+             !
+          enddo          
           ! 
        end select 
        !

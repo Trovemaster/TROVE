@@ -160,7 +160,7 @@
         !
       else
         !
-        call PTcontracted_prediagonalization(j)
+         call PTcontracted_prediagonalization(j)
         !
       endif 
       !
