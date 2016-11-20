@@ -2658,7 +2658,7 @@ module perturbation
          !
          if (FLl2_coeffs) then
            !
-           call PThamiltonianMat(jrot=-1_ik,nroots=nroots,diagonalizer_=diag_)
+           call PThamiltonianMat(jrot=-1_ik,nroots=nroots,diagonalizer_=diag_,postprocess_=bs_t(kmode)%postprocess)
            !
            if (nroots<1) then 
              !
@@ -27370,12 +27370,13 @@ end subroutine read_contr_ind
 !
 ! Here we construct the primitve matrix and diagonalize it
 !
-  subroutine PThamiltonianMat(jrot,nroots,diagonalizer_,uv_syevr_)
+  subroutine PThamiltonianMat(jrot,nroots,diagonalizer_,uv_syevr_,postprocess_)
 
     integer(ik),intent(in) :: jrot ! rotational quantum number
     integer(ik),intent(out):: nroots ! number of roots found
     character(len=cl),intent(in),optional  :: diagonalizer_
     real(rk),intent(in),optional  :: uv_syevr_
+    logical,intent(in),optional   :: postprocess_
     !
     integer(ik) :: alloc,i0,dimen,MaxTerm
     character(len=cl):: diagonalizer_used
@@ -27715,7 +27716,7 @@ end subroutine read_contr_ind
         !
         PT%Hclass%coeffs = c
         !
-        ! transform the matrix elements of the vib. angular momeenum 
+        ! transform the matrix elements of the vib. angular momentum 
         ! to the new basis of eigenfunctions of H-reduced and store in C-matrix
         !
         call dgemm('T','N',dimen,dimen,dimen,alpha,& 
@@ -27752,6 +27753,7 @@ end subroutine read_contr_ind
           ! apply the polyad- and cluster-thresholds only for the non-Harmonic basis 
           !
           if ( ipol>job%Npolyads_contr.and.&
+               .not.( postprocess_ ).and.&
                .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in)  ) then
                !
              cycle 
@@ -27792,7 +27794,7 @@ end subroutine read_contr_ind
         a = 0
         ! 
         ! for each degenerate cluster (incl. Ndeg=1) build a small 
-        ! Lquant matraix NdegxNdeg and diagonalize
+        ! Lquant matrix Ndeg x Ndeg and diagonalize
         ! This should produce a diagonal Lquant (ang. vibr. mometna) matrix
         !
         do icount = 1,Ncount
@@ -27890,6 +27892,12 @@ end subroutine read_contr_ind
           !
           !PT%lquant%icoeffs(i,1) = nint(sqrt(abs(PT%Ewhole%coeffs(i,1))),ik)
           PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i))),ik)
+          !
+          if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then 
+            write(out,"('PThamiltonianMat: lquant is not an integer:',i,1x,f18.4,' i = ',i4)") PT%lquant%icoeffs(i,1)**2,c(i,i),i
+            !stop 'PThamiltonianMat: illegal lquant '
+          endif
+          !
           !PT%Ewhole%coeffs(i,1) = c(i,i)
           !
           ! Re-assign the new eigenfunctions which are also basis functions 
