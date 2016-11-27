@@ -443,41 +443,7 @@ function MLpoten_c2h2_morse(ncoords,natoms,local,xyz,force) result(f)
          !
          x6 = cos(tau)*sin(alpha1)*sin(alpha2)
          !
-      elseif (molec%zmatrix(3)%connect(4)==102) then 
-         !
-         delta1x = local(4)
-         delta1y = local(5)
-         !
-         delta2x = local(6)
-         delta2y = local(7)
-         !
-         !tau1 = pi-atan2(sin(delta1y),-sin(delta1x))
-         !tau2 = pi-atan2(sin(delta2y),-sin(delta2x))
-         !
-         tau1 = pi-atan2((delta1y),-(delta1x))
-         tau2 = pi-atan2((delta2y),-(delta2x))
-         !
-         tau = tau2-tau1
-         !
-         !sinalpha1 = sqrt(sin(delta1x)**2+sin(delta1y)**2)
-         !sinalpha2 = sqrt(sin(delta2x)**2+sin(delta2y)**2)
-         !
-         sinalpha1 = sqrt((delta1x)**2+(delta1y)**2)
-         sinalpha2 = sqrt((delta2x)**2+(delta2y)**2)
-         !
-         alpha1 = pi-asin(sinalpha1)
-         alpha2 = pi-asin(sinalpha2)
-         !
-         x1 = rc1c2
-         x3 = rc1h1
-         x2 = rc2h2
-         x5 = alpha1
-         x4 = alpha2
-         x6 = tau
-         !
-         x6 = cos(tau)*sin(alpha1)*sin(alpha2)
-         ! 
-      elseif (molec%zmatrix(3)%connect(4)==103) then
+      else         
          !
          v1(:) = xyz(2,:)-xyz(1,:)
          v2(:) = xyz(3,:)-xyz(1,:)
@@ -533,29 +499,6 @@ function MLpoten_c2h2_morse(ncoords,natoms,local,xyz,force) result(f)
            
            !
          endif
-         !
-         !cosalpha1 =  v2(3)/rc1h1
-         !cosalpha2 = -v3(3)/rc2h2
-         !
-         !x4 = aacos(cosalpha1,txt)
-         !x5 = aacos(cosalpha2,txt)
-         !
-         !x6 = (v2(1)*v3(1)+v2(2)*v3(2))/(rc1h1*rc2h2)
-         !
-         !e4 = cos(e4)
-         !
-         !
-         !n3(:) = MLvector_product(v12(:),v31(:))
-         !
-         !sintau =  sqrt( sum( n3(:)**2 ) )
-         !costau = -sum( v12(:)*v31(:) )
-         !
-         !tau = atan2(sintau,costau)
-         !
-      else 
-        !
-        write(out,"('MLpoten_v_c2h2_katy: only designed for 7 coordinates, not ',i6)") ncoords
-        stop 'only designed for 7 coordinates ' 
         !
       endif
       !

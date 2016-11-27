@@ -9788,8 +9788,11 @@ module perturbation
        do iclasses = 1,PT%Nclasses
          if (cnu(iclasses)<=contr(iclasses)%nlevels) then
             normal(:) = normal(:) + contr(iclasses)%eigen(cnu(iclasses))%normal(:)
-         endif 
-         largest_coeff = largest_coeff*contr(iclasses)%eigen(cnu(iclasses))%largest_coeff
+         endif
+         !
+         ! the total coeff is the product of the J=0 and contracted  
+         !!!!!largest_coeff = largest_coeff*contr(iclasses)%eigen(cnu(iclasses))%largest_coeff
+         !
        enddo
        !
        maxcontrib(iroot) = largest_coeff
@@ -27390,7 +27393,7 @@ end subroutine read_contr_ind
     !
     double precision :: vrange(2)
     real(rk),allocatable :: b(:),a(:,:),c(:,:),d(:,:),e(:)
-    integer  :: nroot_t,lquant
+    integer  :: nroot_t,lquant,Nmodes1
     double precision,allocatable :: work(:)
     integer,allocatable :: iwork(:)
     integer          :: info,lwork,liwork
@@ -27863,6 +27866,8 @@ end subroutine read_contr_ind
                    cf%coeffs,dimen,beta,&
                    c,dimen)
 
+
+        Nmodes1 = PT%Nmodes+1
         !
         do i=1,nroots
           !
@@ -27893,11 +27898,27 @@ end subroutine read_contr_ind
           !PT%lquant%icoeffs(i,1) = nint(sqrt(abs(PT%Ewhole%coeffs(i,1))),ik)
           PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i))),ik)
           !
-          if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then 
-            write(out,"('PThamiltonianMat: lquant is not an integer:',i,1x,f18.4,' i = ',i4)") PT%lquant%icoeffs(i,1)**2,c(i,i),i
-            !stop 'PThamiltonianMat: illegal lquant '
-          endif
+          !if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then 
+          !  write(out,"('PThamiltonianMat: lquant is not an integer:',i,1x,f18.4,' i = ',i4)") PT%lquant%icoeffs(i,1)**2,c(i,i),i
+          !  !stop 'PThamiltonianMat: illegal lquant '
+          !endif
           !
+          if (job%verbose>=5) then
+              !
+              termvalue = PT%Ewhole%coeffs(i,1)-ZPE
+              !
+              if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then
+                 !
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,'/=',i4)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(c(i,i)),PT%lquant%icoeffs(i,1)
+                 !
+              else
+                 !
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(c(i,i))
+                 !
+              endif
+              !
+          endif
+
           !PT%Ewhole%coeffs(i,1) = c(i,i)
           !
           ! Re-assign the new eigenfunctions which are also basis functions 
