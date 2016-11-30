@@ -27739,6 +27739,8 @@ end subroutine read_contr_ind
         ! Here we count the degenerate srates and form groups from the corresponding eigenfunctions
         !
         allocate (count_index(dimen,dimen),count_degen(dimen),stat=alloc)
+        call ArrayStart('PThamiltonianMat:counts',alloc,size(count_index),kind(count_index))
+        call ArrayStart('PThamiltonianMat:counts',alloc,size(count_degen),kind(count_degen))
         !
         count_index = 0
         count_index(1,1) = 1
@@ -27788,17 +27790,25 @@ end subroutine read_contr_ind
         !
         iroot = iroot_in
         !
+        if (job%verbose>=5) then
+          write(out,"(\'levels, states selected =  ',2i8)") icount,iroot_in
+        endif
+        !
         lwork = 50*maxval(count_degen,dim=1)
         !
         if (job%verbose>=6) write(out,"('maxdeg, lwork',2i8)") maxval(count_degen,dim=1),lwork
         !
-        allocate(work(lwork))
+        allocate(work(lwork),stat=alloc)
+        call ArrayStart('PThamiltonianMat:counts',alloc,size(work),kind(work))
+        call ArrayStart('PThamiltonianMat:counts',alloc,size(work),kind(work))
         !
         a = 0
         ! 
         ! for each degenerate cluster (incl. Ndeg=1) build a small 
         ! Lquant matrix Ndeg x Ndeg and diagonalize
         ! This should produce a diagonal Lquant (ang. vibr. mometna) matrix
+        !
+        if (job%verbose>=5) write(out,"('diagonalize <i|Lvib|j> for clusters with the same L...')") 
         !
         do icount = 1,Ncount
            !
@@ -27841,10 +27851,12 @@ end subroutine read_contr_ind
         !
         deallocate(work)
         deallocate (count_index,count_degen)
+        call ArrayStop('PThamiltonianMat:counts')
         !
         ! Transform to the eigenfunctions to the L-representtation, where
         ! Lz^2 is diagonal 
         !
+        if (job%verbose>=5) write(out,"('Transform to the representation Lvib-diagonal ...')") 
         !   
         call dgemm('N','N',dimen,dimen,dimen,alpha,&
                    cf%coeffs,dimen,&
@@ -27856,6 +27868,8 @@ end subroutine read_contr_ind
         ! check if L2 is diagonal by transforming the primite 
         ! matrix elemenets of L2 to the new representation 
         !
+        if (job%verbose>=5) write(out,"('Now transform the Hamiltonian and check if Lvib is diagonal ...')")         
+        !
         call dgemm('T','N',dimen,dimen,dimen,alpha,& 
                     cf%coeffs,dimen,&
                     PT%Hclass%coeffs,dimen,beta,&
@@ -27866,7 +27880,10 @@ end subroutine read_contr_ind
                    cf%coeffs,dimen,beta,&
                    c,dimen)
 
-
+        if (job%verbose>=4) then
+              write(out,"(/a)") " ... with vibrational angular momenta"
+        endif
+        !
         Nmodes1 = PT%Nmodes+1
         !
         do i=1,nroots
@@ -27903,17 +27920,17 @@ end subroutine read_contr_ind
           !  !stop 'PThamiltonianMat: illegal lquant '
           !endif
           !
-          if (job%verbose>=5) then
+          if (job%verbose>=4) then
               !
               termvalue = PT%Ewhole%coeffs(i,1)-ZPE
               !
               if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,'/=',i4)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(c(i,i)),PT%lquant%icoeffs(i,1)
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i))),PT%lquant%icoeffs(i,1)
                  !
               else
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(c(i,i))
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))
                  !
               endif
               !
