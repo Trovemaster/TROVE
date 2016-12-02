@@ -180,7 +180,11 @@ module molecules
          !
      case('POTEN_C2H2_7_Q2Q1Q4Q3') 
          !
-         MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3
+         MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3         
+         !
+     case('POTEN_C2H2_7_415') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_415
          !
      case('POTEN_C2H2_7_XYZ') 
          !
