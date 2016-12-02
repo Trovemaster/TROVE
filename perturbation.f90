@@ -27402,6 +27402,7 @@ end subroutine read_contr_ind
     integer(ik),allocatable       :: count_index(:,:),count_degen(:)
     integer(ik)        :: icount,ideg,jdeg,jroot,iroot_in,iroot,Ndeg,Ncount
     real(rk)           :: largest_coeff
+    logical            :: postprocess
     !
     Nmodes = PT%Nmodes
     !
@@ -27417,6 +27418,12 @@ end subroutine read_contr_ind
         upper_ener = uv_syevr_
     else 
         upper_ener = job%upper_ener
+    endif 
+    !
+    if (present(postprocess_)) then
+        postprocess = postprocess_
+    else 
+        postprocess = .false.
     endif 
     !
     if (job%verbose>=5) write(out,"( 'Diagonalizer used: ',a)") trim(diagonalizer_used)
@@ -27750,6 +27757,8 @@ end subroutine read_contr_ind
         ideg = 1
         iroot_in = 1
         !
+        if (job%verbose>=6) write(out,"('nroots = ',i5)") nroots
+        !
         do iroot = 2,nroots
           !
           nu = PT%quanta%icoeffs(iroot,:)
@@ -27758,7 +27767,7 @@ end subroutine read_contr_ind
           ! apply the polyad- and cluster-thresholds only for the non-Harmonic basis 
           !
           if ( ipol>job%Npolyads_contr.and.&
-               .not.( postprocess_ ).and.&
+               .not.( postprocess ).and.&
                .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in)  ) then
                !
              cycle 
@@ -27776,12 +27785,12 @@ end subroutine read_contr_ind
             !
           endif 
           !
+          if (job%verbose>=6) write(out,"('iroot,icount,ideg = ',3i5)") iroot,icount,ideg
+          !
           count_index(icount,ideg) = iroot
           count_degen(icount) = ideg
           !
-          if (job%verbose>=6) write(out,"('iroot,icount,ideg = ',3i5)") iroot,icount,ideg
-          !
-          ! last iroot takin in
+          ! last iroot taken in
           iroot_in = iroot
           !
         enddo
