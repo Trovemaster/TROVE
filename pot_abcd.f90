@@ -3784,7 +3784,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 578
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -3864,7 +3864,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -3995,7 +3995,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       y2=1.0_ark-exp(-a2*(x2-e2))
       y3=1.0_ark-exp(-a2*(x3-e2))
       !
-      call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      call potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       !
       f = 0
       !
@@ -4020,7 +4020,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -4098,7 +4098,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -4176,7 +4176,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -4253,7 +4253,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
@@ -4336,7 +4336,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
     !
-    integer(ik),parameter :: n = 415
+    integer(ik),parameter :: n = 410
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
       !
