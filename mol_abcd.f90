@@ -294,6 +294,50 @@ module mol_abcd
           !
           dst(1:3) = dsrc(1:3)
           !
+          dst(4) = dsrc(5)
+          dst(5) =-dsrc(4)
+          dst(6) = dsrc(7)
+          dst(7) =-dsrc(6)
+          !
+       else
+          !
+          dst(1:3) = src(1:3)+molec%local_eq(1:3)
+          !
+          dst(4) =-src(5)-molec%local_eq(5)
+          dst(5) = src(4)+molec%local_eq(4)
+          dst(6) =-src(7)-molec%local_eq(7)
+          dst(7) = src(6)+molec%local_eq(6)
+          !
+       endif
+       !
+    case('R-R1-R2-TX+TY+TX-TY')
+       !
+       if (direct) then 
+          !
+          dst(1:3) = dsrc(1:3)
+          !
+          dst(4) =-dsrc(5)
+          dst(5) = dsrc(4)
+          dst(6) = dsrc(7)
+          dst(7) =-dsrc(6)
+          !
+       else
+          !
+          dst(1:3) = src(1:3)+molec%local_eq(1:3)
+          !
+          dst(4) = src(5)+molec%local_eq(5)
+          dst(5) =-src(4)-molec%local_eq(4)
+          dst(6) =-src(7)-molec%local_eq(7)
+          dst(7) = src(6)+molec%local_eq(6)
+          !
+       endif
+       !
+    case('R-R1-R2-TX+TY-TX+TY')
+       !
+       if (direct) then 
+          !
+          dst(1:3) = dsrc(1:3)
+          !
           dst(4) =-dsrc(5)
           dst(5) = dsrc(4)
           dst(6) =-dsrc(7)
@@ -308,7 +352,7 @@ module mol_abcd
           dst(6) = src(7)+molec%local_eq(7)
           dst(7) =-src(6)-molec%local_eq(6)
           !
-       endif
+       endif       
        !
     case('R-R1-R2+Y-X-Y+X')
        !
@@ -351,6 +395,28 @@ module mol_abcd
           dst(5) =-src(5)-molec%local_eq(5)
           dst(6) = src(6)+molec%local_eq(6)
           dst(7) = src(7)+molec%local_eq(7)
+          !
+       endif
+       !
+    case('R-R1-R2+X+Y-X-Y')
+       !
+       if (direct) then 
+          !
+          dst(1:3) = dsrc(1:3)
+          !
+          dst(4) = dsrc(4)
+          dst(5) = dsrc(5)
+          dst(6) =-dsrc(6)
+          dst(7) =-dsrc(7)
+          !
+       else
+          !
+          dst(1:3) = src(1:3)+molec%local_eq(1:3)
+          !
+          dst(4) = src(4)+molec%local_eq(4)
+          dst(5) = src(5)+molec%local_eq(5)
+          dst(6) =-src(6)-molec%local_eq(6)
+          dst(7) =-src(7)-molec%local_eq(7)
           !
        endif       
        !
@@ -2209,7 +2275,7 @@ module mol_abcd
           !
        end select 
        !
-    case('R-R1-R2-TX-TY-TX-TY','R-R1-R2+TX-TY+TX-TY','R-R1-R2+Y-X-Y+X','R-R1-R2-Y+X+Y-X','R-R1-R2-X-Y+X+Y','R-Z1+Z2-X-Y+X+Y','R-Z1+Z2+X+Y-X-Y','R-Z1+Z2-Y-X-Y-X')
+    case('R-R1-R2-TX-TY-TX-TY','R-R1-R2+TX-TY+TX-TY','R-R1-R2+Y-X-Y+X','R-R1-R2-Y+X+Y-X','R-R1-R2-X-Y+X+Y','R-Z1+Z2-X-Y+X+Y','R-Z1+Z2+X+Y-X-Y','R-Z1+Z2-Y-X-Y-X','R-R1-R2+X+Y-X-Y','R-R1-R2-TX+TY-TX+TY','R-R1-R2-TX+TY+TX-TY')
        ! 
        select case(trim(molec%symmetry))
        case default
