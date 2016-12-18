@@ -1759,7 +1759,7 @@ module fields
                 !
                 call readu(job%bset(imode)%dvr)
                 !
-              case("RESC","RESCOEF")
+              case("RESC","RESCOEF","COEFF")
                 !
                 call readf(job%bset(imode)%res_coeffs)
                 !
@@ -2952,7 +2952,7 @@ module fields
             !
          endif 
          !
-       case("SPECPARAM","SPECPARAMETERS","SPEC")
+       case("SPECPARAM","SPECPARAMETERS","SPEC","PARAMETERS")
          !
          if (trove%Ncoords==0) then 
             !
@@ -14707,6 +14707,8 @@ end subroutine check_read_save_none
           bs%params    = 0
           bs%params(1) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )  ! conversion parameter to the normal coordinates
           bs%params(2) =       sqrt( 2.0_ark*g2(1)*f2(1)  )       ! omega (harmonic parameter)
+          !
+          f_t=bs%params(1)
           !
           call ME_harmonic(bs%Size,bs%order,f_t,bs%matelements,bs%ener0) 
           !
