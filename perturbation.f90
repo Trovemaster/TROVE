@@ -3118,7 +3118,7 @@ module perturbation
            !
            iattempts = iattempts + 1
            !
-           if (job%verbose>=4) write(out,"(28x,'attemp # ',i4,' select sample points again')") iattempts
+           if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' select sample points again')") iattempts
            !
            if (iattempts>=maxattempts) then
              !

@@ -7753,7 +7753,7 @@ end subroutine check_read_save_none
     ! for (102) and (103,104) cases fo numerical derivatives 
     ! instead of more acurate analytical 
     !
-    if ( any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
+    if ( any(trove%dihedtype(:)==101).or.any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
          any(trove%dihedtype(:)==107).or.any(trove%dihedtype(:)==108) ) then
        !
       do icoord = 1,trove%Ncoords
@@ -14691,10 +14691,22 @@ end subroutine check_read_save_none
         ! Here we define the difference between harmonic, normal, and morse bsets
         if (trim(bs%type)=='HARMONIC'.or.trim(bs%type)=='NORMAL') then 
 
+          !
+          ! use specparam if given
+          !
+          if (trove%specparam(bs%mode(1))>0d0 ) then
+             !
+             f2(1) = trove%specparam(bs%mode(1))**2*0.5_ark/g2(1)
+             !
+             if (job%verbose>=4) then
+               write(out,"('the input special-parameter ',f18.8,' will be used as f2 for the Harmonic basis set')") trove%specparam(bs%mode(1)) 
+             endif
+             !
+          endif
+
           bs%params    = 0
           bs%params(1) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )  ! conversion parameter to the normal coordinates
           bs%params(2) =       sqrt( 2.0_ark*g2(1)*f2(1)  )       ! omega (harmonic parameter)
-          f_t=bs%params(1)
           !
           call ME_harmonic(bs%Size,bs%order,f_t,bs%matelements,bs%ener0) 
           !

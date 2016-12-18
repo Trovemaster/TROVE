@@ -10,7 +10,8 @@ module pot_abcd
 
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
-  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415
+  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
+         MLpoten_c2h2_morse_costau
   
   private
  
@@ -552,6 +553,181 @@ function MLpoten_c2h2_morse(ncoords,natoms,local,xyz,force) result(f)
       f = vpot
       !
   end function MLpoten_c2h2_morse
+
+
+function MLpoten_c2h2_morse_costau(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+      !
+      integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,cosalpha1,cosalpha2
+      character(len=cl)  :: txt = 'MLpoten_c2h2_morse_costau'
+      !
+      integer(ik)  :: Nangles 
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=force(1)
+      e2=force(2)
+      e4=force(3)*pd
+      e6=force(4)*pd
+      !
+      a1 = force(5)
+      a2 = force(6)
+      !
+      rc1c2    = local(1)
+      rc1h1    = local(2)
+      rc2h2    = local(3)
+      !
+      if (molec%zmatrix(3)%connect(4)==101) then 
+         !
+         delta1x = local(4)
+         delta1y = local(5)
+         !
+         delta2x = local(6)
+         delta2y = local(7)
+         !
+         tau1 = pi-atan2(sin(delta1y),-sin(delta1x))
+         tau2 = pi-atan2(sin(delta2y),-sin(delta2x))
+         !
+         !tau1 = pi-atan2((delta1y),-(delta1x))
+         !tau2 = pi-atan2((delta2y),-(delta2x))
+         !
+         tau = tau2-tau1
+         !
+         sinalpha1 = sqrt(sin(delta1x)**2+sin(delta1y)**2)
+         sinalpha2 = sqrt(sin(delta2x)**2+sin(delta2y)**2)
+         !
+         !sinalpha1 = sqrt((delta1x)**2+(delta1y)**2)
+         !sinalpha2 = sqrt((delta2x)**2+(delta2y)**2)
+         !
+         alpha1 = pi-asin(sinalpha1)
+         alpha2 = pi-asin(sinalpha2)
+         !
+         x1 = rc1c2
+         x3 = rc1h1
+         x2 = rc2h2
+         x5 = alpha1
+         x4 = alpha2
+         !
+         x6 = cos(tau)*sin(alpha1)*sin(alpha2)
+         !
+      else         
+         !
+         v1(:) = xyz(2,:)-xyz(1,:)
+         v2(:) = xyz(3,:)-xyz(1,:)
+         v3(:) = xyz(4,:)-xyz(2,:)
+         !
+         x1 = sqrt(sum(v1(:)**2))
+         x2 = sqrt(sum(v2(:)**2))
+         x3 = sqrt(sum(v3(:)**2))
+         !
+         cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+         cosalpha2 = sum(-v1(:)*v3(:))/(x1*x3)
+         !
+         x4 = aacos(cosalpha1,txt)
+         x5 = aacos(cosalpha2,txt)
+         !
+         v12(:) = MLvector_product(v2(:),v1(:))
+         v31(:) = MLvector_product(v3(:),v1(:))
+         !
+         v12(:) = v12(:)/(x1*x2)
+         v31(:) = v31(:)/(x1*x3)
+         !
+         x6 = sum(v12*v31)
+         !
+         r21 = sqrt(sum(v12(:)**2))
+         r31 = sqrt(sum(v31(:)**2))
+         !
+         tau = 0
+         !
+         x6 = 0
+         !
+         if (r21>sqrt(small_).and.r31>sqrt(small_)) then 
+           !
+           v12(:) = v12(:)/r21
+           v31(:) = v31(:)/r31
+           !
+           n3(:) = MLvector_product(v12(:),v31(:))
+           !
+           sintau =  sqrt( sum( n3(:)**2 ) )
+           costau =  sum( v12(:)*v31(:) )
+           !
+           tau = atan2(sintau,costau)
+           tau = aacos(costau,txt)
+           !
+           !q(6)= x6
+           !
+           x6 = tau
+           !
+           !if (abs(x6-q(6))>sqrt(small_)) then
+           !  !
+           !  continue 
+           !  !
+           !endif 
+           
+           !
+         endif
+        !
+      endif
+      !
+      q(1)=1.0_ark-exp(-a1*(x1-e1))
+      q(2)=1.0_ark-exp(-a2*(x2-e2))
+      q(3)=1.0_ark-exp(-a2*(x3-e2))
+      !
+      q(4)=(x4-e4)
+      q(5)=(x5-e4)
+      q(6)=cos(tau)
+      !
+      f = 0 
+      !
+      vpot=0.0_ark
+      !
+      do i=7,molec%parmax
+        !
+        if ((molec%pot_ind(4,i)==0.or.molec%pot_ind(5,i)==0).and.molec%pot_ind(6,i)/=0) return
+        !
+        y(1:5) = q(1:5)**molec%pot_ind(1:5,i)
+        !
+        y(6) = 1.0_ark
+        !
+        if (molec%pot_ind(4,i)/=0.and.molec%pot_ind(5,i)/=0) y(6)=cos(real(molec%pot_ind(6,i),ark)*q(6))
+        !
+        !y(6)=cos(real(molec%pot_ind(6,i),4)*q(6))
+        !
+        !if (molec%pot_ind(6,i)/=0) y(6)=y(6)*sin(x4)*sin(x5)
+        !
+        !y(6) =q(6)**molec%pot_ind(6,i)
+        !
+        !y(6)=(cos(x6)*sin(x4)*sin(x5))**molec%pot_ind(6,i)
+        !
+        vpot=vpot+force(i)*product(y(1:6))
+        !
+        if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
+          !
+          k_ind(2) = molec%pot_ind(3,i)
+          k_ind(3) = molec%pot_ind(2,i)
+          k_ind(4) = molec%pot_ind(5,i)
+          k_ind(5) = molec%pot_ind(4,i)
+          !
+          y(2:5) = q(2:5)**k_ind(2:5)
+          !
+          vpot=vpot+force(i)*product(y(1:6))
+          !
+        endif
+        !
+      enddo
+      !
+      f = vpot
+      !
+  end function MLpoten_c2h2_morse_costau
+
 
 
 
@@ -4305,7 +4481,6 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
         y6 =-b2(2)
         y7 = b2(1)
       endif
-      !
       !
       y1=1.0_ark-exp(-a1*(x1-e1))
       y2=1.0_ark-exp(-a2*(x2-e2))
