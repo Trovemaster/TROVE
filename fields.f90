@@ -2126,6 +2126,12 @@ module fields
                !
              endif
              !
+             if (job%contrci_me_fast.and.trim(w)=='NONE') then 
+               !
+               w = 'SAVE'
+               !
+             endif
+             !
              job%IOkinet_action = trim(w)
              !
              if (trim(w)=='CONVERT') then 
@@ -5215,7 +5221,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=6.or.(job%verbose>=4.and.manifold==0)) then
+       if (job%verbose>=6.or.(job%verbose>=5.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes
@@ -5223,19 +5229,19 @@ end subroutine check_read_save_none
                  do i = 1,trove%g_vib(k1,k2)%Ncoeff
                     do irho = 0,Npoints
                       if (k2<=3.and.k1<=3) then 
-                        write(out,"(20x,4i5,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
+                        write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
                                                       trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
                       elseif (k2<=3) then
-                        write(out,"(20x,4i5,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),trove%g_cor(k1,k2)%field(i,irho)
+                        write(out,"(20x,3i5,1x,i7,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),trove%g_cor(k1,k2)%field(i,irho)
                       else 
-                        write(out,"(20x,4i5, e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
+                        write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
                       endif
                     enddo
                  enddo
               enddo
            enddo
            !
-           if (job%verbose>5) then 
+           if (job%verbose>6) then 
              !
              write(out,"(/'b0 and db0 matrices:')") 
              do iatom = 1,trove%Natoms
@@ -6849,7 +6855,7 @@ end subroutine check_read_save_none
         if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
         call FLcheck_point_Hamiltonian('POTENTIAL_READ') 
         !
-        if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) call print_poten
+        if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) call print_poten
         !
         return 
         !
@@ -7101,9 +7107,9 @@ end subroutine check_read_save_none
     call check_field_smoothness(fl,'CHECK',npoints,'poten')
     !
     !
-    if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) then
+    if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
        !
-       if (job%verbose>=4.or.(job%verbose>=2.and.manifold==0)) call print_poten
+       call print_poten
        !
     endif
     !
@@ -7148,7 +7154,7 @@ end subroutine check_read_save_none
            if (i<=min(trove%pseudo%Ncoeff,trove%poten%Ncoeff)) then 
               !
               do irho=0,trove%Npoints,1
-                 write(out,"(20x,2i5,2f24.8,30i4)") irho,i,trove%pseudo%field(i,irho),trove%poten%field(i,irho),&
+                 write(out,"(20x,i5,1x,i7,2f24.8,30i4)") irho,i,trove%pseudo%field(i,irho),trove%poten%field(i,irho),&
                                                   (FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
               enddo
               !
@@ -7156,7 +7162,7 @@ end subroutine check_read_save_none
               !
               do irho=0,trove%Npoints,1
                  !
-                 write(out,"(20x,2i5,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+                 write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
                  !
               enddo
               !
@@ -12977,6 +12983,7 @@ end subroutine check_read_save_none
         open(chkptIO_kin,action='write',position='rewind',status='replace',file=trove%chk_kinet_fname)
         !
         write(chkptIO_kin,"(2i9,10x,a)") trove%g_vib(1,1)%Npoints,trove%g_vib(1,1)%Ncoeff,"<- g_vib Npoints,Ncoeff"
+        Nmodes = trove%Nmodes
         !
         do k1 = 1,Nmodes
           do k2 = 1,Nmodes
