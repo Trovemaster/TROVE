@@ -7169,7 +7169,7 @@ end subroutine check_read_save_none
            else
               !
               do irho=0,trove%Npoints,1
-                 write(out,"(20x,2i5,24x,f24.8,30i4)") irho,i,trove%poten%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+                 write(out,"(20x,i5,1x,i7,24x,f24.8,30i4)") irho,i,trove%poten%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
               enddo
               !
            endif
@@ -8401,7 +8401,7 @@ end subroutine check_read_save_none
     !
     if (trove%internal_coords=='LOCAL') then 
       !
-      write(out,"(' s_vib_s_rot_polynom1d: LOCAL-option has been deactivated, sorry ')") 
+      write(out,"(' s_vib_s_rot_polynom1d: LOCAL-option has been deactivated, use LINEAR')") 
       stop 's_vib_s_rot_polynom1d: LOCAL option has been deactivated'
       !
     endif
