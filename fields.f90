@@ -55,8 +55,11 @@ module fields
       integer(ik)          :: Orders       ! Max. expansion order 
       integer(ik)          :: Ncoeff       ! Number of expansion coeffs.
       integer(ik)          :: Npoints      ! Number of expansion centers.
-      real(ark),pointer     :: field(:,:)   ! Expansion parameters
-      real(ark),pointer     :: me(:,:,:)    ! 1D-numerof type matrix elements 
+      real(ark),pointer    :: field(:,:)   ! Expansion parameters
+      real(ark),pointer    :: me(:,:,:)    ! 1D-numerof type matrix elements 
+      !
+      integer(ik)          :: SNterms      ! Number of expansion coeffs in the sparse representation
+      integer(ik),pointer  :: ifromsparse(:) ! a accounting-index from isparse to icoeff 
       !
    end type FLpolynomT
 
@@ -224,6 +227,7 @@ module fields
       logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
       logical             :: separate_convert  = .false.          ! convert hamiltonian.chk to potential.chk and kinetic.chk
       logical             :: checkpoint_iorder  = .false.
+      logical             :: sparse  = .false.                    ! A sparse representation of fields 
       !
    end type JobT
    !
@@ -1132,6 +1136,10 @@ module fields
        case ("PTPOTSHIFT")
          !
          call readi(job%pot_pt_shift)
+         !
+       case ("SPARSE")
+         !
+         trove%sparse = .true.
          !
        case ("DIAGONALIZER")
          !
@@ -4922,6 +4930,8 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
+        if (trove%sparse) call compact_sparse_kinetic
+        !
         return 
         !
     endif
@@ -5200,6 +5210,8 @@ end subroutine check_read_save_none
     !
     call print_kinetic
     !
+    if (trove%sparse) call compact_sparse_kinetic
+    !
     if (job%verbose>=4) call MemoryReport
     !
     call TimerStop('Kinetic')
@@ -5324,6 +5336,60 @@ end subroutine check_read_save_none
        endif ! job%verbose 
        !
     end subroutine print_kinetic
+
+
+    subroutine compact_sparse_kinetic
+       !
+       implicit none
+       !
+       integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
+       type(FLpolynomT),pointer     :: fl
+       !
+       Nmodes = trove%Nmodes
+       Npoints = trove%Npoints
+       !
+       do k1 = 1,Nmodes
+          do k2 = 1,Nmodes
+             !
+             fl => trove%g_vib(k1,k2)
+             !
+             call FLCompact_a_field_sparse(fl,"g_vib")
+             !
+          enddo
+       enddo
+       !
+       do k1 = 1,Nmodes
+          do k2 = 1,3
+             !
+             fl => trove%g_cor(k1,k2)
+             call FLCompact_a_field_sparse(fl,"g_cor")
+             !
+          enddo
+       enddo
+       !
+       do k1 = 1,3
+          do k2 = 1,3
+             !
+             fl => trove%g_rot(k1,k2)
+             call FLCompact_a_field_sparse(fl,"g_rot")
+             !
+          enddo
+       enddo
+       !
+       if (FLl2_coeffs) then
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+             fl => trove%L2_vib(k1,k2)
+             call FLCompact_a_field_sparse(fl,"L2_vib")
+            enddo
+         enddo
+         !
+       endif
+       !
+    end subroutine compact_sparse_kinetic
+
+
 
 
 
@@ -6853,7 +6919,9 @@ end subroutine check_read_save_none
         trim(trove%IO_potential)=='READ') then 
         !
         if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
-        call FLcheck_point_Hamiltonian('POTENTIAL_READ') 
+        call FLcheck_point_Hamiltonian('POTENTIAL_READ')
+        !
+        if (trove%sparse) call FLCompact_a_field_sparse(trove%poten,"poten")
         !
         if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) call print_poten
         !
@@ -7106,6 +7174,7 @@ end subroutine check_read_save_none
     fl => trove%poten
     call check_field_smoothness(fl,'CHECK',npoints,'poten')
     !
+    call FLCompact_a_field_sparse(trove%poten,"poten")
     !
     if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
        !
@@ -7229,6 +7298,8 @@ end subroutine check_read_save_none
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
       call print_coeff
+      !
+      if (trove%sparse) call compact_sparse_external
       !
       return
       !
@@ -7480,6 +7551,8 @@ end subroutine check_read_save_none
     !
     call print_coeff
     !
+    if (trove%sparse) call compact_sparse_external
+    !
     ! check the smoothness and fix if necessary 
     !
     do imu = 1, extF%rank
@@ -7536,6 +7609,22 @@ end subroutine check_read_save_none
 
      end subroutine print_coeff  
 
+
+    subroutine compact_sparse_external
+       !
+       implicit none
+       !
+       integer(ik) :: imu
+       type(FLpolynomT),pointer     :: fl
+       !
+       do imu = 1, extF%rank
+          !
+          fl => trove%extF(imu)
+          call FLCompact_a_field_sparse(fl,"extF")
+          !
+       enddo
+       !
+    end subroutine compact_sparse_external
   
     
     subroutine par_switch(par)
@@ -11920,7 +12009,6 @@ end subroutine check_read_save_none
       !
    end function FLQindex
 
-
 !
 ! Initilizing the basis set 
 !
@@ -14031,11 +14119,71 @@ end subroutine check_read_save_none
         end if
         !
       end subroutine checkpointRestore_external_ascii
-
-
       !
    end subroutine FLcheck_point_Hamiltonian
    !
+
+   !
+   ! A compact, sparse representation of a field 
+   !
+   subroutine FLCompact_a_field_sparse(fl,name)
+
+     type(FLpolynomT),pointer  :: fl
+     character(len=*),intent(in) :: name
+     integer(ik)        :: Npoints,Ncoeff,iterm,i,icoeff,Nterms,alloc
+     real(ark),allocatable    :: sfield(:,:)  ! Expansion parameters in the sparse representation
+     !
+     Ncoeff = fl%Ncoeff
+     Npoints = fl%Npoints
+     !
+     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeff
+       if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
+          iterm = iterm + 1
+       endif
+     enddo
+     !
+     Nterms = iterm
+     !
+     fl%SNterms = Nterms
+     !
+     ! Create a field in a sparse representaion
+     !
+     allocate(Sfield(Nterms,0:Npoints),fl%ifromsparse(Nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Sfield),kind(Sfield))
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeff
+       !
+       if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
+          !
+          iterm = iterm + 1
+          !
+          Sfield(iterm,:) = fl%field(icoeff,:)
+          fl%ifromsparse(iterm) = icoeff
+          !
+       endif
+     enddo
+     !
+     deallocate(fl%field,stat=alloc)
+     call ArrayMinus(name,alloc,size(fl%field),kind(fl%field))
+     !
+     allocate(fl%field(Nterms,0:Npoints),stat=alloc)
+     call ArrayStart(name,alloc,size(fl%field),kind(fl%field))
+     !
+     fl%field = Sfield
+     !
+     deallocate(Sfield)
+     !
+     call ArrayStop("Sfield")
+     !
+     !call move_alloc(Sfield,fl%field) 
+     !
+   end subroutine FLCompact_a_field_sparse
    ! 
    !
    subroutine FLfingerprint(action,chkptIO,PTorder,Npolyads,enercut)
@@ -14431,8 +14579,8 @@ end subroutine check_read_save_none
     integer(ik),intent(in)      :: ibs         ! Index for the new 1D basis   
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
-    integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq
-    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,isingular,jrot,krot
+    integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff
+    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,rmk,amorse
@@ -14494,7 +14642,11 @@ end subroutine check_read_save_none
               !
               fl => trove%g_vib(k1,k2)
               !
+              !
               Tcoeff = fl%Ncoeff
+              !
+              ! Special case of the reduced sparse representation 
+              if (trove%sparse) Tcoeff = fl%SNterms
               !
               allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
               call ArrayStart('trove%g_vib%me',alloc,size(fl%me),kind(fl%me))
@@ -14512,6 +14664,8 @@ end subroutine check_read_save_none
               fl => trove%g_rot(k1,k2)
               !
               Tcoeff = fl%Ncoeff
+              ! Special case of the reduced sparse representation 
+              if (trove%sparse) Tcoeff = fl%SNterms
               !
               allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
               call ArrayStart('trove%g_rot%me',alloc,size(fl%me),kind(fl%me))
@@ -14529,6 +14683,8 @@ end subroutine check_read_save_none
               fl => trove%g_cor(k1,k2)
               !
               Tcoeff = fl%Ncoeff
+              ! Special case of the reduced sparse representation 
+              if (trove%sparse) Tcoeff = fl%SNterms
               !
               allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
               call ArrayStart('trove%g_cor%me',alloc,size(fl%me),kind(fl%me))
@@ -14540,7 +14696,11 @@ end subroutine check_read_save_none
            enddo
         enddo
         !
-        allocate (trove%poten%me(trove%poten%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+        Tcoeff = trove%poten%Ncoeff
+        ! Special case of the reduced sparse representation 
+        if (trove%sparse) Tcoeff = trove%poten%SNterms
+        !
+        allocate (trove%poten%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
         call ArrayStart('trove%poten%me',alloc,size(fl%me),kind(fl%me))
         !
         ialloc = ialloc+abs(alloc)
@@ -14557,6 +14717,8 @@ end subroutine check_read_save_none
              fl => trove%extF(imu)
              !
              Tcoeff = fl%Ncoeff
+             ! Special case of the reduced sparse representation 
+             if (trove%sparse) Tcoeff = fl%SNterms
              !
              allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
              call ArrayStart('trove%extF%me',alloc,size(fl%me),kind(fl%me))
@@ -14577,6 +14739,9 @@ end subroutine check_read_save_none
                  fl => trove%L2_vib(k1,k2)
                  !
                  Tcoeff = fl%Ncoeff
+                 !
+                 ! Special case of the reduced sparse representation 
+                 if (trove%sparse) Tcoeff = fl%SNterms
                  !
                  allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
                  call ArrayStart('trove%L2_vib%me',alloc,size(fl%me),kind(fl%me))
@@ -14615,8 +14780,26 @@ end subroutine check_read_save_none
          !
          powers = 0 ; powers(nu_i) = 2
          k = FLQindex(trove%Nmodes_e,powers)
-         f2(1) = trove%poten%field(k,irho_eq)
-         g2(1) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+         !
+         if (trove%sparse) then
+           !
+           call find_isparse_from_ifull(trove%poten%SNterms,trove%poten%ifromsparse,k,i)
+           !
+           f2(1) = trove%poten%field(i,irho_eq)
+           !
+           g2(1) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+           !
+           if (abs(g2(1))<sqrt(small_)) then 
+             stop 'FLbset1DNew: g(2)=0 in the sparse-field'
+           endif
+           !
+         else
+           !
+           f2(1) = trove%poten%field(k,irho_eq)
+           g2(1) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+           !
+         endif
+         !
          trove%coord_f(nu_i) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )
          !
        endif
@@ -14674,7 +14857,7 @@ end subroutine check_read_save_none
            endif 
            stop 'FLbset1DNew: not all quadratic parameters are equal'
         endif
-
+        !
         ! for the kinetic part it is simpler - we just take the first member of the g_vib%coeffs
         !
         g2 = 0
@@ -14859,6 +15042,7 @@ end subroutine check_read_save_none
            !  !
            !endif
            !
+           !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
            !
            ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
@@ -14866,22 +15050,6 @@ end subroutine check_read_save_none
            nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
            !
            g1drho(0:npoints) = fl%field(1,0:npoints)
-           !
-           if (trim(molec%coords_transform)=='R-RHO'.and..false.) then 
-             !
-             do i = 0,Npoints
-              !
-              rho_t = ((rho_b(1)+trove%rhostep*real(i,ark)))
-              !
-              rho_t = sum( trove%mass(:)*( trove%b0(:,2,i)**2+ trove%b0(:,3,i)**2 ) )/(planck*avogno*real(1.0d+16,kind=rk)/(4.0_ark*pi*pi*vellgt))
-              !
-              trove%poten%field(:,i) = trove%poten%field(:,i)*rho_t
-              !
-              g1drho(i) = g1drho(i)/rho_t
-              !
-            enddo
-             !
-           endif
            !
            reduced_model = .false.
            !
@@ -15072,7 +15240,7 @@ end subroutine check_read_save_none
               stop 'me_numerov, phivphi_t  - out of memory'
            end if
            !
-           !$omp do private(vl,unitfname,io_slot,k,vr,iterm,k1,k2) schedule(dynamic)
+           !$omp do private(vl,unitfname,io_slot,k,vr,Tcoeff,iterm,k1,k2) schedule(dynamic)
            do vl = 0,bs%Size
               !
               write(unitfname,"('Numerov basis set # ',i6)") nu_i
@@ -15089,29 +15257,24 @@ end subroutine check_read_save_none
                      read (io_slot,rec=vr+1) (phir(k),k=0,npoints),(dphir(k),k=0,npoints)
                   endif
                   !
-                  !omp parallel private(phivphi_t,alloc)
-                  !allocate (phivphi_t(0:npoints),stat=alloc)
-                  !if (alloc/=0) then
-                  !   write (out,"(' Error ',i9,' trying to allocate array phivphi_t')") alloc
-                  !   stop 'me_numerov, phivphi_t  - out of memory'
-                  !end if
+                  Tcoeff = trove%poten%Ncoeff
+                  if (trove%sparse) Tcoeff = trove%poten%SNterms
                   !
-                  !omp do private(iterm) schedule(dynamic)
-                  do iterm = 1,trove%poten%Ncoeff
+                  do iterm = 1,Tcoeff
                     !
-                    !phivphi(:) = trove%poten%field(iterm,:)
-                    !
-                    phivphi_t(:) = phil(:)*trove%poten%field(iterm,:)*phir(:)
+                    phivphi_t(:) = phil(:)*trove%poten%field(icoeff,:)*phir(:)
                     !
                     trove%poten%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                     !
                   enddo
-                  !omp end do
                   !
                   ! vibraional kinetic energy part 
                   !
+                  Tcoeff = trove%g_vib(1,1)%Ncoeff
+                  if (trove%sparse) Tcoeff = trove%g_vib(1,1)%SNterms
+                  !
                   !omp do private(iterm,k1,k2) schedule(dynamic)
-                  do iterm = 1,trove%g_vib(1,1)%Ncoeff
+                  do iterm = 1,Tcoeff
                     !
                     do k1 = 1,Nmodes
                        !
@@ -15153,8 +15316,10 @@ end subroutine check_read_save_none
                   !
                   if (FLl2_coeffs) then
                     !
-                    !omp do private(iterm,k1,k2) schedule(dynamic)
-                    do iterm = 1,trove%L2_vib(1,1)%Ncoeff
+                    Tcoeff = trove%L2_vib(1,1)%Ncoeff
+                    if (trove%sparse) Tcoeff = trove%L2_vib(1,1)%SNterms
+                    !
+                    do iterm = 1,Tcoeff
                       !
                       do k1 = 1,Nmodes
                          !
@@ -15189,22 +15354,21 @@ end subroutine check_read_save_none
                       enddo
                       !
                     enddo
-                    !omp end do
                     !
                   endif
                   !
                   if (FLrotation) then
                      !
+                     Tcoeff = trove%g_rot(1,1)%Ncoeff
+                     if (trove%sparse) Tcoeff = trove%g_rot(1,1)%SNterms
+                     !
                      ! rotation kinetic energy part
                      !
-                     !omp do private(iterm,k1,k2) schedule(dynamic)
-                     do iterm = 1,trove%g_rot(1,1)%Ncoeff
+                     do iterm = 1,Tcoeff
                         !
                         do k1 = 1,3
                            !
                            do k2 = 1,3
-                              !
-                              !fl => trove%g_rot(k1,k2)
                               !
                               phivphi_t(:) = phil(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir(:)
                               !
@@ -15215,12 +15379,13 @@ end subroutine check_read_save_none
                         enddo
                         !
                      enddo
-                     !omp end do
                      !
                      ! Coriolis part
                      !
-                     !omp do private(iterm,k1,k2) schedule(dynamic)
-                     do iterm = 1,trove%g_cor(1,1)%Ncoeff
+                     Tcoeff = trove%g_cor(1,1)%Ncoeff
+                     if (trove%sparse) Tcoeff = trove%g_rot(1,1)%SNterms
+                     !
+                     do iterm = 1,Tcoeff
                        !
                        do k1 = 1,Nmodes
                           !
@@ -15252,10 +15417,12 @@ end subroutine check_read_save_none
                     !
                     ! External field part
                     !
-                    !omp do private(iterm,imu) schedule(dynamic)
                     do imu = 1,extF%rank
                       !
-                      do iterm = 1,trove%extF(imu)%Ncoeff
+                      Tcoeff = trove%extF(imu)%Ncoeff
+                      if (trove%sparse) Tcoeff = trove%extF(imu)%SNTerms
+                      !
+                      do iterm = 1,Tcoeff
                          !
                          phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
                          !
@@ -15264,12 +15431,8 @@ end subroutine check_read_save_none
                       enddo
                       !
                     enddo
-                    !omp end do
                     !
                   endif 
-                  !
-                  !deallocate (phivphi_t)
-                  !omp end parallel 
                   !
               enddo 
               !
@@ -15352,7 +15515,22 @@ end subroutine check_read_save_none
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
                   !
-                  f2(imode) = trove%poten%field(k,irho_eq)
+                  if (trove%sparse) then
+                    !
+                    call find_isparse_from_ifull(trove%poten%SNterms,trove%poten%ifromsparse,k,i)
+                    !
+                    f2(imode) = trove%poten%field(i,irho_eq)
+                    !
+                    if (abs(f2(imode))<sqrt(small_)) then
+                      write(out,"('FLbset1DNew: f2=0 in the poten sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                      stop 'FLbset1DNew: f2=0 in the poten sparse-field'
+                    endif
+                    !
+                  else
+                    !
+                    f2(imode) = trove%poten%field(k,irho_eq)
+                    !
+                  endif
                   !
                 enddo
                 !
@@ -15383,7 +15561,22 @@ end subroutine check_read_save_none
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
                   !
-                  f2(imode) = trove%pseudo%field(k,irho_eq)
+                  if (trove%sparse) then
+                    !
+                    call find_isparse_from_ifull(trove%pseudo%SNterms,trove%pseudo%ifromsparse,k,i)
+                    !
+                    f2(imode) = trove%pseudo%field(i,irho_eq)
+                    !
+                    if (abs(f2(imode))<sqrt(small_)) then
+                      write(out,"('FLbset1DNew: f2=0 in the pseudo sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                      stop 'FLbset1DNew: f2=0 in the pseudo sparse-field'
+                    endif
+                    !
+                  else
+                    !
+                    f2(imode) = trove%pseudo%field(k,irho_eq)
+                    !
+                  endif
                   !
                 enddo
                 !
@@ -15414,7 +15607,24 @@ end subroutine check_read_save_none
                   !
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
-                  g2(imode) = fl%field(k,irho_eq)
+                  !
+                  if (trove%sparse) then
+                    !
+                    call find_isparse_from_ifull(fl%SNterms,fl%ifromsparse,k,i)
+                    !
+                    g2(imode) = fl%field(i,irho_eq)
+                    !
+                    if (abs(f2(imode))<sqrt(small_)) then
+                      write(out,"('FLbset1DNew: f2=0 in the pseudo sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                      stop 'FLbset1DNew: f2=0 in the pseudo sparse-field'
+                    endif
+                    !
+                  else
+                    !
+                    g2(imode) = fl%field(k,irho_eq)
+                    !
+                  endif
+                  !
                 enddo
                 ! 
                 !
@@ -15593,184 +15803,250 @@ end subroutine check_read_save_none
         !
         imode = trove%Nmodes
         !
-        do vl = 0,bs%Size
+        Tcoeff = trove%poten%Ncoeff
+        if (trove%sparse) Tcoeff = trove%poten%SNterms
+        !
+        do icoeff = 1,Tcoeff
            !
-           do vr = 0,bs%Size
-               !
-               do iterm = 1,trove%poten%Ncoeff
+           iterm = icoeff
+           if (trove%sparse) iterm = trove%poten%ifromsparse(icoeff)
+           !
+           ipower = FLIndexQ(imode,iterm)
+           !
+           do vl = 0,bs%Size
+              !
+              do vr = 0,bs%Size
                   !
-                  ipower = FLIndexQ(imode,iterm)
-                  !
-                  trove%poten%me(iterm,vl,vr) = bs%matelements(0,ipower,vl,vr)*trove%poten%field(iterm,0)
-                  !
-               enddo
-               !
-               ! vibraional kinetic energy part 
-               !
-               do iterm = 1,trove%g_vib(1,1)%Ncoeff
-                  !
-                  ipower = FLIndexQ(imode,iterm)
-                  !
-                  do k1 = 1,Nmodes
-                     !
-                     do k2 = 1,Nmodes
-                        !
-                        fl => trove%g_vib(k1,k2)
-                        !
-                        if (k1==imode.and.k2==imode) then 
-                           !
-                           ! we combine this term with the pseudo-potential one. 
-                           !
-                           fl%me(iterm,vl,vr) = bs%matelements( 2,ipower,vl,vr)*fl%field(iterm,0)&
-                                       -2.0_ark*bs%matelements(-1,ipower,vl,vr)*trove%pseudo%field(iterm,0)
-                           !
-                        elseif (k1==imode) then 
-                           !
-                           fl%me(iterm,vl,vr) = -bs%matelements(1,ipower,vr,vl)*fl%field(iterm,0)
-                           !
-                        elseif (k2==imode) then 
-                           !
-                           fl%me(iterm,vl,vr) =  bs%matelements(1,ipower,vl,vr)*fl%field(iterm,0)
-                           !
-                        else 
-                           !
-                           fl%me(iterm,vl,vr) = bs%matelements(-1,ipower,vl,vr)*fl%field(iterm,0)
-                           !
-                        endif
-                        !
-                        !fl%me(iterm,vl,vr) = mat_t*fl%field(iterm,0)
-                        !
-                        !
-                     enddo
-                     !
-                  enddo
+                  trove%poten%me(icoeff,vl,vr) = bs%matelements(0,ipower,vl,vr)*trove%poten%field(icoeff,0)
                   !
                enddo
-               !
-               ! vibraional angular momentum L2
-               !
-               if (FLl2_coeffs) then
-                  !
-                  do iterm = 1,trove%L2_vib(1,1)%Ncoeff
-                     !
-                     ipower = FLIndexQ(imode,iterm)
-                     !
-                     do k1 = 1,Nmodes
-                        !
-                        do k2 = 1,Nmodes
-                           !
-                           fl => trove%L2_vib(k1,k2)
-                           !
-                           if (k1==imode.and.k2==imode) then 
-                              !
-                              fl%me(iterm,vl,vr) = bs%matelements( 2,ipower,vl,vr)*fl%field(iterm,0)
-                              !
-                           elseif (k1==imode) then 
-                              !
-                              fl%me(iterm,vl,vr) = -bs%matelements(1,ipower,vr,vl)*fl%field(iterm,0)
-                              !
-                           elseif (k2==imode) then 
-                              !
-                              fl%me(iterm,vl,vr) =  bs%matelements(1,ipower,vl,vr)*fl%field(iterm,0)
-                              !
-                           else 
-                              !
-                              fl%me(iterm,vl,vr) = bs%matelements(-1,ipower,vl,vr)*fl%field(iterm,0)
-                              !
-                           endif
-                           !
-                        enddo
-                        !
-                     enddo
-                     !
-                  enddo
-                  !
-               endif
-               !
-               if (FLrotation) then
-                  !
-                  ! rotation kinetic energy part
-                  !
-                  do iterm = 1,trove%g_rot(1,1)%Ncoeff
-                     !
-                     ipower = FLIndexQ(imode,iterm)
-                     !
-                     do k1 = 1,3
-                        !
-                        do k2 = 1,3
-                           !
-                           fl => trove%g_rot(k1,k2)
-                           !
-                           mat_t = bs%matelements(-1,ipower,vl,vr)
-                           !
-                           fl%me(iterm,vl,vr) =  mat_t*fl%field(iterm,0)
-                           !
-                        enddo
-                        !
-                     enddo
-                     !
-                  enddo
-                  !
-                  ! Coriolis part
-                  !
-                  do iterm = 1,trove%g_cor(1,1)%Ncoeff
-                     !
-                     ipower = FLIndexQ(imode,iterm)
-                     !
-                     do k1 = 1,Nmodes
-                        !
-                        do k2 = 1,3
-                           !
-                           fl => trove%g_cor(k1,k2)
-                           !
-                           if (k1==Nmodes) then 
-                              !
-                              mat_t =  bs%matelements(1,ipower,vl,vr) -  bs%matelements(1,ipower,vr,vl)
-                              !
-                           else
-                              !
-                              mat_t = bs%matelements(-1,ipower,vl,vr)
-                              !
-                           endif
-                           !
-                           fl%me(iterm,vl,vr) =  mat_t*fl%field(iterm,0)
-                           !
-                           !mat_t = fl%me(iterm,vl,vr)
-                           !
-                           continue 
-                           !
-                        enddo
-                        !
-                     enddo
-                     !
-                  enddo
-                  !
-                  !
-               endif
-               !
-               if (FLextF_coeffs) then
+           enddo
+        enddo
+        !
+        ! vibraional kinetic energy part 
+        !
+        do k1 = 1,Nmodes
+           !
+           do k2 = 1,Nmodes
+              !
+              fl => trove%g_vib(k1,k2)
+              !
+              Tcoeff = fl%Ncoeff
+              if (trove%sparse) Tcoeff = fl%SNterms
+              !
+              do icoeff = 1,Tcoeff
                  !
-                 ! external field part
+                 iterm = icoeff
+                 if (trove%sparse) iterm = fl%ifromsparse(icoeff)
                  !
-                 do imu = 1,extF%rank
+                 do vl = 0,bs%Size
                     !
-                    fl => trove%extF(imu)
-                    !
-                    do iterm = 1,trove%extF(imu)%Ncoeff
+                    do vr = 0,bs%Size
                        !
-                       ipower = FLIndexQ(imode,iterm)
+                       if (k1==imode.and.k2==imode) then 
+                          !
+                          ! we combine this term with the pseudo-potential one. 
+                          !
+                          fl%me(icoeff,vl,vr) = bs%matelements( 2,ipower,vl,vr)*fl%field(icoeff,0)&
+                                      -2.0_ark*bs%matelements(-1,ipower,vl,vr)*trove%pseudo%field(icoeff,0)
+                          !
+                       elseif (k1==imode) then 
+                          !
+                          fl%me(icoeff,vl,vr) = -bs%matelements(1,ipower,vr,vl)*fl%field(icoeff,0)
+                          !
+                       elseif (k2==imode) then 
+                          !
+                          fl%me(icoeff,vl,vr) =  bs%matelements(1,ipower,vl,vr)*fl%field(icoeff,0)
+                          !
+                       else 
+                          !
+                          fl%me(icoeff,vl,vr) = bs%matelements(-1,ipower,vl,vr)*fl%field(icoeff,0)
+                          !
+                       endif
                        !
-                       fl%me(iterm,vl,vr) =  bs%matelements(3,ipower,vl,vr)*fl%field(iterm,0)
+                       !fl%me(iterm,vl,vr) = mat_t*fl%field(iterm,0)
+                       !
                        !
                     enddo
                     !
                  enddo
                  !
-               endif 
-               !
-           enddo 
+              enddo
+              !
+           enddo
            !
-        enddo 
+        enddo
+        !
+        ! vibraional angular momentum L2
+        !
+        if (FLl2_coeffs) then
+           !
+           do k1 = 1,Nmodes
+              !
+              do k2 = 1,Nmodes
+                 !
+                 fl => trove%L2_vib(k1,k2)
+                 !
+                 Tcoeff = fl%Ncoeff
+                 if (trove%sparse) Tcoeff = fl%SNterms
+                 !
+                 do icoeff = 1,Tcoeff
+                    !
+                    iterm = icoeff
+                    if (trove%sparse) iterm = fl%ifromsparse(icoeff)
+                    !
+                    ipower = FLIndexQ(imode,iterm)
+                    !
+                    do vl = 0,bs%Size
+                       !
+                       do vr = 0,bs%Size
+                         !
+                         if (k1==imode.and.k2==imode) then 
+                            !
+                            fl%me(icoeff,vl,vr) = bs%matelements( 2,ipower,vl,vr)*fl%field(icoeff,0)
+                            !
+                         elseif (k1==imode) then 
+                            !
+                            fl%me(icoeff,vl,vr) = -bs%matelements(1,ipower,vr,vl)*fl%field(icoeff,0)
+                            !
+                         elseif (k2==imode) then 
+                            !
+                            fl%me(icoeff,vl,vr) =  bs%matelements(1,ipower,vl,vr)*fl%field(icoeff,0)
+                            !
+                         else 
+                            !
+                            fl%me(icoeff,vl,vr) = bs%matelements(-1,ipower,vl,vr)*fl%field(icoeff,0)
+                            !
+                         endif
+                         !
+                       enddo
+                       !
+                    enddo
+                    !
+                 enddo
+                 !
+              enddo
+              !
+           enddo
+           !
+        endif
+        !
+        if (FLrotation) then
+           !
+           ! rotation kinetic energy part
+           !
+           do k1 = 1,3
+              !
+              do k2 = 1,3
+                 !
+                 fl => trove%g_rot(k1,k2)
+                 !
+                 Tcoeff = fl%Ncoeff
+                 if (trove%sparse) Tcoeff = fl%SNterms
+                 !
+                 do icoeff = 1,Tcoeff
+                    !
+                    iterm = icoeff
+                    if (trove%sparse) iterm = fl%ifromsparse(icoeff)
+                    !
+                    ipower = FLIndexQ(imode,iterm)
+                    !
+                    do vl = 0,bs%Size
+                       !
+                       do vr = 0,bs%Size
+                         !
+                         fl%me(icoeff,vl,vr) =  bs%matelements(-1,ipower,vl,vr)*fl%field(icoeff,0)
+                         !
+                       enddo
+                       !
+                    enddo
+                    !
+                 enddo
+                 !
+              enddo
+              !
+           enddo
+           !
+           ! Coriolis part
+           !
+           do k1 = 1,Nmodes
+              !
+              do k2 = 1,3
+                 !
+                 fl => trove%g_cor(k1,k2)
+                 !
+                 Tcoeff = fl%Ncoeff
+                 if (trove%sparse) Tcoeff = fl%SNterms
+                 !
+                 do icoeff = 1,Tcoeff
+                    !
+                    iterm = icoeff
+                    if (trove%sparse) iterm = fl%ifromsparse(icoeff)
+                    !
+                    ipower = FLIndexQ(imode,iterm)
+                    !
+                    do vl = 0,bs%Size
+                       !
+                       do vr = 0,bs%Size
+                         !
+                         if (k1==Nmodes) then 
+                            !
+                            mat_t =  bs%matelements(1,ipower,vl,vr) -  bs%matelements(1,ipower,vr,vl)
+                            !
+                         else
+                            !
+                            mat_t = bs%matelements(-1,ipower,vl,vr)
+                            !
+                         endif
+                         !
+                         fl%me(icoeff,vl,vr) =  mat_t*fl%field(icoeff,0)
+                         !
+                       enddo
+                       !
+                    enddo
+                    !
+                 enddo
+                 !
+              enddo
+              !
+           enddo
+           !
+           !
+        endif
+        !
+        if (FLextF_coeffs) then
+          !
+          ! external field part
+          !
+          do imu = 1,extF%rank
+             !
+             fl => trove%extF(imu)
+             !
+             Tcoeff = fl%Ncoeff
+             if (trove%sparse) Tcoeff = fl%SNterms
+             !
+             do icoeff = 1,Tcoeff
+                !
+                iterm = icoeff
+                if (trove%sparse) iterm = fl%ifromsparse(icoeff)
+                !
+                ipower = FLIndexQ(imode,iterm)
+                !
+                do vl = 0,bs%Size
+                   !
+                   do vr = 0,bs%Size
+                     !
+                     fl%me(icoeff,vl,vr) =  bs%matelements(3,ipower,vl,vr)*fl%field(icoeff,0)
+                     !
+                   enddo
+                   !
+                enddo
+                !
+             enddo
+             !
+          enddo
+          !
+        endif 
         !
      endif 
      !
@@ -15779,7 +16055,38 @@ end subroutine check_read_save_none
      call Printbset1DInfo (ibs)
      !
      if (job%verbose>=4) write(out,"('FLbset1DNew/end')") 
-    !
+     !
+     contains 
+     !
+     subroutine find_isparse_from_ifull(Nterms,ifromsparse,ifull,isparse)
+       implicit none
+       !
+       integer(ik),intent(in)  :: Nterms
+       integer(ik),intent(in)  :: ifromsparse(Nterms)
+       integer(ik),intent(in)  :: ifull
+       integer(ik),intent(out) :: isparse
+       !
+       integer(ik) :: i
+       !
+       i  = 1
+       isparse = 0
+       !
+       do while(i<=fl%SNterms)
+         !
+         if (ifromsparse(i)==ifull) then
+           isparse = i
+           exit 
+         endif
+         i = i + 1
+       enddo
+       !
+       if (isparse==0) then 
+         write(6,"('FLbset1DNew: Could not localte isparse-term in the sparse-field for index  ',i6)") ifull
+         stop 'FLbset1DNew: Could not localte a term in the sparse-field'
+       endif
+       !
+     end subroutine find_isparse_from_ifull
+     !
   end subroutine FLbset1DNew
 
 
