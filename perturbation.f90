@@ -128,6 +128,7 @@ module perturbation
       integer(ik)          :: Ncoeff
       integer(ik),pointer  :: iorder(:)     
       real(rk),pointer     :: coeff(:,:,:) 
+      integer(ik),pointer     :: IndexQ(:,:) 
    end type PTcoeffT
 
    !
@@ -14173,7 +14174,7 @@ module perturbation
     !
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
-    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N
+    integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
     real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),matclass(:,:,:),hrot_t(:,:)
@@ -14462,6 +14463,7 @@ module perturbation
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
           islice = 0
+          job_is = 'grot'
           !
           do k1 = 1,3
             do k2 = 1,3
@@ -14475,9 +14477,11 @@ module perturbation
               !
               if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
               !
+              grot_N = FLread_fields_dimension_field(job_is,k1,k2)
+              !
               do iterm = 1,grot_N
                 !
-                call calc_contract_matrix_elements_II(iterm,k1,k2,me%grot(k1,k2)%coeff(iterm,:,:),hrot_t,grot_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,k1,k2,me%grot(k1,k2)%coeff(iterm,:,:),me%grot(k1,k2)%IndexQ(:,iterm),hrot_t,grot_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -14524,6 +14528,8 @@ module perturbation
           !
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
+          job_is = 'gcor'
+          !
           do k1 = 1,PT%Nmodes
             do k2 = 1,3
               !
@@ -14535,11 +14541,13 @@ module perturbation
               !
               grot_t = 0
               !
+              gcor_N = FLread_fields_dimension_field(job_is,k1,k2)
+              !
               do iterm = 1,gcor_N
                 !
                 !hrot_t = 0
                 !
-                call calc_contract_matrix_elements_II(iterm,k1,k2,me%gcor(k1,k2)%coeff(iterm,:,:),hrot_t,gcor_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,k1,k2,me%gcor(k1,k2)%coeff(iterm,:,:),me%gcor(k1,k2)%IndexQ(:,iterm),hrot_t,gcor_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -14681,6 +14689,7 @@ module perturbation
             islice = (PT%Nmodes+3)*3
             !
             hvib_t = 0
+            job_is = 'gvib'
             !
             do k1 = 1,PT%Nmodes
               do k2 = 1,PT%Nmodes
@@ -14691,13 +14700,15 @@ module perturbation
                 !
                 if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
                 !
+                gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
+                !
                 gvib_t = 0
                 !
                 do iterm = 1,gvib_N
                   !
                   !fvib_t = 0
                   !
-                  call calc_contract_matrix_elements_II(iterm,k1,k2,me%gvib(k1,k2)%coeff(iterm,:,:),fvib_t,gvib_contr_matelem_single_term)
+                  call calc_contract_matrix_elements_II(iterm,k1,k2,me%gvib(k1,k2)%coeff(iterm,:,:),me%gvib(k1,k2)%IndexQ(:,iterm),fvib_t,gvib_contr_matelem_single_term)
                   !
                   !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
                   do icoeff=1,mdimen
@@ -14737,12 +14748,11 @@ module perturbation
             enddo
             !
             !hvib_t = -0.5_rk*hvib_t
-
-
-
-
             !
             if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
+              !
+              job_is = 'poten'
+              poten_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
               if (job%verbose>=2) write(out,"(/'Potential function...')")
               if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i)") poten_N
@@ -14753,7 +14763,7 @@ module perturbation
                   !
                   if (job%verbose>=4) write(out,"('iterm = ',i8)") iterm
                   !
-                  call calc_contract_matrix_elements_II(iterm,1,1,me%poten%coeff(iterm,:,:),fvib_t,poten_contr_matelem_single_term)
+                  call calc_contract_matrix_elements_II(iterm,1,1,me%poten%coeff(iterm,:,:),me%poten%IndexQ(:,iterm),fvib_t,poten_contr_matelem_single_term)
                   !
                   !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
                   do icoeff=1,mdimen
@@ -14909,6 +14919,8 @@ module perturbation
             call ArrayStart('extF-fields',alloc,1,kind(f_t),rootsize)
             call ArrayStart('extF-fields',alloc,1,kind(f_t),rootsize)
             !
+            job_is = 'externalF'
+            !
             do imu = fitting%iparam(1),fitting%iparam(2)
               !
               if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
@@ -14916,11 +14928,11 @@ module perturbation
               extF_t = 0 
               extF_r = 0 
               !
-              !Decide between the DVR and FBR integration 
+              extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
               !
-              do iterm = 1,extF_N(imu)
+              do iterm = 1,extF_N_
                 !
-                call calc_contract_matrix_elements_II(iterm,imu,1,me%extF(imu)%coeff(iterm,:,:),extF_r,extF_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,imu,1,me%extF(imu)%coeff(iterm,:,:),me%extF(imu)%IndexQ(:,iterm),extF_r,extF_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -15182,156 +15194,11 @@ module perturbation
       ! of an arbitrary field (e.g. poten, g_vib, g_rot, g_cor, and extF), 
       ! a general way.
       !
-      subroutine calc_contract_matrix_elements(iterm,k1,k2,Hobject,field,func)
+      subroutine calc_contract_matrix_elements_II(iterm,k1,k2,Hobject,IndexQ,field,func)
 
         integer(ik),intent(in) :: iterm,k1,k2
         real(rk),intent(in)    :: Hobject(0:,0:)
-        real(rk),intent(inout) :: field(:,:)
-        real(rk),external      :: func
-        !
-        integer(ik) :: k(PT%Nmodes)  
-        integer(ik) :: iclasses,nroots,dimen_p,im1,im2,iprim,jprim,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
-        integer(ik) :: icoeff,icase,ilambda,jcoeff,jcase,jlambda,ideg,jdeg,ilevel,jlevel
-        integer(ik) :: iroot,jroot,Maxcontracts,Nclasses
-        integer(hik):: ib,ib0
-        real(rk)    :: f_t,f_prod(PT%Nclasses)
-        !
-        Nclasses = PT%Nclasses
-        Maxcontracts = PT%Maxcontracts
-        !
-        k(:) = FLIndexQ(:,iterm)
-        !
-        do iclasses = 1,PT%Nclasses
-          !
-          nroots  = contr(iclasses)%nroots
-          dimen_p = contr(iclasses)%dimen
-          im1 = PT%mode_class(iclasses,1)
-          im2 = PT%mode_class(iclasses,PT%mode_iclass(iclasses))
-          !
-          im2 = min(PT%Nmodes-1,im2)
-          !
-          if (job%verbose>=4) call TimerStart('contract_matrix')
-          !
-          me_t = 0 
-          !
-          if (iclasses/=PT%Nclasses) then 
-            !
-            !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
-            do jprim=1,contr(iclasses)%dimen
-              !
-              nu_j(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
-              !
-              do iprim=1,contr(iclasses)%dimen
-                !
-                nu_i(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
-                !
-                ! Primitive matrix elements of all Hamiltonian components ....
-                !
-                me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
-                !
-              enddo
-            enddo
-            !$omp end parallel do
-            !
-          else
-            !
-            !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
-            do jprim=1,contr(iclasses)%dimen
-              !
-              nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
-              !
-              do iprim=1,contr(iclasses)%dimen
-                !
-                nu_i(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
-                !
-                ! Primitive matrix elements of all Hamiltonian components ....
-                !
-                me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
-                !
-                me_t(iprim,jprim) = me_t(iprim,jprim)*Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
-                !
-              enddo
-            enddo
-            !$omp end parallel do
-            !
-          endif 
-          !
-          if (job%verbose>=4) call TimerStop('contract_matrix')
-          !
-          if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
-          !
-          !mat_t(1:nroots,1:dimen_p) = matmul(transpose(tmat(iclasses)%coeffs(1:dimen_p,1:nroots)),me_t(1:dimen_p,1:dimen_p))
-          !mat_tt(iclasses)%coeffs(1:nroots,1:nroots) = matmul(mat_t(1:nroots,1:dimen_p),tmat(iclasses)%coeffs(1:dimen_p,1:nroots))
-          !
-          call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
-                      me_t,dimen_p_max,beta,mat_t,nroots_max)
-          call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
-                      tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeffs,nroots)
-          !
-          !call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,& 
-          !            me_t(1:dimen_p,1:dimen_p),dimen_p,beta,mat_t(1:nroots,1:dimen_p),nroots)
-          !call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t(1:nroots,1:dimen_p),nroots,& 
-          !            tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,beta,mat_tt(iclasses)%coeffs(1:nroots,1:nroots),nroots)
-          !
-          if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
-          !
-        enddo 
-        !
-        if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
-        !
-        !$omp parallel do private(icoeff,jcoeff,f_t,iclasses,iroot,jroot) shared(field) schedule(dynamic)
-        do icoeff=1,Maxcontracts
-          !
-          !icase   = PT%icontr2icase(icoeff,1)
-          !ilambda = PT%icontr2icase(icoeff,2)
-          !
-          !ib0 = int(icoeff*(icoeff-1),hik)/2
-          !
-          !ib0 = icoefficoeff1(icoeff)
-          !
-          do jcoeff=1,icoeff
-            !
-            iroot = icoeff2iroot(1,icoeff)
-            jroot = icoeff2iroot(1,jcoeff)
-            !
-            f_t = mat_tt(1)%coeffs(iroot,jroot)
-            !
-            do iclasses = 2,Nclasses
-              !
-              iroot = icoeff2iroot(iclasses,icoeff)
-              jroot = icoeff2iroot(iclasses,jcoeff)
-              !
-              !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
-              !
-              f_t = f_t*mat_tt(iclasses)%coeffs(iroot,jroot)
-              !
-            enddo
-            !
-            !ib = ib0 + jcoeff
-            !
-            !f_t = product(f_prod)
-            !
-            field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
-            !field(icoeff,jcoeff) = field(jcoeff,icoeff)
-            !
-          enddo
-        enddo
-        !$omp end parallel do 
-        !
-        if (job%verbose>=4) call TimerStop('contract_matrix_sum_field')
-        !
-      end subroutine calc_contract_matrix_elements
-
-
-      !
-      ! This procedure is thought to make the calculations of the contracted mat. elements 
-      ! of an arbitrary field (e.g. poten, g_vib, g_rot, g_cor, and extF), 
-      ! a general way.
-      !
-      subroutine calc_contract_matrix_elements_II(iterm,k1,k2,Hobject,field,func)
-
-        integer(ik),intent(in) :: iterm,k1,k2
-        real(rk),intent(in)    :: Hobject(0:,0:)
+        integer(ik),intent(in) :: IndexQ(:)
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
         !real(rk)               :: matclass(1:,1:,1:)
@@ -15347,7 +15214,7 @@ module perturbation
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
         !
-        k(:) = FLIndexQ(:,iterm)
+        k(:) = IndexQ(:)
         !
         do iclasses = 1,PT%Nclasses
           !
@@ -20155,8 +20022,8 @@ end subroutine read_contr_ind
     !
     integer(ik)        :: PotOrder,KinOrder,extForder,MaxExpOrder
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,L2vib_N,Ncoeffs,jmax
-    integer(ik)        :: extF_rank
-    integer(ik)        :: imu,k1,k2,alloc,isize,ispecies,imode,bsize
+    integer(ik)        :: extF_rank,extF_N_
+    integer(ik)        :: imu,k1,k2,alloc,isize,ispecies,imode,bsize,Nmodes
     integer(ik),allocatable :: extF_N(:)
     logical            :: treat_rotation
     character(len=cl)  :: job_is
@@ -20176,6 +20043,7 @@ end subroutine read_contr_ind
       PT%Nterms%grot = grot_N
       PT%Nterms%gcor = gcor_N
       PT%Nterms%jmax = jmax
+      Nmodes = PT%Nmodes
       !
       ! Some parts of the Hamiltonian are not needed if J=0 (neither grot nor gcor).
       ! We adopt treat_rotation to switch it on/off
@@ -20235,25 +20103,34 @@ end subroutine read_contr_ind
       !
       allocate (me%poten,stat=alloc)
       !
-      allocate (me%poten%coeff(poten_N,0:bsize,0:bsize),me%poten%iorder(poten_N),stat=alloc)
-      call ArrayStart('me%fields%coeff',alloc,size(me%poten%coeff),kind(me%poten%coeff))
-      !
       job_is = 'poten'
+      !
+      poten_N = FLread_fields_dimension_field(job_is,0,0)
+      !
+      allocate (me%poten%coeff(poten_N,0:bsize,0:bsize),me%poten%iorder(poten_N),me%poten%IndexQ(Nmodes,poten_N),stat=alloc)
+      call ArrayStart('me%fields%coeff',alloc,size(me%poten%coeff),kind(me%poten%coeff))
+      call ArrayStart('me%fields%coeff',alloc,size(me%poten%iorder),kind(me%poten%iorder))
+      call ArrayStart('me%fields%IndexQ',alloc,size(me%poten%IndexQ),kind(me%poten%IndexQ))
       call FLread_coeff_matelem(job_is,1,1,me%poten%coeff(:,:,:))
+      call FLread_IndexQ_field(job_is,1,1,me%poten%IndexQ(:,:))
       !
       me%poten%iorder = 0 
       me%poten%Ncoeff = poten_N
       !
-      allocate (me%gvib(PT%Nmodes,PT%Nmodes),stat=alloc)
+      allocate (me%gvib(Nmodes,Nmodes),stat=alloc)
       !
       job_is = 'gvib'
-      do k1 = 1,PT%Nmodes
-         do k2 = 1,PT%Nmodes
+      do k1 = 1,Nmodes
+         do k2 = 1,Nmodes
             !
-            allocate (me%gvib(k1,k2)%coeff(gvib_N,0:bsize,0:bsize),&
+            gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
+            !
+            allocate (me%gvib(k1,k2)%coeff(gvib_N,0:bsize,0:bsize),me%gvib(k1,k2)%IndexQ(Nmodes,gvib_N),&
                       me%gvib(k1,k2)%iorder(gvib_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%gvib(k1,k2)%coeff),kind(me%gvib(k1,k2)%coeff))
+            call ArrayStart('me%fields%IndexQ',alloc,size(me%gvib(k1,k2)%IndexQ),kind(me%gvib(k1,k2)%IndexQ))
             call FLread_coeff_matelem(job_is,k1,k2,me%gvib(k1,k2)%coeff(:,:,:))
+            call FLread_IndexQ_field(job_is,k1,k2,me%gvib(k1,k2)%IndexQ(:,:))
             !
             me%gvib(k1,k2)%iorder = 0 
             me%gvib(k1,k2)%Ncoeff = gvib_N
@@ -20267,10 +20144,14 @@ end subroutine read_contr_ind
       do k1 = 1,3
          do k2 = 1,3
             !
-            allocate (me%grot(k1,k2)%coeff(grot_N,0:bsize,0:bsize),&
+            grot_N = FLread_fields_dimension_field(job_is,k1,k2)
+            !
+            allocate (me%grot(k1,k2)%coeff(grot_N,0:bsize,0:bsize),me%grot(k1,k2)%IndexQ(Nmodes,grot_N),&
                       me%grot(k1,k2)%iorder(grot_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%grot(k1,k2)%coeff),kind(me%grot(k1,k2)%coeff))
+            call ArrayStart('me%fields%IndexQ',alloc,size(me%grot(k1,k2)%IndexQ),kind(me%grot(k1,k2)%IndexQ))
             call FLread_coeff_matelem(job_is,k1,k2,me%grot(k1,k2)%coeff(:,:,:))
+            call FLread_IndexQ_field(job_is,k1,k2,me%grot(k1,k2)%IndexQ(:,:))
             !
             me%grot(k1,k2)%iorder = 0 
             me%grot(k1,k2)%Ncoeff = grot_N
@@ -20284,10 +20165,14 @@ end subroutine read_contr_ind
       do k1 = 1,PT%Nmodes
          do k2 = 1,3
             !
-            allocate (me%gcor(k1,k2)%coeff(gcor_N,0:bsize,0:bsize),&
+            gcor_N = FLread_fields_dimension_field(job_is,k1,k2)
+            !
+            allocate (me%gcor(k1,k2)%coeff(gcor_N,0:bsize,0:bsize),me%gcor(k1,k2)%IndexQ(Nmodes,gcor_N),&
                       me%gcor(k1,k2)%iorder(gcor_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%gcor(k1,k2)%coeff),kind(me%gcor(k1,k2)%coeff))
+            call ArrayStart('me%fields%IndexQ',alloc,size(me%gcor(k1,k2)%IndexQ),kind(me%gcor(k1,k2)%IndexQ))
             call FLread_coeff_matelem(job_is,k1,k2,me%gcor(k1,k2)%coeff(:,:,:))
+            call FLread_IndexQ_field(job_is,k1,k2,me%gcor(k1,k2)%IndexQ(:,:))
             !
             me%gcor(k1,k2)%iorder = 0 
             me%gcor(k1,k2)%Ncoeff = gcor_N
@@ -20305,10 +20190,14 @@ end subroutine read_contr_ind
         do k1 = 1,PT%Nmodes
            do k2 = 1,PT%Nmodes
               !
-              allocate (me%L2(k1,k2)%coeff(L2vib_N,0:bsize,0:bsize),&
+              L2vib_N = FLread_fields_dimension_field(job_is,k1,k2)
+              !
+              allocate (me%L2(k1,k2)%coeff(L2vib_N,0:bsize,0:bsize),me%gvib(k1,k2)%IndexQ(Nmodes,L2vib_N),&
                         me%L2(k1,k2)%iorder(L2vib_N),stat=alloc)
               call ArrayStart('me%fields%coeff',alloc,size(me%L2(k1,k2)%coeff),kind(me%L2(k1,k2)%coeff))
+              call ArrayStart('me%fields%IndexQ',alloc,size(me%L2(k1,k2)%IndexQ),kind(me%L2(k1,k2)%IndexQ))
               call FLread_coeff_matelem(job_is,k1,k2,me%L2(k1,k2)%coeff(:,:,:))
+              call FLread_IndexQ_field(job_is,k1,k2,me%L2(k1,k2)%IndexQ(:,:))
               !
               me%L2(k1,k2)%iorder = 0 
               me%L2(k1,k2)%Ncoeff = L2vib_N
@@ -20327,10 +20216,13 @@ end subroutine read_contr_ind
         job_is = 'externalF'
         do imu = 1,extF_rank
            !
-           allocate (me%extF(imu)%coeff(extF_N(imu),0:bsize,0:bsize),stat=alloc)
+           extF_N_ = FLread_fields_dimension_field(job_is,k1,0)
+           !
+           allocate (me%extF(imu)%coeff(extF_N_,0:bsize,0:bsize),stat=alloc)
            !
            call ArrayStart('me%fields%coeff',alloc,size(me%extF(imu)%coeff),kind(me%extF(imu)%coeff))
            call FLread_coeff_matelem(job_is,imu,1,me%extF(imu)%coeff(:,:,:))
+           call FLread_IndexQ_field(job_is,imu,1,me%extF(imu)%IndexQ(:,:))
            !
            me%extF(imu)%Ncoeff = extF_N(imu)
            !
@@ -20385,9 +20277,9 @@ end subroutine read_contr_ind
          do k1 = 1,3
            do k2 = 1,3
              !
-             do iterm = 1,me%grot(1,1)%Ncoeff
+             do iterm = 1,me%grot(k1,k2)%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
+                k(:) = me%grot(k1,k2)%IndexQ(:,iterm)
                 !
                 ! Check if the current iterm belongs to the current perturb. order
                 !
@@ -20425,9 +20317,9 @@ end subroutine read_contr_ind
          do k1 = 1,PT%Nmodes
             do k2 = 1,3 
               !
-              do iterm = 1,me%gcor(k1,1)%Ncoeff
+              do iterm = 1,me%gcor(k1,k2)%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
+                k(:) = me%gcor(k1,k2)%IndexQ(:,iterm)
                 !
                 do ispecies = 1,PT%Nspecies
                    !
@@ -20485,7 +20377,7 @@ end subroutine read_contr_ind
 
       integer(ik),intent(in)        :: norder,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
       integer(ik),intent(in),optional  :: j
-      real(rk)                      :: mat_elem
+      real(rk)                      :: mat_elem,f_Jk
 
       integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
       integer(ik)                   :: vl,vr,tau_i,tau_j,k_i,k_j,jk,dk,ispecies
@@ -20507,86 +20399,38 @@ end subroutine read_contr_ind
          if (nu_i(0)==nu_j(0)) then 
             !
             if (PTvibrational_me_calc) then 
-              !
-              ! The scenario when the pure vibrational energy is known from the contracted solution
-              !
-              !pot_t = eval
-              ! 
-              !else
-              !
-              ! Potential part of the hamiltonian 
-              !
-              !fl => me%poten
-              !
-              !mat_legatee(:,:) = 1.0_rk
-              !
-              !do iterm = 1,me%poten%Ncoeff
-              !   !
-              !   k(:) = FLIndexQ(:,iterm)
-              !   !
-              !   do imode = max(FLIndexQ_legatee(1,iterm),1),PT%Nmodes-1 !FLIndexQ_legatee(1,iterm),PT%Nmodes-1
-              !      !
-              !      ispecies = PT%Mspecies(imode)
-              !      !
-              !      i = FLIndexQ_legatee(imode,iterm)
-              !      !
-              !      mat_legatee(imode,iterm) = mat_legatee(imode-1,FLIndexQ_legatee(imode,iterm))*&
-              !                                 me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
-              !      
-              !   enddo 
-              !   ! 
-              !   !
-              !enddo
-              !             
-              !pot_t = 0
-              !
-              !do iterm = 1,me%poten%Ncoeff
-              !   !
-              !   if (me%poten%iorder(iterm)==norder) then 
-              !      !
-              !      pot_t = pot_t  + mat_legatee(PT%Nmodes-1,FLIndexQ_legatee(PT%Nmodes,iterm))*me%poten%coeff(iterm,vl,vr)
-              !      !
-              !      !
-              !      continue
-              !      !
-              !      !
-              !   endif 
-              !   !
-              !enddo
-              !
               pot_t = 0
               !
-              do iterm = 1,me%poten%Ncoeff
-                 !
-                 k(:) = FLIndexQ(:,iterm)
+              fl => me%poten
+              !
+              do iterm = 1,fl%Ncoeff
                  !
                  ! Check if the current iterm belongs to the current perturb. order
                  !
-                 if (me%poten%iorder(iterm)==norder) then 
+                 if (fl%iorder(iterm)/=norder) cycle
+                 !
+                 k(:) = fl%IndexQ(:,iterm)
+                 do ispecies = 1,PT%Nspecies
                     !
-                    do ispecies = 1,PT%Nspecies
+                    do i = 1,PT%mode_ispecies(ispecies)
                        !
-                       do i = 1,PT%mode_ispecies(ispecies)
+                       imode = PT%mode_species(ispecies,i)
+                       !
+                       if (imode==PT%Nmodes) then
                           !
-                          imode = PT%mode_species(ispecies,i)
+                          mat(imode) = fl%coeff(iterm,vl,vr)
                           !
-                          if (imode==PT%Nmodes) then
-                             !
-                             mat(imode) = me%poten%coeff(iterm,vl,vr)
-                             !
-                          else
-                             !
-                             mat(imode) = me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                             !
-                          endif
+                       else
                           !
-                       enddo 
-                       ! 
-                    enddo
-                    !
-                    pot_t = pot_t + product(mat(:))
-                    !
-                 endif
+                          mat(imode) = me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                          !
+                       endif
+                       !
+                    enddo 
+                    ! 
+                 enddo
+                 !
+                 pot_t = pot_t + product(mat(:))
                  !
               enddo
               !
@@ -20600,52 +20444,50 @@ end subroutine read_contr_ind
                     !
                     do iterm = 1,fl%Ncoeff
                        !
-                       k(:) = FLIndexQ(:,iterm)
-                       !
                        ! Check if the current iterm belongs to the current perturb. order
                        !
-                       if (fl%iorder(iterm)==norder) then 
+                       if (fl%iorder(iterm)/=norder) cycle
+                       !
+                       k(:) = fl%IndexQ(:,iterm)
+                       !
+                       do ispecies = 1,PT%Nspecies
                           !
-                          do ispecies = 1,PT%Nspecies
+                          do i = 1,PT%mode_ispecies(ispecies)
                              !
-                             do i = 1,PT%mode_ispecies(ispecies)
+                             imode = PT%mode_species(ispecies,i)
+                             !
+                             if (imode==PT%Nmodes) then
                                 !
-                                imode = PT%mode_species(ispecies,i)
+                                mat(imode) = fl%coeff(iterm,vl,vr)
                                 !
-                                if (imode==PT%Nmodes) then
-                                   !
-                                   mat(imode) = fl%coeff(iterm,vl,vr)
-                                   !
-                                else
-                                   !
-                                   if    (k1/=imode.and.k2/=imode) then 
-                                     !
-                                     mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   elseif (k1==imode.and.k2/=imode) then
-                                     !
-                                     mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                                     !
-                                   elseif (k1/=imode.and.k2==imode) then
-                                     !
-                                     mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   else !   if (k1==imode.and.k2==imode) then
-                                     !
-                                     mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   endif
-                                   !
-                                   !
+                             else
+                                !
+                                if    (k1/=imode.and.k2/=imode) then 
+                                  !
+                                  mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
+                                elseif (k1==imode.and.k2/=imode) then
+                                  !
+                                  mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                                  !
+                                elseif (k1/=imode.and.k2==imode) then
+                                  !
+                                  mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
+                                else !   if (k1==imode.and.k2==imode) then
+                                  !
+                                  mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
                                 endif
                                 !
-                             enddo 
-                             ! 
-                          enddo
-                          !
-                          gvib_t = gvib_t + product(mat(:))
-                          !
-                       endif
+                                !
+                             endif
+                             !
+                          enddo 
+                          ! 
+                       enddo
+                       !
+                       gvib_t = gvib_t + product(mat(:))
                        !
                     enddo
                     ! 
@@ -20673,89 +20515,177 @@ end subroutine read_contr_ind
             !
             Jk = 1+k_i+(j*(j+1) )/2
             dk = k_i - k_j
+            f_Jk = 0.5_rk*real(J*(J+1_ik)-k_i**2,ark)
             ! 
             ! Rotational part of the kinetic operator g_rot
             !
             if (abs(dk)<=2) then 
+
+               ! gxx
                !
-               do iterm = 1,me%grot(1,1)%Ncoeff
-                  !
-                  k(:) = FLIndexQ(:,iterm)
+               fl => me%grot(1,1)
+               !
+               do iterm = 1,fl%Ncoeff
                   !
                   ! Check if the current iterm belongs to the current perturb. order
                   !
-                  if (me%grot(1,1)%iorder(iterm)==norder) then 
+                  if (fl%iorder(iterm)/=norder) cycle 
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  !
+                  do ispecies = 1,PT%Nspecies
                      !
-                     do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
                         !
-                        do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        !
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           ! four terms that come together: 
+                           ! 1/2(Jx^2 - Jy^2) and (JxJy+JyJx)
+                           !     (JxJz+JzJx)  and (JzJy+JyJz)
                            !
-                           imode = PT%mode_species(ispecies,i)
-                           !
-                           if (imode/=PT%Nmodes) then
+                           ! first  - all even contributions 
+                           if (tau_i==tau_j) then 
+                              ! Jx2y2 
+                              mat(imode) =  0.5_rk*me%grot(1,1)%coeff(iterm,vl,vr)*me%rot(4)%coeff(Jk,dk,tau_i)
                               !
-                              mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                              !
-                           else
-                              !
-                              ! four terms that come together: 
-                              ! 1/2(Jx^2 - Jy^2) and (JxJy+JyJx)
-                              !     (JxJz+JzJx)  and (JzJy+JyJz)
-                              !
-                              ! first  - all even contributions 
-                              !
-                              if (tau_i==tau_j) then 
-                                 !
-                                 ! Jx2y2 
-                                 !
-                                 mat(imode) =  0.5_rk*&
-                                             ( me%grot(1,1)%coeff(iterm,vl,vr)-me%grot(2,2)%coeff(iterm,vl,vr) )*&
-                                               me%rot(4)%coeff(Jk,dk,tau_i)
-                                 !
-                                 ! Jxz
-                                 !
-                                 mat(imode) = mat(imode) +& 
-                                 me%grot(1,3)%coeff(iterm,vl,vr)*me%rot(6)%coeff(Jk,dk,tau_i)
-                                 !pot_t = me%grot(1,3)%coeff(iterm,vl,vr)
-                                 !pot_t = me%rot(6)%coeff(Jk,dk,tau_i)
-                                 !
-                                 ! and now odd ones 
-                              else
-                                 !
-                                 ! Jxy
-                                 !
-                                 mat(imode) = me%grot(1,2)%coeff(iterm,vl,vr)*me%rot(5)%coeff(Jk,dk,tau_i)
-                                 !
-                                 ! Jyz
-                                 !
-                                 mat(imode) = mat(imode) +& 
-                                              me%grot(2,3)%coeff(iterm,vl,vr)*me%rot(7)%coeff(Jk,dk,tau_i)
-                                 !
-                              endif 
-                              !
-                              if (tau_i==tau_j.and.k_i==k_j) then 
-                                 !
+                              if (k_i==k_j) then 
                                  ! two terms A*Jx^2+BJy^2+C*Jz^2
-                                 !
-                                 mat(imode) = mat(imode) + 0.5_rk*real(J*(J+1_ik)-k_i**2,ark)*&
-                                            ( me%grot(1,1)%coeff(iterm,vl,vr)+me%grot(2,2)%coeff(iterm,vl,vr) )
-                                 mat(imode) = mat(imode) + real(k_i**2,ark)*me%grot(3,3)%coeff(iterm,vl,vr) 
-                                 !
-                              endif 
-                              !
-                           endif
-                           !
-                        enddo 
-                        ! 
-                     enddo
-                     !
-                     grot_t = grot_t + product(mat(:))
-                     !
-                  endif
+                                 mat(imode) = mat(imode) + f_Jk*me%grot(1,1)%coeff(iterm,vl,vr)
+                              endif
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
                   !
                enddo
                !
-               continue
+               fl => me%grot(2,2)
+               !
+               do iterm = 1,fl%Ncoeff
+                  !
+                  ! Check if the current iterm belongs to the current perturb. order
+                  !
+                  if (fl%iorder(iterm)/=norder) cycle
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           if (tau_i==tau_j) then 
+                              ! Jx2y2 
+                              mat(imode) =  0.5_rk*(-me%grot(2,2)%coeff(iterm,vl,vr))*me%rot(4)%coeff(Jk,dk,tau_i)
+                              !
+                              if (k_i==k_j) then 
+                                 ! two terms A*Jx^2+BJy^2+C*Jz^2
+                                 mat(imode) = mat(imode) + f_Jk*me%grot(2,2)%coeff(iterm,vl,vr)
+                              endif 
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
+               enddo
+               !
+               fl => me%grot(3,3)
+               !
+               do iterm = 1,fl%Ncoeff
+                  !
+                  if (fl%iorder(iterm)/=norder) cycle
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  !
+                  do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           if (tau_i==tau_j.and.k_i==k_j) then 
+                              ! two terms A*Jx^2+BJy^2+C*Jz^2
+                              mat(imode) = real(k_i**2,rk)*me%grot(3,3)%coeff(iterm,vl,vr) 
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
+               enddo
+               !
+               fl => me%grot(1,3)
+               !
+               do iterm = 1,fl%Ncoeff
+                  !
+                  if (fl%iorder(iterm)/=norder) cycle
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           if (tau_i==tau_j) then 
+                              ! Jxz
+                              mat(imode) = me%grot(1,3)%coeff(iterm,vl,vr)*me%rot(6)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
+               enddo
+               !
+               fl => me%grot(1,2)
+               !
+               do iterm = 1,fl%Ncoeff
+                  !
+                  if (fl%iorder(iterm)/=norder) cycle 
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  ! Check if the current iterm belongs to the current perturb. order
+                  do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           if (tau_i/=tau_j) then 
+                              ! Jxy
+                              mat(imode) = me%grot(1,2)%coeff(iterm,vl,vr)*me%rot(5)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
+               enddo
+               !
+               fl => me%grot(2,3)
+               !
+               do iterm = 1,fl%Ncoeff
+                  !
+                  if (fl%iorder(iterm)/=norder) cycle
+                  !
+                  k(:) = fl%IndexQ(:,iterm)
+                  do ispecies = 1,PT%Nspecies
+                     do i = 1,PT%mode_ispecies(ispecies)
+                        imode = PT%mode_species(ispecies,i)
+                        if (imode/=PT%Nmodes) then
+                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        else
+                           if (tau_i/=tau_j) then 
+                              ! Jyz
+                              mat(imode) = me%grot(2,3)%coeff(iterm,vl,vr)*me%rot(7)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
+                     enddo 
+                  enddo
+                  grot_t = grot_t + product(mat(:))
+               enddo
                !
             endif 
             ! 
@@ -20765,67 +20695,90 @@ end subroutine read_contr_ind
                !
                do k1 = 1,PT%Nmodes
                   !
-                  do iterm = 1,me%gcor(k1,1)%Ncoeff
+                  fl => me%gcor(k1,1)
+                  !
+                  do iterm = 1,fl%Ncoeff
                      !
-                     k(:) = FLIndexQ(:,iterm)
+                     if (fl%iorder(iterm)/=norder) cycle
                      !
-                     ! Check if the current iterm belongs to the current perturb. order
-                     !
-                     if (me%gcor(k1,1)%iorder(iterm)==norder) then 
-                        !
-                        do ispecies = 1,PT%Nspecies
-                           !
-                           do i = 1,PT%mode_ispecies(ispecies)
-                              !
-                              imode = PT%mode_species(ispecies,i)
-                              !
-                              if (imode/=PT%Nmodes) then
-                                 !
-                                 if (k1/=imode) then 
-                                    !
-                                    mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                    !
-                                 else
-                                    !
-                                    mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                                me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                                    !
-                                 endif
-                                 !
+                     k(:) = fl%IndexQ(:,iterm)
+                     do ispecies = 1,PT%Nspecies
+                        do i = 1,PT%mode_ispecies(ispecies)
+                           imode = PT%mode_species(ispecies,i)
+                           if (imode/=PT%Nmodes) then
+                              if (k1/=imode) then 
+                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                               else
-                                 !
-                                 ! first  - all even contributions 
-                                 !
-                                 if (tau_i==tau_j) then 
-                                    !
-                                    mat(imode) =  me%gcor(k1,2)%coeff(iterm,vl,vr)*me%rot(2)%coeff(Jk,dk,tau_i)
-                                    !
-                                    ! and now odd ones 
-                                 else
-                                    !
-                                    mat(imode) =  me%gcor(k1,1)%coeff(iterm,vl,vr)*me%rot(1)%coeff(Jk,dk,tau_i)+&
-                                                  me%gcor(k1,3)%coeff(iterm,vl,vr)*me%rot(3)%coeff(Jk,dk,tau_i)
-                                    !
-                                 endif 
-                                 !
+                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                               endif
-                              !
-                           enddo 
-                           ! 
-                        enddo
-                        !
-                        gcor_t = gcor_t + product(mat(:))
-                        !
-                     endif
-                     !
+                           else
+                              ! first  - all even contributions 
+                              if (tau_i/=tau_j) then 
+                                 mat(imode) =  me%gcor(k1,1)%coeff(iterm,vl,vr)*me%rot(1)%coeff(Jk,dk,tau_i)
+                              endif 
+                           endif
+                        enddo 
+                     enddo
+                     gcor_t = gcor_t + product(mat(:))
                   enddo
                   !
-                  continue
+                  fl => me%gcor(k1,2)
                   !
+                  do iterm = 1,fl%Ncoeff
+                     !
+                     if (fl%iorder(iterm)/=norder) cycle
+                     !
+                     k(:) = fl%IndexQ(:,iterm)
+                     ! Check if the current iterm belongs to the current perturb. order
+                     do ispecies = 1,PT%Nspecies
+                        do i = 1,PT%mode_ispecies(ispecies)
+                           imode = PT%mode_species(ispecies,i)
+                           if (imode/=PT%Nmodes) then
+                              if (k1/=imode) then 
+                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                              else
+                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                              endif
+                           else
+                              ! first  - all even contributions 
+                              if (tau_i==tau_j) then 
+                                 mat(imode) =  me%gcor(k1,2)%coeff(iterm,vl,vr)*me%rot(2)%coeff(Jk,dk,tau_i)
+                              endif 
+                           endif
+                        enddo 
+                     enddo
+                     gcor_t = gcor_t + product(mat(:))
+                  enddo
+                  !
+                  fl => me%gcor(k1,3)
+                  !
+                  do iterm = 1,fl%Ncoeff
+                     if (fl%iorder(iterm)/=norder) cycle
+                     k(:) = fl%IndexQ(:,iterm)
+                     do ispecies = 1,PT%Nspecies
+                        do i = 1,PT%mode_ispecies(ispecies)
+                           imode = PT%mode_species(ispecies,i)
+                           if (imode/=PT%Nmodes) then
+                              if (k1/=imode) then 
+                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                              else
+                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                              endif
+                           else
+                              ! first  - all even contributions 
+                              if (tau_i/=tau_j) then 
+                                 mat(imode) =  me%gcor(k1,3)%coeff(iterm,vl,vr)*me%rot(3)%coeff(Jk,dk,tau_i)
+                              endif 
+                           endif
+                        enddo 
+                     enddo
+                     gcor_t = gcor_t + product(mat(:))
+                  enddo
                enddo 
-               !
             endif 
-            ! 
             !
           endif 
          endif 
@@ -20837,9 +20790,8 @@ end subroutine read_contr_ind
          !call TimerStart('PTmatrixelements')
          !
       !if (verbose>=6) write(out,"('PTmatrixelements/end')") 
-
+      !
    end function PTmatrixelements
-
 
 
    !
@@ -20876,52 +20828,50 @@ end subroutine read_contr_ind
                     !
                     do iterm = 1,fl%Ncoeff
                        !
-                       k(:) = FLIndexQ(:,iterm)
-                       !
                        ! Check if the current iterm belongs to the current perturb. order
                        !
-                       if (fl%iorder(iterm)==norder) then 
+                       if (fl%iorder(iterm)/=norder) cycle
+                       !
+                       k(:) = fl%IndexQ(:,iterm)
+                       !
+                       do ispecies = 1,PT%Nspecies
                           !
-                          do ispecies = 1,PT%Nspecies
+                          do i = 1,PT%mode_ispecies(ispecies)
                              !
-                             do i = 1,PT%mode_ispecies(ispecies)
+                             imode = PT%mode_species(ispecies,i)
+                             !
+                             if (imode==PT%Nmodes) then
                                 !
-                                imode = PT%mode_species(ispecies,i)
+                                mat(imode) = fl%coeff(iterm,vl,vr)
                                 !
-                                if (imode==PT%Nmodes) then
-                                   !
-                                   mat(imode) = fl%coeff(iterm,vl,vr)
-                                   !
-                                else
-                                   !
-                                   if    (k1/=imode.and.k2/=imode) then 
-                                     !
-                                     mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   elseif (k1==imode.and.k2/=imode) then
-                                     !
-                                     mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                                     !
-                                   elseif (k1/=imode.and.k2==imode) then
-                                     !
-                                     mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   else !   if (k1==imode.and.k2==imode) then
-                                     !
-                                     mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                     !
-                                   endif
-                                   !
-                                   !
+                             else
+                                !
+                                if    (k1/=imode.and.k2/=imode) then 
+                                  !
+                                  mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
+                                elseif (k1==imode.and.k2/=imode) then
+                                  !
+                                  mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                                  !
+                                elseif (k1/=imode.and.k2==imode) then
+                                  !
+                                  mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
+                                else !   if (k1==imode.and.k2==imode) then
+                                  !
+                                  mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                                  !
                                 endif
                                 !
-                             enddo 
-                             ! 
-                          enddo
-                          !
-                          gvib_t = gvib_t + product(mat(:))
-                          !
-                       endif
+                                !
+                             endif
+                             !
+                          enddo 
+                          ! 
+                       enddo
+                       !
+                       gvib_t = gvib_t + product(mat(:))
                        !
                     enddo
                     ! 
@@ -23599,11 +23549,11 @@ end subroutine read_contr_ind
              !
              poten  = 0
              !
-             do iterm = 1,me%poten%Ncoeff
+             fl => me%poten
+             !
+             do iterm = 1,fl%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
-                !
-                fl => me%poten
+                k(:) = fl%IndexQ(:,iterm)
                 !
                 do imode = im1,im2
                    !
@@ -23637,11 +23587,11 @@ end subroutine read_contr_ind
              !
              gvib  = 0 
              !
-             do iterm = 1,me%gvib(1,1)%Ncoeff
+             fl => me%gvib(k1,k2)
+             !
+             do iterm = 1,me%gvib(k1,k2)%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
-                !
-                fl => me%gvib(k1,k2)
+                k(:) = fl%IndexQ(:,iterm)
                 !
                 do imode = im1,im2
                    !
@@ -23712,12 +23662,11 @@ end subroutine read_contr_ind
               !
               grot  = 0 
               !
-              do iterm = 1,me%grot(1,1)%Ncoeff
+              fl => me%grot(k1,k2)
+              !
+              do iterm = 1,fl%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
-                !
-                !
-                fl => me%grot(k1,k2)
+                k(:) = fl%IndexQ(:,iterm)
                 !
                 mat = 1.0_rk
                 !
@@ -23754,11 +23703,11 @@ end subroutine read_contr_ind
               !
               gcor = 0
               !
-              do iterm = 1,me%gcor(1,1)%Ncoeff
+              fl => me%gcor(k1,k2)
+              !
+              do iterm = 1,fl%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
-                !
-                fl => me%gcor(k1,k2)
+                k(:) = fl%IndexQ(:,iterm)
                 !
                 do imode = im1,im2
                   !
@@ -29262,7 +29211,7 @@ end subroutine read_contr_ind
       !
       loop_term : do iterm = 1,fl%Ncoeff
          !
-         k(:) = FLIndexQ(:,iterm)
+         k(:) = fl%IndexQ(:,iterm)
          !
          ! For the zero order case we allow only diagonal terms
          !
@@ -29305,7 +29254,7 @@ end subroutine read_contr_ind
              !
              do iterm = 1,fl%Ncoeff
                 !
-                k(:) = FLIndexQ(:,iterm)
+                k(:) = fl%IndexQ(:,iterm)
                 !
                 excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                 !
@@ -29342,7 +29291,7 @@ end subroutine read_contr_ind
                !
                do iterm = 1,fl%Ncoeff
                   !
-                  k(:) = FLIndexQ(:,iterm)
+                  k(:) = fl%IndexQ(:,iterm)
                   !
                   excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                   !
@@ -29369,7 +29318,7 @@ end subroutine read_contr_ind
                !
                do iterm = 1,fl%Ncoeff
                   !
-                  k(:) = FLIndexQ(:,iterm)
+                  k(:) = fl%IndexQ(:,iterm)
                   !
                   excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                   !
