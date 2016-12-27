@@ -14198,6 +14198,7 @@ module perturbation
     integer(hik),allocatable :: icoefficoeff1(:)
     !
     type(PTcoeffsT)    :: tmat(PT%Nclasses),mat_tt(PT%Nclasses)
+    type(PTcoeffT),pointer        :: fl
       !
       !
       call TimerStart('Contracted matelements-class')
@@ -14479,9 +14480,11 @@ module perturbation
               !
               grot_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
+              fl => me%grot(k1,k2)
+              !
               do iterm = 1,grot_N
                 !
-                call calc_contract_matrix_elements_II(iterm,k1,k2,me%grot(k1,k2)%coeff(iterm,:,:),me%grot(k1,k2)%IndexQ(:,iterm),hrot_t,grot_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,k1,k2,fl,hrot_t,grot_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -14543,11 +14546,13 @@ module perturbation
               !
               gcor_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
+              fl => me%gcor(k1,k2)
+              !
               do iterm = 1,gcor_N
                 !
                 !hrot_t = 0
                 !
-                call calc_contract_matrix_elements_II(iterm,k1,k2,me%gcor(k1,k2)%coeff(iterm,:,:),me%gcor(k1,k2)%IndexQ(:,iterm),hrot_t,gcor_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,k1,k2,fl,hrot_t,gcor_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -14704,11 +14709,13 @@ module perturbation
                 !
                 gvib_t = 0
                 !
+                fl => me%gvib(k1,k2)
+                !
                 do iterm = 1,gvib_N
                   !
                   !fvib_t = 0
                   !
-                  call calc_contract_matrix_elements_II(iterm,k1,k2,me%gvib(k1,k2)%coeff(iterm,:,:),me%gvib(k1,k2)%IndexQ(:,iterm),fvib_t,gvib_contr_matelem_single_term)
+                  call calc_contract_matrix_elements_II(iterm,k1,k2,fl,fvib_t,gvib_contr_matelem_single_term)
                   !
                   !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
                   do icoeff=1,mdimen
@@ -14759,11 +14766,13 @@ module perturbation
               !
               gvib_t = 0
               !
+              fl => me%poten
+              !
               do iterm = 1,poten_N
                   !
                   if (job%verbose>=4) write(out,"('iterm = ',i8)") iterm
                   !
-                  call calc_contract_matrix_elements_II(iterm,1,1,me%poten%coeff(iterm,:,:),me%poten%IndexQ(:,iterm),fvib_t,poten_contr_matelem_single_term)
+                  call calc_contract_matrix_elements_II(iterm,1,1,fl,fvib_t,poten_contr_matelem_single_term)
                   !
                   !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
                   do icoeff=1,mdimen
@@ -14930,9 +14939,11 @@ module perturbation
               !
               extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
               !
+              fl => me%extF(imu)
+              !
               do iterm = 1,extF_N_
                 !
-                call calc_contract_matrix_elements_II(iterm,imu,1,me%extF(imu)%coeff(iterm,:,:),me%extF(imu)%IndexQ(:,iterm),extF_r,extF_contr_matelem_single_term)
+                call calc_contract_matrix_elements_II(iterm,imu,1,fl,extF_r,extF_contr_matelem_single_term)
                 !
                 !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
                 do icoeff=1,mdimen
@@ -15194,13 +15205,15 @@ module perturbation
       ! of an arbitrary field (e.g. poten, g_vib, g_rot, g_cor, and extF), 
       ! a general way.
       !
-      subroutine calc_contract_matrix_elements_II(iterm,k1,k2,Hobject,IndexQ,field,func)
+      subroutine calc_contract_matrix_elements_II(iterm,k1,k2,fl,field,func)
 
         integer(ik),intent(in) :: iterm,k1,k2
-        real(rk),intent(in)    :: Hobject(0:,0:)
-        integer(ik),intent(in) :: IndexQ(:)
+        type(PTcoeffT),pointer        :: fl
+        !real(rk),intent(in)    :: Hobject(0:,0:)
+        !integer(ik),intent(in) :: IndexQ(:)
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
+        !
         !real(rk)               :: matclass(1:,1:,1:)
         !integer(ik),intent(in) :: icoeff2iroot(PT%Nclasses,PT%Maxcontracts)
         !
@@ -15214,7 +15227,7 @@ module perturbation
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
         !
-        k(:) = IndexQ(:)
+        k(:) = fl%IndexQ(:,iterm)
         !
         do iclasses = 1,PT%Nclasses
           !
@@ -15263,7 +15276,7 @@ module perturbation
                 !
                 me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
                 !
-                me_t(iprim,jprim) = me_t(iprim,jprim)*Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                me_t(iprim,jprim) = me_t(iprim,jprim)*fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                 !
                 !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                 !
