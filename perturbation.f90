@@ -17587,6 +17587,7 @@ subroutine read_expansion_terms(func_tag, nclasses, nmodes1, nmodes2, ncomb, ico
   if (allocated(icomb_iclass)) deallocate(icomb_iclass)
   if (allocated(icomb_nterms)) deallocate(icomb_nterms)
   if (allocated(icomb_iterm)) deallocate(icomb_iterm)
+  !if (allocated(iunique_iterm)) deallocate(iunique_iterm)
   if (allocated(icomb_coefs)) deallocate(icomb_coefs)
 
   allocate(icomb_nclasses(0:ncomb), &
@@ -30551,8 +30552,12 @@ subroutine PTstore_contr_matelem(jrot)
   integer(ik) :: i, iclass, info, dimen, maxnterms, nterms_uniq(PT%Nclasses), nclasses, nmodes, &
                  n, iclass_imode(2,PT%Nclasses), nterms, nmodes_class, imode, jmode, iterm, kterm, nprim, term(PT%Nmodes), &
                  ncomb, icomb, iterm_, nterms_, jterm, imode_, jmode_, icomb_maxnterms, imode1, imode2,ipar,extF_rank
+  integer(ik) ::  target_index(PT%Nmodes)
+  integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,Jmax,L2vib_N
+  integer(ik),allocatable :: extF_N(:)
   integer(ik), allocatable :: icomb_nclasses(:), icomb_iclass(:,:), icomb_nterms(:), icomb_iterm(:,:), terms_uniq(:,:,:), &
-                              iterm_uniq(:,:), ijmode_icomb_iterm(:,:,:), ijmode_icomb_nterms(:)
+                              iterm_uniq(:,:), ijmode_icomb_iterm(:,:,:), ijmode_icomb_nterms(:),iunique_iterm(:,:)
+
   integer(ik), allocatable :: terms(:,:)
   real(rk) :: coef_thresh, c
   real(rk), allocatable :: me_contr(:,:,:), ijmode_icomb_coefs(:,:)
@@ -30561,6 +30566,8 @@ subroutine PTstore_contr_matelem(jrot)
   logical            :: treat_rotation =.false.  ! switch off/on the rotation 
   logical            :: treat_vibration =.true.  ! switch off/on the vibration
   logical            :: treat_exfF=.false.       ! switch off/on the external field 
+  type(FLpolynomT),pointer     :: fl
+  !
   !
   if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE'.and.all(trim(job%IOextF_action)/=(/'SAVE','SPLIT'/))) return
   !  
@@ -30594,6 +30601,12 @@ subroutine PTstore_contr_matelem(jrot)
   nmodes = PT%Nmodes
   coef_thresh = job%exp_coeff_thresh
   !
+  extF_rank = FLread_extF_rank()
+  !
+  allocate(extF_N(max(extF_rank,1)))
+  !
+  call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
+  !
   ! expansion indices
   !
   allocate(terms(size(FLIndexQ,dim=1),size(FLIndexQ,dim=2)), stat=info)
@@ -30615,11 +30628,17 @@ subroutine PTstore_contr_matelem(jrot)
   !
   ! estimate max number of expansion terms among all operators
   !
-  maxnterms = max( maxval(trove%g_rot(:,:)%Ncoeff), &
-                   maxval(trove%g_cor(:,:)%Ncoeff), &
-                   maxval(trove%g_vib(:,:)%Ncoeff), &
-                   trove%pseudo%Ncoeff, &
-                   trove%poten%Ncoeff)
+  maxnterms = size(FLIndexQ,dim=2) 
+                   !max( maxval(trove%g_rot(:,:)%Ncoeff), &
+                   !maxval(trove%g_cor(:,:)%Ncoeff), &
+                   !maxval(trove%g_vib(:,:)%Ncoeff), &
+                   !trove%pseudo%Ncoeff, &
+                   !trove%poten%Ncoeff)
+
+  !
+  target_index = 0 
+  target_index(1) = max(potorder,kinorder,extForder)
+  maxnterms = FLQindex(PT%Nmodes,target_index)
   !
   if (associated(trove%extf)) maxnterms = max(maxnterms,maxval(trove%extf(:)%Ncoeff))
   !
@@ -30684,6 +30703,9 @@ subroutine PTstore_contr_matelem(jrot)
   allocate(icomb_iterm(maxval(icomb_nterms(0:ncomb)),0:ncomb), stat=info)
   call ArrayStart('PTstore_contr_matelem:icomb_iterm',info,size(icomb_iterm),kind(icomb_iterm))
   !
+  allocate(iunique_iterm(maxnterms,2), stat=info)
+  call ArrayStart('PTstore_contr_matelem:icomb_iterm',info,size(iunique_iterm),kind(iunique_iterm))
+  !
   !------------------------------------------------------------------!
   ! compute and store matrix elements of the vibrational part of KEO !
   !------------------------------------------------------------------!
@@ -30692,12 +30714,19 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Tvib'
   !
-  nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !
+  target_index = 0 
+  target_index(1) = KinOrder
+  nterms= FLQindex(PT%Nmodes,target_index)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gvib:', nterms
 
-  call split_terms_comb(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses, iclass_imode(1:2,1:nclasses), &
-                        ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb), icomb_nterms(0:ncomb), icomb_iterm(:,0:ncomb))
+  call split_terms_comb(nmodes, nterms, terms(1:nmodes,1:nterms),&
+                        nclasses, iclass_imode(1:2,1:nclasses), &
+                        ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb),&
+                        icomb_nterms(0:ncomb),icomb_iterm(:,0:ncomb),&
+                        iunique_iterm(:,1:2) )
   !
   if (job%verbose>=4) then 
     write(out, '(/1x,a)') 'max number of expansion terms for each combination of classes:'
@@ -30784,13 +30813,15 @@ subroutine PTstore_contr_matelem(jrot)
     !
   enddo ! iclass
   !
+  !
   !------------------------------------------------------------------------!
   ! store expansion terms and coefficients for the vibrational part of KEO !
   !------------------------------------------------------------------------!
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Gvib'
   !
-  nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -30803,14 +30834,39 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(3x,a,3x,a,3x,a,3x,a,3x,es16.8)') 'imode', 'jmode', 'no. terms', 'no. terms with Gvib(imode,jmode) >=', coef_thresh
   !
+  iclass = PT%Nclasses
+  nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+  !
   do imode=1, nmodes
     do jmode=1, nmodes
+      !
+      fl => me%gvib(imode,jmode)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      if (info/=0) then
+        write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate me_contr(nterms_uniq,max(dimen,nprim),max(dimen,nprim))', &
+        'nterms_uniq, dimen, nprim =', nterms_uniq(iclass), dimen, nprim
+      endif
+      !
+      call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+      !
+      call store_contr_matelem_expansion(imode,jmode,iclass,func_tag,nmodes_class,nmodes_class,dimen,fl%IndexQ,me_contr)
       !
       do icomb=0, ncomb
         jterm = 0
         do iterm_=1, icomb_nterms(icomb)
           iterm = icomb_iterm(iterm_,icomb)
-          c = real(trove%g_vib(jmode,imode)%field(iterm,0),kind=rk)
+          fl => trove%g_vib(jmode,imode)
+          !
+          call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,iterm,kterm)
+          !
+          if (kterm==0) cycle
+          !
+          !kterm = trove%g_vib(jmode,imode)%ifromsparse(iterm)
+          !call match_terms(fl,icomb,iterm_,iterm_out)
+          c = real(trove%g_vib(jmode,imode)%field(kterm,0),kind=rk)
           if (icomb==0) then
             jterm = jterm + 1
             ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -30830,7 +30886,7 @@ subroutine PTstore_contr_matelem(jrot)
       call store_expansion_terms(func_tag, jmode, imode, nclasses, nmodes, nmodes, ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb), &
                                  icomb_maxnterms, ijmode_icomb_nterms(0:ncomb), ijmode_icomb_iterm(:,:,0:ncomb), ijmode_icomb_coefs(:,0:ncomb))
       !
-      if (verbose>=5) then 
+      if (verbose>=7) then 
         ! check if we are able to recover all expansion terms from the unique for each class terms
         do iterm=1, nterms
           c = real(trove%g_vib(jmode,imode)%field(iterm,0),kind=rk)
@@ -30860,6 +30916,9 @@ subroutine PTstore_contr_matelem(jrot)
         enddo
      endif
      !
+     deallocate(me_contr)
+     call ArrayStop('PTstore_contr_matelem:me_contr')
+     !
     enddo ! jmode
   enddo ! imode
   !
@@ -30873,7 +30932,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Tcor'
   !
-  nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
+  !nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gcor:', nterms
 
@@ -30952,7 +31011,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Gcor'
   !
-  nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
+  !nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -30972,7 +31031,7 @@ subroutine PTstore_contr_matelem(jrot)
         jterm = 0
         do iterm_=1, icomb_nterms(icomb)
           iterm = icomb_iterm(iterm_,icomb)
-          c = real(trove%g_cor(jmode,imode)%field(iterm,0),kind=rk)
+          !!!!!!c = real(trove%g_cor(jmode,imode)%field(iterm,0),kind=rk)
           if (icomb==0) then
             jterm = jterm + 1
             ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -31035,7 +31094,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Trot'
   !
-  nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+  !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Grot:', nterms
   !
@@ -31104,7 +31163,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Grot'
   !
-  nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+  !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -31124,7 +31183,7 @@ subroutine PTstore_contr_matelem(jrot)
         jterm = 0
         do iterm_=1, icomb_nterms(icomb)
           iterm = icomb_iterm(iterm_,icomb)
-          c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
+          !!!!!c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
           if (icomb==0) then
             jterm = jterm + 1
             ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -31187,7 +31246,9 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Vpot'
   !
-  nterms = trove%poten%Ncoeff
+  target_index = 0 
+  target_index(1) = PotOrder
+  nterms= FLQindex(PT%Nmodes,target_index)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'number of expansion terms:', nterms
   !
@@ -31247,7 +31308,13 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'store expansion coefficients for PES'
   !
-  nterms = trove%poten%Ncoeff
+  !nterms = trove%poten%Ncoeff
+  !
+  !
+  target_index = 0 
+  target_index(1) = PotOrder
+  nterms= FLQindex(PT%Nmodes,target_index)
+  !
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -31264,7 +31331,7 @@ subroutine PTstore_contr_matelem(jrot)
     jterm = 0
     do iterm_=1, icomb_nterms(icomb)
       iterm = icomb_iterm(iterm_,icomb)
-      c = real(trove%poten%field(iterm,0),kind=rk)
+      !!!!!!c = real(trove%poten%field(iterm,0),kind=rk)
       if (icomb==0) then
         jterm = jterm + 1
         ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -31384,7 +31451,12 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'store expansion coefficients for pseudopotential'
   !
-  nterms = trove%pseudo%Ncoeff
+  !nterms = trove%pseudo%Ncoeff
+  !
+  target_index = 0 
+  target_index(1) = KinOrder
+  nterms= FLQindex(PT%Nmodes,target_index)
+  !
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -31401,7 +31473,7 @@ subroutine PTstore_contr_matelem(jrot)
     jterm = 0
     do iterm_=1, icomb_nterms(icomb)
       iterm = icomb_iterm(iterm_,icomb)
-      c = real(trove%pseudo%field(iterm,0),kind=rk)
+      !!!!c = real(trove%pseudo%field(iterm,0),kind=rk)
       if (icomb==0) then
         jterm = jterm + 1
         ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -31464,6 +31536,10 @@ subroutine PTstore_contr_matelem(jrot)
      if (job%verbose>=4) write(out, '(/1x,a)') 'Compute and store matrix elements of extF'
      !
      func_tag = 'extF'
+     !
+     target_index = 0 
+     target_index(1) = ExtFOrder
+     nterms= FLQindex(PT%Nmodes,target_index)
      !
      nterms = maxval(trove%extf(:)%Ncoeff)
      !
@@ -31542,8 +31618,15 @@ subroutine PTstore_contr_matelem(jrot)
         do icomb=0, ncomb
          jterm = 0
          do iterm_=1, icomb_nterms(icomb)
-           iterm = icomb_iterm(iterm_,icomb)
-           c = real(trove%extF(ipar)%field(iterm,0),kind=rk)
+           !iterm = icomb_iterm(iterm_,icomb)
+           !
+           fl => trove%extF(ipar)
+           !call match_terms(fl,icomb_in,iterm_in,iterm_out)
+           !
+           kterm = trove%extF(ipar)%ifromsparse(iterm)
+           !
+           c = real(trove%extF(ipar)%field(kterm,0),kind=rk)
+           !
            if (icomb==0) then
              jterm = jterm + 1
              ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
@@ -31624,6 +31707,92 @@ subroutine PTstore_contr_matelem(jrot)
   if (job%verbose>=3) call MemoryReport
   if (job%verbose>=3) call TimerReport
   !
+  contains 
+
+
+  subroutine match_terms(fl,icomb_in,iterm_in,iterm_out)
+     !
+     type(FLpolynomT),pointer :: fl
+     integer(ik),intent(in)   :: icomb_in,iterm_in
+     integer(ik),intent(out) :: iterm_out
+     integer(ik) :: icomb_out,jterm_out,iterm,iclass
+     real(rk) :: c
+     logical :: match 
+  
+     ! check if we are able to recover all expansion terms from the unique for each class terms
+     !
+     nterms = fl%Ncoeff
+     !
+     iterm_out = 0
+     icomb_out=0
+     jterm_out = 0 
+     !
+     do iterm=1, nterms
+       !
+       c = real(fl%field(iterm,0),kind=rk)
+       !
+       if (abs(c)<coef_thresh) cycle
+       match = .false.
+       ! loop over combinations of classes
+       !do icomb=0, ncomb
+         ! loop over terms assigned to the current combination of classes
+         !do jterm=1, ijmode_icomb_nterms(icomb)
+           ! assemble term indices from unique for each class indices
+           term = 0
+           do iclass=1, nclasses
+             imode1 = iclass_imode(1,iclass)
+             imode2 = iclass_imode(2,iclass)
+             !kterm = ijmode_icomb_iterm(iclass,iterm_in,icomb_in)
+             term(imode1:imode2) = terms_uniq(imode1:imode2,iterm_in,iclass)
+           enddo
+           if (all(term(:)==terms(:,iterm))) match = .true.
+           if (match) then 
+              iterm_out = iterm
+              exit
+           endif
+         !enddo
+         !if (match) exit
+       !enddo
+       if (.not.match) then
+         write(out, '(/a,1x,<nmodes>(1x,i3),1x,2a)') 'PTstore_contr_matelem error(match_terms): failed while checking the expansion term = (', terms(:,iterm),fl%name, ')'
+         stop
+       endif
+     enddo
+     !
+  end subroutine match_terms
+
+
+
+     subroutine find_isparse_from_ifull(Nterms,ifromsparse,ifull,isparse)
+       implicit none
+       !
+       integer(ik),intent(in)  :: Nterms
+       integer(ik),intent(in)  :: ifromsparse(Nterms)
+       integer(ik),intent(in)  :: ifull
+       integer(ik),intent(out) :: isparse
+       !
+       integer(ik) :: i
+       !
+       i  = 1
+       isparse = 0
+       !
+       do while(i<=Nterms)
+         !
+         if (ifromsparse(i)==ifull) then
+           isparse = i
+           exit 
+         endif
+         i = i + 1
+       enddo
+       !
+       !if (isparse==0) then 
+       !  write(6,"('FLbset1DNew: Could not localte isparse-term in the sparse-field for index  ',i6)") ifull
+       !  stop 'FLbset1DNew: Could not localte a term in the sparse-field'
+       !endif
+       !
+     end subroutine find_isparse_from_ifull
+
+  !
 end subroutine PTstore_contr_matelem
 
 
@@ -31700,12 +31869,13 @@ end subroutine split_terms_uniq
 
 
 subroutine split_terms_comb(nmodes, nterms, terms, nclasses, iclass_imode, ncomb, icomb_nclasses, icomb_iclass, &
-                            icomb_nterms, icomb_iterm)
+                            icomb_nterms, icomb_iterm, iunique_from_iterm)
 
   integer(ik), intent(in) :: nmodes, nterms, terms(nmodes,nterms), nclasses, iclass_imode(2,nclasses), ncomb, &
                              icomb_nclasses(0:ncomb), icomb_iclass(nclasses,0:ncomb)
   integer(ik), intent(out) :: icomb_nterms(0:ncomb)
   integer(ik), intent(out), optional :: icomb_iterm(:,0:)
+  integer(ik), intent(out), optional :: iunique_from_iterm(:,:)
 
   integer(ik) :: icomb, nclasses0, iclass0(nclasses), iclass, iclass_n, imode1, imode2, iterm, n, n0
 
@@ -31740,6 +31910,10 @@ subroutine split_terms_comb(nmodes, nterms, terms, nclasses, iclass_imode, ncomb
         icomb_nterms(icomb) = icomb_nterms(icomb) + 1
         if (present(icomb_iterm)) then
           icomb_iterm(icomb_nterms(icomb),icomb) = iterm
+        endif
+        if (present(iunique_from_iterm)) then
+          iunique_from_iterm(iterm,1) = icomb_nterms(icomb)
+          iunique_from_iterm(iterm,2) = icomb
         endif
       endif
     enddo
@@ -31847,6 +32021,115 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   deallocate(prim_coefs, tmat, me_terms)
   !
 end subroutine calc_contr_matelem_expansion_p0
+
+
+
+subroutine calc_contr_matelem_expansion_p0_Nclass(func_tag,nterms,terms,FLcoeff,me_contr)
+  !
+  integer(ik), intent(in) :: iclass, nterms, terms(:,:)
+  real(rk) :: FLcoeff(:,0:,0:)
+  character(cl), intent(in) :: func_tag
+  real(rk), intent(out) :: me_contr(:,:,:)
+  !
+  integer(ik) :: imode, jmode, ispecies, info, iterm, ideg, nprim, iprim, jprim, nroots, ilevel, iroot, nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  iclass = PT%Nclasses
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_p0_Nclass error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms), stat=info)
+  if (info/=0) then
+    write(out, '(/a/a,10(1x,i6))') &
+    'calc_contr_matelem_expansion_p0 error: prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms) - out of memory', &
+    'nterms, nmodes, nprim, nroots =', nterms, nmodes, nprim, nroots
+    stop
+  endif
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  me_contr = 0
+  if (trim(func_tag)=='Vpot') then
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        do iterm=1, nterms
+           do jmode=imode1, imode2
+              ispecies = job%bset(jmode)%species
+              me_terms(jmode,iterm) = me%vib(ispecies,0)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+          enddo
+          !
+          me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
+                                        Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          !
+        enddo
+        !
+      enddo
+    enddo
+  elseif (trim(func_tag)=='Tvib'.or.trim(func_tag)=='Trot'.or.trim(func_tag)=='Tcor'.or.trim(func_tag)=='pseu') then
+    do iprim=1, nprim
+      nu_i(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,iprim)
+      do jprim=1, nprim
+        nu_j(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,jprim)
+        do imode=imode1, imode2
+          ispecies = job%bset(imode)%species
+          do iterm=1, nterms
+            me_terms(imode,iterm) = me%vib(ispecies,-1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
+          enddo
+        enddo
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+      enddo
+    enddo
+  elseif (trim(func_tag)=='extF') then
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        do jmode=imode1, imode2
+          ispecies = job%bset(jmode)%species
+          do iterm=1, nterms
+            me_terms(jmode,iterm) = me%vib(ispecies,3)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+          enddo
+        enddo
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+      enddo
+    enddo
+  else
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p0 error: unknown type of operator =', trim(func_tag)
+    stop
+  endif
+  !
+  ! contraction coefficients
+  !
+  do iroot=1, nroots
+    ilevel = contr(iclass)%ilevel(iroot)
+    ideg = contr(iclass)%ideg(iroot)
+    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+  enddo
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(prim_coefs, tmat, me_terms)
+  !
+end subroutine calc_contr_matelem_expansion_p0_Nclass
+
+
 
 
 
