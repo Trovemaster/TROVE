@@ -16548,8 +16548,8 @@ module perturbation
        endif
        do iclass=1, nclasses
          dimen = dimen_classes(iclass)
-         iclass_nmodes_ = 0
-         jclass_nmodes_ = iclass_nmodes(iclass)
+         iclass_nmodes_ = iclass_nmodes(iclass)
+         jclass_nmodes_ = 0
          if (iclass==nclasses) then 
            iclass_nmodes_ = nmodes
            jclass_nmodes_ = 3
@@ -16902,13 +16902,15 @@ module perturbation
       real(rk),intent(out)   :: grot(:,:)
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
-      integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,Maxcontracts,jsymcoeff,ipos
-      type(PTcoeffT),pointer        :: fl
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
       !
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
+      !
+      fl => me%grot(k1,k2)
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
@@ -16924,8 +16926,6 @@ module perturbation
           !
           matelem = 0
           !
-          fl => me%grot(k1,k2)
-          !
           do icoeff = 1,fl%Ncoeff
             !
             do iclass=1,Nclasses-1
@@ -16935,14 +16935,14 @@ module perturbation
               !
               iterm = fl%uniq(icoeff,iclass)
               !
-              me_class0(iclass) = grot_me(iclass)%me(iterm,nu_i,nu_j,0,0)
+              me_class0(iclass) = grot_me(iclass)%me(iterm,nu_i,nu_j,1,1)
               !
             enddo
             !
             nu_i = nu_classes(Nclasses,icontr)
             nu_j = nu_classes(Nclasses,jcontr)
             !
-            me_class0(iclass) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+            me_class0(Nclasses) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
             !
             matelem = matelem + product(me_class0(1:Nclasses))
             !
@@ -16960,112 +16960,30 @@ module perturbation
       !
     end subroutine calc_grot_contr_matrix 
     !
-
-
-    subroutine  calc_grot_contr_matrix_tmp(k1,k2,isymcoeff,grot)
-      !
-      integer(ik),intent(in) :: k1,k2,isymcoeff
-      !
-      !integer(ik),intent(in) :: nu_classes(PT%Nclasses,PT%Maxcontracts)
-      !integer(ik),intent(in) :: grot_icomb_nterms(0:ncomb,3,3)
-      !
-      real(rk),intent(out)   :: grot(:,:)
-      !
-      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
-      integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,Maxcontracts,jsymcoeff
-      !
-      Maxcontracts = PT%Maxcontracts
-      nmodes = PT%Nmodes
-      nclasses = PT%Nclasses
-      do ideg = 1,PT%Index_deg(isymcoeff)%size1
-        !
-        icontr = PT%icase2icontr(isymcoeff,ideg)
-        !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
-        !$omp& iterm_uniq,me_class0) shared(grot) schedule(dynamic)
-        do jcontr=1,icontr
-          !
-          jsymcoeff = PT%icontr2icase(jcontr,1)
-          energy_j = enermax_classes(jsymcoeff)
-          !
-          if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
-          !
-          matelem = 0
-          !
-          ! zero-order expansion term
-          icomb = 0
-          iterm = 1
-          if (grot_icomb_nterms(icomb,k1,k2)>0) then
-            if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
-              matelem = matelem + grot_icomb_coefs(iterm,icomb,k1,k2)
-            endif
-          endif
-          !
-          do icomb=1, ncomb
-            !
-            nterms = grot_icomb_nterms(icomb,k1,k2)
-            if (nterms<=0) cycle
-            !
-            ! orthogonality of contracted functions
-            n0 = icomb_nclasses0(icomb)
-            if (n0>0) then
-              if (any( (/(nu_classes(icomb_iclass0(iclass,icomb),icontr)/=nu_classes(icomb_iclass0(iclass,icomb),jcontr), iclass=1,n0)/) ) ) cycle
-            endif
-            !
-            n = icomb_nclasses(icomb)
-            do iterm=1, nterms
-              do iclass_n=1, n
-                kclass = icomb_iclass(iclass_n,icomb)
-                nu_i = nu_classes(kclass,icontr)
-                nu_j = nu_classes(kclass,jcontr)
-                iterm_uniq = grot_icomb_iterm(kclass,iterm,icomb,k1,k2)
-                me_class0(iclass_n) = grot_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
-              enddo
-              if (n>0) then
-                matelem = matelem + product(me_class0(1:n)) * grot_icomb_coefs(iterm,icomb,k1,k2)
-              endif
-            enddo
-            !
-          enddo ! icomb
-          !
-          if (job%vib_rot_contr) then 
-            grot(jcontr,ideg) = matelem
-          else
-            grot(icontr,jcontr) = matelem
-          endif
-          !
-        enddo
-      !$omp end parallel do
-      enddo
-      !
-    end subroutine calc_grot_contr_matrix_tmp
-
-
-
     !
     subroutine  calc_gcor_contr_matrix(k1,k2,isymcoeff,gcor)
       !
       integer(ik),intent(in) :: k1,k2,isymcoeff
       real(rk),intent(out) :: gcor(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),prod0,coef_thresh,matelem0,energy_j
-      integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,imode,imode_,Maxcontracts,jsymcoeff
-      type(PTcoeffT),pointer        :: fl
-      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
       coef_thresh = job%exp_coeff_thresh
       Maxcontracts = PT%Maxcontracts
       !
+      fl => me%gcor(k1,k2)
+      !
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,imode,imode_,icomb,iterm,kclass,nu_i,nu_j,&
-        !$omp& ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(gcor) schedule(dynamic)
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,&
+        !$omp& me_class0) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
@@ -17074,10 +16992,6 @@ module perturbation
            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
            !
            matelem = 0
-           !
-
-
-           fl => me%gcor(k1,k2)
            !
            do icoeff = 1,fl%Ncoeff
              !
@@ -17088,93 +17002,15 @@ module perturbation
                !
                iterm = fl%uniq(icoeff,iclass)
                !
-               me_class0(iclass) = grot_me(iclass)%me(iterm,nu_i,nu_j,0,0)
-               !
-               ilambda = k1
-               !
-               me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
+               me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,1,1)
                !
              enddo
              !
-             nu_i = nu_classes(Nclasses,icontr)
-             nu_j = nu_classes(Nclasses,jcontr)
-             !
-             me_class0(iclass) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+             me_class0(Nclasses) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
            enddo ! icoeff
-
-
-
-
-           !
-           do iclass=1, nclasses
-             do imode=1, iclass_nmodes(iclass)
-               imode_ = iclass_imode(imode,iclass)
-               !   
-               ! zero-order expansion term
-               icomb = 0
-               iterm = 1
-               if (gcor_icomb_nterms(icomb,imode_,k2)>0) then
-                 do kclass=1, nclasses
-                   nu_i = nu_classes(kclass,icontr)
-                   nu_j = nu_classes(kclass,jcontr)
-                   ilambda = iclass_ilambda(imode,kclass,iclass)
-                   iterm_uniq = gcor_icomb_iterm(kclass,iterm,icomb,imode_,k2)
-                   me_class0(kclass) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
-                  enddo
-                  matelem = matelem + product(me_class0(1:nclasses)) * gcor_icomb_coefs(iterm,icomb,imode_,k2)
-               endif
-               !
-               do icomb=1, ncomb
-                 !
-                 nterms = gcor_icomb_nterms(icomb,imode_,k2)
-                 if (nterms<=0) cycle
-     
-                 ! orthogonality of contracted functions
-                 if ( any( (/( iclass_ilambda(imode,icomb_iclass0(iclass_n,icomb),iclass)==0 .and. &
-                               nu_classes(icomb_iclass0(iclass_n,icomb),icontr)/=nu_classes(icomb_iclass0(iclass_n,icomb),jcontr), &
-                               iclass_n=1,icomb_nclasses0(icomb))/) ) ) cycle
-     
-                 n0 = icomb_nclasses0(icomb)
-                 do iclass_n=1, n0
-                   kclass = icomb_iclass0(iclass_n,icomb)
-                   nu_i = nu_classes(kclass,icontr)
-                   nu_j = nu_classes(kclass,jcontr)
-                   ilambda = iclass_ilambda(imode,kclass,iclass)
-                   iterm_uniq = gcor_icomb_iterm(kclass,1,0,imode_,k2)
-                   me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
-                 enddo
-                 if (n0>0) then
-                   prod0 = product(me_class0(1:n0))
-                   if (abs(prod0)<coef_thresh) cycle
-                 else
-                   prod0 = 1.0_rk
-                 endif
-                 !
-                 matelem0 = 0.0_rk
-                 n = icomb_nclasses(icomb)
-                 do iterm=1, nterms
-                   do iclass_n=1, n
-                     kclass = icomb_iclass(iclass_n,icomb)
-                     nu_i = nu_classes(kclass,icontr)
-                     nu_j = nu_classes(kclass,jcontr)
-                     ilambda = iclass_ilambda(imode,kclass,iclass)
-                     iterm_uniq = gcor_icomb_iterm(kclass,iterm,icomb,imode_,k2)
-                     me_class0(iclass_n) = gcor_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,ilambda)
-                   enddo
-                   if (n>0) then
-                     matelem0 = matelem0 + product(me_class0(1:n)) * gcor_icomb_coefs(iterm,icomb,imode_,k2)
-                   endif
-                 enddo
-                 !
-                 matelem = matelem + matelem0 * prod0
-                 !
-               enddo ! icomb
-               !
-             enddo
-           enddo
            !
            if (job%vib_rot_contr) then 
              gcor(jcontr,ideg) = matelem
@@ -17196,9 +17032,10 @@ module perturbation
       integer(ik),intent(in) :: isymcoeff
       real(rk),intent(out) :: hvib(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,matelem0,prod0,energy_j,energy_i
-      integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,jclass,imode,jmode,imode_,jmode_,Maxcontracts,jsymcoeff,jdeg
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg
+      type(PTcoeffT),pointer   :: fl,pl
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -17207,12 +17044,15 @@ module perturbation
       !
       Maxcontracts = PT%Maxcontracts
       !
+      fl => me%gvib(k1,k2)
+      pl => me%poten
+      !
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
-        !$omp&         ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,&
+        !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
@@ -17222,166 +17062,47 @@ module perturbation
            !        
            matelem = 0
            !
-           do iclass=1, nclasses
-             do imode=1, iclass_nmodes(iclass)
-               imode_ = iclass_imode(imode,iclass)
-               do jclass=1, nclasses
-                 do jmode=1, iclass_nmodes(jclass)
-                   jmode_ = iclass_imode(jmode,jclass)
-                   !
-                   ! zero-order expansion term
-                   icomb = 0
-                   iterm = 1
-                   if (gvib_icomb_nterms(icomb,imode_,jmode_)>0) then
-                     do kclass=1, nclasses
-                       nu_i = nu_classes(kclass,icontr)
-                       nu_j = nu_classes(kclass,jcontr)
-                       ilambda = iclass_ilambda(imode,kclass,iclass)
-                       imu = iclass_ilambda(jmode,kclass,jclass)
-                       iterm_uniq = gvib_icomb_iterm(kclass,iterm,icomb,imode_,jmode_)
-                       me_class0(kclass) = gvib_me(kclass)%me(iterm_uniq,nu_i,nu_j,ilambda,imu)
-                     enddo
-                     !
-                     !f_t = gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
-                     !f_t = product(me_class0(1:nclasses))
-                     !f_t = product(me_class0(1:nclasses)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
-                     !
-                     matelem = matelem + product(me_class0(1:nclasses)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
-                   endif
-                   !
-                   do icomb=1, ncomb
-                     !
-                     nterms = gvib_icomb_nterms(icomb,imode_,jmode_)
-                     if (nterms<=0) cycle
-                     !
-                     ! orthogonality of contracted functions
-                     if ( any( (/( iclass_ilambda(imode,icomb_iclass0(iclass_n,icomb),iclass)==0 .and. &
-                                   iclass_ilambda(jmode,icomb_iclass0(iclass_n,icomb),jclass)==0 .and. &
-                                   nu_classes(icomb_iclass0(iclass_n,icomb),icontr)/=nu_classes(icomb_iclass0(iclass_n,icomb),jcontr), &
-                                   iclass_n=1,icomb_nclasses0(icomb))/) ) ) cycle
-                     !
-                     n0 = icomb_nclasses0(icomb)
-                     do iclass_n=1, n0
-                       kclass = icomb_iclass0(iclass_n,icomb)
-                       nu_i = nu_classes(kclass,icontr)
-                       nu_j = nu_classes(kclass,jcontr)
-                       ilambda = iclass_ilambda(imode,kclass,iclass)
-                       imu = iclass_ilambda(jmode,kclass,jclass)
-                       iterm_uniq = gvib_icomb_iterm(kclass,1,0,imode_,jmode_)
-                       me_class0(iclass_n) = gvib_me(kclass)%me(iterm_uniq,nu_i,nu_j,ilambda,imu)
-                     enddo
-                     !
-                     !if (n0>0) then
-                       prod0 = 1.0_rk
-                       prod0 = product(me_class0(1:n0))
-                       if (abs(prod0)<coef_thresh) cycle
-                     !else
-                     !  prod0 = 1.0_rk
-                     !endif
-                     !
-                     matelem0 = 0
-                     n = icomb_nclasses(icomb)
-                     do iterm=1, nterms
-                       do iclass_n=1, n
-                         kclass = icomb_iclass(iclass_n,icomb)
-                         nu_i = nu_classes(kclass,icontr)
-                         nu_j = nu_classes(kclass,jcontr)
-                         ilambda = iclass_ilambda(imode,kclass,iclass)
-                         imu = iclass_ilambda(jmode,kclass,jclass)
-                         iterm_uniq = gvib_icomb_iterm(kclass,iterm,icomb,imode_,jmode_)
-                         me_class0(iclass_n) = gvib_me(kclass)%me(iterm_uniq,nu_i,nu_j,ilambda,imu)
-                       enddo
-                       if (n>0) then
-                         matelem0 = matelem0 + product(me_class0(1:n)) * gvib_icomb_coefs(iterm,icomb,imode_,jmode_)
-                       endif
-                     enddo
-                     !
-                     matelem = matelem + matelem0 * prod0
-                     !
-                   enddo ! icomb
-                   !
-                 enddo
-               enddo
+           do icoeff = 1,fl%Ncoeff
+             !
+             do iclass=1,Nclasses-1
+               !
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
+               !
+               iterm = fl%uniq(icoeff,iclass)
+               !
+               me_class0(iclass) = gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)
+               !
              enddo
-           enddo
+             !
+             me_class0(Nclasses) = gvib_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+             !
+             matelem = matelem + product(me_class0(1:Nclasses))
+             !
+           enddo ! icoeff
            !
            matelem = -0.5_rk*matelem
            !
            ! potential part
            !
-           ! zero-order expansion term
-           icomb = 0
-           iterm = 1
-           if (vpot_icomb_nterms(icomb,1,1)>0) then
-             if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
-               matelem = matelem + vpot_icomb_coefs(iterm,icomb,1,1)
-             endif
-           endif
-           !
-           do icomb=1, ncomb
+           do icoeff = 1,pl%Ncoeff
              !
-             nterms = vpot_icomb_nterms(icomb,1,1)
-             if (nterms<=0) cycle
-             !
-             ! orthogonality of contracted functions
-             n0 = icomb_nclasses0(icomb)
-             if (n0>0) then
-               if (any( (/(nu_classes(icomb_iclass0(iclass,icomb),icontr)/=nu_classes(icomb_iclass0(iclass,icomb),jcontr), iclass=1,n0)/) ) ) cycle
-             endif
-             !
-             n = icomb_nclasses(icomb)
-             do iterm=1, nterms
-               do iclass_n=1, n
-                 kclass = icomb_iclass(iclass_n,icomb)
-                 nu_i = nu_classes(kclass,icontr)
-                 nu_j = nu_classes(kclass,jcontr)
-                 iterm_uniq = vpot_icomb_iterm(kclass,iterm,icomb,1,1)
-                 me_class0(iclass_n) = vpot_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
-               enddo
-               if (n>0) then
-                 matelem = matelem + product(me_class0(1:n)) * vpot_icomb_coefs(iterm,icomb,1,1)
-               endif
+             do iclass=1,Nclasses-1
+               !
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
+               !
+               iterm = pl%uniq(icoeff,iclass)
+               !
+               me_class0(iclass) = vpot_me(iclass)%me(iterm,nu_i,nu_j,1,1)
+               !
              enddo
              !
-           enddo ! icomb
-           !
-           ! pseudopotential part
-           !
-           ! zero-order expansion term
-           icomb = 0
-           iterm = 1
-           if (pseudo_icomb_nterms(icomb,1,1)>0) then
-             if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
-               matelem = matelem + pseudo_icomb_coefs(iterm,icomb,1,1)
-             endif
-           endif
-           !
-           do icomb=1, ncomb
+             me_class0(Nclasses) = vpot_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
              !
-             nterms = pseudo_icomb_nterms(icomb,1,1)
-             if (nterms<=0) cycle
+             matelem = matelem + product(me_class0(1:Nclasses))
              !
-             ! orthogonality of contracted functions
-             n0 = icomb_nclasses0(icomb)
-             if (n0>0) then
-               if (any( (/(nu_classes(icomb_iclass0(iclass,icomb),icontr)/=nu_classes(icomb_iclass0(iclass,icomb),jcontr), iclass=1,n0)/) ) ) cycle
-             endif
-             !
-             n = icomb_nclasses(icomb)
-             do iterm=1, nterms
-               do iclass_n=1, n
-                 kclass = icomb_iclass(iclass_n,icomb)
-                 nu_i = nu_classes(kclass,icontr)
-                 nu_j = nu_classes(kclass,jcontr)
-                 iterm_uniq = pseudo_icomb_iterm(kclass,iterm,icomb,1,1)
-                 me_class0(iclass_n) = pseudo_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
-               enddo
-               if (n>0) then
-                 matelem = matelem + product(me_class0(1:n)) * pseudo_icomb_coefs(iterm,icomb,1,1)
-               endif
-             enddo
-             !
-           enddo ! icomb
+           enddo ! icoeff
            !
            if (job%vib_rot_contr) then 
              hvib(jcontr,ideg) = matelem
@@ -17404,66 +17125,51 @@ module perturbation
       !
       real(rk),intent(out)   :: extF(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
-      integer(ik) :: icomb,iterm,nclasses,icontr,jcontr,nterms,n0,iclass,iclass_n,nmodes,klass,nu_i,nu_j,n,kclass
-      integer(ik) :: iterm_uniq,Maxcontracts,jsymcoeff
+      real(rk)    :: matelem,me_class0(PT%Nclasses),energy_j
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
       !
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
       !
+      fl => me%ExtF(k1)
+      !
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icomb,iterm,nterms,n0,n,iclass_n,kclass,nu_i,nu_j,&
-        !$omp&         iterm_uniq,me_class0) shared(hvib) schedule(dynamic)
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
            energy_j = enermax_classes(jsymcoeff)
            !
            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
-           !        
-           matelem = 0
            !
            ! ExtF part
            !
-           ! zero-order expansion term
-           icomb = 0
-           iterm = 1
-           if (ExtF_icomb_nterms(icomb,k1,1)>0) then
-             if (all(nu_classes(1:nclasses,icontr)==nu_classes(1:nclasses,jcontr))) then
-               matelem = matelem + ExtF_icomb_coefs(iterm,icomb,k1,1)
-             endif
-           endif
+           matelem = 0
            !
-           do icomb=1, ncomb
+           do icoeff = 1,fl%Ncoeff
              !
-             nterms = ExtF_icomb_nterms(icomb,k1,1)
-             if (nterms<=0) cycle
-             !
-             ! orthogonality of contracted functions
-             n0 = icomb_nclasses0(icomb)
-             if (n0>0) then
-               if (any( (/(nu_classes(icomb_iclass0(iclass,icomb),icontr)/=nu_classes(icomb_iclass0(iclass,icomb),jcontr), iclass=1,n0)/) ) ) cycle
-             endif
-             !
-             n = icomb_nclasses(icomb)
-             do iterm=1, nterms
-               do iclass_n=1, n
-                 kclass = icomb_iclass(iclass_n,icomb)
-                 nu_i = nu_classes(kclass,icontr)
-                 nu_j = nu_classes(kclass,jcontr)
-                 iterm_uniq = ExtF_icomb_iterm(kclass,iterm,icomb,k1,1)
-                 me_class0(iclass_n) = ExtF_me(kclass)%me(iterm_uniq,nu_i,nu_j,0,0)
-               enddo
-               if (n>0) then
-                 matelem = matelem + product(me_class0(1:n)) * ExtF_icomb_coefs(iterm,icomb,k1,1)
-               endif
+             do iclass=1,Nclasses-1
+               !
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
+               !
+               iterm = fl%uniq(icoeff,iclass)
+               !
+               me_class0(iclass) = extF_me(iclass)%me(iterm,nu_i,nu_j,1,1)
+               !
              enddo
              !
-           enddo ! icomb
+             me_class0(Nclasses) = extF_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
+             !
+             matelem = matelem + product(me_class0(1:Nclasses))
+             !
+           enddo ! icoeff
            !
            if (job%vib_rot_contr) then 
              extF(jcontr,ideg) = matelem
@@ -17483,9 +17189,9 @@ module perturbation
 
 
 
-subroutine store_contr_matelem_expansion(k1,k2,iclass,func_tag,nmodes_class1,nmodes_class2,ncontr,nterms_class,me_contr)
+subroutine store_contr_matelem_expansion(k1_,k2_,k1,k2,iclass,func_tag,nmodes_class1,nmodes_class2,ncontr,nterms_class,me_contr)
 
-  integer(ik), intent(in) :: k1, k2, iclass, nmodes_class1, nmodes_class2, ncontr, nterms_class
+  integer(ik), intent(in) :: k1_,k2_,k1,k2,iclass,nmodes_class1,nmodes_class2,ncontr,nterms_class
   character(cl), intent(in) :: func_tag
   real(rk), intent(in) :: me_contr(:,:,:)
 
@@ -17499,16 +17205,16 @@ subroutine store_contr_matelem_expansion(k1,k2,iclass,func_tag,nmodes_class1,nmo
 
   createfile = .false.
   closefile = .false.
-  if (k1==0.and.k2==0) createfile = .true.
-  if (k1==nmodes_class1.and.k2==nmodes_class2) closefile = .true.
+  if (k1_==0.and.k2_==0) createfile = .true.
+  if (k1_==nmodes_class1.and.k2_==nmodes_class2) closefile = .true.
 
-  if (k1<0.or.k1>nmodes_class1) then
-    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion error: k1 =', k1, 'is out of ranges = [', 0, ':', nmodes_class1, ']'
+  if (k1_<0.or.k1_>nmodes_class1) then
+    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion error: k1 =', k1_, 'is out of ranges = [', 0, ':', nmodes_class1, ']'
     stop
   endif
 
-  if (k2<0.or.k2>nmodes_class2) then
-    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion error: k1 =', k1, 'is out of ranges = [', 0, ':', nmodes_class2, ']'
+  if (k2_<0.or.k2_>nmodes_class2) then
+    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion error: k2 =', k2_, 'is out of ranges = [', 0, ':', nmodes_class2, ']'
     stop
   endif
 
@@ -17613,13 +17319,21 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   character(4), intent(in) :: func_tag
   integer(ik), intent(out) :: nterms_class
   real(rk), allocatable, intent(out) :: me_contr(:,:,:,:,:)
+  real(rk), allocatable              :: me_(:,:,:)
 
-  integer(ik) :: IOunit, info, iclass_, ncontr_, nmodes_class1_, nmodes_class2_, k1, k2, k1_, k2_, nterms_class_
-  character(cl) :: IOname, filename, buf, func_tag_, sclass
+  integer(ik) :: IOunit,info,iclass_,ncontr_,nmodes_class1_,nmodes_class2_,k1,k2,k1_,k2_,n1,n2,nterms_class_,nmodes
+  integer(ik) :: iclass_imode(2,PT%Nclasses),kclass,ialpha
+  character(cl) :: IOname, filename, buf, func_tag_,sclass
 
   write(sclass,'(i4)') iclass
   filename = 'contrME_'//trim(adjustl(sclass))//'_'//trim(func_tag)//'.chk'
-
+  !
+  nmodes = PT%Nmodes
+  !
+  do kclass=1, PT%nclasses
+    iclass_imode(1:2,kclass) = (/PT%mode_class(kclass,1),PT%mode_class(kclass,PT%mode_iclass(kclass))/)
+  enddo
+  !
   IOname = filename
   call IOStart(trim(IOname), IOunit)
   open(IOunit,form='unformatted',action='read',position='rewind',status='old',file=filename,iostat=info)
@@ -17652,8 +17366,11 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   if (iclass==PT%Nclasses) then 
     allocate(me_contr(nterms_class,ncontr,ncontr,1:nmodes_class1,1:nmodes_class2), stat=info)
   else  
-    allocate(me_contr(nterms_class,ncontr,ncontr,0:nmodes_class1,0:nmodes_class2), stat=info)
+    allocate(me_contr(nterms_class,ncontr,ncontr,1:nmodes,1:nmodes), stat=info)
   endif
+  !
+  allocate(me_(nterms_class,ncontr,ncontr), stat=info)
+  call ArrayStart('read_contr_matelem_expansion_me',info,size(me_),kind(me_))
   !
   me_contr = 0
   !
@@ -17673,12 +17390,12 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
       if (k2==0.and.iclass==PT%Nclasses) cycle
       !
       read(IOunit) k1_, k2_, nterms_class_
-      if (k1_<0.or.(k1_>nmodes_class1.and.iclass/=PT%Nclasses)) then
+      if (k1_<0.or.k1_>nmodes) then ! (k1_>nmodes_class1.and.iclass/=PT%Nclasses)) then
         write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a,1x,i3)') &
         'read_contr_matelem_expansion error: index of element k1 =', k1_, 'is out of ranges = [', 0, ':', nmodes_class1, '] for class =', iclass
         stop 'read_contr_matelem_expansion error'
       endif
-      if (k2_<0.or.(k2_>nmodes_class2.and.iclass/=PT%Nclasses)) then
+      if (k2_<0.or.k2_>nmodes) then !nmodes_class2.and.iclass/=PT%Nclasses)) then
         write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a,1x,i3)') &
         'read_contr_matelem_expansion error: index of element k2 =', k2_, 'is out of ranges = [', 0, ':', nmodes_class2, '] for class =', iclass
         stop 'read_contr_matelem_expansion error'
@@ -17687,7 +17404,83 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
         write(out,"(/'read_contr_matelem_expansion error: the record is loo large:',2i8,'Class = ',i4,a)") nterms_class_,nterms_class,iclass,func_tag
         stop 'read_contr_matelem_expansion error: me_contr record is loo large'
       endif
-      read(IOunit,iostat=info) me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,k2_)
+      !
+      read(IOunit,iostat=info) me_(1:nterms_class_,1:ncontr,1:ncontr)
+      !
+      select case (func_tag)
+      !
+      case ('Tvib')
+         !
+         if (k1_==0.and.k2_==0) then
+           !
+           !read(IOunit,iostat=info) me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,k2_)
+           !
+           do n1=1,Nmodes
+             if (iclass_imode(1,iclass)<=n1.and.n1<=iclass_imode(2,iclass)) cycle
+             do n2=1,Nmodes
+                if (iclass_imode(1,iclass)<=n2.and.n2<=iclass_imode(2,iclass)) cycle
+                me_contr(1:nterms_class_,1:ncontr,1:ncontr,n1,n2) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+             enddo
+           enddo
+           !
+         elseif (k1_==0) then
+           !
+           do n1=1,Nmodes
+             if (iclass_imode(1,iclass)<=n1.and.n1<=iclass_imode(2,iclass)) cycle
+             me_contr(1:nterms_class_,1:ncontr,1:ncontr,n1,k2_) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+           enddo
+           !
+         elseif (k2_==0) then
+           !
+           do n2=1,Nmodes
+             if (iclass_imode(1,iclass)<=n2.and.n2<=iclass_imode(2,iclass)) cycle
+             me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,n2) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+           enddo
+           !
+         else
+           !
+           me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,k2_) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+           !
+         endif
+         !
+      case ('Tcor')
+         !
+         if (k1_==0) then
+           !
+           do n1=1,Nmodes
+             if (iclass_imode(1,iclass)<=n1.and.n1<=iclass_imode(2,iclass)) cycle
+             !do ialpha = 1,3
+             me_contr(1:nterms_class_,1:ncontr,1:ncontr,n1,1) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+             !enddo
+           enddo
+           !
+         else
+           !
+           me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,1) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+           !
+         endif
+         !
+      case ('Trot')
+         !
+         me_contr(1:nterms_class_,1:ncontr,1:ncontr,1,1) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+         !
+      case ('Vpot')
+         !
+         me_contr(1:nterms_class_,1:ncontr,1:ncontr,1,1) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+         !
+      case ('extF')
+         !
+         me_contr(1:nterms_class_,1:ncontr,1:ncontr,1,1) = me_(1:nterms_class_,1:ncontr,1:ncontr)
+         !
+      case default 
+         !
+         write (out,"('read_contr_matelem_expansion: illegal func_tag = ',a)") func_tag
+         stop 'read_contr_matelem_expansion: illegal func_tag'
+         !
+      end select 
+      !
+      !read(IOunit,iostat=info) me_contr(1:nterms_class_,1:ncontr,1:ncontr,k1_,k2_)
+      !
       if (info/=0) then
         write(out, '(/a,a,a,1x,i3,1x,i3)') 'read_contr_matelem_expansion error while reading file "', trim(filename), '", element k1, k2 =', k1, k2
         stop 'read_contr_matelem_expansion error'
@@ -17706,6 +17499,9 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   !
   close(IOunit)
   call IOStop(trim(IOname))
+  !
+  deallocate(me_)
+  call ArrayStop('read_contr_matelem_expansion_me')
 
 end subroutine read_contr_matelem_expansion
 
@@ -31112,7 +30908,7 @@ subroutine PTstore_contr_matelem(jrot)
     ! <G>
     !
     call calc_contr_matelem_expansion_p0(iclass,func_tag, nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
-    call store_contr_matelem_expansion(0,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+    call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
     !
     if (job%verbose>=5) write(out, '(17x,i3,3x,i3)') 0, 0
     !
@@ -31122,12 +30918,12 @@ subroutine PTstore_contr_matelem(jrot)
     do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
       imode_ = imode_ + 1
       call calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-      call store_contr_matelem_expansion(0, imode_, iclass, func_tag, nmodes_class, nmodes_class, dimen, nterms_uniq(iclass), me_contr)
+      call store_contr_matelem_expansion(0,imode_,0,imode,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
       if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, imode
       do iterm=1, nterms_uniq(iclass)
         me_contr(iterm,:,:) = -transpose(me_contr(iterm,:,:))
       enddo
-      call store_contr_matelem_expansion(imode_, 0, iclass, func_tag, nmodes_class, nmodes_class, dimen, nterms_uniq(iclass), me_contr)
+      call store_contr_matelem_expansion(imode_,0,imode,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
       if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, 0
     enddo
     !
@@ -31140,7 +30936,7 @@ subroutine PTstore_contr_matelem(jrot)
       do jmode=iclass_imode(1,iclass), iclass_imode(2,iclass)
         jmode_ = jmode_ + 1
         call calc_contr_matelem_expansion_p2(imode,jmode,iclass,func_tag,nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
-        call store_contr_matelem_expansion(imode_,jmode_,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+        call store_contr_matelem_expansion(imode_,jmode_,imode,jmode,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
         if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, jmode
       enddo
     enddo
@@ -31299,7 +31095,7 @@ subroutine PTstore_contr_matelem(jrot)
     ! <G>
     !
     call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-    call store_contr_matelem_expansion(0, 0, iclass, func_tag, 0, nmodes_class, dimen, nterms_uniq(iclass), me_contr)
+    call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,nmodes_class,0,dimen,nterms_uniq(iclass),me_contr)
     !
     !if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, 0
     !
@@ -31308,8 +31104,8 @@ subroutine PTstore_contr_matelem(jrot)
     imode_ = 0
     do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
       imode_ = imode_ + 1
-      call calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-      call store_contr_matelem_expansion(0, imode_, iclass, func_tag, 0, nmodes_class, dimen, nterms_uniq(iclass), me_contr)
+      call calc_contr_matelem_expansion_p1(imode,iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
+      call store_contr_matelem_expansion(imode_,0,imode,0,iclass,func_tag,nmodes_class,0,dimen,nterms_uniq(iclass),me_contr)
       !if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, imode
     enddo
     !
@@ -31460,7 +31256,7 @@ subroutine PTstore_contr_matelem(jrot)
     ! <G>
     !
     call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-    call store_contr_matelem_expansion(0, 0, iclass, func_tag, 0, 0, dimen, nterms_uniq(iclass), me_contr)
+    call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,0,0,dimen,nterms_uniq(iclass),me_contr)
     if (job%verbose>=5) write(out, '(17x,i3,3x,i3)') 0, 0
     !
     deallocate(me_contr)
@@ -31606,7 +31402,7 @@ subroutine PTstore_contr_matelem(jrot)
     endif
     !
     call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-    call store_contr_matelem_expansion(0, 0, iclass, func_tag, 0, 0, dimen, nterms_uniq(iclass), me_contr)
+    call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,0,0,dimen,nterms_uniq(iclass),me_contr)
     !
     deallocate(me_contr)
     !
@@ -31732,7 +31528,7 @@ subroutine PTstore_contr_matelem(jrot)
        call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
        !
        call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-       call store_contr_matelem_expansion(0, 0, iclass, func_tag, 0, 0, dimen, nterms_uniq(iclass), me_contr)
+       call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,0,0,dimen,nterms_uniq(iclass),me_contr)
        !
        deallocate(me_contr)
        call ArrayStop('PTstore_contr_matelem:me_contr')

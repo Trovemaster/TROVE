@@ -1006,7 +1006,7 @@ module fields
              !
              job%vib_contract = .true.
              !
-           case ("FAST_CI","FAST")
+           case ("FAST_CI","FAST","FAST-CI")
              !
              job%contrci_me_fast = .true.
              trove%IO_contrCI = "SAVE"
@@ -2209,6 +2209,11 @@ module fields
                if (trim(w)=='STITCH') job%iswap(:)=0
                !
              endif
+             !
+             if (job%contrci_me_fast.and..not.job%IOmatelem_divide) then
+               write(out,"('Read-input: for fast-ci use MATELEM XXXX split (XXXX=read,save,none)')")
+               call report ("For fast-ci MATELEM must be split",.true.)
+             endif 
              !
              if (item<Nitems) then 
                call readu(w)
@@ -7182,7 +7187,7 @@ end subroutine check_read_save_none
     fl => trove%poten
     call check_field_smoothness(fl,'CHECK',npoints,'poten')
     !
-    call FLCompact_a_field_sparse(trove%poten,"poten")
+    if (trove%sparse) call FLCompact_a_field_sparse(trove%poten,"poten")
     !
     if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
        !
@@ -7628,7 +7633,7 @@ end subroutine check_read_save_none
        do imu = 1, extF%rank
           !
           fl => trove%extF(imu)
-          call FLCompact_a_field_sparse(fl,"extF")
+          if (trove%sparse) call FLCompact_a_field_sparse(fl,"extF")
           !
        enddo
        !
