@@ -60,6 +60,7 @@ module fields
       !
       !integer(ik)          :: SNterms      ! Number of expansion coeffs in the sparse representation
       integer(ik),pointer  :: ifromsparse(:) ! a accounting-index from isparse to icoeff 
+      integer(ik),pointer  :: itosparse(:) ! a accounting-index from isparse to icoeff 
       integer(ik),pointer  :: IndexQ(:,:)    ! This is to store FLIndexQ for each object individually 
       !
    end type FLpolynomT
@@ -14184,9 +14185,11 @@ end subroutine check_read_save_none
      !
      ! Create a field in a sparse representaion
      !
-     allocate(Sfield(Nterms,0:Npoints),fl%ifromsparse(Nterms),fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     allocate(Sfield(Nterms,0:Npoints),fl%ifromsparse(Nterms),fl%itosparse(Ncoeff),&
+              fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield),kind(Sfield))
      call ArrayStart(name,alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
+     call ArrayStart(name,alloc,size(fl%itosparse),kind(fl%itosparse))
      call ArrayStart(name,alloc,size(fl%IndexQ),kind(fl%IndexQ))
      !
      iterm = 0
@@ -14199,6 +14202,7 @@ end subroutine check_read_save_none
           !
           Sfield(iterm,:) = fl%field(icoeff,:)
           fl%ifromsparse(iterm) = icoeff
+          fl%itosparse(icoeff) = iterm
           fl%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
           !
        endif
@@ -17258,6 +17262,7 @@ end subroutine check_read_save_none
      character(len=cl),intent(in) :: job_str
      integer(ik),intent(in)       :: k1,k2 
      integer(ik),intent(out)         :: IndexQ(:,:)
+     type(FLpolynomT),pointer        :: fl
       !
       !if (size(field,dim=1)/=size(bset%rot%matelements,dim=2)) 
       !
@@ -17265,27 +17270,27 @@ end subroutine check_read_save_none
           !
         case('poten')
           !
-          IndexQ(:,:) = trove%poten%IndexQ(:,:)
+          fl => trove%poten
           !
         case('gvib')
           !
-          IndexQ(:,:) = trove%g_vib(k1,k2)%IndexQ(:,:)
+          fl =>  trove%g_vib(k1,k2)
           !
         case('grot')
           !
-          IndexQ(:,:) = trove%g_rot(k1,k2)%IndexQ(:,:)
+          fl => trove%g_rot(k1,k2)
           !
         case('gcor')
           !
-          IndexQ(:,:) = trove%g_cor(k1,k2)%IndexQ(:,:)
+          fl => trove%g_cor(k1,k2)
           !
         case('externalF')
           !
-          IndexQ(:,:) = trove%extF(k1)%IndexQ(:,:)
+          fl => trove%extF(k1)
           !
         case('L2_vib')
           !
-          IndexQ(:,:) = trove%L2_vib(k1,k2)%IndexQ(:,:)
+          fl => trove%L2_vib(k1,k2)
           !
         case default
           !
@@ -17293,6 +17298,8 @@ end subroutine check_read_save_none
           stop 'FLread_IndexQ_field - bad job_str'
           !
       end select 
+      !
+      IndexQ(:,:) = fl%IndexQ(:,:)
       !
    end subroutine FLread_IndexQ_field   
    !
