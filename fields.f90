@@ -14397,7 +14397,7 @@ end subroutine check_read_save_none
      fl%Ncoeff = Nterms
      !
      deallocate(Sfield)
-     deallocate(ifromsparse)
+     if (allocated(ifromsparse)) deallocate(ifromsparse)
      !
      call ArrayStop("Sfield")
      !
@@ -14612,7 +14612,8 @@ end subroutine check_read_save_none
      fl2%field = Sfield2
      fl2%Ncoeff = Nterms
      !
-     deallocate(Sfield1,Sfield2,ifromsparse)
+     deallocate(Sfield1,Sfield2)
+     if (allocated(ifromsparse)) deallocate(ifromsparse)
      !
      call ArrayStop("Sfield")
      !
