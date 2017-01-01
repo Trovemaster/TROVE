@@ -1139,6 +1139,10 @@ module fields
          !
          call readi(job%pot_pt_shift)
          !
+       case ("NO-SPARSE")
+         !
+         trove%sparse = .false.
+         !
        case ("SPARSE")
          !
          trove%sparse = .true.
@@ -13232,6 +13236,15 @@ end subroutine check_read_save_none
           write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
           !
         endif
+        ! 
+        ! record indicating and/or specifying the sparse threshold used for expansion 
+        ! coefficients 
+        !
+        if (trove%sparse) then 
+          write(chkptIO_kin,"(e15.8,5x,' <- sparse threshold used')") job%exp_coeff_thresh
+        else
+          write(chkptIO_kin,"(e15.8,5x,' <- no sparse threshold was used')") 0.0d0
+        endif
         !
         write(chkptIO_kin,"(a)") 'End of kinetic'
         !
@@ -13276,6 +13289,12 @@ end subroutine check_read_save_none
         enddo
         !
         write(chkptIO_pot,"(i11,1x,i5,e18.11)") 987654321,0,0.0_ark
+        !
+        if (trove%sparse) then 
+          write(chkptIO_pot,"(e15.8,5x,' <- sparse threshold used')") job%exp_coeff_thresh
+        else
+          write(chkptIO_pot,"(e15.8,5x,' <- no sparse threshold was used')") 0.0d0
+        endif
         !
         write(chkptIO_pot,"(a)") 'End of potential'
         !
@@ -13326,6 +13345,12 @@ end subroutine check_read_save_none
         enddo
         !
         write(chkptIO_ext,"(i11,1x,i5,1x,i8,1x,e18.11)") 987654321,0,0,0.0_ark
+        !
+        if (trove%sparse) then 
+          write(chkptIO_ext,"(e15.8,5x,' <- sparse threshold used')") job%exp_coeff_thresh
+        else
+          write(chkptIO_ext,"(e15.8,5x,' <- no sparse was threshold used')") 0.0d0
+        endif
         !
         write(chkptIO_ext,"(a)") 'End of external'
         !
@@ -13636,6 +13661,7 @@ end subroutine check_read_save_none
         integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n
         real(rk)             :: factor
         real(ark)            :: field_
+        real(rk)             :: exp_coeff_thresh
 
         !
         integer(ik) :: i, iterm, k(trove%Nmodes)
@@ -13851,11 +13877,28 @@ end subroutine check_read_save_none
           !
         endif
         !
+        read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+          !
+          if (.not.trove%sparse) then
+            write(out,"('kinetic.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+            stop 'kinetic.chk-CheckpointRestore_kinetic_ascii error SPARSE should be swirched on'
+          endif
+          !
+          if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
+            write(out,"('kinetic.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+                        job%exp_coeff_thresh>exp_coeff_thresh
+            stop 'kinetic.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+          endif
+          !
+        endif
+        !
         read(chkptIO,"(a14)") buf
         !
         if (buf/='End of kinetic') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
-          stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
+          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
         end if
         !
         call MemoryReport
@@ -14109,6 +14152,7 @@ end subroutine check_read_save_none
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i
         real(ark) :: field_
+        real(rk)             :: exp_coeff_thresh
         !
 
         unitfname ='Check point of the potential'
@@ -14153,6 +14197,23 @@ end subroutine check_read_save_none
            !
         enddo do_pot
         !
+        read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+          !
+          if (.not.trove%sparse) then
+            write(out,"('potential.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+            stop 'potential.chk error SPARSE should be swirched on'
+          endif
+          !
+          if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
+            write(out,"('potential.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+                        job%exp_coeff_thresh>exp_coeff_thresh
+            stop 'potential.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+          endif
+          !
+        endif
+        !
         read(chkptIO,"(a16)") buf
         !
         if (buf/='End of potential') then
@@ -14174,6 +14235,7 @@ end subroutine check_read_save_none
         integer(ik)        :: chkptIO,alloc,imu,nterms
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Nmodes,Npoints,Ncoeff
+        real(rk)             :: exp_coeff_thresh
         !
         unitfname ='Check point of the Hamiltonian'
         call IOStart(trim(unitfname),chkptIO)
@@ -14207,6 +14269,22 @@ end subroutine check_read_save_none
            !
         enddo
         !
+        read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+          !
+          if (.not.trove%sparse) then
+            write(out,"('external.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+            stop 'external.chk error SPARSE should be swirched on'
+          endif
+          !
+          if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
+            write(out,"('external.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+                        job%exp_coeff_thresh>exp_coeff_thresh
+            stop 'external.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+          endif
+          !
+        endif                !
         read(chkptIO) buf
         !
         if (buf/='End External object') then
@@ -14412,15 +14490,15 @@ end subroutine check_read_save_none
 
      type(FLpolynomT),pointer  :: fl1,fl2
      character(len=*),intent(in) :: name1,name2
-     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc
+     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2
      real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
-     integer(ik),allocatable :: ifromsparse(:)
+     integer(ik),allocatable :: ifromsparse1(:),ifromsparse2(:)
      logical :: check = .true.
      !
      Ncoeff1 = fl1%Ncoeff
-     Npoints = fl1%Npoints
-     !
      Ncoeff2 = fl2%Ncoeff
+     !
+     Npoints = fl1%Npoints
      !
      if (Npoints/=fl2%Npoints) then
        write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") fl1%Npoints,fl2%Npoints
@@ -14466,42 +14544,26 @@ end subroutine check_read_save_none
        !
      else
        !
-       allocate(ifromsparse(max(Ncoeff1,Ncoeff2)),stat=alloc)
-       call ArrayStart("Sfield",alloc,size(ifromsparse),kind(ifromsparse))
+       allocate(ifromsparse1(Ncoeff1),ifromsparse2(Ncoeff2),stat=alloc)
+       call ArrayStart("Sfield",alloc,size(ifromsparse1),kind(ifromsparse1))
+       call ArrayStart("Sfield",alloc,size(ifromsparse2),kind(ifromsparse2))
        !
-       iterm = 0
-       !
-       do icoeff = 1,min(Ncoeff1,Ncoeff2)
-         if (fl1%ifromsparse(icoeff)/=0) then
-            iterm = iterm + 1
-            ifromsparse(iterm) = fl1%ifromsparse(icoeff)
-         elseif(fl2%ifromsparse(icoeff)/=0) then
-            iterm = iterm + 1
-            ifromsparse(iterm) = fl2%ifromsparse(icoeff)
-         endif
+       ifromsparse1 = 0
+       do iterm = 1,Ncoeff1
+         icoeff = fl1%ifromsparse(iterm)
+         if (icoeff/=0) ifromsparse1(icoeff) = 1
        enddo
        !
-       if (Ncoeff2>Ncoeff1) then 
-         !
-         do icoeff = Ncoeff1+1,Ncoeff2
-           if (fl2%ifromsparse(icoeff)/=0) then
-              iterm = iterm + 1
-              ifromsparse(iterm) = fl2%ifromsparse(icoeff)
-           endif
-         enddo
-         !
-       elseif (Ncoeff1>Ncoeff2) then
-         !
-         do icoeff = Ncoeff2+1,Ncoeff1
-           if (fl1%ifromsparse(icoeff)/=0) then
-              iterm = iterm + 1
-              ifromsparse(iterm) = fl1%ifromsparse(icoeff)
-           endif
-         enddo
-         !
-       endif
+       ifromsparse2 = 0
+       do iterm = 1,Ncoeff2
+         icoeff = fl2%ifromsparse(iterm)
+         if (icoeff/=0) ifromsparse2(icoeff) = 1
+       enddo
        !
-       Nterms = iterm
+       Nterm1 = sum(ifromsparse1)
+       Nterm2 = sum(ifromsparse2)
+       !
+       Nterms = max(Nterm1,Nterm2)
        !
        deallocate(fl1%ifromsparse,fl2%ifromsparse)
        call ArrayStop(name1//"ifromsparse")
@@ -14579,19 +14641,57 @@ end subroutine check_read_save_none
         !
      else
         !
-        fl1%ifromsparse(1:Nterms) = ifromsparse(1:Nterms)
-        fl2%ifromsparse(1:Nterms) = ifromsparse(1:Nterms)
+        iterm = 0
         !
-        do iterm = 1,Nterms
-           !
-           icoeff = ifromsparse(iterm)
-           Sfield1(iterm,:) = fl1%field(icoeff,:)
-           fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-           !
-           Sfield2(iterm,:) = fl2%field(icoeff,:)
-           fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-           !
+        do icoeff = 1,min(Ncoeff1,Ncoeff2)
+          if (ifromsparse1(icoeff)/=0.or.ifromsparse2(icoeff)/=0) then
+             !
+             iterm = iterm + 1
+             Sfield1(iterm,:) = fl1%field(icoeff,:)
+             Sfield2(iterm,:) = fl2%field(icoeff,:)
+             !
+             fl1%ifromsparse(iterm) = icoeff
+             fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+             !
+             fl2%ifromsparse(iterm) = icoeff
+             fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+             !
+          endif
         enddo
+        !
+        if (Ncoeff2>Ncoeff1) then 
+          !
+          do icoeff = Ncoeff1+1,Ncoeff2
+            if (ifromsparse2(icoeff)/=0) then
+               iterm = iterm + 1
+               Sfield1(iterm,:) = 0
+               Sfield2(iterm,:) = fl2%field(icoeff,:)
+               !
+               fl1%ifromsparse(iterm) = icoeff
+               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+               !
+               fl2%ifromsparse(iterm) = icoeff
+               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+            endif
+          enddo
+          !
+        elseif (Ncoeff1>Ncoeff2) then
+          !
+          do icoeff = Ncoeff2+1,Ncoeff1
+            if (ifromsparse1(icoeff)/=0) then
+               iterm = iterm + 1
+               Sfield1(iterm,:) = fl1%field(icoeff,:)
+               Sfield2(iterm,:) = 0
+               !
+               fl1%ifromsparse(iterm) = icoeff
+               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+               !
+               fl2%ifromsparse(iterm) = icoeff
+               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+            endif
+          enddo
+          !
+        endif
         !
      endif
      !
@@ -14613,11 +14713,10 @@ end subroutine check_read_save_none
      fl2%Ncoeff = Nterms
      !
      deallocate(Sfield1,Sfield2)
-     if (allocated(ifromsparse)) deallocate(ifromsparse)
+     if (allocated(ifromsparse1)) deallocate(ifromsparse1)
+     if (allocated(ifromsparse2)) deallocate(ifromsparse2)
      !
      call ArrayStop("Sfield")
-     !
-     !call move_alloc(Sfield,fl%field) 
      !
    end subroutine FLCompact_and_combine_fields_sparse
    !
@@ -15408,7 +15507,15 @@ end subroutine check_read_save_none
      case('NUMEROV','BOX') 
         ! 
         ! numerov bset
-        if (trove%manifold_rank(bs%mode(1))/=0) then 
+        if (trove%manifold_rank(bs%mode(1))/=0) then
+           !
+           if (trove%sparse) then 
+             !
+             write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
+             stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
+             !
+           endif
+           !
            !
            ! Allocation of the potential and kinetic 1d matrixes
            !
