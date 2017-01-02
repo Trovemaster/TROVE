@@ -62,6 +62,7 @@ module fields
       integer(ik),pointer  :: ifromsparse(:) ! a accounting-index from isparse to icoeff 
       !integer(ik),pointer  :: itosparse(:) ! a accounting-index from isparse to icoeff 
       integer(ik),pointer  :: IndexQ(:,:)    ! This is to store FLIndexQ for each object individually 
+      logical :: sparse = .false.            ! indicates if the field in the sparse representation 
       !
    end type FLpolynomT
 
@@ -8738,8 +8739,8 @@ end subroutine check_read_save_none
 !
   subroutine s_vib_s_rot_Sorensen(s_vib,s_rot)
 
-    type(FLpolynomT),intent(out) :: s_vib(trove%Nmodes,trove%Natoms,3)
-    type(FLpolynomT),intent(out) :: s_rot(3,trove%Natoms,3)
+    type(FLpolynomT),intent(inout) :: s_vib(trove%Nmodes,trove%Natoms,3)
+    type(FLpolynomT),intent(inout) :: s_rot(3,trove%Natoms,3)
     !
     integer :: alloc,alloc_p,n1,iNcoeff1,iNcoeff2
     !
@@ -10908,10 +10909,10 @@ end subroutine check_read_save_none
     type(FLpolynomT),intent(in) :: s_vib(trove%Nmodes,trove%Natoms,3)
     type(FLpolynomT),intent(in) :: s_rot(3,trove%Natoms,3)
 
-    type(FLpolynomT),intent(out) ::  g_vib(trove%Nmodes,trove%Nmodes)    ! Vibrational part of Kinetic factor G
-    type(FLpolynomT),intent(out) ::  g_rot(3,3)              ! Rotational  part of Kinetic factor G
-    type(FLpolynomT),intent(out) ::  g_cor(trove%Nmodes,3)        ! Coriolis part of Kinetic factor G
-    type(FLpolynomT),intent(out) ::  pseudo                  ! Coriolis part of Kinetic factor G
+    type(FLpolynomT),intent(inout) ::  g_vib(trove%Nmodes,trove%Nmodes)    ! Vibrational part of Kinetic factor G
+    type(FLpolynomT),intent(inout) ::  g_rot(3,3)              ! Rotational  part of Kinetic factor G
+    type(FLpolynomT),intent(inout) ::  g_cor(trove%Nmodes,3)        ! Coriolis part of Kinetic factor G
+    type(FLpolynomT),intent(inout) ::  pseudo                  ! Coriolis part of Kinetic factor G
 
     real(ark)    :: masses(1:trove%Natoms),rhostep,f_t,df_t
     real(ark),allocatable :: s_1t(:,:),s_2t(:,:),s_3t(:,:),s_4t(:,:),s_5t(:,:)
@@ -13711,9 +13712,8 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
-            allocate(fl%ifromsparse(Tcoeff),stat=alloc)
-            call ArrayStart('g_vib'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-            fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+            fl%ifromsparse = 0
+            fl%sparse = .true.
             !
           enddo
         enddo
@@ -13748,9 +13748,8 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
-            allocate(fl%ifromsparse(Tcoeff),stat=alloc)
-            call ArrayStart('g_rot'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-            fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+            fl%ifromsparse = 0
+            fl%sparse = .true.
             !
           enddo
         enddo
@@ -13785,9 +13784,8 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
-            allocate(fl%ifromsparse(Tcoeff),stat=alloc)
-            call ArrayStart('g_cor'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-            fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+            fl%ifromsparse = 0
+            fl%sparse = .true.
             !
           enddo
         enddo
@@ -13819,9 +13817,8 @@ end subroutine check_read_save_none
         fl%Ncoeff = Tcoeff
         !
         call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
-        allocate(fl%ifromsparse(Tcoeff),stat=alloc)
-        call ArrayStart('pseudo'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-        fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+        fl%ifromsparse = 0
+        fl%sparse = .true.
         !
         n = 0
         do_pseu : do 
@@ -13850,9 +13847,8 @@ end subroutine check_read_save_none
               fl%Ncoeff = Tcoeff
               !
               call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
-              allocate(fl%ifromsparse(Tcoeff),stat=alloc)
-              call ArrayStart('L2_vib'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-              fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+              fl%ifromsparse = 0
+              fl%sparse = .true.
               !
             enddo
           enddo
@@ -14179,10 +14175,8 @@ end subroutine check_read_save_none
         fl%Ncoeff = Ncoeff
         !
         call polynom_initialization(trove%poten,trove%NPotOrder,Ncoeff,trove%Npoints,'poten')
-        allocate(fl%ifromsparse(Ncoeff),stat=alloc)
-        call ArrayStart('poten'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-        !
-        fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+        fl%ifromsparse = 0
+        fl%sparse = .true.
         k = 0 
         !
         do_pot : do 
@@ -14337,10 +14331,8 @@ end subroutine check_read_save_none
            fl%Ncoeff = nterms
            !
            call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
-           allocate(fl%ifromsparse(Ncoeff),stat=alloc)
-           call ArrayStart('extF'//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
-           !
-           fl%ifromsparse = 0 ! initialization, zero values will indiciate missing records 
+           fl%ifromsparse = 0
+           fl%sparse = .true.
            !
         enddo
         !
@@ -14394,7 +14386,9 @@ end subroutine check_read_save_none
      !
      iterm = 0
      !
-     if (associated(fl%ifromsparse)) check = .false.
+     if (fl%sparse) check = .false.
+     !
+     !if (associated(fl%ifromsparse)) check = .false.
      !
      if (check) then
        !
@@ -21521,7 +21515,7 @@ end subroutine check_read_save_none
      integer(ik),intent(in) :: orders,Ncoeff,Npoints
      character(len=*),intent(in) :: name
      type(FLpolynomT),pointer :: polynom
-     integer(ik) :: alloc
+     integer(ik) :: alloc,i
        !
        polynom%Orders = orders
        polynom%Ncoeff = Ncoeff
@@ -21529,9 +21523,11 @@ end subroutine check_read_save_none
        polynom%name   = name
        allocate (polynom%field(Ncoeff,0:Npoints),polynom%iorder(Ncoeff),&
                  polynom%IndexQ(trove%Nmodes,Ncoeff),stat=alloc)
+       allocate(polynom%ifromsparse(Ncoeff),stat=alloc)
        call ArrayStart(name,alloc,size(polynom%field),kind(polynom%field))
        call ArrayStart(name,alloc,size(polynom%iorder),kind(polynom%iorder))
        call ArrayStart(name//"IndexQ",alloc,size(polynom%IndexQ),kind(polynom%IndexQ))
+       call ArrayStart(name//'ifromsparse',alloc,size(polynom%ifromsparse),kind(polynom%ifromsparse))
        !
        !if (alloc/=0) then
        !   write (out,"(' Error ',i,' trying to allocate fields of polynom ',a)") alloc,trim(name)
@@ -21540,7 +21536,7 @@ end subroutine check_read_save_none
        polynom%field  = 0 
        polynom%iorder = 0
        polynom%IndexQ(:,1:Ncoeff) = FLIndexQ(:,1:Ncoeff)
-       nullify(polynom%ifromsparse)
+       forall(i = 1:Ncoeff) polynom%ifromsparse(i) = i 
        !
        if (verbose>=5) write(out,"('field ',a,' initialized')") trim(name)
        ! 
