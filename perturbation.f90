@@ -30998,7 +30998,7 @@ subroutine PTstore_contr_matelem(jrot)
         ! <G>
         !
         ! <p_i*G*p_j>
-        call calc_contr_matelem_expansion_p2_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+        call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
         !
       !elseif (jmode>=iclass_imode(1,iclass)) then
       !  ! <p_i*G> and <G*p_i>
@@ -31164,16 +31164,17 @@ subroutine PTstore_contr_matelem(jrot)
       !
       if (job%verbose>=5) write(out, '(3x,a,3x,a)') 'p_i*Gcor:', 'i'
       !
-      if (imode<iclass_imode(1,iclass)) then
-        ! <G>
-        call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
-        !
-      else
+      !if (imode<iclass_imode(1,iclass)) then
+      !  ! <G>
+      !  call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+      !  !
+      !else
         !
         ! <p_i*G>
         !
-        call calc_contr_matelem_expansion_p1_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
-      endif
+        call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+        !
+      !endif
       !
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,3,dimen,fl%Ncoeff,nterms,me_contr)
       !
@@ -31320,7 +31321,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       ! <G>
       !
-      call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,3,3,dimen,fl%Ncoeff,nterms,me_contr)
       !
       !if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, 0
@@ -31446,7 +31447,7 @@ subroutine PTstore_contr_matelem(jrot)
   allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
   call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
   !
-  call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+  call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
   call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms,me_contr)
   !
   deallocate(me_contr)
@@ -31573,7 +31574,7 @@ subroutine PTstore_contr_matelem(jrot)
         allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
         call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
         !
-        call calc_contr_matelem_expansion_p0_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
+        call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
         call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms,me_contr)
         !
         deallocate(me_contr)
@@ -31867,104 +31868,6 @@ end subroutine split_terms_comb
 
 
 
-subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_contr)
-  !
-  integer(ik), intent(in) :: iclass, nterms, terms(:,:)
-  character(cl), intent(in) :: func_tag
-  real(rk), intent(out) :: me_contr(:,:,:)
-  !
-  integer(ik) :: imode, jmode, ispecies, info, iterm, ideg, nprim, iprim, jprim, nroots, ilevel, iroot, nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
-  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
-  !
-  nmodes = PT%Nmodes
-  imode1 = PT%mode_class(iclass,1)
-  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
-  nprim = contr(iclass)%dimen
-  nroots = contr(iclass)%nroots
-  !
-  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
-    write(out, '(/a)') 'calc_contr_matelem_expansion_p0 error: matrix "me_contr" has wrong dimensions'
-    stop
-  endif
-  !
-  allocate(prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms), stat=info)
-  if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &
-    'calc_contr_matelem_expansion_p0 error: prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms) - out of memory', &
-    'nterms, nmodes, nprim, nroots =', nterms, nmodes, nprim, nroots
-    stop
-  endif
-  !
-  ! compute matrix elements between products of 1D functions
-  !
-  me_contr = 0
-  if (trim(func_tag)=='Vpot') then
-    do iprim=1, nprim
-      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
-      do jprim=1, nprim
-        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
-        do jmode=imode1, imode2
-          ispecies = job%bset(jmode)%species
-          do iterm=1, nterms
-            me_terms(jmode,iterm) = me%vib(ispecies,0)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
-          enddo
-        enddo
-        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
-      enddo
-    enddo
-  elseif (trim(func_tag)=='Tvib'.or.trim(func_tag)=='Trot'.or.trim(func_tag)=='Tcor'.or.trim(func_tag)=='pseu') then
-    do iprim=1, nprim
-      nu_i(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,iprim)
-      do jprim=1, nprim
-        nu_j(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,jprim)
-        do imode=imode1, imode2
-          ispecies = job%bset(imode)%species
-          do iterm=1, nterms
-            me_terms(imode,iterm) = me%vib(ispecies,-1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
-          enddo
-        enddo
-        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
-      enddo
-    enddo
-  elseif (trim(func_tag)=='extF') then
-    do iprim=1, nprim
-      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
-      do jprim=1, nprim
-        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
-        do jmode=imode1, imode2
-          ispecies = job%bset(jmode)%species
-          do iterm=1, nterms
-            me_terms(jmode,iterm) = me%vib(ispecies,3)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
-          enddo
-        enddo
-        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
-      enddo
-    enddo
-  else
-    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p0 error: unknown type of operator =', trim(func_tag)
-    stop
-  endif
-  !
-  ! contraction coefficients
-  !
-  do iroot=1, nroots
-    ilevel = contr(iclass)%ilevel(iroot)
-    ideg = contr(iclass)%ideg(iroot)
-    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-  enddo
-  !
-  ! transform to contracted basis
-  !
-  do iterm=1, nterms
-    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
-               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
-    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
-               tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
-  enddo
-  !
-  deallocate(prim_coefs, tmat, me_terms)
-  !
-end subroutine calc_contr_matelem_expansion_p0
 
 
 subroutine calc_contr_matelem_expansion_p0_Nclass(func_tag,nterms,terms,FLcoeff,me_contr)
@@ -32086,15 +31989,23 @@ end subroutine calc_contr_matelem_expansion_p0_Nclass
 
 
 
-subroutine calc_contr_matelem_expansion_p1_Nclass(func_tag,imode,nterms,terms,FLcoeff,me_contr)
+
+
+subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoeff,me_contr)
 
   character(cl), intent(in) :: func_tag
-  integer(ik), intent(in) :: imode, nterms, terms(:,:)
+  integer(ik), intent(in) :: nterms, terms(:,:)
   real(rk), intent(in)  :: FLcoeff(:,0:,0:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,jmode, ispecies, info, iterm, ideg, nprim, iprim, jprim, nroots, ilevel, iroot, nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  if (trim(func_tag)/='Trot') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Trot_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_Trot_Nclass error: illegal field '
+  endif
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32103,95 +32014,61 @@ subroutine calc_contr_matelem_expansion_p1_Nclass(func_tag,imode,nterms,terms,FL
   nprim = contr(iclass)%dimen
   nroots = contr(iclass)%nroots
   !
-  if (imode>imode2.or.imode<imode1) then
-    write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p1_Nclass error: imode =', imode, 'is out of ranges for iclass =', iclass
-    stop
-  endif
-  !
   if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
-    write(out, '(/a)') 'calc_contr_matelem_expansion_p1_Nclass error: matrix "me_contr" has wrong dimensions'
+    write(out, '(/a)') 'calc_contr_matelem_expansion_Trot_Nclass error: matrix "me_contr" has wrong dimensions'
     stop
   endif
   !
-  allocate(prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms), stat=info)
-  if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &
-    'calc_contr_matelem_expansion_p1_Nclass error: prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms) - out of memory', &
-    'nterms, nmodes, nprim, nroots =', nterms, nmodes, nprim, nroots
-    stop
-  endif
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_Trot_Nclass',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_Trot_Nclass',info,size(tmat),kind(tmat))
   !
   imode2 = min(PT%Nmodes-1,imode2)
   !
   ! compute matrix elements between products of 1D functions
   !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_Trot_Nclass error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_Trot_Nclass error: me_terms out of memory'
+  endif 
+  !
   me_contr = 0
-  if (trim(func_tag)=='Tvib') then
-    do iprim=1, nprim
-      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
-      do jprim=1, nprim
-        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
-        !
-        do iterm=1, nterms
-           do jmode=imode1, imode2
-              ispecies = job%bset(jmode)%species
-              !
-              if (jmode==imode) then
-                 me_terms(jmode,iterm) = me%vib(ispecies, 1)%coeff(terms(jmode,iterm),nu_i(imode),nu_j(jmode))
-              else
-                 me_terms(jmode,iterm) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
-              endif
-              !
-          enddo
-          !
-          me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
-                                        Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
-          !
-        enddo
-        !
-     enddo
-    enddo
-  elseif (trim(func_tag)=='Tcor') then
-    do iprim=1, nprim
-      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+  !  
+  !$omp do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies) shared(me_contr) schedule(dynamic)
+  do iprim=1, nprim
+    nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+    do jprim=1, nprim
+      nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       !
-      do jprim=1, nprim
-        !
-        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
-
-        do iterm=1, nterms
-           do jmode=imode1, imode2
-              ispecies = job%bset(jmode)%species
-              !
-              if (jmode==imode) then
-                 me_terms(jmode,iterm) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))&
-                                        -me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
-              else
-                 me_terms(jmode,iterm) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
-              endif
-              !
-          enddo
-          !
-          me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
-                                        Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
-          !
+      do iterm=1, nterms
+         do kmode=imode1, imode2
+            ispecies = job%bset(kmode)%species
+            me_terms(kmode,iterm) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
         enddo
+        !
+        me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
+                                      Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
         !
       enddo
       !
     enddo
-  else
-    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p1_Nclass error: unknown type of operator =', trim(func_tag)
-    stop
-  endif
+  enddo  
+  !$omp enddo
+  !
+  deallocate (me_terms)
+  !$omp end parallel
   !
   ! contraction coefficients
   !
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
   do iroot=1, nroots
     ilevel = contr(iclass)%ilevel(iroot)
     ideg = contr(iclass)%ideg(iroot)
     prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
   enddo
+  !$omp end parallel do
   !
   ! transform to contracted basis
   !
@@ -32199,16 +32076,204 @@ subroutine calc_contr_matelem_expansion_p1_Nclass(func_tag,imode,nterms,terms,FL
     call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
                prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
     call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
-               tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
+               tmat(1:nprim,1:nroots), nprim, 0.0d0,me_contr(iterm,1:nroots,1:nroots), nroots)
   enddo
   !
-  deallocate(prim_coefs, tmat, me_terms)
+  deallocate(prim_coefs, tmat)
+  call ArrayStop('calc_contr_matelem_expansion_Trot_Nclass')
   !
-end subroutine calc_contr_matelem_expansion_p1_Nclass
+end subroutine calc_contr_matelem_expansion_Trot_Nclass
 
 
 
-subroutine calc_contr_matelem_expansion_p2_Nclass(func_tag,imode,jmode,nterms,terms,FLcoeff,me_contr)
+subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoeff,me_contr)
+
+  character(cl), intent(in) :: func_tag
+  integer(ik), intent(in) :: nterms, terms(:,:)
+  real(rk), intent(in)  :: FLcoeff(:,0:,0:)
+  real(rk), intent(out) :: me_contr(:,:,:)
+
+  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  if (trim(func_tag)/='Vpot') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_vpot_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_vpot_Nclass error: illegal field '
+  endif
+  !
+  iclass = PT%Nclasses
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_vpot_Nclass error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_vpot_Nclass',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_vpot_Nclass',info,size(tmat),kind(tmat))
+  !
+  imode2 = min(PT%Nmodes-1,imode2)
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_vpot_Nclass error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_vpot_Nclass error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !  
+  !$omp do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies) shared(me_contr) schedule(dynamic)
+  do iprim=1, nprim
+    nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+    do jprim=1, nprim
+      nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+      do iterm=1, nterms
+         do kmode=imode1, imode2
+            ispecies = job%bset(kmode)%species
+            me_terms(kmode,iterm) = me%vib(ispecies,0)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+        enddo
+        !
+        me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
+                                      Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        !
+      enddo
+      !
+    enddo
+  enddo
+  !$omp enddo
+  !
+  deallocate (me_terms)
+  !$omp end parallel
+  !
+  ! contraction coefficients
+  !
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
+  do iroot=1, nroots
+    ilevel = contr(iclass)%ilevel(iroot)
+    ideg = contr(iclass)%ideg(iroot)
+    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+  enddo
+  !$omp end parallel do
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0,me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(prim_coefs, tmat)
+  call ArrayStop('calc_contr_matelem_expansion_vpot_Nclass')
+  !
+end subroutine calc_contr_matelem_expansion_vpot_Nclass
+
+
+subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoeff,me_contr)
+
+  character(cl), intent(in) :: func_tag
+  integer(ik), intent(in) :: nterms, terms(:,:)
+  real(rk), intent(in)  :: FLcoeff(:,0:,0:)
+  real(rk), intent(out) :: me_contr(:,:,:)
+
+  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  if (trim(func_tag)/='extF') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_extF_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_extF_Nclass error: illegal field '
+  endif
+  !
+  iclass = PT%Nclasses
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_extF_Nclass error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_extF_Nclass',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_extF_Nclass',info,size(tmat),kind(tmat))
+  !
+  imode2 = min(PT%Nmodes-1,imode2)
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_extF_Nclass error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_extF_Nclass error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !  
+  !$omp do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies) shared(me_contr) schedule(dynamic)
+  do iprim=1, nprim
+    nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+    do jprim=1, nprim
+      nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+      !
+      do iterm=1, nterms
+         do kmode=imode1, imode2
+            ispecies = job%bset(kmode)%species
+            me_terms(kmode,iterm) = me%vib(ispecies,3)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+        enddo
+        !
+        me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
+                                      Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        !
+      enddo
+      !
+    enddo
+  enddo  !$omp enddo
+  !
+  deallocate (me_terms)
+  !$omp end parallel
+  !
+  ! contraction coefficients
+  !
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
+  do iroot=1, nroots
+    ilevel = contr(iclass)%ilevel(iroot)
+    ideg = contr(iclass)%ideg(iroot)
+    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+  enddo
+  !$omp end parallel do
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0,me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(prim_coefs, tmat)
+  call ArrayStop('calc_contr_matelem_expansion_extF_Nclass')
+  !
+end subroutine calc_contr_matelem_expansion_extF_Nclass
+
+
+
+subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,terms,FLcoeff,me_contr)
 
   character(cl), intent(in) :: func_tag
   integer(ik), intent(in) :: imode, jmode, nterms, terms(:,:)
@@ -32220,8 +32285,8 @@ subroutine calc_contr_matelem_expansion_p2_Nclass(func_tag,imode,jmode,nterms,te
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
   !
   if (trim(func_tag)/='Tvib') then
-    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p2_Ncalass error: illegal field ', trim(func_tag)
-    stop 'calc_contr_matelem_expansion_p2_Ncalass error: illegal field '
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field '
   endif
   !
   iclass = PT%Nclasses
@@ -32231,39 +32296,24 @@ subroutine calc_contr_matelem_expansion_p2_Nclass(func_tag,imode,jmode,nterms,te
   nprim = contr(iclass)%dimen
   nroots = contr(iclass)%nroots
   !
-  !if (imode>imode2.or.imode<imode1) then
-  !  write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p2_Ncalass error: imode =', imode, 'is out of ranges for iclass =', iclass
-  !  stop
-  !endif
-  !
-  !if (jmode>imode2.or.jmode<imode1) then
-  !  write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p2_Ncalass error: jmode =', jmode, 'is out of ranges for iclass =', iclass
-  !  stop
-  !endif
-  !
   if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
-    write(out, '(/a)') 'calc_contr_matelem_expansion_p2_Ncalass error: matrix "me_contr" has wrong dimensions'
+    write(out, '(/a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: matrix "me_contr" has wrong dimensions'
     stop
   endif
   !
   allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
-  call ArrayStart('calc_contr_matelem_expansion_p2_Ncalass',info,size(prim_coefs),kind(prim_coefs))
-  call ArrayStart('calc_contr_matelem_expansion_p2_Ncalass',info,size(tmat),kind(tmat))
+  call ArrayStart('calc_contr_matelem_expansion_Tvib_Nclass',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_Tvib_Nclass',info,size(tmat),kind(tmat))
   !
   imode2 = min(PT%Nmodes-1,imode2)
   !
-  !if (imode1>imode2) then
-  !  me_contr = 0 
-  !  return 
-  !endif
-  !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel private(mat_t,alloc_p) 
+  !$omp parallel private(me_terms,alloc_p) 
   allocate (me_terms(nmodes,nterms),stat=alloc_p)
   if (alloc_p/=0)  then 
-  write(out,"('Pcalc_contr_matelem_expansion_p2_Ncalass error: me_terms - out of memory')") 
-     stop 'Pcalc_contr_matelem_expansion_p2_Ncalass error: me_terms out of memory'
+  write(out,"('Pcalc_contr_matelem_expansion_Tvib_Nclass error: me_terms - out of memory')") 
+     stop 'Pcalc_contr_matelem_expansion_Tvib_Nclass error: me_terms out of memory'
   endif 
   !
   me_contr = 0
@@ -32320,9 +32370,239 @@ subroutine calc_contr_matelem_expansion_p2_Nclass(func_tag,imode,jmode,nterms,te
   enddo
   !
   deallocate(prim_coefs, tmat)
-  call ArrayStop('calc_contr_matelem_expansion_p2_Ncalass')
+  call ArrayStop('calc_contr_matelem_expansion_Tvib_Nclass')
   !
-end subroutine calc_contr_matelem_expansion_p2_Nclass
+end subroutine calc_contr_matelem_expansion_Tvib_Nclass
+
+
+
+subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,FLcoeff,me_contr)
+
+  character(cl), intent(in) :: func_tag
+  integer(ik), intent(in) :: imode, nterms, terms(:,:)
+  real(rk), intent(in)  :: FLcoeff(:,0:,0:)
+  real(rk), intent(out) :: me_contr(:,:,:)
+
+  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  if (trim(func_tag)/='Tcor') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tcor_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_Tcor_Nclass error: illegal field '
+  endif
+  !
+  iclass = PT%Nclasses
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_Tcor_Nclass error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_Tcor_Nclass',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_Tcor_Nclass',info,size(tmat),kind(tmat))
+  !
+  imode2 = min(PT%Nmodes-1,imode2)
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('Pcalc_contr_matelem_expansion_Tcor_Nclass error: me_terms - out of memory')") 
+     stop 'Pcalc_contr_matelem_expansion_Tcor_Nclass error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !  
+  !$omp do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies) shared(me_contr) schedule(dynamic)
+  do iprim=1, nprim
+    nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+    do jprim=1, nprim
+      nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+      do iterm=1, nterms
+         do kmode=imode1, imode2
+            ispecies = job%bset(kmode)%species
+            !
+            if (kmode==imode) then
+               me_terms(kmode,iterm) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))&
+                                      -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            else
+               me_terms(kmode,iterm) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+            endif
+            !
+        enddo
+        !
+        me_contr(iterm,jprim,iprim) = product(me_terms(imode1:imode2,iterm),dim=1)*&
+                                      Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        !
+      enddo
+      !
+    enddo
+    !
+  enddo
+  !$omp enddo
+  !
+  deallocate (me_terms)
+  !$omp end parallel
+  !
+  ! contraction coefficients
+  !
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
+  do iroot=1, nroots
+    ilevel = contr(iclass)%ilevel(iroot)
+    ideg = contr(iclass)%ideg(iroot)
+    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+  enddo
+  !$omp end parallel do
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0,me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(prim_coefs, tmat)
+  call ArrayStop('calc_contr_matelem_expansion_Tcor_Nclass')
+  !
+end subroutine calc_contr_matelem_expansion_Tcor_Nclass
+
+
+
+subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_contr)
+  !
+  integer(ik), intent(in) :: iclass, nterms, terms(:,:)
+  character(cl), intent(in) :: func_tag
+  real(rk), intent(out) :: me_contr(:,:,:)
+  !
+  integer(ik) :: imode,jmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
+  real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
+  !
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_p0 error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_p0',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_p0',info,size(tmat),kind(tmat))
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_p0 error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_p0 error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  select case (trim(func_tag))
+  !
+  case('Vpot')
+    !$omp do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        do jmode=imode1, imode2
+          ispecies = job%bset(jmode)%species
+          do iterm=1, nterms
+            me_terms(jmode,iterm) = me%vib(ispecies,0)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+          enddo
+        enddo
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+      enddo
+    enddo
+    !$omp enddo
+    !
+    deallocate (me_terms)
+    !$omp end parallel
+    !
+  case('Tvib','Trot','Tcor','pseu')
+    !
+    !$omp do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
+    do iprim=1, nprim
+      nu_i(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,iprim)
+      do jprim=1, nprim
+        nu_j(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,jprim)
+        do imode=imode1, imode2
+          ispecies = job%bset(imode)%species
+          do iterm=1, nterms
+            me_terms(imode,iterm) = me%vib(ispecies,-1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
+          enddo
+        enddo
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+      enddo
+    enddo
+    !$omp enddo
+    !
+    deallocate (me_terms)
+    !$omp end parallel
+    !
+  case ('extF')
+    !$omp do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        do jmode=imode1, imode2
+          ispecies = job%bset(jmode)%species
+          do iterm=1, nterms
+            me_terms(jmode,iterm) = me%vib(ispecies,3)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+          enddo
+        enddo
+        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+      enddo
+    enddo
+    !$omp enddo
+    !
+    deallocate (me_terms)
+    !$omp end parallel
+    !
+  case default 
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p0 error: unknown type of field =', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_p0 error: unknown type of field'
+  end select 
+  !
+  ! contraction coefficients
+  !
+  do iroot=1, nroots
+    ilevel = contr(iclass)%ilevel(iroot)
+    ideg = contr(iclass)%ideg(iroot)
+    prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+  enddo
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(prim_coefs, tmat)
+  call ArrayStop('calc_contr_matelem_expansion_p0')
+  !
+end subroutine calc_contr_matelem_expansion_p0
 
 
 subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, terms, me_contr)
@@ -32331,59 +32611,75 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
   character(cl), intent(in) :: func_tag
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: jmode, ispecies, info, iterm, ideg, nprim, iprim, jprim, nroots, ilevel, iroot, nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  integer(ik) :: jmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
-
+  !
   nmodes = PT%Nmodes
   imode1 = PT%mode_class(iclass,1)
   imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
   nprim = contr(iclass)%dimen
   nroots = contr(iclass)%nroots
-
+  !
   if (imode>imode2.or.imode<imode1) then
     write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p1 error: imode =', imode, 'is out of ranges for iclass =', iclass
     stop
   endif
-
+  !
   if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
     write(out, '(/a)') 'calc_contr_matelem_expansion_p1 error: matrix "me_contr" has wrong dimensions'
     stop
   endif
-
-  allocate(prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms), stat=info)
-  if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &
-    'calc_contr_matelem_expansion_p1 error: prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms) - out of memory', &
-    'nterms, nmodes, nprim, nroots =', nterms, nmodes, nprim, nroots
-    stop
-  endif
-
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_p1',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_p1',info,size(tmat),kind(tmat))
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_p1 error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_p1 error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !  
   ! compute matrix elements between products of 1D functions
-
-  me_contr = 0.0
-  if (trim(func_tag)=='Tvib') then
+  select case (trim(func_tag))
+    !
+  case('Tvib')
+    !
+    !$omp do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do jmode=imode1, imode2
           ispecies = job%bset(jmode)%species
-            !
-            if (jmode==imode) then
-              do iterm=1, nterms
-                me_terms(jmode,iterm) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
-              enddo
-            else
-              do iterm=1, nterms
-                me_terms(jmode,iterm) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
-              enddo
-            endif
+          if (jmode==imode) then
+            do iterm=1, nterms
+              me_terms(jmode,iterm) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+            enddo
+          else
+            do iterm=1, nterms
+              me_terms(jmode,iterm) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+            enddo
+          endif
           !
         enddo
         me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+        !
       enddo
+      !
     enddo
-  elseif (trim(func_tag)=='Tcor') then
+    !$omp enddo
+    !
+    deallocate (me_terms)
+    !$omp end parallel
+    !
+  case('Tcor')
+    ! 
+    !$omp do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       !
@@ -32411,29 +32707,39 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
       enddo
       !
     enddo
-  else
-    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p1 error: unknown type of operator =', trim(func_tag)
-    stop
-  endif
+    !$omp enddo
+    !
+    deallocate (me_terms)
+    !$omp end parallel
+    !
+  case default
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p1 error: unknown type of field =', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_p1 error: unknown type of field'
+  end select 
 
   ! contraction coefficients
 
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
   do iroot=1, nroots
     ilevel = contr(iclass)%ilevel(iroot)
     ideg = contr(iclass)%ideg(iroot)
     prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
   enddo
-
+  !$omp end parallel do
+  !
   ! transform to contracted basis
-
+  !
   do iterm=1, nterms
     call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
                prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
     call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
                tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
   enddo
+  !
+  deallocate(prim_coefs, tmat)
+  !
+  call ArrayStop('calc_contr_matelem_expansion_p1')
 
-  deallocate(prim_coefs, tmat, me_terms)
 
 end subroutine calc_contr_matelem_expansion_p1
 
@@ -32441,97 +32747,114 @@ end subroutine calc_contr_matelem_expansion_p1
 
 
 subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterms, terms, me_contr)
-
+  !
   integer(ik), intent(in) :: imode, jmode, iclass, nterms, terms(:,:)
   character(cl), intent(in) :: func_tag
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: kmode, ispecies, info, iterm, ideg, nprim, iprim, jprim, nroots, ilevel, iroot, nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  integer(ik) :: kmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:), me_terms(:,:)
 
+  !
+  if (trim(func_tag)/='Tvib') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p2 error: unknown type of field =', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_p2 error: unknown type of field'
+  endif
+  !
   nmodes = PT%Nmodes
   imode1 = PT%mode_class(iclass,1)
   imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
   nprim = contr(iclass)%dimen
   nroots = contr(iclass)%nroots
-
+  !
   if (imode>imode2.or.imode<imode1) then
     write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p2 error: imode =', imode, 'is out of ranges for iclass =', iclass
     stop
   endif
-
+  !
   if (jmode>imode2.or.jmode<imode1) then
     write(out, '(/a,1x,i3,1x,a,1x,i3)') 'calc_contr_matelem_expansion_p2 error: jmode =', jmode, 'is out of ranges for iclass =', iclass
     stop
   endif
-
+  !
   if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
-    write(out, '(/a)') 'calc_contr_matelem_expansion_p1 error: matrix "me_contr" has wrong dimensions'
+    write(out, '(/a)') 'calc_contr_matelem_expansion_p2 error: matrix "me_contr" has wrong dimensions'
     stop
   endif
-
-  allocate(prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms), stat=info)
-  if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &
-    'calc_contr_matelem_expansion_p2 error: prim_coefs(nprim,nroots), tmat(nprim,nroots), me_terms(nmodes,nterms) - out of memory', &
-    'nterms, nmodes, nprim, nroots =', nterms, nmodes, nprim, nroots
-    stop
-  endif
-
+  !
+  allocate(prim_coefs(nprim,nroots),tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_p2',info,size(prim_coefs),kind(prim_coefs))
+  call ArrayStart('calc_contr_matelem_expansion_p2',info,size(tmat),kind(tmat))
+  !
+  !$omp parallel private(me_terms,alloc_p) 
+  allocate (me_terms(nmodes,nterms),stat=alloc_p)
+  if (alloc_p/=0)  then 
+  write(out,"('calc_contr_matelem_expansion_p2 error: me_terms - out of memory')") 
+     stop 'calc_contr_matelem_expansion_p2 error: me_terms out of memory'
+  endif 
+  !
+  me_contr = 0
+  !
   ! compute matrix elements between products of 1D functions
-
-  me_contr = 0.0
-  if (trim(func_tag)=='Tvib') then
-    do iprim=1, nprim
-      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
-      do jprim=1, nprim
-        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
-        do kmode=imode1, imode2
-          ispecies = job%bset(kmode)%species
-          if (kmode/=imode.and.kmode/=jmode) then
-            do iterm=1, nterms
-              me_terms(kmode,iterm) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
-            enddo
-          elseif (kmode/=jmode) then
-            do iterm=1, nterms
-              me_terms(kmode,iterm) = -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
-            enddo
-          elseif (kmode/=imode) then
-            do iterm=1, nterms
-              me_terms(kmode,iterm) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
-            enddo
-          else
-            do iterm=1, nterms
-              me_terms(kmode,iterm) = me%vib(ispecies,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
-            enddo
-          endif
-        enddo
-        me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
+  !
+  
+  !$omp do private(iprim,jprim,nu_i,nu_j,kmode,ispecies,iterm) shared(me_contr) schedule(dynamic)
+  do iprim=1, nprim
+    nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+    do jprim=1, nprim
+      nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+      do kmode=imode1, imode2
+        ispecies = job%bset(kmode)%species
+        if (kmode/=imode.and.kmode/=jmode) then
+          do iterm=1, nterms
+            me_terms(kmode,iterm) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+          enddo
+        elseif (kmode/=jmode) then
+          do iterm=1, nterms
+            me_terms(kmode,iterm) = -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+          enddo
+        elseif (kmode/=imode) then
+          do iterm=1, nterms
+            me_terms(kmode,iterm) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+          enddo
+        else
+          do iterm=1, nterms
+            me_terms(kmode,iterm) = me%vib(ispecies,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+          enddo
+        endif
       enddo
+      me_contr(1:nterms,jprim,iprim) = product(me_terms(imode1:imode2,1:nterms),dim=1)
     enddo
-  else
-    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p2 error: unknown type of operator =', trim(func_tag)
-    stop
-  endif
-
+  enddo
+  !$omp enddo
+  !
+  deallocate (me_terms)
+  !$omp end parallel
+  !
+  !
   ! contraction coefficients
-
+  !
+  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_coefs) schedule(static)
   do iroot=1, nroots
     ilevel = contr(iclass)%ilevel(iroot)
     ideg = contr(iclass)%ideg(iroot)
     prim_coefs(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
   enddo
-
+  !$omp end parallel do
+  !
   ! transform to contracted basis
-
+  !
   do iterm=1, nterms
     call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
                prim_coefs(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
     call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_coefs(1:nprim,1:nroots), nprim, &
                tmat(1:nprim,1:nroots), nprim, 0.0d0, me_contr(iterm,1:nroots,1:nroots), nroots)
   enddo
-
-  deallocate(prim_coefs, tmat, me_terms)
+  !
+  deallocate(prim_coefs, tmat)
+  !
+  call ArrayStop('calc_contr_matelem_expansion_p2')
 
 end subroutine calc_contr_matelem_expansion_p2
 
