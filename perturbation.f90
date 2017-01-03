@@ -15771,7 +15771,7 @@ module perturbation
                  !
               else ! no-append means calculation 
                  !
-                 call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
+                 call calc_gcor_contr_matrix(k2,isymcoeff,grot_t)
                  !
               endif 
               !
@@ -16962,14 +16962,14 @@ module perturbation
     end subroutine calc_grot_contr_matrix 
     !
     !
-    subroutine  calc_gcor_contr_matrix(k1,k2,isymcoeff,gcor)
+    subroutine  calc_gcor_contr_matrix(k2,isymcoeff,gcor)
       !
-      integer(ik),intent(in) :: k1,k2,isymcoeff
+      integer(ik),intent(in) :: k2,isymcoeff
       real(rk),intent(out) :: gcor(:,:)
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j
       integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
-      integer(ik) :: Maxcontracts,jsymcoeff
+      integer(ik) :: Maxcontracts,jsymcoeff,k1
       type(PTcoeffT),pointer   :: fl
       !
       nmodes = PT%Nmodes
@@ -16977,13 +16977,13 @@ module perturbation
       coef_thresh = job%exp_coeff_thresh
       Maxcontracts = PT%Maxcontracts
       !
-      fl => me%gcor(k1,k2)
+      !fl => me%gcor(k1,k2)
       !
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,k1,icoeff,iclass,nu_i,nu_j,iterm,&
         !$omp& me_class0) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
            !
@@ -16994,36 +16994,39 @@ module perturbation
            !
            matelem = 0
            !
-           do icoeff = 1,fl%Ncoeff
+           do k1 = 1,nmodes
              !
-             do iclass=1,Nclasses-1
+             do icoeff = 1,me%gcor(k1,k2)%Ncoeff
                !
-               nu_i = nu_classes(iclass,icontr)
-               nu_j = nu_classes(iclass,jcontr)
+               do iclass=1,Nclasses-1
+                 !
+                 nu_i = nu_classes(iclass,icontr)
+                 nu_j = nu_classes(iclass,jcontr)
+                 !
+                 iterm = me%gcor(k1,k2)%uniq(icoeff,iclass)
+                 !
+                 me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)
+                 !
+               enddo
                !
-               iterm = fl%uniq(icoeff,iclass)
+               nu_i = nu_classes(Nclasses,icontr)
+               nu_j = nu_classes(Nclasses,jcontr)
                !
-               me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,1,1)
+               me_class0(Nclasses) = gcor_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
                !
-             enddo
+               matelem = matelem + product(me_class0(1:Nclasses))
+               !
+             enddo ! icoeff
              !
-             nu_i = nu_classes(Nclasses,icontr)
-             nu_j = nu_classes(Nclasses,jcontr)
+             if (job%vib_rot_contr) then 
+               gcor(jcontr,ideg) = matelem
+             else
+               gcor(icontr,jcontr) = matelem
+             endif
              !
-             me_class0(Nclasses) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+             !if (icontr/=jcontr) matelem = -matelem
              !
-             matelem = matelem + product(me_class0(1:Nclasses))
-             !
-           enddo ! icoeff
-           !
-           if (job%vib_rot_contr) then 
-             gcor(jcontr,ideg) = matelem
-           else
-             gcor(icontr,jcontr) = matelem
-           endif
-           !
-           !if (icontr/=jcontr) matelem = -matelem
-           !
+           enddo
         enddo
        !$omp end parallel do 
      enddo
@@ -30984,6 +30987,8 @@ subroutine PTstore_contr_matelem(jrot)
   dimen = contr(iclass)%nroots
   nprim = contr(iclass)%dimen
   !
+  if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
+  !
   do imode=1, nmodes
     do jmode=1, nmodes
       !
@@ -31092,7 +31097,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     ! compute contracted matrix elements for operators: G, p_i*G
     !
-    if (job%verbose>=5) write(out, '(3x,a,3x,a)') 'p_i*Grot*p_j:', 'i'
+    if (job%verbose>=5) write(out, '(3x,a,3x,a)') 'p_i*Gcor*p_j:', 'i'
     !
     ! <G>
     !
@@ -31866,7 +31871,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
   !
   ! compute matrix elements between products of 1D functions
   !  
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) schedule(static)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -31945,7 +31950,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) schedule(static)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32026,7 +32031,7 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoef
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) schedule(static)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32109,7 +32114,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) schedule(static)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32201,7 +32206,7 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) schedule(static)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32287,7 +32292,7 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   !
   case('Vpot')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) schedule(static)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -32305,7 +32310,7 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
     !
   case('Tvib','Trot','Tcor','pseu')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) schedule(static)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,iprim)
       do jprim=1, nprim
@@ -32322,7 +32327,7 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
     !$omp end parallel do
     !
   case ('extF')
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) schedule(static)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -32404,7 +32409,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
     !
   case('Tvib')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) schedule(static)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -32413,7 +32418,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
           do jmode=imode1, imode2
             ispecies = job%bset(jmode)%species
             if (jmode==imode) then
-              me_term(jmode) =-me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+              me_term(jmode) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
             else
               me_term(jmode) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
             endif
@@ -32431,7 +32436,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
     !
   case('Tcor')
     ! 
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) schedule(static)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       !
@@ -32535,7 +32540,7 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,ispecies,iterm,me_term) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
