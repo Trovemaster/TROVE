@@ -31013,10 +31013,10 @@ subroutine PTstore_contr_matelem(jrot)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
       !
       ! <p_i*G*p_j>
-      !call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call calc_contr_matelem_expansion_Tvib_Nclass1(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
 
-      call calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !call calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms,me_contr)
       !
