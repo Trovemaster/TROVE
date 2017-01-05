@@ -17218,6 +17218,7 @@ subroutine store_contr_matelem_expansion(k1_,k2_,k1,k2,iclass,func_tag,nmodes_cl
   ! we need to do this subroutine only if we want to save checkpoints  for contr-ci
   !
   if (trim(trove%IO_contrCI)/='SAVE') return
+  call TimerStop('fast-ci: store '//trim(func_tag))
   !
   write(sclass,'(i4)') iclass
   filename = 'contrME_'//trim(adjustl(sclass))//'_'//trim(func_tag)//'.chk'
@@ -17264,6 +17265,7 @@ subroutine store_contr_matelem_expansion(k1_,k2_,k1,k2,iclass,func_tag,nmodes_cl
 
   close(IOunit)
   call IOStop(trim(IOname))
+  call TimerStop('fast-ci: store '//trim(func_tag))
 
 end subroutine store_contr_matelem_expansion
 
@@ -17283,6 +17285,7 @@ subroutine store_contr_matelem_expansion_classN(k1,k2,iclass,func_tag,nmodes_cla
   ! we need to do this subroutine only if we want to save checkpoints  for contr-ci
   !
   if (trim(trove%IO_contrCI)/='SAVE') return
+  call TimerStart('fast-ci: store class-N'//trim(func_tag))
   !
   write(sclass,'(i4)') iclass
   filename = 'contrME_'//trim(adjustl(sclass))//'_'//trim(func_tag)//'.chk'
@@ -17332,6 +17335,7 @@ subroutine store_contr_matelem_expansion_classN(k1,k2,iclass,func_tag,nmodes_cla
   !
   close(IOunit)
   call IOStop(trim(IOname))
+  call TimerStop('fast-ci: store class-N'//trim(func_tag))
   !
 end subroutine store_contr_matelem_expansion_classN
 
@@ -17348,6 +17352,7 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   integer(ik) :: iclass_imode(2,PT%Nclasses),kclass,ialpha,Ncomp1,Ncomp2
   character(cl) :: IOname, filename, buf, func_tag_,sclass
 
+  call TimerStart('fast-ci: read '//trim(func_tag))
   write(sclass,'(i4)') iclass
   filename = 'contrME_'//trim(adjustl(sclass))//'_'//trim(func_tag)//'.chk'
   !
@@ -17553,6 +17558,7 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   !
   deallocate(me_)
   call ArrayStop('read_contr_matelem_expansion_me')
+  call TimerStop('fast-ci: read '//trim(func_tag))
 
 end subroutine read_contr_matelem_expansion
 
@@ -32031,6 +32037,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Trot_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_Trot_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing Trot_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32080,6 +32087,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_Trot_Nclass')
+  call TimerStop('fast-ci: computing Trot_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Trot_Nclass
 
@@ -32102,6 +32110,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_vpot_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_vpot_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing Vpot_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32154,6 +32163,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_vpot_Nclass')
+  call TimerStop('fast-ci: computing Vpot_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_vpot_Nclass
 
@@ -32175,6 +32185,7 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoef
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_extF_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_extF_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing extF_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32226,6 +32237,7 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoef
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_extF_Nclass')
+  call TimerStop('fast-ci: computing extF_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_extF_Nclass
 
@@ -32248,6 +32260,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing Tvib_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32308,6 +32321,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_Tvib_Nclass')
+  call TimerStop('fast-ci: computing Tvib_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Tvib_Nclass
 
@@ -32331,6 +32345,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing Tvib_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32479,6 +32494,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_Tvib_Nclass')
+  call TimerStop('fast-ci: computing Tvib_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Tvib_Nclass_2
 
@@ -32502,6 +32518,7 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tcor_Nclass error: illegal field ', trim(func_tag)
     stop 'calc_contr_matelem_expansion_Tcor_Nclass error: illegal field '
   endif
+  call TimerStart('fast-ci: computing Tcor_Nclass')
   !
   iclass = PT%Nclasses
   nmodes = PT%Nmodes
@@ -32560,6 +32577,7 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
   !
   deallocate(tmat)
   call ArrayStop('calc_contr_matelem_expansion_Tcor_Nclass')
+  call TimerStop('fast-ci: computing Tcor_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Tcor_Nclass
 
@@ -32575,6 +32593,8 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
                  nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
+  !
+  call TimerStart('fast-ci: computing P0 for '//trim(func_tag))
   !
   nmodes = PT%Nmodes
   imode1 = PT%mode_class(iclass,1)
@@ -32676,6 +32696,8 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   deallocate(prim_coefs, tmat)
   call ArrayStop('calc_contr_matelem_expansion_p0')
   !
+  call TimerStop('fast-ci: computing P0 for '//trim(func_tag))
+  !
 end subroutine calc_contr_matelem_expansion_p0
 
 
@@ -32689,6 +32711,8 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
                  nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
+  !
+  call TimerStart('fast-ci: computing P1 for '//trim(func_tag))
   !
   nmodes = PT%Nmodes
   imode1 = PT%mode_class(iclass,1)
@@ -32796,7 +32820,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
   deallocate(prim_coefs, tmat)
   !
   call ArrayStop('calc_contr_matelem_expansion_p1')
-
+  call TimerStop('fast-ci: computing P1 for '//trim(func_tag))
 
 end subroutine calc_contr_matelem_expansion_p1
 
@@ -32818,6 +32842,8 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
     write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_p2 error: unknown type of field =', trim(func_tag)
     stop 'calc_contr_matelem_expansion_p2 error: unknown type of field'
   endif
+  !
+  call TimerStart('fast-ci: computing P2 for '//trim(func_tag))
   !
   nmodes = PT%Nmodes
   imode1 = PT%mode_class(iclass,1)
@@ -32893,6 +32919,7 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   deallocate(prim_coefs, tmat)
   !
   call ArrayStop('calc_contr_matelem_expansion_p2')
+  call TimerStop('fast-ci: computing P2 for '//trim(func_tag))
 
 end subroutine calc_contr_matelem_expansion_p2
 

@@ -2078,7 +2078,7 @@ module fields
              !
              call check_read_save_none(trove%IO_basisset,w)
              !
-             if (trim(trove%IO_contrCI) == "NONE") trove%IO_contrCI = "SAVE"
+             !if (trim(trove%IO_contrCI) == "NONE") trove%IO_contrCI = "SAVE"
              !
            case('EIGENFUNC','VECTORS')
              !
