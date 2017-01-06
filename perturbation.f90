@@ -178,8 +178,9 @@ module perturbation
       type(PTcoeffT),pointer :: grot(:,:)
       type(PTcoeffT),pointer :: gcor(:,:)
       type(PTcoeffT),pointer :: L2(:,:)   ! vibrational angulal momentum L2
-      type(PTcoeffT),pointer :: rot (:)
-      type(PTcoeffT),pointer :: vib(:,:)
+      type(PTcoeffT),pointer :: rot (:) 
+      type(PTcoeffT),pointer :: vibmode(:,:)  ! the imode    primitive vibrational matrix elemenits
+      type(PTcoeffT),pointer :: vib(:,:)      ! the ispecies primitive vibrational matrix elemenits
       type(PTcoeffT),pointer :: extF(:)   ! arbitrary external field or function, e.g. dipole moment
       real(rk),pointer       :: rot_contr(:,:,:,:,:)
       !
@@ -3840,13 +3841,10 @@ module perturbation
              !
              ! Primitive matrix elements of the vib. momentum operator
              !
-             !
              do imode = im1+imoment-1,im1+imoment
-                !
-                ispecies = PT%Mspecies(imode)
                 ! 
-                mat_q(imode) = me%vib(ispecies,-1)%coeff(1,nu_i(imode),nu_j(imode))
-                mat_p(imode) = me%vib(ispecies, 1)%coeff(0,nu_i(imode),nu_j(imode))
+                mat_q(imode) = me%vibmode(imode,-1)%coeff(1,nu_i(imode),nu_j(imode))
+                mat_p(imode) = me%vibmode(imode, 1)%coeff(0,nu_i(imode),nu_j(imode))
                 ! 
              enddo  
              ! 
@@ -17218,7 +17216,7 @@ subroutine store_contr_matelem_expansion(k1_,k2_,k1,k2,iclass,func_tag,nmodes_cl
   ! we need to do this subroutine only if we want to save checkpoints  for contr-ci
   !
   if (trim(trove%IO_contrCI)/='SAVE') return
-  call TimerStop('fast-ci: store '//trim(func_tag))
+  call TimerStart('fast-ci: store '//trim(func_tag))
   !
   write(sclass,'(i4)') iclass
   filename = 'contrME_'//trim(adjustl(sclass))//'_'//trim(func_tag)//'.chk'
@@ -19961,7 +19959,7 @@ end subroutine read_contr_ind
       integer(ik),intent(in)         :: k1,k2
       real(rk)                       :: gvib
       !
-      integer(ik)                   :: imode,ispecies
+      integer(ik)                   :: imode
       real(rk)                      :: mat(PT%Nmodes)
 
          if (verbose>=6) write(out,"(/'gvib_contr_matelem_single_term/start: matrix elemnts for the hamiltonian ')") 
@@ -19971,27 +19969,25 @@ end subroutine read_contr_ind
          !
          do imode = im1,im2
             !
-            ispecies = PT%Mspecies(imode)
-            !
             !if (imode==PT%Nmodes) then
             !   !
             !   mat(imode) = -0.5_rk*me%gvib(k1,k2)%coeff(iterm,nu_i(imode),nu_j(imode))
             !   !
             if (k1/=imode.and.k2/=imode) then 
               !
-              mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+              mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
               !
             elseif (k2/=imode) then
               !
-              mat(imode) =-me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+              mat(imode) =-me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
               !
             elseif (k1/=imode) then
               !
-              mat(imode) = me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+              mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
               !
             else !   if (k1==imode.and.k2==imode) then
               !
-              mat(imode) = me%vib(ispecies,2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+              mat(imode) = me%vibmode(imode,2)%coeff(k(imode),nu_i(imode),nu_j(imode))
               !
             endif
             !
@@ -20020,7 +20016,7 @@ end subroutine read_contr_ind
       integer(ik),intent(in)         :: k1,k2
       real(rk)                      :: grot
       !
-      integer(ik)                   :: vr,imode,ispecies
+      integer(ik)                   :: vr,imode
       real(rk)                      :: mat(PT%Nmodes)
 
          if (verbose>=6) write(out,"(/'grot_contr_matelem_single_term/start: matrix elemnts for the hamiltonian ')") 
@@ -20029,11 +20025,9 @@ end subroutine read_contr_ind
          !
          do imode = im1,im2
             !
-            ispecies = PT%Mspecies(imode)
-            !
             !if (imode/=PT%Nmodes) then
             !
-            mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+            mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
             !
             !else
             !   !
@@ -20065,7 +20059,7 @@ end subroutine read_contr_ind
       integer(ik),intent(in)         :: k1,k2
       real(rk)                       :: gcor
       !
-      integer(ik)                   :: vr,imode,ispecies
+      integer(ik)                   :: vr,imode
       real(rk)                      :: mat(PT%Nmodes)
 
          if (verbose>=6) write(out,"(/'gcor_contr_matelem_single_term/start: matrix elemnts for the hamiltonian ')") 
@@ -20076,18 +20070,16 @@ end subroutine read_contr_ind
          !
          do imode = im1,im2
            !
-           ispecies = PT%Mspecies(imode)
-           !
            !if (imode/=PT%Nmodes) then
               !
               if (k1/=imode) then 
                  !
-                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                 mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                  !
               else
                  !
-                 mat(imode) = me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                              me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                 mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                              me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                  !
                  !
               endif
@@ -20124,7 +20116,7 @@ end subroutine read_contr_ind
       integer(ik),intent(in)         :: k(PT%Nmodes)
       real(rk)                       :: poten
       !
-      integer(ik)                   :: vr,imode,ispecies
+      integer(ik)                   :: vr,imode
       real(rk)                      :: mat(PT%Nmodes)
 
          if (verbose>=6) write(out,"(/'poten_contr_matelem_single_term/start: matrix elemnts for the hamiltonian ')") 
@@ -20133,15 +20125,13 @@ end subroutine read_contr_ind
          !
          do imode = im1,im2
             !
-            ispecies = PT%Mspecies(imode)
-            !
             !if (imode==PT%Nmodes) then
             !   !
             !   mat(imode) = me%poten%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
             !   !
             !else
                !
-               mat(imode) = me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
+               mat(imode) = me%vibmode(imode,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
                !
             !endif
             !
@@ -20170,7 +20160,7 @@ end subroutine read_contr_ind
       integer(ik),intent(in)         :: k(PT%Nmodes)
       real(rk)                       :: extF
       !
-      integer(ik)                   :: vr,imode,ispecies
+      integer(ik)                   :: vr,imode
       real(rk)                      :: mat(PT%Nmodes)
 
          !
@@ -20178,15 +20168,13 @@ end subroutine read_contr_ind
          !
          do imode = im1,im2
             !
-            ispecies = PT%Mspecies(imode)
-            !
             !if (imode==PT%Nmodes) then
             !   !
             !   mat(imode) = me%extF(imu)%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
             !   !
             !else
                !
-               mat(imode) = me%vib(ispecies,3)%coeff(k(imode),nu_i(imode),nu_j(imode))
+               mat(imode) = me%vibmode(imode,3)%coeff(k(imode),nu_i(imode),nu_j(imode))
                !
             !endif
             !
@@ -20282,6 +20270,26 @@ end subroutine read_contr_ind
           call ArrayStart('me%fields%coeff',alloc,size(me%vib(k1,k2)%coeff),kind(me%vib(k1,k2)%coeff))
           !
           call FLread_coeff_matelem(job_is,k1,k2,me%vib(k1,k2)%coeff(:,:,:))
+          !
+        enddo
+        !
+      enddo
+      !
+      allocate (me%vibmode(1:PT%Nmodes,-1:3))
+      !
+      do imode = 1,PT%Nmodes
+        !
+        job_is = 'vib'
+        !
+        bsize = job%bset(imode)%range(2)
+        ispecies = job%bset(imode)%species
+        !
+        do k2 = -1,3
+          !
+          allocate (me%vibmode(imode,k2)%coeff(0:MaxExpOrder,0:bsize,0:bsize),stat=alloc)
+          call ArrayStart('me%fields%coeff',alloc,size(me%vibmode(imode,k2)%coeff),kind(me%vibmode(imode,k2)%coeff))
+          !
+          call FLread_coeff_matelem(job_is,ispecies,k2,me%vibmode(imode,k2)%coeff(:,:,:))
           !
         enddo
         !
@@ -20444,7 +20452,7 @@ end subroutine read_contr_ind
       real(rk),intent(out)           :: grot(3,3),gcor(PT%Nmodes,3)
 
       integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
-      integer(ik)                   :: vl,vr,ispecies
+      integer(ik)                   :: vl,vr
       real(rk)                      :: mat(PT%Nmodes)
 
          !if (verbose>=6) write(out,"(/'PTmatrixelements_grot_gcor/start: matrix elemnts for the hamiltonian ')") 
@@ -20471,24 +20479,18 @@ end subroutine read_contr_ind
                 !
                 ! Check if the current iterm belongs to the current perturb. order
                 !
-                do ispecies = 1,PT%Nspecies
+                do imode = 1,PT%Nmodes
                    !
-                   do i = 1,PT%mode_ispecies(ispecies)
+                   if (imode/=PT%Nmodes) then
                       !
-                      imode = PT%mode_species(ispecies,i)
+                      mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                       !
-                      if (imode/=PT%Nmodes) then
-                         !
-                         mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                         !
-                      else
-                         !
-                         !
-                         mat(imode) =  me%grot(k1,k2)%coeff(iterm,vl,vr)
-                         !
-                      endif
+                   else
                       !
-                   enddo 
+                      !
+                      mat(imode) =  me%grot(k1,k2)%coeff(iterm,vl,vr)
+                      !
+                   endif
                    ! 
                 enddo
                 !
@@ -20509,31 +20511,25 @@ end subroutine read_contr_ind
                 !
                 k(:) = me%gcor(k1,k2)%IndexQ(:,iterm)
                 !
-                do ispecies = 1,PT%Nspecies
+                do imode = 1,PT%Nmodes
                    !
-                   do i = 1,PT%mode_ispecies(ispecies)
+                   if (imode/=PT%Nmodes) then
                       !
-                      imode = PT%mode_species(ispecies,i)
-                      !
-                      if (imode/=PT%Nmodes) then
+                      if (k1/=imode) then 
                          !
-                         if (k1/=imode) then 
-                            !
-                            mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                            !
-                         else
-                            !
-                            mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                            !
-                         endif
+                         mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                          !
                       else
                          !
-                         mat(imode) =  me%gcor(k1,k2)%coeff(iterm,vl,vr)
-                         !                        !
+                         mat(imode) =me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                         !
                       endif
                       !
-                   enddo 
+                   else
+                      !
+                      mat(imode) =  me%gcor(k1,k2)%coeff(iterm,vl,vr)
+                      !                        !
+                   endif
                    ! 
                 enddo
                 !
@@ -20545,14 +20541,7 @@ end subroutine read_contr_ind
             !
          enddo 
          !
-         !if (verbose>=7) write(out,"('PTmatrixelements_grot_gcor:  pot_t,gvib_t,grot,gcor_t ',4f18.8)") pot_t,gvib_t,grot_t,gcor_t
          !
-         !call TimerStart('PTmatrixelements')
-         !
-      !if (verbose>=6) write(out,"('PTmatrixelements/end')") 
-      
-
-
    end subroutine PTmatrixelements_grot_gcor
 
 
@@ -20568,7 +20557,7 @@ end subroutine read_contr_ind
       real(rk)                      :: mat_elem,f_Jk
 
       integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
-      integer(ik)                   :: vl,vr,tau_i,tau_j,k_i,k_j,jk,dk,ispecies
+      integer(ik)                   :: vl,vr,tau_i,tau_j,k_i,k_j,jk,dk
       real(rk)                      :: pot_t,gvib_t,mat(PT%Nmodes),grot_t,gcor_t
       type(PTcoeffT),pointer        :: fl
       !real(rk)                      :: mat_legatee(0:PT%Nmodes,1:PT%Nterms%maximal)
@@ -20598,30 +20587,24 @@ end subroutine read_contr_ind
                  if (fl%iorder(iterm)/=norder) cycle
                  !
                  k(:) = fl%IndexQ(:,iterm)
-                 do ispecies = 1,PT%Nspecies
+                 !
+                 do imode = 1,PT%Nmodes
                     !
-                    do i = 1,PT%mode_ispecies(ispecies)
+                    if (imode==PT%Nmodes) then
                        !
-                       imode = PT%mode_species(ispecies,i)
+                       mat(imode) = fl%coeff(iterm,vl,vr)
                        !
-                       if (imode==PT%Nmodes) then
-                          !
-                          mat(imode) = fl%coeff(iterm,vl,vr)
-                          !
-                       else
-                          !
-                          mat(imode) = me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                          !
-                       endif
+                    else
                        !
-                    enddo 
+                       mat(imode) = me%vibmode(imode,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                       !
+                    endif
                     ! 
                  enddo
                  !
                  pot_t = pot_t + product(mat(:))
                  !
               enddo
-              !
               ! 
               ! Vibrational part of the kinetic operator g_vib
               !
@@ -20638,40 +20621,34 @@ end subroutine read_contr_ind
                        !
                        k(:) = fl%IndexQ(:,iterm)
                        !
-                       do ispecies = 1,PT%Nspecies
+                       do imode = 1,PT%Nmodes
                           !
-                          do i = 1,PT%mode_ispecies(ispecies)
+                          if (imode==PT%Nmodes) then
                              !
-                             imode = PT%mode_species(ispecies,i)
+                             mat(imode) = fl%coeff(iterm,vl,vr)
                              !
-                             if (imode==PT%Nmodes) then
-                                !
-                                mat(imode) = fl%coeff(iterm,vl,vr)
-                                !
-                             else
-                                !
-                                if    (k1/=imode.and.k2/=imode) then 
-                                  !
-                                  mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                elseif (k1==imode.and.k2/=imode) then
-                                  !
-                                  mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                                  !
-                                elseif (k1/=imode.and.k2==imode) then
-                                  !
-                                  mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                else !   if (k1==imode.and.k2==imode) then
-                                  !
-                                  mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                endif
-                                !
-                                !
+                          else
+                             !
+                             if    (k1/=imode.and.k2/=imode) then 
+                               !
+                               mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
+                             elseif (k1==imode.and.k2/=imode) then
+                               !
+                               mat(imode) =-me%vibmode(imode, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                               !
+                             elseif (k1/=imode.and.k2==imode) then
+                               !
+                               mat(imode) = me%vibmode(imode, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
+                             else !   if (k1==imode.and.k2==imode) then
+                               !
+                               mat(imode) = me%vibmode(imode, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
                              endif
                              !
-                          enddo 
+                             !
+                          endif
                           ! 
                        enddo
                        !
@@ -20721,31 +20698,27 @@ end subroutine read_contr_ind
                   !
                   k(:) = fl%IndexQ(:,iterm)
                   !
-                  do ispecies = 1,PT%Nspecies
+                  do imode = 1,PT%Nmodes
                      !
-                     do i = 1,PT%mode_ispecies(ispecies)
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
                         !
-                        imode = PT%mode_species(ispecies,i)
+                        ! four terms that come together: 
+                        ! 1/2(Jx^2 - Jy^2) and (JxJy+JyJx)
+                        !     (JxJz+JzJx)  and (JzJy+JyJz)
                         !
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           ! four terms that come together: 
-                           ! 1/2(Jx^2 - Jy^2) and (JxJy+JyJx)
-                           !     (JxJz+JzJx)  and (JzJy+JyJz)
+                        ! first  - all even contributions 
+                        if (tau_i==tau_j) then 
+                           ! Jx2y2 
+                           mat(imode) =  0.5_rk*me%grot(1,1)%coeff(iterm,vl,vr)*me%rot(4)%coeff(Jk,dk,tau_i)
                            !
-                           ! first  - all even contributions 
-                           if (tau_i==tau_j) then 
-                              ! Jx2y2 
-                              mat(imode) =  0.5_rk*me%grot(1,1)%coeff(iterm,vl,vr)*me%rot(4)%coeff(Jk,dk,tau_i)
-                              !
-                              if (k_i==k_j) then 
-                                 ! two terms A*Jx^2+BJy^2+C*Jz^2
-                                 mat(imode) = mat(imode) + f_Jk*me%grot(1,1)%coeff(iterm,vl,vr)
-                              endif
-                           endif 
-                        endif
-                     enddo 
+                           if (k_i==k_j) then 
+                              ! two terms A*Jx^2+BJy^2+C*Jz^2
+                              mat(imode) = mat(imode) + f_Jk*me%grot(1,1)%coeff(iterm,vl,vr)
+                           endif
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                   !
@@ -20760,23 +20733,20 @@ end subroutine read_contr_ind
                   if (fl%iorder(iterm)/=norder) cycle
                   !
                   k(:) = fl%IndexQ(:,iterm)
-                  do ispecies = 1,PT%Nspecies
-                     do i = 1,PT%mode_ispecies(ispecies)
-                        imode = PT%mode_species(ispecies,i)
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           if (tau_i==tau_j) then 
-                              ! Jx2y2 
-                              mat(imode) =  0.5_rk*(-me%grot(2,2)%coeff(iterm,vl,vr))*me%rot(4)%coeff(Jk,dk,tau_i)
-                              !
-                              if (k_i==k_j) then 
-                                 ! two terms A*Jx^2+BJy^2+C*Jz^2
-                                 mat(imode) = mat(imode) + f_Jk*me%grot(2,2)%coeff(iterm,vl,vr)
-                              endif 
+                  do imode = 1,PT%Nmodes
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
+                        if (tau_i==tau_j) then 
+                           ! Jx2y2 
+                           mat(imode) =  0.5_rk*(-me%grot(2,2)%coeff(iterm,vl,vr))*me%rot(4)%coeff(Jk,dk,tau_i)
+                           !
+                           if (k_i==k_j) then 
+                              ! two terms A*Jx^2+BJy^2+C*Jz^2
+                              mat(imode) = mat(imode) + f_Jk*me%grot(2,2)%coeff(iterm,vl,vr)
                            endif 
-                        endif
-                     enddo 
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                enddo
@@ -20789,18 +20759,15 @@ end subroutine read_contr_ind
                   !
                   k(:) = fl%IndexQ(:,iterm)
                   !
-                  do ispecies = 1,PT%Nspecies
-                     do i = 1,PT%mode_ispecies(ispecies)
-                        imode = PT%mode_species(ispecies,i)
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           if (tau_i==tau_j.and.k_i==k_j) then 
-                              ! two terms A*Jx^2+BJy^2+C*Jz^2
-                              mat(imode) = real(k_i**2,rk)*me%grot(3,3)%coeff(iterm,vl,vr) 
-                           endif 
-                        endif
-                     enddo 
+                  do imode = 1,PT%Nmodes
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
+                        if (tau_i==tau_j.and.k_i==k_j) then 
+                           ! two terms A*Jx^2+BJy^2+C*Jz^2
+                           mat(imode) = real(k_i**2,rk)*me%grot(3,3)%coeff(iterm,vl,vr) 
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                enddo
@@ -20812,18 +20779,15 @@ end subroutine read_contr_ind
                   if (fl%iorder(iterm)/=norder) cycle
                   !
                   k(:) = fl%IndexQ(:,iterm)
-                  do ispecies = 1,PT%Nspecies
-                     do i = 1,PT%mode_ispecies(ispecies)
-                        imode = PT%mode_species(ispecies,i)
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           if (tau_i==tau_j) then 
-                              ! Jxz
-                              mat(imode) = me%grot(1,3)%coeff(iterm,vl,vr)*me%rot(6)%coeff(Jk,dk,tau_i)
-                           endif 
-                        endif
-                     enddo 
+                  do imode = 1,PT%Nspecies
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
+                        if (tau_i==tau_j) then 
+                           ! Jxz
+                           mat(imode) = me%grot(1,3)%coeff(iterm,vl,vr)*me%rot(6)%coeff(Jk,dk,tau_i)
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                enddo
@@ -20836,18 +20800,15 @@ end subroutine read_contr_ind
                   !
                   k(:) = fl%IndexQ(:,iterm)
                   ! Check if the current iterm belongs to the current perturb. order
-                  do ispecies = 1,PT%Nspecies
-                     do i = 1,PT%mode_ispecies(ispecies)
-                        imode = PT%mode_species(ispecies,i)
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           if (tau_i/=tau_j) then 
-                              ! Jxy
-                              mat(imode) = me%grot(1,2)%coeff(iterm,vl,vr)*me%rot(5)%coeff(Jk,dk,tau_i)
-                           endif 
-                        endif
-                     enddo 
+                  do imode = 1,PT%Nmodes
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
+                        if (tau_i/=tau_j) then 
+                           ! Jxy
+                           mat(imode) = me%grot(1,2)%coeff(iterm,vl,vr)*me%rot(5)%coeff(Jk,dk,tau_i)
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                enddo
@@ -20859,18 +20820,15 @@ end subroutine read_contr_ind
                   if (fl%iorder(iterm)/=norder) cycle
                   !
                   k(:) = fl%IndexQ(:,iterm)
-                  do ispecies = 1,PT%Nspecies
-                     do i = 1,PT%mode_ispecies(ispecies)
-                        imode = PT%mode_species(ispecies,i)
-                        if (imode/=PT%Nmodes) then
-                           mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        else
-                           if (tau_i/=tau_j) then 
-                              ! Jyz
-                              mat(imode) = me%grot(2,3)%coeff(iterm,vl,vr)*me%rot(7)%coeff(Jk,dk,tau_i)
-                           endif 
-                        endif
-                     enddo 
+                  do imode = 1,PT%Nmodes
+                     if (imode/=PT%Nmodes) then
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                     else
+                        if (tau_i/=tau_j) then 
+                           ! Jyz
+                           mat(imode) = me%grot(2,3)%coeff(iterm,vl,vr)*me%rot(7)%coeff(Jk,dk,tau_i)
+                        endif 
+                     endif
                   enddo
                   grot_t = grot_t + product(mat(:))
                enddo
@@ -20890,23 +20848,20 @@ end subroutine read_contr_ind
                      if (fl%iorder(iterm)/=norder) cycle
                      !
                      k(:) = fl%IndexQ(:,iterm)
-                     do ispecies = 1,PT%Nspecies
-                        do i = 1,PT%mode_ispecies(ispecies)
-                           imode = PT%mode_species(ispecies,i)
-                           if (imode/=PT%Nmodes) then
-                              if (k1/=imode) then 
-                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                              else
-                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                              endif
+                     do imode = 1,PT%Nmodes
+                        if (imode/=PT%Nmodes) then
+                           if (k1/=imode) then 
+                              mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                            else
-                              ! first  - all even contributions 
-                              if (tau_i/=tau_j) then 
-                                 mat(imode) =  me%gcor(k1,1)%coeff(iterm,vl,vr)*me%rot(1)%coeff(Jk,dk,tau_i)
-                              endif 
+                              mat(imode) =me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                          me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                            endif
-                        enddo 
+                        else
+                           ! first  - all even contributions 
+                           if (tau_i/=tau_j) then 
+                              mat(imode) =  me%gcor(k1,1)%coeff(iterm,vl,vr)*me%rot(1)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
                      enddo
                      gcor_t = gcor_t + product(mat(:))
                   enddo
@@ -20919,23 +20874,20 @@ end subroutine read_contr_ind
                      !
                      k(:) = fl%IndexQ(:,iterm)
                      ! Check if the current iterm belongs to the current perturb. order
-                     do ispecies = 1,PT%Nspecies
-                        do i = 1,PT%mode_ispecies(ispecies)
-                           imode = PT%mode_species(ispecies,i)
-                           if (imode/=PT%Nmodes) then
-                              if (k1/=imode) then 
-                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                              else
-                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                              endif
+                     do imode = 1,PT%Nspecies
+                        if (imode/=PT%Nmodes) then
+                           if (k1/=imode) then 
+                              mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                            else
-                              ! first  - all even contributions 
-                              if (tau_i==tau_j) then 
-                                 mat(imode) =  me%gcor(k1,2)%coeff(iterm,vl,vr)*me%rot(2)%coeff(Jk,dk,tau_i)
-                              endif 
+                              mat(imode) =me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                          me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                            endif
-                        enddo 
+                        else
+                           ! first  - all even contributions 
+                           if (tau_i==tau_j) then 
+                              mat(imode) =  me%gcor(k1,2)%coeff(iterm,vl,vr)*me%rot(2)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
                      enddo
                      gcor_t = gcor_t + product(mat(:))
                   enddo
@@ -20945,23 +20897,20 @@ end subroutine read_contr_ind
                   do iterm = 1,fl%Ncoeff
                      if (fl%iorder(iterm)/=norder) cycle
                      k(:) = fl%IndexQ(:,iterm)
-                     do ispecies = 1,PT%Nspecies
-                        do i = 1,PT%mode_ispecies(ispecies)
-                           imode = PT%mode_species(ispecies,i)
-                           if (imode/=PT%Nmodes) then
-                              if (k1/=imode) then 
-                                 mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                              else
-                                 mat(imode) =me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                             me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                              endif
+                     do imode = 1,PT%Nmodes
+                        if (imode/=PT%Nmodes) then
+                           if (k1/=imode) then 
+                              mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                            else
-                              ! first  - all even contributions 
-                              if (tau_i/=tau_j) then 
-                                 mat(imode) =  me%gcor(k1,3)%coeff(iterm,vl,vr)*me%rot(3)%coeff(Jk,dk,tau_i)
-                              endif 
+                              mat(imode) =me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                          me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                            endif
-                        enddo 
+                        else
+                           ! first  - all even contributions 
+                           if (tau_i/=tau_j) then 
+                              mat(imode) =  me%gcor(k1,3)%coeff(iterm,vl,vr)*me%rot(3)%coeff(Jk,dk,tau_i)
+                           endif 
+                        endif
                      enddo
                      gcor_t = gcor_t + product(mat(:))
                   enddo
@@ -20992,7 +20941,7 @@ end subroutine read_contr_ind
       real(rk)                      :: mat_elem
 
       integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
-      integer(ik)                   :: vl,vr,ispecies
+      integer(ik)                   :: vl,vr
       real(rk)                      :: gvib_t,mat(PT%Nmodes)
       type(PTcoeffT),pointer        :: fl
 
@@ -21022,40 +20971,34 @@ end subroutine read_contr_ind
                        !
                        k(:) = fl%IndexQ(:,iterm)
                        !
-                       do ispecies = 1,PT%Nspecies
+                       do imode = 1,PT%Nmodes
                           !
-                          do i = 1,PT%mode_ispecies(ispecies)
+                          if (imode==PT%Nmodes) then
                              !
-                             imode = PT%mode_species(ispecies,i)
+                             mat(imode) = fl%coeff(iterm,vl,vr)
                              !
-                             if (imode==PT%Nmodes) then
-                                !
-                                mat(imode) = fl%coeff(iterm,vl,vr)
-                                !
-                             else
-                                !
-                                if    (k1/=imode.and.k2/=imode) then 
-                                  !
-                                  mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                elseif (k1==imode.and.k2/=imode) then
-                                  !
-                                  mat(imode) =-me%vib(ispecies, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                                  !
-                                elseif (k1/=imode.and.k2==imode) then
-                                  !
-                                  mat(imode) = me%vib(ispecies, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                else !   if (k1==imode.and.k2==imode) then
-                                  !
-                                  mat(imode) = me%vib(ispecies, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                                  !
-                                endif
-                                !
-                                !
+                          else
+                             !
+                             if    (k1/=imode.and.k2/=imode) then 
+                               !
+                               mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
+                             elseif (k1==imode.and.k2/=imode) then
+                               !
+                               mat(imode) =-me%vibmode(imode, 1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                               !
+                             elseif (k1/=imode.and.k2==imode) then
+                               !
+                               mat(imode) = me%vibmode(imode, 1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
+                             else !   if (k1==imode.and.k2==imode) then
+                               !
+                               mat(imode) = me%vibmode(imode, 2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                               !
                              endif
                              !
-                          enddo 
+                             !
+                          endif
                           ! 
                        enddo
                        !
@@ -21615,7 +21558,7 @@ end subroutine read_contr_ind
          do ilevel = 1,dvr_size
            do jlevel = ilevel,dvr_size
               !
-              H1dvr(ilevel,jlevel) = me%vib(ispecies,-1)%coeff(1,ilevel-1,jlevel-1)
+              H1dvr(ilevel,jlevel) = me%vibmode(imode,-1)%coeff(1,ilevel-1,jlevel-1)
               H1dvr(jlevel,ilevel) = H1dvr(ilevel,jlevel)
               !
            enddo
@@ -21858,7 +21801,7 @@ end subroutine read_contr_ind
          !
          read (io_slot,rec=1) (phi0(k0),k0=0,npoints),(dphi0(k0),k0=0,npoints)
          !
-         pol(1,0) = me%vib(ispecies,-1)%coeff(1,0,0)
+         pol(1,0) = me%vibmode(imode,-1)%coeff(1,0,0)
          pol(2,0) = 0
          pol(3,0) = 1.0_ark
          !
@@ -23713,7 +23656,7 @@ end subroutine read_contr_ind
       real(rk),intent(out),optional  :: gcor
       !
       integer(ik)                   :: k(PT%Nmodes)  
-      integer(ik)                   :: vl,vr,imode,iterm,ispecies
+      integer(ik)                   :: vl,vr,imode,iterm
       real(rk)                      :: mat(PT%Nmodes)
       type(PTcoeffT),pointer        :: fl
 
@@ -23745,8 +23688,6 @@ end subroutine read_contr_ind
                 !
                 do imode = im1,im2
                    !
-                   ispecies = PT%Mspecies(imode)
-                   !
                    if (imode==PT%Nmodes) then
                       !
                       mat(imode) = fl%coeff(iterm,vl,vr)
@@ -23755,7 +23696,7 @@ end subroutine read_contr_ind
                       !
                    else
                       !
-                      mat(imode) = me%vib(ispecies,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                      mat(imode) = me%vibmode(imode,0)%coeff(k(imode),nu_i(imode),nu_j(imode))
                       !
                       !mat(imode) = bs%matelements(0,k(imode),nu_i(imode),nu_j(imode))
                       !
@@ -23783,8 +23724,6 @@ end subroutine read_contr_ind
                 !
                 do imode = im1,im2
                    !
-                   ispecies = PT%Mspecies(imode)
-                   !
                    if (imode==PT%Nmodes) then
                       !
                       mat(imode) = fl%coeff(iterm,vl,vr)
@@ -23795,25 +23734,25 @@ end subroutine read_contr_ind
                       !
                       if    (k1/=imode.and.k2/=imode) then 
                         !
-                        mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                         !
                         !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
                         !
                       elseif (k1==imode.and.k2/=imode) then
                         !
-                        mat(imode) =-me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                        mat(imode) =-me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                         !
                         !mat(imode) =-bs%matelements(1,k(imode),nu_j(imode),nu_i(imode))
                         !
                       elseif (k1/=imode.and.k2==imode) then
                         !
-                        mat(imode) = me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                         !
                         !mat(imode) = bs%matelements(1,k(imode),nu_i(imode),nu_j(imode))
                         !
                       else !   if (k1==imode.and.k2==imode) then
                         !
-                        mat(imode) = me%vib(ispecies,2)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        mat(imode) = me%vibmode(imode,2)%coeff(k(imode),nu_i(imode),nu_j(imode))
                         !
                         !mat(imode) = bs%matelements(2,k(imode),nu_i(imode),nu_j(imode))
                         !
@@ -23860,11 +23799,9 @@ end subroutine read_contr_ind
                 !
                 do imode = im1,im2
                    !
-                   ispecies = PT%Mspecies(imode)
-                   !
                    if (imode/=PT%Nmodes) then
                       !
-                      mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                      mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                       !
                       !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
                       !
@@ -23899,20 +23836,18 @@ end subroutine read_contr_ind
                 !
                 do imode = im1,im2
                   !
-                  ispecies = PT%Mspecies(imode)
-                  !
                   if (imode/=PT%Nmodes) then
                      !
                      if (k1/=imode) then 
                         !
-                        mat(imode) = me%vib(ispecies,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
                         !
                         !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
                         !
                      else
                         !
-                        mat(imode) = me%vib(ispecies,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                     me%vib(ispecies,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                        mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                     me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
                         !
                         !mat(imode) =bs%matelements(1,k(imode),nu_i(imode),nu_j(imode))-&
                         !            bs%matelements(1,k(imode),nu_j(imode),nu_i(imode))
@@ -32028,7 +31963,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
   real(rk), intent(in) :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32065,8 +32000,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
       nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       do iterm=1, nterms
          do kmode=imode1, imode2
-            ispecies = job%bset(kmode)%species
-            me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
         enddo
         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
       enddo
@@ -32101,7 +32035,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32138,8 +32072,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
       nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       do iterm=1, nterms
          do kmode=imode1, imode2
-           ispecies = job%bset(kmode)%species
-           me_term(kmode) = me%vib(ispecies,0)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+           me_term(kmode) = me%vibmode(kmode,0)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
          enddo
          !
          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
@@ -32214,8 +32147,7 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoef
       !
       do iterm=1, nterms
          do kmode=imode1, imode2
-            ispecies = job%bset(kmode)%species
-            me_term(kmode) = me%vib(ispecies,3)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            me_term(kmode) = me%vibmode(kmode,3)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
         enddo
         !
         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
@@ -32244,14 +32176,14 @@ end subroutine calc_contr_matelem_expansion_extF_Nclass
 
 
 subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,terms,FLcoeff,prim_vect,me_contr)
-
+  !
   character(cl), intent(in) :: func_tag
   integer(ik), intent(in) :: imode, jmode, nterms, terms(:,:)
   real(rk), intent(in)  :: FLcoeff(:,0:,0:)
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32281,7 +32213,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32290,15 +32222,14 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
       do iterm=1, nterms
         !
         do kmode=imode1,imode2
-           ispecies = job%bset(kmode)%species
            if (kmode/=imode.and.kmode/=jmode) then
-              me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+              me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
            elseif (kmode/=jmode) then
-              me_term(kmode) = -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+              me_term(kmode) =-me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
            elseif (kmode/=imode) then
-              me_term(kmode) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+              me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
            else
-              me_term(kmode) = me%vib(ispecies,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+              me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
            endif
         enddo
         !
@@ -32336,7 +32267,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32366,15 +32297,14 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
   !
   if (imode<imode1.and.jmode<imode1) then
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do kmode=imode1,imode2
-             ispecies = job%bset(kmode)%species
-             me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
         enddo
@@ -32385,18 +32315,16 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
     !
   elseif (imode<imode1) then
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do kmode=imode1,imode2
-             ispecies = job%bset(kmode)%species
-             me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(imode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
-          ispecies = job%bset(jmode)%species
-          me_term(jmode) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+          me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           !
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
           !
@@ -32408,18 +32336,16 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
     !
   elseif (jmode<imode1) then
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do kmode=imode1,imode2
-             ispecies = job%bset(kmode)%species
-             me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
-          ispecies = job%bset(imode)%species
-          me_term(imode) = -me%vib(ispecies,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
+          me_term(imode) = -me%vibmode(imode,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
           !
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
           !
@@ -32433,7 +32359,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
     !
     ! compute matrix elements between products of 1D functions
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -32442,13 +32368,10 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
         do iterm=1, nterms
           !
           do kmode=imode1,imode2
-             ispecies = job%bset(kmode)%species
-             me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
-          ispecies = job%bset(imode)%species
-          me_term(imode) = -me%vib(ispecies,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
-          ispecies = job%bset(jmode)%species
-          me_term(jmode) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+          me_term(imode) = -me%vibmode(imode,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
+          me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           !
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
           !
@@ -32460,7 +32383,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
     !
   else
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
@@ -32469,8 +32392,7 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
         do iterm=1, nterms
           !
           do kmode=imode1,imode2
-             ispecies = job%bset(kmode)%species
-             me_term(kmode) = me%vib(ispecies,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
           !
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
@@ -32509,7 +32431,7 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: iclass,kmode,ispecies,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
   real(rk), allocatable :: tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32539,20 +32461,19 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
       nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       do iterm=1, nterms
          do kmode=imode1, imode2
-            ispecies = job%bset(kmode)%species
             !
             if (kmode==imode) then
-               me_term(kmode) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))&
-                               -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+               me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))&
+                               -me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
             else
-               me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+               me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
             endif
             !
         enddo
@@ -32589,7 +32510,7 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   character(cl), intent(in) :: func_tag
   real(rk), intent(out) :: me_contr(:,:,:)
   !
-  integer(ik) :: imode,jmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: imode,jmode,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32618,15 +32539,14 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
   !
   case('Vpot')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do jmode=imode1,imode2
-            ispecies = job%bset(jmode)%species
-            me_term(jmode) = me%vib(ispecies,0)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+            me_term(jmode) = me%vibmode(jmode,0)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           enddo
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
         enddo
@@ -32636,15 +32556,14 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
     !
   case('Tvib','Trot','Tcor','pseu')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,iprim)
       do jprim=1, nprim
         nu_j(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,jprim)
         do iterm=1, nterms
           do jmode=imode1, imode2
-            ispecies = job%bset(jmode)%species
-            me_term(jmode) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+            me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           enddo
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
         enddo
@@ -32653,15 +32572,14 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
     !$omp end parallel do
     !
   case ('extF')
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do jmode=imode1, imode2
-            ispecies = job%bset(jmode)%species
-            me_term(jmode) = me%vib(ispecies,3)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+            me_term(jmode) = me%vibmode(jmode,3)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           enddo
           me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
         enddo
@@ -32707,7 +32625,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
   character(cl), intent(in) :: func_tag
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: jmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: jmode,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32739,18 +32657,17 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
     !
   case('Tvib')
     !
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do jmode=imode1, imode2
-            ispecies = job%bset(jmode)%species
             if (jmode==imode) then
-              me_term(jmode) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
             else
-              me_term(jmode) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
             endif
             !
           enddo
@@ -32766,7 +32683,7 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
     !
   case('Tcor')
     ! 
-    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,jmode,iterm,me_term) shared(me_contr) schedule(dynamic)
     do iprim=1, nprim
       nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
       !
@@ -32775,12 +32692,11 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do jmode=imode1, imode2
-            ispecies = job%bset(jmode)%species
             if (jmode==imode) then
-              me_term(jmode) = me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))&
-                              -me%vib(ispecies,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+              me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))&
+                              -me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
             else
-              me_term(jmode) = me%vib(ispecies,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
             endif
           enddo
           !
@@ -32833,7 +32749,7 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   character(cl), intent(in) :: func_tag
   real(rk), intent(out) :: me_contr(:,:,:)
 
-  integer(ik) :: kmode,ispecies,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+  integer(ik) :: kmode,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
                  nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
@@ -32872,22 +32788,21 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,ispecies,iterm,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,iterm,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
       nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       do iterm=1, nterms
         do kmode=imode1, imode2
-          ispecies = job%bset(kmode)%species
           if (kmode/=imode.and.kmode/=jmode) then
-            me_term(kmode) = me%vib(ispecies,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           elseif (kmode/=jmode) then
-            me_term(kmode) = -me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+            me_term(kmode) =-me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
           elseif (kmode/=imode) then
-            me_term(kmode) = me%vib(ispecies,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           else
-            me_term(kmode) = me%vib(ispecies,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           endif
         enddo
         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
