@@ -31017,14 +31017,14 @@ subroutine PTstore_contr_matelem(jrot)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
       !
       ! <p_i*G*p_j>
-      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call calc_contr_matelem_expansion_Tvib_Nclass1(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
-
-      !call calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !
+      call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms,me_contr)
       !
-      gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+      gvib_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
       !if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') jmode,imode
       !
@@ -31203,7 +31203,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,3,dimen,fl%Ncoeff,nterms,me_contr)
       !
-      gcor_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+      gcor_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -31366,7 +31366,7 @@ subroutine PTstore_contr_matelem(jrot)
       call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,3,3,dimen,fl%Ncoeff,nterms,me_contr)
       !
-      grot_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+      grot_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
       !if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, 0
       !
@@ -31510,7 +31510,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
   call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms,me_contr)
-  Vpot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
+  Vpot_me(iclass)%me(1:fl%Ncoeff,:,:,1,1) = me_contr(1:fl%Ncoeff,:,:)
   !
   deallocate(me_contr)
   call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -31658,7 +31658,7 @@ subroutine PTstore_contr_matelem(jrot)
         call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
         call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms,me_contr)
         !
-        extF_me(iclass)%me(:,:,:,ipar,1) = me_contr(:,:,:)
+        extF_me(iclass)%me(1:fl%Ncoeff,:,:,ipar,1) = me_contr(1:fl%Ncoeff,:,:)
         !
         deallocate(me_contr)
         call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -31993,7 +31993,7 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
   !
   ! compute matrix elements between products of 1D functions
   !  
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32065,7 +32065,7 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,ispecies,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
@@ -32255,6 +32255,114 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
   call TimerStop('fast-ci: computing Tvib_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Tvib_Nclass
+
+
+
+subroutine calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,nterms,terms,FLcoeff,prim_vect,me_contr)
+  !
+  character(cl), intent(in) :: func_tag
+  integer(ik), intent(in) :: imode, jmode, nterms, terms(:,:)
+  real(rk), intent(in)  :: FLcoeff(:,0:,0:)
+  real(rk), intent(in)  :: prim_vect(:,:)
+  real(rk), intent(out) :: me_contr(:,:,:)
+
+  integer(ik) :: iclass,kmode,info,alloc_p,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
+                 nu_i(PT%Nmodes), nu_j(PT%Nmodes), imode1, imode2, nmodes
+  real(rk), allocatable :: tmat(:,:)
+  real(rk) :: me_term(PT%Nmodes)
+  !
+  if (trim(func_tag)/='Tvib') then
+    write(out, '(/a,1x,a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field ', trim(func_tag)
+    stop 'calc_contr_matelem_expansion_Tvib_Nclass error: illegal field '
+  endif
+  call TimerStart('fast-ci: computing Tvib_Nclass')
+  !
+  iclass = PT%Nclasses
+  nmodes = PT%Nmodes
+  imode1 = PT%mode_class(iclass,1)
+  imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+  nprim = contr(iclass)%dimen
+  nroots = contr(iclass)%nroots
+  !
+  if (max(nroots,nprim)/=size(me_contr,dim=2).or.max(nroots,nprim)/=size(me_contr,dim=3)) then
+    write(out, '(/a)') 'calc_contr_matelem_expansion_Tvib_Nclass error: matrix "me_contr" has wrong dimensions'
+    stop
+  endif
+  !
+  allocate(tmat(nprim,nroots),stat=info)
+  call ArrayStart('calc_contr_matelem_expansion_Tvib_Nclass',info,size(tmat),kind(tmat))
+  !
+  imode2 = min(PT%Nmodes-1,imode2)
+  !
+  ! compute matrix elements between products of 1D functions
+  !
+  if (imode<imode1.and.jmode<imode1) then
+    !
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        !
+        do iterm=1, nterms
+          !
+          do kmode=imode1,imode2
+             me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+          enddo
+          !
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          !
+        enddo
+        !
+      enddo
+    enddo
+    !$omp end parallel do
+  else
+    !
+    !$omp parallel do private(iprim,jprim,nu_i,nu_j,iterm,kmode,me_term) shared(me_contr) schedule(dynamic)
+    do iprim=1, nprim
+      nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
+      do jprim=1, nprim
+        nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
+        !
+        do iterm=1, nterms
+          !
+          do kmode=imode1,imode2
+             if (kmode/=imode.and.kmode/=jmode) then
+                me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             elseif (kmode/=jmode) then
+                me_term(kmode) =-me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+             elseif (kmode/=imode) then
+                me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             else
+                me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             endif
+          enddo
+          !
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          !
+        enddo
+        !
+      enddo
+    enddo
+    !$omp end parallel do
+    !
+  endif
+  !
+  ! transform to contracted basis
+  !
+  do iterm=1, nterms
+    call dgemm('N', 'N', nprim, nroots, nprim, 1.0d0, me_contr(iterm,1:nprim,1:nprim), nprim, &
+               prim_vect(1:nprim,1:nroots), nprim, 0.0d0, tmat(1:nprim,1:nroots), nprim)
+    call dgemm('T', 'N', nroots, nroots, nprim, 1.0d0, prim_vect(1:nprim,1:nroots), nprim, &
+               tmat(1:nprim,1:nroots), nprim, 0.0d0,me_contr(iterm,1:nroots,1:nroots), nroots)
+  enddo
+  !
+  deallocate(tmat)
+  call ArrayStop('calc_contr_matelem_expansion_Tvib_Nclass')
+  call TimerStop('fast-ci: computing Tvib_Nclass')
+  !
+end subroutine calc_contr_matelem_expansion_Tvib_Nclass_3
 
 
 

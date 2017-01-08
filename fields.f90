@@ -6950,9 +6950,21 @@ end subroutine check_read_save_none
         if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
-        if (trove%sparse) call FLCompact_a_field_sparse(trove%poten,"poten")
+        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+           call print_poten
+        endif 
         !
-        if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) call print_poten
+        if (trove%sparse) then
+           !
+          call FLCompact_a_field_sparse(trove%poten,"poten")
+          !
+          if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+            !
+            write(out,"('After compacting:')")
+            call print_poten
+          endif
+          !
+        endif
         !
         return 
         !
@@ -7203,12 +7215,20 @@ end subroutine check_read_save_none
     fl => trove%poten
     call check_field_smoothness(fl,'CHECK',npoints,'poten')
     !
-    if (trove%sparse) call FLCompact_a_field_sparse(trove%poten,"poten")
-    !
-    if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
-       !
+    if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
        call print_poten
-       !
+    endif
+    !
+    if (trove%sparse) then
+      !
+      call FLCompact_a_field_sparse(trove%poten,"poten")
+      !
+      if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+        !
+        write(out,"('After compacting:')")
+        call print_poten
+      endif
+      !
     endif
     !
     call TimerStop('Potential')
@@ -7245,32 +7265,26 @@ end subroutine check_read_save_none
      !
      integer(ik) :: i,irho
         !
-        write(out,"('pseudo-potential and potential parameteres:')")
+        write(out,"('pseudo-potential parameteres:')")
         !
-        do i = 1,max(trove%pseudo%Ncoeff,trove%poten%Ncoeff)
+        do i = 1,trove%pseudo%Ncoeff
            !
-           if (i<=min(trove%pseudo%Ncoeff,trove%poten%Ncoeff)) then 
+           do irho=0,trove%Npoints,1
               !
-              do irho=0,trove%Npoints,1
-                 write(out,"(20x,i5,1x,i7,2f24.8,30i4)") irho,i,trove%pseudo%field(i,irho),trove%poten%field(i,irho),&
-                                                  (FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
-              enddo
+              write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(trove%pseudo%IndexQ(imode,i),imode=1,min(30,trove%Nmodes))
               !
-           elseif (i<trove%pseudo%Ncoeff) then 
-              !
-              do irho=0,trove%Npoints,1
-                 !
-                 write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
-                 !
-              enddo
-              !
-           else
-              !
-              do irho=0,trove%Npoints,1
-                 write(out,"(20x,i5,1x,i7,24x,f24.8,30i4)") irho,i,trove%poten%field(i,irho),(FLIndexQ(imode,i),imode=1,min(30,trove%Nmodes))
-              enddo
-              !
-           endif
+           enddo
+           !
+        enddo
+        !
+        write(out,"('potential parameteres:')")
+        !
+        do i = 1,trove%poten%Ncoeff
+           !
+           do irho=0,trove%Npoints,1
+              write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)")  irho,i,trove%poten%field(i,irho),&
+                                                         (trove%poten%IndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+           enddo
            !
         enddo
         !     
@@ -13879,7 +13893,7 @@ end subroutine check_read_save_none
           !
           if (.not.trove%sparse) then
             write(out,"('kinetic.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-            stop 'kinetic.chk-CheckpointRestore_kinetic_ascii error SPARSE should be swirched on'
+            stop 'kinetic.chk-CheckpointRestore_kinetic_ascii error SPARSE should be switched on'
           endif
           !
           if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
@@ -14197,7 +14211,7 @@ end subroutine check_read_save_none
           !
           if (.not.trove%sparse) then
             write(out,"('potential.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-            stop 'potential.chk error SPARSE should be swirched on'
+            stop 'potential.chk error SPARSE should be switched on'
           endif
           !
           if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
@@ -14269,7 +14283,7 @@ end subroutine check_read_save_none
           !
           if (.not.trove%sparse) then
             write(out,"('external.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-            stop 'external.chk error SPARSE should be swirched on'
+            stop 'external.chk error SPARSE should be switched on'
           endif
           !
           if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
@@ -15360,7 +15374,21 @@ end subroutine check_read_save_none
            nu_i = bs%mode(imode)
            powers = 0 ; powers(nu_i) = 2
            k = FLQindex(trove%Nmodes_e,powers)
-           f2(imode) = fl%field(k,irho_eq)
+           !
+           if (trove%sparse) then
+             !
+             call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+             !
+             f2(imode) = 0 
+             !
+             if (i/=0) f2(imode) = trove%poten%field(i,irho_eq)
+             !
+           else
+             !
+             f2(imode) = fl%field(k,irho_eq)
+             !
+           endif
+           !
         enddo 
         !
         ! Check if all quadratic parameters are equal for every considered mode
@@ -15381,6 +15409,18 @@ end subroutine check_read_save_none
           nu_i = bs%mode(imode)
           fl => trove%g_vib(nu_i,nu_i)
           g2(imode) = fl%field(1,irho_eq)
+          !
+          if (trove%sparse) then
+            !
+            g2(imode) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+            !
+            if (abs(g2(1))<sqrt(small_).or.trove%g_vib(nu_i,nu_i)%ifromsparse(1)/=1) then 
+              write(out,"('FLbset1DNew: g(2)=0 in the sparse-field or inconsistent sparse-recored/=1',i8)") trove%g_vib(nu_i,nu_i)%ifromsparse(1)
+              stop 'FLbset1DNew: g(2)=0 in the sparse-field'
+            endif
+            !
+          endif
+          !
         enddo 
         !
         ! The same check for all g_0 kinetic parameters to be equal for every considered mode
