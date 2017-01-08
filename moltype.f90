@@ -806,7 +806,7 @@ module moltype
        !
        select case (J)
          !
-       case (1:101)
+       case (0:101)
          !
          p1 = molec%zmatrix(iatom)%connect(1)
          p2 = molec%zmatrix(iatom)%connect(2)
