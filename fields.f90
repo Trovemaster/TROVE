@@ -7340,7 +7340,7 @@ end subroutine check_read_save_none
       !
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
-      call print_coeff
+      call print_external
       !
       if (trove%sparse) call compact_sparse_external
       !
@@ -7592,7 +7592,7 @@ end subroutine check_read_save_none
     !
     ! report coefficients 
     !
-    call print_coeff
+    call print_external  
     !
     if (trove%sparse) call compact_sparse_external
     !
@@ -7625,7 +7625,7 @@ end subroutine check_read_save_none
   
   
   
-   subroutine print_coeff  
+   subroutine print_external  
   
       integer(ik) :: imu,irho,Ncoeff,npoints,nterms_max
   
@@ -7650,7 +7650,7 @@ end subroutine check_read_save_none
          end do
       end do
 
-     end subroutine print_coeff  
+     end subroutine print_external  
 
 
     subroutine compact_sparse_external
@@ -12693,10 +12693,10 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                if (fl%Ncoeff/= Tcoeff) then 
-                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)")  k1,k2,fl%Ncoeff,Tcoeff
-                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
-                end if 
+                !if (fl%Ncoeff/= Tcoeff) then 
+                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)")  k1,k2,fl%Ncoeff,Tcoeff
+                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
+                !end if 
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12726,10 +12726,10 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                if (fl%Ncoeff/= Tcoeff) then 
-                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_rot disagree with ncoeff of field'
-                end if 
+                !if (fl%Ncoeff/= Tcoeff) then 
+                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_rot disagree with ncoeff of field'
+                !end if 
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12758,10 +12758,10 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                if (fl%Ncoeff/= Tcoeff) then 
-                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_cor disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_cor disagree with ncoeff of field'
-                end if 
+                !if (fl%Ncoeff/= Tcoeff) then 
+                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_cor disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_cor disagree with ncoeff of field'
+                !end if 
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12782,10 +12782,10 @@ end subroutine check_read_save_none
         !
         read(chkptIO) Tcoeff
         !
-        if (trove%poten%Ncoeff/=Tcoeff) then 
-          write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-          stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
-        end if 
+        !if (trove%poten%Ncoeff/=Tcoeff) then 
+        !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+        !  stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
+        !end if 
         !
         trove%poten%Ncoeff = Tcoeff
         !
@@ -12822,10 +12822,10 @@ end subroutine check_read_save_none
                 if (trove%sparse) then 
                   read(chkptIO) Tcoeff
                   !
-                  if (fl%Ncoeff/= Tcoeff) then 
-                    write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                    stop 'check_point_Hamiltonian - Ncoeff (basis) in L2vib disagree with ncoeff of field'
-                  end if 
+                  !if (fl%Ncoeff/= Tcoeff) then 
+                  !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                  !  stop 'check_point_Hamiltonian - Ncoeff (basis) in L2vib disagree with ncoeff of field'
+                  !end if 
                 endif
                 !
                 fl%Ncoeff = Tcoeff
@@ -12861,10 +12861,10 @@ end subroutine check_read_save_none
              !if (trove%sparse) then 
              read(chkptIO) Tcoeff
              !
-             if (fl%Ncoeff/= Tcoeff) then 
-               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-               stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
-             end if 
+             !if (fl%Ncoeff/= Tcoeff) then 
+             !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+             !  stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
+             !end if 
              !
              fl%Ncoeff = Tcoeff
              !

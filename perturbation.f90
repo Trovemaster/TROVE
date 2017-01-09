@@ -17178,7 +17178,10 @@ module perturbation
                !
              enddo
              !
-             me_class0(Nclasses) = extF_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
+             nu_i = nu_classes(Nclasses,icontr)
+             nu_j = nu_classes(Nclasses,jcontr)
+             !
+             me_class0(Nclasses) = extF_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,1)
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
@@ -20312,6 +20315,7 @@ end subroutine read_contr_ind
       call ArrayStart('me%fields%coeff',alloc,size(me%poten%coeff),kind(me%poten%coeff))
       call ArrayStart('me%fields%coeff',alloc,size(me%poten%iorder),kind(me%poten%iorder))
       call ArrayStart('me%fields%IndexQ',alloc,size(me%poten%IndexQ),kind(me%poten%IndexQ))
+      call ArrayStart('me%fields%iorder',alloc,size(me%poten%IndexQ),kind(me%poten%iorder))
       call FLread_coeff_matelem(job_is,1,1,me%poten%coeff(:,:,:))
       call FLread_IndexQ_field(job_is,1,1,me%poten%IndexQ(:,:))
       !
@@ -20330,6 +20334,7 @@ end subroutine read_contr_ind
                       me%gvib(k1,k2)%iorder(gvib_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%gvib(k1,k2)%coeff),kind(me%gvib(k1,k2)%coeff))
             call ArrayStart('me%fields%IndexQ',alloc,size(me%gvib(k1,k2)%IndexQ),kind(me%gvib(k1,k2)%IndexQ))
+            call ArrayStart('me%fields%iorder',alloc,size(me%gvib(k1,k2)%IndexQ),kind(me%gvib(k1,k2)%iorder))
             call FLread_coeff_matelem(job_is,k1,k2,me%gvib(k1,k2)%coeff(:,:,:))
             call FLread_IndexQ_field(job_is,k1,k2,me%gvib(k1,k2)%IndexQ(:,:))
             !
@@ -20351,6 +20356,7 @@ end subroutine read_contr_ind
                       me%grot(k1,k2)%iorder(grot_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%grot(k1,k2)%coeff),kind(me%grot(k1,k2)%coeff))
             call ArrayStart('me%fields%IndexQ',alloc,size(me%grot(k1,k2)%IndexQ),kind(me%grot(k1,k2)%IndexQ))
+            call ArrayStart('me%fields%iorder',alloc,size(me%grot(k1,k2)%IndexQ),kind(me%grot(k1,k2)%iorder))
             call FLread_coeff_matelem(job_is,k1,k2,me%grot(k1,k2)%coeff(:,:,:))
             call FLread_IndexQ_field(job_is,k1,k2,me%grot(k1,k2)%IndexQ(:,:))
             !
@@ -20372,6 +20378,7 @@ end subroutine read_contr_ind
                       me%gcor(k1,k2)%iorder(gcor_N),stat=alloc)
             call ArrayStart('me%fields%coeff',alloc,size(me%gcor(k1,k2)%coeff),kind(me%gcor(k1,k2)%coeff))
             call ArrayStart('me%fields%IndexQ',alloc,size(me%gcor(k1,k2)%IndexQ),kind(me%gcor(k1,k2)%IndexQ))
+            call ArrayStart('me%fields%iorder',alloc,size(me%gcor(k1,k2)%IndexQ),kind(me%gcor(k1,k2)%iorder))
             call FLread_coeff_matelem(job_is,k1,k2,me%gcor(k1,k2)%coeff(:,:,:))
             call FLread_IndexQ_field(job_is,k1,k2,me%gcor(k1,k2)%IndexQ(:,:))
             !
@@ -20393,10 +20400,11 @@ end subroutine read_contr_ind
               !
               L2vib_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
-              allocate (me%L2(k1,k2)%coeff(L2vib_N,0:bsize,0:bsize),me%gvib(k1,k2)%IndexQ(Nmodes,L2vib_N),&
+              allocate (me%L2(k1,k2)%coeff(L2vib_N,0:bsize,0:bsize),me%L2(k1,k2)%IndexQ(Nmodes,L2vib_N),&
                         me%L2(k1,k2)%iorder(L2vib_N),stat=alloc)
               call ArrayStart('me%fields%coeff',alloc,size(me%L2(k1,k2)%coeff),kind(me%L2(k1,k2)%coeff))
               call ArrayStart('me%fields%IndexQ',alloc,size(me%L2(k1,k2)%IndexQ),kind(me%L2(k1,k2)%IndexQ))
+              call ArrayStart('me%fields%iorder',alloc,size(me%L2(k1,k2)%IndexQ),kind(me%L2(k1,k2)%iorder))
               call FLread_coeff_matelem(job_is,k1,k2,me%L2(k1,k2)%coeff(:,:,:))
               call FLread_IndexQ_field(job_is,k1,k2,me%L2(k1,k2)%IndexQ(:,:))
               !
@@ -20417,14 +20425,18 @@ end subroutine read_contr_ind
         job_is = 'externalF'
         do imu = 1,extF_rank
            !
-           extF_N_ = FLread_fields_dimension_field(job_is,k1,0)
+           extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
            !
-           allocate (me%extF(imu)%coeff(extF_N_,0:bsize,0:bsize),stat=alloc)
+           allocate (me%extF(imu)%coeff(extF_N_,0:bsize,0:bsize),me%extF(imu)%IndexQ(Nmodes,extF_N_),&
+                     me%extF(imu)%iorder(extF_N_),stat=alloc)
            !
            call ArrayStart('me%fields%coeff',alloc,size(me%extF(imu)%coeff),kind(me%extF(imu)%coeff))
+           call ArrayStart('me%fields%IndexQ',alloc,size(me%extF(imu)%IndexQ),kind(me%extF(imu)%IndexQ))
+           call ArrayStart('me%fields%iorder',alloc,size(me%extF(imu)%iorder),kind(me%extF(imu)%iorder))
            call FLread_coeff_matelem(job_is,imu,1,me%extF(imu)%coeff(:,:,:))
            call FLread_IndexQ_field(job_is,imu,1,me%extF(imu)%IndexQ(:,:))
            !
+           me%extF(imu)%iorder = 0 
            me%extF(imu)%Ncoeff = extF_N(imu)
            !
         enddo
@@ -31641,7 +31653,7 @@ subroutine PTstore_contr_matelem(jrot)
      dimen = contr(iclass)%nroots
      nprim = contr(iclass)%dimen
      !
-     allocate(extF_me(iclass)%me(nterms,dimen,dimen,1,1), stat=info)
+     allocate(extF_me(iclass)%me(nterms,dimen,dimen,extF_rank,1), stat=info)
      write(sclass,'(i4)') iclass
      skey = 'extF_me('//trim(adjustl(sclass))//')'
      call ArrayStart(trim(skey),info,1,rk,size(extF_me(iclass)%me,kind=hik))
