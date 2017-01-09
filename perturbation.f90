@@ -20234,6 +20234,8 @@ end subroutine read_contr_ind
       MaxExpOrder= max(potorder,kinorder,extForder)
       PT%Nterms%maximal = Ncoeffs
       !
+      if (job%verbose>=5) write(out,"('  Allocating and reading me%vibmode objects with primitive matrix elements ...')") 
+      !
       if (treat_rotation) then
          !
          job_is = 'rot'
@@ -20294,6 +20296,9 @@ end subroutine read_contr_ind
         enddo
         !
       enddo
+      !
+      if (job%verbose>=5) write(out,"('  ...done!')") 
+      if (job%verbose>=5) write(out,"('  Allocating objects for the contracted matrix elements ...')") 
       !
       bsize = job%bset(PT%Nmodes)%range(2)
       !
@@ -20433,6 +20438,8 @@ end subroutine read_contr_ind
       !call FLfree_primitive_objects 
       !
       deallocate(extF_N)
+      !
+      if (job%verbose>=5) write(out,"('  ... done!')") 
       !
       if (job%verbose>=5) write(out,"('PTget_primitive_matelements/done!')") 
       !
