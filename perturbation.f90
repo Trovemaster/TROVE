@@ -8317,7 +8317,7 @@ module perturbation
                     !
                     if(abs(mat_elem)>1.0_rk) then 
                       !write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
-                      write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,' Non-diagonal element between different symmetries is too large!')") & 
+                      write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,' Non-diagonal element (euler) between different symmetries is too large!')") & 
                                     sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem
                       stop 'non-zero element between two symmetries'
                     endif
@@ -31036,10 +31036,10 @@ subroutine PTstore_contr_matelem(jrot)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
       !
       ! <p_i*G*p_j>
-      !call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call calc_contr_matelem_expansion_Tvib_Nclass1(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
       !
-      call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
       call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms,me_contr)
       !

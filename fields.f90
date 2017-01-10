@@ -2020,7 +2020,7 @@ module fields
              call readu(trove%IO_hamiltonian)
              !
              call check_read_save_none(trove%IO_hamiltonian,w)
-             if (trim(w)=='SEPARATE') then
+             if (trim(trove%IO_hamiltonian)=='SEPARATE'.or.trim(trove%IO_hamiltonian)=='ASCII') then
                 trove%separate_store = .true.
              endif 
              !
@@ -2028,7 +2028,7 @@ module fields
                !
                call readu(w)
                !
-               if (trim(w)=='SEPARATE') then
+               if (trim(w)=='SEPARATE'.or.trim(w)=='ASCII') then
                   trove%separate_store = .true.
                elseif (trim(w)=='CONVERT') then
                   trove%separate_convert = .true.
@@ -4037,7 +4037,7 @@ subroutine check_read_save_none(w,place)
   !
   select case(trim(w))
   !
-  case('NONE','SAVE','READ','SEPARATE')
+  case('NONE','SAVE','READ','SEPARATE','ASCII')
     !
     continue
     !
