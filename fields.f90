@@ -4951,9 +4951,13 @@ end subroutine check_read_save_none
         !
         call FLcheck_point_Hamiltonian('KINETIC_READ')
         !
-        call print_kinetic
+        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+           call print_kinetic
+        endif 
         !
         if (trove%sparse) call compact_sparse_kinetic
+        !
+        call print_kinetic
         !
         return 
         !
@@ -7340,9 +7344,13 @@ end subroutine check_read_save_none
       !
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
-      call print_external
+      if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+         call print_external
+      endif 
       !
       if (trove%sparse) call compact_sparse_external
+      !
+      call print_external
       !
       return
       !
@@ -13183,7 +13191,7 @@ end subroutine check_read_save_none
         !
         Ncoeff = trove%RangeOrder(trove%NKinOrder)
         !
-        write(chkptIO_kin,"(2i9,10x,a)") trove%g_vib(1,1)%Npoints,Ncoeff,"<- g_vib Npoints,Ncoeff"
+        write(chkptIO_kin,"(3i9,10x,a)") trove%g_vib(1,1)%Npoints,trove%g_vib(1,1)%orders,Ncoeff,"<- g_vib Npoints,Norder,Ncoeff"
         Nmodes = trove%Nmodes
         !
         do k1 = 1,Nmodes
@@ -13196,9 +13204,9 @@ end subroutine check_read_save_none
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8)") 987654321,0,0,0,0.0_ark
+        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
         !
-        write(chkptIO_kin,"(2i9,10x,a)") trove%g_rot(1,1)%Npoints,Ncoeff,"<- g_rot Npoints,Ncoeff"
+        write(chkptIO_kin,"(3i9,10x,a)") trove%g_rot(1,1)%Npoints,trove%g_rot(1,1)%orders,Ncoeff,"<- g_rot Npoints,Norder,Ncoeff"
         !
         do k1 = 1,3
           do k2 = 1,3
@@ -13210,9 +13218,9 @@ end subroutine check_read_save_none
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
         !
-        write(chkptIO_kin,"(2i9,10x,a)") trove%g_cor(1,1)%Npoints,Ncoeff,"<- g_cor Npoints,Ncoeff"
+        write(chkptIO_kin,"(3i9,10x,a)") trove%g_cor(1,1)%Npoints,trove%g_cor(1,1)%orders,Ncoeff,"<- g_cor Npoints,Norder,Ncoeff"
         !
         do k1 = 1,Nmodes
           do k2 = 1,3
@@ -13224,19 +13232,19 @@ end subroutine check_read_save_none
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
         !
         fl => trove%pseudo
         !
-        write(chkptIO_kin,"(2i9,10x,a)") trove%pseudo%Npoints,Ncoeff,"<- pseudo Npoints,Ncoeff"
+        write(chkptIO_kin,"(3i9,10x,a)") trove%pseudo%Npoints,trove%pseudo%Orders,Ncoeff,"<- pseudo Npoints,Norder,Ncoeff"
         !
         call write_ascii(0_ik,0_ik,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
         !
         if (FLl2_coeffs) then
           !
-          write(chkptIO_kin,"(2i9,10x,a)") trove%L2_vib%Npoints,Ncoeff,"<- L2_vib Npoints,Ncoeff"
+          write(chkptIO_kin,"(3i9,10x,a)") trove%L2_vib%Npoints,trove%L2_vib%Orders,Ncoeff,"<- L2_vib Npoints,Norder,Ncoeff"
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -13248,7 +13256,7 @@ end subroutine check_read_save_none
             enddo
           enddo
           !
-          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11)") 987654321,0,0,0,0.0_ark
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
           !
         endif
         ! 
@@ -13285,7 +13293,7 @@ end subroutine check_read_save_none
         if (i_opened) close(chkptIO_pot)
         open(chkptIO_pot,action='write',position='rewind',status='replace',file=trove%chk_poten_fname)
         !
-        write(chkptIO_pot,"(2i9,10x,a)") trove%poten%Npoints,Ncoeff,"<- Npoints,Ncoeff"
+        write(chkptIO_pot,"(3i9,10x,a)") trove%poten%Npoints,trove%poten%Orders,Ncoeff,"<- Npoints,Norder,Ncoeff"
         !
         fl => trove%poten
         !
@@ -13303,7 +13311,7 @@ end subroutine check_read_save_none
           !
         enddo
         !
-        write(chkptIO_pot,"(i11,1x,i5,e18.11)") 987654321,0,0.0_ark
+        write(chkptIO_pot,"(i11,1x,i5,e18.11,' <- End')") 987654321,0,0.0_ark
         !
         if (trove%sparse) then 
           write(chkptIO_pot,"(e15.8,5x,' <- sparse threshold used')") job%exp_coeff_thresh
@@ -13337,7 +13345,7 @@ end subroutine check_read_save_none
         if (i_opened) close(chkptIO_ext)
         open(chkptIO_ext,action='write',position='rewind',status='replace',file=trove%chk_external_fname)
         !
-        write(chkptIO_ext,"(3i9,10x,a)") trove%extF(1)%Npoints,Ncoeff,extF%rank,"<- Npoints,Ncoeff,Rank"
+        write(chkptIO_ext,"(4i9,10x,a)") trove%extF(1)%Npoints,trove%extF(1)%Orders,Ncoeff,extF%rank,"<- Npoints,Norder,Ncoeff,Rank"
         !
         do k1 = 1,extF%rank
           !
@@ -13359,7 +13367,7 @@ end subroutine check_read_save_none
           !
         enddo
         !
-        write(chkptIO_ext,"(i11,1x,i5,1x,i8,1x,e18.11)") 987654321,0,0,0.0_ark
+        write(chkptIO_ext,"(i11,1x,i5,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0.0_ark
         !
         if (trove%sparse) then 
           write(chkptIO_ext,"(e15.8,5x,' <- sparse threshold used')") job%exp_coeff_thresh
@@ -13673,7 +13681,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder
         real(rk)             :: factor
         real(ark)            :: field_
         real(rk)             :: exp_coeff_thresh
@@ -13688,6 +13696,7 @@ end subroutine check_read_save_none
         Natoms = trove%Natoms
         Nmodes = trove%Nmodes
         Npoints = trove%Npoints
+        KinOrder = trove%NKinOrder
         !
         if (.not.associated(trove%g_vib).or..not.associated(trove%g_rot).or. &
             .not.associated(trove%g_cor)) then 
@@ -13715,9 +13724,16 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO,*) Tpoints,Tcoeff
+        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "gvib-ASCII-chk npoints is wrong"
+        if (Tpoints/=Npoints) then
+          write(out,"('Kinetci-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+          stop "Kinetci-ASCII-chk npoints is wrong"
+        endif
+        if (Torder/=KinOrder) then 
+          write(out,"('Kinetci-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+          stop "Kinetic-ASCII-chk Norder is wrong"
+        endif
         !
         do k1 = 1,Nmodes
           do k2 = 1,Nmodes
@@ -13726,7 +13742,8 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
-            fl%ifromsparse = 0
+            !fl%ifromsparse = 0
+            forall(n=1:Tcoeff) fl%ifromsparse(n) = n
             fl%sparse = .true.
             !
           enddo
@@ -13746,14 +13763,12 @@ end subroutine check_read_save_none
            !
            trove%g_vib(k1,k2)%field(iterm,i) = field_
            !
-           n = n+1
-           trove%g_vib(k1,k2)%ifromsparse(n) = iterm
-           !
         enddo do_gvib
         !
-        read(chkptIO,*) Tpoints,Tcoeff
+        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
         if (Tpoints/=Npoints) stop "grot-ASCII-chk npoints is wrong"
+        if (Torder/=KinOrder) stop "grot-ASCII-chk Order is wrong"
         !
         do k1 = 1,3
           do k2 = 1,3
@@ -13762,7 +13777,7 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
-            fl%ifromsparse = 0
+            forall(n=1:Tcoeff) fl%ifromsparse(n) = n
             fl%sparse = .true.
             !
           enddo
@@ -13782,14 +13797,12 @@ end subroutine check_read_save_none
            !
            trove%g_rot(k1,k2)%field(iterm,i) = field_
            !
-           n = n+1
-           trove%g_rot(k1,k2)%ifromsparse(n) = iterm
-           !
         enddo do_grot
         !
-        read(chkptIO,*) Tpoints,Tcoeff
+        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "g_cor-ASCII-chk npoints is wrong"
+        if (Tpoints/=Npoints) stop "gcor-ASCII-chk npoints is wrong"
+        if (Torder/=KinOrder) stop "gcor-ASCII-chk Order is wrong"
         !
         do k1 = 1,Nmodes
           do k2 = 1,3
@@ -13798,7 +13811,7 @@ end subroutine check_read_save_none
             fl%Ncoeff = Tcoeff
             !
             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
-            fl%ifromsparse = 0
+            forall(n=1:Tcoeff) fl%ifromsparse(n) = n
             fl%sparse = .true.
             !
           enddo
@@ -13817,21 +13830,20 @@ end subroutine check_read_save_none
            endif
            !
            trove%g_cor(k1,k2)%field(iterm,i) = field_
-           n = n+1
-           trove%g_cor(k1,k2)%ifromsparse(n) = iterm
            !
         enddo do_gcor
         !
         !
-        read(chkptIO,*) Tpoints,Tcoeff
+        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
         if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
+        if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
         !
         fl => trove%pseudo
         fl%Ncoeff = Tcoeff
         !
         call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
-        fl%ifromsparse = 0
+        forall(n=1:Tcoeff) fl%ifromsparse(n) = n
         fl%sparse = .true.
         !
         n = 0
@@ -13843,16 +13855,14 @@ end subroutine check_read_save_none
            !
            trove%pseudo%field(iterm,i) = field_
            !
-           n = n+1
-           trove%pseudo%ifromsparse(n) = iterm
-           !
         enddo do_pseu
         !
         if (FLl2_coeffs) then 
           !
-          read(chkptIO,*) Tpoints,Tcoeff
+          read(chkptIO,*) Tpoints,Torder,Tcoeff
           !
           if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
+          if (Torder/=KinOrder) stop "L2vib-ASCII-chk Order is wrong"
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -13861,7 +13871,7 @@ end subroutine check_read_save_none
               fl%Ncoeff = Tcoeff
               !
               call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
-              fl%ifromsparse = 0
+              forall(n=1:Tcoeff) fl%ifromsparse(1:n) = (/(n,n=1, Tcoeff)/)            
               fl%sparse = .true.
               !
             enddo
@@ -13880,8 +13890,6 @@ end subroutine check_read_save_none
              if (k1==987654321) exit do_L2vib
              !
              trove%L2_vib(k1,k2)%field(iterm,i) = field_
-             n = n+1
-             trove%L2_vib(k1,k2)%ifromsparse(n) = iterm
              !
           enddo do_L2vib
           !
@@ -14160,7 +14168,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,alloc,k
         type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i
+        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i,Norder
         real(ark) :: field_
         real(rk)             :: exp_coeff_thresh
         !
@@ -14181,15 +14189,23 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO,*) Npoints,Ncoeff
+        read(chkptIO,*) Npoints,Norder,Ncoeff
         !
-        if (Npoints/=trove%Npoints) stop "poten-ASCII-chk npoints is wrong"
+        if (Npoints/=trove%Npoints) then
+          write(out,"('poten-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
+          stop "poten-ASCII-chk npoints is wrong"
+        endif
+        !
+        if (Norder/=trove%NPotOrder) then 
+          write(out,"('poten-ASCII-chk Norder is wrong:',2i8)") Norder,trove%NPotOrder
+          stop "poten-ASCII-chk Norder is wrong"
+        endif
         !
         fl => trove%poten
         fl%Ncoeff = Ncoeff
         !
         call polynom_initialization(trove%poten,trove%NPotOrder,Ncoeff,trove%Npoints,'poten')
-        fl%ifromsparse = 0
+        forall(k=1:Ncoeff) fl%ifromsparse(k) = k
         fl%sparse = .true.
         k = 0 
         !
@@ -14200,8 +14216,6 @@ end subroutine check_read_save_none
            if (iterm==987654321) exit do_pot
            !
            fl%field(iterm,i) = field_
-           k = k+1
-           fl%ifromsparse(k) = iterm
            !
         enddo do_pot
         !
@@ -14292,7 +14306,8 @@ end subroutine check_read_save_none
             stop 'external.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
           endif
           !
-        endif                !
+        endif                
+        !
         read(chkptIO) buf
         !
         if (buf/='End External object') then
@@ -14312,7 +14327,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,alloc
         type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i,imu,nterms,nrank
+        integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i,imu,nterms,nrank,Norder
         real(ark) :: field_
         integer(ik),allocatable :: nterm(:)
         !
@@ -14333,11 +14348,26 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO,*) Npoints,nterms,nrank
+        read(chkptIO,*) Npoints,Norder,nterms,nrank
         !
         if (nrank/=extF%rank) stop "external-ASCII-chk rank is wrong"
         !
         if (Npoints/=trove%Npoints) stop "external-ASCII-chk npoints is wrong"
+        !
+        if (Npoints/=trove%Npoints) then
+          write(out,"('external-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
+          stop "external-ASCII-chk npoints is wrong"
+        endif
+        !
+        if (Norder/=trove%NExtOrder) then 
+          write(out,"('external-ASCII-chk Norder is wrong:',2i8)") Norder,trove%NExtOrder
+          stop "external-ASCII-chk Norder is wrong"
+        endif
+        !
+        if (nrank/=extF%rank) then 
+          write(out,"('external-ASCII-chk nrank is wrong:',2i8)") nrank,extF%rank
+          stop "external-ASCII-chk nrank is wrong"
+        endif
         !
         do imu = 1,extF%rank
            !
@@ -14345,7 +14375,7 @@ end subroutine check_read_save_none
            fl%Ncoeff = nterms
            !
            call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
-           fl%ifromsparse = 0
+           forall(i=1:Ncoeff) fl%ifromsparse(i) = i
            fl%sparse = .true.
            !
         enddo
@@ -14361,8 +14391,6 @@ end subroutine check_read_save_none
            if (imu==987654321) exit do_ext
            !
            trove%extF(imu)%field(iterm,i) = field_
-           nterm(imu) = nterm(imu)+1
-           trove%extF(imu)%ifromsparse(nterm(imu)) = iterm
            !
         enddo do_ext
         !
@@ -14391,7 +14419,6 @@ end subroutine check_read_save_none
      integer(ik)        :: Npoints,Ncoeff,iterm,i,icoeff,Nterms,alloc
      real(ark),allocatable    :: sfield(:,:)  ! Expansion parameters in the sparse representation
      integer(ik),allocatable  :: siorder(:)  ! iorder in sparse
-     integer(ik),allocatable :: ifromsparse(:)
      logical :: check = .true.
      !
      Ncoeff = fl%Ncoeff
@@ -14401,32 +14428,11 @@ end subroutine check_read_save_none
      !
      iterm = 0
      !
-     if (fl%sparse) check = .false.
-     !
-     !if (associated(fl%ifromsparse)) check = .false.
-     !
-     if (check) then
-       !
-       do icoeff = 1,Ncoeff
-         if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
-            iterm = iterm + 1
-         endif
-       enddo
-       !
-     else
-       ! 
-       do icoeff = 1,Ncoeff
-         if (fl%ifromsparse(icoeff)/=0) then
-            iterm = iterm + 1
-         endif
-       enddo
-       allocate(ifromsparse(iterm),stat=alloc)
-       call ArrayStart("Sfield",alloc,size(ifromsparse),kind(ifromsparse))
-       !
-       ifromsparse(1:iterm) = fl%ifromsparse(1:iterm) 
-       deallocate(fl%ifromsparse)
-       !
-     endif
+     do icoeff = 1,Ncoeff
+       if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
+          iterm = iterm + 1
+       endif
+     enddo
      !
      Nterms = iterm
      !
@@ -14437,7 +14443,10 @@ end subroutine check_read_save_none
        call ArrayStop(name//'IndexQ')
      endif
      !
-     allocate(Sfield(Nterms,0:Npoints),fl%ifromsparse(Nterms),fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     deallocate(fl%ifromsparse)
+     call ArrayStop(name//'ifromsparse')
+     !
+     allocate(Sfield(Nterms,0:Npoints),fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield),kind(Sfield))
      call ArrayStart(name//'IndexQ',alloc,size(fl%IndexQ),kind(fl%IndexQ))
      !
@@ -14449,35 +14458,18 @@ end subroutine check_read_save_none
      !
      iterm = 0
      !
-     if (check) then
-       !
-       do icoeff = 1,Ncoeff
-         if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
-            !
-            iterm = iterm + 1
-            !
-            Sfield(iterm,:) = fl%field(icoeff,:)
-            fl%ifromsparse(iterm) = icoeff
-            fl%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            Siorder(iterm) = fl%iorder(icoeff)
-            !
-         endif
-       enddo
-       !
-     else
-       !
-       fl%ifromsparse(1:Nterms) = ifromsparse(1:Nterms)
-       !
-       do iterm = 1,Nterms
-            !
-            icoeff = ifromsparse(iterm)
-            Sfield(iterm,:) = fl%field(icoeff,:)
-            fl%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            Siorder(iterm) = fl%iorder(icoeff)
-            !
-       enddo
-       !
-     endif
+     do icoeff = 1,Ncoeff
+       if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
+          !
+          iterm = iterm + 1
+          !
+          Sfield(iterm,:) = fl%field(icoeff,:)
+          fl%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          Siorder(iterm) = fl%iorder(icoeff)
+          fl%ifromsparse(iterm) = icoeff
+          !
+       endif
+     enddo
      !
      call ArrayMinus(name,isize=size(fl%iorder),ikind=kind(fl%iorder))
      deallocate(fl%iorder)
@@ -14496,11 +14488,8 @@ end subroutine check_read_save_none
      fl%iorder = Siorder
      !
      deallocate(Sfield,siorder)
-     if (allocated(ifromsparse)) deallocate(ifromsparse)
      !
      call ArrayStop("Sfield")
-     !
-     !call move_alloc(Sfield,fl%field) 
      !
    end subroutine FLCompact_a_field_sparse
    ! 
@@ -14511,10 +14500,10 @@ end subroutine check_read_save_none
 
      type(FLpolynomT),pointer  :: fl1,fl2
      character(len=*),intent(in) :: name1,name2
-     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2
+     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
      real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
-     integer(ik),allocatable :: ifromsparse1(:),ifromsparse2(:)
-     integer(ik),allocatable  :: siorder1(:),siorder2(:)  ! iorder in sparse
+     integer(ik),allocatable  :: siorder1(:),siorder2(:)      ! iorder in sparse
+     integer(ik)   :: target_index(trove%Nmodes)
      logical :: check = .true.
      !
      Ncoeff1 = fl1%Ncoeff
@@ -14526,247 +14515,94 @@ end subroutine check_read_save_none
        write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") fl1%Npoints,fl2%Npoints
        stop 'FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields'
      endif
+     !    
+     target_index = 0
+     target_index(1) = trove%NKinOrder 
+     Ncoeffmax= FLQindex(trove%Nmodes,target_index)
      !
-     if (associated(fl1%ifromsparse)) then
-        check = .false.
-        if (.not.associated(fl2%ifromsparse)) stop 'FLCompact_and_combine_fields_sparse: ifromsparse-s for both fields must be allocated'
-     endif
+     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
      !
-     if (check) then
-       !
-       ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
-       !
-       iterm = 0
-       !
-       do icoeff = 1,min(Ncoeff1,Ncoeff2)
-         if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-            iterm = iterm + 1
-         endif
-       enddo
-       !
-       if (Ncoeff2>Ncoeff1) then 
-         !
-         do icoeff = Ncoeff1+1,Ncoeff2
-           if (any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-              iterm = iterm + 1
-           endif
-         enddo
-         !
-       elseif (Ncoeff1>Ncoeff2) then
-         !
-         do icoeff = Ncoeff2+1,Ncoeff1
-           if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
-              iterm = iterm + 1
-           endif
-         enddo
-         !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
+          iterm = iterm + 1
        endif
-       !
-       Nterms = iterm
-       !
-     else
-       !
-       allocate(ifromsparse1(Ncoeff1),ifromsparse2(Ncoeff2),stat=alloc)
-       call ArrayStart("Sfield",alloc,size(ifromsparse1),kind(ifromsparse1))
-       call ArrayStart("Sfield",alloc,size(ifromsparse2),kind(ifromsparse2))
-       !
-       ifromsparse1 = 0
-       do iterm = 1,Ncoeff1
-         icoeff = fl1%ifromsparse(iterm)
-         if (icoeff/=0) ifromsparse1(icoeff) = 1
-       enddo
-       !
-       ifromsparse2 = 0
-       do iterm = 1,Ncoeff2
-         icoeff = fl2%ifromsparse(iterm)
-         if (icoeff/=0) ifromsparse2(icoeff) = 1
-       enddo
-       !
-       Nterm1 = sum(ifromsparse1)
-       Nterm2 = sum(ifromsparse2)
-       !
-       Nterms = max(Nterm1,Nterm2)
-       !
-       deallocate(fl1%ifromsparse,fl2%ifromsparse)
-       call ArrayStop(name1//"ifromsparse")
-       call ArrayStop(name2//"ifromsparse")
-       !
-     endif
+     enddo
      !
-     ! Create a field in a sparse representaion
+     nterms = iterm
      !
-     allocate(Sfield1(Nterms,0:Npoints),fl1%ifromsparse(Nterms),fl1%IndexQ(trove%Nmodes,Nterms),stat=alloc)
-     allocate(Sfield2(Nterms,0:Npoints),fl2%ifromsparse(Nterms),fl2%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
      call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
+     !
+     allocate(Siorder1(nterms),Siorder2(nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
+     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
+     !
+     deallocate(fl1%IndexQ,fl2%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     !
+     deallocate(fl1%ifromsparse,fl2%ifromsparse)
+     call ArrayStop(name1//"ifromsparse")
+     call ArrayStop(name2//"ifromsparse")
+     !
+     allocate(fl1%ifromsparse(Nterms),fl1%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     allocate(fl2%ifromsparse(Nterms),fl2%IndexQ(trove%Nmodes,Nterms),stat=alloc)
      call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
      call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
      call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
      call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
      !
-     allocate(Siorder1(Nterms),Siorder2(Nterms),stat=alloc)
-     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
-     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
+     iterm = 0
      !
-     Sfield1 = 0 
-     Sfield2 = 0
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
+          !
+          iterm = iterm + 1
+          !
+          Sfield1(iterm,:) = fl1%field(icoeff,:)
+          Sfield2(iterm,:) = fl2%field(icoeff,:)
+          siorder1(iterm) = fl1%iorder(icoeff)
+          siorder2(iterm) = fl2%iorder(icoeff)
+          !
+          fl1%ifromsparse(iterm) = icoeff
+          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+          fl2%ifromsparse(iterm) = icoeff
+          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+       endif
+     enddo
      !
-     if (check) then
-        !
-        iterm = 0
-        !
-        do icoeff = 1,min(Ncoeff1,Ncoeff2)
-          if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-             !
-             iterm = iterm + 1
-             Sfield1(iterm,:) = fl1%field(icoeff,:)
-             Sfield2(iterm,:) = fl2%field(icoeff,:)
-             siorder1(iterm) = fl1%iorder(icoeff)
-             siorder2(iterm) = fl2%iorder(icoeff)
-             !
-             fl1%ifromsparse(iterm) = icoeff
-             fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-             !
-             fl2%ifromsparse(iterm) = icoeff
-             fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-             !
-          endif
-        enddo
-        !
-        if (Ncoeff2>Ncoeff1) then 
-          !
-          do icoeff = Ncoeff1+1,Ncoeff2
-            if (any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-               iterm = iterm + 1
-               Sfield1(iterm,:) = 0
-               Sfield2(iterm,:) = fl2%field(icoeff,:)
-               siorder1(iterm) = 0
-               siorder2(iterm) = fl2%iorder(icoeff)
-               !
-               fl1%ifromsparse(iterm) = icoeff
-               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-               !
-               fl2%ifromsparse(iterm) = icoeff
-               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            endif
-          enddo
-          !
-        elseif (Ncoeff1>Ncoeff2) then
-          !
-          do icoeff = Ncoeff2+1,Ncoeff1
-            if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
-               iterm = iterm + 1
-               Sfield1(iterm,:) = fl1%field(icoeff,:)
-               Sfield2(iterm,:) = 0
-               siorder1(iterm) = fl1%iorder(icoeff)
-               siorder2(iterm) = 0
-               !
-               fl1%ifromsparse(iterm) = icoeff
-               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-               !
-               fl2%ifromsparse(iterm) = icoeff
-               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            endif
-          enddo
-          !
-        endif
-        !
-     else
-        !
-        iterm = 0
-        !
-        do icoeff = 1,min(Ncoeff1,Ncoeff2)
-          if (ifromsparse1(icoeff)/=0.or.ifromsparse2(icoeff)/=0) then
-             !
-             iterm = iterm + 1
-             Sfield1(iterm,:) = fl1%field(icoeff,:)
-             Sfield2(iterm,:) = fl2%field(icoeff,:)
-             siorder1(iterm) = fl1%iorder(icoeff)
-             siorder2(iterm) = fl2%iorder(icoeff)
-             !
-             fl1%ifromsparse(iterm) = icoeff
-             fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-             !
-             fl2%ifromsparse(iterm) = icoeff
-             fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-             !
-          endif
-        enddo
-        !
-        if (Ncoeff2>Ncoeff1) then 
-          !
-          do icoeff = Ncoeff1+1,Ncoeff2
-            if (ifromsparse2(icoeff)/=0) then
-               iterm = iterm + 1
-               Sfield1(iterm,:) = 0
-               Sfield2(iterm,:) = fl2%field(icoeff,:)
-               siorder1(iterm) = 0
-               siorder2(iterm) = fl2%iorder(icoeff)
-               !
-               fl1%ifromsparse(iterm) = icoeff
-               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-               !
-               fl2%ifromsparse(iterm) = icoeff
-               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            endif
-          enddo
-          !
-        elseif (Ncoeff1>Ncoeff2) then
-          !
-          do icoeff = Ncoeff2+1,Ncoeff1
-            if (ifromsparse1(icoeff)/=0) then
-               iterm = iterm + 1
-               Sfield1(iterm,:) = fl1%field(icoeff,:)
-               Sfield2(iterm,:) = 0
-               siorder1(iterm) = fl1%iorder(icoeff)
-               siorder2(iterm) = 0
-               !
-               fl1%ifromsparse(iterm) = icoeff
-               fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-               !
-               fl2%ifromsparse(iterm) = icoeff
-               fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-            endif
-          enddo
-          !
-        endif
-        !
-     endif
+     deallocate(fl1%iorder,fl2%iorder)
+     call ArrayStop(name1)
+     call ArrayStop(name2)
      !
-     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
-     deallocate(fl1%field,stat=alloc)
+     ! Create a field in a sparse representaion
      !
-     call ArrayMinus(name1,isize=size(fl1%iorder),ikind=kind(fl1%iorder))
-     deallocate(fl1%iorder,stat=alloc)
-     !
-     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
-     deallocate(fl2%field,stat=alloc)
-     !
-     call ArrayMinus(name2,isize=size(fl2%iorder),ikind=kind(fl2%iorder))
-     deallocate(fl2%iorder,stat=alloc)
-     !
-     allocate(fl1%field(Nterms,0:Npoints),stat=alloc)
-     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
-     !
-     allocate(fl1%iorder(Nterms),stat=alloc)
+     allocate(fl1%iorder(Nterms),fl2%iorder(Nterms),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
-     !
-     allocate(fl2%field(Nterms,0:Npoints),stat=alloc)
-     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
-     !
-     allocate(fl2%iorder(Nterms),stat=alloc)
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      !
+     deallocate(fl1%field,fl2%field,stat=alloc)
+     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
+     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     !
+     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
+     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
+     !
      fl1%field = Sfield1
-     fl1%iorder = Siorder1
      fl1%Ncoeff = Nterms
+     fl1%iorder = Siorder1
+     !
      fl2%field = Sfield2
-     fl2%iorder = Siorder2
      fl2%Ncoeff = Nterms
+     fl2%iorder = Siorder2
      !
      deallocate(Sfield1,Sfield2,siorder1,siorder2)
-     if (allocated(ifromsparse1)) deallocate(ifromsparse1)
-     if (allocated(ifromsparse2)) deallocate(ifromsparse2)
      !
      call ArrayStop("Sfield")
      !
