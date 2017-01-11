@@ -4951,13 +4951,9 @@ end subroutine check_read_save_none
         !
         call FLcheck_point_Hamiltonian('KINETIC_READ')
         !
-        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
-           call print_kinetic
-        endif 
+        call print_kinetic
         !
         if (trove%sparse) call compact_sparse_kinetic
-        !
-        call print_kinetic
         !
         return 
         !
@@ -5346,9 +5342,9 @@ end subroutine check_read_save_none
              !
            endif
            !
-           write(out,"('Normal quadratic pot. parameteres   qwforce:')")
-           !
            if (trove%Coordinates(1,1)=='NORMAL') then
+              !
+              write(out,"('Normal quadratic pot. parameteres   qwforce:')")
               !
               do k1 = 1,Nmodes
                  do k2 = 1,k1
@@ -5371,6 +5367,8 @@ end subroutine check_read_save_none
        !
        integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
        type(FLpolynomT),pointer     :: fl
+       !
+       if (job%verbose>=4) write(out,"('Compacting the kinetic energy matrices into a sparse representation ...')")
        !
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
@@ -5419,6 +5417,8 @@ end subroutine check_read_save_none
          enddo
          !
        endif
+       !
+       if (job%verbose>=4) write(out,"('... done!')")
        !
     end subroutine compact_sparse_kinetic
 
@@ -7344,13 +7344,9 @@ end subroutine check_read_save_none
       !
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
-      if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
-         call print_external
-      endif 
+      call print_external
       !
       if (trove%sparse) call compact_sparse_external
-      !
-      call print_external
       !
       return
       !
