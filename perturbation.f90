@@ -30681,7 +30681,7 @@ subroutine PTstore_contr_matelem(jrot)
                  n, iclass_imode(2,PT%Nclasses), nterms, nmodes_class, imode, jmode, kmode, lmode, & 
                  iterm, kterm, nprim, term(PT%Nmodes), &
                  ncomb, icomb, iterm_, nterms_, jterm, imode_, jmode_, icomb_maxnterms, imode1, & 
-                 imode2,ipar,extF_rank,icoeff, kclass
+                 imode2,ipar,extF_rank,icoeff, kclass, nterms_field
   integer(ik) ::  target_index(PT%Nmodes)
   integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,Jmax,L2vib_N,ipos,ipos_,iroot,ilevel,ideg
   integer(ik),allocatable :: extF_N(:), IndexQ(:,:)
@@ -31019,7 +31019,12 @@ subroutine PTstore_contr_matelem(jrot)
   enddo
   !$omp end parallel do
   !
-  allocate(gvib_me(iclass)%me(nterms,dimen,dimen,nmodes,nmodes), stat=info)
+  nterms_field = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,nmodes,& 
+                      real(nterms_field*dimen*dimen*nmodes*nmodes,rk)*8.0_rk/1023.0_rk**4
+  !
+  allocate(gvib_me(iclass)%me(nterms_field,dimen,dimen,nmodes,nmodes), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'gvib_me('//trim(adjustl(sclass))//')'
   call ArrayStart(trim(skey),info,1,rk,size(gvib_me(iclass)%me,kind=hik))
@@ -31036,12 +31041,12 @@ subroutine PTstore_contr_matelem(jrot)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
       !
       ! <p_i*G*p_j>
-      !call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call calc_contr_matelem_expansion_Tvib_Nclass1(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
       !
-      call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms,me_contr)
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       gvib_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
@@ -31197,7 +31202,12 @@ subroutine PTstore_contr_matelem(jrot)
   dimen = contr(iclass)%nroots
   nprim = contr(iclass)%dimen
   !
-  allocate(gcor_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,nmodes,3), stat=info)
+  nterms_field = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,3,& 
+                      real(nterms_field*dimen*dimen*nmodes*3,rk)*8.0_rk/1023.0_rk**4
+  !
+  allocate(gcor_me(iclass)%me(nterms_field,dimen,dimen,nmodes,3), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'gcor_me('//trim(adjustl(sclass))//')'
   call ArrayStart(trim(skey),info,1,rk,size(gcor_me(iclass)%me,kind=hik))
@@ -31220,7 +31230,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,3,dimen,fl%Ncoeff,nterms,me_contr)
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,3,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       gcor_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
@@ -31356,7 +31366,12 @@ subroutine PTstore_contr_matelem(jrot)
   dimen = contr(iclass)%nroots
   nprim = contr(iclass)%dimen
   !
-  allocate(grot_me(iclass)%me(nterms,dimen,dimen,3,3), stat=info)
+  nterms_field = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,3,3,& 
+                      real(nterms_field*dimen*dimen*3*3,rk)*8.0_rk/1023.0_rk**4
+  !
+  allocate(grot_me(iclass)%me(nterms_field,dimen,dimen,3,3), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'grot_me('//trim(adjustl(sclass))//')'
   call ArrayStart(trim(skey),info,1,rk,size(grot_me(iclass)%me,kind=hik))
@@ -31383,7 +31398,7 @@ subroutine PTstore_contr_matelem(jrot)
       ! compute contracted matrix elements for operators: G
       !
       call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,3,3,dimen,fl%Ncoeff,nterms,me_contr)
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,3,3,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       grot_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
       !
@@ -31510,7 +31525,13 @@ subroutine PTstore_contr_matelem(jrot)
   dimen = contr(iclass)%nroots
   nprim = contr(iclass)%dimen
   !
-  allocate(vpot_me(iclass)%me(nterms,dimen,dimen,1,1), stat=info)
+  nterms_field = me%poten%Ncoeff
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',3(1x,i7),' vpot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
+                      real(nterms_field*dimen*dimen,rk)*8.0_rk/1023.0_rk**4
+  !
+  !
+  allocate(vpot_me(iclass)%me(nterms_field,dimen,dimen,1,1), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'vpot_me('//trim(adjustl(sclass))//')'
   call ArrayStart(trim(skey),info,1,rk,size(vpot_me(iclass)%me,kind=hik))
@@ -31528,7 +31549,7 @@ subroutine PTstore_contr_matelem(jrot)
   call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
   !
   call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-  call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms,me_contr)
+  call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms_field,me_contr)
   Vpot_me(iclass)%me(1:fl%Ncoeff,:,:,1,1) = me_contr(1:fl%Ncoeff,:,:)
   !
   deallocate(me_contr)
@@ -31653,7 +31674,12 @@ subroutine PTstore_contr_matelem(jrot)
      dimen = contr(iclass)%nroots
      nprim = contr(iclass)%dimen
      !
-     allocate(extF_me(iclass)%me(nterms,dimen,dimen,extF_rank,1), stat=info)
+     nterms_field = maxval(trove%extF(1:extF_rank)%Ncoeff)
+     !
+     if (job%verbose>=5) write(out,"('  Allocating ',4(1x,i7),' extF matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,extF_rank,& 
+                         real(nterms_field*dimen*dimen*extF_rank,rk)*8.0_rk/1023.0_rk**4
+     !
+     allocate(extF_me(iclass)%me(nterms_field,dimen,dimen,extF_rank,1), stat=info)
      write(sclass,'(i4)') iclass
      skey = 'extF_me('//trim(adjustl(sclass))//')'
      call ArrayStart(trim(skey),info,1,rk,size(extF_me(iclass)%me,kind=hik))
@@ -31675,7 +31701,7 @@ subroutine PTstore_contr_matelem(jrot)
         call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
         !
         call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-        call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms,me_contr)
+        call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
         !
         extF_me(iclass)%me(1:fl%Ncoeff,:,:,ipar,1) = me_contr(1:fl%Ncoeff,:,:)
         !
