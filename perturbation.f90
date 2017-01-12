@@ -30692,6 +30692,7 @@ subroutine PTstore_contr_matelem(jrot)
   real(rk) :: coef_thresh, c
   real(rk), allocatable :: me_contr(:,:,:), ijmode_icomb_coefs(:,:)
   character(cl) :: func_tag,skey,sclass
+  integer(hik)  :: matsize
   logical :: match
   logical            :: treat_rotation =.false.  ! switch off/on the rotation 
   logical            :: treat_vibration =.true.  ! switch off/on the vibration
@@ -31021,13 +31022,15 @@ subroutine PTstore_contr_matelem(jrot)
   !
   nterms_field = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
   !
-  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,nmodes,& 
-                      real(nterms_field*dimen*dimen*nmodes*nmodes,rk)*8.0_rk/1023.0_rk**4
+  matsize = int(nterms_field*dimen*dimen*nmodes*nmodes,hik)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,nmodes,& 
+                      matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
   !
   allocate(gvib_me(iclass)%me(nterms_field,dimen,dimen,nmodes,nmodes), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'gvib_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1,rk,size(gvib_me(iclass)%me,kind=hik))
+  call ArrayStart(trim(skey),info,1_ik,rk,matsize)
   gvib_me(iclass)%me = 0
   !
   do imode=1,nmodes
@@ -31204,13 +31207,15 @@ subroutine PTstore_contr_matelem(jrot)
   !
   nterms_field = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
   !
-  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,3,& 
-                      real(nterms_field*dimen*dimen*nmodes*3,rk)*8.0_rk/1023.0_rk**4
+  matsize = int(nterms_field*dimen*dimen*nmodes*3_ik,hik)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,3,& 
+                      matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
   !
   allocate(gcor_me(iclass)%me(nterms_field,dimen,dimen,nmodes,3), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'gcor_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1,rk,size(gcor_me(iclass)%me,kind=hik))
+  call ArrayStart(trim(skey),info,1_ik,rk,matsize)
   gcor_me(iclass)%me = 0
   !
   do imode=1, nmodes
@@ -31368,13 +31373,15 @@ subroutine PTstore_contr_matelem(jrot)
   !
   nterms_field = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
   !
-  if (job%verbose>=5) write(out,"('  Allocating ',5(1x,i7),' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,3,3,& 
-                      real(nterms_field*dimen*dimen*3*3,rk)*8.0_rk/1023.0_rk**4
+  matsize = int(nterms_field*dimen*dimen*3*3,hik)
+  !
+  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,3,3,& 
+                      matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
   !
   allocate(grot_me(iclass)%me(nterms_field,dimen,dimen,3,3), stat=info)
   write(sclass,'(i4)') iclass
   skey = 'grot_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1,rk,size(grot_me(iclass)%me,kind=hik))
+  call ArrayStart(trim(skey),info,1_ik,rk,matsize)
   grot_me(iclass)%me = 0
   !
   do imode=1, 3
@@ -31527,8 +31534,8 @@ subroutine PTstore_contr_matelem(jrot)
   !
   nterms_field = me%poten%Ncoeff
   !
-  if (job%verbose>=5) write(out,"('  Allocating ',3(1x,i7),' vpot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
-                      real(nterms_field*dimen*dimen,rk)*8.0_rk/1023.0_rk**4
+  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' vpot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
+                      real(nterms_field*dimen*dimen,rk)*8.0_rk/1024.0_rk**3
   !
   !
   allocate(vpot_me(iclass)%me(nterms_field,dimen,dimen,1,1), stat=info)
@@ -31676,8 +31683,8 @@ subroutine PTstore_contr_matelem(jrot)
      !
      nterms_field = maxval(trove%extF(1:extF_rank)%Ncoeff)
      !
-     if (job%verbose>=5) write(out,"('  Allocating ',4(1x,i7),' extF matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,extF_rank,& 
-                         real(nterms_field*dimen*dimen*extF_rank,rk)*8.0_rk/1023.0_rk**4
+     if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i5,' extF matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,extF_rank,& 
+                         real(nterms_field*dimen*dimen*extF_rank,rk)*8.0_rk/1024.0_rk**3
      !
      allocate(extF_me(iclass)%me(nterms_field,dimen,dimen,extF_rank,1), stat=info)
      write(sclass,'(i4)') iclass

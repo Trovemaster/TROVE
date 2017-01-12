@@ -14217,20 +14217,20 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) exp_coeff_thresh
         !
-        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
-          !
-          if (.not.trove%sparse) then
-            write(out,"('potential.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-            stop 'potential.chk error SPARSE should be switched on'
-          endif
-          !
-          if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
-            write(out,"('potential.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
-                        job%exp_coeff_thresh>exp_coeff_thresh
-            stop 'potential.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
-          endif
-          !
-        endif
+        !if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+        !  !
+        !  if (.not.trove%sparse) then
+        !    write(out,"('potential.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+        !    stop 'potential.chk error SPARSE should be switched on'
+        !  endif
+        !  !
+        !  if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
+        !    write(out,"('potential.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+        !                job%exp_coeff_thresh>exp_coeff_thresh
+        !    stop 'potential.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+        !  endif
+        !  !
+        !endif
         !
         read(chkptIO,"(a16)") buf
         !
@@ -14289,20 +14289,20 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) exp_coeff_thresh
         !
-        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
-          !
-          if (.not.trove%sparse) then
-            write(out,"('external.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-            stop 'external.chk error SPARSE should be switched on'
-          endif
-          !
-          if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
-            write(out,"('external.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
-                        job%exp_coeff_thresh>exp_coeff_thresh
-            stop 'external.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
-          endif
-          !
-        endif                
+        !if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+        !  !
+        !  if (.not.trove%sparse) then
+        !    write(out,"('external.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+        !    stop 'external.chk error SPARSE should be switched on'
+        !  endif
+        !  !
+        !  if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
+        !    write(out,"('external.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+        !                job%exp_coeff_thresh>exp_coeff_thresh
+        !    stop 'external.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+        !  endif
+        !  !
+        !endif                
         !
         read(chkptIO) buf
         !

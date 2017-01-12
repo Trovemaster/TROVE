@@ -223,7 +223,7 @@ module mol_xy4
     real(ark),dimension(ndst) :: dst
     real(ark)                 :: dsrc(size(src))
     real(ark)                 :: alpha,alpha12,alpha13,alpha14,alpha23,alpha24,alpha34,s2a,s2b,beta312,beta412
-    real(ark)                 :: cosa23,cosa24,cosa34,cosbeta
+    real(ark)                 :: cosa23,cosa24,cosa34,cosbeta,s(5)
     character(len=cl)         :: txt
     !
     !
@@ -643,6 +643,91 @@ module mol_xy4
           !
           !
        endif
+
+
+       !
+    case('R-SYM-F-E')
+       !
+       if (direct) then
+          !
+          alpha12 = src(5)
+          alpha13 = src(6)
+          alpha23 = src(7)
+          alpha14 = src(8)
+          alpha24 = src(9)
+          !
+          if (size(src)==10) then 
+            !
+            alpha34 = src(10)
+            !
+          else
+            !
+            !alpha34 = calc_alpha34(alpha12,alpha13,alpha14,alpha23,alpha24)
+            !
+            cosbeta = (cos(alpha23)-cos(alpha12)*cos(alpha13) )/(sin(alpha12)*sin(alpha13))
+            beta312 = aacos(cosbeta,txt)
+            !
+            cosbeta = (cos(alpha24)-cos(alpha12)*cos(alpha14) )/(sin(alpha12)*sin(alpha14))
+            beta412 = aacos(cosbeta,txt)
+            !
+            cosa34 = cos(alpha13)*cos(alpha14)+cos(beta312+beta412)*sin(alpha13)*sin(alpha14)
+            alpha34 = aacos(cosa34,txt)
+            !
+          endif 
+          !
+          dst(1)=dsrc(1)
+          dst(2)=dsrc(2)
+          dst(3)=dsrc(3)
+          dst(4)=dsrc(4)
+          dst(5)=(alpha24-alpha13)/sqrt(2.0_ark)
+          dst(6)=(alpha23-alpha14)/sqrt(2.0_ark)
+          dst(7)=(alpha34-alpha12)/sqrt(2.0_ark)
+          dst(8)=(2.0_ark*alpha12-alpha13-alpha14-alpha23-alpha24+2.0_ark*alpha34)/sqrt(12.0_ark)
+          dst(9)=(alpha13-alpha14-alpha23+alpha24)*0.5_ark
+          !
+       else
+          !
+          !  write(out,*) dsrc
+          !
+          dst(1:4)=dsrc(1:4) + molec%local_eq(1:4)
+          !
+          s(1:2) = dsrc(8:9)
+          s(3:5) = dsrc(5:7)
+          !
+          call from_sym2alphaII(s(5:9),dst(5:9),alpha34)
+          !
+          alpha12 = dst(5)
+          alpha13 = dst(6)
+          alpha14 = dst(7)
+          alpha23 = dst(8)
+          alpha24 = dst(9)
+          !
+          dst(5) = alpha12
+          dst(6) = alpha13
+          dst(7) = alpha23
+          dst(8) = alpha14
+          dst(9) = alpha24
+          !
+          if (size(dst)==10) then 
+            !
+            !cosbeta = (cos(alpha23)-cos(alpha12)*cos(alpha13) )/(sin(alpha12)*sin(alpha13))
+            !beta312 = aacos(cosbeta,txt)
+            !
+            !cosbeta = (cos(alpha24)-cos(alpha12)*cos(alpha14) )/(sin(alpha12)*sin(alpha14))
+            !beta412 = aacos(cosbeta,txt)
+            !
+            !cosa34 = cos(alpha13)*cos(alpha14)+cos(beta312+beta412)*sin(alpha13)*sin(alpha14)
+            !alpha34 = aacos(cosa34,txt)
+            !
+            dst(10) = alpha34
+            !
+            !dst(10) = calc_alpha34(alpha12,alpha13,alpha14,alpha23,alpha24)
+            !
+          endif 
+          !
+          !
+       endif
+
        !
     end select
     !
@@ -1228,6 +1313,64 @@ module mol_xy4
              !
            end select
            !
+       case('R-SYM-F-E')
+           !
+           select case(ioper)
+           !
+           case (1) ! identity 
+
+             dst(:) = src(:)
+             !
+             return
+             !
+           case (2) ! (123)
+
+             dst(1) = src(3)
+             dst(2) = src(1)
+             dst(3) = src(2)
+             dst(4) = src(4)
+             !
+             !dst(5) = sum(sym%irr(3,2)%repres(1,1:2)*src(5:6))
+             !dst(6) = sum(sym%irr(3,2)%repres(2,1:2)*src(5:6))
+             !
+             dst(8:9) = matmul((sym%irr(3,2)%repres(1:2,1:2)),src(8:9))
+             !
+             !dst(5) =-0.5_ark*src(5)              +0.5_ark*sqrt(3.0_ark)*src(6)
+             !dst(6) =-0.5_ark*sqrt(3.0_ark)*src(5)-0.5_ark*src(6)
+             !
+             dst(5:7) = matmul((sym%irr(5,2)%repres(1:3,1:3)),src(5:7))
+             !
+             !dst(7) =-src(8)
+             !dst(8) =-src(9)
+             !dst(9) = src(7)
+             !
+             return
+             !
+           case (21) ! (14)*
+             !
+             dst(1) = src(4)
+             dst(2) = src(2)
+             dst(3) = src(3)
+             dst(4) = src(1)
+             !
+             !dst(5) = sum(sym%irr(3,21)%repres(1,1:2)*src(5:6))
+             !dst(6) = sum(sym%irr(3,21)%repres(2,1:2)*src(5:6))
+             !
+             dst(8:9) = matmul((sym%irr(3,21)%repres(1:2,1:2)),src(8:9))
+             !
+             !dst(5) =-0.5_ark*src(5)              +0.5_ark*sqrt(3.0_ark)*src(6)
+             !dst(6) = 0.5_ark*sqrt(3.0_ark)*src(5)+0.5_ark*src(6)
+             !
+             !dst(7) =-src(9)
+             !dst(8) = src(8)
+             !dst(9) =-src(7)
+             !
+             dst(5:7) = matmul((sym%irr(5,21)%repres(1:3,1:3)),src(5:7))
+             !
+             return
+             !
+           end select 
+           !
        end select 
        !
        if (all(tn(ioper,:)/=0)) then 
@@ -1314,6 +1457,78 @@ module mol_xy4
              return
              !
            end select
+           !
+       case('R-SYM-F-E')
+           !
+           select case(ioper)
+           !
+           case (1) ! identity 
+
+             dst(:) = src(:)
+             !
+             return
+             !
+           case (2) ! (14)(23)
+
+             dst(1) = src(4)
+             dst(2) = src(3)
+             dst(3) = src(2)
+             dst(4) = src(1)
+
+             dst(8) = src(8)
+             dst(9) = src(9)
+             !
+             dst(5) =-src(5)
+             dst(6) =-src(6)
+             dst(7) = src(7)
+             !
+             return
+             !
+           case (4) ! (14)*
+             !
+             dst(1) = src(4)
+             dst(2) = src(2)
+             dst(3) = src(3)
+             dst(4) = src(1)
+             dst(8) = -0.5_ark*src(8)                +0.5_ark*sqrt(3.0_ark)*src(9)
+             dst(9) =  0.5_ark*sqrt(3.0_ark)*src(8)  +0.5_ark*src(9)
+             !
+             dst(5) = -src(7)
+             dst(6) = -src(6)
+             dst(7) = -src(5)
+             !
+             return
+             !
+           case (3) ! (123)
+             !
+             dst(1) = src(3)
+             dst(2) = src(1)
+             dst(3) = src(2)
+             dst(4) = src(4)
+             !
+             dst(8) = -0.5_ark*src(8)                +0.5_ark*sqrt(3.0_ark)*src(9)
+             dst(9) = -0.5_ark*sqrt(3.0_ark)*src(8)  -0.5_ark*src(9)
+             !
+             dst(5) = src(5)
+             dst(6) = src(7)
+             dst(7) = src(6)             
+             !
+           case (5) ! (23)*
+             !
+             dst(1) = src(1)
+             dst(2) = src(3)
+             dst(3) = src(2)
+             dst(4) = src(4)
+             dst(7) = src(7)
+             dst(8) =-src(8)
+             !
+             dst(5) = src(5)
+             dst(6) = src(7)
+             dst(7) = src(6)             
+             !
+             return
+             !
+           end select           
            !
         case('R-ALPHA')
            !
