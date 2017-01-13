@@ -30915,10 +30915,13 @@ subroutine PTstore_contr_matelem(jrot)
     !
     ! allocate array to keep contracted matrix elements
     !
-    if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+    !
+    if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_uniq(iclass),dimen,dimen,nmodes,nmodes,& 
+                        (nterms_uniq(iclass)*dimen*dimen*nmodes*nmodes,hik),real(nterms_uniq(iclass)*dimen*dimen*nmodes*nmodes,rk)*8.0_rk/1024.0_rk**3
     !
     allocate(gvib_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,nmodes,nmodes), stat=info)
     write(sclass,'(i4)') iclass
@@ -31152,10 +31155,13 @@ subroutine PTstore_contr_matelem(jrot)
     !
     ! allocate array to keep contracted matrix elements
     !
-    if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+    !
+    if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gcor matrix of ',f15.4,' gb')") nterms_uniq(iclass),dimen,dimen,nmodes,1,& 
+                        (nterms_uniq(iclass)*dimen*dimen*nmodes*1,hik),real(nterms_uniq(iclass)*dimen*dimen*nmodes,rk)*8.0_rk/1024.0_rk**3
     !
     allocate(gcor_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,nmodes,1), stat=info)
     write(sclass,'(i4)') iclass
@@ -31333,10 +31339,13 @@ subroutine PTstore_contr_matelem(jrot)
     !
     ! allocate array to keep contracted matrix elements
     !
-    if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+    !
+    if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' grot matrix of ',f15.4,' gb')") nterms_uniq(iclass),dimen,dimen,1,1,& 
+                        (nterms_uniq(iclass)*dimen*dimen,hik),real(nterms_uniq(iclass)*dimen*dimen,rk)*8.0_rk/1024.0_rk**3
     !
     allocate(grot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
     write(sclass,'(i4)') iclass

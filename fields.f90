@@ -14287,7 +14287,7 @@ end subroutine check_read_save_none
            !
         enddo
         !
-        read(chkptIO,*) exp_coeff_thresh
+        !read(chkptIO,*) exp_coeff_thresh
         !
         !if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
         !  !
@@ -14326,8 +14326,8 @@ end subroutine check_read_save_none
         integer(ik)          :: Nmodes,Npoints,Ncoeff,iterm,i,imu,nterms,nrank,Norder
         real(ark) :: field_
         integer(ik),allocatable :: nterm(:)
+        real(rk)             :: exp_coeff_thresh
         !
-
         unitfname ='Check point of the external'
         call IOStart(trim(unitfname),chkptIO)
         open(chkptIO,action='read',status='old',file=trove%chk_external_fname)
@@ -14389,6 +14389,8 @@ end subroutine check_read_save_none
            trove%extF(imu)%field(iterm,i) = field_
            !
         enddo do_ext
+        !
+        read(chkptIO,*) exp_coeff_thresh
         !
         read(chkptIO,"(a15)") buf
         !
