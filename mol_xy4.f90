@@ -694,7 +694,7 @@ module mol_xy4
           s(1:2) = dsrc(8:9)
           s(3:5) = dsrc(5:7)
           !
-          call from_sym2alphaII(s(5:9),dst(5:9),alpha34)
+          call from_sym2alphaII(s(1:5),dst(5:9),alpha34)
           !
           alpha12 = dst(5)
           alpha13 = dst(6)
