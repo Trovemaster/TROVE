@@ -4360,17 +4360,6 @@ contains
                  irec = eigen(ilevel)%irec(1)
                  read(iunit, rec = irec) vec(1:nsize)
                  !
-                 !omp parallel do private(idimen,ktau,icontr) shared(psi) schedule(guided)
-                 !do idimen = 1, dimen
-                 !   !
-                 !   ktau = bset_contr(jind)%ktau(idimen)
-                 !   icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
-                 !   !
-                 !   psi(icontr,ientry,ktau) = vec(idimen)
-                 !   !
-                 !end do
-                 !omp end parallel do
-                 !
                  !$omp parallel do private(idimen,irow,ib,ktau,icontr,iterm,dtemp0,nelem,ielem,isrootI) shared(psi) schedule(guided)
                  do idimen = 1, dimen
                    !
@@ -4559,24 +4548,11 @@ contains
                 !
                 call divided_slice_write(i,'potF',pot_suffix,Nentries,pot_matrix)
                 !
-                !write(unitfname,"('single pot_matrix')")
-                !
-                !call IOStart(trim(unitfname),junit)
-                !
-                !filename = trim(job%fitpot_file)//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))//'_'//trim(adjustl(parchar))//'.tmp'
-                !
-                !open(junit,form='unformatted',action='write',position='rewind',status='replace',file=filename)
-                !
-                !write (junit) pot_matrix
-                !
-                !close(junit)
                 !
               else
                 !
                 write(iunit) i
                 write (iunit) pot_matrix
-                !
-                !write (iunit,rec=i) pot_matrix(1:matsize)
                 !
               endif
               !
@@ -4661,7 +4637,6 @@ contains
             !
             if (.not.job%IOfitpot_divide) then
               !
-              !
               iunit = fit(isym,jind)%IOunit
               !
               read(iunit) buf20(1:12)
@@ -4670,14 +4645,6 @@ contains
                 write (out,"(' pot_matrix at J = ',i4,', isym = ',i4,' has bogus footer: ',a)") jrot,isym,buf20(1:12)
                 stop 'pot_matrix - bogus file format'
               end if
-              !
-            !else
-              !
-              !do i=1,parmax
-              !  !
-              !  call divided_slice_open(i,'potF',pot_suffix)
-              !  !
-              !enddo 
               !
             endif
             !
@@ -4778,78 +4745,78 @@ contains
  end subroutine prepare_pot_matrix
 
 
-      subroutine divided_slice_write(islice,name,suffix,N,field)
-        !
-        integer(ik),intent(in)      :: islice
-        character(len=*),intent(in) :: name,suffix
-        integer(ik),intent(in)      :: N
-        real(rk),intent(in)         :: field(N,N)
-        character(len=4)            :: jchar
-        integer(ik)                 :: chkptIO
-        character(len=cl)           :: buf,filename,job_is
-        !
-        write(job_is,"('single swap_matrix')")
-        !
-        call IOStart(trim(job_is),chkptIO)
-        !
-        write(jchar, '(i4)') islice
-        !
-        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-        !
-        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
-        !
-        write(chkptIO) trim(name)
-        !
-        write(chkptIO) field
-        !
-        write(chkptIO) trim(name)
-        !
-        close(chkptIO)
-        !
-      end subroutine divided_slice_write
-      !       
-      !
-      subroutine divided_slice_read(islice,name,suffix,N,field)
-        !
-        integer(ik),intent(in)      :: islice
-        character(len=*),intent(in) :: name,suffix
-        integer(ik),intent(in)      :: N
-        real(rk),intent(out)        :: field(N,N)
-        character(len=4)            :: jchar
-        integer(ik)                 :: chkptIO
-        character(len=cl)           :: buf,filename,job_is
-        integer(ik)                 :: ilen
-        logical                     :: ifopened
-        !
-        write(job_is,"('single swap_matrix')")
-        !
-        call IOStart(trim(job_is),chkptIO)
-        !
-        write(jchar, '(i4)') islice
-        !
-        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-        !
-        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
-        !
-        ilen = LEN_TRIM(name)
-        !
-        read(chkptIO) buf(1:ilen)
-        if ( trim(buf(1:ilen))/=trim(name) ) then
-          write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-          stop 'divided_slice_read - in slice -  header missing or wrong'
-        end if
-        !
-        read(chkptIO) field
-        !
-        read(chkptIO) buf(1:ilen)
-        if ( trim(buf(1:ilen))/=trim(name) ) then
-          write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-          stop 'divided_slice_read - in slice -  header missing or wrong'
-        end if
-        !
-        close(chkptIO)
-        !
-      end subroutine divided_slice_read
+ subroutine divided_slice_write(islice,name,suffix,N,field)
+   !
+   integer(ik),intent(in)      :: islice
+   character(len=*),intent(in) :: name,suffix
+   integer(ik),intent(in)      :: N
+   real(rk),intent(in)         :: field(N,N)
+   character(len=4)            :: jchar
+   integer(ik)                 :: chkptIO
+   character(len=cl)           :: buf,filename,job_is
+   !
+   write(job_is,"('single swap_matrix')")
+   !
+   call IOStart(trim(job_is),chkptIO)
+   !
+   write(jchar, '(i4)') islice
+   !
+   filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
+   !
+   open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
+   !
+   write(chkptIO) trim(name)
+   !
+   write(chkptIO) field
+   !
+   write(chkptIO) trim(name)
+   !
+   close(chkptIO)
+   !
+ end subroutine divided_slice_write
+ !       
+ !
+ subroutine divided_slice_read(islice,name,suffix,N,field)
+   !
+   integer(ik),intent(in)      :: islice
+   character(len=*),intent(in) :: name,suffix
+   integer(ik),intent(in)      :: N
+   real(rk),intent(out)        :: field(N,N)
+   character(len=4)            :: jchar
+   integer(ik)                 :: chkptIO
+   character(len=cl)           :: buf,filename,job_is
+   integer(ik)                 :: ilen
+   logical                     :: ifopened
+   !
+   write(job_is,"('single swap_matrix')")
+   !
+   call IOStart(trim(job_is),chkptIO)
+   !
+   write(jchar, '(i4)') islice
+   !
+   filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
+   !
+   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+   !
+   ilen = LEN_TRIM(name)
+   !
+   read(chkptIO) buf(1:ilen)
+   if ( trim(buf(1:ilen))/=trim(name) ) then
+     write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+     stop 'divided_slice_read - in slice -  header missing or wrong'
+   end if
+   !
+   read(chkptIO) field
+   !
+   read(chkptIO) buf(1:ilen)
+   if ( trim(buf(1:ilen))/=trim(name) ) then
+     write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+     stop 'divided_slice_read - in slice -  header missing or wrong'
+   end if
+   !
+   close(chkptIO)
+   !
+ end subroutine divided_slice_read
 
  !
 end module refinement

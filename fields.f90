@@ -3763,7 +3763,7 @@ module fields
          extF%coef = 0
          extF%name = 'xxxx'
          extF%term = -1
-         extF%ifit = 0
+         extF%ifit = 1
          !
          Nparam = sum(extF%nterms(:))
          !
@@ -14523,7 +14523,7 @@ end subroutine check_read_save_none
      iterm = 0
      !
      do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
           iterm = iterm + 1
        endif
      enddo
@@ -14556,7 +14556,7 @@ end subroutine check_read_save_none
      iterm = 0
      !
      do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh)) then
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
           !
           iterm = iterm + 1
           !

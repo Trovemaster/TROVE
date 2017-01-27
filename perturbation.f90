@@ -15402,9 +15402,11 @@ module perturbation
     !
     integer(ik)        :: imu,Ncomb,junit,Nslices,Nswap,mdimen,mdimen_,icontr,jcontr
     integer(ik)        :: icoeff,icase,ilambda,jcoeff,idvr,iterm1,iterm2,islice,isymcoeff
+    integer(ik)        :: N1,N2,k1_,k2_
     integer(ik),allocatable  :: extF_N(:)
     character(len=4) :: jchar
     character(len=18):: buf18
+    character(len=4) :: buf4
     integer(ik) :: nclasses,nmodes
     !
     integer(ik), allocatable :: dimen_classes(:), nu_classes(:,:), iclass_nmodes(:), iclass_imode(:,:), iclass_ilambda(:,:,:), &
@@ -15424,7 +15426,7 @@ module perturbation
     real(rk), allocatable :: vpot_icomb_coefs(:,:,:,:)
     real(rk), allocatable :: pseudo_icomb_coefs(:,:,:,:)
     real(rk), allocatable :: extF_icomb_coefs(:,:,:,:)
-    !
+    real(rk), allocatable :: gme_Nclass(:,:,:)
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -15641,6 +15643,8 @@ module perturbation
               !
               grot_t = 0
               !
+              call calc_grot_me(k1,k2,gme_Nclass)
+              !
               do isymcoeff =1,PT%Maxsymcoeffs
                 !
                 Ndeg = PT%Index_deg(isymcoeff)%size1
@@ -15716,11 +15720,53 @@ module perturbation
           !
           if (job%verbose>=2) call TimerStart('calc_gcor_contr_matrix')
           !
-          k1 = 1
+          N1 = 1; N2 = 1
           !
-          do k2 = 1,3
+          if (job%matelem_append) then
+            !
+            if (job%vib_rot_contr) then
+              !
+              write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+              stop 'Appending or dumping is not working with the vib-rot'
+              !
+            endif
+            !
+            call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+            !
+            ! finished gcor record
+            !
+            read(chkptIO) k1_,k2_
+            !
+            ! we will start from these indeces 
+            !
+            N1 = k1_+1
+            N2 = k2_
+            !
+            if (k1_>PT%Nmodes) then
+              N2 = k2_+1
+              N1 = 1
+            endif
+            !
+            read(dumpIO_) grot_t(1:mdimen,1:Ndeg)
+            !
+            read(chkptIO) buf4(1:4)
+            !
+            if (buf4(1:4)/='hcor') then
+              !
+              write (out,"('Wrong record in vib dump-chk file, hcor is missing ',a,' k1,k2 = ',2i4)") buf4(1:4),k1,k2
+              stop 'Wrong record in the dump-file'
+              !
+            end if
+            !
+          endif 
+          !
+          islice = N2-1
+          !
+          do k2 = N2,3
             !
             islice = islice + 1
+            !
+            if (N1==1) grot_t = 0
             !
             if ( job%IOmatelem_divide ) then 
               if (islice<iterm1.or.iterm2<islice) cycle
@@ -15729,83 +15775,65 @@ module perturbation
               !
             endif
             !
-            if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
-            !
-            ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
-            !
-            if (job%matelem_append.or.job%IOmatelem_dump) then
+            do k1 = N1,PT%Nmodes
               !
-              if (job%vib_rot_contr) then
+              if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
+              !
+              ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
+              !
+              if (job%IOmatelem_dump) then
                 !
-                write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
-                stop 'Appending or dumping is not working with the vib-rot'
+                if (job%vib_rot_contr.and..not.job%matelem_append) then
+                  !
+                  write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+                  stop 'Appending or dumping is not working with the vib-rot'
+                  !
+                endif
+                !
+                call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
                 !
               endif
               !
-              call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+              call calc_gcor_me(k1,k2,gme_Nclass) 
               !
-            endif
-            !
-            grot_t = 0
-            !
-            do isymcoeff =1,PT%Maxsymcoeffs
-              !
-              Ndeg = PT%Index_deg(isymcoeff)%size1
-              !
-              if (job%vib_rot_contr) grot_t = 0
-              !
-              if (job%matelem_append) then
-                 !
-                 do ideg=1,Ndeg
-                   !
-                   icontr = PT%icase2icontr(isymcoeff,ideg)
-                   !
-                   read(dumpIO_) icontr,grot_t(icontr,1:icontr)
-                   if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
-                     write(out,"('Wrong record ',i9,' /= ',i9,' in the dump-chk file ',a)") icontr,PT%icase2icontr(isymcoeff,ideg),trim(filename)
-                     stop 'Wrong record in the dump-file'
-                   endif
-                   !
-                 enddo
-                 !
-                 if (isymcoeff==job%iappend) job%matelem_append = .false.
-                 !
-              else ! no-append means calculation 
-                 !
-                 call calc_gcor_contr_matrix(k2,isymcoeff,grot_t)
-                 !
-              endif 
-              !
-              !
-              if (job%vib_rot_contr) then 
-                  !
-                  !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
-                  do ideg=1,Ndeg
-                     icontr = PT%icase2icontr(isymcoeff,ideg)
-                     do jdeg=1,ideg-1
-                        jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                        grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
-                     enddo
-                  enddo
-                  !$omp end parallel do
-                  !
-                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
-                      write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
-                  endif
-                  !
-              elseif (job%IOmatelem_dump.and..not.job%matelem_append) then 
-                  !
-                  do ideg=1,Ndeg
+              do isymcoeff =1,PT%Maxsymcoeffs
+                !
+                Ndeg = PT%Index_deg(isymcoeff)%size1
+                !
+                if (job%vib_rot_contr) grot_t = 0
+                !
+                call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
+                !
+                if (job%vib_rot_contr) then 
                     !
-                    icontr = PT%icase2icontr(isymcoeff,ideg)
+                    !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(grot_t) schedule(dynamic)
+                    do ideg=1,Ndeg
+                       icontr = PT%icase2icontr(isymcoeff,ideg)
+                       do jdeg=1,ideg-1
+                          jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                          grot_t(icontr,jdeg) =-grot_t(jcontr,ideg)
+                       enddo
+                    enddo
+                    !$omp end parallel do
                     !
-                    write(dumpIO_) icontr,grot_t(icontr,1:icontr)
+                    if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                        write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
+                    endif
                     !
-                  enddo
+                endif
+                !
+              enddo
+              !
+              if (job%IOmatelem_dump ) then 
+                  !
+                  write(dumpIO_) k1,k2
+                  write(dumpIO_) grot_t
                   !
               endif
               !
             enddo
+            !
+            N1 = 1
             !
             if (job%IOmatelem_dump) close(dumpIO_)
             !
@@ -15902,8 +15930,81 @@ module perturbation
           !
           if (job%verbose>=2) call TimerStart('calc_gvib_contr_matrix')
           !
+          N1 = 1
+          N2 = 1
+          !
+          if (job%matelem_append) then
+            !
+            ! finished gvib record
+            !
+            read(chkptIO) k1_,k2_
+            !
+            ! we will start from these indeces 
+            N1 = k1_
+            N2 = k2_+1
+            !
+            if (k2_>PT%Nmodes) then
+              N1 = k1_+1
+              N2 = 1
+            endif
+            !
+            read(dumpIO_) hvib_t(1:mdimen,1:Ndeg)
+            !
+            read(chkptIO) buf4(1:4)
+            !
+            if (buf4(1:4)/='hvib') then
+              !
+              write (out,"('Wrong record in vib dump-chk file, hvib is missing ',a,' k1,k2 = ',2i4)") buf4(1:4),k1,k2
+              stop 'Wrong record in the dump-file'
+              !
+            end if
+            !
+          endif 
+          !
           if (job%verbose>=4) write(out,"(/' hvib...',i12)") PT%Maxsymcoeffs
           !if (job%verbose>=4) write(out,"('  |',i8)",advance='NO')
+          !
+          do k1 = N1,PT%Nmodes
+            do k2 = N2,PT%Nmodes
+              !
+              if (job%verbose>=4) write(out,"(/' k1,k2 = ',2i4)") k1,k2
+              !
+              ! computed contracted matrix elements for class Nclasses 
+              !
+              call calc_gvib_me(k1,k2,gme_Nclass)
+              !
+              do isymcoeff =1,PT%Maxsymcoeffs
+                !
+                if (job%verbose>=4.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
+                !
+                Ndeg = PT%Index_deg(isymcoeff)%size1
+                !
+                if (job%vib_rot_contr) hvib_t = 0
+                !
+                call calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib_t)
+                !
+                ! store temp the matrix elements (dump)
+                !
+                if (job%IOmatelem_dump) then 
+                   !
+                   call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+                   write(dumpIO_) k1,k2
+                   write(dumpIO_) hvib_t
+                   write(dumpIO_) 'hvib'
+                   close(dumpIO_)
+                   !
+                endif
+                !
+              enddo
+              !
+            enddo
+          enddo
+          !
+          if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)") 0,0
+          !
+          ! computed contracted matrix elements for class Nclasses 
+          !
+          call calc_Vpot_me(gme_Nclass)
           !
           do isymcoeff =1,PT%Maxsymcoeffs
             !
@@ -15913,78 +16014,61 @@ module perturbation
             !
             if (job%vib_rot_contr) hvib_t = 0
             !
-            if (job%matelem_append) then
-               !
-               do ideg=1,Ndeg
-                 !
-                 icontr = PT%icase2icontr(isymcoeff,ideg)
-                 !
-                 read(dumpIO_) icontr,hvib_t(icontr,1:icontr)
-                 if ( icontr/=PT%icase2icontr(isymcoeff,ideg) ) then
-                   write(out,"('Wrong record ',i9,' /= ',i9,' in the vib dump-chk file ')") icontr,PT%icase2icontr(isymcoeff,ideg)
-                   stop 'Wrong record in the dump-file'
-                 endif
-                 !
-               enddo
-               !
-            else ! no-append means calculation 
-               !
-               call calc_gvib_contr_matrix(isymcoeff,hvib_t)
-               !
-            endif 
+            call calc_vpot_contr_matrix(isymcoeff,hvib_t)
             !
-            ! store the matrix elements 
+            ! store temp the matrix elements (dump)
             !
-            if (job%vib_rot_contr) then 
+            if (job%IOmatelem_dump) then 
                !
-               if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                       (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
-                    !
-                    !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(hvib_t) schedule(dynamic)
-                    do ideg=1,Ndeg
-                      icontr = PT%icase2icontr(isymcoeff,ideg)
-                      do jdeg=1,ideg-1
-                        jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                        hvib_t(icontr,jdeg) = hvib_t(jcontr,ideg)
-                      enddo
-                    enddo
-                    !$omp end parallel do
-                    !
-                    write(chkptIO_) hvib_t(1:mdimen,1:Ndeg)
-                    !
-                else
-                    !
-                    !$omp parallel do private(icontr,ideg,jcontr,jdeg) schedule(dynamic)
-                    do ideg=1,Ndeg
-                      icontr = PT%icase2icontr(isymcoeff,ideg)
-                      do jdeg=1,ideg
-                        jcontr = PT%icase2icontr(isymcoeff,jdeg)
-                        hvib%me(jcontr,ideg) = hvib_t(jcontr,ideg)
-                        hvib%me(icontr,jdeg) = hvib_t(jcontr,ideg)
-                      enddo
-                    enddo
-                    !$omp end parallel do
-                    !
-                    !write(out,"('vib-rot: hvib must be stored, you should not be here!')")
-                    !stop 'vib-rot: hvib must be stored, you should not be here!'
-                    !
-               endif
-               !
-            elseif (job%IOmatelem_dump.and..not.job%matelem_append) then 
-               !
-               do ideg=1,Ndeg
-                 !
-                 icontr = PT%icase2icontr(isymcoeff,ideg)
-                 !
-                 write(dumpIO_) icontr,hvib_t(icontr,1:icontr)
-                 !
-               enddo
+               call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+               write(dumpIO_) 0,0
+               write(dumpIO_) hvib_t
+               write(dumpIO_) 'hvib'
+               close(dumpIO_)
                !
             endif
             !
-            if (isymcoeff==job%iappend) job%matelem_append = .false.
-            !
           enddo
+          !
+          if (job%vib_rot_contr) then 
+             !
+             write(out,"('vib-rot is not working yet, please check')")
+             stop 'vib-rot is not working yet, please check'
+             !
+             if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
+                     (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
+                  !
+                  !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(hvib_t) schedule(dynamic)
+                  do ideg=1,Ndeg
+                    icontr = PT%icase2icontr(isymcoeff,ideg)
+                    do jdeg=1,ideg-1
+                      jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                      hvib_t(icontr,jdeg) = hvib_t(jcontr,ideg)
+                    enddo
+                  enddo
+                  !$omp end parallel do
+                  !
+                  write(chkptIO_) hvib_t(1:mdimen,1:Ndeg)
+                  !
+              else
+                  !
+                  !$omp parallel do private(icontr,ideg,jcontr,jdeg) schedule(dynamic)
+                  do ideg=1,Ndeg
+                    icontr = PT%icase2icontr(isymcoeff,ideg)
+                    do jdeg=1,ideg
+                      jcontr = PT%icase2icontr(isymcoeff,jdeg)
+                      hvib%me(jcontr,ideg) = hvib_t(jcontr,ideg)
+                      hvib%me(icontr,jdeg) = hvib_t(jcontr,ideg)
+                    enddo
+                  enddo
+                  !$omp end parallel do
+                  !
+                  !write(out,"('vib-rot: hvib must be stored, you should not be here!')")
+                  !stop 'vib-rot: hvib must be stored, you should not be here!'
+                  !
+             endif
+             !
+          endif
           !
           if (job%IOmatelem_dump) close(dumpIO_)
           !
@@ -16113,6 +16197,8 @@ module perturbation
               call open_dump_slice(islice,'extF_',job%extmat_suffix,job%extmatelem_append,job%IOextmatelem_dump,dumpIO_)
               !
             endif
+            !
+            call calc_extF_me(imu,gme_Nclass)
             !
             do isymcoeff =1,PT%Maxsymcoeffs
               !
@@ -16782,103 +16868,71 @@ module perturbation
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
       !
-      write(out, '(/1x,a)') 'free memory'
-  
+      write(out, '(/1x,a)') ' Free memory'
+      !
       deallocate(iclass_nmodes, iclass_imode)
       call ArrayStop('PTcontracted_matelem_class_fast:iclass_nmodes')
       call ArrayStop('PTcontracted_matelem_class_fast:iclass_imode')
-  
+      !
       deallocate(dimen_classes,nu_classes,enermax_classes)
       call ArrayStop('PTcontracted_matelem_class_fast:dimen_classes')
       call ArrayStop('PTcontracted_matelem_class_fast:nu_classes')
       call ArrayStop('PTcontracted_matelem_class_fast:enermax_classes')
-  
+      !
       deallocate(icomb_nclasses, icomb_iclass)
-  
-      !deallocate(gvib_icomb_nterms, gvib_icomb_iterm, gvib_icomb_coefs)
-      !call ArrayStop('PTcontracted_matelem_class_fast:gvib_icomb_nterms')
-      !call ArrayStop('PTcontracted_matelem_class_fast:gvib_icomb_iterm')
-      !call ArrayStop('PTcontracted_matelem_class_fast:gvib_icomb_coefs')
-  
+      !  
       deallocate(gvib_me)
       do iclass=1, nclasses-1
         write(sclass,'(i4)') iclass
         skey = 'gvib_me('//trim(adjustl(sclass))//')'
         call ArrayStop(trim(skey))
       enddo
-  
-      !deallocate(grot_icomb_nterms, grot_icomb_iterm, grot_icomb_coefs)
-      !call ArrayStop('PTcontracted_matelem_class_fast:grot_icomb_nterms')
-      !call ArrayStop('PTcontracted_matelem_class_fast:grot_icomb_iterm')
-      !call ArrayStop('PTcontracted_matelem_class_fast:grot_icomb_coefs')
-  
+      !
       deallocate(grot_me)
-      do iclass=1, nclasses
+      do iclass=1, nclasses-1
         write(sclass,'(i4)') iclass
         skey = 'grot_me('//trim(adjustl(sclass))//')'
         call ArrayStop(trim(skey))
       enddo
-  
-      !deallocate(gcor_icomb_nterms, gcor_icomb_iterm, gcor_icomb_coefs)
-      !call ArrayStop('PTcontracted_matelem_class_fast:gcor_icomb_nterms')
-      !call ArrayStop('PTcontracted_matelem_class_fast:gcor_icomb_iterm')
-      !call ArrayStop('PTcontracted_matelem_class_fast:gcor_icomb_coefs')
-  
+      ! 
       deallocate(gcor_me)
-      do iclass=1, nclasses
+      do iclass=1, nclasses-1
         write(sclass,'(i4)') iclass
         skey = 'gcor_me('//trim(adjustl(sclass))//')'
         call ArrayStop(trim(skey))
       enddo
-  
-      !deallocate(vpot_icomb_nterms, vpot_icomb_iterm, vpot_icomb_coefs)
-      !call ArrayStop('PTcontracted_matelem_class_fast:vpot_icomb_nterms')
-      !call ArrayStop('PTcontracted_matelem_class_fast:vpot_icomb_iterm')
-      !call ArrayStop('PTcontracted_matelem_class_fast:vpot_icomb_coefs')
-  
+      !
       deallocate(vpot_me)
-      do iclass=1, nclasses
+      do iclass=1, nclasses-1
         write(sclass,'(i4)') iclass
         skey = 'vpot_me('//trim(adjustl(sclass))//')'
         call ArrayStop(trim(skey))
       enddo
-
-      !deallocate(pseudo_icomb_nterms, pseudo_icomb_iterm, pseudo_icomb_coefs)
-      !call ArrayStop('PTcontracted_matelem_class_fast:pseudo_icomb_nterms')
-      !call ArrayStop('PTcontracted_matelem_class_fast:pseudo_icomb_iterm')
-      !call ArrayStop('PTcontracted_matelem_class_fast:pseudo_icomb_coefs')
-  
-      !deallocate(pseudo_me)
-      !do iclass=1, nclasses
-      !  write(sclass,'(i4)') iclass
-      !  skey = 'pseudo_me('//trim(adjustl(sclass))//')'
-      !  call ArrayStop(trim(skey))
-      !enddo
-
       !
       if (treat_exfF) then
-        !
-        !deallocate(ExtF_icomb_nterms, ExtF_icomb_iterm, ExtF_icomb_coefs)
-        !call ArrayStop('PTcontracted_matelem_class_fast:extF_icomb_nterms')
-        !call ArrayStop('PTcontracted_matelem_class_fast:extF_icomb_iterm')
-        !call ArrayStop('PTcontracted_matelem_class_fast:extF_icomb_coefs')
-     
+        !     
         deallocate(ExtF_me)
-        do iclass=1, nclasses
+        do iclass=1, nclasses-1
           write(sclass,'(i4)') iclass
           skey = 'extF_me('//trim(adjustl(sclass))//')'
           call ArrayStop(trim(skey))
         enddo
         !
       endif
-  
+      !
       deallocate(iclass_ilambda)
       call ArrayStop('PTcontracted_matelem_class_fast:iclass_ilambda')
-  
+      !
       deallocate(icomb_nclasses0, icomb_iclass0)
       call ArrayStop('PTcontracted_matelem_class_fast:icomb_nclasses0')
       call ArrayStop('PTcontracted_matelem_class_fast:icomb_iclass0')
-  
+      !
+      !
+      if (allocated(gme_Nclass)) then
+         call ArrayStop("matelem_Nclass")
+         deallocate(gme_Nclass)
+      endif
+      !
       write(out, '(/a)') 'PTcontracted_matelem_class_fast/done'
       !
     end  subroutine de_initialize_class_contr_objects   
@@ -16935,7 +16989,9 @@ module perturbation
             nu_i = nu_classes(Nclasses,icontr)
             nu_j = nu_classes(Nclasses,jcontr)
             !
-            me_class0(Nclasses) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+            !me_class0(Nclasses) = grot_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+            !
+            me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
             !
             matelem = matelem + product(me_class0(1:Nclasses))
             !
@@ -16954,14 +17010,14 @@ module perturbation
     end subroutine calc_grot_contr_matrix 
     !
     !
-    subroutine  calc_gcor_contr_matrix(k2,isymcoeff,gcor)
+    subroutine  calc_gcor_contr_matrix(k1,k2,isymcoeff,gcor)
       !
-      integer(ik),intent(in) :: k2,isymcoeff
-      real(rk),intent(out) :: gcor(:,:)
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      real(rk),intent(inout) :: gcor(:,:)
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j
       integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
-      integer(ik) :: Maxcontracts,jsymcoeff,k1
+      integer(ik) :: Maxcontracts,jsymcoeff
       type(PTcoeffT),pointer   :: fl
       !
       nmodes = PT%Nmodes
@@ -16975,7 +17031,7 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,k1,icoeff,iclass,nu_i,nu_j,iterm,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,&
         !$omp& me_class0) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
            !
@@ -16986,38 +17042,36 @@ module perturbation
            !
            matelem = 0
            !
-           do k1 = 1,nmodes
+           do icoeff = 1,me%gcor(k1,k2)%Ncoeff
              !
-             do icoeff = 1,me%gcor(k1,k2)%Ncoeff
+             do iclass=1,Nclasses-1
                !
-               do iclass=1,Nclasses-1
-                 !
-                 nu_i = nu_classes(iclass,icontr)
-                 nu_j = nu_classes(iclass,jcontr)
-                 !
-                 iterm = me%gcor(k1,k2)%uniq(icoeff,iclass)
-                 !
-                 me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)
-                 !
-               enddo
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
                !
-               nu_i = nu_classes(Nclasses,icontr)
-               nu_j = nu_classes(Nclasses,jcontr)
+               iterm = me%gcor(k1,k2)%uniq(icoeff,iclass)
                !
-               me_class0(Nclasses) = gcor_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+               me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)
                !
-               matelem = matelem + product(me_class0(1:Nclasses))
-               !
-             enddo ! icoeff
+             enddo
              !
-             !if (icontr/=jcontr) matelem = -matelem
+             nu_i = nu_classes(Nclasses,icontr)
+             nu_j = nu_classes(Nclasses,jcontr)
              !
-           enddo
+             !me_class0(Nclasses) = gcor_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+             !
+             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
+             !
+             matelem = matelem + product(me_class0(1:Nclasses))
+             !
+           enddo ! icoeff
+           !
+           !if (icontr/=jcontr) matelem = -matelem
            !
            if (job%vib_rot_contr) then 
-             gcor(jcontr,ideg) = matelem
+             gcor(jcontr,ideg) = gcor(jcontr,ideg) + matelem
            else
-             gcor(icontr,jcontr) = matelem
+             gcor(icontr,jcontr) = gcor(icontr,jcontr) + matelem
            endif
            !
         enddo
@@ -17027,15 +17081,15 @@ module perturbation
     end subroutine  calc_gcor_contr_matrix
     !
     !
-    subroutine  calc_gvib_contr_matrix(isymcoeff,hvib)
+    subroutine  calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib)
       !
-      integer(ik),intent(in) :: isymcoeff
-      real(rk),intent(out) :: hvib(:,:)
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      real(rk),intent(inout) :: hvib(:,:)
       !
       real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
       integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j
       integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff
-      type(PTcoeffT),pointer   :: pl
+      type(PTcoeffT),pointer   :: fl
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -17044,8 +17098,8 @@ module perturbation
       !
       Maxcontracts = PT%Maxcontracts
       !
-      !fl => me%gvib(k1,k2)
-      pl => me%poten
+      fl => me%gvib(k1,k2)
+      !pl => me%poten
       !
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
         !
@@ -17062,38 +17116,79 @@ module perturbation
            !        
            matelem = 0
            !
-           do k1 = 1,nmodes
-             do k2 = 1,nmodes
+           Ncoeff = me%gvib(k1,k2)%Ncoeff
+           !
+           do icoeff = 1,me%gvib(k1,k2)%Ncoeff
+             !
+             do iclass=1,Nclasses-1
                !
-               Ncoeff = me%gvib(k1,k2)%Ncoeff
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
                !
-               do icoeff = 1,me%gvib(k1,k2)%Ncoeff
-                 !
-                 do iclass=1,Nclasses-1
-                   !
-                   nu_i = nu_classes(iclass,icontr)
-                   nu_j = nu_classes(iclass,jcontr)
-                   !
-                   iterm = me%gvib(k1,k2)%uniq(icoeff,iclass)
-                   !
-                   me_class0(iclass) = gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)
-                   !
-                 enddo
-                 !
-                 nu_i = nu_classes(Nclasses,icontr)
-                 nu_j = nu_classes(Nclasses,jcontr)
-                 !
-                 me_class0(Nclasses) = gvib_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
-                 !
-                 matelem = matelem + product(me_class0(1:Nclasses))
-                 !
-               enddo ! icoeff
+               iterm = fl%uniq(icoeff,iclass)
+               !
+               me_class0(iclass) = gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)
+               !
              enddo
-           enddo
+             !
+             nu_i = nu_classes(Nclasses,icontr)
+             nu_j = nu_classes(Nclasses,jcontr)
+             !
+             !me_class0(Nclasses) = gvib_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
+             !
+             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
+             !
+             matelem = matelem + product(me_class0(1:Nclasses))
+             !
+           enddo ! icoeff
            !
            matelem = -0.5_rk*matelem
            !
-           ! potential part
+           if (job%vib_rot_contr) then 
+             hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
+           else
+             hvib(icontr,jcontr) = hvib(icontr,jcontr) + matelem
+           endif
+           !
+         enddo
+        !$omp end parallel do 
+      enddo
+      !
+    end subroutine  calc_gvib_contr_matrix
+    !
+    subroutine  calc_vpot_contr_matrix(isymcoeff,hvib)
+      !
+      integer(ik),intent(in) :: isymcoeff
+      real(rk),intent(inout) :: hvib(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff
+      type(PTcoeffT),pointer   :: pl
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
+      !
+      Maxcontracts = PT%Maxcontracts
+      !
+      pl => me%poten
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,Ncoeff,icoeff,iclass,nu_i,nu_j,&
+        !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           jsymcoeff = PT%icontr2icase(jcontr,1)
+           energy_j = enermax_classes(jsymcoeff)
+           !
+           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           !        
+           matelem = 0
            !
            do icoeff = 1,pl%Ncoeff
              !
@@ -17111,23 +17206,26 @@ module perturbation
              nu_i = nu_classes(Nclasses,icontr)
              nu_j = nu_classes(Nclasses,jcontr)
              !
-             me_class0(Nclasses) = vpot_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
+             !me_class0(Nclasses) = vpot_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
+             !
+             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
            enddo ! icoeff
            !
            if (job%vib_rot_contr) then 
-             hvib(jcontr,ideg) = matelem
+             hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
            else
-             hvib(icontr,jcontr) = matelem
+             hvib(icontr,jcontr) = hvib(icontr,jcontr) + matelem
            endif
            !
          enddo
         !$omp end parallel do 
       enddo
       !
-    end subroutine  calc_gvib_contr_matrix
+    end subroutine  calc_vpot_contr_matrix
+    !
     !
     subroutine  calc_extF_contr_matrix(k1,isymcoeff,extF)
       !
@@ -17181,7 +17279,9 @@ module perturbation
              nu_i = nu_classes(Nclasses,icontr)
              nu_j = nu_classes(Nclasses,jcontr)
              !
-             me_class0(Nclasses) = extF_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,1)
+             !me_class0(Nclasses) = extF_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,1)
+             !
+             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
@@ -17197,7 +17297,399 @@ module perturbation
         !$omp end parallel do 
       enddo
       !
-    end subroutine calc_extF_contr_matrix 
+    end subroutine calc_extF_contr_matrix
+    !
+
+
+
+    subroutine calc_gcor_me(imode,jmode,gcorme_Nclass)
+
+      integer(ik),intent(in) :: imode,jmode
+      real(rk), allocatable,intent(out)   :: gcorme_Nclass(:,:,:)
+      integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
+      integer(hik) :: matsize
+      real(rk), allocatable :: prim_vect(:,:)
+      type(PTcoeffT),pointer  :: fl 
+      real(rk), allocatable   :: me_contr(:,:,:)
+      character(cl)  :: func_tag
+      integer(ik)    ::  target_index(PT%Nmodes),maxnterms
+      !
+      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'gcor_me matix elements for iclass = ', PT%Nclasses
+      !
+      func_tag = 'Tcor'
+      target_index = 0 
+      target_index(1) = kinorder
+      maxnterms = FLQindex(PT%Nmodes,target_index)
+      Nmodes = PT%Nmodes
+      !
+      iclass = PT%Nclasses
+      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+      dimen = contr(iclass)%nroots
+      nprim = contr(iclass)%dimen
+      !
+      allocate(prim_vect(nprim,dimen),stat=info)
+      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
+      !
+      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+      do iroot=1, dimen
+        ilevel = contr(iclass)%ilevel(iroot)
+        ideg = contr(iclass)%ideg(iroot)
+        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+      enddo
+      !$omp end parallel do
+      !
+      nterms_field = trove%g_cor(imode,jmode)%Ncoeff
+      !
+      matsize = int(nterms_field*dimen*dimen,hik)
+      !
+      if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
+                          matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
+      !
+      if (allocated(gcorme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(gcorme_Nclass)
+      endif
+      !
+      allocate(gcorme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      gcorme_Nclass= 0
+      !
+      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
+      !
+      fl => me%gcor(imode,jmode)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      ! compute contracted matrix elements for operators: G, p_i*G
+      !
+      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
+      !
+      gcorme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      !
+      if (fl%Ncoeff/=me%gcor(jmode,imode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal gcor-fields =',2i8)") fl%Ncoeff,me%gcor(jmode,imode)%Ncoeff
+        stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
+      endif
+      !
+      deallocate(me_contr)
+      call ArrayStop('PTstore_contr_matelem:me_contr')
+      !
+      deallocate(prim_vect)
+      call ArrayStop('prim_vect')
+      !
+    end subroutine calc_gcor_me
+
+
+    subroutine calc_grot_me(imode,jmode,grotme_Nclass)
+
+      integer(ik),intent(in) :: imode,jmode
+      real(rk), allocatable,intent(out)   :: grotme_Nclass(:,:,:)
+      integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
+      integer(hik) :: matsize
+      real(rk), allocatable :: prim_vect(:,:)
+      type(PTcoeffT),pointer  :: fl 
+      real(rk), allocatable   :: me_contr(:,:,:)
+      character(cl)  :: func_tag
+      integer(ik)    ::  target_index(PT%Nmodes),maxnterms
+      !
+      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'grot_me matix elements for iclass = ', PT%Nclasses
+      !
+      func_tag = 'Trot'
+      target_index = 0 
+      target_index(1) = kinorder
+      maxnterms = FLQindex(PT%Nmodes,target_index)
+      Nmodes = PT%Nmodes
+      !
+      iclass = PT%Nclasses
+      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+      dimen = contr(iclass)%nroots
+      nprim = contr(iclass)%dimen
+      !
+      allocate(prim_vect(nprim,dimen),stat=info)
+      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
+      !
+      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+      do iroot=1, dimen
+        ilevel = contr(iclass)%ilevel(iroot)
+        ideg = contr(iclass)%ideg(iroot)
+        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+      enddo
+      !$omp end parallel do
+      !
+      nterms_field = trove%g_rot(imode,jmode)%Ncoeff
+      !
+      matsize = int(nterms_field*dimen*dimen,hik)
+      !
+      if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
+                          matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
+      !
+      if (allocated(grotme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(grotme_Nclass)
+      endif
+      !
+      allocate(grotme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      grotme_Nclass= 0
+      !
+      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
+      !
+      fl => me%grot(imode,jmode)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      ! compute contracted matrix elements for operators: G, p_i*G
+      !
+      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
+      !
+      grotme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      !
+      if (fl%Ncoeff/=me%grot(jmode,imode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal grot-fields =',2i8)") fl%Ncoeff,me%grot(jmode,imode)%Ncoeff
+        stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
+      endif
+      !
+      deallocate(me_contr)
+      call ArrayStop('PTstore_contr_matelem:me_contr')
+      !
+      deallocate(prim_vect)
+      call ArrayStop('prim_vect')
+      !
+    end subroutine calc_grot_me
+
+
+
+    subroutine calc_gvib_me(imode,jmode,gvibme_Nclass)
+
+      integer(ik),intent(in) :: imode,jmode
+      real(rk), allocatable,intent(out)   :: gvibme_Nclass(:,:,:)
+      integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
+      integer(hik) :: matsize
+      real(rk), allocatable :: prim_vect(:,:)
+      type(PTcoeffT),pointer  :: fl 
+      real(rk), allocatable   :: me_contr(:,:,:)
+      character(cl)  :: func_tag
+      integer(ik)    ::  target_index(PT%Nmodes),maxnterms
+      !
+      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'gvib_me matix elements for iclass = ', PT%Nclasses
+      !
+      func_tag = 'Tvib'
+      target_index = 0 
+      target_index(1) = kinorder
+      maxnterms = FLQindex(PT%Nmodes,target_index)
+      Nmodes = PT%Nmodes
+      !
+      iclass = PT%Nclasses
+      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+      dimen = contr(iclass)%nroots
+      nprim = contr(iclass)%dimen
+      !
+      allocate(prim_vect(nprim,dimen),stat=info)
+      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
+      !
+      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+      do iroot=1, dimen
+        ilevel = contr(iclass)%ilevel(iroot)
+        ideg = contr(iclass)%ideg(iroot)
+        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+      enddo
+      !$omp end parallel do
+      !
+      nterms_field = trove%g_vib(imode,jmode)%Ncoeff
+      !
+      matsize = int(nterms_field*dimen*dimen,hik)
+      !
+      if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
+                          matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
+      !
+      if (allocated(gvibme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(gvibme_Nclass)
+      endif
+      !
+      allocate(gvibme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      gvibme_Nclass= 0
+      !
+      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
+      !
+      fl => me%gvib(imode,jmode)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      ! <p_i*G*p_j>
+      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      !
+      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
+      !
+      gvibme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      !
+      if (fl%Ncoeff/=me%gvib(jmode,imode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal gvib-fields =',2i8)") fl%Ncoeff,me%gvib(jmode,imode)%Ncoeff
+        stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
+      endif
+      !
+      deallocate(me_contr)
+      call ArrayStop('PTstore_contr_matelem:me_contr')
+      !
+      deallocate(prim_vect)
+      call ArrayStop('prim_vect')
+      !
+    end subroutine calc_gvib_me
+
+
+    subroutine calc_Vpot_me(Vpotme_Nclass)
+
+      real(rk), allocatable,intent(out)   :: Vpotme_Nclass(:,:,:)
+      integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
+      integer(hik) :: matsize
+      real(rk), allocatable :: prim_vect(:,:)
+      type(PTcoeffT),pointer  :: fl 
+      real(rk), allocatable   :: me_contr(:,:,:)
+      character(cl)  :: func_tag
+      integer(ik)    ::  target_index(PT%Nmodes),maxnterms
+      !
+      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'Vpot_me matix elements for iclass = ', PT%Nclasses
+      !
+
+      func_tag = 'Vpot'
+      !
+      target_index = 0 
+      target_index(1) = PotOrder
+      maxnterms= FLQindex(PT%Nmodes,target_index)
+      Nmodes = PT%Nmodes
+      !
+      iclass = PT%Nclasses
+      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+      dimen = contr(iclass)%nroots
+      nprim = contr(iclass)%dimen
+      !
+      allocate(prim_vect(nprim,dimen),stat=info)
+      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
+      !
+      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+      do iroot=1, dimen
+        ilevel = contr(iclass)%ilevel(iroot)
+        ideg = contr(iclass)%ideg(iroot)
+        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+      enddo
+      !$omp end parallel do
+      !
+      fl => me%poten
+      !
+      nterms_field = me%poten%Ncoeff
+      !
+      if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
+      !
+      matsize = int(nterms_field*dimen*dimen,hik)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      if (allocated(vpotme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(vpotme_Nclass)
+      endif
+      !
+      allocate(vpotme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      vpotme_Nclass= 0
+      !
+      call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms_field,me_contr)
+      !
+      vpotme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      !
+      deallocate(me_contr)
+      call ArrayStop('PTstore_contr_matelem:me_contr')
+      !
+      deallocate(prim_vect)
+      call ArrayStop('prim_vect')
+      !
+    end subroutine calc_Vpot_me
+
+
+
+    subroutine calc_extF_me(ipar,extFme_Nclass)
+
+      integer(ik),intent(in) :: ipar
+      real(rk), allocatable,intent(out)   :: extFme_Nclass(:,:,:)
+      integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
+      integer(hik) :: matsize
+      real(rk), allocatable :: prim_vect(:,:)
+      type(PTcoeffT),pointer  :: fl 
+      real(rk), allocatable   :: me_contr(:,:,:)
+      character(cl)  :: func_tag
+      integer(ik)    ::  target_index(PT%Nmodes),maxnterms
+      !
+      if (job%verbose>=5.and.ipar==1) write(out, '(/1x,a,1x,i3)') 'extF_me matix elements for iclass = ', PT%Nclasses
+      !
+      if (job%verbose>=5) write(out, '(1x,i6)') ipar
+      !
+      func_tag = 'extF'
+      !
+      target_index = 0 
+      target_index(1) = ExtFOrder
+      maxnterms= FLQindex(PT%Nmodes,target_index)
+      Nmodes = PT%Nmodes
+      !
+      iclass = PT%Nclasses
+      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+      dimen = contr(iclass)%nroots
+      nprim = contr(iclass)%dimen
+      !
+      allocate(prim_vect(nprim,dimen),stat=info)
+      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
+      !
+      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+      do iroot=1, dimen
+        ilevel = contr(iclass)%ilevel(iroot)
+        ideg = contr(iclass)%ideg(iroot)
+        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
+      enddo
+      !$omp end parallel do
+      !
+      fl => me%ExtF(ipar)
+      !
+      nterms_field = maxval(trove%extF(1:extF_rank)%Ncoeff)
+      !
+      if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
+      !
+      matsize = int(nterms_field*dimen*dimen,hik)
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      !
+      if (allocated(extFme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(extFme_Nclass)
+      endif
+      !
+      allocate(extFme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      extFme_Nclass= 0
+      !
+      call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
+      !
+      extFme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      !
+      deallocate(me_contr)
+      call ArrayStop('PTstore_contr_matelem:me_contr')
+      !
+      deallocate(prim_vect)
+      call ArrayStop('prim_vect')
+      !
+    end subroutine calc_extF_me
+
+
+
     !
   end subroutine PTcontracted_matelem_class_fast 
 
@@ -31007,66 +31499,13 @@ subroutine PTstore_contr_matelem(jrot)
   !
   !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
   !
-  iclass = PT%Nclasses
-  nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
-  dimen = contr(iclass)%nroots
-  nprim = contr(iclass)%dimen
-  !
-  if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
-  !
-  allocate(prim_vect(nprim,dimen),stat=info)
-  call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-  !
-  !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-  do iroot=1, dimen
-    ilevel = contr(iclass)%ilevel(iroot)
-    ideg = contr(iclass)%ideg(iroot)
-    prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-  enddo
-  !$omp end parallel do
-  !
-  nterms_field = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
-  !
-  matsize = int(nterms_field*dimen*dimen*nmodes*nmodes,hik)
-  !
-  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,nmodes,& 
-                      matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
-  !
-  allocate(gvib_me(iclass)%me(nterms_field,dimen,dimen,nmodes,nmodes), stat=info)
-  write(sclass,'(i4)') iclass
-  skey = 'gvib_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1_ik,rk,matsize)
-  gvib_me(iclass)%me = 0
   !
   do imode=1,nmodes
     do jmode=1,nmodes
       !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
+      if (job%verbose>=6) write(out, '(1x,i6,1x,i6)') imode,jmode
       !
       fl => me%gvib(imode,jmode)
-      !
-      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-      !
-      ! <p_i*G*p_j>
-      call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-      !call calc_contr_matelem_expansion_Tvib_Nclass1(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,me_contr)
-      !
-      !call calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-      !
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
-      !
-      gvib_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
-      !
-      !if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') jmode,imode
-      !
-      if (fl%Ncoeff/=me%gvib(jmode,imode)%Ncoeff) then 
-        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal gvib-fields =',2i8)") fl%Ncoeff,me%gvib(jmode,imode)%Ncoeff
-        stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
-      endif
-      !
-      deallocate(me_contr)
-      call ArrayStop('PTstore_contr_matelem:me_contr')
       !
       ! Build the correlation betweem comb-pos and icoeff-representations of the field 
       !
@@ -31208,49 +31647,10 @@ subroutine PTstore_contr_matelem(jrot)
   !
   ! The last class is special 
   !
-  iclass = PT%Nclasses
-  if (job%verbose>=4) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
-  !
-  nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
-  dimen = contr(iclass)%nroots
-  nprim = contr(iclass)%dimen
-  !
-  nterms_field = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
-  !
-  matsize = int(nterms_field*dimen*dimen*nmodes*3_ik,hik)
-  !
-  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i2,'x',i2,' = ',i12,' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,nmodes,3,& 
-                      matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
-  !
-  allocate(gcor_me(iclass)%me(nterms_field,dimen,dimen,nmodes,3), stat=info)
-  write(sclass,'(i4)') iclass
-  skey = 'gcor_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1_ik,rk,matsize)
-  gcor_me(iclass)%me = 0
-  !
   do imode=1, nmodes
     do jmode=1,3
       !
       fl => me%gcor(imode,jmode)
-      !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
-      !
-      ! allocate array to keep contracted matrix elements
-      if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3, 'gb'
-      !
-      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-      !
-      ! compute contracted matrix elements for operators: G, p_i*G
-      !
-      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-      !
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,nmodes,3,dimen,fl%Ncoeff,nterms_field,me_contr)
-      !
-      gcor_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
-      !
-      deallocate(me_contr)
-      call ArrayStop('PTstore_contr_matelem:me_contr')
       !
       ! Build the correlation betweem uniq and icoeff-representations of the field 
       !
@@ -31404,30 +31804,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       fl => me%grot(imode,jmode)
       !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
-      !
-      nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
-      dimen = contr(iclass)%nroots
-      nprim = contr(iclass)%dimen
-      !
-      ! allocate array to keep contracted matrix elements
-      !
-      if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =',fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3, 'gb'
-      !
-      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-      !
-      ! compute contracted matrix elements for operators: G
-      !
-      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-      call store_contr_matelem_expansion_classN(imode,jmode,iclass,func_tag,3,3,dimen,fl%Ncoeff,nterms_field,me_contr)
-      !
-      grot_me(iclass)%me(1:fl%Ncoeff,:,:,imode,jmode) = me_contr(1:fl%Ncoeff,:,:)
-      !
-      !if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, 0
-      !
-      deallocate(me_contr)
-      call ArrayStop('PTstore_contr_matelem:me_contr')
+      if (job%verbose>=6) write(out, '(1x,i6,1x,i6)') imode,jmode
       !
       ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
       !
@@ -31546,41 +31923,9 @@ subroutine PTstore_contr_matelem(jrot)
     !
   enddo ! iclass
   !
-  ! Now the last class
-  !
-  iclass = PT%Nclasses
-  dimen = contr(iclass)%nroots
-  nprim = contr(iclass)%dimen
-  !
-  nterms_field = me%poten%Ncoeff
-  !
-  if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' vpot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
-                      real(nterms_field*dimen*dimen,rk)*8.0_rk/1024.0_rk**3
-  !
-  !
-  allocate(vpot_me(iclass)%me(nterms_field,dimen,dimen,1,1), stat=info)
-  write(sclass,'(i4)') iclass
-  skey = 'vpot_me('//trim(adjustl(sclass))//')'
-  call ArrayStart(trim(skey),info,1,rk,size(vpot_me(iclass)%me,kind=hik))
-  !vpot_me(iclass)%me = 0
-  !
   nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
   !
   fl => me%poten
-  !
-  if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
-  !
-  if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
-  !
-  allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-  call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-  !
-  call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-  call store_contr_matelem_expansion_classN(1,1,iclass,func_tag,1,1,dimen,fl%Ncoeff,nterms_field,me_contr)
-  Vpot_me(iclass)%me(1:fl%Ncoeff,:,:,1,1) = me_contr(1:fl%Ncoeff,:,:)
-  !
-  deallocate(me_contr)
-  call ArrayStop('PTstore_contr_matelem:me_contr')
   !
   ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
   !
@@ -31700,45 +32045,11 @@ subroutine PTstore_contr_matelem(jrot)
        !
      enddo ! iclass
      !
-     ! The last class 
-     !
-     iclass = PT%Nclasses
-     dimen = contr(iclass)%nroots
-     nprim = contr(iclass)%dimen
-     !
-     nterms_field = maxval(trove%extF(1:extF_rank)%Ncoeff)
-     !
-     if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,'x',i5,' extF matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,extF_rank,& 
-                         real(nterms_field*dimen*dimen*extF_rank,rk)*8.0_rk/1024.0_rk**3
-     !
-     allocate(extF_me(iclass)%me(nterms_field,dimen,dimen,extF_rank,1), stat=info)
-     write(sclass,'(i4)') iclass
-     skey = 'extF_me('//trim(adjustl(sclass))//')'
-     call ArrayStart(trim(skey),info,1,rk,size(extF_me(iclass)%me,kind=hik))
-     extF_me(iclass)%me = 0
-     !
-     nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
-     !
-     if (job%verbose>=4) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
-     !
      do ipar=1, extF_rank
         !
         fl => me%ExtF(ipar)
         !
-        if (job%verbose>=5) write(out, '(1x,i6)') ipar
-        !      
-        if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3, 'gb'
-        !
-        allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-        call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-        !
-        call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
-        call store_contr_matelem_expansion_classN(ipar,1,iclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
-        !
-        extF_me(iclass)%me(1:fl%Ncoeff,:,:,ipar,1) = me_contr(1:fl%Ncoeff,:,:)
-        !
-        deallocate(me_contr)
-        call ArrayStop('PTstore_contr_matelem:me_contr')
+        if (job%verbose>=6) write(out, '(1x,i6)') ipar
         !
         ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
         !
@@ -31784,9 +32095,6 @@ subroutine PTstore_contr_matelem(jrot)
   call store_contr_ind
   !
   ! Done
-  !
-  deallocate(prim_vect)
-  call ArrayStop('prim_vect')
   !
   deallocate(icomb_nclasses, icomb_iclass, icomb_nterms, icomb_iterm, terms_uniq, iterm_uniq, terms)
   call ArrayStop('PTstore_contr_matelem:terms')
@@ -32606,8 +32914,6 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
   call TimerStop('fast-ci: computing Tvib_Nclass')
   !
 end subroutine calc_contr_matelem_expansion_Tvib_Nclass_2
-
-
 
 
 subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,FLcoeff,prim_vect,me_contr)
