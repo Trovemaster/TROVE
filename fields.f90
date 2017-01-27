@@ -13387,7 +13387,7 @@ end subroutine check_read_save_none
           do iterm = 1,Ncoeff
             do i = 0,Npoints
               !
-              if (abs(field(iterm,i))>small_) then 
+              if (abs(field(iterm,i))>job%exp_coeff_thresh) then 
                 !
                 write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e23.16)") k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
                 !
