@@ -12402,6 +12402,11 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bset type mismatch'
         endif 
         !
+        if (trove%sparse) then 
+          write(chkptIO) 'sparse'
+          write(chkptIO) job%exp_coeff_thresh
+        endif
+        !
         write(chkptIO) 'g_vib'
         if (.not.trove%sparse) write(chkptIO) trove%g_vib(1,1)%Ncoeff
         !
@@ -12500,6 +12505,7 @@ end subroutine check_read_save_none
         real(ark),allocatable :: matelements_t(:,:,:,:),ener0_t(:)
         real(ark)             :: b_param_t(1:3)
         logical :: create_new_rot_basis = .false.
+        real(rk) :: exp_coeff_thresh
 
         unitfname ='Check point of the basis set'
         !unitfname ='Check point of the Hamiltonian'
@@ -12679,9 +12685,38 @@ end subroutine check_read_save_none
                stop 'chk_Restore_kin, g-fields - out of memory'
            end if
            !
-        endif 
+        endif
+        !
+        ! sparse check 
+        !
+        if (trove%sparse) then
+          !
+          read(chkptIO) buf(1:6)
+          !
+          if (buf(1:6)/='sparse') then
+            write (out,"(' Checkpoint file ',a,' in g_vib for sparse has bogus label ',a,'sparse expected')") trove%chk_fname, buf(1:6)
+            stop 'check_point_Hamiltonian - bogus file format g_vib sparse'
+          end if
+          !
+          read(chkptIO) exp_coeff_thresh
+          !
+          if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+            !
+            write(out,"('basisRestore-gvib: exp_coeff_thresh used ',e18.10,' is incompatible with stored ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
+                        job%exp_coeff_thresh>exp_coeff_thresh
+            stop 'basisRestore-gvib: exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
+            !
+          endif
+          !
+        endif
         !
         read(chkptIO) buf(1:5)
+        !
+        if (.not.trove%sparse.and.trim(trove%IO_basisset)=="READ") then
+          write(out,"('basisRestore: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+          stop 'basisRestore error SPARSE should be switched on'
+        endif
+        !
         if (buf(1:5)/='g_vib') then
           write (out,"(' Checkpoint file ',a,' has bogus label g_vib ',a)") trove%chk_fname, buf(1:5)
           stop 'check_point_Hamiltonian - bogus file format g_vib'
@@ -12697,10 +12732,12 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                !if (fl%Ncoeff/= Tcoeff) then 
-                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)")  k1,k2,fl%Ncoeff,Tcoeff
-                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
-                !end if 
+                if (fl%Ncoeff/= Tcoeff) then 
+                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)")  k1,k2,fl%Ncoeff,Tcoeff
+                  write (out,"('Consider switching BASIS_SET SAVE')")
+                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
+                end if 
+                !
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12730,10 +12767,11 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                !if (fl%Ncoeff/= Tcoeff) then 
-                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_rot disagree with ncoeff of field'
-                !end if 
+                if (fl%Ncoeff/= Tcoeff) then 
+                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                  write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
+                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_rot disagree with ncoeff of field'
+                end if 
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12762,10 +12800,11 @@ end subroutine check_read_save_none
               if (trove%sparse) then 
                 read(chkptIO) Tcoeff
                 !
-                !if (fl%Ncoeff/= Tcoeff) then 
-                !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_cor disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                !  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_cor disagree with ncoeff of field'
-                !end if 
+                if (fl%Ncoeff/= Tcoeff) then 
+                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_cor disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                  write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
+                  stop 'check_point_Hamiltonian - Ncoeff (basis) in g_cor disagree with ncoeff of field'
+                end if 
               endif
               !
               fl%Ncoeff = Tcoeff
@@ -12786,10 +12825,11 @@ end subroutine check_read_save_none
         !
         read(chkptIO) Tcoeff
         !
-        !if (trove%poten%Ncoeff/=Tcoeff) then 
-        !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-        !  stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
-        !end if 
+        if (trove%poten%Ncoeff/=Tcoeff) then 
+          write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+          write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
+          stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
+        end if 
         !
         trove%poten%Ncoeff = Tcoeff
         !
@@ -12826,10 +12866,11 @@ end subroutine check_read_save_none
                 if (trove%sparse) then 
                   read(chkptIO) Tcoeff
                   !
-                  !if (fl%Ncoeff/= Tcoeff) then 
-                  !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-                  !  stop 'check_point_Hamiltonian - Ncoeff (basis) in L2vib disagree with ncoeff of field'
-                  !end if 
+                  if (fl%Ncoeff/= Tcoeff) then 
+                    write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                    write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
+                    stop 'check_point_Hamiltonian - Ncoeff (basis) in L2vib disagree with ncoeff of field'
+                  end if 
                 endif
                 !
                 fl%Ncoeff = Tcoeff
@@ -12865,10 +12906,11 @@ end subroutine check_read_save_none
              !if (trove%sparse) then 
              read(chkptIO) Tcoeff
              !
-             !if (fl%Ncoeff/= Tcoeff) then 
-             !  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
-             !  stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
-             !end if 
+             if (fl%Ncoeff/= Tcoeff) then 
+               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+               write (out,"(' Check exp_coeff_thresh Consider switching BASIS_SET SAVE')")
+               stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
+             end if 
              !
              fl%Ncoeff = Tcoeff
              !
@@ -13893,20 +13935,11 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) exp_coeff_thresh
         !
-        !if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
-        !  !
-        !  if (.not.trove%sparse) then
-        !    write(out,"('kinetic.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-        !    stop 'kinetic.chk-CheckpointRestore_kinetic_ascii error SPARSE should be switched on'
-        !  endif
-        !  !
-        !  if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
-        !    write(out,"('kinetic.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
-        !                job%exp_coeff_thresh>exp_coeff_thresh
-        !    stop 'kinetic.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
-        !  endif
-        !  !
-        !endif
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+           !
+           write(out,"('WARNING: in kinetic.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh>exp_coeff_thresh
+           !
+        endif
         !
         read(chkptIO,"(a14)") buf
         !
@@ -14217,20 +14250,11 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) exp_coeff_thresh
         !
-        !if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
-        !  !
-        !  if (.not.trove%sparse) then
-        !    write(out,"('potential.chk: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-        !    stop 'potential.chk error SPARSE should be switched on'
-        !  endif
-        !  !
-        !  if (job%exp_coeff_thresh>exp_coeff_thresh.and.trim(trove%IO_basisset)=="READ") then
-        !    write(out,"('potential.chk: A larger exp_coeff_thresh ',e18.10,' is incompatible with BASIS ',e18.10,', change threshold or redo BASIS_SET SAVE')") & 
-        !                job%exp_coeff_thresh>exp_coeff_thresh
-        !    stop 'potential.chk: A larger exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
-        !  endif
-        !  !
-        !endif
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+           !
+           write(out,"('WARNING: in potential.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh>exp_coeff_thresh
+           !
+        endif
         !
         read(chkptIO,"(a16)") buf
         !
@@ -14391,6 +14415,12 @@ end subroutine check_read_save_none
         enddo do_ext
         !
         read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+           !
+           write(out,"('WARNING: in external.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh>exp_coeff_thresh
+           !
+        endif
         !
         read(chkptIO,"(a15)") buf
         !

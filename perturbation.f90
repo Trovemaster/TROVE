@@ -15385,7 +15385,7 @@ module perturbation
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N
-    integer(ik)        :: iclasses,ilevel,ideg,jdeg,alloc,dimen,iterm,k1,k2,Ndeg
+    integer(ik)        :: iclasses,ilevel,ideg,jdeg,alloc,dimen,iterm,k1,k2,Ndeg,nprim
     real(rk),allocatable :: grot_t(:,:),extF_t(:,:),hvib_t(:,:)
     !
     real(rk)           :: f_t
@@ -15427,6 +15427,10 @@ module perturbation
     real(rk), allocatable :: pseudo_icomb_coefs(:,:,:,:)
     real(rk), allocatable :: extF_icomb_coefs(:,:,:,:)
     real(rk), allocatable :: gme_Nclass(:,:,:)
+    !
+    real(rk), allocatable :: prim_vect(:,:)
+
+
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -15549,6 +15553,22 @@ module perturbation
         ! Temporar arrays allocation (for non-DVR, FBR integration)
         !
         matsize = PT%Nclasses*PT%Maxcontracts
+        !
+        ! primitive matrix elements are collected in prim_vect and will be used for all fields 
+        !
+        dimen = contr(PT%Nclasses)%nroots
+        nprim = contr(PT%Nclasses)%dimen
+        !
+        allocate(prim_vect(nprim,dimen),stat=alloc)
+        call ArrayStart('prim_vect',alloc,size(prim_vect),kind(prim_vect))
+        !
+        !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
+        do iroot=1, dimen
+          ilevel = contr(PT%Nclasses)%ilevel(iroot)
+          ideg = contr(PT%Nclasses)%ideg(iroot)
+          prim_vect(1:nprim,iroot) = contr(PT%Nclasses)%eigen(ilevel)%vect(1:nprim,ideg)
+        enddo
+        !$omp end parallel do
         !
         if (job%verbose>=4) call MemoryReport
         !
@@ -15760,7 +15780,7 @@ module perturbation
             !
           endif 
           !
-          islice = N2-1
+          islice = 9+N2-1
           !
           do k2 = N2,3
             !
@@ -15975,7 +15995,7 @@ module perturbation
               !
               do isymcoeff =1,PT%Maxsymcoeffs
                 !
-                if (job%verbose>=4.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
+                if (job%verbose>=6.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
                 !
                 Ndeg = PT%Index_deg(isymcoeff)%size1
                 !
@@ -16008,7 +16028,7 @@ module perturbation
           !
           do isymcoeff =1,PT%Maxsymcoeffs
             !
-            if (job%verbose>=4.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
+            if (job%verbose>=5.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/100),10))==0) write(out,"(i12)") isymcoeff
             !
             Ndeg = PT%Index_deg(isymcoeff)%size1
             !
@@ -16933,6 +16953,11 @@ module perturbation
          deallocate(gme_Nclass)
       endif
       !
+      if (allocated(prim_vect)) then
+         deallocate(prim_vect)
+         call ArrayStop('prim_vect')
+      endif
+      !
       write(out, '(/a)') 'PTcontracted_matelem_class_fast/done'
       !
     end  subroutine de_initialize_class_contr_objects   
@@ -17105,7 +17130,7 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,k1,k2,Ncoeff,icoeff,iclass,nu_i,nu_j,&
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,Ncoeff,icoeff,iclass,nu_i,nu_j,&
         !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
            !
@@ -17308,7 +17333,6 @@ module perturbation
       real(rk), allocatable,intent(out)   :: gcorme_Nclass(:,:,:)
       integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
       integer(hik) :: matsize
-      real(rk), allocatable :: prim_vect(:,:)
       type(PTcoeffT),pointer  :: fl 
       real(rk), allocatable   :: me_contr(:,:,:)
       character(cl)  :: func_tag
@@ -17326,17 +17350,6 @@ module perturbation
       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
       dimen = contr(iclass)%nroots
       nprim = contr(iclass)%dimen
-      !
-      allocate(prim_vect(nprim,dimen),stat=info)
-      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-      !
-      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-      do iroot=1, dimen
-        ilevel = contr(iclass)%ilevel(iroot)
-        ideg = contr(iclass)%ideg(iroot)
-        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-      enddo
-      !$omp end parallel do
       !
       nterms_field = trove%g_cor(imode,jmode)%Ncoeff
       !
@@ -17369,16 +17382,13 @@ module perturbation
       !
       gcorme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
       !
-      if (fl%Ncoeff/=me%gcor(jmode,imode)%Ncoeff) then 
-        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal gcor-fields =',2i8)") fl%Ncoeff,me%gcor(jmode,imode)%Ncoeff
+      if (fl%Ncoeff/=me%gcor(imode,jmode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs do not agree for non-diagonal gcor-fields =',2i8)") fl%Ncoeff,me%gcor(jmode,imode)%Ncoeff
         stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
       endif
       !
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
-      !
-      deallocate(prim_vect)
-      call ArrayStop('prim_vect')
       !
     end subroutine calc_gcor_me
 
@@ -17389,7 +17399,6 @@ module perturbation
       real(rk), allocatable,intent(out)   :: grotme_Nclass(:,:,:)
       integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
       integer(hik) :: matsize
-      real(rk), allocatable :: prim_vect(:,:)
       type(PTcoeffT),pointer  :: fl 
       real(rk), allocatable   :: me_contr(:,:,:)
       character(cl)  :: func_tag
@@ -17407,17 +17416,6 @@ module perturbation
       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
       dimen = contr(iclass)%nroots
       nprim = contr(iclass)%dimen
-      !
-      allocate(prim_vect(nprim,dimen),stat=info)
-      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-      !
-      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-      do iroot=1, dimen
-        ilevel = contr(iclass)%ilevel(iroot)
-        ideg = contr(iclass)%ideg(iroot)
-        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-      enddo
-      !$omp end parallel do
       !
       nterms_field = trove%g_rot(imode,jmode)%Ncoeff
       !
@@ -17449,16 +17447,13 @@ module perturbation
       !
       grotme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
       !
-      if (fl%Ncoeff/=me%grot(jmode,imode)%Ncoeff) then 
-        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal grot-fields =',2i8)") fl%Ncoeff,me%grot(jmode,imode)%Ncoeff
+      if (fl%Ncoeff/=me%grot(imode,jmode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs do not agree for non-diagonal grot-fields =',2i8)") fl%Ncoeff,me%grot(jmode,imode)%Ncoeff
         stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
       endif
       !
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
-      !
-      deallocate(prim_vect)
-      call ArrayStop('prim_vect')
       !
     end subroutine calc_grot_me
 
@@ -17470,7 +17465,6 @@ module perturbation
       real(rk), allocatable,intent(out)   :: gvibme_Nclass(:,:,:)
       integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
       integer(hik) :: matsize
-      real(rk), allocatable :: prim_vect(:,:)
       type(PTcoeffT),pointer  :: fl 
       real(rk), allocatable   :: me_contr(:,:,:)
       character(cl)  :: func_tag
@@ -17488,17 +17482,6 @@ module perturbation
       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
       dimen = contr(iclass)%nroots
       nprim = contr(iclass)%dimen
-      !
-      allocate(prim_vect(nprim,dimen),stat=info)
-      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-      !
-      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-      do iroot=1, dimen
-        ilevel = contr(iclass)%ilevel(iroot)
-        ideg = contr(iclass)%ideg(iroot)
-        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-      enddo
-      !$omp end parallel do
       !
       nterms_field = trove%g_vib(imode,jmode)%Ncoeff
       !
@@ -17530,16 +17513,13 @@ module perturbation
       !
       gvibme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
       !
-      if (fl%Ncoeff/=me%gvib(jmode,imode)%Ncoeff) then 
-        write(out,"('PTstore_contr_matelem error: Ncoeffs doe not agree for non-diagonal gvib-fields =',2i8)") fl%Ncoeff,me%gvib(jmode,imode)%Ncoeff
+      if (fl%Ncoeff/=me%gvib(imode,jmode)%Ncoeff) then 
+        write(out,"('PTstore_contr_matelem error: Ncoeffs do not agree for non-diagonal gvib-fields =',2i8)") fl%Ncoeff,me%gvib(jmode,imode)%Ncoeff
         stop 'PTstore_contr_matelem error: Ncoeff does not agree for non-diagonal'
       endif
       !
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
-      !
-      deallocate(prim_vect)
-      call ArrayStop('prim_vect')
       !
     end subroutine calc_gvib_me
 
@@ -17549,7 +17529,6 @@ module perturbation
       real(rk), allocatable,intent(out)   :: Vpotme_Nclass(:,:,:)
       integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
       integer(hik) :: matsize
-      real(rk), allocatable :: prim_vect(:,:)
       type(PTcoeffT),pointer  :: fl 
       real(rk), allocatable   :: me_contr(:,:,:)
       character(cl)  :: func_tag
@@ -17569,17 +17548,6 @@ module perturbation
       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
       dimen = contr(iclass)%nroots
       nprim = contr(iclass)%dimen
-      !
-      allocate(prim_vect(nprim,dimen),stat=info)
-      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-      !
-      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-      do iroot=1, dimen
-        ilevel = contr(iclass)%ilevel(iroot)
-        ideg = contr(iclass)%ideg(iroot)
-        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-      enddo
-      !$omp end parallel do
       !
       fl => me%poten
       !
@@ -17609,9 +17577,6 @@ module perturbation
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
       !
-      deallocate(prim_vect)
-      call ArrayStop('prim_vect')
-      !
     end subroutine calc_Vpot_me
 
 
@@ -17622,7 +17587,6 @@ module perturbation
       real(rk), allocatable,intent(out)   :: extFme_Nclass(:,:,:)
       integer(ik) :: iclass,dimen,nprim,nmodes_class,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes
       integer(hik) :: matsize
-      real(rk), allocatable :: prim_vect(:,:)
       type(PTcoeffT),pointer  :: fl 
       real(rk), allocatable   :: me_contr(:,:,:)
       character(cl)  :: func_tag
@@ -17643,17 +17607,6 @@ module perturbation
       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
       dimen = contr(iclass)%nroots
       nprim = contr(iclass)%dimen
-      !
-      allocate(prim_vect(nprim,dimen),stat=info)
-      call ArrayStart('prim_vect',info,size(prim_vect),kind(prim_vect))
-      !
-      !$omp parallel do private(iroot,ilevel,ideg) shared(prim_vect) schedule(static)
-      do iroot=1, dimen
-        ilevel = contr(iclass)%ilevel(iroot)
-        ideg = contr(iclass)%ideg(iroot)
-        prim_vect(1:nprim,iroot) = contr(iclass)%eigen(ilevel)%vect(1:nprim,ideg)
-      enddo
-      !$omp end parallel do
       !
       fl => me%ExtF(ipar)
       !
@@ -17683,13 +17636,7 @@ module perturbation
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
       !
-      deallocate(prim_vect)
-      call ArrayStop('prim_vect')
-      !
     end subroutine calc_extF_me
-
-
-
     !
   end subroutine PTcontracted_matelem_class_fast 
 
@@ -31191,7 +31138,7 @@ subroutine PTstore_contr_matelem(jrot)
   logical            :: treat_exfF=.false.       ! switch off/on the external field 
   !type(FLpolynomT),pointer     :: fl
   type(PTcoeffT),pointer        :: fl 
-  real(rk), allocatable :: prim_vect(:,:)
+  !real(rk), allocatable :: prim_vect(:,:)
   !
   if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE'.and.all(trim(job%IOextF_action)/=(/'SAVE','SPLIT'/))) return
   !  
