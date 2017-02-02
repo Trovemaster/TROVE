@@ -16195,7 +16195,7 @@ module perturbation
           !
           do imu = fitting%iparam(1),fitting%iparam(2)
             !
-            if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
+            if (job%verbose>=5) write(out,"('imu = ',i8)",advance='NO') imu
             !
             if (.not.job%IOextF_divide) then 
               write(chkptIO) imu
@@ -16346,7 +16346,7 @@ module perturbation
             !   !
             !endif
             !
-            if (job%verbose>=4) write(out,"('...done')",advance='YES') 
+            if (job%verbose>=5) write(out,"('...done')",advance='YES') 
             !
           enddo
           !
@@ -17594,7 +17594,7 @@ module perturbation
       !
       if (job%verbose>=5.and.ipar==1) write(out, '(/1x,a,1x,i3)') 'extF_me matix elements for iclass = ', PT%Nclasses
       !
-      if (job%verbose>=5) write(out, '(1x,i6)') ipar
+      if (job%verbose>=6) write(out, '(1x,i6)') ipar
       !
       func_tag = 'extF'
       !
@@ -17738,15 +17738,54 @@ subroutine store_contr_matelem_expansion_classN(k1,k2,iclass,func_tag,nmodes_cla
   if (k1==1.and.k2==1) createfile = .true.
   if (k1==nmodes_class1.and.k2==nmodes_class2) closefile = .true.
   !
-  if (k1<1.or.k1>PT%Nmodes) then
-    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion_classN error: k1 =', k1, 'is out of ranges = [', 0, ':', nmodes_class1, ']'
-    stop
+  if (k1<1.or.k2<1) then
+    write(out, '(/a,1x,2i3)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2
+    stop 'store_contr_matelem_expansion_classN error: illegal k1,k2'
   endif
   !
-  if (k2<1.or.k2>PT%nmodes) then
-    write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a,1x,i3,1x,a)') 'store_contr_matelem_expansion_classN error: k1 =', k1, 'is out of ranges = [', 0, ':', nmodes_class2, ']'
-    stop
-  endif
+  select case (trim(func_tag))
+    !
+  case ('Tcor')
+     if (k1>PT%nmodes.or.k2>3) then
+       write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2,trim(func_tag)
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class1, ']'
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class2, ']'
+       stop 'store_contr_matelem_expansion_classN error: gcor'
+     endif
+  case ('Tvib')
+     if (k1>PT%nmodes.or.k2>PT%nmodes) then
+       write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2,trim(func_tag)
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class1, ']'
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class2, ']'
+       stop 'store_contr_matelem_expansion_classN error: gvib'
+     endif
+  case ('Trot')
+     if (k1>3.or.k2>3) then
+       write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2,trim(func_tag)
+       stop 'store_contr_matelem_expansion_classN error: grot'
+     endif
+  case ('Vpot')
+     if (k1>1.or.k2>1) then
+       write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2,trim(func_tag)
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class1, ']'
+       write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class2, ']'
+       stop 'store_contr_matelem_expansion_classN error: Vpot'
+     endif
+  case ('extF')
+    !
+    !if (k1>extF%rank.or.k2>1) then
+    !   write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: k1,k2 =', k1,k2,trim(func_tag)
+    !   write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class1, ']'
+    !   write(out, '(/a,1x,i3,1x,a,1x,i3,1x,a)') 'is out of ranges = [', 0, ':', nmodes_class2, ']'
+    !   stop 'store_contr_matelem_expansion_classN error: extF'
+    !endif
+    !
+  case default 
+    !
+    write(out, '(/a,1x,2i5,a)') 'store_contr_matelem_expansion_classN error: illegal func_tag',trim(func_tag)
+    stop 'store_contr_matelem_expansion_classN error: extF'
+   !
+  end select 
   !
   IOname = filename
   call IOStart(trim(IOname), IOunit)
@@ -20865,6 +20904,9 @@ end subroutine read_contr_ind
         do imu = 1,extF_rank
            !
            extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
+           me%extF(imu)%Ncoeff = extF_N(imu)
+           !
+           if (extF_N_<1) cycle
            !
            allocate (me%extF(imu)%coeff(extF_N_,0:bsize,0:bsize),me%extF(imu)%IndexQ(Nmodes,extF_N_),&
                      me%extF(imu)%iorder(extF_N_),stat=alloc)
@@ -20876,7 +20918,6 @@ end subroutine read_contr_ind
            call FLread_IndexQ_field(job_is,imu,1,me%extF(imu)%IndexQ(:,:))
            !
            me%extF(imu)%iorder = 0 
-           me%extF(imu)%Ncoeff = extF_N(imu)
            !
         enddo
         !
@@ -31922,7 +31963,7 @@ subroutine PTstore_contr_matelem(jrot)
      target_index(1) = ExtFOrder
      nterms= FLQindex(PT%Nmodes,target_index)
      !
-     nterms = maxval(trove%extf(:)%Ncoeff)
+     !nterms = maxval(trove%extf(:)%Ncoeff)
      !
      if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'number of expansion terms:', nterms
      !

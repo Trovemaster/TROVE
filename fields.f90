@@ -12417,7 +12417,7 @@ end subroutine check_read_save_none
               !
               if (trove%sparse) write(chkptIO) fl%Ncoeff
               !
-              write(chkptIO) fl%me 
+              if (fl%Ncoeff>0) write(chkptIO) fl%me 
               !
            enddo
         enddo
@@ -12430,7 +12430,7 @@ end subroutine check_read_save_none
               !
               fl => trove%g_rot(k1,k2)
               if (trove%sparse) write(chkptIO) fl%Ncoeff
-              write(chkptIO) fl%me 
+              if (fl%Ncoeff>0) write(chkptIO) fl%me 
               !
            enddo
         enddo
@@ -12443,7 +12443,7 @@ end subroutine check_read_save_none
               !
               fl => trove%g_cor(k1,k2)
               if (trove%sparse) write(chkptIO) fl%Ncoeff
-              write(chkptIO) fl%me  
+              if (fl%Ncoeff>0) write(chkptIO) fl%me  
               !
            enddo
         enddo
@@ -12466,7 +12466,7 @@ end subroutine check_read_save_none
                 fl => trove%L2_vib(k1,k2)
                 if (trove%sparse) write(chkptIO) fl%Ncoeff
                 !
-                write(chkptIO) fl%me 
+                if (fl%Ncoeff>0) write(chkptIO) fl%me 
                 !
              enddo
           enddo
@@ -12482,7 +12482,7 @@ end subroutine check_read_save_none
              fl => trove%extF(imu)
              !
              write(chkptIO) fl%Ncoeff
-             write(chkptIO) fl%me 
+             if (fl%Ncoeff>0) write(chkptIO) fl%me 
              !
           enddo
           !
@@ -12742,9 +12742,13 @@ end subroutine check_read_save_none
               !
               fl%Ncoeff = Tcoeff
               !
-              allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-              call ArrayStart('trove%g_vib%me',alloc,size(fl%me),kind(fl%me))
-              read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
+              if (fl%Ncoeff>0) then 
+                 !
+                 allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+                 call ArrayStart('trove%g_vib%me',alloc,size(fl%me),kind(fl%me))
+                 read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
+                 !
+              endif
               !
               !read(chkptIO) fl%iorder !(fl%Ncoeff)
               !
@@ -12776,10 +12780,11 @@ end subroutine check_read_save_none
               !
               fl%Ncoeff = Tcoeff
               !
-              allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-              call ArrayStart('trove%g_rot%me',alloc,size(fl%me),kind(fl%me))
-              read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
-              !read(chkptIO) fl%iorder !(fl%Ncoeff)
+              if (fl%Ncoeff>0) then 
+                 allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+                 call ArrayStart('trove%g_rot%me',alloc,size(fl%me),kind(fl%me))
+                 read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
+              endif
               !
            enddo
         enddo
@@ -12809,10 +12814,11 @@ end subroutine check_read_save_none
               !
               fl%Ncoeff = Tcoeff
               !
-              allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-              call ArrayStart('trove%g_cor%me',alloc,size(fl%me),kind(fl%me))
-              read(chkptIO) fl%me
-              !read(chkptIO) fl%iorder  !(fl%Ncoeff)
+              if (fl%Ncoeff>0) then 
+                allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+                call ArrayStart('trove%g_cor%me',alloc,size(fl%me),kind(fl%me))
+                read(chkptIO) fl%me
+              endif
               !
            enddo
         enddo
@@ -12831,15 +12837,18 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
         end if 
         !
+        if (Tcoeff==0) then 
+          write (out,"(' Checkpoint Ncoeff (basis) in poten==0')") 
+          stop ' Checkpoint Ncoeff (basis) in poten==0'
+        end if 
+        !
         trove%poten%Ncoeff = Tcoeff
         !
         allocate (trove%poten%me(trove%poten%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
         call ArrayStart('trove%poten%me',alloc,size(fl%me),kind(fl%me))
         !
         fl => trove%poten
-        !
         read(chkptIO) fl%me  
-        !read(chkptIO) fl%iorder        
         !
         !
         ! L2 field function 
@@ -12875,9 +12884,11 @@ end subroutine check_read_save_none
                 !
                 fl%Ncoeff = Tcoeff
                 !
-                allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-                call ArrayStart('trove%L2_vib%me',alloc,size(fl%me),kind(fl%me))
-                read(chkptIO) fl%me
+                if (fl%Ncoeff>0) then 
+                  allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+                  call ArrayStart('trove%L2_vib%me',alloc,size(fl%me),kind(fl%me))
+                  read(chkptIO) fl%me
+                endif
                 !
              enddo
           enddo
@@ -12914,14 +12925,14 @@ end subroutine check_read_save_none
              !
              fl%Ncoeff = Tcoeff
              !
-             allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-             !
-             totalsize = int(fl%Ncoeff,hik)*int(bs%Size+1_hik,hik)*int(bs%Size+1_hik,hik)
-             !
-             if (job%verbose>=6) write(out,"('Allocating trove%exfF%me:',i12,' x ',i9,' x ',i9,' = ',i14)") fl%Ncoeff,bs%Size+1,bs%Size+1,totalsize
-             !
-             call ArrayStart('trove%exfF%me',alloc,1_ik,kind(fl%me),totalsize)
-             read(chkptIO) fl%me
+             if (fl%Ncoeff>0) then 
+                allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
+                totalsize = int(fl%Ncoeff,hik)*int(bs%Size+1_hik,hik)*int(bs%Size+1_hik,hik)
+                if (job%verbose>=6) write(out,"('Allocating trove%exfF%me:',i12,' x ',i9,' x ',i9,' = ',i14)") fl%Ncoeff,bs%Size+1,bs%Size+1,totalsize
+                !
+                call ArrayStart('trove%exfF%me',alloc,1_ik,kind(fl%me),totalsize)
+                read(chkptIO) fl%me
+             endif
              !
           enddo
           !
@@ -13387,7 +13398,7 @@ end subroutine check_read_save_none
         !
         do k1 = 1,extF%rank
           !
-          do iterm = 1,trove%extF(1)%Ncoeff
+          do iterm = 1,trove%extF(k1)%Ncoeff
             !
             fl => trove%extF(k1)
             !
@@ -14395,7 +14406,7 @@ end subroutine check_read_save_none
            fl%Ncoeff = nterms
            !
            call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
-           forall(i=1:Ncoeff) fl%ifromsparse(i) = i
+           forall(i=1:fl%Ncoeff) fl%ifromsparse(i) = i
            fl%sparse = .true.
            !
         enddo
@@ -14468,11 +14479,25 @@ end subroutine check_read_save_none
      !
      if (associated(fl%IndexQ)) then 
        deallocate(fl%IndexQ)
-       call ArrayStop(name//'IndexQ')
+       call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
      endif
      !
      deallocate(fl%ifromsparse)
-     call ArrayStop(name//'ifromsparse')
+     call ArrayMinus(name//'ifromsparse',isize=size(fl%ifromsparse),ikind=kind(fl%ifromsparse))
+     !
+     if (Nterms==0) then
+       !
+       fl%Ncoeff = Nterms
+       !
+       call ArrayMinus(name,isize=size(fl%iorder),ikind=kind(fl%iorder))
+       deallocate(fl%iorder)
+       !
+       call ArrayMinus(name,isize=size(fl%field),ikind=kind(fl%field))
+       deallocate(fl%field,stat=alloc)
+       !
+       return
+       !
+     endif 
      !
      allocate(Sfield(Nterms,0:Npoints),fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield),kind(Sfield))
@@ -14485,6 +14510,9 @@ end subroutine check_read_save_none
      call ArrayStart("Sfield",alloc,size(siorder),kind(siorder))
      !
      iterm = 0
+     Sfield = 0
+     siorder = 0
+     fl%ifromsparse = 0
      !
      do icoeff = 1,Ncoeff
        if (any(abs(fl%field(icoeff,:))>job%exp_coeff_thresh)) then
@@ -14560,6 +14588,22 @@ end subroutine check_read_save_none
      !
      nterms = iterm
      !
+     if (Nterms==0) then
+       !
+       stop 'FLCompact_and_combine_fields_sparse is not implemented for Nterms=0' 
+       !
+       deallocate(fl1%IndexQ,fl2%IndexQ)
+       call ArrayStop(name1//'IndexQ')
+       call ArrayStop(name2//'IndexQ')
+       !
+       deallocate(fl1%ifromsparse,fl2%ifromsparse)
+       call ArrayStop(name1//"ifromsparse")
+       call ArrayStop(name2//"ifromsparse")
+       !
+       return
+       !
+     endif 
+     !
      allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
      call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
@@ -14576,8 +14620,8 @@ end subroutine check_read_save_none
      call ArrayStop(name1//"ifromsparse")
      call ArrayStop(name2//"ifromsparse")
      !
-     allocate(fl1%ifromsparse(Nterms),fl1%IndexQ(trove%Nmodes,Nterms),stat=alloc)
-     allocate(fl2%ifromsparse(Nterms),fl2%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
      call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
      call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
      call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
@@ -14610,7 +14654,7 @@ end subroutine check_read_save_none
      !
      ! Create a field in a sparse representaion
      !
-     allocate(fl1%iorder(Nterms),fl2%iorder(Nterms),stat=alloc)
+     allocate(fl1%iorder(nterms),fl2%iorder(nterms),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      !

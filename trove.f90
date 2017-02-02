@@ -84,9 +84,14 @@
       !
       if (action%fitting) then 
          !
-         call FLbsetInit
          call PTinit(NPTorder,Nmodes,Npolyads)
          call FLinitilize_Kinetic
+         call FLinitilize_Potential
+         !
+         ! Here we initialize the dipole moment field (if needed)
+         !
+         call FLinit_External_field
+         call FLbsetInit
          call refinement_by_fit
          !
          if (job%verbose>=2) then 
