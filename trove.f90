@@ -62,16 +62,10 @@
       !
       if (intensity%do) then 
          !
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !if (trim(trove%moltype)/='XY3') then
-         !  !
-         !  write(out,"('this version of dipole.f90 is ONLY for the XY3 types, not for',a)") trim(trove%moltype)
-         !  !stop 'check the dipole.f90 for this type of molecules'
-         !  !
-         !endif
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !
          call FLbsetInit
+         call FLinitilize_Kinetic
+         call FLinitilize_Potential
+         call FLinit_External_field
          call PTinit(NPTorder,Nmodes,Npolyads)
          !
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
@@ -87,9 +81,6 @@
          call PTinit(NPTorder,Nmodes,Npolyads)
          call FLinitilize_Kinetic
          call FLinitilize_Potential
-         !
-         ! Here we initialize the dipole moment field (if needed)
-         !
          call FLinit_External_field
          call FLbsetInit
          call refinement_by_fit
