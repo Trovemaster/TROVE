@@ -1118,7 +1118,7 @@ contains
     integer(ik)        :: info,imu
     logical            :: treat_vibration =.true.  ! switch off/on the vibration
     integer(ik)        :: k1,k2,ilevel,ideg,iroot,i1,i2,chkptIO,extF_rank,dimen,irec,iunit,jroot
-    integer(ik)        :: idimen,imu_t,irow,ib,Nsize,mat_size,igamma,ielem
+    integer(ik)        :: idimen,imu_t,irow,ib,Nsize,mat_size,igamma,ielem,ierror
     character(len=cl)  :: job_is
     character(len=cl)  :: task
     real(rk),allocatable  :: vec(:)
@@ -1383,7 +1383,7 @@ contains
             !
             if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat)
+              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
               !
             elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
               !
@@ -1452,7 +1452,7 @@ contains
             !
             if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat)
+              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
               !
             elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
               !
@@ -1580,11 +1580,15 @@ contains
         !
         do imu = fitting%iparam(1),fitting%iparam(2)
           !
-          if (job%verbose>=4) write(out,"('  imu = ',i8)") imu
+          if (job%verbose>=4) write(out,"('  imu = ',i8)",advance='NO') imu
           !
           if (job%IOextF_divide) then
             !
-            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me)
+            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,ierror)
+            !
+            if (ierror==1) cycle
+            !
+            if (job%verbose>=4) write(out,"('.')",advance='YES')
             !
           else
             !
@@ -1722,7 +1726,7 @@ contains
       end subroutine divided_slice_write
       !       
       !
-      subroutine divided_slice_read(islice,name,suffix,N,field)
+      subroutine divided_slice_read(islice,name,suffix,N,field,ierror)
         !
         implicit none
         !
@@ -1730,11 +1734,14 @@ contains
         character(len=*),intent(in) :: name,suffix
         integer(ik),intent(in)      :: N
         real(rk),intent(out)        :: field(N,N)
+        integer(ik),intent(out)     :: ierror
         character(len=4)            :: jchar
         integer(ik)                 :: chkptIO
         character(len=cl)           :: buf,filename,job_is
         integer(ik)                 :: ilen
         logical                     :: ifopened
+        !
+        ierror = 0
         !
         write(job_is,"('single swap_matrix')")
         !
@@ -1744,7 +1751,7 @@ contains
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=15)
         !
         ilen = LEN_TRIM(name)
         !
@@ -1763,6 +1770,21 @@ contains
         end if
         !
         close(chkptIO)
+        !
+        return
+        !
+        ! This error code will allow simply skipping the corresponding record/file without crashing the program 
+        !
+   15   ierror = 1
+        !
+        ! we allow to skip opening the file only for the external matrix elements
+        !
+        if (trim(name)/="extF") then 
+          write (out,"(' kinetic divided_slice_read in slice ',a20,': file does not exist')") filename
+          stop 'divided_slice_read - in slice -  file does not exist'
+        endif
+        !
+        if (job%verbose>=4) write (out,"(' (skipped).')",advance='YES') 
         !
       end subroutine divided_slice_read
       !

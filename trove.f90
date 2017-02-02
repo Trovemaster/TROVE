@@ -63,9 +63,9 @@
       if (intensity%do) then 
          !
          call FLbsetInit
-         call FLinitilize_Kinetic
-         call FLinitilize_Potential
-         call FLinit_External_field
+         !call FLinitilize_Kinetic
+         !call FLinitilize_Potential
+         !call FLinit_External_field
          call PTinit(NPTorder,Nmodes,Npolyads)
          !
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
@@ -79,10 +79,12 @@
       if (action%fitting) then 
          !
          call PTinit(NPTorder,Nmodes,Npolyads)
-         call FLinitilize_Kinetic
-         call FLinitilize_Potential
-         call FLinit_External_field
-         call FLbsetInit
+         !
+         !call FLinitilize_Kinetic
+         !call FLinitilize_Potential
+         !call FLinit_External_field
+         !call FLbsetInit
+         !
          call refinement_by_fit
          !
          if (job%verbose>=2) then 

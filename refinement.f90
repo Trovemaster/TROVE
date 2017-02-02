@@ -696,6 +696,10 @@ contains
                    !
                    if (job%IOfitpot_divide) then
                      !
+                     ! we can sckip the parameter if it is zero and not used in refinement for the sliced-representation
+                     ! 
+                     if (ivar(i)<=0.and.abs(pot_terms(i))<small_) cycle
+                     !
                      call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                      !
                    else
@@ -866,7 +870,7 @@ contains
                         !
                         read (iunit) pot_matrix
                         !
-                      elseif(ivar(i)>0) then
+                      elseif(ivar(i)>0.and.abs(pot_terms(i))>small_) then
                         !
                         call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                         !
@@ -4499,6 +4503,8 @@ contains
               if (i<fitting%iparam(1)) cycle
               !
               if (job%IOextF_divide) then
+                !
+                if (extF%ifit(1,i)<1) cycle
                 !
                 call divided_slice_read(i,'extF',job%extmat_suffix,ncontr_t,poten_)
                 !
