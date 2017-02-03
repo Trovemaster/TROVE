@@ -1101,6 +1101,155 @@ module mol_abcd
         case default
         write (out,"('ML_symmetry_transformation_abcd: coord_transf ',a,' unknown')") trim(molec%coords_transform)
         stop 'ML_symmetry_transformation_abcd - bad coord. type'
+       !
+    case('LINEAR','X-XE')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_abcd - bad symm. type'
+          !
+       case('CS','CS(M)')
+         !
+         select case(ioper)
+         !
+         case (1) ! identity 
+
+           dst = src
+
+         case (2) ! (E*)
+
+           dst = src
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+         !
+         !
+       case('D2H(M)')
+           !
+         select case(ioper)
+           !
+         case (1) ! E 
+           !
+           dst = src
+           !
+         case (2) ! (C2z) -> Rz
+           !
+           dst(1) = src(1)
+           dst(2) = src(2)
+           dst(3) = src(3)
+           dst(4) = src(4)
+           dst(5) = src(5)
+           dst(6) = src(6)
+           !
+         case (3) ! (C2x)
+           !
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) = src(6)
+           !
+         case (4) ! (C2y)
+           !
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) = src(6)
+           !
+         case (5) ! E* -> sigma_xz
+           !
+           dst(1) = src(1)
+           dst(2) = src(2)
+           dst(3) = src(3)
+           dst(4) = src(4)
+           dst(5) = src(5)
+           dst(6) =-src(6)
+
+         case (6) ! sigma_yz
+
+           dst(1) = src(1)
+           dst(2) = src(2)
+           dst(3) = src(3)
+           dst(4) = src(4)
+           dst(5) = src(5)
+           dst(6) =-dst(6)
+
+         case (7) ! sigma_xy
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) =-dst(6)
+
+         case (8) ! i
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) =-dst(6)
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+
+       case('C2H','C2H(M)')
+             !
+         select case(ioper)
+
+         case (1) ! E 
+
+           dst = src
+
+         case (2) ! (12)(34)
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) = src(6)
+
+         case (3) ! (E*)
+
+           dst(1) = src(1)
+           dst(2) = src(2)
+           dst(3) = src(3)
+           dst(4) = src(4)
+           dst(5) = src(5)
+           dst(6) =-src(6)
+           !
+         case (4) ! (12)(34)*
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) =-src(6)
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+         !
+       end select
         !
     case('R-ALPHA-TAU-REF','R-ALPHA-TAU')
        !

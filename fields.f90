@@ -12918,7 +12918,7 @@ end subroutine check_read_save_none
              read(chkptIO) Tcoeff
              !
              if (fl%Ncoeff/= Tcoeff) then 
-               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',i4,1x,2I8)") trove%chk_fname,imu,fl%Ncoeff,Tcoeff
                write (out,"(' Check exp_coeff_thresh Consider switching BASIS_SET SAVE')")
                stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
              end if 
@@ -13133,6 +13133,8 @@ end subroutine check_read_save_none
         !
         write(chkptIO) 'dBmatrho'
         write(chkptIO) trove%dBmatrho
+        !
+        if (trove%separate_store) return
         !
         write(chkptIO) 'g_vib'
         write(chkptIO) trove%g_vib(1,1)%Ncoeff
@@ -13350,11 +13352,11 @@ end subroutine check_read_save_none
           !
           do i = 0,fl%Npoints
             !
-            if (abs(fl%field(iterm,i))>small_) then
+            !if (abs(fl%field(iterm,i))>job%exp_coeff_thresh) then
               !
               write(chkptIO_pot,"(i8,1x,i8,1x,e23.16)") fl%ifromsparse(iterm),i,fl%field(iterm,i)
               !
-            endif
+            !endif
             !
           enddo
           !
@@ -13404,11 +13406,11 @@ end subroutine check_read_save_none
             !
             do i = 0,trove%extF(1)%Npoints
               !
-              if (abs(fl%field(iterm,i))>small_) then
-                !
-                write(chkptIO_ext,"(i8,1x,i8,1x,i8,1x,f23.16)") k1,fl%ifromsparse(iterm),i,fl%field(iterm,i)
-                !
-              endif
+              !if (abs(fl%field(iterm,i))>small_) then
+              !
+              write(chkptIO_ext,"(i8,1x,i8,1x,i8,1x,f23.16)") k1,fl%ifromsparse(iterm),i,fl%field(iterm,i)
+              !
+              !endif
               !
             enddo
             !

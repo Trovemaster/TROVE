@@ -218,6 +218,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_v_c2h2_mlt
          !
+     case('POTEN_P2H2_MORSE_COS') 
+         !
+         MLpotentialfunc => MLpoten_p2h2_morse_cos
+         !
     case('POTEN_XY2_MORBID') 
          !
          MLpotentialfunc => MLpoten_xy2_morbid

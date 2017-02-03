@@ -16025,6 +16025,9 @@ module perturbation
               endif
               !
             enddo
+            !
+            N2 = 1
+            !
           enddo
           !
           if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)") 0,0

@@ -11,7 +11,7 @@ module pot_abcd
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
   public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
-         MLpoten_c2h2_morse_costau
+         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos
   
   private
  
@@ -4994,6 +4994,68 @@ function MLpoten_c2h2_streymills(ncoords,natoms,local,xyz,force) result(f)
       !
 end function MLpoten_c2h2_streymills
 
+
+function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+      !
+      integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd
+      !
+      x1 = local(1)
+      x2 = local(2)
+      x3 = local(3)
+      x4 = local(4)
+      x5 = local(5)
+      x6 = local(6)
+      !
+      pd=pi/180.0_ark
+      e1=force(1)
+      e2=force(2)
+      e4=force(3)*pd
+      e6=force(4)*pd
+      !
+      a1 = force(5)
+      a2 = force(6)
+      !
+      q(1)=1.0_ark-exp(-a1*(x1-e1))
+      q(2)=1.0_ark-exp(-a2*(x2-e2))
+      q(3)=1.0_ark-exp(-a2*(x3-e2))
+      q(4)=cos(x4)-cos(e4)
+      q(5)=cos(x5)-cos(e4)
+      q(6)=cos(x6)-cos(e6)
+      !
+      vpot=0.0_ark
+      !
+      do i=7,molec%parmax
+        !
+        y(1:5) = q(1:5)**molec%pot_ind(1:5,i)
+        y(6)=q(6)**molec%pot_ind(6,i)
+        !
+        vpot=vpot+force(i)*product(y(1:6))
+        !
+        if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
+          !
+          k_ind(2) = molec%pot_ind(3,i)
+          k_ind(3) = molec%pot_ind(2,i)
+          k_ind(4) = molec%pot_ind(5,i)
+          k_ind(5) = molec%pot_ind(4,i)
+          !
+          y(2:5) = q(2:5)**k_ind(2:5)
+          !
+          vpot=vpot+force(i)*product(y(1:6))
+          !
+        endif
+        !
+      enddo
+      !
+      f = vpot
+      !
+  end function MLpoten_p2h2_morse_cos
 
 
 end module pot_abcd
