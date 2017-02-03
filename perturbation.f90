@@ -15742,7 +15742,7 @@ module perturbation
           !
           N1 = 1; N2 = 1
           !
-          if (job%matelem_append) then
+          if (job%matelem_append.and.iterm1>0) then
             !
             if (job%vib_rot_contr) then
               !
@@ -15755,28 +15755,30 @@ module perturbation
             !
             ! finished gcor record
             !
-            read(chkptIO) k1_,k2_
+            read(dumpIO_) k1_,k2_
             !
             ! we will start from these indeces 
             !
             N1 = k1_+1
             N2 = k2_
             !
-            if (k1_>PT%Nmodes) then
+            if (N1>PT%Nmodes) then
               N2 = k2_+1
               N1 = 1
             endif
             !
-            read(dumpIO_) grot_t(1:mdimen,1:Ndeg)
+            read(dumpIO_) grot_t
             !
-            read(chkptIO) buf4(1:4)
+            read(dumpIO_) buf4(1:4)
             !
-            if (buf4(1:4)/='hcor') then
+            if (buf4(1:4)/='gcor') then
               !
               write (out,"('Wrong record in vib dump-chk file, hcor is missing ',a,' k1,k2 = ',2i4)") buf4(1:4),k1,k2
               stop 'Wrong record in the dump-file'
               !
             end if
+            !
+            close(dumpIO_)
             !
           endif 
           !
@@ -15786,8 +15788,6 @@ module perturbation
             !
             islice = islice + 1
             !
-            if (N1==1) grot_t = 0
-            !
             if ( job%IOmatelem_divide ) then 
               if (islice<iterm1.or.iterm2<islice) cycle
               !
@@ -15795,24 +15795,26 @@ module perturbation
               !
             endif
             !
+            if (N1==1) grot_t = 0
+            !
             do k1 = N1,PT%Nmodes
               !
               if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
               !
               ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
               !
-              if (job%IOmatelem_dump) then
-                !
-                if (job%vib_rot_contr.and..not.job%matelem_append) then
-                  !
-                  write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
-                  stop 'Appending or dumping is not working with the vib-rot'
-                  !
-                endif
-                !
-                call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
-                !
-              endif
+              !if (job%IOmatelem_dump) then
+              !  !
+              !  if (job%vib_rot_contr.and..not.job%matelem_append) then
+              !    !
+              !    write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+              !    stop 'Appending or dumping is not working with the vib-rot'
+              !    !
+              !  endif
+              !  !
+              !  !call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+              !  !
+              !endif
               !
               call calc_gcor_me(k1,k2,gme_Nclass) 
               !
@@ -15846,8 +15848,11 @@ module perturbation
               !
               if (job%IOmatelem_dump ) then 
                   !
+                  call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
                   write(dumpIO_) k1,k2
                   write(dumpIO_) grot_t
+                  write(dumpIO_) 'gcor'
+                  close(dumpIO_)
                   !
               endif
               !
@@ -15929,8 +15934,6 @@ module perturbation
             !
           endif
           !
-          ! dumping or/and starting from the previously dumped record of the matelem-checkpoints
-          !
           if (job%matelem_append.or.job%IOmatelem_dump) then
             !
             if (job%vib_rot_contr) then
@@ -15940,11 +15943,9 @@ module perturbation
               !
             endif
             !
-            islice = 0
-            !
-            call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
-            !
           endif
+          !
+          islice = 0
           !
           hvib_t = 0
           !
@@ -15953,24 +15954,28 @@ module perturbation
           N1 = 1
           N2 = 1
           !
+          ! starting from the previously dumped record of the matelem-checkpoints
+          !
           if (job%matelem_append) then
+            !
+            call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
             !
             ! finished gvib record
             !
-            read(chkptIO) k1_,k2_
+            read(dumpIO_) k1_,k2_
             !
             ! we will start from these indeces 
             N1 = k1_
             N2 = k2_+1
             !
-            if (k2_>PT%Nmodes) then
+            if (N2>PT%Nmodes) then
               N1 = k1_+1
               N2 = 1
             endif
             !
-            read(dumpIO_) hvib_t(1:mdimen,1:Ndeg)
+            read(dumpIO_) hvib_t
             !
-            read(chkptIO) buf4(1:4)
+            read(dumpIO_) buf4(1:4)
             !
             if (buf4(1:4)/='hvib') then
               !
@@ -15978,6 +15983,8 @@ module perturbation
               stop 'Wrong record in the dump-file'
               !
             end if
+            !
+            close(dumpIO_)
             !
           endif 
           !
@@ -16003,19 +16010,19 @@ module perturbation
                 !
                 call calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib_t)
                 !
-                ! store temp the matrix elements (dump)
-                !
-                if (job%IOmatelem_dump) then 
-                   !
-                   call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
-                   write(dumpIO_) k1,k2
-                   write(dumpIO_) hvib_t
-                   write(dumpIO_) 'hvib'
-                   close(dumpIO_)
-                   !
-                endif
-                !
               enddo
+              !
+              ! store temp the matrix elements (dump)
+              !
+              if (job%IOmatelem_dump) then 
+                 !
+                 call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+                 write(dumpIO_) k1,k2
+                 write(dumpIO_) hvib_t
+                 write(dumpIO_) 'hvib'
+                 close(dumpIO_)
+                 !
+              endif
               !
             enddo
           enddo
@@ -16038,15 +16045,15 @@ module perturbation
             !
             ! store temp the matrix elements (dump)
             !
-            if (job%IOmatelem_dump) then 
-               !
-               call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
-               write(dumpIO_) 0,0
-               write(dumpIO_) hvib_t
-               write(dumpIO_) 'hvib'
-               close(dumpIO_)
-               !
-            endif
+            !if (job%IOmatelem_dump) then 
+            !   !
+            !   call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+            !   write(dumpIO_) 0,0
+            !   write(dumpIO_) hvib_t
+            !   write(dumpIO_) 'hvib'
+            !   close(dumpIO_)
+            !   !
+            !endif
             !
           enddo
           !
@@ -16090,7 +16097,7 @@ module perturbation
              !
           endif
           !
-          if (job%IOmatelem_dump) close(dumpIO_)
+          !if (job%IOmatelem_dump) close(dumpIO_)
           !
           !if (job%verbose>=4) write(out,"('| 100% done')") 
           !
@@ -16205,18 +16212,18 @@ module perturbation
               !           
             endif
             !
-            if (job%matelem_append.or.job%IOextmatelem_dump) then
-              !
-              if (job%vib_rot_contr) then
-                !
-                write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
-                stop 'Appending or dumping is not working with the vib-rot'
-                !
-              endif
-              !
-              call open_dump_slice(islice,'extF_',job%extmat_suffix,job%extmatelem_append,job%IOextmatelem_dump,dumpIO_)
-              !
-            endif
+            !if (job%matelem_append.or.job%IOextmatelem_dump) then
+            !  !
+            !  if (job%vib_rot_contr) then
+            !    !
+            !    write(out,"('Appending or dumping is not working with the vib-rot contraction scheme, remove them from input')")
+            !    stop 'Appending or dumping is not working with the vib-rot'
+            !    !
+            !  endif
+            !  !
+            !  call open_dump_slice(islice,'extF_',job%extmat_suffix,job%extmatelem_append,job%IOextmatelem_dump,dumpIO_)
+            !  !
+            !endif
             !
             call calc_extF_me(imu,gme_Nclass)
             !
@@ -16285,21 +16292,21 @@ module perturbation
                  !endif
 
                   !
-              elseif (job%IOextmatelem_dump.and..not.job%extmatelem_append) then 
-                 !
-                 do ideg=1,Ndeg
-                   !
-                   icontr = PT%icase2icontr(isymcoeff,ideg)
-                   !
-                   write(dumpIO_) icontr,extF_t(icontr,1:icontr)
-                   !
-                 enddo
-                 !
+              !elseif (job%IOextmatelem_dump.and..not.job%extmatelem_append) then 
+              !   !
+              !   do ideg=1,Ndeg
+              !     !
+              !     icontr = PT%icase2icontr(isymcoeff,ideg)
+              !     !
+              !     write(dumpIO_) icontr,extF_t(icontr,1:icontr)
+              !     !
+              !   enddo
+              !   !
               endif
               !
             enddo
             !
-            if (job%IOextmatelem_dump) close(dumpIO_)
+            !if (job%IOextmatelem_dump) close(dumpIO_)
             !
             if (.not.job%vib_rot_contr) then 
               !
