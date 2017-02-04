@@ -15496,7 +15496,11 @@ module perturbation
       mdimen = PT%Maxcontracts
       dimen_p = PT%max_deg_size
       !
-      rootsize = int(dimen_p*mdimen,hik)
+      if (job%vib_rot_contr) then 
+        rootsize = int(dimen_p*mdimen,hik)
+      else 
+        rootsize = int(mdimen*mdimen,hik)
+      endif
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 
       ! kinetic parts are retrieved now from the storage place (check_point). 
@@ -15615,7 +15619,7 @@ module perturbation
             if (job%verbose>=4) write(out,"('  islice = 0 (gvib and poten), 1-9 (Grot), 10-12 (Gcor) ')")
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4/)") iterm1,iterm2
             if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
-            if (job%verbose>=4) write(out,"('  Vibrational chk-s correspond to slice 0; for vibrational only use MATELEM SAVE 0 0')")
+            if (job%verbose>=4) write(out,"('  Vibrational chk-s correspond to slice 0; for vibrational only use MATELEM SAVE SPLIT 0 0')")
             if (job%verbose>=4) write(out,"('  For all slices run and stitched in one go use MATELEM SAVE SPLIT ')")
             !
           endif
@@ -15964,6 +15968,8 @@ module perturbation
             !
             read(dumpIO_) k1_,k2_
             !
+            if (job%verbose>=4) write(out,"(' Appending to gvib ',2i)") k1_,k2_
+            !
             ! we will start from these indeces 
             N1 = k1_
             N2 = k2_+1
@@ -15988,7 +15994,7 @@ module perturbation
             !
           endif 
           !
-          if (job%verbose>=4) write(out,"(/' hvib...',i12)") PT%Maxsymcoeffs
+          if (job%verbose>=4) write(out,"(' hvib...',i12)") PT%Maxsymcoeffs
           !if (job%verbose>=4) write(out,"('  |',i8)",advance='NO')
           !
           do k1 = N1,PT%Nmodes

@@ -1248,6 +1248,48 @@ module mol_abcd
            stop 'ML_symmetry_transformation_abcd - bad operation. type'
  
          end select 
+
+       case('C2V','C2V(M)')
+             !
+         select case(ioper)
+
+         case (1) ! E 
+
+           dst = src
+
+         case (2) ! (12)(34)
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) = src(6)
+
+         case (3) ! (E*)
+
+           dst(1) = src(1)
+           dst(2) = src(2)
+           dst(3) = src(3)
+           dst(4) = src(4)
+           dst(5) = src(5)
+           dst(6) = src(6)
+           !
+         case (4) ! (12)(34)*
+
+           dst(1) = src(1)
+           dst(2) = src(3)
+           dst(3) = src(2)
+           dst(4) = src(5)
+           dst(5) = src(4)
+           dst(6) = src(6)
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
          !
        end select
         !
