@@ -15702,7 +15702,7 @@ module perturbation
                 !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
                 do icoeff=1,mdimen
                   do jcoeff=1,icoeff-1
-                    grot_t(jcoeff,icoeff) = grot_t(icoeff,jcoeff)
+                    grot_t(icoeff,jcoeff) = grot_t(jcoeff,icoeff)
                   enddo
                 enddo
                 !$omp end parallel do
@@ -15871,7 +15871,7 @@ module perturbation
               !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
               do icoeff=1,mdimen
                 do jcoeff=1,icoeff-1
-                  grot_t(jcoeff,icoeff) = -grot_t(icoeff,jcoeff)
+                  grot_t(icoeff,jcoeff) = -grot_t(jcoeff,icoeff)
                 enddo
               enddo
               !$omp end parallel do
@@ -16119,7 +16119,7 @@ module perturbation
               !$omp parallel do private(icoeff,jcoeff) shared(hvib_t) schedule(dynamic)
               do icoeff=1,mdimen
                 do jcoeff=1,icoeff-1
-                  hvib_t(jcoeff,icoeff) = hvib_t(icoeff,jcoeff)
+                  hvib_t(icoeff,jcoeff) = hvib_t(jcoeff,icoeff)
                 enddo
               enddo
               !$omp end parallel do
@@ -16137,8 +16137,8 @@ module perturbation
             !$omp parallel do private(icoeff,jcoeff) schedule(dynamic)
             do icoeff=1,mdimen
               do jcoeff=1,icoeff-1
-                hvib%me(icoeff,jcoeff) = hvib_t(icoeff,jcoeff)
-                hvib%me(jcoeff,icoeff) = hvib%me(icoeff,jcoeff)
+                hvib%me(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)
+                hvib%me(icoeff,jcoeff) = hvib%me(jcoeff,icoeff)
               enddo
             enddo
             !$omp end parallel do
@@ -16319,10 +16319,10 @@ module perturbation
             !
             if (.not.job%vib_rot_contr) then 
               !
-              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
+              !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
               do icoeff=1,mdimen
                 do jcoeff=1,icoeff-1
-                  extF_t(jcoeff,icoeff) = extF_t(icoeff,jcoeff)
+                  extF_t(icoeff,jcoeff) = extF_t(jcoeff,icoeff)
                 enddo
               enddo
               !$omp end parallel do
@@ -17038,11 +17038,11 @@ module perturbation
             !
           enddo ! icoeff
           !
-          if (job%vib_rot_contr) then 
-            grot(jcontr,ideg) = matelem
-          else
-            grot(icontr,jcontr) = matelem
-          endif
+          !if (job%vib_rot_contr) then 
+          !  grot(jcontr,ideg) = matelem
+          !else
+            grot(jcontr,icontr) = matelem
+          !endif
           !
         enddo
       !$omp end parallel do
@@ -17109,11 +17109,11 @@ module perturbation
            !
            !if (icontr/=jcontr) matelem = -matelem
            !
-           if (job%vib_rot_contr) then 
-             gcor(jcontr,ideg) = gcor(jcontr,ideg) + matelem
-           else
-             gcor(icontr,jcontr) = gcor(icontr,jcontr) + matelem
-           endif
+           !if (job%vib_rot_contr) then 
+           !  gcor(jcontr,ideg) = gcor(jcontr,ideg) + matelem
+           !else
+             gcor(jcontr,icontr) = gcor(jcontr,icontr) + matelem
+           !endif
            !
         enddo
        !$omp end parallel do 
@@ -17159,7 +17159,7 @@ module perturbation
            !
            Ncoeff = me%gvib(k1,k2)%Ncoeff
            !
-           do icoeff = 1,me%gvib(k1,k2)%Ncoeff
+           do icoeff = 1,Ncoeff
              !
              do iclass=1,Nclasses-1
                !
@@ -17185,11 +17185,11 @@ module perturbation
            !
            matelem = -0.5_rk*matelem
            !
-           if (job%vib_rot_contr) then 
-             hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
-           else
-             hvib(icontr,jcontr) = hvib(icontr,jcontr) + matelem
-           endif
+           !if (job%vib_rot_contr) then 
+           !  hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
+           !else
+             hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !endif
            !
          enddo
         !$omp end parallel do 
@@ -17230,8 +17230,9 @@ module perturbation
            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
            !        
            matelem = 0
+           Ncoeff = pl%Ncoeff
            !
-           do icoeff = 1,pl%Ncoeff
+           do icoeff = 1,Ncoeff
              !
              do iclass=1,Nclasses-1
                !
@@ -17255,11 +17256,11 @@ module perturbation
              !
            enddo ! icoeff
            !
-           if (job%vib_rot_contr) then 
-             hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
-           else
-             hvib(icontr,jcontr) = hvib(icontr,jcontr) + matelem
-           endif
+           !if (job%vib_rot_contr) then 
+           !  hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
+           !else
+             hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !endif
            !
          enddo
         !$omp end parallel do 
@@ -17328,11 +17329,11 @@ module perturbation
              !
            enddo ! icoeff
            !
-           if (job%vib_rot_contr) then 
-             extF(jcontr,ideg) = matelem
-           else
-             extF(icontr,jcontr) = matelem
-           endif
+           !if (job%vib_rot_contr) then 
+           !  extF(jcontr,ideg) = matelem
+           !else
+             extF(jcontr,icontr) = matelem
+           !endif
            !
          enddo
         !$omp end parallel do 

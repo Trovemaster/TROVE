@@ -1505,30 +1505,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     v20 = sum(v2*v2)
     v30 = sum(v3*v3)
-
-    if (abs(r(4))>1e-4   ) then
-      continue
-    endif
-
-
-    if (abs(r(5))>1e-4   ) then
-      continue
-    endif
-
-    if (abs(r(6))>1e-4  ) then
-      continue
-    endif
-
-
-    if (abs(r(4))>1e-4 .and. abs(r(6))>1e-4  ) then
-      continue
-    endif
-
-
-    if (abs(r(5))>1e-4 .and. abs(r(7))>1e-4  ) then
-      continue
-    endif
-
     !
     !setting tau
     if (v20>sqrt(small_).and.v30>sqrt(small_)) then !both v2 and v3 defined

@@ -221,6 +221,43 @@ module mol_xy2
           !
        endif
        !
+    case('R-R-R')
+       !
+       if (direct) then 
+          !
+          r1 = src(1) ; r2 = src(2) ;  alpha = src(3)
+          !
+          R = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
+          !
+          dst(1) = r1-molec%local_eq(1)
+          dst(2) = r2-molec%local_eq(1)
+          dst(3) = R -molec%local_eq(1)
+          !
+       else
+          !
+          r1 = src(1)+molec%local_eq(1)
+          r2 = src(2)+molec%local_eq(1)
+          R = src(3)+molec%local_eq(1)
+          !
+          cosalpha = (r1**2+r2**2-R**2)/(2.0_ark*r1*r2)
+          !
+          if ( abs(cosalpha)>1.0_ark+sqrt(small_) ) then 
+             !
+             write (out,"('ML_coordinate_transform_XY2: cosalpha>1: ',f18.8)") cosalpha
+             stop 'ML_coordinate_transform_XY2 - bad cosalpha'
+             !
+          elseif ( cosalpha>=1.0_ark) then 
+             alpha = 0
+          else 
+             alpha = acos(cosalpha)
+          endif
+          !
+          dst(1) = r1
+          dst(2) = r2
+          dst(3) = alpha
+          !
+       endif
+       !
     case('R12-RHO')
        !
        if (direct) then 
@@ -1239,6 +1276,60 @@ module mol_xy2
             stop 'ML_symmetry_transformation_XY2 - bad operation. type'
  
           end select 
+          !
+       end select
+       !
+    case('R-R-R')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_XY2 - bad symm. type'
+          !
+       case('D3H','D3H(M)')
+          !
+           select case(ioper)
+           !
+           case (1, 7) ! identity,(23)*
+
+             dst(1:3) = src(1:3)
+             !
+           case (3, 9) ! (123),(123)*
+
+             dst(1) = src(3)
+             dst(2) = src(1)
+             dst(3) = src(2)
+             !
+           case (2, 8) ! (321),(321)*
+
+             dst(1) = src(2)
+             dst(2) = src(3)
+             dst(3) = src(1)
+ 
+           case (4,10) ! (23),(23)*
+
+             dst(1) = src(1)
+             dst(2) = src(3)
+             dst(3) = src(2)
+
+           case (6,12) ! (13),(13)*
+
+             dst(1) = src(3)
+             dst(2) = src(2)
+             dst(3) = src(1)
+
+           case (5,11) ! (12),(12)*
+
+             dst(1) = src(2)
+             dst(2) = src(1)
+             dst(3) = src(3)
+
+           case default
+
+             write (out,"('ML_symmetry_transformation_XY2: operation ',i8,' unknown')") ioper
+             stop 'ML_symmetry_transformation_XY2 - bad operation. type'
+ 
+           end select 
           !
        end select
        !

@@ -12770,7 +12770,7 @@ end subroutine check_read_save_none
                 read(chkptIO) Tcoeff
                 !
                 if (fl%Ncoeff/= Tcoeff) then 
-                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_rot disagree with ncoeff of field',2i4,1x,2I8)") trim(trove%chk_fname),k1,k2,fl%Ncoeff,Tcoeff
                   write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
                   stop 'check_point_Hamiltonian - Ncoeff (basis) in g_rot disagree with ncoeff of field'
                 end if 
@@ -12830,7 +12830,7 @@ end subroutine check_read_save_none
         read(chkptIO) Tcoeff
         !
         if (trove%poten%Ncoeff/=Tcoeff) then 
-          write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+          write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in poten  disagrees with ncoeff of field',2i4,1x,2I8)") trim(trove%chk_fname),k1,k2,fl%Ncoeff,Tcoeff
           write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
           stop 'check_point_Hamiltonian - Ncoeff (basis) in poten disagree with ncoeff of field'
         end if 
@@ -12874,7 +12874,7 @@ end subroutine check_read_save_none
                   read(chkptIO) Tcoeff
                   !
                   if (fl%Ncoeff/= Tcoeff) then 
-                    write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)")  trove%chk_fname,k1,k2,fl%Ncoeff,Tcoeff
+                    write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in L2vib disagree with ncoeff of field',2i4,1x,2I8)") trim(trove%chk_fname),k1,k2,fl%Ncoeff,Tcoeff
                     write (out,"(' Check exp_coeff_thresh and consider switching BASIS_SET SAVE')")
                     stop 'check_point_Hamiltonian - Ncoeff (basis) in L2vib disagree with ncoeff of field'
                   end if 
@@ -12916,7 +12916,7 @@ end subroutine check_read_save_none
              read(chkptIO) Tcoeff
              !
              if (fl%Ncoeff/= Tcoeff) then 
-               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',i4,1x,2I8)") trove%chk_fname,imu,fl%Ncoeff,Tcoeff
+               write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in extF disagree with ncoeff of field',i4,1x,2I8)") trim(trove%chk_fname),imu,fl%Ncoeff,Tcoeff
                write (out,"(' Check exp_coeff_thresh Consider switching BASIS_SET SAVE')")
                stop 'check_point_Hamiltonian - Ncoeff (basis) in extF disagree with ncoeff of field'
              end if 
@@ -13406,7 +13406,7 @@ end subroutine check_read_save_none
               !
               !if (abs(fl%field(iterm,i))>small_) then
               !
-              write(chkptIO_ext,"(i8,1x,i8,1x,i8,1x,f23.16)") k1,fl%ifromsparse(iterm),i,fl%field(iterm,i)
+              write(chkptIO_ext,"(i8,1x,i8,1x,i8,1x,e23.16)") k1,fl%ifromsparse(iterm),i,fl%field(iterm,i)
               !
               !endif
               !
