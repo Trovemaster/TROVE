@@ -1177,10 +1177,13 @@ contains
       !
       psi = 0
       !
-      ! real dimension taking into account the allowed disk space
+      if (job%convert_model_j0.and.trim(job%IOkinet_action)=='SAVE') then 
+          job%IOj0matel_action = 'SAVE'
+      end if 
       !
-      !rdimen = min(job%max_swap_size,Neigenroots)
-      !
+      if (job%convert_model_j0.and.trim(job%IOextF_action)=='SAVE') then 
+          FLextF_matelem = .true.
+      end if 
       !
       if (job%IOvector_symm) then 
         !

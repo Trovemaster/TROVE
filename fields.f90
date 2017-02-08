@@ -2111,11 +2111,15 @@ module fields
                  !
                elseif (trim(w)=='CONVERT') then
                  !
-                 if (all(trim(job%IOeigen_action)/=(/'SAVE'/))) then
+                 if (all(trim(job%IOeigen_action)/=(/'SAVE','READ'/))) then
                   call report("Unexpected 3d argument in eigenfuc",.true.)
                  endif
                  !
                  job%convert_model_j0 = .true.
+                 !
+                 if (all(trim(job%IOeigen_action)==(/'SAVE'/))) then
+                   job%IOj0contr_action = 'SAVE'
+                 endif
                  !
                  if (job%vib_contract) then
                    !
@@ -2123,6 +2127,11 @@ module fields
                    call report("illegal usage of  eigenfuc",.true.)
                    !
                  endif
+                 !
+               else 
+                 !
+                 write(out,"('illegal keyword after EIGENFUNC XXXX ')")
+                 call report("illegal keyword in eigenfuc xxxx",.true.)
                  !
                end if
                ! 
@@ -2141,6 +2150,18 @@ module fields
              !
              job%IOcontr_action = trim(w)
              !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               if (trim(w)=='CONVERT') then
+                  trove%separate_convert = .true.
+               else
+                   call report (" Illegal record after CONTRACT",.true.)
+               endif
+               !
+             endif 
+             !
            case('MATELEM')
              !
              call readu(w)
@@ -2154,7 +2175,7 @@ module fields
              !
              if (job%contrci_me_fast.and.trim(w)=='NONE') then 
                !
-               w = 'SAVE'
+               !w = 'SAVE'
                !
              endif
              !
@@ -3932,7 +3953,7 @@ module fields
    ! to work only with all modes as one class in the contr. vibrational representaion, i.e.
    ! the vibr. Hamiltonian is assumed to be diagonal in this representaion:
    !
-   if ( any( (/trim(job%IOj0ext_action),trim(job%IOj0matel_action),trim(job%IOj0contr_action)/) /='NONE' ) ) then 
+   if ( any( (/trim(job%IOj0ext_action),trim(job%IOj0matel_action)/) /='NONE' ) ) then 
       !
       job%vib_contract = .true.
       !

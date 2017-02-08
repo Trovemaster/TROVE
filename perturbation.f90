@@ -6343,8 +6343,9 @@ module perturbation
     !
     ! A special case when the diagonlization is to be skipped 
     !
-    if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (job%IOmatelem_divide.and.job%iswap(1)/=0 )) then
+    if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE'.or.&
+           trim(job%IOeigen_action)=='READ').and.&
+           (job%IOmatelem_divide.and.(job%iswap(1)/=0.or.fitting%iparam(1)/=0) )) then
        !
        write(out,"('For MATELEM SAVE DIVIDE the eigenvalue problem is skipped ')")
        write(out,"('Please run again with matelem READ or NONE')")
@@ -30579,13 +30580,18 @@ end subroutine read_contr_ind
        !
        ! Saving the contracted basis set vectors and all auxilery informaion.
        !
-       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)<=1).or.job%convert_model_j0) then
+       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)<=1).or.&
+           job%convert_model_j0) then
          !
          if (job%convert_model_j0) then 
            PT%Nclasses = 1
          endif
          !
-         call PTcheck_point_contracted_space('SAVE')
+         if (trim(job%IOj0contr_action)=='SAVE') then 
+           !
+           call PTcheck_point_contracted_space('SAVE')
+           !
+         endif
          !
        endif
        !
