@@ -408,6 +408,7 @@ module perturbation
    type(PTelementsT),save  :: PT ! the main PT structure, that contains all information on the PT
 !
    integer, parameter :: verbose     = 3       ! Verbosity level
+   logical, parameter :: debug_check_symmetries  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
 !
 ! The zero order for the potential function starts from the harmonic approximation (usually)
 ! Since it can be something else, in general, we introduce a parameter "pot_pt_shift",
@@ -6345,7 +6346,7 @@ module perturbation
     !
     if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE'.or.&
            trim(job%IOeigen_action)=='READ').and.&
-           (job%IOmatelem_divide.and.(job%iswap(1)/=0.or.fitting%iparam(1)/=0) )) then
+           (job%IOmatelem_divide.and.(job%iswap(1)/=0.or.fitting%iparam(1)/=1) )) then
        !
        write(out,"('For MATELEM SAVE DIVIDE the eigenvalue problem is skipped ')")
        write(out,"('Please run again with matelem READ or NONE')")
@@ -8143,16 +8144,18 @@ module perturbation
                       !
                     endif 
                     !
-                    if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
-                        PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
-                        write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
-                                    isym,ielem,iterm,jterm
-                        write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
-                           PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
-                        write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
-                           PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                        stop 'something wrong with sym-counting'
-                    endif 
+                    if (debug_check_symmetries) then
+                      if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
+                          PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
+                          write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
+                                      isym,ielem,iterm,jterm
+                          write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
+                             PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
+                          write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
+                             PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
+                          stop 'something wrong with sym-counting'
+                      endif 
+                    endif
                     !
                     if (job%select_gamma(isym)) then 
                       !
@@ -8160,29 +8163,30 @@ module perturbation
                       !
                     endif
                     !
-                 elseif(abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
-                    !
-                    ! We print out non-zero mat. elements between different symmetries, which have to be zero.
-                    !
-                    if (job%verbose>=6) &
-                      write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
-                                    sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
-
-                    !
-                    ! if this error is too big - we stop
-                    !
-                    if(abs(mat_elem)>1.0_rk) then 
-                      !write(out,"(/'Non-diagonal element between different symmetries:')")
-                         write(out,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,' Non-diagonal element between different symmetries is too large!')") & 
-                                    sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
+                 elseif (debug_check_symmetries) then
+                   if (abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
                       !
+                      ! We print out non-zero mat. elements between different symmetries, which have to be zero.
                       !
-                      ! special case for linear molecules and E-symmetries. Not an ideal solution!
-                      if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                         stop 'non-zero element between two symmetries'
-                      endif 
-                    endif
-                    !
+                      if (job%verbose>=6) &
+                        write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
+                                      sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
+                   
+                      !
+                      ! if this error is too big - we stop
+                      !
+                      if(abs(mat_elem)>1.0_rk) then 
+                        !write(out,"(/'Non-diagonal element between different symmetries:')")
+                           write(out,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,' Non-diagonal element between different symmetries is too large!')") & 
+                                      sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
+                        !
+                        !
+                        ! special case for linear molecules and E-symmetries. Not an ideal solution!
+                        if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
+                           stop 'non-zero element between two symmetries'
+                        endif 
+                      endif
+                   endif
                  endif
                  ! 
                enddo
@@ -8289,16 +8293,18 @@ module perturbation
                       !
                     endif 
                     !
-                    if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
-                        PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
-                        write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
-                                    isym,ielem,iterm,jterm
-                        write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
-                           PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
-                        write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
-                           PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                        stop 'something wrong with sym-counting'
-                    endif 
+                    if (debug_check_symmetries) then
+                      if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
+                          PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
+                          write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
+                                      isym,ielem,iterm,jterm
+                          write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
+                             PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
+                          write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
+                             PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
+                          stop 'something wrong with sym-counting'
+                      endif 
+                    endif
                     !
                     if (job%select_gamma(isym)) then 
                       !
@@ -8306,23 +8312,25 @@ module perturbation
                       !
                     endif
                     !
-                 elseif(abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
-                    !
-                    ! We print out non-zero mat. elements between different symmetries, which have to be zero.
-                    !
-                    if (job%verbose>=6) &
-                      write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
-                                    sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
-                    !
-                    ! if this error is too big - we stop
-                    !
-                    if(abs(mat_elem)>1.0_rk) then 
-                      !write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
-                      write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,' Non-diagonal element (euler) between different symmetries is too large!')") & 
-                                    sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem
-                      stop 'non-zero element between two symmetries'
-                    endif
-                    !
+                 elseif (debug_check_symmetries) then
+                   if (abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
+                      !
+                      ! We print out non-zero mat. elements between different symmetries, which have to be zero.
+                      !
+                      if (job%verbose>=6) &
+                        write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
+                                      sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
+                      !
+                      ! if this error is too big - we stop
+                      !
+                      if(abs(mat_elem)>1.0_rk) then 
+                        !write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
+                        write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,' Non-diagonal element (euler) between different symmetries is too large!')") & 
+                                      sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem
+                        stop 'non-zero element between two symmetries'
+                      endif
+                      !
+                   endif
                  endif
                  ! 
                enddo
@@ -15430,8 +15438,8 @@ module perturbation
     real(rk), allocatable :: gme_Nclass(:,:,:)
     !
     real(rk), allocatable :: prim_vect(:,:)
-
-
+    integer(ik) :: Nsym,isym,Nsymi,Nsymj,jsymcoeff
+    integer(ik), allocatable :: Nsym_diag_isymcoeff(:,:)
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -15574,6 +15582,30 @@ module perturbation
           prim_vect(1:nprim,iroot) = contr(PT%Nclasses)%eigen(ilevel)%vect(1:nprim,ideg)
         enddo
         !$omp end parallel do
+        !
+        ! check if there are no contributions to the diagonal symmetry blocks 
+        !
+        if (.not.debug_check_symmetries) then
+          !
+          allocate(Nsym_diag_isymcoeff(PT%Maxsymcoeffs,PT%Maxsymcoeffs),stat=alloc)
+          call ArrayStart('Nsym_diag_isymcoeff',alloc,1,kind(Nsym_diag_isymcoeff),size(Nsym_diag_isymcoeff,kind=hik))
+          Nsym_diag_isymcoeff = 0
+          !
+          do isymcoeff =1,PT%Maxsymcoeffs
+            do jsymcoeff =1,PT%Maxsymcoeffs
+              !
+              Nsym = 0
+              do isym = 1,sym%Nrepresen
+                !
+                Nsymi = PT%irr(isym)%N(isymcoeff) 
+                Nsymj = PT%irr(isym)%N(jsymcoeff) 
+                !
+                Nsym = NSym + Nsymi*Nsymj 
+              enddo
+              if (NSym/=0) Nsym_diag_isymcoeff(isymcoeff,jsymcoeff) = 1
+            enddo
+          enddo
+        endif
         !
         if (job%verbose>=4) call MemoryReport
         !
@@ -16208,7 +16240,7 @@ module perturbation
           else 
             allocate(extF_t(mdimen,mdimen),stat=alloc)
           endif
-          call ArrayStart('extF-fields',alloc,1,kind(f_t),size(extF_t,kind=8))
+          call ArrayStart('extF-fields',alloc,1,kind(f_t),size(extF_t,kind=hik))
           !
           do imu = fitting%iparam(1),fitting%iparam(2)
             !
@@ -16975,6 +17007,11 @@ module perturbation
          call ArrayStop('prim_vect')
       endif
       !
+      if (allocated(Nsym_diag_isymcoeff)) then
+        deallocate(Nsym_diag_isymcoeff)
+        call ArrayStop('Nsym_diag_isymcoeff')
+      endif
+      !
       write(out, '(/a)') 'PTcontracted_matelem_class_fast/done'
       !
     end  subroutine de_initialize_class_contr_objects   
@@ -17152,6 +17189,11 @@ module perturbation
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
+           !
+           if (.not.debug_check_symmetries) then
+             if (Nsym_diag_isymcoeff(isymcoeff,jsymcoeff)==0) cycle
+           endif
+           !
            energy_j = enermax_classes(jsymcoeff)
            !
            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
@@ -17226,6 +17268,10 @@ module perturbation
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
+           if (.not.debug_check_symmetries) then
+             if (Nsym_diag_isymcoeff(isymcoeff,jsymcoeff)==0) cycle
+           endif
+           !
            energy_j = enermax_classes(jsymcoeff)
            !
            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
