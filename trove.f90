@@ -62,7 +62,7 @@
       !
       if (intensity%do) then 
          !
-         call FLbsetInit
+         !call FLbsetInit
          !call FLinitilize_Kinetic
          !call FLinitilize_Potential
          !call FLinit_External_field

@@ -712,6 +712,8 @@ contains
     !
     if (Ntransit==0) then 
          write(out,"('dm_intensity_symmvec: the transition filters are too tight: no entry')") 
+         write(out,"(' window = ',2f12.4,'; Elow = ',2f12.4,'; Eupp = ',2f12.4,' cm-1')") &
+              intensity%freq_window(1:2),intensity%erange_low(1:2),intensity%erange_upp(1:2)
          stop 'dm_intensity_symmvec: the filters are too tight' 
     endif 
     !

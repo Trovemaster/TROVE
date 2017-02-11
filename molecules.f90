@@ -442,6 +442,10 @@ end function ML_MEPfunc
        !
        MLextF_func => MLdms_hcch_MB
        !
+    case('HCCH_DMS_7D')
+       !
+       MLextF_func => MLdms_HCCH_7D
+       !
     case('COORDINATES')
        !
        MLextF_func => MLextF_coordinates

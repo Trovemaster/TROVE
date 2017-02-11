@@ -3139,11 +3139,11 @@ module fields
                !
              endif
              !
-           case('THRESH_INTES','THRESH_TM')
+           case('THRESH_INTES','THRESH_TM','THRESH_INTENS')
              !
              call readf(intensity%threshold%intensity)
              !
-           case('THRESH_LINE','THRESH_LINESTRENGHT')
+           case('THRESH_LINE','THRESH_LINESTRENGHT','THRESH_LINESTRENGTH')
              !
              call readf(intensity%threshold%linestrength)
              !
@@ -13314,7 +13314,7 @@ end subroutine check_read_save_none
         !
         if (FLl2_coeffs) then
           !
-          write(chkptIO_kin,"(3i9,10x,a)") trove%L2_vib%Npoints,trove%L2_vib%Orders,Ncoeff,"<- L2_vib Npoints,Norder,Ncoeff"
+          write(chkptIO_kin,"(3i9,10x,a)") trove%L2_vib(1,1)%Npoints,trove%L2_vib(1,1)%Orders,Ncoeff,"<- L2_vib Npoints,Norder,Ncoeff"
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes

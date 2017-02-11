@@ -1060,6 +1060,8 @@ contains
        !
        if (job%verbose>=2) write(out,"(/'Convert the J=0 eigenvec. to contracted representaion ')")
        !
+       call MemoryReport
+       !
        Jval(1) = jrot
        !
        if(jrot/=0) then
