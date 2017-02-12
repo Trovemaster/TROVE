@@ -15461,6 +15461,7 @@ module perturbation
     real(rk), allocatable :: prim_vect(:,:)
     integer(ik) :: Nsym,isym,Nsymi,Nsymj,jsymcoeff,Ntot
     integer(ik), allocatable :: isymcoeff_vs_isym(:,:)
+    double precision,parameter :: a0 = -0.5d0
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -16088,7 +16089,10 @@ module perturbation
             !
           enddo
           !
-          if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)") 0,0
+          hvib_t = -0.5_rk*hvib_t
+          !call daxpy(mdimen,alpha,hvib_t,1,hvib_t,1)
+          !
+          if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)")
           !
           ! computed contracted matrix elements for class Nclasses 
           !
@@ -17280,7 +17284,7 @@ module perturbation
              !
            enddo ! icoeff
            !
-           matelem = -0.5_rk*matelem
+           !matelem = -0.5_rk*matelem
            !
            !if (job%vib_rot_contr) then 
            !  hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
@@ -17542,7 +17546,7 @@ module perturbation
       !
       !gcorme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
 
-      gcorme(nclass)%me = me_contr
+      gcorme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
         !
@@ -17642,7 +17646,7 @@ module perturbation
       call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
-      grotme(nclass)%me = me_contr
+      grotme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
          grotme(iclass)%me(:,:,:) = grot_class(iclass)%me
@@ -17740,7 +17744,7 @@ module perturbation
       call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       !gvibme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
-      gvibme(nclass)%me = me_contr
+      gvibme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
         !
@@ -17844,7 +17848,7 @@ module perturbation
       call calc_contr_matelem_expansion_vpot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       call store_contr_matelem_expansion_classN(1,1,nclass,func_tag,1,1,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
-      vpotme(nclass)%me = me_contr
+      vpotme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
          vpotme(iclass)%me(:,:,:) = vpot_class(iclass)%me
@@ -17932,7 +17936,7 @@ module perturbation
       call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       call store_contr_matelem_expansion_classN(ipar,1,nclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
-      extFme(nclass)%me = me_contr
+      extFme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
          extFme(iclass)%me(:,:,:) = extF_class(iclass)%me
@@ -31733,10 +31737,10 @@ subroutine PTstore_contr_matelem(jrot)
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
     !
-    if (nprim>dimen) then
-      write(out,"('PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen:',2i12)") nprim,dimen
-      stop 'PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen'
-    endif
+    !if (nprim>dimen) then
+    !  write(out,"('PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen:',2i12)") nprim,dimen
+    !  stop 'PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen'
+    !endif
     !
     matsize = int(nterms_uniq(iclass)*dimen*dimen*nmodes*nmodes,hik)
     !
@@ -31754,7 +31758,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     allocate(gvib_class(iclass,0,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,0)%me,kind=hik))
-    gvib_class(iclass,0,0)%me = me_contr
+    gvib_class(iclass,0,0)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
     if (job%verbose>=5) write(out, '(17x,i3,3x,i3)') 0, 0
     !
@@ -31773,7 +31777,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       allocate(gvib_class(iclass,0,imode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
       call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,imode_)%me,kind=hik))
-      gvib_class(iclass,0,imode_)%me = me_contr
+      gvib_class(iclass,0,imode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, imode
       do iterm=1, nterms_uniq(iclass)
@@ -31809,7 +31813,7 @@ subroutine PTstore_contr_matelem(jrot)
         !
         allocate(gvib_class(iclass,imode_,jmode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
         call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,imode_,jmode_)%me,kind=hik))
-        gvib_class(iclass,imode_,jmode_)%me = me_contr
+        gvib_class(iclass,imode_,jmode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
         !
       enddo
     enddo
@@ -31961,7 +31965,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     allocate(gcor_class(iclass,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gcor_class(iclass,0)%me,kind=hik))
-    gcor_class(iclass,0)%me = me_contr
+    gcor_class(iclass,0)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
     !do imode=1,nmodes
     !  if (iclass_imode(1,iclass)<=imode.and.imode<=iclass_imode(2,iclass)) cycle
@@ -31982,7 +31986,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       allocate(gcor_class(iclass,imode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
       call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gcor_class(iclass,imode_)%me,kind=hik))
-      gcor_class(iclass,imode_)%me = me_contr
+      gcor_class(iclass,imode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
     enddo
     !
@@ -32127,9 +32131,9 @@ subroutine PTstore_contr_matelem(jrot)
     !
     allocate(grot_class(iclass)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(grot_class(iclass)%me,kind=hik))
-    grot_class(iclass)%me = me_contr
+    grot_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
-    grot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
+    grot_me(iclass)%me(1:,1:dimen,1:dimen,1,1) = me_contr(1:,1:dimen,1:dimen)
     !
     deallocate(me_contr)
     call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -32270,7 +32274,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     allocate(vpot_class(iclass)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(vpot_class(iclass)%me,kind=hik))
-    vpot_class(iclass)%me = me_contr
+    vpot_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
     Vpot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
     !
@@ -32407,7 +32411,7 @@ subroutine PTstore_contr_matelem(jrot)
        !
        allocate(extF_class(iclass)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
        call ArrayStart(trim(skey_cls),info,1_ik,rk,size(extF_class(iclass)%me,kind=hik))
-       extF_class(iclass)%me = me_contr
+       extF_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
        !
        extF_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
        !
