@@ -408,12 +408,16 @@ module perturbation
    end type me_class
 
 
+   ! some parameters that can be used for bechmarking at compilation level
+   !
+   integer, parameter :: verbose     = 3       ! Verbosity level
+   logical, parameter :: debug_check_symmetries  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
+   logical, parameter :: debug_cut_matelem_with_enermax  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
+
+
 !  The PT elements object
 !
    type(PTelementsT),save  :: PT ! the main PT structure, that contains all information on the PT
-!
-   integer, parameter :: verbose     = 3       ! Verbosity level
-   logical, parameter :: debug_check_symmetries  = .true.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
 !
 ! The zero order for the potential function starts from the harmonic approximation (usually)
 ! Since it can be something else, in general, we introduce a parameter "pot_pt_shift",
@@ -16088,7 +16092,8 @@ module perturbation
             !
           enddo
           !
-          !hvib_t = -0.5_rk*hvib_t
+          hvib_t = -0.5_rk*hvib_t
+          !
           !call daxpy(mdimen,alpha,hvib_t,1,hvib_t,1)
           !
           if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)")
@@ -17064,7 +17069,7 @@ module perturbation
       !
       real(rk),intent(out)   :: grot(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j
+      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j,energy_i
       integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
       integer(ik) :: Maxcontracts,jsymcoeff
       type(PTcoeffT),pointer   :: fl
@@ -17072,6 +17077,7 @@ module perturbation
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
+      energy_i = enermax_classes(isymcoeff)
       !
       fl => me%grot(k1,k2)
       do ideg = 1,PT%Index_deg(isymcoeff)%size1
@@ -17082,10 +17088,11 @@ module perturbation
         !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
           !
-          jsymcoeff = PT%icontr2icase(jcontr,1)
-          energy_j = enermax_classes(jsymcoeff)
-          !
-          if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
+          if (debug_cut_matelem_with_enermax) then 
+            jsymcoeff = PT%icontr2icase(jcontr,1)
+            energy_j = enermax_classes(jsymcoeff)
+            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+          endif
           !
           matelem = 0
           !
@@ -17150,7 +17157,7 @@ module perturbation
       integer(ik),intent(in) :: k1,k2,isymcoeff
       real(rk),intent(inout) :: gcor(:,:)
       !
-      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
       integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
       integer(ik) :: Maxcontracts,jsymcoeff
       type(PTcoeffT),pointer   :: fl
@@ -17159,6 +17166,7 @@ module perturbation
       nclasses = PT%Nclasses
       coef_thresh = job%exp_coeff_thresh
       Maxcontracts = PT%Maxcontracts
+      energy_i = enermax_classes(isymcoeff)
       !
       !fl => me%gcor(k1,k2)
       !
@@ -17170,10 +17178,11 @@ module perturbation
         !$omp& me_class0) shared(gcor) schedule(dynamic)
         do jcontr=1,icontr
            !
-           jsymcoeff = PT%icontr2icase(jcontr,1)
-           energy_j = enermax_classes(jsymcoeff)
-           !
-           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
            !
            matelem = 0
            !
@@ -17270,19 +17279,17 @@ module perturbation
         !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
            !
-           jsymcoeff = PT%icontr2icase(jcontr,1)
-           !
            if (.not.debug_check_symmetries) then
-             !
+             jsymcoeff = PT%icontr2icase(jcontr,1)
              jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
-             !
              if ( all( isym(:)/=jsym(:) ) ) cycle
-             !
            endif
            !
-           energy_j = enermax_classes(jsymcoeff)
-           !
-           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
            !        
            matelem = 0
            !
@@ -17327,7 +17334,7 @@ module perturbation
              !
            enddo ! icoeff
            !
-           matelem = -0.5_rk*matelem
+           !matelem = -0.5_rk*matelem
            !
            !if (job%vib_rot_contr) then 
            !  hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
@@ -17377,19 +17384,17 @@ module perturbation
         !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
         do jcontr=1,icontr
            !
-           jsymcoeff = PT%icontr2icase(jcontr,1)
-           !
            if (.not.debug_check_symmetries) then
-             !
+             jsymcoeff = PT%icontr2icase(jcontr,1)
              jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
-             !
              if ( all( isym(:)/=jsym(:) ) ) cycle
-             !
            endif
            !
-           energy_j = enermax_classes(jsymcoeff)
-           !
-           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
            !        
            matelem = 0
            Ncoeff = pl%Ncoeff
@@ -17458,7 +17463,7 @@ module perturbation
       !
       real(rk),intent(out)   :: extF(:,:)
       !
-      real(rk)    :: matelem,me_class0(PT%Nclasses),energy_j
+      real(rk)    :: matelem,me_class0(PT%Nclasses),energy_j,energy_i
       integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nu_i,nu_j
       integer(ik) :: Maxcontracts,jsymcoeff
       type(PTcoeffT),pointer   :: fl
@@ -17466,6 +17471,7 @@ module perturbation
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
+      energy_i = enermax_classes(isymcoeff)
       !
       fl => me%ExtF(k1)
       !
@@ -17476,10 +17482,11 @@ module perturbation
         !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
-           jsymcoeff = PT%icontr2icase(jcontr,1)
-           energy_j = enermax_classes(jsymcoeff)
-           !
-           if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem ) cycle
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
            !
            ! ExtF part
            !
@@ -17557,7 +17564,7 @@ module perturbation
       character(cl)  ::  skey
       integer(ik)    ::  nclass_imode(2,PT%Nclasses),kclass
       !
-      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'gcor_me matix elements for iclass = ', PT%Nclasses
+      if (job%verbose>=6) write(out, '(/1x,a,1x,i3)') 'gcor_me matix elements for iclass = ', PT%Nclasses
       !
       func_tag = 'Tcor'
       target_index = 0 
@@ -17608,8 +17615,6 @@ module perturbation
         call ArrayStart(trim(skey),info,1_ik,rk,size(gcorme(iclass)%me,kind=hik))
         !
       enddo
-      !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
       !
       fl => me%gcor(imode,jmode)
       !
@@ -17711,8 +17716,6 @@ module perturbation
         !
       enddo
       !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
-      !
       fl => me%grot(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
@@ -17812,8 +17815,6 @@ module perturbation
       !call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
       !gvibme_Nclass= 0
       !
-      if (job%verbose>=5) write(out, '(1x,i6,1x,i6)') imode,jmode
-      !
       fl => me%gvib(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
@@ -17872,7 +17873,7 @@ module perturbation
       character(4)   ::  sclass
       character(cl)  ::  skey
       !
-      if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'Vpot_me matix elements for iclass = ', PT%Nclasses
+      if (job%verbose>=6) write(out, '(/1x,a,1x,i3)') 'Vpot_me matix elements for iclass = ', PT%Nclasses
       !
 
       func_tag = 'Vpot'
@@ -17958,7 +17959,7 @@ module perturbation
       character(4)   ::  sclass
       character(cl)  ::  skey
       !
-      if (job%verbose>=5.and.ipar==1) write(out, '(/1x,a,1x,i3)') 'extF_me matix elements for iclass = ', PT%Nclasses
+      if (job%verbose>=6.and.ipar==1) write(out, '(/1x,a,1x,i3)') 'extF_me matix elements for iclass = ', PT%Nclasses
       !
       if (job%verbose>=6) write(out, '(1x,i6)') ipar
       !
