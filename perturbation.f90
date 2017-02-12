@@ -7417,12 +7417,11 @@ module perturbation
     endif
     !
     ! free more memory 
-    if (associated(contr(0)%rot(1)%coeff3d)) then 
-      call ArrayStop('contr(0)-rot-coeff3d')
-    endif
     do ielem =1,size(contr(0)%rot(:))
       if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
     enddo 
+    call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
+    call ArrayStop('contr(0)-rot-coeff3d')
     !
     deallocate(ijterm,k_row)
     !
@@ -16089,7 +16088,7 @@ module perturbation
             !
           enddo
           !
-          hvib_t = -0.5_rk*hvib_t
+          !hvib_t = -0.5_rk*hvib_t
           !call daxpy(mdimen,alpha,hvib_t,1,hvib_t,1)
           !
           if (job%verbose>=4) write(out,"(/' Potential energy ',2i4)")
@@ -17284,7 +17283,7 @@ module perturbation
              !
            enddo ! icoeff
            !
-           !matelem = -0.5_rk*matelem
+           matelem = -0.5_rk*matelem
            !
            !if (job%vib_rot_contr) then 
            !  hvib(jcontr,ideg) = hvib(jcontr,ideg) + matelem
@@ -32108,16 +32107,16 @@ subroutine PTstore_contr_matelem(jrot)
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
     !
-    matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
+    !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
     !
-    if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' grot matrix of ',f15.4,' gb')") & 
-                        nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
+    !if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' grot matrix of ',f15.4,' gb')") & 
+    !                    nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
     !
-    allocate(grot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
-    write(sclass,'(i4)') iclass
-    skey = 'grot_me('//trim(adjustl(sclass))//')'
-    call ArrayStart(trim(skey),info,1,rk,matsize)
-    grot_me(iclass)%me = 0
+    !allocate(grot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
+    !write(sclass,'(i4)') iclass
+    !skey = 'grot_me('//trim(adjustl(sclass))//')'
+    !call ArrayStart(trim(skey),info,1,rk,matsize)
+    !grot_me(iclass)%me = 0
     !
     ! compute contracted matrix elements for operators: G
     !
@@ -32133,7 +32132,7 @@ subroutine PTstore_contr_matelem(jrot)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(grot_class(iclass)%me,kind=hik))
     grot_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
-    grot_me(iclass)%me(1:,1:dimen,1:dimen,1,1) = me_contr(1:,1:dimen,1:dimen)
+    !grot_me(iclass)%me(1:,1:dimen,1:dimen,1,1) = me_contr(1:,1:dimen,1:dimen)
     !
     deallocate(me_contr)
     call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -32263,10 +32262,10 @@ subroutine PTstore_contr_matelem(jrot)
     if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' vpot matrix of ',f15.4,' gb')") & 
                         nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
     !
-    allocate(Vpot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
-    write(sclass,'(i4)') iclass
-    skey = 'vpot_me('//trim(adjustl(sclass))//')'
-    call ArrayStart(trim(skey),info,1,rk,matsize)
+    !allocate(Vpot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
+    !write(sclass,'(i4)') iclass
+    !skey = 'vpot_me('//trim(adjustl(sclass))//')'
+    !call ArrayStart(trim(skey),info,1,rk,matsize)
     !vpot_me(iclass)%me = 0
     !
     call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
@@ -32276,7 +32275,7 @@ subroutine PTstore_contr_matelem(jrot)
     call ArrayStart(trim(skey_cls),info,1_ik,rk,size(vpot_class(iclass)%me,kind=hik))
     vpot_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
     !
-    Vpot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
+    !Vpot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
     !
     deallocate(me_contr)
     !
@@ -32400,10 +32399,10 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' extF matrix of ',f15.4,' gb')") & 
                            nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
        !
-       allocate(extF_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
-       write(sclass,'(i4)') iclass
-       skey = 'extF_me('//trim(adjustl(sclass))//')'
-       call ArrayStart(trim(skey),info,1,rk,matsize)
+       !allocate(extF_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
+       !write(sclass,'(i4)') iclass
+       !skey = 'extF_me('//trim(adjustl(sclass))//')'
+       !call ArrayStart(trim(skey),info,1,rk,matsize)
        !extF_me(iclass)%me = 0
        !
        call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
@@ -32413,7 +32412,7 @@ subroutine PTstore_contr_matelem(jrot)
        call ArrayStart(trim(skey_cls),info,1_ik,rk,size(extF_class(iclass)%me,kind=hik))
        extF_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
        !
-       extF_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
+       !extF_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
        !
        deallocate(me_contr)
        call ArrayStop('PTstore_contr_matelem:me_contr')
