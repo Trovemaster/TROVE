@@ -16289,7 +16289,7 @@ module perturbation
             !  !
             !endif
             !
-            call calc_extF_me(imu,gme)
+            call calc_extF_me(imu,gme,gme_Nclass)
             !
             do isymcoeff =1,PT%Maxsymcoeffs
               !
@@ -17099,14 +17099,15 @@ module perturbation
               iterm = fl%uniq(iclass,icoeff)
               !
               !me_class0(iclass) = grot_me(iclass)%me(iterm,nu_i,nu_j,1,1)
+              !
               me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-               !
-               if (abs(grot_me(iclass)%me(iterm,nu_i,nu_j,1,1)-&
-                       gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
-                       me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-                   stop 'grot_me 1'
-                   continue 
-               endif
+              !
+              !if (abs(grot_me(iclass)%me(iterm,nu_i,nu_j,1,1)-&
+              !         gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
+              !         me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+              !     stop 'grot_me 1'
+              !     continue 
+              ! endif
               !
             enddo
             !
@@ -17117,13 +17118,13 @@ module perturbation
             !
             !me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
             me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-             !
-             if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
-                     gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
-                     me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-                   stop 'grot_me 2'
-                 continue 
-             endif
+            !
+            !if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
+            !         gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
+            !         me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+            !       stop 'grot_me 2'
+            !     continue 
+            !endif
             !
             matelem = matelem + product(me_class0(1:Nclasses))
             !
@@ -17188,12 +17189,12 @@ module perturbation
                !me_class0(iclass) = gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)
                me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
                !
-               if (abs(gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)-&
-                       gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
-                       me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-                   stop 'gcor_me 1'
-                   continue 
-               endif
+               !if (abs(gcor_me(iclass)%me(iterm,nu_i,nu_j,k1,1)-&
+               !        gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
+               !        me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+               !    stop 'gcor_me 1'
+               !    continue 
+               !endif
                !
              enddo
              !
@@ -17205,12 +17206,12 @@ module perturbation
              !me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
              me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
              !
-             if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
-                     gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
-                     me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-                   stop 'gcor_me 2'
-                 continue 
-             endif
+             !if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
+             !        gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
+             !        me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !      stop 'gcor_me 2'
+             !    continue 
+             !endif
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
@@ -17294,15 +17295,15 @@ module perturbation
                !
                iterm = fl%uniq(iclass,icoeff)
                !
-               me_class0(iclass) = gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)
-               !me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+               !me_class0(iclass) = gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)
+               me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
 
-               if (abs(gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)-&
-                       gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
-                       me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-                   stop 'gvib_me 1'
-                   continue 
-               endif
+               !if (abs(gvib_me(iclass)%me(iterm,nu_i,nu_j,k1,k2)-&
+               !        gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
+               !        me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+               !    stop 'gvib_me 1'
+               !    continue 
+               !endif
                !
              enddo
              !
@@ -17311,14 +17312,16 @@ module perturbation
              !
              !me_class0(Nclasses) = gvib_me(Nclasses)%me(icoeff,nu_i,nu_j,k1,k2)
              !
-             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
-             !me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-             if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
-                     gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
-                     me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-                   stop 'gvib_me 2'
-                 continue 
-             endif
+             !me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
+             !
+             me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !
+             !if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
+             !        gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
+             !        me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !      stop 'gvib_me 2'
+             !    continue 
+             !endif
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
@@ -17400,14 +17403,16 @@ module perturbation
                !
                iterm = pl%uniq(iclass,icoeff)
                !
-               me_class0(iclass) = vpot_me(iclass)%me(iterm,nu_i,nu_j,1,1)
-               !me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-               if (abs(vpot_me(iclass)%me(iterm,nu_i,nu_j,1,1)-&
-                       gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
-                       me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
-                   stop 'vpot 1'
-                   continue 
-               endif
+               !me_class0(iclass) = vpot_me(iclass)%me(iterm,nu_i,nu_j,1,1)
+               !
+               me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+               !
+               !if (abs(vpot_me(iclass)%me(iterm,nu_i,nu_j,1,1)-&
+               !        gme(iclass)%me(iterm,nu_i,nu_j))>small_) then 
+               !        me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+               !    stop 'vpot 1'
+               !    continue 
+               !endif
                !
              enddo
              !
@@ -17416,15 +17421,16 @@ module perturbation
              !
              !me_class0(Nclasses) = vpot_me(Nclasses)%me(icoeff,nu_i,nu_j,1,1)
              !
-             me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
-             !me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !me_class0(Nclasses) = gme_Nclass(icoeff,nu_i,nu_j)
              !
-             if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
-                     gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
-                     me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
-                   stop 'vpot 1'
-                 continue 
-             endif
+             me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !
+             !if (abs(gme_Nclass(icoeff,nu_i,nu_j)-&
+             !        gme(Nclasses)%me(icoeff,nu_i,nu_j))>small_) then 
+             !        me_class0(Nclasses) = gme(Nclasses)%me(icoeff,nu_i,nu_j)
+             !      stop 'vpot 1'
+             !    continue 
+             !endif
              !
              matelem = matelem + product(me_class0(1:Nclasses))
              !
@@ -17934,12 +17940,12 @@ module perturbation
     end subroutine calc_Vpot_me
     !
     !
-    subroutine calc_extF_me(ipar,extFme)
+    subroutine calc_extF_me(ipar,extFme,extFme_Nclass)
 
       integer(ik),intent(in) :: ipar
       type(me_class),intent(inout)   :: extFme(PT%Nclasses)
       !
-      !real(rk), allocatable,intent(out)   :: extFme_Nclass(:,:,:)
+      real(rk), allocatable,intent(out)   :: extFme_Nclass(:,:,:)
       integer(ik) :: iclass,nclass,dimen,nprim,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes,idimen,nterms
       integer(hik) :: matsize
       type(PTcoeffT),pointer  :: fl 
@@ -17975,14 +17981,14 @@ module perturbation
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
       !
-      !if (allocated(extFme_Nclass)) then
-      !  call ArrayStop("matelem_Nclass")
-      !  deallocate(extFme_Nclass)
-      !endif
+      if (allocated(extFme_Nclass)) then
+        call ArrayStop("matelem_Nclass")
+        deallocate(extFme_Nclass)
+      endif
       !
-      !allocate(extFme_Nclass(nterms_field,dimen,dimen), stat=info)
-      !call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
-      !extFme_Nclass= 0
+      allocate(extFme_Nclass(nterms_field,dimen,dimen), stat=info)
+      call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
+      extFme_Nclass= 0
       !
       do iclass = 1,nclass
         !
@@ -18013,7 +18019,7 @@ module perturbation
          extFme(iclass)%me(:,:,:) = extF_class(iclass)%me
       enddo   
       !
-      !extFme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      extFme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
       !
       deallocate(me_contr)
       call ArrayStop('PTstore_contr_matelem:me_contr')
@@ -32485,11 +32491,11 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' extF matrix of ',f15.4,' gb')") & 
                            nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
        !
-       !allocate(extF_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
-       !write(sclass,'(i4)') iclass
-       !skey = 'extF_me('//trim(adjustl(sclass))//')'
-       !call ArrayStart(trim(skey),info,1,rk,matsize)
-       !extF_me(iclass)%me = 0
+       allocate(extF_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
+       write(sclass,'(i4)') iclass
+       skey = 'extF_me('//trim(adjustl(sclass))//')'
+       call ArrayStart(trim(skey),info,1,rk,matsize)
+       extF_me(iclass)%me = 0
        !
        call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
        call store_contr_matelem_expansion(0,0,0,0,iclass,func_tag,0,0,dimen,nterms_uniq(iclass),me_contr)
@@ -32498,7 +32504,7 @@ subroutine PTstore_contr_matelem(jrot)
        call ArrayStart(trim(skey_cls),info,1_ik,rk,size(extF_class(iclass)%me,kind=hik))
        extF_class(iclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
        !
-       !extF_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
+       extF_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
        !
        deallocate(me_contr)
        call ArrayStop('PTstore_contr_matelem:me_contr')
