@@ -2150,6 +2150,10 @@ module fields
              !
              job%IOcontr_action = trim(w)
              !
+             if (trim(w)=='SAVE'.and.job%vib_contract) then
+               job%IOj0contr_action = 'SAVE'
+             endif
+             !
              if (nitems>=3) then
                !
                call readu(w)
