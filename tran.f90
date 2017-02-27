@@ -684,6 +684,8 @@ contains
        !
        do gamma = 1,sym%Nrepresen
           !
+          bset_contr(jind)%nsize(gamma) = 0
+          !
           if (.not.job%select_gamma(gamma)) cycle
           !
           write(jchar, '(i4)') jval(jind)
@@ -892,6 +894,8 @@ contains
       end subroutine filter
       !
  end subroutine read_eigenval
+
+
 
 
 

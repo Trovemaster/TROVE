@@ -939,15 +939,15 @@ contains
              !
              iID(ilevelI) = ID_I
              !
-             write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,2x,<nclasses>a3,1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+             write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
              ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
              eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
              eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
              !
-            enddo
-            !
-            nsizeI =  nsizeI + bset_contr(jind)%nsize(igamma)
-            !
+          enddo
+          !
+          nsizeI =  nsizeI + bset_contr(jind)%nsize(igamma)
+          !
         enddo
         !
       enddo

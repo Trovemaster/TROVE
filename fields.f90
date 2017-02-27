@@ -28,7 +28,7 @@ module fields
    public jobt, trove, manifold, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !public FLIndexQ_legatee
    !
-   public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized
+   public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
    !
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfrom_local2chi_by_fit,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,FLDVR_gmat_dvr,FLfromcartesian2local
@@ -203,7 +203,7 @@ module fields
       real(ark),pointer        ::  omega(:)      ! Harmonic frequencies 
       real(ark),pointer        ::  coord_f(:)      ! conversion factor to the standard coordinate (normal, morse ...)
       !
-      integer(ik)              ::  lincoord      ! degenerated cartesian coord. x,y, or z (1,2,3) or none (0)
+      integer(ik)              ::  lincoord = 0  ! degenerated cartesian coord. x,y, or z (1,2,3) or none (0)
                                                  !  in case of linear molecules 
       real(ark)                :: rho_border(2)  ! rhomim, rhomax - borders
       real(ark)                :: rhostep        ! step size
@@ -1456,6 +1456,10 @@ module fields
          !
          job%PTtype = trim(w)
          !
+       case("SINGULAR-AXIS") 
+         !
+         call readi(trove%lincoord)
+         !
        case("SYMGROUP","SYMMETRY","SYMM","SYM","SYM_GROUP") 
          !
          call readu(w)
@@ -1478,7 +1482,7 @@ module fields
          !
          job%isym_do = .true.
          !
-       case("REFER-CONF")
+       case("REFER-CONF","REFER-CONFIGURATION")
          !
          call readu(w)
          !
@@ -4672,7 +4676,7 @@ end subroutine check_read_save_none
       !
       ! Determine is this is a linear-type molecule and the singular axis lincoord = x,y,z
       !
-      trove%lincoord = 0
+      !trove%lincoord = 0
       !
       if (all(trove%a0(:,1)==0.0_rk).and.all(trove%a0(:,2)==0.0_rk)) trove%lincoord = 3
       if (all(trove%a0(:,2)==0.0_rk).and.all(trove%a0(:,3)==0.0_rk)) trove%lincoord = 1
@@ -4690,7 +4694,7 @@ end subroutine check_read_save_none
       !
       ! This can be a linear-type molecule also when the number of modes = 3N-5
       !
-      if (Nmodes==(3*Natoms-5)) then
+      if (Nmodes==(3*Natoms-5).and.trove%lincoord==0) then
           trove%lincoord = minloc(Inertm,dim=1)
       endif
       !
@@ -5179,7 +5183,7 @@ end subroutine check_read_save_none
            write(out,"(3f18.8)") trove%a0(iatom,:)
         enddo 
         !
-        if (trove%lincoord/=0) write(out,"('Molecular is linear lined along ',i4,' axis')") trove%lincoord
+        if (trove%lincoord/=0) write(out,"('Molecular is linear lying along ',i4,' axis')") trove%lincoord
 
     endif 
     !
@@ -14892,6 +14896,74 @@ end subroutine check_read_save_none
     !
    end subroutine FLfingerprint
 
+
+ !read eigenvalues and their assignment 
+ !
+ subroutine FLread_ZPE
+    !
+    implicit none
+    !
+    integer(ik)             :: nmodes, nroots, iroot, igamma,iounit, info, nroots_t, Npolyad_t,nsize,irec,ilevel,ideg
+    real(rk)                :: energy
+    character(cl)           :: filename, ioname, buf
+    character(4)            :: jchar,gchar
+    character(500)          :: buf500
+    integer(ik)             :: gamma
+    real(rk)                :: energy_
+    !
+    !type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
+    !
+    if (job%ZPE>0) return
+    ! 
+    nmodes = FLNmodes
+    !
+    gamma = 1
+    !
+    write(jchar, '(i4)') 0
+    write(gchar, '(i2)') gamma
+    !
+    filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+    !
+    write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', 0,gamma
+    !
+    call IOstart(trim(ioname), iounit)
+    open(unit = iounit, action = 'read',status='old' , file = filename)
+    !
+    ! Check the fingerprint of the computed eigenvectors. 
+    !
+    call FLfingerprint('read',iounit,0,job%Npolyads_prim,(/job%enercutoff%primt,job%enercutoff%contr/))
+    !
+    buf500 = ''
+    !
+    read(iounit, '(a)') buf500
+    read(iounit,"(i8,a4)") Npolyad_t,buf500(1:4)
+    read(iounit, '(a)') buf500
+    !
+    ! Start reading the description of the eigensolution. 
+    !
+    read(iounit,*) nroots_t,nsize
+    !
+    read(iounit, '(a)') buf500
+    if (buf500(1:3) == 'End') then 
+      stop 'FLread_ZPE: no energies in J=0,gamma=1 file'
+    endif 
+    !
+    read(buf500, *) irec, igamma, ilevel, ideg, energy
+    !
+    if (igamma/=gamma) then 
+      write(out,"('FLread_ZPE error: igamma/=gamma: ',2i4)") igamma,gamma
+      stop 'FLread_ZPE error: igamma/=gamma'
+    endif
+    !
+    job%zpe = energy
+    job%partfunc%zpe = energy
+    !
+ end subroutine FLread_ZPE
+
+
+
+
+
 !
 ! Assign PT-orders for different kinetic and potential expansion terms
 !
@@ -19293,10 +19365,10 @@ end subroutine check_read_save_none
      !
      if ( any( abs( chi(:)-chi_(:) )>10.0*sqrt(small_) ) ) then 
        !
-       write(out,'("poten_chi: Error in MLfromlocal2cartesian, r /= r_:")')
-       write(out,'(4x,<Ncoords>f18.6)') r(:)
-       write(out,'(4x,<Ncoords>f18.6)') r_(:)
-       write(out,'(4x,<Ncoords>e18.6)') r(:)-r_(:)
+       write(out,'("poten_chi: Error in MLfromlocal2cartesian, chi /= chi_:")')
+       write(out,'(4x,<Ncoords>f18.6)') chi(:)
+       write(out,'(4x,<Ncoords>f18.6)') chi_(:)
+       write(out,'(4x,<Ncoords>e18.6)') chi(:)-chi_(:)
        !stop "poten_chi: Error in MLfromlocal2cartesian, r /= r_"
        !
      endif 

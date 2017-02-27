@@ -6394,6 +6394,11 @@ module perturbation
       call check_point_active_space(job%IOeigen_action)
     endif 
     !
+    !
+    ! obtain zpe 
+    !
+    if (jrot>0.or..not.job%select_gamma(1)) call FLread_ZPE
+    !
     ! prepare the vectors to store also in the symmetrized representaion
     !
     if (job%IOeigen_compress) then
@@ -17582,6 +17587,8 @@ module perturbation
       !
       nterms_field = trove%g_cor(imode,jmode)%Ncoeff
       !
+      if (me%gcor(imode,jmode)%Ncoeff==0) return
+      !
       !matsize = int(nterms_field*dimen*dimen,hik)
       !
       !if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' gcor matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
@@ -17682,6 +17689,8 @@ module perturbation
       !
       nterms_field = trove%g_rot(imode,jmode)%Ncoeff
       !
+      if (me%grot(imode,jmode)%Ncoeff==0) return
+      !
       !matsize = int(nterms_field*dimen*dimen,hik)
       !
       !if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
@@ -17781,6 +17790,8 @@ module perturbation
       !
       nterms_field = trove%g_vib(imode,jmode)%Ncoeff
       !
+      if (me%gvib(imode,jmode)%Ncoeff==0) return
+      !
       !matsize = int(nterms_field*dimen*dimen,hik)
       !
       !if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
@@ -17817,8 +17828,13 @@ module perturbation
       !
       fl => me%gvib(imode,jmode)
       !
+      if (fl%Ncoeff==0) then 
+        write (out,"('calc_gvib_me-error: Ncoef = 0 in gvib imode,jmode',2i8)") imode,jmode
+        stop 'calc_gvib_me-error: Ncoef = 0 in gvib '
+      endif
+      !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,size(me_contr),kind(me_contr))
       !
       ! <p_i*G*p_j>
       call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
@@ -17854,7 +17870,7 @@ module perturbation
       endif
       !
       deallocate(me_contr)
-      call ArrayStop('PTstore_contr_matelem:me_contr')
+      call ArrayStop('PTstore_contr_matelem:me_contr:gvib')
       !
     end subroutine calc_gvib_me
 
@@ -17891,12 +17907,20 @@ module perturbation
       !
       nterms_field = me%poten%Ncoeff
       !
-      if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
+      if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a,2i9)') 'allocate array "me_contr", size = ',real(fl%Ncoeff*max(dimen,nprim)**2,rk)*8.0_rk/1024.0_rk**3,'gb',max(dimen,nprim),fl%Ncoeff
+      if (job%verbose>=7) then 
+        call MemoryReport
+      endif
       !
       !matsize = int(nterms_field*dimen*dimen,hik)
       !
-      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      if (allocated(me_contr)) then 
+        write (out,"('me_contr is allocated')")
+        stop 'me_contr is allocated'
+      endif
+      !
+      allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)),stat=info)
+      call ArrayStart('PTstore_contr_matelem:me_contr:Vpot',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       !if (allocated(vpotme_Nclass)) then
       !  call ArrayStop("matelem_Nclass")
@@ -17939,7 +17963,7 @@ module perturbation
       !vpotme_Nclass = me_contr
       !
       deallocate(me_contr)
-      call ArrayStop('PTstore_contr_matelem:me_contr')
+      call ArrayStop('PTstore_contr_matelem:me_contr:Vpot')
       !
     end subroutine calc_Vpot_me
     !
@@ -17973,6 +17997,8 @@ module perturbation
       nclass = PT%Nclasses
       dimen = contr(nclass)%nroots
       nprim = contr(nclass)%dimen
+      !
+      if (me%ExtF(ipar)%Ncoeff==0) return
       !
       fl => me%ExtF(ipar)
       !
@@ -30269,6 +30295,8 @@ end subroutine read_contr_ind
        do k1 = 1,PT%Nmodes
           do k2 = 1,PT%Nmodes
              !
+             if ( me%gvib(k1,k2)%Ncoeff<1 ) cycle
+             !
              fl => me%gvib(k1,k2)
              !
              fl%iorder = 0
@@ -30308,6 +30336,8 @@ end subroutine read_contr_ind
                !
                fl => me%grot(k1,k2)
                !
+               if ( me%grot(k1,k2)%Ncoeff<1 ) cycle
+               !
                fl%iorder = 0
                !
                do iterm = 1,fl%Ncoeff
@@ -30334,6 +30364,8 @@ end subroutine read_contr_ind
             do k2 = 1,3
                !
                fl => me%gcor(k1,k2)
+               !
+               if ( me%gcor(k1,k2)%Ncoeff<1 ) cycle
                !
                fl%iorder = 0
                !

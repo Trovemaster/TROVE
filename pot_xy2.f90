@@ -52,12 +52,11 @@ module pot_xy2
          f1a333,f2a333,f1a133,f2a133,f1a3333,f1a1333 ,      & 
          f3,f33  ,f333 ,f133 ,f3333,f1333      
 
-   real(ark)  :: y1,y3,v,coro,v0,a1(3),a0(3),a2(3),t1,t2,w(3),cosalpha
+   real(ark)  :: y1,y3,v,coro,v0,a1(3),a0(3),a2(3),t1,t2,w(3),cosalpha,xyz0(3,3)
    integer(ik) :: vtype
    character(len=cl)     :: txt
    
    if (verbose>=6) write(out,"('MLpoten_xy2_morbid/start')") 
-
      !
      vtype = 2
      !
@@ -117,6 +116,29 @@ module pot_xy2
         if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
         !
         !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
+        !
+     case('R1-R2-Y+X')
+        !
+        call MLfromlocal2cartesian(1_ik,local,xyz0)
+        !
+        a1(:) = xyz0(3,:) - xyz0(1,:)
+        a2(:) = xyz0(2,:) - xyz0(1,:)
+        !
+        t1 =  sqrt(sum(a1(:)**2))
+        t2 =  sqrt(sum(a2(:)**2))
+        !
+        a1 =  a1(:)/t1
+        a2 =  a2(:)/t2
+        !
+        w(:) = MLvector_product(a1,a2)
+        !
+        cosalpha = sum(a1(:)*a2(:))
+        !
+        txt = "pot_xy2"
+        !
+        alpha = aacos(cosalpha,txt)
+        !
+        !if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
         !
      end select 
      !
