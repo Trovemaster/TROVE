@@ -345,6 +345,7 @@ contains
              !
              if (.not.found) then 
                write(out,"('index_correlation: not found for J = ',i8,' -> problems with checkpoints?')") jval(jind)
+               write(out,"('J,icase,cnu,ideg:',2i6,<nclasses>i4,i4)") jval(jind),icase,cnu_i(:),ilambda
                stop 'index_correlation: not found'
              endif 
              !

@@ -1648,7 +1648,7 @@ contains
       !
       call TimerProbe('Intensity loop',real_time,cpu_time)
       !
-      time_per_line = real_time/real(itransit,rk)
+      time_per_line = real_time/real(min(itransit,1),rk)
       total_time_predict = time_per_line*real(Ntransit,rk)/3600.0
       !
       !if (job%verbose>=5) then

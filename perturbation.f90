@@ -5824,7 +5824,7 @@ module perturbation
        stop 'No symmetry defined, Nirr = 0'
      endif 
      !
-     if (job%verbose>=4) then 
+     if (job%verbose>=5) then 
         write(out,"(i7,'' : ' ',<Nclasses1>i5,' isym= (',<Nclasses1>i4,')',2x,<Nrepresen>(f12.4))") icoeff,cnu(:),&
                                 (contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses),Nirr_rk(1:Nrepresen)
      endif
@@ -5877,8 +5877,9 @@ module perturbation
    PT%Max_sym_levels(:) = Ntotal(:)
    !
    if (job%verbose>=3) then 
-      write(out,"(/'Total number of irr. representations: ',40i10)") Ntotal
+      write(out,"(/'Total number of irr. representations: ',40i10/)") Ntotal
    endif 
+   if (job%verbose>=5)  write(out,"('icoef  isym  ideg  irr. repres. ')")
    !
    do isym =1,sym%Nrepresen
      !
@@ -5964,14 +5965,11 @@ module perturbation
          PT%symactive_space(isym)%sym_N(Ntotal(isym)+i0,1) = icoeff
          PT%symactive_space(isym)%sym_N(Ntotal(isym)+i0,2) = i0
          !
-         do ideg = 1,sym%degen(isym)
-           !
-           if (job%verbose>=5) then 
-              write(out,"('icoef =',i,' isym =',i4,' ideg =',i4,' irr. repres.: ',<Ndeg>f18.8)") &
-                           icoeff,isym,ideg,irr_t(isym)%repres(Ntotal(isym)+i0,ideg,1:Ndeg)
-           endif
-           !
-         enddo 
+         if (job%verbose>=5) then 
+           do ideg = 1,sym%degen(isym)
+             write(out,"(i7,i4,i4,<Ndeg>f18.8)") icoeff,isym,ideg,irr_t(isym)%repres(Ntotal(isym)+i0,ideg,1:Ndeg)
+           enddo 
+         endif
          !
        enddo
        !
