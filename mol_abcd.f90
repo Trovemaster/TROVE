@@ -3026,7 +3026,7 @@ module mol_abcd
                 !
               elseif (ioper<=4+4*N_Cn+2*NC2) then !  sigmah
                 !
-                dst(7) = src(1)
+                dst(7) = src(7)
                 dst(1) = src(2)
                 dst(2) = src(1)
                 dst(3) = q2x
