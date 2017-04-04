@@ -32374,23 +32374,24 @@ subroutine PTstore_contr_matelem(jrot)
     !
     if (job%verbose>=5) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. unique terms, no. basis functions:', nterms_uniq(iclass), dimen
     !
-    if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=5) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
     !
-    allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-    if (info/=0) then
-      write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate me_contr(nterms_uniq,max(dimen,nprim),max(dimen,nprim))', &
-      'nterms_uniq, dimen, nprim =', nterms_uniq(iclass), dimen, nprim
-    endif
-    !
-    !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
+    matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
     !
     !if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' vpot matrix of ',f15.4,' gb')") & 
     !                    nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
     !
+    allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
+    !if (info/=0) then
+    !  write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate me_contr(nterms_uniq,max(dimen,nprim),max(dimen,nprim))', &
+    !  'nterms_uniq, dimen, nprim =', nterms_uniq(iclass), dimen, nprim
+    !endif
+    call ArrayStart('Vpot_me',info,1,rk,matsize)
+    !
+    !
     !allocate(Vpot_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,1,1), stat=info)
     !write(sclass,'(i4)') iclass
     !skey = 'vpot_me('//trim(adjustl(sclass))//')'
-    !call ArrayStart(trim(skey),info,1,rk,matsize)
     !vpot_me(iclass)%me = 0
     !
     call calc_contr_matelem_expansion_p0(iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
@@ -32404,6 +32405,8 @@ subroutine PTstore_contr_matelem(jrot)
     !Vpot_me(iclass)%me(:,:,:,1,1) = me_contr(:,:,:)
     !
     deallocate(me_contr)
+    !
+    call ArrayStop('Vpot_me')
     !
   enddo ! iclass
   !

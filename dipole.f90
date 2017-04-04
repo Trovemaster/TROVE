@@ -904,52 +904,36 @@ contains
     !
     if (job%exomol_format) then
       !
-      write(out,"(/a/)") 'States file in the Exomol format'
+      !write(out,"(/a/)") 'States file in the Exomol format'
       !
       allocate(iID(nlevels),stat=info)
       call ArrayStart('iID',info,size(iID),kind(iID))
       !
-      do jind = 1, nJ
-        !
-        nsizeI = 0
-        !
-        do igamma = 1,sym%Nrepresen
-          !
-          do ilevelI = 1,nlevels
-             !
-             indI = eigen(ilevelI)%jind
-             igammaI  = eigen(ilevelI)%igamma
-             !
-             if (indI/=jind.or.igamma/=igammaI) cycle
-             !
-             dimenI = bset_contr(indI)%Maxcontracts
-             !
-             !energy, quanta, and gedeneracy order of the initial state
-             !
-             jI = eigen(ilevelI)%jval
-             energyI = eigen(ilevelI)%energy-intensity%ZPE
-             quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
-             normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
-             !
-             ID_I = eigen(ilevelI)%ilevel + nsizeI
-             !
-             if (jI>0) ID_I = ID_I + bset_contr(1)%Maxcontracts*(2*jI-1)
-             !
-             ! store level's ID
-             !
-             iID(ilevelI) = ID_I
-             !
-             write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
-             ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
-             eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
-             eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
-             !
-          enddo
-          !
-          nsizeI =  nsizeI + bset_contr(jind)%nsize(igamma)
-          !
-        enddo
-        !
+      do ilevelI = 1,nlevels
+         !
+         indI = eigen(ilevelI)%jind
+         igammaI  = eigen(ilevelI)%igamma
+         !
+         !if (indI/=jind.or.igamma/=igammaI) cycle
+         !
+         dimenI = bset_contr(indI)%Maxcontracts
+         !
+         !energy, quanta, and gedeneracy order of the initial state
+         !
+         jI = eigen(ilevelI)%jval
+         energyI = eigen(ilevelI)%energy-intensity%ZPE
+         quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
+         normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+         !
+         ID_I = eigen(ilevelI)%ilevel + bset_contr(indI)%nsize_base(igammaI)
+         !
+         iID(ilevelI) = ID_I
+         !
+         !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+         !ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
+         !eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
+         !eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
+         !
       enddo
       !
     endif
@@ -1487,10 +1471,21 @@ contains
                !$omp critical
                if (job%exomol_format) then
                  !
-                 write(out, "( i12,1x,i12,1x,2(1x,es16.8),' ||')")&
+                 write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
                               iID(ilevelF),iID(ilevelI),A_einst,nu_if     
                               !
-               elseif (job%verbose>=4) then 
+               elseif (intensity%output_short) then 
+                 !
+                 write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
+                              &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
+                              &2(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
+                              !
+                              jF,igammaF,jI,igammaI, & 
+                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
+                              A_einst,absorption_int,&
+                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
+               else
+
                  !
                 !write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
                 !             &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
@@ -1511,25 +1506,9 @@ contains
                               eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
                               itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
                               linestr_deg(1:ndegI,1:ndegF)
-                              !
-                              !                       
-               else
-                 !
-                 write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
-                              &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
-                              &2(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
-                              !
-                              jF,igammaF,jI,igammaI, & 
-                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                              !eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                              !eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                              !eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                              !eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
-                              !linestr,
-                              A_einst,absorption_int,&
-                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
-                              !itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
-                              !linestr_deg(1:ndegI,1:ndegF)                                   !
+                              !            
+
+
                endif
                !$omp end critical
                !             
@@ -1656,12 +1635,12 @@ contains
       !endif
       !
       if (job%verbose>=3) then
-          write(out,"('--- ',t4,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") itransit,real_time,1.0_rk/time_per_line,total_time_predict
+          write(out,"('--- ',t4,f18.6,2x,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
       if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=4) then
          !
-         write(out,"(/'Recomended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
+         write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !
          int_increm = max(Ntransit/int(total_time_predict/intensity%wallclock),1)
          !
@@ -1748,6 +1727,8 @@ contains
       endif 
       !
       if (job%verbose>=5) call TimerReport
+      !
+      call flush(out) 
       !
     end do Ilevels_loop
     !
@@ -4562,6 +4543,11 @@ contains
                   kI = bset_contr(indI)%k(irootI)
                   !
                   if (abs(kF - kI)>1) cycle loop_I
+                  !if ( kI< kF - 1) cycle loop_I
+                  !if ( kI> kF + 1) then 
+                  !  half_ls(irootF) = half_ls(irootF)*(-1.0_rk)**(sigmaF)
+                  !  cycle loop_F
+                  !endif
                   !
                   icontrI = bset_contr(indI)%iroot_correlat_j0(irootI)
                   !

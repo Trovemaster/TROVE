@@ -3175,6 +3175,18 @@ module fields
              !              
              intensity%pruning = .true.
              !
+           case('OUTPUT')
+             !
+             call readu(w)
+             !              
+             if (trim(w)=='SHORT') then 
+               intensity%output_short = .true.
+             elseif(trim(w)=='LONG') then
+               intensity%output_short = .false.
+             else
+               call report ("Illegal OUTPUT value (expected SHORT or LONG) "//trim(w),.true.)
+             endif
+             !
            case('GNS')
              !
              i = 0

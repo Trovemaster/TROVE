@@ -36,7 +36,8 @@ module tran
     type(PTrotquantaT), pointer :: rot_index(:, :)
     integer(ik),        pointer :: icontr_correlat_j0(:, :)
     integer(ik),        pointer :: iroot_correlat_j0(:)
-    integer(ik),        pointer :: nsize(:)
+    integer(ik),        pointer :: nsize(:)  ! number of levels in a J,Gamma-block, can be zero for not used symmetry
+    integer(ik),        pointer :: nsize_base(:) ! number of levels before current J,gamma-vbloxk, needed to count exomol-ID states
     type(PTrepresT),    pointer :: irr(:)
  end type bset_contrT
  ! 
@@ -130,6 +131,9 @@ contains
        !
        allocate(bset_contr(jind)%nsize(sym%Nrepresen),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%nsize),kind(bset_contr(jind)%nsize))
+       !
+       allocate(bset_contr(jind)%nsize_base(sym%Nrepresen),stat = info)
+       call ArrayStart('bset_contr',info,size(bset_contr(jind)%nsize_base),kind(bset_contr(jind)%nsize_base))
        !
        allocate(bset_contr(jind)%icontr2icase(ncontr, 2),bset_contr(jind)%icase2icontr(ncases, nlambdas),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%icontr2icase),kind(bset_contr(jind)%icontr2icase))
@@ -445,7 +449,7 @@ contains
     integer(ik), intent(in) :: njval, jval(njval)
 
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
-                               ideg, ilarge_coef,k0,tau0,nclasses,nsize,   &
+                               ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
                                iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
     integer(ik),allocatable :: ktau_rot(:,:),isym(:)
     !
@@ -504,9 +508,8 @@ contains
     !
     do jind = 1, njval
        !
+       nsize_base = 0
        do gamma = 1,sym%Nrepresen
-          !
-          if (.not.job%select_gamma(gamma)) cycle
           !
           write(jchar, '(i4)') jval(jind)
           write(gchar, '(i2)') gamma
@@ -556,6 +559,15 @@ contains
           ! Start reading the description of the eigensolution. 
           !
           read(iounit,*) nroots_t,nsize
+          !
+          bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
+          !
+          nsize_base = nsize_base + nsize
+          !
+          if (.not.job%select_gamma(gamma)) then
+            close(iounit)
+            cycle
+          endif
           !
           if ( .not.job%IOvector_symm.and.nroots_t /= bset_contr(jind)%Maxcontracts) stop 'read_eigenval error: wrong number of contracted solutions'
           !
@@ -624,7 +636,7 @@ contains
           end do
           !
           close(iounit)
-          close(jounit)
+          if (job%TMpruning) close(jounit)
           !
        enddo
     enddo
@@ -656,6 +668,10 @@ contains
       eigen(ilevel)%quanta = 0
       !
     enddo
+    !
+    if (job%exomol_format) then
+      write(out,"(/a/)") 'States file in the Exomol format'
+    endif
     !
     ! Now we can actually read and store the energies and their description. 
     !
@@ -747,6 +763,21 @@ contains
              endif 
              !
              !if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
+             !
+             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0)) then
+               !
+               !write(out,"(/a/)") 'States file in the Exomol format'
+               !
+               ID_ = ilevel + bset_contr(jind)%nsize_base(gamma)
+               !
+               J_ = Jval(jind)
+               !
+               write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+               ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),normal(1:nmodes),sym%label(isym(1:nclasses)),&
+               ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
+               largest_coeff,ilevel,quanta(1:nmodes)
+               !
+             endif
              !
              passed = .true.
              if (istate2ilevel(jind,igamma,ilevel)==0) passed = .false.
