@@ -411,7 +411,7 @@ module perturbation
    ! some parameters that can be used for bechmarking at compilation level
    !
    integer, parameter :: verbose     = 3       ! Verbosity level
-   logical, parameter :: debug_check_symmetries  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
+   logical, parameter :: debug_check_symmetries  = .true.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
    logical, parameter :: debug_cut_matelem_with_enermax  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
 
 

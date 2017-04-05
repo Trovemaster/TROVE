@@ -2928,11 +2928,95 @@ module mol_abcd
           q2y= src(6)
           !
           ! for odd Dnh groups
+          ! for odd Dnh groups
           !
-          if (mod(sym%N,2)==1) then
+          if (mod(sym%N,2)==1) then 
               !
-              write(out,"('R1-R2-Y+X+Y-X-R: Dnh for odd n is not implemented yet')")
-              stop 'R1-R2-Y+X+Y-X-R: Dnh for odd n is not implemented yet'
+              if (ioper==1) then ! E 
+                !
+                dst = src
+                !
+              elseif (ioper<=1+2*N_Cn) then !  Cinf
+                !
+                ioper_ =ioper-1 
+                irot = (ioper_+1)/2
+                !
+                phi_n = phi*irot
+                !
+                ! Second oper in a class is with negative phi
+                !if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+                !
+                dst(1) = src(1)
+                dst(2) = src(2)
+                dst(3) = src(3)
+                dst(4) = q1x*cos(phi_n)-q1y*sin(phi_n)
+                dst(5) = q1x*sin(phi_n)+q1y*cos(phi_n)
+                dst(6) = q2x*cos(phi_n)-q2y*sin(phi_n)
+                dst(7) = q2x*sin(phi_n)+q2y*cos(phi_n)
+                !
+              elseif (ioper<=1+2*N_Cn+Nrot) then !  C'2
+                !
+                irot = ioper-(1+2*N_Cn)
+                !
+                phi_n = phi*irot*2.0_ark
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(6) = q1x*cos(phi_n)+q1y*sin(phi_n)
+                dst(7) = q1x*sin(phi_n)-q1y*cos(phi_n)
+                dst(4) = q2x*cos(phi_n)+q2y*sin(phi_n)
+                dst(5) = q2x*sin(phi_n)-q2y*cos(phi_n)
+                !
+              elseif (ioper==1+2*N_Cn+Nrot+1) then ! sigmah
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(6) = src(4)
+                dst(7) = src(5)
+                dst(4) = src(6)
+                dst(5) = src(7)
+                !
+              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn) then !  Sinf
+                !
+                ioper_ = ioper-(1+2*N_Cn+Nrot+1)
+                !
+                irot = (ioper_+1)/2
+                !
+                phi_n = phi*irot
+                !
+                ! Second oper in a class is with negative phi
+                !if (mod(ioper_,2)==0)  phi_n = -phi_n
+                !
+                dst(1) = src(1)
+                dst(2) = src(3)
+                dst(3) = src(2)
+                dst(6) = (q1x*cos(phi_n)-q1y*sin(phi_n))
+                dst(7) = (q1x*sin(phi_n)+q1y*cos(phi_n))
+                dst(4) = (q2x*cos(phi_n)-q2y*sin(phi_n))
+                dst(5) = (q2x*sin(phi_n)+q2y*cos(phi_n))
+                !
+              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+                !
+                irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
+                !
+                phi_n = phi*irot*2.0_ark
+                !
+                dst(1) = src(1)
+                dst(2) = src(2)
+                dst(3) = src(3)
+                dst(4) = ( q1x*cos(phi_n)+q1y*sin(phi_n))
+                dst(5) = ( q1x*sin(phi_n)-q1y*cos(phi_n))
+                dst(6) = ( q2x*cos(phi_n)+q2y*sin(phi_n))
+                dst(7) = ( q2x*sin(phi_n)-q2y*cos(phi_n))
+                !
+              else
+                !
+                write (out,"('ML_symmetry_transformation_abcd  in Dinfty: operation ',i8,' unknown')") ioper
+                stop 'ML_symmetry_transformation_abcd Dinfty - bad operation. type'
+         
+              endif 
               !
           else ! for even Dnh groups
               !
