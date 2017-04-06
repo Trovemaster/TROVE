@@ -2688,7 +2688,7 @@ module mol_abcd
                 !
                 irot = ioper-(1+2*N_Cn)
                 !
-                phi_n = phi*irot
+                phi_n = phi*irot*2.0_ark
                 !
                 dst(1) = src(1)
                 dst(2) = src(3)
@@ -2727,11 +2727,11 @@ module mol_abcd
                 dst(4) = (q2x*cos(phi_n)-q2y*sin(phi_n))
                 dst(5) = (q2x*sin(phi_n)+q2y*cos(phi_n))
                 !
-              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  sigmav
                 !
                 irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
                 !
-                phi_n = phi*irot
+                phi_n = phi*irot*2.0_ark
                 !
                 dst(1) = src(1)
                 dst(2) = src(2)
@@ -2747,21 +2747,6 @@ module mol_abcd
                 stop 'ML_symmetry_transformation_abcd Dinfty - bad operation. type'
          
               endif 
-              !
-              !do ioper_=1,sym%Noper/2
-              !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-              !  repres ( ioper_+sym%Noper/2,:,:)= sym%irr(6, ioper_)%repres
-              !enddo
-              !
-              !do ioper_=1,sym%Noper
-              !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-              !  !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
-              !enddo
-              !
-              !dst(4) = repres(ioper,1,1)*src(4)+repres(ioper,1,2)*src(5)
-              !dst(5) = repres(ioper,2,1)*src(4)+repres(ioper,2,2)*src(5)
-              !dst(6) = repres(ioper,1,1)*src(6)+repres(ioper,1,2)*src(7)
-              !dst(7) = repres(ioper,2,1)*src(6)+repres(ioper,2,2)*src(7)
               !
           else ! for even Dnh groups
               !
@@ -2928,9 +2913,11 @@ module mol_abcd
           q2y= src(6)
           !
           ! for odd Dnh groups
-          ! for odd Dnh groups
           !
           if (mod(sym%N,2)==1) then 
+              !
+              write(out,"('R1-R2-Y+X+Y-X-R: Dnh for odd n is not implemented yet')")
+              stop 'R1-R2-Y+X+Y-X-R: Dnh for odd n is not implemented yet'
               !
               if (ioper==1) then ! E 
                 !
@@ -2944,7 +2931,7 @@ module mol_abcd
                 phi_n = phi*irot
                 !
                 ! Second oper in a class is with negative phi
-                !if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+                if ( mod(ioper_,2)==0 ) phi_n = -phi_n
                 !
                 dst(1) = src(1)
                 dst(2) = src(2)
@@ -2987,7 +2974,7 @@ module mol_abcd
                 phi_n = phi*irot
                 !
                 ! Second oper in a class is with negative phi
-                !if (mod(ioper_,2)==0)  phi_n = -phi_n
+                if (mod(ioper_,2)==0)  phi_n = -phi_n
                 !
                 dst(1) = src(1)
                 dst(2) = src(3)
@@ -2997,7 +2984,7 @@ module mol_abcd
                 dst(4) = (q2x*cos(phi_n)-q2y*sin(phi_n))
                 dst(5) = (q2x*sin(phi_n)+q2y*cos(phi_n))
                 !
-              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  sigmav
                 !
                 irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
                 !

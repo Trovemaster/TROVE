@@ -770,37 +770,41 @@ contains
        !
        ! E nrotxCinf nrotxsigmav i  nrotxSinf nrotxC'2
        !
+       allocate(iclass_of(sym%Noper),stat=alloc)
+       if (alloc/=0) stop 'symmetry: iclass_ alloc error'
+       iclass_of = 0
+       !
+       sym%label(1:4)=(/'A1''','A2''','A1"','A2"'/)
+       !
        sym%characters(:,:) = 0
        !
        ! A1g,A1u,A2g,A2u:
        ! E
-       sym%characters(1:4,1) = 1
+       sym%characters(1:4,1) = 1.0_ark
        ! Cinf
-       sym%characters(1:4,1+1:1+N_Cn) = 1
-       ! sigmav
-       sym%characters(1,1+N_Cn+1) = 1
-       sym%characters(2,1+N_Cn+1) =-1
-       sym%characters(3,1+N_Cn+1) = 1
-       sym%characters(4,1+N_Cn+1) =-1
-       ! i
-       sym%characters(1,1+N_Cn+2) = 1
-       sym%characters(2,1+N_Cn+2) = 1
-       sym%characters(3,1+N_Cn+2) =-1
-       sym%characters(4,1+N_Cn+2) =-1
-       ! Sinf
-       sym%characters(1,1+N_Cn+2+1:1+N_Cn+2+N_Cn) = 1
-       sym%characters(2,1+N_Cn+2+1:1+N_Cn+2+N_Cn) = 1
-       sym%characters(3,1+N_Cn+2+1:1+N_Cn+2+N_Cn) =-1
-       sym%characters(4,1+N_Cn+2+1:1+N_Cn+2+N_Cn) =-1
+       sym%characters(1:4,1+1:1+N_Cn) = 1.0_ark
        ! C'inf
-       sym%characters(1,1+N_Cn+2+N_Cn+1) = 1
-       sym%characters(2,1+N_Cn+2+N_Cn+1) =-1
-       sym%characters(3,1+N_Cn+2+N_Cn+1) =-1
-       sym%characters(4,1+N_Cn+2+N_Cn+1) = 1
+       sym%characters(1,1+N_Cn+1) = 1._ark
+       sym%characters(2,1+N_Cn+1) =-1._ark
+       sym%characters(3,1+N_Cn+1) = 1._ark
+       sym%characters(4,1+N_Cn+1) =-1._ark
+       ! sigmah
+       sym%characters(1,1+N_Cn+2) = 1._ark
+       sym%characters(2,1+N_Cn+2) = 1._ark
+       sym%characters(3,1+N_Cn+2) =-1._ark
+       sym%characters(4,1+N_Cn+2) =-1._ark
+       ! Sinf
+       sym%characters(1,1+N_Cn+2+1:1+N_Cn+2+N_Cn) = 1._ark
+       sym%characters(2,1+N_Cn+2+1:1+N_Cn+2+N_Cn) = 1._ark
+       sym%characters(3,1+N_Cn+2+1:1+N_Cn+2+N_Cn) =-1._ark
+       sym%characters(4,1+N_Cn+2+1:1+N_Cn+2+N_Cn) =-1._ark
+       ! sigmav
+       sym%characters(1,1+N_Cn+2+N_Cn+1) = 1._ark
+       sym%characters(2,1+N_Cn+2+N_Cn+1) =-1._ark
+       sym%characters(3,1+N_Cn+2+N_Cn+1) =-1._ark
+       sym%characters(4,1+N_Cn+2+N_Cn+1) = 1._ark
        !
        !sym%label(1:4)=(/'A1g','A2g','A1u','A2u'/)
-       !
-       sym%label(1:4)=(/'A1''','A2''','A1"','A2"'/)
        !
        !sym%label=(/'A1''','A2''','E'' ','A1"','A2"','E" '/)
        !
@@ -813,27 +817,46 @@ contains
          !
          irep = irep + 1
          !
+         sym%lquant(irep  ) = k
+         sym%lquant(irep+1) = k
+         !
          write(Kchar, '(i4)') K
          !
          sym%label(irep  ) = 'E'//trim(adjustl(Kchar))//''''
          sym%label(irep+1) = 'E'//trim(adjustl(Kchar))//'"'
          !
+         ! E 
+         !
          sym%characters(irep  ,1) = 2.0_ark
          sym%characters(irep+1,1) = 2.0_ark
+         !
+         ! Cn
+         !
+         do irot = 1,N_Cn
+           !
+           sym%characters(irep  ,1+irot)          = 2.0_ark*cos(phi*irot*k)
+           sym%characters(irep+1,1+irot)          = 2.0_ark*cos(phi*irot*k)
+           !
+         enddo
+         !
+         ! C2'
+         !
+         sym%characters(irep  ,1+N_Cn+2) = 0
+         sym%characters(irep+1,1+N_Cn+2) = 0
+         !
+         ! sigmah
          !
          sym%characters(irep  ,1+N_Cn+2) = 2.0_ark
          sym%characters(irep+1,1+N_Cn+2) =-2.0_ark
          !
          do irot = 1,N_Cn
-           sym%characters(irep  ,1+irot)          = 2.0_ark*cos(phi*irot*k)
-           sym%characters(irep+1,1+irot)          = 2.0_ark*cos(phi*irot*k)
+           !
            sym%characters(irep  ,1+N_Cn+2+irot)   = 2.0_ark*cos(phi*irot*k)
            sym%characters(irep+1,1+N_Cn+2+irot)   =-2.0_ark*cos(phi*irot*k)
            !
-           sym%lquant(irep  ) = k
-           sym%lquant(irep+1) = k
-           !
          enddo
+         !
+         sym%characters(irep+1,1+2*N_Cn+1) = 0 
          !
          irep = irep + 1
          !
@@ -869,6 +892,60 @@ contains
        call irr_allocation
        !
        ! Generate irr-representations
+       !
+       do ioper = 1,sym%Noper
+         !
+         factor = 1.0_ark
+         !
+         if (ioper==1) then ! E 
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(3,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(4,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn) then !  Cinf
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(3,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(4,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn+Nrot) then !  C2'
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) =-1.0_ark
+           sym%irr(3,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(4,ioper)%repres(1,1) =-1.0_ark
+           !
+         elseif (ioper==1+2*N_Cn+Nrot+1) then ! sigmah
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(3,ioper)%repres(1,1) =-1.0_ark
+           sym%irr(4,ioper)%repres(1,1) =-1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn) then !  Sinf
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(3,ioper)%repres(1,1) =-1.0_ark
+           sym%irr(4,ioper)%repres(1,1) =-1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then ! sigmav
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) =-1.0_ark
+           sym%irr(3,ioper)%repres(1,1) =-1.0_ark
+           sym%irr(4,ioper)%repres(1,1) = 1.0_ark
+           !
+         else
+           !
+           stop  'symmetry: illegal ioper'
+           !
+         endif
+         !
+       enddo
        !
        irep = 4
        do k = 1,(sym%Nrepresen-4)/2
@@ -916,11 +993,11 @@ contains
              sym%irr(irep+1,ioper)%repres(2,1) = sin(phi_n)
              sym%irr(irep+1,ioper)%repres(2,2) = cos(phi_n)
              !
-           elseif (ioper<=1+2*N_Cn+Nrot) then !  sigmav
+           elseif (ioper<=1+2*N_Cn+Nrot) then !  C2'
              !
              irot = ioper-(1+2*N_Cn)
              !
-             phi_n = phi*irot*k
+             phi_n = phi*irot*k*2.0_ark
              !
              sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
              sym%irr(irep,ioper)%repres(1,2) = sin(phi_n)
@@ -929,15 +1006,12 @@ contains
              sym%irr(irep,ioper)%repres(2,2) =-cos(phi_n)
              !
              sym%irr(irep+1,ioper)%repres(1,1) = cos(phi_n)
-             sym%irr(irep+1,ioper)%repres(1,2) =-sin(phi_n)
+             sym%irr(irep+1,ioper)%repres(1,2) = sin(phi_n)
              !
-             sym%irr(irep+1,ioper)%repres(2,1) =-sin(phi_n)
+             sym%irr(irep+1,ioper)%repres(2,1) = sin(phi_n)
              sym%irr(irep+1,ioper)%repres(2,2) =-cos(phi_n)
              !
-           elseif (ioper==1+2*N_Cn+Nrot+1) then ! i
-             !
-             phi_n = 0
-             factor = -1.0_ark
+           elseif (ioper==1+2*N_Cn+Nrot+1) then ! sigmah
              !
              sym%irr(irep,ioper)%repres(1,1) = 1.0_ark
              sym%irr(irep,ioper)%repres(1,2) = 0.0_ark
@@ -974,11 +1048,11 @@ contains
              sym%irr(irep+1,ioper)%repres(2,1) =-sin(phi_n)
              sym%irr(irep+1,ioper)%repres(2,2) =-cos(phi_n)
              !
-           elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+           elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then ! sigmav
              !
              irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
              !
-             phi_n  = phi*irot*k
+             phi_n  = phi*irot*k*2.0_ark
              !
              sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
              sym%irr(irep,ioper)%repres(1,2) = sin(phi_n)
@@ -1003,6 +1077,25 @@ contains
          irep = irep + 1
          !
        enddo
+       ! characters as traces of the corresponding representations 
+       !
+       do irep = 1,sym%Nrepresen
+         ioper = 0
+         do iclass = 1,sym%Nclasses
+           do ielem =1,sym%Nelements(iclass)
+             ioper = ioper + 1
+             f_t = 0
+             do k = 1,sym%degen(irep)
+                 f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+             enddo
+             sym%characters(irep,iclass) = f_t
+           enddo
+         enddo
+       enddo
+       !
+       deallocate(iclass_of)
+       !
+       !----------------------------
        !
        ! do the even part in the same order of operations as the odd  part
        !
