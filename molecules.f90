@@ -94,6 +94,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy3_morbid_10
          !
+    case('POTEN_XY3_MORBID_11') 
+         !
+         MLpotentialfunc => MLpoten_xy3_morbid_11
+         !
     case('POTEN_XY2_SCHWENKE') 
          !
          MLpotentialfunc => MLpoten_xy2_schwenke
@@ -435,6 +439,12 @@ end function ML_MEPfunc
     case('HOOH_MB')
        !
        MLextF_func => MLdms_hooh_MB
+       !
+       ! Molecular Bond representaion of the DMS of HPPH
+       !
+    case('HPPH_MB')
+       !
+       MLextF_func => MLdms_hpph_MB
        !
        ! Molecular Bond representaion of the DMS of HCCH
        !

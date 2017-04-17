@@ -6990,7 +6990,8 @@ end subroutine check_read_save_none
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
         trim(trove%IO_potential)=='READ') then 
         !
-        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
+        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
+        !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
         if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
@@ -13334,6 +13335,8 @@ end subroutine check_read_save_none
         !
         if (FLl2_coeffs) then
           !
+          Ncoeff = trove%RangeOrder(2)
+          !
           write(chkptIO_kin,"(3i9,10x,a)") trove%L2_vib(1,1)%Npoints,trove%L2_vib(1,1)%Orders,Ncoeff,"<- L2_vib Npoints,Norder,Ncoeff"
           !
           do k1 = 1,Nmodes
@@ -13689,7 +13692,7 @@ end subroutine check_read_save_none
                   fl => trove%L2_vib(k1,k2)
                   fl%Ncoeff = Tcoeff
                   !
-                  call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+                  call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
                   !
                   fl%field = 0
                   fl%iorder = 0
@@ -13748,7 +13751,7 @@ end subroutine check_read_save_none
                   fl => trove%L2_vib(k1,k2)
                   fl%Ncoeff = Tcoeff
                   !
-                  call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+                  call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
                   read(chkptIO) fl%field     
                   read(chkptIO) fl%iorder 
                   !
@@ -13952,7 +13955,7 @@ end subroutine check_read_save_none
           read(chkptIO,*) Tpoints,Torder,Tcoeff
           !
           if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
-          if (Torder/=KinOrder) stop "L2vib-ASCII-chk Order is wrong"
+          if (Torder/=2) stop "L2vib-ASCII-chk Order is wrong"
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -13960,7 +13963,7 @@ end subroutine check_read_save_none
               fl => trove%L2_vib(k1,k2)
               fl%Ncoeff = Tcoeff
               !
-              call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'L2_vib')
+              call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
               forall(n=1:Tcoeff) fl%ifromsparse(1:n) = (/(n,n=1, Tcoeff)/)            
               fl%sparse = .true.
               !
@@ -14615,7 +14618,7 @@ end subroutine check_read_save_none
      !    
      target_index = 0
      target_index(1) = trove%NKinOrder 
-     Ncoeffmax= FLQindex(trove%Nmodes,target_index)
+     Ncoeffmax= FLQindex(trove%Nmodes_e,target_index)
      !
      ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
      !
@@ -14939,7 +14942,7 @@ end subroutine check_read_save_none
     write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', 0,gamma
     !
     call IOstart(trim(ioname), iounit)
-    open(unit = iounit, action = 'read',status='old' , file = filename)
+    open(unit = iounit, action = 'read',status='old' , file = filename,err=14)
     !
     ! Check the fingerprint of the computed eigenvectors. 
     !
@@ -14969,6 +14972,10 @@ end subroutine check_read_save_none
     !
     job%zpe = energy
     job%partfunc%zpe = energy
+    !
+    return
+    !
+14  if (job%verbose>=3) write(out,"('Warning: the egine_descr0_1.chk files does nto exist to define the ZPE value; default will be used')")
     !
  end subroutine FLread_ZPE
 
@@ -15331,6 +15338,8 @@ end subroutine check_read_save_none
                  !
                  Tcoeff = fl%Ncoeff
                  !
+                 if (Tcoeff<1) cycle
+                 !
                  allocate (fl%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
                  call ArrayStart('trove%L2_vib%me',alloc,size(fl%me),kind(fl%me))
                  !
@@ -15604,12 +15613,12 @@ end subroutine check_read_save_none
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
            !
-           if (trove%sparse) then 
-             !
-             write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
-             stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
-             !
-           endif
+           !if (trove%sparse) then 
+           !  !
+           !  write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
+           !  !stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
+           !  !
+           !endif
            !
            !
            ! Allocation of the potential and kinetic 1d matrixes
@@ -15865,7 +15874,7 @@ end subroutine check_read_save_none
               stop 'me_numerov, phivphi_t  - out of memory'
            end if
            !
-           !$omp do private(vl,unitfname,io_slot,k,vr,Tcoeff,iterm,k1,k2) schedule(dynamic)
+           !$omp do private(vl,unitfname,io_slot,k,vr,Tcoeff,iterm,k1,k2,mat_t) schedule(dynamic)
            do vl = 0,bs%Size
               !
               write(unitfname,"('Numerov basis set # ',i6)") nu_i
@@ -15886,7 +15895,7 @@ end subroutine check_read_save_none
                   !
                   do iterm = 1,Tcoeff
                     !
-                    phivphi_t(:) = phil(:)*trove%poten%field(icoeff,:)*phir(:)
+                    phivphi_t(:) = phil(:)*trove%poten%field(iterm,:)*phir(:)
                     !
                     trove%poten%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                     !
@@ -15957,10 +15966,6 @@ end subroutine check_read_save_none
                          do iterm = 1,Tcoeff
                             !
                             if (k1==Nmodes.and.k2==Nmodes) then 
-                               !
-                               ! This term can be combined with the pseudopotential part.
-                               ! It will allow us to spare additional array and i.e. memory
-                               ! and it is also necessary in case of the singular solution to do so.
                                !
                                phivphi_t(:) =-dphil(:)*trove%L2_vib(k1,k2)%field(iterm,:)*dphir(:)
                                !
@@ -17788,6 +17793,10 @@ end subroutine check_read_save_none
         case('gcor')
           !
           trove%g_cor(k1,k2)%iorder(:) = field(:)
+          !
+        case('L2vib')
+          !
+          trove%L2_vib(k1,k2)%iorder(:) = field(:)
           !
         case('externalF')
           !

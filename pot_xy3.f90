@@ -12,7 +12,7 @@ module pot_xy3
   public MLpoten_xy3_morbid_10,MLpoten_xy3_morbid_delta,MLpoten_xy3_handy,MLpoten_xy3_sears
   public MLdms2xyz_xy3_mb,MLdms2xyz_xy3_symmb,MLpoten_xy3_morbid_45760,MLloc2pqr_xy3,MLdms2xyz_xy3_mb4
   public MLspinspin_xy3_mb
-  public MLpoten_oh3p_mep,ML_MEP_NH3,MLpoten_xy3_HSL
+  public MLpoten_oh3p_mep,ML_MEP_NH3,MLpoten_xy3_HSL,MLpoten_xy3_morbid_11
 
   private
  
@@ -892,6 +892,121 @@ module pot_xy3
       if (verbose>=6) write(out,"('MLpoten_xy3_morbid_10/end')") 
  
  end function MLpoten_xy3_morbid_10
+
+
+  function MLpoten_xy3_morbid_11(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)          :: N
+
+   real(ark)            ::  r14,r24,r34,alpha1,alpha2,alpha3,alpha0
+   real(ark)            ::  y1,y2,y3,y4,y5
+   real(ark)            ::  v0,rhoe,v1,v2,v3,v4,v5,v6,rho,re14,aa1,tau
+   real(ark)            ::  sinrho,alpha,coro,tau_2,cosalpha,sinphi,phi1,phi2,phi3,delta
+      !
+      if (verbose>=6) write(out,"('MLpoten_xy3_morbid_11/start')") 
+      !
+      re14    = force(1)
+      !
+      alpha0  = force(2)*pi/180.0_ark
+      rhoe    = pi-asin(2.0_ark*sin(alpha0*0.5_ark)/sqrt(3.0_ark))
+      !
+      aa1     = force(3)
+      !
+      r14    = local(1) ;  r24    = local(2) ;  r34    = local(3)
+      !
+      if (size(local)==6.and.molec%Ndihedrals==1) then 
+         !
+         select case(trim(molec%coords_transform))
+         case default
+            !
+            write (out,"('MLpoten_xy3_morbid_10: coord. type ',a,' unknown')") trim(molec%coords_transform)
+            stop 'MLpoten_xy3_morbid_10 - bad coord. type'
+            !
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+            !
+            alpha3 = local(4)
+            alpha2 = local(5)
+            !
+            delta = local(6)
+            !
+            sinphi = sin(alpha2*0.5_ark)/cos(delta)
+            phi2 = asin(sinphi)*2.0_ark
+            phi2 = mod(phi2+2.0_ark*pi,2.0_ark*pi)
+            !
+            sinphi = sin(alpha3*0.5_ark)/cos(delta)
+            phi3 = asin(sinphi)*2.0_ark
+            phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
+            phi1 = 2.0_ark-phi2-phi3
+            !     
+            cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
+            !
+            if ( abs(cosalpha)>1.0_ark+sqrt(small_) ) then 
+               !
+               write (out,"('MLpoten_xy3_morbid_45760: cosalpha>1: ',f18.8)") cosalpha
+               stop 'MLpoten_xy3_morbid_45760 - bad cosalpha'
+               !
+            elseif ( cosalpha>=1.0_ark) then 
+               alpha1 = 0.0_ark
+            else 
+               alpha1 = acos(cosalpha)
+            endif
+            !
+         end select
+         !
+      elseif (size(local)==7.and.molec%Ndihedrals==1) then
+         !
+         alpha3 = local(4)
+         alpha2 = local(5)
+         alpha1 = local(6)
+         tau    = local(7)
+         ! 
+      elseif (size(local)==6.and.molec%Ndihedrals==0) then 
+         !
+         alpha3 = local(4)
+         alpha2 = local(5)
+         alpha1 = local(6)
+         !
+         tau = sqrt(1.0_ark-cos(alpha1)**2-cos(alpha2)**2-cos(alpha3)**2 & 
+                   +2.0_ark*cos(alpha1)*cos(alpha2)*cos(alpha3) )
+         !
+      else
+        !
+        write (out,"('MLpoten_xy3_morbid_11: bad locals; local = ',30f18.8)") local(:)
+        stop 'MLpoten_xy3_morbid_11 - bad local coordinates'
+        !
+      endif
+      !
+      alpha=(alpha1+alpha2+alpha3)/3.0_ark
+      !
+      if ( 2.0_ark*sin(alpha*0.5_ark)/sqrt(3.0_ark).ge.1.0_ark ) then 
+        sinrho=1.0_ark ; rho = 0.5_ark*pi
+      else 
+        sinrho = 2.0_ark*sin(alpha*0.5_ark)/sqrt(3.0_ark)
+        !
+        rho=pi-asin(sinrho)
+        !
+      endif
+      !
+      coro=(sin(rhoe)-sinrho)
+      !
+      y1=1.0_ark-exp(-aa1*(r14-re14))
+      y2=1.0_ark-exp(-aa1*(r24-re14))
+      y3=1.0_ark-exp(-aa1*(r34-re14))
+      !
+      y4=(2.0_ark*alpha1-alpha2-alpha3)/sqrt(6.0_ark)
+      y5=(alpha2-alpha3)/sqrt(2.0_ark)
+      !
+      f = poten_xy3_morbid_10(y1,y2,y3,y4,y5,coro,force(4:))
+      !
+      if (verbose>=6) write(out,"('MLpoten_xy3_morbid_11/end')") 
+ 
+ end function MLpoten_xy3_morbid_11
 
 
 

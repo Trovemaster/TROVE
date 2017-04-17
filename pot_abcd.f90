@@ -11,7 +11,7 @@ module pot_abcd
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
   public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLdms_HCCH_7D,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
-         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos
+         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB
 
   private
 
@@ -1210,8 +1210,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
   end function ML_MEP_ABCD_tau_ref
 
 
-
-  !
  !define cartesian components of the dipole moment in space-fixed system
  !
  ! mu_x has transformation properties of cos(tau) and r2+r3, a1+a2
@@ -1435,6 +1433,233 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !f = mu
     !
   end subroutine MLdms_hooh_MB
+
+
+
+  !
+ !define cartesian components of the dipole moment in space-fixed system : HPPJ 
+ !
+ ! mu_x has transformation properties of cos(tau) and r2+r3, a1+a2
+ ! mu_y has transformation properties of cos(tau) and r2-r3  a1-a2
+ ! mu_z has transformation properties of sin(tau) and r2-r3  a1-a2
+ !
+ recursive subroutine MLdms_hpph_MB(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v12(3),v31(3)
+    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
+                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign
+    !
+    integer(ik),parameter :: lspace = 150
+    integer(ik) :: ierror,rank0
+    real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
+    character(len=cl)  :: txt
+
+    !
+    !write(out,"(i6)") molec%natoms
+    !
+    !write(out,"(/'O',3x,3f14.8)") xyz(1,:)
+    !write(out,"( 'O',3x,3f14.8)") xyz(2,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(3,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(4,:)
+    !
+    e1(:) = xyz(1,:)-xyz(2,:)
+    e2(:) = xyz(3,:)-xyz(1,:)
+    e3(:) = xyz(4,:)-xyz(2,:)
+    !
+    r1 = sqrt(sum(e1(:)**2))
+    r2 = sqrt(sum(e2(:)**2))
+    r3 = sqrt(sum(e3(:)**2))
+    !
+    alpha1 = acos(sum(-e1(:)*e2(:))/(r1*r2))
+    alpha2 = acos(sum( e1(:)*e3(:))/(r1*r3))
+    !
+    v12(:) = MLvector_product(e1(:),e2(:))
+    v31(:) = MLvector_product(e3(:),e1(:))
+    r21 = sqrt(sum(v12(:)**2))
+    r31 = sqrt(sum(v31(:)**2))
+    v12(:) = v12(:)/r21
+    v31(:) = v31(:)/r31
+    !
+    n3(:) = MLvector_product(v12(:),v31(:))
+    !
+    sintau =  sqrt( sum( n3(:)**2 ) )
+    costau = -sum( v12(:)*v31(:) )
+    !
+    tau = atan2(sintau,costau)
+    !
+    e0 = MLvector_product(v12(:),v31(:))
+    !
+    tau_sign = -sum( e1(:)*e0(:) )
+    !
+    if (tau_sign<-small_a) then
+       !
+       tau = 2.0_ark*pi-tau
+       !
+    endif
+    !
+    if ( tau<-small_) then
+      tau  = mod(tau+2.0_ark*pi,2.0_ark*pi)
+    endif
+    !
+    !txt='MLdms_hpph_MB: illegal sin'
+    !tau_ = aasin(sintau,txt)
+    !
+    n3(:) = e1(:)/sqrt(sum(e1(:)**2))
+    !
+    e2(:) =  MLvector_product(v12(:),n3(:))
+    e2(:) =  e2(:)/sqrt(sum(e2(:)**2))
+    e3(:) = -MLvector_product(v31(:),n3(:))
+    e3(:) =  e3(:)/sqrt(sum(e3(:)**2))
+
+    !
+    n1(:) = (v12(:) + v31(:))
+    e1(:) = e2(:) + e3(:)
+    !
+    if (e2(2)>0.or.e3(2)>0) then
+      e1 = -e1
+    endif
+    !
+    if (v12(2)>0.or.v31(2)>0) then
+      n1 = -n1
+    endif
+    !
+    if (sum(n1(:)**2)>1e-1.and.sum(e1(:)**2)>1e-1) then
+      !
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      e1(:) = e1(:)/sqrt(sum(e1(:)**2))
+      !
+      if (any(abs(n1-e1)>1e-12)) then
+        !
+        write(out,"('MLdms_hpph_MB: n1<>e1 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
+        stop 'MLdms_hpph_MB: n1<>e1 '
+        !
+      endif
+      !
+    elseif (sum(n1(:)**2)>1e-1) then
+      !
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      !
+    elseif (sum(e1(:)**2)>1e-1) then
+      !
+      n1(:) = e1(:)
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      !
+    else
+      !
+      write(out,"('MLdms_hpph_MB: both n1 and e1 are  0 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
+      stop 'MLdms_hpph_MB: n1 = e1 = 0 '
+      !
+    endif
+    !
+    !n1(:) =  MLvector_product(v12(:),e1(:))
+    !n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+    !
+    n2(:) = MLvector_product(n3(:),n1(:))
+    n2(:) = n2(:)/sqrt(sum(n2(:)**2))
+    !
+    tmat(1,:) = n1(:)
+    tmat(2,:) = n2(:)
+    tmat(3,:) = n3(:)
+    !
+    r1 = r(1)
+    r2 = r(2)
+    r3 = r(3)
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau_ = r(6)
+    !
+    tau_ = tau
+    !
+    if (v12(2)>small_) tau_ = 2.0_ark*pi + tau
+    !
+    re1(1:3)     = extF%coef(1,1:3)
+    re2(1:3)     = extF%coef(2,1:3)
+    alphae(1:3) = extF%coef(3,1:3)/rad
+    !
+    beta1(1:3)   = extF%coef(4,1:3)
+    beta2(1:3)   = extF%coef(5,1:3)
+    !
+    y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
+    y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
+    y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
+    y(4,:) = (alpha1 - alphae(:))
+    y(5,:) = (alpha2 - alphae(:))
+    !
+    y(6,:) = cos(tau_)
+    !
+    !y(6,:) = cos(2.0_ark*tau_)
+    !
+    mu = 0
+    !
+    do imu = 1, 3
+       !
+       do iterm =  7, extF%nterms(imu)
+          !
+          ind(1:6) = extF%term(1:6, iterm, imu)
+          xi(1:6) = y(1:6,imu) ** ind(1:6)
+          !
+          mu_t = product(xi(1:molec%ncoords))
+          !
+          if (ind(2)/=ind(3).or.ind(4)/=ind(5)) then
+            !
+            ind(2) = extF%term(3, iterm, imu)
+            ind(3) = extF%term(2, iterm, imu)
+            ind(4) = extF%term(5, iterm, imu)
+            ind(5) = extF%term(4, iterm, imu)
+            !
+            xi(2:5) = y(2:5,imu) ** ind(2:5)
+            !
+            f_t = 1.0_ark
+            if (imu/=1)  f_t = -1.0_ark
+            !
+            mu_t = mu_t + f_t*product(xi(1:molec%ncoords))
+            !
+          endif
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu)*mu_t
+          !
+       end do
+       !
+    end do
+    !
+    mu(1) = mu(1)*cos(tau_*0.5_ark)
+    mu(2) = mu(2)*sin(tau_*0.5_ark)
+    !
+    tmat = transpose(tmat)
+    !
+    call MLlinurark(3,tmat,mu,f,ierror)
+    !
+    if (ierror>0) then
+      !
+      tmat_rk = tmat
+      dip_rk(:,1) = mu(:)
+      !
+      call dgelss(3,3,1,tmat_rk,3,dip_rk,3,tsing,tol,rank0,wspace,lspace,ierror)
+      !
+      f(:) = real(dip_rk(:,1),ark)
+      !
+      if (ierror>0) then
+        !
+        print *,ierror,tmat,mu
+        write(out,"('MLdms_hpph_MB: dgelss error = ',i)") ierror
+        stop 'MLdms_hpph_MB: dgelss error'
+        !
+      endif
+      !
+    endif
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+    !f = mu
+    !
+  end subroutine MLdms_hpph_MB
 
 ! HCCH Dipole using R,r1,r2,alpha1,alpha2,tau coordinates
 !define cartesian components of the dipole moment in space-fixed system

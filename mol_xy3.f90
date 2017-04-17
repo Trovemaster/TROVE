@@ -2235,7 +2235,7 @@ module mol_xy3
  
            end select 
            !
-       case('NORMAL')
+       case('NORMAL','C3V-SYMMETRY')
            !
            dst = src
            !
