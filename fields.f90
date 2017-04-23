@@ -5076,9 +5076,9 @@ end subroutine check_read_save_none
            stop 'FLinitilize_Kinetic, L2_vib - out of memory'
        end if
        !
-       NKinOrder_ = max(2,trove%NKinOrder)
+       NKinOrder_ = 2
        !
-       Tcoeff  = trove%RangeOrder(min(NKinOrder_,2))
+       Tcoeff  = trove%RangeOrder(2)
        !
        do k1 = 1,Nmodes
           do k2 = 1,Nmodes
@@ -12752,10 +12752,10 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:5)
         !
-        if (.not.trove%sparse.and.trim(trove%IO_basisset)=="READ") then
-          write(out,"('basisRestore: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
-          stop 'basisRestore error SPARSE should be switched on'
-        endif
+        !if (.not.trove%sparse.and.trim(trove%IO_basisset)=="READ") then
+        !  write(out,"('basisRestore: A sparse option was used to save kinetic.chk, please switch SPARSE on by adding SPARSE to the inpiut')")
+        !  stop 'basisRestore error SPARSE should be switched on'
+        !endif
         !
         if (buf(1:5)/='g_vib') then
           write (out,"(' Checkpoint file ',a,' has bogus label g_vib ',a)") trove%chk_fname, buf(1:5)
@@ -13692,7 +13692,7 @@ end subroutine check_read_save_none
                   fl => trove%L2_vib(k1,k2)
                   fl%Ncoeff = Tcoeff
                   !
-                  call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
+                  call polynom_initialization(fl,2,Tcoeff,Npoints,'L2_vib')
                   !
                   fl%field = 0
                   fl%iorder = 0
@@ -13955,7 +13955,10 @@ end subroutine check_read_save_none
           read(chkptIO,*) Tpoints,Torder,Tcoeff
           !
           if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
-          if (Torder/=2) stop "L2vib-ASCII-chk Order is wrong"
+          if (Torder/=2) then 
+            write (out,"('L2vib-ASCII-chk Order is not 2',i8)") Torder
+            stop "L2vib-ASCII-chk Order is wrong"
+          endif
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes

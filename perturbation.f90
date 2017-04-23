@@ -2940,7 +2940,9 @@ module perturbation
          !
          if ( ipol>job%Npolyads_contr.and.spread>job%cluster.and. &
               .not.( bs_t(kmode)%postprocess.and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model/=1000.and..not.trove%DVR ).and.&
-              .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in ) ) then
+              .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in ).and.& 
+              .not.( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1==iroot_in ) &  
+              ) then
             !
             cycle 
             !
@@ -2948,6 +2950,11 @@ module perturbation
          !
          ! check if a co-degenerate component is already out and remove 
          if ( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold .and. iroot-1/=iroot_in ) then 
+            cycle 
+         endif
+         !
+         ! check if a co-degenerate component is already out and remove 
+         if  ( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1/=iroot_in ) then 
             cycle 
          endif
          !
@@ -2965,15 +2972,16 @@ module perturbation
             !
          endif
          !
-         if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold )  then
-           !
-           ideg = ideg + 1
-           !
+         if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold.and. &
+            ( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot_in,1) )==0 ) ) then 
+            !
+            ideg = ideg + 1
+            !
          else
-           !
-           ideg = 1
-           icount = icount + 1
-           !
+            !
+            ideg = 1
+            icount = icount + 1
+            !
          endif 
          !
          count_index(icount,ideg) = iroot
@@ -3226,8 +3234,19 @@ module perturbation
              !
              ! assume at this stage that the normal quanta are identical with the local quanta
              !
-             contr(iclasses)%eigen(ilevel)%normal(:)   = contr(iclasses)%eigen(ilevel)%nu(:)
-
+             !contr(iclasses)%eigen(ilevel)%normal(:)   = contr(iclasses)%eigen(ilevel)%nu(:)
+             !
+             ! normal mode quantum numbers: 1st is the sum of all quanta, second is lquant, if available
+             !
+             contr(iclasses)%eigen(ilevel)%normal = 0
+             imode = PT%mode_class(iclasses,1)
+             contr(iclasses)%eigen(ilevel)%normal(imode) = sum(contr(iclasses)%eigen(ilevel)%nu(:))
+             !
+             if (PT%mode_iclass(iclasses)>1) then
+               imode = PT%mode_class(iclasses,2)
+               contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+             endif
+             !
              cf => contr(iclasses)%eigen(ilevel)
              !
              cf%isym = gamma    
@@ -16976,42 +16995,17 @@ module perturbation
       !
       deallocate(icomb_nclasses, icomb_iclass)
       !  
-      deallocate(gvib_me)
-      !do iclass=1, nclasses-1
-      !  write(sclass,'(i4)') iclass
-      !  skey = 'gvib_me('//trim(adjustl(sclass))//')'
-      !  call ArrayStop(trim(skey))
-      !enddo
+      if (allocated(gvib_me)) deallocate(gvib_me)
       !
-      deallocate(grot_me)
-      !do iclass=1, nclasses-1
-      !  write(sclass,'(i4)') iclass
-      !  skey = 'grot_me('//trim(adjustl(sclass))//')'
-      !  call ArrayStop(trim(skey))
-      !enddo
+      if (allocated(grot_me)) deallocate(grot_me)
       ! 
-      deallocate(gcor_me)
-      !do iclass=1, nclasses-1
-      !  write(sclass,'(i4)') iclass
-      !  skey = 'gcor_me('//trim(adjustl(sclass))//')'
-      !  call ArrayStop(trim(skey))
-      !enddo
+      if (allocated(grot_me)) deallocate(gcor_me)
       !
-      deallocate(vpot_me)
-      !do iclass=1, nclasses-1
-      !  write(sclass,'(i4)') iclass
-      !  skey = 'vpot_me('//trim(adjustl(sclass))//')'
-      !  call ArrayStop(trim(skey))
-      !enddo
+      if (allocated(vpot_me)) deallocate(vpot_me)
       !
       if (treat_exfF) then
         !     
-        deallocate(ExtF_me)
-        !do iclass=1, nclasses-1
-        !  write(sclass,'(i4)') iclass
-        !  skey = 'extF_me('//trim(adjustl(sclass))//')'
-        !  call ArrayStop(trim(skey))
-        !enddo
+        if (allocated(ExtF_me)) deallocate(ExtF_me)
         !
       endif
       !
@@ -17021,7 +17015,6 @@ module perturbation
       deallocate(icomb_nclasses0, icomb_iclass0)
       call ArrayStop('PTcontracted_matelem_class_fast:icomb_nclasses0')
       call ArrayStop('PTcontracted_matelem_class_fast:icomb_iclass0')
-      !
       !
       if (allocated(gme_Nclass)) then
          call ArrayStop("matelem_Nclass")
@@ -28916,9 +28909,6 @@ end subroutine read_contr_ind
           !
           if ( i==2.and.nint( sqrt( abs( c(i,i) ) ) )/=1.and.sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
             factor = sqrt(abs(c(i,i)))
-            !
-            write(out,"(' All lquant-values will be rescaled by the lquant(1) factor = 1/',f18.12,' to make lquant(1) ==1 ')") factor
-            !
           endif
           !
           PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i)))/factor,ik)
@@ -28932,13 +28922,13 @@ end subroutine read_contr_ind
               !
               termvalue = PT%Ewhole%coeffs(i,1)-ZPE
               !
-              if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then
+              if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i)*factor)>100.0*sqrt(small_)) then
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i))),PT%lquant%icoeffs(i,1)
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor,PT%lquant%icoeffs(i,1)
                  !
               else
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))
+                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor
                  !
               endif
               !
@@ -28961,6 +28951,10 @@ end subroutine read_contr_ind
           !write(out,"(i7,f18.8,<Nmodes>i3,2x,i3)") i,PT%Ewhole%coeffs(i,1)-ZPE,nu_i(1:),PT%lquant%icoeffs(i,1)
           !
         enddo
+        !
+        if ( factor>sqrt(small_) ) then
+          write(out,"(' All lquant-values have been rescaled by the lquant(1) factor = 1/',f18.12,' to make lquant(1) ==1 ')") factor
+        endif
         !
         ! sort the einvalues ann eigenvectors with the energy 
         !

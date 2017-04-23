@@ -1478,6 +1478,7 @@ module mol_xy3
           dst(2) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*dsrc(1)-dsrc(2)-dsrc(3) )
           dst(3) = 1.0_ark/sqrt(2.0_ark)*(                 dsrc(2)-dsrc(3) )
 
+
           if (size(src)==7) then
               !
               !dst(4) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*dsrc(4)-dsrc(5)-dsrc(6) )
@@ -1591,7 +1592,7 @@ module mol_xy3
           dst(2) =(sqrt(2.0_ark)*src(1)-        src(2)+sqrt(3.0_ark)*src(3))/sqrt(6.0_ark)
           dst(3) =(sqrt(2.0_ark)*src(1)-        src(2)-sqrt(3.0_ark)*src(3))/sqrt(6.0_ark)
           !
-          dst(1:3) = dst(1:3)+molec%local_eq(1:3)
+          !dst(1:3) = dst(1:3)+molec%local_eq(1:3)
           !
           if (size(dst)==7) then
              !
@@ -2629,8 +2630,51 @@ module mol_xy3
            !
            dst(4) = repres(ioper,1,1)*src(4)+repres(ioper,1,2)*src(5)
            dst(5) = repres(ioper,2,1)*src(4)+repres(ioper,2,2)*src(5)
+
+
+           !
+           !
+           ! new !!!! 
+           !
+
+           a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
+           !
+           !
+           repres ( 1,:,:)= reshape((/ e, o,  & 
+                                       o, e/),(/2,2/))
+           !
+           repres ( 2,:,:)= reshape((/-a,-b,  &
+                                       b,-a/),(/2,2/))
+           !
+           repres ( 3,:,:)= reshape((/-a, b,  &
+                                      -b,-a/),(/2,2/))
+           !
+           repres ( 4,:,:)= reshape((/ e, o,  &
+                                       o,-e/),(/2,2/))
+           !
+           repres ( 5,:,:)= reshape((/-a, b,  &
+                                       b, a/),(/2,2/))
+           !
+           repres ( 6,:,:)= reshape((/-a,-b,  &
+                                      -b, a/),(/2,2/))
+           !
+           repres ( 7,:,:) = repres (1,:,:)
+           repres ( 8,:,:) = repres (2,:,:)
+           repres ( 9,:,:) = repres (3,:,:)
+           repres (10,:,:) = repres (4,:,:)
+           repres (11,:,:) = repres (5,:,:)
+           repres (12,:,:) = repres (6,:,:)
+           !
+           dst(2) = repres(ioper,1,1)*src(2)+repres(ioper,1,2)*src(3)
+           dst(3) = repres(ioper,2,1)*src(2)+repres(ioper,2,2)*src(3)
+           !
+           dst(4) = repres(ioper,1,1)*src(4)+repres(ioper,1,2)*src(5)
+           dst(5) = repres(ioper,2,1)*src(4)+repres(ioper,2,2)*src(5)
            !
            dst(6) = src(6) ; if (ioper>=4.and.ioper<=9) dst(6) = -dst(6)
+
+           !
+           !dst(6) = src(6) ; if (ioper>=4.and.ioper<=9) dst(6) = -dst(6)
            !           
        case('R-2D-DELTA')
            !
