@@ -2973,7 +2973,7 @@ module perturbation
          endif
          !
          if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold.and. &
-            ( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot_in,1) )==0 ) ) then 
+            (.not.FLl2_coeffs.or.( abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot_in,1) )==0 ) ) ) then 
             !
             ideg = ideg + 1
             !
@@ -28904,7 +28904,7 @@ end subroutine read_contr_ind
             stop 'PThamiltonianMat: illegal lquant '
           endif
           !
-          ! here is the soecial case when lquant = l x constant
+          ! here is the special case when lquant = l x constant
           ! we take lquant(1) = constant and use it to re-scale all other values else, if this works. 
           !
           if ( i==2.and.nint( sqrt( abs( c(i,i) ) ) )/=1.and.sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
@@ -29048,7 +29048,7 @@ end subroutine read_contr_ind
     !
     kmode = PT%mode_class(iclasses,1)
     !
-    reduced_model = .true.
+    reduced_model = .false. !.true.
     diagonal = .false.
     !
     if (reduced_model) then 
