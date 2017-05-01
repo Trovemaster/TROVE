@@ -28372,7 +28372,7 @@ end subroutine read_contr_ind
     !
     double precision :: vrange(2)
     real(rk),allocatable :: b(:),a(:,:),c(:,:),d(:,:),e(:)
-    integer  :: nroot_t,lquant,Nmodes1
+    integer  :: nroot_t,lquant,Nmodes1,itrial
     double precision,allocatable :: work(:)
     integer,allocatable :: iwork(:)
     integer          :: info,lwork,liwork
@@ -28878,6 +28878,8 @@ end subroutine read_contr_ind
         Nmodes1 = PT%Nmodes+1
         factor = 1.0_rk
         !
+        itrial = 2
+        !
         do i=1,nroots
           !
           ! Here we check the diagonality 
@@ -28907,8 +28909,12 @@ end subroutine read_contr_ind
           ! here is the special case when lquant = l x constant
           ! we take lquant(1) = constant and use it to re-scale all other values else, if this works. 
           !
-          if ( i==2.and.nint( sqrt( abs( c(i,i) ) ) )/=1.and.sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
-            factor = sqrt(abs(c(i,i)))
+          if ( i==itrial ) then
+            if ( nint( sqrt( abs( c(i,i) ) ) )/=1.and.sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
+              factor = sqrt(abs(c(i,i)))
+            else
+              itrial = itrial + 1
+            endif 
           endif
           !
           PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i)))/factor,ik)
