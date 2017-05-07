@@ -13995,7 +13995,7 @@ end subroutine check_read_save_none
         !
         if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
            !
-           write(out,"('WARNING: in kinetic.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh>exp_coeff_thresh
+           write(out,"('WARNING: in kinetic.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh,exp_coeff_thresh
            !
         endif
         !
@@ -14310,7 +14310,7 @@ end subroutine check_read_save_none
         !
         if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
            !
-           write(out,"('WARNING: in potential.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh>exp_coeff_thresh
+           write(out,"('WARNING: in potential.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") job%exp_coeff_thresh,exp_coeff_thresh
            !
         endif
         !

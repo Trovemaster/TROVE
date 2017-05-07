@@ -15748,7 +15748,7 @@ module perturbation
                 !
                 if (job%vib_rot_contr) grot_t = 0
                 !
-                call calc_grot_contr_matrix(k1,k2,isymcoeff,grot_t)
+                call calc_grot_contr_matrix_II(k1,k2,isymcoeff,grot_t)
                 !
                 if (job%vib_rot_contr) then 
                   !
@@ -15901,7 +15901,7 @@ module perturbation
                 !
                 if (job%vib_rot_contr) grot_t = 0
                 !
-                call calc_gcor_contr_matrix(k1,k2,isymcoeff,grot_t)
+                call calc_gcor_contr_matrix_II(k1,k2,isymcoeff,grot_t)
                 !
                 if (job%vib_rot_contr) then 
                     !
@@ -16087,7 +16087,9 @@ module perturbation
                 !
                 if (job%vib_rot_contr) hvib_t = 0
                 !
-                call calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib_t)
+                !call calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib_t)
+                !
+                call calc_gvib_contr_matrix_II(k1,k2,isymcoeff,hvib_t)
                 !
               enddo
               !
@@ -16127,7 +16129,7 @@ module perturbation
             !
             if (job%vib_rot_contr) hvib_t = 0
             !
-            call calc_vpot_contr_matrix(isymcoeff,hvib_t)
+            call calc_vpot_contr_matrix_II(isymcoeff,hvib_t)
             !
             ! store temp the matrix elements (dump)
             !
@@ -16337,7 +16339,7 @@ module perturbation
                  !
               else ! no-append means calculation 
                  !
-                 call calc_extF_contr_matrix(imu,isymcoeff,extF_t)
+                 call calc_extF_contr_matrix_II(imu,isymcoeff,extF_t)
                  !
               endif 
               !
@@ -17267,7 +17269,7 @@ module perturbation
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
         !$omp parallel do private(jcontr,energy_j,jsymcoeff,jsym,matelem,icoeff,iclass,nu_i,nu_j,&
-        !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
+        !$omp& iterm,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            if (.not.debug_check_symmetries) then
@@ -17339,6 +17341,462 @@ module perturbation
       !
     end subroutine  calc_gvib_contr_matrix
     !
+    !
+    subroutine  calc_grot_contr_matrix_II(k1,k2,isymcoeff,grot)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      !
+      !integer(ik),intent(in) :: nu_classes(PT%Nclasses,PT%Maxcontracts)
+      !integer(ik),intent(in) :: grot_icomb_nterms(0:ncomb,3,3)
+      !
+      real(rk),intent(out)   :: grot(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      integer :: info_p,info,Ncoeff
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      !
+      Maxcontracts = PT%Maxcontracts
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      energy_i = enermax_classes(isymcoeff)
+      !
+      fl => me%grot(k1,k2)
+      Ncoeff = fl%Ncoeff
+      !
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("grot:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,matelem,iclass,nu_i,nu_j,icoeff) shared(grot,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array grot: me_class0_vec')") info_p
+           stop 'calc_grot_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+          !
+          if (debug_cut_matelem_with_enermax) then 
+            jsymcoeff = PT%icontr2icase(jcontr,1)
+            energy_j = enermax_classes(jsymcoeff)
+            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+          endif
+          !
+          do iclass=1,Nclasses-1
+              !
+              nu_i = nu_classes(iclass,icontr)
+              nu_j = nu_classes(iclass,jcontr)
+              !
+              me_class0_vec(1:Ncoeff,iclass) = gme(iclass)%me(uniqu_trans(1:Ncoeff,iclass),nu_i,nu_j)
+              !
+          enddo
+          !
+          nu_i = nu_classes(Nclasses,icontr)
+          nu_j = nu_classes(Nclasses,jcontr)
+          !
+          me_class0_vec(1:Ncoeff,Nclasses) = gme(Nclasses)%me(1:Ncoeff,nu_i,nu_j)
+          !
+          matelem = 0
+          do icoeff =1,Ncoeff
+            matelem = matelem + product(me_class0_vec(icoeff,1:Nclasses))
+          enddo
+          !
+          grot(jcontr,icontr) = grot(jcontr,icontr) + matelem
+          !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("grot:uniqu_trans")
+      !
+    end subroutine calc_grot_contr_matrix_II
+
+
+
+    subroutine  calc_gcor_contr_matrix_II(k1,k2,isymcoeff,gcor)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      real(rk),intent(inout) :: gcor(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      integer :: info_p,info,Ncoeff
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      Maxcontracts = PT%Maxcontracts
+      energy_i = enermax_classes(isymcoeff)
+      !
+      fl => me%gcor(k1,k2)
+      Ncoeff = fl%Ncoeff
+      !
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("gcor:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) shared(gcor,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array gcor: me_class0_vec')") info_p
+           stop 'calc_gcor_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+          !
+          if (debug_cut_matelem_with_enermax) then 
+            jsymcoeff = PT%icontr2icase(jcontr,1)
+            energy_j = enermax_classes(jsymcoeff)
+            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+          endif
+          !
+          do iclass=1,Nclasses-1
+              !
+              nu_i = nu_classes(iclass,icontr)
+              nu_j = nu_classes(iclass,jcontr)
+              !
+              me_class0_vec(1:Ncoeff,iclass) = gme(iclass)%me(uniqu_trans(1:Ncoeff,iclass),nu_i,nu_j)
+              !
+          enddo
+          !
+          nu_i = nu_classes(Nclasses,icontr)
+          nu_j = nu_classes(Nclasses,jcontr)
+          !
+          me_class0_vec(1:Ncoeff,Nclasses) = gme(Nclasses)%me(1:Ncoeff,nu_i,nu_j)
+          !
+          matelem = 0
+          do icoeff =1,Ncoeff
+            matelem = matelem + product(me_class0_vec(icoeff,1:Nclasses))
+          enddo
+          !
+          gcor(jcontr,icontr) = gcor(jcontr,icontr) + matelem
+          !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("gcor:uniqu_trans")
+     !
+    end subroutine  calc_gcor_contr_matrix_II
+    !
+    !
+    subroutine  calc_gvib_contr_matrix_II(k1,k2,isymcoeff,hvib)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      real(rk),intent(inout) :: hvib(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j,i
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen)
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      integer :: info_p,info
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      type(PTcoeffT),pointer   :: fl
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
+      !
+      Maxcontracts = PT%Maxcontracts
+      !
+      fl => me%gvib(k1,k2)
+      !
+      Ncoeff = fl%Ncoeff
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("gvib:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      if (.not.debug_check_symmetries) then
+        isym(:) = isymcoeff_vs_isym(:,isymcoeff)
+        do i =1,sym%Nrepresen 
+          if (isym(i)==0) isym(i) = -1
+        enddo
+      endif
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) shared(hvib,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
+           stop 'calc_gvib_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           if (.not.debug_check_symmetries) then
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
+             if ( all( isym(:)/=jsym(:) ) ) cycle
+           endif
+           !
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
+           !        
+           matelem = 0
+           do iclass=1,Nclasses-1
+               !
+               nu_i = nu_classes(iclass,icontr)
+               nu_j = nu_classes(iclass,jcontr)
+               !
+               me_class0_vec(1:Ncoeff,iclass) = gme(iclass)%me(uniqu_trans(1:Ncoeff,iclass),nu_i,nu_j)
+               !
+           enddo
+           !
+           nu_i = nu_classes(Nclasses,icontr)
+           nu_j = nu_classes(Nclasses,jcontr)
+           !
+           me_class0_vec(1:Ncoeff,Nclasses) = gme(Nclasses)%me(1:Ncoeff,nu_i,nu_j)
+           !
+           do icoeff =1,Ncoeff
+             matelem = matelem + product(me_class0_vec(icoeff,1:Nclasses))
+           enddo
+           !
+           hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("gvib:uniqu_trans")
+      !
+    end subroutine  calc_gvib_contr_matrix_II  
+    !
+    !
+    subroutine  calc_vpot_contr_matrix_II(isymcoeff,hvib)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: isymcoeff
+      real(rk),intent(inout) :: hvib(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j,info,info_p
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen),i
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      type(PTcoeffT),pointer   :: pl
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
+      !
+      Maxcontracts = PT%Maxcontracts
+      !
+      pl => me%poten
+      Ncoeff = pl%Ncoeff
+      !
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("vpot:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(pl%uniq)
+      !
+      if (.not.debug_check_symmetries) then
+        isym(:) = isymcoeff_vs_isym(:,isymcoeff)
+        do i =1,sym%Nrepresen 
+          if (isym(i)==0) isym(i) = -1
+        enddo
+      endif
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) shared(hvib,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array vpot: me_class0_vec')") info_p
+           stop 'calc_vpot_contr_matrix_II vpot-me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           if (.not.debug_check_symmetries) then
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
+             if ( all( isym(:)/=jsym(:) ) ) cycle
+           endif
+           !
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
+           !
+           do iclass=1,Nclasses-1
+             !
+             nu_i = nu_classes(iclass,icontr)
+             nu_j = nu_classes(iclass,jcontr)
+             !
+             !iterm = pl%uniq(iclass,icoeff)
+             !
+             !me_class0(iclass) = gme(iclass)%me(iterm,nu_i,nu_j)
+             me_class0_vec(1:Ncoeff,iclass) = gme(iclass)%me(uniqu_trans(1:Ncoeff,iclass),nu_i,nu_j)
+             !
+           enddo
+           !
+           nu_i = nu_classes(Nclasses,icontr)
+           nu_j = nu_classes(Nclasses,jcontr)
+           !
+           me_class0_vec(1:Ncoeff,Nclasses) = gme(Nclasses)%me(1:Ncoeff,nu_i,nu_j)
+           !
+           !        
+           matelem = 0
+           do icoeff =1,Ncoeff
+             matelem = matelem + product(me_class0_vec(icoeff,1:Nclasses))
+           enddo
+           !
+           hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("vpot:uniqu_trans")
+      !
+    end subroutine  calc_vpot_contr_matrix_II
+    !
+    !
+    subroutine  calc_extF_contr_matrix_II(k1,isymcoeff,extF)
+      !
+      integer(ik),intent(in) :: k1,isymcoeff
+      !
+      real(rk),intent(out)   :: extF(:,:)
+      !
+      real(rk)    :: matelem,me_class0(PT%Nclasses),energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      integer :: info_p,info,Ncoeff
+      !
+      Maxcontracts = PT%Maxcontracts
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      energy_i = enermax_classes(isymcoeff)
+      !
+      fl => me%ExtF(k1)
+      Ncoeff = fl%Ncoeff
+      !
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("extF:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) shared(extF,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array extF: me_class0_vec')") info_p
+           stop 'calc_extF_contr_matrix_II vpot-me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
+           !
+           ! ExtF part
+           !
+           do iclass=1,Nclasses-1
+             !
+             nu_i = nu_classes(iclass,icontr)
+             nu_j = nu_classes(iclass,jcontr)
+             me_class0_vec(1:Ncoeff,iclass) = gme(iclass)%me(uniqu_trans(1:Ncoeff,iclass),nu_i,nu_j)
+             !
+           enddo
+           !
+           nu_i = nu_classes(Nclasses,icontr)
+           nu_j = nu_classes(Nclasses,jcontr)
+           !
+           me_class0_vec(1:Ncoeff,Nclasses) = gme(Nclasses)%me(1:Ncoeff,nu_i,nu_j)
+           !        
+           matelem = 0
+           do icoeff =1,Ncoeff
+             matelem = matelem + product(me_class0_vec(icoeff,1:Nclasses))
+           enddo
+           !
+           extF(jcontr,icontr) = extF(jcontr,icontr) + matelem
+           !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("extF:uniqu_trans")
+      !
+    end subroutine calc_extF_contr_matrix_II
+
+
+    !
     subroutine  calc_vpot_contr_matrix(isymcoeff,hvib)
       !
       implicit none
@@ -17372,7 +17830,7 @@ module perturbation
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
         !$omp parallel do private(jcontr,energy_j,jsymcoeff,jsym,matelem,Ncoeff,icoeff,iclass,nu_i,nu_j,&
-        !$omp& iterm,me_class0) shared(grot) schedule(dynamic)
+        !$omp& iterm,me_class0) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            if (.not.debug_check_symmetries) then
@@ -17444,6 +17902,8 @@ module perturbation
       !
     end subroutine  calc_vpot_contr_matrix
     !
+
+
     !
     subroutine  calc_extF_contr_matrix(k1,isymcoeff,extF)
       !
@@ -28910,7 +29370,9 @@ end subroutine read_contr_ind
           ! we take lquant(1) = constant and use it to re-scale all other values else, if this works. 
           !
           if ( i==itrial ) then
-            if ( nint( sqrt( abs( c(i,i) ) ) )/=1.and.sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
+            if ( nint( sqrt( abs( c(i,i) ) ) )==1 ) then
+              factor = sqrt(abs(c(i,i)))
+            elseif ( sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
               factor = sqrt(abs(c(i,i)))
             else
               itrial = itrial + 1
@@ -31838,8 +32300,6 @@ subroutine PTstore_contr_matelem(jrot)
       !
       func_tag = 'Tvib'
       !
-      !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
-      !
       target_index = 0 
       target_index(1) = KinOrder
       nterms= FLQindex(trove%Nmodes_e,target_index)
@@ -32074,6 +32534,10 @@ subroutine PTstore_contr_matelem(jrot)
      func_tag = 'Tcor'
      !
      !nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
+     !
+     target_index = 0 
+     target_index(1) = KinOrder
+     nterms= FLQindex(trove%Nmodes_e,target_index)
      !
      if (job%verbose>=5) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gcor:', nterms
  
