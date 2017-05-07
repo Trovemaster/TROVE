@@ -584,6 +584,7 @@ contains
              endif
              !
              if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
+             if (intensity%ZPE<0.and.igamma==1.and.Jval(jind)==0) intensity%zpe = energy
              !
              call filter(energy,igamma,passed)
              !

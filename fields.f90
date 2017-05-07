@@ -710,7 +710,7 @@ module fields
    intensity%action = 'NONE'
    intensity%temperature = 300.0_rk
    intensity%part_func = 1
-   intensity%ZPE = 0.0_rk
+   intensity%ZPE = -small_
    intensity%freq_window = (/-0.1,1e6/)
    intensity%erange_low = (/-0.1,1e6/)
    intensity%erange_upp = (/-0.1,1e6/)
@@ -1010,7 +1010,7 @@ module fields
            case ("FAST_CI","FAST","FAST-CI")
              !
              job%contrci_me_fast = .true.
-             trove%IO_contrCI = "SAVE"
+             trove%IO_contrCI = "NONE"
              !
            case ("VIBINTENSITY","TM","TM_CUTOFF")
              !
