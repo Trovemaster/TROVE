@@ -7,48 +7,22 @@ checkin:
 	ci -l Makefile *.f90
 
 
-FPATH = 
 
 pot_user = pot_ch4
 
-PLAT = 0105_i16_II
+PLAT = _0605
 ###FOR  = ifort
 FOR = ifort 
-# -multiple-processes=4
-###FOR = /home/syurchenko/opt/intel/intel_cluster/composerxe-2011.5.220/composerxe-2011.5.220/bin/intel64/ifort
-
-#FFLAGS = -C -static
-# FFLAGS = -O3 -ip  
 FFLAGS = -ip   -openmp -O3 -static
 
-#-guide-vec 
-###FFLAGS = -O0 -fpe0  -fltconsistency -stand f03 -check all -warn all -traceback -fp-stack-check  # debugging options
 
-
-#-guide-vec -parallel 
-# -openmp-report2 
-#FFLAGS = -C -check bounds -g  -gen-interfaces -warn interfaces  -check arg_temp_created -prof-value-profiling=all -warn all
-
-
-#LAPACK =   -L  /usr/local/share/intel/mkl11.1/lib/em64t/ -lmkl_solver  -lmkl_lapack -lmkl_em64t -lmkl_intel_thread  -lguide -lpthread
-
-#LDIR = /opt/intel/composerxe-2011.4.191/mkl/lib/intel64/
-#LAPACK =  -Wl,--start-group $(LDIR)libmkl_intel_lp64.a   $(LDIR)libmkl_intel_thread.a $(LDIR)libmkl_core.a   -Wl,--end-group  -lpthread
-
-ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
+#ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
 
 #LAPACK = -mkl
 LAPACK = -mkl=parallel
 
-PROPACK = ~/libraries/PROPACK/libdpropack_LINUX_ICC_X86_64.a
 
-#LDIR = /usr/local/intel/Compiler/11.1/059/mkl/lib/32/
-#LAPACK =  -Wl,--start-group $(LDIR)libmkl_intel.a   \
-# $(LDIR)libmkl_intel_thread.a $(LDIR)libmkl_core.a   -Wl,--end-group -lguide -lpthread
-#ARPACK =  ~/libraries/ARPACK/libarpack_omp.a
-
-
-LIB     =  $(ARPACK) $(LAPACK) 
+LIB     =   $(LAPACK) 
 
 
 
@@ -61,7 +35,7 @@ OBJ = perturbation.o molecules.o me_str.o symmetry.o \
                pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_abcd.o  pot_ch3oh.o pot_c2h4.o  $(pot_user).o plasma.o pot_zxy3.o
 
 trove.x:       $(OBJ) trove.o
-	$(FOR) -o j-trove$(PLAT).x $(OBJ) $(FFLAGS) trove.o $(LIB)
+	$(FOR) -o trove$(PLAT).x $(OBJ) $(FFLAGS) trove.o $(LIB)
 
 trove.o:       trove.f90 $(OBJ) 
 	$(FOR) -c trove.f90 $(FFLAGS)
@@ -169,8 +143,6 @@ refinement.o:  refinement.f90 accuracy.o fields.o molecules.o timer.o tran.o
 tran.o:  tran.f90 accuracy.o fields.o molecules.o timer.o
 	$(FOR) -c tran.f90 $(FFLAGS)
 
-#pot_ch4.o:  pot_ch4.f90
-#	$(FOR) -c pot_ch4.f90 $(FFLAGS)
 
 $(pot_user).o:  $(pot_user).f90
 	$(FOR) -c $(pot_user).f90 $(FFLAGS)
