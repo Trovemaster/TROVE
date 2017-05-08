@@ -8,14 +8,14 @@ module dipole
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
  use fields,       only : manifold,job,analysis,bset
- use timer,        only : IOstart,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,TimerProbe,memory_limit,memory_now
+ use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,TimerProbe,memory_limit,memory_now
  use molecules,    only : MLcoord_direct,MLrotsymmetry_generate,ddlmn_conj,dlmn,Phi_rot,calc_phirot
  use moltype,      only : molec, extF, intensity, three_j
  use symmetry,     only : sym
 
 
  use tran,         only : TReigenvec_unit, bset_contr, read_contrind, & 
-                          read_eigenval,index_correlation,eigen,Neigenlevels
+                          read_eigenval,index_correlation,eigen,Neigenlevels,istate2ilevel
 
  private
  public dm_tranint,dm_analysis_density
@@ -335,11 +335,12 @@ contains
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
     logical        :: passed,passed_
     logical        :: vector_diagonal = .false.
+    integer(ik)    :: ID_I
     !
-    integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:)
+    integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:),iID(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
     real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vecPack(:),vec_(:)
-    real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:)
+    real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:),max_intens_state(:)
     integer(ik), pointer :: Jeigenvec_unit(:,:)
     type(DmatT),pointer  :: vec_ram(:,:)
     type(DkmatT),pointer :: ijterm(:)
@@ -357,7 +358,11 @@ contains
     character(len=1) :: branch
     character(len=wl) :: my_fmt,my_fmt_tm
     !
-    real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3)
+    character(cl)           :: filename, ioname
+    character(4)            :: jchar,gchar
+    integer(ik)             :: iounit
+    !
+    real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3), intens_cm_molecule
     !
     call TimerStart('Intensity calculations')
     !
@@ -379,6 +384,7 @@ contains
     !
     beta = planck * vellgt / (boltz * intensity%temperature)
     intens_cm_mol  = 8.0d-36 * pi**3* avogno / (3.0_rk * planck * vellgt)
+    intens_cm_molecule  = 8.0d-36 * pi**3/ (3.0_rk * planck * vellgt)
     A_coef_s_1     =64.0d-36 * pi**4  / (3.0_rk * planck)
     !
     nJ = size(Jval)
@@ -706,6 +712,8 @@ contains
     !
     if (Ntransit==0) then 
          write(out,"('dm_intensity_symmvec: the transition filters are too tight: no entry')") 
+         write(out,"(' window = ',2f12.4,'; Elow = ',2f12.4,'; Eupp = ',2f12.4,' cm-1')") &
+              intensity%freq_window(1:2),intensity%erange_low(1:2),intensity%erange_upp(1:2)
          stop 'dm_intensity_symmvec: the filters are too tight' 
     endif 
     !
@@ -739,6 +747,8 @@ contains
       unitF = Jeigenvec_unit(indF,igammaF)
       !
       if (unitF==-1) stop 'This file is not supposed to be accessed'
+      !
+      indI = eigen(ilevelF)%icoeff ! ???????
       !
       if (nsizeF<=dimenmax_ram.and.iram(indF,igammaF)<ram_size(indF,igammaF)) then
         !
@@ -849,6 +859,86 @@ contains
     !
     call ArrayStart('half_linestr',info,size(half_linestr),kind(half_linestr))
     !
+    ! in case of the TM-pruning the maximal intensity of each state will be estimated and stored
+    !
+    if (intensity%pruning) then
+      !
+      allocate(max_intens_state(nlevels),stat=info)
+      call ArrayStart('max_intens_state',info,size(max_intens_state),kind(max_intens_state))
+      !
+      max_intens_state = 0
+      !
+      do indI = 1, nJ
+         !
+         do igammaI = 1,sym%Nrepresen
+           !
+           write(jchar, '(i4)') jval(indI)
+           write(gchar, '(i2)') igammaI
+           !
+           filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+           !
+           ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
+           !
+           call IOstart(trim(ioname),iounit)
+           !
+           open(unit = iounit, action = 'write',status='replace',file = filename)
+           !
+         enddo
+         !
+      enddo
+      !
+    else 
+      ! 
+      allocate(max_intens_state(1),stat=info)
+      !
+    endif
+    !
+    ! We can construct a unique ID for exomol format for all states using the formula 
+    ! ID = ilevel(J) + Nvib*(2(J-1)+1), 
+    ! where Nvib = bset_contr(1)%Maxcontracts is the size of the vibrational basis and the number of states at J=0.
+    ! Thus we only need to introduce Nstates_before(J) = Nvib*(2(J-1)+1)
+    !
+    !  - prepare the states file:
+    !
+    ! loop over initial states for current J-values for the exomol-format only
+    !
+    if (job%exomol_format) then
+      !
+      !write(out,"(/a/)") 'States file in the Exomol format'
+      !
+      allocate(iID(nlevels),stat=info)
+      call ArrayStart('iID',info,size(iID),kind(iID))
+      !
+      do ilevelI = 1,nlevels
+         !
+         indI = eigen(ilevelI)%jind
+         igammaI  = eigen(ilevelI)%igamma
+         !
+         !if (indI/=jind.or.igamma/=igammaI) cycle
+         !
+         dimenI = bset_contr(indI)%Maxcontracts
+         !
+         !energy, quanta, and gedeneracy order of the initial state
+         !
+         jI = eigen(ilevelI)%jval
+         energyI = eigen(ilevelI)%energy-intensity%ZPE
+         quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
+         normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+         !
+         ID_I = eigen(ilevelI)%ilevel + bset_contr(indI)%nsize_base(igammaI)
+         !
+         iID(ilevelI) = ID_I
+         !
+         !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+         !ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
+         !eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
+         !eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
+         !
+      enddo
+      !
+    endif
+    !
+    !
     !  The matrix where some of the eigenvectors will be stored
     !
     if (job%verbose>=5) call MemoryReport
@@ -879,9 +969,13 @@ contains
       !
       case('ABSORPTION','EMISSION')
        !
-       write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
-                   &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
-                   &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
+       if (job%exomol_format) then 
+         !
+         write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
+                     &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
+                     &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
+                     !
+      endif
       !
       case('TM')
        !
@@ -1138,7 +1232,7 @@ contains
       !
       !loop over final states
       !
-      !$omp parallel private(vecF,vec_,alloc_p)
+      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state)
       allocate(vecF(dimenmax_),vec_(dimenmax),stat = alloc_p)
       if (alloc_p/=0) then
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
@@ -1366,7 +1460,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              !
              if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
@@ -1375,7 +1469,23 @@ contains
                !
                !
                !$omp critical
-               if (job%verbose>=4) then 
+               if (job%exomol_format) then
+                 !
+                 write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
+                              iID(ilevelF),iID(ilevelI),A_einst,nu_if     
+                              !
+               elseif (intensity%output_short) then 
+                 !
+                 write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
+                              &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
+                              &2(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
+                              !
+                              jF,igammaF,jI,igammaI, & 
+                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
+                              A_einst,absorption_int,&
+                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
+               else
+
                  !
                 !write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
                 !             &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
@@ -1396,24 +1506,9 @@ contains
                               eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
                               itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
                               linestr_deg(1:ndegI,1:ndegF)
-               else
-                 !
-                 write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
-                              &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
-                              &2(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
-                              !
-                              jF,igammaF,jI,igammaI, & 
-                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                              !eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                              !eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                              !eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                              !eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
-                              !linestr,
-                              A_einst,absorption_int,&
-                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
-                              !itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
-                              !linestr_deg(1:ndegI,1:ndegF)                            
-                              !
+                              !            
+
+
                endif
                !$omp end critical
                !             
@@ -1480,7 +1575,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr**2 * intens_cm_mol * boltz_fc
+             absorption_int = linestr**2 * intens_cm_molecule * boltz_fc
              !
              if (linestr>=intensity%threshold%intensity) then 
                !
@@ -1511,6 +1606,15 @@ contains
              !
              endif 
              !
+             ! estiimate the maximal intensity for each state needed for the TM-pruning of the basis set
+             !
+             if (intensity%pruning) then 
+               !
+               max_intens_state(ilevelF) = max(max_intens_state(ilevelF),absorption_int)
+               max_intens_state(ilevelI) = max(max_intens_state(ilevelI),absorption_int)
+               !
+             endif
+             !
          end select
          !
       end do Flevels_loop
@@ -1523,7 +1627,7 @@ contains
       !
       call TimerProbe('Intensity loop',real_time,cpu_time)
       !
-      time_per_line = real_time/real(itransit,rk)
+      time_per_line = real_time/real(min(itransit,1),rk)
       total_time_predict = time_per_line*real(Ntransit,rk)/3600.0
       !
       !if (job%verbose>=5) then
@@ -1531,12 +1635,12 @@ contains
       !endif
       !
       if (job%verbose>=3) then
-          write(out,"('--- ',t4,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'h.||')") itransit,real_time,1.0_rk/time_per_line,total_time_predict
+          write(out,"('--- ',t4,f18.6,2x,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
       if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=4) then
          !
-         write(out,"(/'Recomended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
+         write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !
          int_increm = max(Ntransit/int(total_time_predict/intensity%wallclock),1)
          !
@@ -1585,11 +1689,81 @@ contains
          !
       endif
       !
+      if (intensity%pruning) then 
+        !
+        do indF = 1, nJ
+           !
+           do igammaF = 1,sym%Nrepresen
+             !
+             write(jchar, '(i4)') jval(indF)
+             write(gchar, '(i2)') igammaF
+             !
+             filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+             !
+             ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
+             !
+             call IOstart(trim(ioname),iounit)
+             !
+             rewind(iounit)
+             !
+             do irootF = 1, bset_contr(indF)%nsize(igammaF)
+               !
+               ilevelF = istate2ilevel(indF,igammaF,irootF)
+               !
+               energyF = 0 ; absorption_int = 0
+               if (ilevelF/=0) then 
+                 energyF =  eigen(ilevelF)%energy
+                 absorption_int = max_intens_state(ilevelF)
+               endif
+               !
+               write(iounit,"(i5,i3,1x,i9,2x,f20.12,2x,e15.8)") jval(indF),igammaF,irootF,energyF,absorption_int
+               !
+             enddo
+             !
+           enddo
+           !
+        enddo
+        !
+      endif 
+      !
       if (job%verbose>=5) call TimerReport
+      !
+      call flush(out) 
       !
     end do Ilevels_loop
     !
     call TimerStop('Intensity loop')
+    !
+    ! write out the list of states with maximal intensities
+    !
+    if (intensity%pruning) then 
+      !
+      ioname = 'max state intensities'
+      !
+      call IOstart(trim(ioname),iounit)
+      !
+      do indI = 1, nJ
+         !
+         do igammaI = 1,sym%Nrepresen
+           !
+           write(jchar, '(i4)') jval(indI)
+           write(gchar, '(i2)') igammaI
+           !
+           filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+           !
+           ioname = 'max state intensities'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))
+           !
+           call IOstart(trim(ioname),iounit)
+           !
+           close(unit = iounit,status='keep')
+           !
+           call IOstop(trim(ioname))
+           !
+         enddo
+         !
+      enddo
+      !
+    endif 
     !
     deallocate(vecI, vecPack, vec, icoeffI)
     call ArrayStop('intensity-vectors')
@@ -1625,8 +1799,20 @@ contains
     deallocate(istored)
     call ArrayStop('istored')
     !
+    if (allocated(iID) ) then 
+      deallocate(iID)
+      call ArrayStop('iID')
+    endif
+    !
     deallocate(isaved)
     call ArrayStop('isaved')
+    !
+    if (intensity%pruning) then
+      !
+      deallocate(max_intens_state)
+      call ArrayStop('max_intens_state')
+      !
+    endif
     !
     call TimerStop('Intensity calculations')
     !
@@ -1641,74 +1827,147 @@ contains
  !
  subroutine restore_vib_matrix_elements 
    !
+   implicit none 
+   !
    integer(ik)        :: chkptIO,alloc
    character(len=cl)  :: job_is
 
    character(len=20)  :: buf20
+   character(len=4)   :: buf4
+   character(len=4)   :: jchar
+   
    integer(ik)        :: ncontr_t,imu,imu_t
    integer(hik)       :: matsize,rootsize,rootsize2
-
-
-   !dec$ if (dipole_debug > 1)
-      write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from file', trim(job%extFmat_file)
-   !dec$ end if
+   !
+   real(rk),allocatable  :: dipole_(:,:)
+   !
+   character(len=cl) :: filename
+   !
+   if (job%verbose>=4) then 
+     if (.not.job%IOextF_divide) then
+       !
+       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from chk', trim(job%extFmat_file)
+       !
+     else
+       !
+       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from files', trim(job%extmat_suffix)
+       !
+     endif
+     !
+   endif 
    !
    job_is ='external field contracted matrix elements for J=0'
    call IOStart(trim(job_is),chkptIO)
    !
-   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%extFmat_file)
+   if (.not.job%IOextF_divide) then
+      !
+      if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%extFmat_file)
+      !
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%extFmat_file)
+      !
+      read(chkptIO) buf20
+      if (buf20/='Start external field') then
+        write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") job%extFmat_file,buf20
+        stop 'restore_vib_matrix_elements - bogus file format'
+      end if
+      !
+      read(chkptIO) ncontr_t
+      !
+      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+        write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
+        write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
+        stop 'restore_vib_matrix_elements - in file - illegal ncontracts '
+      end if
+      !
+   endif
    !
-   read(chkptIO) buf20
-   if (buf20/='Start external field') then
-     write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") job%extFmat_file,buf20
-     stop 'restore_vib_matrix_elements - bogus file format'
-   end if
+   ncontr_t = bset_contr(1)%Maxcontracts
    !
-   read(chkptIO) ncontr_t
-   !
-   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-     write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
-     stop 'restore_vib_matrix_elements - in file - illegal ncontracts '
-   end if
+   if (job%verbose>=5) write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
    !
    rootsize  = int(ncontr_t*(ncontr_t+1)/2,hik)
    rootsize2 = int(ncontr_t*ncontr_t,hik)
    !
-   !dec$ if (dipole_debug > 3)
-      write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
-   !dec$ end if
-   !
    matsize = rootsize2*3
+   !
+   if (job%verbose>=5) write(out,"(/'allocate 4 dipole_me matrices with ',i22,' elements each...')") rootsize2
    allocate(dipole_me(ncontr_t,ncontr_t,3),stat=alloc)
    call ArrayStart('dipole_me',alloc,1,kind(dipole_me),matsize)
    !
+   allocate(dipole_(ncontr_t,ncontr_t),stat=alloc)
+   call ArrayStart('dipole_',alloc,1,kind(dipole_),rootsize2)
+   !
    do imu = 1,3
      !
-     read(chkptIO) imu_t
-     if (imu_t/=imu) then
-       write (out,"(' restore_vib_matrix_elements ',a,' has bogus imu - restore_vib_matrix_elements: ',i8,'/=',i8)") imu_t,imu
-       stop 'restore_vib_matrix_elements - bogus imu restore_vib_matrix_elements'
-     end if
+     if (job%verbose>=4) write(out,'("imu = ",i3)') imu 
      !
-     read(chkptIO) dipole_me(:,:,imu)
+     if (job%IOextF_divide) then
+       !
+       write(jchar, '(i4)') imu
+       !
+       filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+       !
+       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf4
+         stop 'restore_vib_matrix_elements - bogus file format'
+       end if
+       !
+     else
+       !
+       read(chkptIO) imu_t
+       if (imu_t/=imu) then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus imu - restore_vib_matrix_elements: ',i8,'/=',i8)") imu_t,imu
+         stop 'restore_vib_matrix_elements - bogus imu restore_vib_matrix_elements'
+       end if
+       !
+     endif
+     !
+     if (job%verbose>=5) write(out,"('read dipole_ ...')",advance='NO')
+     !
+     read(chkptIO) dipole_
+     !
+     if (job%verbose>=5) write(out,"('copy to dipole_me ...')",advance='NO')
+     !
+     dipole_me(1:ncontr_t,1:ncontr_t,imu) = dipole_(1:ncontr_t,1:ncontr_t)
+     !
+     if (job%verbose>=5) write(out,"(' done')",advance='YES')
+     !
+     if (job%IOextF_divide) then
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+         stop 'restore_vib_matrix_elements - bogus file format'
+       end if
+       !
+       close(chkptIO,status='keep')
+       !
+     endif
      !
    enddo
    !
-   read(chkptIO) buf20(1:18)
-   if (buf20(1:18)/='End external field') then
-     write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
-     stop 'restore_vib_matrix_elements - bogus file format'
-   end if
+   deallocate(dipole_)
+   call ArrayStop('dipole_')
    !
-   close(chkptIO,status='keep')
-
-   !dec$ if (dipole_debug > 1)
-      write(out, '(/a)') 'done'
-   !dec$ end if
-
+   if (.not.job%IOextF_divide) then
+     !
+     read(chkptIO) buf20(1:18)
+     if (buf20(1:18)/='End external field') then
+       write (out,"(' restore_vib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
+       stop 'restore_vib_matrix_elements - bogus file format'
+     end if
+     !
+     close(chkptIO,status='keep')
+     !
+   endif
+   !
+   if (job%verbose>=4)   write(out, '(a/)') '...done'
    !
  end subroutine restore_vib_matrix_elements
+ !
  !
  function cg(j0, k0, dj, dk)
 
@@ -2578,7 +2837,7 @@ contains
     character(len=cl):: unitfname,filename
     character(4)     :: jchar
     !
-    real(rk)     :: boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp
+    real(rk)     :: boltz_fc, beta, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
     !
     call TimerStart('Intensity calculations')
     !
@@ -2595,6 +2854,7 @@ contains
     !
     beta = planck * vellgt / (boltz * intensity%temperature)
     intens_cm_mol  = 8.0d-36 * pi**3* avogno / (3.0_rk * planck * vellgt)
+    intens_cm_molecule  = 8.0d-36 * pi**3 / (3.0_rk * planck * vellgt)
     A_coef_s_1     =64.0d-36 * pi**4  / (3.0_rk * planck)
     !
     nJ = size(Jval)
@@ -3686,7 +3946,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              !
              if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
@@ -3772,7 +4032,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_mol * boltz_fc
+             absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
              if (linestr>=intensity%threshold%intensity) then 
                !
@@ -4283,6 +4543,11 @@ contains
                   kI = bset_contr(indI)%k(irootI)
                   !
                   if (abs(kF - kI)>1) cycle loop_I
+                  !if ( kI< kF - 1) cycle loop_I
+                  !if ( kI> kF + 1) then 
+                  !  half_ls(irootF) = half_ls(irootF)*(-1.0_rk)**(sigmaF)
+                  !  cycle loop_F
+                  !endif
                   !
                   icontrI = bset_contr(indI)%iroot_correlat_j0(irootI)
                   !

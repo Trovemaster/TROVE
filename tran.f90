@@ -19,7 +19,7 @@ module tran
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
         bset_contr,eigen, index_correlation,Neigenlevels, &
-        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
+        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel
 
  type bset_contrT
     integer(ik)                 :: jval            ! rotational quantum number that correspond to the contr. basis set
@@ -36,7 +36,8 @@ module tran
     type(PTrotquantaT), pointer :: rot_index(:, :)
     integer(ik),        pointer :: icontr_correlat_j0(:, :)
     integer(ik),        pointer :: iroot_correlat_j0(:)
-    integer(ik),        pointer :: nsize(:)
+    integer(ik),        pointer :: nsize(:)  ! number of levels in a J,Gamma-block, can be zero for not used symmetry
+    integer(ik),        pointer :: nsize_base(:) ! number of levels before current J,gamma-vbloxk, needed to count exomol-ID states
     type(PTrepresT),    pointer :: irr(:)
  end type bset_contrT
  ! 
@@ -55,7 +56,8 @@ module tran
  integer(ik)                 :: Neigenroots   ! number of 'eigen' roots to be processed 
  integer(ik)                 :: extF_rank     ! 
  integer(ik),pointer         :: TRicontr_cnu(:,:)     ! store cnu  vs icontr index
- integer(ik),pointer         :: Ncontr02icase0(:,:)  ! from icontr0 to icase0, limits of the contracted active space: (i,1) = icontr1, (i,2) = icontr2
+ integer(ik),pointer         :: Ncontr02icase0(:,:)   ! from icontr0 to icase0, limits of the contracted active space: (i,1) = icontr1, (i,2) = icontr2
+ integer(ik),pointer         :: istate2ilevel(:,:,:)  !  correlate the state number in the eigen...chk with ilevel 
  !
  !character(cl), parameter :: eigen_vectr = 'eigen_vectors', eigen_quant = 'eigen_quanta', eigen_descr = 'eigen_descr'
 
@@ -129,6 +131,9 @@ contains
        !
        allocate(bset_contr(jind)%nsize(sym%Nrepresen),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%nsize),kind(bset_contr(jind)%nsize))
+       !
+       allocate(bset_contr(jind)%nsize_base(sym%Nrepresen),stat = info)
+       call ArrayStart('bset_contr',info,size(bset_contr(jind)%nsize_base),kind(bset_contr(jind)%nsize_base))
        !
        allocate(bset_contr(jind)%icontr2icase(ncontr, 2),bset_contr(jind)%icase2icontr(ncases, nlambdas),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%icontr2icase),kind(bset_contr(jind)%icontr2icase))
@@ -344,6 +349,7 @@ contains
              !
              if (.not.found) then 
                write(out,"('index_correlation: not found for J = ',i8,' -> problems with checkpoints?')") jval(jind)
+               write(out,"('J,icase,cnu,ideg:',2i6,<nclasses>i4,i4)") jval(jind),icase,cnu_i(:),ilambda
                stop 'index_correlation: not found'
              endif 
              !
@@ -443,9 +449,9 @@ contains
     integer(ik), intent(in) :: njval, jval(njval)
 
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
-                               ideg, ilarge_coef,k0,tau0,nclasses,nsize,   &
-                               iounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
-    integer(ik),allocatable :: ilevel_new(:,:,:),ktau_rot(:,:),isym(:)
+                               ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
+                               iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
+    integer(ik),allocatable :: ktau_rot(:,:),isym(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
     !
@@ -455,7 +461,8 @@ contains
     !
     logical                 :: passed
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
-    integer(ik)             :: jind_t,maxdeg,gamma
+    integer(ik)             :: jind_t,maxdeg,gamma,jval_,irec_, igamma_, ilevel_
+    real(rk)                :: energy_, state_intensity
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
     ! 
@@ -487,8 +494,13 @@ contains
     !
     ! create a temp. array needed for filtering out levels
     !
-    allocate(isym(0:nclasses),ilevel_new(njval,sym%Nrepresen,nroots_t),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
-    ilevel_new = 0 
+    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
+    !
+    allocate(istate2ilevel(njval,sym%Nrepresen,nroots_t),stat=info) 
+    !
+    call ArrayStart('istate2ilevel',info,size(istate2ilevel),kind(istate2ilevel))
+    !
+    istate2ilevel = 0
     !
     nroots  = 0
     nlevels = 0 
@@ -496,9 +508,8 @@ contains
     !
     do jind = 1, njval
        !
+       nsize_base = 0
        do gamma = 1,sym%Nrepresen
-          !
-          if (.not.job%select_gamma(gamma)) cycle
           !
           write(jchar, '(i4)') jval(jind)
           write(gchar, '(i2)') gamma
@@ -515,6 +526,19 @@ contains
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename)
+          !
+          ! for the TM-based basis set pruning open the chk-file with the vibrational intensities 
+          !
+          if (job%TMpruning)  then 
+             !
+             filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+             !
+             write(ioname, '(a, i4,2x,i2)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
+             !
+             call IOstart(trim(ioname), jounit)
+             open(unit = jounit, action = 'read',status='old' , file = filename)
+             !
+          endif
           !
           ! Check the fingerprint of the computed eigenvectors. 
           !
@@ -536,6 +560,15 @@ contains
           !
           read(iounit,*) nroots_t,nsize
           !
+          bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
+          !
+          nsize_base = nsize_base + nsize
+          !
+          if (.not.job%select_gamma(gamma)) then
+            close(iounit)
+            cycle
+          endif
+          !
           if ( .not.job%IOvector_symm.and.nroots_t /= bset_contr(jind)%Maxcontracts) stop 'read_eigenval error: wrong number of contracted solutions'
           !
           do
@@ -551,14 +584,39 @@ contains
              endif
              !
              if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
+             if (intensity%ZPE<0.and.igamma==1.and.Jval(jind)==0) intensity%zpe = energy
              !
              call filter(energy,igamma,passed)
+             !
+             if (job%TMpruning)  then 
+                !
+                read(jounit, *) jval_, igamma_, ilevel_, energy_, state_intensity
+                !
+                if (jval_/=jval(jind).or.igamma_/=igamma.or.ilevel_/=ilevel) then 
+                  !
+                  write(out,"('eigen_intens.chk error: ineteger records do not agree with eigen_descr:' )")
+                  write(out,"('jind =  ',2i5,', igamma = ',2i4,'  ilevel =  ',2i8 )") jval_,jval(jind),igamma_,igamma,ilevel_,ilevel
+                  stop 'eigen_intens.chk error: records do not agree with eigen_descr'
+                  !
+                endif
+                !
+                if (energy_>small_.and.abs(energy-energy_)>sqrt(small_)) then 
+                  !
+                  write(out,"('eigen_intens.chk error: energy  does not agree with eigen_descr:' )")
+                  write(out,"('energy =  ',2f20.12)") energy_,energy
+                  stop 'eigen_intens.chk error: energy  does not agree with eigen_descr'
+                  !
+                endif
+                !
+                if (state_intensity<job%TMcutoff.and.energy-job%ZPE>job%TMenermin) passed = .false.
+                !
+             endif
              !
              if (passed) then 
                 if (ideg==1) then 
                     !
                     nlevels = nlevels + 1
-                    ilevel_new(jind,igamma,ilevel) = nlevels
+                    istate2ilevel(jind,igamma,ilevel) = nlevels
                     !
                 endif
                 !
@@ -579,6 +637,7 @@ contains
           end do
           !
           close(iounit)
+          if (job%TMpruning) close(jounit)
           !
        enddo
     enddo
@@ -611,6 +670,10 @@ contains
       !
     enddo
     !
+    if (job%exomol_format) then
+      write(out,"(/a/)") 'States file in the Exomol format'
+    endif
+    !
     ! Now we can actually read and store the energies and their description. 
     !
     nroots  = 0
@@ -638,6 +701,8 @@ contains
        enddo
        !
        do gamma = 1,sym%Nrepresen
+          !
+          bset_contr(jind)%nsize(gamma) = 0
           !
           if (.not.job%select_gamma(gamma)) cycle
           !
@@ -700,13 +765,31 @@ contains
              !
              !if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
              !
-             call filter(energy,igamma,passed)
+             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0)) then
+               !
+               !write(out,"(/a/)") 'States file in the Exomol format'
+               !
+               ID_ = ilevel + bset_contr(jind)%nsize_base(gamma)
+               !
+               J_ = Jval(jind)
+               !
+               write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+               ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),normal(1:nmodes),sym%label(isym(1:nclasses)),&
+               ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
+               largest_coeff,ilevel,quanta(1:nmodes)
+               !
+             endif
+             !
+             passed = .true.
+             if (istate2ilevel(jind,igamma,ilevel)==0) passed = .false.
+             !
+             !call filter(energy,igamma,passed)
              !
              if (passed) then
                 !
                 ! 'nlevels' runs over the levels (i.e. one 'ilevel' for all denerate components)
                 !
-                nlevels = ilevel_new(jind,igamma,ilevel)
+                nlevels = istate2ilevel(jind,igamma,ilevel)
                 !
                 eigen(nlevels)%irec(ideg)  = irec
                 !
@@ -792,6 +875,9 @@ contains
           eigen(ilevel) = eigen_t
           energy        = eigen(ilevel)%energy
           !
+          istate2ilevel(eigen(ilevel)%jind,eigen(ilevel)%igamma,eigen(ilevel)%ilevel) = ilevel
+          istate2ilevel(eigen(jlevel)%jind,eigen(jlevel)%igamma,eigen(jlevel)%ilevel) = jlevel
+          !
         endif 
         !
       enddo
@@ -809,7 +895,7 @@ contains
       enddo
     enddo
     !
-    deallocate(ilevel_new,ktau_rot,isym) 
+    deallocate(ktau_rot,isym) 
     !
     if (job%verbose>=2) write(out,"('...done!')")
     !
@@ -841,6 +927,8 @@ contains
       end subroutine filter
       !
  end subroutine read_eigenval
+
+
 
 
 
@@ -1003,11 +1091,13 @@ contains
     implicit none
 
     integer(ik),intent(in) :: Jrot
-    integer(ik)        :: alloc,nroots
+    integer(ik)        :: alloc,nroots,i
     integer(ik)        :: iroot,ilevel,gamma,Jval(1)
 
        !
        if (job%verbose>=2) write(out,"(/'Convert the J=0 eigenvec. to contracted representaion ')")
+       !
+       call MemoryReport
        !
        Jval(1) = jrot
        !
@@ -1015,6 +1105,14 @@ contains
           write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i)") jrot 
           stop 'TRconvert_repres_J0_to_contr: illegal jrot'
        end if
+       !
+       ! make all modes to be one class  
+       if (job%convert_model_j0) then 
+         PTNclasses = 1
+         do i=1,FLNmodes
+            job%bset(i)%class = 1
+         enddo
+       endif
        !
        if(PTNclasses/=1) then
           write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i)") PTNclasses 
@@ -1044,6 +1142,7 @@ contains
        job%contrfile%dvr        = 'j0'//trim(job%contrfile%dvr)
        !
        call PTdefine_contr_from_eigenvect(Neigenroots,Neigenlevels,eigen(:))
+       !
        ! 
  end subroutine TRconvert_repres_J0_to_contr
 
@@ -1058,7 +1157,7 @@ contains
     integer(ik)        :: info,imu
     logical            :: treat_vibration =.true.  ! switch off/on the vibration
     integer(ik)        :: k1,k2,ilevel,ideg,iroot,i1,i2,chkptIO,extF_rank,dimen,irec,iunit,jroot
-    integer(ik)        :: idimen,imu_t,irow,ib,Nsize,mat_size,igamma,ielem
+    integer(ik)        :: idimen,imu_t,irow,ib,Nsize,mat_size,igamma,ielem,ierror
     character(len=cl)  :: job_is
     character(len=cl)  :: task
     real(rk),allocatable  :: vec(:)
@@ -1088,8 +1187,8 @@ contains
          stop 'TRconvert_matel_j0_eigen: illegal PTNclasses'
       end if
       !
-      if (trim(job%IOkinet_action)/='CONVERT'.and.trim(job%IOextF_action)/='CONVERT') then
-          write(out,"('TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM, at least one must be set to CONVERT')")
+      if (trim(job%IOkinet_action)/='CONVERT'.and.trim(job%IOextF_action)/='CONVERT'.AND..not.job%convert_model_j0) then
+          write(out,"('TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM, at least one must be set to CONVERT or EIGENfunc SAVE CONVERT')")
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
       !
@@ -1117,10 +1216,13 @@ contains
       !
       psi = 0
       !
-      ! real dimension taking into account the allowed disk space
+      if (job%convert_model_j0.and.trim(job%IOkinet_action)=='SAVE') then 
+          job%IOj0matel_action = 'SAVE'
+      end if 
       !
-      !rdimen = min(job%max_swap_size,Neigenroots)
-      !
+      if (job%convert_model_j0.and.trim(job%IOextF_action)=='SAVE') then 
+          FLextF_matelem = .true.
+      end if 
       !
       if (job%IOvector_symm) then 
         !
@@ -1247,7 +1349,7 @@ contains
       !
       if (trim(job%IOj0matel_action)=='SAVE') then
         !
-        if (.not.job%IOmatelem_divide.or.job%iswap(1)==1) then 
+        if (.not.job%IOmatelem_divide.or.job%iswap(1)<=1) then 
           !
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
@@ -1323,7 +1425,7 @@ contains
             !
             if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat)
+              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
               !
             elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
               !
@@ -1382,6 +1484,8 @@ contains
         !
         do k1 = 1,FLNmodes
           !
+          if (job%contrci_me_fast.and.k1>1) cycle
+          !
           do k2 = 1,3
             !
             islice = islice + 1
@@ -1390,7 +1494,7 @@ contains
             !
             if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat)
+              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
               !
             elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
               !
@@ -1467,18 +1571,6 @@ contains
           !
         else
           !
-          ! Prepare the checkpoint file
-          !
-          job_is ='external field contracted matrix elements for J=0'
-          call IOStart(trim(job_is),chkptIO)
-          !
-          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
-          write(chkptIO) 'Start external field'
-          !
-          ! store the matrix elements 
-          !
-          write(chkptIO) Neigenroots
-          !
           job_is ='external field contracted matrix elements for J=0'
           call IOStart(trim(job_is),iunit)
           !
@@ -1502,6 +1594,22 @@ contains
           !
         endif
         !
+        if (.not.job%IOextF_divide.or.job%IOextF_stitch) then 
+          !
+          ! Prepare the checkpoint file
+          !
+          job_is ='external field contracted matrix elements for J=0'
+          call IOStart(trim(job_is),chkptIO)
+          !
+          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
+          write(chkptIO) 'Start external field'
+          !
+          ! store the matrix elements 
+          !
+          write(chkptIO) Neigenroots
+          !
+        endif
+        !
         !if (job%IOextF_divide) close(iunit)
         !
         rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
@@ -1514,11 +1622,15 @@ contains
         !
         do imu = fitting%iparam(1),fitting%iparam(2)
           !
-          if (job%verbose>=4) write(out,"('  imu = ',i8)") imu
+          if (job%verbose>=4) write(out,"('  imu = ',i8)",advance='NO') imu
           !
           if (job%IOextF_divide) then
             !
-            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me)
+            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,ierror)
+            !
+            if (ierror==1) cycle
+            !
+            if (job%verbose>=4) write(out,"('.')",advance='YES')
             !
           else
             !
@@ -1559,14 +1671,14 @@ contains
           !!$omp end parallel do
           !
           !
-          if (job%IOextF_divide) then
-            !
-            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
-            !
-          else
+          if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
             write(chkptIO) imu
             write(chkptIO) mat_s
+            !
+          else
+            !
+            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
             !
           endif
           !
@@ -1577,11 +1689,6 @@ contains
         !
         if (.not.job%IOextF_divide) then
           !
-          write(chkptIO) 'End external field'
-          !
-          !job_is ='external field contracted matrix elements for J=0'
-          !call IOStart(trim(job_is),iunit)
-          !
           read(iunit) buf20(1:18)
           if (buf20(1:18)/='End external field') then
             write (out,"(' restore_Extvib_matrix_elements ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
@@ -1589,6 +1696,16 @@ contains
           end if
           !
           close(iunit,status='keep')
+          !
+          !job_is ='external field contracted matrix elements for J=0'
+          !call IOStart(trim(job_is),iunit)
+          !
+        endif
+        !
+        if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
+          !
+          write(chkptIO) 'End external field'
+          close(chkptIO,status='keep')
           !
         endif
         !
@@ -1651,7 +1768,7 @@ contains
       end subroutine divided_slice_write
       !       
       !
-      subroutine divided_slice_read(islice,name,suffix,N,field)
+      subroutine divided_slice_read(islice,name,suffix,N,field,ierror)
         !
         implicit none
         !
@@ -1659,11 +1776,14 @@ contains
         character(len=*),intent(in) :: name,suffix
         integer(ik),intent(in)      :: N
         real(rk),intent(out)        :: field(N,N)
+        integer(ik),intent(out)     :: ierror
         character(len=4)            :: jchar
         integer(ik)                 :: chkptIO
         character(len=cl)           :: buf,filename,job_is
         integer(ik)                 :: ilen
         logical                     :: ifopened
+        !
+        ierror = 0
         !
         write(job_is,"('single swap_matrix')")
         !
@@ -1673,7 +1793,7 @@ contains
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=15)
         !
         ilen = LEN_TRIM(name)
         !
@@ -1692,6 +1812,21 @@ contains
         end if
         !
         close(chkptIO)
+        !
+        return
+        !
+        ! This error code will allow simply skipping the corresponding record/file without crashing the program 
+        !
+   15   ierror = 1
+        !
+        ! we allow to skip opening the file only for the external matrix elements
+        !
+        if (trim(name)/="extF") then 
+          write (out,"(' kinetic divided_slice_read in slice ',a20,': file does not exist')") filename
+          stop 'divided_slice_read - in slice -  file does not exist'
+        endif
+        !
+        if (job%verbose>=4) write (out,"(' (skipped).')",advance='YES') 
         !
       end subroutine divided_slice_read
       !

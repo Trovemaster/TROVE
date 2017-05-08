@@ -11,7 +11,7 @@ module pot_xy2
   public MLpoten_xy2_morbid
   public MLpoten_xy2_halonen_I,MLpoten_xy2_dmbe,MLdms2pqr_xy2,MLloc2pqr_xy2,MLpoten_xy2_tyuterev
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
-  public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1
+  public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1
   private
  
@@ -52,12 +52,11 @@ module pot_xy2
          f1a333,f2a333,f1a133,f2a133,f1a3333,f1a1333 ,      & 
          f3,f33  ,f333 ,f133 ,f3333,f1333      
 
-   real(ark)  :: y1,y3,v,coro,v0,a1(3),a0(3),a2(3),t1,t2,w(3),cosalpha
+   real(ark)  :: y1,y3,v,coro,v0,a1(3),a0(3),a2(3),t1,t2,w(3),cosalpha,xyz0(3,3)
    integer(ik) :: vtype
    character(len=cl)     :: txt
    
    if (verbose>=6) write(out,"('MLpoten_xy2_morbid/start')") 
-
      !
      vtype = 2
      !
@@ -117,6 +116,29 @@ module pot_xy2
         if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
         !
         !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
+        !
+     case('R1-R2-Y+X')
+        !
+        call MLfromlocal2cartesian(1_ik,local,xyz0)
+        !
+        a1(:) = xyz0(3,:) - xyz0(1,:)
+        a2(:) = xyz0(2,:) - xyz0(1,:)
+        !
+        t1 =  sqrt(sum(a1(:)**2))
+        t2 =  sqrt(sum(a2(:)**2))
+        !
+        a1 =  a1(:)/t1
+        a2 =  a2(:)/t2
+        !
+        w(:) = MLvector_product(a1,a2)
+        !
+        cosalpha = sum(a1(:)*a2(:))
+        !
+        txt = "pot_xy2"
+        !
+        alpha = aacos(cosalpha,txt)
+        !
+        !if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
         !
      end select 
      !
@@ -2631,6 +2653,74 @@ endif
      f=sum*1.0e-11/planck/vellgt
  
    end function MLpoten_c3_mladenovic
+
+
+  !
+  ! B. Schröder and P. Sebald, JCP 2016 http://dx.doi.org/10.1063/1.4940780]
+  !
+  function MLpoten_c3_R_theta(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   real(ark)    ::   re,alphae,vpot, q(3),theta,y(3),p1,p2
+   integer(ik)  ::   i,k_ind(2)
+   real(ark),parameter :: tocm = 219474.63067_ark
+     !
+     re = force( 1)
+     alphae = force(2)
+     !
+     q(1)=local(1)-re
+     q(2)=local(2)-re
+     q(3) = local(3)-alphae*pi/180.0_ark
+     !
+     !p1=local(1)-re
+     !p2=local(2)-re
+     !
+     !q(1) = (p1+p2)*sqrt(0.5_ark)/bohr
+     !q(2) = (p1-p2)*sqrt(0.5_ark)/bohr
+     !
+     q(1:2) = q(1:2)/bohr
+     !
+     if  (molec%Ndihedrals>1) then
+       !
+       theta = asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+       q(3) = theta
+       !
+     endif
+     !
+     vpot = 0 
+     !
+     do i=3,molec%parmax
+       !
+       y(1:3) = q(1:3)**molec%pot_ind(1:3,i)
+       !
+       vpot=vpot+force(i)*product(y(1:3))
+       !
+       if (molec%pot_ind(1,i)/=molec%pot_ind(2,i)) then
+         !
+         k_ind(1) = molec%pot_ind(2,i)
+         k_ind(2) = molec%pot_ind(1,i)
+         !
+         y(1:2) = q(1:2)**k_ind(1:2)
+         !
+         vpot=vpot+force(i)*product(y(1:3))
+         !
+       endif
+       !
+     enddo
+     !
+     !f=vpot*1.0e-11/planck/vellgt
+     !
+     f=vpot*tocm
+     
+ 
+   end function MLpoten_c3_R_theta
+
+
+
 
    function MLpoten_h2s_dvr3d(ncoords,natoms,local,xyz,force) result(f) 
    !

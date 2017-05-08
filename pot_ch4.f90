@@ -68,7 +68,7 @@ module pot_user
    real(ark)              ::  f
     !
     real(ark) :: dx(5,3)
-    integer(ik),parameter :: n = 292
+    integer(ik),parameter :: n = 289
     integer(ik) :: i,k,nmax
     real(ark) :: dF(n)
      !
@@ -1376,13 +1376,13 @@ module pot_user
       dF(288) = (y9+y7+y8)*y1**5+(-y7+y9-y8)*y2**5+(-y8-y9+y7)*y3**5+(-y7-y9+y8)*y4**5
       dF(289) = y3**6+y4**6+y1**6+y2**6
       !
-      dF(290:292) = 0
+      !dF(290:292) = 0
       !
       !dF(290)  = (a12**2*t12+a13**2*t13+a14**2*t14+a23**2*t23+a24**2*t24+a34**2*t34)
       !dF(291)  = (a12**3*t12+a13**3*t13+a14**3*t14+a23**3*t23+a24**3*t24+a34**3*t34)
       !dF(292)  = (a12**4*t12+a13**4*t13+a14**4*t14+a23**4*t23+a24**4*t24+a34**4*t34)
       
-      dF(10:289) = vdump*dF(10:289)
+      !dF(10:289) = vdump*dF(10:289)
       !
       !
  end subroutine potch4_diff_V

@@ -539,7 +539,7 @@ module pot_xy4
        s4y=(alpha23-alpha14)/sqrt(2.0_ark)
        s4z=(alpha34-alpha12)/sqrt(2.0_ark)
        !
-    case('R-SYM')
+    case('R-SYM','R-SYM-F-E')
        !
        chi(1:9) = local(1:9) - molec%local_eq(1:9)
        !

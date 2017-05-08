@@ -62,16 +62,10 @@
       !
       if (intensity%do) then 
          !
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !if (trim(trove%moltype)/='XY3') then
-         !  !
-         !  write(out,"('this version of dipole.f90 is ONLY for the XY3 types, not for',a)") trim(trove%moltype)
-         !  !stop 'check the dipole.f90 for this type of molecules'
-         !  !
-         !endif
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !
-         call FLbsetInit
+         !call FLbsetInit
+         !call FLinitilize_Kinetic
+         !call FLinitilize_Potential
+         !call FLinit_External_field
          call PTinit(NPTorder,Nmodes,Npolyads)
          !
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
@@ -84,9 +78,13 @@
       !
       if (action%fitting) then 
          !
-         call FLbsetInit
          call PTinit(NPTorder,Nmodes,Npolyads)
-         call FLinitilize_Kinetic
+         !
+         !call FLinitilize_Kinetic
+         !call FLinitilize_Potential
+         !call FLinit_External_field
+         !call FLbsetInit
+         !
          call refinement_by_fit
          !
          if (job%verbose>=2) then 
@@ -176,7 +174,10 @@
       ! 
       ! Convert the J=0 basis set and mat.elements to the contracted represent. 
       !
-      if (action%convert_vibme) call TRconvert_matel_j0_eigen(j)
+      if (action%convert_vibme) then 
+         call TRconvert_matel_j0_eigen(j)
+         return 
+      endif
       !
       if (job%contrci_me_fast) then 
         !
@@ -191,6 +192,15 @@
       endif
       !
       call PThamiltonian_contract(j)
+      !
+      ! convert to j=0 representation as part of the first step j=0 calculation
+      !
+      if (job%convert_model_j0) then
+        !
+        call TRconvert_repres_J0_to_contr(j)
+        call TRconvert_matel_j0_eigen(j)
+        !
+      endif
       !
       call TimerStop('TROVE')
       !

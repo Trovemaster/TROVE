@@ -87,3 +87,45 @@ The lvib is now a part of the basis set definition
 
 21.09.2015
  contr_descr writing bug for Lvib is fixed
+
+22.11.2015
+ Added print_poten and print_kinetic also when the poten or kinetic fields are READ
+ Added a kinetic_skip to skip the kinetic part in hamltonian.chk in order to allow POTEN READ AND KINETIC NONE/SAVE
+
+29.12,2015
+ The symmeties Dnh(M) for n even have been implemenetd for n>2 and for rotation. 
+
+12.04.2016
+
+ Andrey's PES of C2H4 added to pot_c2h4
+ 
+03.05.2016
+ The new MB-dipole for C2H2, new coordinate system r-r1-r2-r-tx-ty-tx-ty which should now give correct symmetries of Eu/Eg 
+ dipole components and of the wavefunctions 
+
+ 11.05.2016
+ Changed symmetry of Dnh-rotational part to ide=1; if (mod(k+tau,2)/=0) ideg = 2 in order to fix the problem 
+ with missing Eu-band in C2H2
+
+
+ 13.05.2016
+ Rotational symmetry of Dnh: change to gamma = 8+2*l-1
+
+ 14.05.2016
+ The conversion to J=0 at the first step is implemented, used with eigenfunc save convert
+
+ 15.05.2016
+ Symmetries of Dnh are changed to 10g,10u,11g,11u etc to keep the format of 3 chars for symmetries
+
+ 26.05.2016
+  - vib_ci for extF - bug fixed
+  - the PES type _7 is replaced by D8h-one
+
+30.05.2016
+ - if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then: and to or
+
+08.06.2016
+ - enercut_matelem allows to skip matrix elements in matelem with energies above this threshold
+
+09.06.2016
+ - D10h type PES, 6th order, is re-implemented for tx-ty coordinates, C2H2

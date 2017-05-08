@@ -22,7 +22,7 @@ module molecules
   use pot_zxy3
   use pot_xy4
   use pot_ch3oh
-  use pot_c2h4
+  use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
   use symmetry,     only : sym
@@ -93,6 +93,10 @@ module molecules
     case('POTEN_XY3_MORBID_10','POTEN_XY3_MORBID_10_MEP') 
          !
          MLpotentialfunc => MLpoten_xy3_morbid_10
+         !
+    case('POTEN_XY3_MORBID_11') 
+         !
+         MLpotentialfunc => MLpoten_xy3_morbid_11
          !
     case('POTEN_XY2_SCHWENKE') 
          !
@@ -174,6 +178,34 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_7
          !
+     case('POTEN_C2H2_7_Q1Q2Q3Q4') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_q1q2q3q4         
+         !
+     case('POTEN_C2H2_7_Q2Q1Q4Q3') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3         
+         !
+     case('POTEN_C2H2_7_415') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_415
+         !
+     case('POTEN_C2H2_7_XYZ') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_xyz
+         !
+     case('POTEN_C2H2_7_R_RR_NNNN') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_rr_nnnn
+         !
+     case('POTEN_C2H2_7_R_RR_XY') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_rr_xy
+         !
+     case('POTEN_C2H2_7_R_ZZ_NNNN') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_r_zz_nnnn
+         !
      case('POTEN_C2H2_STREYMILLS') 
          !
          MLpotentialfunc =>  MLpoten_c2h2_streymills
@@ -189,6 +221,10 @@ module molecules
      case('POTEN_C2H2_MLT') 
          !
          MLpotentialfunc => MLpoten_v_c2h2_mlt
+         !
+     case('POTEN_P2H2_MORSE_COS') 
+         !
+         MLpotentialfunc => MLpoten_p2h2_morse_cos
          !
     case('POTEN_XY2_MORBID') 
          !
@@ -229,6 +265,10 @@ module molecules
     case('POTEN_C3_MLADENOVIC') 
          !
          MLpotentialfunc => MLpoten_c3_mladenovic
+         !
+    case('POTEN_C3_R_THETA') 
+         !
+         MLpotentialfunc => MLpoten_c3_R_theta
          !
     case('POTEN_H2S_DVR3D') 
          !
@@ -277,6 +317,10 @@ module molecules
     case('POTEN_C2H4_88') 
          !
          MLpotentialfunc => MLpoten_c2h4_88
+         !
+    case('POTEN_C2H4_886666') 
+         !
+         MLpotentialfunc => MLpoten_c2h4_886666
          !
     case('POTEN_ZXY3_SYM') 
          !
@@ -396,6 +440,22 @@ end function ML_MEPfunc
        !
        MLextF_func => MLdms_hooh_MB
        !
+       ! Molecular Bond representaion of the DMS of HPPH
+       !
+    case('HPPH_MB')
+       !
+       MLextF_func => MLdms_hpph_MB
+       !
+       ! Molecular Bond representaion of the DMS of HCCH
+       !
+    case('HCCH_MB')
+       !
+       MLextF_func => MLdms_hcch_MB
+       !
+    case('HCCH_DMS_7D')
+       !
+       MLextF_func => MLdms_HCCH_7D
+       !
     case('COORDINATES')
        !
        MLextF_func => MLextF_coordinates
@@ -414,7 +474,7 @@ end function ML_MEPfunc
        !
     case('DIPOLE_C2H4_4M') 
        !
-       MLextF_func => MLdipole ! dummy dipole does not work
+       MLextF_func => ML_dipole_c2h4_4m_dummy  ! dummy dipole does not work
        !
     case('DIPOLE','USER','GENERAL','DIPOLE_USER')
        !
