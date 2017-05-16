@@ -2036,6 +2036,7 @@ module fields
                   trove%separate_store = .true.
                elseif (trim(w)=='CONVERT') then
                   trove%separate_convert = .true.
+                  if (trove%separate_store)  trove%IO_hamiltonian = 'SAVE'
                else
                    call report (" Illegal record after hamilton",.true.)
                endif
@@ -12328,7 +12329,9 @@ end subroutine check_read_save_none
         !
         call HamiltonianSave
         !
-        if (trove%separate_store) then
+        !call HamiltonianSave_2007
+        !
+        if (trove%separate_store.and..not.trove%separate_convert) then
           !
           ! use kinetic.chk and potential.chk as ASCII
           !
@@ -12345,7 +12348,7 @@ end subroutine check_read_save_none
         !
         call checkpointRestore_kinetic
         !
-        if (trove%separate_convert) call KineticSave_ASCII
+        if (trove%separate_convert.and..not.trove%separate_store) call KineticSave_ASCII
         !
         if (trove%separate_store) call checkpointRestore_kinetic_ascii
         !
@@ -12359,7 +12362,7 @@ end subroutine check_read_save_none
           call checkpointRestore_potential
         endif
         !
-        if (trove%separate_convert) call PotentialSave_ASCII
+        if (trove%separate_convert.and..not.trove%separate_store) call PotentialSave_ASCII
         !
       case ('EXTERNAL_READ')
         !
@@ -13174,7 +13177,7 @@ end subroutine check_read_save_none
         write(chkptIO) 'dBmatrho'
         write(chkptIO) trove%dBmatrho
         !
-        if (trove%separate_store) return
+        if (trove%separate_store.and..not.trove%separate_convert) return
         !
         write(chkptIO) 'g_vib'
         write(chkptIO) trove%g_vib(1,1)%Ncoeff
@@ -13264,6 +13267,129 @@ end subroutine check_read_save_none
         !
       end subroutine HamiltonianSave
 
+      !
+      ! this is the original version of HamiltonianSave uspporting a differnt, old format of hamiltonian.chk
+      !
+      subroutine HamiltonianSave_2007
+
+        character(len=cl)  :: unitfname
+        integer(ik)        :: Nmodes,k1,k2,chkptIO
+        type(FLpolynomT),pointer    :: fl
+        logical     :: i_opened
+        !
+        if (job%verbose>=3) write(out,"(/'Store all objects defining the Hamiltonian...')")
+        !
+        unitfname ='Check point of the Hamiltonian'
+        call IOStart(trim(unitfname),chkptIO)
+        !
+        inquire (chkptIO,opened=i_opened)
+        !
+        if (i_opened) close(chkptIO)
+        !
+        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=trove%chk_hamil_fname)
+        !
+        write(chkptIO) 'Start Hamiltonian objects'
+        !
+        Nmodes = trove%Nmodes
+        !
+        !
+        write(chkptIO) 'Amatrho'
+        write(chkptIO) trove%Amatrho
+        !
+        write(chkptIO) 'dAmatrho'
+        write(chkptIO) trove%dAmatrho
+        !
+        write(chkptIO) 'Bmatrho'
+        write(chkptIO) trove%Bmatrho
+        !
+        write(chkptIO) 'dBmatrho'
+        write(chkptIO) trove%dBmatrho
+        !
+        write(chkptIO) 'g_vib'
+        write(chkptIO) trove%g_vib(1,1)%Ncoeff
+        !
+        do k1 = 1,Nmodes
+           do k2 = 1,Nmodes
+              !
+              write(chkptIO) trove%g_vib(k1,k2)%field
+              write(chkptIO) trove%g_vib(k1,k2)%iorder
+              !
+           enddo
+        enddo
+        !
+        write(chkptIO) 'g_rot'
+        write(chkptIO) trove%g_rot(1,1)%Ncoeff
+        !
+        do k1 = 1,3
+           do k2 = 1,3
+              !
+              write(chkptIO) trove%g_rot(k1,k2)%field
+              write(chkptIO) trove%g_rot(k1,k2)%iorder
+              !
+           enddo
+        enddo
+        !
+        write(chkptIO) 'g_cor'
+        write(chkptIO) trove%g_cor(1,1)%Ncoeff
+        !
+        do k1 = 1,Nmodes
+           do k2 = 1,3
+              !
+              write(chkptIO) trove%g_cor(k1,k2)%field
+              write(chkptIO) trove%g_cor(k1,k2)%iorder
+              !
+           enddo
+        enddo
+        !
+        fl => trove%pseudo
+        !
+        write(chkptIO) 'pseudo'
+        write(chkptIO) trove%pseudo%Ncoeff
+        write(chkptIO) trove%pseudo%field
+        write(chkptIO) trove%pseudo%iorder
+        !
+        if (FLl2_coeffs) then
+          !
+          write(chkptIO) 'L2_vib'
+          write(chkptIO) trove%L2_vib(1,1)%Ncoeff
+          !
+          do k1 = 1,Nmodes
+             do k2 = 1,Nmodes
+                !
+                write(chkptIO) trove%L2_vib(k1,k2)%field
+                write(chkptIO) trove%L2_vib(k1,k2)%iorder
+                !
+             enddo
+          enddo
+        endif
+        !
+        write(chkptIO) 'poten'
+        write(chkptIO) trove%poten%Ncoeff
+        write(chkptIO) trove%poten%field
+        write(chkptIO) trove%poten%iorder
+        !
+        write(chkptIO) 'End Hamiltonian objects'
+        !
+        if (trim(trove%IO_ext_coeff)=='SAVE') then
+          !
+          write(chkptIO) 'extF'
+          write(chkptIO) trove%extF(1)%Ncoeff
+          !
+          do k1 = 1,extF%rank
+             !
+             write(chkptIO) trove%extF(k1)%field
+             write(chkptIO) trove%extF(k1)%iorder
+             !
+          enddo
+          !
+          write(chkptIO) 'End External object'          
+          !
+        endif
+        !
+        close(chkptIO,status='keep')
+        !
+      end subroutine HamiltonianSave_2007
+      !
 
       subroutine KineticSave_ASCII
 
