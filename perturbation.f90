@@ -17659,9 +17659,9 @@ module perturbation
            hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
            !
         enddo
+        !$omp end parallel do
 	    !
       enddo
-      !$omp end parallel do
       !
     end subroutine  calc_vib_contr_matrix
     !
@@ -32865,7 +32865,7 @@ subroutine PTstore_contr_matelem(jrot)
   forall(n=1:maxnterms) terms(Nmodes,n)=n
 
   ! set all powers for the last class  and last mode to 0
-  forall(n=1:maxnterms) terms(Nmodes,n)=0
+  !forall(n=1:maxnterms) terms(Nmodes,n)=0
   !
   if (job%verbose>=4) then 
       write(out, *)
@@ -33159,7 +33159,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          fl => me%gvib(imode,jmode)
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,nterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
          !
        enddo ! jmode
      enddo ! imode
@@ -33905,17 +33905,17 @@ subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itospar
           !
           itotal = itotal + 1
           !
-          qindex = FLQindex(trove%Nmodes_e,ipowers)
+          qindex = FLQindex(trove%Nmodes-1,ipowers)
           !
           if (qindex>maxnterms) cycle
           !
-          isparse = itosparse(qindex)
+          !isparse = itosparse(qindex)
           !
-          if (isparse==0) cycle
+          !if (isparse==0) cycle
           !
           iactual = iactual + 1
           !
-          ifield(itotal) = iactual
+          ifield(itotal) = qindex ! isparse ! iactual
           !
           return
           !
