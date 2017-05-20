@@ -126,13 +126,14 @@ module perturbation
 
    type PTcoeffT
       integer(ik)          :: Ncoeff
+      integer(ik)          :: MaxNterms
       integer(ik),pointer  :: iorder(:)     
       real(rk),pointer     :: coeff(:,:,:) 
       integer(ik),pointer  :: IndexQ(:,:) 
-      !integer(ik),pointer  :: ifromsparse(:)
+      integer(ik),pointer  :: ifromsparse(:)
       !integer(ik),pointer  :: itosparse(:)
       !integer(ik),pointer  :: uniq_iclass(:)
-      !integer(ik),pointer  :: uniq_icomb(:)
+      integer(ik),pointer  :: ifield(:)
       integer(ik),pointer  :: nterms(:) 
       integer(ik),pointer  :: iterm(:,:) 
       integer(ik),pointer  :: uniq(:,:) 
@@ -15749,9 +15750,9 @@ module perturbation
                 !
                 if (job%vib_rot_contr) grot_t = 0
                 !
-                !call calc_grot_contr_matrix_II(k1,k2,isymcoeff,grot_t)
+                call calc_grot_contr_matrix_III(k1,k2,isymcoeff,grot_t)
                 !
-                call calc_field_contr_matrix(isymcoeff,me%grot(k1,k2),grot_t)
+                !call calc_field_contr_matrix(isymcoeff,me%grot(k1,k2),grot_t)
                 !
                 if (job%vib_rot_contr) then 
                   !
@@ -16092,9 +16093,9 @@ module perturbation
                 !
                 if (job%vib_rot_contr) hvib_t = 0
                 !
-                !call calc_gvib_contr_matrix(k1,k2,isymcoeff,hvib_t)
+                call calc_gvib_contr_matrix_III(k1,k2,isymcoeff,hvib_t)
                 !
-                call calc_field_contr_matrix(isymcoeff,me%gvib(k1,k2),hvib_t)
+                !call calc_field_contr_matrix(isymcoeff,me%gvib(k1,k2),hvib_t)
                 !
               enddo
               !
@@ -17552,6 +17553,233 @@ module perturbation
      !
     end subroutine  calc_gcor_contr_matrix_II
     !
+
+
+    subroutine  calc_grot_contr_matrix_III(k1,k2,isymcoeff,grot)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      !
+      !integer(ik),intent(in) :: nu_classes(PT%Nclasses,PT%Maxcontracts)
+      !integer(ik),intent(in) :: grot_icomb_nterms(0:ncomb,3,3)
+      !
+      real(rk),intent(out)   :: grot(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,iclass,nmodes,nu_i,nu_j
+      integer(ik) :: Maxcontracts,jsymcoeff
+      type(PTcoeffT),pointer   :: fl
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      integer :: info_p,info,Ncoeff
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      !
+      Maxcontracts = PT%Maxcontracts
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      energy_i = enermax_classes(isymcoeff)
+      !
+      fl => me%grot(k1,k2)
+      Ncoeff = fl%Ncoeff
+      !
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("grot:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,matelem,iclass,nu_i,nu_j,icoeff) shared(grot,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array grot: me_class0_vec')") info_p
+           stop 'calc_grot_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+          !
+          if (debug_cut_matelem_with_enermax) then 
+            jsymcoeff = PT%icontr2icase(jcontr,1)
+            energy_j = enermax_classes(jsymcoeff)
+            if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+          endif
+          !
+          call do_sum_of_prods_by_classes(fl%maxnterms,fl%nterms,fl%ifield,icontr,jcontr,matelem)
+          !
+          grot(jcontr,icontr) = grot(jcontr,icontr) + matelem
+          !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("grot:uniqu_trans")
+      !
+    end subroutine calc_grot_contr_matrix_III
+
+
+
+    subroutine  calc_gvib_contr_matrix_III(k1,k2,isymcoeff,hvib)
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: k1,k2,isymcoeff
+      real(rk),intent(inout) :: hvib(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j,i
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen)
+      integer(ik),allocatable :: uniqu_trans(:,:)
+      integer :: info_p,info
+      real(rk),allocatable	:: me_class0_vec(:,:)
+      type(PTcoeffT),pointer   :: fl
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
+      !
+      Maxcontracts = PT%Maxcontracts
+      !
+      fl => me%gvib(k1,k2)
+      !
+      Ncoeff = fl%Ncoeff
+      allocate(uniqu_trans(Ncoeff,nclasses),stat=info)
+      call ArrayStart("gvib:uniqu_trans",info,size(uniqu_trans),kind(uniqu_trans))
+      !
+      uniqu_trans = transpose(fl%uniq)
+      !
+      if (.not.debug_check_symmetries) then
+        isym(:) = isymcoeff_vs_isym(:,isymcoeff)
+        do i =1,sym%Nrepresen 
+          if (isym(i)==0) isym(i) = -1
+        enddo
+      endif
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) shared(hvib,uniqu_trans) 
+        !
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
+           stop 'calc_gvib_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do  schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           if (.not.debug_check_symmetries) then
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
+             if ( all( isym(:)/=jsym(:) ) ) cycle
+           endif
+           !
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
+           !        
+           call do_sum_of_prods_by_classes(fl%maxnterms,fl%nterms,fl%ifield,icontr,jcontr,matelem)
+           !
+           hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !
+        enddo
+	    !
+	    deallocate(me_class0_vec)
+	    !
+        !$omp end parallel 
+      enddo
+      !
+      deallocate(uniqu_trans)
+      call ArrayStop("gvib:uniqu_trans")
+      !
+    end subroutine  calc_gvib_contr_matrix_III
+    !
+
+
+    subroutine do_sum_of_prods_by_classes(maxnterms,nterms,ifield,icontr,jcontr,me_tot)
+      !
+      !
+      implicit none
+      !
+      integer(ik),intent(in) :: maxnterms,nterms(PT%Nclasses),icontr,jcontr
+      integer(ik),intent(in) :: ifield(:)
+      real(rk),intent(out) :: me_tot
+      integer(ik) :: iclass
+      integer(ik) :: itotal,iactual
+        !
+        ! ititialization
+        !
+        iclass = 0
+        iactual = 0
+        itotal = 0
+        !me_tot = 0
+        !
+        call do_expansion(iclass+1_ik,nterms,icontr,jcontr,itotal,ifield,me_tot)
+        !
+    end subroutine do_sum_of_prods_by_classes
+
+
+    recursive subroutine do_expansion(iclass,nterms,icontr,jcontr,itotal,ifield,me_tot)
+       !
+       implicit none
+       !
+       integer(ik),intent(in) :: nterms(PT%Nclasses),icontr,jcontr
+       real(rk),intent(inout) :: me_tot
+       integer(ik) :: iclass
+       integer(ik),intent(out) :: itotal
+       integer(ik),intent(in)  :: ifield(:)
+       integer(ik) :: iterm,ipowers(PT%nmodes),qindex,isparse,imode1,imode2
+       real(rk) :: me_prod,me_class
+       integer(ik) :: nu_i,nu_j,iactual
+       !
+       imode1 = PT%mode_class(iclass,1)
+       imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+       !
+       nu_i = nu_classes(iclass,icontr)
+       nu_j = nu_classes(iclass,jcontr)
+       !
+       me_tot = 0
+       !
+       do iterm=1,nterms(iclass)
+         !
+         !ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
+         !
+         if (iclass == PT%Nclasses) then
+           !
+           itotal = itotal + 1
+           !
+           iactual = ifield(itotal)
+           !
+           if (iactual==0) cycle
+           !
+           me_tot = gme(iclass)%me(iactual,nu_i,nu_j)
+           !
+           return
+           !
+         endif
+         !
+         call do_expansion(iclass+1_ik,nterms,icontr,jcontr,itotal,ifield,me_prod)
+         !
+         me_class = me_prod*gme(iclass)%me(iterm,nu_i,nu_j)
+         !
+         me_tot = me_tot+me_class 
+         !
+       enddo
+       !
+    end subroutine do_expansion
+    !
     !
     subroutine  calc_gvib_contr_matrix_II(k1,k2,isymcoeff,hvib)
       !
@@ -17715,7 +17943,7 @@ module perturbation
              energy_j = enermax_classes(jsymcoeff)
              if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
            endif
-           !        
+           !
            matelem = 0
            do iclass=1,Nclasses-1
                !
@@ -18258,7 +18486,6 @@ module perturbation
       integer(ik),intent(in) :: imode,jmode
       type(me_class),intent(inout)   :: grotme(PT%Nclasses)
       !
-      !real(rk), allocatable,intent(out)   :: grotme_Nclass(:,:,:)
       integer(ik) :: iclass,nclass,dimen,nprim,ilevel,ideg,iroot,nterms_field,icoeff,iterm,info,Nmodes,idimen,nterms
       integer(hik) :: matsize
       type(PTcoeffT),pointer  :: fl 
@@ -18284,19 +18511,6 @@ module perturbation
       !
       if (me%grot(imode,jmode)%Ncoeff==0) return
       !
-      !matsize = int(nterms_field*dimen*dimen,hik)
-      !
-      !if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' grot matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
-      !                    matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
-      
-      !if (allocated(grotme_Nclass)) then
-      !  call ArrayStop("matelem_Nclass")
-      !  deallocate(grotme_Nclass)
-      !endif
-      !
-      !allocate(grotme_Nclass(nterms_field,dimen,dimen), stat=info)
-      !call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
-      !grotme_Nclass= 0
       !
       do iclass = 1,nclass
         !
@@ -18311,7 +18525,10 @@ module perturbation
         idimen = contr(iclass)%nroots
         nterms = grot_me(iclass)%nterms
         !
-        if (iclass==nclass) nterms = me%grot(imode,jmode)%Ncoeff
+        if (iclass==nclass) then 
+          !nterms = me%grot(imode,jmode)%Ncoeff
+          nterms = me%grot(imode,jmode)%MaxNterms
+        endif
         !
         allocate(grotme(iclass)%me(nterms,idimen,idimen), stat=info)
         call ArrayStart(trim(skey),info,1_ik,rk,size(grotme(iclass)%me,kind=hik))
@@ -18328,13 +18545,19 @@ module perturbation
       call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
-      grotme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
+      grotme(nclass)%me(:,:,:) = 0
+      !
+      do icoeff = 1,fl%Ncoeff
+        !
+        iterm = fl%ifromsparse(icoeff)
+        !
+        grotme(nclass)%me(iterm,:,:) = grotme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
+        !
+      enddo
       !
       do iclass = 1,nclass-1
          grotme(iclass)%me(:,:,:) = grot_class(iclass)%me
       enddo   
-      !
-      !grotme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
       !
       if (fl%Ncoeff/=me%grot(imode,jmode)%Ncoeff) then 
         write(out,"('PTstore_contr_matelem error: Ncoeffs do not agree for non-diagonal grot-fields =',2i8)") fl%Ncoeff,me%grot(jmode,imode)%Ncoeff
@@ -18385,16 +18608,6 @@ module perturbation
       !
       if (me%gvib(imode,jmode)%Ncoeff==0) return
       !
-      !matsize = int(nterms_field*dimen*dimen,hik)
-      !
-      !if (job%verbose>=5) write(out,"('  Allocating ',i6,'x',i7,'x',i7,' = ',i12,' gvib matrix of ',f15.4,' gb')") nterms_field,dimen,dimen,& 
-      !                    matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
-      !
-      !if (allocated(gvibme_Nclass)) then
-      !  call ArrayStop("matelem_Nclass")
-      !  deallocate(gvibme_Nclass)
-      !endif
-      !
       do iclass = 1,nclass
         !
         write(sclass,'(i4)') iclass
@@ -18408,16 +18621,12 @@ module perturbation
         idimen = contr(iclass)%nroots
         nterms = gvib_me(iclass)%nterms
         !
-        if (iclass==nclass) nterms = me%gvib(imode,jmode)%Ncoeff
+        if (iclass==nclass) nterms = me%gvib(imode,jmode)%MaxNterms
         !
         allocate(gvibme(iclass)%me(nterms,idimen,idimen), stat=info)
         call ArrayStart(trim(skey),info,1_ik,rk,size(gvibme(iclass)%me,kind=hik))
         !
       enddo
-      !
-      !allocate(gvibme_Nclass(nterms_field,dimen,dimen), stat=info)
-      !call ArrayStart("matelem_Nclass",info,1_ik,rk,matsize)
-      !gvibme_Nclass= 0
       !
       fl => me%gvib(imode,jmode)
       !
@@ -18434,9 +18643,17 @@ module perturbation
       !
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
-      !gvibme_Nclass(1:fl%Ncoeff,:,:) = me_contr(1:fl%Ncoeff,:,:)
+      gvibme(nclass)%me(:,:,:) = 0
       !
-      gvibme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
+      do icoeff = 1,fl%Ncoeff
+        !
+        iterm = fl%ifromsparse(icoeff)
+        !
+        gvibme(nclass)%me(iterm,:,:) = gvibme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
+        !
+      enddo
+      !
+      !gvibme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
       do iclass = 1,nclass-1
         !
@@ -32562,16 +32779,21 @@ subroutine PTstore_contr_matelem(jrot)
                  n, iclass_imode(2,PT%Nclasses), nterms, nmodes_class, imode, jmode, kmode, lmode, & 
                  iterm, kterm, nprim, term(PT%Nmodes), &
                  ncomb, icomb, iterm_, nterms_, jterm, imode_, jmode_, icomb_maxnterms, imode1, & 
-                 imode2,ipar,extF_rank,icoeff, kclass, nterms_field
-  integer(ik) ::  target_index(PT%Nmodes)
+                 imode2,ipar,extF_rank,icoeff, kclass, nterms_field, nterms0
+  integer(ik) ::  target_index(PT%Nmodes),Nfield_terms
   integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,Jmax,L2vib_N,ipos,ipos_,iroot,ilevel,ideg
-  integer(ik),allocatable :: extF_N(:), IndexQ(:,:)
+  integer(ik),allocatable :: extF_N(:), IndexQ(:,:),IndexQ0(:,:)
   integer(ik), allocatable :: icomb_nclasses(:), icomb_iclass(:,:), icomb_nterms(:), icomb_iterm(:,:), terms_uniq(:,:,:), &
                               iterm_uniq(:,:),iunique_iterm(:,:)
 
+
+  integer(ik), allocatable :: ijmode_icomb_iterm(:,:,:), ijmode_icomb_nterms(:), ifromsparse(:), itosparse(:)
+
+
+
   integer(ik), allocatable :: terms(:,:)
   real(rk) :: coef_thresh, c
-  real(rk), allocatable :: me_contr(:,:,:), ijmode_icomb_coefs(:,:), ifromsparse(:)
+  real(rk), allocatable :: me_contr(:,:,:), ijmode_icomb_coefs(:,:)
   character(cl) :: func_tag,skey,sclass,skey_cls
   integer(hik)  :: matsize
   logical :: match
@@ -32621,6 +32843,7 @@ subroutine PTstore_contr_matelem(jrot)
   call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
   !
   ! expansion indices
+
   !
   target_index = 0 
   target_index(1) = max(potorder,kinorder,extForder)
@@ -32641,8 +32864,16 @@ subroutine PTstore_contr_matelem(jrot)
   call ArrayStart('PTstore_contr_matelem:IndexQ',info,size(IndexQ),kind(IndexQ))
   IndexQ = terms
   !
+  nterms0 = FLQindex(trove%Nmodes-1,target_index)
+  allocate(IndexQ0(Nmodes,nterms0), stat=info)
+  call ArrayStart('PTstore_contr_matelem:IndexQ0',info,size(IndexQ0),kind(IndexQ0))
+  nterms0 = FLQindex(trove%Nmodes-1,target_index,IndexQ0)
+  !
   ! set all powers for the last class  and last mode to n, which is a running term, just to make sure it is unique and non-zero
   forall(n=1:maxnterms) terms(Nmodes,n)=n
+
+  ! set all powers for the last class  and last mode to 0
+  forall(n=1:maxnterms) terms(Nmodes,n)=0
   !
   if (job%verbose>=4) then 
       write(out, *)
@@ -32743,244 +32974,207 @@ subroutine PTstore_contr_matelem(jrot)
   !------------------------------------------------------------------!
   !
   if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==0) ) then 
-      !
-      !
-      if (job%verbose>=4) write(out, '(/1x,a)') 'Compute and store matrix elements of Gvib'
-      !
-      func_tag = 'Tvib'
-      !
-      target_index = 0 
-      target_index(1) = KinOrder
-      nterms= FLQindex(trove%Nmodes_e,target_index)
-      !
-      if (job%verbose>=5) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gvib:', nterms
+     !
+     !
+     if (job%verbose>=4) write(out, '(/1x,a)') 'Compute and store matrix elements of Gvib'
+     !
+     func_tag = 'Tvib'
+     !
+     target_index = 0 
+     target_index(1) = KinOrder
+     nterms= FLQindex(trove%Nmodes_e,target_index)
+     nterms0= FLQindex(trove%Nmodes-1,target_index)
+     !
+     if (job%verbose>=5) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gvib:', nterms
  
-      call split_terms_comb(nmodes, nterms, terms(1:nmodes,1:nterms),&
-                            nclasses, iclass_imode(1:2,1:nclasses), &
-                            ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb),&
-                            icomb_nterms(0:ncomb),icomb_iterm(:,0:ncomb),&
-                            iunique_iterm(:,1:2) )
-      !
-      if (job%verbose>=4) then 
-        write(out, '(/1x,a)') 'max number of expansion terms for each combination of classes:'
-        do icomb=0, ncomb
-          write(out, '(1x,a,1x,i3,3x,a,1x,i6)') 'icomb =', icomb, 'nterms =', icomb_nterms(icomb)
-        enddo
-      endif
-      !
-      if (sum(icomb_nterms(0:ncomb))/=nterms) then
-        write(out, '(/a,1x,i6,1x,a,1x,i6)') &
-        'PTstore_contr_matelem error: number of Gvib expansion terms among all combinations of classes =', sum(icomb_nterms(0:ncomb)), &
-        'differs from the total number of terms =', nterms
-        stop
-      endif
-      !
-      !nterms_uniq:  total number of terms in each class
-      !terms_uniq :  powers for a given ipos in a given class 
-      !iterm_uniq :  correlation from iterm to the uniq-position for a given class
-      !
-      call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses, iclass_imode(1:2,1:nclasses), &
-                            nterms_uniq(1:nclasses), iterm_uniq(1:nclasses,1:nterms), terms_uniq(1:nmodes,1:nterms,1:nclasses))
-      !
-      if (job%verbose>=5) write(out, '(/1x,a,100(1x,i6))') 'max number of unique terms in each class:', nterms_uniq(1:nclasses)
-      !
-      ! compute and store contracted matrix elements for unique expansion terms only within each class
-      !
-      allocate(gvib_me(nclasses), stat=info)
-      if (info/=0) then
-        write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate gvib_me(nclasses)', 'nclasses =', nclasses
-        stop
-      endif
-      !
-      allocate(gvib_class(nclasses,0:nmodes,0:nmodes), stat=info)
-      if (info/=0) then
-        write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate gvib_class(nclasses)', 'nclasses =', nclasses
-        stop
-      endif
-      !
-      do iclass=1, nclasses-1
-        !
-        if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
-        !
-        gvib_me(iclass)%nterms = nterms_uniq(iclass)
-        !
-        nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
-        dimen = contr(iclass)%nroots
-        nprim = contr(iclass)%dimen
-        !
-        write(sclass,'(i4)') iclass
-        skey_cls = 'gvib_class('//trim(adjustl(sclass))//')'
-        !
-        if (job%verbose>=5) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. modes, no. unique terms, no. basis functions:', nmodes_class, nterms_uniq(iclass), dimen
-        !
-        ! allocate array to keep contracted matrix elements
-        !
-        if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
-        !
-        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-        call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
-        !
-        !if (nprim>dimen) then
-        !  write(out,"('PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen:',2i12)") nprim,dimen
-        !  stop 'PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen'
-        !endif
-        !
-        !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
-        !
-        !if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,' = ',i12,' gvib matrix of ',f15.4,' gb')") & 
-        !                    nterms_uniq(iclass),dimen,dimen,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
-        !
-        !allocate(gvib_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,nmodes,nmodes), stat=info)
-        !write(sclass,'(i4)') iclass
-        !skey = 'gvib_me('//trim(adjustl(sclass))//')'
-        !call ArrayStart(trim(skey),info,1_ik,rk,matsize)
-        !gvib_me(iclass)%me = 0
-        !
-        ! compute contracted matrix elements for operators: G, p_i*G, G*p_i, p_i*G*p_j
-        !
-        if (job%verbose>=5) write(out, '(3x,a,3x,a,5x,a)') 'p_i*Gvib*p_j:', 'i', 'j'
-        !
-        ! <G>
-        !
-        call calc_contr_matelem_expansion_p0(iclass,func_tag, nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
-        call store_contr_matelem_expansion(0,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
-        !
-        !do imode=1,nmodes
-        !  if (iclass_imode(1,iclass)<=imode.and.imode<=iclass_imode(2,iclass)) cycle
-        !  do jmode=1,nmodes 
-        !    if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
-        !    gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
-        !  enddo
-        !enddo
-        !
-        allocate(gvib_class(iclass,0,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
-        call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,0)%me,kind=hik))
-        gvib_class(iclass,0,0)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
-        !
-        if (job%verbose>=5) write(out, '(17x,i3,3x,i3)') 0, 0
-        !
-        ! <p_i*G> and <G*p_i>
-        !
-        imode_ = 0
-        do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
-          imode_ = imode_ + 1
-          !
-          call calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
-          call store_contr_matelem_expansion(0,imode_,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
-          !
-          !do jmode=1,nmodes
-          !  if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
-          !  gvib_me(iclass)%me(:,:,:,jmode,imode) = me_contr(:,:,:)
-          !enddo
-          !
-          allocate(gvib_class(iclass,0,imode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
-          call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,imode_)%me,kind=hik))
-          !
-          gvib_class(iclass,0,imode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
-          !
-          if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, imode
-          do iterm=1, nterms_uniq(iclass)
-            me_contr(iterm,:,:) = -transpose(me_contr(iterm,:,:))
-          enddo
-          !
-          call store_contr_matelem_expansion(imode_,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
-          !
-          !do jmode=1,nmodes 
-          !  if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
-          !  gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
-          !enddo
-          !
-          allocate(gvib_class(iclass,imode_,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
-          call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,imode_,0)%me,kind=hik))
-          gvib_class(iclass,imode_,0)%me = me_contr
-          !
-          if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, 0
-        enddo
-        !
-        ! <p_i*G*p_j>
-        !
-        imode_ = 0
-        do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
-          imode_ = imode_ + 1
-          jmode_ = 0
-          do jmode=iclass_imode(1,iclass), iclass_imode(2,iclass)
-            jmode_ = jmode_ + 1
-            !
-            if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, jmode
-            !
-            call calc_contr_matelem_expansion_p2(imode,jmode,iclass,func_tag,nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
-            call store_contr_matelem_expansion(imode_,jmode_,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
-            !
-            !gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
-            !
-            allocate(gvib_class(iclass,imode_,jmode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
-            call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,imode_,jmode_)%me,kind=hik))
-            !
-            gvib_class(iclass,imode_,jmode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
-            !
-          enddo
-        enddo
-        !
-        deallocate(me_contr)
-        call ArrayStop('PTstore_contr_matelem:me_contr')
-        !
-      enddo ! iclass
-      !
-      ! Build the correlation betweem comb-pos and icoeff-representations of the field 
-      !
-      do imode=1,nmodes
-        do jmode=1,nmodes
-          !
-          if (job%verbose>=6) write(out, '(1x,i6,1x,i6)') imode,jmode
-          !
-          fl => me%gvib(imode,jmode)
-          !
-          allocate(fl%uniq(Nclasses,fl%Ncoeff),stat=info)
-          call ArrayStart('gvib-uniq',info,size(fl%uniq),kind(fl%uniq))
-          !
-          allocate(fl%Nterms(Nclasses),stat=info)
-          call ArrayStart('gvib-uniq',info,size(fl%Nterms),kind(fl%Nterms))
-          !
-          allocate(fl%iterm(Nclasses,maxval(nterms_uniq)),stat=info)
-          call ArrayStart('gvib-uniq',info,size(fl%iterm),kind(fl%iterm))
-          !
-          allocate(ifromsparse(fl%Ncoeff),stat=info)
-          call ArrayStart('gvib-ifromsparse',info,size(ifromsparse),kind(ifromsparse))
-          !
-          loop_icoeff_gvib : do icoeff = 1,fl%Ncoeff
-            do iterm=1,maxnterms
-                if (all(fl%IndexQ(:,icoeff)==IndexQ(:,iterm))) then
-                  ifromsparse(icoeff) = iterm
-                  cycle loop_icoeff_gvib 
-                endif
-            enddo
-            !
-            write(out,"('PTstore_contr_matelem: corr, could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',<nmodes>i4)") icoeff, fl%IndexQ(:,icoeff)
-            stop 'PTstore_contr_matelem: corr, could not find a sparse-not-sparse-match'
-            !
-          enddo loop_icoeff_gvib
-          !
-          ! reconstruct correlation from icoeff to uniq-term(iclass)
-          !
-          do icoeff = 1,fl%Ncoeff
-            !
-            iterm_ = ifromsparse(icoeff)
-            !
-            do kclass=1,Nclasses
-              fl%uniq(kclass,icoeff) = iterm_uniq(kclass,iterm_)
-            enddo
-          enddo
-          deallocate(ifromsparse)
-          call ArrayStop('gvib-ifromsparse')
-          !
-          fl%iterm = iterm_uniq
-          fl%Nterms = nterms_uniq
-          !
-        enddo ! jmode
-      enddo ! imode
-      !
-      call store_fast_ci_uniq(func_tag)
-      !
+     call split_terms_comb(nmodes, nterms, terms(1:nmodes,1:nterms),&
+                           nclasses, iclass_imode(1:2,1:nclasses), &
+                           ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb),&
+                           icomb_nterms(0:ncomb),icomb_iterm(:,0:ncomb),&
+                           iunique_iterm(:,1:2) )
+     !
+     if (job%verbose>=4) then 
+       write(out, '(/1x,a)') 'max number of expansion terms for each combination of classes:'
+       do icomb=0, ncomb
+         write(out, '(1x,a,1x,i3,3x,a,1x,i6)') 'icomb =', icomb, 'nterms =', icomb_nterms(icomb)
+       enddo
+     endif
+     !
+     if (sum(icomb_nterms(0:ncomb))/=nterms) then
+       write(out, '(/a,1x,i6,1x,a,1x,i6)') &
+       'PTstore_contr_matelem error: number of Gvib expansion terms among all combinations of classes =', sum(icomb_nterms(0:ncomb)), &
+       'differs from the total number of terms =', nterms
+       stop
+     endif
+     !
+     !nterms_uniq:  total number of terms in each class
+     !terms_uniq :  powers for a given ipos in a given class 
+     !iterm_uniq :  correlation from iterm to the uniq-position for a given class
+     !
+     call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses, iclass_imode(1:2,1:nclasses), &
+                           nterms_uniq(1:nclasses), iterm_uniq(1:nclasses,1:nterms), terms_uniq(1:nmodes,1:nterms,1:nclasses))
+     !
+     if (job%verbose>=5) write(out, '(/1x,a,100(1x,i6))') 'max number of unique terms in each class:', nterms_uniq(1:nclasses)
+     !
+     ! compute and store contracted matrix elements for unique expansion terms only within each class
+     !
+     allocate(gvib_me(nclasses), stat=info)
+     if (info/=0) then
+       write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate gvib_me(nclasses)', 'nclasses =', nclasses
+       stop
+     endif
+     !
+     allocate(gvib_class(nclasses,0:nmodes,0:nmodes), stat=info)
+     if (info/=0) then
+       write(out, '(/a/a,10(1x,i8))') 'error: failed to allocate gvib_class(nclasses)', 'nclasses =', nclasses
+       stop
+     endif
+     !
+     do iclass=1, nclasses-1
+       !
+       if (job%verbose>=5) write(out, '(/1x,a,1x,i3)') 'iclass = ', iclass
+       !
+       gvib_me(iclass)%nterms = nterms_uniq(iclass)
+       !
+       nmodes_class = iclass_imode(2,iclass) - iclass_imode(1,iclass) + 1
+       dimen = contr(iclass)%nroots
+       nprim = contr(iclass)%dimen
+       !
+       write(sclass,'(i4)') iclass
+       skey_cls = 'gvib_class('//trim(adjustl(sclass))//')'
+       !
+       if (job%verbose>=5) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. modes, no. unique terms, no. basis functions:', nmodes_class, nterms_uniq(iclass), dimen
+       !
+       ! allocate array to keep contracted matrix elements
+       !
+       if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+       !
+       allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
+       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+       !
+       !if (nprim>dimen) then
+       !  write(out,"('PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen:',2i12)") nprim,dimen
+       !  stop 'PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen'
+       !endif
+       !
+       !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
+       !
+       !if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,' = ',i12,' gvib matrix of ',f15.4,' gb')") & 
+       !                    nterms_uniq(iclass),dimen,dimen,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
+       !
+       !allocate(gvib_me(iclass)%me(nterms_uniq(iclass),dimen,dimen,nmodes,nmodes), stat=info)
+       !write(sclass,'(i4)') iclass
+       !skey = 'gvib_me('//trim(adjustl(sclass))//')'
+       !call ArrayStart(trim(skey),info,1_ik,rk,matsize)
+       !gvib_me(iclass)%me = 0
+       !
+       ! compute contracted matrix elements for operators: G, p_i*G, G*p_i, p_i*G*p_j
+       !
+       if (job%verbose>=5) write(out, '(3x,a,3x,a,5x,a)') 'p_i*Gvib*p_j:', 'i', 'j'
+       !
+       ! <G>
+       !
+       call calc_contr_matelem_expansion_p0(iclass,func_tag, nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
+       call store_contr_matelem_expansion(0,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+       !
+       !do imode=1,nmodes
+       !  if (iclass_imode(1,iclass)<=imode.and.imode<=iclass_imode(2,iclass)) cycle
+       !  do jmode=1,nmodes 
+       !    if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
+       !    gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+       !  enddo
+       !enddo
+       !
+       allocate(gvib_class(iclass,0,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
+       call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,0)%me,kind=hik))
+       gvib_class(iclass,0,0)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
+       !
+       if (job%verbose>=5) write(out, '(17x,i3,3x,i3)') 0, 0
+       !
+       ! <p_i*G> and <G*p_i>
+       !
+       imode_ = 0
+       do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
+         imode_ = imode_ + 1
+         !
+         call calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms_uniq(iclass), terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass), me_contr)
+         call store_contr_matelem_expansion(0,imode_,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+         !
+         !do jmode=1,nmodes
+         !  if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
+         !  gvib_me(iclass)%me(:,:,:,jmode,imode) = me_contr(:,:,:)
+         !enddo
+         !
+         allocate(gvib_class(iclass,0,imode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
+         call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,0,imode_)%me,kind=hik))
+         !
+         gvib_class(iclass,0,imode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
+         !
+         if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') 0, imode
+         do iterm=1, nterms_uniq(iclass)
+           me_contr(iterm,:,:) = -transpose(me_contr(iterm,:,:))
+         enddo
+         !
+         call store_contr_matelem_expansion(imode_,0,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+         !
+         !do jmode=1,nmodes 
+         !  if (iclass_imode(1,iclass)<=jmode.and.jmode<=iclass_imode(2,iclass)) cycle
+         !  gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+         !enddo
+         !
+         allocate(gvib_class(iclass,imode_,0)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
+         call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,imode_,0)%me,kind=hik))
+         gvib_class(iclass,imode_,0)%me = me_contr
+         !
+         if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, 0
+       enddo
+       !
+       ! <p_i*G*p_j>
+       !
+       imode_ = 0
+       do imode=iclass_imode(1,iclass), iclass_imode(2,iclass)
+         imode_ = imode_ + 1
+         jmode_ = 0
+         do jmode=iclass_imode(1,iclass), iclass_imode(2,iclass)
+           jmode_ = jmode_ + 1
+           !
+           if (job%verbose>=4) write(out, '(17x,i3,3x,i3)') imode, jmode
+           !
+           call calc_contr_matelem_expansion_p2(imode,jmode,iclass,func_tag,nterms_uniq(iclass),terms_uniq(1:nmodes,1:nterms_uniq(iclass),iclass),me_contr)
+           call store_contr_matelem_expansion(imode_,jmode_,iclass,func_tag,nmodes_class,nmodes_class,dimen,nterms_uniq(iclass),me_contr)
+           !
+           !gvib_me(iclass)%me(:,:,:,imode,jmode) = me_contr(:,:,:)
+           !
+           allocate(gvib_class(iclass,imode_,jmode_)%me(nterms_uniq(iclass),dimen,dimen), stat=info)
+           call ArrayStart(trim(skey_cls),info,1_ik,rk,size(gvib_class(iclass,imode_,jmode_)%me,kind=hik))
+           !
+           gvib_class(iclass,imode_,jmode_)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
+           !
+         enddo
+       enddo
+       !
+       deallocate(me_contr)
+       call ArrayStop('PTstore_contr_matelem:me_contr')
+       !
+     enddo ! iclass
+     !
+     ! Build the correlation betweem comb-pos and icoeff-representations of the field 
+     !
+     do imode=1,nmodes
+       do jmode=1,nmodes
+         !
+         if (job%verbose>=6) write(out, '(1x,i6,1x,i6)') imode,jmode
+         !
+         fl => me%gvib(imode,jmode)
+         !
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag)
+         !
+         !
+       enddo ! jmode
+     enddo ! imode
+     !
+     call store_fast_ci_uniq(func_tag)
+     !
   endif
   !
   if (treat_rotation) then 
@@ -32998,6 +33192,7 @@ subroutine PTstore_contr_matelem(jrot)
      target_index = 0 
      target_index(1) = KinOrder
      nterms= FLQindex(trove%Nmodes_e,target_index)
+     nterms0= FLQindex(trove%Nmodes-1,target_index)
      !
      if (job%verbose>=5) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gcor:', nterms
  
@@ -33267,6 +33462,25 @@ subroutine PTstore_contr_matelem(jrot)
      enddo ! iclass
      !
      ! Now the last class
+
+     !-----------------------------------------------------------------------!
+     ! store expansion terms and coefficients for the rotational part of KEO !
+     !-----------------------------------------------------------------------!
+     !
+     if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Grot'
+     !
+     !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+     icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
+     !
+     allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
+     if (info/=0) then
+       write(out, '(/a/a,10(1x,i8))') &
+       'error: failed to allocate ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb)', &
+       'nclasses, icomb_maxnterms, ncomb =', nclasses, icomb_maxnterms, ncomb
+       stop
+     endif
+     !
+     if (job%verbose>=4) write(out, '(3x,a,3x,a,3x,a,3x,a,3x,es16.8)') 'imode', 'jmode', 'no. terms', 'no. terms with Grot(imode,jmode) >=', coef_thresh
      !
      do imode=1, 3
        do jmode=1, 3
@@ -33286,13 +33500,19 @@ subroutine PTstore_contr_matelem(jrot)
           allocate(fl%iterm(Nclasses,maxval(nterms_uniq)),stat=info)
           call ArrayStart('grot-uniq',info,size(fl%iterm),kind(fl%iterm))
          !
-         allocate(ifromsparse(fl%Ncoeff),stat=info)
+         allocate(ifromsparse(fl%Ncoeff),itosparse(maxnterms),stat=info)
          call ArrayStart('grot-ifromsparse',info,size(ifromsparse),kind(ifromsparse))
+         !
+         allocate(fl%ifromsparse(fl%Ncoeff),stat=info)
+         call ArrayStart('grot-ifromsparse',info,size(fl%ifromsparse),kind(fl%ifromsparse))
+         !
+         itosparse = 0
          !
          loop_icoeff_grot : do icoeff = 1,fl%Ncoeff
            do iterm=1,maxnterms
                if (all(fl%IndexQ(:,icoeff)==IndexQ(:,iterm))) then
                  ifromsparse(icoeff) = iterm
+                 itosparse(iterm) = icoeff
                  cycle loop_icoeff_grot 
                endif
            enddo
@@ -33313,18 +33533,117 @@ subroutine PTstore_contr_matelem(jrot)
            enddo
          enddo
          !
-         deallocate(ifromsparse)
-         call ArrayStop('grot-ifromsparse')
-         !
-         fl%iterm = iterm_uniq
+         fl%iterm = iterm_uniq 
          fl%Nterms = nterms_uniq
          !
-       enddo
-     enddo
+         loop_iterm_grot : do icoeff = 1,fl%Ncoeff
+           do iterm=1,nterms0
+               if (all(fl%IndexQ(:Nmodes-1,icoeff)==IndexQ0(:Nmodes-1,iterm))) then
+                 fl%ifromsparse(icoeff) = iterm
+                 cycle loop_iterm_grot 
+               endif
+           enddo
+           !
+           write(out,"('PTstore_contr_matelem: grot, could not find a sparse-to-(Nclasses-1)-match for icoeff =',i8,' powers=',<nmodes>i4)") icoeff, fl%IndexQ(:,icoeff)
+           stop 'PTstore_contr_matelem: grot, could not find a sparse-to-(Nclasses-1)-match'
+           !
+         enddo loop_iterm_grot
+         !
+         !fl%ifromsparse = ifromsparse
+         !
+         fl%MaxNterms = nterms0
+         !
+         ! new summation scheme by classes
+         !
+         Nfield_terms = product(nterms_uniq(:))
+         !
+         allocate(fl%ifield(Nfield_terms),stat=info)
+         call ArrayStart('grot-ifield',info,size(fl%ifield),kind(fl%ifield))
+         !
+         call create_field_expansion_by_classes(maxnterms,nterms_uniq,terms_uniq,itosparse,fl%ifield)
+         !
+         do icomb=0, ncomb
+           jterm = 0
+           do iterm_=1, icomb_nterms(icomb)
+             iterm = icomb_iterm(iterm_,icomb)
+             !
+             c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
+             if (icomb==0) then
+               jterm = jterm + 1
+               ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
+               ijmode_icomb_coefs(jterm,icomb) = c
+             elseif (itosparse(iterm)/=0) then
+               jterm = jterm + 1
+               ijmode_icomb_iterm(1:nclasses,jterm,icomb) = iterm_uniq(1:nclasses,iterm)
+               ijmode_icomb_coefs(jterm,icomb) = c
+             endif
+           enddo
+           ijmode_icomb_nterms(icomb) = jterm
+         enddo
+         !
+         nterms_ = sum(ijmode_icomb_nterms(0:ncomb))
+         if (job%verbose>=4) write(out, '(5x,i3,5x,i3,6x,i6,6x,i6,1x,f10.1,a)') jmode, imode, nterms, nterms_, real(nterms_)/real(nterms)*100.0, '%'
+         !
+         call store_expansion_terms(func_tag, jmode, imode, nclasses, 3, 3, ncomb, icomb_nclasses(0:ncomb), icomb_iclass(1:nclasses,0:ncomb), &
+                                    icomb_maxnterms, ijmode_icomb_nterms(0:ncomb), ijmode_icomb_iterm(:,:,0:ncomb), ijmode_icomb_coefs(:,0:ncomb))
+         !
+         if (verbose>=5) then 
+            ! check if we are able to recover all expansion terms from the unique for each class terms
+            do iterm=1, nterms
+              c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
+              if (abs(c)<coef_thresh) cycle
+              match = .false.
+              ! loop over combinations of classes
+              do icomb=0, ncomb
+                ! loop over terms assigned to the current combination of classes
+                do jterm=1, ijmode_icomb_nterms(icomb)
+                  ! assemble term indices from unique for each class indices
+                  term = 0
+                  do iclass=1, nclasses
+                    imode1 = iclass_imode(1,iclass)
+                    imode2 = iclass_imode(2,iclass)
+                    kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
+                    term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
+                  enddo
+                  if (all(term(:)==terms(:,iterm))) match = .true.
+                  if (match) exit
+                enddo
+                if (match) exit
+              enddo
+              if (.not.match) then
+                write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Grot expansion term = (', terms(:,iterm), ')'
+                stop
+              endif
+            enddo
+         endif
+
+         !
+         deallocate(ifromsparse,itosparse)
+         call ArrayStop('grot-ifromsparse')
+
+
+         !
+       enddo ! jmode
+     enddo ! imode
+     !
+     deallocate(ijmode_icomb_iterm, ijmode_icomb_coefs, ijmode_icomb_nterms)
+
+
+     !  enddo
+     !enddo
      !
      call store_fast_ci_uniq(func_tag)
      !
+
+
+
+
   endif
+
+
+
+
+
   !
   if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==0) ) then 
       !
@@ -33712,38 +34031,158 @@ subroutine PTstore_contr_matelem(jrot)
   end subroutine match_terms
 
 
-
-     !subroutine find_isparse_from_ifull(Nterms,ifromsparse,ifull,isparse)
-     !  implicit none
-     !  !
-     !  integer(ik),intent(in)  :: Nterms
-     !  integer(ik),intent(in)  :: ifromsparse(Nterms)
-     !  integer(ik),intent(in)  :: ifull
-     !  integer(ik),intent(out) :: isparse
-     !  !
-     !  integer(ik) :: i
-     !  !
-     !  i  = 1
-     !  isparse = 0
-     !  !
-     !  do while(i<=Nterms)
-     !    !
-     !    if (ifromsparse(i)==ifull) then
-     !      isparse = i
-     !      exit 
-     !    endif
-     !    i = i + 1
-     !  enddo
-     !  !
-     !  !if (isparse==0) then 
-     !  !  write(6,"('FLbset1DNew: Could not localte isparse-term in the sparse-field for index  ',i6)") ifull
-     !  !  stop 'FLbset1DNew: Could not localte a term in the sparse-field'
-     !  !endif
-     !  !
-     !end subroutine find_isparse_from_ifull
-
+  subroutine correlate_field_expansions_sparse_to_by_classes(fl,tag)
+   !
+   implicit none 
+   !
+   type(PTcoeffT),pointer :: fl 
+   character(cl)  :: tag
+   !
+   integer(ik) :: itosparse,icoeff,iterm_,kclass,itermm,Nfield_terms
+   integer(ik),allocatable :: ifromsparse(:), itosparse(:)
+      !
+      allocate(fl%uniq(Nclasses,fl%Ncoeff),stat=info)
+      call ArrayStart('tag'//'-uniq',info,size(fl%uniq),kind(fl%uniq))
+      !
+      allocate(fl%Nterms(Nclasses),stat=info)
+      call ArrayStart('tag'//'-uniq',info,size(fl%Nterms),kind(fl%Nterms))
+      !
+      allocate(fl%iterm(Nclasses,maxval(nterms_uniq)),stat=info)
+      call ArrayStart('tag'//'-uniq',info,size(fl%iterm),kind(fl%iterm))
+      !
+      allocate(ifromsparse(fl%Ncoeff),itosparse(maxnterms),stat=info)
+      call ArrayStart('ifromsparse',info,size(ifromsparse),kind(ifromsparse))
+      !
+      allocate(fl%ifromsparse(fl%Ncoeff),stat=info)
+      call ArrayStart('tag'//'-ifromsparse',info,size(fl%ifromsparse),kind(fl%ifromsparse))
+      !
+      itosparse = 0
+      loop_icoeff : do icoeff = 1,fl%Ncoeff
+        do iterm=1,maxnterms
+            if (all(fl%IndexQ(:,icoeff)==IndexQ(:,iterm))) then
+              ifromsparse(icoeff) = iterm
+              itosparse(iterm) = icoeff
+              cycle loop_icoeff 
+            endif
+        enddo
+        !
+        write(out,"('correlate_field_expansions...:',a,' corr, could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
+        stop 'correlate_field_expansions...: corr, could not find a sparse-not-sparse-match'
+        !
+      enddo loop_icoeff
+      !
+      ! reconstruct correlation from icoeff to uniq-term(iclass)
+      !
+      do icoeff = 1,fl%Ncoeff
+        !
+        iterm_ = ifromsparse(icoeff)
+        !
+        do kclass=1,Nclasses
+          fl%uniq(kclass,icoeff) = iterm_uniq(kclass,iterm_)
+        enddo
+      enddo
+      !
+      fl%iterm = iterm_uniq
+      fl%Nterms = nterms_uniq
+      !
+      loop_iterm : do icoeff = 1,fl%Ncoeff
+        do iterm=1,nterms0
+            if (all(fl%IndexQ(:Nmodes-1,icoeff)==IndexQ0(:Nmodes-1,iterm))) then
+              fl%ifromsparse(icoeff) = iterm
+              cycle loop_iterm 
+            endif
+        enddo
+        !
+        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-(Nclasses-1)-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
+        stop 'correlate_field_expansions...: could not find a sparse-to-(Nclasses-1)-match'
+        !
+      enddo loop_iterm
+      !
+      fl%MaxNterms = nterms0
+      !
+      ! new summation scheme by classes
+      !
+      Nfield_terms = product(nterms_uniq(:))
+      !
+      allocate(fl%ifield(Nfield_terms),stat=info)
+      call ArrayStart('tag'//'-ifield',info,size(fl%ifield),kind(fl%ifield))
+      !
+      call create_field_expansion_by_classes(maxnterms,nterms_uniq,terms_uniq,itosparse,fl%ifield)
+      !
+      deallocate(ifromsparse,itosparse)
+      call ArrayStop('ifromsparse')
+      !
+  end subroutine correlate_field_expansions_sparse_to_by_classes
   !
 end subroutine PTstore_contr_matelem
+
+
+
+subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itosparse,ifield)
+  !
+  !
+  implicit none
+  !
+  integer(ik),intent(in) :: maxnterms,nterms(PT%Nclasses),itosparse(maxnterms)
+  integer(ik),intent(in) :: terms_uniq(PT%nmodes,maxnterms,PT%nclasses)
+  integer(ik),intent(out) :: ifield(:)
+  integer(ik) :: iclass
+  integer(ik) :: itotal,iactual
+  integer(ik) :: ipowers(PT%nmodes)
+    !
+    ! ititialization
+    !
+    iclass = 0
+    ipowers = 0
+    iactual = 0
+    itotal = 0
+    ifield = 0
+    !
+    call do_expansion(iclass+1_ik,ipowers,itotal,iactual,ifield)
+    !
+  contains
+
+   recursive subroutine do_expansion(iclass,ipowers,itotal,iactual,ifield)
+      !
+      integer(ik) :: iclass
+      integer(ik),intent(out) :: itotal,iactual,ifield(:)
+      integer(ik) :: iterm,ipowers(PT%nmodes),qindex,isparse,imode1,imode2
+      !
+      imode1 = PT%mode_class(iclass,1)
+      imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+      !
+      do iterm=1,nterms(iclass)
+        !
+        ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
+        !
+        if (iclass == PT%Nclasses) then
+          !
+          itotal = itotal + 1
+          !
+          qindex = FLQindex(trove%Nmodes_e,ipowers)
+          !
+          if (qindex>maxnterms) cycle
+          !
+          isparse = itosparse(qindex)
+          !
+          if (isparse==0) cycle
+          !
+          iactual = iactual + 1
+          !
+          ifield(itotal) = iactual
+          !
+          return
+          !
+        endif
+        !
+        call do_expansion(iclass+1_ik,ipowers,itotal,iactual,ifield)
+        !
+      enddo
+
+   end subroutine do_expansion
+   !
+end subroutine create_field_expansion_by_classes
+
 
 
 recursive subroutine cartesian_product(nvec, nelem, elem, sym, minsum, maxsum, ivec, ind, nterms, cprod)
