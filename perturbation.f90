@@ -32856,13 +32856,15 @@ subroutine PTstore_contr_matelem(jrot)
   call ArrayStart('PTstore_contr_matelem:IndexQ',info,size(IndexQ),kind(IndexQ))
   IndexQ = terms
   !
-  nterms0 = FLQindex(trove%Nmodes-1,target_index)
+  ! exclude last class form IndexQ0
+  imode1 = PT%mode_class(nclasses,1)
+  nterms0 = FLQindex(imode1-1,target_index)
   allocate(IndexQ0(Nmodes,nterms0), stat=info)
   call ArrayStart('PTstore_contr_matelem:IndexQ0',info,size(IndexQ0),kind(IndexQ0))
-  nterms0 = FLQindex(trove%Nmodes-1,target_index,IndexQ0)
+  nterms0 = FLQindex(imode1-1,target_index,IndexQ0)
   !
   ! set all powers for the last class  and last mode to n, which is a running term, just to make sure it is unique and non-zero
-  forall(n=1:maxnterms) terms(Nmodes,n)=n
+  !forall(n=1:maxnterms) terms(Nmodes,n)=n
 
   ! set all powers for the last class  and last mode to 0
   !forall(n=1:maxnterms) terms(Nmodes,n)=0
@@ -33159,7 +33161,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          fl => me%gvib(imode,jmode)
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,nterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,nterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
          !
        enddo ! jmode
      enddo ! imode
@@ -33307,7 +33309,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          ! Build the correlation betweem uniq and icoeff-representations of the field 
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
          !
        enddo
      enddo
@@ -33442,7 +33444,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
          !
        enddo ! jmode
      enddo ! imode
@@ -33574,7 +33576,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
       !
-      call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+      call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
       !
       call store_fast_ci_uniq(func_tag)
       !
@@ -33687,7 +33689,7 @@ subroutine PTstore_contr_matelem(jrot)
         !
         ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
         !
-        call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+        call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
         !
      enddo
      !
@@ -33782,7 +33784,7 @@ subroutine PTstore_contr_matelem(jrot)
    character(cl),intent(in)  :: tag
    integer(ik),intent(in) :: maxnterms,IndexQ(PT%Nmodes,maxnterms),IndexQ0(PT%Nmodes,maxnterms),iterm_uniq(PT%nclasses,maxnterms),nterms_uniq(PT%Nclasses),nterms0
    !
-   integer(ik) :: icoeff,iterm_,kclass,itermm,Nfield_terms,Nclasses
+   integer(ik) :: icoeff,iterm_,kclass,itermm,Nfield_terms,Nclasses,imode1
    integer(ik),allocatable :: ifromsparse(:),itosparse(:)
       !
       Nclasses = PT%Nclasses
@@ -33812,7 +33814,7 @@ subroutine PTstore_contr_matelem(jrot)
             endif
         enddo
         !
-        write(out,"('correlate_field_expansions...:',a,' corr, could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
+        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
         stop 'correlate_field_expansions...: corr, could not find a sparse-not-sparse-match'
         !
       enddo loop_icoeff
@@ -33831,9 +33833,10 @@ subroutine PTstore_contr_matelem(jrot)
       fl%iterm = iterm_uniq
       fl%Nterms = nterms_uniq
       !
+      imode1 = PT%mode_class(nclasses,1)
       loop_iterm : do icoeff = 1,fl%Ncoeff
         do iterm=1,nterms0
-            if (all(fl%IndexQ(:Nmodes-1,icoeff)==IndexQ0(:Nmodes-1,iterm))) then
+            if (all(fl%IndexQ(:imode1-1,icoeff)==IndexQ0(:imode1-1,iterm))) then
               fl%ifromsparse(icoeff) = iterm
               cycle loop_iterm 
             endif
@@ -33905,7 +33908,7 @@ subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itospar
           !
           itotal = itotal + 1
           !
-          qindex = FLQindex(trove%Nmodes-1,ipowers)
+          qindex = FLQindex(imode1-1,ipowers)
           !
           if (qindex>maxnterms) cycle
           !
