@@ -33833,6 +33833,8 @@ subroutine PTstore_contr_matelem(jrot)
       allocate(fl%ifromsparse(fl%Ncoeff),stat=info)
       call ArrayStart('tag'//'-ifromsparse',info,size(fl%ifromsparse),kind(fl%ifromsparse))
       !
+      if (job%verbose>=5) write (out,"(  'Generating fl%uniq ...')")
+      !
       itosparse = 0
       loop_icoeff : do icoeff = 1,fl%Ncoeff
         do iterm=1,maxnterms
@@ -33861,6 +33863,8 @@ subroutine PTstore_contr_matelem(jrot)
       !
       fl%iterm = iterm_uniq
       fl%Nterms = nterms_uniq
+      !
+      if (job%verbose>=5) write (out,"(  'Generating IndexQ0 and fl%ifromsparse ...')")
       !
       imode1 = PT%mode_class(nclasses,1)
       loop_iterm : do icoeff = 1,fl%Ncoeff
@@ -33929,34 +33933,38 @@ subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itospar
       imode1 = PT%mode_class(iclass,1)
       imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
       !
-      do iterm=1,nterms(iclass)
+      if (iclass == PT%Nclasses) then
         !
-        ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
+        itotal = itotal + 1
         !
-        if (iclass == PT%Nclasses) then
-          !
-          itotal = itotal + 1
-          !
-          qindex = FLQindex(imode1-1,ipowers)
-          !
-          if (qindex>maxnterms) cycle
-          !
-          !isparse = itosparse(qindex)
-          !
-          !if (isparse==0) cycle
-          !
-          iactual = iactual + 1
-          !
-          ifield(itotal) = qindex ! isparse ! iactual
-          !
-          return
-          !
-        endif
+        !ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
         !
-        call do_expansion(iclass+1_ik,ipowers,itotal,iactual,ifield)
+        qindex = FLQindex(imode1-1,ipowers)
         !
-      enddo
-
+        if (qindex>maxnterms) return
+        !
+        !isparse = itosparse(qindex)
+        !
+        !if (isparse==0) cycle
+        !
+        iactual = iactual + 1
+        !
+        ifield(itotal) = qindex ! isparse ! iactual
+        !
+        return
+        !
+      else
+        !
+        do iterm=1,nterms(iclass)
+          !
+          ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
+          !
+          call do_expansion(iclass+1_ik,ipowers,itotal,iactual,ifield)
+          !
+        enddo
+        !
+      endif
+      !
    end subroutine do_expansion
    !
 end subroutine create_field_expansion_by_classes
