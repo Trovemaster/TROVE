@@ -18423,6 +18423,7 @@ module perturbation
       !
       gcorme(nclass)%me(:,:,:) = 0
       !
+      !$omp parallel do private(icoeff,iterm) schedule(dynamic)
       do icoeff = 1,fl%Ncoeff
         !
         iterm = fl%ifromsparse(icoeff)
@@ -18430,6 +18431,7 @@ module perturbation
         gcorme(nclass)%me(iterm,:,:) = gcorme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
       enddo
+      !$omp end parallel do
       !
       do iclass = 1,nclass-1
         !
@@ -18519,6 +18521,7 @@ module perturbation
       !
       grotme(nclass)%me(:,:,:) = 0
       !
+      !$omp parallel do private(icoeff,iterm) schedule(dynamic)
       do icoeff = 1,fl%Ncoeff
         !
         iterm = fl%ifromsparse(icoeff)
@@ -18526,6 +18529,7 @@ module perturbation
         grotme(nclass)%me(iterm,:,:) = grotme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
       enddo
+      !$omp end parallel do
       !
       do iclass = 1,nclass-1
          grotme(iclass)%me(:,:,:) = grot_class(iclass)%me
@@ -18617,6 +18621,7 @@ module perturbation
       !
       gvibme(nclass)%me(:,:,:) = 0
       !
+      !$omp parallel do private(icoeff,iterm) schedule(dynamic)
       do icoeff = 1,fl%Ncoeff
         !
         iterm = fl%ifromsparse(icoeff)
@@ -18624,6 +18629,7 @@ module perturbation
         gvibme(nclass)%me(iterm,:,:) = gvibme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
       enddo
+      !$omp end parallel do
       !
       !gvibme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
       !
@@ -18740,6 +18746,7 @@ module perturbation
       !
       vpotme(nclass)%me(:,:,:) = 0
       !
+      !$omp parallel do private(icoeff,iterm) schedule(dynamic)
       do icoeff = 1,fl%Ncoeff
         !
         iterm = fl%ifromsparse(icoeff)
@@ -18747,6 +18754,7 @@ module perturbation
         vpotme(nclass)%me(iterm,:,:) = vpotme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
       enddo
+      !$omp end parallel do
       !
       do iclass = 1,nclass-1
          vpotme(iclass)%me(:,:,:) = vpot_class(iclass)%me
@@ -18839,6 +18847,7 @@ module perturbation
       !
       extFme(nclass)%me(:,:,:) = 0
       !
+      !$omp parallel do private(icoeff,iterm) schedule(dynamic)
       do icoeff = 1,fl%Ncoeff
         !
         iterm = fl%ifromsparse(icoeff)
@@ -18846,6 +18855,7 @@ module perturbation
         extFme(nclass)%me(iterm,:,:) = extFme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
       enddo
+      !$omp end parallel do
       !
       do iclass = 1,nclass-1
          extFme(iclass)%me(:,:,:) = extF_class(iclass)%me
