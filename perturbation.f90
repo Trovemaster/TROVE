@@ -132,7 +132,8 @@ module perturbation
       integer(ik),pointer  :: IndexQ(:,:) 
       integer(ik),pointer  :: ifromsparse(:)
       !integer(ik),pointer  :: itosparse(:)
-      !integer(ik),pointer  :: uniq_iclass(:)
+      type(PTintcoeffs1dT),pointer  :: icoeff(:)
+      type(PTintcoeffs1dT),pointer  :: iuniq(:)
       integer(ik),pointer  :: ifield(:)
       integer(ik),pointer  :: nterms(:) 
       integer(ik),pointer  :: iterm(:,:) 
@@ -16093,7 +16094,7 @@ module perturbation
                 !
                 if (job%vib_rot_contr) hvib_t = 0
                 !
-                call calc_vib_contr_matrix(isymcoeff,me%gvib(k1,k2),hvib_t)
+                call calc_vib_contr_matrix_II(isymcoeff,me%gvib(k1,k2),hvib_t)
                 !
                 !call calc_field_contr_matrix(isymcoeff,me%gvib(k1,k2),hvib_t)
                 !
@@ -16137,7 +16138,7 @@ module perturbation
             !
             !call calc_vpot_contr_matrix_II(isymcoeff,hvib_t)
             !
-            call calc_vib_contr_matrix(isymcoeff,me%poten,hvib_t)
+            call calc_vib_contr_matrix_II(isymcoeff,me%poten,hvib_t)
             !
             ! store temp the matrix elements (dump)
             !
@@ -17591,7 +17592,7 @@ module perturbation
             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
           endif
           !
-          call do_sum_of_prods_by_classes(fl%maxnterms,fl%nterms,fl%ifield,icontr,jcontr,matelem)
+          call do_sum_of_prods_by_classes(icontr,jcontr,fl,matelem)
           !
           grot(jcontr,icontr) = grot(jcontr,icontr) + matelem
           !
@@ -17654,7 +17655,7 @@ module perturbation
              if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
            endif
            !        
-           call do_sum_of_prods_by_classes(fl%maxnterms,fl%nterms,fl%ifield,icontr,jcontr,matelem)
+           call do_sum_of_prods_by_classes(icontr,jcontr,fl,matelem)
            !
            hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
            !
@@ -17667,44 +17668,155 @@ module perturbation
     !
 
 
-    subroutine do_sum_of_prods_by_classes(maxnterms,nterms,ifield,icontr,jcontr,me_tot)
-      !
+    subroutine  calc_vib_contr_matrix_II(isymcoeff,fl,hvib)
       !
       implicit none
       !
-      integer(ik),intent(in) :: maxnterms,nterms(PT%Nclasses),icontr,jcontr
-      integer(ik),intent(in) :: ifield(:)
+      integer(ik),intent(in) :: isymcoeff
+      type(PTcoeffT),intent(in)   :: fl
+      real(rk),intent(inout) :: hvib(:,:)
+      !
+      real(rk) :: matelem,me_class0(PT%Nclasses),coef_thresh,energy_j,energy_i
+      integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j,i
+      integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen),nsize,iuniq
+      integer :: info_p,info
+
+      real(rk),allocatable :: mat1(:),mat2(:)
+      !
+      nmodes = PT%Nmodes
+      nclasses = PT%Nclasses
+      coef_thresh = job%exp_coeff_thresh
+      energy_i = enermax_classes(isymcoeff)
+      Maxcontracts = PT%Maxcontracts
+      Ncoeff = fl%Ncoeff
+      !
+      !
+      if (.not.debug_check_symmetries) then
+        isym(:) = isymcoeff_vs_isym(:,isymcoeff)
+        do i =1,sym%Nrepresen 
+          if (isym(i)==0) isym(i) = -1
+        enddo
+      endif
+      !
+      do ideg = 1,PT%Index_deg(isymcoeff)%size1
+        !
+        icontr = PT%icase2icontr(isymcoeff,ideg)
+        !
+        !$omp parallel private(nsize,mat1,mat2,info_p,jcontr,jsymcoeff,jsym,energy_j,nu_i,nu_j,iclass,iterm,icoeff,iuniq,matelem) shared(hvib) schedule(dynamic)
+        nsize = fl%icoeff(PT%Nclasses-1)%isize(1)
+        !
+        allocate(mat1(nsize),mat2(nsize),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
+           stop 'calc_gvib_contr_matrix_II me_class0_vec'
+        end if
+        !
+        !$omp do schedule(dynamic)
+        do jcontr=1,icontr
+           !
+           if (.not.debug_check_symmetries) then
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             jsym(:) = isymcoeff_vs_isym(:,jsymcoeff)
+             if ( all( isym(:)/=jsym(:) ) ) cycle
+           endif
+           !
+           if (debug_cut_matelem_with_enermax) then 
+             jsymcoeff = PT%icontr2icase(jcontr,1)
+             energy_j = enermax_classes(jsymcoeff)
+             if ( isymcoeff/=jsymcoeff.and.energy_j>job%enercutoff%matelem.and.abs(energy_i-energy_j)>job%enercutoff%DeltaE ) cycle
+           endif
+           !
+           nu_i = nu_classes(Nclasses,icontr)
+           nu_j = nu_classes(Nclasses,jcontr)
+           !
+           mat1 = gme(Nclasses)%me(:,nu_i,nu_j)
+           !
+           do iclass = Nclasses-1,2,-1
+             !
+             nsize = fl%icoeff(iclass)%isize(1)
+             !
+             nu_i = nu_classes(iclass,icontr)
+             nu_j = nu_classes(iclass,jcontr)
+             !
+             mat2 = 0
+             do iterm = 1,nsize
+               !
+               icoeff = fl%icoeff(iclass)%imat(iterm)
+               iuniq  = fl%iuniq(iclass)%imat(iterm)
+               !
+               mat2(icoeff) = mat2(icoeff) + gme(iclass)%me(iuniq,nu_i,nu_j)*mat1(iterm)
+               !
+             enddo
+             !
+             mat1(1:nsize) = mat2(1:nsize)
+             !
+           enddo
+           !
+           nsize = fl%icoeff(1)%isize(1)
+           !
+           nu_i = nu_classes(1,icontr)
+           nu_j = nu_classes(1,jcontr)
+           !
+           matelem = sum(gme(1)%me(1:nsize,nu_i,nu_j)*mat1(1:nsize))
+           !        
+           !call do_sum_of_prods_by_classes(icontr,jcontr,fl,matelem)
+           !
+           hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
+           !
+        enddo
+        !$omp enddo
+        !
+        deallocate(mat1,mat2)
+        !$omp end parallel
+	    !
+      enddo
+      !
+    end subroutine  calc_vib_contr_matrix_II
+    !
+
+
+
+    subroutine do_sum_of_prods_by_classes(icontr,jcontr,fl,me_tot)
+      !
+      implicit none
+      !
+      type(PTcoeffT),intent(in)   :: fl 
+      integer(ik),intent(in) :: icontr,jcontr
       real(rk),intent(out) :: me_tot
+      integer(ik) :: nterms(PT%Nclasses),maxnterms
       integer(ik) :: iclass
-      integer(ik) :: itotal,iactual
+      integer(ik) :: iterm,iactual
         !
         ! ititialization
         !
+        maxnterms = fl%maxnterms
+        nterms = fl%nterms
+        !
         iclass = 0
         iactual = 0
-        itotal = 0
+        iterm = 1
         !me_tot = 0
         !
-        call do_expansion(iclass+1_ik,nterms,icontr,jcontr,itotal,ifield,me_tot)
+        call do_expansion(iclass+1_ik,fl,nterms,icontr,jcontr,iterm,me_tot)
         !
     end subroutine do_sum_of_prods_by_classes
 
 
-    recursive subroutine do_expansion(iclass,nterms,icontr,jcontr,itotal,ifield,me_tot)
+    recursive subroutine do_expansion(iclass,fl,nterms,icontr,jcontr,icoeff,me_tot)
        !
        implicit none
        !
-       integer(ik),intent(in) :: nterms(PT%Nclasses),icontr,jcontr
-       real(rk),intent(inout) :: me_tot
        integer(ik) :: iclass
-       integer(ik),intent(out) :: itotal
-       integer(ik),intent(in)  :: ifield(:)
+       type(PTcoeffT),intent(in)   :: fl 
+       integer(ik),intent(in) :: nterms(PT%Nclasses),icontr,jcontr
+       integer(ik),intent(in) :: icoeff
+       real(rk),intent(inout) :: me_tot
        integer(ik) :: iterm,ipowers(PT%nmodes),qindex,isparse,imode1,imode2
        real(rk) :: me_prod,me_class
        integer(ik) :: nu_i,nu_j,iactual
        !
-       imode1 = PT%mode_class(iclass,1)
-       imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+       !imode1 = PT%mode_class(iclass,1)
+       !imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
        !
        nu_i = nu_classes(iclass,icontr)
        nu_j = nu_classes(iclass,jcontr)
@@ -17712,25 +17824,18 @@ module perturbation
        me_tot = 0
        !
        if (iclass == PT%Nclasses) then
-         !do iterm=1,nterms(PT%Nclasses)
-            !
-            itotal = itotal + 1
-            !
-            iactual = ifield(itotal)
-            !
-            if (iactual==0) return
-            !
-            me_tot = gme(iclass)%me(iactual,nu_i,nu_j)
-            !
-            return
-            !
-         !enddo
+         !
+         !iterm = fl%icoeff(iclass)%imat(icoeff)
+         !
+         me_tot = gme(iclass)%me(icoeff,nu_i,nu_j)
+         !
+         return
          !
        else 
          !
          do iterm=1,nterms(iclass)
            !
-           call do_expansion(iclass+1_ik,nterms,icontr,jcontr,itotal,ifield,me_prod)
+           call do_expansion(iclass+1_ik,fl,nterms,icontr,jcontr,iterm,me_prod)
            !
            me_class = me_prod*gme(iclass)%me(iterm,nu_i,nu_j)
            !
@@ -17739,32 +17844,6 @@ module perturbation
          enddo
          !
        endif 
-       !
-       !do iterm=1,nterms(iclass)
-         !
-         !ipowers(imode1:imode2) = terms_uniq(imode1:imode2,iterm,iclass)
-         !
-         !if (iclass == PT%Nclasses) then
-         !  !
-         !  itotal = itotal + 1
-         !  !
-         !  iactual = ifield(itotal)
-         !  !
-         !  if (iactual==0) cycle
-         !  !
-         !  me_tot = gme(iclass)%me(iactual,nu_i,nu_j)
-         !  !
-         !  return
-         !  !
-         !endif
-         !!
-         !call do_expansion(iclass+1_ik,nterms,icontr,jcontr,itotal,ifield,me_prod)
-         !!
-         !me_class = me_prod*gme(iclass)%me(iterm,nu_i,nu_j)
-         !!
-         !me_tot = me_tot+me_class 
-         !!
-       !enddo
        !
     end subroutine do_expansion
     !
@@ -18550,7 +18629,9 @@ module perturbation
       !
       do icoeff = 1,fl%Ncoeff
         !
-        iterm = fl%ifromsparse(icoeff)
+        !iterm = fl%ifromsparse(icoeff)
+        !
+        iterm = fl%icoeff(nclass)%imat(icoeff)
         !
         grotme(nclass)%me(iterm,:,:) = grotme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
@@ -18648,7 +18729,8 @@ module perturbation
       !
       do icoeff = 1,fl%Ncoeff
         !
-        iterm = fl%ifromsparse(icoeff)
+        !iterm = fl%ifromsparse(icoeff)
+        iterm = fl%icoeff(nclass)%imat(icoeff)
         !
         gvibme(nclass)%me(iterm,:,:) = gvibme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
@@ -18771,7 +18853,8 @@ module perturbation
       !
       do icoeff = 1,fl%Ncoeff
         !
-        iterm = fl%ifromsparse(icoeff)
+        !iterm = fl%ifromsparse(icoeff)
+        iterm = fl%icoeff(nclass)%imat(icoeff)
         !
         vpotme(nclass)%me(iterm,:,:) = vpotme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
@@ -18870,7 +18953,8 @@ module perturbation
       !
       do icoeff = 1,fl%Ncoeff
         !
-        iterm = fl%ifromsparse(icoeff)
+        !iterm = fl%ifromsparse(icoeff)
+        iterm = fl%icoeff(nclass)%imat(icoeff)
         !
         extFme(nclass)%me(iterm,:,:) = extFme(nclass)%me(iterm,:,:) +  me_contr(icoeff,1:dimen,1:dimen)
         !
@@ -33183,6 +33267,8 @@ subroutine PTstore_contr_matelem(jrot)
      !
      ! Build the correlation betweem comb-pos and icoeff-representations of the field 
      !
+     if (job%verbose>=6) print*,"nterms,nterms0 = ",nterms,nterms0 
+     !
      do imode=1,nmodes
        do jmode=1,nmodes
          !
@@ -33190,7 +33276,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          fl => me%gvib(imode,jmode)
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,nterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,KinOrder,nterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq,terms_uniq)
          !
        enddo ! jmode
      enddo ! imode
@@ -33338,7 +33424,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          ! Build the correlation betweem uniq and icoeff-representations of the field 
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,KinOrder,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq,terms_uniq)
          !
        enddo
      enddo
@@ -33473,7 +33559,7 @@ subroutine PTstore_contr_matelem(jrot)
          !
          ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
          !
-         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
+         call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,KinOrder,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq,terms_uniq)
          !
        enddo ! jmode
      enddo ! imode
@@ -33605,7 +33691,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
       !
-      call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
+      call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,PotOrder,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq,terms_uniq)
       !
       call store_fast_ci_uniq(func_tag)
       !
@@ -33718,7 +33804,7 @@ subroutine PTstore_contr_matelem(jrot)
         !
         ! Build the correlation betweem uniq_term(iclass) and icoeff-representations of the field 
         !
-        call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq)
+        call correlate_field_expansions_sparse_to_by_classes(fl,func_tag,ExtFOrder,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq(1:nclasses,1:nterms),nterms_uniq,terms_uniq)
         !
      enddo
      !
@@ -33805,16 +33891,18 @@ subroutine PTstore_contr_matelem(jrot)
   end subroutine match_terms
 
 
-  subroutine correlate_field_expansions_sparse_to_by_classes(fl,tag,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq)
+  subroutine correlate_field_expansions_sparse_to_by_classes(fl,tag,NOrder,maxnterms,nterms0,IndexQ,IndexQ0,iterm_uniq,nterms_uniq,terms_uniq)
    !
    implicit none 
    !
    type(PTcoeffT),pointer :: fl 
    character(cl),intent(in)  :: tag
-   integer(ik),intent(in) :: maxnterms,IndexQ(PT%Nmodes,maxnterms),IndexQ0(PT%Nmodes,maxnterms),iterm_uniq(PT%nclasses,maxnterms),nterms_uniq(PT%Nclasses),nterms0
+   integer(ik),intent(in) :: NOrder,maxnterms,IndexQ(PT%Nmodes,maxnterms),IndexQ0(PT%Nmodes,maxnterms),iterm_uniq(PT%nclasses,maxnterms),nterms_uniq(PT%Nclasses),nterms0,terms_uniq(:,:,:)
    !
-   integer(ik) :: icoeff,iterm_,kclass,itermm,Nfield_terms,Nclasses,imode1
+   integer(ik) :: icoeff,iterm_,kclass,itermm,Nfield_terms,Nclasses,imode1,imode2,IndexQ_(PT%Nmodes,maxnterms),IndexS_(PT%Nmodes,maxnterms),jmode,nterms_,target_index(PT%Nmodes),nterms_icl,iterms_
    integer(ik),allocatable :: ifromsparse(:),itosparse(:)
+      !
+      if (job%verbose>=6) write(out,"('correlate_field_expansions_sparse_to_by_classes')") 
       !
       Nclasses = PT%Nclasses
       !
@@ -33832,6 +33920,34 @@ subroutine PTstore_contr_matelem(jrot)
       !
       allocate(fl%ifromsparse(fl%Ncoeff),stat=info)
       call ArrayStart('tag'//'-ifromsparse',info,size(fl%ifromsparse),kind(fl%ifromsparse))
+      !
+      allocate(fl%icoeff(Nclasses),fl%iuniq(Nclasses),stat=info)
+      !
+      !target_index = IndexQ(:,maxnterms)
+      !
+      target_index = 0; target_index(1) = NOrder 
+      !
+      do iclass=1,Nclasses
+        !
+        imode1 = PT%mode_class(iclass,1)
+        imode2 = PT%mode_class(iclass,PT%mode_iclass (iclass))
+        !
+        nterms_ = FLQindex(imode2,target_index)
+        !nterms_= nterms_uniq(iclass)
+        !
+        if (iclass==Nclasses) nterms_= fl%Ncoeff
+        !
+        fl%icoeff(iclass)%isize(1) = nterms_
+        allocate(fl%icoeff(iclass)%imat(nterms_),stat=info)
+        call ArrayStart('tag'//'-icoeff%imat',info,size(fl%icoeff(iclass)%imat),kind(fl%icoeff(iclass)%imat))
+        !
+        !nterms_ = nterms_uniq(iclass)
+        !
+        fl%iuniq(iclass)%isize(1) = nterms_
+        allocate(fl%iuniq(iclass)%imat(nterms_),stat=info)
+        call ArrayStart('tag'//'-iuniq%imat',info,size(fl%iuniq(iclass)%imat),kind(fl%iuniq(iclass)%imat))
+        !
+      enddo
       !
       if (job%verbose>=5) write (out,"(  'Generating fl%uniq ...')")
       !
@@ -33880,7 +33996,79 @@ subroutine PTstore_contr_matelem(jrot)
         !
       enddo loop_iterm
       !
-      fl%MaxNterms = nterms0
+      indexQ_ = 0
+      indexS_ = 0 
+      !
+      do iclass = Nclasses,2,-1
+        !
+        imode1 = PT%mode_class(iclass,1)
+        imode2 = PT%mode_class(iclass,PT%mode_iclass (iclass))
+        !
+        nterms_icl = nterms_uniq(iclass)
+        !
+        target_index = 0; target_index(1) = NOrder 
+        !
+        nterms_ = FLQindex(imode2  ,target_index,indexQ_)
+        iterms_ = FLQindex(imode1-1,target_index,indexS_)
+        !
+        if (iclass==nclasses) nterms_ = fl%Ncoeff
+        !
+        loop_iterm_class : do icoeff = 1,nterms_
+          !
+          iterm = icoeff
+          if (iclass==Nclasses) iterm = ifromsparse(icoeff)
+          !
+          do jterm=1,iterms_
+              if (all(indexQ_(:imode1-1,iterm)==IndexS_(:imode1-1,jterm))) then
+                fl%icoeff(iclass)%imat(icoeff) = jterm
+                cycle loop_iterm_class 
+              endif
+          enddo
+          !
+          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-iterm_class-match for icoeff =',i8,' powers=',2(<nmodes>i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
+          stop 'correlate_field_expansions...: could not find a sparse-to-iterm_class-match'
+          !
+        enddo loop_iterm_class
+        !
+      enddo
+
+
+      do iclass = Nclasses,1,-1
+        !
+        imode1 = PT%mode_class(iclass,1)
+        imode2 = PT%mode_class(iclass,PT%mode_iclass (iclass))
+        !
+        nterms_icl = nterms_uniq(iclass)
+        !
+        target_index = 0; target_index(1) = NOrder 
+        !
+        nterms_ = FLQindex(imode2  ,target_index,indexQ_)
+        if (iclass==nclasses) nterms_ = fl%Ncoeff
+        !
+        iterms_ = nterms_uniq(iclass)
+        !
+        loop_iterm_uniq : do icoeff = 1,nterms_
+          !
+          iterm = icoeff
+          if (iclass==Nclasses) iterm = ifromsparse(icoeff)
+          !
+          do jterm=1,iterms_
+              if (all(indexQ_(imode1:imode2,iterm)==terms_uniq(imode1:imode2,jterm,iclass))) then
+                fl%iuniq(iclass)%imat(icoeff) = jterm
+                cycle loop_iterm_uniq 
+              endif
+          enddo
+          !
+          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-uniq_class-match for icoeff =',i8,' powers=',2(<nmodes>i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
+          stop 'correlate_field_expansions...: could not find a sparse-to-uniq-match'
+          !
+        enddo loop_iterm_uniq
+        !
+      enddo
+      !
+      fl%MaxNterms = 1
+      !
+      if (Nclasses>1) fl%MaxNterms = fl%icoeff(Nclasses-1)%isize(1)
       !
       ! new summation scheme by classes
       !
@@ -33889,7 +34077,9 @@ subroutine PTstore_contr_matelem(jrot)
       allocate(fl%ifield(Nfield_terms),stat=info)
       call ArrayStart('tag'//'-ifield',info,size(fl%ifield),kind(fl%ifield))
       !
-      call create_field_expansion_by_classes(maxnterms,nterms_uniq,terms_uniq,itosparse,fl%ifield)
+      if (job%verbose>=6) print*,"Nfield_terms = ", Nfield_terms
+      !
+      !call create_field_expansion_by_classes(maxnterms,nterms_uniq,terms_uniq,itosparse,fl%ifield)
       !
       deallocate(ifromsparse,itosparse)
       call ArrayStop('ifromsparse')
@@ -33951,9 +34141,14 @@ subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itospar
         !
         ifield(itotal) = qindex ! isparse ! iactual
         !
+        if (job%verbose>=7) print*,"iactual,itotal,qindex =  ", iactual,itotal,qindex
+        if (job%verbose>=7) print*,"ipowers =  ", ipowers
+        !
         return
         !
       else
+        !
+        if (job%verbose>=6) print*,"iclass,nterms(iclass) = ", iclass,nterms(iclass)
         !
         do iterm=1,nterms(iclass)
           !
