@@ -691,7 +691,8 @@ module timer
     !
     function insert_arrayunit(name) result(pos)
       character(len=*), intent(in)  :: name
-      integer(ik)                  :: pos
+      integer(ik)                  :: pos,ord
+      type(tarray_unit), pointer :: t
       !
       pos = string_hash(name)
       search: do
@@ -703,6 +704,20 @@ module timer
           if (array_count>=tarray_size/4) then
             write (out,"('Too many array_units. Increase tarray_size in "// &
                        "timer.f90 to at least ',i5)") array_count*4+1
+
+            scan: do ord=1,array_count
+              pos = array_appear(ord)
+              t => array_table(pos)
+              !
+              ! Calculate active-array corrections
+              !
+              !  Output
+              !
+              write (out,"(t2,a,t50,t55,e11.4)") &
+                     t%name, t%size
+            end do scan
+
+
             stop 'timer%insert_item'
           end if
           array_appear(array_count)      = pos
