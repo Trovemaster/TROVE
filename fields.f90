@@ -2036,7 +2036,12 @@ module fields
                   trove%separate_store = .true.
                elseif (trim(w)=='CONVERT') then
                   trove%separate_convert = .true.
+                  trove%separate_store = .false.
                   if (trove%separate_store)  trove%IO_hamiltonian = 'SAVE'
+               elseif (trim(w)=='CONVERT-BACK') then
+                  trove%separate_convert = .true.
+                  trove%separate_store = .true.
+                  trove%IO_hamiltonian = 'SAVE'
                else
                    call report (" Illegal record after hamilton",.true.)
                endif
@@ -2397,6 +2402,10 @@ module fields
              if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
              if (any(trim(trove%IO_ext_coeff)==(/'SAVE','READ'/))) FLextF_coeffs = .true.
+             !
+             if (trove%separate_convert.and.trove%separate_store ) then
+                  trove%IO_ext_coeff   = 'READ'
+             endif 
              !
            case('EXTMATELEM')
              !
@@ -12329,7 +12338,7 @@ end subroutine check_read_save_none
         !
         call HamiltonianSave
         !
-        !call HamiltonianSave_2007
+        call HamiltonianSave_2007
         !
         if (trove%separate_store.and..not.trove%separate_convert) then
           !
@@ -12372,7 +12381,7 @@ end subroutine check_read_save_none
           call checkpointRestore_external
         endif
         !
-        if (trove%separate_convert) call ExternalSave_ASCII
+        if (trove%separate_convert.and..not.trove%separate_store) call ExternalSave_ASCII
         !
     end select
     call TimerStop('FLcheck_point_Hamiltonian')
@@ -13554,7 +13563,7 @@ end subroutine check_read_save_none
         !
         if (job%verbose>=3) write(out,"(/'Store all objects as ASCII ...')")
         !
-        if (trim(trove%IO_ext_coeff)/='SAVE') return
+        if (.not.trove%separate_convert.and.trim(trove%IO_ext_coeff)/='SAVE') return
         !
         Ncoeff = trove%RangeOrder(trove%NExtOrder)
         !

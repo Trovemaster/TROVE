@@ -16142,7 +16142,7 @@ module perturbation
             !
             !call calc_vpot_contr_matrix(isymcoeff,hvib_t)
             !
-            call calc_vib_contr_matrix_II(isymcoeff,me%poten,hvib_t)
+            call calc_vib_contr_matrix_I(isymcoeff,me%poten,hvib_t)
             !
             !call calc_vib_contr_matrix_II(isymcoeff,me%poten,hvib_t)
             !
@@ -16159,6 +16159,8 @@ module perturbation
             !endif
             !
           enddo
+          !
+          call deinit_gme_I(gme)
           !
           if (job%vib_rot_contr) then 
              !
@@ -18948,6 +18950,31 @@ module perturbation
       call ArrayStop('PTstore_contr_matelem:me_contr:gvib')
       !
     end subroutine calc_gvib_me_I
+
+
+    subroutine deinit_gme_I(gvibme)
+
+      implicit none
+      type(me_class),intent(inout)   :: gvibme(PT%Nclasses)
+      !
+      integer(ik) :: iclass
+      character(4)   ::  sclass
+      character(cl)  ::  skey
+      !
+      do iclass = 1,PT%nclasses
+        !
+        write(sclass,'(i4)') iclass
+        skey = 'matelem('//trim(adjustl(sclass))//')'
+        !
+        if (allocated(gvibme(iclass)%me)) then
+          call ArrayStop(trim(skey))
+          deallocate(gvibme(iclass)%me)
+        endif
+        !
+      enddo
+      !
+    end subroutine deinit_gme_I
+
 
 
     subroutine calc_Vpot_me_I(vpotme)
