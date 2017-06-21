@@ -1382,7 +1382,7 @@ contains
           iterm2 = min(job%iswap(2),(FLNmodes+3)*3)
           !
           if (job%verbose>=4) write(out,"('  The j0_matelem.chk will be divided into 3 x 3 + ',i4,'x 3  = ',i5,' chk-slices')") FLNmodes,9+3*FLNmodes
-          if (job%verbose>=4) write(out,"('  islise = 1-9 (Grot), and 10-',i4,'(Gcor). ')") 9+3*FLNmodes
+          if (job%verbose>=4) write(out,"('  islice = 1-9 (Grot), and 10-',i4,'(Gcor). ')") 9+3*FLNmodes
           if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4)") iterm1,iterm2
           !
         endif

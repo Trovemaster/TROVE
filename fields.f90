@@ -12338,7 +12338,7 @@ end subroutine check_read_save_none
         !
         call HamiltonianSave
         !
-        call HamiltonianSave_2007
+        !call HamiltonianSave_2007
         !
         if (trove%separate_store.and..not.trove%separate_convert) then
           !
@@ -13379,7 +13379,7 @@ end subroutine check_read_save_none
         !
         write(chkptIO) 'End Hamiltonian objects'
         !
-        if (trim(trove%IO_ext_coeff)=='SAVE') then
+        if (trim(trove%IO_ext_coeff)/='NONE') then
           !
           write(chkptIO) 'extF'
           write(chkptIO) trove%extF(1)%Ncoeff
