@@ -18697,7 +18697,7 @@ module perturbation
       fl => me%gcor(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
@@ -18800,7 +18800,7 @@ module perturbation
       fl => me%grot(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
@@ -18902,7 +18902,7 @@ module perturbation
       endif
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,1_hik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! <p_i*G*p_j>
       call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
@@ -19122,7 +19122,7 @@ module perturbation
       matsize = int(nterms_field*dimen*dimen,hik)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       !if (allocated(extFme_Nclass)) then
       !  call ArrayStop("matelem_Nclass")
@@ -19254,7 +19254,7 @@ module perturbation
       fl => me%gcor(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
@@ -19355,7 +19355,7 @@ module perturbation
       fl => me%grot(imode,jmode)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
@@ -19455,7 +19455,7 @@ module perturbation
       endif
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! <p_i*G*p_j>
       call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
@@ -19650,7 +19650,7 @@ module perturbation
       matsize = int(nterms_field*dimen*dimen,hik)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+      call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       !if (allocated(extFme_Nclass)) then
       !  call ArrayStop("matelem_Nclass")
@@ -33894,7 +33894,7 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
        !
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
        !
        !if (nprim>dimen) then
        !  write(out,"('PTstore_contr_matelem: Illegal array sizes of me_contr, nprim > dimen:',2i12)") nprim,dimen
@@ -34097,7 +34097,7 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
        !
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
        !
        matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
        !
@@ -34238,7 +34238,7 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=6) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
        !
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
        !
        !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
        !
@@ -34518,7 +34518,7 @@ subroutine PTstore_contr_matelem(jrot)
        if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
        !
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
-       call ArrayStart('PTstore_contr_matelem:me_contr',info,size(me_contr),kind(me_contr))
+       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
        !
        !matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
        !
