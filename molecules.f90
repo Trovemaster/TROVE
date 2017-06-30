@@ -14,6 +14,7 @@ module molecules
   use mol_ch3oh
   use mol_abcd
   use mol_c2h4
+  use mol_c2h6
   
   use pot_xy2
   use pot_xy3
@@ -23,6 +24,8 @@ module molecules
   use pot_xy4
   use pot_ch3oh
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
+  use pot_c2h6, only : MLpoten_c2h6_88
+
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
   use symmetry,     only : sym
@@ -321,6 +324,10 @@ module molecules
     case('POTEN_C2H4_886666') 
          !
          MLpotentialfunc => MLpoten_c2h4_886666
+         !
+    case('POTEN_C2H6_88') 
+         !
+         MLpotentialfunc => MLpoten_c2h6_88
          !
     case('POTEN_ZXY3_SYM') 
          !
@@ -632,6 +639,13 @@ end function ML_MEPfunc
          MLequilibrium_xyz => ML_b0_C2H4
          MLsymmetry_transform_func => ML_symmetry_transformation_C2H4
          MLrotsymmetry_func => ML_rotsymmetry_C2H4
+         !
+    case('C2H6') 
+         !
+         MLcoordinate_transform_func =>  ML_coordinate_transform_C2H6
+         MLequilibrium_xyz => ML_b0_C2H6
+         MLsymmetry_transform_func => ML_symmetry_transformation_C2H6
+         MLrotsymmetry_func => ML_rotsymmetry_C2H6
          !
     case('XY3') 
          !
