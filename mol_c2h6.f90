@@ -194,6 +194,7 @@ module mol_c2h6
 !      enddo
       !
 !    endif
+    rho_ref = 0
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !

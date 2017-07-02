@@ -7502,7 +7502,7 @@ module perturbation
       job_is ='Vib. matrix elements of the rot. kinetic'
       call IOStart(trim(job_is),chkptIO)
       !
-      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file)
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file,recordtype='variable')
       !
       read(chkptIO) buf18
       if (buf18/='Start Kinetic part') then
@@ -35768,7 +35768,7 @@ end subroutine combinations
           !
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
-
+          !
           open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kinetmat_file)
           write(chkptIO) 'Start Kinetic part'
           !
@@ -37601,7 +37601,7 @@ subroutine PTstore_contr_matelem(jrot)
   !  
   if (trim(job%IOkinet_action)=='CONVERT') return 
   if (job%vib_contract) return
-  if (trim(job%IOkinet_action)=='READ'.or.trim(job%IOkinet_action)=='VIB_READ') return
+  if ( ( trim(job%IOkinet_action)=='READ'.or.trim(job%IOkinet_action)=='VIB_READ' ).and.trim(job%IOextF_action)=='SAVE' ) return
   !
   if (trim(trove%IO_contrCI)=='READ') return
   !
@@ -37953,7 +37953,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   deallocate(ijmode_icomb_iterm, ijmode_icomb_coefs, ijmode_icomb_nterms)
   !
-  if (treat_rotation) then
+  !if (treat_rotation) then
       !
       !---------------------------------------------------------------!
       ! compute and store matrix elements of the Coriolis part of KEO !
@@ -38304,7 +38304,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       deallocate(ijmode_icomb_iterm, ijmode_icomb_coefs, ijmode_icomb_nterms)
       !
-  endif
+  !endif
   !
   !------------------------------------------!
   ! compute and store matrix elements of PES !

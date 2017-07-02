@@ -3905,7 +3905,7 @@ module fields
       !
    endif
    !
-   if (job%verbose>=5) then
+   if (job%verbose>=6) then
      !
      call print_symmetries
      !    
