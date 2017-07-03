@@ -1589,12 +1589,9 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
     y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
     y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
-    y(4,:) = (alpha1 - alphae(:))
-    y(5,:) = (alpha2 - alphae(:))
-    !
-    y(6,:) = cos(tau_)
-    !
-    !y(6,:) = cos(2.0_ark*tau_)
+    y(4,:) = cos(alpha1)-cos(alphae(:))
+    y(5,:) = cos(alpha2)-cos(alphae(:))
+    y(6,:) = cos(tau)-cos(tau_)
     !
     mu = 0
     !
