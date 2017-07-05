@@ -775,6 +775,27 @@ module mol_abcd
         !
         call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
         !
+        a0(3,2) = re2*sin(ae1)*sin(rho*0.5_ark)
+        a0(3,1) = re2*sin(ae2)*cos(rho*0.5_ark)
+        a0(3,3) = re2*cos(ae1)
+        !
+        a0(1,2) = 0.0_ark
+        a0(1,1) = 0.0_ark
+        a0(1,3) = 0.0_ark
+        !
+        a0(2,2) = 0.0_ark
+        a0(2,1) = 0.0_ark
+        a0(2,3) = re1
+        !
+        a0(4,2) =-re3*sin(ae2)*sin(rho*0.5_ark)
+        a0(4,1) = re3*sin(ae2)*cos(rho*0.5_ark)
+        a0(4,3) = re1-re3*cos(ae2)        
+        !
+        do n = 1,3 
+          CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+          a0(:,n) = a0(:,n) - CM_shift
+        enddo 
+        !        
       endif 
       !
       b0(:,:,0) = a0(:,:)

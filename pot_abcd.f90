@@ -1452,9 +1452,10 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v12(3),v31(3)
-    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
-                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v1(3),v2(3),v3(3)
+    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),taue(1:3),e0(3),costau, &
+                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign,&
+                             t1(3),t2(3),t3(3),rx3,ry3,rx2,ry2
     !
     integer(ik),parameter :: lspace = 150
     integer(ik) :: ierror,rank0
@@ -1469,32 +1470,46 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !write(out,"( 'H',3x,3f14.8)") xyz(3,:)
     !write(out,"( 'H',3x,3f14.8)") xyz(4,:)
     !
-    e1(:) = xyz(1,:)-xyz(2,:)
-    e2(:) = xyz(3,:)-xyz(1,:)
-    e3(:) = xyz(4,:)-xyz(2,:)
+    tau_ = r(6)
     !
-    r1 = sqrt(sum(e1(:)**2))
-    r2 = sqrt(sum(e2(:)**2))
-    r3 = sqrt(sum(e3(:)**2))
+    !if (tau_sign<-small_a) then
+    !   !
+    !   tau = 2.0_ark*pi-tau
+    !   !
+    !endif
     !
-    alpha1 = acos(sum(-e1(:)*e2(:))/(r1*r2))
-    alpha2 = acos(sum( e1(:)*e3(:))/(r1*r3))
+    t1(:) = xyz(1,:)-xyz(2,:)
+    t2(:) = xyz(3,:)-xyz(1,:)
+    t3(:) = xyz(4,:)-xyz(2,:)
     !
-    v12(:) = MLvector_product(e1(:),e2(:))
-    v31(:) = MLvector_product(e3(:),e1(:))
-    r21 = sqrt(sum(v12(:)**2))
-    r31 = sqrt(sum(v31(:)**2))
-    v12(:) = v12(:)/r21
-    v31(:) = v31(:)/r31
+    if (  tau_>1.5_ark*pi.and.rx3>-small_) then 
+      tau_ = tau_ - 2.0_ark*pi
+    endif
     !
-    n3(:) = MLvector_product(v12(:),v31(:))
+    r1 = sqrt(sum(t1(:)**2))
+    r2 = sqrt(sum(t2(:)**2))
+    r3 = sqrt(sum(t3(:)**2))
+    !
+    alpha1 = acos(sum(-t1(:)*t2(:))/(r1*r2))
+    alpha2 = acos(sum( t1(:)*t3(:))/(r1*r3))
+    !
+    v2(:) = MLvector_product(t2(:),t1(:))
+    v3(:) = MLvector_product(t1(:),t3(:))
+    !
+    r21 = sqrt(sum(v2(:)**2))
+    r31 = sqrt(sum(v3(:)**2))
+    !
+    v2(:) = v2(:)/r21
+    v3(:) = v3(:)/r31
+    !
+    n3(:) = MLvector_product(v2(:),v3(:))
     !
     sintau =  sqrt( sum( n3(:)**2 ) )
-    costau = -sum( v12(:)*v31(:) )
+    costau = -sum( v2(:)*v3(:) )
     !
     tau = atan2(sintau,costau)
     !
-    e0 = MLvector_product(v12(:),v31(:))
+    e0 = MLvector_product(v2(:),v3(:))
     !
     tau_sign = -sum( e1(:)*e0(:) )
     !
@@ -1504,62 +1519,87 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
        !
     endif
     !
-    if ( tau<-small_) then
-      tau  = mod(tau+2.0_ark*pi,2.0_ark*pi)
+    if ( tau_<-small_) then
+      tau_  = mod(tau_+4.0_ark*pi,4.0_ark*pi)
     endif
     !
     !txt='MLdms_hpph_MB: illegal sin'
     !tau_ = aasin(sintau,txt)
     !
-    n3(:) = e1(:)/sqrt(sum(e1(:)**2))
+    n3(:) = t1(:)/sqrt(sum(t1(:)**2))
     !
-    e2(:) =  MLvector_product(v12(:),n3(:))
+    e2(:) =  MLvector_product(v2(:),n3(:))
     e2(:) =  e2(:)/sqrt(sum(e2(:)**2))
-    e3(:) = -MLvector_product(v31(:),n3(:))
+    e3(:) =  MLvector_product(n3(:),v3(:))
     e3(:) =  e3(:)/sqrt(sum(e3(:)**2))
-
     !
-    n1(:) = (v12(:) + v31(:))
+    !tau_ = acos(sum(-v2(:)*v3(:)))
+    !
+    v1(:) = (v2(:) + v3(:))
     e1(:) = e2(:) + e3(:)
     !
-    if (e2(2)>0.or.e3(2)>0) then
-      e1 = -e1
-    endif
+    !if (e2(2)>0.or.e3(2)>0) then
+    !  e1 = -e1
+    !endif
     !
-    if (v12(2)>0.or.v31(2)>0) then
-      n1 = -n1
-    endif
+    !if (v2(2)>0.or.v3(2)>0) then
+    !  n1 = -n1
+    !endif
     !
-    if (sum(n1(:)**2)>1e-1.and.sum(e1(:)**2)>1e-1) then
+    rx2 = t2(1)
+    ry2 = t2(2)
+    !
+    rx3 = t3(1)
+    ry3 = t3(2)
+    !
+    if ( abs(ry2)<small_.and.rx2>small_) then
       !
-      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
-      e1(:) = e1(:)/sqrt(sum(e1(:)**2))
-      !
-      if (any(abs(n1-e1)>1e-12)) then
-        !
-        write(out,"('MLdms_hpph_MB: n1<>e1 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
-        stop 'MLdms_hpph_MB: n1<>e1 '
-        !
+      if (sum(e1(:)**2)<sqrt(small_)) then
+        write(out,"('e1=0')") 
+        stop 'e1=0'
+      endif
+      if (abs(ry3)>small_) then
+        write(out,"('ry3 was assumed to be small ',f16.8)") ry3
+        stop 'ry3 was assumed to be small'
       endif
       !
-    elseif (sum(n1(:)**2)>1e-1) then
+      n1(:) = e1(:)/sqrt(sum(e1(:)**2))
       !
-      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+    elseif ( ry2>small_ ) then
       !
-    elseif (sum(e1(:)**2)>1e-1) then
+      if (sum(v1(:)**2)<sqrt(small_)) then
+        write(out,"('v1=0')") 
+        stop 'v1=0'
+      endif
+      n1(:) = v1(:)/sqrt(sum(v1(:)**2))
       !
-      n1(:) = e1(:)
-      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+    elseif ( abs(ry2)<small_.and.rx3<-small_ ) then
       !
-    else
+      if (sum(e1(:)**2)<sqrt(small_)) then
+        write(out,"('e1=0')") 
+        stop 'e1=0'
+      endif
+      if (abs(ry3)>small_) then
+        write(out,"('ry3 was assumed to be small-2',f16.8)") ry3
+        stop 'ry3 was assumed to be small-2'
+      endif
       !
-      write(out,"('MLdms_hpph_MB: both n1 and e1 are  0 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
-      stop 'MLdms_hpph_MB: n1 = e1 = 0 '
+      n1(:) =-e1(:)/sqrt(sum(e1(:)**2))
+      !
+    elseif ( ry2<-small_ ) then
+      !
+      if (sum(v1(:)**2)<sqrt(small_)) then
+        write(out,"('v1=0')") 
+        stop 'v1=0'
+      endif
+      n1(:) = -v1(:)/sqrt(sum(v1(:)**2))
+      !
+    else 
+      !
+      write(out,"('MLdms_hpph_MB: rx2 and ry2 are unphysical = ',2f16.9)") 
+      stop 'MLdms_hpph_MB: rx2 and ry2 are unphysical'
       !
     endif
-    !
-    !n1(:) =  MLvector_product(v12(:),e1(:))
-    !n1(:) = n1(:)/sqrt(sum(n1(:)**2))
     !
     n2(:) = MLvector_product(n3(:),n1(:))
     n2(:) = n2(:)/sqrt(sum(n2(:)**2))
@@ -1573,25 +1613,26 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     r3 = r(3)
     alpha1 = r(4)
     alpha2 = r(5)
-    tau_ = r(6)
+    !tau_ = r(6)
     !
-    tau_ = tau
+    !tau_ = tau
     !
-    if (v12(2)>small_) tau_ = 2.0_ark*pi + tau
+    !if (v2(2)>small_) tau_ = 2.0_ark*pi + tau
     !
     re1(1:3)     = extF%coef(1,1:3)
     re2(1:3)     = extF%coef(2,1:3)
-    alphae(1:3) = extF%coef(3,1:3)/rad
+    alphae(1:3)  = extF%coef(3,1:3)/rad
+    taue(1:3)    = extF%coef(4,1:3)/rad
     !
-    beta1(1:3)   = extF%coef(4,1:3)
-    beta2(1:3)   = extF%coef(5,1:3)
+    beta1(1:3)   = extF%coef(5,1:3)
+    beta2(1:3)   = extF%coef(6,1:3)
     !
     y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
     y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
     y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
     y(4,:) = cos(alpha1)-cos(alphae(:))
     y(5,:) = cos(alpha2)-cos(alphae(:))
-    y(6,:) = cos(tau)-cos(tau_)
+    y(6,:) = cos(tau_)-cos(taue(:))
     !
     mu = 0
     !
@@ -1631,26 +1672,26 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     tmat = transpose(tmat)
     !
-    call MLlinurark(3,tmat,mu,f,ierror)
+    !call MLlinurark(3,tmat,mu,f,ierror)
     !
-    if (ierror>0) then
-      !
-      tmat_rk = tmat
-      dip_rk(:,1) = mu(:)
-      !
-      call dgelss(3,3,1,tmat_rk,3,dip_rk,3,tsing,tol,rank0,wspace,lspace,ierror)
-      !
-      f(:) = real(dip_rk(:,1),ark)
-      !
-      if (ierror>0) then
-        !
-        print *,ierror,tmat,mu
-        write(out,"('MLdms_hpph_MB: dgelss error = ',i)") ierror
-        stop 'MLdms_hpph_MB: dgelss error'
-        !
-      endif
-      !
-    endif
+    !if (ierror>0) then
+    !  !
+    !  tmat_rk = tmat
+    !  dip_rk(:,1) = mu(:)
+    !  !
+    !  call dgelss(3,3,1,tmat_rk,3,dip_rk,3,tsing,tol,rank0,wspace,lspace,ierror)
+    !  !
+    !  f(:) = real(dip_rk(:,1),ark)
+    !  !
+    !  if (ierror>0) then
+    !    !
+    !    print *,ierror,tmat,mu
+    !    write(out,"('MLdms_hpph_MB: dgelss error = ',i)") ierror
+    !    stop 'MLdms_hpph_MB: dgelss error'
+    !    !
+    !  endif
+    !  !
+    !endif
     !
     f(1:3) = matmul(tmat,mu)
     !
