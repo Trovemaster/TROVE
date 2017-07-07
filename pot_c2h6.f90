@@ -88,11 +88,11 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
       theta45 = tau25-tau24
       theta46 = 2.0_ark*pi-theta56-theta45
       !
-      xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
-      xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+      xi(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
+      xi(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
       !
-      xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
-      xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+      xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
+      xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
       !
       xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
     !
@@ -142,6 +142,15 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
     f = f + term*force(i)
 
   end do
+  !
+  !
+  !f = force(6)+force(7)*xi(1)**2+&
+  !    force(8)*sum(xi(2:7)**2)+force(8)*xi(18)**2+&
+  !    force(9)*sum(xi(8:13)**2)+force(10)*sum(xi(14:17)**2)+&
+  !    force(11)*( xi(14)*xi(16)+xi(15)*xi(17) )
+  !!
+  !f = f/12.0_ark
+  !  
 
 end function MLpoten_c2h6_88
 

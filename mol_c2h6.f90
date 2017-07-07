@@ -139,11 +139,11 @@ module mol_c2h6
         !
         dst(1:13) = src(1:13)+molec%local_eq(1:13)
         !
-        S1 = src(13)
-        S2 = src(14)
+        S1 = src(14)
+        S2 = src(15)
         S3 = 2.0_ark*pi
-        S4 = src(15)
-        S5 = src(16)
+        S4 = src(16)
+        S5 = src(17)
         S6 = 2.0_ark*pi
         taubar = src(18)+3.0_ark*pi/sqrt(3.0_ark)
         Tau = taubar*sqrt(3.0_ark)
@@ -254,23 +254,11 @@ module mol_c2h6
     b0(:,:,0) = a0(:,:)
     !
     if (Npoints/=0) then
-    stop
+      rho_ref = 0
+      write(out,"('ML_b0_C2H6 error: the non-rigid part has not been implemebted yet')") 
+      stop 'ML_b0_C2H6 error: the non-rigid part has not been implemebted yet'
     end if
-       !
-!        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
-        !
-!        do n = 1,3
-!          CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-!          b0(:,n,i) = b0(:,n,i) - CM_shift
-!        enddo
-        !
-!        if (verbose>=5) then
-!          write(out, '(1x,a,1x,i6,100(1x,es16.8))') 'b0', i, b0(:,:,i)
-!        endif
-        !
-!      enddo
-      !
-!    endif
+
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
@@ -661,6 +649,22 @@ module mol_c2h6
         !
       end select
       !
+    case('R-R16-BETA16-THETA-TAU')
+      !
+      select case(trim(molec%symmetry))
+      !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      end select
       !
     end select
     !
