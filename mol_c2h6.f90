@@ -64,6 +64,8 @@ module mol_c2h6
     real(ark) :: tau4213,tau5124,tau6213,tau5126
     real(ark) :: tau1, tau2, b1_zmat, b2_zmat, tau1_zmat, dtau, db1, db2
     !
+    real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,&
+                 S1,S2,S3,S4,S5,S6,taubar,tau
 
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/start'
     !
@@ -85,24 +87,88 @@ module mol_c2h6
 
         dst(1:13) = src(1:13)-molec%local_eq(1:13)
 
-        dst(14)  = (3.D0*src(14) - 2.0*pi)/(6.D0**0.5)
-        dst(15)  = ( 2.0*src(15) - 2.0*pi + src(14))/(2.0**0.5)
-        dst(16) = (3.0*src(18) - 2.0*pi)/(6.0**0.5)
-        dst(17) = ( 2*src(17) - 2.0*pi + src(18))/(2.0**0.5)
-        dst(18) = ( ( 3.D0*src(16) + src(14) - src(15) + src(17) - src(18))/3.D0 ) - molec%local_eq(16)
+        dst(14)  = (3.0_ark*src(14) - 2.0_ark*pi)/sqrt(6.0_ark)
+        dst(15)  = ( 2.0_ark*src(15) - 2.0_ark*pi + src(14))/sqrt(2.0_ark)
+        dst(16) = (3.0_ark*src(18) - 2.0_ark*pi)/sqrt(6.0_ark)
+        dst(17) = ( 2.0_ark*src(17) - 2.0_ark*pi + src(18))/sqrt(2.0_ark)
+        dst(18) = ( ( 3.0_ark*src(16) + src(14) - src(15) + src(17) - src(18))/3.0_ark ) - molec%local_eq(16)
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
         dst(1:13) = src(1:13)+molec%local_eq(1:13)
 
-        dst(14) = ((6.D0**0.5D0)*src(14) + 2.0*pi)/3.D0
-        dst(15) = ( (2.D0**0.5D0)*src(15) - src(14) + 2.0*pi)/2.D0
-        dst(18) = ((6.D0**0.5D0)*src(17) + 2.0_rk*pi)/3.D0
-        dst(17) = ( (2.D0**0.5D0)*src(16) - dst(18) + 2.0*pi)/2.D0
-        dst(16) = ( (3.D0*src(18) - dst(14) + dst(15) - dst(16) + dst(17) )/3.D0  ) + molec%local_eq(16)
+        dst(14) = ((sqrt(6.0_ark))*src(14) + 2.0_ark*pi)/3.0_ark
+        dst(15) = ( (sqrt(2.0_ark))*src(15) - dst(14) + 2.0_ark*pi)/2.0_ark
+        dst(18) = ((sqrt(6.0_ark))*src(16) + 2.0_ark*pi)/3.0_ark
+        dst(17) = ( (sqrt(2.0_ark))*src(17) - dst(18) + 2.0_ark*pi)/2.0_ark
+        dst(16) = ( (3.0_ark*src(18) - dst(14) + dst(15) - dst(17) + dst(18) )/3.0_ark  ) + molec%local_eq(16)
         !
       endif
       !
+    case('R-R16-BETA16-THETA-TAU')
+      ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
+      !  TO BE 16TH COORDINATE IN Z-MAT
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+
+        dst(1:13) = src(1:13)-molec%local_eq(1:13)
+        !
+        tau14 = src(14)
+        tau24 = src(15)
+        tau25 = src(16)
+        tau35 = src(17)
+        tau36 = src(18)
+        !
+        theta12 = tau14-tau24
+        theta23 = tau25-tau35
+        theta13 = 2.0_ark*pi-theta12-theta23
+        !
+        theta56 = tau36-tau35
+        theta45 = tau25-tau24
+        theta46 = 2.0_ark*pi-theta56-theta45
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+        !
+        dst(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:13) = src(1:13)+molec%local_eq(1:13)
+        !
+        S1 = src(13)
+        S2 = src(14)
+        S3 = 2.0_ark*pi
+        S4 = src(15)
+        S5 = src(16)
+        S6 = 2.0_ark*pi
+        taubar = src(18)+3.0_ark*pi/sqrt(3.0_ark)
+        Tau = taubar*sqrt(3.0_ark)
+        !
+        theta23 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S1+S3)
+        theta13 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        theta12 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        !
+        theta56 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S4+S6)
+        theta46 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+        theta45 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+
+        tau36 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau+2.0_ark*theta56+        theta45-        theta12)
+        tau35 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau-        theta56+        theta45-        theta12)
+        tau14 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45+2.0_ark*theta12)
+        tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
+        tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
+        !
+        dst(14) = tau14
+        dst(15) = tau24
+        dst(16) = tau25
+        dst(17) = tau35
+        dst(18) = tau36
+        !
+      endif
       !
     end select
     !
@@ -122,54 +188,65 @@ module mol_c2h6
     real(ark),intent(out),optional :: rho_ref
     real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
     !
-    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0
-    integer(ik) :: i, n, iatom
+    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12
+    integer(ik) :: i, n, iatom, ix
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/start'
     !
-    a0 = 0.0_ark
+    r12 = molec%req(1)
+    r   = molec%req(2)
+    alpha = molec%alphaeq(1)
+    theta = 2.0_ark*pi/3.0_ark
     !
-      a0(1,1) = 0.0_ark
-      a0(1,2) = 0.0_ark
-      a0(1,3) = -molec%req(1)*0.5_ark
-      !
-      a0(2,1) = 0.0_ark
-      a0(2,2) = 0.0_ark
-      a0(2,3) = molec%req(1)*0.5_ark
-      !
-      a0(3,1) = molec%req(2)*SIN(PI - molec%alphaeq(1))
-      a0(3,2) = 0.0
-      a0(3,3) = -molec%req(2)*COS(PI - molec%alphaeq(1)) - 0.5d0*molec%req(1)
-      !
-      a0(4,1) = molec%req(3)*SIN(PI - molec%alphaeq(2))*COS(molec%taueq(1))
-      a0(4,2) = -molec%req(3)*SIN(PI - molec%alphaeq(2))*SIN(molec%taueq(1)) 
-      a0(4,3) = -molec%req(3)*cos(pi - molec%alphaeq(2))- 0.5*molec%req(1)
-      !
-      a0(5,1) = molec%req(4)*SIN(PI - molec%alphaeq(3))*COS(-molec%taueq(2))
-      a0(5,2) = -molec%req(4)*SIN(PI - molec%alphaeq(3))*SIN(-molec%taueq(2))
-      a0(5,3) = -molec%req(4)*cos(pi - molec%alphaeq(3))- 0.5*molec%req(1)
-      !
-      a0(6,1) = molec%req(5)*SIN(PI - molec%alphaeq(4))*COS(molec%taueq(3))
-      a0(6,2) = molec%req(5)*SIN(PI - molec%alphaeq(4))*SIN(molec%taueq(3))
-      a0(6,3) = molec%req(5)*cos(pi - molec%alphaeq(4)) + 0.5*molec%req(1)
-      !
-      a0(7,1) = molec%req(6)*SIN(PI - molec%alphaeq(5))*COS(molec%taueq(3)+ molec%taueq(4) )
-      a0(7,2) = molec%req(6)*SIN(PI - molec%alphaeq(5))*SIN(molec%taueq(3) + molec%taueq(4) )
-      a0(7,3) = molec%req(6)*cos(pi - molec%alphaeq(5)) + 0.5*molec%req(1) 
-     !
-      a0(8,1) = molec%req(7)*SIN(PI - molec%alphaeq(5))*COS(molec%taueq(3) - molec%taueq(5) )
-      a0(8,2) = molec%req(7)*SIN(PI - molec%alphaeq(6))*SIN(molec%taueq(3) - molec%taueq(5) )
-      a0(8,3) = molec%req(7)*cos(pi - molec%alphaeq(6)) + 0.5*molec%req(1)  
-     !
+    if (any(molec%req(2:7)/=r)) then
+      write(out,"('ML_b0_C2H6 error: eq-m r2-r7 are not all the same:',6f12.5)") molec%req(2:7)
+      stop 'ML_b0_C2H6 error: eq-m r2-r7 are not all the same'
+    endif
     !
-    
-    do n=1, 3
-      CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-      a0(:,n) = a0(:,n) - CM_shift
+    if (any(molec%alphaeq(1:6)/=alpha)) then
+      write(out,"('ML_b0_C2H6 error: eq-m alphas are not all the same:',6f12.5)") molec%alphaeq(1:6)
+      stop 'ML_b0_C2H6 error: eq-m alphas are not all the same'
+    endif
+    !
+    !
+    a0 = 0
+    !
+    a0(3,1) = r*sin(alpha)
+    a0(3,2) = 0
+    a0(3,3) = r*cos(alpha)
+    !
+    a0(4,1) =-r*sin(alpha)
+    a0(4,2) = 0
+    a0(4,3) =-r*cos(alpha)
+    !
+    a0(5,1) = r*sin(alpha)*cos(theta)
+    a0(5,2) =-r*sin(alpha)*sin(theta)
+    a0(5,3) = r*cos(alpha)
+    !
+    a0(6,1) =-r*sin(alpha)*cos(theta)
+    a0(6,2) = r*sin(alpha)*sin(theta)
+    a0(6,3) =-r*cos(alpha)
+    !
+    a0(7,1) = r*sin(alpha)*cos(theta)
+    a0(7,2) = r*sin(alpha)*sin(theta)
+    a0(7,3) = r*cos(alpha)
+    !
+    a0(8,1) =-r*sin(alpha)*cos(theta)
+    a0(8,2) =-r*sin(alpha)*sin(theta)
+    a0(8,3) =-r*cos(alpha)
+    !
+    a0(1:7:2,3) =a0(1:7:2,3)-r12*0.5_ark
+    a0(2:8:2,3) =a0(2:8:2,3)+r12*0.5_ark
+    !
+    do ix=1, 3
+      CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+      a0(:,ix) = a0(:,ix) - CM_shift
     enddo
     !
     if (verbose>=3) then
-      do iatom=1, Natoms
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
+      do iatom=3, Natoms
         write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
       enddo
     endif
@@ -194,7 +271,6 @@ module mol_c2h6
 !      enddo
       !
 !    endif
-    rho_ref = 0
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
@@ -212,8 +288,8 @@ module mol_c2h6
     real(ark), intent(out)   ::  dst(1:nmodes)
     real(ark) :: a,b
     !
-    a = 0.5d0
-    b = 0.5d0*sqrt(3.0d0)
+    a = 0.5_ark
+    b = 0.5_ark*sqrt(3.0_ark)
     if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/start'
     !
     select case(trim(molec%coords_transform))
@@ -224,7 +300,7 @@ module mol_c2h6
       'ML_symmetry_transformation_C2H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_symmetry_transformation_C2H6 error: bad coordinate type'
       !
-    case('ZMAT_4BETA_1TAU')
+    case('ZMAT_4BETA_1TAU','C2H6_4BETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -510,7 +586,7 @@ module mol_c2h6
       stop 'ML_rotsymmetry_C2H6 error: bad coordinate type'
       !
       !
-    case('ZMAT_2BETA_1TAU','C2H6_2BETA_1TAU')
+    case('ZMAT_4BETA_1TAU','C2H6_4BETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !
