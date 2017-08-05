@@ -1579,42 +1579,50 @@ contains
              !
              if (linestr>=intensity%threshold%intensity) then 
                !
-               !nformat = ndegI*ndegF
+               if (job%exomol_format) then
+                 !
+                 write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,1x,es16.8,' ||')")&
+                              iID(ilevelF),iID(ilevelI),linestr,nu_if,absorption_int
+                              !
+               else
+                 !
+                 !nformat = ndegI*ndegF
+                 !
+                 !$omp critical
+                 !write(out, "( (i4, 1x, a3, 3x),'<-', (i4, 1x, a3, 3x),a1,&
+                 !             &(2x, f13.6,1x),'<-',(1x, f13.6,1x),f12.6,2x,&
+                 !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'<- ',   &
+                 !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',   &
+                 !             &2(1x,es15.8),i8,&
+                 !             &2x,'(',<nmodes>(1x, i3),')',2x,'<- ',   &
+                 !             &1x,'(',<nmodes>(1x, i3),')',   &
+                 !             &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
+                 write(out,my_fmt_tm) &
+                              jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
+                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if ,&
+                              eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
+                              eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
+                              eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
+                              eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
+                              linestr,absorption_int,itransit,&
+                              normalF(1:nmodes),normalI(1:nmodes),&
+                              ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                 !$omp end critical
+                 !
+               endif 
+               !'i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2(1x,es15.8),i8,2x,"(",3(1x, i3),")",2x,"<- ",1x,"(",3(1x, i3),")",3(1(1x,f16.8,1x,3i1))'
                !
-               !$omp critical
-               !write(out, "( (i4, 1x, a3, 3x),'<-', (i4, 1x, a3, 3x),a1,&
-               !             &(2x, f13.6,1x),'<-',(1x, f13.6,1x),f12.6,2x,&
-               !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'<- ',   &
-               !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',   &
-               !             &2(1x,es15.8),i8,&
-               !             &2x,'(',<nmodes>(1x, i3),')',2x,'<- ',   &
-               !             &1x,'(',<nmodes>(1x, i3),')',   &
-               !             &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
-               write(out,my_fmt_tm) &
-                            jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
-                            energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if ,&
-                            eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                            eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                            eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                            eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
-                            linestr,absorption_int,itransit,&
-                            normalF(1:nmodes),normalI(1:nmodes),&
-                            ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
-             !$omp end critical
-             !
-             !'i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2(1x,es15.8),i8,2x,"(",3(1x, i3),")",2x,"<- ",1x,"(",3(1x, i3),")",3(1(1x,f16.8,1x,3i1))'
-             !
-             endif 
-             !
-             ! estiimate the maximal intensity for each state needed for the TM-pruning of the basis set
-             !
-             if (intensity%pruning) then 
-               !
-               max_intens_state(ilevelF) = max(max_intens_state(ilevelF),absorption_int)
-               max_intens_state(ilevelI) = max(max_intens_state(ilevelI),absorption_int)
-               !
-             endif
-             !
+            endif 
+            !
+            ! estiimate the maximal intensity for each state needed for the TM-pruning of the basis set
+            !
+            if (intensity%pruning) then 
+              !
+              max_intens_state(ilevelF) = max(max_intens_state(ilevelF),absorption_int)
+              max_intens_state(ilevelI) = max(max_intens_state(ilevelI),absorption_int)
+              !
+            endif
+            !
          end select
          !
       end do Flevels_loop

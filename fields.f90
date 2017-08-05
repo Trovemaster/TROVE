@@ -13525,7 +13525,7 @@ end subroutine check_read_save_none
         !
         fl => trove%poten
         !
-        do iterm = 1,fl%Ncoeff
+        do iterm = 1,Ncoeff
           !
           do i = 0,fl%Npoints
             !
@@ -17993,12 +17993,13 @@ end subroutine check_read_save_none
            !
         enddo
         !
-        if (associated(trove%poten)) deallocate(trove%poten)
+        if (associated(trove%poten)) nullify(trove%poten) !deallocate(trove%poten)
         if (associated(trove%g_vib)) deallocate(trove%g_vib)
         if (associated(trove%g_rot)) deallocate(trove%g_rot)
         if (associated(trove%g_cor)) deallocate(trove%g_cor)
         if (associated(trove%pseudo)) then 
-            deallocate(trove%pseudo)
+            !deallocate(trove%pseudo)
+            nullify(trove%pseudo)
             call ArrayStop('pseudo')
         endif 
         if (associated(trove%extF)) then
