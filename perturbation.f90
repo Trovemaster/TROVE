@@ -33175,7 +33175,7 @@ subroutine PTstore_contr_matelem_II(jrot)
   if (trim(trove%IO_contrCI)=='SAVE'.and.job%IOmatelem_divide.and.job%iswap(1)>1) then
     !
     write(out,"('PTstore_contr_matelem: CONTR_CI should be set to READ if _MATELEM save split_ and slices>1')")
-    stop 'PTstore_contr_matelem: CONTR_CI should be set to READ for _MATELEM save split_ use'
+    !stop 'PTstore_contr_matelem: CONTR_CI should be set to READ for _MATELEM save split_ use'
     !
   endif
   !

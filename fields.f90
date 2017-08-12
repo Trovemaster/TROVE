@@ -2208,6 +2208,12 @@ module fields
                 !
                 job%matelem_append = .true.
                 !
+                if (Nitems>3) then
+                   call readi(job%iappend)
+                else
+                   call report (" The reccord to append after is missing",.true.)
+                endif
+                !
                 job%IOkinet_action = trim('SAVE')
                 !
              endif 
