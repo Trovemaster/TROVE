@@ -434,7 +434,7 @@ module perturbation
    type(PTcontrME),pointer :: gvib(:,:)  ! vib. kinetic part 
    type(PTcontrME)         :: hvib       ! vib. part of the hamiltonian 
    type(PTcontrME),pointer :: grot(:,:)  ! rot. kinetic part
-   type(PTcontrME),pointer :: gcor(:,:)  ! coriolis kinetic part
+   type(PTcontrME),pointer :: gcor(:)    ! coriolis kinetic part
    logical :: contr_bset_initialized = .false.    !  defaul value is false - to make sure that we do not use the basis set before it has been initialized
    type(PTfmtT)            :: fmt
    type(PTprimMET)         :: me   ! 1D primitive matrix elements
@@ -2724,7 +2724,7 @@ module perturbation
          !
          diag_='SYEV'
          !
-         call PThamiltonianMat(jrot=-2_ik,nroots=nroots,diagonalizer_=diag_)
+         call PThamiltonianMat(jrot=-2_ik,nroots=nroots,diagonalizer_=diag_,postprocess_=bs_t(kmode)%postprocess)
          !
          if (nroots<1) then 
            !
@@ -6374,7 +6374,7 @@ module perturbation
     !
     if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE'.or.&
            trim(job%IOeigen_action)=='READ').and.&
-           (job%IOmatelem_divide.and.(job%iswap(1)/=0.or.fitting%iparam(1)/=1) )) then
+           (job%IOmatelem_split.and.(job%iswap(1)/=0.or.fitting%iparam(1)/=1) )) then
        !
        write(out,"('For MATELEM SAVE DIVIDE the eigenvalue problem is skipped ')")
        write(out,"('Please run again with matelem READ or NONE')")
@@ -7002,10 +7002,8 @@ module perturbation
         deallocate (mat_t)
         !$omp end parallel
         !
-        do k_i = 1,PT%Nmodes
-          do k_j = 1,3
-            deallocate(gcor(k_i,k_j)%me)
-          enddo
+        do k_i = 1,3
+          deallocate(gcor(k_i)%me)
         enddo
         !
         deallocate(gcor)
@@ -7170,7 +7168,7 @@ module perturbation
         !
         matsize = 1
         !
-        if (no_diagonalization) then 
+        if (only_store.or.no_diagonalization) then 
           !
           allocate (a(dimen_s,1),stat=alloc)
           call ArrayStart('PThamiltonian_contract:a',alloc,size(a),kind(a))
@@ -7622,7 +7620,7 @@ module perturbation
       allocate(mat_(maxcontr,maxcontr),stat=alloc)
       call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
       !
-      if (.not.job%IOmatelem_divide) then
+      if (.not.job%IOmatelem_split) then
         !
         read(chkptIO) buf18(1:5)
         if (buf18(1:5)/='g_rot') then
@@ -7669,7 +7667,7 @@ module perturbation
       allocate(mat_(maxcontr,maxcontr),stat=alloc)
       call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
       !
-      if (.not.job%IOmatelem_divide) then
+      if (.not.job%IOmatelem_split) then
         !
         read(chkptIO) buf18(1:5)
         if (buf18(1:5)/='g_cor') then
@@ -7679,35 +7677,26 @@ module perturbation
         !
       endif
       !
-      allocate(gcor(PT%Nmodes,3),stat=alloc)
+      allocate(gcor(3),stat=alloc)
       !
       islice  = 9
       chkptIO_ = chkptIO
       !
-      do k1 = 1,PT%Nmodes
-        do k2 = 1,3
-          !
-          islice = islice + 1
-          !
-          allocate(gcor(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
-          call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
-          !
-          ! For fast-ci the N-modes derivativea are aleady combined into one object which is assocaited with k1=1 
-          !
-          if (job%contrci_me_fast.and.k1>1) then 
-             gcor(k1,k2)%me = 0
-             cycle 
-          endif
-          !
-          call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
-          !
-          read(chkptIO_) mat_
-          !
-          gcor(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-          !
-          call divided_slice_close(islice,chkptIO_,'g_cor')
-          !
-        enddo
+      do k1 = 1,3
+        !
+        islice = islice + 1
+        !
+        allocate(gcor(k1)%me(maxcontr,maxcontr),stat=alloc)
+        call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
+        !
+        call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
+        !
+        read(chkptIO_) mat_
+        !
+        gcor(k1)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+        !
+        call divided_slice_close(islice,chkptIO_,'g_cor')
+        !
       enddo
       !
       deallocate(mat_)
@@ -7719,7 +7708,7 @@ module perturbation
       !
       if (job%verbose>=4) write(out,"('   Read and process vibrational part...')")
       !
-      if (.not.job%IOmatelem_divide.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
+      if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
         !
         allocate(mat_t(maxcontr,maxcontr),stat=alloc)
         call ArrayStart('PThamiltonian_contract: mat_t',alloc,1,kind(mat_t),rootsize2_)
@@ -7810,7 +7799,7 @@ module perturbation
         rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*9_hik*int(nprocs,hik)
         call ArrayStart('PThamiltonian_contract: grot',alloc,1,rk,rootsize2_)
         !
-        allocate(gcor(PT%Nmodes,3),stat=alloc)
+        allocate(gcor(3),stat=alloc)
         rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*int(PT%Nmodes,hik)*3_hik*int(nprocs,hik)
         call ArrayStart('PThamiltonian_contract: grot',alloc,1,rk,rootsize2_)
         !
@@ -7828,7 +7817,7 @@ module perturbation
       !
       ! Read the rotational part only
       !
-      if (.not.job%IOmatelem_divide ) then
+      if (.not.job%IOmatelem_split ) then
         !
         write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
         stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with SPLIT only'
@@ -7866,7 +7855,7 @@ module perturbation
       ! Read the Corriolis part only
       !
       !
-      if (.not.job%IOmatelem_divide ) then
+      if (.not.job%IOmatelem_split ) then
         !
         write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
         stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with SPLIT only'
@@ -7885,28 +7874,21 @@ module perturbation
       !
       islice  = 9
       !
-      do k1 = 1,PT%Nmodes
-        do k2 = 1,3
-          !
-          islice = islice + 1
-          !
-          nullify(gcor(k1,k2)%me)
-          !
-          if (associated(gcor(k1,k2)%me)) deallocate(gcor(k1,k2)%me)
-          !
-          allocate(gcor(k1,k2)%me(maxcontr,icontr1:icontr2),stat=alloc)
-          !
-          write(job_is,"('single swap_matrix #',i8)") islice
-          call IOStart(trim(job_is),chkptIO_)
-          !
-          read(chkptIO_) gcor(k1,k2)%me
-          !
-          !if (icontr==maxcontr0) then 
-          !  call divided_slice_close_vib_rot(islice,'g_cor',chkptIO_)
-          !  call IOStop(trim(job_is))
-          !endif
-          !
-        enddo
+      do k1 = 1,3
+        !
+        islice = islice + 1
+        !
+        nullify(gcor(k1)%me)
+        !
+        if (associated(gcor(k1)%me)) deallocate(gcor(k1)%me)
+        !
+        allocate(gcor(k1)%me(maxcontr,icontr1:icontr2),stat=alloc)
+        !
+        write(job_is,"('single swap_matrix #',i8)") islice
+        call IOStart(trim(job_is),chkptIO_)
+        !
+        read(chkptIO_) gcor(k1)%me
+        !
       enddo
       !
     case('vib-icontr') ! vibrational part for the vib-rot contraction scheme
@@ -7914,7 +7896,7 @@ module perturbation
       !
       !if (job%verbose>=4.and.irow==0) write(out,"('   Read and process vibrational part...')")
       !
-      if (.not.job%IOmatelem_divide.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
+      if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
         !
         if (job%vib_rot_contr) then
           write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
@@ -7982,7 +7964,7 @@ module perturbation
       integer(ik)                 :: ilen
       logical                     :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       write(job_is,"('single swap_matrix')")
       !
@@ -8014,7 +7996,7 @@ module perturbation
       integer(ik)      :: ilen
       logical          :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       ilen = LEN_TRIM(name)
       !
@@ -8039,7 +8021,7 @@ module perturbation
       integer(ik)                 :: ilen
       logical                     :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       write(jchar, '(i4)') islice
       !
@@ -8071,7 +8053,7 @@ module perturbation
       integer(ik)      :: ilen
       logical          :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       ilen = LEN_TRIM(name)
       !
@@ -14244,7 +14226,7 @@ module perturbation
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
     real(rk),allocatable :: me_t(:,:)
-    real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),matclass(:,:,:),hrot_t(:,:)
+    real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),matclass(:,:,:),hrot_t(:,:),gcor_t(:,:)
     real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:),extF_r(:,:)
     !
     real(rk)           :: f_t
@@ -14350,7 +14332,7 @@ module perturbation
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.(job%iswap(1)==1.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) )) then
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.(job%iswap(1)==1.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) )) then
           !
           if (FLrotation.and.jrot/=0) then 
             write (out,"(' IOkinet_action = SAVE is not working for J/=0 ')") 
@@ -14499,10 +14481,14 @@ module perturbation
           !
           if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
           !
-          if (job%IOmatelem_divide) then
+          if (job%IOmatelem_split) then
             !
             iterm1 = max(job%iswap(1),0)
-            iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+PT%Nmodes**2)
+            iterm2 = min(job%iswap(2),12)
+            if (job%IOmatelem_divide) then 
+              iterm1 = max(job%iswap(1),0)
+              iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+PT%Nmodes**2)
+            endif             
             !
             if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 = ',i5,' chk-slices')") PT%Nmodes,9+3*PT%Nmodes+1
             if (job%verbose>=4) write(out,"('  islice = 0 (gvib+poten stitching), 1-9 (Grot), 10-',i3,' (Gcor), ',i3,'-',i3,' (Gvib), and ',i3,' (Poten) ')") 9+3*PT%Nmodes,9+3*PT%Nmodes+1,9+3*PT%Nmodes+PT%Nmodes**2,9+3*PT%Nmodes+PT%Nmodes**2+1
@@ -14513,13 +14499,14 @@ module perturbation
             !
           endif
           !
-          allocate(grot_t(mdimen,mdimen),hrot_t(mdimen,mdimen),stat=alloc)
+          allocate(grot_t(mdimen,mdimen),hrot_t(mdimen,mdimen),gcor_t(mdimen,mdimen),stat=alloc)
+          call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
           call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
           call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
           !
           if (job%verbose>=5) call MemoryReport
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_rot'
             !
@@ -14538,7 +14525,7 @@ module perturbation
               !
               islice = islice + 1
               !
-              if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+              if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
               grot_t = 0
               hrot_t = 0
@@ -14572,7 +14559,7 @@ module perturbation
               !$omp end parallel do
               !
               if (trim(job%IOkinet_action)=='SAVE') then
-                if (job%IOmatelem_divide) then 
+                if (job%IOmatelem_split) then 
                   !
                   call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
                   !
@@ -14590,7 +14577,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_cor'
             !
@@ -14599,13 +14586,21 @@ module perturbation
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
           job_is = 'gcor'
-          !
-          do k1 = 1,PT%Nmodes
-            do k2 = 1,3
-              !
+          do k2 = 1,3
+            !
+            gcor_t = 0
+            !
+            if (job%IOmatelem_split.and..not.job%IOmatelem_divide) then
               islice = islice + 1
+              if (islice<iterm1.or.iterm2<islice) cycle
+            endif
+            !
+            do k1 = 1,PT%Nmodes
               !
-              if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+              if (job%IOmatelem_divide) then
+                islice = islice + 1
+                if (islice<iterm1.or.iterm2<islice) cycle
+              endif
               !
               if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
               !
@@ -14639,27 +14634,42 @@ module perturbation
               enddo
               !$omp end parallel do
               !
-              if (trim(job%IOkinet_action)=='SAVE') then
-                if (job%IOmatelem_divide) then 
-                  !
-                  call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,grot_t)
-                  !
-                else
-                  !
-                  ! store the matrix elements 
-                  !
-                  write(chkptIO) grot_t
-                  !
-                endif
-              endif
+              if (job%IOmatelem_divide) then
+                !
+                call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,grot_t)
+                !
+              else
+                !
+                !$omp parallel do private(icoeff) shared(gcor_t) schedule(dynamic)
+                do icoeff=1,mdimen
+                    gcor_t(icoeff,:) = gcor_t(icoeff,:)+grot_t(icoeff,:)
+                enddo
+                !$omp end parallel do
+                !
+              endif 
               !
             enddo
+            !
+            if (trim(job%IOkinet_action)=='SAVE') then
+              !
+              if (job%IOmatelem_split) then 
+                !
+                call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,gcor_t)
+                !
+              else
+                !
+                ! store the matrix elements 
+                !
+                write(chkptIO) gcor_t
+                !
+              endif
+            endif
             !
           enddo
           !
           !islice = gcor_N+grot_N
           !
-          deallocate(grot_t,hrot_t)
+          deallocate(grot_t,hrot_t,gcor_t)
           call ArrayStop('grot-gcor-fields')
           !
         endif
@@ -14746,7 +14756,7 @@ module perturbation
                !
             endif
             !
-          else ! if (.not.job%IOmatelem_divide.or.job%iswap(1)==0 ) then
+          else ! if (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) then
             !
             ! ----------------- FBR ------------------
             !
@@ -14758,17 +14768,23 @@ module perturbation
             call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
             call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
             !
-            islice = (PT%Nmodes+3)*3
+            islice = 0
+            !
+            if (job%IOmatelem_divide) islice = (PT%Nmodes+3)*3
             !
             hvib_t = 0
             job_is = 'gvib'
             !
             do k1 = 1,PT%Nmodes
+              !
+              if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
+              !
               do k2 = 1,PT%Nmodes
                 !
-                islice = islice + 1
-                !
-                if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+                if (job%IOmatelem_divide) then
+                  islice = islice + 1
+                  if (islice<iterm1.or.iterm2<islice) cycle
+                endif
                 !
                 if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
                 !
@@ -14823,7 +14839,7 @@ module perturbation
             !
             !hvib_t = -0.5_rk*hvib_t
             !
-            if (.not.(job%IOmatelem_divide.or.job%iswap(1)==0).or.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1) then
+            if (.not.(job%IOmatelem_divide)) then
               !
               job_is = 'poten'
               poten_N = FLread_fields_dimension_field(job_is,k1,k2)
@@ -14868,7 +14884,7 @@ module perturbation
               !
               call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
               !
-              if (job%IOmatelem_divide.and.job%iswap(1)==1) job%iswap(1)=0
+              if (job%IOmatelem_split.and.job%iswap(1)==1) job%iswap(1)=0
               !
             endif
             !
@@ -14908,13 +14924,13 @@ module perturbation
                !
             endif
             !
-            ! now we can switch off IOmatelem_divide and compute the vibrational energies 
+            ! now we can switch off IOmatelem_split and compute the vibrational energies 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) job%IOmatelem_divide = .false.
             !
             ! combining and symmetrizing 
             !
-            if ( .not.( job%IOmatelem_divide.and.job%iswap(2)==(PT%Nmodes+3)*3+PT%Nmodes**2+1 ) ) then
+            if ( .not.job%IOmatelem_divide ) then
               !
               !$omp parallel do private(icoeff,jcoeff) schedule(dynamic)
               do icoeff=1,mdimen
@@ -15216,7 +15232,7 @@ module perturbation
       integer(ik)                 :: ilen
       logical                     :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       write(job_is,"('single swap_matrix')")
       !
@@ -15253,7 +15269,7 @@ module perturbation
       integer(ik)      :: ilen
       logical          :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       ilen = LEN_TRIM(name)
       !
@@ -15535,7 +15551,7 @@ module perturbation
         !
         treat_vibration = .false.
         !
-        job%IOmatelem_divide = .true.
+        job%IOmatelem_split = .true.
         !
       endif 
       !
@@ -15581,7 +15597,7 @@ module perturbation
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
           if (FLrotation.and.jrot/=0) then 
             write (out,"(' IOkinet_action = SAVE is not working for J/=0 ')") 
@@ -15661,7 +15677,7 @@ module perturbation
         endif
         !
         if (.not.(trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                  (job%IOmatelem_divide.or.job%iswap(1)==0.and.job%iswap(1)/=(PT%Nmodes+3)*3 ) ) then
+                  (job%IOmatelem_split.or.job%iswap(1)==0.and.job%iswap(1)/=(PT%Nmodes+3)*3 ) ) then
 
           !
           ! The vibrational part of the Hamiltonian
@@ -15686,7 +15702,7 @@ module perturbation
           !
           if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
           !
-          if (job%IOmatelem_divide) then
+          if (job%IOmatelem_split) then
             !
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
@@ -15710,7 +15726,7 @@ module perturbation
           !
           if (job%verbose>=5) call MemoryReport
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_rot'
             !
@@ -15730,9 +15746,9 @@ module perturbation
               !
               islice = islice + 1
               !
-              !if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+              !if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
-              if ( job%IOmatelem_divide ) then 
+              if ( job%IOmatelem_split ) then 
                 if (islice<iterm1.or.iterm2<islice) cycle
                 !
                 call open_divided_slice(islice,'g_rot',job%matelem_suffix,chkptIO_)
@@ -15769,7 +15785,7 @@ module perturbation
                   enddo
                   !$omp end parallel do
                   !
-                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_split) then
                     write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                   endif
                   !
@@ -15789,7 +15805,7 @@ module perturbation
                 !
                 if (trim(job%IOkinet_action)=='SAVE') then
                   !
-                  if (job%IOmatelem_divide) then
+                  if (job%IOmatelem_split) then
                      write(chkptIO_) grot_t
                   else
                      write(chkptIO) grot_t
@@ -15799,7 +15815,7 @@ module perturbation
                 !
               endif
               !
-              if (job%IOmatelem_divide) then 
+              if (job%IOmatelem_split) then 
                 write(chkptIO_) 'g_rot'
                 close(chkptIO_)
               endif
@@ -15814,7 +15830,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_cor'
             !
@@ -15872,7 +15888,7 @@ module perturbation
             !
             islice = islice + 1
             !
-            if ( job%IOmatelem_divide ) then 
+            if ( job%IOmatelem_split ) then 
               if (islice<iterm1.or.iterm2<islice) cycle
               !
               call open_divided_slice(islice,'g_cor',job%matelem_suffix,chkptIO_)
@@ -15926,7 +15942,7 @@ module perturbation
                     enddo
                     !$omp end parallel do
                     !
-                    if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                    if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_split) then
                         write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                     endif
                     !
@@ -15962,7 +15978,7 @@ module perturbation
               !
               if (trim(job%IOkinet_action)=='SAVE') then
                 !
-                if (job%IOmatelem_divide) then
+                if (job%IOmatelem_split) then
                    write(chkptIO_) grot_t
                 else
                    write(chkptIO) grot_t
@@ -15972,7 +15988,7 @@ module perturbation
               !
             endif
             !
-            if (job%IOmatelem_divide) then 
+            if (job%IOmatelem_split) then 
               write(chkptIO_) 'g_cor'
               close(chkptIO_)
             endif
@@ -15992,7 +16008,7 @@ module perturbation
         !
         !islice = (PT%Nmodes+3)*3+1
         !
-        if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.iterm1==0) ) then 
+        if ( treat_vibration.and.(.not.job%IOmatelem_split.or.iterm1==0) ) then 
           !
           ! ----------------- FBR ------------------
           !
@@ -16008,7 +16024,7 @@ module perturbation
           call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
           !
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                  (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
+                  (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
              !
              write(chkptIO) 'hvib'
              !
@@ -16168,7 +16184,7 @@ module perturbation
              stop 'vib-rot is not working yet, please check'
              !
              if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                     (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
+                     (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
                   !
                   !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(hvib_t) schedule(dynamic)
                   do ideg=1,Ndeg
@@ -16258,7 +16274,7 @@ module perturbation
         !Finish the contracted checkpointing
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
           write(chkptIO) 'End Kinetic part'
           close(chkptIO,status='keep')
@@ -16748,8 +16764,6 @@ module perturbation
          iclass_nmodes_ = iclass_nmodes(iclass)
          if (iclass==nclasses) iclass_nmodes_ = nmodes
          !
-         !call read_contr_matelem_expansion(iclass, func_tag_, dimen, iclass_nmodes_, iclass_nmodes_, gvib_me(iclass)%nterms, gvib_me(iclass)%me)
-         !
          call read_contr_matelem_expansion_II(iclass,func_tag_,dimen,iclass_nmodes_,iclass_nmodes_,gvib_me(iclass)%nterms,gvib_me(iclass)%me)
          !
          ! note: "me" are allocated inside "read_contr_matelem_expansion"
@@ -16872,7 +16886,6 @@ module perturbation
            iclass_nmodes_ = nmodes
            jclass_nmodes_ = 3
          endif
-         !call read_contr_matelem_expansion(iclass,func_tag_,dimen,iclass_nmodes_,jclass_nmodes_,gcor_me(iclass)%nterms,gcor_me(iclass)%me)
          !
          call read_contr_matelem_expansion_II(iclass,func_tag_,dimen,iclass_nmodes_,jclass_nmodes_,gcor_me(iclass)%nterms,gcor_me(iclass)%me)
          !
@@ -26375,21 +26388,17 @@ end subroutine read_contr_matelem_expansion_classN
              !
              if (abs(dk)<=1) then 
                !
-               do k1 = 1,PT%Nmodes
+               do k2 = 1,3
                  !
-                 do k2 = 1,3
+                 if ( (tau_i==tau_j.and.k2==2).or.(tau_i/=tau_j.and.k2/=2) ) then 
                    !
-                   if ( (tau_i==tau_j.and.k2==2).or.(tau_i/=tau_j.and.k2/=2) ) then 
-                     !
-                     mat_t = gcor(k1,k2)%me(icontr,jcontr)
-                     !
-                     !if (icontr<jcontr) mat_t = -mat_t
-                     !
-                     gcor_t = gcor_t + mat_t*contr(0)%rot(k2)%coeff3d(Jk,dk,tau_i)
-                     !
-                   endif 
+                   mat_t = gcor(k2)%me(icontr,jcontr)
                    !
-                 enddo 
+                   !if (icontr<jcontr) mat_t = -mat_t
+                   !
+                   gcor_t = gcor_t + mat_t*contr(0)%rot(k2)%coeff3d(Jk,dk,tau_i)
+                   !
+                 endif 
                  !
                enddo 
                ! 
@@ -26492,18 +26501,14 @@ end subroutine read_contr_matelem_expansion_classN
              ! 
              ! Coriolis part of the kinetic operator g_cor
              !
-             do k1 = 1,PT%Nmodes
-               !
-               do k2 = 1,3
-                  !
-                  mat_t = gcor(k1,k2)%me(icontr,jcontr)
-                  !
-                  !if (icontr<jcontr) mat_t = -mat_t
-                  !
-                  gcor_t = gcor_t + mat_t*me%rot_contr(k2,icount,jcount,ideg,jdeg)
-                  !
-               enddo 
-               !
+             do k2 = 1,3
+                !
+                mat_t = gcor(k2)%me(icontr,jcontr)
+                !
+                !if (icontr<jcontr) mat_t = -mat_t
+                !
+                gcor_t = gcor_t + mat_t*me%rot_contr(k2,icount,jcount,ideg,jdeg)
+                !
              enddo 
              !
            endif
@@ -26675,24 +26680,19 @@ end subroutine read_contr_matelem_expansion_classN
          ! 
          ! Rotational part of the kinetic operator g_cor
          !
-         do k1 = 1,PT%Nmodes
+         do k2 = 1,3
            !
-           do k2 = 1,3
+           if ( (tau_i==tau_j.and.k2==2).or.(tau_i/=tau_j.and.k2/=2) ) then 
              !
-             if ( (tau_i==tau_j.and.k2==2).or.(tau_i/=tau_j.and.k2/=2) ) then 
-               !
-               mat_t = gcor(k1,k2)%me(icontr,jcontr)
-               !
-               !if (icontr<jcontr) mat_t = -mat_t
-               !
-               gcor_ = gcor_ + mat_t*contr(0)%rot(k2)%coeff3d(Jk,dk,tau_i)
-               !
-             endif 
+             mat_t = gcor(k2)%me(icontr,jcontr)
              !
-           enddo 
+             !if (icontr<jcontr) mat_t = -mat_t
+             !
+             gcor_ = gcor_ + mat_t*contr(0)%rot(k2)%coeff3d(Jk,dk,tau_i)
+             !
+           endif 
            !
          enddo 
-
          !
          gcor_ = 0.5_rk*gcor_
          !
@@ -26834,18 +26834,14 @@ end subroutine read_contr_matelem_expansion_classN
          ! 
          ! Coriolis part of the kinetic operator g_cor
          !
-         do k1 = 1,PT%Nmodes
-           !
-           do k2 = 1,3
-              !
-              mat_t = gcor(k1,k2)%me(icontr,jcontr)
-              !
-              !if (icontr<jcontr) mat_t = -mat_t
-              !
-              gcor_t = gcor_t + mat_t*me%rot_contr(k2,icount,jcount,ideg,jdeg)
-              !
-           enddo 
-           !
+         do k2 = 1,3
+            !
+            mat_t = gcor(k2)%me(icontr,jcontr)
+            !
+            !if (icontr<jcontr) mat_t = -mat_t
+            !
+            gcor_t = gcor_t + mat_t*me%rot_contr(k2,icount,jcount,ideg,jdeg)
+            !
          enddo 
          !
          gcor_t = 0.5_rk*gcor_t
@@ -32535,7 +32531,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        ! Saving the contracted basis set vectors and all auxilery informaion.
        !
-       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_divide.or.job%iswap(1)<=1).or.&
+       if (trim(job%IOcontr_action)=='SAVE'.and.(.not.job%IOmatelem_split.or.job%iswap(1)<=1).or.&
            job%convert_model_j0) then
          !
          if (job%convert_model_j0) then 
@@ -33172,7 +33168,7 @@ subroutine PTstore_contr_matelem_II(jrot)
   !
   if (trim(trove%IO_contrCI)=='READ') return
   !
-  if (trim(trove%IO_contrCI)=='SAVE'.and.job%IOmatelem_divide.and.job%iswap(1)>1) then
+  if (trim(trove%IO_contrCI)=='SAVE'.and.job%IOmatelem_split.and.job%iswap(1)>1) then
     !
     write(out,"('PTstore_contr_matelem: CONTR_CI should be set to READ if _MATELEM save split_ and slices>1')")
     !stop 'PTstore_contr_matelem: CONTR_CI should be set to READ for _MATELEM save split_ use'
@@ -33335,7 +33331,7 @@ subroutine PTstore_contr_matelem_II(jrot)
   ! compute and store matrix elements of the vibrational part of KEO !
   !------------------------------------------------------------------!
   !
-  if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==0) ) then 
+  if ( treat_vibration.and.(.not.job%IOmatelem_split.or.job%iswap(1)==0) ) then 
      !
      !
      if (job%verbose>=4) write(out, '(/1x,a)') 'Compute and store matrix elements of Gvib'
@@ -33844,7 +33840,7 @@ subroutine PTstore_contr_matelem_II(jrot)
 
 
   !
-  if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.job%iswap(1)==0) ) then 
+  if ( treat_vibration.and.(.not.job%IOmatelem_split.or.job%iswap(1)==0) ) then 
       !
       !------------------------------------------!
       ! compute and store matrix elements of PES !
@@ -35715,7 +35711,7 @@ end subroutine combinations
         !
         treat_vibration = .false.
         !
-        job%IOmatelem_divide = .true.
+        job%IOmatelem_split = .true.
         !
       endif 
       !
@@ -35757,7 +35753,7 @@ end subroutine combinations
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
           if (FLrotation.and.jrot/=0) then 
             write (out,"(' IOkinet_action = SAVE is not working for J/=0 ')") 
@@ -35799,7 +35795,7 @@ end subroutine combinations
         endif
         !
         if (.not.(trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                  (job%IOmatelem_divide.or.job%iswap(1)==0.and.job%iswap(1)/=(PT%Nmodes+3)*3 ) ) then
+                  (job%IOmatelem_split.or.job%iswap(1)==0.and.job%iswap(1)/=(PT%Nmodes+3)*3 ) ) then
 
           !
           ! The vibrational part of the Hamiltonian
@@ -35824,7 +35820,7 @@ end subroutine combinations
           !
           if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
           !
-          if (job%IOmatelem_divide) then
+          if (job%IOmatelem_split) then
             !
             iterm1 = max(job%iswap(1),0)
             iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+1)
@@ -35848,7 +35844,7 @@ end subroutine combinations
           !
           if (job%verbose>=5) call MemoryReport
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_rot'
             !
@@ -35868,9 +35864,9 @@ end subroutine combinations
               !
               islice = islice + 1
               !
-              !if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+              !if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
-              if ( job%IOmatelem_divide ) then 
+              if ( job%IOmatelem_split ) then 
                 if (islice<iterm1.or.iterm2<islice) cycle
                 !
                 call open_divided_slice(islice,'g_rot',job%matelem_suffix,chkptIO_)
@@ -35901,7 +35897,7 @@ end subroutine combinations
                   enddo
                   !$omp end parallel do
                   !
-                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_split) then
                     write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                   endif
                   !
@@ -35921,7 +35917,7 @@ end subroutine combinations
                 !
                 if (trim(job%IOkinet_action)=='SAVE') then
                   !
-                  if (job%IOmatelem_divide) then
+                  if (job%IOmatelem_split) then
                      write(chkptIO_) grot_t
                   else
                      write(chkptIO) grot_t
@@ -35931,7 +35927,7 @@ end subroutine combinations
                 !
               endif
               !
-              if (job%IOmatelem_divide) then 
+              if (job%IOmatelem_split) then 
                 write(chkptIO_) 'g_rot'
                 close(chkptIO_)
               endif
@@ -35946,7 +35942,7 @@ end subroutine combinations
           !
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
-          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_divide) then
+          if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             write(chkptIO) 'g_cor'
             !
@@ -35962,7 +35958,7 @@ end subroutine combinations
             !
             islice = islice + 1
             !
-            if ( job%IOmatelem_divide ) then 
+            if ( job%IOmatelem_split ) then 
               if (islice<iterm1.or.iterm2<islice) cycle
               !
               call open_divided_slice(islice,'g_cor',job%matelem_suffix,chkptIO_)
@@ -36029,7 +36025,7 @@ end subroutine combinations
                   enddo
                   !$omp end parallel do
                   !
-                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_divide) then
+                  if (trim(job%IOkinet_action)=='SAVE'.and.job%IOmatelem_split) then
                       write(chkptIO_) grot_t(1:mdimen,1:Ndeg)
                   endif
                   !
@@ -36061,7 +36057,7 @@ end subroutine combinations
               !
               if (trim(job%IOkinet_action)=='SAVE') then
                 !
-                if (job%IOmatelem_divide) then
+                if (job%IOmatelem_split) then
                    write(chkptIO_) grot_t
                 else
                    write(chkptIO) grot_t
@@ -36071,7 +36067,7 @@ end subroutine combinations
               !
             endif
             !
-            if (job%IOmatelem_divide) then 
+            if (job%IOmatelem_split) then 
               write(chkptIO_) 'g_cor'
               close(chkptIO_)
             endif
@@ -36091,7 +36087,7 @@ end subroutine combinations
         !
         !islice = (PT%Nmodes+3)*3+1
         !
-        if ( treat_vibration.and.(.not.job%IOmatelem_divide.or.iterm1==0) ) then 
+        if ( treat_vibration.and.(.not.job%IOmatelem_split.or.iterm1==0) ) then 
           !
           ! ----------------- FBR ------------------
           !
@@ -36107,7 +36103,7 @@ end subroutine combinations
           call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
           !
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                  (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
+                  (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
              !
              write(chkptIO) 'hvib'
              !
@@ -36178,7 +36174,7 @@ end subroutine combinations
             if (job%vib_rot_contr) then 
                !
                if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                       (.not.job%IOmatelem_divide.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
+                       (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
                     !
                     !$omp parallel do private(ideg,icontr,jcontr,jdeg) shared(hvib_t) schedule(dynamic)
                     do ideg=1,Ndeg
@@ -36282,7 +36278,7 @@ end subroutine combinations
         !Finish the contracted checkpointing
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
           write(chkptIO) 'End Kinetic part'
           close(chkptIO,status='keep')
@@ -37605,7 +37601,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (trim(trove%IO_contrCI)=='READ') return
   !
-  if (trim(trove%IO_contrCI)=='SAVE'.and.job%IOmatelem_divide.and.job%iswap(1)>1) then
+  if (trim(trove%IO_contrCI)=='SAVE'.and.job%IOmatelem_split.and.job%iswap(1)>1) then
     !
     write(out,"('PTstore_contr_matelem: CONTR_CI should be set to READ if _MATELEM save split_ and slices>1')")
     stop 'PTstore_contr_matelem: CONTR_CI should be set to READ for _MATELEM save split_ use'
@@ -37798,7 +37794,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     ! allocate array to keep contracted matrix elements
     !
-    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     if (info/=0) then
@@ -37856,7 +37852,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Gvib'
   !
-  nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
+  !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38008,7 +38004,7 @@ subroutine PTstore_contr_matelem(jrot)
         !
         ! allocate array to keep contracted matrix elements
         !
-        if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+        if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
         !
         allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
         if (info/=0) then
@@ -38047,7 +38043,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Gcor'
       !
-      nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
+      !nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
       icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
       !
       allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38104,7 +38100,9 @@ subroutine PTstore_contr_matelem(jrot)
           !
           if (verbose>=5) then 
              ! check if we are able to recover all expansion terms from the unique for each class terms
-             do iterm=1, nterms
+             do icoeff = 1,trove%g_cor(jmode,imode)%Ncoeff
+               !
+               iterm = trove%g_cor(jmode,imode)%ifromsparse(icoeff)
                c = real(trove%g_cor(jmode,imode)%field(iterm,0),kind=rk)
                if (abs(c)<coef_thresh) cycle
                match = .false.
@@ -38146,6 +38144,9 @@ subroutine PTstore_contr_matelem(jrot)
       func_tag = 'Trot'
       !
       !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+      target_index = 0 
+      target_index(1) = KinOrder
+      nterms= FLQindex(trove%Nmodes_e,target_index)
       !
       if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Grot:', nterms
       !
@@ -38186,7 +38187,7 @@ subroutine PTstore_contr_matelem(jrot)
         !
         ! allocate array to keep contracted matrix elements
         !
-        if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+        if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size =', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
         !
         allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
         if (info/=0) then
@@ -38214,7 +38215,7 @@ subroutine PTstore_contr_matelem(jrot)
       !
       if (job%verbose>=4) write(out, '(/1x,a)') 'Store expansion coefficients for Grot'
       !
-      nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
+      !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
       icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
       !
       allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38271,7 +38272,9 @@ subroutine PTstore_contr_matelem(jrot)
           !
           if (verbose>=5) then 
              ! check if we are able to recover all expansion terms from the unique for each class terms
-             do iterm=1, nterms
+             do icoeff = 1,trove%g_rot(jmode,imode)%Ncoeff
+               !
+               iterm = trove%g_rot(jmode,imode)%ifromsparse(icoeff)
                c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
                if (abs(c)<coef_thresh) cycle
                match = .false.
@@ -38358,7 +38361,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     if (job%verbose>=4) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. unique terms, no. basis functions:', nterms_uniq(iclass), dimen
     !
-    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     if (info/=0) then
@@ -38379,7 +38382,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'store expansion coefficients for PES'
   !
-  nterms = trove%poten%Ncoeff
+  !nterms = trove%poten%Ncoeff
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38432,7 +38435,10 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (verbose>=5) then 
      ! check if we are able to recover all expansion terms from the unique for each class terms
-     do iterm=1, nterms
+     do icoeff = 1,trove%poten%Ncoeff
+       !
+       iterm = trove%poten%ifromsparse(icoeff)
+       !
        c = real(trove%poten%field(iterm,0),kind=rk)
        if (abs(c)<coef_thresh) cycle
        match = .false.
@@ -38514,7 +38520,7 @@ subroutine PTstore_contr_matelem(jrot)
     !
     if (job%verbose>=4) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. unique terms, no. basis functions:', nterms_uniq(iclass), dimen
     !
-    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+    if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
     !
     allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
     if (info/=0) then
@@ -38535,7 +38541,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=4) write(out, '(/1x,a)') 'store expansion coefficients for pseudopotential'
   !
-  nterms = trove%pseudo%Ncoeff
+  !nterms = trove%pseudo%Ncoeff
   icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
   !
   allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38589,7 +38595,10 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (verbose>=5) then 
      ! check if we are able to recover all expansion terms from the unique for each class terms
-     do iterm=1, nterms
+     do icoeff = 1,trove%pseudo%Ncoeff
+       !
+       iterm = trove%pseudo%ifromsparse(icoeff)
+       !
        c = real(trove%pseudo%field(iterm,0),kind=rk)
        if (abs(c)<coef_thresh) cycle
        match = .false.
@@ -38675,7 +38684,7 @@ subroutine PTstore_contr_matelem(jrot)
  
        if (job%verbose>=4) write(out, '(1x,a,1x,i3,1x,i6,1x,i6)') 'no. unique terms, no. basis functions:', nterms_uniq(iclass), dimen
  
-       if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
+       if (job%verbose>=4) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', real(nterms_uniq(iclass))*real(max(dimen,nprim))**2*8.0/1024.0**3, 'gb'
  
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
        if (info/=0) then
@@ -38695,7 +38704,7 @@ subroutine PTstore_contr_matelem(jrot)
      !
      if (job%verbose>=4) write(out, '(/1x,a)') 'store expansion coefficients for extF'
      !
-     nterms = maxval(trove%extf(:)%Ncoeff)
+     !nterms = maxval(trove%extf(:)%Ncoeff)
      icomb_maxnterms = maxval(icomb_nterms(0:ncomb))
      !
      allocate(ijmode_icomb_iterm(nclasses,icomb_maxnterms,0:ncomb), ijmode_icomb_coefs(icomb_maxnterms,0:ncomb), ijmode_icomb_nterms(0:ncomb), stat=info)
@@ -38752,8 +38761,11 @@ subroutine PTstore_contr_matelem(jrot)
        !
        if (verbose>=5) then 
           ! check if we are able to recover all expansion terms from the unique for each class terms
-          do iterm=1, nterms
-            c = real(trove%poten%field(iterm,0),kind=rk)
+          do icoeff = 1,trove%extF(ipar)%Ncoeff
+            !
+            iterm = trove%extF(ipar)%ifromsparse(icoeff)
+
+            c = real(trove%extF(ipar)%field(iterm,0),kind=rk)
             if (abs(c)<coef_thresh) cycle
             match = .false.
             ! loop over combinations of classes

@@ -297,6 +297,8 @@ module fields
       logical             :: IOvector_symm = .true.    ! store eigen-vectors in the symmetrized iired. representation 
       logical             :: IOeigen_compress = .false.   ! compress the computed eigenvectors using the threshold factor coeff_thresh
       logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
+      logical             :: IOmatelem_stitch = .false.   ! stitch the matelem checkpoints from split pieces 
+      logical             :: IOmatelem_split  = .false.   ! split the matelem checkpoint into pieces (can be different from divide)
       logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
       logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
@@ -1033,7 +1035,7 @@ module fields
              !
              job%vib_rot_contr = .true.
              !
-             job%IOmatelem_divide = .true.
+             job%IOmatelem_split = .true.
              job%IOextF_divide  = .true.
              !
              job%iswap(1) = 0
@@ -2240,12 +2242,20 @@ module fields
              !
              if (Nitems>2.or.(job%matelem_append.and.Nitems>3)) then
                call readu(w)
-               if (all(trim(w)/=(/'DIVIDE','SPLIT','STITCH'/))) call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
+               if (all(trim(w)/=(/'DIVIDE','SPLIT','STITCH','COLLECT','NON-SPLIT'/))) call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
                !
-               job%IOmatelem_divide = .true.
+               if (trim(w)=='NON-SPLIT') cycle
                !
-               job%iswap(1) = 1
-               job%iswap(2) = (trove%Nmodes+3)*3+trove%Nmodes**2+1
+               job%iswap(1) = 0
+               job%iswap(2) = 12
+               !
+               if (trim(w)=='DIVIDE') then 
+                 job%IOmatelem_divide = .true.
+                 job%iswap(1) = 1
+                 job%iswap(2) = (trove%Nmodes+3)*3+trove%Nmodes**2+1
+               endif
+               !
+               job%IOmatelem_split  = .true.
                !
                if (job%contrci_me_fast) then 
                  job%iswap(1) = 0
@@ -2257,11 +2267,13 @@ module fields
                   call readi(job%iswap(2))
                endif
                !
-               if (trim(w)=='STITCH') job%iswap(:)=0
+               if (trim(w)=='STITCH'.or.trim(w)=='COLLECT') job%iswap(:)=0
+               !
+               if (trim(w)=='DIVIDE') job%iswap(:)=0
                !
              endif
              !
-             if (job%contrci_me_fast.and..not.job%IOmatelem_divide) then
+             if (job%contrci_me_fast.and..not.job%IOmatelem_split) then
                write(out,"('Read-input: for fast-ci use MATELEM XXXX split (XXXX=read,save,none)')")
                call report ("For fast-ci MATELEM must be split",.true.)
              endif 
@@ -2311,7 +2323,7 @@ module fields
              if (Nitems>2) then
                call readu(w)
                if (all(trim(w)/=(/'DIVIDE','SPLIT'/))) call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-               job%IOmatelem_divide = .true.
+               job%IOmatelem_split = .true.
                !
                job%iswap(1) = 0
                job%iswap(2) = 1e6
@@ -13531,7 +13543,7 @@ end subroutine check_read_save_none
         !
         fl => trove%poten
         !
-        do iterm = 1,Ncoeff
+        do iterm = 1,fl%Ncoeff
           !
           do i = 0,fl%Npoints
             !

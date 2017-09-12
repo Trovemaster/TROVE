@@ -54,6 +54,15 @@ module mol_abcd
        write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'MLcoordinate_transform_func - bad coord. type'
        !
+    case('NORMAL')
+       !
+       if (direct) then 
+           dst = src
+       else
+           dst = src
+           !dst(:) = dst(:) +  molec%local_eq(:)
+       endif
+       !
     case('R-ALPHA-TAU')
        !
        if (direct) then
