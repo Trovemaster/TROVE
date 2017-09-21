@@ -1,3 +1,7 @@
+# Fortran files and objects
+*.mod
+*.o
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
