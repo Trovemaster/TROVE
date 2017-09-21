@@ -62,6 +62,10 @@ module me_numer
                                                          ! where phi_v is a numerical eigenfunction from numerov
                                                          ! deriv_method can be either 'd04aaf' of '5 points'
                                                          ! '5 points' 
+  real(ark) ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
+
+  integer(ik) :: iswitch                                 ! the grid point of switch
+
   !
   contains
 
@@ -101,6 +105,7 @@ module me_numer
      iperiod = iperiod_
      verbose = verbose_
      imode=icoord
+     rho_switch = molec%specparam(icoord)
      !
      periodic = .false.
      if (iperiod>0) periodic = .true.
@@ -196,6 +201,13 @@ module me_numer
      ! solve 1D Schroedinger equation with Numerov algorithm
      !
      iparity = 0
+     !
+     iswitch = max(1,int( rho_switch/rhostep_))
+     !
+     if (isingular>-1.and.(iswitch<=0.or.iswitch>=npoints_)) then
+       write(out,"('me_numerov: illegal iswitch or npoints',2i8)") iswitch,npoints_
+       stop 'iswitch inconsistent with npoints' 
+     endif
      !
      if (iperiod/=0) vmax = vmax/2
      !
@@ -599,6 +611,14 @@ module me_numer
        if (ic/=npoints.and.enerslot(v)>=poten(imin).and.iter==1) eguess = enerslot(v)
        !
        if (verbose>=5) write(out,"('eguess = ',e14.7)") eguess
+       !
+       ! special case of a singular point i = 0
+       !
+       if (isingular==0) then 
+          !
+          forall(i = 0:npoints) phi_f(i)  = sqrt(rhostep*real(i,ark))!*sqrt(mu_rr(i))
+          !
+       endif
        !
        call numcoo ( v, pot_eff, i0, eguess, enerlow, ic, phi_f, pcout, ierr)
        ! 
@@ -1165,8 +1185,13 @@ module me_numer
             phi_f(0)  = 0
             phi_f(1)  = small_
             !
-         elseif (abs(rho_b(1))<=0.01_ark.and..not.periodic) then 
+         elseif (isingular==0) then 
             !
+            istart = iswitch+2
+            phi_f(npoints-1)  = safe_min ! small_
+            phi_f(npoints  )  = 0.0_ark
+            !
+         elseif (abs(rho_b(1))<=0.01_ark.and..not.periodic) then 
             !
             phi_f(1)  = sqrt(small_) ! small_
             phi_f(0)  = small_
@@ -1201,7 +1226,8 @@ module me_numer
         !  !
         !  phi_f(1)  = safe_min ! small_
         !  phi_f(0)  = 0.0_ark
-          !
+
+            !
         elseif (periodic) then 
           !
           if (pcin*pcout>small_.or.(mod(v,2)/=0.and.iperiod>0.and.iparity==1)) then 
@@ -1346,7 +1372,7 @@ module me_numer
      real(ark),intent(inout) :: phi_f(0:npoints)
      real(ark),intent(out) :: sumout,pcout
      !
-     integer(ik) :: i,iend
+     integer(ik) :: i,iend,imin_ref
      logical :: notfound
      !
      real(ark) :: hh,const,tsum,redfac,yi,yim1,yip1,phi_t
@@ -1371,6 +1397,20 @@ module me_numer
      iend = npoints-2 
      if (v==0) iend = imin
      !
+     ! if minimum is at i= 0 choose iend at the moddle 
+     !
+     !
+     imin_ref = imin
+     !
+     if (isingular==0) then 
+       !
+       !if (imin<=5) 
+       !imin_ref = npoints/2
+       !if (iend<=5) 
+       !iend = npoints/2
+       !
+     endif
+     !
      do while(notfound.and.i<=iend)
         !
         i = i + 1
@@ -1383,21 +1423,20 @@ module me_numer
         !
         yip1=const*phi_t+yi+yi-yim1
         !
-        if (i>=imin) then 
-        !
-        if ( sign( 1.0_ark,yi-yim1 )/=sign(1.0_ark,yip1-yi).and.i.ne.1) then 
-        !if ( sign( 1.0_rk,yim1 )/=sign(1.0_rk,yip1 ).and.i.ne.1) then 
-            notfound = .false.
-            cycle 
-        endif 
-        !
-        if ( i==iref ) then 
-        !if ( sign( 1.0_rk,yim1 )/=sign(1.0_rk,yip1 ).and.i.ne.1) then 
-            notfound = .false.
-            cycle 
-        endif 
-
-
+        if (i>=imin_ref) then 
+          !
+          if ( sign( 1.0_ark,yi-yim1 )/=sign(1.0_ark,yip1-yi).and.i.ne.1) then 
+          !if ( sign( 1.0_rk,yim1 )/=sign(1.0_rk,yip1 ).and.i.ne.1) then 
+              notfound = .false.
+              cycle 
+          endif 
+          !
+          if ( i==iref ) then 
+          !if ( sign( 1.0_rk,yim1 )/=sign(1.0_rk,yip1 ).and.i.ne.1) then 
+              notfound = .false.
+              cycle 
+          endif 
+          !
         endif 
         !
         yim1=yi
@@ -1423,7 +1462,7 @@ module me_numer
      !
      if (notfound) then 
         if (v/=0) ierr=1
-        ic=imin
+        ic=imin_ref
         if (verbose>=7) then 
           write (out,"('intout: no turning point found in outward integration')")
         endif 

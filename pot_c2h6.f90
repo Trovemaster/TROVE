@@ -24,6 +24,7 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
   real(ark)              :: f
 
   real(ark) :: xi(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
+  real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
   real(ark) :: chi(18,12),term,rad
   integer(ik) :: ioper,ipower(18),i
 
@@ -87,6 +88,36 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
       theta56 = tau36-tau35
       theta45 = tau25-tau24
       theta46 = 2.0_ark*pi-theta56-theta45
+
+
+      !r1=    1.53580000   
+      !r2=    1.08770000   
+      !r3=    1.08770000   
+      !r4=    1.08770000   
+      !r5=    1.08770000   
+      !r6=    1.08770000   
+      !r7=    1.08770000   
+      
+      !beta1 =  111.22000000*rad   
+      !beta2 = 111.22000000*rad   
+      !beta3 = 111.22000000*rad   
+      !beta4 = 111.22000000*rad   
+      !beta5 = 111.22000000*rad   
+      !beta6 = 111.22000000*rad   
+      !
+      !theta45 =  120.00000000*rad   
+      !theta46 =  120.00000000*rad    ! - 1
+      !tau14   =  145.00000000*rad   
+      !theta12 =  120.00000000*rad   
+      !theta13 =  120.00000000*rad    ! -1
+      !theta56 = 2.0_ark*pi-theta46-theta45
+      !theta13 = 2.0_ark*pi-theta12-theta23
+      !
+      !tau24 = tau14-theta12 
+      !tau25 = theta45+tau24
+      !tau35 = tau25-theta23
+      !tau36 = theta56+tau35
+
       !
       xi(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
       xi(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
@@ -94,7 +125,11 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
       xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
       xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
       !
-      xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+      !!!xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+
+      xi(18)  = ( tau14+tau25+tau36 )/3.0_ark-pi
+
+
     !
   end select
 
@@ -103,17 +138,24 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
   xi(2)=1.0_ark-exp(-b*(r2-r2e))
   xi(3)=1.0_ark-exp(-b*(r3-r2e))
   xi(4)=1.0_ark-exp(-b*(r4-r2e))
-  XI(5)=1.0_ark-EXP(-B*(R5-R2E))
-  XI(6)=1.0_ark-EXP(-B*(R6-R2E))
-  XI(7)=1.0_ark-EXP(-B*(R7-R2E))
+  xi(5)=1.0_ark-exp(-b*(r5-r2e))
+  xi(6)=1.0_ark-exp(-b*(r6-r2e))
+  xi(7)=1.0_ark-exp(-b*(r7-r2e))
   !
   xi(8) = local(8)   - betae
   xi(9) = local(9)   - betae
   xi(10) = local(10) - betae
-  XI(11) = LOCAL(11) - BETAE
-  XI(12) = LOCAL(12) - BETAE
-  XI(13) = LOCAL(13) - BETAE
+  xi(11) = local(11) - betae
+  xi(12) = local(12) - betae
+  xi(13) = local(13) - betae
 
+  !xi(8)  = beta1 - betae
+  !xi(9)  = beta2 - betae
+  !xi(10) = beta3 - betae
+  !xi(11) = beta4 - betae
+  !xi(12) = beta5 - betae
+  !xi(13) = beta6 - betae
+  !xi(18) = xi(18)/sqrt(3.0_ark)
 
   !write(out,*) xi, 'pot coords'  !BPM
 

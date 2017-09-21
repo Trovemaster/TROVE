@@ -65,7 +65,7 @@ module mol_c2h6
     real(ark) :: tau1, tau2, b1_zmat, b2_zmat, tau1_zmat, dtau, db1, db2
     !
     real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,&
-                 S1,S2,S3,S4,S5,S6,taubar,tau
+                 S1,S2,S3,S4,S5,S6,taubar,tau,S14,S15,S16,S17,S18
 
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/start'
     !
@@ -105,6 +105,92 @@ module mol_c2h6
         !
       endif
       !
+    case('R-R16-BETA16-THETA-TAU-XXXXX')
+      ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
+      !  TO BE 16TH COORDINATE IN Z-MAT
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+
+        dst(1:13) = src(1:13)-molec%local_eq(1:13)
+        !
+        tau14 = src(14)
+        tau24 = src(15)
+        tau25 = src(16)
+        tau35 = src(17)
+        tau36 = src(18)
+        !
+        theta12 = tau14-tau24
+        theta23 = tau25-tau35
+        theta13 = 2.0_ark*pi-theta12-theta23
+        !
+        theta56 = tau35-tau36
+        theta45 = tau24-tau25
+        theta46 = 2.0_ark*pi-theta56-theta45
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+        !
+        dst(18)  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:13) = src(1:13)+molec%local_eq(1:13)
+        !
+
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+
+        !tau14 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+Pi 
+        !tau35 = S18+1.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        !tau36 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+S18+Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15 
+        !tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        !tau24 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
+
+
+tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+7.0_ark/3.0_ark*Pi
+tau24 = S18+5.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6._ark*sqrt(2.0_ark)*S15-1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
+tau25 = 1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16
+tau36 = -1.0_ark/6._ark*sqrt(6._ark)*S14-1.0_ark/6._ark*sqrt(6._ark)*S16+S18-1.0_ark/3.0_ark*Pi+1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6._ark*sqrt(2._ark)*S15
+tau35 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6._ark*sqrt(2._ark)*S15-1.0_ark/6._ark*sqrt(6._ark)*S14+1.0_ark/6._ark*sqrt(6._ark)*S16
+
+
+
+        !S1 = src(14)
+        !S2 = src(15)
+        !S3 = 2.0_ark*pi
+        !S4 = src(16)
+        !S5 = src(17)
+        !S6 = 2.0_ark*pi
+        !taubar = src(18)+3.0_ark*pi/sqrt(3.0_ark)
+        !Tau = taubar*sqrt(3.0_ark)
+        !
+        !theta23 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S1+S3)
+        !theta13 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        !theta12 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        !
+        !theta56 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S4+S6)
+        !theta46 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+        !theta45 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+
+        !tau36 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau+2.0_ark*theta56+        theta45-        theta12)
+        !tau35 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau-        theta56+        theta45-        theta12)
+        !tau14 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45+2.0_ark*theta12)
+        !tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
+        !tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
+        !
+        dst(14) = tau14
+        dst(15) = tau24
+        dst(16) = tau25
+        dst(17) = tau35
+        dst(18) = tau36
+        !
+      endif
     case('R-R16-BETA16-THETA-TAU')
       ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
       !  TO BE 16TH COORDINATE IN Z-MAT
@@ -133,34 +219,47 @@ module mol_c2h6
         dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
         dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
         !
-        dst(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+        dst(18)  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
         dst(1:13) = src(1:13)+molec%local_eq(1:13)
         !
-        S1 = src(14)
-        S2 = src(15)
-        S3 = 2.0_ark*pi
-        S4 = src(16)
-        S5 = src(17)
-        S6 = 2.0_ark*pi
-        taubar = src(18)+3.0_ark*pi/sqrt(3.0_ark)
-        Tau = taubar*sqrt(3.0_ark)
-        !
-        theta23 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S1+S3)
-        theta13 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
-        theta12 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
-        !
-        theta56 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S4+S6)
-        theta46 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
-        theta45 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
 
-        tau36 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau+2.0_ark*theta56+        theta45-        theta12)
-        tau35 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau-        theta56+        theta45-        theta12)
-        tau14 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45+2.0_ark*theta12)
-        tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
-        tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+
+        tau14 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+Pi 
+        tau35 = S18+1.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        tau36 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+S18+Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15 
+        tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        tau24 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
+
+        !S1 = src(14)
+        !S2 = src(15)
+        !S3 = 2.0_ark*pi
+        !S4 = src(16)
+        !S5 = src(17)
+        !S6 = 2.0_ark*pi
+        !taubar = src(18)+3.0_ark*pi/sqrt(3.0_ark)
+        !Tau = taubar*sqrt(3.0_ark)
+        !
+        !theta23 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S1+S3)
+        !theta13 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        !theta12 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S2+sqrt(6.0_ark)*S3-3.0_ark*S1)
+        !
+        !theta56 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S4+S6)
+        !theta46 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+        !theta45 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
+
+        !tau36 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau+2.0_ark*theta56+        theta45-        theta12)
+        !tau35 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau-        theta56+        theta45-        theta12)
+        !tau14 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45+2.0_ark*theta12)
+        !tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
+        !tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
         !
         dst(14) = tau14
         dst(15) = tau24
@@ -169,7 +268,7 @@ module mol_c2h6
         dst(18) = tau36
         !
       endif
-      !
+        !
     end select
     !
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/end'

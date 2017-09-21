@@ -511,6 +511,8 @@ contains
        nsize_base = 0
        do gamma = 1,sym%Nrepresen
           !
+          if (.not.job%select_gamma(gamma)) cycle
+          !
           write(jchar, '(i4)') jval(jind)
           write(gchar, '(i2)') gamma
           !
@@ -1349,7 +1351,7 @@ contains
       !
       if (trim(job%IOj0matel_action)=='SAVE') then
         !
-        if (.not.job%IOmatelem_divide.or.job%iswap(1)<=1) then 
+        if (.not.job%IOmatelem_split.or.job%iswap(1)<=1) then 
           !
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
@@ -1376,7 +1378,7 @@ contains
         ! Preparing slicing 
         !
         !
-        if (job%IOmatelem_divide) then
+        if (job%IOmatelem_split) then
           !
           iterm1 = max(job%iswap(1),1)
           iterm2 = min(job%iswap(2),(FLNmodes+3)*3)
@@ -1393,7 +1395,7 @@ contains
         !
         if (job%verbose>=3) write(out,"(/' Transform grot to J0-repres...')")
         !
-        if (.not.job%IOmatelem_divide) then
+        if (.not.job%IOmatelem_split) then
           !
           task = 'rot'
           !
@@ -1421,13 +1423,13 @@ contains
             !
             islice = islice + 1
             !
-            if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+            if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
             !
-            if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
+            if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
               call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
               !
-            elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
+            elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
               call divided_slice_read_vibrot(islice,job%matelem_suffix,dimen,gmat)
               !
@@ -1443,11 +1445,11 @@ contains
             call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
                         psi,dimen,beta,mat_s,Neigenroots)
             !
-            if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
+            if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
               call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s)
               !
-            elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
+            elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
               call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
               !
@@ -1466,7 +1468,7 @@ contains
         if (job%verbose>=3) write(out,"(' ...done!')")
         if (job%verbose>=3) write(out,"(/' Transform gcor to J0-repres...')")
         !
-        if (.not.job%IOmatelem_divide) then
+        if (.not.job%IOmatelem_split) then
           !
           task = 'cor'
           !
@@ -1490,13 +1492,13 @@ contains
             !
             islice = islice + 1
             !
-            if (job%IOmatelem_divide.and.(islice<iterm1.or.iterm2<islice)) cycle
+            if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
             !
-            if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
+            if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
               call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
               !
-            elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
+            elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
               call divided_slice_read_vibrot(islice,job%matelem_suffix,dimen,gmat)
               !
@@ -1512,11 +1514,11 @@ contains
                         psi,dimen,beta,mat_s,Neigenroots)
             !
             !
-            if (job%IOmatelem_divide.and..not.job%vib_rot_contr) then 
+            if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
               call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s)
               !
-            elseif (job%IOmatelem_divide.and.job%vib_rot_contr) then 
+            elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
               call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
               !
@@ -1532,7 +1534,7 @@ contains
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
-        if (.not.job%IOmatelem_divide.or.job%iswap(1)==1) write(chkptIO) 'End Kinetic part'
+        if (.not.job%IOmatelem_split.or.job%iswap(1)==1) write(chkptIO) 'End Kinetic part'
         !
         if (.not.job%vib_rot_contr) then 
           close(chkptIO,status='keep')
@@ -1845,7 +1847,7 @@ contains
         logical                     :: ifopened
         real(rk)                    :: f_t
         !
-        if (.not.job%IOmatelem_divide) return
+        if (.not.job%IOmatelem_split) return
         !
         write(jchar, '(i4)') islice
         !
@@ -1892,7 +1894,7 @@ contains
         logical                     :: ifopened
         real(rk)                    :: f_t
         !
-        if (.not.job%IOmatelem_divide) return
+        if (.not.job%IOmatelem_split) return
         !
         write(jchar, '(i4)') islice
         !
@@ -2075,7 +2077,7 @@ contains
       integer(ik)                 :: ilen
       logical                     :: ifopened
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       write(jchar, '(i4)') islice
       !
@@ -2100,7 +2102,7 @@ contains
       character(len=cl)           :: filename,job_is
       integer(ik)                 :: ilen
       !
-      if (.not.job%IOmatelem_divide) return
+      if (.not.job%IOmatelem_split) return
       !
       write(jchar, '(i4)') islice
       !

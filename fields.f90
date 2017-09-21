@@ -405,6 +405,7 @@ module fields
      real(rk)    :: theta = 0
      real(rk)    :: phi = 0
      real(rk)    :: tau = 0
+     real(rk)    :: theta1 = 0
      integer(ik) :: Itermax = 200
      character(len=cl) :: type = 'GLOBAL_SEARCH'      ! to switch between fitting methods. 
      !
@@ -2710,6 +2711,10 @@ module fields
                   case('TAU')
                     !
                     call readf(analysis%res%tau)
+                    !
+                  case('THETA_RESTART')
+                    !
+                    call readf(analysis%res%theta1)
                     !
                 end select
                 !
@@ -6888,7 +6893,7 @@ end subroutine check_read_save_none
          !
          if (trove%internal_coords=='LOCAL') then 
             !
-            stop 'check local potential here'
+            !stop 'check local potential here'
             !
             pot_points(iterm) = poten_xi(xi_t)
             !
@@ -7191,7 +7196,7 @@ end subroutine check_read_save_none
              !
              if (trove%internal_coords=='LOCAL') then 
                 !
-                stop 'check local potential here'
+                !stop 'check local potential here'
                 !
                 pot_points(iterm) = poten_xi(xi_t)
                 !
@@ -13178,6 +13183,8 @@ end subroutine check_read_save_none
         !
         if (job%verbose>=3) write(out,"(/'Store all objects defining the Hamiltonian...')")
         !
+        if (trove%separate_store.and.trim(trove%internal_coords)=='LOCAL') return
+        !
         unitfname ='Check point of the Hamiltonian'
         call IOStart(trim(unitfname),chkptIO)
         !
@@ -13427,6 +13434,8 @@ end subroutine check_read_save_none
         !
         if (job%verbose>=3) write(out,"(/'Store all objects as ASCII ...')")
         !
+        if (trim(trove%IO_kinetic)/='SAVE') return
+        !
         unitfname ='Check point of the kinetic'
         call IOStart(trim(unitfname),chkptIO_kin)
         inquire (chkptIO_kin,opened=i_opened)
@@ -13659,6 +13668,8 @@ end subroutine check_read_save_none
         real(rk)             :: factor
         !
         integer(ik) :: n(2,8), m(2,8) , l(2,8), i, iterm, k(trove%Nmodes)
+        !
+        if (trove%separate_store.and.trim(trove%internal_coords)=='LOCAL') return
         !
         unitfname ='Check point of the Hamiltonian'
         call IOStart(trim(unitfname),chkptIO)
@@ -14581,7 +14592,10 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) Npoints,Norder,nterms,nrank
         !
-        if (nrank/=extF%rank) stop "external-ASCII-chk rank is wrong"
+        if (nrank/=extF%rank) then 
+           write(out,"(a,i8,1x,i8)") "external-ASCII-chk rank is wrong: " ,nrank,extF%rank
+           stop "external-ASCII-chk rank is wrong"
+        endif
         !
         if (Npoints/=trove%Npoints) stop "external-ASCII-chk npoints is wrong"
         !
@@ -15369,6 +15383,9 @@ end subroutine check_read_save_none
     logical               :: reduced_model
     real(ark)              :: poten_t,gvib_t(trove%Nmodes,trove%Nmodes),grot_t(3,3),gcor_t(trove%Nmodes,3),extF_t(extF%rank)
     !
+    real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
+    integer(ik) ::  iswitch                                 ! the grid point of switch
+    !
     ! substitute for easier reference 
     !
     bs => bset%bs1D(ibs)
@@ -15810,7 +15827,7 @@ end subroutine check_read_save_none
            !
            ! Potential and kinetic energy parts
            !
-           if (trove%naught_at_rho_0) then
+           if (trove%lincoord/=0) then
              !
              ! Well, if pseudo -> infinity, we better switch it off. Here it is done by removing it
              ! when we have a naught at rho=0. 
@@ -15833,7 +15850,23 @@ end subroutine check_read_save_none
            !endif
            !
            !
+           ! standard case of a non-singular pseudo-function
+           !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
+           ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
+           if (isingular>=0) then 
+             !        
+             rho_switch = trove%specparam(nu_i)
+             iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+             !
+             do i = iswitch+1,npoints
+                !
+                rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                f1drho(i) = trove%poten%field(1,i) +trove%pseudo%field(1,i)/rho**2
+                !
+             enddo
+             !
+           endif 
            !
            ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
            !
@@ -22487,8 +22520,8 @@ end subroutine check_read_save_none
     real(rk)            :: dx(2*trove%nmodes+2),t_xi(2*trove%nmodes+2),Tsing(2*trove%nmodes+2)
     integer(ik)         :: icol,i,irow,icolumn,numpar,ncol,ncol1,ncol2,i1,i2,rank,iwork, info
     real(rk)            :: stability_best,deltax(2*trove%nmodes+2)
-    real(rk)            :: r_na(trove%natoms,3),r(trove%Ncoords),largest,res_,tau,smallest
-    integer(ik)         :: iphi_,itheta_,itau_,ncoords,iatom,naught_at(2),iphi_s,itheta_s,itau_s
+    real(rk)            :: r_na(trove%natoms,3),largest,res_,tau,smallest,r(trove%Ncoords)
+    integer(ik)         :: iphi_,itheta_,itau_,ncoords,iatom,naught_at(2),iphi_s,itheta_s,itau_s,alloc_p,Ntheta1
 
     !
     integer(ik)         :: Ntheta,Nphi,itmax,Ntau,itau
@@ -22496,8 +22529,10 @@ end subroutine check_read_save_none
     character(len=cl)     :: flag_res,comment
     !character(len=cl)     :: flag_res = 'THETA_TAU'
     !character(len=cl)     :: flag_res = 'GLOBAL_SEARCH'
+    !
+    real(rk) :: work((2*trove%Nmodes+2)*50)
 
-    real(rk),allocatable  :: RES(:,:,:),work(:),xi_(:,:,:,:)
+    real(rk),allocatable  :: RES(:,:,:),xi_(:,:,:,:),r_(:,:,:),flag(:,:)
 
       !
       jval = trove%jmax
@@ -22540,22 +22575,51 @@ end subroutine check_read_save_none
       if (Nphi/=0) phistep   = 2.0_rk*pi/Nphi
       if (Ntau/=0) taustep   = 2.0_rk*pi/Ntau
       !
-      itmax = analysis%res%itermax
+      Ntheta1 = 0
       !
-      allocate(xi_(parmax,0:Ntheta,0:Nphi,0:Ntau),RES(0:Ntheta,0:Nphi,0:Ntau),work(iwork))
+      if (analysis%res%theta1>small_) then
+         Ntheta1 = int(analysis%res%theta1/thetastep)
+      endif
+      !
+      itmax = analysis%res%itermax
       !
       write(out,"(/'  Rotational energy surface'/)")
       !
       itheta_ = 0 ; iphi_ = 0 ;  itau_ = 0 ; largest = 0
       itheta_s= 0 ; iphi_s= 0 ;  itau_s= 0 ; smallest= 0
       !
-      do itheta=0,Ntheta,1
+
+      stability =  1.e10
+      stability_best = 100.0_rk*sqrt(small_)
+      ssq_best = 1e-16
+      !
+      allocate(RES(0:Ntheta,0:Nphi,0:Ntau),stat=info)
+      call ArrayStart('RES',info,size(RES),kind(RES))
+      allocate(xi_(parmax,0:Ntheta,0:Nphi,0:Ntau),stat=info)
+      call ArrayStart('RES',info,size(xi_),kind(xi_))
+      allocate(r_(trove%Ncoords,0:Nphi,0:Ntau),stat=info)
+      call ArrayStart('RES',info,size(r_),kind(r_))
+      allocate(flag(0:Nphi,0:Ntau),stat=info)
+      call ArrayStart('RES',info,size(r_),kind(r_))
+      !     
+      !omp parallel private(work,alloc_p) shared(RES,xi_)
+      !allocate(work(iwork),stat=alloc_p)
+      !if (alloc_p/=0) then
+      !   write (out,"(' Error ',i9,' trying to allocate array pot_points')") alloc_p
+      !   stop 'FLinitilize_Potential, pot_points  - out of memory'
+      !end if
+      !
+      do itheta=Ntheta1,Ntheta,1
         !
         theta=min(itheta*thetastep,pi)
         !
+        !
+        !$omp  parallel do private(iphi,phi,itau,tau,xi,ivar,numpar,&
+        !$omp& rjacob,iter,ssq_old,ssq,dx,stability,ncol,i,r_na,r,Energy,deltax,t_xi,ncol1,i1,ncol2,i2,Fright,Fleft,Hess,&
+        !$omp& Fplusminus,irow,icolumn,am,bl,Tsing,rank,info,comment) shared(RES,xi_,r_,flag) schedule(guided) 
         do iphi=0,Nphi,1
            !
-           if (job%verbose>=5) write(out,"('itheta,iphi = ',2i8)") itheta,iphi
+           !if (job%verbose>=5) write(out,"('itheta,iphi = ',2i8)") itheta,iphi
            !
            phi=min(iphi*phistep,2.d0*pi)
            !
@@ -22566,6 +22630,8 @@ end subroutine check_read_save_none
              xi(1:Nmodes) = trove%chi_ref(1:Nmodes,0)
              xi(Nmodes+1:2*Nmodes) = 0 
              xi(2*Nmodes+1:2*Nmodes+2) = (/theta,phi/)
+             !
+             if (itheta>0) xi(1:Nmodes) = xi_(1:Nmodes,itheta-1,iphi,itau) 
              !
              ivar = 1 
              !
@@ -22626,18 +22692,17 @@ end subroutine check_read_save_none
              !hess = 0 
              iter = 0
              ssq_old = 1.e10
-             stability =  1.e10
              ssq    =  1.e10
-             ssq_best = 1e-16
-             stability_best = 100.0_rk*sqrt(small_)
              dx = 0
+             !
+             stability = 1e8
              !
              ! start optimization here:
              !
              outer_loop: & 
              do while( iter<itmax .and. stability>stability_best ) 
                 !
-                if (job%verbose>=5) write(out,"('iter = ',i8)") iter
+                !if (job%verbose>=5) write(out,"('iter = ',i8)") iter
                 !
                 iter = iter + 1
                 ssq=0
@@ -22654,13 +22719,13 @@ end subroutine check_read_save_none
                 !
                 ! Caclulate the function 
                 !
-                if (job%verbose>=5) write(out,"('classic_hamilt')") 
+                !if (job%verbose>=5) write(out,"('classic_hamilt')") 
                 !
                 Energy=classic_hamilt(jval,xi,r,r_na)
                 !
-                if (job%verbose>=5) write(out,"('...done!')") 
+                !if (job%verbose>=5) write(out,"('...done!')") 
                 !
-                if (job%verbose>=5) write(out,"('hessian:')") 
+                !if (job%verbose>=5) write(out,"('hessian:')") 
                 !
                 rjacob = 0
                 !
@@ -22675,7 +22740,7 @@ end subroutine check_read_save_none
                     if (ivar(i1) /= 0) then
                       !
                       ncol1=ncol1+1
-                      if (job%verbose>=5) write(out,"('ncol1 = ',i8)") ncol1
+                      !if (job%verbose>=5) write(out,"('ncol1 = ',i8)") ncol1
                       !
                       ncol2=0
                       do  i2=1,i1
@@ -22684,7 +22749,7 @@ end subroutine check_read_save_none
                           !
                           ncol2=ncol2+1
                           !
-                          if (job%verbose>=5) write(out,"('ncol2 = ',i8)") ncol2
+                          !if (job%verbose>=5) write(out,"('ncol2 = ',i8)") ncol2
                           !
                           t_xi = xi
                           !
@@ -22739,7 +22804,7 @@ end subroutine check_read_save_none
                   enddo ! --- ncol
                 endif
                 !
-                if (job%verbose>=5) write(out,"('...done!')") 
+                !if (job%verbose>=5) write(out,"('...done!')") 
                 !
                 ssq = energy 
                 !
@@ -22760,11 +22825,11 @@ end subroutine check_read_save_none
                   !
                   !call linur(numpar,parmax,al,bl,dx,ierror)
                   !
-                  if (job%verbose>=5) write(out,"('dgelss')") 
+                  !if (job%verbose>=5) write(out,"('dgelss')") 
                   !
                   call dgelss(numpar,numpar,1,am(1:numpar,1:numpar),numpar,bl(1:numpar,1),numpar,Tsing(1:numpar),-1.0d-12,rank,work,iwork,info)
                   !
-                  if (job%verbose>=5) write(out,"('...done!')") 
+                  !if (job%verbose>=5) write(out,"('...done!')") 
                   !
                   if (info/=0) then
                     write(6,"('dgelss:error',i)") info
@@ -22791,10 +22856,12 @@ end subroutine check_read_save_none
              enddo  outer_loop ! --- iter
              !
              comment = ''
+             flag(iphi,itau) = 1
              !
              if (iter==itmax) then
                 !
                 comment = 'Not found'
+                flag(iphi,itau) = 0
                 !
                 !write(out,"('FL_rotation_energy_suface: could not find solution after ',i8,' iterations with stability = ',g14.6)") iter, stability
                 !stop 'FL_rotation_energy_surface: could not find solution'
@@ -22803,10 +22870,53 @@ end subroutine check_read_save_none
              RES(itheta,iphi,itau)=classic_hamilt(jval,xi,r,r_na)
              !
              xi_(:,itheta,iphi,itau) = xi
+             r_(:,iphi,itau) = r
              !
-             ! print out RES
              !
-             write(out,"(2f12.4,4x,g16.8,2x,<ncoords>g13.6,2x,a10)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES(itheta,iphi,itau),r(1:ncoords),trim(comment)
+          enddo
+          !
+        enddo
+        !$omp end parallel do
+        !
+        ! print out RES
+        !
+        do iphi=0,Nphi,1
+           !
+           !if (job%verbose>=5) write(out,"('itheta,iphi = ',2i8)") itheta,iphi
+           !
+           phi=min(iphi*phistep,2.d0*pi)
+           !
+           do itau=0,Ntau,1
+             !
+             tau=min(itau*taustep,2.d0*pi)
+             r(:) = r_(:,iphi,itau)
+             comment = ''
+             if (flag(iphi,itau)==0) comment = 'Not found'
+             !
+             write(out,"(2f12.4,4x,g16.8,2x,<ncoords>g13.6,2x,a10)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES(itheta,iphi,itau),r(1:ncoords),comment
+             !
+           enddo
+           !
+        enddo
+        !
+      enddo
+      !
+      !deallocate(work)
+      !omp end parallel
+      !
+      do itheta=Ntheta1,Ntheta,1
+        !
+        theta=min(itheta*thetastep,pi)
+        !
+        do iphi=0,Nphi,1
+           !
+           !if (job%verbose>=5) write(out,"('itheta,iphi = ',2i8)") itheta,iphi
+           !
+           phi=min(iphi*phistep,2.d0*pi)
+           !
+           do itau=0,Ntau,1
+             !
+             tau=min(itau*taustep,2.d0*pi)
              !
              if (RES(itheta,iphi,itau)>largest) then 
                !
@@ -22825,6 +22935,7 @@ end subroutine check_read_save_none
                itau_s = itau
                !
              endif 
+
              !
           enddo
           !
@@ -22857,7 +22968,8 @@ end subroutine check_read_save_none
         !
       enddo
       !
-      deallocate(RES,work,xi_)
+      deallocate(RES,xi_,r_,flag)
+      call arraystop('RES')
       !
     contains 
 
