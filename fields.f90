@@ -7986,6 +7986,16 @@ end subroutine check_read_save_none
       !
     endif
     !
+    do icoord = 1,trove%Ncoords
+      !
+      call diff_local2cartesian(icoord,a0,Bmat_t)
+      !
+      Bmat(icoord,:,:) = Bmat_t(:,:)
+      !
+    enddo
+    !
+    return 
+    !
     ! for easy reference 
     !
     Nmodes = trove%Nmodes
@@ -8513,12 +8523,15 @@ end subroutine check_read_save_none
       real(ark),intent(out) ::  Bmat(trove%Natoms,3) 
 
       real(ark)             :: xi_p(trove%Ncoords),xi_m(trove%Ncoords),deltax,xna(trove%Natoms,3)
+      real(ark)             :: xi_pp(trove%Ncoords),xi_mm(trove%Ncoords)
       integer(ik)           :: iatom,ix
 
           !
           xna = a0
           !
           deltax = trove%fdstep(1)
+          !
+          deltax = 1e-4
           !
           do iatom = 1,trove%Natoms
              do ix = 1,3
@@ -8529,7 +8542,19 @@ end subroutine check_read_save_none
                 xna(iatom,ix)  = a0(iatom,ix) - deltax
                 call FLfromcartesian2local(xna,xi_m)
                 !
+                xna(iatom,ix)  = a0(iatom,ix) + deltax*2.0_ark
+                call FLfromcartesian2local(xna,xi_pp)
+                !
+                xna(iatom,ix)  = a0(iatom,ix) - deltax*2.0_ark
+                call FLfromcartesian2local(xna,xi_mm)
+                !
+                !f = (-f4/12.0_ark+2.0_ark/3.0_ark*f2 & 
+                !     +f3/12.0_ark-2.0_ark/3.0_ark*f1 )/h
+                !
                 Bmat(iatom,ix) = 0.5_ark*(xi_p(icoord)-xi_m(icoord))/deltax
+                !
+                !Bmat(iatom,ix) = (  ( -xi_pp(icoord)+xi_mm(icoord) )/12.0_ark &
+                !                      +2.0_ark/3.0_ark*( xi_p(icoord)-xi_m(icoord) ) )/deltax
                 !
                 xna(iatom,ix)  = a0(iatom,ix)
                 !

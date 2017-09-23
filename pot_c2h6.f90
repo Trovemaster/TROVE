@@ -85,6 +85,20 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
       theta23 = tau25-tau35
       theta13 = 2.0_ark*pi-theta12-theta23
       !
+
+      tau14 = local(14)
+      tau24 = local(15)
+      tau25 = local(16)
+      tau35 = local(17)
+      tau36 = local(18)
+      !
+      theta12 = tau14-tau24
+      theta23 = tau25-tau35
+      theta13 = 2.0_ark*pi-theta12-theta23
+
+
+
+      !
       theta56 = tau36-tau35
       theta45 = tau25-tau24
       theta46 = 2.0_ark*pi-theta56-theta45

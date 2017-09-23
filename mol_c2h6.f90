@@ -105,7 +105,7 @@ module mol_c2h6
         !
       endif
       !
-    case('R-R16-BETA16-THETA-TAU-XXXXX')
+    case('R-R16-BETA16-THETA-TAU-XXXX')
       ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
       !  TO BE 16TH COORDINATE IN Z-MAT
       !
@@ -127,11 +127,11 @@ module mol_c2h6
         theta45 = tau24-tau25
         theta46 = 2.0_ark*pi-theta56-theta45
         !
-        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
-        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        dst(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
         !
-        dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
-        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+        dst(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
         !
         dst(18)  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
         !
@@ -153,12 +153,11 @@ module mol_c2h6
         !tau24 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
 
 
-tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+7.0_ark/3.0_ark*Pi
-tau24 = S18+5.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6._ark*sqrt(2.0_ark)*S15-1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
-tau25 = 1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16
-tau36 = -1.0_ark/6._ark*sqrt(6._ark)*S14-1.0_ark/6._ark*sqrt(6._ark)*S16+S18-1.0_ark/3.0_ark*Pi+1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6._ark*sqrt(2._ark)*S15
-tau35 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6._ark*sqrt(2._ark)*S17+1.0_ark/6._ark*sqrt(2._ark)*S15-1.0_ark/6._ark*sqrt(6._ark)*S14+1.0_ark/6._ark*sqrt(6._ark)*S16
-
+tau14 = 1.0_ark/6.0_ark*sqrt(2._ark)*S17+4.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2._ark)*S15-1.0_ark/6*sqrt(2._ark)*sqrt(3.0_ark)*S16+1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
+tau24 = 2.0_ark/3.0_ark*Pi+1.0_ark/3*sqrt(3.0_ark)*S18-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17-1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14-1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
+tau25 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
+tau36 = 1.0_ark/3.0_ark*sqrt(3.0_ark)*S18-4.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
+tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15-1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
 
 
         !S1 = src(14)
