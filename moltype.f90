@@ -1102,7 +1102,7 @@ module moltype
            x(iatom,:) = x(p1,:)+rbond*( cos(alpha)*n2(:) &
                                       + sin(alpha)*cos(phi)*n1(:) &
                                       - sin(alpha)*sin(phi)*n3(:) )
-        case(-2,2)
+        case(-2,2,-202,202)
            !
            idihedral = idihedral + 1
            !

@@ -1592,11 +1592,11 @@ module fields
                   NAngles = NAngles + 1 
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(2) 
+               case(2,202) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(-2) 
+               case(-2,-202) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
@@ -1711,7 +1711,7 @@ module fields
               call readu(w)
               job%bset(imode)%coord_poten = trim(w)
               !
-              if (trim(job%bset(imode)%type)/='NUMEROV'.and.trim(job%bset(imode)%type)/='BOX') then 
+              if (all(trim(job%bset(imode)%type)/=(/'NUMEROV','BOX','LAGUERRE'/))) then 
                  !
                  job%bset(imode)%coord_kinet = job%bset(imode)%type
                  job%bset(imode)%coord_poten = job%bset(imode)%type
@@ -4874,7 +4874,7 @@ end subroutine check_read_save_none
              dihedrals(Ndihedrals,3) = trove%zmatrix(iatom)%connect(2)
              dihedrals(Ndihedrals,4) = trove%zmatrix(iatom)%connect(3)
              !
-          case(-2,2) 
+          case(-2,2,-202,202) 
              !
              ! J=2 -> beta = dihedral-beta(p0,p1,p2,p3) - type 2
              !
@@ -7974,7 +7974,7 @@ end subroutine check_read_save_none
     if ( any(trove%dihedtype(:)==101).or.any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
          any(trove%dihedtype(:)==107).or.any(trove%dihedtype(:)==108) ) then
        !
-      do icoord = 1,trove%Ncoords
+       do icoord = 1,trove%Ncoords
         !
         call diff_local2cartesian(icoord,a0,Bmat_t)
         !
@@ -7985,16 +7985,6 @@ end subroutine check_read_save_none
       return 
       !
     endif
-    !
-    do icoord = 1,trove%Ncoords
-      !
-      call diff_local2cartesian(icoord,a0,Bmat_t)
-      !
-      Bmat(icoord,:,:) = Bmat_t(:,:)
-      !
-    enddo
-    !
-    return 
     !
     ! for easy reference 
     !
@@ -8272,6 +8262,12 @@ end subroutine check_read_save_none
             Bmat(Nbonds+Nangles+iangle,a,:) = b_t*tau_sign
             !
           enddo
+          !
+       case(202,-202)
+          !
+          call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t)
+          !
+          Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
           !
        case(101) ! The special bond-angles for the linear molecule case 
           !
@@ -15805,7 +15801,152 @@ end subroutine check_read_save_none
            stop 'FLbset1DNew: bad bset-type'
            !
         endif 
+
+
         !
+     case('LAGUERRE') 
+        ! 
+        ! numerov bset
+        if (trove%manifold_rank(bs%mode(1))/=0) then
+           !
+           ! Allocation of the potential and kinetic 1d matrixes
+           !
+           if (job%bset(nu_i)%iperiod>0) then
+             iperiod = job%bset(nu_i)%iperiod
+             rho_b(2) = rho_b(2)/real(iperiod,ark)
+             npoints = npoints/iperiod
+           endif
+           !
+           if (job%bset(nu_i)%iperiod==-2) then
+             iperiod = abs(job%bset(nu_i)%iperiod)
+             rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
+             npoints = npoints/iperiod
+           endif
+           !
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),weight(0:Npoints),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
+              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
+           end if
+           !    
+           ! Double check:
+           !
+           if (bs%imodes/=1.or.bs%mode(bs%imodes)/=trove%Nmodes) then
+              write (out,"(' FLbset1DNew-Numerov: it has to be 1d and the last bs,')") 
+              write (out,"('                      you have bs%imodes, bs%mode: ',30i8)") bs%imodes,bs%mode(:)
+              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
+           end if
+           !
+           ! for basis sets we will need 1d potential and kinetic enrgy part 
+           ! in terms of the corresponding coordinate 
+           !
+           ! Potential and kinetic energy parts
+           !
+           if (trove%lincoord/=0) then
+             !
+             ! Well, if pseudo -> infinity, we better switch it off. Here it is done by removing it
+             ! when we have a naught at rho=0. 
+             isingular = 0 
+             !
+           endif 
+           !
+           ! standard case of a non-singular pseudo-function
+           !
+           f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
+           ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
+           if (isingular>=0) then 
+             !        
+             rho_switch = trove%specparam(nu_i)
+             iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+             !
+             do i = iswitch+1,npoints
+                !
+                rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                f1drho(i) = trove%poten%field(1,i) +trove%pseudo%field(1,i)/rho**2
+                !
+             enddo
+             !
+           endif 
+           !
+           ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
+           !
+           nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
+           !
+           g1drho(0:npoints) = fl%field(1,0:npoints)
+           !
+           reduced_model = .false.
+           !
+           if (bset%dscr(nu_i)%model<trove%NPotOrder) then 
+             !
+             reduced_model = .true.
+             !
+           endif 
+           !
+           if (.not.trove%DVR.or.reduced_model) then
+             !
+             ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
+             ! g_rot(z,z)%field(1,:)*Krot**2
+             !
+             krot = 0 
+             !
+             if ( job%bset(0)%range(2)/=0 ) then 
+               !
+               krot = job%bset(0)%range(2)
+               !
+               fl => trove%g_rot(3,3)
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.5_ark*fl%field(1,0:npoints)*real(krot,ark)**2
+               !
+             endif 
+             !
+             if ( job%bset(0)%range(1)/=0 ) then 
+               !
+               jrot = job%bset(0)%range(1) ! job%bset(0)%model
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.25_ark*(trove%g_rot(1,1)%field(1,0:npoints)+trove%g_rot(2,2)%field(1,0:npoints))* &
+               real(jrot*(jrot+1)-krot**2,ark)
+               !
+             endif
+             !
+           endif
+           !
+           bs%params    = 0
+           !
+           ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
+           ! now we need them:
+           !
+           ! This NUMEROV for the last (could be also non-rigid) coordinate
+           !
+           allocate (drho(0:Npoints,3),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
+              stop 'FLbset1DNew, drho - out of memory'
+           end if
+           !
+           do i = 0,npoints
+              !
+              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+              !
+              drho(i,1) = MLcoord_direct(rho,1,nu_i)
+              drho(i,2) = MLcoord_direct(rho,2,nu_i)
+              drho(i,3) = MLcoord_direct(rho,3,nu_i)
+              !
+           enddo
+           !
+           weight = 1.0_ark
+           !
+           numerpoints = trove%numerpoints
+           !
+           if (trove%numerpoints<0) numerpoints = npoints
+           !
+           call ME_laguerre(npoints+1,bs%Size,bs%order,rho_b,drho(0:npoints,1:3),nu_i,isingular,f1drho,g1drho,job%verbose,bs%matelements,bs%ener0)
+           !
+        else
+           !
+           stop 'RIGID LAGUERRE NOT IMPLEMENTED'
+           !
+        endif
+           !
      case('NUMEROV','BOX') 
         ! 
         ! numerov bset
@@ -21360,7 +21501,7 @@ end subroutine check_read_save_none
           !
           !r(trove%Nbonds+trove%Nangles+iangle) = delta
           !
-       case(-2,2) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+       case(-2,2,-202,202) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
           !
           n1 = trove%dihedrals(iangle,1)
           n2 = trove%dihedrals(iangle,2)

@@ -286,7 +286,8 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     real(ark),intent(out),optional :: rho_ref
     real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
     !
-    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12
+    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12,tau14,tau15,tau16
+    real(ark) :: transform(3,3)
     integer(ik) :: i, n, iatom, ix
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/start'
@@ -352,11 +353,78 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     b0(:,:,0) = a0(:,:)
     !
     if (Npoints/=0) then
-      rho_ref = 0
-      write(out,"('ML_b0_C2H6 error: the non-rigid part has not been implemebted yet')") 
-      stop 'ML_b0_C2H6 error: the non-rigid part has not been implemebted yet'
-    end if
+       ! 
+       if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+          write(out,"('ML_b0_ABCD: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+          stop 'ML_b0_ABCD: rho_borders or rho_ref not specified '
+       endif
+       !
+       rho_ref = molec%taueq(1)
+       !
+       do i = 0,npoints
+          !
+          tau = rho_i(i)
+          !
+          tau14 = tau
+          tau15 = tau+theta
+          tau16 = tau-theta
 
+          b0(1,:,i) = 0
+          b0(2,:,i) = 0
+          !
+          b0(3,1,i) = r*sin(alpha)
+          b0(3,2,i) = 0
+          b0(3,3,i) = r*cos(alpha)
+          !
+          b0(4,1,i) = r*sin(alpha)*cos(tau14)
+          b0(4,2,i) = r*sin(alpha)*sin(tau14)
+          b0(4,3,i) =-r*cos(alpha)
+          !
+          b0(5,1,i) = r*sin(alpha)*cos(theta)
+          b0(5,2,i) =-r*sin(alpha)*sin(theta)
+          b0(5,3,i) = r*cos(alpha)
+          !
+          b0(6,1,i) = r*sin(alpha)*cos(tau15)
+          b0(6,2,i) = r*sin(alpha)*sin(tau15)
+          b0(6,3,i) =-r*cos(alpha)
+          !
+          b0(7,1,i) = r*sin(alpha)*cos(theta)
+          b0(7,2,i) = r*sin(alpha)*sin(theta)
+          b0(7,3,i) = r*cos(alpha)
+          !
+          b0(8,1,i) = r*sin(alpha)*cos(tau16)
+          b0(8,2,i) = r*sin(alpha)*sin(tau16)
+          b0(8,3,i) =-r*cos(alpha)
+          !
+          b0(1:7:2,3,i) =b0(1:7:2,3,i)-r12*0.5_ark
+          b0(2:8:2,3,i) =b0(2:8:2,3,i)+r12*0.5_ark
+          !
+          ! Find center of mass
+          !
+          do n = 1,3 
+            CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+            b0(:,n,i) = b0(:,n,i) - CM_shift
+          enddo 
+          !
+          !do n = 1,molec%Natoms
+          !  b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+          !enddo
+          !
+          !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
+          !
+          if (verbose>=3) then
+            write(out, '(i5)') 8
+            write(out,'(a)') ""
+            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
+            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
+            do iatom=3, Natoms
+              write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
+            enddo
+          endif
+          !
+       enddo
+       !
+    endif
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
