@@ -29246,6 +29246,7 @@ end subroutine read_contr_matelem_expansion_classN
      integer(ik)        :: chkptIO,chkptIO_vect,ib,rec_len,maxsize,iclasses,irecord,&
                            level_degen,ideg,dimen,iroots,Nmodes
      real(rk)           :: f_t
+     character(256) :: nmodes_plus1_s
      !
      ! File for the conctracted coefficients
      !
@@ -29308,12 +29309,13 @@ end subroutine read_contr_matelem_expansion_classN
            !
            irecord = irecord + 1
            write(chkptIO_vect,rec=irecord) contr(iclasses)%eigen(ib)%vect(1:dimen,ideg)
-           write(chkptIO,'(i7,i4,i8,i4,f20.12,<nmodes+1>i4,2x,<nmodes+1>i4,2x,f17.8)')  irecord,&
-                             contr(iclasses)%eigen(ib)%isym,&
-                             ib,ideg,&
-                             contr(iclasses)%eigen(ib)%value,&
-                             contr(iclasses)%eigen(ib)%nu(0:PT%Nmodes),&
-                             contr(iclasses)%eigen(ib)%normal(0:PT%Nmodes),contr(iclasses)%eigen(ib)%largest_coeff
+           write(nmodes_plus1_s,*) nmodes+1
+           write(chkptIO,'(i7,i4,i8,i4,f20.12,'//nmodes_plus1_s//'i4,2x,'//nmodes_plus1_s//'i4,2x,f17.8)')  irecord,&
+                           contr(iclasses)%eigen(ib)%isym,&
+                           ib,ideg,&
+                           contr(iclasses)%eigen(ib)%value,&
+                           contr(iclasses)%eigen(ib)%nu(0:PT%Nmodes),&
+                           contr(iclasses)%eigen(ib)%normal(0:PT%Nmodes),contr(iclasses)%eigen(ib)%largest_coeff
            !
          enddo
          !
