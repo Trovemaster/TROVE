@@ -548,7 +548,7 @@ module timer
 
       if (alloc/=0) then
           write(out,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
-          write(out,"( ' Array dimension = ',i,' array size =  ',f20.2,' Gb')") hsize_,size_
+          write(out,"( ' Array dimension = ',i0,' array size =  ',f20.2,' Gb')") hsize_,size_
           call MemoryReport
           stop 'ArrayStart - allocation error'
       end if
