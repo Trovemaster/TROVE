@@ -1238,7 +1238,7 @@ module fields
              endif
              !
              if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
-               write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i)") Nitems-1
+               write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i0)") Nitems-1
                stop 'FLinput - illegal number of gammas in DIAGONALIZER'
              endif
              !
@@ -1769,7 +1769,7 @@ module fields
                 call readi(job%bset(imode)%dvrpoints)
                 !
                 if (job%bset(imode)%dvrpoints==0) then 
-                  write(out,"('illegal number of dvrpoins:',i)") job%bset(imode)%dvrpoints
+                  write(out,"('illegal number of dvrpoins:',i0)") job%bset(imode)%dvrpoints
                   stop 'input: illegal number of dvrpoins'
                 endif 
                 !
@@ -3505,14 +3505,14 @@ module fields
              !
              allocate (fitting%obs(1:fitting%Nenergies),stat=alloc)
              if (alloc/=0) then
-               write (out,"(' Error ',i,' initializing obs. energy related arrays')") alloc
+               write (out,"(' Error ',i0,' initializing obs. energy related arrays')") alloc
                stop 'obs. energy arrays - alloc'
              end if
              !
              do i = 1,fitting%Nenergies
                allocate(fitting%obs(i)%quanta(0:trove%nmodes),stat=alloc)
                if (alloc/=0) then
-                 write (out,"(' Error ',i,' initializing obs%quanta')") alloc
+                 write (out,"(' Error ',i0,' initializing obs%quanta')") alloc
                  stop 'initializing obs%quanta - alloc'
                 end if
              enddo
@@ -3533,7 +3533,7 @@ module fields
                    !
                 endif 
                 !
-                read(w,"(i)") fitting%obs(i)%Jrot
+                read(w,*) fitting%obs(i)%Jrot
                 !
                 call readi(fitting%obs(i)%symmetry) 
                 call readi(fitting%obs(i)%N)
@@ -3558,14 +3558,14 @@ module fields
              !
              allocate (j0fit%obs(1:j0fit%Nenergies),stat=alloc)
              if (alloc/=0) then
-               write (out,"(' Error ',i,' initializing obs. energy related arrays')") alloc
+               write (out,"(' Error ',i0,' initializing obs. energy related arrays')") alloc
                stop 'obs. energy arrays - alloc'
              end if
              !
              do i = 1,j0fit%Nenergies
                allocate(j0fit%obs(i)%quanta(0:trove%nmodes),stat=alloc)
                if (alloc/=0) then
-                 write (out,"(' Error ',i,' initializing obs%quanta')") alloc
+                 write (out,"(' Error ',i0,' initializing obs%quanta')") alloc
                  stop 'initializing obs%quanta - alloc'
                 end if
              enddo
@@ -3588,7 +3588,7 @@ module fields
                 !
                 !read(w,"(i)") j0fit%obs(i)%Jrot
                 !
-                read(w,"(i)") j0fit%obs(i)%symmetry
+                read(w,*) j0fit%obs(i)%symmetry
                 !
                 call readi(j0fit%obs(i)%N)
                 call readf(j0fit%obs(i)%energy)
@@ -3875,7 +3875,7 @@ module fields
                call readi(i_t); extF%ifit(iterm,imu) = i_t
                call readf(f_t); extF%coef(iterm,imu) = f_t
                !
-               write(extF%name(iterm,imu),"('f',<Ncoords>i1)") (mod(extF%term(i,iterm,imu),10),i=1,trove%Ncoords)
+               write(extF%name(iterm,imu),"('f',*(i1))") (mod(extF%term(i,iterm,imu),10),i=1,trove%Ncoords)
                !
                if (any(extF%term(:,iterm,imu)<0)) then 
                    write(out,"('FLinput: negative extF powers on row',i8)") iparam
@@ -4345,9 +4345,9 @@ end subroutine check_read_save_none
       !
       !write(out,"('The molecule (Molecule):',a)") trim(Molecule)
       !
-      write(out,"('The kinetic   coordinates (Molecule):',<Nmodes>(1x,a))") ( trim(trove%Coordinates(1,i1)),i1=1,Nmodes)
-      write(out,"('The potential coordinates (Molecule):',<Nmodes>(1x,a))") ( trim(trove%Coordinates(2,i1)),i1=1,Nmodes)
-      write(out,"('The externalF coordinates (Molecule):',<Nmodes>(1x,a))") ( trim(trove%Coordinates(3,i1)),i1=1,Nmodes)
+      write(out,"('The kinetic   coordinates (Molecule):',*(1x,a))") ( trim(trove%Coordinates(1,i1)),i1=1,Nmodes)
+      write(out,"('The potential coordinates (Molecule):',*(1x,a))") ( trim(trove%Coordinates(2,i1)),i1=1,Nmodes)
+      write(out,"('The externalF coordinates (Molecule):',*(1x,a))") ( trim(trove%Coordinates(3,i1)),i1=1,Nmodes)
       !
       write(out,"('fdstep:',40f14.6)") trove%fdstep(1:min(40,trove%Nmodes))
       !
@@ -5744,7 +5744,7 @@ end subroutine check_read_save_none
     !
     rho_loop : do irho = 0,Npoints
       !
-      if (job%verbose>=6) write(out,"('irho = ',i)") irho
+      if (job%verbose>=6) write(out,"('irho = ',i0)") irho
       !
       Amat = 0
       !
@@ -6141,7 +6141,7 @@ end subroutine check_read_save_none
       trove%Amatrho(1:Natoms,1:3,1:Nmodes,irho) = Amat(1:Natoms,1:3,1:Nmodes)
       !
       if (job%verbose>=6) then 
-        write(out,"(i8,18(<Nmodes>f16.8))") irho,(Amat(1:Natoms,ix,1:Nmodes),ix=1,3)
+        write(out,"(i8,*(f16.8))") irho,(Amat(1:Natoms,ix,1:Nmodes),ix=1,3)
       endif
       !
     enddo rho_loop
@@ -7135,7 +7135,7 @@ end subroutine check_read_save_none
       !
       jpar = jpar + 1
       !
-      if (job%verbose>=3) write(out,"(i8,' -> ',<Nmodes>i4)") jpar,par(1:trove%Nmodes)
+      if (job%verbose>=3) write(out,"(i8,' -> ',*(i4))") jpar,par(1:trove%Nmodes)
       !
       do imode = 1,trove%Nmodes
         !
@@ -7457,14 +7457,14 @@ end subroutine check_read_save_none
        if (job%verbose>=7) then
           write(out, '(/1x, a, 25x, i3/1x, a, 4x, i3/1x, a, 1x, i5)') &
           'imu', imu, 'maximum expansion degree',trove%NExtOrder,'number of expansion terms', nterms
-          write(out, '(/2(1x, a), <nmodes>(1x, i3))') 'iterm', 'imode->', (imode, imode = 1, nmodes)
+          write(out, '(/2(1x, a), *(1x, i3))') 'iterm', 'imode->', (imode, imode = 1, nmodes)
        end if
        !
        !print expansion terms
        !
        if (job%verbose>=5) then
           do iterm = 1, trove%extF(imu)%Ncoeff
-             write(out, '(3x, i6, 8x, <nmodes>(1x, i3))') iterm, (FLIndexQ(imode,iterm), imode = 1, nmodes)
+             write(out, '(3x, i6, 8x, *(1x, i3))') iterm, (FLIndexQ(imode,iterm), imode = 1, nmodes)
           end do
        end if
        !
@@ -7535,7 +7535,7 @@ end subroutine check_read_save_none
       !
       jpar = jpar + 1
       !
-      if (job%verbose>=2) write(out,"(i8,' -> ',<nmodes>i4)") jpar,par(1:trove%Nmodes)
+      if (job%verbose>=2) write(out,"(i8,' -> ',*(i4))") jpar,par(1:trove%Nmodes)
       !
       do imode = 1,trove%Nmodes
         !
@@ -7709,7 +7709,7 @@ end subroutine check_read_save_none
       Ncoeff = nterms_max
       npoints   = trove%Npoints
       !
-      write(out, '(/1x, a, 1x, a, 1x, a, <Ncoeff>(8x, i5))') &
+      write(out, '(/1x, a, 1x, a, 1x, a, *(8x, i5))') &
       'ipoint', 'imu', 'iterm->', (iterm, iterm = 1,nterms_max)
       !
       do imu = 1, extF%rank
@@ -7717,7 +7717,7 @@ end subroutine check_read_save_none
             !
             Ncoeff = trove%extF(imu)%Ncoeff
             !
-            write(out, '(1x, i6, 2x, i4, 8x, <Ncoeff>(1x, es12.4))') &
+            write(out, '(1x, i6, 2x, i4, 8x, *(1x, es12.4))') &
             irho, imu, (trove%extF(imu)%field(iterm,irho), iterm = 1,Ncoeff)
          end do
       end do
@@ -7805,7 +7805,7 @@ end subroutine check_read_save_none
 
 
       Nmodes = trove%Nmodes
-      if (verbose>=6) write(out,"('FLfinitediffs/start: finite derivatives for k=',<Nmodes>i4)") itarget(1:Nmodes)
+      if (verbose>=6) write(out,"('FLfinitediffs/start: finite derivatives for k=',*(i4))") itarget(1:Nmodes)
       !
       i_potpoints = size(ipoint_address,dim=1)
       !
@@ -15036,13 +15036,13 @@ end subroutine check_read_save_none
                bs_%RES_COEFFS,bs_%NPOINTS,bs_%BORDERS,bs_%PERIODIC,bs_%IPERIOD
         !
         if (bs_%range(2)/=job%bset(imode)%range(2)) then
-          write (out,"('fingerprintRead:  parameters mismatch for  ',i,'th mode:')") imode
+          write (out,"('fingerprintRead:  parameters mismatch for  ',i0,'th mode:')") imode
           write (out,"('range2 (stored) /=  range (given)  : ',2i8)") bs_%range(2),job%bset(imode)%range(2)
           stop 'fingerprintRead - parameters mismatch:range'
         end if
         !
         if (bs_%IPERIOD/=job%bset(imode)%IPERIOD) then
-          write (out,"('fingerprintRead:  parameters mismatch for  ',i,'th mode:')") imode
+          write (out,"('fingerprintRead:  parameters mismatch for  ',i0,'th mode:')") imode
           write (out,"('IPERIOD (stored) /=  IPERIOD (given)  : ',2i8)") bs_%IPERIOD,job%bset(imode)%IPERIOD
           stop 'fingerprintRead - parameters mismatch:IPERIOD'
         end if
@@ -15859,7 +15859,7 @@ end subroutine check_read_save_none
                !
                call FLcalc_poten_kinet_dvr(chi,i,poten_t,gvib_t,grot_t,gcor_t,extF_t,reduced_model)
                !
-               if (job%verbose>=7) write(out,"(i,f12.6,3g18.8)") i,chi(nu_i),poten_t,gvib_t(nu_i,nu_i)
+               if (job%verbose>=7) write(out,"(i0,f12.6,3g18.8)") i,chi(nu_i),poten_t,gvib_t(nu_i,nu_i)
                !
                g1drho(i) = gvib_t(nu_i,nu_i)
                f1drho(i) = poten_t
@@ -17676,7 +17676,7 @@ end subroutine check_read_save_none
            !
            call dms4chi(irho,dchi,extfield_)
            !
-           if (verbose>=6) write(out,"('rank = ',i)") extF%rank
+           if (verbose>=6) write(out,"('rank = ',i0)") extF%rank
            !
            if (verbose>=6) write(out,"('extfield_ = ',50f18.8)") extfield_
            !
@@ -19120,7 +19120,7 @@ end subroutine check_read_save_none
       integer(ik) :: imode
       integer(ik) :: isearch(Nmodes)
       !
-      if (verbose>=6) write(out,"(/'Finite deriv-s for k=',<Nmodes>i4)") (itarget(imode),imode=1,Nmodes)
+      if (verbose>=6) write(out,"(/'Finite deriv-s for k=',*(i4))") (itarget(imode),imode=1,Nmodes)
       !
       ! Itarget defines the total combination of the derivatives 
       ! while in isearch we store the current derivatives level. 
@@ -19168,7 +19168,7 @@ end subroutine check_read_save_none
       Nmodes = size(Itarget)
 
       !
-      if (verbose>=6) write(out,"(/'Finite deriv-s for k=',<Nmodes>i4)") (itarget(imode),imode=1,Nmodes)
+      if (verbose>=6) write(out,"(/'Finite deriv-s for k=',*(i4))") (itarget(imode),imode=1,Nmodes)
       !
       ! Itarget defines the total combination of the derivatives 
       ! while in isearch we store the current derivatives level. 
@@ -19497,8 +19497,8 @@ end subroutine check_read_save_none
      if ( any( abs( r(:)-r_(:) )>sqrt(small_) ) ) then 
        !
        write(out,'("poten_xi: Error in MLfromlocal2cartesian, r /= r_:")')
-       write(out,'(4x,<Ncoords>f18.6)') r(:)
-       write(out,'(4x,<Ncoords>f18.6)') r_(:)
+       write(out,'(4x,*(f18.6))') r(:)
+       write(out,'(4x,*(f18.6))') r_(:)
        stop "poten_xi: Error in MLfromlocal2cartesian, r /= r_"
        !
      endif 
@@ -19544,9 +19544,9 @@ end subroutine check_read_save_none
      if ( any( abs( chi(:)-chi_(:) )>10.0*sqrt(small_) ) ) then 
        !
        write(out,'("poten_chi: Error in MLfromlocal2cartesian, chi /= chi_:")')
-       write(out,'(4x,<Ncoords>f18.6)') chi(:)
-       write(out,'(4x,<Ncoords>f18.6)') chi_(:)
-       write(out,'(4x,<Ncoords>e18.6)') chi(:)-chi_(:)
+       write(out,'(4x,*(f18.6))') chi(:)
+       write(out,'(4x,*(f18.6))') chi_(:)
+       write(out,'(4x,*(e18.6))') chi(:)-chi_(:)
        !stop "poten_chi: Error in MLfromlocal2cartesian, r /= r_"
        !
      endif 
@@ -20818,8 +20818,8 @@ end subroutine check_read_save_none
       write (out,"('FLfrom_local2chi_by_fit: no convergence after ',i8,' iterations')") iter
       write (out,"('stadev = ',es18.8,'(',es18.8,') ')") stadev,stadev_best
       write (out,"('eps = ')")
-      write (out,"(<Ncoords>f18.8)") eps(:)
-      write (out,"(<Ncoords>f18.8)") local(:)
+      write (out,"(*(f18.8))") eps(:)
+      write (out,"(*(f18.8))") local(:)
       stop 'FLfrom_local2chi_by_fit: - has not converged'
    endif 
    !
@@ -21973,7 +21973,7 @@ end subroutine check_read_save_none
           write(out, '(/1x, a, 25x, i3/1x, a, 4x, i3/1x, a, 1x, i5)') &
           'imu', imu, 'maximum expansion degree', trove%NExtOrder, &
       'number of expansion terms', nterms
-          write(out, '(/2(1x, a), <nmodes>(1x, i3))') &
+          write(out, '(/2(1x, a), *(1x, i3))') &
           'iterm', 'imode->', (imode, imode = 1, nmodes)
        end if
        !
@@ -21981,7 +21981,7 @@ end subroutine check_read_save_none
        !
        if (job%verbose>=5) then
           do iterm = 1, trove%extF(imu)%Ncoeff
-             write(out, '(3x, i6, 8x, <nmodes>(1x, i3))') iterm, (FLIndexQ(imode,iterm), imode = 1, nmodes)
+             write(out, '(3x, i6, 8x, *(1x, i3))') iterm, (FLIndexQ(imode,iterm), imode = 1, nmodes)
           end do
        end if
        !
@@ -22062,7 +22062,7 @@ end subroutine check_read_save_none
        !
        Ncoeff = maxval(trove%extF(1:extF%rank)%Ncoeff, dim=1) 
        !
-       write(out, '(/1x, a, 1x, a, 1x, a, <Ncoeff>(10x, i3))') &
+       write(out, '(/1x, a, 1x, a, 1x, a, *(10x, i3))') &
        'ipoint', 'imu', 'iterm->', (iterm, iterm = 1, trove%extF(imu_maxord)%Ncoeff)
        !
        do irank = 1, extF%rank
@@ -22070,7 +22070,7 @@ end subroutine check_read_save_none
              !
              Ncoeff = trove%extF(imu_maxord)%Ncoeff
              !
-             write(out, '(1x, i6, 2x, i2, 8x, <Ncoeff>(1x, es12.4))') &
+             write(out, '(1x, i6, 2x, i2, 8x, *(1x, es12.4))') &
              ipoint, irank, (trove%extF(irank)%field(iterm,ipoint), iterm = 1, trove%extF(irank)%Ncoeff)
           end do
        end do
@@ -22205,11 +22205,11 @@ end subroutine check_read_save_none
        !
        Ncoeff = trove%poten%Ncoeff
        !
-       write(out, '(/1x, a, 1x, a, 1x, a, <Ncoeff>(10x, i3))') &
+       write(out, '(/1x, a, 1x, a, 1x, a, *(10x, i3))') &
        'ipoint', 'imu', 'iterm->', (iterm, iterm = 1, trove%poten%Ncoeff)
        do ipoint = 0, npoints
            !
-           write(out, '(1x, i6, 8x, <Ncoeff>(1x, es12.4))') &
+           write(out, '(1x, i6, 8x, *(1x, es12.4))') &
            ipoint, (trove%poten%field(iterm,ipoint), iterm = 1, trove%poten%Ncoeff)
         end do
     end if
@@ -22356,8 +22356,9 @@ end subroutine check_read_save_none
     call FLfromcartesian2local(xyz,r)
     !
     if (verbose>=6) then 
-       write(out, '(1x, a/<nmodes>(1x, es16.8)/1x, a/<nlocals>(1x, es16.8) )') 'xi', xi(1:nmodes), 'r', r(1:nlocals)
-       write(out, '(1x, a, <natoms>(/3(1x, es16.8)))') 'xyz', (xyz(iatom, 1:3), iatom = 1, natoms)
+      write(out, '(1x, a/, *(1x, es16.8))') 'xi', xi(1:nmodes)
+      write(out, '(1x, a/, *(1x, es16.8))') 'r', r(1:nlocals)
+      write(out, '(1x, a, *(/3(1x, es16.8)))') 'xyz', (xyz(iatom, 1:3), iatom = 1, natoms)
     endif
     !
     call MLextF_func(rank,molec%ncoords,molec%natoms,r,xyz,mu_xyz)
@@ -22415,8 +22416,9 @@ end subroutine check_read_save_none
     nmodes = size(dchi)
     !
     if (verbose>=6) then 
-       write(out, '(1x, a/<nmodes>(1x, es16.8)/1x, a/<nlocals>(1x, es16.8) )') 'xi', dchi(1:nmodes), 'r', r(1:nlocals)
-       write(out, '(1x, a, <natoms>(/3(1x, es16.8)))') 'xyz', (xyz(iatom, 1:3), iatom = 1, natoms)
+      write(out, '(1x, a/, *(1x, es16.8))') 'xi', dchi(1:nmodes)
+      write(out, '(1x, a/, *(1x, es16.8))') 'r', r(1:nlocals)
+      write(out, '(1x, a, *(/3(1x, es16.8)))') 'xyz', (xyz(iatom, 1:3), iatom = 1, natoms)
     endif
     !
     rank = size(mu_xyz,dim=1)
@@ -22767,7 +22769,7 @@ end subroutine check_read_save_none
                   if (job%verbose>=5) write(out,"('...done!')") 
                   !
                   if (info/=0) then
-                    write(6,"('dgelss:error',i)") info
+                    write(6,"('dgelss:error',i0)") info
                     stop 'dgelss'
                   endif
                   !
@@ -22806,7 +22808,7 @@ end subroutine check_read_save_none
              !
              ! print out RES
              !
-             write(out,"(2f12.4,4x,g16.8,2x,<ncoords>g13.6,2x,a10)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES(itheta,iphi,itau),r(1:ncoords),trim(comment)
+             write(out,"(2f12.4,4x,g16.8,2x,*(g13.6),2x,a10)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES(itheta,iphi,itau),r(1:ncoords),trim(comment)
              !
              if (RES(itheta,iphi,itau)>largest) then 
                !
@@ -22836,7 +22838,7 @@ end subroutine check_read_save_none
       theta=xi_(2*Nmodes+1,itheta_,iphi_,itau_) ! min(itheta_*thetastep,pi)
       phi=xi_(2*Nmodes+2,itheta_,iphi_,itau_) ! min(iphi_*phistep,2.d0*pi)
       write(out,"(/'  Highest point of RES:')")
-      write(out,"(/'st. point: ',2f12.4,4x,f16.8,2x,<ncoords>f12.6)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES_,r(1:ncoords)
+      write(out,"(/'st. point: ',2f12.4,4x,f16.8,2x,*(f12.6))") theta*180.0_rk/pi,phi*180.0_rk/pi,RES_,r(1:ncoords)
       write(out,"(/i6/)") trove%natoms
       !
       do iatom = 1,trove%natoms
@@ -22849,7 +22851,7 @@ end subroutine check_read_save_none
       theta=xi_(2*Nmodes+1,itheta_s,iphi_s,itau_s) ! min(itheta_*thetastep,pi)
       phi=xi_(2*Nmodes+2,itheta_s,iphi_s,itau_s) ! min(iphi_*phistep,2.d0*pi)
       write(out,"(/'  Lowest poit of RES:')")
-      write(out,"(/'min. point: ',2f12.4,4x,f16.8,2x,<ncoords>f12.6)") theta*180.0_rk/pi,phi*180.0_rk/pi,RES_,r(1:ncoords)
+      write(out,"(/'min. point: ',2f12.4,4x,f16.8,2x,*(f12.6))") theta*180.0_rk/pi,phi*180.0_rk/pi,RES_,r(1:ncoords)
       !
       do iatom = 1,trove%natoms
         !
