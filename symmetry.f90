@@ -305,7 +305,7 @@ contains
     sym%characters = transpose(sym%characters)
     sym%degen=(/1,1,1,1,1,1,1,1/)
     sym%Nelements=(/1,1,1,1,1,1,1,1/)
-    sym%label=(/'Ag','Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
+    sym%label=(/' Ag',' Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
     !
     o  = 0.0_ark
     p2 = 0.5_ark*pi
@@ -346,7 +346,7 @@ contains
     sym%characters = transpose(sym%characters)
     sym%degen=(/1,1,1,1,1,1,1,1/)
     sym%Nelements=(/1,1,1,1,1,1,1,1/)
-    sym%label=(/'Ag','Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
+    sym%label=(/' Ag','Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
     !
     o  = 0.0_ark
     p2 = 0.5_ark*pi
