@@ -147,7 +147,7 @@ module lapack
     na1 = size(a,dim=1) ; na2 = size(a,dim=2)
     nb1 = size(b,dim=1) ; nb2 = size(b,dim=2)
     !
-    if (verbose>=5) write(out,"('lapack_dgelss...na1,nb1,na2,nb2 = ',4i)") na1,nb1,na2,nb2
+    if (verbose>=5) write(out,"('lapack_dgelss...na1,nb1,na2,nb2 = ',4i0)") na1,nb1,na2,nb2
     !
     allocate(h(na1,na2),stat=info1)
     !
@@ -155,7 +155,7 @@ module lapack
     !
     if (info1/=0) then
       !
-      write (out,"(' allocation (h) error ',i8,' size = ',2i)") info1,na1,na2
+      write (out,"(' allocation (h) error ',i8,' size = ',2i0)") info1,na1,na2
       stop 'lapack_dgelss - allocation of h failed'
       !
     end if
@@ -173,7 +173,7 @@ module lapack
     !
     iw = int(work(1))
     !
-    if (verbose>=5) write(out,"('  size(work) = ',i)") iw 
+    if (verbose>=5) write(out,"('  size(work) = ',i0)") iw 
     !
     allocate(work_t(iw),stat=info2)
     !
@@ -181,7 +181,7 @@ module lapack
     !
     if (info2/=0) then
       !
-      write (out,"(' allocation (of work) error ',i8,' iwork = ',i)") info2,iw
+      write (out,"(' allocation (of work) error ',i8,' iwork = ',i0)") info2,iw
       stop 'lapack_dgelss - allocation of work_t failed'
       !
     end if
@@ -196,7 +196,7 @@ module lapack
     if (info/=0.or.info1/=0.or.info2/=0) then
       !
       write (out,"(' dgelss returned ',i8)") info
-      write (out,"(' dgelss: na1 = ',i8,' nb1 =  ',i8,' na2 = ',i8,' nb2 =  ',i8,' iwork = ',i)") na1,nb1,na2,nb2,iw
+      write (out,"(' dgelss: na1 = ',i8,' nb1 =  ',i8,' na2 = ',i8,' nb2 =  ',i8,' iwork = ',i0)") na1,nb1,na2,nb2,iw
       !
       if (present(ierror).and.info/=0) then 
         !
@@ -811,7 +811,7 @@ module lapack
     niwork = 20*nh1
     ldz = 2*nh1
     !
-    if (verbose>=4) write(out,'("jobz,rng = ",2a," vl,vu,il,iu =  ",2f12.2,2i)') jobz_,rng_,vl,vu,il,ir
+    if (verbose>=4) write(out,'("jobz,rng = ",2a," vl,vu,il,iu =  ",2f12.2,2i0)') jobz_,rng_,vl,vu,il,ir
     !
     if (verbose>=6) then 
       write(out,"(//'MATRIX:')")
@@ -1258,7 +1258,7 @@ module lapack
         if (verbose>=3) write(out,"(/'Arpack-stored: n = ',i8,' nev = ',i8)") n_chk,nev_chk
         !
         if (n_chk>n.or.nev_chk<ncv) then 
-          write(out,"('dseupd_arpack error: stored vectors are inconsistent: either  n_chk>n = ',2i,', or nev_chk<ncv = ',2i)") n_chk,n,nev_chk,ncv
+          write(out,"('dseupd_arpack error: stored vectors are inconsistent: either  n_chk>n = ',2i0,', or nev_chk<ncv = ',2i0)") n_chk,n,nev_chk,ncv
           stop 'dseupd_arpack error: stored vectors are inconsistent'
         endif
         !
@@ -1536,7 +1536,7 @@ module lapack
         call MPI_COMM_RANK( comm, myid, ierr )
         call MPI_COMM_SIZE( comm, nprocs_, ierr )
         if (nprocs_/=nprocs) then
-          write(out,"('matvec_p: inconsistent number of  nprocs  = ',2i)") nprocs_,nprocs
+          write(out,"('matvec_p: inconsistent number of  nprocs  = ',2i0)") nprocs_,nprocs
           stop 'matvec_p: inconsistent number of  nprocs s'
         endif
       !dec$ end if
