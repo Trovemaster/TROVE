@@ -8488,8 +8488,8 @@ s4 = fea333555*y3**3*s4b**3+fea133333*y1**5*y2+fea33334*y3**4*s4a+&
 fea113345*y1**2*y3**2*s4a*s4b+(7.0_ark/12.0_ark*fea334445*sqrt(3.0_ark)+&
 5.0_ark/4.0_ark*fea334455-3.0_ark/2.0_ark*fea335555)*y1**2*s4a**4+fea133333*y2**5&
 *y3+(fea222245*sqrt(3.0_ark)/2.0_ark+fea222255)*y1**4*s4b**2+(-2.0_ark/5.0_ark*fea244455-&
-fea145555/15.0_ark+2.0_ark/9.0_ark*fea244555*sqrt(3.0_ark))*y1*s4a*&
-*5+fea25555*y3*s4b**4-2.0_ark*fea33334*y1**4*s4a+fea23333*y1*y2**4+&
+fea145555/15.0_ark+2.0_ark/9.0_ark*fea244555*sqrt(3.0_ark))*y1*s4a**5&
++fea25555*y3*s4b**4-2.0_ark*fea33334*y1**4*s4a+fea23333*y1*y2**4+&
 fea33344*y2**3*s4a**2+fea145555*y1*s4a*s4b**4+(-3.0_ark*fea334445-&
 2.0_ark*fea334455*sqrt(3.0_ark)+4.0_ark*fea335555*sqrt(3.0_ark))*y2**2*s4a*s4b**3+(&
 -2.0_ark/3.0_ark*fea334445*sqrt(3.0_ark)-fea334455+3.0_ark*fea335555)*y3**2*s4a**4+&
