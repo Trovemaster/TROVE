@@ -7525,7 +7525,7 @@ module perturbation
       job_is ='Vib. matrix elements of the rot. kinetic'
       call IOStart(trim(job_is),chkptIO)
       !
-      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file,recordtype='variable')
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file,access='stream')!recordtype='variable')
       !
       read(chkptIO) buf18
       if (buf18/='Start Kinetic part') then
