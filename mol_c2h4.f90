@@ -143,9 +143,9 @@ module mol_c2h4
         b2_zmat = db2 + pi
         !
         tau1 = (dtau - db1 - db2)*0.5_ark
-        if (sign(1.0,tau1)>0.0) then
+        if (sign(1.0_ark,tau1)>0.0) then
           tau1_zmat = 2.0_ark*pi - tau1
-        elseif (sign(1.0,tau1)<0.0) then
+        elseif (sign(1.0_ark,tau1)<0.0) then
           tau1_zmat = -tau1
         else
           tau1_zmat = tau1
