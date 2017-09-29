@@ -364,6 +364,7 @@ contains
       logical       :: do_symmetry
       character(len=1)   :: rng
       character(len=1),allocatable  :: mark(:)
+      character(len=cl) :: nmodes_s, nclasses_s, ncoords_s, ndigits_s
        !
        if (job%verbose>=2) write(out,"(/'The least-squares fitting ...')")
        !
@@ -1068,9 +1069,11 @@ contains
                        !
                        if (jener<en_npts) then 
                          !
+                         write(nmodes_s,'(i0)') nmodes
+                         write(nclasses_s,'(i0)') nclasses
                          write(enunit,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'( ',a3,';',i3,' )',1x,'( '<nclasses>a3,';',<nmodes>(1x, i3),' )'&
-                            &,1x,'(',<nmodes>(1x, i3),')',a)") &
+                            &'( ',a3,';',i3,' )',1x,'( '"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),' )'&
+                            &,1x,'(',"//nmodes_s//"(1x, i3),')',a)") &
                             i,fitting%obs(jener)%N,Jrot,&
                             sym%label(isym),enercalc(jener)+eps(jener),&
                             enercalc(jener),eps(jener),wtall(jener),&
@@ -1082,8 +1085,10 @@ contains
                          !
                          !write(enunit,"(4i5,' ',3f13.4,2x,e8.2,5x,<nmodes>(i3))") i,0,Jrot,isym,0.0,energy_(i)-ezero_,0.0,0.0
                          !
+                         write(nmodes_s,'(i0)') nmodes
+                         write(nclasses_s,'(i0)') nclasses
                          write(enunit,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'( ',a3,';',i3,' )',1x,'( '<nclasses>a3,';',<nmodes>(1x, i3),' )')") &
+                            &'( ',a3,';',i3,' )',1x,'( '"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),' )')") &
                             i,0,Jrot,sym%label(isym),0.0,energy_(i)-ezero_,0.0,0.0,&
                             eigen(ilevel)%cgamma(0),eigen(ilevel)%krot,&
                             eigen(ilevel)%cgamma(1:nclasses),eigen(ilevel)%quanta(1:nmodes)
@@ -1188,16 +1193,15 @@ contains
             !
             rewind(abinitunit)
             !
-            write(abinitunit,"(1h1,5x,12('*'),' ab initio points ',  &
-                 12('*')// &
-                 4x,<ncoords>(7x),'zero',7x, &
+            write(ncoords_s,'(i0)') ncoords
+            write(abinitunit,"(1h1,5x,12('*'),' ab initio points ', 12('*')// 4x,"//ncoords_s//"(7x),'zero',7x, &
                  'calc.',3x,'zero-calc',3x,'weight'/)")
             !
             do i=1,pot_npts
                !
                v = pot_values(i)-eps(i+en_npts)
                !
-               write (abinitunit,"(<ncoords>(2x,f18.9),3(x,g18.10),x,e12.4)"),& 
+               write (abinitunit,"("//ncoords_s//"(2x,f18.9),3(x,g18.10),x,e12.4)")& 
                       local(:,i), &
                       pot_values(i),v, &
                       eps(i+en_npts),wtall(i+en_npts) 
@@ -1406,12 +1410,14 @@ contains
                    !
                    if (conf_int>1e8) conf_int = 0 
                    !
-                   write (out,"(a8,i4,2x,f22.<ndigits>,'(',i14,')')") nampar(i),ivar(i),potparam(i),nint(conf_int)
+                   write(ndigits_s,'(i0)') ndigits
+                   write (out,"(a8,i4,2x,f22."//ndigits_s//",'(',i14,')')") nampar(i),ivar(i),potparam(i),nint(conf_int)
                 else 
                    ndigits =2
                    if (potparam(i).ne.0.0) ndigits = 8
                    !
-                   write (out,"(a8,i4,2x,f22.<ndigits>)") nampar(i),ivar(i),potparam(i)
+                   write(ndigits_s,'(i0)') ndigits
+                   write (out,"(a8,i4,2x,f22."//ndigits_s//")") nampar(i),ivar(i),potparam(i)
                    !
                 endif
               enddo  ! --- i
@@ -1741,6 +1747,7 @@ contains
       logical       :: do_symmetry
       character(len=1)   :: rng
       character(len=1),allocatable  :: mark(:)
+      character(len=cl) :: nmodes_s, nclasses_s, ndigits_s
        !
        if (job%verbose>=2) write(out,"(/'The least-squares fitting ...')")
        !
@@ -2036,7 +2043,7 @@ contains
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
                        !dec$ if (fit_debug > 3)
-                         write (out,"('mat (',i,',',i,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
+                         write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
                        !dec$ end if
                        !
                      enddo
@@ -2362,9 +2369,11 @@ contains
                        !
                        if (jener<en_npts) then 
                          !
+                         write(nmodes_s,'(i0)') nmodes
+                         write(nclasses_s,'(i0)') nclasses
                          write(enunit,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'( ',a3,';',i3,' )',1x,'( '<nclasses>a3,';',<nmodes>(1x, i3),' )'&
-                            &,1x,'(',<nmodes>(1x, i3),')',a)") &
+                            &'( ',a3,';',i3,' )',1x,'( '"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),' )'&
+                            &,1x,'(',"//nmodes_s//"(1x, i3),')',a)") &
                             i,fitting%obs(jener)%N,Jrot,&
                             sym%label(isym),enercalc(jener)+eps(jener),&
                             enercalc(jener),-eps(jener),wtall(jener),&
@@ -2377,7 +2386,7 @@ contains
                          !write(enunit,"(4i5,' ',3f13.4,2x,e8.2,5x,<nmodes>(i3))") i,0,Jrot,isym,0.0,energy_(i)-ezero_,0.0,0.0
                          !
                          write(enunit,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'( ',a3,';',i3,' )',1x,'( '<nclasses>a3,';',<nmodes>(1x, i3),' )')") &
+                            &'( ',a3,';',i3,' )',1x,'( '"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),' )')") &
                             i,0,Jrot,sym%label(isym),0.0,energy_(i)-ezero_,0.0,0.0,&
                             eigen(ilevel)%cgamma(0),eigen(ilevel)%krot,&
                             eigen(ilevel)%cgamma(1:nclasses),eigen(ilevel)%quanta(1:nmodes)
@@ -2573,12 +2582,13 @@ contains
               !  stop 'bandcentres_fitting: wrong j0ener- or obs-parameters'
               !endif
               !
+              write(nmodes_s,'(i0)') nmodes
               if (iener<=en_npts) then 
                 !
                 jlevel = fit(isym,1)%ilevel(ilargest_j0(isym,ilevel))
                 !
                 write(out,"(3i5,2x,&
-                   f18.10,2x,<nmodes>(1x, i3),f8.2,1x,'(',<nmodes>(1x, i3),')',2x,'(',<nmodes>(1x, i3),')',f12.4,2x,f12.4)") &
+                   f18.10,2x,"//nmodes_s//"(1x, i3),f8.2,1x,'(',"//nmodes_s//"(1x, i3),')',2x,'(',"//nmodes_s//"(1x, i3),')',f12.4,2x,f12.4)") &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
                    xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
                    eigen(jlevel)%quanta(1:nmodes),&
@@ -2588,7 +2598,7 @@ contains
               else if (ilevel<=nroots_j0(isym)) then
                 !
                 write(out,"(3i5,2x,&
-                   f18.10,2x,<nmodes>(1x, i3),f8.2,1x,'(',<nmodes>(1x, i3),')',2x,'(',<nmodes>(4x),')',f12.4)") &
+                   f18.10,2x,"//nmodes_s//"(1x, i3),f8.2,1x,'(',"//nmodes_s//"(1x, i3),')',2x,'(',"//nmodes_s//"(4x),')',f12.4)") &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
                    xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
                    eigen(jlevel)%quanta(1:nmodes),&
@@ -2597,7 +2607,7 @@ contains
               else 
                 !
                 write(out,"(3i5,2x,&
-                   f18.10,2x,<nmodes>(1x, i3),f8.2,1x,'(',<nmodes>(4x),')',2x,'(',<nmodes>(4x),')')") &
+                   f18.10,2x,"//nmodes_s//"(1x, i3),f8.2,1x,'(',"//nmodes_s//"(4x),')',2x,'(',"//nmodes_s//"(4x),')')") &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
                    xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk)
                
@@ -2635,12 +2645,14 @@ contains
                    !
                    if (conf_int>1e8) conf_int = 0 
                    !
-                   write (out,"(a8,i4,2x,f22.<ndigits>,'(',i14,')')") nampar(i),ivar(i),xparam(i),nint(conf_int)
+                   write (ndigits_s,'(i0)') ndigits
+                   write (out,"(a8,i4,2x,f22."//ndigits_s//",'(',i14,')')") nampar(i),ivar(i),xparam(i),nint(conf_int)
                 else 
                    ndigits =2
                    if (xparam(i).ne.0.0) ndigits = 8
                    !
-                   write (out,"(a8,i4,2x,f22.<ndigits>)") nampar(i),ivar(i),xparam(i)
+                   write (ndigits_s,'(i0)') ndigits
+                   write (out,"(a8,i4,2x,f22."//ndigits_s//")") nampar(i),ivar(i),xparam(i)
                    !
                 endif
               enddo  ! --- i
