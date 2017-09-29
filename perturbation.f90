@@ -18940,7 +18940,7 @@ module perturbation
       endif
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
-      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,1_hik,kind(me_contr),size(me_contr,kind=hik))
+      call ArrayStart('PTstore_contr_matelem:me_contr:gvib',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
       !
       ! <p_i*G*p_j>
       call calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
