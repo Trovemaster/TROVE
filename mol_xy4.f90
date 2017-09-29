@@ -31,7 +31,7 @@ module mol_xy4
      integer(ik),intent(in)  :: Npoints,Natoms
 
      real(ark),   intent(out) :: b0(Natoms,3,0:Npoints)
-     real(ark),   intent(inout),optional  :: rho_i(0:Npoints)
+     real(ark),   intent(in),optional  :: rho_i(0:Npoints)
      real(ark),   intent(out),optional :: rho_ref
      real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
 
@@ -177,7 +177,9 @@ module mol_xy4
       !
       if (Npoints/=0) then
          !
-         rho_i = 0
+         !rho_i = 0
+         !js947: comment this because it messes up the interface and is not
+         !important if the program is about to stop
          ! 
          write(out,"('ML_b0_XY4: non-rigid  is not implemented yet')") 
          stop 'ML_b0_XY4: non-rigid  is not implemented yet '

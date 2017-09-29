@@ -209,7 +209,7 @@ module mol_c2h4
     !
     integer(ik),intent(in) :: Npoints, Natoms
     real(ark),intent(out) :: b0(Natoms,3,0:Npoints)
-    real(ark),intent(inout),optional :: rho_i(0:Npoints)
+    real(ark),intent(in),optional :: rho_i(0:Npoints)
     real(ark),intent(out),optional :: rho_ref
     real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
     !
