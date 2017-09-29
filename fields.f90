@@ -1859,7 +1859,7 @@ module fields
                 job%bset(i)%range(1)   ==job%bset(i-1)%range(1)   .and.job%bset(i)%range(2)   ==job%bset(i-1)%range(2).and.&
                 job%bset(i)%borders(1) ==job%bset(i-1)%borders(1) .and.job%bset(i)%borders(2) ==job%bset(i-1)%borders(2).and.&
                 job%bset(i)%res_coeffs ==job%bset(i-1)%res_coeffs .and.job%bset(i)%npoints    ==job%bset(i-1)%npoints .and.&
-                job%bset(i)%periodic   ==job%bset(i-1)%periodic   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
+                job%bset(i)%periodic.eqv.job%bset(i-1)%periodic   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
                 !
                 job%bset(i)%species = ispecies
                 !
