@@ -17674,7 +17674,7 @@ end subroutine check_read_save_none
 
 
 
-   function FLread_extF_rank result (rank)
+   function FLread_extF_rank() result (rank)
      !
      integer(ik) :: rank
      !
