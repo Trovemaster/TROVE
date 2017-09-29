@@ -552,7 +552,7 @@ contains
            !
            if (mod(Ntransit,intensity%int_increm)==0.and.energyI>ener_) then
               ener_ = energyI
-              write(out,"(i,f16.4)") Ntransit,energyI-intensity%ZPE
+              write(out,"(i0,1x,f16.4)") Ntransit,energyI-intensity%ZPE
            endif
            !
          endif 
@@ -619,20 +619,20 @@ contains
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for J = ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,"('Number of states for J = ',i4,' each symm = ',*(i8))") jI,nlevelsG(jind,:)
       !
     enddo
     !
     dimenmax_ram = max(nsizemax,1)
     !
-    write(out,"('Max size of vectors: sym = ',i,' prim =  ',i)") dimenmax_ram,matsize
+    write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
     allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
     call ArrayStart('vec_ram',0,1,rk)
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
+    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i0,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
@@ -640,7 +640,7 @@ contains
     !
     ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
     !
     do jind = 1, nJ
        !
@@ -659,7 +659,7 @@ contains
           !
           if (ram_size_>0) then
             !
-            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i,4x,f14.5)") jval(jind),irep,ram_size_,f_t
+            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i0,4x,f14.5)") jval(jind),irep,ram_size_,f_t
             !
             !dimenmax_ram_ = max(min(int(bset_contr(jind)%nsize(irep)*intensity%factor),bset_contr(jind)%nsize(irep)),1)
             !
@@ -667,7 +667,7 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
             !
@@ -720,7 +720,7 @@ contains
     !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -832,7 +832,7 @@ contains
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,"('Number of states for ',i4,' each symm = ',*(i8))") jI,nlevelsG(jind,:)
       !
     enddo
     !
@@ -1643,7 +1643,7 @@ contains
       !endif
       !
       if (job%verbose>=3) then
-          write(out,"('--- ',t4,f18.6,2x,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
+          write(out,"('--- ',t4,f18.6,2x,i0,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
       if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=4) then
@@ -1683,7 +1683,7 @@ contains
                 !
                 if (mod(Ntransit_,int_increm)==0.and.energyI>ener_) then
                    !
-                   write(out,"('|  ',2f16.0,i)") ener_-intensity%ZPE,energyI-intensity%ZPE,Ntransit_
+                   write(out,"('|  ',2f16.0,i0)") ener_-intensity%ZPE,energyI-intensity%ZPE,Ntransit_
                    ener_ = energyI
                 endif
                 !
@@ -1693,7 +1693,7 @@ contains
            !
          enddo
          !
-         write(out,"('|  ',2f16.0,i)") ener_-intensity%ZPE,intensity%erange_low(2),Ntransit_
+         write(out,"('|  ',2f16.0,i0)") ener_-intensity%ZPE,intensity%erange_low(2),Ntransit_
          !
       endif
       !
@@ -2187,20 +2187,20 @@ contains
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for J = ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,"('Number of states for J = ',i4,' each symm = ',*(i8))") jI,nlevelsG(jind,:)
       !
     enddo
     !
     dimenmax_ram = max(nsizemax,1)
     !
-    write(out,"('Max size of vectors: sym = ',i,' prim =  ',i)") dimenmax_ram,matsize
+    write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
     allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
     call ArrayStart('vec_ram',0,1,rk)
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
+    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i0,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
@@ -2208,7 +2208,7 @@ contains
     !
     ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
     !
     do jind = 1, nJ
        !
@@ -2227,7 +2227,7 @@ contains
           !
           if (ram_size_>0) then
             !
-            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i,4x,f14.5)") jval(jind),irep,ram_size_,f_t
+            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i0,4x,f14.5)") jval(jind),irep,ram_size_,f_t
             !
             !dimenmax_ram_ = max(min(int(bset_contr(jind)%nsize(irep)*intensity%factor),bset_contr(jind)%nsize(irep)),1)
             !
@@ -2235,7 +2235,7 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
             !
@@ -2276,7 +2276,7 @@ contains
     !
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=6.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=6.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -2359,7 +2359,7 @@ contains
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,"('Number of states for ',i4,' each symm = ',*(i8))") jI,nlevelsG(jind,:)
     enddo
     !
     if (all(nlevelsG(:,:)<1)) then 
@@ -2524,7 +2524,7 @@ contains
                  !
                  if (abs(vec(irootI))>1e-4) then  
                    !
-                   write(out,'(2x,i4,i7,e16.8,3x,"(",3i3,")",1x,"(",<Nclasses>(i3),")")') & 
+                   write(out,'(2x,i4,i7,e16.8,3x,"(",3i3,")",1x,"(",*(i3),")")') & 
                               igammaI,irootI,&
                               vec(irootI), &
                               jI,kI,tauI, &
@@ -2996,7 +2996,7 @@ contains
            !
            if (mod(Ntransit,intensity%int_increm)==0.and.energyI>ener_) then
               ener_ = energyI
-              write(out,"(i,f16.4)") Ntransit,energyI-intensity%ZPE
+              write(out,"(i0,1x,f16.4)") Ntransit,energyI-intensity%ZPE
            endif
            !
          endif 
@@ -3034,11 +3034,11 @@ contains
        !
     enddo
     !
-    write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
+    write(out,"('Number of states for each symm = ',*(i8))") nlevelsG(:)
     !
     dimenmax_swap = max(min(int(dimenmax*intensity%factor),dimenmax),1)
     !
-    write(out,"('Size of the reduced vector = ',i,' total =  ',i)") dimenmax_swap,dimenmax
+    write(out,"('Size of the reduced vector = ',i0,' total =  ',i0)") dimenmax_swap,dimenmax
     !
     call ArrayStart('vec_swap',0,1,rk)
     call ArrayStart('icoeff_swap',0,1,ik)
@@ -3056,7 +3056,7 @@ contains
     !
     matsize = int(sum( nlevelsG(:) ),hik)
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,matsize,f_t/real(matsize,rk)
+    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i0,' per each vector = ',f12.5'Gb')") f_t,matsize,f_t/real(matsize,rk)
     !
     ! memory per vector
     !
@@ -3065,7 +3065,7 @@ contains
     !
     swap_size_max = max(0,min( matsize,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb number of vectors will be shared in RAM =  ',i)") f_t*real(matsize,rk),memory_limit-memory_now,swap_size_max
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb number of vectors will be shared in RAM =  ',i0)") f_t*real(matsize,rk),memory_limit-memory_now,swap_size_max
     !
     do irep = 1,Nrepresen
        !
@@ -3076,7 +3076,7 @@ contains
        f_t = real( nlevelsG(irep),rk )/real( sum( nlevelsG(:) ), rk )
        swap_size_ = int(f_t*swap_size_max,ik)
        !
-       if (job%verbose>=4) write(out,"('irep = ',i2,';  total swap ',i,' swap_irep =  ',i,' f_t = ',f14.5)") irep,swap_size_max,swap_size_,f_t
+       if (job%verbose>=4) write(out,"('irep = ',i2,';  total swap ',i0,' swap_irep =  ',i0,' f_t = ',f14.5)") irep,swap_size_max,swap_size_,f_t
        !
        swap_size_ = min(swap_size_,nlevelsG(irep))
        !
@@ -3088,7 +3088,7 @@ contains
          !
          matsize = int(swap_size_,hik)*int(sym%degen(irep),hik)*int(dimenmax_swap,hik)
          !
-         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th  swap matrix   ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*8,rk)/1024.0_rk**3
+         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th  swap matrix   ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*8,rk)/1024.0_rk**3
          !
          allocate(vec_swap(irep)%mat(swap_size_,sym%degen(irep),dimenmax_swap),stat=info)
          !
@@ -3096,7 +3096,7 @@ contains
          !
          matsize = int(swap_size_,hik)*int(sym%degen(irep),hik)*int(dimenmax_swap,hik)+int(swap_size_,hik)*int(sym%degen(irep),hik)
          !
-         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th iswap matrix   ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*4,rk)/1024.0_rk**3
+         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th iswap matrix   ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*4,rk)/1024.0_rk**3
          !
          allocate(icoeff_swap(irep)%imat(swap_size_,sym%degen(irep),dimenmax_swap),stat=info)
          allocate(cdimen_swap(irep)%kmat(swap_size_,sym%degen(irep)),stat=info)
@@ -3225,7 +3225,7 @@ contains
        !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
        do ilevelF = 1, nlevels
          !
-         if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+         if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
          !
          jF = eigen(ilevelF)%jval
          !
@@ -3279,8 +3279,8 @@ contains
            !
            if (cdimen>idimenmax(indF)) then 
               !
-              write(out,"('intens: dimenmax_swap is too small (',i,' vs ',i,') reduce the coeff value or increase swap_factor to minimum',f12.4)") idimenmax(indF),cdimen,real(cdimen,rk)/real(bset_contr(jind)%Maxcontracts,rk)
-			  write(out,"('dimenmax_ = ',i,' intensity%factor = ',i)")  dimenmax_,intensity%factor
+              write(out,"('intens: dimenmax_swap is too small (',i0,' vs ',i0,') reduce the coeff value or increase swap_factor to minimum',f12.4)") idimenmax(indF),cdimen,real(cdimen,rk)/real(bset_contr(jind)%Maxcontracts,rk)
+			  write(out,"('dimenmax_ = ',i0,' intensity%factor = ',i0)")  dimenmax_,intensity%factor
               stop 'intens: increase swap_factor!'
               !
            endif
@@ -3300,7 +3300,7 @@ contains
         return 
       endif
 	  !
-	  write(out,"(/'Maximal number of non-zero values after vector compression  = ',i,' out of ',i,' suggested compression  = ',f12.5/)") cdimenmax,dimenmax,cfactor
+	  write(out,"(/'Maximal number of non-zero values after vector compression  = ',i0,' out of ',i0,' suggested compression  = ',f12.5/)") cdimenmax,dimenmax,cfactor
       !
     endif
     !
@@ -3312,7 +3312,7 @@ contains
     !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -3452,7 +3452,7 @@ contains
        !
     enddo
     !
-    write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
+    write(out,"('Number of states for each symm = ',*(i8))") nlevelsG(:)
     !
     !dec$ if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
