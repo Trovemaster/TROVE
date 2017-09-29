@@ -218,7 +218,8 @@
   end module tp_module
   !
   program driver
-    use tp_module
+    use tp_module, only : pt
+    implicit none
 
     call pt
 
