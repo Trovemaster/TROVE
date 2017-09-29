@@ -158,11 +158,11 @@ contains
 
           do ilambda = 1, nlambdas
 
-             read(iounit, '(i8, i6, <nclasses>i6)') iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
+             read(iounit, '(i8, i6, *(i6))') iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
 
 
              !dec$ if (tran_debug > 2)
-                write(out, '(42x, i3, 1x, i5, 3x, <nclasses>(1x, i3), 1x, i3)')                                        &
+                write(out, '(42x, i3, 1x, i5, 3x, *(1x, i3), 1x, i3)')                                        &
                 ilambda, iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
              !dec$ end if
 
@@ -300,7 +300,7 @@ contains
        !
        nclasses = bset_contr(jind)%nclasses
        if (bset_contr(jind)%nclasses/=bset_contr(1)%nclasses) then 
-         write(out,"('index_correlation: Nclasses are different for diff. J:',2i)") bset_contr(1)%nclasses,bset_contr(jind)%nclasses
+         write(out,"('index_correlation: Nclasses are different for diff. J:',2(1x,i0))") bset_contr(1)%nclasses,bset_contr(jind)%nclasses
          stop 'index_correlation: Nclasses cannot be different for diff. J'
        endif
        !
@@ -349,7 +349,7 @@ contains
              !
              if (.not.found) then 
                write(out,"('index_correlation: not found for J = ',i8,' -> problems with checkpoints?')") jval(jind)
-               write(out,"('J,icase,cnu,ideg:',2i6,<nclasses>i4,i4)") jval(jind),icase,cnu_i(:),ilambda
+               write(out,"('J,icase,cnu,ideg:',2i6,*(i4),i4)") jval(jind),icase,cnu_i(:),ilambda
                stop 'index_correlation: not found'
              endif 
              !
@@ -1102,7 +1102,7 @@ contains
        Jval(1) = jrot
        !
        if(jrot/=0) then
-          write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i)") jrot 
+          write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i0)") jrot 
           stop 'TRconvert_repres_J0_to_contr: illegal jrot'
        end if
        !
@@ -1115,7 +1115,7 @@ contains
        endif
        !
        if(PTNclasses/=1) then
-          write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i)") PTNclasses 
+          write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i0)") PTNclasses 
        !   stop 'TRconvert_repres_J0_to_contr: illegal PTNclasses'
        end if
        !
@@ -1178,12 +1178,12 @@ contains
       if (job%verbose>=2) call TimerStart('Convert J0-mat.elems to contr. repres.')
       !
       if(jrot/=0) then
-          write(out,"('TRconvert_matel_j0_eigen: illegal jrot (not 0): ',i)") jrot 
+          write(out,"('TRconvert_matel_j0_eigen: illegal jrot (not 0): ',i0)") jrot 
           stop 'TRconvert_matel_j0_eigen: illegal jrot'
       end if
       !
       if(PTNclasses/=1) then
-         write(out,"('TRconvert_matel_j0_eigen: illegal number of classes (not 1): ',i)") PTNclasses 
+         write(out,"('TRconvert_matel_j0_eigen: illegal number of classes (not 1): ',i0)") PTNclasses 
          stop 'TRconvert_matel_j0_eigen: illegal PTNclasses'
       end if
       !
@@ -1208,7 +1208,7 @@ contains
       !
       matsize = int(dimen*Neigenroots,hik)
       !
-      if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i,' elements.')") Neigenroots,Neigenroots,matsize
+      if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i0,' elements.')") Neigenroots,Neigenroots,matsize
       !
       allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
       call ArrayStart('psi',info,1,kind(psi),matsize)
@@ -1615,7 +1615,7 @@ contains
         rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
         rootsize2= int(ncontr_t*ncontr_t,hik)
         !
-        if (job%verbose>=4) write(out,"(/'restore Extvib...: Number of elements: ',i)") ncontr_t
+        if (job%verbose>=4) write(out,"(/'restore Extvib...: Number of elements: ',i0)") ncontr_t
         !
         allocate(extF_me(ncontr_t,ncontr_t),stat=info)
         call ArrayStart('extF_me',info,1,kind(extF_me),rootsize2)
@@ -1966,7 +1966,7 @@ contains
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") bset_contr(1)%Maxcontracts,ncontr_t
+       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2(i0,1x))") bset_contr(1)%Maxcontracts,ncontr_t
        stop 'PTcontracted_matelem_class - in file - illegal nroots '
      end if
      !
