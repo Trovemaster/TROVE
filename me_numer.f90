@@ -679,7 +679,7 @@ module me_numer
            if (abs(phi_t(0)-(-1.0_ark)**iparity*phi_t(npoints  ))>sqrt(thrsh_int).or.&
                abs(df_t1-(-1.0_ark)**iparity*df_t2)>1000.*sqrt(thrsh_int)) then 
               !
-              if (verbose>=5) write(out,"(/'f(0),f(1),...,f(N-1),f(N),f(0)-tau*f(N),energy: ',5g18.8,', energy = ',f12.4,', n = ',i)") phi_t(0),phi_t(npoints  ),phi_t(1),phi_t(npoints-1),& 
+              if (verbose>=5) write(out,"(/'f(0),f(1),...,f(N-1),f(N),f(0)-tau*f(N),energy: ',5g18.8,', energy = ',f12.4,', n = ',i0)") phi_t(0),phi_t(npoints  ),phi_t(1),phi_t(npoints-1),& 
                                              phi_t(0)-(-1.0_rk)**iparity*phi_t(npoints ),eguess,numnod
               if (verbose>=5) write(out,"(/'df(0)-df(N): ',3g18.8)") df_t1,df_t2,df_t1-(-1.0_ark)**iparity*df_t2
               !
@@ -710,7 +710,7 @@ module me_numer
            if ( (iparity==0.and.abs(psi_t(npoints  ))>sqrt(thrsh_int)).or.&
                 (iparity==1.and.abs(phi_t(npoints  ))>sqrt(thrsh_int))) then 
               !
-              if (verbose>=5) write(out,"(/'phi(N) and psi(N) = ',2g18.8,', energy = ',f12.4,', n = ',i)") phi_t(npoints  ),psi_t(npoints ),eguess,numnod
+              if (verbose>=5) write(out,"(/'phi(N) and psi(N) = ',2g18.8,', energy = ',f12.4,', n = ',i0)") phi_t(npoints  ),psi_t(npoints ),eguess,numnod
               !
               if ( numnod+1<maxslots.and.numnod>v) then 
                   enerslot(numnod)=eguess
@@ -753,7 +753,7 @@ module me_numer
           endif 
        endif 
        !
-       if (verbose>=5) write(out,"('v = ',i5,'; numnod = ',i8,', efound = ',f16.7,', ierr = ',i)") v,numnod,eguess,ierr
+       if (verbose>=5) write(out,"('v = ',i5,'; numnod = ',i8,', efound = ',f16.7,', ierr = ',i0)") v,numnod,eguess,ierr
        !
        if ( ierr == 0.and.v==numnod ) notfound = .false.
        !
