@@ -1421,7 +1421,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
       if (ierror>0) then
         !
         print *,ierror,tmat,mu
-        write(out,"('MLdms_hooh_MB: dgelss error = ',i)") ierror
+        write(out,"('MLdms_hooh_MB: dgelss error = ',i0)") ierror
         stop 'MLdms_hooh_MB: dgelss error'
         !
       endif
@@ -5574,7 +5574,7 @@ function MLpoten_c2h2_streymills(ncoords,natoms,local,xyz,force) result(f)
          !
       else
         !
-        write(out,"('MLpoten_c2h2_8: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
+        write(out,"('MLpoten_c2h2_8: only designed for zmatrix-connect( =103 ',i0)") molec%zmatrix(3)%connect(4)
         stop 'only designed for zmat=103'
         !
       endif

@@ -1454,7 +1454,7 @@ module pot_user
          if (ierror>0) then
            !
            print *,i,k,ierror,rmat,dipin
-           write(out,"('MLdipole_xy4_dF: dgelss error = ',i)") ierror
+           write(out,"('MLdipole_xy4_dF: dgelss error = ',i0)") ierror
            stop 'MLdipole_xy4_dF: dgelss error'
            !
          endif

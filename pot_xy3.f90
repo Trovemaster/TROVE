@@ -2597,7 +2597,7 @@ module pot_xy3
 
      select case ( ix )
      case default
-       write (6,"(' dip. order component',i)") ix
+       write (6,"(' dip. order component',i0)") ix
        stop 'dip. order component'
      case (1)
        xi1=(r14-re14) *exp(-beta*(r14-re14)**2)
@@ -3692,7 +3692,7 @@ module pot_xy3
 
      select case ( ix )
      case default
-       write (6,"(' dip. order component',i)") ix
+       write (6,"(' dip. order component',i0)") ix
        stop 'dip. order component'
      case (1,4,7)
        xi1=(r14-re14)
