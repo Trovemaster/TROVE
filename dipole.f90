@@ -1606,7 +1606,7 @@ contains
                               eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
                               linestr,absorption_int,itransit,&
                               normalF(1:nmodes),normalI(1:nmodes),&
-                              ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                              ( ( ( [tm_deg(imu,idegI,idegF),real(idegF,rk),real(idegI,rk),real(imu,rk)],idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
                  !$omp end critical
                  !
                endif 
@@ -4063,7 +4063,7 @@ contains
                             eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
                             linestr,absorption_int,itransit,&
                             normalF(1:nmodes),normalI(1:nmodes),&
-                            ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                            ( ( ( [tm_deg(imu,idegI,idegF),real(idegF,rk),real(idegI,rk),real(imu,rk)],idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
              endif 
              !
          end select
