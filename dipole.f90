@@ -17,6 +17,7 @@ module dipole
  use tran,         only : TReigenvec_unit, bset_contr, read_contrind, & 
                           read_eigenval,index_correlation,eigen,Neigenlevels,istate2ilevel
 
+ implicit none
  private
  public dm_tranint,dm_analysis_density
 
@@ -2845,7 +2846,7 @@ contains
     character(len=cl):: unitfname,filename
     character(4)     :: jchar
     !
-    real(rk)     :: boltz_fc, beta, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
+    real(rk)     :: boltz_fc, beta, intens_cm_mol, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
     !
     call TimerStart('Intensity calculations')
     !
