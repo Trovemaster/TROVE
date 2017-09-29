@@ -811,7 +811,10 @@ module mol_xy2
             !
             alpha = rho
             !
-            if(any(trim(molec%coords_transform)==(/'R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z'/))) alpha = pi-rho
+            select case (trim(molec%coords_transform))
+            case ('R-RHO', 'R12-RHO', 'R13-RHO', 'R-RHO-Z', 'R-PHI-RHO', 'R-PHI-RHO-Z')
+              alpha = pi-rho
+            end select
             !
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
             !
