@@ -44,12 +44,12 @@ module mol_xy4
 
 
       if (size(molec%req)/=4) then
-        write(out,"('ML_b0_XY4: Nbonds must be 4 in this routine, not  ',i)") size(molec%req)
+        write(out,"('ML_b0_XY4: Nbonds must be 4 in this routine, not  ',i0)") size(molec%req)
         stop 'ML_b0_XY4: wrong Nbonds '
       endif 
 
       if (molec%Natoms/=5) then
-        write(out,"('ML_b0_XY4: Natoms must be 5 in this routine, not  ',i)") molec%Natoms
+        write(out,"('ML_b0_XY4: Natoms must be 5 in this routine, not  ',i0)") molec%Natoms
         stop 'ML_b0_XY4: wrong Natoms '
       endif 
 

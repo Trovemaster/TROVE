@@ -2565,7 +2565,7 @@ contains
           if (verbose_>=5) then
             write(out,"('igamma,iclass,ioper = ',3i6)") igamma,iclass,ioper
             do ideg = 1,sym%degen(igamma)
-              write(out,"(<sym%degen(igamma)>f18.8)") sym%irr(igamma,ioper)%repres(ideg,:)
+              write(out,"('<sym%degen(igamma)>',f18.8)") sym%irr(igamma,ioper)%repres(ideg,:)
             enddo
           endif
           !
