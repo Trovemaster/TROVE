@@ -6388,8 +6388,15 @@ module perturbation
     !
     ! check if we only need to store matrices, not diagonalize them
     !
-    if(any(trim(job%mat_readwrite)==(/'SAVE-LOWER','STORE-LOWER','STORE_CHEAP'/))) only_store = .true.
-    if(any(trim(job%diagonalizer)==(/'ENERGY=DIAGONAL','NO-DIAGONALIZATION'/))) no_diagonalization = .true.
+    select case (trim(job%mat_readwrite))
+    case ('SAVE-LOWER', 'STORE-LOWER', 'STORE_CHEAP')
+      only_store = .true.
+    end select
+    !
+    select case (trim(job%diagonalizer))
+    case ('Energy=DIAGONAL', 'NO-DIAGONALIZATION')
+      no_diagonalization = .true.
+    end select
     !
     !if (any(trim(job%IOswap_matelem)==(/'DIVIDE'/))) then 
     !   !
@@ -6407,7 +6414,7 @@ module perturbation
     !
     ! Prepare the storing information if necessary:
     !
-    if (any(trim(job%IOeigen_action)==(/'SAVE','APPEND'/))) then
+    if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND') then
       call check_point_active_space(job%IOeigen_action)
     endif 
     !
@@ -6532,7 +6539,7 @@ module perturbation
       !
       deallocate(k_row)
       !
-      if (any(trim(job%IOeigen_action)==(/'SAVE','APPEND'/))) then
+      if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND')  then
         !
         call check_point_active_space('CLOSE')
         !
@@ -6606,7 +6613,23 @@ module perturbation
     !
     ! forget about the kblock structure in case of the TD symmetry or if the rot. symmetry is based on the euler angles transformation properties
     !
-    if (job%vib_rot_contr.or.(job%rotsym_do.and.any( trim( trove%symmetry )==(/'TD','TD(M)','C2V(M)','C2V','C2V','C3V(M)','C3V','D3H(M)','D3H','C2H(M)','C2H','G4(M)','G4','G4(EM)','D2H(M)','D2H'/) ) ) ) then 
+    if (job%vib_rot_contr.or.(job%rotsym_do.and.( &
+       trim(trove%symmetry)=='TD' .or. &
+       trim(trove%symmetry)=='TD(M)' .or. &
+       trim(trove%symmetry)=='C2V(M)' .or. &
+       trim(trove%symmetry)=='C2V' .or. &
+       trim(trove%symmetry)=='C2V' .or. &
+       trim(trove%symmetry)=='C3V(M)' .or. &
+       trim(trove%symmetry)=='C3V' .or. &
+       trim(trove%symmetry)=='D3H(M)' .or. &
+       trim(trove%symmetry)=='D3H' .or. &
+       trim(trove%symmetry)=='C2H(M)' .or. &
+       trim(trove%symmetry)=='C2H' .or. &
+       trim(trove%symmetry)=='G4(M)' .or. &
+       trim(trove%symmetry)=='G4' .or. &
+       trim(trove%symmetry)=='G4(EM)' .or. &
+       trim(trove%symmetry)=='D2H(M)' .or. &
+       trim(trove%symmetry)=='D2H'))) then
       !
       do isym = 1,sym%Nrepresen
         !
@@ -7425,7 +7448,7 @@ module perturbation
       !
     enddo
     !
-    if (any(trim(job%IOeigen_action)==(/'SAVE','APPEND'/))) then
+    if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND') then
       !
       call check_point_active_space('CLOSE')
       !
@@ -14309,7 +14332,7 @@ module perturbation
       !
       ! Turn on the external field
       !
-      if (any(trim(job%IOextF_action)==(/'SAVE','SPLIT'/))) treat_exfF = .true.
+      if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
       !
       ! We assume that all matrix elements are simmetric, therefore we can use 
       ! a 1D array for storing only the upper half of the matrix.
@@ -15559,7 +15582,7 @@ module perturbation
       !
       ! Turn on the external field
       !
-      if (any(trim(job%IOextF_action)==(/'SAVE','SPLIT'/))) treat_exfF = .true.
+      if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
       !
       ! We assume that all matrix elements are simmetric, therefore we can use 
       ! a 1D array for storing only the upper half of the matrix.
@@ -16970,7 +16993,7 @@ module perturbation
        if (job%verbose>=4) call MemoryReport
        !
        !
-       if ( any( trim(job%IOextF_action)==(/'SAVE','SPLIT'/) )) then
+       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') then
           !
           ! read expansion terms for ExtF 
           !
@@ -22805,7 +22828,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       ! external field partr - optional 
       !
-      if ( any( trim(job%IOextF_action)==(/'SAVE','SPLIT'/) )) then
+      if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') then
         !
         allocate (me%extF(extF_rank),stat=alloc)
         !
@@ -33162,11 +33185,15 @@ subroutine PTstore_contr_matelem_II(jrot)
   type(PTcoeffT),pointer        :: fl 
   !real(rk), allocatable :: prim_vect(:,:)
   !
-  if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE'.and.all(trim(job%IOextF_action)/=(/'SAVE','SPLIT'/))) return
+  if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE' &
+    .and.trim(job%IOextF_action)/='SAVE' &
+    .and.trim(job%IOextF_action)/='SPLIT') return
   !  
   if (trim(job%IOkinet_action)=='CONVERT') return 
   if (job%vib_contract) return
-  if ((trim(job%IOkinet_action)=='READ'.or.trim(job%IOkinet_action)=='VIB_READ').and.all(trim(job%IOextF_action)/=(/'SAVE','SPLIT'/))) return
+  if ((trim(job%IOkinet_action)=='READ'.or.trim(job%IOkinet_action)=='VIB_READ') &
+    .and.trim(job%IOextF_action)/='SAVE' &
+    .and.trim(job%IOextF_action)/='SPLIT') return
   !
   if (trim(trove%IO_contrCI)=='READ') return
   !
@@ -33322,7 +33349,7 @@ subroutine PTstore_contr_matelem_II(jrot)
   allocate(iunique_iterm(maxnterms,2), stat=info)
   call ArrayStart('PTstore_contr_matelem:icomb_iterm',info,size(iunique_iterm),kind(iunique_iterm))
   !
-  if (any(trim(job%IOextF_action)==(/'SAVE','SPLIT'/))) treat_exfF = .true.
+  if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
   !
   if (trim(job%IOkinet_action)=='READ'.or.(trim(job%IOkinet_action)=='NONE'.and.treat_exfF)) then
     treat_vibration = .false.
@@ -35719,7 +35746,7 @@ end subroutine combinations
       !
       ! Turn on the external field
       !
-      if (any(trim(job%IOextF_action)==(/'SAVE','SPLIT'/))) treat_exfF = .true.
+       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
       !
       ! We assume that all matrix elements are simmetric, therefore we can use 
       ! a 1D array for storing only the upper half of the matrix.
@@ -36905,7 +36932,7 @@ end subroutine combinations
          enddo
        enddo
        !
-       if ( any( trim(job%IOextF_action)==(/'SAVE','SPLIT'/) )) then
+       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') then
           !
           ! read expansion terms for ExtF 
           !
@@ -37595,7 +37622,9 @@ subroutine PTstore_contr_matelem(jrot)
   integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,Jmax,L2vib_N,ipos,ipos_,iroot,ilevel,ideg
   integer(ik),allocatable :: extF_N(:), IndexQ(:,:),IndexQ0(:,:)
   !
-  if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE'.and.all(trim(job%IOextF_action)/=(/'SAVE','SPLIT'/))) return
+  if ((.not.FLrotation.or.jrot/=0).and.trim(job%IOkinet_action)/='SAVE' &
+    .and.trim(job%IOextF_action)/='SAVE' &
+    .and.trim(job%IOextF_action)/='SPLIT') return
   !  
   if (trim(job%IOkinet_action)=='CONVERT') return 
   if (job%vib_contract) return
@@ -38632,7 +38661,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   !
   !
-  if (any(trim(job%IOextF_action)==(/'SAVE','SPLIT'/))) then
+  if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') then
      !
      extF_rank = FLread_extF_rank()
      !
