@@ -267,7 +267,7 @@ module pot_zxy3
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz0(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark), intent(out) ::  f(rank)
     !
     integer(ik)            :: i,k_ind(9),ioper,imu,iterm,lwork,info,nsv
     real(ark)              :: xi(9),chi(9,6),r1,r2,r3,r4,r1e,r2e,beta2,a,b,betae,tau12,tau23,tau13

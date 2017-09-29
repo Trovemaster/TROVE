@@ -43,7 +43,7 @@ module moltype
       !
       integer(ik),intent(in) ::  rank,ncoords,natoms
       real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
-      real(ark)              ::  mu_xyz(rank)
+      real(ark), intent(out)  ::  mu_xyz(rank)
       !
     end subroutine MLtemplate_extF
     !

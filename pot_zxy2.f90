@@ -2437,7 +2437,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)      :: i,imu,iterm,lwork,info,nsv
     real(ark)        :: x(molec%natoms,3),r_CO,r_CH1,r_CH2,a_H1CO,a_H2CO,tau,re_CO(3),re_CH(3),ae_HCO(3),&

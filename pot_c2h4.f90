@@ -4438,7 +4438,7 @@ recursive subroutine ML_dipole_c2h4_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz0(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark), intent(out) ::  f(rank)
     !
     !
     stop 'dipole_c2h4_4m_dummy is not implemented'

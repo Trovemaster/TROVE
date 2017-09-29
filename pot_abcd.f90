@@ -1987,7 +1987,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
-    real(ark),intent(out)  ::  f(3)
+    real(ark),intent(out)  ::  f(rank)
 
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
     real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
