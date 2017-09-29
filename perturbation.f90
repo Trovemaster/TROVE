@@ -23621,6 +23621,7 @@ end subroutine read_contr_matelem_expansion_classN
     integer(hik)          :: size_total,isum
     !
     integer(ik)           :: mpoints,imu,iclass,im1,im2,powers(trove%Nmodes)
+    character(256) :: nmodes_s
     !
     call TimerStart('PTDVR_initialize')
     !
@@ -24916,7 +24917,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     ! A pointwise generation of the DVR-fields
     !
-    !$omp parallel private(extF_t,extF_) 
+    !$omp parallel private(extF_t,extF_,nmodes_s) 
     allocate(extF_t(max(extF_rank,1)),extF_(max(extF_rank,1),-2:2))
     ! 
     !$omp do private(idvrpoint,imode,ispecies,k,dchi,irho,poten_t,gvib_t,grot_t,gcor_t,xval,dchi_,i,irho_,x,poten_,gvib_,grot_,gcor_,fval,df_t,k1,k2,imu)
@@ -25059,7 +25060,8 @@ end subroutine read_contr_matelem_expansion_classN
         !
         k = trove%nmodes**2
         !
-        write(out,"(5x,<trove%nmodes>f18.8,2x,f18.8,x,<k>f18.8)") dchi(:),dvr%poten(idvrpoint) ! ,dvr%gvib(:,:,idvrpoint)
+        write(nmodes_s,'(i0)') trove%nmodes
+        write(out,"(5x,"//nmodes_s//"f18.8,2x,f18.8,x,*(f18.8))") dchi(:),dvr%poten(idvrpoint) ! ,dvr%gvib(:,:,idvrpoint)
         !
       endif 
       !
