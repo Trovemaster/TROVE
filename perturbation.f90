@@ -639,7 +639,7 @@ module perturbation
       !
       write(out,"(/'Rotational basis: ',a)") trim(bs_t(0)%type)
       write(out,"( 'range for J ',2i5)")  bs_t(0)%range(1:2) 
-      write(out,"( 'dvr points:',i )") bs_t(0)%dvrpoints
+      write(out,"( 'dvr points:',i0 )") bs_t(0)%dvrpoints
     endif 
     !
     ! Verbose (resonanses):  
@@ -677,11 +677,11 @@ module perturbation
     !
     if (job%verbose>=4) then 
       write(out,"( 'Rotational mode is  assigned to index =',i5)") 0
-      write(out,"(/'quanta range vs imode ',<nmodes1>i5)") (imode,imode=0,Nmodes)
-      write(out,"( 'from              ->  ',<nmodes1>i5)") (PT%range(1,imode),imode=0,Nmodes)
-      write(out,"( 'to                ->  ',<nmodes1>i5)") (PT%range(2,imode),imode=0,Nmodes)
+      write(out,"(/'quanta range vs imode ',*(i5))") (imode,imode=0,Nmodes)
+      write(out,"( 'from              ->  ',*(i5))") (PT%range(1,imode),imode=0,Nmodes)
+      write(out,"( 'to                ->  ',*(i5))") (PT%range(2,imode),imode=0,Nmodes)
       write(out,"( 'quanta overlaping')") 
-      write(out,"( ' <v|q|v+overlap>  ->  ',<nmodes1>i5)") (PT%overlap(imode),imode=0,Nmodes)
+      write(out,"( ' <v|q|v+overlap>  ->  ',*(i5))") (PT%overlap(imode),imode=0,Nmodes)
     endif 
     !
     ! define  basis set function types
@@ -750,8 +750,8 @@ module perturbation
     endif 
     !
     if (job%verbose>=2) then 
-      write(out,"(/'Polyads estimated from range: ',<Nmodes>i5)") (imode,imode=1,Nmodes)
-      write(out,"( '                          ->  ',<Nmodes>i5)") (pol_t(imode),imode=1,Nmodes)
+      write(out,"(/'Polyads estimated from range: ',*(i5))") (imode,imode=1,Nmodes)
+      write(out,"( '                          ->  ',*(i5))") (pol_t(imode),imode=1,Nmodes)
       write(out,"(/'Adjusted (input) maximal polyad is: ',i5,'(',i5,')')") PT%Polyad_max,PT%Npolyads
     endif 
     !
@@ -949,7 +949,7 @@ module perturbation
        !
        active_nu = PT%active_space%icoeffs
        !
-       write(out,"('  Compute the diagonal primitive matrix elements (total = ',i,') ... ')") dimen
+       write(out,"('  Compute the diagonal primitive matrix elements (total = ',i0,') ... ')") dimen
        !
        !$omp parallel do private(i,nu_i) shared(a) schedule(dynamic)
        do i = 1,dimen
@@ -973,7 +973,7 @@ module perturbation
        !
        do i = 1,dimen
           !
-          if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i)"), i
+          if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i0)"), i
           !
           nu_i(:) = active_nu(:,i)
           !
@@ -1018,8 +1018,8 @@ module perturbation
           !
        enddo
        !
-       write(out,'("  The number of target states for E <  ",f14.4," is ",i," ")') job%ener_thresh,ib
-       write(out,'("  The active space is reduced from ",i," to ",i," using the small-number threshold of ",g18.8)') PT%Maxcoeffs,icoeffs,job%coeff_thresh
+       write(out,'("  The number of target states for E <  ",f14.4," is ",i0," ")') job%ener_thresh,ib
+       write(out,'("  The active space is reduced from ",i0," to ",i0," using the small-number threshold of ",g18.8)') PT%Maxcoeffs,icoeffs,job%coeff_thresh
        !
        PT%Maxcoeffs = icoeffs
        PT%RangeOrder(0) = icoeffs
@@ -1065,16 +1065,16 @@ module perturbation
     ! verbose 
     !
     if (job%verbose>=4) then 
-      write(out,"(/'quanta range vs imode ',<Nmodes1>i5)") (imode,imode=0,Nmodes)
-      write(out,"( 'from              ->  ',<Nmodes1>i5)") (PT%range(1,imode),imode=0,Nmodes)
-      write(out,"( 'to                ->  ',<Nmodes1>i5)") (PT%range(2,imode),imode=0,Nmodes)
+      write(out,"(/'quanta range vs imode ',*(i5))") (imode,imode=0,Nmodes)
+      write(out,"( 'from              ->  ',*(i5))") (PT%range(1,imode),imode=0,Nmodes)
+      write(out,"( 'to                ->  ',*(i5))") (PT%range(2,imode),imode=0,Nmodes)
       write(out,"( 'quanta overlaping')") 
-      write(out,"( ' <v|q|v+overlap>  ->  ',<Nmodes1>i5)") (PT%overlap(imode),imode=0,Nmodes)
+      write(out,"( ' <v|q|v+overlap>  ->  ',*(i5))") (PT%overlap(imode),imode=0,Nmodes)
     endif 
     ! 
     if (job%verbose>=4) then
-       write(out,"(/'RangeOrder vs order ',<NPTorder1>i8 )") (iorder               ,iorder=0,NPTorder)
-       write(out,"( 'RangeOrder       -> ',<NPTorder1>i8/)") (PT%RangeOrder(iorder),iorder=0,NPTorder)
+       write(out,"(/'RangeOrder vs order ',*(i8 ))") (iorder               ,iorder=0,NPTorder)
+       write(out,"( 'RangeOrder       -> ',*(i8/))") (PT%RangeOrder(iorder),iorder=0,NPTorder)
     endif 
     !
     ! verbose 
@@ -1086,8 +1086,8 @@ module perturbation
     ! Be verbose !
     ! 
     if (job%verbose>=4) then
-       write(out,"(/'MaxIndex_nu vs polyad ',<Npolyads1>i8)") (ipol,ipol=0,Npolyads)
-       write(out,"( '                   -> ',<Npolyads1>i8/)") (PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
+       write(out,"(/'MaxIndex_nu vs polyad ',*(i8))") (ipol,ipol=0,Npolyads)
+       write(out,"( '                   -> ',*(i8/))") (PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
     endif 
     !
     ! Be verbose
@@ -1098,7 +1098,7 @@ module perturbation
       do ipol = 0,PT%Polyad_max
          do ib = 1,PT%MaxIndex_nu(ipol)
             ener0 = FLenergy_zero(PT%Index_nu(ipol)%icoeffs(:,ib))
-            write(out,"(i5,1x,i8,2x,f12.2,<nmodes1>i8)") ipol,ib,ener0,& 
+            write(out,"(i5,1x,i8,2x,f12.2,*(i8))") ipol,ib,ener0,& 
                         (PT%Index_nu(ipol)%icoeffs(imode,ib),imode=0,Nmodes)
          enddo 
       enddo 
@@ -1132,7 +1132,7 @@ module perturbation
       write(out,"(/'Active_space table')")
       write(out,"('i   nu_i')")
       do ib = 1,PT%Maxcoeffs
-            write(out,"(i8,1x,<nmodes1>i4)") ib,(PT%active_space%icoeffs(imode,ib),imode=0,PT%Nmodes)
+            write(out,"(i8,1x,*(i4))") ib,(PT%active_space%icoeffs(imode,ib),imode=0,PT%Nmodes)
       enddo 
     endif 
     !
@@ -3164,7 +3164,7 @@ module perturbation
              !
              kroot = count_index(icount,1) 
              !
-             write(out,"('PTcontracted_prediag: Cannot define symmetry for level ',i8,'; Nirr = ',<sym%Nrepresen>g12.4)") ilevel,Nirr_rk
+             write(out,"('PTcontracted_prediag: Cannot define symmetry for level ',i8,'; Nirr = ',*(g12.4))") ilevel,Nirr_rk
              write(out,"('                      nelem = ',i8,' kroot = ',i8,' to ',i8,' icount = ',i8,' Ncount = ',i8)") nelem,kroot,count_index(icount,Nelem),icount,Ncount
              write(out,"(' Characters = ',40f17.7)") characters(1:min(40,sym%Nclasses))
              write(out,"('Energies = ',40f17.7)") PT%Ewhole%coeffs(kroot:count_index(icount,Nelem),1)-PT%Ewhole%coeffs(1,1)
@@ -3405,7 +3405,7 @@ module perturbation
              !
              if (job%verbose>=2) then 
                !
-               write(out,"(i7,f18.8,2i4,2x,a4,<nmodes>i4,1x,i4)") ilevel,cf%value-zpe,&
+               write(out,"(i7,f18.8,2i4,2x,a4,*(i4),1x,i4)") ilevel,cf%value-zpe,&
                                                             cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:),contr(iclasses)%eigen(ilevel)%lquant 
                !
              end if 
@@ -3930,7 +3930,7 @@ module perturbation
          !
          cf => contr(iclasses)%eigen(ilevel)
          !
-         write(out,"(i7,f18.8,2i4,2x,a4,<nmodes>i4)") ilevel,cf%value-contr(iclasses)%eigen(1)%value,&
+         write(out,"(i7,f18.8,2i4,2x,a4,*(i4))") ilevel,cf%value-contr(iclasses)%eigen(1)%value,&
                                                       cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:)
          !
        enddo
@@ -3974,7 +3974,7 @@ module perturbation
           !
           if (npoints_t/=npoints) then
             !
-            write(out,"('calc_overlap: not the same number of points in class = ',i)") iclasses
+            write(out,"('calc_overlap: not the same number of points in class = ',i0)") iclasses
             stop 'calc_overlap: wrong npoints'
             !
           endif
@@ -4001,7 +4001,7 @@ module perturbation
             !
             if (any( chi_t(ioper,jpoint,imode1:imode2)<job%bset(jmode)%borders(1) ).or.any(chi_t(ioper,jpoint,imode1:imode2)>job%bset(jmode)%borders(2))) then 
               write(out,"('PTcontracted_prediagonalization: calc_overlap, point is out of the range:')")
-              write(out,"('iclass,imode,ioper,jpoint,xval_j,xval_i: ',4i,<nmodes>f12.6)") iclasses,imode,ioper,jpoint,chi_t(ioper,jpoint,:)
+              write(out,"('iclass,imode,ioper,jpoint,xval_j,xval_i: ',4(i0,1x),*(f12.6))") iclasses,imode,ioper,jpoint,chi_t(ioper,jpoint,:)
               stop 'PTcontracted_prediagonalization: calc_overlap, point is out of the range'
             endif
             !
@@ -4716,7 +4716,7 @@ module perturbation
     m = Ndeg*mpoints ; n = Ndeg**2 ;  iw = 20*max(m,n)
     !
     if (Ndeg>mpoints) then 
-      write(out,"('reconstruct_transf_matrix: sample_points < ndeg: ',2i)") mpoints,ndeg
+      write(out,"('reconstruct_transf_matrix: sample_points < ndeg: ',2i0)") mpoints,ndeg
       stop 'sample_points is too small?'
     endif
     !
@@ -4800,7 +4800,7 @@ module perturbation
         !
         ndeg2 = Ndeg**2
         !
-        write(out,"(i8,8x,<ndeg2>f18.10)") ioper,b(1:Ndeg**2,1)
+        write(out,"(i8,8x,*(f18.10))") ioper,b(1:Ndeg**2,1)
         !
         write(out,"('ioper,ipoint,ideg,a(ieq,:):')")
         !
@@ -4825,7 +4825,7 @@ module perturbation
       if (verbose>=5) write(out,"('reconst_tr_m: dgelss...done!')")
       !
       if (info_t<0) then 
-        write(out,"('reconstruct_transf_matrix: (',i,') probably not sufficient sample_points: ',i)") info_t,mpoints
+        write(out,"('reconstruct_transf_matrix: (',i0,') probably not sufficient sample_points: ',i0)") info_t,mpoints
         stop 'sample_points is too small?'
       endif 
       !
@@ -4946,7 +4946,7 @@ module perturbation
         do ioper = 1,sym%Noper
           do ideg = 1,Nelem
             !
-            write(out,"(2i8,<mpoints>f18.10)") ioper,ideg,phi_src(ioper,ideg,1:mpoints)
+            write(out,"(2i8,*(f18.10))") ioper,ideg,phi_src(ioper,ideg,1:mpoints)
             !
           enddo
         enddo
@@ -4966,7 +4966,7 @@ module perturbation
         do ioper = 1,sym%Noper
           do ideg = 1,Nelem
             !
-            write(out,"(2i8,<Nelem>g18.10)") ioper,ideg,tmat_t(ioper,ideg,1:Nelem)
+            write(out,"(2i8,*(g18.10))") ioper,ideg,tmat_t(ioper,ideg,1:Nelem)
             !
           enddo
         enddo
@@ -5059,8 +5059,8 @@ module perturbation
        if (Nirr(isym)<0.or.Nirr(isym)>Nelem.or.abs(Nirr_rk(isym)-real(Nirr(isym)))>0.01) then 
          !
          write(out,"('degenerate_symmetrization: Found characters and Nirr are illegal: ')") 
-         write(out,"('              characters : ',<sym%Nclasses>f18.6)") chi
-         write(out,"('                    Nirr : ',<sym%Nrepresen>i9   )") Nirr(1:isym)
+         write(out,"('              characters : ',*(f18.6))") chi
+         write(out,"('                    Nirr : ',*(i9   ))") Nirr(1:isym)
          info = 1
          !
          if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
@@ -5796,7 +5796,7 @@ module perturbation
          !
          do ideg = 1,PT%Index_deg(icoeff)%size1 
            !
-           write(out,"(t1,i5,t8,<sizeprint>(f18.8))") ioper,r_represent(ioper)%coeffs(ideg,1:PT%Index_deg(icoeff)%size1)
+           write(out,"(t1,i5,t8,*(f18.8))") ioper,r_represent(ioper)%coeffs(ideg,1:PT%Index_deg(icoeff)%size1)
            !
          enddo
          !
@@ -5842,8 +5842,9 @@ module perturbation
      endif 
      !
      if (job%verbose>=5) then 
-        write(out,"(i7,'' : ' ',<Nclasses1>i5,' isym= (',<Nclasses1>i4,')',2x,<Nrepresen>(f12.4))") icoeff,cnu(:),&
-                                (contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses),Nirr_rk(1:Nrepresen)
+        write(out,"(i7,'' : ' ',*(i5))") icoeff,cnu(:)
+        write(out,"('isym= (',*(i4),')')") (contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses)
+        write(out,"(*(f12.4))") Nirr_rk(1:Nrepresen)
      endif
      !
      !if (job%verbose>=5) then 
@@ -5984,7 +5985,7 @@ module perturbation
          !
          if (job%verbose>=5) then 
            do ideg = 1,sym%degen(isym)
-             write(out,"(i7,i4,i4,<Ndeg>f18.8)") icoeff,isym,ideg,irr_t(isym)%repres(Ntotal(isym)+i0,ideg,1:Ndeg)
+             write(out,"(i7,i4,i4,*(f18.8))") icoeff,isym,ideg,irr_t(isym)%repres(Ntotal(isym)+i0,ideg,1:Ndeg)
            enddo 
          endif
          !
@@ -6015,7 +6016,7 @@ module perturbation
    enddo
    !
    if (job%verbose>=6) then 
-     write(out,"('max_global = ',i)") max_global
+     write(out,"('max_global = ',i0)") max_global
    endif 
    !
    !
@@ -6500,7 +6501,7 @@ module perturbation
         !----------Only allocate if we are putting vectors into memory---------------!
         if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
 		matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
-		if (job%verbose>=4) write(out,"('Allocate array b',i,'x',i,' = ',i)") dimen_s,job%nroots(isym),matsize
+		if (job%verbose>=4) write(out,"('Allocate array b',i0,'x',i0,' = ',i0)") dimen_s,job%nroots(isym),matsize
 		allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
 		!
 		a = 0
@@ -6635,7 +6636,7 @@ module perturbation
         dimen_row = kblock(isym,k_i,2)-kblock(isym,max(k_i-2,0),1)+1
         dimen_maxrow = max(dimen_maxrow,dimen_row)
         !
-        if (job%verbose>=6) write(out,"('isym,k_i,kblock  = ',4i)") isym,k_i,kblock(isym,k_i,1),kblock(isym,k_i,2)
+        if (job%verbose>=6) write(out,"('isym,k_i,kblock  = ',4(1x,i0))") isym,k_i,kblock(isym,k_i,1),kblock(isym,k_i,2)
         ! 
       enddo
       !
@@ -6645,7 +6646,7 @@ module perturbation
       !
       matsize = int(dimen_s,hik)*int(dimen_maxrow,hik)
       !
-      if (job%verbose>=4) write(out,"('Allocate array ',i,'x',i,' = ',i)") dimen_s,dimen_maxrow,matsize
+      if (job%verbose>=4) write(out,"('Allocate array ',i0,'x',i0,' = ',i0)") dimen_s,dimen_maxrow,matsize
       allocate (smat(isym)%coeffs(dimen_s,dimen_maxrow),stat=alloc)
       call ArrayStart('PThamiltonian_contract:smat'//sym%label(isym),alloc,1,kind(smat(isym)%coeffs),matsize)
       !
@@ -7139,7 +7140,7 @@ module perturbation
         do k_i = 0,jrot
           dimen_row = kblock(isym,min(k_i+2,jrot),2)-kblock(isym,max(k_i-2,0),1)+1
           dimen_maxrow = max(dimen_maxrow,dimen_row)
-          if (job%verbose>=6) write(out,"('k_i = ',i,'; dimen_row = ',i)") k_i,dimen_row
+          if (job%verbose>=6) write(out,"('k_i = ',i0,'; dimen_row = ',i0)") k_i,dimen_row
         enddo
         !
         !if (job%nroots(isym)/=1000000) nroots = min(job%nroots(isym),dimen_s)
@@ -7157,7 +7158,7 @@ module perturbation
         else 
           !
           matsize = int(dimen_s,hik)*int(dimen_maxrow,hik)
-          if (job%verbose>=4) write(out,"('Allocate array a (sparse)',i,'x',i,' = ',i)") dimen_s,dimen_maxrow,matsize
+          if (job%verbose>=4) write(out,"('Allocate array a (sparse)',i0,'x',i0,' = ',i0)") dimen_s,dimen_maxrow,matsize
           allocate (a(dimen_s,dimen_maxrow),stat=alloc)
           !
           call ArrayStart('PThamiltonian_contract:a',alloc,1,kind(a),matsize)
@@ -7176,7 +7177,7 @@ module perturbation
         elseif (.not.only_store) then 
           !
           matsize = int(dimen_s,hik)*int(dimen_s,hik)
-          if (job%verbose>=4) write(out,"('Allocate array a',i,'x',i,' = ',i)") dimen_s,dimen_s,matsize
+          if (job%verbose>=4) write(out,"('Allocate array a',i0,'x',i0,' = ',i0)") dimen_s,dimen_s,matsize
           allocate (a(dimen_s,dimen_s),stat=alloc)
           !
           call ArrayStart('PThamiltonian_contract:a',alloc,1,kind(a),matsize)
@@ -7491,7 +7492,7 @@ module perturbation
     rootsize2_ = int(maxcontr*maxcontr,hik)
     !
     !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
-    if (job%verbose>=6.and.present(icontr)) write(out,"('icontr = ',i)") icontr
+    if (job%verbose>=6.and.present(icontr)) write(out,"('icontr = ',i0)") icontr
     !
     select case (trim(task))
     !
@@ -7512,7 +7513,7 @@ module perturbation
       !
       if (jrot==0.and.PT%Maxcontracts/=ncontr) then
         write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-        write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") PT%Maxcontracts,ncontr
+        write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") PT%Maxcontracts,ncontr
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
       end if
       !
@@ -7603,7 +7604,7 @@ module perturbation
       if (job%verbose>=4) write(out,"('   ...done!')")
       !
       if (job%verbose>=4.and.maxcontr/=ncontr) then
-        write (out,"('   The contracted basis set is reduced: ',i,' -> ',i)") ncontr,maxcontr
+        write (out,"('   The contracted basis set is reduced: ',i0,' -> ',i0)") ncontr,maxcontr
       end if
       !
       if (maxcontr>ncontr) then
@@ -7746,7 +7747,7 @@ module perturbation
         !
       endif
       !
-      if (job%verbose>=6) write(out,"('   rootsize_,rootsize = ',2i)") rootsize_,rootsize
+      if (job%verbose>=6) write(out,"('   rootsize_,rootsize = ',2(1x,i0))") rootsize_,rootsize
       !
       read(chkptIO) buf18(1:4)
       if (buf18(1:4)/='hvib') then
@@ -9030,7 +9031,7 @@ module perturbation
        read(chkptIO) dimen_p,nroots
        !
        if (dimen_s/=dimen_p) then
-         write (out,"(' solution matrix ',a,' has a wrong size',i)") filename,dimen_p
+         write (out,"(' solution matrix ',a,' has a wrong size',i0)") filename,dimen_p
          stop 'bogus matrix size'
        end if
        !
@@ -9051,7 +9052,7 @@ module perturbation
          !
          jelem = jelem + dimen
          !
-         if (job%verbose>=4) write(out,"('read eigen-solutions: n1,n2,dimen = ',2i,2x,i)") n1,n2,dimen
+         if (job%verbose>=4) write(out,"('read eigen-solutions: n1,n2,dimen = ',2(1x,i0),2x,i0)") n1,n2,dimen
          !
          do ielem = 1,nroots
             !
@@ -9062,7 +9063,7 @@ module perturbation
        enddo
        !
        if (dimen_s/=jelem) then
-         write (out,"(' solution matrix  has a wrong total size',i,' /= dimen_s = ',i)") jelem,dimen_s
+         write (out,"(' solution matrix  has a wrong total size ',i0,' /= dimen_s = ',i0)") jelem,dimen_s
          stop 'bogus total matrix size'
        end if
        !
@@ -10088,7 +10089,7 @@ module perturbation
              !
              call TimerStop('Compressing eigenvectors')
              !
-             if (job%verbose>=6) write(out,"('iroot = ',i8,' dimen = ',i,'  compressed size = ',i)") iroot,PT%Maxcontracts,cdimen
+             if (job%verbose>=6) write(out,"('iroot = ',i8,' dimen = ',i0,'  compressed size = ',i0)") iroot,PT%Maxcontracts,cdimen
              if (cdimen>PT%Maxcontracts*job%compress) then 
                write(out,"('Error: the compression factor ',f9.2,' is too low, must be at leas  ',f9.2)") job%compress,real(cdimen/PT%Maxcontracts)
                stop 'the compression factor is too low'
@@ -10132,7 +10133,7 @@ module perturbation
          deallocate(vec_compress,icoeff_compress)
          call ArrayStop('diagonalization_contr:vec_compress')
          !
-         if (job%verbose>=4) write(out,"(/'Maximal number of non-zero values after vector compression  = ',i,' out of ',i,' suggested compression  = ',f12.5/)") cdimenmax,PT%Maxcontracts,real(cdimenmax)/real(PT%Maxcontracts)
+         if (job%verbose>=4) write(out,"(/'Maximal number of non-zero values after vector compression  = ',i0,' out of ',i0,' suggested compression  = ',f12.5/)") cdimenmax,PT%Maxcontracts,real(cdimenmax)/real(PT%Maxcontracts)
          !
        endif
        !
@@ -10967,8 +10968,8 @@ module perturbation
        dimen_g = kelem
        dimen_n = nelem
        !
-       if (job%verbose>=5) write (out,"('     Size of the contr. matrix = ',i)") dimen_g
-       if (job%verbose>=5) write (out,"('     Number of elements taken for PT = ',i)") dimen_n
+       if (job%verbose>=5) write (out,"('     Size of the contr. matrix = ',i0)") dimen_g
+       if (job%verbose>=5) write (out,"('     Number of elements taken for PT = ',i0)") dimen_n
        !
        if (dimen_g==0) then  
          nroots =0
@@ -11232,7 +11233,7 @@ module perturbation
     dimen_e = kelem
     dimen_x = nelem
     !
-    if (job%verbose>=4) write (out,"('     Number of roots to converge     = ',i)") dimen_e
+    if (job%verbose>=4) write (out,"('     Number of roots to converge     = ',i0)") dimen_e
     if (job%verbose>=4) write (out,"('     Lowest diagonal mat. element    = ',f18.8)") energy(1)
     !
     eps = safe_max  ; eps_ = safe_max
@@ -11343,8 +11344,8 @@ module perturbation
        !
        if (dimen_g==dimen_s) last_iter = .true.
        !
-       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i)") dimen_g
-       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i)") dimen_n
+       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i0)") dimen_g
+       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i0)") dimen_n
        !
        if (dimen_g==0) cycle
        !
@@ -11653,7 +11654,7 @@ module perturbation
        !
        if (dimen_k<=0) cycle
        if (dimen_k>size(mat,dim=2)) then 
-         write(out,"('krot_contracted_diagon: number of cols in mat is too small:',i)") size(mat,dim=2),dimen_k
+         write(out,"('krot_contracted_diagon: number of cols in mat is too small:',i0)") size(mat,dim=2),dimen_k
          stop 'krot_contracted_diagon: N of cols in mat is too small'
        endif 
        !
@@ -11721,7 +11722,7 @@ module perturbation
       !
     enddo
     !
-    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i)") dimen_g
+    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i0)") dimen_g
     !
     if (dimen_g==0) then  
       nroots =0
@@ -12035,8 +12036,8 @@ module perturbation
     dimen_g = kelem
     dimen_n = nelem
     !
-    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i)") dimen_g
-    if (job%verbose>=5) write (out,"('     Number of elements taken for PT = ',i)") dimen_n
+    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i0)") dimen_g
+    if (job%verbose>=5) write (out,"('     Number of elements taken for PT = ',i0)") dimen_n
     !
     if (job%verbose>=4) call TimerStop('k-prediag (ssyev)')
     if (job%verbose>=5) write (out,"('     ...done!')") 
@@ -12538,7 +12539,7 @@ module perturbation
     dimen_e = kelem
     dimen_x = nelem
     !
-    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i)") dimen_e
+    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i0)") dimen_e
     !
     if (job%verbose>=4) call TimerStop('k-prediag (ssyev)')
     if (job%verbose>=5) write (out,"('     ...done!')") 
@@ -12768,8 +12769,8 @@ module perturbation
        !
        if (dimen_g==dimen_s) last_iter = .true.
        !
-       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i)") dimen_g
-       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i)") dimen_n
+       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i0)") dimen_g
+       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i0)") dimen_n
        !
        if (dimen_g==0) cycle
        !
@@ -12891,7 +12892,7 @@ module perturbation
            !
            do iroot=1,dimen_e
              !
-             write(out,'("| ",a,i7,<iter>f14.6)') sym%label(gamma),iroot,energies(iroot,1:iter)
+             write(out,'("| ",a,i7,*(f14.6))') sym%label(gamma),iroot,energies(iroot,1:iter)
              !
            enddo 
            !
@@ -13195,7 +13196,7 @@ module perturbation
     dimen_e = kelem
     dimen_x = nelem
     !
-    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i)") dimen_e
+    if (job%verbose>=5) write (out,"('     Size of the k-contr. matrix = ',i0)") dimen_e
     !
     if (job%verbose>=4) call TimerStop('k-prediag (ssyev)')
     if (job%verbose>=5) write (out,"('     ...done!')") 
@@ -13370,8 +13371,8 @@ module perturbation
        dimen_g = kelem
        dimen_n = nelem
        !
-       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i)") dimen_g
-       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i)") dimen_n
+       if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i0)") dimen_g
+       if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i0)") dimen_n
        !
        !outer_loop : do 
          !
@@ -13419,8 +13420,8 @@ module perturbation
          dimen_g = kelem
          dimen_n = nelem
          !
-         if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i)") dimen_g
-         if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i)") dimen_n
+         if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i0)") dimen_g
+         if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i0)") dimen_n
          !
        !enddo outer_loop
        !
@@ -13549,7 +13550,7 @@ module perturbation
            !
            do iroot=1,dimen_e
              !
-             write(out,'("| ",a,i7,<iter>f14.6)') sym%label(gamma),iroot,energies(iroot,1:iter)
+             write(out,'("| ",a,i7,*(f14.6))') sym%label(gamma),iroot,energies(iroot,1:iter)
              !
            enddo 
            !
@@ -13851,8 +13852,8 @@ module perturbation
     dimen_g = kelem
     dimen_n = nelem
     !
-    if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i)") dimen_g
-    if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i)") dimen_n
+    if (job%verbose>=4) write (out,"('       Size of the contr. matrix       = ',i0)") dimen_g
+    if (job%verbose>=4) write (out,"('       Number of elements taken for PT = ',i0)") dimen_n
     !
     if (dimen_g==0) then 
       !
@@ -14461,7 +14462,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -14479,7 +14480,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -14761,7 +14762,7 @@ module perturbation
             ! ----------------- FBR ------------------
             !
             if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
-            if (job%verbose>=3) write(out,"(/'Number of gvib terms  = ',i)") gvib_N
+            if (job%verbose>=3) write(out,"(/'Number of gvib terms  = ',i0)") gvib_N
             !
             allocate(hvib_t(mdimen,mdimen),gvib_t(mdimen,mdimen),fvib_t(mdimen,mdimen),stat=alloc)
             call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
@@ -14845,7 +14846,7 @@ module perturbation
               poten_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
               if (job%verbose>=2) write(out,"(/'Potential function...')")
-              if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i)") poten_N
+              if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i0)") poten_N
               !
               gvib_t = 0
               !
@@ -15682,7 +15683,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15700,7 +15701,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -16013,7 +16014,7 @@ module perturbation
           ! ----------------- FBR ------------------
           !
           if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
-          if (job%verbose>=3) write(out,"(/'Dimensions of the contracted matrix  = ',2i)") mdimen,dimen_p
+          if (job%verbose>=3) write(out,"(/'Dimensions of the contracted matrix  =',2(1x,i0))") mdimen,dimen_p
           !
           if (job%vib_rot_contr) then 
             allocate(hvib_t(mdimen,dimen_p),stat=alloc)
@@ -16068,7 +16069,7 @@ module perturbation
             !
             read(dumpIO_) k1_,k2_
             !
-            if (job%verbose>=4) write(out,"(' Appending to gvib ',2i)") k1_,k2_
+            if (job%verbose>=4) write(out,"(' Appending to gvib ',2(1x,i0))") k1_,k2_
             !
             ! we will start from these indeces 
             N1 = k1_
@@ -20143,7 +20144,7 @@ subroutine read_contr_matelem_expansion_II(iclass, func_tag, ncontr, nmodes_clas
   read(IOunit) iclass_, func_tag_, nmodes_class1_, nmodes_class2_, ncontr_, nterms_class
 
   if (iclass/=iclass_.or.trim(func_tag)/=trim(func_tag_).or.nmodes_class1/=nmodes_class1_.or.nmodes_class2/=nmodes_class2_.or.ncontr/=ncontr_) then
-    write(out, '(/a,a,a/a,1x,i,1x,a,3(1x,i)/a,1x,i,1x,a,3(1x,i))') &
+    write(out, '(/a,a,a/a,1x,i0,1x,a,3(1x,i0)/a,1x,i0,1x,a,3(1x,i0))') &
     'read_contr_matelem_expansion error: file "', trim(filename), '" has bogus header', &
     'read: ', iclass_, trim(func_tag_), nmodes_class1_, nmodes_class2_, ncontr_, &
     'expected:', iclass, trim(func_tag), nmodes_class1, nmodes_class2, ncontr
@@ -20235,7 +20236,7 @@ subroutine read_contr_matelem_expansion_classN(iclass, imode, jmode, func_tag, n
   read(IOunit) iclass_, func_tag_, nmodes_class1_, nmodes_class2_, ncontr_, nterms_class
 
   if (iclass/=iclass_.or.trim(func_tag)/=trim(func_tag_).or.nmodes_class1/=nmodes_class1_.or.nmodes_class2/=nmodes_class2_.or.ncontr/=ncontr_) then
-    write(out, '(/a,a,a/a,1x,i,1x,a,3(1x,i)/a,1x,i,1x,a,3(1x,i))') &
+    write(out, '(/a,a,a/a,1x,i0,1x,a,3(1x,i0)/a,1x,i0,1x,a,3(1x,i0))') &
     'read_contr_matelem_expansion_classN error: file "', trim(filename), '" has bogus header', &
     'read: ', iclass_, trim(func_tag_), nmodes_class1_, nmodes_class2_, ncontr_, &
     'expected:', iclass, trim(func_tag), nmodes_class1, nmodes_class2, ncontr
@@ -20570,7 +20571,7 @@ end subroutine read_contr_matelem_expansion_classN
     !$omp do private(icoeff,jcoeff,ib,f_t,m,mp1,k) schedule(dynamic)
     do icoeff=1,PT%Maxcontracts
       !
-      if (job%verbose>=6) write(out,"('   icoeff = ',i)") icoeff
+      if (job%verbose>=6) write(out,"('   icoeff = ',i0)") icoeff
       !
       !call PTDVR_contracted_bases_onthefly(jrot,icoeff,ideriv,vectori)
       !
@@ -20686,7 +20687,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do k = 1,dimen
       !
-      if (job%verbose>=6.and.mod(k,1000)==0) write(out,"('   k = ',i)") k
+      if (job%verbose>=6.and.mod(k,1000)==0) write(out,"('   k = ',i0)") k
       !
       !if (job%verbose>=4) call TimerStart('PTDVR_contracted_basis_product')
       !
@@ -20951,7 +20952,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       if ( islice==Nslices ) kmax = kmin + mod(dimen,Nswap) - 1 
       !
-      if (job%verbose>=4) write(out,"(' Number of swap slices = ',i7,' processing DVR points  =  [',i,'...',i,']')") Nslices,kmin,kmax
+      if (job%verbose>=4) write(out,"(' Number of swap slices = ',i7,' processing DVR points  =  [',i0,'...',i0,']')") Nslices,kmin,kmax
       !
       !
       if (kmin>dimen.or.kmax>dimen) then 
@@ -20966,7 +20967,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do k = kmin,kmax
       !
-      if (job%verbose>=5.and.mod(k,dimen/min(500,dimen))==0) write(out,"('   k = ',i)") k
+      if (job%verbose>=5.and.mod(k,dimen/min(500,dimen))==0) write(out,"('   k = ',i0)") k
       !
       !if (job%verbose>=4) call TimerStart('PTDVR_contracted_basis_product')
       !
@@ -21183,7 +21184,7 @@ end subroutine read_contr_matelem_expansion_classN
     Nmodes = PT%Nmodes
     maxcontr = PT%Maxcontracts
     !
-    if (job%verbose>=4) write(out,"(' Basis set sizes: contr. = ',i,'; primitive (DVR) = ',i)") maxcontr,dimen
+    if (job%verbose>=4) write(out,"(' Basis set sizes: contr. = ',i0,'; primitive (DVR) = ',i0)") maxcontr,dimen
     !
     ! preparing matrices to be saved to disk or to be stored in memory and their dimensions
     !
@@ -21191,7 +21192,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     stored_size = min(job%stored_size,maxcontr)
     !
-    if (job%verbose>=5) write(out,"(' job%stored_size  = ',i,' -> ',i)") job%stored_size,stored_size
+    if (job%verbose>=5) write(out,"(' job%stored_size  = ',i0,' -> ',i0)") job%stored_size,stored_size
     !
     call ArrayStart('PTDVRcontrac-srored-vec',0,1,rk,1_hik)
     call ArrayStart('PTDVRcontrac-srored-index',0,1,ik,1_hik)
@@ -21200,7 +21201,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       matsize = int(stored_size,hik)*int(Nmodes+1,hik)*int(idimenmax,hik)
       !
-      if (job%verbose>=5) write(out,"(' Allocate  stored matrix of ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") & 
+      if (job%verbose>=5) write(out,"(' Allocate  stored matrix of ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')") & 
                                        stored_size,Nmodes+1,dimen,matsize,real(matsize*8,rk)/1024.0_rk**3
       !
       allocate(vec_stored(dimen,stored_size,0:Nmodes),stat=alloc)
@@ -21208,7 +21209,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       matsize = int(stored_size,hik)*int(idimenmax,hik)*int(Nmodes+2,hik)
       !
-      if (job%verbose>=5) write(out,"(' Allocate istored matrix of ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") stored_size,Nmodes+1,dimen,matsize,real(matsize*4,rk)/1024.0_rk**3
+      if (job%verbose>=5) write(out,"(' Allocate istored matrix of ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')") stored_size,Nmodes+1,dimen,matsize,real(matsize*4,rk)/1024.0_rk**3
       !
       allocate(icontr_stored(dimen,stored_size,0:Nmodes),stat=alloc)
       !
@@ -21297,7 +21298,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        do icontr=1,maxcontr
          !
-         if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0.and.trim(job%IOswap_matelem)=="SAVE") write(out,"('   i = ',i)") icontr
+         if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0.and.trim(job%IOswap_matelem)=="SAVE") write(out,"('   i = ',i0)") icontr
          !
          do ideriv = 0,Nmodes
            !
@@ -21372,11 +21373,11 @@ end subroutine read_contr_matelem_expansion_classN
        !
        cdimen_aver_f = cdimen_aver_f/real(maxcontr)/real((Nmodes+1))
        !
-       if (job%verbose>=4) write(out,"(/' The distribution of the actual dimensions of the contr-vectors between 1 and ',i,' with 0.1 step: '/,' ',10f8.2)") dimen,real(cdimen_distr,rk)/real(maxcontr*(Nmodes+1))
+       if (job%verbose>=4) write(out,"(/' The distribution of the actual dimensions of the contr-vectors between 1 and ',i0,' with 0.1 step: '/,' ',10f8.2)") dimen,real(cdimen_distr,rk)/real(maxcontr*(Nmodes+1))
        !
-       if (job%verbose>=4) write(out,"(' Vectors stored  into the memory =',i,'; expected = ',i)") istore,maxcontr
+       if (job%verbose>=4) write(out,"(' Vectors stored  into the memory =',i0,'; expected = ',i0)") istore,maxcontr
        !
-       if (job%verbose>=5) write(out,"(' Compression: maximal allowed = ',i,'; total dimension ',f12.0,'; average  = ',i,'; input = ',f12.2)") & 
+       if (job%verbose>=5) write(out,"(' Compression: maximal allowed = ',i0,'; total dimension ',f12.0,'; average  = ',i0,'; input = ',f12.2)") & 
                                                                       cdimenmax,dimen,cdimen_aver_f,job%compress
        !
        if(trim(job%IOswap_matelem)=="SAVE") then 
@@ -21410,7 +21411,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        do icontr=1,maxcontr
          !
-         if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0) write(out,"('   i = ',i)") icontr
+         if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0) write(out,"('   i = ',i0)") icontr
          !
          do ideriv = 0,Nmodes
            !
@@ -21429,7 +21430,7 @@ end subroutine read_contr_matelem_expansion_classN
              !
              if (cdimen/=cdimens(icontr,ideriv)) then 
                 !
-                write(out,"('cdimen and cdimens(icontr,ideriv):',i,' /= ',i)") cdimen,cdimens(icontr,ideriv)
+                write(out,"('cdimen and cdimens(icontr,ideriv):',i0,' /= ',i0)") cdimen,cdimens(icontr,ideriv)
                 stop 'cdimen <> cdimens'
                 !
              endif
@@ -21473,7 +21474,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do icontr=1,maxcontr
       !
-      if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0) write(out,"('   i = ',i)") icontr
+      if (job%verbose>=5.and.mod(icontr,maxcontr/min(500,icontr))==0) write(out,"('   i = ',i0)") icontr
       !
       ib0 = icontr*(icontr-1)/2
       !
@@ -21492,7 +21493,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           if (cdimen/=cdimens(icontr,ideriv)) then 
              !
-             write(out,"('cdimen and cdimens(icontr,ideriv):',i,' /= ',i,' (ii)')") cdimen,cdimens(icontr,ideriv)
+             write(out,"('cdimen and cdimens(icontr,ideriv):',i0,' /= ',i0,' (ii)')") cdimen,cdimens(icontr,ideriv)
              stop 'cdimen <> cdimens (ii)'
              !
           endif
@@ -21966,7 +21967,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do k = 1,dimen
       !
-      if (job%verbose>=5.and.mod(k,100)==0) write(out,"('   k = ',i)") k
+      if (job%verbose>=5.and.mod(k,100)==0) write(out,"('   k = ',i0)") k
       !
       !$omp parallel do private(icoeff) shared(vector) schedule(static)
       do icoeff=1,maxcontr
@@ -24075,7 +24076,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          if (any(b(:,1)<0)) then 
            !
-           write(out,"('PTDVR_initialize: weights are negative for ispecies = ',i,' : ',<dvr_size>(1x,e14.7))") ispecies,b(1:dvr_size,1)
+           write(out,"('PTDVR_initialize: weights are negative for ispecies = ',i0,' : ',*(1x,e14.7))") ispecies,b(1:dvr_size,1)
            write(out,"('PTDVR_initialize: try to schrink the borders')")
            stop 'PTDVR_initialize: negative weights'
            !
@@ -24788,7 +24789,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          dvr_size = size(dvr%abcissa(ispecies)%coeff1d)
          !
-         write(out,"(5x,i4,': ',<dvr_size>f18.8)") ispecies,dvr%abcissa(ispecies)%coeff1d(1:dvr_size)
+         write(out,"(5x,i4,': ',*(f18.8))") ispecies,dvr%abcissa(ispecies)%coeff1d(1:dvr_size)
          !
       enddo 
     endif 
@@ -24814,7 +24815,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     dvr%total_size = size_total
     !
-    if (job%verbose>=3) write(out,"(/'     Number of DVR points = ',i)")  dvr%total_size 
+    if (job%verbose>=3) write(out,"(/'     Number of DVR points = ',i0)")  dvr%total_size 
     !
     allocate (dvr%poten(size_total),dvr%gvib(PT%Nmodes,PT%Nmodes,size_total),dvr%kindex(size_total,PT%Nmodes),&
               dvr%icheck_deriv(PT%Nclasses,0:PT%Nmodes),stat=alloc)
@@ -25642,7 +25643,7 @@ end subroutine read_contr_matelem_expansion_classN
     if (job%verbose>=3) call TimerStart('PTDVRcontracted_matelem_all')
     !
     if (job%verbose>=4) write(out,"('Contracted matrix elements in DVR representaion...')")
-    if (job%verbose>=4) write(out,"('  Size of the the contr. basis = ',i)") PT%Maxcontracts
+    if (job%verbose>=4) write(out,"('  Size of the the contr. basis = ',i0)") PT%Maxcontracts
     !
     dimen = dvr%total_size
     Nmodes = PT%Nmodes
@@ -25722,7 +25723,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do icoeff=1,maxcontr
        !
-       if (job%verbose>=5.and.mod(icoeff,maxcontr/400)==0) write(out,"('   i = ',i)") icoeff
+       if (job%verbose>=5.and.mod(icoeff,maxcontr/400)==0) write(out,"('   i = ',i0)") icoeff
        !
        ib0 = icoeff*(icoeff-1)/2
        !
@@ -28064,7 +28065,7 @@ end subroutine read_contr_matelem_expansion_classN
 
            if (abs(ivector(ielem))>1e-4) then  
              !
-             write(out,'(2x,a2,2i7,f14.6,e16.8,3x,"(",3i3,")",1x,"(",<Nclasses>(i3),")")') & 
+             write(out,'(2x,a2,2i7,f14.6,e16.8,3x,"(",3i3,")",1x,"(",*(i3),")")') & 
                         solut(j)%eigen(ilevel)%gamma,iroot,ielem,solut(j)%eigen(ilevel)%value,&
                         ivector(ielem), &
                         j,k_i,tau_i, &
@@ -29063,7 +29064,7 @@ end subroutine read_contr_matelem_expansion_classN
        read(chkptIO) dvr%abcissa(ispecies)%coeff1d
        !
        if (job%verbose>=4) then 
-         write(out,"(5x,i4,': ',<dvr_size>f18.8)") ispecies,dvr%abcissa(ispecies)%coeff1d(1:dvr_size)
+         write(out,"(5x,i4,': ',*(f18.8))") ispecies,dvr%abcissa(ispecies)%coeff1d(1:dvr_size)
        endif 
        !
        read(chkptIO) buf(1:9)
@@ -29082,7 +29083,7 @@ end subroutine read_contr_matelem_expansion_classN
      !
      read(chkptIO) dvr%total_size
      !
-     if (job%verbose>=3) write(out,"(/'     Number of DVR points = ',i)")  dvr%total_size 
+     if (job%verbose>=3) write(out,"(/'     Number of DVR points = ',i0)")  dvr%total_size 
      !
      allocate (dvr%poten(dvr%total_size),dvr%gvib(PT%Nmodes,PT%Nmodes,dvr%total_size),dvr%kindex(dvr%total_size,PT%Nmodes),&
                dvr%icheck_deriv(PT%Nclasses,0:PT%Nmodes),stat=alloc)
@@ -29172,7 +29173,7 @@ end subroutine read_contr_matelem_expansion_classN
      character(len=*) :: message,file
 
       if (Nbuf/=N) then
-        write (out,"(' DVR-chk-file: ',a,1x,a,1x,2i)") file,message,Nbuf,N
+        write (out,"(' DVR-chk-file: ',a,1x,a,1x,i0,1x,i0)") file,message,Nbuf,N
         stop 'DVR-chk-file: wrong integer number'
       end if
 
@@ -29547,7 +29548,7 @@ end subroutine read_contr_matelem_expansion_classN
            if (ideg==1) ilevel_ = ilevel_ + 1
            !
            if (iroot_/=iroot.or.ilevel_/=ilevel) then
-              write (out,"(' Error in cutting of the contracted basis set, iroots dont agree :',4i)") iroot_,iroot,ilevel_,ilevel
+              write (out,"(' Error in cutting of the contracted basis set, iroots dont agree :',4(1x,i0))") iroot_,iroot,ilevel_,ilevel
               stop 'PTcheck_point_contr: Error in cutting of the contr.bset'
            end if
            !
@@ -29820,7 +29821,7 @@ end subroutine read_contr_matelem_expansion_classN
      character(len=*) :: message,file
 
       if (Nbuf/=N) then
-        write (out,"(' DVR-chk-file: ',a,1x,a,1x,2i)") file,message,Nbuf,N
+        write (out,"(' DVR-chk-file: ',a,1x,a,1x,2(i0,1x))") file,message,Nbuf,N
         stop 'DVR-contr-chk-file: wrong integer number'
       end if
 
@@ -29926,7 +29927,7 @@ end subroutine read_contr_matelem_expansion_classN
     !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a) schedule(static)
     do i = 1,dimen
       !
-      if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i)"), i
+      if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i0)"), i
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
@@ -30414,11 +30415,11 @@ end subroutine read_contr_matelem_expansion_classN
               !
               if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i)*factor)>100.0*sqrt(small_)) then
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor,PT%lquant%icoeffs(i,1)
+                 write(out,"(i7,f18.8,*(i3),f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor,PT%lquant%icoeffs(i,1)
                  !
               else
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor
+                 write(out,"(i7,f18.8,*(i3),f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor
                  !
               endif
               !
@@ -30567,7 +30568,7 @@ end subroutine read_contr_matelem_expansion_classN
     !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a) schedule(static)
     do i = 1,dimen
       !
-      if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i)"), i
+      if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i0)"), i
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
@@ -30687,7 +30688,7 @@ end subroutine read_contr_matelem_expansion_classN
          if (nsym(gamma,ideg)/=nsym(gamma,ideg-1)) then 
            !
            write(out,"('PThamiltonianMat_reduced: sizes of blocks for different degen. are inconsistent:')")
-           write(out,"(' gamma,ideg,ideg-1,nsym(gamma,ideg),nsym(gamma,ideg-1) = ',5i)") gamma,ideg,ideg-1,nsym(gamma,ideg),nsym(gamma,ideg-1)
+           write(out,"(' gamma,ideg,ideg-1,nsym(gamma,ideg),nsym(gamma,ideg-1) =',5(1x,i0))") gamma,ideg,ideg-1,nsym(gamma,ideg),nsym(gamma,ideg-1)
            stop 'PThamiltonianMat_reduced: inconsistent degen-s' 
            !
          endif
@@ -30698,7 +30699,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     if (iroot/=dimen) then 
       !
-      write(out,"('PThamiltonianMat_reduced: iroot /= dimen:',2i)") iroot,dimen
+      write(out,"('PThamiltonianMat_reduced: iroot /= dimen:',2(1x,i0))") iroot,dimen
       !
       !stop 'PThamiltonianMat_reduced: iroot /= dimen' 
       !
@@ -31107,7 +31108,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        if (job%verbose>=2) then 
          !
-         write(out,"(i7,f18.8,2i4,2x,a4,<nmodes>i4)") ilevel,termvalue,sym%degen(gamma),gamma,trim(contr(iclasses)%eigen(ilevel)%gamma),nu_i(1:)
+         write(out,"(i7,f18.8,2i4,2x,a4,*(i4))") ilevel,termvalue,sym%degen(gamma),gamma,trim(contr(iclasses)%eigen(ilevel)%gamma),nu_i(1:)
          !
        end if 
        !
@@ -32562,7 +32563,7 @@ end subroutine read_contr_matelem_expansion_classN
       n = size(a,dim=1)
       !
       if (size(a,dim=2)/=n.or.size(d,dim=1)/=n) then
-        write (out,"(' diag_u: wrong shapes of arrays a and d :',3i)") n,size(a,dim=2),size(d,dim=1)
+        write (out,"(' diag_u: wrong shapes of arrays a and d :',3i0)") n,size(a,dim=2),size(d,dim=1)
         stop 'diag_u - wrong shapes of arrays'
       end if
       !
@@ -34146,7 +34147,7 @@ subroutine PTstore_contr_matelem_II(jrot)
          !if (match) exit
        !enddo
        if (.not.match) then
-         write(out, '(/a,1x,<nmodes>(1x,i3),1x,2a)') 'PTstore_contr_matelem error(match_terms): failed while checking the expansion term = (', terms(:,iterm),fl%name, ')'
+         write(out, '(/a,1x,*(1x,i3),1x,2a)') 'PTstore_contr_matelem error(match_terms): failed while checking the expansion term = (', terms(:,iterm),fl%name, ')'
          stop
        endif
      enddo
@@ -34224,7 +34225,7 @@ subroutine PTstore_contr_matelem_II(jrot)
             endif
         enddo
         !
-        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
+        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-non-sparse-match for icoeff =',i8,' powers=',*(i4))") trim(tag),icoeff, fl%IndexQ(:,icoeff)
         stop 'correlate_field_expansions...: corr, could not find a sparse-not-sparse-match'
         !
       enddo loop_icoeff
@@ -34254,7 +34255,7 @@ subroutine PTstore_contr_matelem_II(jrot)
             endif
         enddo
         !
-        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-(Nclasses-1)-match for icoeff =',i8,' powers=',<nmodes>i4)") trim(tag),icoeff, fl%IndexQ(:,icoeff)
+        write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-(Nclasses-1)-match for icoeff =',i8,' powers=',*(i4))") trim(tag),icoeff, fl%IndexQ(:,icoeff)
         stop 'correlate_field_expansions...: could not find a sparse-to-(Nclasses-1)-match'
         !
       enddo loop_iterm
@@ -34288,7 +34289,7 @@ subroutine PTstore_contr_matelem_II(jrot)
               endif
           enddo
           !
-          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-iterm_class-match for icoeff =',i8,' powers=',2(<nmodes>i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
+          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-iterm_class-match for icoeff =',i8,' powers=',*(i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
           stop 'correlate_field_expansions...: could not find a sparse-to-iterm_class-match'
           !
         enddo loop_iterm_class
@@ -34322,7 +34323,7 @@ subroutine PTstore_contr_matelem_II(jrot)
               endif
           enddo
           !
-          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-uniq_class-match for icoeff =',i8,' powers=',2(<nmodes>i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
+          write(out,"('correlate_field_expansions...:',a,' could not find a sparse-to-uniq_class-match for icoeff =',i8,' powers=',*(i4))") trim(tag),icoeff,IndexQ(:,icoeff),IndexQ_(:,icoeff)
           stop 'correlate_field_expansions...: could not find a sparse-to-uniq-match'
           !
         enddo loop_iterm_uniq
@@ -35800,7 +35801,7 @@ end subroutine combinations
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -35818,7 +35819,7 @@ end subroutine combinations
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -36092,7 +36093,7 @@ end subroutine combinations
           ! ----------------- FBR ------------------
           !
           if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
-          if (job%verbose>=3) write(out,"(/'Dimensions of the contracted matrix  = ',2i)") mdimen,dimen_p
+          if (job%verbose>=3) write(out,"(/'Dimensions of the contracted matrix  = ',2(i0,1x))") mdimen,dimen_p
           !
           if (job%vib_rot_contr) then 
             allocate(hvib_t(mdimen,dimen_p),stat=alloc)
@@ -37938,7 +37939,7 @@ subroutine PTstore_contr_matelem(jrot)
             if (match) exit
           enddo
           if (.not.match) then
-            write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', terms(:,iterm), ')'
+            write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', terms(:,iterm), ')'
             stop
           endif
         enddo
@@ -38124,7 +38125,7 @@ subroutine PTstore_contr_matelem(jrot)
                  if (match) exit
                enddo
                if (.not.match) then
-                 if (job%verbose>=4) write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Gcor expansion term = (', terms(:,iterm), ')'
+                 if (job%verbose>=4) write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Gcor expansion term = (', terms(:,iterm), ')'
                  stop
                endif
              enddo
@@ -38296,7 +38297,7 @@ subroutine PTstore_contr_matelem(jrot)
                  if (match) exit
                enddo
                if (.not.match) then
-                 write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Grot expansion term = (', terms(:,iterm), ')'
+                 write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Grot expansion term = (', terms(:,iterm), ')'
                  stop
                endif
              enddo
@@ -38460,7 +38461,7 @@ subroutine PTstore_contr_matelem(jrot)
          if (match) exit
        enddo
        if (.not.match) then
-         write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the PES expansion term = (', terms(:,iterm), ')'
+         write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the PES expansion term = (', terms(:,iterm), ')'
          stop
        endif
      enddo
@@ -38620,7 +38621,7 @@ subroutine PTstore_contr_matelem(jrot)
          if (match) exit
        enddo
        if (.not.match) then
-         write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the pseudopotential expansion term = (', terms(:,iterm), ')'
+         write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the pseudopotential expansion term = (', terms(:,iterm), ')'
          stop
        endif
      enddo
@@ -38786,7 +38787,7 @@ subroutine PTstore_contr_matelem(jrot)
               if (match) exit
             enddo
             if (.not.match) then
-              write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the extF expansion term = (', terms(:,iterm), ')'
+              write(out, '(/a,1x,*(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the extF expansion term = (', terms(:,iterm), ')'
               stop
             endif
           enddo
@@ -38921,7 +38922,7 @@ subroutine read_contr_matelem_expansion(iclass, func_tag, ncontr, nmodes_class1,
   read(IOunit) iclass_, func_tag_, nmodes_class1_, nmodes_class2_, ncontr_, nterms_class
 
   if (iclass/=iclass_.or.trim(func_tag)/=trim(func_tag_).or.nmodes_class1/=nmodes_class1_.or.nmodes_class2/=nmodes_class2_.or.ncontr/=ncontr_) then
-    write(out, '(/a,a,a/a,1x,i,1x,a,3(1x,i)/a,1x,i,1x,a,3(1x,i))') &
+    write(out, '(/a,a,a/a,1x,i0,1x,a,3(1x,i0)/a,1x,i0,1x,a,3(1x,i0))') &
     'read_contr_matelem_expansion error: file "', trim(filename), '" has bogus header', &
     'read: ', iclass_, trim(func_tag_), nmodes_class1_, nmodes_class2_, ncontr_, &
     'expected:', iclass, trim(func_tag), nmodes_class1, nmodes_class2, ncontr
@@ -39075,7 +39076,7 @@ subroutine read_expansion_terms(func_tag, nclasses, nmodes1, nmodes2, ncomb, ico
   read(IOunit) func_tag_, nclasses_, nmodes1_, nmodes2_, ncomb, icomb_maxnterms
 
   if (nclasses/=nclasses_.or.trim(func_tag)/=trim(func_tag_).or.nmodes1/=nmodes1_.or.nmodes2/=nmodes2_) then
-    write(out, '(/a,a,a/a,1x,i,1x,a,1x,i,1x,i/a,1x,i,1x,a,1x,i,1x,i)') &
+    write(out, '(/a,a,a/a,1x,i0,1x,a,1x,i0,1x,i0/a,1x,i0,1x,a,1x,i0,1x,i0)') &
     'read_expansion_terms error: file "', trim(filename), '" has bogus header', &
     'read: ', nclasses_, trim(func_tag_), nmodes1_, nmodes2_, &
     'expected:', nclasses, trim(func_tag), nmodes1, nmodes2
