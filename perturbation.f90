@@ -2061,7 +2061,7 @@ module perturbation
          do iclasses = 0,PT%Nclasses
            !
            if (cnu(iclasses)>size( contr(iclasses)%eigen(:) ) ) then 
-              e_t = huge(1.0_ark)
+              e_t = huge(e_t)
               return 
            endif  
            !
