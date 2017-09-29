@@ -2630,7 +2630,7 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
     endif
     !
     costheta = sum(N1(1:3)*NB2(1:3))
-    if (sign(1.0_ark,costheta)<0.0) then
+    if (sign(1.0d0,costheta)<0.0) then
      rho = pi - tau
     else
      rho = pi + tau
