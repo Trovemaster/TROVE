@@ -9606,7 +9606,7 @@ module perturbation
        !
        spur = spur*exp(-beta*mat0)
        !
-       write(out, '(/1x, a, 1x, es16.8)'), 'qpart = ', spur
+       write(out, '(/1x, a, 1x, es16.8)') 'qpart = ', spur
        !
        !mat = mat / (-planck * vellgt) * (boltz * intensity%temperature)
        !do ielem = 1, dimen_s
