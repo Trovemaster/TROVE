@@ -414,7 +414,7 @@ contains
        !
        if (parmax>molec%parmax) then 
          !
-         write(out,"('fitting: potential and fitting parameters do not agree (parmax>molec%parmax):',2i)") parmax,molec%parmax
+         write(out,"('fitting: potential and fitting parameters do not agree (parmax>molec%parmax):',2(1x,i0))") parmax,molec%parmax
          stop 'potential and fitting parameters do not agree'
          !
        endif
@@ -489,7 +489,7 @@ contains
        do i=1,pot_npts
          !
          !dec$ if (fit_debug > 6)
-           write (out,"('i = ',i)") i
+           write (out,"('i = ',i0)") i
          !dec$ end if
          !
          read (potunit,*) ar_t(1:molec%ncoords),pot_values(i),wtall(en_npts+i)
@@ -727,7 +727,7 @@ contains
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
                        !dec$ if (fit_debug > 3)
-                         write (out,"('mat (',i,',',i,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
+                         write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
                        !dec$ end if
                        !
                      enddo
@@ -1032,7 +1032,7 @@ contains
                      ilevel = fit(isym,j)%ilevel(ilargest(i))
                      !
                      write (out,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'(',i3,')',1x,'(',<nmodes>(1x, i3),')',a)") &
+                            &'(',i3,')',1x,'(',*(1x, i3),')',a)") &
                             iener,i,iJ,sym%label(isym),enercalc(iener)+eps(iener),enercalc(iener),eps(iener),&
                             wtall(iener),&
                             eigen(ilevel)%krot,eigen(ilevel)%quanta(1:nmodes),mark(iener)
@@ -1219,7 +1219,7 @@ contains
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
                    !dec$ if (fit_debug > 2)
-                     write (out,"('al (',i,',',i,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
+                     write (out,"('al (',i0,',',i0,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
                    !dec$ end if
                  enddo
                enddo
@@ -1228,7 +1228,7 @@ contains
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
                  !dec$ if (fit_debug > 2)
-                   write (out,"('bl (',i,')= ',es14.7)") irow,bl(irow)
+                   write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
                  !dec$ end if
                enddo  
                !
@@ -1259,7 +1259,7 @@ contains
                           ivar(i) = 0
                           potparam(i) = 0
                           !
-                          write(out,"(i,'-th is out - ',a8)") i,nampar(i)
+                          write(out,"(i0,'-th is out - ',a8)") i,nampar(i)
                           !
                       endif 
                       !
@@ -1283,7 +1283,7 @@ contains
                  call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bl(1:numpar),numpar,Tsing,-1.D-12,rank,wspace,lwork,info)
                  !
                  if (info/=0) then
-                   write(out,"('dgelss:error',i)") info
+                   write(out,"('dgelss:error',i0)") info
                    stop 'dgelss'
                  endif
                  !
@@ -1373,13 +1373,13 @@ contains
                ! 'powers'
                !
                do i=1,parmax
-                  write (out,"(a8,4x,<Ncoords>i3,1x,i2,e22.14)") nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),potparam(i)
+                  write (out,"(a8,4x,*(i3),1x,i2,e22.14)") nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),potparam(i)
                enddo
                !
                write(out,"(/'Potential parameters:')")
                !
                do i=1,parmax
-                 write (out,"(a8,4x,<Ncoords>i3,1x,i2,e22.14)") nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),molec%force(i)+potparam(i)
+                 write (out,"(a8,4x,*(i3),1x,i2,e22.14)") nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),molec%force(i)+potparam(i)
                enddo
                !
             endif 
@@ -1849,7 +1849,7 @@ contains
          xparam(i) = j0fit%obs(i)%energy
          ivar(i)   = j0fit%obs(i)%weight
          !
-         write(nampar(i),"(<nmodes>i3)") j0fit%obs(i)%quanta(1:nmodes)
+         write(nampar(i),"(*(i3))") j0fit%obs(i)%quanta(1:nmodes)
          !
        enddo
        !
@@ -2328,7 +2328,7 @@ contains
                      ilevel = fit(isym,j)%ilevel(ilargest(i))
                      !
                      write (out,"(3i5,2x,a3,' ',3f13.4,2x,e9.2,2x,&
-                            &'(',i3,')',1x,'(',<nmodes>(1x, i3),')',a)") &
+                            &'(',i3,')',1x,'(',*(1x, i3),')',a)") &
                             iener,i,iJ,sym%label(isym),enercalc(iener)+eps(iener),enercalc(iener),-eps(iener),&
                             wtall(iener),&
                             eigen(ilevel)%krot,eigen(ilevel)%quanta(1:nmodes),mark(iener)
@@ -2413,7 +2413,7 @@ contains
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
                    !dec$ if (fit_debug > 2)
-                     write (out,"('al (',i,',',i,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
+                     write (out,"('al (',i0,',',i0,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
                    !dec$ end if
                  enddo
                enddo
@@ -2422,7 +2422,7 @@ contains
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
                  !dec$ if (fit_debug > 2)
-                   write (out,"('bl (',i,')= ',es14.7)") irow,bl(irow)
+                   write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
                  !dec$ end if
                enddo  
                !
@@ -2453,7 +2453,7 @@ contains
                           ivar(i) = 0
                           xparam(i) = 0
                           !
-                          write(out,"(i,'-th is out - ',a8)") i,nampar(i)
+                          write(out,"(i0,'-th is out - ',a8)") i,nampar(i)
                           !
                       endif 
                       !
@@ -2477,7 +2477,7 @@ contains
                  call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bl(1:numpar),numpar,Tsing,1.D-12,rank,wspace,lwork,info)
                  !
                  if (info/=0) then
-                   write(out,"('dgelss:error',i)") info
+                   write(out,"('dgelss:error',i0)") info
                    stop 'dgelss'
                  endif
                  !
@@ -2812,7 +2812,7 @@ contains
    !
    if (bset_contr(1)%Maxcontracts/=ncontr_t) then
      write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") bset_contr(1)%Maxcontracts,ncontr_t
+     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2(i0,1x))") bset_contr(1)%Maxcontracts,ncontr_t
      stop 'restore_vib_matrix_elements - in file - illegal ncontracts '
    end if
    !
@@ -2923,7 +2923,7 @@ contains
     !$omp end parallel do
     !
     !dec$ if (fit_debug > 3)
-      write (out,"('ientry = ',i,'; dimen = ',i)") ientry,dimen
+      write (out,"('ientry = ',i0,'; dimen = ',i0)") ientry,dimen
     !dec$ end if
     !
     !loop over final states
@@ -3032,7 +3032,7 @@ contains
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") bset_contr(1)%Maxcontracts,ncontr_t
+       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2(i0,1x))") bset_contr(1)%Maxcontracts,ncontr_t
        stop 'calc_exp_values - in file - illegal ncontracts '
      end if
      !
@@ -3131,7 +3131,7 @@ contains
         !
         do isym=1,sym%Nrepresen
           !
-          if (job%verbose>=2) write (out,"('jrot = ',i,'; sym = ',i)") Jrot,isym
+          if (job%verbose>=2) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
           !write (out,"(/'iparam    #      ilist     matrix   ')")
           !
           Nentries = fit(isym,jind)%Nentries
@@ -3230,7 +3230,7 @@ contains
           !
           do i=1,parmax
             !
-            if (job%verbose>=5) write (out,"('iparam = ',i)") i
+            if (job%verbose>=5) write (out,"('iparam = ',i0)") i
             !
             write (out,"(' ')")
             !
@@ -3408,7 +3408,7 @@ contains
      !
      if (job%IOfitpot_action/='SPLIT') fitting%iparam = (/1,j0ener_fit_plus/)
      !
-     if (job%verbose>=5) write (out,"('Total number of J=0 energies (incl. degeneracies) = ',i/)") j0ener_fit_plus
+     if (job%verbose>=5) write (out,"('Total number of J=0 energies (incl. degeneracies) = ',i0/)") j0ener_fit_plus
      !
      if (job%verbose>=4) then 
         write(out, '(/a)') 'Reading the eigenvalues'
@@ -3430,7 +3430,7 @@ contains
            !
          enddo
          !
-         if (job%verbose>=5) write (out,"('Nentries = ',i/)") Nentries
+         if (job%verbose>=5) write (out,"('Nentries = ',i0/)") Nentries
          !
          fit(isym,jind)%Nentries=Nentries 
          !
@@ -3489,7 +3489,7 @@ contains
           !
           do isym= 1,sym%Nrepresen
             !
-            if (job%verbose>=4) write (out,"('jrot = ',i,'; sym = ',i)") Jrot,isym
+            if (job%verbose>=4) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
             !
             Nentries = fit(isym,jind)%Nentries
             !
@@ -3498,7 +3498,7 @@ contains
             matsize = int(Nentries*(Nentries+1)/2,hik)
             matsize2= int(Nentries*(Nentries+1)/2,hik)
             !
-            if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i)") matsize,j0ener_fit_plus
+            if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2(i0,1x))") matsize,j0ener_fit_plus
             !
             idimen = j0ener_fit_plus
             !
@@ -3554,7 +3554,7 @@ contains
                  end do
                  !
                  if (job%verbose>=6) then 
-                   write (out,"(' ientry  =  ',i,' cdimen_ = ',i)") ientry,cdimen_
+                   write (out,"(' ientry  =  ',i0,' cdimen_ = ',i0)") ientry,cdimen_
                  end if
                  !
                  cdimen(ientry) = cdimen_
@@ -3595,7 +3595,7 @@ contains
               icontr_max = maxval(bset_contr(jind)%iroot_correlat_j0(:),dim=1)
               ktaumax = 2*jrot+1
               !
-              if (job%verbose>=5) write(out,"('ktaumax = ',i,'; icontr_max = ',i,' dimen = ',i)") ktaumax,icontr_max,dimen
+              if (job%verbose>=5) write(out,"('ktaumax = ',i0,'; icontr_max = ',i0,' dimen = ',i0)") ktaumax,icontr_max,dimen
               !
               allocate(kmat(Nentries,icontr_max,0:ktaumax),stat=alloc)
               !
@@ -3623,7 +3623,7 @@ contains
               !omp do private(ientry,ilevel,irec,cdimen_,idimen) schedule(guided)
               do ientry = 1,Nentries
                  !
-                 if (job%verbose>=5.and.mod(ientry,Nentries/50)) write(out,"('ientry = ',i)") ientry
+                 if (job%verbose>=5.and.mod(ientry,Nentries/50).ne.0) write(out,"('ientry = ',i0)") ientry
                  !
                  ilevel = fit(isym,jind)%ilevel(ientry)
                  !
@@ -3667,7 +3667,7 @@ contains
                      !
                      cdimen_ = max(kdimen(ientry,icontr,ktau_i),1)
                      !
-                     if (job%verbose>=6) write (out,"(' ientry  =  ',i,'ktau_i = ',i4,' icontr = ',i,' cdimen_ = ',i)") ientry,ktau_i,icontr,cdimen_
+                     if (job%verbose>=6) write (out,"(' ientry  =  ',i0,'ktau_i = ',i4,' icontr = ',i0,' cdimen_ = ',i0)") ientry,ktau_i,icontr,cdimen_
                      !
                      !allocate(kmat(ientry,icontr,ktau_i)%coeff(cdimen_),stat=alloc)
                      !if (alloc /= 0) stop 'fitting-vec allocation error: kmat%coeff - out of memory'
@@ -3732,11 +3732,11 @@ contains
               !
               do i=fitting%iparam(1),fitting%iparam(2)
                 !
-                if (job%verbose>=5) write (out,"('iparam = ',i)") i
+                if (job%verbose>=5) write (out,"('iparam = ',i0)") i
                 !
                 do ientry = 1, Nentries
                   !
-                  if (job%verbose>=5.and.mod(ientry,Nentries/50)) write(out,"('ientry = ',i)") ientry
+                  if (job%verbose>=5.and.mod(ientry,Nentries/50).ne.0) write(out,"('ientry = ',i0)") ientry
                   !
                   ilevel = fit(isym,jind)%ilevel(ientry)
                   !
@@ -3823,7 +3823,7 @@ contains
               !
               do ientry = 1, Nentries
                 !
-                if (job%verbose>=5.and.mod(ientry,Nentries/50)) write(out,"('ientry = ',i)") ientry
+                if (job%verbose>=5.and.mod(ientry,Nentries/50).ne.0) write(out,"('ientry = ',i0)") ientry
                 !
                 ilevel = fit(isym,jind)%ilevel(ientry)
                 !
@@ -3897,7 +3897,7 @@ contains
               !
               do ientry = 1, Nentries
                 !
-                if (job%verbose>=5.and.mod(ientry,Nentries/50)) write(out,"('ientry = ',i)") ientry
+                if (job%verbose>=5.and.mod(ientry,Nentries/50).ne.0) write(out,"('ientry = ',i0)") ientry
                 !
                 ilevel = fit(isym,jind)%ilevel(ientry)
                 !
@@ -3999,7 +3999,7 @@ contains
           !
           do isym= 1,sym%Nrepresen
             !
-            if (job%verbose>=4) write (out,"('jrot = ',i,'; sym = ',i)") Jrot,isym
+            if (job%verbose>=4) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
             !
             Nentries = fit(isym,jind)%Nentries
             !
@@ -4008,7 +4008,7 @@ contains
             matsize = int(Nentries*(Nentries+1)/2,hik)
             matsize2= int(Nentries*Nentries,hik)
             !
-            if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i)") matsize,j0ener_fit_plus
+            if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2(i0,1x))") matsize,j0ener_fit_plus
             !
             if (trim(fitting%method)=='SLOW') idimen = 1
             !
@@ -4022,7 +4022,7 @@ contains
             !
             do i=1,j0ener_fit_plus
               !
-              if (job%verbose>=5) write (out,"('iparam = ',i)") i
+              if (job%verbose>=5) write (out,"('iparam = ',i0)") i
               !
               write(unitfname,"('single deriv_matrix')")
               !
@@ -4200,7 +4200,7 @@ contains
          !
          if (bset_contr(1)%Maxcontracts/=ncontr_t) then
            write (out,"(' Dipole moment checkpoint file ',a)") job_file
-           write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") bset_contr(1)%Maxcontracts,ncontr_t
+           write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2(i0,1x))") bset_contr(1)%Maxcontracts,ncontr_t
            stop 'prepare_pot_matrix - in file - illegal ncontracts '
          end if
          !
@@ -4324,7 +4324,7 @@ contains
           !
           do isym= 1,sym%Nrepresen
             !
-            if (job%verbose>=4) write (out,"('jrot = ',i,'; sym = ',i)") Jrot,isym
+            if (job%verbose>=4) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
             !
             Nentries = fit(isym,jind)%Nentries
             !
@@ -4433,7 +4433,7 @@ contains
                  end do
                  !
                  if (job%verbose>=6) then 
-                   write (out,"(' ientry  =  ',i,' cdimen_ = ',i)") ientry,cdimen_
+                   write (out,"(' ientry  =  ',i0,' cdimen_ = ',i0)") ientry,cdimen_
                  end if
                  !
                  cdimen(ientry) = cdimen_
@@ -4670,7 +4670,7 @@ contains
           !
           do isym= 1,sym%Nrepresen
             !
-            if (job%verbose>=4) write (out,"('jrot = ',i,'; sym = ',i)") Jrot,isym
+            if (job%verbose>=4) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
             !
             Nentries = fit(isym,jind)%Nentries
             !
