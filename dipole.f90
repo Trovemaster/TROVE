@@ -357,7 +357,7 @@ contains
     !
     !
     character(len=1) :: branch
-    character(len=wl) :: my_fmt,my_fmt_tm
+    character(len=wl) :: my_fmt,my_fmt_tm, nmodes_s, nclasses_s
     !
     character(cl)           :: filename, ioname
     character(4)            :: jchar,gchar
@@ -972,16 +972,20 @@ contains
        !
        if (job%exomol_format) then 
          !
+         write(nmodes_s,'(i0)') nmodes
+         write(nclasses_s,'(i0)') nclasses
          write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
-                     &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
+                     &t85,"//nclasses_s//"(4x),1x,"//nmodes_s//"(4x),3x,'<-',14x,"//nclasses_s//"(4x),1x,"//nmodes_s//"(4x),&
                      &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
                      !
       endif
       !
       case('TM')
        !
+       write(nmodes_s,'(i0)') nmodes
+       write(nclasses_s,'(i0)') nclasses
        write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t52'Ei',t65'nu_if',&
-                   &t84,<nclasses>(3x),1x,<nmodes>(3x),9x,'<-',8x,<nclasses>(3x),1x,<nmodes>(3x),&
+                   &t84,"//nclasses_s//"(3x),1x,"//nmodes_s//"(3x),9x,'<-',8x,"//nclasses_s//"(3x),1x,"//nmodes_s//"(3x),&
                    &17x,'TM(f<-i)',8x,'N',12x,'x',18x,'y',18x,'z')")
 
        !
@@ -2060,6 +2064,7 @@ contains
     double complex,allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
     character(len=1)        :: jobvl,jobvr
     integer(ik)             :: cnu_i(0:molec%nmodes),ktau,tauI
+    character(len=256) :: nmodes_s, nclasses_s
     !
     call TimerStart('Density analysis')
     !
@@ -2487,7 +2492,9 @@ contains
            !
            !print*, vec
            !
-           write(out,"(i4,1x, a3,2x,f13.6,1x,'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'(',<nmodes>(1x, i3),')')") & 
+           write(nmodes_s,'(i0)') nmodes
+           write(nclasses_s,'(i0)') nclasses
+           write(out,"(i4,1x, a3,2x,f13.6,1x,'(',a3,';',i3,')',1x,'(',"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),')',2x,'(',"//nmodes_s//"(1x, i3),')')") & 
                             jI,sym%label(igammaI),&
                             energyI-intensity%ZPE,&
                             eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
@@ -2843,7 +2850,7 @@ contains
     !
     !
     character(len=1) :: branch
-    character(len=cl):: unitfname,filename
+    character(len=cl):: unitfname,filename, nmodes_s, nclasses_s
     character(4)     :: jchar
     !
     real(rk)     :: boltz_fc, beta, intens_cm_mol, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
@@ -3491,14 +3498,18 @@ contains
       !
       case('ABSORPTION','EMISSION')
        !
+       write(nmodes_s,'(i0)') nmodes
+       write(nclasses_s,'(i0)') nclasses
        write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ei',t42'<-',t50'Ef',t62'nu_if',&
-                   &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
+                   &t85,"//nclasses_s//"(4x),1x,"//nmodes_s//"(4x),3x,'<-',14x,"//nclasses_s//"(4x),1x,"//nmodes_s//"(4x),&
                    &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
       !
       case('TM')
        !
+       write(nmodes_s,'(i0)') nmodes
+       write(nclasses_s,'(i0)') nclasses
        write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ei',t42'<-',t52'Ef',t65'nu_if',&
-                   &t84,<nclasses>(3x),1x,<nmodes>(3x),9x,'<-',8x,<nclasses>(3x),1x,<nmodes>(3x),&
+                   &t84,"//nclasses_s//"(3x),1x,"//nmodes_s//"(3x),9x,'<-',8x,"//nclasses_s//"(3x),1x,"//nmodes_s//"(3x),&
                    &17x,'TM(f<-i)',8x,'N',12x,'x',18x,'y',18x,'z')")
 
        !
@@ -3966,13 +3977,15 @@ contains
                !
                cdimen = maxval(cdimens(ilevelF,1:ndegF),dim=1)
                !
+               write(nmodes_s,'(i0)') nmodes
+               write(nclasses_s,'(i0)') nclasses
                write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
                             &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
-                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,'<- ',   &
-                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,   &
+                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,"//nclasses_s//"(x,a3),1x,"//nmodes_s//"(1x, i3),1x,')',1x,'<- ',   &
+                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,"//nclasses_s//"(x,a3),1x,"//nmodes_s//"(1x, i3),1x,')',1x,   &
                             & 3(1x, es16.8),2x,(1x,i6,1x),'<-',(1x,i6,1x),i8,1x,i12,1x,i8,&
-                            1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,'<- ',1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,& 
-                            <nformat>(1x, es16.8))")  &
+                            1x,'(',1x,"//nmodes_s//"(1x, i3),1x,')',1x,'<- ',1x,'(',1x,"//nmodes_s//"(1x, i3),1x,')',1x,& 
+                            *(1x, es16.8))")  &
                             !
                             jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
                             energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
@@ -4047,14 +4060,16 @@ contains
                !
                nformat = ndegI*ndegF
                !
+               write(nmodes_s,'(i0)') nmodes
+               write(nclasses_s,'(i0)') nclasses
                write(out, "( (i4, 1x, a3, 3x),'<-', (i4, 1x, a3, 3x),a1,&
                             &(2x, f13.6,1x),'<-',(1x, f13.6,1x),f12.6,2x,&
-                            &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'<- ',   &
-                            &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',   &
+                            &'(',a3,';',i3,')',1x,'(',"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),')',2x,'<- ',   &
+                            &'(',a3,';',i3,')',1x,'(',"//nclasses_s//"a3,';',"//nmodes_s//"(1x, i3),')',   &
                             &2(1x,es15.8),i8,&
-                            &2x,'(',<nmodes>(1x, i3),')',2x,'<- ',   &
-                            &1x,'(',<nmodes>(1x, i3),')',   &
-                            &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
+                            &2x,'(',"//nmodes_s//"(1x, i3),')',2x,'<- ',   &
+                            &1x,'(',"//nmodes_s//"(1x, i3),')',   &
+                            &3(*( 1x,f16.8,1x,3i1) ) )") &
                             !
                             jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
                             energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                              &
