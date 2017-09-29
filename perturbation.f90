@@ -8672,6 +8672,7 @@ module perturbation
    integer(hik)         :: ndvr_ktau,matsize
    integer(ik)          :: nelem,chkptIO
    integer(ik)          :: dimen_maxrow,m_,i_,j_,kmax,jb
+   character(len=256) :: nmodes_s, nclasses_s
      !
      ! Check for the trivial solution 
      if (dimen_s<=0) return 
@@ -10041,7 +10042,9 @@ module perturbation
            !
            if (job%IOvector_symm) ilevel = iroot 
            !
-           write(IOunit_quanta,'(i8,3i8,f20.12,i8,<Nmodes>i4,i8,<Nclasses1>i4,i8,<Nmodes>i4,2x,f17.8,<Nclasses>i7)')  irecord,&
+           write(nmodes_s,'(i0)') Nmodes
+           write(nclasses_s,'(i0)') Nclasses1
+           write(IOunit_quanta,'(i8,3i8,f20.12,i8,'//nmodes_s//'i4,i8,'//nclasses_s//'i4,i8,'//nmodes_s//'i4,2x,f17.8,'//nclasses_s//'i7)')  irecord,&
                                gamma,ilevel,kdeg,energy(iroot),eignu(iroot,0:PT%Nmodes),ilarge_coef_t,isym(0:Nclasses),eignormal(iroot,0:PT%Nmodes),maxcontrib(iroot),cnu(1:Nclasses)
            !
            !
