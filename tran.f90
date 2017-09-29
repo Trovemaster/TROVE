@@ -149,7 +149,7 @@ contains
           bset_contr(jind)%index_deg(icase)%size1 = nlambdas
           !
           !dec$ if (tran_debug > 2)
-             write(out, '(1x, i5, 2x, i3, 1x, <nclasses>(1x, i3), 1x, i3)')                                            &
+             write(out, '(1x, i5, 2x, i3, 1x, *(1x, i3), 1x, i3)')                                            &
              icase, nlambdas, bset_contr(jind)%contractive_space(0:nclasses, icase)
           !dec$ end if
           !
@@ -458,6 +458,7 @@ contains
     character(cl)           :: filename, ioname, buf
     character(4)            :: jchar,gchar
     character(500)          :: buf500
+    character(200)          :: nmodes_s
     !
     logical                 :: passed
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
@@ -773,7 +774,8 @@ contains
                !
                J_ = Jval(jind)
                !
-               write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
+               write(nmodes_s,'(i0)') nmodes
+               write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,"//nmodes_s//"i3,1x,*(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,"//nmodes_s//"i3)") & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),normal(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
                largest_coeff,ilevel,quanta(1:nmodes)
@@ -837,14 +839,15 @@ contains
           !
           !print energies
           !dec$ if (tran_debug > 2)
+             write(nmodes_s,'(i0)') nmodes
              write(out, '(/1x, a, 2x, i8/1x, a, 1x, i8)') 'number of roots', nroots, 'number of levels', nlevels
-             write(out, '(/1x, a, 11x, a, 1x, a, 1x, a, 8x, a, <nmodes>(2x), 1x, a)') 'ilevel', 'energy', 'ndeg',       &
+             write(out, '(/1x, a, 11x, a, 1x, a, 1x, a, 8x, a, '//nmodes_s//'(2x), 1x, a)') 'ilevel', 'energy', 'ndeg',       &
              'igamma', 'nu(0:nmodes)', 'irec'
              !
              do ilevel = 1, nlevels
                 !
                 ndeg = eigen(ilevel)%ndeg
-                write(out, '(2x, i8, 1x, f14.8, 2x, i3, 4x, i3, 5x, <nmodes>(1x, i3), 1x, i7, 5x,<ndeg>(1x, i7))')  &
+                write(out, '(2x, i8, 1x, f14.8, 2x, i3, 4x, i3, 5x, '//nmodes_s//'(1x, i3), 1x, i7, 5x,<ndeg>(1x, i7))')  &
                 ilevel, eigen(ilevel)%energy, eigen(ilevel)%ndeg,        &
                 eigen(ilevel)%igamma, eigen(ilevel)%quanta(1:nmodes),    &
                 eigen(ilevel)%irec(1:ndeg)
