@@ -3950,10 +3950,11 @@ module perturbation
 
      integer(ik),intent(in)  :: iclasses
      integer(ik)  :: ispecies,i,imode,ioper,vi,vj,jpoint,ipoint,ipshift,npoints_t,nmodes,imode1,imode2,jmode
-     real(rk)     :: bs_size,xval_i,xval_j
+     real(rk)     :: xval_i,xval_j
      real(ark)    :: r_t(-Nr_t:Nr_t),fval,df_t,chi_i,chi_j(PT%Nmodes),chi_(PT%Nmodes),rho_range
      real(ark),allocatable  :: chi_t(:,:,:)
      real(ark),allocatable :: funct_t(:),phipsi(:)
+     integer :: bs_size
        !
        nmodes = PT%Nmodes
        !
