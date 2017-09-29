@@ -63,7 +63,7 @@ module diag
     !
     nb = ilaenv( 1, 'DSYTRD','U',n, -1, -1, -1 )
     !
-    if (verbose>=3) write(out,"('The optional block size  = ',i)") nb
+    if (verbose>=3) write(out,"('The optional block size  = ',i0)") nb
     !
     lwork = (nb+10)*n
     !
@@ -78,7 +78,7 @@ module diag
     call dsytrd('U',n,h,n,d,offd,tau,work,-1,info)
     !
     if (info/=0) then
-      write (out,"(' dsytrd-1 returned ',i)") info
+      write (out,"(' dsytrd-1 returned ',i0)") info
       stop 'dsytrd  failed'
     end if
     !
@@ -86,7 +86,7 @@ module diag
       !
       lwork = int(work(1))
       !
-      if (verbose>=3) write(out,"('work-size = ',i)") lwork
+      if (verbose>=3) write(out,"('work-size = ',i0)") lwork
       !
       deallocate(work)
       !
@@ -103,7 +103,7 @@ module diag
     call diag_dsytrd('U',n,h,d,offd,tau,info)
     !
     if (info/=0) then
-      write (out,"(' dsytrd returned ',i)") info
+      write (out,"(' dsytrd returned ',i0)") info
       stop 'dsytrd  failed'
     end if
     !
@@ -384,7 +384,7 @@ module diag
     !
     nb = ilaenv( 1, 'DSYTRD','U',n, -1, -1, -1 )
     !
-    if (verbose>=3) write(out,"('The optional block size  = ',i)") nb
+    if (verbose>=3) write(out,"('The optional block size  = ',i0)") nb
     !
     !call dsptrd('U',n,ap,d,offd,tau,info)
     !
@@ -393,7 +393,7 @@ module diag
     !call diag_dsptrd_omp('U',n,ap,d,offd,tau,info)
     !
     if (info/=0) then
-      write (out,"(' dsptrd returned ',i)") info
+      write (out,"(' dsptrd returned ',i0)") info
       stop 'dsytrd  failed'
     end if
     !
@@ -540,7 +540,7 @@ module diag
     if (verbose>=3) write(out,"('...done!')") 
     !
     if (info/=0) then
-      write (out,"(' dstev returned ',i)") info
+      write (out,"(' dstev returned ',i0)") info
       stop 'diag - dstev failed'
     end if
     !
@@ -559,7 +559,7 @@ module diag
     call dopmtr('L','U','N',n,m,ap,tau,h(1:n,1:msize),n,work,info)
     !
     if (info/=0) then
-      write (out,"(' dopmtr returned ',i)") info
+      write (out,"(' dopmtr returned ',i0)") info
       stop 'diag - dopmtr failed'
     end if
     !
@@ -606,7 +606,7 @@ module diag
        jobz_ = jobz
     endif
     !
-    print("('kind(hik) = ',i)"), kind(info)
+    print("('kind(hik) = ',i0)"), kind(info)
     !
     lwork = 50*size(h,dim=1)
     !
@@ -619,7 +619,7 @@ module diag
       !
       lwork = int(work(1))
       !
-      if (verbose>=3) write(out,"('lwork = ',i)")  lwork
+      if (verbose>=3) write(out,"('lwork = ',i0)")  lwork
       !
       deallocate(work)
       !
@@ -665,7 +665,7 @@ module diag
        jobz_ = jobz
     endif
     !
-    print("('kind(hik) = ',i)"), kind(info)
+    print("('kind(hik) = ',i0)"), kind(info)
     !
     lwork = 50*size(h,dim=1)
     !
@@ -678,7 +678,7 @@ module diag
       !
       lwork = int(work(1))
       !
-      if (verbose>=3) write(out,"('lwork = ',i)")  lwork
+      if (verbose>=3) write(out,"('lwork = ',i0)")  lwork
       !
       deallocate(work)
       !
@@ -856,7 +856,7 @@ module diag
         deallocate(work)
         allocate(work(lwork),stat=alloc)
         !
-        if (verbose>=3) write(out,"(/'lwork = ',i)") lwork
+        if (verbose>=3) write(out,"(/'lwork = ',i0)") lwork
         !
       endif
       !
@@ -978,7 +978,7 @@ module diag
     if (verbose>=3) write(out,"('...done!')") 
     !
     if (info/=0) then
-      write (out,"(' dsyev returned ',i)") info
+      write (out,"(' dsyev returned ',i0)") info
       stop 'diag - dsyev failed'
     end if
     !
@@ -1047,7 +1047,7 @@ module diag
          nx = max( nb, ilaenv( 3, 'dsytrd', uplo, n, -1, -1, -1 ) )
          nx = min(nx,n)
          !
-         if (verbose>=3) write(out,"('the optimal block size nb,nx =  ',2i)") nb,nx
+         if (verbose>=3) write(out,"('the optimal block size nb,nx =  ',2i0)") nb,nx
          !
          allocate(w(ldw,nb),stat=alloc)
          !
@@ -1059,7 +1059,7 @@ module diag
          !
          do i = n - nb + 1, kk + 1, -nb
             !
-            if (verbose>=3) write(out,"('  i = ',i)") i
+            if (verbose>=3) write(out,"('  i = ',i0)") i
             !
             !reduce columns i:i+nb-1 to tridiagonal form and form the
             !matrix w which is needed to update the unreduced part of
@@ -1559,11 +1559,11 @@ module diag
          !
          i1 = n*( n-1 ) / 2 + 1
          !
-         if (verbose>=3) write(out,"('i1 = ',i)") i1
+         if (verbose>=3) write(out,"('i1 = ',i0)") i1
          !
          do i = n - 1, 1, -1
             !
-            if (verbose>=3) write(out,"('   i = ',i)") i
+            if (verbose>=3) write(out,"('   i = ',i0)") i
             !
             ! generate elementary reflector h(i) = i - tau * v * v'
             ! to annihilate a(1:i-1,i+1)
@@ -1795,7 +1795,7 @@ module diag
          !
          i1 = n*( n-1 ) / 2 + 1
          !
-         if (verbose>=3) write(out,"('i1 = ',i)") i1
+         if (verbose>=3) write(out,"('i1 = ',i0)") i1
          !
          do i = n - 1, np+1, -np
             !
@@ -1806,7 +1806,7 @@ module diag
               !
               ip = i-j+1
               !
-              if (verbose>=3) write(out,"('   i,j = ',2i)") i,j
+              if (verbose>=3) write(out,"('   i,j = ',2i0)") i,j
               !
               ! generate elementary reflector h(i) = i - tau * v * v'
               ! to annihilate a(1:i-1,i+1)
@@ -1846,7 +1846,7 @@ module diag
               !
               ip = i-j+1
               !
-              if (verbose>=3) write(out,"('   j = ',i)") j
+              if (verbose>=3) write(out,"('   j = ',i0)") j
               !
               taui = taui_(ip)
               !
@@ -1880,7 +1880,7 @@ module diag
          !
          do i = min(np,n-1), 1, -1
             !
-            if (verbose>=3) write(out,"('   i = ',i)") i
+            if (verbose>=3) write(out,"('   i = ',i0)") i
             !
             ! generate elementary reflector h(i) = i - tau * v * v'
             ! to annihilate a(1:i-1,i+1)
@@ -2040,7 +2040,7 @@ module diag
       !
       msize = int(ldv,hik)*int(ncv,hik)
       !
-      if (verbose>=3) write(out,"(/'Arpack: msize = ',i)") msize
+      if (verbose>=3) write(out,"(/'Arpack: msize = ',i0)") msize
       !
       call ArrayStart('diag_dseupd:v',alloc,1,kind(v),msize)
       call ArrayStart('diag_dseupd:workl',alloc,size(workl),kind(workl))
@@ -2321,7 +2321,7 @@ module diag
       !
       lwork = int(work(1))
       !
-      if (verbose>=3) write(out,"('lwork = ',i)")  lwork
+      if (verbose>=3) write(out,"('lwork = ',i0)")  lwork
       !
       deallocate(work)
       !
@@ -2446,7 +2446,7 @@ module diag
         call MPI_COMM_RANK( comm, myid, ierr )
         call MPI_COMM_SIZE( comm, nprocs_, ierr )
         if (nprocs_/=nprocs) then
-          write(out,"('matvec_p: inconsistent number of  nprocs  = ',2i)") nprocs_,nprocs
+          write(out,"('matvec_p: inconsistent number of  nprocs  = ',2i0)") nprocs_,nprocs
           stop 'matvec_p: inconsistent number of  nprocs s'
         endif
       !dec$ end if
@@ -3088,7 +3088,7 @@ module diag
       !
       msize = int(ldv,hik)*int(ncv,hik)
       !
-      if (verbose>=3) write(out,"(/'Arpack: msize = ',i)") msize
+      if (verbose>=3) write(out,"(/'Arpack: msize = ',i0)") msize
       !
       call ArrayStart('dseupd_omp_arpack:v',alloc,1,kind(v),msize)
       call ArrayStart('dseupd_omp_arpack:workl',alloc,size(workl),kind(workl))
@@ -3476,7 +3476,7 @@ module diag
               write(out,'(f18.8)') energies(i)
             enddo
             !
-            write(out,'("Convergence of the ",i,"th root = ",g18.8)') nroots,conv_nroots
+            write(out,'("Convergence of the ",i0,"th root = ",g18.8)') nroots,conv_nroots
             !
           endif 
           !
@@ -3530,7 +3530,7 @@ module diag
       enddo
       !
       if (conv_nroots>=tol.and.k<n) then 
-        write(out,'("Convergence is not reached after ",i," iterations, ",g19.8)') iter,conv_nroots
+        write(out,'("Convergence is not reached after ",i0," iterations, ",g19.8)') iter,conv_nroots
         stop 'diag_propack: No convergence'
       endif
       !
