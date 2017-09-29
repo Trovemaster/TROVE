@@ -16,6 +16,7 @@ module refinement
  use tran,         only : TReigenvec_unit, bset_contr, read_contrind, & 
                           read_eigenval,index_correlation,eigen,Neigenlevels
 
+ implicit none
  private
 
 
