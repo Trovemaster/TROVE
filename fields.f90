@@ -3533,7 +3533,7 @@ module fields
                    !
                 endif 
                 !
-                read(w,*) fitting%obs(i)%Jrot
+                call readi(fitting%obs(i)%Jrot)
                 !
                 call readi(fitting%obs(i)%symmetry) 
                 call readi(fitting%obs(i)%N)
@@ -3588,7 +3588,7 @@ module fields
                 !
                 !read(w,"(i)") j0fit%obs(i)%Jrot
                 !
-                read(w,*) j0fit%obs(i)%symmetry
+                call readi(j0fit%obs(i)%symmetry)
                 !
                 call readi(j0fit%obs(i)%N)
                 call readf(j0fit%obs(i)%energy)
