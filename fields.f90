@@ -3940,14 +3940,16 @@ module fields
        !
    end do
    !
-   if ( any( trim(job%IOextF_action)==(/'SAVE','DIVIDE','SPLIT'/) ).and.trim(trove%IO_ext_coeff)=='NONE' ) then 
-      !
+   select case (trim(job%IOextF_action))
+   case ('SAVE', 'DIVIDE', 'SPLIT')
+     if (trim(trove%IO_ext_coeff) == 'NONE') then
       FLextF_coeffs = .true.
       !
       !write(out,"('FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed')")
       !stop 'FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed'
       !
-   endif
+    end if
+   end select
    !
    if (trim(job%IOextF_action)=='SAVE') then 
        if (trim(job%IOcontr_action)  =='NONE') job%IOcontr_action   = 'READ'
