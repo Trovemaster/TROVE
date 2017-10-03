@@ -2246,7 +2246,12 @@ module fields
              !
              if (Nitems>2.or.(job%matelem_append.and.Nitems>3)) then
                call readu(w)
-               if (all(trim(w)/=(/'DIVIDE','SPLIT','STITCH','COLLECT','NON-SPLIT'/))) call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
+               select case (trim(w))
+               case ('DIVIDE','SPLIT','STITCH','COLLECT','NON-SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
+               end select
                !
                if (trim(w)=='NON-SPLIT') cycle
                !
