@@ -2505,24 +2505,25 @@ module fields
              if (Nitems>2.or.(job%extmatelem_append.and.Nitems>3)) then
                !
                call readu(w)
-               if (any(trim(w)==(/'DIVIDE','SPLIT'/))) then 
+               select case (trim(w))
+               case ('DIVIDE', 'SPLIT')
                  !
                  job%IOextF_divide = .true.
                  !
-               elseif ( trim(w)=='STITCH' ) then
+               case ('STITCH')
                  !
                  job%IOextF_divide = .true.
                  job%IOextF_stitch = .true.
                  !
-               elseif ( trim(w)=='DUMP' ) then
+               case ( 'DUMP' )
                  !
                  if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
                  !
-               else
+               case default
                  !
                  call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
                  !
-               endif 
+               end select
                !
                if (job%IOextF_divide.and.Nitems>3) then
                   call readi(fitting%iparam(1))
