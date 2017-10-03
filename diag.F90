@@ -2883,11 +2883,16 @@ module diag
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-#else 
+#elif (ARPACK_ > 0)
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
+
+#else
+
+            write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
+            stop 'Arpack was not activated'
             !
 #endif
         !
