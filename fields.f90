@@ -2408,12 +2408,13 @@ module fields
              !
              call readu(w)
              !
-             if ( all( trim(w)/=(/'READ','SAVE','APPEND','NONE'/) ) ) then 
-               !
+             select case (trim(w))
+             case ('READ','SAVE','APPEND','NONE')
+               continue
+             case default
                write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
                stop 'FLinput -illegal key in CHECK_POINT'
-               !
-             endif 
+             end select
              !
              job%IOj0contr_action = trim(w)
              !
