@@ -2379,10 +2379,11 @@ module fields
              !
              job%IOj0ext_action = trim(w)
              !
-             if (any(trim(job%IOj0ext_action)==(/'SAVE','APPEND','DIVIDE'/))) then 
+             select case (trim(job%IOj0ext_action))
+             case ('SAVE','APPEND','DIVIDE')
                 action%convert_vibme = .true.
                 FLextF_matelem = .true.
-             endif
+             end select
              !
              ! an addional key to specify SAVE/READ 
              !
