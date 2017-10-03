@@ -2573,7 +2573,12 @@ module fields
              !
              if (Nitems>2) then
                call readu(w)
-               if (all(trim(w)/=(/'DIVIDE','SPLIT'/))) call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+               select case (trim(w))
+               case ('DIVIDE', 'SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+               end select
                job%IOextF_divide = .true.
                job%IOfitpot_divide = .true.
                !
