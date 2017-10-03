@@ -2113,9 +2113,12 @@ module fields
                !
                if (trim(w)=='COMPRESS') then
                  !
-                 if (all(trim(job%IOeigen_action)/=(/'APPEND','SAVE'/))) then
+                 select case (trim(job%IOeigen_action))
+                 case ('APPEND', 'SAVE')
+                   continue
+                 case default
                   call report("Unexpected 3d argument in eigenfuc",.true.)
-                 endif
+                end select
                  !
                  job%IOeigen_compress = .true.
                  !
