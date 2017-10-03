@@ -2324,7 +2324,10 @@ module fields
              !
              job%IOj0matel_action = trim(w)
              !
-             if ( any( trim(w)==(/'SAVE','APPEND'/) ) ) action%convert_vibme = .true.
+             select case (trim(w))
+             case ('SAVE', 'APPEND')
+               action%convert_vibme = .true.
+             end select
              !
              !if (trim(job%IOj0matel_action)=='SAVE') action%convert_vibme = .true.
              !
