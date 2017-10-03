@@ -2614,12 +2614,15 @@ module fields
              !
              call readu(w)
              !
-             if ( all( trim(w)/=(/'NONE','DIVIDE','JOIN','SAVE','READ','SPLIT'/) ) ) then 
+             select case (trim(w))
+             case ('NONE','DIVIDE','JOIN','SAVE','READ','SPLIT')
+               continue
+             case default
                !
                write (out,"('FLinput: illegal key in CONTRSWAP :',a)") trim(w)
                stop 'FLinput -illegal key in CONTRSWAP'
                !
-             endif 
+             end select
              !
              job%IOswap_matelem = trim(w)
              !
