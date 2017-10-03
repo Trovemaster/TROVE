@@ -2455,12 +2455,13 @@ module fields
              !
              call readu(w)
              !
-             if ( all( trim(w)/=(/'READ','SAVE','MATELEM','NONE','CONVERT','APPEND','STITCH'/) ) ) then
-               !
+             select case (trim(w))
+             case ('READ','SAVE','MATELEM','NONE','CONVERT','APPEND','STITCH')
+               continue
+             case default
                write (out,"('FLinput: illegal key in EXTMATELEM :',a)") trim(w)
                stop 'FLinput -illegal key in EXTMATELEM'
-               !
-             endif 
+             end select
              !
              job%IOextF_action = trim(w)
              !
