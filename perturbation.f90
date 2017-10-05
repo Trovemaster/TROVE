@@ -639,7 +639,7 @@ module perturbation
       !
       write(out,"(/'Rotational basis: ',a)") trim(bs_t(0)%type)
       write(out,"( 'range for J ',2i5)")  bs_t(0)%range(1:2) 
-      write(out,"( 'dvr points:',i0 )") bs_t(0)%dvrpoints
+      write(out,"( 'dvr points:',i12 )") bs_t(0)%dvrpoints
     endif 
     !
     ! Verbose (resonanses):  
