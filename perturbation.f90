@@ -1087,7 +1087,7 @@ module perturbation
     ! 
     if (job%verbose>=4) then
        write(out,"(/'MaxIndex_nu vs polyad ',*(i8))") (ipol,ipol=0,Npolyads)
-       write(out,"( '                   -> ',*(i8/))") (PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
+       write(out,"( '                   -> ',*(i8)/)") (PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
     endif 
     !
     ! Be verbose
