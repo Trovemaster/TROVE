@@ -1,6 +1,6 @@
 module refinement
 
-!dec$ define fit_debug = 1
+#define fit_debug 1
 
 
  use accuracy,     only : ik, hik, rk, ark, cl, out, small_
@@ -488,9 +488,9 @@ contains
        !
        do i=1,pot_npts
          !
-         !dec$ if (fit_debug > 6)
+#if (fit_debug > 6)
            write (out,"('i = ',i)") i
-         !dec$ end if
+#endif
          !
          read (potunit,*) ar_t(1:molec%ncoords),pot_values(i),wtall(en_npts+i)
          local(:,i) = ar_t(:)
@@ -726,9 +726,9 @@ contains
                        !
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
-                       !dec$ if (fit_debug > 3)
+#if (fit_debug > 3)
                          write (out,"('mat (',i,',',i,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
-                       !dec$ end if
+#endif
                        !
                      enddo
                      !
@@ -749,11 +749,11 @@ contains
                     endif
                  enddo
                  !
-                 !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                     !
                     write (out,"(/'Smallest diag. value of mat = ',es14.7,'at k = ',i8,' upper_range = ',es14.7/)") mat(k,k),k,job%upper_ener+mat(k,k)
                     !
-                 !dec$ end if
+#endif
                  !
                  if (allocated(energy_)) deallocate(energy_)
                  !
@@ -1218,18 +1218,18 @@ contains
                  do icolumn=1,irow    
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
-                   !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                      write (out,"('al (',i,',',i,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
-                   !dec$ end if
+#endif
                  enddo
                enddo
                !
                ! form B matrix 
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
-                 !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                    write (out,"('bl (',i,')= ',es14.7)") irow,bl(irow)
-                 !dec$ end if
+#endif
                enddo  
                !
                ! Two types of the linear solver are availible: 
@@ -1438,8 +1438,8 @@ contains
             !
             ! Print the potential energy points into a separate unit. 
             !
-            !dec$ if (fit_debug > 1)
-            !dec$ end if
+#if (fit_debug > 1)
+#endif
             !
             if (job%verbose>=6) call TimerReport
             !
@@ -2034,9 +2034,9 @@ contains
                        !
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
-                       !dec$ if (fit_debug > 3)
+#if (fit_debug > 3)
                          write (out,"('mat (',i,',',i,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
-                       !dec$ end if
+#endif
                        !
                      enddo
                      !
@@ -2058,11 +2058,11 @@ contains
                     endif
                  enddo
                  !
-                 !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                     !
                     write (out,"(/'Smallest diag. value of mat = ',es14.7,'at k = ',i8,' upper_range = ',es14.7/)") mat(k,k),k,job%upper_ener+mat(k,k)
                     !
-                 !dec$ end if
+#endif
                  !
                  if (allocated(energy_)) deallocate(energy_)
                  !
@@ -2412,18 +2412,18 @@ contains
                  do icolumn=1,irow    
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
-                   !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                      write (out,"('al (',i,',',i,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
-                   !dec$ end if
+#endif
                  enddo
                enddo
                !
                ! form B matrix 
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
-                 !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
                    write (out,"('bl (',i,')= ',es14.7)") irow,bl(irow)
-                 !dec$ end if
+#endif
                enddo  
                !
                ! Two types of the linear solver are availible: 
@@ -2667,8 +2667,8 @@ contains
             !
             ! Print the potential energy points into a separate unit. 
             !
-            !dec$ if (fit_debug > 1)
-            !dec$ end if
+#if (fit_debug > 1)
+#endif
             !
             if (job%verbose>=6) call TimerReport
             !
@@ -2792,9 +2792,9 @@ contains
    integer(hik)       :: rootsize,rootsize2
 
 
-   !dec$ if (fit_debug > 1)
+#if (fit_debug > 1)
       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from file', trim(job%extFmat_file)
-   !dec$ end if
+#endif
    !
    job_is ='external field contracted matrix elements for J=0'
    call IOStart(trim(job_is),chkptIO)
@@ -2819,9 +2819,9 @@ contains
    rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
    rootsize2= int(ncontr_t*ncontr_t,hik)
    !
-   !dec$ if (fit_debug > 2)
+#if (fit_debug > 2)
       write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
-   !dec$ end if
+#endif
    !
    allocate(poten_me(ncontr_t,ncontr_t,extF%rank),stat=alloc)
    call ArrayStart('poten_me',alloc,1,kind(poten_me),rootsize2)
@@ -2847,9 +2847,9 @@ contains
    !
    close(chkptIO,status='keep')
 
-   !dec$ if (fit_debug > 1)
+#if (fit_debug > 1)
       write(out, '(/a)') 'done'
-   !dec$ end if
+#endif
 
    !
  end subroutine restore_vib_matrix_elements
@@ -2922,9 +2922,9 @@ contains
     end do
     !$omp end parallel do
     !
-    !dec$ if (fit_debug > 3)
+#if (fit_debug > 3)
       write (out,"('ientry = ',i,'; dimen = ',i)") ientry,dimen
-    !dec$ end if
+#endif
     !
     !loop over final states
     !
