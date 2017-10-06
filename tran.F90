@@ -4,7 +4,8 @@
 !
 module tran
 
-!dec$ define tran_debug = 1 ! set tran_debug > 2 with small vibrational bases and small expansions only
+#define tran_debug 1
+! set tran_debug > 2 with small vibrational bases and small expansions only
 
  use accuracy,     only : ik, rk, hik, ark, cl, out, small_
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
@@ -95,10 +96,10 @@ contains
        filename = trim(job%eigenfile%filebase)//'_quanta'//trim(adjustl(jchar))//'.chk'
 
 
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(/a, 1x, i2, 2(1x, a))') 'read contraction indexes for J =', jval(jind), &
                                                'from file', trim(filename)
-       !dec$ end if
+#endif
 
 
        write(ioname, '(a, i4)') 'contraction indexes for J=', jval(jind)
@@ -120,11 +121,11 @@ contains
        bset_contr(jind)%nclasses     = nclasses
 
 
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(3(/1x, a, 1x, i5))') 'ncases ', ncases, 'ndegmax', nlambdas, 'ncontr ', ncontr
           write(out, '(/1x, a, 1x, a, 4x, a/40x, 1x, a, 1x, a, 6x, a)') 'icase', 'ndeg', 'ilevel(0:nclasses)', 'ideg', &
                                                                         'iroot', 'ideg(0:nclasses)'
-       !dec$ end if
+#endif
        !
        allocate(bset_contr(jind)%index_deg(ncases),bset_contr(jind)%contractive_space(0:nclasses, ncases),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%contractive_space),kind(bset_contr(jind)%contractive_space))
@@ -148,10 +149,10 @@ contains
           !
           bset_contr(jind)%index_deg(icase)%size1 = nlambdas
           !
-          !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
              write(out, '(1x, i5, 2x, i3, 1x, <nclasses>(1x, i3), 1x, i3)')                                            &
              icase, nlambdas, bset_contr(jind)%contractive_space(0:nclasses, icase)
-          !dec$ end if
+#endif
           !
           allocate(bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, nlambdas))
           call ArrayStart('bset_contr',info,size(bset_contr(jind)%index_deg(icase)%icoeffs),kind(bset_contr(jind)%index_deg(icase)%icoeffs))
@@ -161,10 +162,10 @@ contains
              read(iounit, '(i8, i6, <nclasses>i6)') iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
 
 
-             !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
                 write(out, '(42x, i3, 1x, i5, 3x, <nclasses>(1x, i3), 1x, i3)')                                        &
                 ilambda, iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
-             !dec$ end if
+#endif
 
 
              icontr = icontr + 1
@@ -188,10 +189,10 @@ contains
        read(iounit, '(2i8)') ncases, nlambdas
 
 
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(2(/1x, a, 1x, i2))') 'nrot      ', ncases, 'nrotdegmax', nlambdas
           write(out, '(/1x, a, 1x, a, 8x, a, 3x, a, 1x, a)') 'irot', 'irotdeg', 'J', 'K', 'Tau'
-       !dec$ end if
+#endif
 
 
        allocate(bset_contr(jind)%rot_index(ncases, nlambdas), stat = info)
@@ -205,11 +206,11 @@ contains
                                        bset_contr(jind)%rot_index(icase, ilambda)%k,                                       &
                                        bset_contr(jind)%rot_index(icase, ilambda)%tau
 
-          !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
              write(out, '(2x, i3, 5x, i3, 5x, 3(1x, i3))') icase, ilambda, bset_contr(jind)%rot_index(icase, ilambda)%j,   &
                                                                            bset_contr(jind)%rot_index(icase, ilambda)%k,   &
                                                                            bset_contr(jind)%rot_index(icase, ilambda)%tau
-          !dec$ end if
+#endif
 
        end do
 
@@ -307,19 +308,19 @@ contains
        allocate(cnu_i(1:nclasses),cnu_j(1:nclasses),stat = info)
        if (info /= 0) stop 'index_correlation: cnu_i allocation error'
        !
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(/a, 1x, i2)') 'find correlation between contraction indexes for J = 0 and J =', jval(jind)
-       !dec$ end if
+#endif
        !
        if (jind > size(bset_contr)) stop 'index_correlation error: jind > size(bset_contr)'
        !
        allocate(bset_contr(jind)%icontr_correlat_j0(bset_contr(jind)%Maxsymcoeffs,bset_contr(jind)%max_deg_size), stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%icontr_correlat_j0),kind(bset_contr(jind)%icontr_correlat_j0))
        !
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(/7x, a, i3, 17x, a/1x, a, 1x, a, 1x, a, 4x, a, 1x, a, 1x, a)')                                  &
           'J =', jval(jind), 'J =  0', 'icase', 'ilambda', 'iroot', 'icase', 'ilambda', 'iroot'
-       !dec$ end if
+#endif
        !
        l_icase : do icase = 1, bset_contr(jind)%Maxsymcoeffs
           !
@@ -357,13 +358,13 @@ contains
              !
              bset_contr(jind)%icontr_correlat_j0(icase, ilambda) = jcontr
              !
-             !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
                 write(out, '(i6, 6x, i2, i6, 3x, i6, 6x, i2, i6)')   &
                 !                      case,                      lambda, contr
                 icase,ilambda,bset_contr(jind)%icase2icontr(icase,ilambda), &
                 bset_contr(1)%icontr2icase(jcontr,1), bset_contr(1)%icontr2icase(jcontr,2), jcontr
                 !
-             !dec$ end if
+#endif
              !
           end do l_ilambda
           !
@@ -401,15 +402,15 @@ contains
             bset_contr(jind)%k(iroot)    = ideg
           endif 
           !
-          !dec$ if (tran_debug >= 3)
+#if (tran_debug >= 3)
             write (out,"('iroot,icase,ilambda,jcontr = ',4i7)") iroot,icase,ilambda,jcontr 
-          !dec$ end if
+#endif
           !
        enddo
        !
-       !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
           write(out, '(/a)') 'done'
-       !dec$ end if
+#endif
        !
        deallocate(cnu_i,cnu_j)
        !
@@ -518,9 +519,9 @@ contains
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
-          !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
              write(out, '(/a, 1x, i2, 2(1x, a))') 'read eigenvalues for J =', jval(jind), ', gamma = ',i2,' from file', trim(filename)
-          !dec$ end if
+#endif
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
@@ -838,7 +839,7 @@ contains
           !
           !
           !print energies
-          !dec$ if (tran_debug > 2)
+#if (tran_debug > 2)
              write(out, '(/1x, a, 2x, i8/1x, a, 1x, i8)') 'number of roots', nroots, 'number of levels', nlevels
              write(out, '(/1x, a, 11x, a, 1x, a, 1x, a, 8x, a, <nmodes>(2x), 1x, a)') 'ilevel', 'energy', 'ndeg',       &
              'igamma', 'nu(0:nmodes)', 'irec'
@@ -853,7 +854,7 @@ contains
                 !
              end do
              write(out, '(a)') '...done!'
-          !dec$ end if
+#endif
           !
        enddo
        !
