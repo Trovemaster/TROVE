@@ -211,8 +211,8 @@ module fields
       integer(ik)              :: iothreads = 1          ! Number of threads used for IO
       logical                  :: periodic       ! periodic boundary condition
       !
-      logical                  :: naught_at_rho_0  !  we use this parameter to check whether 
-                                                   ! if some functions are infinity at rho=0  and the basis function has to have a nought at rho=0
+      logical                  :: sing_at_rho_0  !  we use this parameter to check whether 
+                                                   ! if some functions are infinity at rho=0  and the basis function has to have a singularity at rho=0
       character(len=cl)   :: IO_hamiltonian = 'NONE'  ! we can either SAVE or READ the Hamiltonian objects
       character(len=cl)   :: IO_potential   = 'NONE'  ! we can either SAVE or READ the potential objects
       character(len=cl)   :: IO_kinetic     = 'NONE'  ! we can either SAVE or READ the kinetic objects
@@ -522,6 +522,9 @@ module fields
    logical :: FLextF_matelem = .false.
    logical :: FLextF_coeffs = .false.
    logical :: FLL2_coeffs = .false.
+   !
+   ! check and fix the discontiunity of non-rigid fields
+   logical :: FL_iron_field_out = .false.
    !
    ! current  rho-point 
    integer(ik),save              :: FLirho
@@ -1151,6 +1154,10 @@ module fields
          !
          trove%sparse = .true.
          !
+       case ("IRON-OUT","IRONOUT","IRON-FIELD-OUT")
+         !
+         FL_iron_field_out = .true.
+         !
        case ("DIAGONALIZER")
          !
          call readu(w)
@@ -1711,7 +1718,7 @@ module fields
               call readu(w)
               job%bset(imode)%coord_poten = trim(w)
               !
-              if (all(trim(job%bset(imode)%type)/=(/'NUMEROV','BOX','LAGUERRE'/))) then 
+              if (all(trim(job%bset(imode)%type)/=(/'NUMEROV','BOX','LAGUERRE','FOURIER'/))) then 
                  !
                  job%bset(imode)%coord_kinet = job%bset(imode)%type
                  job%bset(imode)%coord_poten = job%bset(imode)%type
@@ -4212,7 +4219,7 @@ end subroutine check_read_save_none
     trove%Coordinates(2,:) = job%bset(1:Nmodes)%coord_poten
     trove%Coordinates(3,:) = extF%intcoords(1:Nmodes)
     !
-    trove%naught_at_rho_0 = .false.
+    trove%sing_at_rho_0 = .false.
     !
     ! For the non-rigid configuration we reserve the last mode (imode=Nmodes) 
     ! for the large-amplitude motion, which will be treated explicitely 
@@ -5266,6 +5273,8 @@ end subroutine check_read_save_none
           write(txt1,"(i2)") k1
           write(txt2,"(i2)") k2
           call check_field_smoothness(fl,'CHECK',npoints,'g_rot'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
+          if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'g_rot'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
+          !
        enddo
     enddo
     !
@@ -5275,6 +5284,7 @@ end subroutine check_read_save_none
           write(txt1,"(i2)") k1
           write(txt2,"(i2)") k2
           call check_field_smoothness(fl,'CHECK',npoints,'g_cor'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
+          if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'g_cor'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
        enddo
     enddo
     !
@@ -5284,11 +5294,13 @@ end subroutine check_read_save_none
           write(txt1,"(i2)") k1
           write(txt2,"(i2)") k2
           call check_field_smoothness(fl,'CHECK',npoints,'g_vib'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
+          if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'g_vib'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
        enddo
     enddo
     !
     fl => trove%pseudo
     call check_field_smoothness(fl,'CHECK',npoints,'pseudo')
+    if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'pseudo')
     !
     if (FLl2_coeffs) then
       !
@@ -5298,6 +5310,7 @@ end subroutine check_read_save_none
             write(txt1,"(i2)") k1
             write(txt2,"(i2)") k2
             call check_field_smoothness(fl,'CHECK',npoints,'L2_vib'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
+            if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'L2_vib'//trim(adjustl(txt1))//'_'//trim(adjustl(txt2)))
          enddo
       enddo
       !
@@ -5514,7 +5527,8 @@ end subroutine check_read_save_none
     integer(ik)                  :: i,i1,i2,k,ioutlier
     logical                      :: outliers
     real(ark)                    :: rho_(1:N_max),func_(1:N_max),rho,fval,foutlier,fcorr,df
-    integer(ik)                  :: iattempt,Nattempt,ioutlier_max,Ncoeff,iterm
+    integer(ik)                  :: iattempt,Nattempt,ioutlier_max,Ncoeff,iterm,info
+    integer(ik),allocatable      :: outlier(:)
 
       if (job%verbose>=6) write(out,"('  check field smoothness for ',a)") msg
       !
@@ -5533,6 +5547,9 @@ end subroutine check_read_save_none
       end select 
       !
       N_ = min(N_max,npoints)
+      allocate (outlier(0:npoints),stat=info)
+      call ArrayStart('check_field_smoothness',info,size(outlier),kind(outlier))
+      outlier = 0
       !
       Ncoeff = object%Ncoeff
       do iterm = 1, Ncoeff
@@ -5560,6 +5577,7 @@ end subroutine check_read_save_none
             k = 0
             do i = i1,i2
                if (i==irho.or.k>N_) cycle
+               !if (outlier(i)==1) cycle
                k = k + 1
                rho_(k) = trove%rho_border(1)+i*trove%rhostep
                func_(k) = object%field(iterm,i)
@@ -5579,6 +5597,7 @@ end subroutine check_read_save_none
             if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*1000.0*sqrt(small_),100.0*sqrt(small_)) ) then
                !
                outliers = .true.
+               outlier(irho) = 1
                !
                ioutlier = ioutlier + 1
                !
@@ -5609,10 +5628,11 @@ end subroutine check_read_save_none
         if ( iattempt==Nattempt.and.outliers.and.Nattempt>1) then
           write(out,"('check_field_smoothness: ',a)") msg
           write(out,"('      Too many outliers, it was impossible to fix after ',i4,' attempts for iterm = ',i5 )") Nattempt,iterm
-          stop 'check_field_smoothness: too many outliers'
+          !stop 'check_field_smoothness: too many outliers'
         endif
         !
       enddo
+      call ArrayStop('check_field_smoothness')
       !
  end subroutine check_field_smoothness
 
@@ -5684,8 +5704,10 @@ end subroutine check_read_save_none
     Natoms = trove%Natoms
     Nbonds = trove%Nbonds
     Nangles = trove%Nangles
-    lincoord = trove%lincoord
     Npoints = trove%Npoints
+    !
+    lincoord = 0
+    if ( Nmodes==3*Nmodes-5 ) lincoord = trove%lincoord
     !
     !lincoord = 0
     !
@@ -5709,7 +5731,7 @@ end subroutine check_read_save_none
     !
     Nequat = 6+Nmodes-min(1,lincoord)
     !
-    allocate (Amat(Natoms,3,Nmodes), &
+    allocate (Amat(Nmodes,3,Nmodes), &
               Bmat(Nmodes,Natoms,3),Bmat_t(trove%Ncoords,Natoms,3),stat=alloc)
     if (alloc/=0) then
         write (out,"(' Error ',i9,' trying to allocate array for Bmat')") alloc
@@ -6099,7 +6121,7 @@ end subroutine check_read_save_none
                  write(out,"('Lmat_generation1d: we are aware that all Bmat for irho=',i4,',jmode = ',i4,' are zero')") irho,jmode
                  write(out,"('               and orthogon. eq. 3 is not = 0 at imode = ',i4,', jmode =',i4,d18.8)") imode,jmode,a_t
                  !
-                 !trove%naught_at_rho_0 = .true.
+                 !trove%sing_at_rho_0 = .true.
                  !
                else
                  !
@@ -7291,6 +7313,7 @@ end subroutine check_read_save_none
     !
     fl => trove%poten
     call check_field_smoothness(fl,'CHECK',npoints,'poten')
+    if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'poten')
     !
     if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
        call print_poten
@@ -8265,7 +8288,7 @@ end subroutine check_read_save_none
           !
        case(202,-202)
           !
-          call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t)
+          call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
           !
           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
           !
@@ -8512,14 +8535,16 @@ end subroutine check_read_save_none
     !
     contains 
 
-    subroutine diff_local2cartesian(icoord,a0,Bmat)
+    subroutine diff_local2cartesian(icoord,a0,Bmat,fmod)
  
       integer(ik),intent(in):: icoord
       real(ark),intent(in)  ::  a0(trove%Natoms,3)
       real(ark),intent(out) ::  Bmat(trove%Natoms,3) 
+      real(ark),intent(in),optional  ::  fmod ! a fmod-value which be subtructed from a large angle value to prevent discontinuity  
+                                              ! of angles in finite differences 
 
       real(ark)             :: xi_p(trove%Ncoords),xi_m(trove%Ncoords),deltax,xna(trove%Natoms,3)
-      real(ark)             :: xi_pp(trove%Ncoords),xi_mm(trove%Ncoords)
+      real(ark)             :: xi_pp(trove%Ncoords),xi_mm(trove%Ncoords),dx,ddx
       integer(ik)           :: iatom,ix
 
           !
@@ -8544,13 +8569,23 @@ end subroutine check_read_save_none
                 xna(iatom,ix)  = a0(iatom,ix) - deltax*2.0_ark
                 call FLfromcartesian2local(xna,xi_mm)
                 !
+                dx  = xi_p(icoord) -xi_m(icoord)
+                ddx = xi_pp(icoord)-xi_mm(icoord)
+                !
+                if (present(fmod)) then 
+                  if (dx> fmod*0.5_ark) dx  = dx-fmod
+                  if (dx<-fmod*0.5_ark) dx  = dx+fmod
+                  if (ddx> fmod*0.5_ark) ddx  = ddx-fmod
+                  if (ddx<-fmod*0.5_ark) ddx  = ddx+fmod
+                endif 
+                !
                 !f = (-f4/12.0_ark+2.0_ark/3.0_ark*f2 & 
                 !     +f3/12.0_ark-2.0_ark/3.0_ark*f1 )/h
                 !
-                Bmat(iatom,ix) = 0.5_ark*(xi_p(icoord)-xi_m(icoord))/deltax
+                !Bmat(iatom,ix) = 0.5_ark*(xi_p(icoord)-xi_m(icoord))/deltax
                 !
-                !Bmat(iatom,ix) = (  ( -xi_pp(icoord)+xi_mm(icoord) )/12.0_ark &
-                !                      +2.0_ark/3.0_ark*( xi_p(icoord)-xi_m(icoord) ) )/deltax
+                Bmat(iatom,ix) = (  ( -ddx )/12.0_ark &
+                                      +2.0_ark/3.0_ark*( dx ) )/deltax
                 !
                 xna(iatom,ix)  = a0(iatom,ix)
                 !
@@ -8858,11 +8893,11 @@ end subroutine check_read_save_none
     !
     integer(ik) ::  x1,x2,k0,k1,Ng
     integer(ik) ::  n,nmodes,Natoms,iatom,ix,jx,kx
-    integer(ik) ::  imode,jmode,kmode,mmode,Npoints,irho,lincoord,Tcoeff
+    integer(ik) ::  imode,jmode,kmode,mmode,Npoints,irho,lincoord,Tcoeff,iswitch
     !
     real(ark)    :: Inertm(3),r_t(0:trove%Npoints),f_t,df_t,factor
     !
-    real(ark)   :: z_t
+    real(ark)   :: z_t,rho_switch
     character(len=cl)            :: job_is
     !
     real(ark),allocatable     ::  s_mat_t(:,:,:,:),eta(:,:,:),tmat(:,:,:,:),Jmat(:,:,:),c(:,:,:),dzeta(:,:,:),dzeta_(:,:,:)
@@ -8947,8 +8982,18 @@ end subroutine check_read_save_none
         stop 's_vib_s_rot_Sorensen, s_mat_t - out of memory'
     end if
     !
-    !$omp do private(irho,Inertm,x1,x2,Ng,ix,n1,imode,z_t,k0,jmode,jx,kx,k1,kmode,mmode) schedule(guided)
+    rho_switch = trove%specparam(Nmodes)
+    !
+    iswitch = 0 
+    if (Npoints>0) then 
+      iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+    endif
+    !
+    !$omp do private(irho,lincoord,Inertm,x1,x2,Ng,ix,n1,imode,z_t,k0,jmode,jx,kx,k1,kmode,mmode) schedule(guided)
     do irho = 0,Npoints
+      !
+      lincoord = trove%lincoord
+      if (Nmodes == 3*natoms-6.and.irho>iswitch) lincoord = 0
       !
       if (job%verbose>=2.and.mod(irho,max(Npoints/10,1))==0) write(out,"('irho= ',i5)") irho
       !
@@ -8972,7 +9017,7 @@ end subroutine check_read_save_none
       !
       do x1 = 1,3
         if (Inertm(x1)<sqrt(small_).and.lincoord/=x1) then 
-           trove%naught_at_rho_0 = .true.
+           trove%sing_at_rho_0 = .true.
         endif
         !
         do x2 = x1+1,x1-1
@@ -10885,7 +10930,7 @@ end subroutine check_read_save_none
                 ! if this happens we do not give up, instead 
                 ! we make ensure a naught for the basis functions at this point
                 !
-                trove%naught_at_rho_0 = .true.
+                trove%sing_at_rho_0 = .true.
                 !
                 !stop 's_vib_s_rot_polynom1d: ieq is inconsistent'
                 !
@@ -11410,7 +11455,7 @@ end subroutine check_read_save_none
          stop 'gmat_polynom: s_t - out of memory'
       endif 
       !
-      !trove%naught_at_rho_0(1) = 1
+      !trove%sing_at_rho_0(1) = 1
       !
       ! Pseudopotential fucntion: part 1-2sing
       !
@@ -11515,7 +11560,7 @@ end subroutine check_read_save_none
       !
     endif 
     !
-    if (trove%naught_at_rho_0) then 
+    if (trove%sing_at_rho_0) then 
       !
       return
       !
@@ -15811,13 +15856,13 @@ end subroutine check_read_save_none
            !
            ! Allocation of the potential and kinetic 1d matrixes
            !
-           if (job%bset(nu_i)%iperiod>0) then
+           if (job%bset(nu_i)%iperiod>0.and.trim(bs%type)=='NUMEROV') then
              iperiod = job%bset(nu_i)%iperiod
              rho_b(2) = rho_b(2)/real(iperiod,ark)
              npoints = npoints/iperiod
            endif
            !
-           if (job%bset(nu_i)%iperiod==-2) then
+           if (job%bset(nu_i)%iperiod==-2.and.trim(bs%type)=='NUMEROV') then
              iperiod = abs(job%bset(nu_i)%iperiod)
              rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
              npoints = npoints/iperiod
@@ -15947,7 +15992,7 @@ end subroutine check_read_save_none
            !
         endif
            !
-     case('NUMEROV','BOX') 
+     case('NUMEROV','BOX','FOURIER') 
         ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
@@ -15962,13 +16007,13 @@ end subroutine check_read_save_none
            !
            ! Allocation of the potential and kinetic 1d matrixes
            !
-           if (job%bset(nu_i)%iperiod>0) then
+           if (job%bset(nu_i)%iperiod>0.and.trim(bs%type)=='NUMEROV') then
              iperiod = job%bset(nu_i)%iperiod
              rho_b(2) = rho_b(2)/real(iperiod,ark)
              npoints = npoints/iperiod
            endif
            !
-           if (job%bset(nu_i)%iperiod==-2) then
+           if (job%bset(nu_i)%iperiod==-2.and.trim(bs%type)=='NUMEROV') then
              iperiod = abs(job%bset(nu_i)%iperiod)
              rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
              npoints = npoints/iperiod
@@ -16129,13 +16174,14 @@ end subroutine check_read_save_none
              call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,&
                              bs%matelements,bs%ener0)
              !
-             !call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,drho(0:npoints,3),f1drho(0:npoints),g1drho(0:npoints),nu_i,job%bset(nu_i)%periodic,job%verbose,&
-             !                bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
-             !
            elseif (trim(bs%type)=='BOX') then 
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho(0:npoints,3),f1drho(0:npoints),g1drho(0:npoints),nu_i,job%bset(nu_i)%periodic,job%verbose,&
+             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho(0:npoints),g1drho(0:npoints),nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
+                         !
+           elseif (trim(bs%type)=='FOURIER') then 
+             !
+             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            endif
            !
@@ -16146,7 +16192,7 @@ end subroutine check_read_save_none
               stop 'FLbset1DNew: phi - out of memory'
            endif 
            !
-           if (job%bset(nu_i)%iperiod/=0) then
+           if (job%bset(nu_i)%iperiod/=0.and.trim(bs%type)=='NUMEROV') then
              !
              if (abs(job%bset(nu_i)%iperiod)/=2) then
                write (out,"(' FLbset1DNew: periodic copying procedure is only working for period of 2*pi ')") 
@@ -16771,6 +16817,10 @@ end subroutine check_read_save_none
            elseif (trim(bs%type)=='BOX') then
              !
              call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,bs%matelements,bs%ener0)
+             !
+           elseif (trim(bs%type)=='FOURIER') then
+             !
+             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            endif
            !
@@ -22515,6 +22565,7 @@ end subroutine check_read_save_none
     !
     real(ark)               :: r(molec%ncoords),xyz(molec%natoms, 3),chi(nmodes)
     integer(ik)             :: natoms,nlocals,iatom,icart
+    logical                 :: dir
     !
     if (verbose>=6) write(out,"('dms4xi/start')")    
     !
@@ -22552,7 +22603,17 @@ end subroutine check_read_save_none
        enddo
     enddo
     !
-    call FLfromcartesian2local(xyz,r)
+    if (trove%internal_coords=='LOCAL') then 
+       !
+       dir = .false.
+       !
+       r = MLcoordinate_transform_func(chi,size(r),dir)
+       !
+    else
+       !
+       call FLfromcartesian2local(xyz,r)
+       !
+    endif
     !
     if (verbose>=6) then 
        write(out, '(1x, a/<nmodes>(1x, es16.8)/1x, a/<nlocals>(1x, es16.8) )') 'xi', xi(1:nmodes), 'r', r(1:nlocals)

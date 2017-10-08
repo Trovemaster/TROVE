@@ -329,7 +329,7 @@ contains
     integer(ik)    :: cdimenI,irep
     integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen,Ntransit_
     integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),normalI(0:molec%nmodes)
-    integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm
+    integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
     real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_
     real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
@@ -340,6 +340,8 @@ contains
     integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:),iID(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
     real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vecPack(:),vec_(:)
+    real(rk),    allocatable :: vecPack_kblock(:,:)
+    integer(ik), allocatable :: icoeff_kblock(:,:),cdimen_kblock(:),itau_kblock(:,:)
     real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:),max_intens_state(:)
     integer(ik), pointer :: Jeigenvec_unit(:,:)
     type(DmatT),pointer  :: vec_ram(:,:)
@@ -802,7 +804,17 @@ contains
     !
     allocate(icoeffI(dimenmax), stat = info)
     call ArrayStart('intensity-vectors',info,size(icoeffI),kind(icoeffI))
+
     !
+    if (.not.job%rotsym_do) then 
+      allocate(icoeff_kblock(dimenmax,0:jmax),cdimen_kblock(0:jmax),itau_kblock(dimenmax,0:jmax),stat = info)
+      call ArrayStart('intensity-vectors-kblock',info,size(icoeff_kblock),kind(icoeff_kblock))
+      call ArrayStart('intensity-vectors-kblock',info,size(cdimen_kblock),kind(cdimen_kblock))
+      call ArrayStart('intensity-vectors-kblock',info,size(itau_kblock),kind(itau_kblock))
+      allocate(vecPack_kblock(dimenmax,0:jmax), stat = info)
+      call ArrayStart('intensity-vectors-kblock',info,size(vecPack_kblock),kind(vecPack_kblock))
+    endif
+
     !
     ! loop over final states -> count states for each symmetry
     !
@@ -1163,14 +1175,26 @@ contains
               !vecPack = pack(vec,abs(vec)>intensity%threshold%coeff)
               !cdimenI = count(abs(vec)>intensity%threshold%coeff)
               !
-              cdimenI = 0 
+              cdimenI    = 0 
               icoeffI(:) = 0
-              !
+              cdimen_kblock  = 0
+              icoeff_kblock  = 0  
+              itau_kblock    = 0
+              vecPack_kblock = 0 
               do idimen = 1, dimenI
                  if (abs(vec(idimen)) > intensity%threshold%coeff) then
                     cdimenI = cdimenI + 1
                     icoeffI(cdimenI) = idimen
                     vecPack(cdimenI) = vec(idimen)
+                    !
+                    kI = bset_contr(indI)%k(idimen)
+                    cdimen_kblock(kI) = cdimen_kblock(kI) + 1
+                    icoeff_kblock(cdimen_kblock(kI),kI) = idimen
+                    vecPack_kblock(cdimen_kblock(kI),kI) = vec(idimen)
+                    !
+                    ktauI = bset_contr(indI)%ktau(idimen)
+                    itau_kblock(cdimen_kblock(kI),kI) = mod(ktauI,2_ik)
+                    !
                  end if
               end do
               !
@@ -1183,8 +1207,10 @@ contains
                                               !
               else
                 !
-                call do_1st_half_linestrength_II_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vecPack,&
-                                              jmax,threej,half_linestr(:,indF,idegI,1))
+                call do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,&
+                cdimen_kblock,icoeff_kblock,vecPack_kblock,itau_kblock,threej,half_linestr(:,indF,idegI,1))
+                !call do_1st_half_linestrength_II_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vecPack,&
+                !                              jmax,threej,half_linestr(:,indF,idegI,1))
               endif 
               !
             enddo
@@ -1775,6 +1801,11 @@ contains
     !
     deallocate(vecI, vecPack, vec, icoeffI)
     call ArrayStop('intensity-vectors')
+
+    if (.not.job%rotsym_do) then
+      deallocate(vecPack_kblock,icoeff_kblock,cdimen_kblock,itau_kblock)
+      call ArrayStop('intensity-vectors-kblock')
+    endif
     !
     deallocate(half_linestr)
     call ArrayStop('half_linestr')
@@ -4510,7 +4541,7 @@ contains
         real(rk),intent(out)    :: half_ls(:)
         integer(ik)             :: irootF, icontrF, icontrI, & 
                                    kF, kI, tauF, tauI,sigmaF, sigmaI, ktau,&
-                                   irootI,dimenI, dimenF,cirootI
+                                   irootI,dimenI, dimenF,cirootI, startK,endK
         real(rk)                :: ls, f3j, sq2
 
           !
@@ -4537,6 +4568,8 @@ contains
                ktau = bset_contr(indF)%ktau(irootF)
                tauF  = mod(ktau,2_ik)
                kF = bset_contr(indF)%k(irootF)
+               startK = max(kF-1,0)
+               endK   = max(kF+1,0)
                !
                sigmaF = mod(kF, 3)*tauF
                !
@@ -4611,6 +4644,124 @@ contains
             call TimerStop('do_1st_half_linestr')
             !
       end subroutine do_1st_half_linestrength_II_symmvec
+
+
+      subroutine do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,cdimen_blk,icoeff_blk,vector_blk,itau_blk,threej,half_ls)
+
+        implicit none 
+        integer(ik),intent(in)  :: jI,jF,indI,indF,jmax,dimenmax,cdimen_blk(0:jmax),icoeff_blk(dimenmax,0:jmax),itau_blk(dimenmax,0:jmax)
+        real(rk),intent(in)     :: vector_blk(dimenmax,0:jmax),threej(0:jmax,0:jmax,-1:1,-1:1)
+        real(rk),intent(out)    :: half_ls(:)
+        integer(ik)             :: irootF, icontrF, icontrI, & 
+                                   kF, kI, tauF, tauI,sigmaF, sigmaI, ktau,&
+                                   irootI,dimenI, dimenF,cirootI, startK,endK
+        real(rk)                :: ls, f3j, sq2
+
+          !
+          !dms_tmp = dipole_me
+          !
+          call TimerStart('do_1st_half_linestr')
+          !
+          half_ls    = 0
+          !
+          sq2 = 1.0_ark/sqrt(2.0_rk)
+          !
+          dimenI = bset_contr(indI)%Maxcontracts
+          dimenF = bset_contr(indF)%Maxcontracts
+          !
+          !loop over final state basis components
+          !
+          !$omp parallel do private(irootF,icontrF,ktau,tauF,kF,startK,endK,sigmaF,kI,f3j,cirootI,irootI,icontrI,tauI,sigmaI,ls) shared(half_ls) schedule(static)
+          loop_F : do irootF = 1, dimenF
+               !
+               icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
+               !irlevelF = bset_contr(indF)%ktau(irootF)
+               !irdegF   = bset_contr(indF)%k(irootF)
+               !
+               ktau = bset_contr(indF)%ktau(irootF)
+               tauF  = mod(ktau,2_ik)
+               kF = bset_contr(indF)%k(irootF)
+               startK = max(kF-1,0)
+               endK   = min(kF+1,jI)
+               !
+               sigmaF = mod(kF, 3)*tauF
+               !
+               !loop over initial state basis components
+               !
+               !loop_I : do irootI = 1, dimenI
+               loop_k : do kI = startK,endK
+                 !
+                 f3j  =  threej(jI, kI, jF - jI, kF - kI)                 
+                 ! 
+                 ! 3j-symbol selection rule
+                 !
+                 if (abs(f3j)<intensity%threshold%coeff) cycle loop_K
+                 !
+                 loop_I : do cirootI = 1, cdimen_blk(kI)
+                    !
+                    irootI = icoeff_blk(cirootI,kI)
+                    !
+                    !kI = bset_contr(indI)%k(irootI)
+                    !if (abs(kF - kI)>1) cycle loop_I
+                    !if ( kI< kF - 1) cycle loop_I
+                    !
+                    if ( irootI==0 ) then 
+                      write(out,"('do_1st_half_linestrength_III_symmvec error: illegal index irootI =0 ')")
+                      stop 'do_1st_half_linestrength_III_symmvec error: irootI = 0 :( '
+                    endif
+                    !
+                    icontrI = bset_contr(indI)%iroot_correlat_j0(irootI)
+                    !
+                    !irlevelI = bset_contr(indI)%ktau(irootI)
+                    !irdegI   = bset_contr(indI)%k(irootI)
+                    !
+                    !ktau = bset_contr(indI)%ktau(irootI)
+                    !tauI  = mod(ktau,2_ik)
+                    !
+                    tauI  = itau_blk(cirootI,kI)
+                    !
+                    sigmaI = mod(kI, 3)*tauI
+                    !
+                    !compute line strength
+                    !
+                    ls = 0 
+                    !
+                    if (kF == kI) then
+                        !
+                        ls  =  real(tauF-tauI,rk) * dipole_me(icontrI,icontrF, 3)
+                        !
+                    elseif(tauF/=tauI) then 
+                        !
+                        ls =  real((kF-kI)*(tauF-tauI),rk)*dipole_me(icontrI,icontrF,1) 
+                        !
+                        if (kI*kF /= 0) ls = ls*sq2
+                        !
+                    elseif(tauF==tauI) then 
+                        !
+                        ls =  -dipole_me(icontrI,icontrF,2)
+                        !
+                        if (kI*kF /= 0) ls = ls*sq2
+                        !
+                    endif
+                    !
+                    !if (kI*kF /= 0.and.kF/=kI) ls = ls*sq2
+                    !
+                    ! The factor I**(tauF-tauI) is equivalent to I*(tauF-tauI)
+                    !
+                    half_ls(irootF) = half_ls(irootF) + (-1.0_rk)**(sigmaI+kI)*ls*f3j*vector_blk(cirootI,kI)
+                    !
+                 end do  loop_I
+               end do  loop_K
+               !
+               half_ls(irootF) = half_ls(irootF)*(-1.0_rk)**(sigmaF)
+               !
+            end do   loop_F
+            !$omp end parallel do
+            !
+            call TimerStop('do_1st_half_linestr')
+            !
+      end subroutine do_1st_half_linestrength_III_symmvec
+
 
       !
       ! symmilar procedure of evaluating the (left) half-transformation of the line strength 

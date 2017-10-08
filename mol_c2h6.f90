@@ -198,19 +198,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
 
         dst(1:13) = src(1:13)-molec%local_eq(1:13)
         !
-        tau14 = src(14)
-        tau24 = src(15)
-        tau25 = src(16)
-        tau35 = src(17)
-        tau36 = src(18)
+        tau14 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
         !
-        theta12 = tau14-tau24
-        theta23 = tau25-tau35
-        theta13 = 2.0_ark*pi-theta12-theta23
+        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
         !
-        theta56 = tau36-tau35
-        theta45 = tau25-tau24
-        theta46 = 2.0_ark*pi-theta56-theta45
+        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
         !
         dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
         dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
@@ -260,11 +260,11 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
         !tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
         !
-        dst(14) = tau14
-        dst(15) = tau24
-        dst(16) = tau25
-        dst(17) = tau35
-        dst(18) = tau36
+        dst(14) = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+2.0_ark*pi,2.0_ark*pi)
         !
       endif
         !
@@ -287,7 +287,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
     !
     real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12,tau14,tau15,tau16
-    real(ark) :: transform(3,3)
+    real(ark) :: transform(3,3),phi
     integer(ik) :: i, n, iatom, ix
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/start'
@@ -404,11 +404,21 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           do n = 1,3 
             CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
             b0(:,n,i) = b0(:,n,i) - CM_shift
-          enddo 
+          enddo
           !
-          !do n = 1,molec%Natoms
-          !  b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
-          !enddo
+          !
+          phi = tau*0.5_ark
+          !
+          transform = 0 
+          transform(3,3) = 1.0_ark
+          transform(1,1) = cos(phi)
+          transform(1,2) = sin(phi)
+          transform(2,1) = -sin(phi)
+          transform(2,2) = cos(phi)
+          !
+          do n = 1,Natoms
+            b0(n,:,i) = matmul(transform,b0(n,:,i))
+          enddo
           !
           !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
           !

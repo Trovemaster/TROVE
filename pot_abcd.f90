@@ -11,7 +11,7 @@ module pot_abcd
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
   public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLdms_HCCH_7D,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
-         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB
+         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local
 
   private
 
@@ -2131,12 +2131,12 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     tau_ = tau
     !
-    re1     = extF%coef(2,1)
-    re2     = extF%coef(3,1)
+    re1     = extF%coef(1,1)
+    re2     = extF%coef(2,1)
     alphae = 180.00_ark/rad
     !
-    beta1   = extF%coef(4,1)
-    beta2   = extF%coef(5,1)
+    beta1   = extF%coef(3,1)
+    beta2   = extF%coef(4,1)
     !
     a1(:) =matmul(tmat,x2(:))
     a0(:) =matmul(tmat,x1(:))
@@ -2192,6 +2192,73 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     end subroutine MLdms_HCCH_7D
 
+
+ recursive subroutine MLdms_HCCH_7D_local(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(3)
+
+    integer(ik)           :: i,k
+    real(ark)             :: y1,y2,y3,y4,y5,y6,y7
+    real(ark)             :: re1,re2,alphae,beta1,beta2,y(molec%ncoords), xi(molec%ncoords)
+    !
+    integer(ik),parameter :: lspace = 150
+    integer(ik),parameter :: nxy = 140, nz = 112
+    real(ark)   :: dmux(nxy),dmuy(nxy),dmuz(nz)
+    real(ark)    :: mu(3),r1,r2,r3
+    character(len=cl)  :: txt
+    !
+    !
+    re1     = extF%coef(1,1)
+    re2     = extF%coef(2,1)
+    alphae = 180.00_ark/rad
+    !
+    beta1   = extF%coef(3,1)
+    beta2   = extF%coef(4,1)
+    !
+    r1 = r(1)
+    r2 = r(2)
+    r3 = r(3)
+    !
+    y(1) = (r1 - re1) * exp(-beta1 * (r1 - re1) ** 2)
+    y(2) = (r2 - re2) * exp(-beta2 * (r2 - re2) ** 2)
+    y(3) = (r3 - re2) * exp(-beta2 * (r3 - re2) ** 2)
+    y(4) = r(4)
+    y(5) = r(5)
+    y(6) = r(6)
+    y(7) = r(7)
+    !
+    y1=y(1)
+    y2=y(2)
+    y3=y(3)
+    y4=y(4)
+    y5=y(5)
+    y6=y(6)
+    y7=y(7)
+    !
+    call dmsC2H2_D8h_diff_mux(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
+    call dmsC2H2_D8h_diff_muy(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
+    call dmsC2H2_D8h_diff_muz(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
+    !
+    mu=0
+    !
+    do i = 1,Nxy
+      k = 4+i
+      mu(1) = mu(1) + extF%coef(k,1)*dmux(i)
+      mu(2) = mu(2) + extF%coef(k,1)*dmuy(i)
+    enddo
+    !
+    do i = 1,Nz
+      k = 4+Nxy+i
+      mu(3) = mu(3) + extF%coef(k,1)*dmuz(i)
+    enddo
+    !
+    f(1:3) = mu(1:3)
+    !
+    end subroutine MLdms_HCCH_7D_local
 
 
 
@@ -5221,6 +5288,83 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       !
  end function MLpoten_c2h2_7_q2q1q4q3
 
+
+ function MLpoten_c2h2_7_q2q1q4q3_linearized(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+    !
+    integer(ik),parameter :: n = 410
+    integer(ik) :: i,k,nmax
+    real(ark) :: dF(n)
+      !
+      integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: r_na(4,3)
+      integer(ik)  :: Nangles
+      !
+      character(len=cl)  :: txt = 'MLpoten_c2h2_7_q2q1q4q3'
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=molec%force(1)
+      e2=molec%force(2)
+      e4=pi
+      e6=pi
+      !
+      a1 = molec%force(3)
+      a2 = molec%force(4)
+      !
+      x1    = local(1)
+      x2    = local(2)
+      x3    = local(3)
+      !
+      call MLfromlocal2cartesian(1_ik,local,r_na)
+      !
+      b1(:) = r_na(3,:)-r_na(1,:)
+      b0(:) = r_na(2,:)-r_na(1,:)
+      b2(:) = r_na(4,:)-r_na(2,:)
+      !
+      x2 =  sqrt(sum(b1(:)**2))
+      x1 =  sqrt(sum(b0(:)**2))
+      x3 =  sqrt(sum(b2(:)**2))
+      !
+      b1 =  b1(:)/x2
+      b0 =  b0(:)/x1
+      b2 =  b2(:)/x3
+      !
+      w1(:) = MLvector_product(b1,b0)
+      w2(:) = MLvector_product(b0,b2)
+      !
+      y4 =local(4)
+      y5 =local(5)
+      y6 =local(6)
+      y7 =local(7)
+      !
+      y1=1.0_ark-exp(-a1*(local(1)))
+      y2=1.0_ark-exp(-a2*(local(2)))
+      y3=1.0_ark-exp(-a2*(local(3)))
+      !
+      call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      !
+      f = 0
+      !
+      nmax = min(size(force),molec%parmax)
+      !
+      do i = 5,nmax
+        !
+        !k = molec%pot_ind(1,i)
+        !
+        f = f + force(i)*dF(i)
+       !
+      enddo
+      !
+ end function MLpoten_c2h2_7_q2q1q4q3_linearized
 
  function MLpoten_c2h2_7_r_rr_nnnn(ncoords,natoms,local,xyz,force) result(f)
    !

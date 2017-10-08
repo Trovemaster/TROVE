@@ -54,6 +54,7 @@ contains
   character(len=4) :: Kchar
   !
   integer(ik),allocatable :: iclass_of(:)
+  real(ark),allocatable :: characters_(:,:)
   !   
   sym%group=sym_group
   !
@@ -89,10 +90,9 @@ contains
         enddo 
       enddo 
     enddo 
-
-
+    !
   case("CS(M)","CS")
-
+    !
     sym%Nrepresen=2
     sym%Noper=2
     sym%Nclasses=2
@@ -106,11 +106,11 @@ contains
     sym%degen=(/1,1/)
     sym%Nelements=(/1,1/)
     sym%label=(/'A''','A"'/)
-
+    !
     call irr_allocation
-
+    !
   case("C2V(M)","C2V")
-
+    !
     sym%Nrepresen=4
     sym%Noper=4
     sym%Nclasses=4
@@ -424,8 +424,7 @@ contains
     sym%CII%Noper = 0
 
     call simple_arrays_allocation
-
-
+    !
     sym%characters= reshape( &      !A1 A2 E  A1 A2 E
                                   (/ 1, 1, 2, 1, 1, 2, &  
                                      1, 1,-1, 1, 1,-1, &  
@@ -537,6 +536,160 @@ contains
     sym%lquant(4:5) = 0
     sym%lquant(3) = 1
     sym%lquant(6) = 1
+    !
+  case("D3D(M)","D3D")
+    !
+    sym%Nrepresen=6
+    sym%Noper=12
+    sym%Nclasses=6
+    sym%CII%Noper = 0
+    !
+    call simple_arrays_allocation
+    !
+    sym%characters= reshape( &      !E  2C3  3C2'  i  2S6  3sd
+                                  (/ 1,  1,   1,   1,  1,   1,  &  !A1g
+                                     1,  1,  -1,   1,  1,  -1,  &  !A2g
+                                     2, -1,   0,   2, -1,   0,  &  !Eg         
+                                     1,  1,   1,  -1, -1,  -1,  &  !A1u
+                                     1,  1,  -1,  -1, -1,   1,  &  !A2u
+                                     2, -1,   0,  -2,  1,   0 /),(/6,6/))   !Eu
+    !
+    sym%characters = transpose(sym%characters)
+    sym%degen=(/1,1,2,1,1,2/)
+    sym%Nelements=(/1,2,3,1,2,3/)
+    sym%label=(/'A1g''','A2g''','Eg'' ','A1u"','A2u"','Eu" '/)
+    !
+    o   = 0.0_ark
+    p2  = 0.5_ark*pi
+    p3  = pi/3.0_ark
+    p23 = 2.0_ark/3.0_ark*pi
+    p43 = 4.0_ark/3.0_ark*pi
+    !
+    sym%euler( 1,:) = 0               ! (E)
+    sym%euler( 2,:) = (/p23,o ,o /)   ! (132)
+    sym%euler( 3,:) = (/p43,o ,o /)   ! (123)
+    sym%euler( 4,:) = (/ pi,pi,o /)   ! (23)
+    sym%euler( 5,:) = (/ p3,pi,o /)   ! (12)
+    sym%euler( 6,:) = (/-p3,pi,o /)   ! (13)
+    sym%euler( 7,:) = (/ pi, o,o /)   ! (E)*
+    sym%euler( 8,:) = (/-p3, o,o /)   ! (132)*
+    sym%euler( 9,:) = (/ p3, o,o /)   ! (123)*
+    sym%euler(10,:) = (/  o,pi,o /)   ! (23)*
+    sym%euler(11,:) = (/p43,pi,o /)   ! (12)*
+    sym%euler(12,:) = (/p23,pi,o /)   ! (13)*
+    !
+    call irr_allocation
+    !
+    a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
+    !
+    sym%irr(3,1)%repres = reshape((/e, o,  &
+                                    o, e/),(/2,2/))
+    !
+    sym%irr(3,2)%repres = reshape((/-a, -b, &
+                                     b, -a/),(/2,2/))
+    !
+    sym%irr(3,3)%repres = reshape((/-a, b, &
+                                    -b, -a/),(/2,2/))
+    !
+    sym%irr(3,4)%repres = reshape((/ e, o, &
+                                     o,-e/),(/2,2/))
+    !
+    sym%irr(3,5)%repres = reshape((/ -a, -b, &
+                                      b,  a /),(/2,2/))
+    !
+    sym%irr(3,6)%repres = reshape((/ -a, b, &
+                                    - b, a  /),(/2,2/))
+    !
+    sym%irr(3,7)%repres = reshape((/ e, o, &
+                                     o, e/),(/2,2/))
+    !
+    sym%irr(3,8)%repres = reshape((/ -a, b, &
+                                     -b, -a/),(/2,2/))
+    !
+    sym%irr(3,9)%repres = reshape((/ -a, -b, &
+                                      b, -a/),(/2,2/))
+    !
+    sym%irr(3,10)%repres= reshape((/ -e, o, &
+                                      o, e/),(/2,2/))
+    !
+    sym%irr(3,11)%repres= reshape((/ a, -b, &
+                                    -b, -a /),(/2,2/))
+    !
+    sym%irr(3,12)%repres= reshape((/ a,  b, &
+                                     -b, -a  /),(/2,2/))
+    !
+    sym%irr(6,1)%repres = reshape((/e, o,  &
+                                    o, e/),(/2,2/))
+    !
+    sym%irr(6,2)%repres = reshape((/-a, -b, &
+                                     b, -a/),(/2,2/))
+    !
+    sym%irr(6,3)%repres = reshape((/-a, b, &
+                                    -b, -a/),(/2,2/))
+    !
+    sym%irr(6,4)%repres = reshape((/ e, o, &
+                                     o,-e/),(/2,2/))
+    !
+    sym%irr(6,5)%repres = reshape((/ -a, -b, &
+                                      b,  a /),(/2,2/))
+    !
+    sym%irr(6,6)%repres = reshape((/ -a, b, &
+                                    - b, a  /),(/2,2/))
+    !
+    sym%irr(6,7)%repres = reshape((/-e, o, &
+                                     o, -e/),(/2,2/))
+    !
+    sym%irr(6,8)%repres = reshape((/ a, -b, &
+                                     b,  a/),(/2,2/))
+    !
+    sym%irr(6,9)%repres = reshape((/ a, b, &
+                                    -b, a/),(/2,2/))
+    !
+    sym%irr(6,10)%repres= reshape((/ -e, o, &
+                                      o, e/),(/2,2/))
+    !
+    sym%irr(6,11)%repres= reshape((/ a, -b, &
+                                    -b, -a /),(/2,2/))
+    !
+    sym%irr(6,12)%repres= reshape((/ a,  b, &
+                                     -b, -a  /),(/2,2/))
+    !
+    sym%lquant(1:2) = 0
+    sym%lquant(4:5) = 0
+    sym%lquant(3) = 1
+    sym%lquant(6) = 1
+
+    allocate (characters_(sym%Nrepresen,sym%Nclasses),stat=alloc)
+    !
+    if (alloc/=0) stop 'characters_ - out of memory'
+    !
+    characters_ = sym%characters
+    !
+    ! characters as traces of the corresponding representations 
+    !
+    do irep = 1,sym%Nrepresen
+      ioper = 0
+      do iclass = 1,sym%Nclasses
+        do ielem =1,sym%Nelements(iclass)
+          ioper = ioper + 1
+          f_t = 0
+          do k = 1,sym%degen(irep)
+              f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+          enddo
+          sym%characters(irep,iclass) = f_t
+          !
+          if (abs(sym%characters(irep,iclass)-characters_(irep,iclass))>small_) then 
+            !
+            write(out,"(' characters do not agree: irep,iclass = ',4i8)") irep,iclass,sym%characters(irep,iclass),characters_(irep,iclass)
+            stop 'simple_arrays_allocation - out of memory'
+            !
+          endif
+          !
+        enddo
+      enddo
+    enddo
+    !
+    deallocate(characters_)
     !
   case("TD(M)","TD")
 
@@ -1094,8 +1247,6 @@ contains
        enddo
        !
        deallocate(iclass_of)
-       !
-       !----------------------------
        !
        ! do the even part in the same order of operations as the odd  part
        !

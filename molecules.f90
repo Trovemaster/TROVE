@@ -24,7 +24,7 @@ module molecules
   use pot_xy4
   use pot_ch3oh
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
-  use pot_c2h6, only : MLpoten_c2h6_88
+  use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau
 
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -183,7 +183,11 @@ module molecules
          !
      case('POTEN_C2H2_7_Q1Q2Q3Q4') 
          !
-         MLpotentialfunc => MLpoten_c2h2_7_q1q2q3q4         
+         MLpotentialfunc => MLpoten_c2h2_7_q1q2q3q4
+         !
+     case('POTEN_C2H2_7_Q2Q1Q4Q3_LINEARIZED') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3_linearized
          !
      case('POTEN_C2H2_7_Q2Q1Q4Q3') 
          !
@@ -329,6 +333,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h6_88
          !
+    case('POTEN_C2H6_88_COS3TAU') 
+         !
+         MLpotentialfunc => MLpoten_c2h6_88_cos3tau
+         !
     case('POTEN_ZXY3_SYM') 
          !
          MLpotentialfunc => MLpoten_zxy3_sym
@@ -462,6 +470,10 @@ end function ML_MEPfunc
     case('HCCH_DMS_7D')
        !
        MLextF_func => MLdms_HCCH_7D
+       !
+    case('HCCH_DMS_7D_LOCAL')
+       !
+       MLextF_func => MLdms_HCCH_7D_LOCAL
        !
     case('COORDINATES')
        !
