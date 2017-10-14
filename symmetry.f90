@@ -585,20 +585,20 @@ contains
     sym%irr(3,1)%repres = reshape((/e, o,  &
                                     o, e/),(/2,2/))
     !
-    sym%irr(3,2)%repres = reshape((/-a, -b, &
-                                     b, -a/),(/2,2/))
-    !
-    sym%irr(3,3)%repres = reshape((/-a, b, &
+    sym%irr(3,2)%repres = reshape((/-a,  b, &
                                     -b, -a/),(/2,2/))
+    !
+    sym%irr(3,3)%repres = reshape((/-a, -b, &
+                                     b, -a/),(/2,2/))
     !
     sym%irr(3,4)%repres = reshape((/ e, o, &
                                      o,-e/),(/2,2/))
     !
-    sym%irr(3,5)%repres = reshape((/ -a, -b, &
+    sym%irr(3,5)%repres = reshape((/ -a,  b, &
                                       b,  a /),(/2,2/))
     !
-    sym%irr(3,6)%repres = reshape((/ -a, b, &
-                                    - b, a  /),(/2,2/))
+    sym%irr(3,6)%repres = reshape((/ -a,-b, &
+                                     -b, a  /),(/2,2/))
     !
     sym%irr(3,7)%repres = reshape((/ e, o, &
                                      o, e/),(/2,2/))
@@ -609,32 +609,32 @@ contains
     sym%irr(3,9)%repres = reshape((/ -a, -b, &
                                       b, -a/),(/2,2/))
     !
-    sym%irr(3,10)%repres= reshape((/ -e, o, &
-                                      o, e/),(/2,2/))
+    sym%irr(3,10)%repres= reshape((/  e, o, &
+                                      o,-e/),(/2,2/))
     !
-    sym%irr(3,11)%repres= reshape((/ a, -b, &
-                                    -b, -a /),(/2,2/))
+    sym%irr(3,11)%repres= reshape((/ -a,  b, &
+                                      b,  a /),(/2,2/))
     !
-    sym%irr(3,12)%repres= reshape((/ a,  b, &
-                                     -b, -a  /),(/2,2/))
+    sym%irr(3,12)%repres= reshape((/ -a, -b, &
+                                     -b,  a  /),(/2,2/))
     !
     sym%irr(6,1)%repres = reshape((/e, o,  &
                                     o, e/),(/2,2/))
     !
-    sym%irr(6,2)%repres = reshape((/-a, -b, &
-                                     b, -a/),(/2,2/))
-    !
-    sym%irr(6,3)%repres = reshape((/-a, b, &
+    sym%irr(6,2)%repres = reshape((/-a,  b, &
                                     -b, -a/),(/2,2/))
+    !
+    sym%irr(6,3)%repres = reshape((/-a, -b, &
+                                     b, -a/),(/2,2/))
     !
     sym%irr(6,4)%repres = reshape((/ e, o, &
                                      o,-e/),(/2,2/))
     !
-    sym%irr(6,5)%repres = reshape((/ -a, -b, &
+    sym%irr(6,5)%repres = reshape((/ -a,  b, &
                                       b,  a /),(/2,2/))
     !
-    sym%irr(6,6)%repres = reshape((/ -a, b, &
-                                    - b, a  /),(/2,2/))
+    sym%irr(6,6)%repres = reshape((/ -a, -b, &
+                                     -b,  a  /),(/2,2/))
     !
     sym%irr(6,7)%repres = reshape((/-e, o, &
                                      o, -e/),(/2,2/))
@@ -652,7 +652,7 @@ contains
                                     -b, -a /),(/2,2/))
     !
     sym%irr(6,12)%repres= reshape((/ a,  b, &
-                                     -b, -a  /),(/2,2/))
+                                     b, -a  /),(/2,2/))
     !
     sym%lquant(1:2) = 0
     sym%lquant(4:5) = 0
@@ -2670,8 +2670,8 @@ contains
 
    subroutine check_characters_and_representation
 
-    integer(ik) :: igamma,jgamma,ioper,ideg,iclass,ielem
-    real(ark)   :: temp
+    integer(ik) :: igamma,jgamma,ioper,ideg,iclass,ielem,k1,k2,m1,m2
+    real(ark)   :: temp,f_t
 
     do igamma = 1,sym%Nrepresen
       do jgamma = igamma,sym%Nrepresen
@@ -2730,6 +2730,39 @@ contains
       enddo
       !
     enddo
+
+    do igamma = 1,sym%Nrepresen
+      do jgamma = 1,sym%Nrepresen
+        do k1 = 1,sym%degen(igamma)
+          do k2 = 1,sym%degen(igamma)
+            do m1 = 1,sym%degen(jgamma)
+              do m2 = 1,sym%degen(jgamma)
+                ioper = 0
+                f_t = 0
+                do iclass = 1,sym%Nclasses
+                  do ielem =1,sym%Nelements(iclass)
+                   ioper = ioper + 1
+                   f_t = f_t + sym%irr(igamma,ioper)%repres(k1,k2)*sqrt(real(sym%degen(igamma))/real(sym%Noper,ark))*&
+                               sym%irr(jgamma,ioper)%repres(m1,m2)*sqrt(real(sym%degen(jgamma))/real(sym%Noper,ark))
+                  enddo          
+                enddo
+                !
+                if ((k1/=m1.or.k2/=m2.or.igamma/=jgamma).and.abs(f_t)>small_) then
+                  write(out,"('Non orthogonal irreps for igamma,jgamma,k1,k2,m1,m2 = ',6i7,f16.7)") igamma,jgamma,k1,k2,m1,m2,f_t
+                  stop 'Non orthogonal irreps'
+                endif
+                !
+                if ((k1==m1.and.k2==m2.and.igamma==jgamma).and.abs(f_t-1.0_ark)>small_) then
+                  write(out,"('Non normalized irreps for igamma,jgamma,k1,k2,m1,m2 = ',6i7,f16.7)") igamma,jgamma,k1,k2,m1,m2,f_t
+                  stop 'Non normailized irreps'
+                endif
+                !          
+              enddo          
+            enddo          
+          enddo          
+        enddo          
+      enddo          
+    enddo          
 
 
    end subroutine check_characters_and_representation

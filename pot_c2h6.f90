@@ -720,7 +720,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     if (verbose>=5) write(out,"('ML_symmetry_transformation_XY3/start')")
     !
     a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
-    NSYM = 12
+    Nsym = 12
     !
     repres = 0
     !
@@ -734,15 +734,15 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(1,7,7) = 1.0_ark
     repres(1,8,8) = 1.0_ark
     repres(1,9,9) = 1.0_ark
-    REPRES(1,10,10) = 1.0_ark
-    REPRES(1,11,11) = 1.0_ark
-    REPRES(1,12,12) = 1.0_ark
-    REPRES(1,13,13) = 1.0_ark
-    REPRES(1,14,14) = 1.0_ark
-    REPRES(1,15,15) = 1.0_ark
-    REPRES(1,16,16) = 1.0_ark
-    REPRES(1,17,17) = 1.0_ark
-    REPRES(1,18,18)  = 1.0_ark
+    repres(1,10,10) = 1.0_ark
+    repres(1,11,11) = 1.0_ark
+    repres(1,12,12) = 1.0_ark
+    repres(1,13,13) = 1.0_ark
+    repres(1,14,14) = 1.0_ark
+    repres(1,15,15) = 1.0_ark
+    repres(1,16,16) = 1.0_ark
+    repres(1,17,17) = 1.0_ark
+    repres(1,18,18)  = 1.0_ark
 !
     !C3+/(123)(465)
     repres(2,1,1) = 1.0_ark
@@ -766,7 +766,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(2,17,16) = b
     repres(2,16,17) = -b
     repres(2,17,17) = -a
-    REPRES(2,18,18)  = 1.0_ark
+    repres(2,18,18)  = 1.0_ark
     !
 !C3-/(123)(465)
     repres(3,1,1) = 1.0_ark
@@ -790,7 +790,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(3,17,16) = -b
     repres(3,16,17) = b
     repres(3,17,17) = -a
-    REPRES(3,18,18)  = 1.0_ark
+    repres(3,18,18)  = 1.0_ark
     !
     !C2/(16)(24)(35)(78)
     repres(4,1,1) = 1.0_ark
@@ -810,7 +810,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(4,17,15) = -1._ark
     repres(4,14,16) = 1._ark
     repres(4,15,17) = -1._ark
-    REPRES(4,18,18)  = 1.0_ark
+    repres(4,18,18)  = 1.0_ark
     !
     !
     !C2'/(16)(24)(35)(78)
@@ -835,7 +835,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(5,15,16) = -b
     repres(5,14,17) = -b
     repres(5,15,17) =  a
-    REPRES(5,18,18)  = 1.0_ark
+    repres(5,18,18)  = 1.0_ark
     !
     !C2''/(16)(24)(35)(78)
     repres(6,1,1) = 1.0_ark
@@ -856,11 +856,10 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(6,16,15) = b
     repres(6,17,15) = a
     repres(6,14,16) = -a
-    repres(6,14,16) = -a
     repres(6,15,16) = b
     repres(6,14,17) = b
     repres(6,15,17) = a
-    REPRES(6,18,18)  = 1.0_ark
+    repres(6,18,18)  = 1.0_ark
     !
     !i/(14)(26)(35)(78)*
     repres(7,1,1) = 1.0_ark
@@ -880,7 +879,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(7,17,15) = 1._ark
     repres(7,14,16) = 1._ark
     repres(7,15,17) = 1._ark
-    REPRES(7,18,18)  = 1.0_ark
+    repres(7,18,18)  = 1.0_ark
     !
     !S6/(163425)(78)*
     repres(8,1,1) = 1.0_ark
@@ -904,7 +903,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(8,15,16) = b
     repres(8,14,17) = -b
     repres(8,15,17) = -a
-    REPRES(8,18,18)  = 1.0_ark
+    repres(8,18,18)  = 1.0_ark
     !
     !S6'/(14)(26)(35)(78)*
     repres(9,1,1) = 1.0_ark
@@ -928,7 +927,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(9,15,16) = -b
     repres(9,14,17) = b
     repres(9,15,17) = -a
-    REPRES(9,18,18)  = 1.0_ark
+    repres(9,18,18)  = 1.0_ark
     !
  !sigmad/(12)(46)*
     repres(10,1,1) = 1.0_ark
@@ -952,7 +951,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(10,17,16) = -b
     repres(10,16,17) = -b
     repres(10,17,17) = a
-    REPRES(10,18,18)  = 1.0_ark
+    repres(10,18,18)  = 1.0_ark
 !sigmad'/(12)(46)*
     repres(11,1,1) = 1.0_ark
     repres(11,2,2) = 1.0_ark
@@ -975,7 +974,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(11,17,16) =  b
     repres(11,16,17) =  b
     repres(11,17,17) =  a
-    REPRES(11,18,18)  = 1.0_ark
+    repres(11,18,18)  = 1.0_ark
     !
 !sigmad''/(12)(46)*
     repres(12,1,1) = 1.0_ark
@@ -995,7 +994,7 @@ subroutine ML_symmetry_transformation_XY3_III(ioper,src,dst,NDEG)
     repres(12,15,15) =  -1.0_ark
     repres(12,16,16) = 1.0_ark
     repres(12,17,17) =  -1.0_ark
-    REPRES(12,18,18)  = 1.0_ark
+    repres(12,18,18)  = 1.0_ark
     !
     if (ioper<0.or.ioper>NSYM) then
       write (6,"('symmetry_transformation_local: operation ',i8,' unknown')")

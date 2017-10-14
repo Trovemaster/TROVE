@@ -720,6 +720,263 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(18) = -src(18)
         end select
         !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('D3D(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_C2H6 error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) ! !C3+/(123)(465)
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+          dst(18) = src(18)
+          !
+        case (3) !C3-/(123)(465)
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) =  b*src(14) - a*src(15) 
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  b*src(16) - a*src(17)
+          dst(18) = src(18)
+          !
+        case (4) ! C2/(16)(24)(35)(78)
+          !
+          dst(1) = src(1)
+          dst(2) = src(7)
+          dst(3) = src(5)
+          dst(4) = src(6)
+          dst(5) = src(3)
+          dst(6) = src(4)
+          dst(7) = src(2)
+          dst(8) = src(13)
+          dst(9) = src(11)
+          dst(10) = src(12)
+          dst(11) = src(9)
+          dst(12) = src(10)
+          dst(13) = src(8)
+          dst(14) = src(16)
+          dst(15) = -src(17) 
+          dst(16) = src(14)
+          dst(17) = -src(15)
+          dst(18) = src(18)
+          !
+        case (5) !C2'/(16)(24)(35)(78)
+          !
+          dst(1) = src(1)
+          dst(2) = src(6)
+          dst(3) = src(7)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          dst(6) = src(2)
+          dst(7) = src(3)
+          dst(8) = src(12)
+          dst(9) = src(13)
+          dst(10) = src(11)
+          dst(11) = src(10)
+          dst(12) = src(8)
+          dst(13) = src(9)
+          dst(14) = -a*src(16) - b*src(17)
+          dst(15) =  b*src(16) + a*src(17) 
+          dst(16) = -a*src(14) - b*src(16)
+          dst(17) = -b*src(14) + a*src(15)
+          dst(18) = src(18)
+          !
+        case (6) ! C2''(16)(24)(35)(78)
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(6)
+          dst(4) = src(7)
+          dst(5) = src(2)
+          dst(6) = src(3)
+          dst(7) = src(4)
+          dst(8) = src(11)
+          dst(9) = src(12)
+          dst(10) = src(13)
+          dst(11) = src(8)
+          dst(12) = src(9)
+          dst(13) = src(10)
+          dst(14) = -a*src(16) + b*src(17)
+          dst(15) =  b*src(16) + a*src(17) 
+          dst(16) = -a*src(14) + b*src(16)
+          dst(17) = b*src(14) + a*src(15)
+          dst(18) = src(18)
+          !
+        case (7) ! i/(14)(26)(35)(78)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(7)
+          dst(4) = src(6)
+          dst(5) = src(2)
+          dst(6) = src(4)
+          dst(7) = src(3)
+          dst(8) = src(11)
+          dst(9) = src(13)
+          dst(10) = src(12)
+          dst(11) = src(8)
+          dst(12) = src(10)
+          dst(13) = src(9)
+          dst(14) = src(16)
+          dst(15) = src(17) 
+          dst(16) = src(14)
+          dst(17) = src(15)
+          dst(18) = -src(18)
+          !
+        case (8) ! S6/(163425)(78)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(6)
+          dst(3) = src(5)
+          dst(4) = src(7)
+          dst(5) = src(4)
+          dst(6) = src(3)
+          dst(7) = src(2)
+          dst(8) = src(12)
+          dst(9) = src(11)
+          dst(10) = src(13)
+          dst(11) = src(10)
+          dst(12) = src(9)
+          dst(13) = src(8)
+          dst(14) = -a*src(16) + b*src(17)
+          dst(15) =  -b*src(16) - a*src(17) 
+          dst(16) = -a*src(14) + b*src(16)
+          dst(17) = -b*src(14) - a*src(15)
+          dst(18) = -src(18)
+          !
+        case (9) !S6'/(14)(26)(35)(78)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(7)
+          dst(3) = src(6)
+          dst(4) = src(5)
+          dst(5) = src(3)
+          dst(6) = src(2)
+          dst(7) = src(4)
+          dst(8) = src(13)
+          dst(9) = src(12)
+          dst(10) = src(11)
+          dst(11) = src(9)
+          dst(12) = src(8)
+          dst(13) = src(10)
+          dst(14) = -a*src(16) - b*src(17)
+          dst(15) =  b*src(16) - a*src(17) 
+          dst(16) = -a*src(14) - b*src(16)
+          dst(17) =  b*src(14) - a*src(15)
+          dst(18) = -src(18)
+          !
+        case (10) !sigmad/(12)(46)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(3)
+          dst(4) = src(2)
+          dst(5) = src(6)
+          dst(6) = src(5)
+          dst(7) = src(7)
+          dst(8) = src(10)
+          dst(9) = src(9)
+          dst(10) = src(8)
+          dst(11) = src(12)
+          dst(12) = src(11)
+          dst(13) = src(13)
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) =  -b*src(14) + a*src(15) 
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  -b*src(16) + a*src(17)
+          dst(18) = -src(18)
+          !
+        case (11) !sigmad'/(12)(46)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(2)
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+          dst(6) = src(7)
+          dst(7) = src(6)
+          dst(8) = src(8)
+          dst(9) = src(10)
+          dst(10) = src(9)
+          dst(11) = src(11)
+          dst(12) = src(13)
+          dst(13) = src(12)
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) =  b*src(14) + a*src(15) 
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) =  b*src(16) + a*src(17)
+          dst(18) = -src(18)
+          !
+        case (12) !sigmad''/(12)(46)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(2)
+          dst(4) = src(4)
+          dst(5) = src(7)
+          dst(6) = src(6)
+          dst(7) = src(5)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          dst(10) = src(10)
+          dst(11) = src(13)
+          dst(12) = src(12)
+          dst(13) = src(11)
+          dst(14) = src(14)
+          dst(15) = -src(15) 
+          dst(16) =  src(16)
+          dst(17) =  -src(17)
+          dst(18) = -src(18)
+        end select
         !
       end select
       !

@@ -747,15 +747,17 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
-
+   !
+   integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
+   !
    real(ark)            :: rho,L,rhostep,potmin
    real(ark)            :: psipsi_t,characvalue,rho_b(2)
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
-   !real(ark),allocatable :: f(:),poten(:),mu_rr(:)
-
+   real(rk),allocatable :: h(:,:),ener(:),psi(:,:),dpsi(:,:)
+   !
    character(len=cl)    :: unitfname 
     !
     if (verbose>=1) write (out,"(/20('*'),' Fourier real functions primitive matrix elements calculations')")
@@ -768,6 +770,17 @@ module me_bnd
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
      endif 
+     !
+     fmax = vmax*factor_ff
+     !
+     allocate(psi(vmax+1,0:npoints),stat=alloc)
+     call ArrayStart('psi-phi-Fourier',alloc,size(psi),kind(psi))
+     allocate(dpsi(vmax+1,0:npoints),stat=alloc)
+     call ArrayStart('psi-phi-Fourier',alloc,size(dpsi),kind(dpsi))
+     !
+     allocate(h(fmax+1,fmax+1),ener(fmax+1),stat=alloc)
+     call ArrayStart('h-Fourier',alloc,size(h),kind(h))
+     call ArrayStart('h-Fourier',alloc,size(ener),kind(ener))
      !
      rho_b = rho_b_
      !
@@ -784,6 +797,7 @@ module me_bnd
      !
      if (verbose>=3) then 
          write (out,"('vmax = ',i8)") vmax
+         write (out,"('fmax (Fourier size) = ',i8)") fmax
          write (out,"('maxorder = ',i8)") maxorder
          write (out,"('icoord = ',i4)") icoord
          write (out,"('rho_b (x) = ',2f12.4)") rho_b(1:2) !*180.0_ark/pi
@@ -827,15 +841,9 @@ module me_bnd
      !
      L = (rho_b(2)-rho_b(1))*0.5_ark
      !
-     do vl = 0,vmax
-       kl = vl*p/2
-       energy((vl+1)/2) = 0.5_ark*(kl)**2*mu_rr(imin)*pi**2/(2.0_ark*L**2)
-       energy((vl+1)/2) = 0.5_ark*(kl)**2*mu_rr(imin)*pi**2/(2.0_ark*L**2)
-     enddo
-     !
      !characvalue = maxval(enerslot(0:vmax))
      !
-     do vl = 0,vmax
+     do vl = 0,fmax
         kl = (vl+1)/2*p
         !
         do i=0,npoints
@@ -855,9 +863,7 @@ module me_bnd
            !
         enddo
         !
-        write (io_slot,rec=vl+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)
-        !
-        do vr = vl,vmax
+        do vr = vl,fmax
             kr = (vr+1)/2*p
             !
             do i=0,npoints
@@ -881,19 +887,90 @@ module me_bnd
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
             ! obtained above by the Numerov
             !
-            !phivphi(:) = phil(:)*poten(:)*phir(:)
+            phivphi(:) = phil(:)*poten(:)*phir(:)
             !
-            !h_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
-            !phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
+            phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
             !
-            !psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
-            !h_t = h_t - 0.5_ark*psipsi_t
+            h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*psipsi_t
+            !
+            h(vr+1,vl+1) = h(vl+1,vr+1)
+            !
+        enddo
+     enddo
+     !
+     call lapack_syev(h,ener)
+     !
+     energy(0:vmax) = ener(1:vmax+1)-ener(1)
+     !
+     write (out,"(/' Fourier-optimized energies are:')") 
+     !
+     do vl=0,vmax   
+       write (out,"(i8,f18.8)") vl,energy(vl)
+     enddo
+     !
+     do i=0,npoints
+        !
+        rho = real(i,kind=ark)*rhostep
+        do vl = 0,fmax
+           kl = (vl+1)/2*p
+           !
+           if (vl==0) then 
+             phil(vl+1)  = sqrt(0.5_ark/L)
+             dphil(vl+1) = 0
+           elseif (mod(vl,2)==0) then
+             phil(vl+1)  = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)
+             dphil(vl+1) =-sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
+           else
+             phil(vl+1)  = sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)
+             dphil(vl+1) = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
+           endif
+           !
+        enddo
+        !
+        Psi (1:vmax+1,i)  = matmul(transpose(h(:,1:vmax+1)),phil(:))
+        DPsi(1:vmax+1,i)  = matmul(transpose(h(:,1:vmax+1)),dphil(:))
+        !
+     enddo
+     !
+     do vl = 0,vmax
+        kl = (vl+1)/2*p
+        !
+        phil(:)  =  Psi(vl+1,:)
+        dphil(:) = dPsi(vl+1,:)
+        !
+        write (io_slot,rec=vl+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)        !
+        do vr = vl,vmax
+            !
+            phir = Psi(vr+1,:)
+            dphir = dPsi(vr+1,:)
+            !
+            ! Here we prepare integrals of the potential 
+            ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
+            ! obtained above by the Numerov
+            !
+            phivphi(:) = phil(:)*poten(:)*phir(:)
+            !
+            h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            !
+            ! momenta-quadratic part 
+            !
+            phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
+            !
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            !
+            ! Add the diagonal kinetic part to the tested mat. elem-s
+            !
+            h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*psipsi_t
+            !
+            h(vr+1,vl+1) = h(vl+1,vr+1)
             !
             psipsi_t = 0 
             !
@@ -992,6 +1069,10 @@ module me_bnd
      enddo
      !
      deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF)
+     deallocate(h,ener)
+     deallocate(psi,dpsi)
+     call ArrayStop('psi-phi-Fourier')
+     call ArrayStop('h-Fourier')
      !
   end subroutine ME_Fourier
 
