@@ -40,10 +40,10 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
 
   r1      = local(1)
   r2      = local(2)
-  r3      = local(3)
-  r4      = local(4)
-  r5      = local(5)
-  r6      = local(6)
+  r3      = local(4)
+  r4      = local(6)
+  r5      = local(3)
+  r6      = local(5)
   r7      = local(7)
 
   r1e = force(1)
@@ -157,10 +157,10 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
   xi(7)=1.0_ark-exp(-b*(r7-r2e))
   !
   xi(8) = local(8)   - betae
-  xi(9) = local(9)   - betae
-  xi(10) = local(10) - betae
-  xi(11) = local(11) - betae
-  xi(12) = local(12) - betae
+  xi(9) = local(10)   - betae
+  xi(10) = local(12) - betae
+  xi(11) = local(9) - betae
+  xi(12) = local(11) - betae
   xi(13) = local(13) - betae
 
   !xi(8)  = beta1 - betae
@@ -539,11 +539,11 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
 
   r1      = local(1)
   r2      = local(2)
-  r3      = local(3)
-  r4      = local(4)
-  r5      = local(5)
-  r6      = local(6)
-  r7      = local(7)
+  r3      = local(4)
+  r4      = local(6)
+  r5      = local(3)
+  r6      = local(7)
+  r7      = local(5)
 
   r1e = force(1)
   r2e = force(2)
@@ -652,11 +652,11 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
   xi(7)=1.0_ark-exp(-b*(r7-r2e))
   !
   xi(8) = local(8)   - betae
-  xi(9) = local(9)   - betae
-  xi(10) = local(10) - betae
-  xi(11) = local(11) - betae
-  xi(12) = local(12) - betae
-  xi(13) = local(13) - betae
+  xi(9) = local(10)   - betae
+  xi(10) = local(12) - betae
+  xi(11) = local(9) - betae
+  xi(12) = local(13) - betae
+  xi(13) = local(11) - betae
 
   !xi(8)  = beta1 - betae
   !xi(9)  = beta2 - betae

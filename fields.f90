@@ -1599,11 +1599,11 @@ module fields
                   NAngles = NAngles + 1 
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(2,202) 
+               case(2,202,302) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(-2,-202) 
+               case(-2,-202,302) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
@@ -4881,7 +4881,7 @@ end subroutine check_read_save_none
              dihedrals(Ndihedrals,3) = trove%zmatrix(iatom)%connect(2)
              dihedrals(Ndihedrals,4) = trove%zmatrix(iatom)%connect(3)
              !
-          case(-2,2,-202,202) 
+          case(-2,2,-202,202,-302,302) 
              !
              ! J=2 -> beta = dihedral-beta(p0,p1,p2,p3) - type 2
              !
@@ -8291,6 +8291,84 @@ end subroutine check_read_save_none
           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
           !
           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
+          !
+       case(-302,302) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n2 = trove%dihedrals(iangle,2)
+          n3 = trove%dihedrals(iangle,3)
+          n4 = trove%dihedrals(iangle,4)
+          !
+          if (J>0) then 
+             !
+             u(:) = a0(n4,:) - a0(n3,:)
+             w(:) = a0(n2,:) - a0(n3,:)
+             v(:) = a0(n1,:) - a0(n2,:)
+             !
+             m = n4 ; o = n3 ; p = n2 ; n = n1
+             !
+          else
+             !
+             u(:) = a0(n4,:) - a0(n3,:)
+             w(:) = a0(n3,:) - a0(n2,:)
+             v(:) = a0(n1,:) - a0(n2,:)
+             !
+             m = n4 ; o = n2 ; p = n3 ; n = n1
+             !
+          endif
+          !
+          mnop(1) = m; mnop(2) = o; mnop(3) = p; mnop(4) = n
+          !
+          r1 =  sqrt(sum(u(:)**2))
+          r2 =  sqrt(sum(w(:)**2))
+          r3 =  sqrt(sum(v(:)**2))
+          !
+          u = u/r1
+          w = w/r2
+          v = v/r3
+          !
+          cosu = sum( u(:)*w(:) )
+          cosv =-sum( v(:)*w(:) )
+          !
+          sinu = sqrt(1.0_ark-cosu**2)
+          sinv = sqrt(1.0_ark-cosv**2)
+          !
+          dvec1(:) = 0 
+          dvec2(:) = 0 
+          !
+          do iy =1,3
+            do iz =1,3
+               dvec1(:) = dvec1(:) + epsil(:,iy,iz)*u(iy)*w(iz)
+               dvec2(:) = dvec2(:) + epsil(:,iy,iz)*v(iy)*w(iz)
+            enddo
+          enddo
+          !
+          vec1 = sqrt( sum(dvec1(:)**2) )
+          vec2 = sqrt( sum(dvec2(:)**2) )
+          !
+          B = sum( dvec1(:)*dvec2(:) )/( sinu*sinv )
+          !
+          tau_sign = 0
+          !
+          do iy =1,3
+            do iz =1,3
+               tau_sign = tau_sign + sum(epsil(:,iy,iz)*a_t2(:)*dvec1(iy)*dvec2(iz))
+            enddo
+          enddo
+          !
+          if (abs(tau_sign)<small_a) tau_sign = B
+          tau_sign = sign(1.0_ark,tau_sign)
+          !
+          do i = 1,4
+            !
+            a = mnop(i)
+            !
+            b_t  = zetaf(a,m,o)*dvec1(:)/sinu**2/r1 + zetaf(a,p,n)*dvec2(:)/sinv**2/r3 + & 
+                   zetaf(a,o,p)*( dvec1(:)*cosu/sinu**2/r2 + dvec2(:)*cosv/sinv**2/r2 )
+
+            Bmat(Nbonds+Nangles+iangle,a,:) = b_t*tau_sign
+            !
+          enddo
           !
        case(101) ! The special bond-angles for the linear molecule case 
           !
@@ -21551,7 +21629,7 @@ end subroutine check_read_save_none
           !
           !r(trove%Nbonds+trove%Nangles+iangle) = delta
           !
-       case(-2,2,-202,202) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+       case(-2,2,-202,202,-302,302) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
           !
           n1 = trove%dihedrals(iangle,1)
           n2 = trove%dihedrals(iangle,2)

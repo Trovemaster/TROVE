@@ -591,11 +591,11 @@ contains
     sym%irr(3,3)%repres = reshape((/-a, -b, &
                                      b, -a/),(/2,2/))
     !
-    sym%irr(3,4)%repres = reshape((/ e, o, &
-                                     o,-e/),(/2,2/))
-    !
-    sym%irr(3,5)%repres = reshape((/ -a,  b, &
+    sym%irr(3,4)%repres = reshape((/ -a,  b, &
                                       b,  a /),(/2,2/))
+    !
+    sym%irr(3,5)%repres = reshape((/e, o, &
+                                    o,-e/),(/2,2/))
     !
     sym%irr(3,6)%repres = reshape((/ -a,-b, &
                                      -b, a  /),(/2,2/))
@@ -603,20 +603,20 @@ contains
     sym%irr(3,7)%repres = reshape((/ e, o, &
                                      o, e/),(/2,2/))
     !
-    sym%irr(3,8)%repres = reshape((/ -a, b, &
-                                     -b, -a/),(/2,2/))
-    !
-    sym%irr(3,9)%repres = reshape((/ -a, -b, &
+    sym%irr(3,8)%repres = reshape((/ -a, -b, &
                                       b, -a/),(/2,2/))
     !
-    sym%irr(3,10)%repres= reshape((/  e, o, &
+    sym%irr(3,9)%repres = reshape((/ -a,  b, &
+                                     -b, -a/),(/2,2/))
+    !
+    sym%irr(3,10)%repres= reshape((/ -a, -b, &
+                                     -b,  a /),(/2,2/))
+    !
+    sym%irr(3,11)%repres= reshape((/  e, o, &
                                       o,-e/),(/2,2/))
     !
-    sym%irr(3,11)%repres= reshape((/ -a,  b, &
-                                      b,  a /),(/2,2/))
-    !
-    sym%irr(3,12)%repres= reshape((/ -a, -b, &
-                                     -b,  a  /),(/2,2/))
+    sym%irr(3,12)%repres= reshape((/ -a,  b, &
+                                      b,  a  /),(/2,2/))
     !
     sym%irr(6,1)%repres = reshape((/e, o,  &
                                     o, e/),(/2,2/))
@@ -627,10 +627,10 @@ contains
     sym%irr(6,3)%repres = reshape((/-a, -b, &
                                      b, -a/),(/2,2/))
     !
-    sym%irr(6,4)%repres = reshape((/ e, o, &
-                                     o,-e/),(/2,2/))
+    sym%irr(6,5)%repres = reshape((/  e, o, &
+                                      o,-e/),(/2,2/))
     !
-    sym%irr(6,5)%repres = reshape((/ -a,  b, &
+    sym%irr(6,4)%repres = reshape((/ -a,  b, &
                                       b,  a /),(/2,2/))
     !
     sym%irr(6,6)%repres = reshape((/ -a, -b, &
@@ -639,20 +639,20 @@ contains
     sym%irr(6,7)%repres = reshape((/-e, o, &
                                      o, -e/),(/2,2/))
     !
-    sym%irr(6,8)%repres = reshape((/ a, -b, &
+    sym%irr(6,8)%repres = reshape((/ a,  b, &
+                                    -b,  a/),(/2,2/))
+    !
+    sym%irr(6,9)%repres = reshape((/ a, -b, &
                                      b,  a/),(/2,2/))
     !
-    sym%irr(6,9)%repres = reshape((/ a, b, &
-                                    -b, a/),(/2,2/))
+    sym%irr(6,11)%repres= reshape((/ -e,  o, &
+                                      o,  e/),(/2,2/))
     !
-    sym%irr(6,10)%repres= reshape((/ -e, o, &
-                                      o, e/),(/2,2/))
+    sym%irr(6,10)%repres= reshape((/  a,  b, &
+                                      b, -a /),(/2,2/))
     !
-    sym%irr(6,11)%repres= reshape((/ a, -b, &
-                                    -b, -a /),(/2,2/))
-    !
-    sym%irr(6,12)%repres= reshape((/ a,  b, &
-                                     b, -a  /),(/2,2/))
+    sym%irr(6,12)%repres= reshape((/  a,  -b, &
+                                     -b,  -a  /),(/2,2/))
     !
     sym%lquant(1:2) = 0
     sym%lquant(4:5) = 0
