@@ -5,7 +5,7 @@
 module perturbation 
   use accuracy
   use molecules, only : MOrepres_arkT,MLsymmetry_transform_func,polintark,MLrotsymmetry_func,MLrotsymmetry_generate
-  use moltype, only : MLlinur,MLlinurark
+  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark
   use lapack
   use plasma
   use fields
@@ -2544,7 +2544,7 @@ module perturbation
     integer(ik)       ::  mpoints, iattempts,maxattempts
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
-    real(rk)          :: spread
+    real(rk)          :: spread,tol
     !
     real(rk),allocatable  :: mat(:,:),mat_(:,:)
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
@@ -2918,6 +2918,8 @@ module perturbation
        !
        call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
        !
+       tol = job%symm_toler(imode)
+       !
        !call calc_overlap(iclasses)
        !
        count_index = 0
@@ -3134,7 +3136,7 @@ module perturbation
          if (job%verbose>=6) call TimerStop('Contract: The points')
          !
          call degenerate_symmetrization(Nelem,mpoints,transform(1:sym%Noper,1:Nelem,1:mpoints),&
-                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),Nirr,Nirr_rk,characters,info)
+                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info)
          !
          ! Sometimes the last level in the list does not have all degenerate components.
          ! In this case we remove the last root and set nroots = nroots - 1
@@ -4693,17 +4695,19 @@ module perturbation
   end subroutine PT_conctracted_rotational_bset
   !
   !
-  subroutine reconstruct_transf_matrix(Ndeg,mpoints,phi_src,tmat,info)
+  subroutine reconstruct_transf_matrix(Ndeg,mpoints,phi_src,tmat,tol,info)
 
     integer(ik),intent(in)  ::Ndeg,mpoints
     integer(ik),intent(out) ::info
 
     real(ark),intent(in)    :: phi_src(sym%Noper,Ndeg,mpoints)
     real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
+    real(rk),intent(in)     :: tol
     real(ark)               :: t_vect(Ndeg)
 
     integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n,nthreads,tid,nsize,alloc
     double precision,allocatable  :: a(:,:),b(:,:),s(:),work(:)
+    real(ark),allocatable  :: am(:,:),bm(:),xm(:)
     integer(ik) :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
     !
     if (job%verbose>=6) call TimerStart('reconstruct_transf_matrix')
@@ -4758,6 +4762,14 @@ module perturbation
     call ArrayStart('reconstruct_transf:s',alloc_p,1_ik,rk,size(s,kind=hik))
     allocate(work(iw),stat=alloc_p)
     call ArrayStart('reconstruct_transf:w',alloc_p,1_ik,rk,size(work,kind=hik))
+
+    allocate(am(m,n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(am,kind=hik))
+    allocate(bm(m),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(bm,kind=hik))
+    allocate(xm(n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(xm,kind=hik))
+
     !
     !if (alloc_p/=0) then
     !    write (out,"(' reconstruct_transf_matrix: ',i9,' trying to allocate array for a and b')") alloc_p
@@ -4769,15 +4781,16 @@ module perturbation
       !
       info_t = 0
       !
-      a = 0
+      am = 0
+      bm = 0
       !
-      !$omp parallel do private(ipoint,ideg,ieq,ig,jg,keq) shared(b,a)
+      !$omp parallel do private(ipoint,ideg,ieq,ig,jg,keq) shared(bm,am)
       do ipoint = 1,mpoints
         do ideg = 1,Ndeg
           !
           ieq = ideg + (ipoint-1)*Ndeg
           !
-          b(ieq,1) = phi_src(ioper,ideg,ipoint)
+          bm(ieq) = phi_src(ioper,ideg,ipoint)
           !
           do ig = 1,Ndeg
             do jg = 1,Ndeg
@@ -4785,7 +4798,7 @@ module perturbation
               keq = jg + Ndeg*(ig-1)
               !
               if (ig==ideg) then 
-                a(ieq,keq) = phi_src(1,jg,ipoint)
+                am(ieq,keq) = phi_src(1,jg,ipoint)
               endif    
             enddo
           enddo
@@ -4800,7 +4813,7 @@ module perturbation
         !
         ndeg2 = Ndeg**2
         !
-        write(out,"(i8,8x,<ndeg2>f18.10)") ioper,b(1:Ndeg**2,1)
+        write(out,"(i8,8x,<ndeg2>f18.10)") ioper,bm(1:Ndeg**2)
         !
         write(out,"('ioper,ipoint,ideg,a(ieq,:):')")
         !
@@ -4811,7 +4824,7 @@ module perturbation
             !
             ieq = ieq + 1
             !
-            write(out,"(3i8,40f18.10)") ioper,ipoint,ideg,a(ieq,1:min(40,Ndeg**2))
+            write(out,"(3i8,40f18.10)") ioper,ipoint,ideg,am(ieq,1:min(40,Ndeg**2))
             !
           enddo
         enddo
@@ -4819,6 +4832,9 @@ module perturbation
       endif
       !
       if (verbose>=5) write(out,"('reconst_tr_m: dgelss')")
+      !
+      b(1:m,1) = bm(1:m)
+      a = am
       !
       call dgelss(m,n,1,a(1:m,1:n),m,b(1:m,1:1),m,s,-1.0d-12, rank, work, iw, info_t)
       !
@@ -4833,7 +4849,25 @@ module perturbation
         !
         info = max(info,2)
         !
-      endif 
+      endif
+      !
+      !omp parallel do private(ideg,jdeg,ieq) shared(tmat)
+      !do ideg = 1,Ndeg
+      !  do jdeg = 1,Ndeg
+      !    !
+      !    ieq = jdeg + Ndeg*(ideg-1)
+      !    !
+      !    tmat(ioper,ideg,jdeg) = real(b(ieq,1),ark)
+      !    !
+      !  enddo 
+      !enddo
+      !omp end parallel do
+      !
+      ! for higher accuracy try to refine the solution using ark
+      !
+      xm(1:n) = b(1:n,1)    
+      call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+      !bm(1:n) = xm(1:n)
       !
       !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)
       do ideg = 1,Ndeg
@@ -4841,7 +4875,7 @@ module perturbation
           !
           ieq = jdeg + Ndeg*(ideg-1)
           !
-          tmat(ioper,ideg,jdeg) = real(b(ieq,1),ark)
+          tmat(ioper,ideg,jdeg) = xm(ieq)
           !
         enddo 
       enddo
@@ -4856,7 +4890,7 @@ module perturbation
          !
          do ideg=1,ndeg
            !
-           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>job%symm_toler) then 
+           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>tol) then 
              if (job%verbose>=6) then 
                write(out,"('reconstruct_transf_mat: Cannot define presentation, ioper,ipoint,k =  ',3i8)") ioper,ipoint,ideg
                print *, t_vect(ideg),phi_src(ioper,ideg,ipoint)
@@ -4883,6 +4917,9 @@ module perturbation
     call ArrayStop('reconstruct_transf:s')
     call ArrayStop('reconstruct_transf:w')
     !
+    deallocate(am,bm,xm)    
+    call ArrayStop('reconstruct_transf')
+    !
     if (info==2) then 
       !
       if (job%verbose>=6) then 
@@ -4900,7 +4937,7 @@ module perturbation
 
 
   !
-  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,Nirr,Nirr_rk,chi,info)
+  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info)
 
     integer(ik),intent(in)  ::Nelem,mpoints
     integer(ik),intent(out) ::info
@@ -4909,6 +4946,7 @@ module perturbation
     real(ark),intent(out)    :: transform(Nelem,sym%maxdegen,Nelem),chi(sym%Nclasses)
     integer(ik),intent(out)  :: Nirr(sym%Nrepresen)
     real(ark),intent(out)    :: Nirr_rk(sym%Nrepresen)
+    real(rk),intent(in)      :: tol
 
     real(ark)                :: t_vect(Nelem,Nelem),tmat_t(sym%Noper,Nelem,Nelem)
     real(ark)                :: tmat(sym%Noper,Nelem,Nelem),fnormal,f_t,g_t
@@ -4953,7 +4991,7 @@ module perturbation
        !
     endif 
     !
-    call reconstruct_transf_matrix(Nelem,mpoints,phi_src,tmat_t,info)
+    call reconstruct_transf_matrix(Nelem,mpoints,phi_src,tmat_t,tol,info)
     !
     if (info/=0) then 
       if (job%verbose>=5) call TimerStop('Degenerate symmetrization')

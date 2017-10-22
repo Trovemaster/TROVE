@@ -343,8 +343,8 @@ module fields
       logical             :: sparse = .false. ! to switch on sparse matrix processing
       !
       type(FLbasissetT),pointer  :: bset(:)   ! Basis set specifications: range and type
-      real(rk)            :: symm_toler = 1.e-4  ! tolerance that decides whether the symmetry transformation matrix 
-                                              ! has been properly defined at the sample point, i.e. the transformed function
+      real(rk),pointer    :: symm_toler(:) ! tolerance that decides whether the symmetry transformation matrix 
+                                              ! has been properly recostracted at the sample point, i.e. the transformed function
                                               ! coincides with the sampe function at the transformed sample point. 
       integer(ik)         :: msample_points = 40  ! number of sample points for determination of the symmetry transformational properties of the contr. solution
       integer(ik)         :: msample_attempts = 100 ! maximal number of attempts of samplings in the symmetry determinations
@@ -550,6 +550,7 @@ module fields
  
    type(FLactionT),save               :: action   ! defines dfifferent actions to perform
 
+   real(ark) :: fd_step_Bmat=1e-4  ! finite difference parameter used for Bmat differentiation numerically 
 
   contains
 
@@ -857,6 +858,12 @@ module fields
             stop 'FLinput - cannot allocate extF%intcoords'
          end if
          !
+         allocate (job%symm_toler(Nmodes),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate symm_toler')") alloc
+             stop 'FLinput, symm_toler - out of memory'
+         end if
+         !
          ! default values for bset and fdstep 
          !
          job%bset(1:trove%Nmodes) = vibbasisset_
@@ -971,7 +978,26 @@ module fields
              !
            case ("SYMM_TOLER")
              !
-             call readf(job%symm_toler)
+             !call readf(job%symm_toler)
+             !
+             if (nitems-1==1) then 
+                call readf(f_t)
+                job%symm_toler(:) = f_t
+                call read_line(eof) ; if (eof) exit
+                call readu(w)
+                cycle 
+             endif 
+             !
+             if (nitems-1/=Nmodes) then 
+                write (out,"('FLinput: wrong number elements in job%symm_toler : ',i8)") nitems-1
+                stop 'FLinput - illigal number of job%symm_toler'
+             endif 
+             !
+             do i =1,Nmodes
+                !
+                call readf(job%symm_toler(i))
+                !
+             end do
              !
            case ("SAMPLE_POINTS")
              !
@@ -1603,7 +1629,7 @@ module fields
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(-2,-202,302) 
+               case(-2,-202,-302) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
@@ -3774,6 +3800,10 @@ module fields
                 extF%geom_ref(imode) = extF%geom_ref(imode)*lfact
                 !
               enddo
+              !
+            case ("DSTEP_BMAT")
+              !
+              call readf(fd_step_Bmat)
               !
             case ("DSTEP")
               !
@@ -8356,7 +8386,7 @@ end subroutine check_read_save_none
             enddo
           enddo
           !
-          if (abs(tau_sign)<small_a) tau_sign = B
+          if (abs(tau_sign)<100.0_ark*small_a) tau_sign = B
           tau_sign = sign(1.0_ark,tau_sign)
           !
           do i = 1,4
@@ -8628,9 +8658,7 @@ end subroutine check_read_save_none
           !
           xna = a0
           !
-          deltax = trove%fdstep(1)
-          !
-          deltax = 1e-4
+          deltax = fd_step_Bmat
           !
           do iatom = 1,trove%Natoms
              do ix = 1,3

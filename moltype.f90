@@ -11,7 +11,7 @@ module moltype
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF
-  public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry
+  public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -2233,6 +2233,121 @@ module moltype
     
   end function faclogf
 
+
+  subroutine ML_rjacobi_fit_ark(N,M,a,b,x,tolerance)
+    !
+    integer(ik),intent(in) :: N,M
+    real(ark),intent(in)  :: a(N,M),b(N)
+    real(ark),intent(inout) :: x(M)
+    real(rk),intent(in) :: tolerance
+    !
+    real(ark) :: x0(m),eps(n)
+    real(ark) :: rjacob(n,m),b_(n),am(m,m),bm(m),b_r(n),b_l(n),cm(m)
+
+    real(ark) :: stadev_old,stability,stadev,ssq,stadev_best,h
+    double precision :: ad(m,m),bd(m,1)
+    !
+    integer(ik),parameter :: itmax=100
+    integer(ik) :: iter,k,irow,icolumn,ierror
+    !
+    rjacob = 0 
+    iter = 0
+    stadev_old = 1.e10
+    stability =  1.e10
+    stadev    =  1.e10
+    !
+    x0 = x
+    !
+    stadev_best = tolerance ! (small_)*1e-2
+    !
+    iter = 0 
+    !
+    outer_loop: & 
+    do while( iter<itmax .and. stadev>stadev_best )   
+      !
+      iter = iter + 1
+      ssq=0
+      !
+      ! Calculate the target 
+      !
+      b_ = matmul(a,x)
+      !
+      eps(:) = b(:)-b_(:)
+      !
+      do k = 1,m
+        !
+        h = 1.e-4*abs(x(k)) ; if (h<sqrt(small_)) h = sqrt(small_)
+        !
+        x(k) = x(k) + h 
+        !
+        b_r = matmul(a,x)
+        !
+        x(k) = x(k) - h - h
+        !
+        b_l = matmul(a,x)
+        !
+        rjacob(:,k)  = ( b_r(:)-b_l(:))/h*0.5_ark
+        !
+        x(k) = x(k) + h
+        !
+      enddo 
+      !
+      ssq=sqrt(sum(eps(:)**2))
+      !
+      ! We constract a set of linear equations A x = B
+      !
+      ! form A matrix 
+      !
+      do irow=1,m       !==== row-...... ====!
+        do icolumn=1,irow    !==== column-....====!
+          am(irow,icolumn)=sum(rjacob(:,icolumn)*rjacob(:,irow))
+          am(icolumn,irow)=am(irow,icolumn)
+        enddo
+      enddo
+      !
+      ! form B matrix 
+      !
+      do irow=1,m       !==== row-...... ====!
+        bm(irow)=sum(eps(:)*rjacob(:,irow))
+      enddo   
+      !
+      ! Solve the set of linear equations 
+      !
+      call MLlinurark(m,am,bm,cm,ierror)
+      !
+      if (ierror>0) then
+        !
+        ad = am ; bd(:,1) = bm(:) 
+        !
+        call lapack_gelss(ad(:,:),bd(:,:))
+        !
+        cm(:) = bd(:,1)
+        !
+      endif
+      !
+      x(:)=x(:)+cm(:)
+      !
+      stadev=ssq/sqrt(real(n,ark))
+      !
+      stadev_old=stadev
+      !
+    enddo  outer_loop ! --- iter
+    !
+    b_ = matmul(a,x)
+    !
+    eps(:) = b(:)-b_(:)
+    !
+    ssq=sqrt(sum(eps(:)**2))
+    !
+    stadev=ssq/sqrt(real(n,ark))
+    !
+    if (iter==itmax.and.verbose>=5.and.stadev>sqrt(small_)) then
+       write(6,"('ML_rjacobi_fit_ark: could not find solution after ',i8,' iterations')") iter
+       stop 'ML_rjacobi_fit_ark: could not find solution'
+    endif 
+
+  end subroutine ML_rjacobi_fit_ark
+  !
 
 
 end module moltype
