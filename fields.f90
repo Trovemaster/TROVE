@@ -2114,6 +2114,10 @@ module fields
              !
              if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
+             if (trim(w)=='SAVE'.and.trove%separate_store) then
+                trove%IO_hamiltonian = 'SAVE'
+             endif 
+             !
            case('BASIS_SET')
              !
              call readu(trove%IO_basisset)

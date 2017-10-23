@@ -2686,7 +2686,7 @@ module perturbation
          !
          diag_='SYEV'
          !
-         if (FLl2_coeffs) then
+         if (FLl2_coeffs.and.job%bset(kmode)%lvib) then
            !
            call PThamiltonianMat(jrot=-1_ik,nroots=nroots,diagonalizer_=diag_,postprocess_=bs_t(kmode)%postprocess)
            !
@@ -2713,7 +2713,7 @@ module perturbation
            !
          enddo
          !
-       elseif (FLl2_coeffs.and.job%bset(kmode)%lvib) then 
+       elseif (FLl2_coeffs.and.false) then 
          !
          ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
          ! to learn the symmetric properties of the contracted basis function. 
@@ -23400,7 +23400,7 @@ end subroutine read_contr_matelem_expansion_classN
             !
             if (PTvibrational_me_calc) then 
               ! 
-              ! Vibrational part of the kinetic operator g_vib
+              ! Vibrational angular momentum
               !
               do k1 = 1,PT%Nmodes
                  do k2 = 1,PT%Nmodes
@@ -31932,7 +31932,7 @@ end subroutine read_contr_matelem_expansion_classN
                    !
                    excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                    !
-                   if (excluded_power>0.or.imode1>k1.or.k1>imode2.or.&
+                   if (excluded_power>1.or.imode1>k1.or.k1>imode2.or.&
                                            imode1>k2.or.k2>imode2)  &
                                                      fl%iorder(iterm) = 1
                   !
