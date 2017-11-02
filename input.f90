@@ -527,12 +527,12 @@ END SUBROUTINE getargs
 !-----------------------------------------------------------------------
 
 SUBROUTINE input_options(default,clear_if_null,skip_blank_lines,       &
-    echo_lines, error_flag, concat_string)
+    echo_lines, error_flag, concat_string, default_unit)
 
 IMPLICIT NONE
 LOGICAL, OPTIONAL :: default, clear_if_null, skip_blank_lines,         &
     echo_lines
-INTEGER, OPTIONAL :: error_flag
+INTEGER, OPTIONAL :: error_flag, default_unit
 CHARACTER(LEN=*), optional :: concat_string
 
 if (present(default)) then
@@ -561,6 +561,9 @@ if (present(concat_string)) then
       ("Concatenation string must be 8 characters or fewer",.false.)
   concat=concat_string
   lc=len(trim(concat_string))
+endif
+if (present(default_unit)) then
+  ir=default_unit
 endif
 
 END SUBROUTINE input_options

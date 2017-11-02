@@ -626,6 +626,8 @@ module fields
    integer(ik) :: i,iatom,imode,natoms,alloc,Nparam,iparam,i_t
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
    character(len=4) :: char_j
+   integer :: arg_status, arg_length, arg_unit
+   character(:), allocatable :: arg
                                         ! in the symmetr. diag. routine 
    !
    !
@@ -736,7 +738,17 @@ module fields
    !
    Jrot = 0
    !
-   call input_options(echo_lines=.true.,error_flag=1)
+   arg_unit = 5
+   call get_command_argument(1, status=arg_status, length=arg_length)
+   if (arg_status == 0) then
+     allocate( character(arg_length) :: arg )
+     call get_command_argument(1, status=arg_status, value=arg)
+     if (arg_status == 0) then
+       open(newunit=arg_unit, file=arg, status='old')
+     end if
+   end if
+   !
+   call input_options(echo_lines=.true.,error_flag=1, default_unit=arg_unit)
    !
    ! read the general input 
    !
