@@ -2713,7 +2713,7 @@ module perturbation
            !
          enddo
          !
-       elseif (FLl2_coeffs.and.false) then 
+       elseif (FLl2_coeffs.and.job%bset(kmode)%lvib) then 
          !
          ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
          ! to learn the symmetric properties of the contracted basis function. 
@@ -31932,20 +31932,22 @@ end subroutine read_contr_matelem_expansion_classN
                    !
                    excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                    !
-                   if (excluded_power>1.or.imode1>k1.or.k1>imode2.or.&
-                                           imode1>k2.or.k2>imode2)  &
-                                                     fl%iorder(iterm) = 1
-                  !
-                  if (imode1>0.and.imode2<=PT%Nmodes) then 
-                    !
-                    excluded_power = sum(k(imode1:imode2))
-                    if (excluded_power>rpower) fl%iorder(iterm) = 1
-                    !
-                    !if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
-                    !
-                    !if (diagonal.and.k1/=k2) fl%iorder(iterm) = 1
-                    !
-                  endif 
+                   if (excluded_power>0.or.imode1>k1.or.k1>imode2.or.&
+                                                imode1>k2.or.k2>imode2) then
+                      fl%iorder(iterm) = 1
+                      cycle 
+                   endif
+                   !
+                   if (imode1>0.and.imode2<=PT%Nmodes) then 
+                     !
+                     excluded_power = sum(k(imode1:imode2))
+                     if (excluded_power>rpower) fl%iorder(iterm) = 1
+                     !
+                     !if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
+                     !
+                     !if (diagonal.and.k1/=k2) fl%iorder(iterm) = 1
+                     !
+                   endif 
                    !
                 enddo
                 ! 

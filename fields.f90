@@ -2114,7 +2114,7 @@ module fields
              !
              if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
-             if (trim(w)=='SAVE'.and.trove%separate_store) then
+             if (trim(trove%IO_kinetic)=='SAVE'.and.trove%separate_store) then
                 trove%IO_hamiltonian = 'SAVE'
              endif 
              !
