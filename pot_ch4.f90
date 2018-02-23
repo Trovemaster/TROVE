@@ -1476,7 +1476,7 @@ module pot_user
     !
     real(ark) :: r1,r2,r3,r4,alpha12,alpha13,alpha23,alpha14,alpha24,alpha34
     !
-    real(ark) :: re,beta,y1,y2,y3,y4,y5,y6,y7,y8,y9
+    real(ark) :: re,beta,y1,y2,y3,y4,y5,y6,y7,y8,y9,s1,s2,s3
     !
     beta = 1.0d0
     !
@@ -7229,7 +7229,8 @@ module pot_user
     dF(3,679) = -y3*y4**4*y5+y1**4*y2*y5-y3**4*y4*y5+y1*y2**4*y5
     dF(3,680) = y1**2*y2**4+y1**4*y2**2-y3**2*y4**4-y3**4*y4**2
     dF(3,681) = -y4**6+y1**6-y3**6+y2**6
-      !
+  
+ 
  end subroutine dipch4_diff_mu
 
 

@@ -6809,8 +6809,12 @@ module perturbation
       if (associated(gcor)) deallocate(gcor)
       if (associated(hvib%me)) deallocate(hvib%me)
       !
-      call ArrayStart('grot-gcor-hvib',0,1,4)
-      call Arraystop('grot-gcor-hvib')
+      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('grot-matrix',0,1,4)
+      call ArrayStart('gcor-matrix',0,1,4)
+      call ArrayStop('hvib-matrix')
+      call ArrayStop('grot-matrix')
+      call ArrayStop('gcor-matrix')
       !
       if (job%verbose>=4) write(out,"(/' ...done!)')") 
       !
@@ -6898,8 +6902,12 @@ module perturbation
       if (associated(gcor)) deallocate(gcor)
       if (associated(hvib%me)) deallocate(hvib%me)
       !
-      call ArrayStart('grot-gcor-hvib',0,1,4)
-      call Arraystop('grot-gcor-hvib')
+      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('grot-matrix',0,1,4)
+      call ArrayStart('gcor-matrix',0,1,4)
+      call ArrayStop('hvib-matrix')
+      call ArrayStop('grot-matrix')
+      call ArrayStop('gcor-matrix')
       !
       if (job%verbose>=4) write(out,"(/' ...done!)')")       !
     else ! slow and cheap calculations
@@ -6979,7 +6987,7 @@ module perturbation
         enddo
         !
         deallocate(grot)
-        call Arraystop('grot-gcor-hvib')
+        call Arraystop('grot-matrix')
         !
         if (job%verbose>=4) write(out,"('   Coriolis part...')")
         !
@@ -7045,7 +7053,7 @@ module perturbation
         enddo
         !
         deallocate(gcor)
-        call Arraystop('grot-gcor-hvib')
+        call Arraystop('gcor-matrix')
         !
       endif
       ! 
@@ -7114,8 +7122,12 @@ module perturbation
         !
         deallocate(hvib%me)
         !
-        call ArrayStart('grot-gcor-hvib',0,1,4)
-        call Arraystop('grot-gcor-hvib')
+        call ArrayStart('hvib-matrix',0,1,4)
+        call ArrayStart('grot-matrix',0,1,4)
+        call ArrayStart('gcor-matrix',0,1,4)
+        call ArrayStop('hvib-matrix')
+        call ArrayStop('grot-matrix')
+        call ArrayStop('gcor-matrix')
         !
       endif 
       !
@@ -7682,7 +7694,7 @@ module perturbation
           call divided_slice_open(islice,chkptIO_,'g_rot',job%matelem_suffix)
           !
           allocate(grot(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
-          call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
+          call ArrayStart('grot-matrix',alloc,1,kind(f_t),rootsize2_)
           !
           read(chkptIO_) mat_
           !
@@ -7725,7 +7737,7 @@ module perturbation
         islice = islice + 1
         !
         allocate(gcor(k1)%me(maxcontr,maxcontr),stat=alloc)
-        call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
+        call ArrayStart('gcor-matrix',alloc,1,kind(f_t),rootsize2_)
         !
         call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
         !
@@ -7771,13 +7783,13 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        do k1 = 1,PT%Nmodes
-          do k2 = 1,3
-            !
-            read(chkptIO) mat_t
-            !
-          enddo
+        !do k1 = 1,PT%Nmodes
+        do k2 = 1,3
+          !
+          read(chkptIO) mat_t
+          !
         enddo
+        !enddo
         !
         deallocate(mat_t)
         call ArrayStop('mat_t')
@@ -7800,7 +7812,7 @@ module perturbation
       call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
       !
       allocate(hvib%me(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
+      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
       !
       read(chkptIO) mat_
       !
@@ -7957,8 +7969,12 @@ module perturbation
       !
       if (associated(hvib%me)) deallocate(hvib%me)
       !
-      call ArrayStart('grot-gcor-hvib',0,1,4)
-      call ArrayStop('grot-gcor-hvib')
+      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('grot-matrix',0,1,4)
+      call ArrayStart('gcor-matrix',0,1,4)
+      call ArrayStop('hvib-matrix')
+      call ArrayStop('grot-matrix')
+      call ArrayStop('gcor-matrix')
       !
       icontr1 = PT%Ncontr02icase0(icontr,1)
       icontr2 = PT%Ncontr02icase0(icontr,2)
@@ -7966,7 +7982,7 @@ module perturbation
       if (job%verbose>=6) write(out,"('allocate hvib for ',i9,' x ',i8,' -> ',i8)") maxcontr,icontr1,icontr2
       !
       allocate(hvib%me(maxcontr,icontr1:icontr2),stat=alloc)
-      call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
+      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
       !
       read(chkptIO) hvib%me
       !
@@ -14528,6 +14544,10 @@ module perturbation
               iterm2 = min(job%iswap(2),(PT%Nmodes+3)*3+PT%Nmodes**2)
             endif             
             !
+          endif
+          !
+          if (job%IOmatelem_divide ) then
+            !
             if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + ',i3,'x 3 = ',i5,' chk-slices')") PT%Nmodes,9+3*PT%Nmodes+1
             if (job%verbose>=4) write(out,"('  islice = 0 (gvib+poten stitching), 1-9 (Grot), 10-',i3,' (Gcor), ',i3,'-',i3,' (Gvib), and ',i3,' (Poten) ')") 9+3*PT%Nmodes,9+3*PT%Nmodes+1,9+3*PT%Nmodes+PT%Nmodes**2,9+3*PT%Nmodes+PT%Nmodes**2+1
             if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4)") iterm1,iterm2
@@ -14535,7 +14555,16 @@ module perturbation
             if (job%verbose>=4) write(out,"('  Vibrational chk-s obtained separately must be combined using MATELEM SAVE STITCH or MATELEM SAVE 0 0')")
             if (job%verbose>=4) write(out,"('  For all slices run and stitched in one go use MATELEM SAVE SPLIT ')")
             !
+          elseif (job%IOmatelem_split) then
+            !
+            if (job%verbose>=4) write(out,"('  The matelem.chk will be divided into 3 x 3 + 1 chk-slices')")
+            if (job%verbose>=4) write(out,"('  islice = 0 (gvib+poten stitching), 1-9 (Grot), 10-12 (Gcor)')") 
+            if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4)") iterm1,iterm2
+            if (job%verbose>=4) write(out,"(/'  For a single chk-slice #i use MATELEM SAVE SPLIT i i ')")
+            if (job%verbose>=4) write(out,"('  For all slices in one go use MATELEM SAVE SPLIT ')")
+            !
           endif
+          !
           !
           allocate(grot_t(mdimen,mdimen),hrot_t(mdimen,mdimen),gcor_t(mdimen,mdimen),stat=alloc)
           call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -14877,7 +14906,8 @@ module perturbation
             !
             !hvib_t = -0.5_rk*hvib_t
             !
-            if (.not.(job%IOmatelem_divide)) then
+            if (.not.(job%IOmatelem_divide).and.&
+               (.not.job%IOmatelem_split.or.(islice>=iterm1.and.iterm2>=islice) ) ) then
               !
               job_is = 'poten'
               poten_N = FLread_fields_dimension_field(job_is,k1,k2)
@@ -14965,10 +14995,11 @@ module perturbation
             ! now we can switch off IOmatelem_split and compute the vibrational energies 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) job%IOmatelem_divide = .false.
+            if (job%IOmatelem_split.and.job%iswap(1)==0) job%IOmatelem_split = .false.
             !
             ! combining and symmetrizing 
             !
-            if ( .not.job%IOmatelem_divide ) then
+            if ( .not.job%IOmatelem_divide.and..not.job%IOmatelem_split ) then
               !
               !$omp parallel do private(icoeff,jcoeff) schedule(dynamic)
               do icoeff=1,mdimen
@@ -14991,7 +15022,8 @@ module perturbation
           ! store the matrix elements 
           !
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
-                  (.not.job%IOmatelem_divide.or.job%iswap(1)==0) ) then
+                  (.not.job%IOmatelem_divide.or.job%iswap(1)==0) .and. &
+                  (.not.job%IOmatelem_split.or.job%iswap(1)==0)) then
              !
              write(chkptIO) 'hvib'
              write(chkptIO) hvib%me
@@ -15003,7 +15035,8 @@ module perturbation
         !Finish the contracted checkpointing
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
-           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 )) then
+           (.not.job%IOmatelem_divide.or.job%iswap(1)==0 ).and. &
+           (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) ) then
           !
           write(chkptIO) 'End Kinetic part'
           close(chkptIO,status='keep')
@@ -15988,7 +16021,9 @@ module perturbation
                 !
               enddo
               !
-              if (job%IOmatelem_dump ) then 
+              if (job%IOmatelem_dump ) then
+                  !
+                  if (job%verbose>=6.and.mod(isymcoeff,max(int(PT%Maxsymcoeffs/500),10))==0) write(out,"(i12)") isymcoeff 
                   !
                   call open_dump_slice(islice,'g_cor',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
                   write(dumpIO_) k1,k2

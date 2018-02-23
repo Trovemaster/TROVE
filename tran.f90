@@ -420,7 +420,7 @@ contains
     dimen  = bset_contr(1)%Maxcontracts
     !
     allocate(i2d_to_1d(dimen,dimen), stat = info)
-    call ArrayStart('i2d_to_1d',info,size(i2d_to_1d),kind(i2d_to_1d))
+    call ArrayStart('i2d_to_1d',info,1,kind(i2d_to_1d),size(i2d_to_1d,kind=hik))
     !
     do icontr = 1,dimen
       !
@@ -1371,6 +1371,8 @@ contains
         !
         rootsize = int(bset_contr(1)%Maxcontracts*(bset_contr(1)%Maxcontracts+1)/2,hik)
         rootsize2= int(bset_contr(1)%Maxcontracts*bset_contr(1)%Maxcontracts,hik)
+        rootsize2= int(bset_contr(1)%Maxcontracts,hik)
+        rootsize2 = rootsize2*rootsize2
         !
         allocate(gmat(dimen,dimen),stat=info)
         call ArrayStart('gmat-fields',info,1,kind(gmat),rootsize2)
@@ -1484,9 +1486,9 @@ contains
         !
         islice = 9
         !
-        do k1 = 1,FLNmodes
+        !do k1 = 1,FLNmodes
           !
-          if (job%contrci_me_fast.and.k1>1) cycle
+          !if (job%contrci_me_fast.and.k1>1) cycle
           !
           do k2 = 1,3
             !
@@ -1530,7 +1532,7 @@ contains
             !
           enddo
           ! 
-        enddo
+        !enddo
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !

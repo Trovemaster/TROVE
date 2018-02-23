@@ -1168,13 +1168,14 @@ module mol_abcd
          select case(ioper)
          !
          case (1) ! identity 
-
+           !
            dst = src
-
+           !
          case (2) ! (E*)
-
-           dst = src
-
+           !
+           dst(1:5) = src(1:5)
+           dst(6) =-src(6)
+           !
          case default
 
            write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
@@ -1327,7 +1328,7 @@ module mol_abcd
            dst(3) = src(3)
            dst(4) = src(4)
            dst(5) = src(5)
-           dst(6) = src(6)
+           dst(6) =-src(6)
            !
          case (4) ! (12)(34)*
 
@@ -1336,7 +1337,7 @@ module mol_abcd
            dst(3) = src(2)
            dst(4) = src(5)
            dst(5) = src(4)
-           dst(6) = src(6)
+           dst(6) =-src(6)
 
          case default
 
@@ -2342,7 +2343,7 @@ module mol_abcd
                 dst(4) = (q2x*cos(phi_n)-q2y*sin(phi_n))
                 dst(5) = (q2x*sin(phi_n)+q2y*cos(phi_n))
                 !
-              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  C'2
+              elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then !  sigmav
                 !
                 irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
                 !
@@ -3495,8 +3496,8 @@ module mol_abcd
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
        if (mod(K+2,2)==0.and.tau==1) gamma =3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma =2 !4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma =4 !2 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma =3 !4 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma =1 !2 !; return
        !
     case('CS(EM)')
        !
@@ -3511,10 +3512,10 @@ module mol_abcd
        !
        gamma = 0 
        ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 !1 ; return
+       if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !4 !3 !3 !2 ; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !4 !3 !2 !4 !2 !3 ; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !3 !2 !3 !2 !4 !4 ; return
        !
     case('G4(EM)')
        !
@@ -3567,12 +3568,13 @@ module mol_abcd
              !
           elseif (tau<=1.and.k<=j) then
              !
-             ideg = tau +1
+             ideg = 1 ! tau +1
+             if (mod(k+tau,2)/=0) ideg = 2
              !
              if     (mod(k+2,2)==0) then 
                  gamma = 4+2*l-1
              else
-                 gamma = 4+2*l
+                gamma = 4+2*l
              endif
              !
           else

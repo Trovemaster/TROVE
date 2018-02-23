@@ -5447,11 +5447,11 @@ end subroutine check_read_save_none
              enddo
              !
              write(out,"(/'Bmatrho matrices:')") 
-             do iatom = 1,trove%Natoms
-                do imode = 1,Nmodes
+             do imode = 1,Nmodes
+               do iatom = 1,trove%Natoms
                    do irho = 0,Npoints
                      !
-                     write(out,"(i5,3f18.8)") irho,trove%Bmatrho(imode,iatom,:,irho)
+                     write(out,"(3i5,3f18.8)") imode,iatom,irho,trove%Bmatrho(imode,iatom,:,irho)
                      !
                    enddo
                enddo
