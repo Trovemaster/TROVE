@@ -535,14 +535,21 @@ module lapack
     integer          :: nh1, nh2,liwork,lwork
     double precision,allocatable :: work(:)
     integer,allocatable :: iwork(:)
-    
-
-    lwork  = 50*size(h,dim=1)
-    liwork = 50*size(h,dim=1)
-    !
-    allocate(work(lwork),iwork(liwork))
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
+    !
+    lwork  = 2*nh1**2+6*nh1+10
+    liwork = 3*nh1+10
+    !
+    allocate(work(lwork),stat=info)
+    call ArrayStart('lapack_ssyevd-arrays-work',info,size(work),kind(work))
+    allocate(iwork(liwork),stat=info)
+    call ArrayStart('lapack_ssyevd-arrays-work',info,size(iwork),kind(iwork))
+    !
+    if (info/=0) then
+      write (out,"(' dsyevd returned allocation work failed',i8)") info
+      stop 'lapack_dsyevd - allocation work failed'
+    end if
     call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,iwork,-1,info)
     !
     if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
@@ -562,12 +569,13 @@ module lapack
       !
     endif 
     !
-    deallocate(work,iwork)
-    !
     if (info/=0) then
       write (out,"(' dsyevd returned ',i8)") info
       stop 'lapack_dsyevd - dsyev failed'
     end if
+    !
+    deallocate(work,iwork)
+    call ArrayStop('lapack_ssyevd-arrays-work')
     !
   end subroutine lapack_dsyevd
 

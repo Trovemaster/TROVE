@@ -4071,7 +4071,7 @@ contains
              !
              ! intensity in cm/mol
              !
-             absorption_int = linestr * intens_cm_molecule * boltz_fc
+             absorption_int = linestr**2 * intens_cm_molecule * boltz_fc
              !
              if (linestr>=intensity%threshold%intensity) then 
                !

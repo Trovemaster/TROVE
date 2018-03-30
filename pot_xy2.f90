@@ -1791,6 +1791,9 @@ endif
    !
    real(ark)            :: str1,str2,enetmp1,atp1,enetmp2,edamp11,edamp12,edamp1,V
    real(ark)            :: v0,rrco1,rrco2,r1,r2,a3,xx1,xx2,rco1,rco2,ang,dstr1,dstr2,sumstr2,sumstr4,angref,angx,bdamp2,bdamp4
+   !
+   real(ark)            ::   v1(3),v2(3),x1,x2,cosalpha1
+   character(len=cl)    :: txt = 'MLpoten_c3_R_theta'
         !
         r12ref  = force(1)
         alpha2  = force(2)
@@ -1821,6 +1824,23 @@ endif
           !
         endif 
         !
+        if  (molec%Ndihedrals>1) then
+          !
+          ang = asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+          !
+          v1(:) = xyz(2,:)-xyz(1,:)
+          v2(:) = xyz(3,:)-xyz(1,:)
+          !
+          x1 = sqrt(sum(v1(:)**2))
+          x2 = sqrt(sum(v2(:)**2))
+          !
+          cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+          !
+          !alpha = aacos(cosalpha1,txt)
+          ang  = aacos(cosalpha1,txt)-pi
+          !
+        endif
+        !
         r1=1._ark-exp(-alpha*(rco1-r12ref))
         r2=1._ark-exp(-alpha*(rco2-r12ref))
         a3=cos(ang)
@@ -1843,7 +1863,7 @@ endif
         sumstr2=dstr1**2+dstr2**2
         sumstr4=dstr1**4+dstr2**4
         !
-        angref=150.0_ark*pi/180.d0-pi
+        angref=150.0_ark*pi/180.0_ark-pi
         !
         angx=min(-abs(ang)-angref,0.0_ark)
         bdamp2=angx**2;bdamp4=angx**4
@@ -1868,14 +1888,14 @@ endif
         sumstr2=(xx1-r12ref)**2+(xx2-r12ref)**2
         sumstr4=(xx1-r12ref)**4+(xx2-r12ref)**4
         edamp11=-0.5_ark; edamp12=-0.5_ark
-        edamp1=exp(0.2_ark*edamp11*sumstr2+0.d0*edamp12*sumstr4)
+        edamp1=exp(0.2_ark*edamp11*sumstr2+0*edamp12*sumstr4)
         enetmp2=edamp1*enetmp2
         !
         V0=V0+enetmp1+enetmp2
         !
         V=V0-emin
         !
-        f = V*219474.63067d0
+        f = V*219474.63067_ark
         !
   end function MLpoten_co2_ames1
 
@@ -1920,7 +1940,7 @@ endif
         !
         rref = r12ref
         !
-        a2b=0.529177249d0
+        a2b=0.529177249_ark
         !
         rrso1 = local(1)
         rrso2 = local(2)
@@ -2665,9 +2685,10 @@ endif
    real(ark),intent(in)   ::  xyz(natoms,3)
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
-   real(ark)    ::   re,alphae,vpot, q(3),theta,y(3),p1,p2
+   real(ark)    ::   re,alphae,vpot, q(3),theta,y(3),p1,p2,v1(3),v2(3),alpha,x1,x2,cosalpha1
    integer(ik)  ::   i,k_ind(2)
    real(ark),parameter :: tocm = 219474.63067_ark
+   character(len=cl)  :: txt = 'MLpoten_c3_R_theta'
      !
      re = force( 1)
      alphae = force(2)
@@ -2687,6 +2708,18 @@ endif
      if  (molec%Ndihedrals>1) then
        !
        theta = asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+       q(3) = theta
+       !
+       v1(:) = xyz(2,:)-xyz(1,:)
+       v2(:) = xyz(3,:)-xyz(1,:)
+       !
+       x1 = sqrt(sum(v1(:)**2))
+       x2 = sqrt(sum(v2(:)**2))
+       !
+       cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+       !
+       alpha = aacos(cosalpha1,txt)
+       theta  = pi- alpha
        q(3) = theta
        !
      endif

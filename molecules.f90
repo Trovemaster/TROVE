@@ -101,6 +101,11 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy3_morbid_11
          !
+         !
+    case('POTEN_XY3_MORBID_MORPHING') 
+         !
+         MLpotentialfunc => MLpoten_xy3_morbid_morphing
+         !
     case('POTEN_XY2_SCHWENKE') 
          !
          MLpotentialfunc => MLpoten_xy2_schwenke
