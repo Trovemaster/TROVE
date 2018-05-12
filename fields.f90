@@ -3525,11 +3525,13 @@ module fields
            case("SYM","SYMM","SYMMETRY","SYMMETRIES","GNS")
              !
              job%isym_do = .false.
+             job%select_gamma = .false.
              !
              do while (item<Nitems.and.item-1<sym%Nrepresen)
                !
                call readi(i)
                if (i>0) job%isym_do(i) = .true.
+               if (i>0) job%select_gamma(i) = .true.
                !
              enddo
              !
