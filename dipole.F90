@@ -1,10 +1,11 @@
 module dipole
 
-!dec$ define dipole_debug = 0 ! set dipole_debug > 2 with small expansions only
-                              ! 0 - none
-                              ! 1 - some checkings only (no printing)
-                              ! 2 - minimal printing
-                              ! 3 - extendent printing
+#define dipole_debug 0
+! 0 - none
+! 1 - some checkings only (no printing)
+! 2 - minimal printing
+! 3 - extendent printing
+! set dipole_debug > 2 with small expansions only
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
  use fields,       only : manifold,job,analysis,bset
@@ -848,10 +849,10 @@ contains
       !
     enddo
     !
-    !dec$ if (dipole_debug >= 0)
+#if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
        write(out,"(' Total number of transitions  = ',i10)") Ntransit
-    !dec$ end if
+#endif
     !
     !
     ! In order to speed up the line strength evaluation, 
@@ -3485,10 +3486,10 @@ contains
     !
     write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
     !
-    !dec$ if (dipole_debug >= 0)
+#if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
        write(out,"(' Total number of transitions  = ',i8)") Ntransit
-    !dec$ end if
+#endif
     !
     !
     ! In order to speed up the line strength evaluation, 
@@ -3676,11 +3677,11 @@ contains
               !
               !if (ndegI>1) ideg_range = mod(idegI,2)+1
               !
-              !dec$ if (dipole_debug >=3)
+#if (dipole_debug >=3)
               !  !
               !  ideg_range(1) = 1; ideg_range(2) = ndegF 
               !  !
-              !dec$ end if
+#endif
               !
               if (job%rotsym_do) then 
                 !
@@ -3872,11 +3873,11 @@ contains
                 !!
                 !if (ndegI>1) ideg_range = mod(idegI,2)+1
                 !!
-                !!dec$ if (dipole_debug >=3)
+                !#if (dipole_debug >=3)
                 !  !
                 !  ideg_range(1) = 1; ideg_range(2) = ndegF 
                 !  !
-                !!dec$ end if
+                !#endif
                 !
                 ! swtich to a reduced C3v/D3h case by commenting the next loop
                 !
