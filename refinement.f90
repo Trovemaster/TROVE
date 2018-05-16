@@ -1093,13 +1093,36 @@ contains
                     !
                  enddo
                  !
+                 ! switch off energies with large obs-calc assuming unwanted swapping 
+                 if (fitting%threshold_obs_calc>small_) then
+                     !
+                     do iener = 1,en_npts
+                       !
+                       iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
+                       !
+                       if (iJ==Jrot.and.igamma==isym) then
+                         !
+                         if (abs(eps(iener))>fitting%threshold_obs_calc.and.wtall(iener)>small_) then
+                           wtall(iener) = 0
+                           if (fitting%robust>small_) sigma(iener) = 0
+                           eps(iener) = 0
+                           nused = nused - 1
+                         endif
+                         !
+                       endif
+                     enddo
+                     nused = max(nused,1)
+                     wtsum = sum(wtall(1:npts))
+                     wtall(1:npts) = wtall(1:npts)/wtsum
+                     !
+                 endif
+                 !
                  deallocate(energy_)
                  if (allocated(deriv)) deallocate(deriv )
                  call ArrayStop('fit-ener-deriv')
                  !
                  deallocate(ilargest)
                  call ArrayStop('ilargest')
-
                  !
                enddo loop_isym
                !
@@ -1295,7 +1318,7 @@ contains
                !
                do ncol=1,numpar 
                   i = ifitparam(ncol)
-                  potparam(i)=potparam(i)+dx(ncol)*0.3d0
+                  potparam(i)=potparam(i)+dx(ncol)*fitting%fit_scale
                enddo
                !
                ! Robust fit: adjust the fitting weights

@@ -194,6 +194,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3_linearized
          !
+     case('POTEN_C2H2_7_Q2Q1Q4Q3_LINEAR_MORPHED') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3_linearized_morphing
+         !
      case('POTEN_C2H2_7_Q2Q1Q4Q3') 
          !
          MLpotentialfunc => MLpoten_c2h2_7_q2q1q4q3         

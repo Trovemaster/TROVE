@@ -391,6 +391,8 @@ module fields
      character(len=cl)    :: fit_type = 'DGELSS'      ! to switch between fitting methods. 
      real(rk)             :: threshold_coeff = -1e-18
      real(rk)             :: threshold_lock  = -1e-18
+     real(rk)             :: threshold_obs_calc  = -1e-16
+     real(rk)             :: fit_scale  = 0.4
      type(FLobsT),pointer :: obs(:)
      !
    end type FLfittingT
@@ -3516,6 +3518,16 @@ module fields
            case('THRESH_ASSIGN','THRESH_REASSIGN','LOCK')
              !
              call readf(fitting%threshold_lock)
+             !
+           case('THRESH_OBS-CALC') 
+             ! switch off weights for residuals larger than THRESH_OBS-CALC
+             !
+             call readf(fitting%threshold_obs_calc)
+             !
+           case('FIT_SCALE') 
+             ! parameter to scale the correction dx for fitting x = x + scale*dx, default = 0.4
+             !
+             call readf(fitting%fit_scale)
              !
            case("IPARAM")
              !
