@@ -755,7 +755,7 @@ module me_bnd
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:)
    real(rk),allocatable :: h(:,:),ener(:),psi(:,:),dpsi(:,:)
    !
    character(len=cl)    :: unitfname 
@@ -778,9 +778,11 @@ module me_bnd
      allocate(dpsi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(dpsi),kind(dpsi))
      !
-     allocate(h(fmax+1,fmax+1),ener(fmax+1),stat=alloc)
+     allocate(h(fmax+1,fmax+1),ener(fmax+1),phi(fmax+1),dphi(fmax+1),stat=alloc)
      call ArrayStart('h-Fourier',alloc,size(h),kind(h))
      call ArrayStart('h-Fourier',alloc,size(ener),kind(ener))
+     call ArrayStart('h-Fourier-phi',alloc,size(phi),kind(phi))
+     call ArrayStart('h-Fourier-phi',alloc,size(dphi),kind(dphi))
      !
      rho_b = rho_b_
      !
@@ -923,20 +925,20 @@ module me_bnd
            kl = (vl+1)/2*p
            !
            if (vl==0) then 
-             phil(vl+1)  = sqrt(0.5_ark/L)
-             dphil(vl+1) = 0
+             phi(vl+1)  = sqrt(0.5_ark/L)
+             dphi(vl+1) = 0
            elseif (mod(vl,2)==0) then
-             phil(vl+1)  = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)
-             dphil(vl+1) =-sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
+             phi(vl+1)  = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)
+             dphi(vl+1) =-sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
            else
-             phil(vl+1)  = sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)
-             dphil(vl+1) = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
+             phi(vl+1)  = sqrt(1.0_ark/L)*sin(real(kl,ark)*pi*rho/L)
+             dphi(vl+1) = sqrt(1.0_ark/L)*cos(real(kl,ark)*pi*rho/L)*real(kl,ark)*pi/L
            endif
            !
         enddo
         !
-        Psi (1:vmax+1,i)  = matmul(transpose(h(:,1:vmax+1)),phil(:))
-        DPsi(1:vmax+1,i)  = matmul(transpose(h(:,1:vmax+1)),dphil(:))
+        Psi (1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),phi(1:fmax+1))
+        DPsi(1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),dphi(1:fmax+1))
         !
      enddo
      !
@@ -946,7 +948,8 @@ module me_bnd
         phil(:)  =  Psi(vl+1,:)
         dphil(:) = dPsi(vl+1,:)
         !
-        write (io_slot,rec=vl+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)        !
+        write (io_slot,rec=vl+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)
+        !
         do vr = vl,vmax
             !
             phir = Psi(vr+1,:)
@@ -1070,9 +1073,10 @@ module me_bnd
      !
      deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF)
      deallocate(h,ener)
-     deallocate(psi,dpsi)
+     deallocate(psi,dpsi,phi,dphi)
      call ArrayStop('psi-phi-Fourier')
      call ArrayStop('h-Fourier')
+     call ArrayStop('h-Fourier-phi')
      !
   end subroutine ME_Fourier
 

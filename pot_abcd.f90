@@ -12,7 +12,7 @@ module pot_abcd
   public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
   public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLdms_HCCH_7D,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
          MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,&
-         MLpoten_c2h2_7_q2q1q4q3_linearized_morphing
+         MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,MLdms_HCCH_7D_7ORDER_linear
 
   private
 
@@ -2170,9 +2170,9 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     y6=y(6)
     y7=y(7)
     !
-    call dmsC2H2_D8h_diff_mux(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
-    call dmsC2H2_D8h_diff_muy(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
-    call dmsC2H2_D8h_diff_muz(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
+    call dmsC2H2_D8h_diff_mux_6th(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
+    call dmsC2H2_D8h_diff_muy_6th(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
+    call dmsC2H2_D8h_diff_muz_6th(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
     !
     mu=0
     !
@@ -2192,6 +2192,282 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     f(1:3) = matmul(rmat,mu)    
     !
     end subroutine MLdms_HCCH_7D
+
+
+ recursive subroutine MLdms_HCCH_7D_7ORDER(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(3)
+
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
+                             y1,y2,y3,y4,y5,y6,y7
+    real(ark)             :: re1,re2,alphae,e0(3),costau, &
+                             beta1,beta2,y(molec%ncoords), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
+    !
+    integer(ik),parameter :: lspace = 150
+    integer(ik),parameter :: nxy = 259, nz = 200
+    integer(ik) :: ierror,rank0,info
+    real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
+    real(ark)   :: dmux(nxy),dmuy(nxy),dmuz(nz)
+    real(ark)    :: cosalpha1,cosalpha2,x1(3),x2(3),x3(3),n30,v2(3),v3(3),v20,v30,n0(3),e20,e30
+    real(ark)    :: b1(3),b0(3),b2(3),t1,t0,t2,a1(3),a0(3),a2(3),w1(3),w2(3),rmat(3,3),mu(3)
+    character(len=cl)  :: txt
+    !
+    !
+    txt = 'Error: MLdms_HCCH_7D_7ORDER'
+    !
+    x1(:) = xyz(1,:)-xyz(2,:)
+    x2(:) = xyz(3,:)-xyz(1,:)
+    x3(:) = xyz(4,:)-xyz(2,:)
+    !
+    r1 = sqrt(sum(x1(:)**2))
+    r2 = sqrt(sum(x2(:)**2))
+    r3 = sqrt(sum(x3(:)**2))
+    !
+    cosalpha1 = sum(-x1(:)*x2(:))/(r1*r2)
+    cosalpha2 = sum( x1(:)*x3(:))/(r1*r3)
+    !
+    alpha1 = aacos(cosalpha1,txt)
+    alpha2 = aacos(cosalpha2,txt)
+    !
+    n3(:) = -x1(:)/r1
+    !
+    n30 = sum(n3*n3)
+    !
+    n3(:) = n3/sqrt(n30)
+    !
+    v2(:) = MLvector_product(x2(:),n3(:))
+    !
+    v3(:) = MLvector_product(n3(:),x3(:))
+    !
+    v20 = sum(v2*v2)
+    v30 = sum(v3*v3)
+    !
+    !setting tau
+    if (v20>sqrt(small_).and.v30>sqrt(small_)) then !both v2 and v3 defined
+       !
+       v2 = v2/sqrt(v20)
+       v3 = v3/sqrt(v30)
+       !
+       costau =-sum(v2*v3)
+       !
+       tau = aacos(costau,txt)
+       !
+    elseif (v20<sqrt(small_).and.v30>sqrt(small_)) then !v2 undefined
+       !
+       v3 = v3/sqrt(v30)
+       tau=0
+       !
+    elseif (v20>sqrt(small_).and.v30<sqrt(small_)) then !v3 undefined
+       v2 = v2/sqrt(v20)
+       tau=0
+       !
+    else !both undefined
+       !
+       tau = 0
+       !
+    endif
+    !End of setting tau
+    !
+    e2(:) = -MLvector_product(v2(:),n3(:))
+    !
+    e3(:) = MLvector_product(v3(:),n3(:))
+    !
+    e20 = sum(e2*e2)
+    e30 = sum(e3*e3)
+    !
+    n1 = 0
+    n2 = 0
+    !
+    !setting n1 and n2
+    if (abs(tau-pi)<sqrt(small_).or.abs(tau+pi)<sqrt(small_)) then !tau=pi planar
+      !
+      n2(:)=-e2(:)
+      !
+    elseif(e30>small_.and.e20>small_) then
+      !
+      n1(:) =  (e2(:) + e3(:))
+      n2(:) =  (e2(:) - e3(:))
+      !
+    elseif (e20<small_.and.e30>small_) then !v3 defined
+      !
+      n1(:) = e3(:)
+      !
+    elseif (e30<small_.and.e20>small_) then !v2 defined
+      !
+      n1(:) = e2(:)
+      !
+    elseif (e30<small_.and.e20<small_) then  !both v2 and v3 undefined
+      !
+      !define arbitrary direction for n1
+      !
+      n1 = (/ 1.0_ark,0.0_ark,0.0_ark /)
+      !
+    else
+      !
+      write(out,"('MLdms_HCCH_7D_7ORDER: you should not be here')")
+      stop 'MLdms_HCCH_7D_7ORDER: you should not be here'
+      !
+    endif
+    !
+    !if (e2(2)>0.or.e3(2)>0) then
+    !  n1 = -n1
+    !endif
+    !
+    !if (v2(2)>0.or.v3(2)>0) then
+    !  n2 = -n2
+    !endif
+    !
+    if (sum(n1(:)*n1(:))>small_) then !n1 defined
+      !
+      n1(:) = n1(:)/SQRT(sum(n1(:)*n1(:)))
+      n2(:) = MLvector_product(n3(:),n1(:))
+      !
+    elseif (sum(n2(:)**2)>small_) then !n2 defined
+      !
+      n2(:) = n2(:)/SQRT(sum(n2(:)*n2(:)))
+      n1(:) = MLvector_product(n2(:),n3(:))
+      !
+    else !both n1 and n2 are still undefined
+      !
+      write(6,"(' both n1 and n2 are  0 : n1 = ',3g12.5,' n2 = ',3g12.5)") n1,n2
+      stop ' n1 = n2 = 0 '
+      !
+    endif
+    !
+    tmat(1,:) = n1(:)
+    tmat(2,:) = n2(:)
+    tmat(3,:) = n3(:)
+    !
+    tau_ = tau
+    !
+    re1     = extF%coef(1,1)
+    re2     = extF%coef(2,1)
+    alphae = 180.00_ark/rad
+    !
+    beta1   = extF%coef(3,1)
+    beta2   = extF%coef(4,1)
+    !
+    a1(:) =matmul(tmat,x2(:))
+    a0(:) =matmul(tmat,x1(:))
+    a2(:) =matmul(tmat,x3(:))
+    !
+    t1 =  sqrt(sum(a1(:)**2))
+    t0 =  sqrt(sum(a0(:)**2))
+    t2 =  sqrt(sum(a2(:)**2))
+    !
+    b1 =  a1(:)/t1
+    b0 =  a0(:)/t0
+    b2 =  a2(:)/t2
+    !
+    w1(:) = MLvector_product(b1,b0)
+    w2(:) = MLvector_product(b0,b2)
+    !
+    y(1) = (r1 - re1) * exp(-beta1 * (r1 - re1) ** 2)
+    y(2) = (r2 - re2) * exp(-beta2 * (r2 - re2) ** 2)
+    y(3) = (r3 - re2) * exp(-beta2 * (r3 - re2) ** 2)
+    y(4) = -w1(2)
+    y(5) = w1(1)
+    y(6) = w2(2)
+    y(7) = -w2(1)
+    !
+    y1=y(1)
+    y2=y(2)
+    y3=y(3)
+    y4=y(4)
+    y5=y(5)
+    y6=y(6)
+    y7=y(7)
+    !
+    call dmsC2H2_D8h_diff_mux_7th(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
+    call dmsC2H2_D8h_diff_muy_7th(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
+    call dmsC2H2_D8h_diff_muz_7th(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
+    !
+    mu=0
+    !
+    do i = 1,Nxy
+      k = 4+i
+      mu(1) = mu(1) + extF%coef(k,1)*dmux(i)
+      mu(2) = mu(2) + extF%coef(k,1)*dmuy(i)
+    enddo
+    !
+    do i = 1,Nz
+      k = 4+Nxy+i
+      mu(3) = mu(3) + extF%coef(k,1)*dmuz(i)
+    enddo
+    !
+    rmat = transpose(tmat)
+    !
+    f(1:3) = matmul(rmat,mu)    
+    !
+    end subroutine MLdms_HCCH_7D_7ORDER
+
+
+ recursive subroutine MLdms_HCCH_7D_7ORDER_linear(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(3)
+
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
+                             y1,y2,y3,y4,y5,y6,y7
+    real(ark)             :: re1,re2,alphae,e0(3),costau, &
+                             beta1,beta2,y(molec%ncoords), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
+    !
+    integer(ik),parameter :: lspace = 150
+    integer(ik),parameter :: nxy = 259, nz = 200
+    integer(ik) :: ierror,rank0,info
+    real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
+    real(ark)   :: dmux(nxy),dmuy(nxy),dmuz(nz)
+    real(ark)    :: cosalpha1,cosalpha2,x1(3),x2(3),x3(3),n30,v2(3),v3(3),v20,v30,n0(3),e20,e30
+    real(ark)    :: b1(3),b0(3),b2(3),t1,t0,t2,a1(3),a0(3),a2(3),w1(3),w2(3),rmat(3,3),mu(3)
+    character(len=cl)  :: txt
+    !
+    !
+    txt = 'Error: MLdms_HCCH_7D_7ORDER'
+    !
+    re1     = extF%coef(1,1)
+    re2     = extF%coef(2,1)
+    alphae = 180.00_ark/rad
+    !
+    y1=r(1)- re1
+    y2=r(2)- re2
+    y3=r(3)- re2
+    y4=r(4)
+    y5=r(5)
+    y6=r(6)
+    y7=r(7)
+    !
+    call dmsC2H2_D8h_diff_mux_7th(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
+    call dmsC2H2_D8h_diff_muy_7th(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
+    call dmsC2H2_D8h_diff_muz_7th(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
+    !
+    mu=0
+    !
+    do i = 1,Nxy
+      k = 4+i
+      mu(1) = mu(1) + extF%coef(k,1)*dmux(i)
+      mu(2) = mu(2) + extF%coef(k,1)*dmuy(i)
+    enddo
+    !
+    do i = 1,Nz
+      k = 4+Nxy+i
+      mu(3) = mu(3) + extF%coef(k,1)*dmuz(i)
+    enddo
+    !
+    !rmat = transpose(tmat)
+    !
+    f(1:3) = mu(1:3) !matmul(rmat,mu)    
+    !
+    end subroutine MLdms_HCCH_7D_7ORDER_linear
+
 
 
  recursive subroutine MLdms_HCCH_7D_local(rank,ncoords,natoms,r,xyz,f)
@@ -2240,9 +2516,9 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     y6=y(6)
     y7=y(7)
     !
-    call dmsC2H2_D8h_diff_mux(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
-    call dmsC2H2_D8h_diff_muy(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
-    call dmsC2H2_D8h_diff_muz(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
+    call dmsC2H2_D8h_diff_mux_6th(nxy,y1,y2,y3,y4,y5,y6,y7,dmux)
+    call dmsC2H2_D8h_diff_muy_6th(nxy,y1,y2,y3,y4,y5,y6,y7,dmuy)
+    call dmsC2H2_D8h_diff_muz_6th(nz,y1,y2,y3,y4,y5,y6,y7,dmuz)
     !
     mu=0
     !
@@ -3613,7 +3889,762 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
   end subroutine  potC2H2_D8h_diff_V_tmp
 
 
-subroutine dmsC2H2_D8h_diff_mux(n,y1,y2,y3,y4,y5,y6,y7,dF)
+
+
+subroutine dmsC2H2_D8h_diff_mux_7th(n,y1,y2,y3,y4,y5,y6,y7,dF)
+    !
+    implicit none
+    !
+    integer(ik),intent(in)  :: n
+    real(ark),intent(in)  :: y1,y2,y3,y4,y5,y6,y7
+    real(ark),intent(out) :: dF(n)
+      !
+dF(1) = (y4 + y6)
+dF(2) = (y1*y4 + y1*y6)
+dF(3) = (y2*y4 + y3*y6)
+dF(4) = (y3*y4 + y2*y6)
+dF(5) = (y1**2*y4 + y1**2*y6)
+dF(6) = (y1*y2*y4 + y1*y3*y6)
+dF(7) = (y2**2*y4 + y3**2*y6)
+dF(8) = (y2*y3*y4 + y2*y3*y6)
+dF(9) = (y4**3 + y4*y5**2 + y6**3 + y6*y7**2)
+dF(10) = (y4**2*y6 + y4*y6**2 + y4*y5*y7 + y5*y6*y7)
+dF(11) = (y1*y3*y4 + y1*y2*y6)
+dF(12) = (y3**2*y4 + y2**2*y6)
+dF(13) = (y4**2*y6 + y5**2*y6 + y4*y6**2 + y4*y7**2)
+dF(14) = (y1**3*y4 + y1**3*y6)
+dF(15) = (y1**2*y2*y4 + y1**2*y3*y6)
+dF(16) = (y1*y2**2*y4 + y1*y3**2*y6)
+dF(17) = (y2**3*y4 + y3**3*y6)
+dF(18) = (y1*y2*y3*y4 + y1*y2*y3*y6)
+dF(19) = (y2**2*y3*y4 + y2*y3**2*y6)
+dF(20) = (y1*y4**3 + y1*y4*y5**2 + y1*y6**3 + y1*y6*y7**2)
+dF(21) = (y2*y4**3 + y2*y4*y5**2 + y3*y6**3 + y3*y6*y7**2)
+dF(22) = (y1*y4**2*y6 + y1*y4*y6**2 + y1*y4*y5*y7 + y1*y5*y6*y7)
+dF(23) = (y2*y4**2*y6 + y3*y4*y6**2 + y2*y4*y5*y7 + y3*y5*y6*y7)
+dF(24) = (y3*y4**2*y6 + y3*y5**2*y6 + y2*y4*y6**2 + y2*y4*y7**2)
+dF(25) = (y1**2*y3*y4 + y1**2*y2*y6)
+dF(26) = (y1*y3**2*y4 + y1*y2**2*y6)
+dF(27) = (y3**3*y4 + y2**3*y6)
+dF(28) = (y2*y3**2*y4 + y2**2*y3*y6)
+dF(29) = (y1*y4**2*y6 + y1*y5**2*y6 + y1*y4*y6**2 + y1*y4*y7**2)
+dF(30) = (y2*y4**2*y6 + y2*y5**2*y6 + y3*y4*y6**2 + y3*y4*y7**2)
+dF(31) = (y3*y4**2*y6 + y2*y4*y6**2 + y3*y4*y5*y7 + y2*y5*y6*y7)
+dF(32) = (y3*y4**3 + y3*y4*y5**2 + y2*y6**3 + y2*y6*y7**2)
+dF(33) = (y1**4*y4 + y1**4*y6)
+dF(34) = (y1**3*y2*y4 + y1**3*y3*y6)
+dF(35) = (y1**2*y2**2*y4 + y1**2*y3**2*y6)
+dF(36) = (y1*y2**3*y4 + y1*y3**3*y6)
+dF(37) = (y2**4*y4 + y3**4*y6)
+dF(38) = (y1**2*y2*y3*y4 + y1**2*y2*y3*y6)
+dF(39) = (y1*y2**2*y3*y4 + y1*y2*y3**2*y6)
+dF(40) = (y2**3*y3*y4 + y2*y3**3*y6)
+dF(41) = (y2**2*y3**2*y4 + y2**2*y3**2*y6)
+dF(42) = (y1**2*y4**3 + y1**2*y4*y5**2 + y1**2*y6**3 + y1**2*y6*y7**2)
+dF(43) = (y1*y2*y4**3 + y1*y2*y4*y5**2 + y1*y3*y6**3 + y1*y3*y6*y7**2)
+dF(44) = (y2**2*y4**3 + y2**2*y4*y5**2 + y3**2*y6**3 + y3**2*y6*y7**2)
+dF(45) = (y2*y3*y4**3 + y2*y3*y4*y5**2 + y2*y3*y6**3 + y2*y3*y6*y7**2)
+dF(46) = (y4**5 + 2*y4**3*y5**2 + y4*y5**4 + y6**5 + 2*y6**3*y7**2 + y6*y7**4)
+dF(47) = (y1**2*y4**2*y6 + y1**2*y4*y6**2 + y1**2*y4*y5*y7 + y1**2*y5*y6*y7)
+dF(48) = (y1*y2*y4**2*y6 + y1*y3*y4*y6**2 + y1*y2*y4*y5*y7 + y1*y3*y5*y6*y7)
+dF(49) = (y2**2*y4**2*y6 + y3**2*y4*y6**2 + y2**2*y4*y5*y7 + y3**2*y5*y6*y7)
+dF(50) = (y2*y3*y4**2*y6 + y2*y3*y4*y6**2 + y2*y3*y4*y5*y7 + y2*y3*y5*y6*y7)
+dF(51) = (y1*y3*y4**2*y6 + y1*y3*y5**2*y6 + y1*y2*y4*y6**2 + y1*y2*y4*y7**2)
+dF(52) = (y3**2*y4**2*y6 + y3**2*y5**2*y6 + y2**2*y4*y6**2 + y2**2*y4*y7**2)
+dF(53) = (y4**3*y6**2 + y4**2*y6**3 + 2*y4**2*y5*y6*y7 + 2*y4*y5*y6**2*y7 + y4*y5**2*y7**2 + y5**2*y6*y7**2)
+dF(54) = (y1**3*y3*y4 + y1**3*y2*y6)
+dF(55) = (y1**2*y3**2*y4 + y1**2*y2**2*y6)
+dF(56) = (y1*y3**3*y4 + y1*y2**3*y6)
+dF(57) = (y3**4*y4 + y2**4*y6)
+dF(58) = (y1*y2*y3**2*y4 + y1*y2**2*y3*y6)
+dF(59) = (y2*y3**3*y4 + y2**3*y3*y6)
+dF(60) = (y1**2*y4**2*y6 + y1**2*y5**2*y6 + y1**2*y4*y6**2 + y1**2*y4*y7**2)
+dF(61) = (y1*y2*y4**2*y6 + y1*y2*y5**2*y6 + y1*y3*y4*y6**2 + y1*y3*y4*y7**2)
+dF(62) = (y2**2*y4**2*y6 + y2**2*y5**2*y6 + y3**2*y4*y6**2 + y3**2*y4*y7**2)
+dF(63) = (y2*y3*y4**2*y6 + y2*y3*y5**2*y6 + y2*y3*y4*y6**2 + y2*y3*y4*y7**2)
+dF(64) = (-(y4**4*y6) + y5**4*y6 - y4*y6**4 - 2*y4**3*y5*y7 - 2*y4*y5**3*y7 - 2*y5*y6**3*y7 - 2*y5*y6*y7**3 + y4*y7**4)
+dF(65) = (y4**4*y6 + y4**2*y5**2*y6 + y4*y6**4 + y4**3*y5*y7 + y4*y5**3*y7 + y5*y6**3*y7 + y4*y6**2*y7**2 + y5*y6*y7**3)
+dF(66) = (y1*y3*y4**2*y6 + y1*y2*y4*y6**2 + y1*y3*y4*y5*y7 + y1*y2*y5*y6*y7)
+dF(67) = (y3**2*y4**2*y6 + y2**2*y4*y6**2 + y3**2*y4*y5*y7 + y2**2*y5*y6*y7)
+dF(68) = (y4**3*y6**2 + y4**2*y6**3 - y5**2*y6**3 + 3*y4**2*y5*y6*y7 + y5**3*y6*y7 + 3*y4*y5*y6**2*y7 - y4**3*y7**2 + y4*y5*y7**3)
+dF(69) = (y1*y3*y4**3 + y1*y3*y4*y5**2 + y1*y2*y6**3 + y1*y2*y6*y7**2)
+dF(70) = (y3**2*y4**3 + y3**2*y4*y5**2 + y2**2*y6**3 + y2**2*y6*y7**2)
+dF(71) = (y4*y5**2*y6**2 + y5**2*y6**3 - 2*y4**2*y5*y6*y7 - 2*y4*y5*y6**2*y7 + y4**3*y7**2 + y4**2*y6*y7**2)
+dF(72) = (y1**5*y4 + y1**5*y6)
+dF(73) = (y1**4*y2*y4 + y1**4*y3*y6)
+dF(74) = (y1**3*y2**2*y4 + y1**3*y3**2*y6)
+dF(75) = (y1**2*y2**3*y4 + y1**2*y3**3*y6)
+dF(76) = (y1*y2**4*y4 + y1*y3**4*y6)
+dF(77) = (y2**5*y4 + y3**5*y6)
+dF(78) = (y1**3*y2*y3*y4 + y1**3*y2*y3*y6)
+dF(79) = (y1**2*y2**2*y3*y4 + y1**2*y2*y3**2*y6)
+dF(80) = (y1*y2**3*y3*y4 + y1*y2*y3**3*y6)
+dF(81) = (y2**4*y3*y4 + y2*y3**4*y6)
+dF(82) = (y1*y2**2*y3**2*y4 + y1*y2**2*y3**2*y6)
+dF(83) = (y2**3*y3**2*y4 + y2**2*y3**3*y6)
+dF(84) = (y1**3*y4**3 + y1**3*y4*y5**2 + y1**3*y6**3 + y1**3*y6*y7**2)
+dF(85) = (y1**2*y2*y4**3 + y1**2*y2*y4*y5**2 + y1**2*y3*y6**3 + y1**2*y3*y6*y7**2)
+dF(86) = (y1*y2**2*y4**3 + y1*y2**2*y4*y5**2 + y1*y3**2*y6**3 + y1*y3**2*y6*y7**2)
+dF(87) = (y2**3*y4**3 + y2**3*y4*y5**2 + y3**3*y6**3 + y3**3*y6*y7**2)
+dF(88) = (y1*y2*y3*y4**3 + y1*y2*y3*y4*y5**2 + y1*y2*y3*y6**3 + y1*y2*y3*y6*y7**2)
+dF(89) = (y2**2*y3*y4**3 + y2**2*y3*y4*y5**2 + y2*y3**2*y6**3 + y2*y3**2*y6*y7**2)
+dF(90) = (y1*y4**5 + 2*y1*y4**3*y5**2 + y1*y4*y5**4 + y1*y6**5 + 2*y1*y6**3*y7**2 + y1*y6*y7**4)
+dF(91) = (y2*y4**5 + 2*y2*y4**3*y5**2 + y2*y4*y5**4 + y3*y6**5 + 2*y3*y6**3*y7**2 + y3*y6*y7**4)
+dF(92) = (y1**3*y4**2*y6 + y1**3*y4*y6**2 + y1**3*y4*y5*y7 + y1**3*y5*y6*y7)
+dF(93) = (y1**2*y2*y4**2*y6 + y1**2*y3*y4*y6**2 + y1**2*y2*y4*y5*y7 + y1**2*y3*y5*y6*y7)
+dF(94) = (y1*y2**2*y4**2*y6 + y1*y3**2*y4*y6**2 + y1*y2**2*y4*y5*y7 + y1*y3**2*y5*y6*y7)
+dF(95) = (y2**3*y4**2*y6 + y3**3*y4*y6**2 + y2**3*y4*y5*y7 + y3**3*y5*y6*y7)
+dF(96) = (y1*y2*y3*y4**2*y6 + y1*y2*y3*y4*y6**2 + y1*y2*y3*y4*y5*y7 + y1*y2*y3*y5*y6*y7)
+dF(97) = (y2**2*y3*y4**2*y6 + y2*y3**2*y4*y6**2 + y2**2*y3*y4*y5*y7 + y2*y3**2*y5*y6*y7)
+dF(98) = (y1**2*y3*y4**2*y6 + y1**2*y3*y5**2*y6 + y1**2*y2*y4*y6**2 + y1**2*y2*y4*y7**2)
+dF(99) = (y1*y3**2*y4**2*y6 + y1*y3**2*y5**2*y6 + y1*y2**2*y4*y6**2 + y1*y2**2*y4*y7**2)
+dF(100) = (y3**3*y4**2*y6 + y3**3*y5**2*y6 + y2**3*y4*y6**2 + y2**3*y4*y7**2)
+dF(101) = (y2*y3**2*y4**2*y6 + y2*y3**2*y5**2*y6 + y2**2*y3*y4*y6**2 + y2**2*y3*y4*y7**2)
+dF(102) = (y1*y4**3*y6**2 + y1*y4**2*y6**3 + 2*y1*y4**2*y5*y6*y7 + 2*y1*y4*y5*y6**2*y7 + y1*y4*y5**2*y7**2 + y1*y5**2*y6*y7**2)
+dF(103) = (y2*y4**3*y6**2 + y3*y4**2*y6**3 + 2*y2*y4**2*y5*y6*y7 + 2*y3*y4*y5*y6**2*y7 + y2*y4*y5**2*y7**2 + y3*y5**2*y6*y7**2)
+dF(104) = (y3*y4**3*y6**2 + y3*y4*y5**2*y6**2 + y2*y4**2*y6**3 + y3*y4**2*y5*y6*y7 + y3*y5**3*y6*y7 + y2*y4*y5*y6**2*y7 + y2*y4**2*y6*y7**2 + y2*y4*y5*y7**3)
+dF(105) = (-(y3*y4**4*y6) + y3*y5**4*y6 - y2*y4*y6**4 - 2*y3*y4**3*y5*y7 - 2*y3*y4*y5**3*y7 - 2*y2*y5*y6**3*y7 - 2*y2*y5*y6*y7**3 + y2*y4*y7**4)
+dF(106) = (y1**4*y3*y4 + y1**4*y2*y6)
+dF(107) = (y1**3*y3**2*y4 + y1**3*y2**2*y6)
+dF(108) = (y1**2*y3**3*y4 + y1**2*y2**3*y6)
+dF(109) = (y1*y3**4*y4 + y1*y2**4*y6)
+dF(110) = (y3**5*y4 + y2**5*y6)
+dF(111) = (y1**2*y2*y3**2*y4 + y1**2*y2**2*y3*y6)
+dF(112) = (y1*y2*y3**3*y4 + y1*y2**3*y3*y6)
+dF(113) = (y2*y3**4*y4 + y2**4*y3*y6)
+dF(114) = (y2**2*y3**3*y4 + y2**3*y3**2*y6)
+dF(115) = (y1**3*y4**2*y6 + y1**3*y5**2*y6 + y1**3*y4*y6**2 + y1**3*y4*y7**2)
+dF(116) = (y1**2*y2*y4**2*y6 + y1**2*y2*y5**2*y6 + y1**2*y3*y4*y6**2 + y1**2*y3*y4*y7**2)
+dF(117) = (y1*y2**2*y4**2*y6 + y1*y2**2*y5**2*y6 + y1*y3**2*y4*y6**2 + y1*y3**2*y4*y7**2)
+dF(118) = (y2**3*y4**2*y6 + y2**3*y5**2*y6 + y3**3*y4*y6**2 + y3**3*y4*y7**2)
+dF(119) = (y1*y2*y3*y4**2*y6 + y1*y2*y3*y5**2*y6 + y1*y2*y3*y4*y6**2 + y1*y2*y3*y4*y7**2)
+dF(120) = (y2**2*y3*y4**2*y6 + y2**2*y3*y5**2*y6 + y2*y3**2*y4*y6**2 + y2*y3**2*y4*y7**2)
+dF(121) = (-(y1*y4**4*y6) + y1*y5**4*y6 - y1*y4*y6**4 - 2*y1*y4**3*y5*y7 - 2*y1*y4*y5**3*y7 - 2*y1*y5*y6**3*y7 - 2*y1*y5*y6*y7**3 + y1*y4*y7**4)
+dF(122) = (-(y2*y4**4*y6) + y2*y5**4*y6 - y3*y4*y6**4 - 2*y2*y4**3*y5*y7 - 2*y2*y4*y5**3*y7 - 2*y3*y5*y6**3*y7 - 2*y3*y5*y6*y7**3 + y3*y4*y7**4)
+dF(123) = (y1*y4**4*y6 + y1*y4**2*y5**2*y6 + y1*y4*y6**4 + y1*y4**3*y5*y7 + y1*y4*y5**3*y7 + y1*y5*y6**3*y7 + y1*y4*y6**2*y7**2 + y1*y5*y6*y7**3)
+dF(124) = (y2*y4**4*y6 + y2*y4**2*y5**2*y6 + y3*y4*y6**4 + y2*y4**3*y5*y7 + y2*y4*y5**3*y7 + y3*y5*y6**3*y7 + y3*y4*y6**2*y7**2 + y3*y5*y6*y7**3)
+dF(125) = (y1**2*y3*y4**2*y6 + y1**2*y2*y4*y6**2 + y1**2*y3*y4*y5*y7 + y1**2*y2*y5*y6*y7)
+dF(126) = (y1*y3**2*y4**2*y6 + y1*y2**2*y4*y6**2 + y1*y3**2*y4*y5*y7 + y1*y2**2*y5*y6*y7)
+dF(127) = (y3**3*y4**2*y6 + y2**3*y4*y6**2 + y3**3*y4*y5*y7 + y2**3*y5*y6*y7)
+dF(128) = (y2*y3**2*y4**2*y6 + y2**2*y3*y4*y6**2 + y2*y3**2*y4*y5*y7 + y2**2*y3*y5*y6*y7)
+dF(129) = (y1*y4**3*y6**2 + y1*y4**2*y6**3 - y1*y5**2*y6**3 + 3*y1*y4**2*y5*y6*y7 + y1*y5**3*y6*y7 + 3*y1*y4*y5*y6**2*y7 - y1*y4**3*y7**2 + y1*y4*y5*y7**3)
+dF(130) = (y2*y4**3*y6**2 + y3*y4**2*y6**3 - y3*y5**2*y6**3 + 3*y2*y4**2*y5*y6*y7 + y2*y5**3*y6*y7 + 3*y3*y4*y5*y6**2*y7 - y2*y4**3*y7**2 + y3*y4*y5*y7**3)
+dF(131) = (y1**2*y3*y4**3 + y1**2*y3*y4*y5**2 + y1**2*y2*y6**3 + y1**2*y2*y6*y7**2)
+dF(132) = (y1*y3**2*y4**3 + y1*y3**2*y4*y5**2 + y1*y2**2*y6**3 + y1*y2**2*y6*y7**2)
+dF(133) = (y3**3*y4**3 + y3**3*y4*y5**2 + y2**3*y6**3 + y2**3*y6*y7**2)
+dF(134) = (y2*y3**2*y4**3 + y2*y3**2*y4*y5**2 + y2**2*y3*y6**3 + y2**2*y3*y6*y7**2)
+dF(135) = (y3*y4**3*y6**2 + y2*y4**2*y6**3 + 2*y3*y4**2*y5*y6*y7 + 2*y2*y4*y5*y6**2*y7 + y3*y4*y5**2*y7**2 + y2*y5**2*y6*y7**2)
+dF(136) = (y3*y4**5 + 2*y3*y4**3*y5**2 + y3*y4*y5**4 + y2*y6**5 + 2*y2*y6**3*y7**2 + y2*y6*y7**4)
+dF(137) = (y1*y4*y5**2*y6**2 + y1*y5**2*y6**3 - 2*y1*y4**2*y5*y6*y7 - 2*y1*y4*y5*y6**2*y7 + y1*y4**3*y7**2 + y1*y4**2*y6*y7**2)
+dF(138) = (y2*y4*y5**2*y6**2 + y3*y5**2*y6**3 - 2*y2*y4**2*y5*y6*y7 - 2*y3*y4*y5*y6**2*y7 + y2*y4**3*y7**2 + y3*y4**2*y6*y7**2)
+dF(139) = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 + y2*y5*y6*y7**3)
+dF(140) = (y3*y4*y5**2*y6**2 + y2*y5**2*y6**3 - 2*y3*y4**2*y5*y6*y7 - 2*y2*y4*y5*y6**2*y7 + y3*y4**3*y7**2 + y2*y4**2*y6*y7**2)
+dF(141) = (y1**6*y4 + y1**6*y6)
+dF(142) = (y1**5*y2*y4 + y1**5*y3*y6)
+dF(143) = (y1**4*y2**2*y4 + y1**4*y3**2*y6)
+dF(144) = (y1**3*y2**3*y4 + y1**3*y3**3*y6)
+dF(145) = (y1**2*y2**4*y4 + y1**2*y3**4*y6)
+dF(146) = (y1*y2**5*y4 + y1*y3**5*y6)
+dF(147) = (y2**6*y4 + y3**6*y6)
+dF(148) = (y1**4*y2*y3*y4 + y1**4*y2*y3*y6)
+dF(149) = (y1**3*y2**2*y3*y4 + y1**3*y2*y3**2*y6)
+dF(150) = (y1**2*y2**3*y3*y4 + y1**2*y2*y3**3*y6)
+dF(151) = (y1*y2**4*y3*y4 + y1*y2*y3**4*y6)
+dF(152) = (y2**5*y3*y4 + y2*y3**5*y6)
+dF(153) = (y1**2*y2**2*y3**2*y4 + y1**2*y2**2*y3**2*y6)
+dF(154) = (y1*y2**3*y3**2*y4 + y1*y2**2*y3**3*y6)
+dF(155) = (y2**4*y3**2*y4 + y2**2*y3**4*y6)
+dF(156) = (y2**3*y3**3*y4 + y2**3*y3**3*y6)
+dF(157) = (y1**4*y4**3 + y1**4*y4*y5**2 + y1**4*y6**3 + y1**4*y6*y7**2)
+dF(158) = (y1**3*y2*y4**3 + y1**3*y2*y4*y5**2 + y1**3*y3*y6**3 + y1**3*y3*y6*y7**2)
+dF(159) = (y1**2*y2**2*y4**3 + y1**2*y2**2*y4*y5**2 + y1**2*y3**2*y6**3 + y1**2*y3**2*y6*y7**2)
+dF(160) = (y1*y2**3*y4**3 + y1*y2**3*y4*y5**2 + y1*y3**3*y6**3 + y1*y3**3*y6*y7**2)
+dF(161) = (y2**4*y4**3 + y2**4*y4*y5**2 + y3**4*y6**3 + y3**4*y6*y7**2)
+dF(162) = (y1**2*y2*y3*y4**3 + y1**2*y2*y3*y4*y5**2 + y1**2*y2*y3*y6**3 + y1**2*y2*y3*y6*y7**2)
+dF(163) = (y1*y2**2*y3*y4**3 + y1*y2**2*y3*y4*y5**2 + y1*y2*y3**2*y6**3 + y1*y2*y3**2*y6*y7**2)
+dF(164) = (y2**3*y3*y4**3 + y2**3*y3*y4*y5**2 + y2*y3**3*y6**3 + y2*y3**3*y6*y7**2)
+dF(165) = (y2**2*y3**2*y4**3 + y2**2*y3**2*y4*y5**2 + y2**2*y3**2*y6**3 + y2**2*y3**2*y6*y7**2)
+dF(166) = (y1**2*y4**5 + 2*y1**2*y4**3*y5**2 + y1**2*y4*y5**4 + y1**2*y6**5 + 2*y1**2*y6**3*y7**2 + y1**2*y6*y7**4)
+dF(167) = (y1*y2*y4**5 + 2*y1*y2*y4**3*y5**2 + y1*y2*y4*y5**4 + y1*y3*y6**5 + 2*y1*y3*y6**3*y7**2 + y1*y3*y6*y7**4)
+dF(168) = (y2**2*y4**5 + 2*y2**2*y4**3*y5**2 + y2**2*y4*y5**4 + y3**2*y6**5 + 2*y3**2*y6**3*y7**2 + y3**2*y6*y7**4)
+dF(169) = (y2*y3*y4**5 + 2*y2*y3*y4**3*y5**2 + y2*y3*y4*y5**4 + y2*y3*y6**5 + 2*y2*y3*y6**3*y7**2 + y2*y3*y6*y7**4)
+dF(170) = (y4**7 + 3*y4**5*y5**2 + 3*y4**3*y5**4 + y4*y5**6 + y6**7 + 3*y6**5*y7**2 + 3*y6**3*y7**4 + y6*y7**6)
+dF(171) = (y1**4*y4**2*y6 + y1**4*y4*y6**2 + y1**4*y4*y5*y7 + y1**4*y5*y6*y7)
+dF(172) = (y1**3*y2*y4**2*y6 + y1**3*y3*y4*y6**2 + y1**3*y2*y4*y5*y7 + y1**3*y3*y5*y6*y7)
+dF(173) = (y1**2*y2**2*y4**2*y6 + y1**2*y3**2*y4*y6**2 + y1**2*y2**2*y4*y5*y7 + y1**2*y3**2*y5*y6*y7)
+dF(174) = (y1*y2**3*y4**2*y6 + y1*y3**3*y4*y6**2 + y1*y2**3*y4*y5*y7 + y1*y3**3*y5*y6*y7)
+dF(175) = (y2**4*y4**2*y6 + y3**4*y4*y6**2 + y2**4*y4*y5*y7 + y3**4*y5*y6*y7)
+dF(176) = (y1**2*y2*y3*y4**2*y6 + y1**2*y2*y3*y4*y6**2 + y1**2*y2*y3*y4*y5*y7 + y1**2*y2*y3*y5*y6*y7)
+dF(177) = (y1*y2**2*y3*y4**2*y6 + y1*y2*y3**2*y4*y6**2 + y1*y2**2*y3*y4*y5*y7 + y1*y2*y3**2*y5*y6*y7)
+dF(178) = (y2**3*y3*y4**2*y6 + y2*y3**3*y4*y6**2 + y2**3*y3*y4*y5*y7 + y2*y3**3*y5*y6*y7)
+dF(179) = (y2**2*y3**2*y4**2*y6 + y2**2*y3**2*y4*y6**2 + y2**2*y3**2*y4*y5*y7 + y2**2*y3**2*y5*y6*y7)
+dF(180) = (y4**6*y6 + 2*y4**4*y5**2*y6 + y4**2*y5**4*y6 + y4*y6**6 + y4**5*y5*y7 + 2*y4**3*y5**3*y7 + y4*y5**5*y7 + y5*y6**5*y7 + 2*y4*y6**4*y7**2 + 2*y5*y6**3*y7**3 + y4*y6**2*y7**4 + y5*y6*y7**5)
+dF(181) = (y1**3*y3*y4**2*y6 + y1**3*y3*y5**2*y6 + y1**3*y2*y4*y6**2 + y1**3*y2*y4*y7**2)
+dF(182) = (y1**2*y3**2*y4**2*y6 + y1**2*y3**2*y5**2*y6 + y1**2*y2**2*y4*y6**2 + y1**2*y2**2*y4*y7**2)
+dF(183) = (y1*y3**3*y4**2*y6 + y1*y3**3*y5**2*y6 + y1*y2**3*y4*y6**2 + y1*y2**3*y4*y7**2)
+dF(184) = (y3**4*y4**2*y6 + y3**4*y5**2*y6 + y2**4*y4*y6**2 + y2**4*y4*y7**2)
+dF(185) = (y1*y2*y3**2*y4**2*y6 + y1*y2*y3**2*y5**2*y6 + y1*y2**2*y3*y4*y6**2 + y1*y2**2*y3*y4*y7**2)
+dF(186) = (y2*y3**3*y4**2*y6 + y2*y3**3*y5**2*y6 + y2**3*y3*y4*y6**2 + y2**3*y3*y4*y7**2)
+dF(187) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 + 2*y1**2*y4**2*y5*y6*y7 + 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4*y5**2*y7**2 + y1**2*y5**2*y6*y7**2)
+dF(188) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 + 2*y1*y2*y4**2*y5*y6*y7 + 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4*y5**2*y7**2 + y1*y3*y5**2*y6*y7**2)
+dF(189) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 + 2*y2**2*y4**2*y5*y6*y7 + 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4*y5**2*y7**2 + y3**2*y5**2*y6*y7**2)
+dF(190) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 + 2*y2*y3*y4**2*y5*y6*y7 + 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4*y5**2*y7**2 + y2*y3*y5**2*y6*y7**2)
+dF(191) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 + 2*y4**4*y5*y6*y7 + 2*y4**2*y5**3*y6*y7 + 2*y4*y5*y6**4*y7 + y4**3*y5**2*y7**2 + y4*y5**4*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 + 2*y4*y5*y6**2*y7**3 + y5**2*y6*y7**4)
+dF(192) = (y1*y3*y4**3*y6**2 + y1*y3*y4*y5**2*y6**2 + y1*y2*y4**2*y6**3 + y1*y3*y4**2*y5*y6*y7 + y1*y3*y5**3*y6*y7 + y1*y2*y4*y5*y6**2*y7 + y1*y2*y4**2*y6*y7**2 + y1*y2*y4*y5*y7**3)
+dF(193) = (y3**2*y4**3*y6**2 + y3**2*y4*y5**2*y6**2 + y2**2*y4**2*y6**3 + y3**2*y4**2*y5*y6*y7 + y3**2*y5**3*y6*y7 + y2**2*y4*y5*y6**2*y7 + y2**2*y4**2*y6*y7**2 + y2**2*y4*y5*y7**3)
+dF(194) = (-(y1*y3*y4**4*y6) + y1*y3*y5**4*y6 - y1*y2*y4*y6**4 - 2*y1*y3*y4**3*y5*y7 - 2*y1*y3*y4*y5**3*y7 - 2*y1*y2*y5*y6**3*y7 - 2*y1*y2*y5*y6*y7**3 + y1*y2*y4*y7**4)
+dF(195) = (-(y3**2*y4**4*y6) + y3**2*y5**4*y6 - y2**2*y4*y6**4 - 2*y3**2*y4**3*y5*y7 - 2*y3**2*y4*y5**3*y7 - 2*y2**2*y5*y6**3*y7 - 2*y2**2*y5*y6*y7**3 + y2**2*y4*y7**4)
+dF(196) = (y1**5*y3*y4 + y1**5*y2*y6)
+dF(197) = (y1**4*y3**2*y4 + y1**4*y2**2*y6)
+dF(198) = (y1**3*y3**3*y4 + y1**3*y2**3*y6)
+dF(199) = (y1**2*y3**4*y4 + y1**2*y2**4*y6)
+dF(200) = (y1*y3**5*y4 + y1*y2**5*y6)
+dF(201) = (y3**6*y4 + y2**6*y6)
+dF(202) = (y1**3*y2*y3**2*y4 + y1**3*y2**2*y3*y6)
+dF(203) = (y1**2*y2*y3**3*y4 + y1**2*y2**3*y3*y6)
+dF(204) = (y1*y2*y3**4*y4 + y1*y2**4*y3*y6)
+dF(205) = (y2*y3**5*y4 + y2**5*y3*y6)
+dF(206) = (y1*y2**2*y3**3*y4 + y1*y2**3*y3**2*y6)
+dF(207) = (y2**2*y3**4*y4 + y2**4*y3**2*y6)
+dF(208) = (y1**4*y4**2*y6 + y1**4*y5**2*y6 + y1**4*y4*y6**2 + y1**4*y4*y7**2)
+dF(209) = (y1**3*y2*y4**2*y6 + y1**3*y2*y5**2*y6 + y1**3*y3*y4*y6**2 + y1**3*y3*y4*y7**2)
+dF(210) = (y1**2*y2**2*y4**2*y6 + y1**2*y2**2*y5**2*y6 + y1**2*y3**2*y4*y6**2 + y1**2*y3**2*y4*y7**2)
+dF(211) = (y1*y2**3*y4**2*y6 + y1*y2**3*y5**2*y6 + y1*y3**3*y4*y6**2 + y1*y3**3*y4*y7**2)
+dF(212) = (y2**4*y4**2*y6 + y2**4*y5**2*y6 + y3**4*y4*y6**2 + y3**4*y4*y7**2)
+dF(213) = (y1**2*y2*y3*y4**2*y6 + y1**2*y2*y3*y5**2*y6 + y1**2*y2*y3*y4*y6**2 + y1**2*y2*y3*y4*y7**2)
+dF(214) = (y1*y2**2*y3*y4**2*y6 + y1*y2**2*y3*y5**2*y6 + y1*y2*y3**2*y4*y6**2 + y1*y2*y3**2*y4*y7**2)
+dF(215) = (y2**3*y3*y4**2*y6 + y2**3*y3*y5**2*y6 + y2*y3**3*y4*y6**2 + y2*y3**3*y4*y7**2)
+dF(216) = (y2**2*y3**2*y4**2*y6 + y2**2*y3**2*y5**2*y6 + y2**2*y3**2*y4*y6**2 + y2**2*y3**2*y4*y7**2)
+dF(217) = (-(y1**2*y4**4*y6) + y1**2*y5**4*y6 - y1**2*y4*y6**4 - 2*y1**2*y4**3*y5*y7 - 2*y1**2*y4*y5**3*y7 - 2*y1**2*y5*y6**3*y7 - 2*y1**2*y5*y6*y7**3 + y1**2*y4*y7**4)
+dF(218) = (-(y1*y2*y4**4*y6) + y1*y2*y5**4*y6 - y1*y3*y4*y6**4 - 2*y1*y2*y4**3*y5*y7 - 2*y1*y2*y4*y5**3*y7 - 2*y1*y3*y5*y6**3*y7 - 2*y1*y3*y5*y6*y7**3 + y1*y3*y4*y7**4)
+dF(219) = (-(y2**2*y4**4*y6) + y2**2*y5**4*y6 - y3**2*y4*y6**4 - 2*y2**2*y4**3*y5*y7 - 2*y2**2*y4*y5**3*y7 - 2*y3**2*y5*y6**3*y7 - 2*y3**2*y5*y6*y7**3 + y3**2*y4*y7**4)
+dF(220) = (-(y2*y3*y4**4*y6) + y2*y3*y5**4*y6 - y2*y3*y4*y6**4 - 2*y2*y3*y4**3*y5*y7 - 2*y2*y3*y4*y5**3*y7 - 2*y2*y3*y5*y6**3*y7 - 2*y2*y3*y5*y6*y7**3 + y2*y3*y4*y7**4)
+dF(221) = (y4**6*y6 + 3*y4**4*y5**2*y6 + 3*y4**2*y5**4*y6 + y5**6*y6 + y4*y6**6 + 3*y4*y6**4*y7**2 + 3*y4*y6**2*y7**4 + y4*y7**6)
+dF(222) = (y1**2*y4**4*y6 + y1**2*y4**2*y5**2*y6 + y1**2*y4*y6**4 + y1**2*y4**3*y5*y7 + y1**2*y4*y5**3*y7 + y1**2*y5*y6**3*y7 + y1**2*y4*y6**2*y7**2 + y1**2*y5*y6*y7**3)
+dF(223) = (y1*y2*y4**4*y6 + y1*y2*y4**2*y5**2*y6 + y1*y3*y4*y6**4 + y1*y2*y4**3*y5*y7 + y1*y2*y4*y5**3*y7 + y1*y3*y5*y6**3*y7 + y1*y3*y4*y6**2*y7**2 + y1*y3*y5*y6*y7**3)
+dF(224) = (y2**2*y4**4*y6 + y2**2*y4**2*y5**2*y6 + y3**2*y4*y6**4 + y2**2*y4**3*y5*y7 + y2**2*y4*y5**3*y7 + y3**2*y5*y6**3*y7 + y3**2*y4*y6**2*y7**2 + y3**2*y5*y6*y7**3)
+dF(225) = (y2*y3*y4**4*y6 + y2*y3*y4**2*y5**2*y6 + y2*y3*y4*y6**4 + y2*y3*y4**3*y5*y7 + y2*y3*y4*y5**3*y7 + y2*y3*y5*y6**3*y7 + y2*y3*y4*y6**2*y7**2 + y2*y3*y5*y6*y7**3)
+dF(226) = (y1**3*y3*y4**2*y6 + y1**3*y2*y4*y6**2 + y1**3*y3*y4*y5*y7 + y1**3*y2*y5*y6*y7)
+dF(227) = (y1**2*y3**2*y4**2*y6 + y1**2*y2**2*y4*y6**2 + y1**2*y3**2*y4*y5*y7 + y1**2*y2**2*y5*y6*y7)
+dF(228) = (y1*y3**3*y4**2*y6 + y1*y2**3*y4*y6**2 + y1*y3**3*y4*y5*y7 + y1*y2**3*y5*y6*y7)
+dF(229) = (y3**4*y4**2*y6 + y2**4*y4*y6**2 + y3**4*y4*y5*y7 + y2**4*y5*y6*y7)
+dF(230) = (y1*y2*y3**2*y4**2*y6 + y1*y2**2*y3*y4*y6**2 + y1*y2*y3**2*y4*y5*y7 + y1*y2**2*y3*y5*y6*y7)
+dF(231) = (y2*y3**3*y4**2*y6 + y2**3*y3*y4*y6**2 + y2*y3**3*y4*y5*y7 + y2**3*y3*y5*y6*y7)
+dF(232) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 - y1**2*y5**2*y6**3 + 3*y1**2*y4**2*y5*y6*y7 + y1**2*y5**3*y6*y7 + 3*y1**2*y4*y5*y6**2*y7 - y1**2*y4**3*y7**2 + y1**2*y4*y5*y7**3)
+dF(233) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 - y1*y3*y5**2*y6**3 + 3*y1*y2*y4**2*y5*y6*y7 + y1*y2*y5**3*y6*y7 + 3*y1*y3*y4*y5*y6**2*y7 - y1*y2*y4**3*y7**2 + y1*y3*y4*y5*y7**3)
+dF(234) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 - y3**2*y5**2*y6**3 + 3*y2**2*y4**2*y5*y6*y7 + y2**2*y5**3*y6*y7 + 3*y3**2*y4*y5*y6**2*y7 - y2**2*y4**3*y7**2 + y3**2*y4*y5*y7**3)
+dF(235) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 - y2*y3*y5**2*y6**3 + 3*y2*y3*y4**2*y5*y6*y7 + y2*y3*y5**3*y6*y7 + 3*y2*y3*y4*y5*y6**2*y7 - y2*y3*y4**3*y7**2 + y2*y3*y4*y5*y7**3)
+dF(236) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 - y5**2*y6**5 + 3*y4**4*y5*y6*y7 + 4*y4**2*y5**3*y6*y7 + y5**5*y6*y7 + 3*y4*y5*y6**4*y7 - y4**5*y7**2 - y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 - y5**2*y6**3*y7**2 + 4*y4*y5*y6**2*y7**3 + y4*y5*y7**5)
+dF(237) = (y1**3*y3*y4**3 + y1**3*y3*y4*y5**2 + y1**3*y2*y6**3 + y1**3*y2*y6*y7**2)
+dF(238) = (y1**2*y3**2*y4**3 + y1**2*y3**2*y4*y5**2 + y1**2*y2**2*y6**3 + y1**2*y2**2*y6*y7**2)
+dF(239) = (y1*y3**3*y4**3 + y1*y3**3*y4*y5**2 + y1*y2**3*y6**3 + y1*y2**3*y6*y7**2)
+dF(240) = (y3**4*y4**3 + y3**4*y4*y5**2 + y2**4*y6**3 + y2**4*y6*y7**2)
+dF(241) = (y1*y2*y3**2*y4**3 + y1*y2*y3**2*y4*y5**2 + y1*y2**2*y3*y6**3 + y1*y2**2*y3*y6*y7**2)
+dF(242) = (y2*y3**3*y4**3 + y2*y3**3*y4*y5**2 + y2**3*y3*y6**3 + y2**3*y3*y6*y7**2)
+dF(243) = (y1*y3*y4**3*y6**2 + y1*y2*y4**2*y6**3 + 2*y1*y3*y4**2*y5*y6*y7 + 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4*y5**2*y7**2 + y1*y2*y5**2*y6*y7**2)
+dF(244) = (y3**2*y4**3*y6**2 + y2**2*y4**2*y6**3 + 2*y3**2*y4**2*y5*y6*y7 + 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4*y5**2*y7**2 + y2**2*y5**2*y6*y7**2)
+dF(245) = (-(y4*y5**2*y6**4) + y4**3*y5*y6**2*y7 + y4*y5**3*y6**2*y7 + y4**2*y5*y6**3*y7 - y5**3*y6**3*y7 - y4**4*y6*y7**2 + y5**4*y6*y7**2 - y4**3*y5*y7**3 - y4*y5**3*y7**3 + y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4*y5**2*y7**4)
+dF(246) = ((y4**4*y6**3)/3 + (y4**3*y6**4)/3 + y4**3*y5*y6**2*y7 + y4**2*y5*y6**3*y7 + y4**2*y5**2*y6*y7**2 + y4*y5**2*y6**2*y7**2 + (y4*y5**3*y7**3)/3 + (y5**3*y6*y7**3)/3)
+dF(247) = (y1*y3*y4**5 + 2*y1*y3*y4**3*y5**2 + y1*y3*y4*y5**4 + y1*y2*y6**5 + 2*y1*y2*y6**3*y7**2 + y1*y2*y6*y7**4)
+dF(248) = (y3**2*y4**5 + 2*y3**2*y4**3*y5**2 + y3**2*y4*y5**4 + y2**2*y6**5 + 2*y2**2*y6**3*y7**2 + y2**2*y6*y7**4)
+dF(249) = (y1**2*y4*y5**2*y6**2 + y1**2*y5**2*y6**3 - 2*y1**2*y4**2*y5*y6*y7 - 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4**3*y7**2 + y1**2*y4**2*y6*y7**2)
+dF(250) = (y1*y2*y4*y5**2*y6**2 + y1*y3*y5**2*y6**3 - 2*y1*y2*y4**2*y5*y6*y7 - 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4**3*y7**2 + y1*y3*y4**2*y6*y7**2)
+dF(251) = (y2**2*y4*y5**2*y6**2 + y3**2*y5**2*y6**3 - 2*y2**2*y4**2*y5*y6*y7 - 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4**3*y7**2 + y3**2*y4**2*y6*y7**2)
+dF(252) = (y2*y3*y4*y5**2*y6**2 + y2*y3*y5**2*y6**3 - 2*y2*y3*y4**2*y5*y6*y7 - 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4**3*y7**2 + y2*y3*y4**2*y6*y7**2)
+dF(253) = (y4**3*y5**2*y6**2 + y4*y5**4*y6**2 + y5**2*y6**5 - 2*y4**4*y5*y6*y7 - 2*y4**2*y5**3*y6*y7 - 2*y4*y5*y6**4*y7 + y4**5*y7**2 + y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 - 2*y4*y5*y6**2*y7**3 + y4**2*y6*y7**4)
+dF(254) = (y1*y3*y4**4*y6 + y1*y3*y4**2*y5**2*y6 + y1*y2*y4*y6**4 + y1*y3*y4**3*y5*y7 + y1*y3*y4*y5**3*y7 + y1*y2*y5*y6**3*y7 + y1*y2*y4*y6**2*y7**2 + y1*y2*y5*y6*y7**3)
+dF(255) = (y3**2*y4**4*y6 + y3**2*y4**2*y5**2*y6 + y2**2*y4*y6**4 + y3**2*y4**3*y5*y7 + y3**2*y4*y5**3*y7 + y2**2*y5*y6**3*y7 + y2**2*y4*y6**2*y7**2 + y2**2*y5*y6*y7**3)
+dF(256) = (y1*y3*y4*y5**2*y6**2 + y1*y2*y5**2*y6**3 - 2*y1*y3*y4**2*y5*y6*y7 - 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4**3*y7**2 + y1*y2*y4**2*y6*y7**2)
+dF(257) = (y3**2*y4*y5**2*y6**2 + y2**2*y5**2*y6**3 - 2*y3**2*y4**2*y5*y6*y7 - 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4**3*y7**2 + y2**2*y4**2*y6*y7**2)
+dF(258) = (-(y4**4*y6**3) + y5**4*y6**3 - y4**3*y6**4 - 3*y4**3*y5*y6**2*y7 - 3*y4*y5**3*y6**2*y7 - 3*y4**2*y5*y6**3*y7 - y5**3*y6**3*y7 - y4**3*y5*y7**3 - y4*y5**3*y7**3 - 3*y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4**3*y7**4)
+dF(259) = ((2*y4**4*y6**3)/3 + y4**2*y5**2*y6**3 + (2*y4**3*y6**4)/3 + y4*y5**2*y6**4 + y4*y5**3*y6**2*y7 + y5**3*y6**3*y7 + y4**4*y6*y7**2 + y4**3*y6**2*y7**2 + y4**3*y5*y7**3 + (2*y4*y5**3*y7**3)/3 + y4**2*y5*y6*y7**3 + (2*y5**3*y6*y7**3)/3)
+end subroutine dmsC2H2_D8h_diff_mux_7th
+
+
+subroutine dmsC2H2_D8h_diff_muy_7th(n,y1,y2,y3,y4,y5,y6,y7,dF)
+    !
+    implicit none
+    !
+    integer(ik),intent(in)  :: n
+    real(ark),intent(in)  :: y1,y2,y3,y4,y5,y6,y7
+    real(ark),intent(out) :: dF(n)
+      !
+dF(1) = (y5 + y7)
+dF(2) = (y1*y5 + y1*y7)
+dF(3) = (y2*y5 + y3*y7)
+dF(4) = (y3*y5 + y2*y7)
+dF(5) = (y1**2*y5 + y1**2*y7)
+dF(6) = (y1*y2*y5 + y1*y3*y7)
+dF(7) = (y2**2*y5 + y3**2*y7)
+dF(8) = (y2*y3*y5 + y2*y3*y7)
+dF(9) = (y4**2*y5 + y5**3 + y6**2*y7 + y7**3)
+dF(10) = (y4*y5*y6 + y5**2*y7 + y4*y6*y7 + y5*y7**2)
+dF(11) = (y1*y3*y5 + y1*y2*y7)
+dF(12) = (y3**2*y5 + y2**2*y7)
+dF(13) = (y5*y6**2 + y4**2*y7 + y5**2*y7 + y5*y7**2)
+dF(14) = (y1**3*y5 + y1**3*y7)
+dF(15) = (y1**2*y2*y5 + y1**2*y3*y7)
+dF(16) = (y1*y2**2*y5 + y1*y3**2*y7)
+dF(17) = (y2**3*y5 + y3**3*y7)
+dF(18) = (y1*y2*y3*y5 + y1*y2*y3*y7)
+dF(19) = (y2**2*y3*y5 + y2*y3**2*y7)
+dF(20) = (y1*y4**2*y5 + y1*y5**3 + y1*y6**2*y7 + y1*y7**3)
+dF(21) = (y2*y4**2*y5 + y2*y5**3 + y3*y6**2*y7 + y3*y7**3)
+dF(22) = (y1*y4*y5*y6 + y1*y5**2*y7 + y1*y4*y6*y7 + y1*y5*y7**2)
+dF(23) = (y2*y4*y5*y6 + y2*y5**2*y7 + y3*y4*y6*y7 + y3*y5*y7**2)
+dF(24) = (y2*y5*y6**2 + y3*y4**2*y7 + y3*y5**2*y7 + y2*y5*y7**2)
+dF(25) = (y1**2*y3*y5 + y1**2*y2*y7)
+dF(26) = (y1*y3**2*y5 + y1*y2**2*y7)
+dF(27) = (y3**3*y5 + y2**3*y7)
+dF(28) = (y2*y3**2*y5 + y2**2*y3*y7)
+dF(29) = (y1*y5*y6**2 + y1*y4**2*y7 + y1*y5**2*y7 + y1*y5*y7**2)
+dF(30) = (y3*y5*y6**2 + y2*y4**2*y7 + y2*y5**2*y7 + y3*y5*y7**2)
+dF(31) = (y3*y4*y5*y6 + y3*y5**2*y7 + y2*y4*y6*y7 + y2*y5*y7**2)
+dF(32) = (y3*y4**2*y5 + y3*y5**3 + y2*y6**2*y7 + y2*y7**3)
+dF(33) = (y1**4*y5 + y1**4*y7)
+dF(34) = (y1**3*y2*y5 + y1**3*y3*y7)
+dF(35) = (y1**2*y2**2*y5 + y1**2*y3**2*y7)
+dF(36) = (y1*y2**3*y5 + y1*y3**3*y7)
+dF(37) = (y2**4*y5 + y3**4*y7)
+dF(38) = (y1**2*y2*y3*y5 + y1**2*y2*y3*y7)
+dF(39) = (y1*y2**2*y3*y5 + y1*y2*y3**2*y7)
+dF(40) = (y2**3*y3*y5 + y2*y3**3*y7)
+dF(41) = (y2**2*y3**2*y5 + y2**2*y3**2*y7)
+dF(42) = (y1**2*y4**2*y5 + y1**2*y5**3 + y1**2*y6**2*y7 + y1**2*y7**3)
+dF(43) = (y1*y2*y4**2*y5 + y1*y2*y5**3 + y1*y3*y6**2*y7 + y1*y3*y7**3)
+dF(44) = (y2**2*y4**2*y5 + y2**2*y5**3 + y3**2*y6**2*y7 + y3**2*y7**3)
+dF(45) = (y2*y3*y4**2*y5 + y2*y3*y5**3 + y2*y3*y6**2*y7 + y2*y3*y7**3)
+dF(46) = (y4**4*y5 + 2*y4**2*y5**3 + y5**5 + y6**4*y7 + 2*y6**2*y7**3 + y7**5)
+dF(47) = (y1**2*y4*y5*y6 + y1**2*y5**2*y7 + y1**2*y4*y6*y7 + y1**2*y5*y7**2)
+dF(48) = (y1*y2*y4*y5*y6 + y1*y2*y5**2*y7 + y1*y3*y4*y6*y7 + y1*y3*y5*y7**2)
+dF(49) = (y2**2*y4*y5*y6 + y2**2*y5**2*y7 + y3**2*y4*y6*y7 + y3**2*y5*y7**2)
+dF(50) = (y2*y3*y4*y5*y6 + y2*y3*y5**2*y7 + y2*y3*y4*y6*y7 + y2*y3*y5*y7**2)
+dF(51) = (y1*y2*y5*y6**2 + y1*y3*y4**2*y7 + y1*y3*y5**2*y7 + y1*y2*y5*y7**2)
+dF(52) = (y2**2*y5*y6**2 + y3**2*y4**2*y7 + y3**2*y5**2*y7 + y2**2*y5*y7**2)
+dF(53) = (y4**2*y5*y6**2 + 2*y4*y5**2*y6*y7 + y4**2*y6**2*y7 + y5**3*y7**2 + 2*y4*y5*y6*y7**2 + y5**2*y7**3)
+dF(54) = (y1**3*y3*y5 + y1**3*y2*y7)
+dF(55) = (y1**2*y3**2*y5 + y1**2*y2**2*y7)
+dF(56) = (y1*y3**3*y5 + y1*y2**3*y7)
+dF(57) = (y3**4*y5 + y2**4*y7)
+dF(58) = (y1*y2*y3**2*y5 + y1*y2**2*y3*y7)
+dF(59) = (y2*y3**3*y5 + y2**3*y3*y7)
+dF(60) = (y1**2*y5*y6**2 + y1**2*y4**2*y7 + y1**2*y5**2*y7 + y1**2*y5*y7**2)
+dF(61) = (y1*y3*y5*y6**2 + y1*y2*y4**2*y7 + y1*y2*y5**2*y7 + y1*y3*y5*y7**2)
+dF(62) = (y3**2*y5*y6**2 + y2**2*y4**2*y7 + y2**2*y5**2*y7 + y3**2*y5*y7**2)
+dF(63) = (y2*y3*y5*y6**2 + y2*y3*y4**2*y7 + y2*y3*y5**2*y7 + y2*y3*y5*y7**2)
+dF(64) = (-2*y4**3*y5*y6 - 2*y4*y5**3*y6 + y5*y6**4 + y4**4*y7 - y5**4*y7 - 2*y4*y6**3*y7 - 2*y4*y6*y7**3 - y5*y7**4)
+dF(65) = (y4**3*y5*y6 + y4*y5**3*y6 + y4**2*y5**2*y7 + y5**4*y7 + y4*y6**3*y7 + y5*y6**2*y7**2 + y4*y6*y7**3 + y5*y7**4)
+dF(66) = (y1*y3*y4*y5*y6 + y1*y3*y5**2*y7 + y1*y2*y4*y6*y7 + y1*y2*y5*y7**2)
+dF(67) = (y3**2*y4*y5*y6 + y3**2*y5**2*y7 + y2**2*y4*y6*y7 + y2**2*y5*y7**2)
+dF(68) = (-(y5**3*y6**2) + y4*y5*y6**3 + y4**3*y6*y7 + 3*y4*y5**2*y6*y7 + y5**3*y7**2 + 3*y4*y5*y6*y7**2 - y4**2*y7**3 + y5**2*y7**3)
+dF(69) = (y1*y3*y4**2*y5 + y1*y3*y5**3 + y1*y2*y6**2*y7 + y1*y2*y7**3)
+dF(70) = (y3**2*y4**2*y5 + y3**2*y5**3 + y2**2*y6**2*y7 + y2**2*y7**3)
+dF(71) = (y5**3*y6**2 - 2*y4*y5**2*y6*y7 + y5**2*y6**2*y7 + y4**2*y5*y7**2 - 2*y4*y5*y6*y7**2 + y4**2*y7**3)
+dF(72) = (y1**5*y5 + y1**5*y7)
+dF(73) = (y1**4*y2*y5 + y1**4*y3*y7)
+dF(74) = (y1**3*y2**2*y5 + y1**3*y3**2*y7)
+dF(75) = (y1**2*y2**3*y5 + y1**2*y3**3*y7)
+dF(76) = (y1*y2**4*y5 + y1*y3**4*y7)
+dF(77) = (y2**5*y5 + y3**5*y7)
+dF(78) = (y1**3*y2*y3*y5 + y1**3*y2*y3*y7)
+dF(79) = (y1**2*y2**2*y3*y5 + y1**2*y2*y3**2*y7)
+dF(80) = (y1*y2**3*y3*y5 + y1*y2*y3**3*y7)
+dF(81) = (y2**4*y3*y5 + y2*y3**4*y7)
+dF(82) = (y1*y2**2*y3**2*y5 + y1*y2**2*y3**2*y7)
+dF(83) = (y2**3*y3**2*y5 + y2**2*y3**3*y7)
+dF(84) = (y1**3*y4**2*y5 + y1**3*y5**3 + y1**3*y6**2*y7 + y1**3*y7**3)
+dF(85) = (y1**2*y2*y4**2*y5 + y1**2*y2*y5**3 + y1**2*y3*y6**2*y7 + y1**2*y3*y7**3)
+dF(86) = (y1*y2**2*y4**2*y5 + y1*y2**2*y5**3 + y1*y3**2*y6**2*y7 + y1*y3**2*y7**3)
+dF(87) = (y2**3*y4**2*y5 + y2**3*y5**3 + y3**3*y6**2*y7 + y3**3*y7**3)
+dF(88) = (y1*y2*y3*y4**2*y5 + y1*y2*y3*y5**3 + y1*y2*y3*y6**2*y7 + y1*y2*y3*y7**3)
+dF(89) = (y2**2*y3*y4**2*y5 + y2**2*y3*y5**3 + y2*y3**2*y6**2*y7 + y2*y3**2*y7**3)
+dF(90) = (y1*y4**4*y5 + 2*y1*y4**2*y5**3 + y1*y5**5 + y1*y6**4*y7 + 2*y1*y6**2*y7**3 + y1*y7**5)
+dF(91) = (y2*y4**4*y5 + 2*y2*y4**2*y5**3 + y2*y5**5 + y3*y6**4*y7 + 2*y3*y6**2*y7**3 + y3*y7**5)
+dF(92) = (y1**3*y4*y5*y6 + y1**3*y5**2*y7 + y1**3*y4*y6*y7 + y1**3*y5*y7**2)
+dF(93) = (y1**2*y2*y4*y5*y6 + y1**2*y2*y5**2*y7 + y1**2*y3*y4*y6*y7 + y1**2*y3*y5*y7**2)
+dF(94) = (y1*y2**2*y4*y5*y6 + y1*y2**2*y5**2*y7 + y1*y3**2*y4*y6*y7 + y1*y3**2*y5*y7**2)
+dF(95) = (y2**3*y4*y5*y6 + y2**3*y5**2*y7 + y3**3*y4*y6*y7 + y3**3*y5*y7**2)
+dF(96) = (y1*y2*y3*y4*y5*y6 + y1*y2*y3*y5**2*y7 + y1*y2*y3*y4*y6*y7 + y1*y2*y3*y5*y7**2)
+dF(97) = (y2**2*y3*y4*y5*y6 + y2**2*y3*y5**2*y7 + y2*y3**2*y4*y6*y7 + y2*y3**2*y5*y7**2)
+dF(98) = (y1**2*y2*y5*y6**2 + y1**2*y3*y4**2*y7 + y1**2*y3*y5**2*y7 + y1**2*y2*y5*y7**2)
+dF(99) = (y1*y2**2*y5*y6**2 + y1*y3**2*y4**2*y7 + y1*y3**2*y5**2*y7 + y1*y2**2*y5*y7**2)
+dF(100) = (y2**3*y5*y6**2 + y3**3*y4**2*y7 + y3**3*y5**2*y7 + y2**3*y5*y7**2)
+dF(101) = (y2**2*y3*y5*y6**2 + y2*y3**2*y4**2*y7 + y2*y3**2*y5**2*y7 + y2**2*y3*y5*y7**2)
+dF(102) = (y1*y4**2*y5*y6**2 + 2*y1*y4*y5**2*y6*y7 + y1*y4**2*y6**2*y7 + y1*y5**3*y7**2 + 2*y1*y4*y5*y6*y7**2 + y1*y5**2*y7**3)
+dF(103) = (y2*y4**2*y5*y6**2 + 2*y2*y4*y5**2*y6*y7 + y3*y4**2*y6**2*y7 + y2*y5**3*y7**2 + 2*y3*y4*y5*y6*y7**2 + y3*y5**2*y7**3)
+dF(104) = (y2*y4*y5*y6**3 + y3*y4**3*y6*y7 + y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 + y3*y5**3*y7**2 + y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
+dF(105) = (-2*y3*y4**3*y5*y6 - 2*y3*y4*y5**3*y6 + y2*y5*y6**4 + y3*y4**4*y7 - y3*y5**4*y7 - 2*y2*y4*y6**3*y7 - 2*y2*y4*y6*y7**3 - y2*y5*y7**4)
+dF(106) = (y1**4*y3*y5 + y1**4*y2*y7)
+dF(107) = (y1**3*y3**2*y5 + y1**3*y2**2*y7)
+dF(108) = (y1**2*y3**3*y5 + y1**2*y2**3*y7)
+dF(109) = (y1*y3**4*y5 + y1*y2**4*y7)
+dF(110) = (y3**5*y5 + y2**5*y7)
+dF(111) = (y1**2*y2*y3**2*y5 + y1**2*y2**2*y3*y7)
+dF(112) = (y1*y2*y3**3*y5 + y1*y2**3*y3*y7)
+dF(113) = (y2*y3**4*y5 + y2**4*y3*y7)
+dF(114) = (y2**2*y3**3*y5 + y2**3*y3**2*y7)
+dF(115) = (y1**3*y5*y6**2 + y1**3*y4**2*y7 + y1**3*y5**2*y7 + y1**3*y5*y7**2)
+dF(116) = (y1**2*y3*y5*y6**2 + y1**2*y2*y4**2*y7 + y1**2*y2*y5**2*y7 + y1**2*y3*y5*y7**2)
+dF(117) = (y1*y3**2*y5*y6**2 + y1*y2**2*y4**2*y7 + y1*y2**2*y5**2*y7 + y1*y3**2*y5*y7**2)
+dF(118) = (y3**3*y5*y6**2 + y2**3*y4**2*y7 + y2**3*y5**2*y7 + y3**3*y5*y7**2)
+dF(119) = (y1*y2*y3*y5*y6**2 + y1*y2*y3*y4**2*y7 + y1*y2*y3*y5**2*y7 + y1*y2*y3*y5*y7**2)
+dF(120) = (y2*y3**2*y5*y6**2 + y2**2*y3*y4**2*y7 + y2**2*y3*y5**2*y7 + y2*y3**2*y5*y7**2)
+dF(121) = (-2*y1*y4**3*y5*y6 - 2*y1*y4*y5**3*y6 + y1*y5*y6**4 + y1*y4**4*y7 - y1*y5**4*y7 - 2*y1*y4*y6**3*y7 - 2*y1*y4*y6*y7**3 - y1*y5*y7**4)
+dF(122) = (-2*y2*y4**3*y5*y6 - 2*y2*y4*y5**3*y6 + y3*y5*y6**4 + y2*y4**4*y7 - y2*y5**4*y7 - 2*y3*y4*y6**3*y7 - 2*y3*y4*y6*y7**3 - y3*y5*y7**4)
+dF(123) = (y1*y4**3*y5*y6 + y1*y4*y5**3*y6 + y1*y4**2*y5**2*y7 + y1*y5**4*y7 + y1*y4*y6**3*y7 + y1*y5*y6**2*y7**2 + y1*y4*y6*y7**3 + y1*y5*y7**4)
+dF(124) = (y2*y4**3*y5*y6 + y2*y4*y5**3*y6 + y2*y4**2*y5**2*y7 + y2*y5**4*y7 + y3*y4*y6**3*y7 + y3*y5*y6**2*y7**2 + y3*y4*y6*y7**3 + y3*y5*y7**4)
+dF(125) = (y1**2*y3*y4*y5*y6 + y1**2*y3*y5**2*y7 + y1**2*y2*y4*y6*y7 + y1**2*y2*y5*y7**2)
+dF(126) = (y1*y3**2*y4*y5*y6 + y1*y3**2*y5**2*y7 + y1*y2**2*y4*y6*y7 + y1*y2**2*y5*y7**2)
+dF(127) = (y3**3*y4*y5*y6 + y3**3*y5**2*y7 + y2**3*y4*y6*y7 + y2**3*y5*y7**2)
+dF(128) = (y2*y3**2*y4*y5*y6 + y2*y3**2*y5**2*y7 + y2**2*y3*y4*y6*y7 + y2**2*y3*y5*y7**2)
+dF(129) = (-(y1*y5**3*y6**2) + y1*y4*y5*y6**3 + y1*y4**3*y6*y7 + 3*y1*y4*y5**2*y6*y7 + y1*y5**3*y7**2 + 3*y1*y4*y5*y6*y7**2 - y1*y4**2*y7**3 + y1*y5**2*y7**3)
+dF(130) = (-(y2*y5**3*y6**2) + y3*y4*y5*y6**3 + y2*y4**3*y6*y7 + 3*y2*y4*y5**2*y6*y7 + y2*y5**3*y7**2 + 3*y3*y4*y5*y6*y7**2 - y3*y4**2*y7**3 + y3*y5**2*y7**3)
+dF(131) = (y1**2*y3*y4**2*y5 + y1**2*y3*y5**3 + y1**2*y2*y6**2*y7 + y1**2*y2*y7**3)
+dF(132) = (y1*y3**2*y4**2*y5 + y1*y3**2*y5**3 + y1*y2**2*y6**2*y7 + y1*y2**2*y7**3)
+dF(133) = (y3**3*y4**2*y5 + y3**3*y5**3 + y2**3*y6**2*y7 + y2**3*y7**3)
+dF(134) = (y2*y3**2*y4**2*y5 + y2*y3**2*y5**3 + y2**2*y3*y6**2*y7 + y2**2*y3*y7**3)
+dF(135) = (y3*y4**2*y5*y6**2 + 2*y3*y4*y5**2*y6*y7 + y2*y4**2*y6**2*y7 + y3*y5**3*y7**2 + 2*y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
+dF(136) = (y3*y4**4*y5 + 2*y3*y4**2*y5**3 + y3*y5**5 + y2*y6**4*y7 + 2*y2*y6**2*y7**3 + y2*y7**5)
+dF(137) = (y1*y5**3*y6**2 - 2*y1*y4*y5**2*y6*y7 + y1*y5**2*y6**2*y7 + y1*y4**2*y5*y7**2 - 2*y1*y4*y5*y6*y7**2 + y1*y4**2*y7**3)
+dF(138) = (y2*y5**3*y6**2 - 2*y2*y4*y5**2*y6*y7 + y3*y5**2*y6**2*y7 + y2*y4**2*y5*y7**2 - 2*y3*y4*y5*y6*y7**2 + y3*y4**2*y7**3)
+dF(139) = (y3*y4**3*y5*y6 + y3*y4*y5**3*y6 + y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + y2*y4*y6*y7**3 + y2*y5*y7**4)
+dF(140) = (y3*y5**3*y6**2 - 2*y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 - 2*y2*y4*y5*y6*y7**2 + y2*y4**2*y7**3)
+dF(141) = (y1**6*y5 + y1**6*y7)
+dF(142) = (y1**5*y2*y5 + y1**5*y3*y7)
+dF(143) = (y1**4*y2**2*y5 + y1**4*y3**2*y7)
+dF(144) = (y1**3*y2**3*y5 + y1**3*y3**3*y7)
+dF(145) = (y1**2*y2**4*y5 + y1**2*y3**4*y7)
+dF(146) = (y1*y2**5*y5 + y1*y3**5*y7)
+dF(147) = (y2**6*y5 + y3**6*y7)
+dF(148) = (y1**4*y2*y3*y5 + y1**4*y2*y3*y7)
+dF(149) = (y1**3*y2**2*y3*y5 + y1**3*y2*y3**2*y7)
+dF(150) = (y1**2*y2**3*y3*y5 + y1**2*y2*y3**3*y7)
+dF(151) = (y1*y2**4*y3*y5 + y1*y2*y3**4*y7)
+dF(152) = (y2**5*y3*y5 + y2*y3**5*y7)
+dF(153) = (y1**2*y2**2*y3**2*y5 + y1**2*y2**2*y3**2*y7)
+dF(154) = (y1*y2**3*y3**2*y5 + y1*y2**2*y3**3*y7)
+dF(155) = (y2**4*y3**2*y5 + y2**2*y3**4*y7)
+dF(156) = (y2**3*y3**3*y5 + y2**3*y3**3*y7)
+dF(157) = (y1**4*y4**2*y5 + y1**4*y5**3 + y1**4*y6**2*y7 + y1**4*y7**3)
+dF(158) = (y1**3*y2*y4**2*y5 + y1**3*y2*y5**3 + y1**3*y3*y6**2*y7 + y1**3*y3*y7**3)
+dF(159) = (y1**2*y2**2*y4**2*y5 + y1**2*y2**2*y5**3 + y1**2*y3**2*y6**2*y7 + y1**2*y3**2*y7**3)
+dF(160) = (y1*y2**3*y4**2*y5 + y1*y2**3*y5**3 + y1*y3**3*y6**2*y7 + y1*y3**3*y7**3)
+dF(161) = (y2**4*y4**2*y5 + y2**4*y5**3 + y3**4*y6**2*y7 + y3**4*y7**3)
+dF(162) = (y1**2*y2*y3*y4**2*y5 + y1**2*y2*y3*y5**3 + y1**2*y2*y3*y6**2*y7 + y1**2*y2*y3*y7**3)
+dF(163) = (y1*y2**2*y3*y4**2*y5 + y1*y2**2*y3*y5**3 + y1*y2*y3**2*y6**2*y7 + y1*y2*y3**2*y7**3)
+dF(164) = (y2**3*y3*y4**2*y5 + y2**3*y3*y5**3 + y2*y3**3*y6**2*y7 + y2*y3**3*y7**3)
+dF(165) = (y2**2*y3**2*y4**2*y5 + y2**2*y3**2*y5**3 + y2**2*y3**2*y6**2*y7 + y2**2*y3**2*y7**3)
+dF(166) = (y1**2*y4**4*y5 + 2*y1**2*y4**2*y5**3 + y1**2*y5**5 + y1**2*y6**4*y7 + 2*y1**2*y6**2*y7**3 + y1**2*y7**5)
+dF(167) = (y1*y2*y4**4*y5 + 2*y1*y2*y4**2*y5**3 + y1*y2*y5**5 + y1*y3*y6**4*y7 + 2*y1*y3*y6**2*y7**3 + y1*y3*y7**5)
+dF(168) = (y2**2*y4**4*y5 + 2*y2**2*y4**2*y5**3 + y2**2*y5**5 + y3**2*y6**4*y7 + 2*y3**2*y6**2*y7**3 + y3**2*y7**5)
+dF(169) = (y2*y3*y4**4*y5 + 2*y2*y3*y4**2*y5**3 + y2*y3*y5**5 + y2*y3*y6**4*y7 + 2*y2*y3*y6**2*y7**3 + y2*y3*y7**5)
+dF(170) = (y4**6*y5 + 3*y4**4*y5**3 + 3*y4**2*y5**5 + y5**7 + y6**6*y7 + 3*y6**4*y7**3 + 3*y6**2*y7**5 + y7**7)
+dF(171) = (y1**4*y4*y5*y6 + y1**4*y5**2*y7 + y1**4*y4*y6*y7 + y1**4*y5*y7**2)
+dF(172) = (y1**3*y2*y4*y5*y6 + y1**3*y2*y5**2*y7 + y1**3*y3*y4*y6*y7 + y1**3*y3*y5*y7**2)
+dF(173) = (y1**2*y2**2*y4*y5*y6 + y1**2*y2**2*y5**2*y7 + y1**2*y3**2*y4*y6*y7 + y1**2*y3**2*y5*y7**2)
+dF(174) = (y1*y2**3*y4*y5*y6 + y1*y2**3*y5**2*y7 + y1*y3**3*y4*y6*y7 + y1*y3**3*y5*y7**2)
+dF(175) = (y2**4*y4*y5*y6 + y2**4*y5**2*y7 + y3**4*y4*y6*y7 + y3**4*y5*y7**2)
+dF(176) = (y1**2*y2*y3*y4*y5*y6 + y1**2*y2*y3*y5**2*y7 + y1**2*y2*y3*y4*y6*y7 + y1**2*y2*y3*y5*y7**2)
+dF(177) = (y1*y2**2*y3*y4*y5*y6 + y1*y2**2*y3*y5**2*y7 + y1*y2*y3**2*y4*y6*y7 + y1*y2*y3**2*y5*y7**2)
+dF(178) = (y2**3*y3*y4*y5*y6 + y2**3*y3*y5**2*y7 + y2*y3**3*y4*y6*y7 + y2*y3**3*y5*y7**2)
+dF(179) = (y2**2*y3**2*y4*y5*y6 + y2**2*y3**2*y5**2*y7 + y2**2*y3**2*y4*y6*y7 + y2**2*y3**2*y5*y7**2)
+dF(180) = (y4**5*y5*y6 + 2*y4**3*y5**3*y6 + y4*y5**5*y6 + y4**4*y5**2*y7 + 2*y4**2*y5**4*y7 + y5**6*y7 + y4*y6**5*y7 + y5*y6**4*y7**2 + 2*y4*y6**3*y7**3 + 2*y5*y6**2*y7**4 + y4*y6*y7**5 + y5*y7**6)
+dF(181) = (y1**3*y2*y5*y6**2 + y1**3*y3*y4**2*y7 + y1**3*y3*y5**2*y7 + y1**3*y2*y5*y7**2)
+dF(182) = (y1**2*y2**2*y5*y6**2 + y1**2*y3**2*y4**2*y7 + y1**2*y3**2*y5**2*y7 + y1**2*y2**2*y5*y7**2)
+dF(183) = (y1*y2**3*y5*y6**2 + y1*y3**3*y4**2*y7 + y1*y3**3*y5**2*y7 + y1*y2**3*y5*y7**2)
+dF(184) = (y2**4*y5*y6**2 + y3**4*y4**2*y7 + y3**4*y5**2*y7 + y2**4*y5*y7**2)
+dF(185) = (y1*y2**2*y3*y5*y6**2 + y1*y2*y3**2*y4**2*y7 + y1*y2*y3**2*y5**2*y7 + y1*y2**2*y3*y5*y7**2)
+dF(186) = (y2**3*y3*y5*y6**2 + y2*y3**3*y4**2*y7 + y2*y3**3*y5**2*y7 + y2**3*y3*y5*y7**2)
+dF(187) = (y1**2*y4**2*y5*y6**2 + 2*y1**2*y4*y5**2*y6*y7 + y1**2*y4**2*y6**2*y7 + y1**2*y5**3*y7**2 + 2*y1**2*y4*y5*y6*y7**2 + y1**2*y5**2*y7**3)
+dF(188) = (y1*y2*y4**2*y5*y6**2 + 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y4**2*y6**2*y7 + y1*y2*y5**3*y7**2 + 2*y1*y3*y4*y5*y6*y7**2 + y1*y3*y5**2*y7**3)
+dF(189) = (y2**2*y4**2*y5*y6**2 + 2*y2**2*y4*y5**2*y6*y7 + y3**2*y4**2*y6**2*y7 + y2**2*y5**3*y7**2 + 2*y3**2*y4*y5*y6*y7**2 + y3**2*y5**2*y7**3)
+dF(190) = (y2*y3*y4**2*y5*y6**2 + 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y4**2*y6**2*y7 + y2*y3*y5**3*y7**2 + 2*y2*y3*y4*y5*y6*y7**2 + y2*y3*y5**2*y7**3)
+dF(191) = (y4**4*y5*y6**2 + y4**2*y5**3*y6**2 + 2*y4**3*y5**2*y6*y7 + 2*y4*y5**4*y6*y7 + y4**2*y6**4*y7 + y4**2*y5**3*y7**2 + y5**5*y7**2 + 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 + 2*y4*y5*y6*y7**4 + y5**2*y7**5)
+dF(192) = (y1*y2*y4*y5*y6**3 + y1*y3*y4**3*y6*y7 + y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 + y1*y3*y5**3*y7**2 + y1*y2*y4*y5*y6*y7**2 + y1*y2*y5**2*y7**3)
+dF(193) = (y2**2*y4*y5*y6**3 + y3**2*y4**3*y6*y7 + y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 + y3**2*y5**3*y7**2 + y2**2*y4*y5*y6*y7**2 + y2**2*y5**2*y7**3)
+dF(194) = (-2*y1*y3*y4**3*y5*y6 - 2*y1*y3*y4*y5**3*y6 + y1*y2*y5*y6**4 + y1*y3*y4**4*y7 - y1*y3*y5**4*y7 - 2*y1*y2*y4*y6**3*y7 - 2*y1*y2*y4*y6*y7**3 - y1*y2*y5*y7**4)
+dF(195) = (-2*y3**2*y4**3*y5*y6 - 2*y3**2*y4*y5**3*y6 + y2**2*y5*y6**4 + y3**2*y4**4*y7 - y3**2*y5**4*y7 - 2*y2**2*y4*y6**3*y7 - 2*y2**2*y4*y6*y7**3 - y2**2*y5*y7**4)
+dF(196) = (y1**5*y3*y5 + y1**5*y2*y7)
+dF(197) = (y1**4*y3**2*y5 + y1**4*y2**2*y7)
+dF(198) = (y1**3*y3**3*y5 + y1**3*y2**3*y7)
+dF(199) = (y1**2*y3**4*y5 + y1**2*y2**4*y7)
+dF(200) = (y1*y3**5*y5 + y1*y2**5*y7)
+dF(201) = (y3**6*y5 + y2**6*y7)
+dF(202) = (y1**3*y2*y3**2*y5 + y1**3*y2**2*y3*y7)
+dF(203) = (y1**2*y2*y3**3*y5 + y1**2*y2**3*y3*y7)
+dF(204) = (y1*y2*y3**4*y5 + y1*y2**4*y3*y7)
+dF(205) = (y2*y3**5*y5 + y2**5*y3*y7)
+dF(206) = (y1*y2**2*y3**3*y5 + y1*y2**3*y3**2*y7)
+dF(207) = (y2**2*y3**4*y5 + y2**4*y3**2*y7)
+dF(208) = (y1**4*y5*y6**2 + y1**4*y4**2*y7 + y1**4*y5**2*y7 + y1**4*y5*y7**2)
+dF(209) = (y1**3*y3*y5*y6**2 + y1**3*y2*y4**2*y7 + y1**3*y2*y5**2*y7 + y1**3*y3*y5*y7**2)
+dF(210) = (y1**2*y3**2*y5*y6**2 + y1**2*y2**2*y4**2*y7 + y1**2*y2**2*y5**2*y7 + y1**2*y3**2*y5*y7**2)
+dF(211) = (y1*y3**3*y5*y6**2 + y1*y2**3*y4**2*y7 + y1*y2**3*y5**2*y7 + y1*y3**3*y5*y7**2)
+dF(212) = (y3**4*y5*y6**2 + y2**4*y4**2*y7 + y2**4*y5**2*y7 + y3**4*y5*y7**2)
+dF(213) = (y1**2*y2*y3*y5*y6**2 + y1**2*y2*y3*y4**2*y7 + y1**2*y2*y3*y5**2*y7 + y1**2*y2*y3*y5*y7**2)
+dF(214) = (y1*y2*y3**2*y5*y6**2 + y1*y2**2*y3*y4**2*y7 + y1*y2**2*y3*y5**2*y7 + y1*y2*y3**2*y5*y7**2)
+dF(215) = (y2*y3**3*y5*y6**2 + y2**3*y3*y4**2*y7 + y2**3*y3*y5**2*y7 + y2*y3**3*y5*y7**2)
+dF(216) = (y2**2*y3**2*y5*y6**2 + y2**2*y3**2*y4**2*y7 + y2**2*y3**2*y5**2*y7 + y2**2*y3**2*y5*y7**2)
+dF(217) = (-2*y1**2*y4**3*y5*y6 - 2*y1**2*y4*y5**3*y6 + y1**2*y5*y6**4 + y1**2*y4**4*y7 - y1**2*y5**4*y7 - 2*y1**2*y4*y6**3*y7 - 2*y1**2*y4*y6*y7**3 - y1**2*y5*y7**4)
+dF(218) = (-2*y1*y2*y4**3*y5*y6 - 2*y1*y2*y4*y5**3*y6 + y1*y3*y5*y6**4 + y1*y2*y4**4*y7 - y1*y2*y5**4*y7 - 2*y1*y3*y4*y6**3*y7 - 2*y1*y3*y4*y6*y7**3 - y1*y3*y5*y7**4)
+dF(219) = (-2*y2**2*y4**3*y5*y6 - 2*y2**2*y4*y5**3*y6 + y3**2*y5*y6**4 + y2**2*y4**4*y7 - y2**2*y5**4*y7 - 2*y3**2*y4*y6**3*y7 - 2*y3**2*y4*y6*y7**3 - y3**2*y5*y7**4)
+dF(220) = (-2*y2*y3*y4**3*y5*y6 - 2*y2*y3*y4*y5**3*y6 + y2*y3*y5*y6**4 + y2*y3*y4**4*y7 - y2*y3*y5**4*y7 - 2*y2*y3*y4*y6**3*y7 - 2*y2*y3*y4*y6*y7**3 - y2*y3*y5*y7**4)
+dF(221) = (y5*y6**6 + y4**6*y7 + 3*y4**4*y5**2*y7 + 3*y4**2*y5**4*y7 + y5**6*y7 + 3*y5*y6**4*y7**2 + 3*y5*y6**2*y7**4 + y5*y7**6)
+dF(222) = (y1**2*y4**3*y5*y6 + y1**2*y4*y5**3*y6 + y1**2*y4**2*y5**2*y7 + y1**2*y5**4*y7 + y1**2*y4*y6**3*y7 + y1**2*y5*y6**2*y7**2 + y1**2*y4*y6*y7**3 + y1**2*y5*y7**4)
+dF(223) = (y1*y2*y4**3*y5*y6 + y1*y2*y4*y5**3*y6 + y1*y2*y4**2*y5**2*y7 + y1*y2*y5**4*y7 + y1*y3*y4*y6**3*y7 + y1*y3*y5*y6**2*y7**2 + y1*y3*y4*y6*y7**3 + y1*y3*y5*y7**4)
+dF(224) = (y2**2*y4**3*y5*y6 + y2**2*y4*y5**3*y6 + y2**2*y4**2*y5**2*y7 + y2**2*y5**4*y7 + y3**2*y4*y6**3*y7 + y3**2*y5*y6**2*y7**2 + y3**2*y4*y6*y7**3 + y3**2*y5*y7**4)
+dF(225) = (y2*y3*y4**3*y5*y6 + y2*y3*y4*y5**3*y6 + y2*y3*y4**2*y5**2*y7 + y2*y3*y5**4*y7 + y2*y3*y4*y6**3*y7 + y2*y3*y5*y6**2*y7**2 + y2*y3*y4*y6*y7**3 + y2*y3*y5*y7**4)
+dF(226) = (y1**3*y3*y4*y5*y6 + y1**3*y3*y5**2*y7 + y1**3*y2*y4*y6*y7 + y1**3*y2*y5*y7**2)
+dF(227) = (y1**2*y3**2*y4*y5*y6 + y1**2*y3**2*y5**2*y7 + y1**2*y2**2*y4*y6*y7 + y1**2*y2**2*y5*y7**2)
+dF(228) = (y1*y3**3*y4*y5*y6 + y1*y3**3*y5**2*y7 + y1*y2**3*y4*y6*y7 + y1*y2**3*y5*y7**2)
+dF(229) = (y3**4*y4*y5*y6 + y3**4*y5**2*y7 + y2**4*y4*y6*y7 + y2**4*y5*y7**2)
+dF(230) = (y1*y2*y3**2*y4*y5*y6 + y1*y2*y3**2*y5**2*y7 + y1*y2**2*y3*y4*y6*y7 + y1*y2**2*y3*y5*y7**2)
+dF(231) = (y2*y3**3*y4*y5*y6 + y2*y3**3*y5**2*y7 + y2**3*y3*y4*y6*y7 + y2**3*y3*y5*y7**2)
+dF(232) = (-(y1**2*y5**3*y6**2) + y1**2*y4*y5*y6**3 + y1**2*y4**3*y6*y7 + 3*y1**2*y4*y5**2*y6*y7 + y1**2*y5**3*y7**2 + 3*y1**2*y4*y5*y6*y7**2 - y1**2*y4**2*y7**3 + y1**2*y5**2*y7**3)
+dF(233) = (-(y1*y2*y5**3*y6**2) + y1*y3*y4*y5*y6**3 + y1*y2*y4**3*y6*y7 + 3*y1*y2*y4*y5**2*y6*y7 + y1*y2*y5**3*y7**2 + 3*y1*y3*y4*y5*y6*y7**2 - y1*y3*y4**2*y7**3 + y1*y3*y5**2*y7**3)
+dF(234) = (-(y2**2*y5**3*y6**2) + y3**2*y4*y5*y6**3 + y2**2*y4**3*y6*y7 + 3*y2**2*y4*y5**2*y6*y7 + y2**2*y5**3*y7**2 + 3*y3**2*y4*y5*y6*y7**2 - y3**2*y4**2*y7**3 + y3**2*y5**2*y7**3)
+dF(235) = (-(y2*y3*y5**3*y6**2) + y2*y3*y4*y5*y6**3 + y2*y3*y4**3*y6*y7 + 3*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**3*y7**2 + 3*y2*y3*y4*y5*y6*y7**2 - y2*y3*y4**2*y7**3 + y2*y3*y5**2*y7**3)
+dF(236) = (-(y4**2*y5**3*y6**2) - y5**5*y6**2 + y4*y5*y6**5 + y4**5*y6*y7 + 4*y4**3*y5**2*y6*y7 + 3*y4*y5**4*y6*y7 + y4**2*y5**3*y7**2 + y5**5*y7**2 + 4*y4*y5*y6**3*y7**2 - y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 + 3*y4*y5*y6*y7**4 - y4**2*y7**5 + y5**2*y7**5)
+dF(237) = (y1**3*y3*y4**2*y5 + y1**3*y3*y5**3 + y1**3*y2*y6**2*y7 + y1**3*y2*y7**3)
+dF(238) = (y1**2*y3**2*y4**2*y5 + y1**2*y3**2*y5**3 + y1**2*y2**2*y6**2*y7 + y1**2*y2**2*y7**3)
+dF(239) = (y1*y3**3*y4**2*y5 + y1*y3**3*y5**3 + y1*y2**3*y6**2*y7 + y1*y2**3*y7**3)
+dF(240) = (y3**4*y4**2*y5 + y3**4*y5**3 + y2**4*y6**2*y7 + y2**4*y7**3)
+dF(241) = (y1*y2*y3**2*y4**2*y5 + y1*y2*y3**2*y5**3 + y1*y2**2*y3*y6**2*y7 + y1*y2**2*y3*y7**3)
+dF(242) = (y2*y3**3*y4**2*y5 + y2*y3**3*y5**3 + y2**3*y3*y6**2*y7 + y2**3*y3*y7**3)
+dF(243) = (y1*y3*y4**2*y5*y6**2 + 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y4**2*y6**2*y7 + y1*y3*y5**3*y7**2 + 2*y1*y2*y4*y5*y6*y7**2 + y1*y2*y5**2*y7**3)
+dF(244) = (y3**2*y4**2*y5*y6**2 + 2*y3**2*y4*y5**2*y6*y7 + y2**2*y4**2*y6**2*y7 + y3**2*y5**3*y7**2 + 2*y2**2*y4*y5*y6*y7**2 + y2**2*y5**2*y7**3)
+dF(245) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y4**2*y5*y6**4 + y4**4*y6**2*y7 - y5**4*y6**2*y7 - y4**3*y6**3*y7 + y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 + y4*y5**3*y6*y7**2 - y4**3*y6*y7**3 + y4*y5**2*y6*y7**3 - y4**2*y5*y7**4)
+dF(246) = ((y4**3*y5*y6**3)/3 + y4**2*y5**2*y6**2*y7 + (y4**3*y6**3*y7)/3 + y4*y5**3*y6*y7**2 + y4**2*y5*y6**2*y7**2 + (y5**4*y7**3)/3 + y4*y5**2*y6*y7**3 + (y5**3*y7**4)/3)
+dF(247) = (y1*y3*y4**4*y5 + 2*y1*y3*y4**2*y5**3 + y1*y3*y5**5 + y1*y2*y6**4*y7 + 2*y1*y2*y6**2*y7**3 + y1*y2*y7**5)
+dF(248) = (y3**2*y4**4*y5 + 2*y3**2*y4**2*y5**3 + y3**2*y5**5 + y2**2*y6**4*y7 + 2*y2**2*y6**2*y7**3 + y2**2*y7**5)
+dF(249) = (y1**2*y5**3*y6**2 - 2*y1**2*y4*y5**2*y6*y7 + y1**2*y5**2*y6**2*y7 + y1**2*y4**2*y5*y7**2 - 2*y1**2*y4*y5*y6*y7**2 + y1**2*y4**2*y7**3)
+dF(250) = (y1*y2*y5**3*y6**2 - 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y5**2*y6**2*y7 + y1*y2*y4**2*y5*y7**2 - 2*y1*y3*y4*y5*y6*y7**2 + y1*y3*y4**2*y7**3)
+dF(251) = (y2**2*y5**3*y6**2 - 2*y2**2*y4*y5**2*y6*y7 + y3**2*y5**2*y6**2*y7 + y2**2*y4**2*y5*y7**2 - 2*y3**2*y4*y5*y6*y7**2 + y3**2*y4**2*y7**3)
+dF(252) = (y2*y3*y5**3*y6**2 - 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**2*y6**2*y7 + y2*y3*y4**2*y5*y7**2 - 2*y2*y3*y4*y5*y6*y7**2 + y2*y3*y4**2*y7**3)
+dF(253) = (y4**2*y5**3*y6**2 + y5**5*y6**2 - 2*y4**3*y5**2*y6*y7 - 2*y4*y5**4*y6*y7 + y5**2*y6**4*y7 + y4**4*y5*y7**2 + y4**2*y5**3*y7**2 - 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 - 2*y4*y5*y6*y7**4 + y4**2*y7**5)
+dF(254) = (y1*y3*y4**3*y5*y6 + y1*y3*y4*y5**3*y6 + y1*y3*y4**2*y5**2*y7 + y1*y3*y5**4*y7 + y1*y2*y4*y6**3*y7 + y1*y2*y5*y6**2*y7**2 + y1*y2*y4*y6*y7**3 + y1*y2*y5*y7**4)
+dF(255) = (y3**2*y4**3*y5*y6 + y3**2*y4*y5**3*y6 + y3**2*y4**2*y5**2*y7 + y3**2*y5**4*y7 + y2**2*y4*y6**3*y7 + y2**2*y5*y6**2*y7**2 + y2**2*y4*y6*y7**3 + y2**2*y5*y7**4)
+dF(256) = (y1*y3*y5**3*y6**2 - 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 - 2*y1*y2*y4*y5*y6*y7**2 + y1*y2*y4**2*y7**3)
+dF(257) = (y3**2*y5**3*y6**2 - 2*y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 - 2*y2**2*y4*y5*y6*y7**2 + y2**2*y4**2*y7**3)
+dF(258) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y5**3*y6**4 - y4**3*y6**3*y7 - 3*y4*y5**2*y6**3*y7 - 3*y4**3*y5*y6*y7**2 - 3*y4*y5**3*y6*y7**2 + y4**4*y7**3 - y5**4*y7**3 - y4**3*y6*y7**3 - 3*y4*y5**2*y6*y7**3 - y5**3*y7**4)
+dF(259) = ((2*y4**3*y5*y6**3)/3 + y4*y5**3*y6**3 + y5**4*y6**2*y7 + (2*y4**3*y6**3*y7)/3 + y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 + y5**3*y6**2*y7**2 + y4**2*y5**2*y7**3 + (2*y5**4*y7**3)/3 + y4**3*y6*y7**3 + y4**2*y5*y7**4 + (2*y5**3*y7**4)/3)
+
+end subroutine dmsC2H2_D8h_diff_muy_7th
+
+subroutine dmsC2H2_D8h_diff_muz_7th(n,y1,y2,y3,y4,y5,y6,y7,dF)
+    !
+    implicit none
+    !
+    integer(ik),intent(in)  :: n
+    real(ark),intent(in)  :: y1,y2,y3,y4,y5,y6,y7
+    real(ark),intent(out) :: dF(n)
+      !
+dF(1) = (y2 - y3)
+dF(2) = (y1*y2 - y1*y3)
+dF(3) = (y2**2 - y3**2)
+dF(4) = (y4**2 + y5**2 - y6**2 - y7**2)
+dF(5) = (y1**2*y2 - y1**2*y3)
+dF(6) = (y1*y2**2 - y1*y3**2)
+dF(7) = (y2**3 - y3**3)
+dF(8) = (y2**2*y3 - y2*y3**2)
+dF(9) = (y1*y4**2 + y1*y5**2 - y1*y6**2 - y1*y7**2)
+dF(10) = (y2*y4**2 + y2*y5**2 - y3*y6**2 - y3*y7**2)
+dF(11) = (y2*y4*y6 - y3*y4*y6 + y2*y5*y7 - y3*y5*y7)
+dF(12) = (-(y3*y4**2) - y3*y5**2 + y2*y6**2 + y2*y7**2)
+dF(13) = (y1**3*y2 - y1**3*y3)
+dF(14) = (y1**2*y2**2 - y1**2*y3**2)
+dF(15) = (y1*y2**3 - y1*y3**3)
+dF(16) = (y2**4 - y3**4)
+dF(17) = (y1*y2**2*y3 - y1*y2*y3**2)
+dF(18) = (y2**3*y3 - y2*y3**3)
+dF(19) = (y1**2*y4**2 + y1**2*y5**2 - y1**2*y6**2 - y1**2*y7**2)
+dF(20) = (y1*y2*y4**2 + y1*y2*y5**2 - y1*y3*y6**2 - y1*y3*y7**2)
+dF(21) = (y2**2*y4**2 + y2**2*y5**2 - y3**2*y6**2 - y3**2*y7**2)
+dF(22) = (y2*y3*y4**2 + y2*y3*y5**2 - y2*y3*y6**2 - y2*y3*y7**2)
+dF(23) = (y4**4 + 2*y4**2*y5**2 + y5**4 - y6**4 - 2*y6**2*y7**2 - y7**4)
+dF(24) = (y1*y2*y4*y6 - y1*y3*y4*y6 + y1*y2*y5*y7 - y1*y3*y5*y7)
+dF(25) = (y2**2*y4*y6 - y3**2*y4*y6 + y2**2*y5*y7 - y3**2*y5*y7)
+dF(26) = (y4**3*y6 + y4*y5**2*y6 - y4*y6**3 + y4**2*y5*y7 + y5**3*y7 - y5*y6**2*y7 - y4*y6*y7**2 - y5*y7**3)
+dF(27) = (-(y1*y3*y4**2) - y1*y3*y5**2 + y1*y2*y6**2 + y1*y2*y7**2)
+dF(28) = (-(y3**2*y4**2) - y3**2*y5**2 + y2**2*y6**2 + y2**2*y7**2)
+dF(29) = (y1**4*y2 - y1**4*y3)
+dF(30) = (y1**3*y2**2 - y1**3*y3**2)
+dF(31) = (y1**2*y2**3 - y1**2*y3**3)
+dF(32) = (y1*y2**4 - y1*y3**4)
+dF(33) = (y2**5 - y3**5)
+dF(34) = (y1**2*y2**2*y3 - y1**2*y2*y3**2)
+dF(35) = (y1*y2**3*y3 - y1*y2*y3**3)
+dF(36) = (y2**4*y3 - y2*y3**4)
+dF(37) = (y2**3*y3**2 - y2**2*y3**3)
+dF(38) = (y1**3*y4**2 + y1**3*y5**2 - y1**3*y6**2 - y1**3*y7**2)
+dF(39) = (y1**2*y2*y4**2 + y1**2*y2*y5**2 - y1**2*y3*y6**2 - y1**2*y3*y7**2)
+dF(40) = (y1*y2**2*y4**2 + y1*y2**2*y5**2 - y1*y3**2*y6**2 - y1*y3**2*y7**2)
+dF(41) = (y2**3*y4**2 + y2**3*y5**2 - y3**3*y6**2 - y3**3*y7**2)
+dF(42) = (y1*y2*y3*y4**2 + y1*y2*y3*y5**2 - y1*y2*y3*y6**2 - y1*y2*y3*y7**2)
+dF(43) = (y2**2*y3*y4**2 + y2**2*y3*y5**2 - y2*y3**2*y6**2 - y2*y3**2*y7**2)
+dF(44) = (y1*y4**4 + 2*y1*y4**2*y5**2 + y1*y5**4 - y1*y6**4 - 2*y1*y6**2*y7**2 - y1*y7**4)
+dF(45) = (y2*y4**4 + 2*y2*y4**2*y5**2 + y2*y5**4 - y3*y6**4 - 2*y3*y6**2*y7**2 - y3*y7**4)
+dF(46) = (y1**2*y2*y4*y6 - y1**2*y3*y4*y6 + y1**2*y2*y5*y7 - y1**2*y3*y5*y7)
+dF(47) = (y1*y2**2*y4*y6 - y1*y3**2*y4*y6 + y1*y2**2*y5*y7 - y1*y3**2*y5*y7)
+dF(48) = (y2**3*y4*y6 - y3**3*y4*y6 + y2**3*y5*y7 - y3**3*y5*y7)
+dF(49) = (y2**2*y3*y4*y6 - y2*y3**2*y4*y6 + y2**2*y3*y5*y7 - y2*y3**2*y5*y7)
+dF(50) = (y1*y4**3*y6 + y1*y4*y5**2*y6 - y1*y4*y6**3 + y1*y4**2*y5*y7 + y1*y5**3*y7 - y1*y5*y6**2*y7 - y1*y4*y6*y7**2 - y1*y5*y7**3)
+dF(51) = (y2*y4**3*y6 + y2*y4*y5**2*y6 - y3*y4*y6**3 + y2*y4**2*y5*y7 + y2*y5**3*y7 - y3*y5*y6**2*y7 - y3*y4*y6*y7**2 - y3*y5*y7**3)
+dF(52) = (-(y1**2*y3*y4**2) - y1**2*y3*y5**2 + y1**2*y2*y6**2 + y1**2*y2*y7**2)
+dF(53) = (-(y1*y3**2*y4**2) - y1*y3**2*y5**2 + y1*y2**2*y6**2 + y1*y2**2*y7**2)
+dF(54) = (-(y3**3*y4**2) - y3**3*y5**2 + y2**3*y6**2 + y2**3*y7**2)
+dF(55) = (-(y2*y3**2*y4**2) - y2*y3**2*y5**2 + y2**2*y3*y6**2 + y2**2*y3*y7**2)
+dF(56) = (y2*y4**2*y6**2 - y3*y4**2*y6**2 + 2*y2*y4*y5*y6*y7 - 2*y3*y4*y5*y6*y7 + y2*y5**2*y7**2 - y3*y5**2*y7**2)
+dF(57) = (-(y3*y4**3*y6) - y3*y4*y5**2*y6 + y2*y4*y6**3 - y3*y4**2*y5*y7 - y3*y5**3*y7 + y2*y5*y6**2*y7 + y2*y4*y6*y7**2 + y2*y5*y7**3)
+dF(58) = (-(y3*y4**4) - 2*y3*y4**2*y5**2 - y3*y5**4 + y2*y6**4 + 2*y2*y6**2*y7**2 + y2*y7**4)
+dF(59) = (y2*y5**2*y6**2 - y3*y5**2*y6**2 - 2*y2*y4*y5*y6*y7 + 2*y3*y4*y5*y6*y7 + y2*y4**2*y7**2 - y3*y4**2*y7**2)
+dF(60) = (y1**5*y2 - y1**5*y3)
+dF(61) = (y1**4*y2**2 - y1**4*y3**2)
+dF(62) = (y1**3*y2**3 - y1**3*y3**3)
+dF(63) = (y1**2*y2**4 - y1**2*y3**4)
+dF(64) = (y1*y2**5 - y1*y3**5)
+dF(65) = (y2**6 - y3**6)
+dF(66) = (y1**3*y2**2*y3 - y1**3*y2*y3**2)
+dF(67) = (y1**2*y2**3*y3 - y1**2*y2*y3**3)
+dF(68) = (y1*y2**4*y3 - y1*y2*y3**4)
+dF(69) = (y2**5*y3 - y2*y3**5)
+dF(70) = (y1*y2**3*y3**2 - y1*y2**2*y3**3)
+dF(71) = (y2**4*y3**2 - y2**2*y3**4)
+dF(72) = (y1**4*y4**2 + y1**4*y5**2 - y1**4*y6**2 - y1**4*y7**2)
+dF(73) = (y1**3*y2*y4**2 + y1**3*y2*y5**2 - y1**3*y3*y6**2 - y1**3*y3*y7**2)
+dF(74) = (y1**2*y2**2*y4**2 + y1**2*y2**2*y5**2 - y1**2*y3**2*y6**2 - y1**2*y3**2*y7**2)
+dF(75) = (y1*y2**3*y4**2 + y1*y2**3*y5**2 - y1*y3**3*y6**2 - y1*y3**3*y7**2)
+dF(76) = (y2**4*y4**2 + y2**4*y5**2 - y3**4*y6**2 - y3**4*y7**2)
+dF(77) = (y1**2*y2*y3*y4**2 + y1**2*y2*y3*y5**2 - y1**2*y2*y3*y6**2 - y1**2*y2*y3*y7**2)
+dF(78) = (y1*y2**2*y3*y4**2 + y1*y2**2*y3*y5**2 - y1*y2*y3**2*y6**2 - y1*y2*y3**2*y7**2)
+dF(79) = (y2**3*y3*y4**2 + y2**3*y3*y5**2 - y2*y3**3*y6**2 - y2*y3**3*y7**2)
+dF(80) = (y2**2*y3**2*y4**2 + y2**2*y3**2*y5**2 - y2**2*y3**2*y6**2 - y2**2*y3**2*y7**2)
+dF(81) = (y1**2*y4**4 + 2*y1**2*y4**2*y5**2 + y1**2*y5**4 - y1**2*y6**4 - 2*y1**2*y6**2*y7**2 - y1**2*y7**4)
+dF(82) = (y1*y2*y4**4 + 2*y1*y2*y4**2*y5**2 + y1*y2*y5**4 - y1*y3*y6**4 - 2*y1*y3*y6**2*y7**2 - y1*y3*y7**4)
+dF(83) = (y2**2*y4**4 + 2*y2**2*y4**2*y5**2 + y2**2*y5**4 - y3**2*y6**4 - 2*y3**2*y6**2*y7**2 - y3**2*y7**4)
+dF(84) = (y2*y3*y4**4 + 2*y2*y3*y4**2*y5**2 + y2*y3*y5**4 - y2*y3*y6**4 - 2*y2*y3*y6**2*y7**2 - y2*y3*y7**4)
+dF(85) = (y4**6 + 3*y4**4*y5**2 + 3*y4**2*y5**4 + y5**6 - y6**6 - 3*y6**4*y7**2 - 3*y6**2*y7**4 - y7**6)
+dF(86) = (y1**3*y2*y4*y6 - y1**3*y3*y4*y6 + y1**3*y2*y5*y7 - y1**3*y3*y5*y7)
+dF(87) = (y1**2*y2**2*y4*y6 - y1**2*y3**2*y4*y6 + y1**2*y2**2*y5*y7 - y1**2*y3**2*y5*y7)
+dF(88) = (y1*y2**3*y4*y6 - y1*y3**3*y4*y6 + y1*y2**3*y5*y7 - y1*y3**3*y5*y7)
+dF(89) = (y2**4*y4*y6 - y3**4*y4*y6 + y2**4*y5*y7 - y3**4*y5*y7)
+dF(90) = (y1*y2**2*y3*y4*y6 - y1*y2*y3**2*y4*y6 + y1*y2**2*y3*y5*y7 - y1*y2*y3**2*y5*y7)
+dF(91) = (y2**3*y3*y4*y6 - y2*y3**3*y4*y6 + y2**3*y3*y5*y7 - y2*y3**3*y5*y7)
+dF(92) = (y1**2*y4**3*y6 + y1**2*y4*y5**2*y6 - y1**2*y4*y6**3 + y1**2*y4**2*y5*y7 + y1**2*y5**3*y7 - y1**2*y5*y6**2*y7 - y1**2*y4*y6*y7**2 - y1**2*y5*y7**3)
+dF(93) = (y1*y2*y4**3*y6 + y1*y2*y4*y5**2*y6 - y1*y3*y4*y6**3 + y1*y2*y4**2*y5*y7 + y1*y2*y5**3*y7 - y1*y3*y5*y6**2*y7 - y1*y3*y4*y6*y7**2 - y1*y3*y5*y7**3)
+dF(94) = (y2**2*y4**3*y6 + y2**2*y4*y5**2*y6 - y3**2*y4*y6**3 + y2**2*y4**2*y5*y7 + y2**2*y5**3*y7 - y3**2*y5*y6**2*y7 - y3**2*y4*y6*y7**2 - y3**2*y5*y7**3)
+dF(95) = (y2*y3*y4**3*y6 + y2*y3*y4*y5**2*y6 - y2*y3*y4*y6**3 + y2*y3*y4**2*y5*y7 + y2*y3*y5**3*y7 - y2*y3*y5*y6**2*y7 - y2*y3*y4*y6*y7**2 - y2*y3*y5*y7**3)
+dF(96) = (y4**5*y6 + 2*y4**3*y5**2*y6 + y4*y5**4*y6 - y4*y6**5 + y4**4*y5*y7 + 2*y4**2*y5**3*y7 + y5**5*y7 - y5*y6**4*y7 - 2*y4*y6**3*y7**2 - 2*y5*y6**2*y7**3 - y4*y6*y7**4 - y5*y7**5)
+dF(97) = (-(y1**3*y3*y4**2) - y1**3*y3*y5**2 + y1**3*y2*y6**2 + y1**3*y2*y7**2)
+dF(98) = (-(y1**2*y3**2*y4**2) - y1**2*y3**2*y5**2 + y1**2*y2**2*y6**2 + y1**2*y2**2*y7**2)
+dF(99) = (-(y1*y3**3*y4**2) - y1*y3**3*y5**2 + y1*y2**3*y6**2 + y1*y2**3*y7**2)
+dF(100) = (-(y3**4*y4**2) - y3**4*y5**2 + y2**4*y6**2 + y2**4*y7**2)
+dF(101) = (-(y1*y2*y3**2*y4**2) - y1*y2*y3**2*y5**2 + y1*y2**2*y3*y6**2 + y1*y2**2*y3*y7**2)
+dF(102) = (-(y2*y3**3*y4**2) - y2*y3**3*y5**2 + y2**3*y3*y6**2 + y2**3*y3*y7**2)
+dF(103) = (y1*y2*y4**2*y6**2 - y1*y3*y4**2*y6**2 + 2*y1*y2*y4*y5*y6*y7 - 2*y1*y3*y4*y5*y6*y7 + y1*y2*y5**2*y7**2 - y1*y3*y5**2*y7**2)
+dF(104) = (y2**2*y4**2*y6**2 - y3**2*y4**2*y6**2 + 2*y2**2*y4*y5*y6*y7 - 2*y3**2*y4*y5*y6*y7 + y2**2*y5**2*y7**2 - y3**2*y5**2*y7**2)
+dF(105) = (y4**4*y6**2 + y4**2*y5**2*y6**2 - y4**2*y6**4 + 2*y4**3*y5*y6*y7 + 2*y4*y5**3*y6*y7 - 2*y4*y5*y6**3*y7 + y4**2*y5**2*y7**2 + y5**4*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 - 2*y4*y5*y6*y7**3 - y5**2*y7**4)
+dF(106) = (-(y1*y3*y4**3*y6) - y1*y3*y4*y5**2*y6 + y1*y2*y4*y6**3 - y1*y3*y4**2*y5*y7 - y1*y3*y5**3*y7 + y1*y2*y5*y6**2*y7 + y1*y2*y4*y6*y7**2 + y1*y2*y5*y7**3)
+dF(107) = (-(y3**2*y4**3*y6) - y3**2*y4*y5**2*y6 + y2**2*y4*y6**3 - y3**2*y4**2*y5*y7 - y3**2*y5**3*y7 + y2**2*y5*y6**2*y7 + y2**2*y4*y6*y7**2 + y2**2*y5*y7**3)
+dF(108) = (-(y1*y3*y4**4) - 2*y1*y3*y4**2*y5**2 - y1*y3*y5**4 + y1*y2*y6**4 + 2*y1*y2*y6**2*y7**2 + y1*y2*y7**4)
+dF(109) = (-(y3**2*y4**4) - 2*y3**2*y4**2*y5**2 - y3**2*y5**4 + y2**2*y6**4 + 2*y2**2*y6**2*y7**2 + y2**2*y7**4)
+dF(110) = (y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3*y4*y5*y6*y7 + y1*y2*y4**2*y7**2 - y1*y3*y4**2*y7**2)
+dF(111) = (y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2 - y3**2*y4**2*y7**2)
+dF(112) = (y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 + y4**4*y7**2 + y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
+dF(113) = (y1**6*y2 - y1**6*y3)
+dF(114) = (y1**5*y2**2 - y1**5*y3**2)
+dF(115) = (y1**4*y2**3 - y1**4*y3**3)
+dF(116) = (y1**3*y2**4 - y1**3*y3**4)
+dF(117) = (y1**2*y2**5 - y1**2*y3**5)
+dF(118) = (y1*y2**6 - y1*y3**6)
+dF(119) = (y2**7 - y3**7)
+dF(120) = (y1**4*y2**2*y3 - y1**4*y2*y3**2)
+dF(121) = (y1**3*y2**3*y3 - y1**3*y2*y3**3)
+dF(122) = (y1**2*y2**4*y3 - y1**2*y2*y3**4)
+dF(123) = (y1*y2**5*y3 - y1*y2*y3**5)
+dF(124) = (y2**6*y3 - y2*y3**6)
+dF(125) = (y1**2*y2**3*y3**2 - y1**2*y2**2*y3**3)
+dF(126) = (y1*y2**4*y3**2 - y1*y2**2*y3**4)
+dF(127) = (y2**5*y3**2 - y2**2*y3**5)
+dF(128) = (y2**4*y3**3 - y2**3*y3**4)
+dF(129) = (y1**5*y4**2 + y1**5*y5**2 - y1**5*y6**2 - y1**5*y7**2)
+dF(130) = (y1**4*y2*y4**2 + y1**4*y2*y5**2 - y1**4*y3*y6**2 - y1**4*y3*y7**2)
+dF(131) = (y1**3*y2**2*y4**2 + y1**3*y2**2*y5**2 - y1**3*y3**2*y6**2 - y1**3*y3**2*y7**2)
+dF(132) = (y1**2*y2**3*y4**2 + y1**2*y2**3*y5**2 - y1**2*y3**3*y6**2 - y1**2*y3**3*y7**2)
+dF(133) = (y1*y2**4*y4**2 + y1*y2**4*y5**2 - y1*y3**4*y6**2 - y1*y3**4*y7**2)
+dF(134) = (y2**5*y4**2 + y2**5*y5**2 - y3**5*y6**2 - y3**5*y7**2)
+dF(135) = (y1**3*y2*y3*y4**2 + y1**3*y2*y3*y5**2 - y1**3*y2*y3*y6**2 - y1**3*y2*y3*y7**2)
+dF(136) = (y1**2*y2**2*y3*y4**2 + y1**2*y2**2*y3*y5**2 - y1**2*y2*y3**2*y6**2 - y1**2*y2*y3**2*y7**2)
+dF(137) = (y1*y2**3*y3*y4**2 + y1*y2**3*y3*y5**2 - y1*y2*y3**3*y6**2 - y1*y2*y3**3*y7**2)
+dF(138) = (y2**4*y3*y4**2 + y2**4*y3*y5**2 - y2*y3**4*y6**2 - y2*y3**4*y7**2)
+dF(139) = (y1*y2**2*y3**2*y4**2 + y1*y2**2*y3**2*y5**2 - y1*y2**2*y3**2*y6**2 - y1*y2**2*y3**2*y7**2)
+dF(140) = (y2**3*y3**2*y4**2 + y2**3*y3**2*y5**2 - y2**2*y3**3*y6**2 - y2**2*y3**3*y7**2)
+dF(141) = (y1**3*y4**4 + 2*y1**3*y4**2*y5**2 + y1**3*y5**4 - y1**3*y6**4 - 2*y1**3*y6**2*y7**2 - y1**3*y7**4)
+dF(142) = (y1**2*y2*y4**4 + 2*y1**2*y2*y4**2*y5**2 + y1**2*y2*y5**4 - y1**2*y3*y6**4 - 2*y1**2*y3*y6**2*y7**2 - y1**2*y3*y7**4)
+dF(143) = (y1*y2**2*y4**4 + 2*y1*y2**2*y4**2*y5**2 + y1*y2**2*y5**4 - y1*y3**2*y6**4 - 2*y1*y3**2*y6**2*y7**2 - y1*y3**2*y7**4)
+dF(144) = (y2**3*y4**4 + 2*y2**3*y4**2*y5**2 + y2**3*y5**4 - y3**3*y6**4 - 2*y3**3*y6**2*y7**2 - y3**3*y7**4)
+dF(145) = (y1*y2*y3*y4**4 + 2*y1*y2*y3*y4**2*y5**2 + y1*y2*y3*y5**4 - y1*y2*y3*y6**4 - 2*y1*y2*y3*y6**2*y7**2 - y1*y2*y3*y7**4)
+dF(146) = (y2**2*y3*y4**4 + 2*y2**2*y3*y4**2*y5**2 + y2**2*y3*y5**4 - y2*y3**2*y6**4 - 2*y2*y3**2*y6**2*y7**2 - y2*y3**2*y7**4)
+dF(147) = (y1*y4**6 + 3*y1*y4**4*y5**2 + 3*y1*y4**2*y5**4 + y1*y5**6 - y1*y6**6 - 3*y1*y6**4*y7**2 - 3*y1*y6**2*y7**4 - y1*y7**6)
+dF(148) = (y2*y4**6 + 3*y2*y4**4*y5**2 + 3*y2*y4**2*y5**4 + y2*y5**6 - y3*y6**6 - 3*y3*y6**4*y7**2 - 3*y3*y6**2*y7**4 - y3*y7**6)
+dF(149) = (y1**4*y2*y4*y6 - y1**4*y3*y4*y6 + y1**4*y2*y5*y7 - y1**4*y3*y5*y7)
+dF(150) = (y1**3*y2**2*y4*y6 - y1**3*y3**2*y4*y6 + y1**3*y2**2*y5*y7 - y1**3*y3**2*y5*y7)
+dF(151) = (y1**2*y2**3*y4*y6 - y1**2*y3**3*y4*y6 + y1**2*y2**3*y5*y7 - y1**2*y3**3*y5*y7)
+dF(152) = (y1*y2**4*y4*y6 - y1*y3**4*y4*y6 + y1*y2**4*y5*y7 - y1*y3**4*y5*y7)
+dF(153) = (y2**5*y4*y6 - y3**5*y4*y6 + y2**5*y5*y7 - y3**5*y5*y7)
+dF(154) = (y1**2*y2**2*y3*y4*y6 - y1**2*y2*y3**2*y4*y6 + y1**2*y2**2*y3*y5*y7 - y1**2*y2*y3**2*y5*y7)
+dF(155) = (y1*y2**3*y3*y4*y6 - y1*y2*y3**3*y4*y6 + y1*y2**3*y3*y5*y7 - y1*y2*y3**3*y5*y7)
+dF(156) = (y2**4*y3*y4*y6 - y2*y3**4*y4*y6 + y2**4*y3*y5*y7 - y2*y3**4*y5*y7)
+dF(157) = (y2**3*y3**2*y4*y6 - y2**2*y3**3*y4*y6 + y2**3*y3**2*y5*y7 - y2**2*y3**3*y5*y7)
+dF(158) = (y1**3*y4**3*y6 + y1**3*y4*y5**2*y6 - y1**3*y4*y6**3 + y1**3*y4**2*y5*y7 + y1**3*y5**3*y7 - y1**3*y5*y6**2*y7 - y1**3*y4*y6*y7**2 - y1**3*y5*y7**3)
+dF(159) = (y1**2*y2*y4**3*y6 + y1**2*y2*y4*y5**2*y6 - y1**2*y3*y4*y6**3 + y1**2*y2*y4**2*y5*y7 + y1**2*y2*y5**3*y7 - y1**2*y3*y5*y6**2*y7 - y1**2*y3*y4*y6*y7**2 - y1**2*y3*y5*y7**3)
+dF(160) = (y1*y2**2*y4**3*y6 + y1*y2**2*y4*y5**2*y6 - y1*y3**2*y4*y6**3 + y1*y2**2*y4**2*y5*y7 + y1*y2**2*y5**3*y7 - y1*y3**2*y5*y6**2*y7 - y1*y3**2*y4*y6*y7**2 - y1*y3**2*y5*y7**3)
+dF(161) = (y2**3*y4**3*y6 + y2**3*y4*y5**2*y6 - y3**3*y4*y6**3 + y2**3*y4**2*y5*y7 + y2**3*y5**3*y7 - y3**3*y5*y6**2*y7 - y3**3*y4*y6*y7**2 - y3**3*y5*y7**3)
+dF(162) = (y1*y2*y3*y4**3*y6 + y1*y2*y3*y4*y5**2*y6 - y1*y2*y3*y4*y6**3 + y1*y2*y3*y4**2*y5*y7 + y1*y2*y3*y5**3*y7 - y1*y2*y3*y5*y6**2*y7 - y1*y2*y3*y4*y6*y7**2 - y1*y2*y3*y5*y7**3)
+dF(163) = (y2**2*y3*y4**3*y6 + y2**2*y3*y4*y5**2*y6 - y2*y3**2*y4*y6**3 + y2**2*y3*y4**2*y5*y7 + y2**2*y3*y5**3*y7 - y2*y3**2*y5*y6**2*y7 - y2*y3**2*y4*y6*y7**2 - y2*y3**2*y5*y7**3)
+dF(164) = (y1*y4**5*y6 + 2*y1*y4**3*y5**2*y6 + y1*y4*y5**4*y6 - y1*y4*y6**5 + y1*y4**4*y5*y7 + 2*y1*y4**2*y5**3*y7 + y1*y5**5*y7 - y1*y5*y6**4*y7 - 2*y1*y4*y6**3*y7**2 - 2*y1*y5*y6**2*y7**3 - y1*y4*y6*y7**4 - y1*y5*y7**5)
+dF(165) = (y2*y4**5*y6 + 2*y2*y4**3*y5**2*y6 + y2*y4*y5**4*y6 - y3*y4*y6**5 + y2*y4**4*y5*y7 + 2*y2*y4**2*y5**3*y7 + y2*y5**5*y7 - y3*y5*y6**4*y7 - 2*y3*y4*y6**3*y7**2 - 2*y3*y5*y6**2*y7**3 - y3*y4*y6*y7**4 - y3*y5*y7**5)
+dF(166) = (-(y1**4*y3*y4**2) - y1**4*y3*y5**2 + y1**4*y2*y6**2 + y1**4*y2*y7**2)
+dF(167) = (-(y1**3*y3**2*y4**2) - y1**3*y3**2*y5**2 + y1**3*y2**2*y6**2 + y1**3*y2**2*y7**2)
+dF(168) = (-(y1**2*y3**3*y4**2) - y1**2*y3**3*y5**2 + y1**2*y2**3*y6**2 + y1**2*y2**3*y7**2)
+dF(169) = (-(y1*y3**4*y4**2) - y1*y3**4*y5**2 + y1*y2**4*y6**2 + y1*y2**4*y7**2)
+dF(170) = (-(y3**5*y4**2) - y3**5*y5**2 + y2**5*y6**2 + y2**5*y7**2)
+dF(171) = (-(y1**2*y2*y3**2*y4**2) - y1**2*y2*y3**2*y5**2 + y1**2*y2**2*y3*y6**2 + y1**2*y2**2*y3*y7**2)
+dF(172) = (-(y1*y2*y3**3*y4**2) - y1*y2*y3**3*y5**2 + y1*y2**3*y3*y6**2 + y1*y2**3*y3*y7**2)
+dF(173) = (-(y2*y3**4*y4**2) - y2*y3**4*y5**2 + y2**4*y3*y6**2 + y2**4*y3*y7**2)
+dF(174) = (-(y2**2*y3**3*y4**2) - y2**2*y3**3*y5**2 + y2**3*y3**2*y6**2 + y2**3*y3**2*y7**2)
+dF(175) = (y1**2*y2*y4**2*y6**2 - y1**2*y3*y4**2*y6**2 + 2*y1**2*y2*y4*y5*y6*y7 - 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y5**2*y7**2 - y1**2*y3*y5**2*y7**2)
+dF(176) = (y1*y2**2*y4**2*y6**2 - y1*y3**2*y4**2*y6**2 + 2*y1*y2**2*y4*y5*y6*y7 - 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y5**2*y7**2 - y1*y3**2*y5**2*y7**2)
+dF(177) = (y2**3*y4**2*y6**2 - y3**3*y4**2*y6**2 + 2*y2**3*y4*y5*y6*y7 - 2*y3**3*y4*y5*y6*y7 + y2**3*y5**2*y7**2 - y3**3*y5**2*y7**2)
+dF(178) = (y2**2*y3*y4**2*y6**2 - y2*y3**2*y4**2*y6**2 + 2*y2**2*y3*y4*y5*y6*y7 - 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y5**2*y7**2 - y2*y3**2*y5**2*y7**2)
+dF(179) = (y1*y4**4*y6**2 + y1*y4**2*y5**2*y6**2 - y1*y4**2*y6**4 + 2*y1*y4**3*y5*y6*y7 + 2*y1*y4*y5**3*y6*y7 - 2*y1*y4*y5*y6**3*y7 + y1*y4**2*y5**2*y7**2 + y1*y5**4*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 - 2*y1*y4*y5*y6*y7**3 - y1*y5**2*y7**4)
+dF(180) = (y2*y4**4*y6**2 + y2*y4**2*y5**2*y6**2 - y3*y4**2*y6**4 + 2*y2*y4**3*y5*y6*y7 + 2*y2*y4*y5**3*y6*y7 - 2*y3*y4*y5*y6**3*y7 + y2*y4**2*y5**2*y7**2 + y2*y5**4*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 - 2*y3*y4*y5*y6*y7**3 - y3*y5**2*y7**4)
+dF(181) = (-(y1**2*y3*y4**3*y6) - y1**2*y3*y4*y5**2*y6 + y1**2*y2*y4*y6**3 - y1**2*y3*y4**2*y5*y7 - y1**2*y3*y5**3*y7 + y1**2*y2*y5*y6**2*y7 + y1**2*y2*y4*y6*y7**2 + y1**2*y2*y5*y7**3)
+dF(182) = (-(y1*y3**2*y4**3*y6) - y1*y3**2*y4*y5**2*y6 + y1*y2**2*y4*y6**3 - y1*y3**2*y4**2*y5*y7 - y1*y3**2*y5**3*y7 + y1*y2**2*y5*y6**2*y7 + y1*y2**2*y4*y6*y7**2 + y1*y2**2*y5*y7**3)
+dF(183) = (-(y3**3*y4**3*y6) - y3**3*y4*y5**2*y6 + y2**3*y4*y6**3 - y3**3*y4**2*y5*y7 - y3**3*y5**3*y7 + y2**3*y5*y6**2*y7 + y2**3*y4*y6*y7**2 + y2**3*y5*y7**3)
+dF(184) = (-(y2*y3**2*y4**3*y6) - y2*y3**2*y4*y5**2*y6 + y2**2*y3*y4*y6**3 - y2*y3**2*y4**2*y5*y7 - y2*y3**2*y5**3*y7 + y2**2*y3*y5*y6**2*y7 + y2**2*y3*y4*y6*y7**2 + y2**2*y3*y5*y7**3)
+dF(185) = (y2*y4**3*y6**3 - y3*y4**3*y6**3 + 3*y2*y4**2*y5*y6**2*y7 - 3*y3*y4**2*y5*y6**2*y7 + 3*y2*y4*y5**2*y6*y7**2 - 3*y3*y4*y5**2*y6*y7**2 + y2*y5**3*y7**3 - y3*y5**3*y7**3)
+dF(186) = (-(y1**2*y3*y4**4) - 2*y1**2*y3*y4**2*y5**2 - y1**2*y3*y5**4 + y1**2*y2*y6**4 + 2*y1**2*y2*y6**2*y7**2 + y1**2*y2*y7**4)
+dF(187) = (-(y1*y3**2*y4**4) - 2*y1*y3**2*y4**2*y5**2 - y1*y3**2*y5**4 + y1*y2**2*y6**4 + 2*y1*y2**2*y6**2*y7**2 + y1*y2**2*y7**4)
+dF(188) = (-(y3**3*y4**4) - 2*y3**3*y4**2*y5**2 - y3**3*y5**4 + y2**3*y6**4 + 2*y2**3*y6**2*y7**2 + y2**3*y7**4)
+dF(189) = (-(y2*y3**2*y4**4) - 2*y2*y3**2*y4**2*y5**2 - y2*y3**2*y5**4 + y2**2*y3*y6**4 + 2*y2**2*y3*y6**2*y7**2 + y2**2*y3*y7**4)
+dF(190) = (-(y3*y4**4*y6**2) + y3*y5**4*y6**2 + y2*y4**2*y6**4 - y2*y5**2*y6**4 - 4*y3*y4**3*y5*y6*y7 - 4*y3*y4*y5**3*y6*y7 + 4*y2*y4*y5*y6**3*y7 + y3*y4**4*y7**2 - y3*y5**4*y7**2 + 4*y2*y4*y5*y6*y7**3 - y2*y4**2*y7**4 + y2*y5**2*y7**4)
+dF(191) = (-(y3*y4**5*y6) - 2*y3*y4**3*y5**2*y6 - y3*y4*y5**4*y6 + y2*y4*y6**5 - y3*y4**4*y5*y7 - 2*y3*y4**2*y5**3*y7 - y3*y5**5*y7 + y2*y5*y6**4*y7 + 2*y2*y4*y6**3*y7**2 + 2*y2*y5*y6**2*y7**3 + y2*y4*y6*y7**4 + y2*y5*y7**5)
+dF(192) = (-(y3*y4**6) - 3*y3*y4**4*y5**2 - 3*y3*y4**2*y5**4 - y3*y5**6 + y2*y6**6 + 3*y2*y6**4*y7**2 + 3*y2*y6**2*y7**4 + y2*y7**6)
+dF(193) = (y1**2*y2*y5**2*y6**2 - y1**2*y3*y5**2*y6**2 - 2*y1**2*y2*y4*y5*y6*y7 + 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y4**2*y7**2 - y1**2*y3*y4**2*y7**2)
+dF(194) = (y1*y2**2*y5**2*y6**2 - y1*y3**2*y5**2*y6**2 - 2*y1*y2**2*y4*y5*y6*y7 + 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y4**2*y7**2 - y1*y3**2*y4**2*y7**2)
+dF(195) = (y2**3*y5**2*y6**2 - y3**3*y5**2*y6**2 - 2*y2**3*y4*y5*y6*y7 + 2*y3**3*y4*y5*y6*y7 + y2**3*y4**2*y7**2 - y3**3*y4**2*y7**2)
+dF(196) = (y2**2*y3*y5**2*y6**2 - y2*y3**2*y5**2*y6**2 - 2*y2**2*y3*y4*y5*y6*y7 + 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y4**2*y7**2 - y2*y3**2*y4**2*y7**2)
+dF(197) = (y1*y4**2*y5**2*y6**2 + y1*y5**4*y6**2 - y1*y5**2*y6**4 - 2*y1*y4**3*y5*y6*y7 - 2*y1*y4*y5**3*y6*y7 + 2*y1*y4*y5*y6**3*y7 + y1*y4**4*y7**2 + y1*y4**2*y5**2*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 + 2*y1*y4*y5*y6*y7**3 - y1*y4**2*y7**4)
+dF(198) = (y2*y4**2*y5**2*y6**2 + y2*y5**4*y6**2 - y3*y5**2*y6**4 - 2*y2*y4**3*y5*y6*y7 - 2*y2*y4*y5**3*y6*y7 + 2*y3*y4*y5*y6**3*y7 + y2*y4**4*y7**2 + y2*y4**2*y5**2*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 + 2*y3*y4*y5*y6*y7**3 - y3*y4**2*y7**4)
+dF(199) = (y2*y4*y5**2*y6**3 - y3*y4*y5**2*y6**3 - 2*y2*y4**2*y5*y6**2*y7 + 2*y3*y4**2*y5*y6**2*y7 + y2*y5**3*y6**2*y7 - y3*y5**3*y6**2*y7 + y2*y4**3*y6*y7**2 - y3*y4**3*y6*y7**2 - 2*y2*y4*y5**2*y6*y7**2 + 2*y3*y4*y5**2*y6*y7**2 + y2*y4**2*y5*y7**3 - y3*y4**2*y5*y7**3)
+dF(200) = (-(y3*y4**2*y5**2*y6**2) - y3*y5**4*y6**2 + y2*y5**2*y6**4 + 2*y3*y4**3*y5*y6*y7 + 2*y3*y4*y5**3*y6*y7 - 2*y2*y4*y5*y6**3*y7 - y3*y4**4*y7**2 - y3*y4**2*y5**2*y7**2 + y2*y4**2*y6**2*y7**2 + y2*y5**2*y6**2*y7**2 - 2*y2*y4*y5*y6*y7**3 + y2*y4**2*y7**4)
+
+end subroutine dmsC2H2_D8h_diff_muz_7th
+
+
+
+subroutine dmsC2H2_D8h_diff_mux_6th(n,y1,y2,y3,y4,y5,y6,y7,dF)
     !
     implicit none
     !
@@ -3762,10 +4793,10 @@ dF(138)  = (y2*y4*y5**2*y6**2 + y3*y5**2*y6**3 - 2*y2*y4**2*y5*y6*y7 - 2*y3*y4*y
 dF(139)  = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 + y2*y5*y6*y7**3)
 dF(140)  = (y3*y4*y5**2*y6**2 + y2*y5**2*y6**3 - 2*y3*y4**2*y5*y6*y7 - 2*y2*y4*y5*y6**2*y7 + y3*y4**3*y7**2 + y2*y4**2*y6*y7**2)
 
-end subroutine dmsC2H2_D8h_diff_mux
+end subroutine dmsC2H2_D8h_diff_mux_6th
 
 
-subroutine dmsC2H2_D8h_diff_muy(n,y1,y2,y3,y4,y5,y6,y7,dF)
+subroutine dmsC2H2_D8h_diff_muy_6th(n,y1,y2,y3,y4,y5,y6,y7,dF)
     !
     implicit none
     !
@@ -3914,9 +4945,9 @@ dF(138)  = (y2*y5**3*y6**2 - 2*y2*y4*y5**2*y6*y7 + y3*y5**2*y6**2*y7 + y2*y4**2*
 dF(139)  = (y3*y4**3*y5*y6 + y3*y4*y5**3*y6 + y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + y2*y4*y6*y7**3 + y2*y5*y7**4)
 dF(140)  = (y3*y5**3*y6**2 - 2*y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 - 2*y2*y4*y5*y6*y7**2 + y2*y4**2*y7**3)
 
-end subroutine dmsC2H2_D8h_diff_muy
+end subroutine dmsC2H2_D8h_diff_muy_6th
 
-subroutine dmsC2H2_D8h_diff_muz(n,y1,y2,y3,y4,y5,y6,y7,dF)
+subroutine dmsC2H2_D8h_diff_muz_6th(n,y1,y2,y3,y4,y5,y6,y7,dF)
     !
     implicit none
     !
@@ -4037,8 +5068,7 @@ dF(110)  =(y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3
 dF(111)  =(y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2 - y3**2*y4**2*y7**2)
 dF(112)  =(y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 + y4**4*y7**2 + y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
 
-end subroutine dmsC2H2_D8h_diff_muz
-
+end subroutine dmsC2H2_D8h_diff_muz_6th
 
 
 subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
@@ -5462,7 +6492,7 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
         !
         !k = molec%pot_ind(1,i)
         !
-        f = f + force(i)*dF(i-NparM)
+        f = f + force(i)*dF(i+4-NparM)
         !
       enddo
       !

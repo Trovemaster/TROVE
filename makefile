@@ -10,10 +10,10 @@ checkin:
 
 pot_user = pot_ch4
 
-PLAT = _0605
+PLAT = _2205_i17
 ###FOR  = ifort
 FOR = ifort 
-FFLAGS = -ip   -openmp -O3 -static
+FFLAGS = -ip   -openmp -O3  -static
 
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
@@ -33,7 +33,7 @@ trove.x:        trove.o accuracy.o perturbation.o fields.o symmetry.o molecules.
 	                 lapack.o plasma.o moltype.o refinement.o dipole.o refinement.o tran.o diag.o timer.o input.o \
                    mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o \
 									          pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o pot_c2h6.o $(pot_user).o
-	$(FOR) $(FFLAGS) -o trove$(PLAT).x $^ $(LIB)
+	$(FOR) $(FFLAGS) -o j-trove$(PLAT).x $^ $(LIB)
 
 trove.o:        accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o
 perturbation.o: accuracy.o molecules.o lapack.o fields.o timer.o symmetry.o diag.o plasma.o
@@ -44,7 +44,7 @@ molecules.o:    accuracy.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_
 													 symmetry.o $(pot_user).o
 
 me_numer.o:     accuracy.o molecules.o timer.o
-me_str.o:       accuracy.o
+me_str.o:       accuracy.o timer.o me_numer.o
 me_bnd.o:       accuracy.o timer.o me_numer.o
 me_rot.o:       accuracy.o timer.o
 
@@ -74,6 +74,7 @@ pot_xy3.o:      accuracy.o moltype.o
 pot_xy4.o:      accuracy.o moltype.o symmetry.o
 pot_zxy2.o:     accuracy.o moltype.o
 pot_zxy3.o:     accuracy.o moltype.o
+pot_c2h6.o:     accuracy.o moltype.o
 pot_ch3oh.o:	  accuracy.o moltype.o
 pot_c2h4.o:	    accuracy.o moltype.o
 pot_c2h6.o:     accuracy.o moltype.o

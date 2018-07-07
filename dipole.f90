@@ -1596,6 +1596,10 @@ contains
              !
              linestr = sqrt( sum( tm_deg(1:3,1:ndegI,1:ndegF)**2 ) )
              !
+             ! Einstein A (vib) coeff
+             !
+             A_einst = A_coef_s_1*linestr**2*abs(nu_if)**3
+             !
              boltz_fc = abs(nu_if) * exp(-(energyI-intensity%ZPE) * beta) * (1.0_rk - exp(-abs(nu_if) * beta))&
                         / intensity%part_func
              !
@@ -1608,7 +1612,7 @@ contains
                if (job%exomol_format) then
                  !
                  write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,1x,es16.8,' ||')")&
-                              iID(ilevelF),iID(ilevelI),linestr,nu_if,absorption_int
+                              iID(ilevelF),iID(ilevelI),A_einst,nu_if,absorption_int
                               !
                else
                  !

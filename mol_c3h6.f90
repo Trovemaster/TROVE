@@ -6,49 +6,48 @@ module mol_c3h6
 
   implicit none
 
-  public ML_coordinate_transform_C3H6, ML_b0_C3H6, ML_symmetry_transformation_C2H6, ML_rotsymmetry_C2H6
+  public ML_coordinate_transform_C3H6, ML_b0_C3H6, ML_symmetry_transformation_C3H6, ML_rotsymmetry_C3H6
   private
 
   integer(ik), parameter :: verbose = 3 ! Verbosity level
 
   !--------------------------
+  !      ZMAT_prop1
+  !--------------------------
   !
   !ZMAT
-  !1C;
-  !2C, 1, r2,
-  !3C, 2, r3, 1, a3,
-  !4H, 1, r4, 2, a4, 3, d4;
-  !5H, 1, r5, 2, a5, 4, d5;
-  !6H, 1, r6, 2, a6, 4, d6;
-  !7H, 2, r7, 1, a7, 3, d7;
-  !8H, 3, r8, 2, a8, 1, d8;
-  !9H, 3, r9, 2, a9, 8, d9;
-  !
-  !Variables:
-  !r2= 1.4456
-  !r3= 1.3380
-  !a3= 124.64
-  !r4= 1.0927
-  !a4= 113.32
-  !d4=   0.03
-  !r5= 1.0913
-  !a5= 109.48
-  !d5= 120.50
-  !r6= 1.0913
-  !a6= 109.48
-  !d6= 239.50
-  !r7= 0.9952
-  !a7= 117.31
-  !d7= 179.97
-  !r8= 0.9921
-  !a8= 120.66
-  !d8= 179.97
-  !r9= 0.9923
-  !a9= 121.51
-  !d9= 180.0
+  !C   0  0  0  0  12.00000000   CH3 C
+  !C   1  0  0  0  12.00000000   CH  C
+  !C   2  1  0  0  12.00000000   CH2 C
+  !H   1  2  3  2   1.00782505   CH3 H in plane
+  !H   1  2  4  2   1.00782505   CH3 H
+  !H   1  2  4  2   1.00782505   CH3 H
+  !H   3  2  1  2   1.00782505   CH2 H   0 deg from CH3 group (trans)
+  !H   3  2  7  2   1.00782505   CH2 H   0 deg from CH3 group (cis)
+  !H   2  1  7  2   1.00782505   CH  H 
   !end
-
-
+  ! 1  r_12        0         1.5022
+  ! 2  r_23        0         1.3380
+  ! 3  r_14        0         1.0914
+  ! 4  r_15        0         1.09331
+  ! 5  r_16        0         1.09331
+  ! 6  r_37        0         1.0827
+  ! 7  r_38        0         1.0847
+  ! 8  r_26        0         1.0866
+  ! 9  alp_321     0         124.4552
+  !10  alp_214     0         110.9662
+  !11  alp_215     0         110.9662
+  !12  alp_216     0         110.9662
+  !13  alp_238     0         121.1556
+  !14  alp_239     0         121.4643
+  !15  alp_127     0         118.8949
+  !16  di_CCCH     0         0.0
+  !17  di_HCCH     0         120.0000
+  !18  di_HCCH     0         240.0000
+  !19  di_CCCH     0         0.0
+  !20  di_HCCH     0         180.0000
+  !21  di_HCCHg    0         180.0000
+  !end
 
 
   contains
@@ -64,11 +63,10 @@ module mol_c3h6
     !
     real(ark),dimension(ndst) :: dst
     integer(ik) :: nsrc
-    real(ark) :: tau4213,tau5124,tau6213,tau5126
-    real(ark) :: tau1, tau2, b1_zmat, b2_zmat, tau1_zmat, dtau, db1, db2
-    !
-    real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,&
-                 S1,S2,S3,S4,S5,S6,taubar,tau,S14,S15,S16,S17,S18
+    real(ark) :: thet78,thet79,thet89,tbar,A1,A2
+    real(ark) :: T1,T2,T3,tol
+
+    tol = 1.0d-11
 
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C3H6/start'
     !
@@ -82,27 +80,109 @@ module mol_c3h6
       'ML_coordinate_transform_C3H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_coordinate_transform_C3H6 error: bad coordinate type'
       !
-    case('ZMAT_R-A-D_TAU')
-      ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
-      !  TO BE 16TH COORDINATE IN Z-MAT
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
+      ! 
+      !  
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
 
-        dst(1:15) = src(1:13)-molec%local_eq(1:15)
-        dst(16:20) = src(17:21)-molec%local_eq(17:21)
-        dst(21) = src(16)-molec%local_eq(16)
+        !FOR STRETCHES AND 'ALPHA' BENDS JUST SUBTRACT EQUILIBRIUM COORDINATES
+        dst(1:15) = src(1:15)-molec%local_eq(1:15)
+
+        !FOR CCCH 'C1 TO H5' DIHEDRAL ANGLE, ALSO RIGID, TRY JUST SUBTRACTING EQUILIBRIUM
+        dst(16) = src(19) - molec%local_eq(19)
+        !MAKE SURE THAT ANGLE IS AROUND 0
+        if( abs( dst(16)-2.0_ark*pi).lt.1d-4 ) then
+        dst(16) = dst(16) - 2.0_ark*pi
+        end if
+
+        !FOR CH2 HCH 'BOOK' DIHEDRAL ANGLE, RIGID, TRY JUST SUBTRACTING EQUILIBRIUM
+        dst(17) = src(20) - molec%local_eq(20)
+
+        !FOR CH HCCH DIHEDRAL ANGLE, TRY SUBTRACTING EQUILIBRIUM
+        dst(18) = src(21) - molec%local_eq(21)
+
+
+        T1 = src(16) 
+
+!       HERE MAKE 'T' ANGLES BY ADDING T1 TO THETA ANGLES
+
+!       ALWAYS WANT TO MEASURE ANGLES IN SAME WAY
+!       TO GET CONSISTENT TRANSFORMS, DEFINE RANGES FOR ANGLES ELSE ADD/SUB 2*PI
+
+        IF(T1.LT.0.0.AND.ABS(T1).GT.TOL) THEN
+        T1 = T1 + 2.0_ark*PI
+        END IF
+        IF(T1.GT.(2.0_ark*PI).AND.ABS(T1-2.0_ARK*PI).GT.TOL) THEN
+         T1 = T1 - 2.0_ark*PI
+        END IF
+
+
+        T2 = src(17) + T1 
+        T3 = src(18) + T1 
+
+!        IF(T2.LT.2.0_ark*Pi/3.0_ark.AND.abs(T2-2.0_ark*Pi/3.0_ark).GT.tol) THEN
+!        T2 = T2 + 2.0_ark*PI
+!        END IF
+!        IF(T2.GT.8.0_ark*Pi/3.0_ark.AND.(T2-8.0_ark*Pi/3.0_ark).GT.tol) THEN
+!        T2 = T2 - 2.0_ark*PI
+!        END IF
+
+!        IF(T3.LT.(4.0_ark*PI/3.0_ark).AND.ABS(T3-4.0_ark*PI/3.0_ark).GT.TOL) THEN
+!        T3 = T3 + 2.0_ark*PI
+!        END IF
+!        IF(T3.GT.(10.0_ark*PI/3.0_ark).AND.ABS(T3-10.0_ark*PI/3.0_ark).GT.TOL) THEN
+!        T3 = T3 - 2.0_ark*PI
+!        END IF
+
+
+        T1 = T1 - molec%local_eq(16)
+        T2 = T2 - molec%local_eq(17)
+        T3 = T3 - molec%local_eq(18)
+
+!       SUBTRACT EQUILBRIUM THETA VALUES TO MAKE A1/A2 ZERO AT EQUILIBRIUM
+!       AND ENSURE CONSISTENT TRANSFROMS
+
+
+        A1  = (2.0_ark*T1 - T2 - T3)/sqrt(6.0_ark)   
+        A2  = (             T2 - T3)/sqrt(2.0_ark)   
+        tbar = (T1 + T2 + T3)/3.0_ark 
+
+        dst(19) = A1 
+        dst(20) = A2 
+        dst(21) = tbar 
         !
       else !  transform from TROVE coords to Z-matrix coords
+
         !
         dst(1:15) = src(1:15)+molec%local_eq(1:15)
-        dst(16) = src(21)+molec%local_eq(16)
-        dst(17:21) = src(16:20)+molec%local_eq(17:21)
+
+        dst(19) = src(16) + molec%local_eq(19)
+        if( abs( dst(19)-2.0_ark*pi).lt.1d-4 ) then
+        dst(19) =  dst(19) - 2.0_ark*pi
+        end if
+        dst(20) = src(17) + molec%local_eq(20)
+        dst(21) = src(18) + molec%local_eq(21)
+
+        A1 = src(19) 
+        A2 = src(20) 
+        tbar = src(21) 
+
+
+        T1 = (3.0_ark*tbar + sqrt(6.0_ark)*A1)/3.0_ark
+        T2 = (sqrt(6.0_ark)*A1 - sqrt(2.0_ark)*A2 - 2.0_ark*T1)/(-2.0_ark)
+        T3 = T2 - sqrt(2.0_ark)*A2
+
+        dst(16) = T1  +  molec%local_eq(16) 
+        dst(17) = T2 - T1 +  molec%local_eq(17)   
+        dst(18) = T3 - T1 +  molec%local_eq(18)
+
         !
       endif
       !
     end select
     !
-    if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C3H6/end'
+    if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/end'
     !
   end function ML_coordinate_transform_C3H6
 
@@ -117,13 +197,24 @@ module mol_c3h6
     real(ark),intent(inout),optional :: rho_i(0:Npoints)
     real(ark),intent(out),optional :: rho_ref
     real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
+    real(ark) :: rad,thet,r3
     !
-    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12,tau14,tau15,tau16
-    real(ark) :: transform(3,3),phi
+    real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12
+    real(ark) :: rC1e,rC2e,rH1e,rH2e,rH3e,rH4e,rH5e,rH6e,alpha1e,alpha2e,alpha3e
+    real(ark) :: alpha4e,alpha5e,alpha6e,alpha7e,delta1e,delta2e,delta3e,delta4e
+    real(ark) :: delta5e,delta6e
     integer(ik) :: i, n, iatom, ix
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C3H6/start'
-    !
+
+    rad = pi/180.0_ark
+
+
+    select case(trim(molec%coords_transform))
+
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
+
+
     rC1e      = molec%req(1)
     rC2e      = molec%req(2)
     rH1e      = molec%req(3)
@@ -133,88 +224,87 @@ module mol_c3h6
     rH5e      = molec%req(7)
     rH6e      = molec%req(8)
     !
-    alpha1e    = molec%alphaeq(1)*deg
-    alpha2e    = molec%alphaeq(2)*deg
-    alpha3e    = molec%alphaeq(3)*deg
-    alpha4e    = molec%alphaeq(4)*deg
-    alpha5e    = molec%alphaeq(5)*deg
-    alpha6e    = molec%alphaeq(6)*deg
+    alpha1e    = molec%alphaeq(1)
+    alpha2e    = molec%alphaeq(2)
+    alpha3e    = molec%alphaeq(3)
+    alpha4e    = molec%alphaeq(4)
+    alpha5e    = molec%alphaeq(5)
+    alpha6e    = molec%alphaeq(6)
+    alpha7e    = molec%alphaeq(7)
     !
-    delta1e    = molec%taueq(1)*deg
-    delta2e    = molec%taueq(2)*deg
-    delta3e    = molec%taueq(3)*deg
-    delta4e    = molec%taueq(4)*deg
-    delta5e    = molec%taueq(5)*deg
-    taue       = molec%taueq(6)*deg
+    delta1e    = molec%taueq(1)
+    delta2e    = molec%taueq(2)
+    delta3e    = molec%taueq(3)
+    delta4e    = molec%taueq(4)
+    delta5e    = molec%taueq(5)
+    delta6e    = molec%taueq(6)
 
-    !
-    !if (any(molec%req(2:7)/=r)) then
-    !  write(out,"('ML_b0_C3H6 error: eq-m r2-r7 are not all the same:',6f12.5)") molec%req(2:7)
-    !  stop 'ML_b0_C3H6 error: eq-m r2-r7 are not all the same'
-    !endif
-    !
-    !if (any(molec%alphaeq(1:6)/=alpha)) then
-    !  write(out,"('ML_b0_C3H6 error: eq-m alphas are not all the same:',6f12.5)") molec%alphaeq(1:6)
-    !  stop 'ML_b0_C3H6 error: eq-m alphas are not all the same'
-    !endif
-    !
-    !
     a0 = 0
-    !
-    a0(1,:) = 0
-    a0(2,:) = 0
-    !
-    a0(3,1) = r*sin(alpha)
-    a0(3,2) = 0
-    a0(3,3) = r*cos(alpha)
-    !
-    a0(4,1) = r*sin(alpha)*cos(tau14)
-    a0(4,2) = r*sin(alpha)*sin(tau14)
-    a0(4,3) =-r*cos(alpha)
-    !
-    a0(5,1) = r*sin(alpha)*cos(theta)
-    a0(5,2) =-r*sin(alpha)*sin(theta)
-    a0(5,3) = r*cos(alpha)
-    !
-    a0(6,1) = r*sin(alpha)*cos(tau15)
-    a0(6,2) = r*sin(alpha)*sin(tau15)
-    a0(6,3) =-r*cos(alpha)
-    !
-    a0(7,1) = r*sin(alpha)*cos(theta)
-    a0(7,2) = r*sin(alpha)*sin(theta)
-    a0(7,3) = r*cos(alpha)
-    !
-    a0(8,1) = r*sin(alpha)*cos(tau16)
-    a0(8,2) = r*sin(alpha)*sin(tau16)
-    a0(8,3) =-r*cos(alpha)
-    !
-    a0(1:7:2,3) =a0(1:7:2,3)-r12*0.5_ark
-    a0(2:8:2,3) =a0(2:8:2,3)+r12*0.5_ark
-    !
+
+    a0(1,1) = 0.0_ark
+    a0(1,2) = 0.0_ark
+    a0(1,3) = -rC1e
+       
+    a0(2,1) = 0.0_ark
+    a0(2,2) = 0.0_ark
+    a0(2,3) = 0.0_ark
+
+
+    a0(3,1) = rC2e*sin(PI - alpha1e)
+    a0(3,2) = 0.0_ark  
+    a0(3,3) = rC2e*cos(PI - alpha1e)
+
+    a0(4,1) = rH1e*sin(PI - alpha2e)
+    a0(4,2) = 0.0_ark  
+    a0(4,3) = -rH1e*cos(PI - alpha2e) - rC1e
+
+    a0(5,1) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+    a0(5,2) = rH2e*sin(PI - alpha3e)*sin(delta2e)
+    a0(5,3) = -rH2e*cos(PI - alpha3e) - rC1e
+
+    a0(6,1) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+    a0(6,2) = rH3e*sin(PI - alpha4e)*sin(delta3e)
+    a0(6,3) = -rH3e*cos(PI - alpha4e) - rC1e
+
+
+    r3 = cosine1(rh4e,rc2e,alpha5e)
+    thet = cosine2(rc2e,r3,rh4e)
+
+    a0(7,1) = r3*sin(PI + thet - alpha1e)
+    a0(7,2) = 0.0_ark
+    a0(7,3) = r3*cos(PI + thet - alpha1e)   
+
+    r3 = cosine1(rh5e,rc2e,alpha6e)
+    thet = cosine2(rc2e,r3,rh5e)
+
+    a0(8,1) = r3*sin(PI - thet - alpha1e)
+    a0(8,2) = 0.0_ark
+    a0(8,3) = r3*cos(PI - thet - alpha1e)   
+
+    a0(9,1) = rh6e*SIN(PI - alpha7e)*COS(delta6e)
+    a0(9,2) = rh6e*SIN(PI - alpha7e)*SIN(delta6e)
+    a0(9,3) = rh6e*cos(pi - alpha7e) 
+
+    end select
+    if (verbose>=3) then
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(3,1:3)
+      do iatom=4, Natoms
+        write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
+      enddo
+    endif
     !
     do ix=1, 3
       CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
       a0(:,ix) = a0(:,ix) - CM_shift
     enddo
     !
-    !
-    phi = tau*0.5_ark
-    !
-    transform = 0 
-    transform(3,3) = 1.0_ark
-    transform(1,1) = cos(phi)
-    transform(1,2) = sin(phi)
-    transform(2,1) = -sin(phi)
-    transform(2,2) = cos(phi)
-    !
-    do n = 1,Natoms
-      a0(n,:) = matmul(transform,a0(n,:))
-    enddo
-    !
     if (verbose>=3) then
       write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
       write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
-      do iatom=3, Natoms
+      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(3,1:3)
+      do iatom=4, Natoms
         write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
       enddo
     endif
@@ -222,87 +312,104 @@ module mol_c3h6
     b0(:,:,0) = a0(:,:)
     !
     if (Npoints/=0) then
-       ! 
-       if (.not.present(rho_borders).or..not.present(rho_ref)) then  
-          write(out,"('ML_b0_ABCD: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
-          stop 'ML_b0_ABCD: rho_borders or rho_ref not specified '
-       endif
-       !
-       rho_ref = molec%taueq(1)
-       !
-       do i = 0,npoints
-          !
-          tau = rho_i(i)
-          !
-          tau14 = tau
-          tau15 = tau+theta
-          tau16 = tau-theta
+    !
+      if (.not.present(rho_borders).or..not.present(rho_ref)) then
+        write(out, '(/a)') 'ML_b0_C3H6: rho_borders and rho_ref must be presented if Npoints > 0'
+        stop 'ML_b0_C3H6: rho_borders or rho_ref is not specified'
+      endif
+      !
+      rho_ref = 0.0_ark
+      !
+      do i=0, npoints
 
-          b0(1,:,i) = 0
-          b0(2,:,i) = 0
-          !
-          b0(3,1,i) = r*sin(alpha)
-          b0(3,2,i) = 0
-          b0(3,3,i) = r*cos(alpha)
-          !
-          b0(4,1,i) = r*sin(alpha)*cos(tau14)
-          b0(4,2,i) = r*sin(alpha)*sin(tau14)
-          b0(4,3,i) =-r*cos(alpha)
-          !
-          b0(5,1,i) = r*sin(alpha)*cos(theta)
-          b0(5,2,i) =-r*sin(alpha)*sin(theta)
-          b0(5,3,i) = r*cos(alpha)
-          !
-          b0(6,1,i) = r*sin(alpha)*cos(tau15)
-          b0(6,2,i) = r*sin(alpha)*sin(tau15)
-          b0(6,3,i) =-r*cos(alpha)
-          !
-          b0(7,1,i) = r*sin(alpha)*cos(theta)
-          b0(7,2,i) = r*sin(alpha)*sin(theta)
-          b0(7,3,i) = r*cos(alpha)
-          !
-          b0(8,1,i) = r*sin(alpha)*cos(tau16)
-          b0(8,2,i) = r*sin(alpha)*sin(tau16)
-          b0(8,3,i) =-r*cos(alpha)
-          !
-          b0(1:7:2,3,i) =b0(1:7:2,3,i)-r12*0.5_ark
-          b0(2:8:2,3,i) =b0(2:8:2,3,i)+r12*0.5_ark
-          !
-          ! Find center of mass
-          !
-          do n = 1,3 
-            CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-            b0(:,n,i) = b0(:,n,i) - CM_shift
+        rC1e      = molec%req(1)
+        rC2e      = molec%req(2)
+        rH1e      = molec%req(3)
+        rH2e      = molec%req(4)
+        rH3e      = molec%req(5)
+        rH4e      = molec%req(6)
+        rH5e      = molec%req(7)
+        rH6e      = molec%req(8)
+        !
+        alpha1e    = molec%alphaeq(1)
+        alpha2e    = molec%alphaeq(2)
+        alpha3e    = molec%alphaeq(3)
+        alpha4e    = molec%alphaeq(4)
+        alpha5e    = molec%alphaeq(5)
+        alpha6e    = molec%alphaeq(6)
+        alpha7e    = molec%alphaeq(7)
+        !
+        delta1e    = rho_i(i) +  pi/3.0_ark
+        delta2e    = molec%taueq(2) + delta1e
+        delta3e    = molec%taueq(3) + delta1e
+        delta4e    = molec%taueq(4)
+        delta5e    = molec%taueq(5)
+        delta6e    = molec%taueq(6)
+
+        b0(1,1,i) = 0.0_ark
+        b0(1,2,i) = 0.0_ark
+        b0(1,3,i) = -rC1e
+             
+        b0(2,1,i) = 0.0_ark
+        b0(2,2,i) = 0.0_ark
+        b0(2,3,i) = 0.0_ark
+
+        b0(3,1,i) = rC2e*sin(PI - alpha1e)
+        b0(3,2,i) = 0.0_ark  
+        b0(3,3,i) = rC2e*cos(PI - alpha1e)
+              
+        b0(4,1,i) = rH1e*sin(PI - alpha2e)*cos(delta1e)
+        b0(4,2,i) = rh1e*sin(PI - alpha2e)*sin(delta1e)
+        b0(4,3,i) = -rH1e*cos(PI - alpha2e) - rC1e
+              
+        b0(5,1,i) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+        b0(5,2,i) = rH2e*sin(PI - alpha3e)*sin(delta2e)
+        b0(5,3,i) = -rH2e*cos(PI - alpha3e) - rC1e
+              
+        b0(6,1,i) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+        b0(6,2,i) = rH3e*sin(PI - alpha4e)*sin(delta3e)
+        b0(6,3,i) = -rH3e*cos(PI - alpha4e) - rC1e
+              
+        r3 = cosine1(rh4e,rc2e,alpha5e)
+        thet = cosine2(rc2e,r3,rh4e)
+        
+        b0(7,1,i) = r3*sin(PI + thet - alpha1e)
+        b0(7,2,i) = 0.0_ark
+        b0(7,3,i) = r3*cos(PI + thet - alpha1e)   
+        
+        
+        r3 = cosine1(rh5e,rc2e,alpha6e)
+        thet = cosine2(rc2e,r3,rh5e)
+        
+        b0(8,1,i) = r3*sin(PI - thet - alpha1e)
+        b0(8,2,i) = 0.0_ark
+        b0(8,3,i) = r3*cos(PI - thet - alpha1e)   
+        
+        b0(9,1,i) = rh6e*SIN(PI - alpha7e)*COS(delta6e)
+        b0(9,2,i) = rh6e*SIN(PI - alpha7e)*SIN(delta6e)
+        b0(9,3,i) = rh6e*cos(pi - alpha7e) 
+
+
+        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
+        !
+        do n = 1,3
+          CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+          b0(:,n,i) = b0(:,n,i) - CM_shift
+        enddo
+        !
+        if (verbose>=3) then
+         write(out,*) Natoms
+         write(out,*)
+          write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
+          write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
+          write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(3,1:3,i)
+          do iatom=4, Natoms
+            write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
           enddo
-          !
-          !
-          phi = tau*0.5_ark
-          !
-          transform = 0 
-          transform(3,3) = 1.0_ark
-          transform(1,1) = cos(phi)
-          transform(1,2) = sin(phi)
-          transform(2,1) = -sin(phi)
-          transform(2,2) = cos(phi)
-          !
-          do n = 1,Natoms
-            b0(n,:,i) = matmul(transform,b0(n,:,i))
-          enddo
-          !
-          !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
-          !
-          if (verbose>=3) then
-            write(out, '(i5)') 8
-            write(out,'(a)') ""
-            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-            do iatom=3, Natoms
-              write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-            enddo
-          endif
-          !
-       enddo
-       !
+        endif
+        !
+      enddo
+      !
     endif
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C3H6/end'
@@ -311,7 +418,7 @@ module mol_c3h6
 
 
 
-  subroutine ML_symmetry_transformation_C2H6(ioper, nmodes, src, dst)
+  subroutine ML_symmetry_transformation_C3H6(ioper, nmodes, src, dst)
     !
     ! Symmetry transformation rules of coordinates
     !
@@ -323,27 +430,27 @@ module mol_c3h6
     !
     a = 0.5_ark
     b = 0.5_ark*sqrt(3.0_ark)
-    if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/start'
+    if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C3H6/start'
     !
     select case(trim(molec%coords_transform))
       !
     case default
       !
       write(out, '(/a,1x,a,1x,a)') &
-      'ML_symmetry_transformation_C2H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
-      stop 'ML_symmetry_transformation_C2H6 error: bad coordinate type'
+      'ML_symmetry_transformation_C3H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
+      stop 'ML_symmetry_transformation_C3H6 error: bad coordinate type'
       !
-    case('ZMAT_4BETA_1TAU','C2H6_4BETA_1TAU')
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
       !
       select case(trim(molec%symmetry))
         !
       case default
         !
         write(out, '(/a,1x,a,1x,a)') &
-        'ML_symmetry_transformation_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        'ML_symmetry_transformation_C3H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
         stop
         !
-      case('D3D(M)')
+      case('C3V(M)')
         !
         select case(ioper)
           !
@@ -355,254 +462,111 @@ module mol_c3h6
           !
         case (1) ! E
           !
-          dst(1:18) = src(1:18)
+          dst(1:21) = src(1:21)
           !
-        case (2) ! !C3+/(132)(465)
+        case (2) ! (123)
           !
-          dst(1) = src(1)
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
-          dst(18) = src(18)
-          !
-        case (3) !C3-/(123)(465)
-          !
-          dst(1) = src(1)
-          dst(2) = src(3)
+          dst(1:2) = src(1:2)
+
           dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(6)
-          dst(6) = src(7)
-          dst(7) = src(5)
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
+          dst(4) = src(5)
+          dst(5) = src(3)
+
+          dst(6:9) = src(6:9)
+
+          dst(10) = src(11)
           dst(11) = src(12)
-          dst(12) = src(13)
-          dst(13) = src(11)
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
-          dst(18) =  src(18)
-          !
-        case (4) ! C2/(16)(24)(35)(78)
-          !
-          dst(1) = src(1)
-          dst(2) = src(6)
-          dst(3) = src(5)
-          dst(4) = src(7)
-          dst(5) = src(3)
-          dst(6) = src(2)
-          dst(7) = src(4)
-          dst(8) = src(12)
-          dst(9) = src(11)
-          dst(10) = src(13)
-          dst(11) = src(9)
-          dst(12) = src(8)
-          dst(13) = src(10)
-          dst(14) = -a*src(16) + b*src(17)
-          dst(15) = -b*src(16) - a*src(17) 
-          dst(16) = -a*src(14) + b*src(15)
-          dst(17) =  b*src(14) + a*src(15)
-          dst(18) = src(18)
-          !
-        case (5) !C2'/(16)(24)(35)(78)
-          !
-          dst(1) = src(1)
-          dst(2) = src(5)
-          dst(3) = src(7)
-          dst(4) = src(6)
-          dst(5) = src(2)
-          dst(6) = src(4)
-          dst(7) = src(3)
-          dst(8) = src(11)
-          dst(9) = src(13)
-          dst(10) = src(12)
-          dst(11) = src(8)
           dst(12) = src(10)
-          dst(13) = src(9)
-          dst(14) = src(17)
-          dst(15) = src(18) 
-          dst(16) = src(14)
-          dst(17) = src(15)
-          dst(18) = src(18)
+
+          dst(13:18) = src(13:18)
+
+          dst(19) = -a*src(19) + b*src(20)
+          dst(20) = -a*src(20) - b*src(19)
+          dst(21) = src(21)
           !
-        case (6) ! C2''(16)(24)(35)(78)
+        case (3) !(132)
           !
-          dst(1) = src(1)
-          dst(2) = src(7)
-          dst(3) = src(6)
-          dst(4) = src(5)
-          dst(5) = src(4)
-          dst(6) = src(3)
-          dst(7) = src(2)
-          dst(8) = src(13)
-          dst(9) = src(12)
-          dst(10) = src(11)
-          dst(11) = src(10)
-          dst(12) = src(9)
-          dst(13) = src(8)
-          dst(14) = -a*src(16) - b*src(17)
-          dst(15) =  b*src(16) - a*src(17) 
-          dst(16) = -a*src(14) - b*src(16)
-          dst(17) = -b*src(14) + a*src(15)
-          dst(18) = src(18)
-          !
-        case (7) ! i/(14)(26)(35)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(5)
-          dst(3) = src(6)
-          dst(4) = src(7)
-          dst(5) = src(2)
-          dst(6) = src(3)
-          dst(7) = src(4)
-          dst(8) = src(11)
-          dst(9) = src(12)
-          dst(10) = src(13)
-          dst(11) = src(8)
-          dst(12) = src(9)
-          dst(13) = src(10)
-          dst(14) = src(16)
-          dst(15) = -src(17) 
-          dst(16) = src(14)
-          dst(17) = -src(15)
-          dst(18) = -src(18)
-          !
-        case (8) ! S6/(163425)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(6)
-          dst(3) = src(7)
-          dst(4) = src(5)
-          dst(5) = src(3)
-          dst(6) = src(4)
-          dst(7) = src(2)
-          dst(8) = src(12)
-          dst(9) = src(13)
-          dst(10) = src(11)
-          dst(11) = src(9)
-          dst(12) = src(10)
-          dst(13) = src(8)
-          dst(14) = -a*src(16) + b*src(17)
-          dst(15) =  b*src(16) + a*src(17) 
-          dst(16) = -a*src(14) + b*src(16)
-          dst(17) =  -b*src(14) - a*src(15)
-          dst(18) = -src(18)
-          !
-        case (9) !S6'/(14)(26)(35)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(7)
+          dst(1:2) = src(1:2)
+
           dst(3) = src(5)
-          dst(4) = src(6)
-          dst(5) = src(4)
-          dst(6) = src(2)
-          dst(7) = src(3)
-          dst(8) = src(13)
-          dst(9) = src(11)
-          dst(10) = src(12)
-          dst(11) = src(10)
-          dst(12) = src(8)
-          dst(13) = src(9)
-          dst(14) = -a*src(16) - b*src(17)
-          dst(15) = -b*src(16) + a*src(17) 
-          dst(16) = -a*src(14) - b*src(16)
-          dst(17) =  b*src(14) - a*src(15)
-          dst(18) = -src(18)
-          !
-        case (10) !sigmad/(12)(46)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(4)
-          dst(3) = src(3)
-          dst(4) = src(2)
-          dst(5) = src(7)
-          dst(6) = src(6)
-          dst(7) = src(5)
-          dst(8) = src(10)
-          dst(9) = src(9)
-          dst(10) = src(8)
-          dst(11) = src(13)
-          dst(12) = src(12)
-          dst(13) = src(11)
-          dst(14) = -a*src(14) - b*src(15) 
-          dst(15) = -b*src(14) - a*src(15)
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) = -b*src(16) + a*src(17)
-          dst(18) = -src(18)
-          !
-        case (11) !sigmad'/(12)(46)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(2)
-          dst(3) = src(4)
           dst(4) = src(3)
-          dst(5) = src(5)
-          dst(6) = src(7)
-          dst(7) = src(6)
-          dst(8) = src(8)
-          dst(9) = src(10)
-          dst(10) = src(9)
-          dst(11) = src(11)
-          dst(12) = src(13)
-          dst(13) = src(12)
-          dst(14) = src(14) 
-          dst(15) = -src(15) 
-          dst(16) = src(16)
-          dst(17) = -src(17)
-          dst(18) = -src(18)
+          dst(5) = src(4)
+
+          dst(6:9) = src(6:9)
+
+          dst(10) = src(12)
+          dst(11) = src(10)
+          dst(12) = src(11)
+
+          dst(13:18) = src(13:18)
+
+          dst(19) = -a*src(19) - b*src(20)
+          dst(20) = -a*src(20) + b*src(19)
+          dst(21) = src(21)
           !
-        case (12) !sigmad''/(12)(46)*
+        case (4) ! (32)
           !
-          dst(1) = src(1)
-          dst(2) = src(3)
-          dst(3) = src(2)
-          dst(4) = src(4)
-          dst(5) = src(6)
-          dst(6) = src(5)
-          dst(7) = src(7)
-          dst(8) = src(9)
-          dst(9) = src(8)
+          dst(1:2) = src(1:2)
+
+          dst(3) = src(3)
+          dst(4) = src(5)
+          dst(5) = src(4)
+
+          dst(6:9) = src(6:9)
+
           dst(10) = src(10)
           dst(11) = src(12)
           dst(12) = src(11)
-          dst(13) = src(13)
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) =  b*src(16) + a*src(17)
-          dst(18) = -src(18)
+
+          dst(13:18) = src(13:18)
+
+          dst(19) = dst(19)
+          dst(20) = -src(20)
+          dst(21) = src(21)
+          !
+        case (5) ! (12)
+          !
+          dst(1:2) = src(1:2)
+
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+
+          dst(6:9) = src(6:9)
+
+          dst(10) = src(11)
+          dst(11) = src(10)
+          dst(12) = src(12)
+
+          dst(13:18) = src(13:18)
+
+          dst(19) = -a*src(19) + b*src(20)
+          dst(20) =  a*src(20) + b*src(19)
+          dst(21) = src(21)
+          !
+        case (6) ! (13)
+          !
+          dst(1:2) = src(1:2)
+
+          dst(3) = src(5)
+          dst(4) = src(4)
+          dst(5) = src(3)
+
+          dst(6:9) = src(6:9)
+
+          dst(10) = src(12)
+          dst(11) = src(11)
+          dst(12) = src(10)
+
+          dst(13:18) = src(13:18)
+          dst(19) = -a*src(19) - b*src(20)
+          dst(20) =  a*src(20) - b*src(19)
+          dst(21) = src(21)
+          !
         end select
-        !
-      end select
-      !
-    case('R-R16-BETA16-THETA-TAU')
-      !
-      select case(trim(molec%symmetry))
-        !
-      case default
-        !
-        write(out, '(/a,1x,a,1x,a)') &
-        'ML_symmetry_transformation_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
-        stop
-        !
-      case('D3D(M)')
-        !
+          !
+      case('C(M)')
+          !
         select case(ioper)
           !
         case default
@@ -610,260 +574,31 @@ module mol_c3h6
           write(out, '(/a,1x,i3,1x,a)') &
           'ML_symmetry_transformation_C2H6 error: symmetry operation ', ioper, 'is unknown'
           stop
-          !
         case (1) ! E
           !
-          dst(1:18) = src(1:18)
-          !
-        case (2) ! !C3+/(132)(465)
-          !
-          dst(1) = src(1)
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
-          dst(18) = src(18)
-          !
-        case (3) !C3-/(123)(465)
-          !
-          dst(1) = src(1)
-          dst(2) = src(3)
-          dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(6)
-          dst(6) = src(7)
-          dst(7) = src(5)
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
-          dst(11) = src(12)
-          dst(12) = src(13)
-          dst(13) = src(11)
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
-          dst(18) =  src(18)
-          !
-        case (4) ! C2/(16)(24)(35)(78)
-          !
-          dst(1) = src(1)
-          dst(2) = src(6)
-          dst(3) = src(5)
-          dst(4) = src(7)
-          dst(5) = src(3)
-          dst(6) = src(2)
-          dst(7) = src(4)
-          dst(8) = src(12)
-          dst(9) = src(11)
-          dst(10) = src(13)
-          dst(11) = src(9)
-          dst(12) = src(8)
-          dst(13) = src(10)
-          dst(14) = -a*src(16) + b*src(17)
-          dst(15) =  b*src(16) + a*src(17) 
-          dst(16) = -a*src(14) + b*src(15)
-          dst(17) =  b*src(14) + a*src(15)
-          dst(18) = src(18)
-          !
-        case (5) !C2'/(16)(24)(35)(78)
-          !
-          dst(1) = src(1)
-          dst(2) = src(5)
-          dst(3) = src(7)
-          dst(4) = src(6)
-          dst(5) = src(2)
-          dst(6) = src(4)
-          dst(7) = src(3)
-          dst(8) = src(11)
-          dst(9) = src(13)
-          dst(10) = src(12)
-          dst(11) = src(8)
-          dst(12) = src(10)
-          dst(13) = src(9)
-          dst(14) = src(16)
-          dst(15) =-src(17) 
-          dst(16) = src(14)
-          dst(17) =-src(15)
-          dst(18) = src(18)
-          !
-        case (6) ! C2''(16)(24)(35)(78)
-          !
-          dst(1) = src(1)
-          dst(2) = src(7)
-          dst(3) = src(6)
-          dst(4) = src(5)
-          dst(5) = src(4)
-          dst(6) = src(3)
-          dst(7) = src(2)
-          dst(8) = src(13)
-          dst(9) = src(12)
-          dst(10) = src(11)
-          dst(11) = src(10)
-          dst(12) = src(9)
-          dst(13) = src(8)
-          dst(14) = -a*src(16) - b*src(17)
-          dst(15) = -b*src(16) + a*src(17) 
-          dst(16) = -a*src(14) - b*src(15)
-          dst(17) = -b*src(14) + a*src(15)
-          dst(18) = src(18)
-          !
-        case (7) ! i/(14)(26)(35)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(5)
-          dst(3) = src(6)
-          dst(4) = src(7)
-          dst(5) = src(2)
-          dst(6) = src(3)
-          dst(7) = src(4)
-          dst(8) = src(11)
-          dst(9) = src(12)
-          dst(10) = src(13)
-          dst(11) = src(8)
-          dst(12) = src(9)
-          dst(13) = src(10)
-          dst(14) = src(16)
-          dst(15) = src(17) 
-          dst(16) = src(14)
-          dst(17) = src(15)
-          dst(18) = -src(18)
-          !
-        case (8) ! S6/(163425)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(6)
-          dst(3) = src(7)
-          dst(4) = src(5)
-          dst(5) = src(3)
-          dst(6) = src(4)
-          dst(7) = src(2)
-          dst(8) = src(12)
-          dst(9) = src(13)
-          dst(10) = src(11)
-          dst(11) = src(9)
-          dst(12) = src(10)
-          dst(13) = src(8)
-          dst(14) = -a*src(16) + b*src(17)
-          dst(15) = -b*src(16) - a*src(17) 
-          dst(16) = -a*src(14) + b*src(15)
-          dst(17) = -b*src(14) - a*src(15)
-          dst(18) = -src(18)
-          !
-        case (9) !S6'/(14)(26)(35)(78)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(7)
-          dst(3) = src(5)
-          dst(4) = src(6)
-          dst(5) = src(4)
-          dst(6) = src(2)
-          dst(7) = src(3)
-          dst(8) = src(13)
-          dst(9) = src(11)
-          dst(10) = src(12)
-          dst(11) = src(10)
-          dst(12) = src(8)
-          dst(13) = src(9)
-          dst(14) = -a*src(16) - b*src(17)
-          dst(15) =  b*src(16) - a*src(17) 
-          dst(16) = -a*src(14) - b*src(15)
-          dst(17) =  b*src(14) - a*src(15)
-          dst(18) = -src(18)
-          !
-        case (10) !sigmad/(12)(46)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(4)
-          dst(3) = src(3)
-          dst(4) = src(2)
-          dst(5) = src(7)
-          dst(6) = src(6)
-          dst(7) = src(5)
-          dst(8) = src(10)
-          dst(9) = src(9)
-          dst(10) = src(8)
-          dst(11) = src(13)
-          dst(12) = src(12)
-          dst(13) = src(11)
-          dst(14) = -a*src(14) - b*src(15) 
-          dst(15) = -b*src(14) + a*src(15)
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) = -b*src(16) + a*src(17)
-          dst(18) = -src(18)
-          !
-        case (11) !sigmad'/(12)(46)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(2)
-          dst(3) = src(4)
-          dst(4) = src(3)
-          dst(5) = src(5)
-          dst(6) = src(7)
-          dst(7) = src(6)
-          dst(8) = src(8)
-          dst(9) = src(10)
-          dst(10) = src(9)
-          dst(11) = src(11)
-          dst(12) = src(13)
-          dst(13) = src(12)
-          dst(14) = src(14) 
-          dst(15) =-src(15) 
-          dst(16) = src(16)
-          dst(17) =-src(17)
-          dst(18) =-src(18)
-          !
-        case (12) !sigmad''/(12)(46)*
-          !
-          dst(1) = src(1)
-          dst(2) = src(3)
-          dst(3) = src(2)
-          dst(4) = src(4)
-          dst(5) = src(6)
-          dst(6) = src(5)
-          dst(7) = src(7)
-          dst(8) = src(9)
-          dst(9) = src(8)
-          dst(10) = src(10)
-          dst(11) = src(12)
-          dst(12) = src(11)
-          dst(13) = src(13)
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) =  b*src(14) + a*src(15) 
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) =  b*src(16) + a*src(17)
-          dst(18) = -src(18)
-          !
+          dst(1:21) = src(1:21)
         end select
+          !
+        !
         !
       end select
       !
     end select
     !
-    if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/end'
+    if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C3H6/end'
     !
-  end subroutine ML_symmetry_transformation_C2H6
+  end subroutine ML_symmetry_transformation_C3H6
 
-  subroutine ML_rotsymmetry_C2H6(J,K,tau,gamma,ideg)
+
+
+  subroutine ML_rotsymmetry_C3H6(J,K,tau,gamma,ideg)
     !
     ! Symmetry transformation rules of TROVE rotational functions
     !
     integer(ik),intent(in) :: J,K,tau
     integer(ik),intent(out) :: gamma,ideg
     !
-    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C2H6/start'
+    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C3H6/start'
     !
     select case(trim(molec%coords_transform))
       !
@@ -871,11 +606,11 @@ module mol_c3h6
     case default
       !
       write(out, '(/a,1x,a,1x,a)') &
-      'ML_rotsymmetry_C2H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
-      stop 'ML_rotsymmetry_C2H6 error: bad coordinate type'
+      'ML_rotsymmetry_C3H6 error: coordinate type =', trim(molec%coords_transform), 'is unknown'
+      stop 'ML_rotsymmetry_C3H6 error: bad coordinate type'
       !
       !
-    case('ZMAT_4BETA_1TAU','C2H6_4BETA_1TAU')
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -885,7 +620,12 @@ module mol_c3h6
         'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
         stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
         !
-      case('D3D(M)')
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('D2H(M)')
         !
         gamma = 0
         ideg = 1
@@ -894,9 +634,58 @@ module mol_c3h6
        ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
        ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
        ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+!        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+!        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+!        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+!        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+!       CHANGING TO TRY TO GET TO WORK: BARRY
+        !
+!      case('D2H')
+        !
+!        gamma = 0
+!        ideg = 1
+        !
+!        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+!        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B3g
+!        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B1g
+!        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      end select
+      !
+      !
+    case('R_ALPHA_4TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      case('D2H','D2H(M)')
+        !
+        gamma = 0
+        ideg = 1
+        !
         if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
-        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
-        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 5 ! B2g
+        if (mod(K+2,2)/=0.and.tau==0) gamma = 7 ! B3g
+        !
+      case('D2H(S)')
+        !
+        gamma = 0
+        ideg = 1
+        !
+        !if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        !if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+        !if (mod(K+2,2)/=0.and.tau==1) gamma = 6 ! B2u
+        !if (mod(K+2,2)/=0.and.tau==0) gamma = 8 ! B3u
+        !
+        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
         if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
         !
       end select
@@ -910,20 +699,6 @@ module mol_c3h6
         gamma = 1
         ideg = 1
         !
-      case('D3D(M)')
-        !
-        gamma = 0
-        ideg = 1
-        !
-       ! if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
-       ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
-       ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
-       ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
-        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
-        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
-        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
-        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
-        !
      case default
         !
         write(out, '(/a,1x,a,1x,a)') &
@@ -936,7 +711,27 @@ module mol_c3h6
     !
     if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C2H6/end'
     !
-  end subroutine ML_rotsymmetry_C2H6
+  end subroutine ML_rotsymmetry_C3H6
+
+
+        function cosine1(r1,r2,thet) result(r3)
+
+        real(ark) :: r1,r2,thet,r3
+
+        r3 = sqrt(r1**2.0 + r2**2.d0 - 2.d0*r1*r2*cos(thet) )
+
+
+        end function cosine1
+
+        function cosine2(r1,r2,r3) result(thet)
+
+        real(ark) :: r1,r2,r3,thet
+
+        thet = acos( (r1**2.d0 + r2**2.d0 - r3**2.0)/(2.d0*r1*r2) )
+
+
+        end function cosine2
+
 
 
 end module mol_c3h6

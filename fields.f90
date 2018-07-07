@@ -553,6 +553,7 @@ module fields
    type(FLactionT),save               :: action   ! defines dfifferent actions to perform
 
    real(ark) :: fd_step_Bmat=1e-4  ! finite difference parameter used for Bmat differentiation numerically 
+   real(rk)  :: symm_toler_defaul = 1e-8  ! defaul value for symm_toler 
 
   contains
 
@@ -877,6 +878,10 @@ module fields
              write (out,"(' Error ',i9,' trying to allocate symm_toler')") alloc
              stop 'FLinput, symm_toler - out of memory'
          end if
+         !
+         ! defafault values for job%symm_toler
+         !
+         job%symm_toler = symm_toler_defaul
          !
          ! default values for bset and fdstep 
          !

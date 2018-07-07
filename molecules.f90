@@ -15,6 +15,7 @@ module molecules
   use mol_abcd
   use mol_c2h4
   use mol_c2h6
+  use mol_c3h6
   
   use pot_xy2
   use pot_xy3
@@ -25,7 +26,8 @@ module molecules
   use pot_ch3oh
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
-
+  use pot_c3h6, only : MLpoten_c3h6_harmtest
+  !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
   use symmetry,     only : sym
@@ -363,6 +365,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_zxy3_Nikitin
          !
+    case('POTEN_C3H6_HARMTEST') 
+         !
+         MLpotentialfunc => MLpoten_c3h6_harmtest
+         !
     end select
     !
    if (verbose>=6) write(out,"('MLdefine_potenfunc/end')") 
@@ -488,6 +494,14 @@ end function ML_MEPfunc
     case('HCCH_DMS_7D')
        !
        MLextF_func => MLdms_HCCH_7D
+       !
+    case('HCCH_DMS_7D_7ORDER')
+       !
+       MLextF_func => MLdms_HCCH_7D_7ORDER
+       !
+    case('HCCH_DMS_7D_7ORDER_LINEAR')
+       !
+       MLextF_func => MLdms_HCCH_7D_7ORDER_linear
        !
     case('HCCH_DMS_7D_LOCAL')
        !
@@ -676,6 +690,13 @@ end function ML_MEPfunc
          MLequilibrium_xyz => ML_b0_C2H6
          MLsymmetry_transform_func => ML_symmetry_transformation_C2H6
          MLrotsymmetry_func => ML_rotsymmetry_C2H6
+         !
+    case('C3H6') 
+         !
+         MLcoordinate_transform_func =>  ML_coordinate_transform_C3H6
+         MLequilibrium_xyz => ML_b0_C3H6
+         MLsymmetry_transform_func => ML_symmetry_transformation_C3H6
+         MLrotsymmetry_func => ML_rotsymmetry_C3H6
          !
     case('XY3') 
          !
