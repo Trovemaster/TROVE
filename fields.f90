@@ -15587,8 +15587,9 @@ end subroutine check_read_save_none
     integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints
     character(len=cl)    :: unitfname,char_
     !
-    logical               :: reduced_model
-    real(ark)              :: poten_t,gvib_t(trove%Nmodes,trove%Nmodes),grot_t(3,3),gcor_t(trove%Nmodes,3),extF_t(extF%rank)
+    logical              :: reduced_model,periodic_model 
+    real(ark)            :: poten_t,gvib_t(trove%Nmodes,trove%Nmodes),grot_t(3,3),gcor_t(trove%Nmodes,3),extF_t(extF%rank)
+    real(ark)            :: rho_ref_,period
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
@@ -15608,7 +15609,9 @@ end subroutine check_read_save_none
     rho_b  = trove%rho_border
     Nmodes = trove%Nmodes
     rho_range = rho_b(2)-rho_b(1)
-    isingular = -1
+    isingular = -1    !
+    periodic_model = .false.
+    period = 0
     !
     if (job%verbose>=6) then
       write (out,"(' Basis type ',a,' needs ',f12.5,' Mbytes of memory (plus a bit)')") &
@@ -16644,6 +16647,15 @@ end subroutine check_read_save_none
              !
              irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
              !
+             ! for periodic case we need to choose the equilibrium at the 
+             ! reference geometry; we apply this rule only whe the periodicity is the same 
+             ! as the size of the class 
+             ! 
+             if (trove%periodic.and.bs%imodes==job%bset(Nmodes)%iperiod) then
+               period = (job%bset(Nmodes)%borders(2)-job%bset(Nmodes)%borders(1))/real(job%bset(Nmodes)%iperiod,ark)
+               periodic_model = .true.
+             endif
+             !
            end select
            !
            if (irho_eq<0.or.irho_eq>trove%Npoints) then
@@ -16688,6 +16700,14 @@ end subroutine check_read_save_none
                   nu_i = bs%mode(imode)
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
+                  !
+                  ! shift the minimum by the period of the last mode if present
+                  if (periodic_model) then 
+                    !
+                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                    !
+                  endif
                   !
                   if (trove%sparse) then
                     !
@@ -16736,6 +16756,14 @@ end subroutine check_read_save_none
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
                   !
+                  ! shift the minimum by the period of the last mode if present
+                  if (periodic_model) then 
+                    !
+                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                    !
+                  endif
+                  !
                   if (trove%sparse) then
                     !
                     call find_isparse_from_ifull(trove%pseudo%Ncoeff,trove%pseudo%ifromsparse,k,i)
@@ -16783,6 +16811,14 @@ end subroutine check_read_save_none
                   !
                   powers = 0 ; powers(nu_i) = ipower
                   k = FLQindex(trove%Nmodes_e,powers)
+                  !
+                  ! shift the minimum by the period of the last mode if present
+                  if (periodic_model) then 
+                    !
+                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                    !
+                  endif
                   !
                   if (trove%sparse) then
                     !
