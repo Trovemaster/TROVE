@@ -38,12 +38,15 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
   real(ark) :: alp_216e,alp_238e,alp_239e,alp_127e
   real(ark) :: di_hcche,di_hcch2e,di_hcch3e,di_ccche
   real(ark) :: di_hcch4e,di_hcchge,tol
-  real(ark) :: a1,a2,a3,a4,a5,a6,a7,a8,Ax1,Ax2,tbar,T1,T2,T3
+  real(ark) :: a1,a2,a3,a4,a5,a6,a7,a8,Ax1,Ax2,tbar,T1,T2,T3,T1_
 
   tol = 1.0d-11
   rad = pi/180.0_ark
 
   ! expansion functions
+
+!   write(6,*) !BPM
+!   write(6,*) local !BPM
 
 
   r_12      = local(1)
@@ -67,7 +70,7 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
   di_hcch2  = local(17)
   di_hcch3  = local(18)
   di_ccch   = local(19)
-  di_hcch4   = local(20)
+  di_hcch4  = local(20)
   di_hcchg  = local(21)
 
   r_12e = force(1)
@@ -93,7 +96,7 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
   di_hcch2e  = force(17)*rad
   di_hcch3e  = force(18)*rad
   di_ccche   = force(19)*rad
-  di_hcch4e   = force(20)*rad
+  di_hcch4e  = force(20)*rad
   di_hcchge  = force(21)*rad
 
   a1 = force(22)
@@ -113,10 +116,8 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
     write(out, '(/a,1x,a,1x,a)') &
     'MLpoten_c3h6_harmtest error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c3h6_harmtest error error: bad coordinate type'
-    !
-  case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
-    !
 
+  case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU')
 
     xi(1)=1.0_ark-exp(-a1*(r_12-r_12e))
     xi(2)=1.0_ark-exp(-a2*(r_23-r_23e))
@@ -136,6 +137,11 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
     xi(15) = alp_127   -  alp_127e
 
     xi(16) =  di_ccch   -  di_ccche 
+    !To ensure always near zero:
+    !if( abs( xi(16)-2.0_ark*pi).lt.1d-4 ) then
+    if(xi(16).gt.6.d0) then
+    xi(16) = xi(16) - 2.0_ark*pi
+    end if
     xi(17) =  di_hcch4  -  di_hcch4e
     xi(18) =  di_hcchg  -  di_hcchge
 
@@ -190,7 +196,91 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
     xi(20) = Ax2 
     xi(21) = (1.0_ark - cos(3.d0*tbar) )
     !
+  case('7ALF_TAU_1RHO')
+    !
+    xi(1)=1.0_ark-exp(-a1*(r_12-r_12e))
+    xi(2)=1.0_ark-exp(-a2*(r_23-r_23e))
+    xi(3)=1.0_ark-exp(-a3*(r_14-r_14e))
+    xi(4)=1.0_ark-exp(-a4*(r_15-r_15e))
+    XI(5)=1.0_ark-EXP(-a5*(r_16-r_16e))
+    XI(6)=1.0_ark-EXP(-a7*(r_38-r_38e))
+    XI(7)=1.0_ark-EXP(-a8*(r_39-r_39e))
+    XI(8)=1.0_ark-EXP(-a6*(r_27-r_27e))
+  !
+    xi(9) =  alp_321   -  alp_321e
+    xi(10) = alp_214   -  alp_214e
+    xi(11) = alp_215   -  alp_215e
+    xi(12) = alp_216   -  alp_216e
+    xi(13) = alp_238   -  alp_238e
+    xi(14) = alp_239   -  alp_239e
+    xi(15) = alp_127   -  alp_127e
+
+    xi(16) =  di_ccch   -  di_ccche 
+    !
+    !To ensure always near zero:
+    !if( abs( xi(16)-2.0_ark*pi).lt.1d-4 ) then
+    if(xi(16).gt.6.d0) then
+       xi(16) = xi(16) - 2.0_ark*pi
+    end if
+    xi(17) =  di_hcch4  -  di_hcch4e
+    xi(18) =  di_hcchg  -  di_hcchge
+    !
+    T1 = di_hcch
+    !
+    !       ALWAYS WANT TO MEASURE ANGLES IN SAME WAY
+    !       TO GET CONSISTENT TRANSFORMS, DEFINE RANGES FOR ANGLES ELSE ADD/SUB 2*PI
+    !
+    IF(T1.LT.0.0.AND.ABS(T1).GT.TOL) THEN
+      T1 = T1 + 2.0_ark*PI
+    END IF
+    IF(T1.GT.(2.0_ark*PI).AND.ABS(T1-2.0_ARK*PI).GT.TOL) THEN
+      T1 = T1 - 2.0_ark*PI
+    END IF
+    !
+    T2 = di_hcch2
+    T3 = di_hcch3
+    !
+    !IF(T2.LT.2.0_ark*Pi/3.0_ark.AND.abs(T2-2.0_ark*Pi/3.0_ark).GT.tol) THEN
+    !T2 = T2 + 2.0_ark*PI
+    !END IF
+    !IF(T2.GT.8.0_ark*Pi/3.0_ark.AND.(T2-8.0_ark*Pi/3.0_ark).GT.tol) THEN
+    !T2 = T2 - 2.0_ark*PI
+    !END IF
+
+    !IF(T3.LT.(4.0_ark*PI/3.0_ark).AND.ABS(T3-4.0_ark*PI/3.0_ark).GT.TOL) THEN
+    !T3 = T3 + 2.0_ark*PI
+    !END IF
+    !IF(T3.GT.(10.0_ark*PI/3.0_ark).AND.ABS(T3-10.0_ark*PI/3.0_ark).GT.TOL) THEN
+    !T3 = T3 - 2.0_ark*PI
+    !END IF
+    !
+    T1 = T1 - force(16)*rad
+    T2 = T2 - force(17)*rad
+    T3 = T3 - force(18)*rad
+    !
+    Ax1  = (T2 + T3)*3.0_ark/sqrt(6.0_ark)   
+    Ax2  = (T2 - T3)/sqrt(2.0_ark)   
+    !
+    !tbar = (src(16) + src(17) + src(18))/3.0_ark 
+    !
+    T2 = T2 + T1
+    T3 =-T3 + T1
+    !
+    tbar = (T1 + T2 + T3)/3.0_ark 
+
+
+!       SUBTRACT EQUILBRIUM THETA VALUES TO MAKE A1/A2 ZERO AT EQUILIBRIUM
+!       AND ENSURE CONSISTENT TRANSFROMS
+    !
+
+    xi(19) = Ax1 
+    xi(20) = Ax2 
+    xi(21) = (1.0_ark - cos(3.d0*tbar) )
+    !
    end select
+
+      !  write(6,*) !BPM
+      !  write(6,*) xi !BPM
 
 
   f = 0
@@ -220,6 +310,14 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
 
   end do
 
+      !  write(6,*) !BPM
+      !  write(6,*) f!BPM
+      !  stop ! BPM
+        if(f.gt.1e6) then 
+          write(out,"('MLpoten_c3h6_harmtest error, V is too large:',e12.5)") f
+          write(out,"(21f14.8)") xi
+          !stop 'problem here'
+        endif
 
 
   !

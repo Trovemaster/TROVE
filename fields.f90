@@ -4857,6 +4857,8 @@ end subroutine check_read_save_none
       !
     end select
     !
+    !if (trim(trove%IO_hamiltonian)=='SAVE') call FLcheck_point_Hamiltonian('AMAT_SAVE')
+    !
     ! the rank = 1 manifold case
     !
     if (manifold/=0.and.trove%Coordinates(1,1)=='NORMAL') then
@@ -5384,6 +5386,15 @@ end subroutine check_read_save_none
     call print_kinetic
     !
     if (trove%sparse) call compact_sparse_kinetic
+
+    if (trim(trove%IO_kinetic)=='SAVE'.and.&
+        trove%separate_store.and..not.trove%separate_convert) then
+          !
+          ! save kinetic.chk as ASCII
+          !
+          call FLcheck_point_Hamiltonian('KINETIC_SAVE_SPARSE')
+          !      
+    endif 
     !
     if (job%verbose>=4) call MemoryReport
     !
@@ -5969,7 +5980,7 @@ end subroutine check_read_save_none
       !
       ! Quadratic force constants in local coordinates are stored in "f"
       !
-      f(1:Nmodes,1:Nmodes) = trove%qwforce(1:Nmodes,1:Nmodes,irho)
+      !f(1:Nmodes,1:Nmodes) = trove%qwforce(1:Nmodes,1:Nmodes,irho)
       !
       ! Constructing a system of linear equations T x = b, where x = Amat
       ! The equations can be solved for every mode indipendently,  
@@ -6232,11 +6243,24 @@ end subroutine check_read_save_none
       !
       trove%Amatrho(1:Natoms,1:3,1:Nmodes,irho) = Amat(1:Natoms,1:3,1:Nmodes)
       !
-      if (job%verbose>=6) then 
-        write(out,"(i8,18(<Nmodes>f16.8))") irho,(Amat(1:Natoms,ix,1:Nmodes),ix=1,3)
-      endif
+      !if (job%verbose>=6) then 
+      !  write(out,"(i8,18(<Nmodes>f16.8))") irho,(Amat(1:Natoms,ix,1:Nmodes),ix=1,3)
+      !endif
       !
     enddo rho_loop
+    !
+    ! do some reporting 
+    !
+    if (job%verbose>=6) then
+      write(out,"(a)") 'irho, iatom, imode, Amat:'
+      do iatom =1,Natoms
+        do imode =1,Nmodes
+           do irho = 0,Npoints
+              write(out,"(i8,1x,i3,1x,i3,1x,3(f16.8))") irho,iatom,imode,(trove%Amatrho(iatom,ix,imode,irho),ix=1,3)
+           end do
+         end do
+      end do
+    endif
     !
     ! Generate the matrix with derivatives of Amatrho wrt to rho 
     ! only when it is an 1D case 
@@ -6831,6 +6855,27 @@ end subroutine check_read_save_none
        !
     endif
     !
+    if (trove%sparse) then
+      !
+      call FLCompact_a_field_sparse(trove%poten,"poten")
+      !
+      if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+        !
+        write(out,"('After compacting:')")
+        call print_poten
+      endif
+      !
+    endif
+    !
+    if (trim(trove%IO_potential)=='SAVE'.and.&
+        trove%separate_store.and..not.trove%separate_convert) then
+          !
+          ! save potential.chk as ASCII
+          !
+          call FLcheck_point_Hamiltonian('POTENTIAL_SAVE_SPARSE')
+          !      
+    endif 
+    !
     call TimerStop('Potential')
     !
     call TimerReport
@@ -6840,7 +6885,6 @@ end subroutine check_read_save_none
     if (job%verbose>=2) write(out,"('FLinitilize_Potential_original/end')")   
     !
   end subroutine FLinitilize_Potential_original
-
 
 
   !
@@ -6858,7 +6902,34 @@ end subroutine check_read_save_none
     integer(ik)                  :: istep(2,trove%Nmodes)
     integer(ik),allocatable      :: ipoint_address(:,:)
     real(ark),allocatable        :: pot_points(:),poten_t(:)
-
+    !
+    if (trim(trove%IO_hamiltonian)=='READ'.or.&
+        trim(trove%IO_potential)=='READ') then 
+        !
+        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
+        !
+        call FLcheck_point_Hamiltonian('POTENTIAL_READ')
+        !
+        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+           call print_poten
+        endif 
+        !
+        if (trove%sparse) then
+           !
+          call FLCompact_a_field_sparse(trove%poten,"poten")
+          !
+          if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+            !
+            write(out,"('After compacting:')")
+            call print_poten
+          endif
+          !
+        endif
+        !
+        return 
+        !
+    endif
+    !
     if (job%verbose>=2) write(out,"(/'FLinitilize_Potential_II/start')")   
     !
     call TimerStart('Potential')
@@ -7075,6 +7146,35 @@ end subroutine check_read_save_none
        enddo
        !
     endif
+    !
+    fl => trove%poten
+    call check_field_smoothness(fl,'CHECK',npoints,'poten')
+    if (FL_iron_field_out) call check_field_smoothness(fl,'FIX',npoints,'poten')
+    !
+    if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+       call print_poten
+    endif
+    !
+    if (trove%sparse) then
+      !
+      call FLCompact_a_field_sparse(trove%poten,"poten")
+      !
+      if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+        !
+        write(out,"('After compacting:')")
+        call print_poten
+      endif
+      !
+    endif
+    !
+    if (trim(trove%IO_potential)=='SAVE'.and.&
+        trove%separate_store.and..not.trove%separate_convert) then
+          !
+          ! save potential.chk as ASCII
+          !
+          call FLcheck_point_Hamiltonian('POTENTIAL_SAVE_SPARSE')
+          !      
+    endif 
     !
     call TimerStop('Potential')
     !
@@ -7396,6 +7496,15 @@ end subroutine check_read_save_none
       !
     endif
     !
+    if (trim(trove%IO_potential)=='SAVE'.and.&
+        trove%separate_store.and..not.trove%separate_convert) then
+          !
+          ! save potential.chk as ASCII
+          !
+          call FLcheck_point_Hamiltonian('POTENTIAL_SAVE_SPARSE')
+          !      
+    endif 
+    !
     call TimerStop('Potential')
     !
     call TimerReport
@@ -7426,9 +7535,32 @@ end subroutine check_read_save_none
     end subroutine par_switch
 
 
+
+    logical function par_check(par,kindex)
+      !
+      integer(ik),intent(in)   :: par(0:trove%Nmodes+1),kindex(trove%Nmodes)
+      integer(ik)              :: imode
+      logical :: ch0
+      !
+      ch0 = .true.
+      !
+      do imode = 1,trove%Nmodes
+        !
+        ch0 = ch0 .and. (par(imode)==-1.or.mod(par(imode)+kindex(imode),2)==0)
+        !
+      enddo
+      !
+      par_check = ch0
+      !
+    end function par_check
+
+    
+  end subroutine FLinitilize_Potential
+
+
     subroutine print_poten
      !
-     integer(ik) :: i,irho
+     integer(ik) :: i,irho,imode
         !
         write(out,"('pseudo-potential parameteres:')")
         !
@@ -7454,30 +7586,6 @@ end subroutine check_read_save_none
         enddo
         !     
     end subroutine print_poten 
-
-    logical function par_check(par,kindex)
-      !
-      integer(ik),intent(in)   :: par(0:trove%Nmodes+1),kindex(trove%Nmodes)
-      integer(ik)              :: imode
-      logical :: ch0
-      !
-      ch0 = .true.
-      !
-      do imode = 1,trove%Nmodes
-        !
-        ch0 = ch0 .and. (par(imode)==-1.or.mod(par(imode)+kindex(imode),2)==0)
-        !
-      enddo
-      !
-      par_check = ch0
-      !
-    end function par_check
-
-    
-  end subroutine FLinitilize_Potential
-
-
-
 
 
   subroutine FLinit_External_field  
@@ -7775,6 +7883,14 @@ end subroutine check_read_save_none
       !
     enddo
     !
+    if (trim(trove%IO_ext_coeff)=='SAVE'.and.&
+        trove%separate_store.and..not.trove%separate_convert) then
+          !
+          ! save external.chk as ASCII
+          !
+          call FLcheck_point_Hamiltonian('EXTERNAL_SAVE_SPARSE')
+          !      
+    endif 
     !
     call TimerStop('External')
     !
@@ -9451,8 +9567,8 @@ end subroutine check_read_save_none
     !
     !write(out,"(/'vib')") 
     !do irho = 0,Npoints
-    !  if (job%verbose>=4) then 
-    !    write(out,"(i8,18(<Nmodes>f16.8))") irho,((s_rot(Nmodes,n1,x1)%field(1,irho),n1=1,Natoms),x1=1,3)
+    !  if (job%verbose>=6) then 
+    !    write(out,"(i8,18(<Nmodes>f16.8))") irho,((s_vib(Nmodes,n1,x1)%field(1,irho),n1=1,Natoms),x1=1,3)
     !  endif
     !enddo
     !
@@ -12564,6 +12680,8 @@ end subroutine check_read_save_none
       case ('BASIS_SAVE')
         call basissetSave
         call numerovSave
+      case ('AMAT_SAVE')
+        call AmatBmatSave
       case ('HAMILTONIAN_SAVE')
         !
         call HamiltonianSave
@@ -12574,9 +12692,9 @@ end subroutine check_read_save_none
           !
           ! use kinetic.chk and potential.chk as ASCII
           !
-          call KineticSave_ASCII
-          call PotentialSave_ASCII
-          call ExternalSave_ASCII
+          !call KineticSave_ASCII
+          !call PotentialSave_ASCII
+          !call ExternalSave_ASCII
           !
         endif
         !
@@ -12591,6 +12709,13 @@ end subroutine check_read_save_none
         !
         if (trove%separate_store) call checkpointRestore_kinetic_ascii
         !
+      case ('KINETIC_SAVE_SPARSE')
+        call AmatBmatSave
+        call KineticSave_ASCII
+      case ('POTENTIAL_SAVE_SPARSE')
+        call PotentialSave_ASCII
+      case ('EXTERNAL_SAVE_SPARSE')
+        call ExternalSave_ASCII
       case ('KINETIC_SKIP')
         call checkpointSkip_kinetic
       case ('POTENTIAL_READ')
@@ -13381,16 +13506,17 @@ end subroutine check_read_save_none
       end subroutine numerovRestore
       !
 
-      subroutine HamiltonianSave
-
+      subroutine AmatBmatSave
+        !
         character(len=cl)  :: unitfname
         integer(ik)        :: Nmodes,k1,k2,chkptIO,chkptIO_pot,chkptIO_kin,chkptIO_ext,i,iterm,npoints
         type(FLpolynomT),pointer    :: fl
         logical     :: i_opened
         !
-        if (job%verbose>=3) write(out,"(/'Store all objects defining the Hamiltonian...')")
+        if (job%verbose>=3) write(out,"(/'Store Amat and Bmat objects (sparse) ...')")
         !
         if (trove%separate_store.and.trim(trove%internal_coords)=='LOCAL') return
+        if (.not.trove%separate_store.or.trove%separate_convert) return
         !
         unitfname ='Check point of the Hamiltonian'
         call IOStart(trim(unitfname),chkptIO)
@@ -13418,7 +13544,49 @@ end subroutine check_read_save_none
         write(chkptIO) 'dBmatrho'
         write(chkptIO) trove%dBmatrho
         !
+        close(chkptIO,status='keep')
+        !
+      end subroutine AmatBmatSave
+
+
+      subroutine HamiltonianSave
+
+        character(len=cl)  :: unitfname
+        integer(ik)        :: Nmodes,k1,k2,chkptIO,chkptIO_pot,chkptIO_kin,chkptIO_ext,i,iterm,npoints
+        type(FLpolynomT),pointer    :: fl
+        logical     :: i_opened
+        !
+        if (job%verbose>=3) write(out,"(/'Store all objects defining the Hamiltonian...')")
+        !
+        if (trove%separate_store.and.trim(trove%internal_coords)=='LOCAL') return
+        !
         if (trove%separate_store.and..not.trove%separate_convert) return
+        !
+        unitfname ='Check point of the Hamiltonian'
+        call IOStart(trim(unitfname),chkptIO)
+        !
+        inquire (chkptIO,opened=i_opened)
+        !
+        if (i_opened) close(chkptIO)
+        !
+        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=trove%chk_hamil_fname)
+        !
+        write(chkptIO) 'Start Hamiltonian objects'
+        !
+        Nmodes = trove%Nmodes
+        Npoints = trove%npoints
+        !
+        write(chkptIO) 'Amatrho'
+        write(chkptIO) trove%Amatrho
+        !
+        write(chkptIO) 'dAmatrho'
+        write(chkptIO) trove%dAmatrho
+        !
+        write(chkptIO) 'Bmatrho'
+        write(chkptIO) trove%Bmatrho
+        !
+        write(chkptIO) 'dBmatrho'
+        write(chkptIO) trove%dBmatrho
         !
         write(chkptIO) 'g_vib'
         write(chkptIO) trove%g_vib(1,1)%Ncoeff
@@ -13855,7 +14023,7 @@ end subroutine check_read_save_none
               !
               if (abs(field(iterm,i))>job%exp_coeff_thresh) then 
                 !
-                write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e23.16)") k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
+                write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e36.29)") k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
                 !
               endif
               !
@@ -15566,7 +15734,7 @@ end subroutine check_read_save_none
     integer(ik),intent(in)      :: ibs         ! Index for the new 1D basis   
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
-    integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff
+    integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
@@ -15577,6 +15745,9 @@ end subroutine check_read_save_none
     character(len=cl)     :: dir
     !
     real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:)
+    !
+    integer(ik),parameter        ::  Nperiod_max = 10 
+    real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
     !
     real(ark),allocatable       :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),phivphi_t(:),weight(:)
     real(ark),allocatable       :: dfunc(:,:),func(:,:)
@@ -15852,7 +16023,9 @@ end subroutine check_read_save_none
            if (bs%imodes<30) then
              write(out,"(30f18.8)") f2(1:bs%imodes)
            endif 
-           stop 'FLbset1DNew: not all quadratic parameters are equal'
+           if (.not.trove%periodic) then
+             stop 'FLbset1DNew: not all quadratic parameters are equal'
+           endif
         endif
         !
         ! for the kinetic part it is simpler - we just take the first member of the g_vib%coeffs
@@ -16017,6 +16190,10 @@ end subroutine check_read_save_none
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
            end if
+           !
+           if (trove%periodic.and.job%bset(Nmodes)%iperiod>Nperiod_max) then
+              stop 'FLbset1DNew: Nperiod_max is too small'
+           endif
            !    
            ! Double check:
            !
@@ -16566,7 +16743,7 @@ end subroutine check_read_save_none
                        !
                        do k2 = 1,3
                           !
-                          Tcoeff = trove%g_cor(1,1)%Ncoeff
+                          Tcoeff = trove%g_cor(k1,k2)%Ncoeff
                           !
                           do iterm = 1,Tcoeff
                              !
@@ -16651,7 +16828,7 @@ end subroutine check_read_save_none
              ! reference geometry; we apply this rule only whe the periodicity is the same 
              ! as the size of the class 
              ! 
-             if (trove%periodic.and.bs%imodes==job%bset(Nmodes)%iperiod) then
+             if (trove%periodic.and.bs%imodes   ==job%bset(Nmodes)%iperiod) then
                period = (job%bset(Nmodes)%borders(2)-job%bset(Nmodes)%borders(1))/real(job%bset(Nmodes)%iperiod,ark)
                periodic_model = .true.
              endif
@@ -16721,6 +16898,21 @@ end subroutine check_read_save_none
                       stop 'FLbset1DNew: f2=0 in the poten sparse-field'
                     endif
                     !
+                    if (periodic_model) then 
+                      !
+                      do jmode = 1,bs%imodes
+                        !
+                        rho_ref_ = trove%rho_ref+period*real(jmode-1,ark)
+                        irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                        call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+                        !
+                        f_period(imode,jmode) = 0 
+                        if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq)
+                        !
+                      enddo
+                      !
+                    endif
+                    !
                   else
                     !
                     f2(imode) = trove%poten%field(k,irho_eq)
@@ -16737,7 +16929,9 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
                    write(out,"('pot-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   stop 'FLbset1DNew: not all numerov parameters are equal'
+                   if (.not.periodic_model) then 
+                     stop 'FLbset1DNew: not all numerov parameters are equal'
+                   endif
                 endif
                 !
                 f1d(ipower) = f2(1)
@@ -16792,7 +16986,9 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
                    write(out,"('pseudo-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   stop 'FLbset1DNew: not all numerov parameters are equal'
+                   if (.not.periodic_model) then 
+                     stop 'FLbset1DNew: not all numerov parameters are equal'
+                   endif
                 endif
                 !
                 p1d(ipower) = f2(1)
@@ -19945,9 +20141,8 @@ end subroutine check_read_save_none
      !
      real(ark)               :: f,r(trove%Ncoords),chi_(trove%Nmodes),r_(trove%Ncoords)
      logical                 :: dir
-     integer(ik)             :: pm = 1,Ncoords
+     integer(ik)             :: pm = 1,Ncoords,i
      !
-
      if (verbose>=6) write(out,"(/'poten_chi/start')") 
      !
      Ncoords = trove%Ncoords
@@ -19967,15 +20162,16 @@ end subroutine check_read_save_none
      dir = .true.
      chi_ = MLcoordinate_transform_func(r_,size(r_),dir)
      !
-     if ( any( abs( chi(:)-chi_(:) )>10.0*sqrt(small_) ) ) then 
+     do i = 1,trove%Nmodes
        !
-       write(out,'("poten_chi: Error in MLfromlocal2cartesian, chi /= chi_:")')
-       write(out,'(4x,<Ncoords>f18.6)') chi(:)
-       write(out,'(4x,<Ncoords>f18.6)') chi_(:)
-       write(out,'(4x,<Ncoords>e18.6)') chi(:)-chi_(:)
-       !stop "poten_chi: Error in MLfromlocal2cartesian, r /= r_"
-       !
-     endif 
+       if ( abs( chi(i)-chi_(i) )>10.0*sqrt(small_).and.abs( chi(i)-chi_(i) )-2.0_ark*pi> 10.0*sqrt(small_)) then
+         !
+         write(out,'("poten_chi: chi /= chi_: ",i5,4x,2f18.6,1x,e10.3)') i,chi(i),chi_(i),chi(:)-chi_(:)
+         !stop "poten_chi: Error in MLfromlocal2cartesian, r /= r_"
+         !
+        endif
+        ! 
+     enddo
      !
      if (verbose>=6) write(out,"('poten_chi/end')") 
      !

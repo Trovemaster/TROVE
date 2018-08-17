@@ -3592,8 +3592,8 @@ end subroutine gaulegf
 
   subroutine MLinvmatark(al,ai,dimen,ierr)
   integer,intent(in)   :: dimen
-  real(ark),intent(in)  :: al(dimen,dimen)
-  real(ark),intent(out) :: ai(dimen,dimen)
+  real(ark),intent(in)  :: al(:,:)
+  real(ark),intent(out) :: ai(:,:)
   integer(ik),intent(out) :: ierr
   real(ark)             :: h(dimen),p,q
   integer(ik)           :: i1,i2,k,i,j,k8,k9

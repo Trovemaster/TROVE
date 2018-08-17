@@ -815,8 +815,11 @@ module moltype
          !
          alpha = r(molec%Nbonds+1)
          !
-         n2(:) = (/sin(alpha),0.0_ark,pm*cos(alpha)/)
-         !
+         if (p1==1) then 
+           n2(:) = (/sin(alpha),0.0_ark,cos(alpha)/)
+         else 
+           n2(:) = (/sin(alpha),0.0_ark,-cos(alpha)/)
+         endif
          x(3,:) = x(p1,:)+n2(:)*r(2)
          !
        case (102)

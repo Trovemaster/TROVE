@@ -870,7 +870,7 @@ contains
                         !
                         read (iunit) pot_matrix
                         !
-                      elseif(ivar(i)>0.and.abs(pot_terms(i))>small_) then
+                      elseif(ivar(i)>0) then !.and.abs(pot_terms(i))>small_) then
                         !
                         call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                         !
@@ -1173,7 +1173,15 @@ contains
               !
               if (do_deriv) then
                 !
-                pot_terms = 0 
+                do i = 1,parmax
+                  !
+                  if (ivar(i)<0) then 
+                    pot_terms(i) = molec%force(i)
+                  else
+                    pot_terms(i) = 0
+                  endif
+                  !
+                enddo
                 !
                 !omp do private(ncol,i) schedule(guided)
                 do ncol=1,numpar 

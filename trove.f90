@@ -101,7 +101,7 @@
       !
       ! Here we initialize the potential energy field
       !
-      call FLinitilize_Potential
+      call FLinitilize_Potential_II
       !
       ! Here we initialize the dipole moment field (if needed)
       !

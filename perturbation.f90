@@ -2827,7 +2827,7 @@ module perturbation
            !
            ispecies = PT%Mspecies(imode)
            !
-           if (trim(bs_t(imode)%type)=='NUMEROV'.or.trim(bs_t(imode)%type)=='BOX') then 
+           if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
              call ArrayStart('bs_funct(ispecies)%coeffs' ,alloc,size( bs_funct(ispecies)%coeffs ),kind( bs_funct(ispecies)%coeffs))
@@ -3061,7 +3061,7 @@ module perturbation
                     !
                     xval = chi_t(imode,ioper,jpoint) 
                     !
-                    if (trim(bs_t(imode)%type)=='NUMEROV'.or.trim(bs_t(imode)%type)=='BOX') then 
+                    if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
                       !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
                       !
@@ -3587,7 +3587,7 @@ module perturbation
          !
          imode = PT%mode_class(iclasses,i)
          !
-         if (trim(bs_t(imode)%type)=='NUMEROV') then 
+         if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
            !
            if (PT%Mspecies(imode)/=ispecies) then 
              ispecies = PT%Mspecies(imode)
@@ -3597,7 +3597,7 @@ module perturbation
          endif
        enddo
        !
-       if (trim(bs_t(PT%mode_class(iclasses,1))%type)=='NUMEROV') then 
+       if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then
          !
          call ArrayStop('bs_funct(ispecies)%coeffs')
          !
@@ -14295,7 +14295,8 @@ module perturbation
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
     character(len=cl)  :: job_is,buf
     !
-    integer(ik)        :: dimen_p_max,nroots_max,imu,iterm1,iterm2,mdimen,mdimen_
+    integer(ik)        :: dimen_p_max,nroots_max,imu,mdimen,mdimen_
+    integer(ik)        :: iterm1=0,iterm2=12
     integer(ik)        :: icoeff,icase,ilambda,jcoeff,idvr
     integer(ik),allocatable  :: extF_N(:),icoeff2iroot(:,:)
     integer(hik),allocatable :: icoefficoeff1(:)
