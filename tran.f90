@@ -442,11 +442,12 @@ contains
  ! 
  !read eigenvalues and their assignment 
  !
- subroutine read_eigenval(njval, jval)
+ subroutine read_eigenval(njval, jval, error)
     !
     implicit none
     !
     integer(ik), intent(in) :: njval, jval(njval)
+    integer(ik),optional,intent(out) :: error
 
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
@@ -502,6 +503,9 @@ contains
     !
     istate2ilevel = 0
     !
+    ! initialize the error code which will indicate if an eigen-file exists
+    if (present(error)) error = 0 
+    !
     nroots  = 0
     nlevels = 0 
     maxdeg = 1
@@ -527,7 +531,7 @@ contains
           write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
-          open(unit = iounit, action = 'read',status='old' , file = filename)
+          open(unit = iounit, action = 'read',status='old' , file = filename, err=15)
           !
           ! for the TM-based basis set pruning open the chk-file with the vibrational intensities 
           !
@@ -641,6 +645,13 @@ contains
           close(iounit)
           if (job%TMpruning) close(jounit)
           !
+          cycle
+          !
+          15 continue 
+          !
+          write(out,"('read_eigenval warninig: eigenfilefile',a,'is missing')") filename
+          if (present(error)) error = 1 
+          !
        enddo
     enddo
     !
@@ -718,7 +729,7 @@ contains
           write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
-          open(unit = iounit, action = 'read',status='old' , file = filename)
+          open(unit = iounit, action = 'read',status='old' , file = filename, err=16)
           !
           buf500 = ''
           !
@@ -855,6 +866,9 @@ contains
              write(out, '(a)') '...done!'
           !dec$ end if
           !
+          16 continue 
+          if (present(error)) error = 1 
+          !
        enddo
        !
     end do
@@ -985,7 +999,7 @@ contains
     !
     inquire (file = filename, exist = exists)
     if (.not.exists) then 
-      write (out,"('TReigenvec_unit: Cannot find file for j= ',i3,4x,a)") jval,filename
+      write (out,"('TReigenvec_unit: Cannot find file for j= ',i3,4x,a)") jval(jind),filename
       stop 'TReigenvec_unit: file with eigenvectors does not exist' 
     endif 
     !

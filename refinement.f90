@@ -68,7 +68,7 @@ contains
 
     integer(ik)          :: info
 
-    integer(ik)              :: Jmin, Jmax, nJ, jind, j, igamma, idimen, Nterms, iterm
+    integer(ik)              :: Jmin, Jmax, nJ, jind, j, igamma, idimen, Nterms, iterm, ierror, Nentries
     integer(ik), allocatable :: Jval(:)
 
        !
@@ -123,13 +123,21 @@ contains
        ! read eigenvalues and their labeling, i.e. description;
        ! initialize file-units for reading eigenvectors
        !
-       call read_eigenval(nJ, Jval(1:nJ))
+       call read_eigenval(nJ, Jval(1:nJ),ierror)
        !
        allocate(Jeigenvec_unit(nJ,sym%Nrepresen), stat = info)
        if (info /= 0) stop 'dm_tranint allocation error: Jeigenvec_unit - out of memory'
        !
        do jind=1,nJ
          do igamma = 1,sym%Nrepresen
+           !
+           Nentries = 0
+           do j = 1, Neigenlevels
+             if (eigen(j)%jval==Jval(jind).and.eigen(j)%igamma==igamma.and.job%isym_do(igamma)) Nentries = Nentries + 1
+           enddo
+           !
+           if (Nentries==0) cycle
+           !
            Jeigenvec_unit(jind,igamma) = TReigenvec_unit(jind,Jval,igamma)
          enddo
        enddo
@@ -1425,18 +1433,20 @@ contains
               write (out,"(//'Potential parameters rounded in accord. with their standard errors'/)")
               l = 0 
               do i=1,parmax
-                if (ivar(i) .ne. 0) then
+                if (ivar(i) > 0) then
+                   !
                    l=l+1
                    ndigits = 0
                    conf_int = sterr(l)
-                   do while (conf_int.le.10.0.and.ndigits<10)
+                   do while (conf_int.le.10.0.and.ndigits<12)
                      ndigits = ndigits +1 
                      conf_int = conf_int*10
                    enddo
                    !
-                   if (conf_int>1e8) conf_int = 0 
+                   if (conf_int>1e10) conf_int = 0 
                    !
                    write (out,"(a8,i4,2x,f22.<ndigits>,'(',i14,')')") nampar(i),ivar(i),potparam(i),nint(conf_int)
+                   !
                 else 
                    ndigits =2
                    if (potparam(i).ne.0.0) ndigits = 8

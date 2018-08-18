@@ -59,7 +59,7 @@ contains
     !
     integer(ik)          :: info
 
-    integer(ik)              :: Jmin, Jmax, nJ, jind, j
+    integer(ik)              :: Jmin, Jmax, nJ, jind, j, ierror
     integer(ik), allocatable :: Jval(:)
 
     real(rk)             :: exp_en, part, beta, energy, q_part(20,0:100)
@@ -108,7 +108,12 @@ contains
        ! read eigenvalues and their labeling, i.e. description;
        ! initialize file-units for reading eigenvectors
        !
-       call read_eigenval(nJ, Jval(1:nJ))
+       call read_eigenval(nJ, Jval(1:nJ),ierror)
+       !
+       if (ierror/=0) then 
+           write(out,"('dm_tranint: read_eigenval error, some eigen-files do not exists')")
+           stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
+       endif 
        !
        !restore vibrational contracted matrix elements
        !for all  dipole moment vector components
@@ -175,7 +180,12 @@ contains
 
 
        call read_contrind(nJ, Jval(1:nJ))
-       call read_eigenval(nJ, Jval(1:nJ))
+       call read_eigenval(nJ, Jval(1:nJ),ierror)
+       !
+       if (ierror/=0) then 
+           write(out,"('dm_tranint: read_eigenval error, some eigen-files do not exists')")
+           stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
+       endif 
 
 
        write(out, '(/3x, a, 1x, a, (/1x, i3, 11x, i6))') 'J', 'number of levels',                                  &
@@ -187,7 +197,6 @@ contains
        !
        q_part  = 0 
        !
-
        do ilevel = 1, Neigenlevels
 
              j = eigen(ilevel)%jval
@@ -239,7 +248,7 @@ contains
     !
     integer(ik)          :: info
 
-    integer(ik)              :: Jmin, Jmax, nJ, jind, j
+    integer(ik)              :: Jmin, Jmax, nJ, jind, j, ierror
     integer(ik), allocatable :: Jval(:)
 
     integer(ik)          :: i,ilist,nlist,imode,kmode,jmode
@@ -282,7 +291,12 @@ contains
     ! read eigenvalues and their labeling, i.e. description;
     ! initialize file-units for reading eigenvectors
     !
-    call read_eigenval(nJ, Jval(1:nJ))
+    call read_eigenval(nJ, Jval(1:nJ),ierror)
+    !
+    if (ierror/=0) then 
+        write(out,"('dm_tranint: read_eigenval error, some eigen-files do not exists')")
+        stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
+    endif 
     !
     ilist = 1 
     !
