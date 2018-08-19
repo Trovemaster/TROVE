@@ -649,7 +649,7 @@ contains
           !
           15 continue 
           !
-          write(out,"('read_eigenval warninig: eigenfilefile',a,'is missing')") filename
+          write(out,"('read_eigenval warninig: eigenfilefile ',a,'is missing')") filename
           if (present(error)) error = 1 
           !
        enddo
