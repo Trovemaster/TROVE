@@ -2827,7 +2827,7 @@ module perturbation
            !
            ispecies = PT%Mspecies(imode)
            !
-           if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
+           if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER','LEGENDRE'/))) then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
              call ArrayStart('bs_funct(ispecies)%coeffs' ,alloc,size( bs_funct(ispecies)%coeffs ),kind( bs_funct(ispecies)%coeffs))
@@ -3061,7 +3061,7 @@ module perturbation
                     !
                     xval = chi_t(imode,ioper,jpoint) 
                     !
-                    if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
+                    if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER','LEGENDRE'/))) then 
                       !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
                       !
@@ -3587,7 +3587,7 @@ module perturbation
          !
          imode = PT%mode_class(iclasses,i)
          !
-         if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then 
+         if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER','LEGENDRE'/))) then 
            !
            if (PT%Mspecies(imode)/=ispecies) then 
              ispecies = PT%Mspecies(imode)
@@ -3597,7 +3597,7 @@ module perturbation
          endif
        enddo
        !
-       if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER'/))) then
+       if (any(trim(bs_t(imode)%type)==(/'NUMEROV','BOX','FOURIER','LEGENDRE'/))) then
          !
          call ArrayStop('bs_funct(ispecies)%coeffs')
          !

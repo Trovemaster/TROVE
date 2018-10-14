@@ -7,7 +7,7 @@ module me_bnd
   implicit none
 
   public ik, rk, out
-  public degener_harm_q,ME_box,ME_Fourier
+  public degener_harm_q,ME_box,ME_Fourier,ME_Legendre
 
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
 
@@ -1081,11 +1081,11 @@ module me_bnd
   end subroutine ME_Fourier
 
   !
-  ! Matrix elements with Fourier-eigenfunctions 
+  ! Matrix elements with Legendre-eigenfunctions 
   !
-  subroutine ME_Legendre_sqrt_sinrho(vmax,maxorder,rho_b_,npoints,drho,poten,mu_rr,icoord,verbose,g_numerov,energy)
+  subroutine ME_Legendre(vmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,icoord,verbose,g_numerov,energy)
    !
-   integer(ik),intent(in) :: vmax,maxorder,npoints
+   integer(ik),intent(in) :: vmax,maxorder,npoints,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
@@ -1094,14 +1094,14 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
-   real(ark)            :: rho,rhostep,potmin
-   real(ark)            :: psipsi_t,characvalue,rho_b(2)
+   real(ark)            :: rho,rhostep,potmin,C_l,C_r,phi_rho(vmax+1),dphi_rho(vmax+1),ddphi_rho(vmax+1)
+   real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),x(:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),x(:),sinrho(:)
    real(ark),allocatable :: L(:,:),dL(:,:)
-   real(rk),allocatable  :: h(:,:),ener(:),psi(:,:),dpsi(:,:)
+   real(rk),allocatable  :: h(:,:),ener(:),psi(:,:),dpsi(:,:),ddpsi(:,:)
    !
    character(len=cl)    :: unitfname 
      !
@@ -1111,7 +1111,7 @@ module me_bnd
      !
      allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
               phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),&
-              x(0:npoints),L(vmax,0:npoints),stat=alloc)
+              x(0:npoints),sinrho(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -1121,12 +1121,18 @@ module me_bnd
      call ArrayStart('psi-phi-Legendre',alloc,size(psi),kind(psi))
      allocate(dpsi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Legendre',alloc,size(dpsi),kind(dpsi))
+     allocate(ddpsi(vmax+1,0:npoints),stat=alloc)
+     call ArrayStart('psi-phi-Legendre',alloc,size(ddpsi),kind(ddpsi))
      !
-     allocate(h(fmax+1,fmax+1),ener(fmax+1),phi(fmax+1),dphi(fmax+1),stat=alloc)
+     allocate(h(vmax+1,vmax+1),ener(vmax+1),phi(vmax+1),dphi(vmax+1),stat=alloc)
      call ArrayStart('h-Legendre',alloc,size(h),kind(h))
      call ArrayStart('h-Legendre',alloc,size(ener),kind(ener))
      call ArrayStart('h-Legendre-phi',alloc,size(phi),kind(phi))
      call ArrayStart('h-Legendre-phi',alloc,size(dphi),kind(dphi))
+     !
+     allocate(L(0:npoints,0:vmax),dL(0:npoints,0:vmax),stat=alloc)
+     call ArrayStart('Legendre',alloc,size(L),kind(L))
+     call ArrayStart('Legendre',alloc,size(dL),kind(dL))
      !
      rho_b = rho_b_
      !
@@ -1141,7 +1147,6 @@ module me_bnd
          write (out,"('icoord = ',i4)") icoord
          write (out,"('rho_b (x) = ',2f12.4)") rho_b(1:2) !*180.0_ark/pi
          write (out,"('rhostep (x) = ',2f12.4)") rhostep  !*180.0_ark/pi
-         write (out,"('periodicity = ',i8)") p
      endif 
      !
      potmin = huge(1.0_ark)
@@ -1164,14 +1169,16 @@ module me_bnd
      !
      do i=0,npoints
         !
-        rho = real(i,kind=ark)*rhostep
+        rho = rho_b(1)+real(i,kind=ark)*rhostep
         x(i) = cos(rho)
+        sinrho(i) = sin(rho)
         !
      enddo
      !
      ! Evaluate the Legendre polynomials
      !
-     call p_polynomial_value(npoints,vmax,x,L)
+     call p_polynomial_value(npoints+1,vmax,x(0:),L(0:,0:))
+     call p_polynomial_prime(npoints+1,vmax,x(0:),dL(0:,0:))
      !
      ! define the rho-type coordinate 
      !
@@ -1189,35 +1196,43 @@ module me_bnd
      !
      ! Matrix elements
      !
-     ! box size: 
-     !
-     L = (rho_b(2)-rho_b(1))*0.5_ark
-     !
      !characvalue = maxval(enerslot(0:vmax))
      !
-     do vl = 0,fmax
-        kl = (vl+1)/2*p
+     do vl = 0,vmax
+        !
+        ! normalisation constant
+        C_l = sqrt( real(2*vl+1,ark)/2.0_ark )
         !
         do i=0,npoints
            !
-           rho = real(i,kind=ark)*rhostep
+           rho = rho_b(1)+real(i,kind=ark)*rhostep
            !
-           phil(i)  = L(vl,i)
-           dphil(i) = dL(vl,i)
+           phil(i)  = L(i,vl)*C_l*sqrt(sin(rho))
+           !dphil(i) = ( cos(rho)*L(i,vl)-sin(rho)**2*dL(i,vl) )*C_l
+           !
+           dphil(i) = -sin(rho)*dL(i,vl)*sqrt(sin(rho))*C_l
            !
         enddo
         !
-        do vr = vl,fmax
-            kr = (vr+1)/2*p
+        do vr = vl,vmax
+            !
+            ! norm constant
+            C_r = sqrt( real(2*vr+1,ark)/2.0_ark )
             !
             do i=0,npoints
                !
-               rho = real(i,kind=ark)*rhostep
+               rho = rho_b(1)+real(i,kind=ark)*rhostep
                !
-               phir(i)  = L(vr,i)
-               dphir(i) = dL(vr,i)
+               phir(i)  = L(i,vr)*C_r*sqrt(sin(rho))
+               !dphir(i) = ( cos(rho)*L(i,vr)-sin(rho)**2*dL(i,vr) )*C_r
+               dphir(i) = -sin(rho)*dL(i,vr)*sqrt(sin(rho))*C_r
                !
             enddo
+            !
+            ! check orthagonality and noralisation
+            !
+            phivphi(:) = phil(:)*phir(:)
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
@@ -1229,9 +1244,15 @@ module me_bnd
             !
             ! momenta-quadratic part 
             !
+            !phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
+            !
             phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
             !
             psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            !
+            ! correction due to the derivatives at rho=0 and rho = Pi
+            !
+            !psipsi_t = psipsi_t - ( phil(npoints)*mu_rr(npoints)*phir(npoints) - phil(0)*mu_rr(0)*phir(0) )
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -1254,22 +1275,32 @@ module me_bnd
      !
      do i=0,npoints
         !
-        rho = real(i,kind=ark)*rhostep
-        do vl = 0,fmax
-           kl = (vl+1)/2*p
+        rho = rho_b(1)+real(i,kind=ark)*rhostep
+        !
+        do vl = 0,vmax
            !
-           phi(i)  = L(vl,i)
-           dphi(i) = dL(vl,i)
+           C_l = sqrt( real(2*vl+1,ark)/2.0_ark )
+           !
+           phi_rho(vl+1)  = L(i,vl)*C_l !*sqrt(sin(rho))
+           !dphi_rho(vl+1) = ( cos(rho)*L(i,vl)*0.5_ark-sin(rho)**2*dL(i,vl) )*C_l
+           dphi_rho(vl+1) = -sin(rho)*dL(i,vl)*C_l
+           !
+           ddphi_rho(vl+1) = -sin(rho)*dL(i,vl)*sqrt(sin(rho))*C_l
            !
         enddo
         !
-        Psi (1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),phi(1:fmax+1))
-        DPsi(1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),dphi(1:fmax+1))
+        Psi (1:vmax+1,i)  = matmul(transpose(h(1:vmax+1,1:vmax+1)),  phi_rho(1:vmax+1))
+        DPsi(1:vmax+1,i)  = matmul(transpose(h(1:vmax+1,1:vmax+1)), dphi_rho(1:vmax+1))
+        DDPsi(1:vmax+1,i) = matmul(transpose(h(1:vmax+1,1:vmax+1)),ddphi_rho(1:vmax+1))
         !
      enddo
      !
+     rms = 0
+     sigma = 0.0_ark 
+     rms   = 0.0_ark 
+     characvalue = maxval(ener(:))
+     !
      do vl = 0,vmax
-        kl = (vl+1)/2*p
         !
         phil(:)  =  Psi(vl+1,:)
         dphil(:) = dPsi(vl+1,:)
@@ -1285,21 +1316,53 @@ module me_bnd
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
             ! obtained above by the Numerov
             !
-            phivphi(:) = phil(:)*poten(:)*phir(:)
+            phivphi(:) = phil(:)*poten(:)*phir(:)*sinrho(:)
             !
-            h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            h_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
-            phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
+            phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)*sinrho(:)
             !
             psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
+            !psipsi_t = psipsi_t - (phil(npoints)*mu_rr(npoints)*phir(npoints)- phil(0)*mu_rr(0)*phir(0))
+            !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
-            h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*psipsi_t
+            h_t = h_t - 0.5_ark*psipsi_t
             !
-            h(vr+1,vl+1) = h(vl+1,vr+1)
+            ! check the solution
+            !
+            sigma_t =  abs(h_t)
+            if (vl==vr) sigma_t =  abs(h_t-ener(vl+1))
+            !
+            sigma = max(sigma,sigma_t)
+            rms = rms + sigma_t**2
+            !
+            ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
+            ! the Schroedinger all right
+            if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
+               write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               stop 'ME_numerov: bad Numerov solution'
+            endif 
+            !
+            if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
+               write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl)
+               stop 'ME_numerov: bad Numerov solution'
+            endif 
+            !
+            ! Reporting the quality of the matrix elemenst 
+            !
+            if (verbose>=3) then 
+              if (vl/=vr) then 
+               write(out,"('<',i4,'|H|',i4,'> = ',e16.2,'<-',8x,'0.0',5x,'; <',i4,'|',i4,'> = ',e16.2,'<-',8x,'0.0')") & 
+                                vl,vr,h_t,vl,vr,sigma_t
+              else
+               write(out,"('<',i4,'|H|',i4,'> = ',f16.6,'<-',f16.6,'; <',i4,'|',i4,'> = ',f16.6)")& 
+                              vl,vr,h_t,ener(vl+1),vl,vr,sigma_t
+              endif 
+            endif 
             !
             psipsi_t = 0 
             !
@@ -1397,15 +1460,15 @@ module me_bnd
         enddo
      enddo
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,L,dL)
+     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,L,dL)
      deallocate(h,ener)
-     deallocate(psi,dpsi,phi,dphi)
+     deallocate(psi,dpsi,ddpsi,phi,dphi)
      call ArrayStop('psi-phi-Legendre')
      call ArrayStop('h-Legendre')
      call ArrayStop('h-Legendre-phi')
+     call ArrayStop('Legendre')
      !
-  end subroutine ME_Legendre_sqrt_sinrho
-
+  end subroutine ME_Legendre
 
 
 
@@ -1521,7 +1584,7 @@ subroutine p_polynomial_value ( m, n, x, v )
     return
   end if
 
-  v(1:m,0) = 1.0D+00
+  v(1:m,0) = 1.0_ark
 
   if ( n < 1 ) then
     return
@@ -1542,6 +1605,99 @@ subroutine p_polynomial_value ( m, n, x, v )
 end subroutine p_polynomial_value
 
 
+
+subroutine p_polynomial_prime ( m, n, x, vp )
+
+!*****************************************************************************80
+!
+!! P_POLYNOMIAL_PRIME evaluates the derivative of Legendre polynomials P(n,x).
+!
+!  Discussion:
+!
+!    P(0,X) = 1
+!    P(1,X) = X
+!    P(N,X) = ( (2*N-1)*X*P(N-1,X)-(N-1)*P(N-2,X) ) / N
+!
+!    P'(0,X) = 0
+!    P'(1,X) = 1
+!    P'(N,X) = ( (2*N-1)*(P(N-1,X)+X*P'(N-1,X)-(N-1)*P'(N-2,X) ) / N
+!
+!  Licensing:
+!
+!    This code is distributed under the GNU LGPL license. 
+!
+!  Modified:
+!
+!    13 March 2012
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Reference:
+!
+!    Milton Abramowitz, Irene Stegun,
+!    Handbook of Mathematical Functions,
+!    National Bureau of Standards, 1964,
+!    ISBN: 0-486-61272-4,
+!    LC: QA47.A34.
+!
+!    Daniel Zwillinger, editor,
+!    CRC Standard Mathematical Tables and Formulae,
+!    30th Edition,
+!    CRC Press, 1996.
+!
+!  Parameters:
+!
+!    Input, integer ( kind = 4 ) M, the number of evaluation points.
+!
+!    Input, integer ( kind = 4 ) N, the highest order polynomial to evaluate.
+!    Note that polynomials 0 through N will be evaluated.
+!
+!    Input, real ( kind = 8 ) X(M), the evaluation points.
+!
+!    Output, real ( kind = 8 ) VP(M,0:N), the values of the derivatives of the
+!    Legendre polynomials of order 0 through N.
+!
+  implicit none
+
+  integer ( kind = ik ) m
+  integer ( kind = ik ) n
+
+  integer ( kind = ik ) i
+  real ( kind = ark ) v(m,0:n)
+  real ( kind = ark ) vp(m,0:n)
+  real ( kind = ark ) x(m)
+
+  if ( n < 0 ) then
+    return
+  end if
+
+  v(1:m,0) = 1.0_ark
+  vp(1:m,0) = 0
+
+  if ( n < 1 ) then
+    return
+  end if
+
+  v(1:m,1) = x(1:m)
+  vp(1:m,1) = 1.0_ark
+ 
+  do i = 2, n
+ 
+    v(1:m,i) = ( real ( 2 * i - 1, kind = ark ) * x(1:m) * v(1:m,i-1)   &
+               - real (     i - 1, kind = ark ) *          v(1:m,i-2) ) &
+               / real (     i,     kind = ark )
+ 
+    vp(1:m,i) = ( real ( 2 * i - 1, kind = ark ) * ( v(1:m,i-1) &
+                                                   + x(1:m) * vp(1:m,i-1) ) &
+                - real (     i - 1, kind = ark ) *   vp(1:m,i-2)               ) &
+                / real (     i,     kind = ark )
+ 
+  end do
+ 
+  return
+end subroutine p_polynomial_prime
 
 
 

@@ -2695,7 +2695,7 @@ endif
      !
      q(1)=local(1)-re
      q(2)=local(2)-re
-     q(3) = local(3)-alphae*pi/180.0_ark
+     q(3) = (pi-local(3))-alphae*pi/180.0_ark
      !
      !p1=local(1)-re
      !p2=local(2)-re

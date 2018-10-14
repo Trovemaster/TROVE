@@ -6,7 +6,7 @@ module fields
    use molecules
    use lapack
    use me_str
-   use me_bnd
+   use me_bnd, only : ME_box,ME_Fourier,ME_Legendre
    use me_numer
    use me_rot
    use timer
@@ -1763,7 +1763,7 @@ module fields
               call readu(w)
               job%bset(imode)%coord_poten = trim(w)
               !
-              if (all(trim(job%bset(imode)%type)/=(/'NUMEROV','BOX','LAGUERRE','FOURIER'/))) then 
+              if (all(trim(job%bset(imode)%type)/=(/'NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE'/))) then 
                  !
                  job%bset(imode)%coord_kinet = job%bset(imode)%type
                  job%bset(imode)%coord_poten = job%bset(imode)%type
@@ -15750,6 +15750,7 @@ end subroutine check_read_save_none
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
     !
     real(ark),allocatable       :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),phivphi_t(:),weight(:)
+    real(ark),allocatable       :: phil_leg(:),phir_leg(:),dphil_leg(:),dphir_leg(:)
     real(ark),allocatable       :: dfunc(:,:),func(:,:)
     !
     real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2
@@ -16163,8 +16164,6 @@ end subroutine check_read_save_none
            stop 'FLbset1DNew: bad bset-type'
            !
         endif 
-
-
         !
      case('LAGUERRE') 
         ! 
@@ -16312,8 +16311,8 @@ end subroutine check_read_save_none
            stop 'RIGID LAGUERRE NOT IMPLEMENTED'
            !
         endif
-           !
-     case('NUMEROV','BOX','FOURIER') 
+        !
+     case('NUMEROV','BOX','FOURIER','LEGENDRE') 
         ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
@@ -16499,7 +16498,11 @@ end subroutine check_read_save_none
              !
              call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho(0:npoints),g1drho(0:npoints),nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
-                         !
+             !
+           elseif (trim(bs%type)=='LEGENDRE') then 
+             !
+             call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
+             !
            elseif (trim(bs%type)=='FOURIER') then 
              !
              call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
@@ -16589,14 +16592,23 @@ end subroutine check_read_save_none
            !
            deallocate(phil,phir,dphil,dphir)
            !
-           !$omp parallel private(phivphi_t,phil,phir,dphil,dphir,alloc_p)
+           !$omp parallel private(phivphi_t,phil,phir,dphil,dphir,alloc_p,phil_leg,phir_leg)
            allocate (phivphi_t(0:npoints),phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints),stat=alloc_p)
            if (alloc_p/=0) then
               write (out,"(' Error ',i9,' trying to allocate array phivphi_t')") alloc_p
               stop 'me_numerov, phivphi_t  - out of memory'
            end if
            !
-           !$omp do private(vl,unitfname,io_slot,k,vr,Tcoeff,iterm,k1,k2,mat_t) schedule(dynamic)
+           if (trim(bs%type)=='LEGENDRE') then
+             allocate(phil_leg(0:trove%Npoints),phir_leg(0:trove%Npoints),&
+                      dphil_leg(0:trove%Npoints),dphir_leg(0:trove%Npoints),stat=alloc_p)
+             if (alloc_p/=0) then 
+                write (out,"('FLbset1DNew: phil_leg - out of memory')")
+                stop 'FLbset1DNew: phil_leg - out of memory'
+             endif 
+           endif
+           !
+           !$omp do private(vl,unitfname,io_slot,i,rho,k,vr,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
            do vl = 0,bs%Size
               !
               write(unitfname,"('Numerov basis set # ',i6)") nu_i
@@ -16604,13 +16616,36 @@ end subroutine check_read_save_none
               !
               read (io_slot,rec=vl+1) (phil(k),k=0,npoints),(dphil(k),k=0,npoints)
               !
+              if (trim(bs%type)=='LEGENDRE') then
+                 do i = 0,npoints
+                    rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                    phil_leg(i) = phil(i)
+                    phil(i) = sqrt(sin(rho))*phil(i)
+                    !
+                    dphil_leg(i) =  sin(rho)*dphil(i)+cos(rho)*0.5_ark*phil_leg(i)
+                    dphil(i) = sqrt(sin(rho))*dphil(i)
+                 enddo
+              endif
+              !
               do vr = 0,bs%Size
                   !
-                  if (vl==vr) then
-                      phir =  phil
-                     dphir = dphil
-                  else
-                     read (io_slot,rec=vr+1) (phir(k),k=0,npoints),(dphir(k),k=0,npoints)
+                  !if (vl==vr) then
+                  !    phir =  phil
+                  !   dphir = dphil
+                  !else
+                  read (io_slot,rec=vr+1) (phir(k),k=0,npoints),(dphir(k),k=0,npoints)
+                  !endif
+                  !
+                  if (trim(bs%type)=='LEGENDRE') then
+                     do i = 0,npoints
+                        rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                        !
+                        phir_leg(i) = phir(i)
+                        phir(i) = sqrt(sin(rho))*phir(i)
+                        !
+                        dphir_leg(i) =  sin(rho)*dphir(i)+cos(rho)*0.5_ark*phir_leg(i)
+                        dphir(i) = sqrt(sin(rho))*dphir(i)
+                     enddo
                   endif
                   !
                   Tcoeff = trove%poten%Ncoeff
@@ -16623,7 +16658,7 @@ end subroutine check_read_save_none
                     !
                   enddo
                   !
-                  ! vibraional kinetic energy part 
+                  ! vibraional kinetic energy part
                   !
                   do k1 = 1,Nmodes
                      !
@@ -16659,6 +16694,37 @@ end subroutine check_read_save_none
                     !
                   enddo
                   !
+                  ! redefine the rh-rho matrix element for LEGENDRE
+                  !
+                  if (trim(bs%type)=='LEGENDRE') then 
+                     !
+                     do k1 = 1,Nmodes-1
+                       !
+                       fl => trove%g_vib(k1,Nmodes)
+                       Tcoeff = fl%Ncoeff
+                       do iterm = 1,Tcoeff
+                          phivphi_t(:) = phil_leg(:)*fl%field(iterm,:)*dphir_leg(:)
+                          fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                       enddo
+                       !
+                       fl => trove%g_vib(Nmodes,k1)
+                       Tcoeff = fl%Ncoeff
+                       do iterm = 1,Tcoeff
+                          phivphi_t(:) = -dphil_leg(:)*fl%field(iterm,:)*phir_leg(:)
+                          fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                       enddo
+                       !
+                     enddo
+                     !
+                     fl => trove%g_vib(Nmodes,Nmodes)
+                     Tcoeff = fl%Ncoeff
+                     do iterm = 1,Tcoeff
+                        phivphi_t(:) =-dphil(:)*fl%field(iterm,:)*dphir(:)
+                        fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                     enddo
+                     !
+                  endif                  
+                  !
                   Tcoeff = trove%pseudo%Ncoeff
                   !
                   do iterm = 1,Tcoeff
@@ -16668,6 +16734,11 @@ end subroutine check_read_save_none
                      ! and it is also necessary in case of the singular solution to do so.
                      !
                      phivphi_t(:) =-2.0_ark*phil(:)*trove%pseudo%field(iterm,:)*phir(:)
+                     !
+                     ! Special basis set sqrt(sin(rho))L_n
+                     if (trim(bs%type)=='LEGENDRE') then 
+                       phivphi_t(:) =-2.0_ark*phil_leg(:)*trove%pseudo%field(iterm,:)*phir_leg(:)
+                     endif
                      !
                      mat_t = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                      !
@@ -16795,6 +16866,10 @@ end subroutine check_read_save_none
            !
            deallocate (phivphi_t,phil,phir,dphil,dphir)
            !$omp end parallel 
+
+           if (trim(bs%type)=='LEGENDRE') then
+             deallocate(phil_leg,phir_leg,stat=alloc_p)
+           endif
            !
            call TimerStop('Primitive matrix elements')
            !
@@ -17195,6 +17270,11 @@ end subroutine check_read_save_none
              !
              call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
+           else
+             !
+             write(out,"('FLbset1DNew: illegal type for RIGID case ',a)") trim(bs%type)
+             stop 'FLbset1DNew: illegal basis set type for RIGID'
+            !
            endif
            !
            deallocate (f1drho,g1drho,drho)
