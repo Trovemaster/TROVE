@@ -15747,7 +15747,7 @@ end subroutine check_read_save_none
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
-    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,kmax,nmax
+    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,kmax,nmax,krot1,krot2
     integer(ik)                 :: nl,nr,l
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
@@ -16532,8 +16532,8 @@ end subroutine check_read_save_none
              !
              !call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
              !
-             call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
-             !call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
+             !call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
+             call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
              !
              do i = 0,npoints
                 rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
@@ -16659,14 +16659,17 @@ end subroutine check_read_save_none
               if (trim(bs%type)=='LEGENDRE') then
                  !
                  nl = mod(vl,nmax+1)
-                 krot = (vl-nl)/(nmax+1)
+                 krot1 = (vl-nl)/(nmax+1)
                  !
                  do i = 0,npoints
                     rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
                     phil_leg(i) = phil(i)
-                    phil(i) = sqrt(sin(rho))*phil(i)
+                    phil(i) = sqrt(sin(rho))*phil(i)*sin(rho)**krot1
                     !
-                    dphil_leg(i) = cos(rho)*0.5_ark*phil_leg(i)-sin(rho)*dphil(i)-cos(rho)*phil_leg(i)*real(krot,ark)
+                    !dphil_leg(i) = cos(rho)*0.5_ark*phil_leg(i)+sin(rho)*dphil(i)+cos(rho)*phil_leg(i)*real(krot,ark)
+                    !
+                    dphil_leg(i) = cos(rho)*0.5_ark*phil_leg(i)+sin(rho)*dphil(i)
+                    !
                     !dphil(i) = dphil(i)
                  enddo
               endif
@@ -16683,6 +16686,7 @@ end subroutine check_read_save_none
                   if (trim(bs%type)=='LEGENDRE') then
                      !
                      nr = mod(vr,nmax+1)
+                     krot2 = (vr-nr)/(nmax+1)
                      !
                      !if ( krot/=(vr-nr)/(nmax+1) ) cycle
                      !
@@ -16694,9 +16698,11 @@ end subroutine check_read_save_none
                         rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
                         !
                         phir_leg(i) = phir(i)
-                        phir(i) = sqrt(sin(rho))*phir(i)
+                        phir(i) = sqrt(sin(rho))*phir(i)*sin(rho)**krot2
                         !
-                        dphir_leg(i) = cos(rho)*0.5_ark*phir_leg(i)-sin(rho)*dphir(i)-cos(rho)*phir_leg(i)*real(krot,ark)
+                        !dphir_leg(i) = cos(rho)*0.5_ark*phir_leg(i)+sin(rho)*dphir(i)+cos(rho)*phir_leg(i)*real(krot,ark)
+                        !
+                        dphir_leg(i) = cos(rho)*0.5_ark*phir_leg(i)+sin(rho)*dphir(i)
                         !
                         !dphir(i) = sqrt(sin(rho))*dphir(i)
                      enddo
@@ -16757,14 +16763,14 @@ end subroutine check_read_save_none
                        fl => trove%g_vib(k1,Nmodes)
                        Tcoeff = fl%Ncoeff
                        do iterm = 1,Tcoeff
-                          phivphi_t(:) =-phil_leg(:)*fl%field(iterm,:)*dphir_leg(:)
+                          phivphi_t(:) =-phil_leg(:)*fl%field(iterm,:)*dphir_leg(:)*sinrho(:)**krot1
                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                        enddo
                        !
                        fl => trove%g_vib(Nmodes,k1)
                        Tcoeff = fl%Ncoeff
                        do iterm = 1,Tcoeff
-                          phivphi_t(:) = dphil_leg(:)*fl%field(iterm,:)*phil_leg(:)
+                          phivphi_t(:) = dphil_leg(:)*fl%field(iterm,:)*phil_leg(:)*sinrho(:)**krot2
                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                        enddo
                        !
@@ -16773,9 +16779,12 @@ end subroutine check_read_save_none
                      fl => trove%g_vib(Nmodes,Nmodes)
                      Tcoeff = fl%Ncoeff
                      do iterm = 1,Tcoeff
-                        phivphi_t(:) =-fl%field(iterm,:)*( dphil(:)*dphiR(:)*sinrho(:)-&
-                        real(krot,ark)*( dphil(:)*phir_leg(:)+phil_leg(:)*dphir(:) )*cosrho(:) )
-                        fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                        !
+                        !phivphi_t(:) =-fl%field(iterm,:)*( dphil(:)*dphiR(:)*sinrho(:)-&
+                        !real(krot,ark)*( dphil(:)*phir_leg(:)+phil_leg(:)*dphir(:) )*cosrho(:) )
+                        !fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                        !
+                        phivphi_t(:) =-fl%field(iterm,:)*dphil(:)*dphiR(:)*sinrho(:)
                         !
                         ! add the mu_zz k^2 part here and delete from the rotational part
                         !phivphi_t(:) =phil_leg(:)*trove%g_rot(3,3)%field(iterm,:)*phir_leg(:)*real(krot*krot,ark)
@@ -16797,7 +16806,10 @@ end subroutine check_read_save_none
                      !
                      ! Special basis set sqrt(sin(rho))L_n
                      if (trim(bs%type)=='LEGENDRE') then 
-                       phivphi_t(:) =-2.0_ark*phil_leg(:)*trove%pseudo%field(iterm,:)*phir_leg(:)
+                       !phivphi_t(:) =-2.0_ark*phil_leg(:)*trove%pseudo%field(iterm,:)*phir_leg(:)
+                       !
+                       phivphi_t(:) =-2.0_ark*phil_leg(:)*trove%pseudo%field(iterm,:)*phir_leg(:)*sinrho(:)**(krot1+krot2)
+                       !                       
                      endif
                      !
                      mat_t = simpsonintegral_ark(npoints,rho_range,phivphi_t)
@@ -16869,28 +16881,38 @@ end subroutine check_read_save_none
                      enddo
                      !
                      ! Special basis set sqrt(sin(rho))L_n
-                     if (trim(bs%type)=='LEGENDRE') then 
+                     if (trim(bs%type)=='LEGENDRE'.and.krot1+krot2>0) then 
                        !
-                       do k2 = 1,2
-                         !
-                         fl => trove%g_rot(k2,3)
-                         do iterm = 1,fl%Ncoeff
-                           phivphi_t(:) =phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
-                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
-                         enddo
-                         fl => trove%g_rot(3,k2)
-                         do iterm = 1,fl%Ncoeff
-                           phivphi_t(:) =phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
-                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                       do k1 = 1,3
+                         do k2 = 1,3
+                           !
+                           fl => trove%g_rot(k1,k2)
+                           !
+                           if (k1==3.and.k2==3) then
+                             !
+                             do iterm = 1,fl%Ncoeff
+                               phivphi_t(:) = phil_leg(:)*fl%field(iterm,:)*phir_leg(:)*sinrho(:)**(krot1+krot2-1)
+                               fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                             enddo
+                             !
+                           elseif (k1==3.or.k2==3) then
+                             !
+                             do iterm = 1,fl%Ncoeff
+                               phivphi_t(:) =phil_leg(:)*fl%field(iterm,:)*phir_leg(:)*sinrho(:)**(krot1+krot2)
+                               fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                             enddo
+                             !
+                           endif
+                           !
                          enddo
                        enddo
                        !
-                       fl => trove%g_rot(3,3)
-                       !fl%me(:,vl,vr) = 0 
-                       do iterm = 1,fl%Ncoeff
-                         phivphi_t(:) = -phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
-                         fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
-                       enddo
+                       !fl => trove%g_rot(3,3)
+                       !!fl%me(:,vl,vr) = 0 
+                       !do iterm = 1,fl%Ncoeff
+                       !  phivphi_t(:) = phil_leg(:)*fl%field(iterm,:)*phir_leg(:)*sinrho(:)**(2*k)
+                       !  fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                       !enddo
                        !
                      endif
                      !
@@ -16933,7 +16955,7 @@ end subroutine check_read_save_none
                           !
                           do iterm = 1,Tcoeff
                              !
-                             phivphi_t(:) = fl%field(iterm,:)*( phil_leg(:)*dphir_leg(:) - dphil_leg(:)*phir_leg(:))
+                             phivphi_t(:) = fl%field(iterm,:)*( phil_leg(:)*dphir_leg(:)*sinrho(:)**krot1 - dphil_leg(:)*phir_leg(:)*sinrho(:)**krot2 )
                              !
                              fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                              !

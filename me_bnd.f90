@@ -2261,7 +2261,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(i)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(:)**(2*k-1)
                 !
                 mu_zz_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -2378,7 +2378,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*sinrho(i)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*sinrho(:)**(2*k-1)
                 !
                 mu_zz_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
