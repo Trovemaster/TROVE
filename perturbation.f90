@@ -693,7 +693,7 @@ module perturbation
         write (out,"(/' Error ',i9,' trying to allocate BasissetType')") alloc
         stop 'PTactive_space_init, BasissetType - out of memory'
     end if
-
+    !
     PT%BasissetType(0:Nmodes)     = bs_t(0:Nmodes)%type
     !
     if (job%verbose>=4) then 
@@ -726,7 +726,7 @@ module perturbation
     ! 
     nu_max(1:Nmodes) = nu_min(1:Nmodes) + PT%Norder *job%PTDeltaQuanta
     !
-    ! and then adjusted the PT%range number
+    ! and then adjusted the PT%range number 
     ! 
     nu_max(1:Nmodes) = min(PT%range(2,1:Nmodes),nu_max(1:Nmodes))
     !
@@ -758,8 +758,8 @@ module perturbation
     ! Adjust Npolyads to the new estimated value 
     !
     !PT%Npolyads = PT%Polyad_max
-        Npolyads = PT%Polyad_max
-        Npolyads1 = Npolyads+1
+    Npolyads = PT%Polyad_max
+    Npolyads1 = Npolyads+1
     !
     ! Be verbose !
     !
@@ -1673,7 +1673,11 @@ module perturbation
               !
               !lquant = lquant + sym%lquant(kgamma)
               !
+              !if (trim(job%bset(PT%Nmodes)%type)=='LEGENDRE') then
+              !   lquant = lquant + contr(kclass)%eigen(v_search(kclass))%nu(0) 
+              !else
               lquant = lquant + contr(kclass)%eigen(v_search(kclass))%lquant 
+              !endif
               ! 
             enddo
             !
@@ -1681,7 +1685,9 @@ module perturbation
           !
           if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
               ! LINEAR MOLECULE -> requires optimization !!!
-              .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) ) ) then
+              .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0 ) ) ) ) then
+             ! .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0.or.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.or..not.job%vib_contract ) ) ) ) then
+             ! .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0.and.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE' ) ) ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
              ! .and.(trove%lincoord==0.or.( v_search(0)==contr(0)%nlevels.or.v_search(0)==contr(0)%nlevels-1 ) ) ) then
             !
@@ -2609,7 +2615,7 @@ module perturbation
          !
          imode = PT%mode_class(iclasses,i)
          bs_t(imode)%range(:) = job%bset(imode)%range(:) 
-         bs_t(imode)%res_coeffs = job%bset(imode)%res_coeffs/res_min
+         bs_t(imode)%res_coeffs = job%bset(imode)%res_coeffs !/res_min
          bs_t(imode)%dvrpoints = job%bset(imode)%dvrpoints
          !
          ! if specified in the input we solve  a reduced quadratic model  
@@ -3237,6 +3243,10 @@ module perturbation
                contr(iclasses)%eigen(ilevel)%lquant  = sym%lquant(gamma)
              endif
              !
+             !if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+             !  contr(iclasses)%eigen(ilevel)%nu(0) = contr(iclasses)%eigen(ilevel)%lquant
+             !endif
+             !
              ! assume at this stage that the normal quanta are identical with the local quanta
              !
              !contr(iclasses)%eigen(ilevel)%normal(:)   = contr(iclasses)%eigen(ilevel)%nu(:)
@@ -3249,6 +3259,12 @@ module perturbation
              !
              if (PT%mode_iclass(iclasses)>1) then
                imode = PT%mode_class(iclasses,2)
+               contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+             endif
+             !
+             if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+               contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
+               imode = PT%mode_class(iclasses,1)
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
@@ -7560,7 +7576,7 @@ module perturbation
       !
       read(chkptIO) ncontr
       !
-      if (jrot==0.and.PT%Maxcontracts/=ncontr) then
+      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.and.job%vib_contract ) ) then
         write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") PT%Maxcontracts,ncontr
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
@@ -23808,7 +23824,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV')
+      case ('NUMEROV','LEGENDRE','FOURIER')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
@@ -29644,6 +29660,10 @@ end subroutine read_contr_matelem_expansion_classN
            contr(iclasses)%eigen(ilevel)%nu(0:PT%Nmodes) = nu(0:PT%Nmodes)
            contr(iclasses)%eigen(ilevel)%normal(0:PT%Nmodes) = normal(0:PT%Nmodes)
            !
+           if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
+             contr(iclasses)%eigen(ilevel)%lquant = normal(0)
+           endif
+           !
            gamma = isym
            !
            contr(iclasses)%eigen(ilevel)%gamma = trim(sym%label(gamma))
@@ -29920,7 +29940,7 @@ end subroutine read_contr_matelem_expansion_classN
     character(len=cl):: diagonalizer_used
     real(rk)  :: upper_ener,factor
     !
-    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,k_j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
     !
     type(PTcoeffsT),pointer    ::  cf
     !
@@ -29938,6 +29958,7 @@ end subroutine read_contr_matelem_expansion_classN
     integer(ik)        :: icount,ideg,jdeg,jroot,iroot_in,iroot,Ndeg,Ncount
     real(rk)           :: largest_coeff
     logical            :: postprocess
+    integer(ik)        :: kmax, nmax,n_i,n_j,v_i,v_j,k_i,k_j
     !
     Nmodes = PT%Nmodes
     !
@@ -29986,11 +30007,19 @@ end subroutine read_contr_matelem_expansion_classN
     call ArrayStart('PThamiltonianMat_a',alloc,size(a),kind(a))
     call ArrayStart('PThamiltonianMat_b',alloc,size(b),kind(b))
     !
+    a = 0
+    !
     ! vibrational angular momentum
     !
     if (jrot<0) then
      allocate (c(dimen,dimen),stat=alloc)
      call ArrayStart('PThamiltonianMat_c',alloc,size(c),kind(c))
+    endif
+    !
+    kmax = job%bset(0)%range(2)
+    nmax = job%bset(Nmodes)%range(2)
+    if ( kmax/=0 ) then 
+      nmax = (job%bset(Nmodes)%range(2)+1)/(kmax+1)-1
     endif
     !
     if (job%verbose>=3) then 
@@ -30004,9 +30033,25 @@ end subroutine read_contr_matelem_expansion_classN
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
+      ! singularity resolved by Associayed Legendres
+      if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+        v_i = nu_i(Nmodes)
+        n_i = mod(v_i,nmax+1)
+        k_i = (v_i-n_i)/(nmax+1)
+        !nu_i(nmodes) = n_i
+      endif
+      !
       do j = i,dimen
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
+        !
+        if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+          v_j = nu_j(Nmodes)
+          n_j = mod(v_j,nmax+1)
+          k_j = (v_j-n_j)/(nmax+1)
+          !nu_j(nmodes) = n_j
+          if (k_i/=k_j) cycle
+        endif
         !
         ! Matrix elements 
         !
@@ -30233,6 +30278,14 @@ end subroutine read_contr_matelem_expansion_classN
        !
        nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
        PT%quanta%icoeffs(ib,:) = nu_i(:)
+       !
+       if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+         v_i = nu_i(Nmodes)
+         n_i = mod(v_i,nmax+1)
+         k_i = (v_i-n_i)/(nmax+1)
+         PT%lquant%icoeffs(ib,1)=k_i
+         PT%quanta%icoeffs(ib,Nmodes) = n_i
+       endif
        !
        termvalue = b(ib)-ZPE
        !
@@ -32577,6 +32630,11 @@ end subroutine read_contr_matelem_expansion_classN
           contr(1)%eigen(ilevel)%isym     = eigen(ilevel)%igamma
           contr(1)%eigen(ilevel)%gamma    = trim(sym%label(eigen(ilevel)%igamma))
           contr(1)%eigen(ilevel)%largest_coeff    = eigen(ilevel)%largest_coeff
+          contr(1)%eigen(ilevel)%lquant = sym%lquant(contr(1)%eigen(ilevel)%isym)
+          !
+          if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
+            contr(1)%eigen(ilevel)%lquant = eigen(ilevel)%normal(0)
+          endif
           !
           do ideg = 1,eigen(ilevel)%ndeg
             !

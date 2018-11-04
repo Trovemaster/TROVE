@@ -888,7 +888,8 @@ module pot_xy3
       y4=(2.0_ark*alpha1-alpha2-alpha3)/sqrt(6.0_ark)
       y5=(alpha2-alpha3)/sqrt(2.0_ark)
       !
-      f = poten_xy3_morbid_10(y1,y2,y3,y4,y5,coro,force)
+      !f = poten_xy3_morbid_10(y1,y2,y3,y4,y5,coro,force)
+      f = poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force)
       !
       if (verbose>=6) write(out,"('MLpoten_xy3_morbid_10/end')") 
  
@@ -8840,6 +8841,51 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
  
  end function MLpoten_xy3_morbid_morphing
 
+
+
+function poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force) result (f)
+   !
+   real(ark),intent(in) ::  y1,y2,y3,y4,y5,coro
+   real(ark),intent(in) ::  force(:)
+   real(ark)            ::  f
+   !
+   integer(ik)          :: N
+
+   real(ark)            ::  v0,v1,v2,v3,v4,v5,v6
+   
+      !
+   real(ark)            ::  s1,s2,s3,s4,s5,tau
+      !
+   real(ark)            ::  &      
+      ve  ,  f0a1,f0a11,f0a12,f0a14,f0a44,x,core
+
+      N = size(force)
+      !
+      ve         = force(  1)
+      f0a11      = force(  2)
+      f0a12      = force(  3)
+      f0a14      = force(  4)
+      f0a44      = force(  5)
+
+      !
+      core = cos(0.38527731_ark)
+      !
+      x = asin(core-coro)
+      !
+      v2 = (y2**2+y3**2+y1**2)*f0a11   &                                                                &
+       +(-sqrt(3.0_ark)*y3*y5/2.0_ark-y3*y4/2.0_ark+y1*y4+sqrt(3.0_ark)*y2*y5/2.0_ark-y2*y4/2.0_ark)*f0a14 &
+       +(y5**2+y4**2)*f0a44
+      !
+      V0 = 3.2583150561068*10**5*(.92474543485090061154-sin(x))**2 &
+           -4.0947687262644*10**5*(.92474543485090061154-sin(x))**3 &
+          + 1.00144017931265*10**6*(.92474543485090061154-sin(x))**4 &
+          - 1.47925562630875*10**6*(.92474543485090061154-sin(x))**5 &
+          + 2.15175445893997*10**6*(.92474543485090061154-sin(x))**6
+      !
+      f =  ve+v0+v2
+
+
+  end function poten_xy3_Per_1D
 
 
 end module pot_xy3   

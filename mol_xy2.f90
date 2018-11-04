@@ -1281,8 +1281,118 @@ module mol_xy2
  
           end select 
           !
-       end select
+       case('DNH','DNH(M)')
           !
+          ! Number of eq. rotations 
+          Nrot = sym%N
+          !
+          ! Number of Cn classes 
+          N_Cn = sym%N/2
+          !
+          ! for odd Dnh groups
+          !
+          if (mod(sym%N,2)==1) then
+              stop 'ML_symmetry_transformation_XY2: DNH odd for R1-R2-Y+X is not implemented' 
+          endif
+          !
+          !qx= 1
+          !qy= 1
+          !q2x= 2
+          !q2y= -2
+          !
+          NC2 = sym%N/2
+          N_Cn = sym%N/2-1
+          !
+          if (ioper==1) then ! E 
+            !
+            dst = src
+            !
+          elseif (ioper<=1+2*N_Cn+1) then ! Cn x 2 x(n/2-1), C2 only once
+            !
+            ioper_ =ioper-1 
+            irot = (ioper_+1)/2
+            !
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=2+2*N_Cn+NC2) then !  C'2
+            !
+            irot =ioper-(2+2*N_Cn)-1
+            !
+            phi_n = phi*irot*2.0_ark
+            !
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=2+2*N_Cn+2*NC2) then !  C2"
+            !
+            irot =ioper-(2+2*N_Cn+NC2)-1
+            !
+            !phi_n =(irot*2.0_ark-1.0_ark)*phi*0.5_ark
+            !
+            phi_n = phi*(2*irot+1)
+            !
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+            !
+          elseif (ioper==3+2*N_Cn+2*NC2) then ! i
+            !
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=3+4*N_Cn+2*NC2) then !  2xnxSn
+            !
+            ioper_ =ioper-(3+2*N_Cn+2*NC2)
+            irot = (ioper_+1)/2
+            !
+            phi_n = phi*irot
+            !
+            ! Second oper in a class is with negative phi
+            if (mod(ioper_,2)==0)  phi_n = -phi_n
+            !
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=4+4*N_Cn+2*NC2) then !  sigmah
+            !
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=4+4*N_Cn+3*NC2) then !  sigmav
+            !
+            irot = ioper-(4+4*N_Cn+2*NC2)-1
+            !
+            phi_n = phi*irot*2.0_ark
+            !
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+            !
+          elseif (ioper<=4+4*N_Cn+4*NC2) then !  sigmad
+            !
+            irot = ioper-(4+4*N_Cn+3*NC2)-1
+            !
+            phi_n = (2*irot+1)*phi
+            !
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+            !
+          else
+            !
+            write (out,"('ML_symmetry_transformation_abcd  in Dinfty: operation ',i8,' unknown')") ioper
+            stop 'ML_symmetry_transformation_abcd Dinfty - bad operation. type'
+            !         
+          endif 
+          !
+       end select
+       !
     case('R12-R')
        !
        select case(trim(molec%symmetry))

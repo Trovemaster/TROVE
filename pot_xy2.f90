@@ -2083,13 +2083,14 @@ endif
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
    !
-   real(rk)            :: r12,r32,alpha,xcos,v
+   real(rk)               :: r12,r32,alpha,xcos,v
+   real(rk),parameter     :: tocm = 219474.63067_ark
    !
    if (verbose>=6) write(out,"('MLpoten_xy2_tennys/start')") 
 
 
-     write (out,"('MLpoten_xy2_dmbe: is turned off')")
-     stop 'MLpoten_xy2_dmbe: PES is turned off'
+     !write (out,"('MLpoten_xy2_dmbe: is turned off')")
+     !stop 'MLpoten_xy2_dmbe: PES is turned off'
 
 
      r12 = local(1)/bohr ; r32 = local(2)/bohr ;  alpha = local(3)
@@ -2100,8 +2101,8 @@ endif
        ! 
        xcos = cos(alpha)
        !
-       !call potv(v,r12,r32,xcos)
-       v = 0 
+       call potv(v,r12,r32,xcos)
+       v = v*tocm
        !
      elseif(molec%AtomMasses(1)>31.9_rk.and.molec%AtomMasses(1)<36.0_rk) then 
        !

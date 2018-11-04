@@ -6,7 +6,7 @@ module fields
    use molecules
    use lapack
    use me_str
-   use me_bnd, only : ME_box,ME_Fourier,ME_Legendre
+   use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial
    use me_numer
    use me_rot
    use timer
@@ -1405,6 +1405,7 @@ module fields
            case("ZPE")
              !
              call readf(job%partfunc%zpe)
+             job%zpe = job%partfunc%zpe
              !
            case("GNS")
              !
@@ -1889,6 +1890,13 @@ module fields
            call read_line(eof) ; if (eof) exit
            !
          end do
+         !
+         ! special case of Assoc Legendre 
+         !
+         if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then 
+            job%bset(Nmodes)%range(2) = (job%bset(Nmodes)%range(2)+1)*(job%bset(0)%range(2)+1)-1
+            job%bset(Nmodes)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
+         endif 
          !
          call readu(w)
          !
@@ -13028,7 +13036,7 @@ end subroutine check_read_save_none
                  call ArrayStart('bs%matelements-rot',alloc,size(bs%matelements),kind(bs%matelements))
                  call ArrayStart('bs%ener0-rot',alloc,size(bs%ener0),kind(bs%ener0))
                  !
-               endif 
+               endif
                !
                allocate (matelements_t(7,isize+1,-2:2,0:1),ener0_t(0:isize),stat=alloc)
                !
@@ -13063,7 +13071,7 @@ end subroutine check_read_save_none
                bs%params(1:3) = b_param_t(1:3)
                bs%ener0(0:isize) = ener0_t(0:isize)
                !
-             endif 
+             endif
              !
              deallocate(matelements_t,ener0_t)
              !
@@ -13398,7 +13406,7 @@ end subroutine check_read_save_none
           !
           imode = bs%mode(1)
           !
-          if(bset%dscr(imode)%type/='NUMEROV') cycle
+          if(all(bset%dscr(imode)%type/=(/'NUMEROV','FOURIER','LEGENDRE'/))) cycle
           !
           write(unitfname,"('Numerov basis set # ',i6)") imode
           ! get the i/o unit with stored numerov basis functions
@@ -13410,6 +13418,8 @@ end subroutine check_read_save_none
           bs_size  = job%bset(imode)%range(2) 
           !
           do v = 0,bs_size+1
+            !
+            if(v>bs_size.and.bset%dscr(imode)%type/='NUMEROV') cycle
             !
             ! copy:
             read (io_slot,rec=v+1) (bs_funct(i),i=0,npoints),(dbs_funct(i),i=0,npoints)
@@ -13472,7 +13482,7 @@ end subroutine check_read_save_none
           !
           itype_t = itype_stored(imode)
           !
-          if(bset%dscr(imode)%type/='NUMEROV') cycle
+          if(all(bset%dscr(imode)%type/=(/'NUMEROV','FOURIER','LEGENDRE'/))) cycle
           !
           npoints = job%bset(imode)%npoints
           !
@@ -13486,6 +13496,8 @@ end subroutine check_read_save_none
           open(unit=io_slot,status='scratch',access='direct',recl=rec_len)
           !
           do v = 0,bs_size+1
+            !
+            if(v>bs_size.and.bset%dscr(imode)%type/='NUMEROV') cycle
             !
             ! copy:
             vrec = itype_t+v*ntypes_stored !bset%n_bset1D_max
@@ -15735,7 +15747,8 @@ end subroutine check_read_save_none
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
-    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot
+    integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,kmax,nmax
+    integer(ik)                 :: nl,nr,l
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,rmk,amorse
@@ -15744,7 +15757,7 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -15857,6 +15870,8 @@ end subroutine check_read_save_none
         !
         allocate (trove%poten%me(Tcoeff,0:bs%Size,0:bs%Size),stat=alloc)
         call ArrayStart('trove%poten%me',alloc,size(fl%me),kind(fl%me))
+        !
+        trove%poten%me = 0
         !
         ialloc = ialloc+abs(alloc)
         !
@@ -16385,7 +16400,7 @@ end subroutine check_read_save_none
            !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
            ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
-           if (isingular>=0) then 
+           if (isingular>=0.and..not.trim(bs%type)=='LEGENDRE') then 
              !        
              rho_switch = trove%specparam(nu_i)
              iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
@@ -16432,7 +16447,7 @@ end subroutine check_read_save_none
              !
            endif
            !
-           if (.not.trove%DVR.or.reduced_model) then
+           if (.not.trim(bs%type)=='LEGENDRE'.and..not.trove%DVR.or.reduced_model) then
              !
              ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
              ! g_rot(z,z)%field(1,:)*Krot**2
@@ -16501,7 +16516,32 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='LEGENDRE') then 
              !
-             call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
+             kmax = job%bset(0)%range(2)
+             nmax = bs%Size
+             if ( kmax/=0 ) then 
+               nmax = (bs%Size+1)/(kmax+1)-1
+             endif
+             !
+             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),stat=alloc)
+             if (alloc/=0) then
+                write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
+                stop 'FLbset1DNew, muzz - out of memory'
+             end if
+             !
+             muzz = trove%g_rot(3,3)%field(1,0:npoints)
+             !
+             !call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
+             !
+             call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
+             !call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
+             !
+             do i = 0,npoints
+                rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                sinrho(i) = sin(rho)
+                cosrho(i) = cos(rho)
+             enddo
+             !
+             deallocate(muzz)
              !
            elseif (trim(bs%type)=='FOURIER') then 
              !
@@ -16617,13 +16657,17 @@ end subroutine check_read_save_none
               read (io_slot,rec=vl+1) (phil(k),k=0,npoints),(dphil(k),k=0,npoints)
               !
               if (trim(bs%type)=='LEGENDRE') then
+                 !
+                 nl = mod(vl,nmax+1)
+                 krot = (vl-nl)/(nmax+1)
+                 !
                  do i = 0,npoints
                     rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
                     phil_leg(i) = phil(i)
                     phil(i) = sqrt(sin(rho))*phil(i)
                     !
-                    dphil_leg(i) =  sin(rho)*dphil(i)+cos(rho)*0.5_ark*phil_leg(i)
-                    dphil(i) = sqrt(sin(rho))*dphil(i)
+                    dphil_leg(i) = cos(rho)*0.5_ark*phil_leg(i)-sin(rho)*dphil(i)-cos(rho)*phil_leg(i)*real(krot,ark)
+                    !dphil(i) = dphil(i)
                  enddo
               endif
               !
@@ -16637,14 +16681,24 @@ end subroutine check_read_save_none
                   !endif
                   !
                   if (trim(bs%type)=='LEGENDRE') then
+                     !
+                     nr = mod(vr,nmax+1)
+                     !
+                     !if ( krot/=(vr-nr)/(nmax+1) ) cycle
+                     !
+                     !  write(out,"('inconsistent k in vr',2i8,' for vr,nr = ',2i5)") krot,(vr-nr-1)/(nmax+1),vr,nr
+                     !  stop 'Inconsistent kl and kr'
+                     !endif
+                     !
                      do i = 0,npoints
                         rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
                         !
                         phir_leg(i) = phir(i)
                         phir(i) = sqrt(sin(rho))*phir(i)
                         !
-                        dphir_leg(i) =  sin(rho)*dphir(i)+cos(rho)*0.5_ark*phir_leg(i)
-                        dphir(i) = sqrt(sin(rho))*dphir(i)
+                        dphir_leg(i) = cos(rho)*0.5_ark*phir_leg(i)-sin(rho)*dphir(i)-cos(rho)*phir_leg(i)*real(krot,ark)
+                        !
+                        !dphir(i) = sqrt(sin(rho))*dphir(i)
                      enddo
                   endif
                   !
@@ -16703,14 +16757,14 @@ end subroutine check_read_save_none
                        fl => trove%g_vib(k1,Nmodes)
                        Tcoeff = fl%Ncoeff
                        do iterm = 1,Tcoeff
-                          phivphi_t(:) = phil_leg(:)*fl%field(iterm,:)*dphir_leg(:)
+                          phivphi_t(:) =-phil_leg(:)*fl%field(iterm,:)*dphir_leg(:)
                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                        enddo
                        !
                        fl => trove%g_vib(Nmodes,k1)
                        Tcoeff = fl%Ncoeff
                        do iterm = 1,Tcoeff
-                          phivphi_t(:) = -dphil_leg(:)*fl%field(iterm,:)*phir_leg(:)
+                          phivphi_t(:) = dphil_leg(:)*fl%field(iterm,:)*phil_leg(:)
                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                        enddo
                        !
@@ -16719,9 +16773,15 @@ end subroutine check_read_save_none
                      fl => trove%g_vib(Nmodes,Nmodes)
                      Tcoeff = fl%Ncoeff
                      do iterm = 1,Tcoeff
-                        phivphi_t(:) =-dphil(:)*fl%field(iterm,:)*dphir(:)
+                        phivphi_t(:) =-fl%field(iterm,:)*( dphil(:)*dphiR(:)*sinrho(:)-&
+                        real(krot,ark)*( dphil(:)*phir_leg(:)+phil_leg(:)*dphir(:) )*cosrho(:) )
                         fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                        !
+                        ! add the mu_zz k^2 part here and delete from the rotational part
+                        !phivphi_t(:) =phil_leg(:)*trove%g_rot(3,3)%field(iterm,:)*phir_leg(:)*real(krot*krot,ark)
+                        !fl%me(iterm,vl,vr) =  fl%me(iterm,vl,vr) - simpsonintegral_ark(npoints,rho_range,phivphi_t)
                      enddo
+                     !
                      !
                   endif                  
                   !
@@ -16808,6 +16868,32 @@ end subroutine check_read_save_none
                         !
                      enddo
                      !
+                     ! Special basis set sqrt(sin(rho))L_n
+                     if (trim(bs%type)=='LEGENDRE') then 
+                       !
+                       do k2 = 1,2
+                         !
+                         fl => trove%g_rot(k2,3)
+                         do iterm = 1,fl%Ncoeff
+                           phivphi_t(:) =phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
+                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                         enddo
+                         fl => trove%g_rot(3,k2)
+                         do iterm = 1,fl%Ncoeff
+                           phivphi_t(:) =phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
+                           fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                         enddo
+                       enddo
+                       !
+                       fl => trove%g_rot(3,3)
+                       !fl%me(:,vl,vr) = 0 
+                       do iterm = 1,fl%Ncoeff
+                         phivphi_t(:) = -phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
+                         fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                       enddo
+                       !
+                     endif
+                     !
                      ! Coriolis part
                      !
                      do k1 = 1,Nmodes
@@ -16836,6 +16922,27 @@ end subroutine check_read_save_none
                        enddo
                        !
                      enddo
+                     !
+                     if (trim(bs%type)=='LEGENDRE') then
+                       !
+                       do k2 = 1,3
+                          !
+                          fl => trove%g_cor(Nmodes,k2)
+                          !
+                          Tcoeff = fl%Ncoeff
+                          !
+                          do iterm = 1,Tcoeff
+                             !
+                             phivphi_t(:) = fl%field(iterm,:)*( phil_leg(:)*dphir_leg(:) - dphil_leg(:)*phir_leg(:))
+                             !
+                             fl%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                             !
+                             !
+                          enddo
+                          !
+                       enddo
+                       !
+                     endif
                      !
                   endif
                   !
@@ -16868,7 +16975,7 @@ end subroutine check_read_save_none
            !$omp end parallel 
 
            if (trim(bs%type)=='LEGENDRE') then
-             deallocate(phil_leg,phir_leg,stat=alloc_p)
+             deallocate(phil_leg,phir_leg,sinrho,cosrho,stat=alloc_p)
            endif
            !
            call TimerStop('Primitive matrix elements')
@@ -16876,7 +16983,6 @@ end subroutine check_read_save_none
            if (job%verbose>=3) call TimerReport
            !
            deallocate (f1drho,g1drho,phivphi,weight)
-           !close(nfilenumerov)
            !
         else
            !
