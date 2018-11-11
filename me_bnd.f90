@@ -2005,7 +2005,7 @@ module me_bnd
    !
    character(len=cl)    :: unitfname 
      !
-     if (verbose>=3) write (out,"(/20('*'),' Legendre real functions primitive matrix elements calculations')")
+     if (verbose>=3) write (out,"(/20('*'),' Pseudo Associate Legendre functions primitive matrix elements calculations')")
      !
      ! global variables 
      !
@@ -2123,117 +2123,145 @@ module me_bnd
        !
        do vl =  0,nmax
          !
-         do i=0,npoints
-            !
-            rho_ = rho(i)
-            !
-            L(i,vl) = cosrho(i)**vl
-            if (vl>0) dL(i,vl) = -real(vl,ark)*cosrho(i)**(vl-1)*sinrho(i)
-            !
-            Psi(vl+1,i) = L(i,vl)*sqrt(sinrho(i))*sinrho(i)**k
-            !
-            phivphi(i) = psi(vl+1,i)*psi(vl+1,i)
-            !
-         enddo
+         L(:,vl) = x(:)**vl
          !
-         factor = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-         Psi(vl+1,:) = 1.0_ark/sqrt(factor)*Psi(vl+1,:)
-         L(:,vl) = L(:,vl)/sqrt(factor)
-         dL(:,vl) = dL(:,vl)/sqrt(factor)
+         if (vl>0) dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
+         !
+         Psi(vl+1,:) = L(:,vl)*sqrt(sinrho(:))*sinrho(:)**k
+         !
+         !phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
+         !
+         !factor = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+         !Psi(vl+1,:) = 1.0_ark/sqrt(factor)*Psi(vl+1,:)
+         !L(:,vl) = L(:,vl)/sqrt(factor)
+         !dL(:,vl) = dL(:,vl)/sqrt(factor)
          !
        enddo
        !
        ! building the overlap matrix and diagonalizing it
        !
-       do vl = 0,nmax
-          !
-          do vr = vl,nmax
-              !
-              ! check orthagonality and noralisation
-              !
-              phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
-              !
-              h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-              h(vr+1,vl+1) = h(vl+1,vr+1)
-              !
-          enddo
-       enddo
+       !do vl = 0,nmax
+       !   !
+       !   do vr = vl,nmax
+       !       !
+       !       ! check orthagonality and noralisation
+       !       !
+       !       phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
+       !       !
+       !       h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+       !       h(vr+1,vl+1) = h(vl+1,vr+1)
+       !       !
+       !   enddo
+       !enddo
        !
-       call lapack_syev(h,ener)
+       ! orthogonalisation using the weight sqrt(sin(rho))*sin(rho)^k
        !
-       vect = h
-       !
-       ! orthononalisation using the weight sqrt(sin(rho))*sin(rho)^k
-       !
-       do vl =  1,nmax1
+       do vl =  0,nmax
          !
-         cross_prod = sum(vect(:,vl)*vect(:,vl))
+         phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
+         cross_prod = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+         !
+         !cross_prod = sum(psi(vl+1,:)*psi(vl+1,:))*rhostep
          !
          factor = 1.0_ark/sqrt(cross_prod)
          !
-         vect(:,vl) = vect(:,vl)*factor
+         psi(vl+1,:) = psi(vl+1,:)*factor
+         L(:,vl)  =  L(:,vl)*factor
+         dL(:,vl) = dL(:,vl)*factor
          !
-         do vr = vl+1,nmax1
+         do vr = vl+1,nmax
            !
-           cross_prod = sum(vect(:,vl)*vect(:,vr))
+           phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
+           cross_prod = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
-           vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
+           !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
+           !
+           psi(vr+1,:) = psi(vr+1,:)-cross_prod*psi(vl+1,:)
+           !
+           phivphi(:) = psi(vr+1,:)*psi(vr+1,:)
+           factor = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+           !
+           !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
+           !
+           factor = 1.0_ark/sqrt(factor)
+           psi(vr+1,:) = psi(vr+1,:)*factor
+           L(:,vr)   = ( L(:,vr)-cross_prod* L(:,vl))*factor
+           dL(:,vr)  = (dL(:,vr)-cross_prod*dL(:,vl))*factor
            ! 
          enddo
          !
-         cross_prod = sum(vect(:,vl)*vect(:,vl))
-         !
-         factor = 1.0_ark/sqrt(cross_prod)
-         vect(:,vl) = vect(:,vl)*factor
-         !
        enddo 
        !
+       !call lapack_syev(h,ener)
        !
-       do i=0,npoints
-          !
-          do vl = 0,nmax
-             !
-             phi_rho(vl+1)  = L(i,vl)
-             dphi_rho(vl+1) = dL(i,vl)
-             !
-             !ddphi_rho(vl+1) = dL(i,vl)*sqrt(sin(rho))
-             !
-          enddo
-          !
-          !Psi (1:nmax1,i)  = matmul(transpose(vect), phi_rho)
-          !DPsi(1:nmax1,i)  = matmul(transpose(vect),dphi_rho)
-          !
-          psi (1:nmax1,i)  = matmul(transpose(vect), phi_rho)
-          dpsi(1:nmax1,i)  = matmul(transpose(vect),dphi_rho)
-          !
-       enddo
+       !vect = h
+       !
+       ! orthogonalisation using the weight sqrt(sin(rho))*sin(rho)^k
+       !
+       !do vl =  1,nmax1
+       !  !
+       !  cross_prod = sum(vect(:,vl)*vect(:,vl))
+       !  !
+       !  factor = 1.0_ark/sqrt(cross_prod)
+       !  !
+       !  vect(:,vl) = vect(:,vl)*factor
+       !  !
+       !  do vr = vl+1,nmax1
+       !    !
+       !    cross_prod = sum(vect(:,vl)*vect(:,vr))
+       !    !
+       !    vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
+       !    ! 
+       !  enddo
+       !  !
+       !  cross_prod = sum(vect(:,vl)*vect(:,vl))
+       !  !
+       !  factor = 1.0_ark/sqrt(cross_prod)
+       !  vect(:,vl) = vect(:,vl)*factor
+       !  !
+       !enddo 
+       !
+       !
+       !do i=0,npoints
+       !   !
+       !   do vl = 0,nmax
+       !      !
+       !      phi_rho(vl+1)  = L(i,vl)
+       !      dphi_rho(vl+1) = dL(i,vl)
+       !      !
+       !      !ddphi_rho(vl+1) = dL(i,vl)*sqrt(sin(rho))
+       !      !
+       !   enddo
+       !   !
+       !   !Psi (1:nmax1,i)  = matmul(transpose(vect), phi_rho)
+       !   !DPsi(1:nmax1,i)  = matmul(transpose(vect),dphi_rho)
+       !   !
+       !   psi (1:nmax1,i)  = matmul(transpose(vect), phi_rho)
+       !   dpsi(1:nmax1,i)  = matmul(transpose(vect),dphi_rho)
+       !   !
+       !enddo
+       !!
+       !do vl = 0,nmax
+       !   !
+       !   phivphi(:) = psi(vl+1,:)*psi(vl+1,:)*sinrho(:)**(2*k+1)
+       !   !
+       !   factor = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+       !   L(:,vl) = psi(vl+1,:)/sqrt(factor)
+       !   dL(:,vl)= dpsi(vl+1,:)/sqrt(factor)
+       !   !
+       !enddo
        !
        do vl = 0,nmax
           !
-          L(:,vl) = psi(vl+1,:)
-          dL(:,vl)= dpsi(vl+1,:)
-          !
-       enddo
-       !
-       do vl = 0,nmax
-          !
-          do i=0,npoints
-             !
-             phil(i)  = L(i,vl)*sqrt(sinrho(i))*sinrho(i)**k
-             dphil(i) = dL(i,vl)*sinrho(i)**k
-             if (k>0) dphil(i) = dphil(i) + real(k,ark)*sinrho(i)**(k-1)*L(i,vl)
-             !
-          enddo
+          phil(:)  = L(:,vl)*sqrt(sinrho(:))*sinrho(:)**k
+          dphil(:) = dL(:,vl)*sinrho(:)**k
+          if (k>0) dphil(:) = dphil(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vl)*cosrho(:)
           !
           do vr = vl,nmax
               !
-              do i=0,npoints
-                 !
-                 phir(i)  = L(i,vr)*sqrt(sinrho(i))*sinrho(i)**k
-                 dphir(i) = dL(i,vr)*sinrho(i)**k
-                 if (k>0) dphir(i) = dphir(i) + real(k,ark)*sinrho(i)**(k-1)*L(i,vr)
-                 !
-              enddo
+              phir(:)  = L(:,vr)*sqrt(sinrho(:))*sinrho(:)**k
+              dphir(:) = dL(:,vr)*sinrho(:)**k
+              if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
               !
               ! check orthagonality and noralisation
               !
@@ -2282,7 +2310,7 @@ module me_bnd
        !
        call lapack_syev(h,ener)
        !
-       write (out,"(/' Legendre-optimized energies are:')") 
+       write (out,"(/' Optimized energies are:')") 
        !
        zpe = ener(1)
        !
@@ -2326,7 +2354,7 @@ module me_bnd
              phi_rho(vl+1)  = L(i,vl)
              !dphi_rho(vl+1) = dL(i,vl)
              dphi_rho(vl+1) = dL(i,vl)*sinrho(i)**k
-             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + real(k,ark)*sinrho(i)**(k-1)*L(i,vl)
+             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + real(k,ark)*sinrho(i)**(k-1)*L(i,vl)*cosrho(i)
              !
           enddo
           !
@@ -2404,7 +2432,7 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl)
+                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
                  stop 'ME_numerov: bad Numerov solution'
               endif 
               !
@@ -2529,6 +2557,8 @@ module me_bnd
      call ArrayStop('psi-Legendre')
      !
      deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,cosrho,rho)
+     !
+     if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
   end subroutine ME_sinrho_polynomial
 

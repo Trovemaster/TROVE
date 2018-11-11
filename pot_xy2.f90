@@ -464,7 +464,7 @@ module pot_xy2
    g1   = force(3)
    g2   = force(4)
    !
-   rhh=sqrt(r12**2+r32**2-2.d0*r12*r32*cos(alpha))
+   rhh=sqrt(r12**2+r32**2-2._ark*r12*r32*cos(alpha))
    vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
    !
    ! calculate potential energy function values
@@ -2083,8 +2083,8 @@ endif
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
    !
-   real(rk)               :: r12,r32,alpha,xcos,v
-   real(rk),parameter     :: tocm = 219474.63067_ark
+   real(ark)               :: r12,r32,alpha,xcos,v
+   real(ark),parameter     :: tocm = 219474.63067_ark
    !
    if (verbose>=6) write(out,"('MLpoten_xy2_tennys/start')") 
 
@@ -2103,6 +2103,8 @@ endif
        !
        call potv(v,r12,r32,xcos)
        v = v*tocm
+       !
+       !v = v + MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force)
        !
      elseif(molec%AtomMasses(1)>31.9_rk.and.molec%AtomMasses(1)<36.0_rk) then 
        !
@@ -2123,6 +2125,322 @@ endif
      if (verbose>=6) write(out,"('MLpoten_xy2_dmbe/end')") 
  
  end function MLpoten_xy2_dmbe
+
+
+
+  function MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+
+   integer,parameter           ::  npropin = 240
+
+   real(ark) ::  r1,r2,th
+   real(ark)            :: reoh,thetae,b1,roh,alphaoh
+   real(ark)            :: phh2,t0,ut,x0,ut2,x02,xs1,xs2,xst,rs,rm,rr1,rr2,xep1,xep2,xep3
+   real(ark)            :: rhh,vhh,vpb1,vpb2,v0,vp1,vp2,vp3,vp,vps1,vps2,y1,y2,y12,y22,voh1,voh2
+   integer(4) :: i 
+      !
+      r1 = local(1) ; r2 = local(2) ;  th = local(3)
+      !
+      reoh  = 0.958649_ark
+      thetae= 104.3475_ark
+      b1=2.0_ark
+      roh=0.951961_ark
+      alphaoh=2.587949757553683_ark
+      phh2=6.70164303995_ark
+      t0=0.01_ark
+      ut=20._ark
+      x0=2.5_ark
+      ut2=20._ark
+      x02=2.5_ark
+        
+      thetae=thetae*3.14159265358979312_ark*.00555555555555555555_ark
+
+      xs1=(r1+r2)*0.5_ark-reoh
+      xs2=(r1-r2)*0.5_ark
+      xst=cos(th)-cos(thetae)
+
+      rs=sqrt(0.5_ark)*(r1+r2)
+      rm=sqrt(0.5_ark)*(r1-r2)
+
+      rr1=r1-roh
+      rr2=r2-roh
+
+      xep1=exp(-2._ark*alphaoh*rr1)-2._ark*exp(-alphaoh*rr1)+1._ark
+      xep2=exp(-2._ark*alphaoh*rr2)-2._ark*exp(-alphaoh*rr2)+1._ark
+      xep3=exp(-b1*(rr1**2+rr2**2))
+      rhh=sqrt(r1**2+r2**2-2._ark*r1*r2*cos(th))
+      vhh=0.900642240911285975d6*exp(-phh2*rhh)
+      vpb1=0.518622556959170834d5*xep1
+      vpb2=0.518622556959170834d5*xep2
+
+
+  v0= force(1)  *xs1**0*xs2**0*xst**0
+ vp1= force(2)  *xs1**0*xs2**0*xst**1&
+     +force(3)  *xs1**1*xs2**0*xst**0&
+     +force(4)  *xs1**0*xs2**0*xst**2&
+     +force(5)  *xs1**0*xs2**2*xst**0&
+     +force(6)  *xs1**1*xs2**0*xst**1&
+     +force(7)  *xs1**2*xs2**0*xst**0&
+     +force(8)  *xs1**0*xs2**0*xst**3&
+     +force(9)  *xs1**0*xs2**2*xst**1&
+     +force(10) *xs1**1*xs2**0*xst**2&
+     +force(11) *xs1**1*xs2**2*xst**0&
+     +force(12) *xs1**2*xs2**0*xst**1&
+     +force(13) *xs1**3*xs2**0*xst**0&
+     +force(14) *xs1**0*xs2**0*xst**4&
+     +force(15) *xs1**0*xs2**2*xst**2&
+     +force(16) *xs1**0*xs2**4*xst**0&
+     +force(17) *xs1**1*xs2**0*xst**3&
+     +force(18) *xs1**1*xs2**2*xst**1&
+     +force(19) *xs1**2*xs2**0*xst**2&
+     +force(20) *xs1**2*xs2**2*xst**0&
+     +force(21) *xs1**3*xs2**0*xst**1&
+     +force(22) *xs1**4*xs2**0*xst**0&
+     +force(23) *xs1**0*xs2**0*xst**5&
+     +force(24) *xs1**0*xs2**2*xst**3&
+     +force(25) *xs1**0*xs2**4*xst**1&
+     +force(26) *xs1**1*xs2**0*xst**4&
+     +force(27) *xs1**1*xs2**2*xst**2&
+     +force(28) *xs1**1*xs2**4*xst**0&
+     +force(29) *xs1**2*xs2**0*xst**3&
+     +force(30) *xs1**2*xs2**2*xst**1&
+     +force(31) *xs1**3*xs2**0*xst**2&
+     +force(32) *xs1**3*xs2**2*xst**0&
+     +force(33) *xs1**4*xs2**0*xst**1&
+     +force(34) *xs1**5*xs2**0*xst**0&
+     +force(35) *xs1**0*xs2**0*xst**6&
+     +force(36) *xs1**0*xs2**2*xst**4&
+     +force(37) *xs1**0*xs2**4*xst**2&
+     +force(38) *xs1**0*xs2**6*xst**0&
+     +force(39) *xs1**1*xs2**0*xst**5&
+     +force(40) *xs1**1*xs2**2*xst**3&
+     +force(41) *xs1**1*xs2**4*xst**1&
+     +force(42) *xs1**2*xs2**0*xst**4&
+     +force(43) *xs1**2*xs2**2*xst**2&
+     +force(44) *xs1**2*xs2**4*xst**0&
+     +force(45) *xs1**3*xs2**0*xst**3&
+     +force(46) *xs1**3*xs2**2*xst**1&
+     +force(47) *xs1**4*xs2**0*xst**2&
+     +force(48) *xs1**4*xs2**2*xst**0&
+     +force(49) *xs1**5*xs2**0*xst**1&
+     +force(50) *xs1**6*xs2**0*xst**0&
+     +force(51) *xs1**0*xs2**0*xst**7&
+     +force(52) *xs1**0*xs2**2*xst**5&
+     +force(53) *xs1**0*xs2**4*xst**3&
+     +force(54) *xs1**0*xs2**6*xst**1&
+     +force(55) *xs1**1*xs2**0*xst**6&
+     +force(56) *xs1**1*xs2**2*xst**4&
+     +force(57) *xs1**1*xs2**4*xst**2&
+     +force(58) *xs1**1*xs2**6*xst**0&
+     +force(59) *xs1**2*xs2**0*xst**5&
+     +force(60) *xs1**2*xs2**2*xst**3&
+     +force(61) *xs1**2*xs2**4*xst**1&
+     +force(62) *xs1**3*xs2**0*xst**4&
+     +force(63) *xs1**3*xs2**2*xst**2&
+     +force(64) *xs1**3*xs2**4*xst**0&
+     +force(65) *xs1**4*xs2**0*xst**3&
+     +force(66) *xs1**4*xs2**2*xst**1&
+     +force(67) *xs1**5*xs2**0*xst**2&
+     +force(68) *xs1**5*xs2**2*xst**0&
+     +force(69) *xs1**6*xs2**0*xst**1&
+     +force(70) *xs1**7*xs2**0*xst**0&
+     +force(71) *xs1**0*xs2**0*xst**8&
+     +force(72) *xs1**0*xs2**2*xst**6&
+     +force(73) *xs1**0*xs2**4*xst**4&
+     +force(74) *xs1**0*xs2**6*xst**2&
+     +force(75) *xs1**0*xs2**8*xst**0&
+     +force(76) *xs1**1*xs2**0*xst**7&
+     +force(77) *xs1**1*xs2**2*xst**5&
+     +force(78) *xs1**1*xs2**4*xst**3&
+     +force(79) *xs1**1*xs2**6*xst**1&
+     +force(80) *xs1**2*xs2**0*xst**6&
+     +force(81) *xs1**2*xs2**2*xst**4&
+     +force(82) *xs1**2*xs2**4*xst**2&
+     +force(83) *xs1**2*xs2**6*xst**0&
+     +force(84) *xs1**3*xs2**0*xst**5&
+     +force(85) *xs1**3*xs2**2*xst**3&
+     +force(86) *xs1**3*xs2**4*xst**1&
+     +force(87) *xs1**4*xs2**0*xst**4&
+     +force(88) *xs1**4*xs2**2*xst**2&
+     +force(89) *xs1**4*xs2**4*xst**0&
+     +force(90) *xs1**5*xs2**0*xst**3&
+     +force(91) *xs1**5*xs2**2*xst**1&
+     +force(92) *xs1**6*xs2**0*xst**2
+ vp2= force(93) *xs1**6*xs2**2*xst**0&
+     +force(94) *xs1**7*xs2**0*xst**1&
+     +force(95) *xs1**8*xs2**0*xst**0&
+     +force(96) *xs1**0*xs2**0*xst**9&
+     +force(97) *xs1**0*xs2**2*xst**7&
+     +force(98) *xs1**0*xs2**4*xst**5&
+     +force(99) *xs1**0*xs2**6*xst**3&
+     +force(100)*xs1**0*xs2**8*xst**1&
+     +force(101)*xs1**1*xs2**0*xst**8&
+     +force(102)*xs1**1*xs2**2*xst**6&
+     +force(103)*xs1**1*xs2**4*xst**4&
+     +force(104)*xs1**1*xs2**6*xst**2&
+     +force(105)*xs1**1*xs2**8*xst**0&
+     +force(106)*xs1**2*xs2**0*xst**7&
+     +force(107)*xs1**2*xs2**2*xst**5&
+     +force(108)*xs1**2*xs2**4*xst**3&
+     +force(109)*xs1**2*xs2**6*xst**1&
+     +force(110)*xs1**3*xs2**0*xst**6&
+     +force(111)*xs1**3*xs2**2*xst**4&
+     +force(112)*xs1**3*xs2**4*xst**2&
+     +force(113)*xs1**3*xs2**6*xst**0&
+     +force(114)*xs1**4*xs2**0*xst**5&
+     +force(115)*xs1**4*xs2**2*xst**3&
+     +force(116)*xs1**4*xs2**4*xst**1&
+     +force(117)*xs1**5*xs2**0*xst**4&
+     +force(118)*xs1**5*xs2**2*xst**2&
+     +force(119)*xs1**5*xs2**4*xst**0&
+     +force(120)*xs1**6*xs2**0*xst**3&
+     +force(121)*xs1**6*xs2**2*xst**1&
+     +force(122)*xs1**7*xs2**0*xst**2&
+     +force(123)*xs1**7*xs2**2*xst**0&
+     +force(124)*xs1**8*xs2**0*xst**1&
+     +force(125)*xs1**9*xs2**0*xst**0&
+     +force(126)*xs1**0*xs2**0*xst**10&
+     +force(127)*xs1**0*xs2**2*xst**8&
+     +force(128)*xs1**0*xs2**4*xst**6&
+     +force(129)*xs1**0*xs2**6*xst**4&
+     +force(130)*xs1**0*xs2**8*xst**2&
+     +force(131)*xs1**0*xs2**10*xst**0&
+     +force(132)*xs1**1*xs2**0*xst**9&
+     +force(133)*xs1**1*xs2**2*xst**7&
+     +force(134)*xs1**1*xs2**4*xst**5&
+     +force(135)*xs1**1*xs2**6*xst**3&
+     +force(136)*xs1**1*xs2**8*xst**1&
+     +force(137)*xs1**2*xs2**0*xst**8&
+     +force(138)*xs1**2*xs2**2*xst**6&
+     +force(139)*xs1**2*xs2**4*xst**4&
+     +force(140)*xs1**2*xs2**6*xst**2&
+     +force(141)*xs1**2*xs2**8*xst**0&
+     +force(142)*xs1**3*xs2**0*xst**7&
+     +force(143)*xs1**3*xs2**2*xst**5&
+     +force(144)*xs1**3*xs2**4*xst**3&
+     +force(145)*xs1**3*xs2**6*xst**1&
+     +force(146)*xs1**4*xs2**0*xst**6&
+     +force(147)*xs1**4*xs2**2*xst**4&
+     +force(148)*xs1**4*xs2**4*xst**2&
+     +force(149)*xs1**4*xs2**6*xst**0&
+     +force(150)*xs1**5*xs2**0*xst**5&
+     +force(151)*xs1**5*xs2**2*xst**3&
+     +force(152)*xs1**5*xs2**4*xst**1&
+     +force(153)*xs1**6*xs2**0*xst**4&
+     +force(154)*xs1**6*xs2**2*xst**2&
+     +force(155)*xs1**6*xs2**4*xst**0&
+     +force(156)*xs1**7*xs2**0*xst**3&
+     +force(157)*xs1**7*xs2**2*xst**1&
+     +force(158)*xs1**8*xs2**0*xst**2&
+     +force(159)*xs1**8*xs2**2*xst**0&
+     +force(160)*xs1**9*xs2**0*xst**1&
+     +force(161)*xs1**10*xs2**0*xst**0&
+     +force(162)*xs1**0*xs2**0*xst**11&
+     +force(163)*xs1**0*xs2**2*xst**9&
+     +force(164)*xs1**0*xs2**4*xst**7&
+     +force(165)*xs1**0*xs2**6*xst**5&
+     +force(166)*xs1**0*xs2**8*xst**3&
+     +force(167)*xs1**0*xs2**10*xst**1&
+     +force(168)*xs1**1*xs2**0*xst**10&
+     +force(169)*xs1**1*xs2**2*xst**8&
+     +force(170)*xs1**1*xs2**4*xst**6&
+     +force(171)*xs1**1*xs2**6*xst**4&
+     +force(172)*xs1**1*xs2**8*xst**2&
+     +force(173)*xs1**1*xs2**10*xst**0&
+     +force(174)*xs1**2*xs2**0*xst**9
+ vp3= force(175)*xs1**2*xs2**2*xst**7&
+     +force(176)*xs1**2*xs2**4*xst**5&
+     +force(177)*xs1**2*xs2**6*xst**3&
+     +force(178)*xs1**2*xs2**8*xst**1&
+     +force(179)*xs1**3*xs2**0*xst**8&
+     +force(180)*xs1**3*xs2**2*xst**6&
+     +force(181)*xs1**3*xs2**4*xst**4&
+     +force(182)*xs1**3*xs2**6*xst**2&
+     +force(183)*xs1**3*xs2**8*xst**0&
+     +force(184)*xs1**4*xs2**0*xst**7&
+     +force(185)*xs1**4*xs2**2*xst**5&
+     +force(186)*xs1**4*xs2**4*xst**3&
+     +force(187)*xs1**4*xs2**6*xst**1&
+     +force(188)*xs1**5*xs2**0*xst**6&
+     +force(189)*xs1**5*xs2**2*xst**4&
+     +force(190)*xs1**5*xs2**4*xst**2&
+     +force(191)*xs1**5*xs2**6*xst**0&
+     +force(192)*xs1**6*xs2**0*xst**5&
+     +force(193)*xs1**6*xs2**2*xst**3&
+     +force(194)*xs1**6*xs2**4*xst**1&
+     +force(195)*xs1**7*xs2**0*xst**4&
+     +force(196)*xs1**7*xs2**2*xst**2&
+     +force(197)*xs1**7*xs2**4*xst**0&
+     +force(198)*xs1**8*xs2**0*xst**3&
+     +force(199)*xs1**8*xs2**2*xst**1&
+     +force(200)*xs1**9*xs2**0*xst**2&
+     +force(201)*xs1**9*xs2**2*xst**0&
+     +force(202)*xs1**0*xs2**0*xst**12&
+     +force(203)*xs1**0*xs2**2*xst**10&
+     +force(204)*xs1**0*xs2**4*xst**8&
+     +force(205)*xs1**0*xs2**6*xst**6&
+     +force(206)*xs1**0*xs2**8*xst**4&
+     +force(207)*xs1**0*xs2**10*xst**2&
+     +force(208)*xs1**0*xs2**12*xst**0&
+     +force(209)*xs1**1*xs2**0*xst**11&    
+     +force(210)*xs1**1*xs2**2*xst**9&
+     +force(211)*xs1**1*xs2**4*xst**7&
+     +force(212)*xs1**1*xs2**6*xst**5&
+     +force(213)*xs1**1*xs2**8*xst**3&
+     +force(214)*xs1**1*xs2**10*xst**1&
+     +force(215)*xs1**2*xs2**0*xst**10&
+     +force(216)*xs1**2*xs2**2*xst**8&
+     +force(217)*xs1**2*xs2**4*xst**6&
+     +force(218)*xs1**2*xs2**6*xst**4&
+     +force(219)*xs1**2*xs2**8*xst**2&
+     +force(220)*xs1**2*xs2**10*xst**0&
+     +force(221)*xs1**3*xs2**0*xst**9&
+     +force(222)*xs1**3*xs2**2*xst**7&
+     +force(223)*xs1**3*xs2**4*xst**5&
+     +force(224)*xs1**3*xs2**6*xst**3&
+     +force(225)*xs1**3*xs2**8*xst**1&
+     +force(226)*xs1**4*xs2**0*xst**8&
+     +force(227)*xs1**4*xs2**2*xst**6&
+     +force(228)*xs1**4*xs2**4*xst**4&
+     +force(229)*xs1**4*xs2**6*xst**2&
+     +force(230)*xs1**4*xs2**8*xst**0&
+     +force(231)*xs1**5*xs2**0*xst**7&
+     +force(232)*xs1**5*xs2**2*xst**5&
+     +force(233)*xs1**5*xs2**4*xst**3&
+     +force(234)*xs1**5*xs2**6*xst**1&
+     +force(235)*xs1**6*xs2**0*xst**6&
+     +force(236)*xs1**6*xs2**2*xst**4&
+     +force(237)*xs1**6*xs2**4*xst**2&
+     +force(238)*xs1**6*xs2**6*xst**0&
+     +force(239)*xs1**7*xs2**0*xst**5&
+     +force(240)*xs1**7*xs2**2*xst**3
+
+       vp=vp1+vp2+vp3
+       !
+       vps1=42395.535333_ark*xep1
+       vps2=42395.535333_ark*xep2
+
+       y1=1._ark/(1._ark+exp(ut*(x0-r1)))
+       y2=1._ark/(1._ark+exp(ut*(x0-r2)))
+       y12=1._ark/(1._ark+exp(ut2*(x02-r1)))
+       y22=1._ark/(1._ark+exp(ut2*(x02-r2)))
+
+       vp=vp*xep3*(1-y12)*(1-y22)
+       voh1=vpb1*(1-y1)+y1*vps1
+       voh2=vpb2*(1-y2)+y2*vps2
+
+
+       f=v0+vp+voh1+voh2+vhh
+
+      end function MLpoten_xy2_bubukina
+
+
+
 
 
 
