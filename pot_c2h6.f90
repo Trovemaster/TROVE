@@ -74,7 +74,7 @@ function MLpoten_c2h6_88(ncoords, natoms, local, xyz, force) result(f)
     xi(18) = ( ( 3.0_ark*local(16) + local(14) - local(15) + local(17) - local(18))/3.0_ark ) - pi
 
     !
-  case('R-R16-BETA16-THETA-TAU')
+  case('R-R16-BETA16-THETA-TAU-2')
       !
       tau14 = local(14)
       tau24 = local(15)
@@ -573,7 +573,7 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
     xi(18) = ( ( 3.0_ark*local(16) + local(14) - local(15) + local(17) - local(18))/3.0_ark ) - pi
 
     !
-  case('R-R16-BETA16-THETA-TAU')
+  case('R-R16-BETA16-THETA-TAU-2')
       !
       tau14 = local(14)
       tau24 = local(15)

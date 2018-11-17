@@ -751,12 +751,13 @@ module me_bnd
    integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
    !
    real(ark)            :: rho,L,rhostep,potmin
-   real(ark)            :: psipsi_t,characvalue,rho_b(2)
+   real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:)
-   real(rk),allocatable :: h(:,:),ener(:),psi(:,:),dpsi(:,:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),vect(:,:)
+   real(ark),allocatable :: psi(:,:),dpsi(:,:)
+   real(rk),allocatable ::  h(:,:),ener(:)
    !
    character(len=cl)    :: unitfname 
     !
@@ -771,7 +772,7 @@ module me_bnd
        stop 'phi - out of memory'
      endif 
      !
-     fmax = vmax*factor_ff
+     fmax = vmax*factor_ff*iperiod
      !
      allocate(psi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(psi),kind(psi))
@@ -885,6 +886,10 @@ module me_bnd
                !
             enddo
             !
+            ! check orthogonality (normalisation)
+            phivphi(:) = phil(:)*phir(:)
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
             ! obtained above by the Numerov
@@ -912,6 +917,31 @@ module me_bnd
      !
      energy(0:vmax) = ener(1:vmax+1)-ener(1)
      !
+     ! Schmidt orthogonalization to make eigenvectors orthogonal in ark
+     !
+     allocate(vect(fmax+1,fmax+1),stat=alloc)
+     call ArrayStart('h-vect',alloc,size(vect),kind(vect))
+     !
+     vect = h
+     !
+     do vl =  1,vmax+1
+       !
+       cross_prod = sum(vect(:,vl)*vect(:,vl))
+       !
+       factor = 1.0_ark/sqrt(cross_prod)
+       !
+       vect(:,vl) = vect(:,vl)*factor
+       !
+       do vr = vl+1,vmax+1
+         !
+         cross_prod = sum(vect(:,vl)*vect(:,vr))
+         !
+         vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
+         ! 
+       enddo
+       !
+     enddo
+     !
      write (out,"(/' Fourier-optimized energies are:')") 
      !
      do vl=0,vmax   
@@ -937,10 +967,13 @@ module me_bnd
            !
         enddo
         !
-        Psi (1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),phi(1:fmax+1))
-        DPsi(1:vmax+1,i)  = matmul(transpose(h(1:fmax+1,1:vmax+1)),dphi(1:fmax+1))
+        Psi (1:vmax+1,i)  = matmul(transpose(vect(1:fmax+1,1:vmax+1)),phi(1:fmax+1))
+        DPsi(1:vmax+1,i)  = matmul(transpose(vect(1:fmax+1,1:vmax+1)),dphi(1:fmax+1))
         !
      enddo
+     !
+     deallocate(vect)
+     call ArrayStop('h-vect')
      !
      do vl = 0,vmax
         kl = (vl+1)/2*p
@@ -954,6 +987,10 @@ module me_bnd
             !
             phir = Psi(vr+1,:)
             dphir = dPsi(vr+1,:)
+            !
+            ! check orthogonality (normalisation)
+            phivphi(:) = phil(:)*phir(:)
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
             !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
@@ -1069,6 +1106,16 @@ module me_bnd
             enddo 
             !
         enddo
+        !
+        if (verbose>=6) then 
+           !
+           write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
+           !
+           do i=0,npoints 
+              write(out,"(i8,2f18.8)") i,phil(i),dphil(i)
+           enddo
+        endif 
+        !
      enddo
      !
      deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF)

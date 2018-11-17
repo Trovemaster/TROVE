@@ -64,9 +64,12 @@ module mol_c2h6
     real(ark) :: tau4213,tau5124,tau6213,tau5126
     real(ark) :: tau1, tau2, b1_zmat, b2_zmat, tau1_zmat, dtau, db1, db2
     !
-    real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,&
+    real(ark) :: tau16,tau34,tau36,tau24,tau25,theta12,theta23,theta31,theta56,theta45,theta64,&
                  S1,S2,S3,S4,S5,S6,taubar,tau,S14,S15,S16,S17,S18
 
+    real(ark) :: tau14,tau35,theta13,theta46
+    
+    
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/start'
     !
     nsrc = size(src)
@@ -190,7 +193,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(18) = tau36
         !
       endif
-    case('R-R16-BETA16-THETA-TAU')
+    case('R-R16-BETA16-THETA-TAU-2')
       ! ORDER CHANGED HERE AS WANT TBAR TO BE 18TH COORDINATE BUT NEEDS
       !  TO BE 16TH COORDINATE IN Z-MAT
       !
@@ -199,58 +202,58 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(1) = src(1)-molec%local_eq(1)
         !
         dst(2) = src(2)-molec%local_eq(2)
-        dst(3) = src(4)-molec%local_eq(4)
-        dst(4) = src(6)-molec%local_eq(6)
-        dst(5) = src(3)-molec%local_eq(3)
-        dst(6) = src(5)-molec%local_eq(5)
-        dst(7) = src(7)-molec%local_eq(7)
+        dst(3) = src(6)-molec%local_eq(6)
+        dst(4) = src(4)-molec%local_eq(4)
+        dst(5) = src(5)-molec%local_eq(5)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(3)-molec%local_eq(3)
         !
-        dst( 8) = src( 8)-molec%local_eq( 8)
-        dst( 9) = src(10)-molec%local_eq(10)
-        dst(10) = src(12)-molec%local_eq(12)
-        dst(11) = src( 9)-molec%local_eq( 9)
-        dst(12) = src(11)-molec%local_eq(11)
-        dst(13) = src(13)-molec%local_eq(13)
+        dst( 8) = src( 8)-molec%local_eq(8)
+        dst( 9) = src(12)-molec%local_eq(12)
+        dst(10) = src(10)-molec%local_eq(10)
+        dst(11) = src(11)-molec%local_eq(11)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(9)- molec%local_eq(9)
         !
-        tau14 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
-        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
-        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
-        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
-        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau34 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
         !
-        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
-        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
-        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(tau16-tau36+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau34-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta12 = mod(2.0_ark*pi-theta31-theta23+2.0_ark*pi,2.0_ark*pi)
         !
-        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
         theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
-        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau34-tau36+2.0_ark*pi,2.0_ark*pi)
+        theta56 = mod(2.0_ark*pi-theta64-theta45+2.0_ark*pi,2.0_ark*pi)
         !
-        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
-        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        dst(14)  = ( 2.0_ark*theta31 - theta23 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta23 - theta12 )/sqrt(2.0_ark)
         !
-        dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
-        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+        dst(16)  = ( 2.0_ark*theta64 - theta56 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta56 - theta45 )/sqrt(2.0_ark)
         !
-        dst(18)  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+        dst(18)  = ( tau16+tau25+tau34 )/(3.0_ark) -Pi
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
         dst(1) = src(1)+molec%local_eq(1)
         !
         dst(2) = src(2)+molec%local_eq(2)
-        dst(4) = src(3)+molec%local_eq(3)
-        dst(6) = src(4)+molec%local_eq(4)
-        dst(3) = src(5)+molec%local_eq(5)
-        dst(5) = src(6)+molec%local_eq(6)
-        dst(7) = src(7)+molec%local_eq(7)
+        dst(6) = src(3)+molec%local_eq(6)
+        dst(4) = src(4)+molec%local_eq(4)
+        dst(5) = src(5)+molec%local_eq(5)
+        dst(7) = src(6)+molec%local_eq(7)
+        dst(3) = src(7)+molec%local_eq(3)
         !
-        dst( 8) = src( 8)+molec%local_eq( 8)
-        dst(10) = src( 9)+molec%local_eq( 9)
-        dst(12) = src(10)+molec%local_eq(10)
-        dst( 9) = src(11)+molec%local_eq(11)
-        dst(11) = src(12)+molec%local_eq(12)
-        dst(13) = src(13)+molec%local_eq(13)
+        dst(8) = src( 8)+ molec%local_eq(8)
+        dst(12) = src( 9)+molec%local_eq(12)
+        dst(10) = src(10)+molec%local_eq(10)
+        dst(11) = src(11)+molec%local_eq(11)
+        dst(13) = src(12)+molec%local_eq(13)
+        dst(9) = src(13)+ molec%local_eq(9)
         !
         S14 = src(14)
         S15 = src(15)
@@ -258,20 +261,28 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         S17 = src(17)
         S18 = src(18)
         !
-        !tau14 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+Pi 
-        !tau35 = S18+1.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
-        !tau36 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+S18+Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15 
-        !tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
-        !tau24 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
+        !tau16 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+Pi 
+        !tau24 = S18+1.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        !tau25 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+S18+Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15 
+        !tau34 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
+        !tau36 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
 
 
-        tau14 =  sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+pi+S18
-        tau35 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi/3.0_ark-sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau25 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi-sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau24 =  sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi/3.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
+        !tau14 =  sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+pi+S18
+        !tau35 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi/3.0_ark-sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        !tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        !tau25 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi-sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
+        !tau24 =  sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi/3.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
 
-
+        tau16 = Pi + S14/sqrt(6.0_ark) +S15/(3.0_ark*Sqrt(2.0_ark)) - S16/sqrt(6.0_ark) +S17/(3.0_ark*sqrt(2.0_ark)) +s18
+        !
+        tau36 = 1.0_ark/6.0_ark*(2.0_ark*Pi - sqrt(6.0_ark)*S14 +sqrt(2.0_ark)*S15 -sqrt(6.0_ark)*S16 +sqrt(2.0_ark)*S17+6.0_ark*S18)
+        !
+        tau34 = Pi -S14/sqrt(6.0_ark) +S15/(3.0_ark*sqrt(2.0_ark)) + S16/sqrt(6.0_ark) +S17/(3.0_ark*sqrt(2.0_ark)) +S18
+        !
+        tau24 = Pi/3.0_ark - sqrt(2.0_ark)/3.0_ark*S15 +S16/sqrt(6.0_ark) + S17/(sqrt(2.0_ark)*3.0_ark) + S18
+        !
+        tau25 = Pi -sqrt(2.0_ark)/3.0_ark*S15 -sqrt(2.0_ark)/3.0_ark*S17 + S18
 
         !
         !S1 = src(14)
@@ -289,21 +300,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !
         !theta56 = 1.0_ark/3.0_ark*(sqrt(6.0_ark)*S4+S6)
         !theta46 = sqrt(6.0_ark)/18.0_ark*( 3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
-        !theta45 = sqrt(6.0_ark)/18.0_ark*(-3.0_ark*sqrt(3.0_ark)*S5+sqrt(6.0_ark)*S6-3.0_ark*S4)
-
-        !tau36 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau+2.0_ark*theta56+        theta45-        theta12)
-        !tau35 = 1.0_ark/3.0_ark*(-2.0_ark*theta23+Tau-        theta56+        theta45-        theta12)
-        !tau14 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45+2.0_ark*theta12)
-        !tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
-        !tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
-        !
-        dst(14) = mod(tau14+2.0_ark*pi,2.0_ark*pi)
-        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        dst(16) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
-        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
-        dst(18) = mod(tau36+2.0_ark*pi,2.0_ark*pi)
-        !
-      endif
+         dst(14) = mod(tau16+2.0_ark, 2.0_ark)
+         dst(15) = mod(tau36+2.0_ark, 2.0_ark)
+         dst(16) = mod(tau34+2.0_ark, 2.0_ark)
+         dst(17) = mod(tau24+2.0_ark, 2.0_ark)
+         dst(18) = mod(tau25+2.0_ark, 2.0_ark)
+     endif
         !
     end select
     !
@@ -503,7 +505,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
 
 
 
-  subroutine ML_symmetry_transformation_C2H6(ioper, nmodes, src, dst)
+  recursive subroutine ML_symmetry_transformation_C2H6(ioper, nmodes, src, dst)
     !
     ! Symmetry transformation rules of coordinates
     !
@@ -512,6 +514,20 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     real(ark), intent(in)    ::  src(1:nmodes)
     real(ark), intent(out)   ::  dst(1:nmodes)
     real(ark) :: a,b
+ !
+    real(ark),dimension(size(src)) :: tmp
+    !
+    integer(ik)  :: tn(72,2), temp(144)
+    integer(ik) :: nsrc
+
+    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0, 21, 19,  2,  3,  2,  3,  2,  3,  4,  5,  6,  4,  5,  6,  4,  5,  6 /)
+    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0,  7,  7, 19, 19, 20, 20, 21, 21, 19, 19, 19, 20, 20, 20, 21, 21, 21 /)
+
+    temp(37:72)   = (/ 0, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37/)
+    temp(109:144) = (/ 0,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36/)
+
+    tn = reshape( temp, (/ 72, 2/))
+  
     !
     a = 0.5_ark
     b = 0.5_ark*sqrt(3.0_ark)
@@ -598,7 +614,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(3) = src(5)
           dst(4) = src(7)
           dst(5) = src(3)
-          dst(6) = src(2)
+         dst(6) = src(2)
           dst(7) = src(4)
           dst(8) = src(12)
           dst(9) = src(11)
@@ -779,10 +795,326 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = -a*src(16) + b*src(17)
           dst(17) =  b*src(16) + a*src(17)
           dst(18) = -src(18)
+	  !
         end select
         !
       end select
+      
+    case('R-R16-BETA16-THETA-TAU-2')
       !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('G36(EM)')
+        !
+        !write(*,*) "case", ioper,  "prior ", src(18)
+        !write(*,*) "operation: ", ioper
+        select case(ioper)
+          !
+        !case default
+          !
+          !write(out, '(/a,1x,i3,1x,a)') &
+          !'ML_symmetry_transformation_C2H6 error: symmetry operation ', ioper, 'is unknown'
+          !stop
+          !
+          ! 1 and 6, 2 and 5, and 3 and 4 are opposites
+          ! (123) means 1 replaced by 2 etc, so here r1 would now be r3 as 3 is
+          ! relabelled as 1. 
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+            !         write(*,*) "operation 1: ", dst(18) 
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
+          !
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
+          !
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) = +b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+          !
+          dst(18) = src(18)  - 2.0_ark/3.0_ark*pi
+          do while(dst(18) < 0) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+      
+           !         write(*,*) "operation 2: ", dst(18)  
+          
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(5)
+          dst(3) = src(7)
+          dst(4) = src(6)
+          dst(5) = src(2)
+          dst(6) = src(4)
+          dst(7) = src(3)
+          !
+          dst(8) = src(11)
+          dst(9) = src(13)
+          dst(10) = src(12)
+          dst(11) = src(8)
+          dst(12) = src(10)
+          dst(13) = src(9)
+          !
+          dst(14) = -a*src(16) - b*src(17)
+          dst(15) =  b*src(16) - a*src(17) 
+          !
+          dst(16) = -a*src(14) + b*src(15)
+          dst(17) = -b*src(14) - a*src(15)
+          !
+          dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
+          do while(dst(18) < 0) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          
+          
+        !write(*,*) "operation 4: ", dst(18) 
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
+          !
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
+          !
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+         !
+          dst(18) = src(18)
+        !  write(*,*) "operation 7: ", dst(18) 
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(5)
+          dst(3) = src(6)
+          dst(4) = src(7)
+          dst(5) = src(2)
+          dst(6) = src(3)
+          dst(7) = src(4)
+          !
+          dst(8) = src(11)
+          dst(9) = src(12)
+          dst(10) = src(13)
+          dst(11) = src(8)
+          dst(12) = src(9)
+          dst(13) = src(10)
+          !
+          dst(14) = src(16)
+          dst(15) =-src(17) 
+          !
+          dst(16) = src(14)
+          dst(17) =-src(15)
+          !
+          dst(18) = src(18)
+         !write(*,*) "operation 19: ", dst(18)               
+          !
+          
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+          ! write(*,*) "operation 37: ", dst(18) 
+
+        end select
+        !
+       case('G36(M)')
+        !
+        !write(*,*) "operation: ", ioper
+        select case(ioper)
+          !
+        !case default
+          !
+          !write(out, '(/a,1x,i3,1x,a)') &
+          !'ML_symmetry_transformation_C2H6 error: symmetry operation ', ioper, 'is unknown'
+          !stop
+          !
+          ! 1 and 6, 2 and 5, and 3 and 4 are opposites
+          ! (123) means 1 replaced by 2 etc, so here r1 would now be r3 as 3 is
+          ! relabelled as 1. 
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
+          !
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
+          !
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) = +b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+          !
+          dst(18) = src(18) - 2.0_ark/3.0_ark*pi
+          do while(dst(18) < 0) 
+                dst(18) = dst(18) + 2.0_ark*pi
+          enddo
+          do while(dst(18) > 2.0_ark*pi) 
+                dst(18) = dst(18) - 2.0_ark*pi
+          enddo
+          !
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(5)
+          dst(3) = src(7)
+          dst(4) = src(6)
+          dst(5) = src(2)
+          dst(6) = src(4)
+          dst(7) = src(3)
+          !
+          dst(8) = src(11)
+          dst(9) = src(13)
+          dst(10) = src(12)
+          dst(11) = src(8)
+          dst(12) = src(10)
+          dst(13) = src(9)
+          !
+          dst(14) = -a*src(16) - b*src(17)
+          dst(15) =  b*src(16) - a*src(17) 
+          !
+          dst(16) = -a*src(14) + b*src(15)
+          dst(17) = -b*src(14) - a*src(15)
+          !
+          dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
+          do while(dst(18) < 0) 
+                dst(18) = dst(18) + 2.0_ark*pi
+          enddo
+          do while(dst(18) > 2.0_ark*pi) 
+                dst(18) = dst(18) - 2.0_ark*pi
+          enddo
+          !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
+          !
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
+          !
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+         !
+          dst(18) = src(18)
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2) = src(5)
+          dst(3) = src(6)
+          dst(4) = src(7)
+          dst(5) = src(2)
+          dst(6) = src(3)
+          dst(7) = src(4)
+          !
+          dst(8) = src(11)
+          dst(9) = src(12)
+          dst(10) = src(13)
+          dst(11) = src(8)
+          dst(12) = src(9)
+          dst(13) = src(10)
+          !
+          dst(14) = src(16)
+          dst(15) =-src(17) 
+          !
+          dst(16) = src(14)
+          dst(17) =-src(15)
+          !
+          dst(18) = src(18)
+          !
+          
+        !case(37) !E'
+        !   dst(1:17) = src(1:17)
+        !   dst(18) = mod(src(18) + 2.0_ark*pi, 4.0_ark*pi)
+
+        end select
+        !
+      end select 
+      !
+      if (all(tn(ioper,:)/=0)) then
+          call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+          call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+      endif 
     case('R-R16-BETA16-THETA-TAU')
       !
       select case(trim(molec%symmetry))
@@ -1093,7 +1425,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU')
+    case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2')
       !
       select case(trim(molec%symmetry))
       !
@@ -1115,6 +1447,21 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
         if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
         if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      case('G36(EM)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        if (J>0) then 
+          write(out,"('The rotational symmetries have not been implemented for G36(EM)')")
+          stop 'The rotational symmetries have not been implemented for G36(EM)'
+        endif
+        !
+        !if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        !if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        !if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        !if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g        !
         !
      case default
         !
