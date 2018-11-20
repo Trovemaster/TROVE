@@ -15748,7 +15748,7 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,kmax,nmax,krot1,krot2
-    integer(ik)                 :: nl,nr,l
+    integer(ik)                 :: nl,nr,irho
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,rmk,amorse
@@ -15766,7 +15766,7 @@ end subroutine check_read_save_none
     real(ark),allocatable       :: phil_leg(:),phir_leg(:),dphil_leg(:),dphir_leg(:),phil_sin(:),phir_sin(:)
     real(ark),allocatable       :: dfunc(:,:),func(:,:)
     !
-    real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2
+    real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L
     real(ark)                   :: rho_range,rho_t
     integer(ik)                 :: io_slot       ! unit numeber to store the numerov eigenvectors and their derivatives
     integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints
@@ -16546,7 +16546,7 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='FOURIER') then 
              !
-             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            endif
            !
@@ -16560,8 +16560,8 @@ end subroutine check_read_save_none
            if (job%bset(nu_i)%iperiod/=0.and.trim(bs%type)=='NUMEROV') then
              !
              if (abs(job%bset(nu_i)%iperiod)/=2) then
-               write (out,"(' FLbset1DNew: periodic copying procedure is only working for period of 2*pi ')") 
-               stop 'FLbset1DNew: illegal periodicity'
+               write (out,"(' FLbset1DNew warning: periodic copying procedure has been only tested for period of 2 ')") 
+               !stop 'FLbset1DNew: illegal periodicity'
              endif 
              !
              write(unitfname,"('Numerov basis set # ',i6)") nu_i
@@ -16583,41 +16583,133 @@ end subroutine check_read_save_none
              !
              open(unit=io_slot,status='scratch',access='direct',recl=rec_len)
              !
-             sqrt2 = sqrt(0.5_ark)
-             !
-             do vl = 0,bs%Size+1
-                !
-                forall(i = 0:npoints) phil(i)  =  func(vl,i)*sqrt2
-                forall(i = 0:npoints) dphil(i) = dfunc(vl,i)*sqrt2
-                !
-                if (job%bset(nu_i)%iperiod>0) then
+             if (abs(job%bset(nu_i)%iperiod)==2) then
+               !
+               sqrt2 = sqrt(0.5_ark)
+               !
+               do vl = 0,bs%Size+1
                   !
-                  iparity = 2
+                  forall(i = 0:npoints) phil(i)  =  func(vl,i)*sqrt2
+                  forall(i = 0:npoints) dphil(i) = dfunc(vl,i)*sqrt2
                   !
-                  if (mod((vl+1)/2,2)==1) iparity = 1
+                  if (job%bset(nu_i)%iperiod>0) then
+                    !
+                    iparity = 2
+                    !
+                    if (mod((vl+1)/2,2)==1) iparity = 1
+                    !
+                    !if (iparity==1.and.abs(func(vl,npoints))>sqrt(small_)) then
+                    !   !iparity = 1
+                    !   write(out,'("basis_parity: parity = 1, but psi(npoints)/=0;  mode = ",i2," v = ",i3," psi(npoints) ")') nu_i,vl,func(vl,npoints)
+                    !   stop "psi must be zero at its node for parity 1"
+                    !endif
+                    !
+                    forall(i = 1:npoints) phil(npoints+i)  =  func(vl,npoints-i)*(-1.0_ark)**(iparity  )*sqrt2
+                    forall(i = 1:npoints) dphil(npoints+i) = dfunc(vl,npoints-i)*(-1.0_ark)**(iparity+1)*sqrt2
+                    !
+                  else
+                    !
+                    iparity = 2
+                    if (mod(vl,2)/=0) iparity = 1
+                    !
+                    forall(i = 1:npoints) phil(npoints+i)  =  func(vl,npoints-i)*(-1.0_ark)**(iparity  )*sqrt2
+                    forall(i = 1:npoints) dphil(npoints+i) = dfunc(vl,npoints-i)*(-1.0_ark)**(iparity+1)*sqrt2
+                    !
+                  endif 
                   !
-                  !if (iparity==1.and.abs(func(vl,npoints))>sqrt(small_)) then
-                  !   !iparity = 1
-                  !   write(out,'("basis_parity: parity = 1, but psi(npoints)/=0;  mode = ",i2," v = ",i3," psi(npoints) ")') nu_i,vl,func(vl,npoints)
-                  !   stop "psi must be zero at its node for parity 1"
-                  !endif
+                  write (io_slot,rec=vl+1) (phil(i),i=0,trove%Npoints),(dphil(i),i=0,trove%Npoints)
                   !
-                  forall(i = 1:npoints) phil(npoints+i)  =  func(vl,npoints-i)*(-1.0_ark)**(iparity  )*sqrt2
-                  forall(i = 1:npoints) dphil(npoints+i) = dfunc(vl,npoints-i)*(-1.0_ark)**(iparity+1)*sqrt2
-                  !
-                else
-                  !
-                  iparity = 2
-                  if (mod(vl,2)/=0) iparity = 1
-                  !
-                  forall(i = 1:npoints) phil(npoints+i)  =  func(vl,npoints-i)*(-1.0_ark)**(iparity  )*sqrt2
-                  forall(i = 1:npoints) dphil(npoints+i) = dfunc(vl,npoints-i)*(-1.0_ark)**(iparity+1)*sqrt2
-                  !
-                endif 
-                !
-                write (io_slot,rec=vl+1) (phil(i),i=0,trove%Npoints),(dphil(i),i=0,trove%Npoints)
-                !
-             enddo
+               enddo
+               !
+             else
+               !
+               ! Bloch functions 
+               !
+               L = rho_range*0.5_ark
+               !
+               step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+               !
+               nl = 0 
+               !
+               if (.true.) then
+                 !
+                 sqrt2 = 1.0_ark/sqrt(real(job%bset(nu_i)%iperiod,ark))
+                 !
+                 loop_v : do vl = 0,bs%Size+1
+                    !
+                    !iparity = 2
+                    !if (mod((vl+1)/2,2)==1) iparity = 1
+                    !
+                    !k = mod((vl+1)/2,job%bset(nu_i)%iperiod)
+                    !
+                    do i=0,trove%Npoints
+                       !
+                       irho = mod(i,Npoints)
+                       !
+                       rho = real(i,kind=ark)*step
+                       phil(i)  = func(vl,irho)*sqrt2
+                       dphil(i) = dfunc(vl,irho)*sqrt2
+                       !
+                    enddo
+                    !
+                    phivphi(:) = phil(:)*phil(:)
+                    !
+                    mat_t = simpsonintegral_ark(trove%Npoints,rho_range,phivphi)
+                    !
+                    phil(:) = 1.0_ark/sqrt(mat_t)*phil(:)
+                    dphil(:) = 1.0_ark/sqrt(mat_t)*dphil(:)
+                    !
+                    write (io_slot,rec=vl+1) (phil(i),i=0,trove%Npoints),(dphil(i),i=0,trove%Npoints)
+                    !
+                 enddo loop_v
+                 !
+               else
+                 !
+                 loop_vl : do vl = 0,bs%Size+1
+                    !
+                    do k =0,job%bset(nu_i)%iperiod-1
+                      !
+                      nl = nl + 1
+                      !
+                      if (nl>bs%Size+1) cycle loop_vl 
+                      !
+                      !k = mod((vl+1)/2,job%bset(nu_i)%iperiod)
+                      !
+                      do i=0,trove%Npoints
+                         !
+                         irho = mod(i,Npoints)
+                         !
+                         rho = real(i,kind=ark)*step
+                         !
+                         if (k==0) then 
+                           phil(i)  = func(vl,irho)
+                           dphil(i) = dfunc(vl,irho)
+                         elseif (mod(k,2)==0) then
+                           phil(i)  = cos(real(k,ark)*pi*rho/L)*func(vl,irho)
+                           dphil(i) = cos(real(k,ark)*pi*rho/L)*dfunc(vl,irho)-sin(real(k,ark)*pi*rho/L)*real(k,ark)*pi/L*func(vl,irho)
+                         else
+                           phil(i)  = sin(real(k,ark)*pi*rho/L)*func(vl,irho)
+                           dphil(i) = sin(real(k,ark)*pi*rho/L)*dfunc(vl,irho)+cos(real(k,ark)*pi*rho/L)*real(k,ark)*pi/L*func(vl,irho)
+                         endif
+                         !
+                      enddo
+                      !
+                      phivphi(:) = phil(:)*phil(:)
+                      !
+                      mat_t = simpsonintegral_ark(trove%Npoints,rho_range,phivphi)
+                      !
+                      phil(:) = 1.0_ark/sqrt(mat_t)*phil(:)
+                      dphil(:) = 1.0_ark/sqrt(mat_t)*dphil(:)
+                      !
+                      write (io_slot,rec=nl+1) (phil(i),i=0,trove%Npoints),(dphil(i),i=0,trove%Npoints)
+                      !
+                    enddo
+                    !
+                 enddo loop_vl
+                 !
+               endif
+               !
+             endif 
              !
              npoints = trove%Npoints
              rho_b  = trove%rho_border
@@ -17829,7 +17921,7 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='FOURIER') then
              !
-             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            else
              !

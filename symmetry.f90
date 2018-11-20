@@ -569,6 +569,22 @@ contains
 !  end do 
 
 
+       ! characters as traces of the corresponding representations 
+       !
+       !do irep = 1,sym%Nrepresen
+       !  ioper = 0
+       !  do iclass = 1,sym%Nclasses
+       !    do ielem =1,sym%Nelements(iclass)
+       !      ioper = ioper + 1
+       !      f_t = 0
+       !      do k = 1,sym%degen(irep)
+       !          f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+       !      enddo
+       !      sym%characters(irep,iclass) = f_t
+       !    enddo
+       !  enddo
+       !enddo
+
 
   case("D2H(M)")
     !

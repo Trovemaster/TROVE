@@ -1,6 +1,7 @@
 module me_bnd
   use accuracy
   use me_numer
+  use molecules
   use timer
   use lapack
   !
@@ -10,6 +11,7 @@ module me_bnd
   public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial
 
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
+  integer(ik) :: Nr = 4                          ! 2*Nr+1 is the number of interpolation points
 
   private
 
@@ -496,7 +498,7 @@ module me_bnd
    integer(ik),intent(in) :: verbose   ! Verbosity level
    logical,intent(in)     :: periodic
 
-   real(ark)            :: rho,L,rhostep,potmin
+   real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2)
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p
@@ -736,27 +738,30 @@ module me_bnd
   !
   ! Matrix elements with Fourier-eigenfunctions 
   !
-  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,icoord,iperiod,verbose,g_numerov,energy)
+  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,iperiod,verbose,g_numerov,energy)
    !
-   integer(ik),intent(in) :: vmax,maxorder,npoints,isingular
+   integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten(0:npoints),mu_rr(0:npoints),drho(0:npoints,3)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
    !
-   integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
+   integer(ik),parameter  :: Factor_FF=30 ! factor to increase the Fourier basis set size 
    !
-   real(ark)            :: rho,L,rhostep,potmin
-   real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor
+   real(ark)            :: rho,L,rhostep,potmin,rhostep_
+   real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2
+   !
+   real(ark),allocatable :: poten(:),mu_rr(:),rho_(:)
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),vect(:,:)
-   real(ark),allocatable :: psi(:,:),dpsi(:,:)
+   real(ark),allocatable :: phil_(:),phir_(:),dphil_(:),dphir_(:),phivphi_(:)
+   real(ark),allocatable :: psi(:,:),dpsi(:,:),psi_(:,:),dpsi_(:,:)
    real(rk),allocatable ::  h(:,:),ener(:)
    !
    character(len=cl)    :: unitfname 
@@ -765,8 +770,18 @@ module me_bnd
      !
      ! global variables 
      !
+     ! large grid 
+     npoints   = numerpoints_
+     !
+     allocate(phil_(0:npoints_),phir_(0:npoints_),dphil_(0:npoints_),dphir_(0:npoints_), &
+              phivphi_(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),stat=alloc)
+     if (alloc/=0) then 
+       write (out,"('phi - out of memory')")
+       stop 'phi - out of memory'
+     endif
+     !
      allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
-              phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),stat=alloc)
+              phivphi(0:npoints),poten(0:npoints),mu_rr(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -779,6 +794,11 @@ module me_bnd
      allocate(dpsi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(dpsi),kind(dpsi))
      !
+     allocate(psi_(vmax+1,0:npoints_),stat=alloc)
+     call ArrayStart('psi-phi-Fourier',alloc,size(psi_),kind(psi_))
+     allocate(dpsi_(vmax+1,0:npoints_),stat=alloc)
+     call ArrayStart('psi-phi-Fourier',alloc,size(dpsi_),kind(dpsi_))
+     !
      allocate(h(fmax+1,fmax+1),ener(fmax+1),phi(fmax+1),dphi(fmax+1),stat=alloc)
      call ArrayStart('h-Fourier',alloc,size(h),kind(h))
      call ArrayStart('h-Fourier',alloc,size(ener),kind(ener))
@@ -788,7 +808,44 @@ module me_bnd
      rho_b = rho_b_
      !
      ! step size 
-     rhostep = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+     rhostep  = (rho_b(2)-rho_b(1))/real(npoints ,kind=ark)
+     rhostep_ = (rho_b(2)-rho_b(1))/real(npoints_,kind=ark)
+     !
+     ! interpolation: mapping to the larger grid
+     !
+     step_scale = rhostep/rhostep_
+     !
+     if (npoints==npoints_) then 
+       !
+       poten = poten_
+       mu_rr = mu_rr_
+       !
+     else
+       !
+       allocate(rho_(0:npoints_),stat=alloc)
+       if (alloc/=0) stop 'rho_ - out of memory'
+       !
+       forall(i_ = 0:npoints_) rho_(i_)  =  rho_b(1)+real(i_,kind=ark)*rhostep_
+       !
+       do i = 0,npoints 
+          !
+          rho =  rho_b(1)+real(i,kind=ark)*rhostep
+          !
+          i_ = int( real(i,ark)*step_scale )
+          !
+          i1 = max(0,i_-Nr) ; i2 = min(npoints_,i_+Nr)
+          !
+          call polintark(rho_(i1:i2),poten_(i1:i2),rho,fval,df_t)
+          poten(i) = fval
+          !
+          call polintark(rho_(i1:i2),mu_rr_(i1:i2),rho,fval,df_t)
+          mu_rr(i) = fval
+          !
+       enddo
+       !
+       deallocate(rho_)
+       !
+     endif     
      !
      ! periodic factor to produce cos( k nx ) and sin(k nx ) functions
      p = 1
@@ -826,11 +883,11 @@ module me_bnd
      !
      ! define the rho-type coordinate 
      !
-     rho_kinet(:) = drho(:,1)
-     rho_poten(:) = drho(:,2)
-     rho_extF(:)  = drho(:,3)
+     rho_kinet(:) = drho_(:,1)
+     rho_poten(:) = drho_(:,2)
+     rho_extF(:)  = drho_(:,3)
      !
-     inquire(iolength=rec_len) phil(:),dphil(:)
+     inquire(iolength=rec_len) phil_(:),dphil_(:)
      !
      write(unitfname,"('Numerov basis set # ',i6)") icoord
      call IOStart(trim(unitfname),io_slot)
@@ -972,39 +1029,55 @@ module me_bnd
         !
      enddo
      !
+     ! dump the eigenfunction
+     !
+     if (npoints_==npoints) then 
+          Psi_  = Psi
+          DPsi_ = DPsi
+     else
+       do i_ = 0,npoints_
+          !
+          i = nint( real(i_,ark)/step_scale )
+          !
+          Psi_(1:vmax+1,i_) = Psi(1:vmax+1,i)
+          DPsi_(1:vmax+1,i_) = DPsi(1:vmax+1,i)
+          !
+       enddo
+     endif
+     !
      deallocate(vect)
      call ArrayStop('h-vect')
      !
      do vl = 0,vmax
         kl = (vl+1)/2*p
         !
-        phil(:)  =  Psi(vl+1,:)
-        dphil(:) = dPsi(vl+1,:)
+        phil_(:)  =  Psi_(vl+1,:)
+        dphil_(:) = dPsi_(vl+1,:)
         !
-        write (io_slot,rec=vl+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)
+        write (io_slot,rec=vl+1) (phil_(i),i=0,npoints_),(dphil_(i),i=0,npoints_)
         !
         do vr = vl,vmax
             !
-            phir = Psi(vr+1,:)
-            dphir = dPsi(vr+1,:)
+            phir_  = Psi_(vr+1,:)
+            dphir_ = dPsi_(vr+1,:)
             !
             ! check orthogonality (normalisation)
-            phivphi(:) = phil(:)*phir(:)
-            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            phivphi_(:) = phil_(:)*phir_(:)
+            psipsi_t = simpsonintegral_ark(npoints_,rho_b_(2)-rho_b_(1),phivphi_)
             !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
             ! obtained above by the Numerov
             !
-            phivphi(:) = phil(:)*poten(:)*phir(:)
+            phivphi_(:) = phil_(:)*poten_(:)*phir_(:)
             !
-            h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            h(vl+1,vr+1) = simpsonintegral_ark(npoints_,rho_b_(2)-rho_b_(1),phivphi_)
             !
             ! momenta-quadratic part 
             !
-            phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)
+            phivphi_(:) =-dphil_(:)*mu_rr(:)*dphir_(:)
             !
-            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -1019,33 +1092,33 @@ module me_bnd
                ! momenta-free part in potential part
                !
                if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
+                  phivphi_(:) = phil_(:)*phir_(:)
                else
-                  phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
+                  phivphi_(:) = phil_(:)*rho_poten(:)**lambda*phir_(:)
                endif
                !
-               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                !
                ! external field expansion
                !
                if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
+                  phivphi_(:) = phil_(:)*phir_(:)
                else
-                  phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
+                  phivphi_(:) = phil_(:)*rho_extF(:)**lambda*phir_(:)
                endif
                !
-               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
                ! momenta-free in kinetic part 
                !
                if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
+                  phivphi_(:) = phil_(:)*phir_(:)
                else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
+                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*phir_(:)
                endif
                !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -1056,12 +1129,12 @@ module me_bnd
                ! momenta-quadratic part 
                !
                if (lambda==0) then 
-                  phivphi(:) =-dphil(:)*dphir(:)
+                  phivphi_(:) =-dphil_(:)*dphir_(:)
                else
-                  phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
+                  phivphi_(:) =-dphil_(:)*rho_kinet(:)**lambda*dphir_(:)
                endif
                !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
@@ -1070,22 +1143,22 @@ module me_bnd
                !
                !
                if (lambda==0) then 
-                  phivphi(:) = phil(:)*dphir(:)
+                  phivphi_(:) = phil_(:)*dphir_(:)
                else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
+                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*dphir_(:)
                endif
                !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) then
                   !
                   if (lambda==0) then 
-                     phivphi(:) = dphil(:)*phir(:)
+                     phivphi_(:) = dphil_(:)*phir_(:)
                   else
-                     phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
+                     phivphi_(:) = dphil_(:)*rho_kinet(:)**lambda*phir_(:)
                   endif
                   !
-                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                   !
                endif 
                !
@@ -1112,15 +1185,17 @@ module me_bnd
            write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
            !
            do i=0,npoints 
-              write(out,"(i8,2f18.8)") i,phil(i),dphil(i)
+              write(out,"(i8,2f18.8)") i,phil_(i),dphil_(i)
            enddo
         endif 
         !
      enddo
      !
      deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF)
+     deallocate(phil_,phir_,dphil_,dphir_,phivphi_)
+     deallocate(poten,mu_rr)
      deallocate(h,ener)
-     deallocate(psi,dpsi,phi,dphi)
+     deallocate(psi,dpsi,psi_,dpsi_,phi,dphi)
      call ArrayStop('psi-phi-Fourier')
      call ArrayStop('h-Fourier')
      call ArrayStop('h-Fourier-phi')

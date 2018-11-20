@@ -5137,7 +5137,16 @@ module perturbation
          enddo
          !
        endif 
-    enddo 
+    enddo
+    !
+    if (all(Nirr==0)) then 
+      info = 1
+      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
+      if (job%verbose>=6) then 
+        write(out,"('no irreps found')")
+      endif 
+      return
+    endif
     !
     if (verbose>=5) then 
       write(out,"('Nirr = ',40i8)") Nirr(:)

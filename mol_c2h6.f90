@@ -520,14 +520,13 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     integer(ik)  :: tn(72,2), temp(144)
     integer(ik) :: nsrc
 
-    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0, 21, 19,  2,  3,  2,  3,  2,  3,  4,  5,  6,  4,  5,  6,  4,  5,  6 /)
-    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0,  7,  7, 19, 19, 20, 20, 21, 21, 19, 19, 19, 20, 20, 20, 21, 21, 21 /)
-
+    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    ! 
     temp(37:72)   = (/ 0, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37/)
     temp(109:144) = (/ 0,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36/)
-
+    !
     tn = reshape( temp, (/ 72, 2/))
-  
     !
     a = 0.5_ark
     b = 0.5_ark*sqrt(3.0_ark)
@@ -614,7 +613,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(3) = src(5)
           dst(4) = src(7)
           dst(5) = src(3)
-         dst(6) = src(2)
+          dst(6) = src(2)
           dst(7) = src(4)
           dst(8) = src(12)
           dst(9) = src(11)
@@ -854,8 +853,8 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = -a*src(16) + b*src(17)
           dst(17) = -b*src(16) - a*src(17)
           !
-          dst(18) = src(18)  - 2.0_ark/3.0_ark*pi
-          do while(dst(18) < 0) 
+          dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
           enddo
           do while(dst(18) > 4.0_ark*pi) 
@@ -888,22 +887,22 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = -a*src(14) + b*src(15)
           dst(17) = -b*src(14) - a*src(15)
           !
-          dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
-          do while(dst(18) < 0) 
+          !dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
+          dst(18) =  4.0_ark/3.0_ark*pi - src(18)
+          
+          !dst(18) =  4.0_ark/3.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
           enddo
           do while(dst(18) > 4.0_ark*pi) 
                 dst(18) = dst(18) - 4.0_ark*pi
           enddo
-          
-          
-        !write(*,*) "operation 4: ", dst(18) 
          !
         case (7) ! C(-)/(132)(456)
           !
           dst(1) = src(1)
           !
-
           dst(2) = src(3)
           dst(3) = src(4)
           dst(4) = src(2)
@@ -954,18 +953,17 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(18) = src(18)
          !write(*,*) "operation 19: ", dst(18)               
           !
-          
         case(37) !E'
            dst(1:17) = src(1:17)
            dst(18) = src(18) + 2.0_ark*pi
-           do while(dst(18) < 0) 
+           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
            enddo
            do while(dst(18) > 4.0_ark*pi) 
                 dst(18) = dst(18) - 4.0_ark*pi
            enddo
-          ! write(*,*) "operation 37: ", dst(18) 
-
+           ! write(*,*) "operation 37: ", dst(18) 
+           !
         end select
         !
        case('G36(M)')
