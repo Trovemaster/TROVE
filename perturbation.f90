@@ -4882,7 +4882,13 @@ module perturbation
       ! for higher accuracy try to refine the solution using ark
       !
       xm(1:n) = b(1:n,1)    
-      call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+      !
+      if (tol<1e-6) then 
+        !
+        call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+        !
+      endif
+      !
       !bm(1:n) = xm(1:n)
       !
       !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)

@@ -2245,13 +2245,15 @@ module moltype
     real(rk),intent(in) :: tolerance
     !
     real(ark) :: x0(m),eps(n)
-    real(ark) :: rjacob(n,m),b_(n),am(m,m),bm(m),b_r(n),b_l(n),cm(m)
-
+    !
+    real(ark),allocatable :: rjacob(:,:),b_(:),am(:,:),bm(:),b_r(:),b_l(:),cm(:)
+    !
     real(ark) :: stadev_old,stability,stadev,ssq,stadev_best,h
-    double precision :: ad(m,m),bd(m,1)
+    !
+    double precision,allocatable :: ad(:,:),bd(:,:)
     !
     integer(ik),parameter :: itmax=100
-    integer(ik) :: iter,k,irow,icolumn,ierror
+    integer(ik) :: iter,k,irow,icolumn,ierror,alloc
     !
     rjacob = 0 
     iter = 0
@@ -2262,6 +2264,23 @@ module moltype
     x0 = x
     !
     stadev_best = tolerance ! (small_)*1e-2
+    !
+    allocate(rjacob(n,m),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(rjacob,kind=hik))
+    allocate(am(m,m),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(am,kind=hik))
+    allocate(bm(m),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(bm,kind=hik))
+    allocate(cm(m),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(cm,kind=hik))
+    !
+    allocate(b_(n),b_r(n),b_l(n),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,3*size(b_,kind=hik))
+    !
+    allocate(ad(m,m),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,rk,size(ad,kind=hik))
+    allocate(bd(m,1),stat=alloc)
+    call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,rk,size(bd,kind=hik))
     !
     iter = 0 
     !
@@ -2348,10 +2367,12 @@ module moltype
        write(6,"('ML_rjacobi_fit_ark: could not find solution after ',i8,' iterations')") iter
        stop 'ML_rjacobi_fit_ark: could not find solution'
     endif 
-
+    !
+    deallocate(rjacob,am,bm,cm,b_,b_r,b_l,ad,bd)
+    !
+    call ArrayStop('ML_rjacobi_fit_ark')
+    !
   end subroutine ML_rjacobi_fit_ark
   !
-
-
 end module moltype
 

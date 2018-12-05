@@ -571,77 +571,183 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
     xi(16) = (3.0_ark*local(18)  - 2.0_ark*pi)/sqrt(6.0_ark)
     xi(17) = ( 2.0_ark*local(17) - 2.0_ark*pi + local(18))/sqrt(2.0_ark)
     xi(18) = ( ( 3.0_ark*local(16) + local(14) - local(15) + local(17) - local(18))/3.0_ark ) - pi
+    !
+  case('R-R16-BETA16-THETA-TAU-3')
+    !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
 
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
+    !
+    !!!xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
     !
   case('R-R16-BETA16-THETA-TAU-2')
-      !
-      tau14 = local(14)
-      tau24 = local(15)
-      tau25 = local(16)
-      tau35 = local(17)
-      tau36 = local(18)
-      !
-      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
-      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
-      theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
-      !
+    !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
 
-      tau14 = local(14)
-      tau24 = local(15)
-      tau25 = local(16)
-      tau35 = local(17)
-      tau36 = local(18)
-      !
-      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
-      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
-      theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
-      !
-      theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
-      theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
-      theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
 
 
-      !r1=    1.53580000   
-      !r2=    1.08770000   
-      !r3=    1.08770000   
-      !r4=    1.08770000   
-      !r5=    1.08770000   
-      !r6=    1.08770000   
-      !r7=    1.08770000   
-      
-      !beta1 =  111.22000000*rad   
-      !beta2 = 111.22000000*rad   
-      !beta3 = 111.22000000*rad   
-      !beta4 = 111.22000000*rad   
-      !beta5 = 111.22000000*rad   
-      !beta6 = 111.22000000*rad   
-      !
-      !theta45 =  120.00000000*rad   
-      !theta46 =  120.00000000*rad    ! - 1
-      !tau14   =  145.00000000*rad   
-      !theta12 =  120.00000000*rad   
-      !theta13 =  120.00000000*rad    ! -1
-      !theta56 = 2.0_ark*pi-theta46-theta45
-      !theta13 = 2.0_ark*pi-theta12-theta23
-      !
-      !tau24 = tau14-theta12 
-      !tau25 = theta45+tau24
-      !tau35 = tau25-theta23
-      !tau36 = theta56+tau35
+    !r1=    1.53580000   
+    !r2=    1.08770000   
+    !r3=    1.08770000   
+    !r4=    1.08770000   
+    !r5=    1.08770000   
+    !r6=    1.08770000   
+    !r7=    1.08770000   
+    
+    !beta1 =  111.22000000*rad   
+    !beta2 = 111.22000000*rad   
+    !beta3 = 111.22000000*rad   
+    !beta4 = 111.22000000*rad   
+    !beta5 = 111.22000000*rad   
+    !beta6 = 111.22000000*rad   
+    !
+    !theta45 =  120.00000000*rad   
+    !theta46 =  120.00000000*rad    ! - 1
+    !tau14   =  145.00000000*rad   
+    !theta12 =  120.00000000*rad   
+    !theta13 =  120.00000000*rad    ! -1
+    !theta56 = 2.0_ark*pi-theta46-theta45
+    !theta13 = 2.0_ark*pi-theta12-theta23
+    !
+    !tau24 = tau14-theta12 
+    !tau25 = theta45+tau24
+    !tau35 = tau25-theta23
+    !tau36 = theta56+tau35
+    !
+    xi(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
+    !
+    !!!xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
 
-      !
-      xi(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
-      xi(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
-      !
-      xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
-      xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
-      !
-      !!!xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
 
-      rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4')
+    !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
 
-      xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
-      !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+
+
+    !r1=    1.53580000   
+    !r2=    1.08770000   
+    !r3=    1.08770000   
+    !r4=    1.08770000   
+    !r5=    1.08770000   
+    !r6=    1.08770000   
+    !r7=    1.08770000   
+    
+    !beta1 =  111.22000000*rad   
+    !beta2 = 111.22000000*rad   
+    !beta3 = 111.22000000*rad   
+    !beta4 = 111.22000000*rad   
+    !beta5 = 111.22000000*rad   
+    !beta6 = 111.22000000*rad   
+    !
+    !theta45 =  120.00000000*rad   
+    !theta46 =  120.00000000*rad    ! - 1
+    !tau14   =  145.00000000*rad   
+    !theta12 =  120.00000000*rad   
+    !theta13 =  120.00000000*rad    ! -1
+    !theta56 = 2.0_ark*pi-theta46-theta45
+    !theta13 = 2.0_ark*pi-theta12-theta23
+    !
+    !tau24 = tau14-theta12 
+    !tau25 = theta45+tau24
+    !tau35 = tau25-theta23
+    !tau36 = theta56+tau35
+
+    !
+    xi(14)  = ( 2.0_ark*theta12 - theta13 - theta23 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta23 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta46 - theta45 - theta56 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta56 )/sqrt(2.0_ark)
+    !
+    !!!xi(18)  = ( tau14+tau25+tau36 )/sqrt(3.0_ark)-3.0_ark*pi/sqrt(3.0_ark)
+
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
   end select
   !
   xi(1)=1.0_ark-exp(-a*(r1-r1e))
@@ -697,11 +803,13 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
   !
   !
   !f = force(6)+force(7)*xi(1)**2+&
-  !    force(8)*sum(xi(2:7)**2)+force(8)*xi(18)**2+&
-  !    force(9)*sum(xi(8:13)**2)+force(10)*sum(xi(14:17)**2)+&
-  !    force(11)*( xi(14)*xi(16)+xi(15)*xi(17) )
-  !!
-  !f = f/12.0_ark
+  !    force(8)*sum(xi(2:7)**2)+&
+  !    force(9)*sum(xi(8:13)**2)+force(10)*sum(xi(14:17)**2)
+  !    !force(11)*( xi(14)*xi(16)+xi(15)*xi(17) )
+  !
+  !f = f +sum(force(11:16)*xi(18)**molec%pot_ind(18,11:16))
+  !
+  f = f/12.0_ark
   !  
 
 end function MLpoten_c2h6_88_cos3tau

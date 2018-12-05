@@ -5655,17 +5655,41 @@ end subroutine check_read_save_none
           !
           do irho = 0, npoints
             !
-            i1 = max(irho-N_/2,0)
-            i2 = min(irho+N_/2,npoints)
-            !
-            k = 0
-            do i = i1,i2
-               if (i==irho.or.k>N_) cycle
-               !if (outlier(i)==1) cycle
-               k = k + 1
-               rho_(k) = trove%rho_border(1)+i*trove%rhostep
-               func_(k) = object%field(iterm,i)
-            enddo
+            if (trove%periodic) then 
+              !
+              i1 = irho-N_/2
+              i2 = irho+N_/2
+              !
+              k = 0
+              do i = i1,i2
+                 if (i==irho.or.k>N_) cycle
+                 k = k + 1
+                 rho_(k) = trove%rho_border(1)+i*trove%rhostep
+                 !
+                 if (i<0) then 
+                   func_(k) = object%field(iterm,npoints+i)
+                 elseif(i>npoints) then
+                   func_(k) = object%field(iterm,i-npoints)
+                 else
+                   func_(k) = object%field(iterm,i)
+                 endif
+              enddo
+              !
+            else
+              !
+              i1 = max(irho-N_/2,0)
+              i2 = min(irho+N_/2,npoints)
+              !
+              k = 0
+              do i = i1,i2
+                 if (i==irho.or.k>N_) cycle
+                 !if (outlier(i)==1) cycle
+                 k = k + 1
+                 rho_(k) = trove%rho_border(1)+i*trove%rhostep
+                 func_(k) = object%field(iterm,i)
+              enddo
+              !
+            endif
             !
             !if ( k<1.or.k>N_max ) then 
             !   write(out,"('check_field_smoothness is out of range, k = ',i5,' <> [ 0,',i2,']')") k,N_max
@@ -5711,7 +5735,7 @@ end subroutine check_read_save_none
         !
         if ( iattempt==Nattempt.and.outliers.and.Nattempt>1) then
           write(out,"('check_field_smoothness: ',a)") msg
-          write(out,"('      Too many outliers, it was impossible to fix after ',i4,' attempts for iterm = ',i5 )") Nattempt,iterm
+          write(out,"('      Too many outliers, it was impossible to fix after ',i9,' attempts for iterm = ',i5 )") Nattempt,iterm
           !stop 'check_field_smoothness: too many outliers'
         endif
         !
@@ -14035,7 +14059,7 @@ end subroutine check_read_save_none
               !
               if (abs(field(iterm,i))>job%exp_coeff_thresh) then 
                 !
-                write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e36.29)") k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
+                write(chkptIO_kin,"(i5,1x,i5,1x,i8,1x,i8,1x,e26.18)") k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
                 !
               endif
               !
