@@ -331,11 +331,26 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(12) = src(11)-molec%local_eq(11)
         dst(13) = src(13)-molec%local_eq(13)
         !
-        tau14 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
-        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
-        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
-        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
-        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau24 = mod(src(15)+4.0_ark*pi,4.0_ark*pi)
+        tau25 = mod(src(16)+4.0_ark*pi,4.0_ark*pi)
+        tau35 = mod(src(17)+4.0_ark*pi,4.0_ark*pi)
+        tau36 = mod(src(18)+4.0_ark*pi,4.0_ark*pi)
+        !
+        taubar  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+        !
+        !if (abs(taubar)<10.0_ark*small_) taubar = 0.0_ark
+        !if (abs(4.0_ark*pi-taubar)<10.0_ark*small_) taubar = 4.0_ark*pi
+        !
+        !dst(18) = mod(taubar+4.0_ark*pi,4.0_ark*pi)
+        !
+        dst(18) = taubar
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
         !
         theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
@@ -350,8 +365,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !
         dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
         dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
-        !
-        dst(18)  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
@@ -413,11 +426,11 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !tau24 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56-2.0_ark*theta45-        theta12)
         !tau25 = 1.0_ark/3.0_ark*(         theta23+Tau-        theta56+        theta45-        theta12)
         !
-        dst(14) = mod(tau14+2.0_ark*pi,2.0_ark*pi)
-        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        dst(16) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
-        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
-        dst(18) = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi)
+        dst(15) = mod(tau24+4.0_ark*pi,4.0_ark*pi)
+        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau35+4.0_ark*pi,4.0_ark*pi)
+        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
         !
       endif
      !
@@ -2376,9 +2389,9 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
           !
           !!!
-          dst(18) =  4.0_ark/3.0_ark*pi - src(18)
+          !!!dst(18) =  4.0_ark/3.0_ark*pi - src(18)
           !!!
-          !dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  2.0_ark*pi - src(18)
 
 
           !dst(18) =  4.0_ark/3.0_ark*pi - src(18)

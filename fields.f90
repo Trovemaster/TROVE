@@ -20923,7 +20923,7 @@ end subroutine check_read_save_none
        !
        if ( abs( chi(i)-chi_(i) )>10.0*sqrt(small_).and.abs( chi(i)-chi_(i) )-2.0_ark*pi> 10.0*sqrt(small_)) then
          !
-         write(out,'("poten_chi: chi /= chi_: ",i5,4x,2f18.6,1x,e10.3)') i,chi(i),chi_(i),chi(:)-chi_(:)
+         write(out,'("poten_chi: chi /= chi_: ",i5,4x,2f18.6,1x,e10.3)') i,chi(i),chi_(i),chi(i)-chi_(i)
          !stop "poten_chi: Error in MLfromlocal2cartesian, r /= r_"
          !
         endif
