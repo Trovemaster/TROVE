@@ -534,15 +534,15 @@ contains
                                o, o, e, o, &
                                o, o, o, e/), (/4,4/)))
    
-    !g2 = transpose(reshape( (/ -a,-b, o, o, &
-    !                            b,-a, o, o, &
-    !                            o, o,-a,-b, &
-    !                            o, o, b,-a  /), (/4,4/))) 
+    g2 = transpose(reshape( (/ -a,-b, o, o, &
+                                b,-a, o, o, &
+                                o, o,-a,-b, &
+                                o, o, b,-a  /), (/4,4/))) 
 
-    g2 = transpose(reshape( (/ -a, b, o, o, &
-                               -b,-a, o, o, &
-                                o, o,-a, b, &
-                                o, o,-b,-a  /), (/4,4/))) 
+    !!g2 = transpose(reshape( (/ -a, b, o, o, &
+    !!                           -b,-a, o, o, &
+    !!                            o, o,-a, b, &
+    !!                            o, o,-b,-a  /), (/4,4/))) 
 
                                 !
     !g4 = transpose(reshape( (/o, o,-e, o, &
@@ -601,6 +601,10 @@ contains
   
       c = transpose(reshape( (/ -a, -b, &
                                  b, -a/), (/ 2, 2/)))
+
+      !c = transpose(reshape( (/ -a,  b, &
+      !                          -b, -a/), (/ 2, 2/)))
+
   
     c2 = matmul(c,c)
   
