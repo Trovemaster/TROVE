@@ -410,7 +410,7 @@ contains
 
 
 
-    case("G36(EM)")
+    case("G36(EM1)")
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -533,63 +533,65 @@ contains
                                o, e, o, o, &
                                o, o, e, o, &
                                o, o, o, e/), (/4,4/)))
-   
+    !!
     g2 = transpose(reshape( (/ -a,-b, o, o, &
                                 b,-a, o, o, &
                                 o, o,-a,-b, &
                                 o, o, b,-a  /), (/4,4/))) 
 
-    !!g2 = transpose(reshape( (/ -a, b, o, o, &
-    !!                           -b,-a, o, o, &
-    !!                            o, o,-a, b, &
-    !!                            o, o,-b,-a  /), (/4,4/))) 
+    !sy01: repalce g2 from !!! to this, did not work
+    !g2 = transpose(reshape( (/ -a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
 
-                                !
+    !sy3: try this in place of !!  did not work even with one class                          !
     !g4 = transpose(reshape( (/o, o,-e, o, &
     !                           o, o, o, e, &
     !                          -e, o, o, o, &
     !                           o, e, o, o  /), (/4,4/)))
 
-    g4 = transpose(reshape( (/ e, o, o, o, &
-                               o,-e, o, o, &
-                               o, o,-e, o, &
-                               o, o, o, e  /), (/4,4/)))
-
+    ! sy2: use this for g4 in place of !! did not help
+    !g4 = transpose(reshape( (/ e, o, o, o, &
+    !                           o,-e, o, o, &
+    !                           o, o,-e, o, &
+    !                           o, o, o, e  /), (/4,4/)))
+    !!
     g4 = transpose(reshape( (/-e, o, o, o, &
                                o, e, o, o, &
                                o, o, e, o, &
                                o, o, o,-e  /), (/4,4/)))
 
 
-
+    !! sy4: try this instead of !! did not work 
     !g7 = transpose(reshape( (/ -a, o, o,-b, &
     !                            o,-a, b, o, &
     !                            o,-b,-a, o, &
     !                            b, o, o,-a  /), (/4,4/))) 
-
+    !!
     g7 = transpose(reshape( (/ -a, o, o, b, &
-                                o,-a,-b, o, &
+                               o,-a,-b, o, &
                                 o, b,-a, o, &
                                -b, o, o,-a  /), (/4,4/))) 
 
-
+    ! sy5: try this instd of !! wrong character 
     !g7 = transpose(reshape( (/-a, b, o, o, &
     !                           -b,-a, o, o, &
     !                            o, o,-a,-b, &
     !                            o, o, b,-a  /), (/4,4/))) 
-
+    ! sy6: try this for !! does not work even for one class
     !g19= transpose(reshape( (/-e, o, o, o, &
     !                           o, e, o, o, &
     !                           o, o,-e, o, &
     !                           o, o, o, e  /), (/4,4/)))
 
-    
+    !!
     g19= transpose(reshape( (/ e, o, o, o, &
                                o, e, o, o, &
                                o, o,-e, o, &
                                o, o, o,-e  /), (/4,4/)))
 
-
+    ! sy7: try this for !! completely wrong 
     !g19= transpose(reshape( (/o, o, e, o, &
     !                           o, o, o, e, &
     !                           e, o, o, o, &
@@ -598,21 +600,22 @@ contains
 
       i = transpose(reshape( (/ e, o, &
                                 o, e /), (/ 2, 2/)))
-  
+      !!
       c = transpose(reshape( (/ -a, -b, &
                                  b, -a/), (/ 2, 2/)))
-
+      !
+      !sy8: try this for !! did not work
       !c = transpose(reshape( (/ -a,  b, &
       !                          -b, -a/), (/ 2, 2/)))
 
   
     c2 = matmul(c,c)
-  
+    !!
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))
-
-    !sxy = transpose(reshape( (/ o, e, &
-    !                            e, o /), (/ 2, 2/)))
+    ! sy9 try this for !! did not work
+    !!sxy = transpose(reshape( (/ o, e, &
+    !!                           e, o /), (/ 2, 2/)))
     !
   	s3 = matmul(c, sxy)
     !
@@ -647,11 +650,6 @@ contains
     sym%irr( 6,37)%repres = i
     sym%irr( 7,37)%repres = i
     sym%irr( 8,37)%repres = i
-    !
-    sym%irr(5+9,37)%repres = i
-    sym%irr(6+9,37)%repres = i
-    sym%irr(7+9,37)%repres = i
-    sym%irr(8+9,37)%repres = i
     !
     do irep = 5,8
       sym%irr(irep+9, 1)%repres = sym%irr(irep, 1)%repres
@@ -700,7 +698,7 @@ contains
       enddo
     enddo
     !
-    case("G36(EM1)")
+    case("G36(EM)")
 
       sym%Nrepresen = 18
       sym%Noper = 72

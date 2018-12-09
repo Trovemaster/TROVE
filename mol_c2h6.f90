@@ -2354,7 +2354,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = -a*src(16) + b*src(17)
           dst(17) = -b*src(16) - a*src(17)
           !
+          !!
           dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          !sy11 : try this 
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
           enddo
