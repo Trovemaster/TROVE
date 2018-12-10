@@ -2334,31 +2334,57 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
+          !dst(2) = src(4)
+          !dst(3) = src(2)
+          !dst(4) = src(3)
+          !dst(5) = src(7)
+          !dst(6) = src(5)
+          !dst(7) = src(6)
           !
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
+          !dst(8) = src(10)
+          !dst(9) = src(8)
+          !dst(10) = src(9)
+          !dst(11) = src(13)
+          !dst(12) = src(11)
+          !dst(13) = src(12)
           !
+          ! s12: try reversing the direction; worked in combination with 
+          ! dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
+          !
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
+          !!
           dst(14) = -a*src(14) + b*src(15)
           dst(15) = -b*src(14) - a*src(15) 
           !
           dst(16) = -a*src(16) + b*src(17)
           dst(17) = -b*src(16) - a*src(17)
           !
+          ! sy13: change direction here comp. to !! made it worse
+          !
+          !dst(14) = -a*src(14) - b*src(15)
+          !dst(15) =  b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
+          !
           !!
           dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
-          !sy11 : try this 
-          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !sy11 : try thisl it worked! for 0 1 1 0 16 (classes 12345) but did not work for 0 0 0 1 16
+          !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !  and for 0 0 0 1  16
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -2385,18 +2411,30 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(12) = src(10)
           dst(13) = src(9)
           !
+          !!
           dst(14) = src(16)
           dst(15) =-src(17) 
           !
           dst(16) = src(14)
           dst(17) =-src(15)
           !
+          ! sy14: try changing sign, which did not help, 01110 is still non-diagonal
+          !dst(14) =-src(16)
+          !dst(15) = src(17) 
+          !
+          !dst(16) =-src(14)
+          !dst(17) = src(15)
+          !
           !dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
           !
           !!!
           !!!dst(18) =  4.0_ark/3.0_ark*pi - src(18)
           !!!
+          !!
           dst(18) =  2.0_ark*pi - src(18)
+
+          ! sy23 try this for !! did not help
+          !dst(18) =   - src(18)
 
 
           !dst(18) =  4.0_ark/3.0_ark*pi - src(18)
@@ -2411,29 +2449,68 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         case (7) ! C(-)/(132)(456)
           !
           dst(1) = src(1)
+          !!
+          ! s23: try reversing the direction relative to ! again, did not help
           !
-          dst(2) = src(3)
-          dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
+          !dst(2) = src(3)
+          !dst(3) = src(4)
+          !dst(4) = src(2)
+          !dst(5) = src(7)
+          !dst(6) = src(5)
+          !dst(7) = src(6)
           !
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
+          !dst(8) = src(9)
+          !dst(9) = src(10)
+          !dst(10) = src(8)
+          !dst(11) = src(13)
+          !dst(12) = src(11)
+          !dst(13) = src(12)
           !
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
+          ! s12: try reversing the direction
           !
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
-         !
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
+          !
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
+          !
+          !!
+          !dst(14) = -a*src(14) - b*src(15)
+          !dst(15) =  b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) + b*src(17)
+          !dst(17) = -b*src(16) - a*src(17)
+          !
+          ! sy13: change direction here comp. to !! did not work, made it worse for 0001-16
+          ! which worked ith !!
+          !
+          !dst(14) = -a*src(14) + b*src(15)
+          !dst(15) = -b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
+          !
+          !
+          ! sy15: change direction only here comp. to !! but leave (2) as it is  
+          ! it worked! for 01010 and for 00110 and for 0001-16 and for 010116 and for 0011-16 and for 022000
+          ! and for 0220-16
+          !but not for 01110 :(
+          !
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  b*src(16) - a*src(17)
+          !
           dst(18) = src(18)
-        !  write(*,*) "operation 7: ", dst(18) 
           !
         case (19) !sxy(-)/(14)(25)(36)(ab)
           !

@@ -409,7 +409,10 @@ contains
     write(*,*) "test 1"
 
 
-
+    !
+    ! sy16: Per's matrices, did not improve 
+    ! sy24: as part of sap 7 and 8 
+    !
     case("G36(EM1)")
 
       sym%Nrepresen = 18
@@ -563,14 +566,16 @@ contains
                                o, o, o,-e  /), (/4,4/)))
 
 
-    !! sy4: try this instead of !! did not work 
+    ! sy4: try this instead of !! did not work 
+    ! sy17: try this instead of !!  again to make it consistent with sy15, did not help
+    ! sy18: use this together with e7-alternative choice, did not work either
     !g7 = transpose(reshape( (/ -a, o, o,-b, &
     !                            o,-a, b, o, &
     !                            o,-b,-a, o, &
     !                            b, o, o,-a  /), (/4,4/))) 
     !!
     g7 = transpose(reshape( (/ -a, o, o, b, &
-                               o,-a,-b, o, &
+                                o,-a,-b, o, &
                                 o, b,-a, o, &
                                -b, o, o,-a  /), (/4,4/))) 
 
@@ -605,6 +610,7 @@ contains
                                  b, -a/), (/ 2, 2/)))
       !
       !sy8: try this for !! did not work
+      !sy20: try this for !! agian, did not help
       !c = transpose(reshape( (/ -a,  b, &
       !                          -b, -a/), (/ 2, 2/)))
 
@@ -613,9 +619,11 @@ contains
     !!
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))
+    !
     ! sy9 try this for !! did not work
-    !!sxy = transpose(reshape( (/ o, e, &
-    !!                           e, o /), (/ 2, 2/)))
+    ! sy21 try this for !! again, made it even worse 
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
     !
   	s3 = matmul(c, sxy)
     !
@@ -636,10 +644,19 @@ contains
     sym%irr( 7, 4)%repres = sxy
     sym%irr( 8, 4)%repres = sxy
     !
+    !!
     sym%irr( 5, 7)%repres = c2
     sym%irr( 6, 7)%repres = c2
     sym%irr( 7, 7)%repres = i
     sym%irr( 8, 7)%repres = i
+    !
+    ! sy18: use this together with g7-alternative choice, did no help
+    ! sy19: only this option without g7-swap, did not help
+    !
+    !sym%irr( 5, 7)%repres = c
+    !sym%irr( 6, 7)%repres = c
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
     !
     sym%irr( 5,19)%repres = sxy
     sym%irr( 6,19)%repres = sxy
@@ -753,10 +770,11 @@ contains
                                  b, -a/), (/ 2, 2/)))
   
     c2 = matmul(c,c)
-  
+    !!
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))
-
+    !
+    ! sy22 try this for !! made it worse
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
