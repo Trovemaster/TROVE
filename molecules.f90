@@ -352,6 +352,9 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h6_88_cos3tau_142536
          !
+    case('POTEN_C2H6_88_COS3TAU_SYM') 
+         !
+         MLpotentialfunc => MLpoten_c2h6_88_cos3tau_sym
          !
     case('POTEN_C2H6_DUNCAN') 
          !

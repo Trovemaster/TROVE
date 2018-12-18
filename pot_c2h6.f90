@@ -679,7 +679,7 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
 
     xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
     !
-  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4')
+  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5')
     !
     tau14 = local(14)
     tau24 = local(15)
@@ -1164,7 +1164,7 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2')
+  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5')
       !
       tau14 = local(14)
       tau24 = local(15)
@@ -1204,6 +1204,51 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
 
       rhobar = ( tau14+tau25+tau36 )/3.0_ark
 
+      xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+     !
+  case('R-R16-BETA16-THETA-TAU')
+      !
+      tau14 = local(14)
+      tau24 = local(15)
+      tau25 = local(16)
+      tau35 = local(17)
+      tau36 = local(18)
+      !
+      tau14 = mod(tau14+4.0_ark*pi,4.0_ark*pi)
+      tau24 = mod(tau24+4.0_ark*pi,4.0_ark*pi)
+      tau25 = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+      tau35 = mod(tau35+4.0_ark*pi,4.0_ark*pi)
+      tau36 = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+      !
+      rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+      !
+      tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+      tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+      tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+      tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+      tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+      !
+      xi_A  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(12.0_ark)
+      xi_B  = (                   theta13 - theta12 )/(2.0_ark)
+      !
+      xi_C  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(12.0_ark)
+      xi_D  = (                   theta46 - theta45 )/(2.0_ark)
+      !
+      xi(14) = xi_A + xi_C 
+      xi(15) = xi_B + xi_D
+      xi(16) = xi_A - xi_C 
+      xi(17) = xi_B - xi_D 
+      !
+      !rhobar = ( tau14+tau25+tau36 )/3.0_ark
+      !
       xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
       !
   end select

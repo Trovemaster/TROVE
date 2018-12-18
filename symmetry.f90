@@ -484,8 +484,8 @@ contains
     E_rep_1(5,:,:) = s2
     E_rep_1(6,:,:) = s3
     
-    A2_char(:3) = 1
-    A2_char(4:6) = -1
+    A2_char(:3) = 1.0_ark
+    A2_char(4:6) = -1.0_ark
   
     call irr_allocation 
   
@@ -537,16 +537,18 @@ contains
                                o, o, e, o, &
                                o, o, o, e/), (/4,4/)))
     !!
-    g2 = transpose(reshape( (/ -a,-b, o, o, &
-                                b,-a, o, o, &
-                                o, o,-a,-b, &
-                                o, o, b,-a  /), (/4,4/))) 
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o, b,-a  /), (/4,4/))) 
 
     !sy01: repalce g2 from !!! to this, did not work
-    !g2 = transpose(reshape( (/ -a, b, o, o, &
-    !                           -b,-a, o, o, &
-    !                            o, o,-a, b, &
-    !                            o, o,-b,-a  /), (/4,4/))) 
+    !
+    ! q03 try this 
+    g2 = transpose(reshape( (/ -a, b, o, o, &
+                               -b,-a, o, o, &
+                                o, o,-a, b, &
+                                o, o,-b,-a  /), (/4,4/))) 
 
     !sy3: try this in place of !!  did not work even with one class                          !
     !g4 = transpose(reshape( (/o, o,-e, o, &
@@ -555,20 +557,24 @@ contains
     !                           o, e, o, o  /), (/4,4/)))
 
     ! sy2: use this for g4 in place of !! did not help
-    !g4 = transpose(reshape( (/ e, o, o, o, &
-    !                           o,-e, o, o, &
-    !                           o, o,-e, o, &
-    !                           o, o, o, e  /), (/4,4/)))
+    ! q01: change again for g4 !!
+    ! q03 
+    g4 = transpose(reshape( (/ e, o, o, o, &
+                               o,-e, o, o, &
+                               o, o,-e, o, &
+                               o, o, o, e  /), (/4,4/)))
     !!
-    g4 = transpose(reshape( (/-e, o, o, o, &
-                               o, e, o, o, &
-                               o, o, e, o, &
-                               o, o, o,-e  /), (/4,4/)))
+    !g4 = transpose(reshape( (/-e, o, o, o, &
+    !                           o, e, o, o, &
+    !                           o, o, e, o, &
+    !                           o, o, o,-e  /), (/4,4/)))
 
 
     ! sy4: try this instead of !! did not work 
     ! sy17: try this instead of !!  again to make it consistent with sy15, did not help
     ! sy18: use this together with e7-alternative choice, did not work either
+    ! q01: try his and also in g19 insetad of !!, there is a sign difference in G2 and G3
+    ! q02: try this 
     !g7 = transpose(reshape( (/ -a, o, o,-b, &
     !                            o,-a, b, o, &
     !                            o,-b,-a, o, &
@@ -622,6 +628,9 @@ contains
     !
     ! sy9 try this for !! did not work
     ! sy21 try this for !! again, made it even worse 
+    ! p04 try changing for tau-5 and inverting A-B for (7), did nit work
+    ! p05, everythung else is usual, did nit help 
+    ! p09 
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
@@ -638,11 +647,18 @@ contains
     sym%irr( 6, 2)%repres = i
     sym%irr( 7, 2)%repres = c
     sym%irr( 8, 2)%repres = c
-    !
+    !!
     sym%irr( 5, 4)%repres = i
     sym%irr( 6, 4)%repres = i*m_one
     sym%irr( 7, 4)%repres = sxy
     sym%irr( 8, 4)%repres = sxy
+    !
+    ! p09 change as for A1,..A4
+    !
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i*m_one
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy*m_one
     !
     !!
     sym%irr( 5, 7)%repres = c2
@@ -658,10 +674,29 @@ contains
     !sym%irr( 7, 7)%repres = i
     !sym%irr( 8, 7)%repres = i
     !
+    ! p06 try changing sign for oper 6  did not work 
+    !
+    !sym%irr( 5, 7)%repres = c2
+    !sym%irr( 6, 7)%repres = c2*m_one
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
+    !!
     sym%irr( 5,19)%repres = sxy
     sym%irr( 6,19)%repres = sxy
     sym%irr( 7,19)%repres = i
     sym%irr( 8,19)%repres = i*m_one
+    !
+    ! p07 change E2 sign according with character of A2, did not help
+    ! p08 the same but with sxy from alternative choice , did not work
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy*m_one
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
+    ! p10 another test, did not work 
+    !sym%irr( 5,19)%repres = sxy*m_one
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
     !
     sym%irr( 5,37)%repres = i
     sym%irr( 6,37)%repres = i
@@ -789,8 +824,8 @@ contains
     E_rep_1(5,:,:) = s2
     E_rep_1(6,:,:) = s3
     
-    A2_char(:3) = 1
-    A2_char(4:6) = -1
+    A2_char(:3) = 1.0_ark
+    A2_char(4:6) = -1.0_ark
   
     call irr_allocation 
   
