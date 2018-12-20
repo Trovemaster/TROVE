@@ -2211,8 +2211,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = -a*src(16) + b*src(17)
           dst(17) = -b*src(16) - a*src(17)
           !
-          ! sy13: change direction here comp. to !! made it worse
-          ! p06 try together with p05 to chenge from !!, did not work! 
+          ! r01
           !
           !dst(14) = -a*src(14) - b*src(15)
           !dst(15) =  b*src(14) - a*src(15) 
@@ -2220,12 +2219,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(16) = -a*src(16) - b*src(17)
           !dst(17) =  b*src(16) - a*src(17)
           !
+          ! r02
+          !
+          !dst(14) = -a*src(14) + b*src(15)
+          !dst(15) = -b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
+          !
           !!
           dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
-          !sy11 : try thisl it worked! for 0 1 1 0 16 (classes 12345) but did not work for 0 0 0 1 16
+          ! r05
           !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
-          !  and for 0 0 0 1  16
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -2259,22 +2265,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = src(14)
           dst(17) =-src(15)
           !
-          ! sy14: try changing sign, which did not help, 01110 is still non-diagonal
-          ! q04 : try the following if it chages the sign o G3 and G4, it swapped G2 and G3 
-          ! p07 together with p06 and 095 changing sign relative to !! did not help
+          !r03
+          !dst(14) = src(16)
+          !dst(15) = src(17) 
+          !
+          !dst(16) = src(14)
+          !dst(17) = src(15)
+          !
+          ! r01 did not work
           !
           !dst(14) =-src(16)
           !dst(15) = src(17) 
           !
           !dst(16) =-src(14)
-          !dst(17) = src(15)
-          !
-          ! q05: try this 
-          !
-          !dst(14) = src(16)
-          !dst(15) = src(17) 
-          !
-          !dst(16) = src(14)
           !dst(17) = src(15)
           !
           !dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
@@ -2285,7 +2288,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !!
           dst(18) =  2.0_ark*pi - src(18)
 
-          ! sy23 try this for !! did not help
+          ! r06
           !dst(18) =   - src(18)
 
 
@@ -2334,35 +2337,33 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(12) = src(13)
           dst(13) = src(11)
           !
-          ! sy35: change direction only here comp. !!! did not work
-          ! p05 try changing the directionrelative to !!!  again even though it has not worked before, made it even worse! 
-          !!
+          ! r02
+          !dst(14) = -a*src(14) + b*src(15)
+          !dst(15) = -b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) + b*src(17)
+          !dst(17) = -b*src(16) - a*src(17)
+          !
+          ! r01
           !dst(14) = -a*src(14) - b*src(15)
           !dst(15) =  b*src(14) - a*src(15) 
           !
           !dst(16) = -a*src(16) + b*src(17)
           !dst(17) = -b*src(16) - a*src(17)
           !
-          ! sy13: change direction here comp. to !! did not work, made it worse for 0001-16
-          ! which worked with !!
+          ! r04
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) =  b*src(14) - a*src(15) 
           !
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
+          !
+          !!
           !dst(14) = -a*src(14) + b*src(15)
           !dst(15) = -b*src(14) - a*src(15) 
           !
           !dst(16) = -a*src(16) - b*src(17)
           !dst(17) =  b*src(16) - a*src(17)
-          !
-          !!!
-          ! sy15: change direction only here comp. to !! but leave (2) as it is  
-          ! it worked! for 01010 and for 00110 and for 0001-16 and for 010116 and for 0011-16 and for 022000
-          ! and for 0220-16
-          !but not for 01110 :(
-          !
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
-          !
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
           !
           dst(18) = src(18)
           !
@@ -2390,8 +2391,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = src(14)
           dst(17) = src(15)
           !
-          ! q05: try this (swap oper 4 and 19 for this class 4), no could not symmetrize state 2
-          !
+          ! r03
           !dst(14) = src(16)
           !dst(15) =-src(17) 
           !
