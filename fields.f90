@@ -22568,7 +22568,7 @@ end subroutine check_read_save_none
     real(ark)   :: rcon(trove%Natoms,trove%Natoms),tau_sign
     real(ark)   :: tau,cosa1,cosa2,cosa3,sindelta,norm_2,cosa,&
                    a_t(3),a_t1(3),a_t2(3),a_t3(3),delta,B,vec1,vec2,dvec1(3),dvec2(3),r1,r2,r3,cosu,cosv,sinu,sinv,&
-                   u(3),v(3),w(3),cosdelta,phi,rmat(3,3)
+                   u(3),v(3),w(3),cosdelta,phi,rmat(3,3),fmod
 
     integer(ik) ::  ibond,iangle,kappa,zeta,k1,k2
     integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,J
@@ -22769,15 +22769,20 @@ end subroutine check_read_save_none
           !   delta = acos(B)
           !endif
           !
+          fmod = 2.0_ark*pi
+          !
+          ! s[ecial case of (EM)-symmetry with tau=0..720 deg
+          !if (trove%periodic.and.abs(job%bset(trove%Nmodes)%borders(2)-4.0_ark*pi)<sqrt(small_)) fmod = 4.0_ark*pi
+          !
           if (tau_sign<-small_a) then 
              !
-             delta = 2.0_ark*pi-delta
+             delta = fmod-delta
              !
           endif
           !
-          if ( delta<-small_.or.delta>2.0_ark*pi+small_ ) then 
+          if ( delta<-small_.or.delta>fmod+small_ ) then 
             !
-            delta  = mod(delta+2.0_ark*pi,2.0_ark*pi)
+            delta  = mod(delta+fmod,fmod)
             !
           endif
           !

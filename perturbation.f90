@@ -3147,7 +3147,7 @@ module perturbation
          ! Sometimes the last level in the list does not have all degenerate components.
          ! In this case we remove the last root and set nroots = nroots - 1
          !
-         if (info==1.and.count_index(icount,1)+Nelem>nroots) then 
+         if (info==1.and.count_index(icount,1)+Nelem-1>nroots) then 
            !
            write(out,"(//'PTcontracted_prediag: the last level is  missing its pair, remove it!')")
            Ncount = Ncount - 1

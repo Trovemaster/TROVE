@@ -538,16 +538,17 @@ contains
                                o, o, o, e/), (/4,4/)))
     !
     ! q01 try this 
-    !g2 = transpose(reshape( (/ -a,-b, o, o, &
-    !                            b,-a, o, o, &
-    !                            o, o,-a,-b, &
-    !                            o, o, b,-a  /), (/4,4/))) 
+    ! u07 
+    g2 = transpose(reshape( (/ -a,-b, o, o, &
+                                b,-a, o, o, &
+                                o, o,-a,-b, &
+                                o, o, b,-a  /), (/4,4/))) 
 
     !!
-    g2 = transpose(reshape( (/ -a, b, o, o, &
-                               -b,-a, o, o, &
-                                o, o,-a, b, &
-                                o, o,-b,-a  /), (/4,4/))) 
+    !g2 = transpose(reshape( (/ -a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
 
     !t02
     !g4 = transpose(reshape( (/o, o,-e, o, &
@@ -604,12 +605,13 @@ contains
       i = transpose(reshape( (/ e, o, &
                                 o, e /), (/ 2, 2/)))
       !!
-      c = transpose(reshape( (/ -a, -b, &
-                                 b, -a/), (/ 2, 2/)))
+      !c = transpose(reshape( (/ -a, -b, &
+      !                           b, -a/), (/ 2, 2/)))
       !
       !t08
-      !c = transpose(reshape( (/ -a,  b, &
-      !                          -b, -a/), (/ 2, 2/)))
+      !u09
+      c = transpose(reshape( (/ -a,  b, &
+                                -b, -a/), (/ 2, 2/)))
 
   
     c2 = matmul(c,c)
@@ -618,6 +620,7 @@ contains
                                 o, -e /), (/ 2, 2/)))
     !
     ! t07 
+    ! u10
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
@@ -640,7 +643,13 @@ contains
     sym%irr( 7, 4)%repres = sxy
     sym%irr( 8, 4)%repres = sxy
     !
-    ! t09 change as for A1,..A4
+    !u11
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy
+    !
+    ! u12
     !
     !sym%irr( 5, 4)%repres = i
     !sym%irr( 6, 4)%repres = i*m_one

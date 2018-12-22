@@ -679,7 +679,7 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
 
     xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
     !
-  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6')
+  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7')
     !
     tau14 = local(14)
     tau24 = local(15)
