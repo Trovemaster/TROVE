@@ -919,21 +919,15 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(12) = src(11)-molec%local_eq(11)
         dst(13) = src(13)-molec%local_eq(13)
         !
-        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
-        tau24 = mod(src(15)+4.0_ark*pi,4.0_ark*pi)
-        tau25 = mod(src(16)+4.0_ark*pi,4.0_ark*pi)
-        tau35 = mod(src(17)+4.0_ark*pi,4.0_ark*pi)
-        tau36 = mod(src(18)+4.0_ark*pi,4.0_ark*pi)
+        tau14 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
         !
         taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
         !
         dst(18) = taubar
-        !
-        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
-        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
-        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
-        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
         !
         theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
@@ -979,11 +973,11 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         tau35= -(sqrt(3.0_ark)*S17-3.0_ark*sqrt(3.0_ark)*S18+2.0_ark*sqrt(3.0_ark)*pi+3.0_ark*S14)*sqrt(3.0_ark)/9.0_ark
         tau36= (-sqrt(3.0_ark)*S17+3.0_ark*sqrt(3.0_ark)*S18+3.0_ark*S16)*sqrt(3.0_ark)/9.0_ark
         !
-        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi)
-        dst(15) = mod(tau24+4.0_ark*pi,4.0_ark*pi)
-        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
-        dst(17) = mod(tau35+4.0_ark*pi,4.0_ark*pi)
-        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        dst(14) = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+2.0_ark*pi,2.0_ark*pi)
         !
       endif
       !
@@ -1277,7 +1271,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     integer(ik), intent(in)  ::  nmodes
     real(ark), intent(in)    ::  src(1:nmodes)
     real(ark), intent(out)   ::  dst(1:nmodes)
-    real(ark) :: a,b
+    real(ark) :: a,b,e,o,g(1:4,1:4)
  !
     real(ark),dimension(size(src)) :: tmp
     !
@@ -1297,6 +1291,10 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     !
     a = 0.5_ark
     b = 0.5_ark*sqrt(3.0_ark)
+    !
+    e = 1.0_ark
+    o = 0.0_ark
+    !
     if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/start'
     !
     select case(trim(molec%coords_transform))
@@ -4062,12 +4060,13 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(11) = src(12)
           !dst(12) = src(13)
           !dst(13) = src(11)
-          !!
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
           !
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
+          g = transpose(reshape( (/ -a,-b, o, o, &
+                                     b,-a, o, o, &
+                                     o, o,-a,-b, &
+                                     o, o, b,-a  /), (/4,4/))) 
+          !!
+          dst(14:17) = matmul(g,src(14:17))
           !
           ! sy13: change direction here comp. to !! made it worse
           ! p06 try together with p05 to chenge from !!, did not work! 
@@ -4110,12 +4109,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(12) = src(10)
           dst(13) = src(9)
           !
+          g = transpose(reshape( (/ e, o, o, o, &
+                                    o,-e, o, o, &
+                                    o, o,-e, o, &
+                                    o, o, o, e  /), (/4,4/)))
           !!
-          dst(14) = src(16)
-          dst(15) =-src(17) 
-          !
-          dst(16) = src(14)
-          dst(17) =-src(15)
+          dst(14:17) = matmul(g,src(14:17))
           !
           ! sy14: try changing sign, which did not help, 01110 is still non-diagonal
           ! q04 : try the following if it chages the sign o G3 and G4, it swapped G2 and G3 
@@ -4216,11 +4215,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           ! and for 0220-16
           !but not for 01110 :(
           !
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
-          !
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
+          g = transpose(reshape( (/ -a, o, o, b, &
+                                     o,-a,-b, o, &
+                                     o, b,-a, o, &
+                                    -b, o, o,-a  /), (/4,4/))) 
+          !!
+          dst(14:17) = matmul(g,src(14:17))
           !
           dst(18) = src(18)
           !
@@ -4242,11 +4242,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(12) = src(9)
           dst(13) = src(10)
           !!
-          dst(14) = src(16)
-          dst(15) = src(17) 
-          !
-          dst(16) = src(14)
-          dst(17) = src(15)
+          g= transpose(reshape( (/ e, o, o, o, &
+                                   o, e, o, o, &
+                                   o, o,-e, o, &
+                                   o, o, o,-e  /), (/4,4/)))
+          !!
+          dst(14:17) = matmul(g,src(14:17))
           !
           ! q05: try this (swap oper 4 and 19 for this class 4), no could not symmetrize state 2
           !
