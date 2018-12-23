@@ -413,7 +413,7 @@ contains
     ! sy16: Per's matrices, did not improve 
     ! sy24: as part of sap 7 and 8 
     !
-    case("G36(EM)") ! sy 
+    case("G36(EM)") 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -539,16 +539,16 @@ contains
     !
     ! q01 try this 
     ! u07 
-    g2 = transpose(reshape( (/ -a,-b, o, o, &
-                                b,-a, o, o, &
-                                o, o,-a,-b, &
-                                o, o, b,-a  /), (/4,4/))) 
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o, b,-a  /), (/4,4/))) 
 
     !!
-    !g2 = transpose(reshape( (/ -a, b, o, o, &
-    !                           -b,-a, o, o, &
-    !                            o, o,-a, b, &
-    !                            o, o,-b,-a  /), (/4,4/))) 
+    g2 = transpose(reshape( (/ -a, b, o, o, &
+                               -b,-a, o, o, &
+                                o, o,-a, b, &
+                                o, o,-b,-a  /), (/4,4/))) 
 
     !t02
     !g4 = transpose(reshape( (/o, o,-e, o, &
@@ -605,13 +605,13 @@ contains
       i = transpose(reshape( (/ e, o, &
                                 o, e /), (/ 2, 2/)))
       !!
-      !c = transpose(reshape( (/ -a, -b, &
-      !                           b, -a/), (/ 2, 2/)))
+      c = transpose(reshape( (/ -a, -b, &
+                                 b, -a/), (/ 2, 2/)))
       !
       !t08
       !u09
-      c = transpose(reshape( (/ -a,  b, &
-                                -b, -a/), (/ 2, 2/)))
+      !c = transpose(reshape( (/ -a,  b, &
+      !                          -b, -a/), (/ 2, 2/)))
 
   
     c2 = matmul(c,c)

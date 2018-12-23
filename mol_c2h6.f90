@@ -3642,54 +3642,34 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
       !
       select case(trim(molec%symmetry))
         !
-      case default
-        !
-        !write(out, '(/a,1x,a,1x,a)') &
-        !'ML_symmetry_transformation_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
-        !stop
-        !
       case('G36(EM)')
         !
-        !b =-0.5_ark*sqrt(3.0_ark)
-        !
-        !write(*,*) "case", ioper,  "prior ", src(18)
-        !write(*,*) "operation: ", ioper
         select case(ioper)
           !
-        !case default
-          !
-          !write(out, '(/a,1x,i3,1x,a)') &
-          !'ML_symmetry_transformation_C2H6 error: symmetry operation ', ioper, 'is unknown'
-          !stop
-          !
-          ! 1 and 6, 2 and 5, and 3 and 4 are opposites
-          ! (123) means 1 replaced by 2 etc, so here r1 would now be r3 as 3 is
-          ! relabelled as 1. 
         case (1) ! E
           !
           dst(1:18) = src(1:18)
-            !         write(*,*) "operation 1: ", dst(18) 
           !
         case (2) !C(+)/(123)(456)
           !
           dst(1) = src(1)
+          !!
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
           !
-          ! u05
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
           !
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
+          ! a02
           !
-          ! u06
           !dst(2) = src(4)
           !dst(3) = src(2)
           !dst(4) = src(3)
@@ -3697,66 +3677,27 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(6) = src(5)
           !dst(7) = src(6)
           !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
-          !!!
-          !dst(2) = src(3)
-          !dst(3) = src(4)
-          !dst(4) = src(2)
-          !dst(5) = src(6)
-          !dst(6) = src(7)
-          !dst(7) = src(5)
-          !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
-          !
-          ! s12: try reversing the direction; worked in combination with 
-          ! dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
-          !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
+          !dst(8) = src(10)
+          !dst(9) = src(8)
+          !dst(10) = src(9)
+          !dst(11) = src(13)
+          !dst(12) = src(11)
+          !dst(13) = src(12)
           !!
-          ! u03
-          !dst(14) = -a*src(14) + b*src(15)
-          !dst(15) = -b*src(14) - a*src(15) 
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
           !
-          !dst(16) = -a*src(16) - b*src(17)
-          !dst(17) =  b*src(16) - a*src(17)
-          !
-          ! u04
-          !dst(14) = -a*src(14) - b*src(15)
-          !dst(15) =  b*src(14) - a*src(15) 
-          !
-          !dst(16) = -a*src(16) + b*src(17)
-          !dst(17) = -b*src(16) - a*src(17)
-          !
-          ! u01
-          !
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
-          !
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
           !
           !!
           dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
-          ! u12
+          ! a01, nope
           !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
           !
-          !  and for 0 0 0 1  16
+          ! a05
+          dst(18) = src(18)
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -3784,42 +3725,22 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(13) = src(9)
           !
           !!
-          !dst(14) = src(16)
-          !dst(15) =-src(17) 
+          dst(14) = src(16)
+          dst(15) =-src(17) 
           !
-          !dst(16) = src(14)
-          !dst(17) =-src(15)
+          dst(16) = src(14)
+          dst(17) =-src(15)
           !
-          ! sy14: try changing sign, which did not help, 01110 is still non-diagonal
-          ! q04 : try the following if it chages the sign o G3 and G4, it swapped G2 and G3 
-          ! p07 together with p06 and 095 changing sign relative to !! did not help
-          !
-          dst(14) =-src(16)
-          dst(15) = src(17) 
-          !
-          dst(16) =-src(14)
-          dst(17) = src(15)
-          !
-          ! u02
-          !
-          !dst(14) = src(16)
-          !dst(15) = src(17) 
-          !
-          !dst(16) = src(14)
-          !dst(17) = src(15)
-          !
-          !dst(18) =  -2.0_ark/3.0_ark*pi - src(18)
-          !
-          !!!
-          !!!dst(18) =  4.0_ark/3.0_ark*pi - src(18)
-          !!!
           !!
           dst(18) =  2.0_ark*pi - src(18)
-
+          !
+          !a04
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          !a05
+          !dst(18) = src(18)
+          !
           ! sy23 try this for !! did not help
-          !dst(18) =   - src(18)
-
-
           !dst(18) =  4.0_ark/3.0_ark*pi - src(18)
           !
           do while(dst(18) < 0.0_ark) 
@@ -3833,38 +3754,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !!
-          ! u05
-          !
-          !dst(2) = src(3)
-          !dst(3) = src(4)
-          !dst(4) = src(2)
-          !dst(5) = src(7)
-          !dst(6) = src(5)
-          !dst(7) = src(6)
-          !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(13)
-          !dst(12) = src(11)
-          !dst(13) = src(12)
-          !
-          ! u06
-          dst(2) = src(3)
-          dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
-          !
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
-          dst(11) = src(12)
-          dst(12) = src(13)
-          dst(13) = src(11)
-          !
-          ! s12: try reversing the direction
           !
           !dst(2) = src(4)
           !dst(3) = src(2)
@@ -3880,42 +3769,32 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(12) = src(13)
           !dst(13) = src(11)
           !
-          ! u01
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
+          ! a02
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(7)
+          dst(6) = src(5)
+          dst(7) = src(6)
           !
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(13)
+          dst(12) = src(11)
+          dst(13) = src(12)
           !
-          ! sy13: change direction here comp. to !! did not work, made it worse for 0001-16
-          ! which worked with !!
-          ! u03
-          !dst(14) = -a*src(14) + b*src(15)
-          !dst(15) = -b*src(14) - a*src(15) 
           !
-          !dst(16) = -a*src(16) + b*src(17)
-          !dst(17) = -b*src(16) - a*src(17)
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
           !
-          ! u04
-          !dst(14) = -a*src(14) - b*src(15)
-          !dst(15) =  b*src(14) - a*src(15) 
-          !
-          !dst(16) = -a*src(16) - b*src(17)
-          !dst(17) =  b*src(16) - a*src(17)
-          !
-          !!!
-          ! sy15: change direction only here comp. to !! but leave (2) as it is  
-          ! it worked! for 01010 and for 00110 and for 0001-16 and for 010116 and for 0011-16 and for 022000
-          ! and for 0220-16
-          !but not for 01110 :(
-          !
-          !dst(14) = -a*src(14) + b*src(15)
-          !dst(15) = -b*src(14) - a*src(15) 
-          !
-          !dst(16) = -a*src(16) - b*src(17)
-          !dst(17) =  b*src(16) - a*src(17)
-          !
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  b*src(16) - a*src(17)
+          !!
           dst(18) = src(18)
+          !
+          ! a05
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
         case (19) !sxy(-)/(14)(25)(36)(ab)
           !
@@ -3940,47 +3819,28 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(16) = src(14)
           dst(17) = src(15)
-          !
-          ! u02
-          !
-          !dst(14) = src(16)
-          !dst(15) =-src(17) 
-          !
-          !dst(16) = src(14)
-          !dst(17) =-src(15)
-          !
-          ! u03
-          !
-          !dst(14) =-src(16)
-          !dst(15) = src(17) 
-          !
-          !dst(16) =-src(14)
-          !dst(17) = src(15)
-          !
+          !!
           dst(18) = src(18)
+          !
+          ! a05
+          !dst(18) =  2.0_ark*pi - src(18)
           !
         case(37) !E'
            dst(1:17) = src(1:17)
-
-           dst(14:17) = src(14:17)
-
-
            dst(18) = src(18) + 2.0_ark*pi
-           !
            do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
            enddo
            do while(dst(18) > 4.0_ark*pi) 
                 dst(18) = dst(18) - 4.0_ark*pi
            enddo
-           ! write(*,*) "operation 37: ", dst(18) 
            !
         end select
         !
         if (all(tn(ioper,:)/=0)) then
             call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
             call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
-        endif  
+        endif 
         !
       end select 
       !

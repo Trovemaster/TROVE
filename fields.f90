@@ -16098,7 +16098,9 @@ end subroutine check_read_save_none
              write(out,"(30f18.8)") g2(1:bs%imodes)
              write(out,"('difference somewhat greater than ',f18.8)") 10000.0_rk*sqrt(small_)*abs(f_t)
            endif 
+           !if (.not.periodic_model) then 
            stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+           !endif
         endif
         !
         ! Define the conditional basis set parameters   
@@ -16132,7 +16134,7 @@ end subroutine check_read_save_none
              endif
              !
           endif
-
+          !
           bs%params    = 0
           bs%params(1) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )  ! conversion parameter to the normal coordinates
           bs%params(2) =       sqrt( 2.0_ark*g2(1)*f2(1)  )       ! omega (harmonic parameter)
@@ -17577,10 +17579,11 @@ end subroutine check_read_save_none
              irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
              !
              ! for periodic case we need to choose the equilibrium at the 
-             ! reference geometry; we apply this rule only whe the periodicity is the same 
+             ! reference geometry; we apply this rule only if the periodicity is the same 
              ! as the size of the class 
              ! 
-             if (trove%periodic.and.bs%imodes   ==job%bset(Nmodes)%iperiod) then
+             if (trove%periodic) then 
+               !.and.bs%imodes   ==job%bset(Nmodes)%iperiod) then
                period = (job%bset(Nmodes)%borders(2)-job%bset(Nmodes)%borders(1))/real(job%bset(Nmodes)%iperiod,ark)
                periodic_model = .true.
              endif
@@ -17797,7 +17800,9 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
-                   stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                   if (.not.periodic_model) then 
+                     stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                   endif
                 endif
                 !
                 g1d(ipower) = g2(1)
