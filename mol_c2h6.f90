@@ -831,21 +831,29 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(12) = src(11)-molec%local_eq(11)
         dst(13) = src(13)-molec%local_eq(13)
         !
-        tau14 = mod(src(14)+2.0_ark*pi,2.0_ark*pi)
+        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
         tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
         tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
         tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
         tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
         !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau14>2.0_ark*pi) then 
+           tau25 = tau25 + 2.0_ark*pi
+           tau36 = tau36 + 2.0_ark*pi
+        endif
+        !
         taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
         !
         dst(18) = taubar
         !
-        !tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
-        !tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        !tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
-        !tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
-        !tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
         !
         theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
@@ -1021,86 +1029,84 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     endif
     !
     !
-    a0 = 0
-    !
-    tau = pi
-    !
-    tau14 = tau
-    tau15 = tau-theta
-    tau16 = tau+theta
-
-    a0(1,:) = 0
-    a0(2,:) = 0
-    !
-    a0(3,1) = r*sin(alpha)
-    a0(3,2) = 0
-    a0(3,3) = r*cos(alpha)
-    !
-    a0(4,1) = r*sin(alpha)*cos(tau14)
-    a0(4,2) = r*sin(alpha)*sin(tau14)
-    a0(4,3) =-r*cos(alpha)
-    !
-    a0(5,1) = r*sin(alpha)*cos(theta)
-    a0(5,2) =-r*sin(alpha)*sin(theta)
-    a0(5,3) = r*cos(alpha)
-    !
-    a0(6,1) = r*sin(alpha)*cos(tau15)
-    a0(6,2) = r*sin(alpha)*sin(tau15)
-    a0(6,3) =-r*cos(alpha)
-    !
-    a0(7,1) = r*sin(alpha)*cos(theta)
-    a0(7,2) = r*sin(alpha)*sin(theta)
-    a0(7,3) = r*cos(alpha)
-    !
-    a0(8,1) = r*sin(alpha)*cos(tau16)
-    a0(8,2) = r*sin(alpha)*sin(tau16)
-    a0(8,3) =-r*cos(alpha)
-    !
-    a0(1:7:2,3) =a0(1:7:2,3)-r12*0.5_ark
-    a0(2:8:2,3) =a0(2:8:2,3)+r12*0.5_ark
-    !
-    !
-    do ix=1, 3
-      CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-      a0(:,ix) = a0(:,ix) - CM_shift
-    enddo
-    !
-    !
-    phi = tau*0.5_ark
-    !
-    transform = 0 
-    transform(3,3) = 1.0_ark
-    transform(1,1) = cos(phi)
-    transform(1,2) = sin(phi)
-    transform(2,1) = -sin(phi)
-    transform(2,2) = cos(phi)
-    !
-    do n = 1,Natoms
-      a0(n,:) = matmul(transform,a0(n,:))
-    enddo
-    !
-    if (verbose>=3) then
-      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
-      write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
-      do iatom=3, Natoms
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
+    select case(trim(molec%coords_transform))
+      !
+    case default
+      !
+      a0 = 0
+      !
+      tau = pi
+      !
+      tau14 = tau
+      tau15 = tau-theta
+      tau16 = tau+theta
+   
+      a0(1,:) = 0
+      a0(2,:) = 0
+      !
+      a0(3,1) = r*sin(alpha)
+      a0(3,2) = 0
+      a0(3,3) = r*cos(alpha)
+      !
+      a0(4,1) = r*sin(alpha)*cos(tau14)
+      a0(4,2) = r*sin(alpha)*sin(tau14)
+      a0(4,3) =-r*cos(alpha)
+      !
+      a0(5,1) = r*sin(alpha)*cos(theta)
+      a0(5,2) =-r*sin(alpha)*sin(theta)
+      a0(5,3) = r*cos(alpha)
+      !
+      a0(6,1) = r*sin(alpha)*cos(tau15)
+      a0(6,2) = r*sin(alpha)*sin(tau15)
+      a0(6,3) =-r*cos(alpha)
+      !
+      a0(7,1) = r*sin(alpha)*cos(theta)
+      a0(7,2) = r*sin(alpha)*sin(theta)
+      a0(7,3) = r*cos(alpha)
+      !
+      a0(8,1) = r*sin(alpha)*cos(tau16)
+      a0(8,2) = r*sin(alpha)*sin(tau16)
+      a0(8,3) =-r*cos(alpha)
+      !
+      a0(1:7:2,3) =a0(1:7:2,3)-r12*0.5_ark
+      a0(2:8:2,3) =a0(2:8:2,3)+r12*0.5_ark
+      !
+      !
+      do ix=1, 3
+        CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+        a0(:,ix) = a0(:,ix) - CM_shift
       enddo
-    endif
-    !
-    b0(:,:,0) = a0(:,:)
-    !
-    
-    !
-    if (Npoints/=0) then
-       ! 
-       if (.not.present(rho_borders).or..not.present(rho_ref)) then  
-          write(out,"('ML_b0_ABCD: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
-          stop 'ML_b0_ABCD: rho_borders or rho_ref not specified '
-       endif
-       !
-       select case(trim(molec%coords_transform))
-         !
-       case default
+      !
+      !
+      phi = tau*0.5_ark
+      !
+      transform = 0 
+      transform(3,3) = 1.0_ark
+      transform(1,1) = cos(phi)
+      transform(1,2) = sin(phi)
+      transform(2,1) = -sin(phi)
+      transform(2,2) = cos(phi)
+      !
+      do n = 1,Natoms
+        a0(n,:) = matmul(transform,a0(n,:))
+      enddo
+      !
+      if (verbose>=3) then
+        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
+        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
+        do iatom=3, Natoms
+          write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
+        enddo
+      endif
+      !
+      b0(:,:,0) = a0(:,:)
+      !
+      if (Npoints/=0) then
+         ! 
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_ABCD: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_ABCD: rho_borders or rho_ref not specified '
+         endif
          !
          rho_ref = molec%taueq(1)
          !
@@ -1177,7 +1183,82 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             !
          enddo
          !
-       case('R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7')
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7')
+      !
+      a0 = 0
+      !
+      tau = pi
+      !
+      tau14 = tau
+      tau15 = tau+theta
+      tau16 = tau-theta
+   
+      a0(1,:) = 0
+      a0(2,:) = 0
+      !
+      a0(3,1) = r*sin(alpha)
+      a0(3,2) = 0
+      a0(3,3) =-r*cos(alpha)
+      !
+      a0(4,1) = r*sin(alpha)*cos(tau14)
+      a0(4,2) = r*sin(alpha)*sin(tau14)
+      a0(4,3) = r*cos(alpha)
+      !
+      a0(5,1) = r*sin(alpha)*cos(theta)
+      a0(5,2) =-r*sin(alpha)*sin(theta)
+      a0(5,3) =-r*cos(alpha)
+      !
+      a0(8,1) = r*sin(alpha)*cos(tau15)
+      a0(8,2) = r*sin(alpha)*sin(tau15)
+      a0(8,3) = r*cos(alpha)
+      !
+      a0(7,1) = r*sin(alpha)*cos(theta)
+      a0(7,2) = r*sin(alpha)*sin(theta)
+      a0(7,3) =-r*cos(alpha)
+      !
+      a0(6,1) = r*sin(alpha)*cos(tau16)
+      a0(6,2) = r*sin(alpha)*sin(tau16)
+      a0(6,3) = r*cos(alpha)
+      !
+      a0(1:7:2,3) =a0(1:7:2,3)+r12*0.5_ark
+      a0(2:8:2,3) =a0(2:8:2,3)-r12*0.5_ark
+      !
+      do ix=1, 3
+        CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+        a0(:,ix) = a0(:,ix) - CM_shift
+      enddo
+      !
+      phi = tau*0.5_ark
+      !
+      transform = 0 
+      transform(3,3) = 1.0_ark
+      transform(1,1) = cos(phi)
+      transform(1,2) = sin(phi)
+      transform(2,1) = -sin(phi)
+      transform(2,2) = cos(phi)
+      !
+      do n = 1,Natoms
+        a0(n,:) = matmul(transform,a0(n,:))
+      enddo
+      !
+      if (verbose>=3) then
+        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
+        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
+        do iatom=3, Natoms
+          write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
+        enddo
+      endif
+      !
+      b0(:,:,0) = a0(:,:)
+      !
+      if (Npoints/=0) then
+         ! 
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_ABCD: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_ABCD: rho_borders or rho_ref not specified '
+         endif
          !
          rho_ref = 0
          !
@@ -1188,7 +1269,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             tau14 = tau
             tau15 = tau+theta
             tau16 = tau-theta
-      
+            !
             b0(1,:,i) = 0
             b0(2,:,i) = 0
             !
@@ -1239,8 +1320,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
               b0(n,:,i) = matmul(transform,b0(n,:,i))
             enddo
             !
-            !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
-            !
             if (verbose>=3) then
               write(out, '(i5)') 8
               write(out,'(a)') ""
@@ -1253,9 +1332,9 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             !
          enddo         
          !
-       end select 
+       endif
        !
-    endif
+    end select 
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
@@ -3691,13 +3770,15 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(17) = -b*src(16) - a*src(17)
           !
           !!
-          dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
           ! a01, nope
           !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          ! a06
+          !dst(18) = src(18)  + 8.0_ark/3.0_ark*pi
           !
-          ! a05
-          dst(18) = src(18)
+          ! a08
+          !dst(18) = src(18)
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -3739,6 +3820,9 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           !a05
           !dst(18) = src(18)
+          !
+          !a07
+          !dst(18) =src(18)
           !
           ! sy23 try this for !! did not help
           !dst(18) =  4.0_ark/3.0_ark*pi - src(18)
@@ -3793,7 +3877,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !!
           dst(18) = src(18)
           !
-          ! a05
+          ! a08
           !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
         case (19) !sxy(-)/(14)(25)(36)(ab)
@@ -3820,7 +3904,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = src(14)
           dst(17) = src(15)
           !!
-          dst(18) = src(18)
+          dst(18) =src(18)
           !
           ! a05
           !dst(18) =  2.0_ark*pi - src(18)

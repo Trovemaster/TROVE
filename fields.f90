@@ -1645,11 +1645,11 @@ module fields
                   NAngles = NAngles + 1 
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(2,202,302) 
+               case(2,202,302,402) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(-2,-202,-302) 
+               case(-2,-202,-302,-402) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
@@ -4956,7 +4956,7 @@ end subroutine check_read_save_none
              dihedrals(Ndihedrals,3) = trove%zmatrix(iatom)%connect(2)
              dihedrals(Ndihedrals,4) = trove%zmatrix(iatom)%connect(3)
              !
-          case(-2,2,-202,202,-302,302) 
+          case(-2,2,-202,202,-302,302,-402,402) 
              !
              ! J=2 -> beta = dihedral-beta(p0,p1,p2,p3) - type 2
              !
@@ -8500,6 +8500,12 @@ end subroutine check_read_save_none
           enddo
           !
        case(202,-202)
+          !
+          call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
+          !
+          Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
+          !
+       case(402,-402)
           !
           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
           !
@@ -22573,7 +22579,7 @@ end subroutine check_read_save_none
     real(ark)   :: rcon(trove%Natoms,trove%Natoms),tau_sign
     real(ark)   :: tau,cosa1,cosa2,cosa3,sindelta,norm_2,cosa,&
                    a_t(3),a_t1(3),a_t2(3),a_t3(3),delta,B,vec1,vec2,dvec1(3),dvec2(3),r1,r2,r3,cosu,cosv,sinu,sinv,&
-                   u(3),v(3),w(3),cosdelta,phi,rmat(3,3),fmod
+                   u(3),v(3),w(3),cosdelta,phi,rmat(3,3),fmod,u0(3),v0(3),sina1,sina2
 
     integer(ik) ::  ibond,iangle,kappa,zeta,k1,k2
     integer(ik) ::  n1,n2,n3,n4,n0,ix,iy,iz,J
@@ -22792,6 +22798,116 @@ end subroutine check_read_save_none
           endif
           !
           r(trove%Nbonds+trove%Nangles+iangle) = delta
+          !
+       case(-402,402) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+          !           ! special case of tau defined for the range 0..720
+          !
+          n1 = trove%dihedrals(iangle,1)
+          n2 = trove%dihedrals(iangle,2)
+          n3 = trove%dihedrals(iangle,3)
+          n4 = trove%dihedrals(iangle,4)
+          !
+          u(:) = cartesian(n4,:) - cartesian(n3,:)
+          w(:) = cartesian(n2,:) - cartesian(n3,:)
+          v(:) = cartesian(n1,:) - cartesian(n2,:)
+          !
+          if (J<0) w = -w
+          !
+          !endif 
+          !
+          r1 =  sqrt(sum(u(:)**2))
+          r2 =  sqrt(sum(w(:)**2))
+          r3 =  sqrt(sum(v(:)**2))
+          !
+          u = u/r1
+          w = w/r2
+          v = v/r3
+          !
+          dvec1(:) = 0 
+          dvec2(:) = 0 
+          !
+          do iy =1,3
+            do iz =1,3
+               dvec1(:) = dvec1(:) + epsil(:,iy,iz)*u(iy)*w(iz)
+               dvec2(:) = dvec2(:) + epsil(:,iy,iz)*v(iy)*w(iz)
+            enddo
+          enddo
+          !
+          cosu = sum( u(:)*w(:) )
+          cosv =-sum( v(:)*w(:) )
+          !
+          sinu = sqrt(1.0_ark-cosu**2)
+          sinv = sqrt(1.0_ark-cosv**2)
+          !
+          B = sum( dvec1(:)*dvec2(:) )/( sinu*sinv )
+          !
+          tau_sign = 0
+          !
+          do iy =1,3
+            do iz =1,3
+               tau_sign = tau_sign - sum(epsil(:,iy,iz)*w(:)*dvec1(iy)*dvec2(iz))
+            enddo
+          enddo
+          !
+          dvec1(:) = MLvector_product(u(:),w(:))
+          dvec2(:) = MLvector_product(v(:),w(:))
+          !
+          vec1 = sqrt( sum(dvec1(:)**2) )
+          vec2 = sqrt( sum(dvec2(:)**2) )
+          !
+          dvec1 = dvec1/vec1
+          dvec2 = dvec2/vec2
+          !
+          B = sum( dvec1(:)*dvec2(:) )
+          !
+          a_t = MLvector_product(dvec1(:),dvec2(:))
+          !
+          tau_sign = -sum( w(:)*a_t(:) )
+          !
+          cosdelta = B
+          !
+          a_t = MLvector_product(dvec1(:),dvec2(:))
+          !
+          sindelta = sqrt(sum(a_t(:)**2))
+          !
+          delta = atan2(sindelta,cosdelta)
+          !
+          u0(:) = trove%b0(n4,:,0) - trove%b0(n3,:,0) 
+          v0(:) = trove%b0(n1,:,0) - trove%b0(n2,:,0) 
+          !
+          u0 = u0/sqrt(sum(u0(:)**2))
+          v0 = v0/sqrt(sum(v0(:)**2))
+          !
+          cosa1 = sum(u0*u)
+          cosa2 = sum(v0*v)
+          !
+          a_t = MLvector_product(u0(:),u(:))
+          sina1 = sqrt(sum(a_t(:)**2))
+          !          
+          a_t = MLvector_product(v0(:),v(:))
+          sina2 = sqrt(sum(a_t(:)**2))
+          !
+          fmod = 2.0_ark*pi
+          !
+          ! special case of (EM)-symmetry with tau=0..720 deg
+          if (dvec1(1)<0.0_ark) then 
+            delta = delta + 2.0_ark*pi
+            fmod = 4.0_ark*pi
+          endif
+          !
+          if (tau_sign<-small_a) then 
+             !
+             delta = fmod-delta
+             !
+          endif
+          !
+          if ( delta<-small_.or.delta>fmod+small_ ) then 
+            !
+            delta  = mod(delta+fmod,fmod)
+            !
+          endif
+          !
+          r(trove%Nbonds+trove%Nangles+iangle) = delta          
           !
        case(101) ! The special bond-angles for the linear molecule case 
           !
@@ -24480,3 +24596,4 @@ end subroutine check_read_save_none
 
 
   end module fields
+
