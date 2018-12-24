@@ -413,7 +413,7 @@ contains
     ! sy16: Per's matrices, did not improve 
     ! sy24: as part of sap 7 and 8 
     !
-    case("G36(EM)") 
+    case("G36(EM2)") 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -1090,7 +1090,7 @@ contains
 
 
 
-    case("G36(EM1)") !! 
+    case("G36(EM)") !! Tom's
 
       sym%Nrepresen = 18
       sym%Noper = 72
