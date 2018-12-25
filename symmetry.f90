@@ -413,7 +413,7 @@ contains
     ! sy16: Per's matrices, did not improve 
     ! sy24: as part of sap 7 and 8 
     !
-    case("G36(EM2)") 
+    case("G36(EM)") 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -539,6 +539,7 @@ contains
     !
     ! q01 try this 
     ! u07 
+    ! b08
     !g2 = transpose(reshape( (/ -a,-b, o, o, &
     !                            b,-a, o, o, &
     !                            o, o,-a,-b, &
@@ -568,15 +569,16 @@ contains
     !                           o, o, o,-e  /), (/4,4/)))
 
     !t05
-    !g7 = transpose(reshape( (/ -a, o, o,-b, &
-    !                            o,-a, b, o, &
-    !                            o,-b,-a, o, &
-    !                            b, o, o,-a  /), (/4,4/))) 
+    ! b09
+    g7 = transpose(reshape( (/ -a, o, o,-b, &
+                                o,-a, b, o, &
+                                o,-b,-a, o, &
+                                b, o, o,-a  /), (/4,4/))) 
     !!
-    g7 = transpose(reshape( (/ -a, o, o, b, &
-                                o,-a,-b, o, &
-                                o, b,-a, o, &
-                               -b, o, o,-a  /), (/4,4/))) 
+    !g7 = transpose(reshape( (/ -a, o, o, b, &
+    !                            o,-a,-b, o, &
+    !                            o, b,-a, o, &
+    !                           -b, o, o,-a  /), (/4,4/))) 
 
     ! sy5: try this instd of !! wrong character 
     !g7 = transpose(reshape( (/-a, b, o, o, &
@@ -610,6 +612,8 @@ contains
       !
       !t08
       !u09
+      ! b07
+      ! b16: still same problem 
       !c = transpose(reshape( (/ -a,  b, &
       !                          -b, -a/), (/ 2, 2/)))
 
@@ -621,6 +625,7 @@ contains
     !
     ! t07 
     ! u10
+    ! b10
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
@@ -662,13 +667,12 @@ contains
     sym%irr( 7, 7)%repres = i
     sym%irr( 8, 7)%repres = i
     !
-    ! sy18: use this together with g7-alternative choice, did no help
-    ! sy19: only this option without g7-swap, did not help
+    ! b15 wrong characters
     !
-    !sym%irr( 5, 7)%repres = c
-    !sym%irr( 6, 7)%repres = c
+    !sym%irr( 5, 7)%repres = c2
+    !sym%irr( 6, 7)%repres = c2
     !sym%irr( 7, 7)%repres = i
-    !sym%irr( 8, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i*m_one
     !
     ! p06 try changing sign for oper 6  did not work 
     !
@@ -681,6 +685,12 @@ contains
     sym%irr( 6,19)%repres = sxy
     sym%irr( 7,19)%repres = i
     sym%irr( 8,19)%repres = i*m_one
+    !
+    ! b15
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i
     !
     ! p07 change E2 sign according with character of A2, did not help
     ! p08 the same but with sxy from alternative choice , did not work
@@ -1090,7 +1100,7 @@ contains
 
 
 
-    case("G36(EM)") !! Tom's
+    case("G36(EM2)") !! Tom's
 
       sym%Nrepresen = 18
       sym%Noper = 72
