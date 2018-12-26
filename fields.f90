@@ -4849,6 +4849,8 @@ end subroutine check_read_save_none
         !
         trove%chi_ref(:,irho) = MLcoordinate_transform_func(ar_t,Nmodes,dir)
         !
+        write(out,"(2x,f17.6)") trove%chi_ref(18,irho)*180.0_ark/pi
+        !
         ! Check for the linearity 
         !
         Inertm(1) = sum( trove%mass(:)*( trove%b0(:,2,irho)**2+ trove%b0(:,3,irho)**2 ) )
@@ -22888,10 +22890,7 @@ end subroutine check_read_save_none
           sina2 = sqrt(sum(a_t(:)**2))
           !
           fmod = 2.0_ark*pi
-          !
-          ! special case of (EM)-symmetry with tau=0..720 deg
           if (dvec1(1)<0.0_ark) then 
-            delta = delta + 2.0_ark*pi
             fmod = 4.0_ark*pi
           endif
           !
@@ -22899,6 +22898,11 @@ end subroutine check_read_save_none
              !
              delta = fmod-delta
              !
+          endif
+          !
+          ! special case of (EM)-symmetry with tau=0..720 deg
+          if (dvec1(1)<0.0_ark.and.tau_sign>-small_a) then 
+            delta = delta + 2.0_ark*pi
           endif
           !
           if ( delta<-small_.or.delta>fmod+small_ ) then 

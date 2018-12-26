@@ -413,7 +413,7 @@ contains
     ! sy16: Per's matrices, did not improve 
     ! sy24: as part of sap 7 and 8 
     !
-    case("G36(EM)") 
+    case("G36(EM3)") 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -545,6 +545,13 @@ contains
     !                            o, o,-a,-b, &
     !                            o, o, b,-a  /), (/4,4/))) 
 
+    !c01
+    !
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
     !!
     g2 = transpose(reshape( (/ -a, b, o, o, &
                                -b,-a, o, o, &
@@ -570,15 +577,20 @@ contains
 
     !t05
     ! b09
-    g7 = transpose(reshape( (/ -a, o, o,-b, &
-                                o,-a, b, o, &
-                                o,-b,-a, o, &
-                                b, o, o,-a  /), (/4,4/))) 
-    !!
-    !g7 = transpose(reshape( (/ -a, o, o, b, &
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
+    !                            o,-a, b, o, &
+    !                            o,-b,-a, o, &
+    !                            b, o, o,-a  /), (/4,4/))) 
+    ! c02
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
     !                            o,-a,-b, o, &
     !                            o, b,-a, o, &
-    !                           -b, o, o,-a  /), (/4,4/))) 
+    !                            b, o, o,-a  /), (/4,4/))) 
+    !!
+    g7 = transpose(reshape( (/ -a, o, o, b, &
+                                o,-a,-b, o, &
+                                o, b,-a, o, &
+                               -b, o, o,-a  /), (/4,4/))) 
 
     ! sy5: try this instd of !! wrong character 
     !g7 = transpose(reshape( (/-a, b, o, o, &
@@ -1100,7 +1112,7 @@ contains
 
 
 
-    case("G36(EM2)") !! Tom's
+    case("G36(EM)") !! Tom's
 
       sym%Nrepresen = 18
       sym%Noper = 72

@@ -1182,10 +1182,10 @@ module me_bnd
         !
         if (verbose>=6) then 
            !
-           write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
+           !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
            !
            do i=0,npoints 
-              write(out,"(i8,2f18.8,' ||')") i,phil_(i),dphil_(i)
+              write(out,"(i8,2f18.8,' || ',1x,i8)") i,phil_(i),dphil_(i),vl
            enddo
         endif 
         !
