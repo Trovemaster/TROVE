@@ -5553,18 +5553,18 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(11)
           !
           !!
-          !dst(14) = -a*src(14) - b*src(15)
-          !dst(15) =  b*src(14) - a*src(15) 
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) =  b*src(14) - a*src(15) 
           !
-          !dst(16) = -a*src(16) - b*src(17)
-          !dst(17) =  b*src(16) - a*src(17)
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  b*src(16) - a*src(17)
           !
           ! c05
-          dst(14) = -a*src(14) + b*src(15)
-          dst(15) = -b*src(14) - a*src(15) 
+          !dst(14) = -a*src(14) + b*src(15)
+          !dst(15) = -b*src(14) - a*src(15) 
           !
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
+          !dst(16) = -a*src(16) + b*src(17)
+          !dst(17) = -b*src(16) - a*src(17)
           !
           !b01
           !dst(14) = -a*src(14) - b*src(15)
