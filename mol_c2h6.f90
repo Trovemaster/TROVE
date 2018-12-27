@@ -5452,18 +5452,18 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(13) = src(9)
           !
           !!
-          !dst(14) = src(16)
-          !dst(15) = src(17) 
-          !
-          !dst(16) = src(14)
-          !dst(17) = src(15)
-          !
-          ! f01
           dst(14) = src(16)
-          dst(15) =-src(17) 
+          dst(15) = src(17) 
           !
           dst(16) = src(14)
-          dst(17) =-src(15)
+          dst(17) = src(15)
+          !
+          ! f01
+          !dst(14) = src(16)
+          !dst(15) =-src(17) 
+          !
+          !dst(16) = src(14)
+          !dst(17) =-src(15)
           !
           !!
           dst(18) =  2.0_ark*pi - src(18)
@@ -5601,17 +5601,17 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(13) = src(10)
           !
           ! f01
-          !dst(14) = src(16)
-          !dst(15) =-src(17) 
-          !
-          !dst(16) = src(14)
-          !dst(17) =-src(15)
-          !
           dst(14) = src(16)
-          dst(15) = src(17) 
+          dst(15) =-src(17) 
           !
           dst(16) = src(14)
-          dst(17) = src(15)
+          dst(17) =-src(15)
+          !
+          !dst(14) = src(16)
+          !dst(15) = src(17) 
+          !
+          !dst(16) = src(14)
+          !dst(17) = src(15)
           !!
           dst(18) = src(18)
           !
