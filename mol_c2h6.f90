@@ -1236,8 +1236,8 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
         dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
         !
-        dst(16)  = ( 2.0_ark*theta45 - theta46 - theta56 )/sqrt(6.0_ark)
-        dst(17)  = (                   theta46 - theta56 )/sqrt(2.0_ark)
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
@@ -1263,11 +1263,11 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         S17 = src(17)
         S18 = src(18)
         !
-        tau14 = -sqrt(2.0_ark)*S17/6.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18+sqrt(6.0_ark)*S16/6.0_ark
-        tau24 = -2.0_ark/3.0_ark*pi-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau25 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau35 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark-2.0_ark/3.0_ark*pi-sqrt(6.0_ark)*S14/6.0_ark+S18
-        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark-sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
+        tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
+        tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
+        tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18-2.0_ark/3.0_ark*pi
+        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
         !
         dst(14) = mod(tau14+4.0_ark*pi,2.0_ark*pi)
         dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
@@ -5343,19 +5343,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !!
-          dst(2) = src(3)
-          dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(6)
-          dst(6) = src(7)
-          dst(7) = src(5)
+          !dst(2) = src(3)
+          !dst(3) = src(4)
+          !dst(4) = src(2)
+          !dst(5) = src(6)
+          !dst(6) = src(7)
+          !dst(7) = src(5)
           !
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
-          dst(11) = src(12)
-          dst(12) = src(13)
-          dst(13) = src(11)
+          !dst(8) = src(9)
+          !dst(9) = src(10)
+          !dst(10) = src(8)
+          !dst(11) = src(12)
+          !dst(12) = src(13)
+          !dst(13) = src(11)
           !
           ! a02
           ! b02
@@ -5374,19 +5374,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(12)
           !
           ! b04
-          !dst(2) = src(4)
-          !dst(3) = src(2)
-          !dst(4) = src(3)
-          !dst(5) = src(6)
-          !dst(6) = src(7)
-          !dst(7) = src(5)
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
           !
-          !dst(8) = src(10)
-          !dst(9) = src(8)
-          !dst(10) = src(9)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
           !!
           !dst(14) = -a*src(14) + b*src(15)
           !dst(15) = -b*src(14) - a*src(15) 
@@ -5395,28 +5395,28 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(17) = -b*src(16) - a*src(17)
           !
           ! b11
+          !dst(14) = -a*src(14) - b*src(15)
+          !dst(15) =  b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
+          !
+          ! b05
           dst(14) = -a*src(14) - b*src(15)
           dst(15) =  b*src(14) - a*src(15) 
           !
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
-          !
-          ! b05
-          !dst(14) = -a*src(14) - b*src(15)
-          !dst(15) = -b*src(14) - a*src(15) 
-          !
-          !dst(16) = -a*src(16) + b*src(17)
-          !dst(17) =  b*src(16) - a*src(17)
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
           !
           ! a01, nope
-          !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
           ! a06
           !dst(18) = src(18)  + 8.0_ark/3.0_ark*pi
           !
           ! b16
           !dst(18) = src(18)
           !!
-          dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -5426,7 +5426,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
                 dst(18) = dst(18) - 4.0_ark*pi
           enddo
           !    
-        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+        case (19) !sxy(+)/(14)(26)(35)(ab)* 
           !
           dst(1) = src(1)
           !
@@ -5451,6 +5451,13 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16) = src(14)
           dst(17) =-src(15)
           !
+          ! d01
+          !dst(14) = src(16)
+          !dst(15) = src(17) 
+          !
+          !dst(16) = src(14)
+          !dst(17) = src(15)
+          !
           !!
           dst(18) =  2.0_ark*pi - src(18)
           !
@@ -5464,7 +5471,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(18) = src(18)
           !
           !a07
-          !dst(18) =src(18)
+          dst(18) =src(18)
           !
           ! b14
           !dst(18) =  4.0_ark/3.0_ark*pi - src(18)
@@ -5480,19 +5487,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !!
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(6)
-          dst(6) = src(7)
-          dst(7) = src(5)
+          !dst(2) = src(4)
+          !dst(3) = src(2)
+          !dst(4) = src(3)
+          !dst(5) = src(6)
+          !dst(6) = src(7)
+          !dst(7) = src(5)
           !
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(12)
-          dst(12) = src(13)
-          dst(13) = src(11)
+          !dst(8) = src(10)
+          !dst(9) = src(8)
+          !dst(10) = src(9)
+          !dst(11) = src(12)
+          !dst(12) = src(13)
+          !dst(13) = src(11)
           !
           ! a02
           !dst(2) = src(3)
@@ -5525,34 +5532,42 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(11)
           !
           !b04
-          !dst(2) = src(3)
-          !dst(3) = src(4)
-          !dst(4) = src(2)
-          !dst(5) = src(6)
-          !dst(6) = src(7)
-          !dst(7) = src(5)
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
           !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
           !
           !!
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
-          !
-          dst(16) = -a*src(16) + b*src(17)
-          dst(17) = -b*src(16) - a*src(17)
-          !
-          !b01
           !dst(14) = -a*src(14) - b*src(15)
           !dst(15) =  b*src(14) - a*src(15) 
           !
           !dst(16) = -a*src(16) + b*src(17)
           !dst(17) = -b*src(16) - a*src(17)
-          !!
+          !
+          !b01
+          !dst(14) = -a*src(14) + b*src(15)
+          !dst(15) = -b*src(14) - a*src(15) 
+          !
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
+          !
+          !b01
+          dst(14) = -a*src(14) - b*src(15)
+          dst(15) =  b*src(14) - a*src(15) 
+          !
+          dst(16) = -a*src(16) - b*src(17)
+          dst(17) =  b*src(16) - a*src(17)
+          !
+          !
           dst(18) = src(18)
           !
           !b05
@@ -5561,7 +5576,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           ! 
           !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
-        case (19) !sxy(-)/(14)(25)(36)(ab)
+        case (4) !sxy(-)/(14)(25)(36)(ab)
           !
           dst(1) = src(1)
           !
@@ -5584,6 +5599,13 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(16) = src(14)
           dst(17) = src(15)
+          !
+          ! d01
+          !dst(14) = src(16)
+          !dst(15) =-src(17) 
+          !
+          !dst(16) = src(14)
+          !dst(17) =-src(15)
           !!
           dst(18) = src(18)
           !
@@ -5660,7 +5682,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9')
+    case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10')
       !
       select case(trim(molec%symmetry))
       !

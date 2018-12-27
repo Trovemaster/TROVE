@@ -771,7 +771,7 @@ contains
 
 
 
-    case("G36(EM0)") ! sy 
+    case("G36(EM)") ! sy 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -1112,7 +1112,7 @@ contains
 
 
 
-    case("G36(EM)") !! Tom's
+    case("G36(EM2)") !! Tom's
 
       sym%Nrepresen = 18
       sym%Noper = 72
