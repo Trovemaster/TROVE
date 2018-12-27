@@ -5343,19 +5343,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !!
-          !dst(2) = src(3)
-          !dst(3) = src(4)
-          !dst(4) = src(2)
-          !dst(5) = src(6)
-          !dst(6) = src(7)
-          !dst(7) = src(5)
+          dst(2) = src(3)
+          dst(3) = src(4)
+          dst(4) = src(2)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
           !
-          !dst(8) = src(9)
-          !dst(9) = src(10)
-          !dst(10) = src(8)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
+          dst(8) = src(9)
+          dst(9) = src(10)
+          dst(10) = src(8)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
           !
           ! a02
           ! b02
@@ -5374,19 +5374,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(11)
           !
           ! b04
-          dst(2) = src(4)
-          dst(3) = src(2)
-          dst(4) = src(3)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
+          !dst(2) = src(4)
+          !dst(3) = src(2)
+          !dst(4) = src(3)
+          !dst(5) = src(7)
+          !dst(6) = src(5)
+          !dst(7) = src(6)
           !
-          dst(8) = src(10)
-          dst(9) = src(8)
-          dst(10) = src(9)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
+          !dst(8) = src(10)
+          !dst(9) = src(8)
+          !dst(10) = src(9)
+          !dst(11) = src(13)
+          !dst(12) = src(11)
+          !dst(13) = src(12)
           !!
           !dst(14) = -a*src(14) + b*src(15)
           !dst(15) = -b*src(14) - a*src(15) 
@@ -5493,20 +5493,22 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         case (7) ! C(-)/(132)(456)
           !
           dst(1) = src(1)
-          !!
-          !dst(2) = src(4)
-          !dst(3) = src(2)
-          !dst(4) = src(3)
-          !dst(5) = src(6)
-          !dst(6) = src(7)
-          !dst(7) = src(5)
           !
-          !dst(8) = src(10)
-          !dst(9) = src(8)
-          !dst(10) = src(9)
-          !dst(11) = src(12)
-          !dst(12) = src(13)
-          !dst(13) = src(11)
+          !f06
+          !!
+          dst(2) = src(4)
+          dst(3) = src(2)
+          dst(4) = src(3)
+          dst(5) = src(6)
+          dst(6) = src(7)
+          dst(7) = src(5)
+          !
+          dst(8) = src(10)
+          dst(9) = src(8)
+          dst(10) = src(9)
+          dst(11) = src(12)
+          dst(12) = src(13)
+          dst(13) = src(11)
           !
           ! a02
           !dst(2) = src(3)
@@ -5524,19 +5526,19 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(11)
           !
           ! b03
-          dst(2) = src(3)
-          dst(3) = src(4)
-          dst(4) = src(2)
-          dst(5) = src(7)
-          dst(6) = src(5)
-          dst(7) = src(6)
+          !dst(2) = src(3)
+          !dst(3) = src(4)
+          !dst(4) = src(2)
+          !dst(5) = src(7)
+          !dst(6) = src(5)
+          !dst(7) = src(6)
           !
-          dst(8) = src(9)
-          dst(9) = src(10)
-          dst(10) = src(8)
-          dst(11) = src(13)
-          dst(12) = src(11)
-          dst(13) = src(12)
+          !dst(8) = src(9)
+          !dst(9) = src(10)
+          !dst(10) = src(8)
+          !dst(11) = src(13)
+          !dst(12) = src(11)
+          !dst(13) = src(12)
           !
           !b04
           !dst(2) = src(3)
@@ -5554,18 +5556,18 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !dst(13) = src(11)
           !
           !!
-          dst(14) = -a*src(14) - b*src(15)
-          dst(15) =  b*src(14) - a*src(15) 
+          !dst(14) = -a*src(14) - b*src(15)
+          !dst(15) =  b*src(14) - a*src(15) 
           !
-          dst(16) = -a*src(16) - b*src(17)
-          dst(17) =  b*src(16) - a*src(17)
+          !dst(16) = -a*src(16) - b*src(17)
+          !dst(17) =  b*src(16) - a*src(17)
           !
-          ! c05
-          !dst(14) = -a*src(14) + b*src(15)
-          !dst(15) = -b*src(14) - a*src(15) 
+          ! f05
+          dst(14) = -a*src(14) + b*src(15)
+          dst(15) = -b*src(14) - a*src(15) 
           !
-          !dst(16) = -a*src(16) + b*src(17)
-          !dst(17) = -b*src(16) - a*src(17)
+          dst(16) = -a*src(16) + b*src(17)
+          dst(17) = -b*src(16) - a*src(17)
           !
           !b01
           !dst(14) = -a*src(14) - b*src(15)
