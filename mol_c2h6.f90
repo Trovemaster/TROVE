@@ -1287,15 +1287,15 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         dst(3) = src(4)-molec%local_eq(4)
         dst(4) = src(6)-molec%local_eq(6)
         dst(5) = src(3)-molec%local_eq(3)
-        dst(6) = src(5)-molec%local_eq(7)
-        dst(7) = src(7)-molec%local_eq(5)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(5)-molec%local_eq(5)
         !
         dst( 8) = src( 8)-molec%local_eq( 8)
         dst( 9) = src(10)-molec%local_eq(10)
         dst(10) = src(12)-molec%local_eq(12)
         dst(11) = src( 9)-molec%local_eq( 9)
-        dst(12) = src(11)-molec%local_eq(13)
-        dst(13) = src(13)-molec%local_eq(11)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(11)-molec%local_eq(11)
         !
         tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
         tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
@@ -5777,11 +5777,25 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(8:10) = matmul(a123,src(8:10))
           dst(11:13) = matmul(a123,src(11:13))
-          !
+          !!
           dst(14:15) = matmul(c123,src(14:15))
           dst(16:17) = matmul(c123,src(16:17))
+          !
           !!
-          dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -5795,14 +5809,17 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i,src(5:7))
-          dst(5:7) = matmul(i,src(2:4))
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
           !
-          dst(8:10) = matmul(i,src(11:13))
-          dst(11:13) = matmul(i,src(8:10))
-          !
-          dst(14:15) = matmul(sxy,src(14:15))
-          dst(16:17) = matmul(sxy,src(16:17))
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) =  2.0_ark*pi - src(18)
           !
@@ -5827,19 +5844,25 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16:17) = matmul(c123,src(16:17))
           !!
           dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
         case (19) !sxy(-)/(14)(25)(36)(ab)
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i2,src(5:7))
-          dst(5:7) = matmul(i2,src(2:4))
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
           !
-          dst(8:10) = matmul(i2,src(11:13))
-          dst(11:13) = matmul(i2,src(8:10))
-          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
           dst(14:15) = src(16:17)
           dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) = src(18)
           !
