@@ -1925,7 +1925,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     o = 0.0_ark
     !!
     c123 = transpose(reshape( (/ -a, -b, &
-                                b, -a/), (/ 2, 2/)))
+                                  b, -a/), (/ 2, 2/)))
     c132  = matmul(c123,c123)
     !
     a123 = transpose(reshape( (/ o, o, e,&
@@ -1943,6 +1943,10 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     !
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))
+    !
+    ! a12
+    !sxy = transpose(reshape( (/ o,  e, &
+    !                            e,  o /), (/ 2, 2/)))
     !
     if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/start'
     !
@@ -5777,10 +5781,10 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(8:10) = matmul(a123,src(8:10))
           dst(11:13) = matmul(a123,src(11:13))
-          !!
-          dst(14:15) = matmul(c123,src(14:15))
-          dst(16:17) = matmul(c123,src(16:17))
           !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
           !!
           dst(14:15) = matmul(c123,src(14:15))
           dst(16:17) = matmul(c123,src(16:17))
@@ -5814,6 +5818,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(8:10) = matmul(i2,src(11:13))
           dst(11:13) = matmul(i2,src(8:10))
+          !
           ! a02
           !dst(14:15) = src(16:17)
           !dst(16:17) = src(14:15)
@@ -5822,6 +5827,9 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -5839,9 +5847,13 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
           !
           dst(8:10) = matmul(a132,src(8:10))
           dst(11:13) = matmul(a123,src(11:13))
-          !
+          !!
           dst(14:15) = matmul(c132,src(14:15))
           dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
           !!
           dst(18) = src(18)
           ! a04
