@@ -1227,8 +1227,8 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       xi(9)  = local(10) - betae
       xi(10) = local(12) - betae
       xi(11) = local(9)  - betae
-      xi(13) = local(13) - betae
-      xi(11) = local(11) - betae
+      xi(12) = local(13) - betae
+      xi(13) = local(11) - betae
       !
       tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
       tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)

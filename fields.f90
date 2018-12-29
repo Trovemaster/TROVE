@@ -22890,18 +22890,22 @@ end subroutine check_read_save_none
           sina2 = sqrt(sum(a_t(:)**2))
           !
           fmod = 2.0_ark*pi
-          if (dvec1(1)<0.0_ark) then 
+          if ( abs(dvec1(1))<sqrt(small_) ) then 
+            if ( dvec1(2)>0.0_ark ) then 
+                fmod = 4.0_ark*pi
+            endif
+          elseif (dvec1(1)<0.0_ark) then 
             fmod = 4.0_ark*pi
           endif
           !
-          if (tau_sign<-small_a) then 
+          if (tau_sign<-sqrt(small_a)) then 
              !
              delta = fmod-delta
              !
           endif
           !
           ! special case of (EM)-symmetry with tau=0..720 deg
-          if (dvec1(1)<0.0_ark.and.tau_sign>-small_a) then 
+          if ( fmod > 2.0_ark*pi.and.tau_sign> small_a ) then 
             delta = delta + 2.0_ark*pi
           endif
           !
