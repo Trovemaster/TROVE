@@ -1164,7 +1164,7 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11')
+  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10')
       !
       tau14 = local(14)
       tau24 = local(15)
@@ -1201,11 +1201,77 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       xi(15) = xi_B + xi_D
       xi(16) = xi_A - xi_C 
       xi(17) = xi_B - xi_D 
-
+      !
       rhobar = ( tau14+tau25+tau36 )/3.0_ark
-
+      !
+      xi(8)  = local(8)  - betae
+      xi(9)  = local(10) - betae
+      xi(10) = local(12) - betae
+      xi(11) = local(9)  - betae
+      xi(12) = local(11) - betae
+      xi(13) = local(13) - betae
+      !
       xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
-     !
+      !
+  case('R-R16-BETA16-THETA-TAU-11')
+      !
+      r1 = local(1)
+      r2 = local(2)
+      r3 = local(4)
+      r4 = local(6)
+      r5 = local(3)
+      r6 = local(7)
+      r7 = local(5)
+      !
+      xi(8)  = local(8)  - betae
+      xi(9)  = local(10) - betae
+      xi(10) = local(12) - betae
+      xi(11) = local(9)  - betae
+      xi(13) = local(13) - betae
+      xi(11) = local(11) - betae
+      !
+      tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+      tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+      tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+      tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+      tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+      !
+      if (tau14>2.0_ark*pi) then 
+         tau25 = tau25 + 2.0_ark*pi
+         tau36 = tau36 + 2.0_ark*pi
+      endif
+      !
+      rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+      !
+      tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+      tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+      tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+      tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+      tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+      !
+      xi_A  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+      xi_B  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+      !
+      xi_C  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+      xi_D  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+      !
+      xi(14) = xi_A + xi_C 
+      xi(15) = xi_B + xi_D
+      xi(16) =-xi_A + xi_C 
+      xi(17) =-xi_B + xi_D       
+      !
+      rhobar = ( tau14+tau25+tau36 )/3.0_ark
+      !
+      xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+      !
   case('R-R16-BETA16-THETA-TAU')
       !
       tau14 = local(14)
@@ -1250,6 +1316,15 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       !rhobar = ( tau14+tau25+tau36 )/3.0_ark
       !
       xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+
+      xi(8)  = local(8)  - betae
+      xi(9)  = local(10) - betae
+      xi(10) = local(12) - betae
+      xi(11) = local(9)  - betae
+      xi(12) = local(11) - betae
+      xi(13) = local(13) - betae
+
+
       !
   end select
   !
@@ -1261,12 +1336,6 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
   xi(6)=1.0_ark-exp(-b*(r6-r2e))
   xi(7)=1.0_ark-exp(-b*(r7-r2e))
   !
-  xi(8)  = local(8)  - betae
-  xi(9)  = local(10) - betae
-  xi(10) = local(12) - betae
-  xi(11) = local(9)  - betae
-  xi(12) = local(11) - betae
-  xi(13) = local(13) - betae
   !
   f = force(6)*xi(1)**2+force(7)*sum(xi(2:7)**2)/6.0_ark+force(8)*sum(xi(8:13)**2)/6.0_ark+&
       force(9)*(xi(14)**2+xi(15)**2)/2.0_ark+force(10)*(xi(16)**2+xi(17)**2)/2.0_ark+&

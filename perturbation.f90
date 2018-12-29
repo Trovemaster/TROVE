@@ -14906,10 +14906,6 @@ module perturbation
                     do jcoeff=1,icoeff
                       gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
                       !
-                      if (k1>=14 .and. k2>=14 .and.abs(gvib_t(icoeff,jcoeff))>1e-6) then
-                        write(out,"('debug:',2i5,2x,2i7,f18.9)") k1,k2,icoeff,jcoeff,gvib_t(icoeff,jcoeff)
-                      endif
-                      !
                     enddo
                   enddo
                   !$omp end parallel do
@@ -15500,25 +15496,6 @@ module perturbation
           !            tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,beta,mat_tt(iclasses)%coeffs(1:nroots,1:nroots),nroots)
           !
           if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
-          !
-          if (iclasses >= 4 .and. (k1>=14 .and. k2>=14) ) then
-            !
-            write(out,"('debug: ', 3i7)") k1,k2,iclasses
-            do jprim=1,contr(iclasses)%dimen
-              !
-              nu_j(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
-              !
-              do iprim=1,contr(iclasses)%dimen
-                !
-                nu_i(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
-                !
-                if (abs(me_t(jprim,iprim))>1e-6.or.abs(matclass(iclasses,jprim,iprim))>1e-6) then  
-                   write(out,"(2i7,2f18.9)") jprim,iprim,me_t(jprim,iprim),matclass(iclasses,jprim,iprim)
-                endif
-                !
-              enddo
-            enddo
-          endif
           !
         enddo 
         !
