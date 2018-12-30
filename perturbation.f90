@@ -4885,7 +4885,7 @@ module perturbation
       !
       xm(1:n) = b(1:n,1)    
       !
-      if (tol<1e-7) then 
+      if (tol<1.0e-11) then 
         !
         call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
         !

@@ -26,7 +26,6 @@ module fields
    public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
    public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
    public jobt, trove, manifold, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
-   !public FLIndexQ_legatee
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
    !
@@ -115,6 +114,7 @@ module fields
      integer(ik)                :: dvrpoints    ! number of dvr-integration points for each mode 
      logical                    :: postprocess  ! Post-diagonalization of the contracted basis set
      logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
+     logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
    end type  FLbasissetT 
 
 
@@ -357,6 +357,8 @@ module fields
       logical		      :: ignore_vectors = .false.
       logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
       logical             :: exomol_format  = .false.     ! exomol format of intensity output 
+      logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
+                                            ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
       !
    end type FLcalcsT
 
@@ -610,8 +612,8 @@ module fields
    character(len=cl),parameter :: coords_ = 'LINEAR' ! default internal coordinates 
    !
    type(FLbasissetT),parameter :: vibbasisset_= FLbasissetT('HARMONIC','HARMONIC','HARMONIC',1000,'1D',100,1,(/0,20/),&
-                                                             1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.)
-   type(FLbasissetT),parameter :: rotbasisset_= FLbasissetT('JKTAU', 'xxxxxx','xxxxxx',1000,'1D',0,0,(/0,0 /),0.0,0,(/0.0,0.0/),.false.,0,'xxxxxx',0,.false.,.false.)
+                                                             1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.,.true.)
+   type(FLbasissetT),parameter :: rotbasisset_= FLbasissetT('JKTAU', 'xxxxxx','xxxxxx',1000,'1D',0,0,(/0,0 /),0.0,0,(/0.0,0.0/),.false.,0,'xxxxxx',0,.false.,.false.,.true.)
 
    integer(ik),parameter :: nroots_=1e6
    real(rk),parameter    :: uv_syevr_=1e9
@@ -788,6 +790,12 @@ module fields
          do i=2,min(Nitems-1,Nmodes)
             call readf(trove%PotPolyad(i))
          enddo
+         !
+       case ("POTENTIAL_SIMPLE")
+         ! This is simple finite differences type of the potential expansion
+         ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
+         !
+         job%Potential_Simple = .true.
          !
        case ("DVR")
          !
@@ -1858,6 +1866,10 @@ module fields
                 job%bset(imode)%lvib =.true.
                 !
                 FLl2_coeffs = .true.
+                !
+              case("NOCHECK")
+                !
+                job%bset(imode)%check_sym =.false.
                 !
               case("BORDERS")
                 !
@@ -4849,7 +4861,7 @@ end subroutine check_read_save_none
         !
         trove%chi_ref(:,irho) = MLcoordinate_transform_func(ar_t,Nmodes,dir)
         !
-        write(out,"(2x,f17.6)") trove%chi_ref(18,irho)*180.0_ark/pi
+        if (job%verbose>=6)  write(out,"(2x,f17.6)") trove%chi_ref(18,irho)*180.0_ark/pi
         !
         ! Check for the linearity 
         !
@@ -6965,6 +6977,8 @@ end subroutine check_read_save_none
     endif
     !
     if (job%verbose>=2) write(out,"(/'FLinitilize_Potential_II/start')")   
+
+    if (job%verbose>=4) write(out,"('  This is a simple finite differences type of the potential expansion. ')") 
     !
     call TimerStart('Potential')
     ! 
@@ -7238,6 +7252,7 @@ end subroutine check_read_save_none
     logical                      :: par_i
 
     if (job%verbose>=2) write(out,"(/'FLinitilize_Potential/start')")   
+    if (job%verbose>=4) write(out,"('  Default expansion with finite difference, exending to N+1 and (N+1)s terms is set to zero (more accurate)')")
     !
     ! If the potentil function has been stored we can just read it from the hard disk and leave...
     !
@@ -16071,7 +16086,7 @@ end subroutine check_read_save_none
            if (bs%imodes<30) then
              write(out,"(30f18.8)") f2(1:bs%imodes)
            endif 
-           if (.not.trove%periodic) then
+           if ( job%bset(nu_i)%check_sym ) then
              stop 'FLbset1DNew: not all quadratic parameters are equal'
            endif
         endif
@@ -16106,9 +16121,9 @@ end subroutine check_read_save_none
              write(out,"(30f18.8)") g2(1:bs%imodes)
              write(out,"('difference somewhat greater than ',f18.8)") 10000.0_rk*sqrt(small_)*abs(f_t)
            endif 
-           !if (.not.periodic_model) then 
-           stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
-           !endif
+           if ( job%bset(nu_i)%check_sym ) then 
+             stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+           endif
         endif
         !
         ! Define the conditional basis set parameters   
@@ -17692,7 +17707,7 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
                    write(out,"('pot-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   if (.not.periodic_model) then 
+                   if ( job%bset(nu_i)%check_sym ) then 
                      stop 'FLbset1DNew: not all numerov parameters are equal'
                    endif
                 endif
@@ -17749,7 +17764,7 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
                    write(out,"('pseudo-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   if (.not.periodic_model) then 
+                   if ( job%bset(nu_i)%check_sym ) then 
                      stop 'FLbset1DNew: not all numerov parameters are equal'
                    endif
                 endif
@@ -17808,7 +17823,7 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
-                   if (.not.periodic_model) then 
+                   if ( job%bset(nu_i)%check_sym ) then 
                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                    endif
                 endif

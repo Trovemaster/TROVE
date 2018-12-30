@@ -1475,7 +1475,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         a0(n,:) = matmul(transform,a0(n,:))
       enddo
       !
-      if (verbose>=3) then
+      if (verbose>=4) then
         write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
         write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
         do iatom=3, Natoms
@@ -1555,7 +1555,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             !
             !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
             !
-            if (verbose>=3) then
+            if (verbose>=4) then
               write(out, '(i5)') 8
               write(out,'(a)') ""
               write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)

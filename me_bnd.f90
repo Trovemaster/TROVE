@@ -755,7 +755,7 @@ module me_bnd
    real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p
    !
    real(ark),allocatable :: poten(:),mu_rr(:),rho_(:)
    !
@@ -766,28 +766,25 @@ module me_bnd
    !
    character(len=cl)    :: unitfname 
     !
-    if (verbose>=1) write (out,"(/20('*'),' Fourier real functions primitive matrix elements calculations')")
+    if (verbose>=2) write (out,"(/20('*'),' Fourier real functions primitive matrix elements calculations')")
+     !
+     call TimerStart('ME_Fourier')
      !
      ! global variables 
      !
      ! large grid 
      npoints   = numerpoints_
      !
-     allocate(phil_(0:npoints_),phir_(0:npoints_),dphil_(0:npoints_),dphir_(0:npoints_), &
-              phivphi_(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),stat=alloc)
-     if (alloc/=0) then 
-       write (out,"('phi - out of memory')")
-       stop 'phi - out of memory'
-     endif
-     !
-     allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
-              phivphi(0:npoints),poten(0:npoints),mu_rr(0:npoints),stat=alloc)
-     if (alloc/=0) then 
-       write (out,"('phi - out of memory')")
-       stop 'phi - out of memory'
-     endif 
+     allocate(rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),stat=alloc)
+     call ArrayStart('rho-grids',alloc,size(rho_kinet),kind(rho_kinet))
+     call ArrayStart('rho-grids',alloc,size(rho_poten),kind(rho_poten))
+     call ArrayStart('rho-grids',alloc,size(rho_extF),kind(rho_extF))
      !
      fmax = vmax*factor_ff*iperiod
+     !
+     allocate(poten(0:npoints),mu_rr(0:npoints),stat=alloc)
+     call ArrayStart('mu-poten',alloc,size(poten),kind(poten))
+     call ArrayStart('mu-poten',alloc,size(mu_rr),kind(mu_rr))
      !
      allocate(psi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(psi),kind(psi))
@@ -799,11 +796,9 @@ module me_bnd
      allocate(dpsi_(vmax+1,0:npoints_),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(dpsi_),kind(dpsi_))
      !
-     allocate(h(fmax+1,fmax+1),ener(fmax+1),phi(fmax+1),dphi(fmax+1),stat=alloc)
+     allocate(h(fmax+1,fmax+1),ener(fmax+1),stat=alloc)
      call ArrayStart('h-Fourier',alloc,size(h),kind(h))
      call ArrayStart('h-Fourier',alloc,size(ener),kind(ener))
-     call ArrayStart('h-Fourier-phi',alloc,size(phi),kind(phi))
-     call ArrayStart('h-Fourier-phi',alloc,size(dphi),kind(dphi))
      !
      rho_b = rho_b_
      !
@@ -887,7 +882,7 @@ module me_bnd
      rho_poten(:) = drho_(:,2)
      rho_extF(:)  = drho_(:,3)
      !
-     inquire(iolength=rec_len) phil_(:),dphil_(:)
+     inquire(iolength=rec_len) rho_kinet(:),rho_poten(:)
      !
      write(unitfname,"('Numerov basis set # ',i6)") icoord
      call IOStart(trim(unitfname),io_slot)
@@ -901,8 +896,18 @@ module me_bnd
      !
      L = (rho_b(2)-rho_b(1))*0.5_ark
      !
-     !characvalue = maxval(enerslot(0:vmax))
+     ! Build primitive Fourier functions on a grid
      !
+     if (verbose>=4) write(out,"('   Build primitive Fourier functions and 1D Hamiltonian on a grid ...')")
+     !
+     !$omp parallel private(phil,phir,dphil,dphir,alloc_p,phivphi) shared(h) 
+     allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints),phivphi(0:npoints),stat=alloc_p)
+     if (alloc_p/=0) then 
+       write (out,"('phil,phir - out of memory')")
+       stop 'phil,phir - out of memory'
+     endif 
+     !
+     !$omp do private(vl,kl,i,rho,vr,kr,psipsi_t) schedule(dynamic)
      do vl = 0,fmax
         kl = (vl+1)/2*p
         !
@@ -969,7 +974,12 @@ module me_bnd
             !
         enddo
      enddo
+     !$omp end do
      !
+     deallocate (phil,phir,dphil,dphir,phivphi)
+     !$omp end parallel 
+     !
+     if (verbose>=4) write(out,"('   Diagonalize the 1D primitive Hamiltonian ...')")
      call lapack_syev(h,ener)
      !
      energy(0:vmax) = ener(1:vmax+1)-ener(1)
@@ -981,6 +991,7 @@ module me_bnd
      !
      vect = h
      !
+     !$omp parallel do private(vl,cross_prod,factor,vr) shared(vect) schedule(dynamic)
      do vl =  1,vmax+1
        !
        cross_prod = sum(vect(:,vl)*vect(:,vl))
@@ -998,6 +1009,7 @@ module me_bnd
        enddo
        !
      enddo
+     !$omp end parallel do
      !
      write (out,"(/' Fourier-optimized energies are:')") 
      !
@@ -1005,6 +1017,16 @@ module me_bnd
        write (out,"(i8,f18.8)") vl,energy(vl)
      enddo
      !
+     if (verbose>=4) write(out,"('   Transform primitive to contracted on the grid ...')")
+     !
+     !$omp parallel private(phi,dphi,alloc_p) shared(Psi,dPsi)
+     allocate(phi(fmax+1),dphi(fmax+1),stat=alloc_p)
+     if (alloc_p/=0) then 
+       write (out,"('phi,dphi - out of memory')")
+       stop 'phi,dphi - out of memory'
+     endif 
+     !
+     !$omp do private(i,rho,vl,kl) schedule(dynamic)
      do i=0,npoints
         !
         rho = real(i,kind=ark)*rhostep
@@ -1028,13 +1050,19 @@ module me_bnd
         DPsi(1:vmax+1,i)  = matmul(transpose(vect(1:fmax+1,1:vmax+1)),dphi(1:fmax+1))
         !
      enddo
+     !$omp end do
+     !
+     deallocate (phi,dphi)
+     !$omp end parallel 
+     !
      !
      ! dump the eigenfunction
-     !
      if (npoints_==npoints) then 
           Psi_  = Psi
           DPsi_ = DPsi
      else
+       !
+       !$omp parallel do private(i_,i) shared(Psi_,dPsi_) schedule(dynamic)
        do i_ = 0,npoints_
           !
           i = nint( real(i_,ark)/step_scale )
@@ -1043,18 +1071,38 @@ module me_bnd
           DPsi_(1:vmax+1,i_) = DPsi(1:vmax+1,i)
           !
        enddo
+       !$omp end parallel do
+       !
      endif
      !
      deallocate(vect)
      call ArrayStop('h-vect')
      !
+     ! store basis functios 
      do vl = 0,vmax
-        kl = (vl+1)/2*p
+        !
+        write (io_slot,rec=vl+1) (Psi_(vl+1,i),i=0,npoints_),(dPsi_(vl+1,i),i=0,npoints_)
+        !
+     enddo
+     !
+     ! Build contracted Fourier functions on a grid
+     !
+     if (verbose>=4) write(out,"('   Generate matrix elements of elements of 1D Hamiltonian, x^n, p x^n, p^2 x^n  ...')")
+     !
+     !$omp parallel private(phil_,phir_,dphil_,dphir_,alloc_p,phivphi_) shared(h,g_numerov)
+     allocate(phil_(0:npoints_),phir_(0:npoints_),dphil_(0:npoints_),dphir_(0:npoints_),phivphi_(0:npoints_),stat=alloc_p)
+     if (alloc_p/=0) then 
+       write (out,"('phi_ - out of memory')")
+       stop 'phi_ - out of memory'
+     endif
+     !
+     !$omp do private(vl,i,rho,vr,psipsi_t,lambda) schedule(dynamic)
+     do vl = 0,vmax
         !
         phil_(:)  =  Psi_(vl+1,:)
         dphil_(:) = dPsi_(vl+1,:)
         !
-        write (io_slot,rec=vl+1) (phil_(i),i=0,npoints_),(dphil_(i),i=0,npoints_)
+        !write (io_slot,rec=vl+1) (phil_(i),i=0,npoints_),(dphil_(i),i=0,npoints_)
         !
         do vr = vl,vmax
             !
@@ -1141,7 +1189,6 @@ module me_bnd
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
-               !
                if (lambda==0) then 
                   phivphi_(:) = phil_(:)*dphir_(:)
                else
@@ -1161,7 +1208,6 @@ module me_bnd
                   g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
                   !
                endif 
-               !
                !
                if (verbose>=7) then 
                    write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
@@ -1183,22 +1229,35 @@ module me_bnd
         if (verbose>=6) then 
            !
            !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
-           !
+           !$omp critical
            do i=0,npoints 
               write(out,"(i8,2f18.8,' || ',1x,i8)") i,phil_(i),dphil_(i),vl
            enddo
+           !$omp end critical
+           !
         endif 
         !
      enddo
+     !$omp end do
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF)
-     deallocate(phil_,phir_,dphil_,dphir_,phivphi_)
+     deallocate (phil_,phir_,dphil_,dphir_,phivphi_)
+     !$omp end parallel 
+     !
+     deallocate(rho_kinet,rho_poten,rho_extF)
+     !
+     call ArrayStop('rho-grids')
+     !
      deallocate(poten,mu_rr)
+     call ArrayStop('mu-poten')
+     !
      deallocate(h,ener)
-     deallocate(psi,dpsi,psi_,dpsi_,phi,dphi)
-     call ArrayStop('psi-phi-Fourier')
      call ArrayStop('h-Fourier')
-     call ArrayStop('h-Fourier-phi')
+     deallocate(psi,dpsi,psi_,dpsi_)
+     call ArrayStop('psi-phi-Fourier')
+     !
+     if (verbose>=2) write (out,"(/40('*')/)")
+     !
+     call TimerStop('ME_Fourier')
      !
   end subroutine ME_Fourier
 

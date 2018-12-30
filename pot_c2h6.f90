@@ -8,6 +8,7 @@ use mol_c2h6
 implicit none
 
 public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
+public MLpoten_c2h6_88_cos3tau_G36
 
 private
 
@@ -2045,6 +2046,347 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
 
 
 
+   recursive subroutine ML_symmetry_transformation_C2H6_G36(ioper, nmodes, src, dst)
+    !
+    ! Symmetry transformation rules of coordinates
+    !
+    integer(ik), intent(in)  ::  ioper
+    integer(ik), intent(in)  ::  nmodes
+    real(ark), intent(in)    ::  src(1:nmodes)
+    real(ark), intent(out)   ::  dst(1:nmodes)
+    real(ark) :: a,b,e,o,g(1:4,1:4),c123(2,2),c132(2,2),a123(3,3),a132(3,3),sxy(2,2),i(3,3),i2(3,3)
+ !
+    real(ark),dimension(size(src)) :: tmp
+    !
+    integer(ik)  :: tn(72,2), temp(144)
+    integer(ik) :: nsrc
+    !
+    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    !
+    tn = reshape( temp, (/ 72, 2/))
+    !
+    a = 0.5_ark
+    b = 0.5_ark*sqrt(3.0_ark)
+    !
+    e = 1.0_ark
+    o = 0.0_ark
+    !!
+    c123 = transpose(reshape( (/ -a, -b, &
+                                  b, -a/), (/ 2, 2/)))
+    c132  = matmul(c123,c123)
+    !
+    a123 = transpose(reshape( (/ o, o, e,&
+                                 e, o, o,&
+                                 o, e, o/), (/ 3, 3/)))
+    a132  = matmul(a123,a123)
+    !
+    i = transpose(reshape( (/ e, o, o,&
+                              o, e, o,&
+                              o, o, e/), (/ 3, 3/)))
+    !
+    i2= transpose(reshape( (/ e, o, o,&
+                              o, o, e,&
+                              o, e, o/), (/ 3, 3/)))
+    !
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    select case(ioper)
+      !
+    case (1) ! E
+      !
+      dst(1:18) = src(1:18)
+      !
+    case (2) !C(+)/(123)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a123,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a123,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c123,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      !
+      do while(dst(18) < 0.0_ark) 
+            dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      !
+      do while(dst(18) > 4.0_ark*pi) 
+            dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+      !    
+    case (4) !sxy(+)/(14)(26)(35)(ab)* 
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i2,src(5:7))
+      dst(5:7) = matmul(i2,src(2:4))
+      !
+      dst(8:10) = matmul(i2,src(11:13))
+      dst(11:13) = matmul(i2,src(8:10))
+      !
+      !!
+      dst(14:15) = matmul(sxy,src(16:17))
+      dst(16:17) = matmul(sxy,src(14:15))
+      !!
+      dst(18) =  2.0_ark*pi - src(18)
+      !
+      do while(dst(18) < 0.0_ark) 
+            dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      do while(dst(18) > 4.0_ark*pi) 
+            dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+     !
+    case (7) ! C(-)/(132)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a132,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a132,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c132,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      !!
+      dst(18) = src(18)
+      !
+    case (19) !sxy(-)/(14)(25)(36)(ab)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i,src(5:7))
+      dst(5:7) = matmul(i,src(2:4))
+      !
+      dst(8:10) = matmul(i,src(11:13))
+      dst(11:13) = matmul(i,src(8:10))
+      !!
+      dst(14:15) = src(16:17)
+      dst(16:17) = src(14:15)
+      !!
+      dst(18) = src(18)
+      !
+    case(37) !E'
+       dst(1:17) = src(1:17)
+       dst(18) = src(18) + 2.0_ark*pi
+       do while(dst(18) < 0.0_ark) 
+            dst(18) = dst(18) + 4.0_ark*pi
+       enddo
+       do while(dst(18) > 4.0_ark*pi) 
+            dst(18) = dst(18) - 4.0_ark*pi
+       enddo
+       !
+    end select
+    !
+    if (all(tn(ioper,:)/=0)) then
+        call ML_symmetry_transformation_C2H6_G36(tn(ioper,1),nmodes,src,tmp)
+        call ML_symmetry_transformation_C2H6_G36(tn(ioper,2),nmodes,tmp,dst)
+    endif 
+    !
+  end subroutine ML_symmetry_transformation_C2H6_G36
+
+
+
+function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(f)
+  !
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+  !
+  real(ark) :: xi(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
+  real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
+  real(ark) :: chi(18,36),term,rad,rhobar
+  integer(ik) :: ioper,ipower(18),i
+
+  real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,xi_A,xi_B,xi_C,xi_D
+  !
+  rad = pi/180.0_ark
+  !
+  r1      = local(1)
+  r2      = local(2)
+  r3      = local(4)
+  r4      = local(6)
+  r5      = local(3)
+  r6      = local(5)
+  r7      = local(7)
+  !
+  r1e = force(1)
+  r2e = force(2)
+  betae = force(3)*rad
+  a = force(4)
+  b = force(5)
+  !
+  select case(trim(molec%coords_transform))
+    !
+  case default
+    !
+    write(out, '(/a,1x,a,1x,a)') &
+    'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_c2h6_88 error error: bad coordinate type'
+    !
+  case('R-R16-BETA16-THETA-TAU-11')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(4)
+    r4 = local(6)
+    r5 = local(3)
+    r6 = local(7)
+    r7 = local(5)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(10) - betae
+    xi(10) = local(12) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(13) - betae
+    xi(13) = local(11) - betae
+    !
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !
+    tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+  case('R-R16-BETA16-THETA-TAU')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(4)
+    r4 = local(6)
+    r5 = local(3)
+    r6 = local(5)
+    r7 = local(7)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    tau14 = mod(tau14+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(tau24+4.0_ark*pi,4.0_ark*pi)
+    tau25 = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+    tau35 = mod(tau35+4.0_ark*pi,4.0_ark*pi)
+    tau36 = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+    !
+    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+    !
+    tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+    tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(12.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(12.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/(2.0_ark)
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(10) - betae
+    xi(10) = local(12) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
+    !
+  end select
+  !
+  f = 0
+  !
+  do ioper = 1,36
+    !
+    call ML_symmetry_transformation_C2H6_G36(ioper,18,xi,chi(:,ioper))
+    !
+  enddo
+  ! 
+  do i = 6, molec%parmax
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    !
+    do ioper = 1,36
+      !
+      term = term + product(chi(1:18,ioper)**ipower(1:18))
+      !
+    end do
+    !
+    term = term/12.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  !  
+end function MLpoten_c2h6_88_cos3tau_G36
+
+
 
 recursive subroutine ML_dipole_c2h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     !
@@ -2057,6 +2399,9 @@ recursive subroutine ML_dipole_c2h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     stop 'dipole_c2h6_4m_dummy is not implemented'
     !
 end subroutine ML_dipole_c2h6_4m_dummy
+
+
+
 
 
 
