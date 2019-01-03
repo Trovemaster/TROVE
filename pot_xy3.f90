@@ -8872,7 +8872,7 @@ function poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force) result (f)
       !
       x = asin(core-coro)
       !
-      v2 = (y2**2+y3**2+y1**2)*f0a11   &                                                                &
+      v2 = (y2**2+y3**2+y1**2)*f0a11   &
        +(-sqrt(3.0_ark)*y3*y5/2.0_ark-y3*y4/2.0_ark+y1*y4+sqrt(3.0_ark)*y2*y5/2.0_ark-y2*y4/2.0_ark)*f0a14 &
        +(y5**2+y4**2)*f0a44
       !

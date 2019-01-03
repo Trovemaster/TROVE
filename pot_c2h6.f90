@@ -2111,7 +2111,8 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(c123,src(14:15))
       dst(16:17) = matmul(c123,src(16:17))
       !
-      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      dst(18) = src(18)
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi
@@ -2135,7 +2136,9 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(sxy,src(16:17))
       dst(16:17) = matmul(sxy,src(14:15))
       !!
-      dst(18) =  2.0_ark*pi - src(18)
+      !dst(18) =  2.0_ark*pi - src(18)
+      !
+      dst(18) = src(18)
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi
@@ -2213,13 +2216,13 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   !
   rad = pi/180.0_ark
   !
-  r1      = local(1)
-  r2      = local(2)
-  r3      = local(4)
-  r4      = local(6)
-  r5      = local(3)
-  r6      = local(5)
-  r7      = local(7)
+  !r1      = local(1)
+  !r2      = local(2)
+  !r3      = local(4)
+  !r4      = local(6)
+  !r5      = local(3)
+  !r6      = local(5)
+  !r7      = local(7)
   !
   r1e = force(1)
   r2e = force(2)
@@ -2378,7 +2381,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
       !
     end do
     !
-    term = term/12.0_ark
+    term = term/36.0_ark
     !
     f = f + term*force(i)
     !
