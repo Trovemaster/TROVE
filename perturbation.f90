@@ -3002,7 +3002,7 @@ module perturbation
        !
        !mpoints = job%msample_points
        !
-       mpoints_max = int(real(maxval(count_degen(1:Ncount)),rk)*1.5)
+       mpoints_max = max(int(real(maxval(count_degen(1:Ncount)),rk)*2.0_rk),job%msample_points)
        mpoints = mpoints_max
        !
        do i = 1,PT%mode_iclass(iclasses)
@@ -3066,7 +3066,7 @@ module perturbation
          iroot  = count_index(icount,1)
          Nelem  = count_degen(icount)
          !
-         mpoints = min(int(real(count_degen(icount))*1.5),Nelem)
+         mpoints = max(min(int(real(count_degen(icount))*2.0_rk),Nelem),job%msample_points)
          !
          ! In case the number of degenerate levels exceeds the maximal allowed degeneracy 
          ! the degenerate set has to be splitted. 
@@ -30464,8 +30464,8 @@ end subroutine read_contr_matelem_expansion_classN
         ! Lquant matrix Ndeg x Ndeg and diagonalize
         ! This should produce a diagonal Lquant (ang. vibr. mometna) matrix
         !
-        if ( jrot/=-3.and.job%verbose>=5 ) write(out,"('diagonalize <i|Lvib|j> for clusters with the same L...')") 
-        if ( jrot==-3.and.job%verbose>=5 ) write(out,"('diagonalize H clusters for degenerate states...')") 
+        if ( jrot/=-3.and.job%verbose>=5 ) write(out,"('   Diagonalize <i|Lvib|j> for clusters with the same L...')") 
+        if ( jrot==-3.and.job%verbose>=5 ) write(out,"('   Diagonalize H-blocks clusters for degenerate states...')") 
         !
         do icount = 1,Ncount
            !
@@ -30497,7 +30497,8 @@ end subroutine read_contr_matelem_expansion_classN
              iroot = count_index(icount,ideg)
              !
              forall (jdeg=1:Ndeg) a(count_index(icount,jdeg),iroot) = d(jdeg,ideg)
-             !PT%Ewhole%coeffs(iroot,1) = e(ideg)
+             !
+             b(iroot) = e(ideg)
              !
            enddo
            !
@@ -30515,7 +30516,7 @@ end subroutine read_contr_matelem_expansion_classN
         ! Transform to the eigenfunctions to the L-representtation, where
         ! Lz^2 is diagonal 
         !
-        if (job%verbose>=5) write(out,"('Transform to the diagonal representation ...')") 
+        if (job%verbose>=5) write(out,"('   Transform to the diagonal representation ...')") 
         !   
         call dgemm('N','N',dimen,dimen,dimen,alpha,&
                    cf%coeffs,dimen,&
@@ -30527,7 +30528,7 @@ end subroutine read_contr_matelem_expansion_classN
         ! check if L2 is diagonal by transforming the primite 
         ! matrix elemenets of L2 to the new representation 
         !
-        if (job%verbose>=5) write(out,"('Now transform the Hamiltonian or Lvib and check if it is diagonal ...')")         
+        !if (job%verbose>=5) write(out,"('   Transform the Hamiltonian or Lvib and check if it is diagonal ...')")         
         !
         call dgemm('T','N',dimen,dimen,dimen,alpha,& 
                     cf%coeffs,dimen,&
@@ -30539,13 +30540,12 @@ end subroutine read_contr_matelem_expansion_classN
                    cf%coeffs,dimen,beta,&
                    c,dimen)
 
-        if (job%verbose>=4) then
-              write(out,"(/a)") " ... with vibrational angular momenta"
-        endif
         !
         ! Only for the lvib-case 
         !
         if (jrot==-1.or.jrot==-2) then
+           !
+           if (job%verbose>=5) write(out,"(/a)") "   Obtain vibrational angular momenta"
            !
            Nmodes1 = PT%Nmodes+1
            factor = 1.0_rk
@@ -30619,6 +30619,47 @@ end subroutine read_contr_matelem_expansion_classN
            if ( factor>sqrt(small_) ) then
              write(out,"(' All lquant-values have been rescaled by the lquant(1) factor = 1/',f18.12,' to make lquant(1) ==1 ')") factor
            endif
+           !
+        elseif (jrot==-3) then
+           !
+           Nmodes1 = PT%Nmodes+1
+           !
+           ZPE  = safe_max
+           !
+           do jb=1,nroots
+              if (b(jb)<=ZPE) then 
+                  ZPE = b(jb)
+              endif
+           enddo
+           !
+           write(out,"(/'Zero-point-energy is ',f18.6)") ZPE
+           !
+           do i=1,nroots
+             !
+             ! Assign the new basis functions = eigenfunctions
+             !
+             MaxEigenvects  = small_
+             MaxTerm  = 1
+             !
+             MaxEigenvects = maxval(cf%coeffs(:,i)**2,dim=1)-small_
+             MaxTerm = maxloc(cf%coeffs(:,i)**2,dim=1,mask=cf%coeffs(:,i).ge.MaxEigenvects)
+             !
+             nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
+             PT%quanta%icoeffs(i,:) = nu_i(:)
+             !
+             PT%largest%coeffs(i,1) = cf%coeffs(MaxTerm,i)
+             !
+             PT%Ewhole%coeffs(i,1) = b(i)
+             !
+             termvalue = b(i)-ZPE
+             !
+             if (job%verbose>=4) then
+               !
+               write(out,"(i7,f18.8,<Nmodes1>i3)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes)
+               !
+             endif
+             !
+           enddo
            !
         endif
         !
