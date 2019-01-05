@@ -888,8 +888,8 @@ module pot_xy3
       y4=(2.0_ark*alpha1-alpha2-alpha3)/sqrt(6.0_ark)
       y5=(alpha2-alpha3)/sqrt(2.0_ark)
       !
-      !f = poten_xy3_morbid_10(y1,y2,y3,y4,y5,coro,force)
-      f = poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force)
+      f = poten_xy3_morbid_10(y1,y2,y3,y4,y5,coro,force)
+      !f = poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force)
       !
       if (verbose>=6) write(out,"('MLpoten_xy3_morbid_10/end')") 
  
