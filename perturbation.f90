@@ -2547,7 +2547,7 @@ module perturbation
     integer(ik)        :: nroots,jrot,icount,ideg,kdeg,ndeg,Ncount,k0,ioper
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
-    integer(ik)       ::  mpoints, iattempts,maxattempts
+    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
@@ -2719,6 +2719,35 @@ module perturbation
            !
          enddo
          !
+       elseif (bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model>2) then 
+         !
+         dimen = size(PT%Htotal%coeffs,dim=1)
+         !
+         diag_='SYEV'
+         !
+         call PThamiltonianMat(jrot=-3_ik,nroots=nroots,diagonalizer_=diag_,postprocess_=bs_t(kmode)%postprocess)
+         !
+         if (nroots<1) then 
+           !
+           write(out,"('No eigensolutions found')") 
+           stop 'No eigensolutions found'
+           !
+         endif
+         !
+         ! count the Harmonic levels with Eharmonic < ecut
+         !
+         nroots = 0 
+         !
+         do icount = 1,dimen
+           !
+           if (PT%Ewhole%coeffs(icount,1)<=job%enercutoff%primt)  then 
+             !
+             nroots = nroots + 1
+             !
+           endif
+           !
+         enddo
+         !
        elseif (FLl2_coeffs.and.job%bset(kmode)%lvib) then 
          !
          ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
@@ -2789,20 +2818,11 @@ module perturbation
           stop 'PTcontracted_prediagonalization, ilevel -  out of memory'
        end if
        !
-       ! all points will be used for the symmetry evaluation 
-       !mpoints = (bs(imode)%npoints-2*Nr_t)/2
-       !
-       if (job%verbose>=3) then
-         write (out,"(/i6,'-points interpolation will be used;')") 2*Nr_t+1
-         write (out,"( i6,' sample points will be selected for symmetry reconstruction.'/)") mpoints
-       end if
-       !
-       allocate (count_index(nroots,Ndeg),count_degen(nroots),transform(sym%Noper,Ndeg,mpoints), & 
+       allocate (count_index(nroots,Ndeg),count_degen(nroots),& 
                  sample_vector(dimen),tmat(Ndeg,sym%maxdegen,Ndeg),fv(dimen),stat=alloc)
                  !
        call ArrayStart('PTcontracted:count_index' ,alloc,size(count_index),kind(count_index))
        call ArrayStart('PTcontracted:count_degen' ,alloc,size(count_degen),kind(count_degen))
-       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        call ArrayStart('PTcontracted:sample_vector' ,alloc,size(sample_vector),kind(sample_vector))
        call ArrayStart('PTcontracted:tmat' ,alloc,size(tmat),kind(tmat))
        call ArrayStart('PTcontracted:fv' ,alloc,size(fv),kind(fv))
@@ -2818,13 +2838,6 @@ module perturbation
          !
          npoints = job%bset(imode)%npoints
          !
-         if (mpoints>job%bset(imode)%npoints) then 
-           !
-           write(out,"('PTcontracted_prediag..: For class ',i4,' number of points is too small.')") iclasses
-           stop 'PTcontracted_prediag..: illegal number of points in class'
-           !
-         endif
-         !
          ! size of the primitive basis set 
          !
          bs_size = job%bset(imode)%range(2) 
@@ -2837,11 +2850,6 @@ module perturbation
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
              call ArrayStart('bs_funct(ispecies)%coeffs' ,alloc,size( bs_funct(ispecies)%coeffs ),kind( bs_funct(ispecies)%coeffs))
-             !
-             !do ioper = 1,sym%Noper
-             !  allocate (overlap(ispecies,ioper)%coeffs(0:bs_size,0:bs_size),stat=alloc)
-             !  call ArrayStart('bs_funct(ispecies)%coeffs',alloc,size(overlap(ispecies,ioper)%coeffs),kind(overlap(ispecies,ioper)%coeffs))
-             !enddo
              !
              ! get the i/o unit with stored numerov or dvr-poilynomial basis functions
              !
@@ -2893,15 +2901,6 @@ module perturbation
          !
        enddo
        !
-       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
-                 transform_t(mpoints),&
-                 transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
-                 !
-       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
-       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
-       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
-       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
-       !
        allocate (mat(sym%maxdegen,sym%maxdegen),mat_(sym%maxdegen,dimen),stat=alloc)
        !
        call ArrayStart('PTcontracted:mat' ,alloc,size(mat),kind(mat))
@@ -2919,10 +2918,6 @@ module perturbation
          write(out,"('      i       ener         deg  symmetry  quanta:')")
          !
        end if 
-       !
-       ! Select sample points at which we check the transformation of the eigenfunctions
-       !
-       call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
        !
        tol = job%symm_toler(imode)
        !
@@ -3005,6 +3000,45 @@ module perturbation
        !
        Ncount = icount
        !
+       !mpoints = job%msample_points
+       !
+       mpoints_max = int(real(maxval(count_degen(1:Ncount)),rk)*1.5)
+       mpoints = mpoints_max
+       !
+       do i = 1,PT%mode_iclass(iclasses)
+         !
+         imode = PT%mode_class(iclasses,i)
+         !
+         if (mpoints>job%bset(imode)%npoints) then 
+           !
+           write(out,"('PTcontracted_prediag..: For class ',i4,' number of points is too small.')") iclasses
+           stop 'PTcontracted_prediag..: illegal number of points in class'
+           !
+         endif
+         !
+       enddo
+       !
+       if (job%verbose>=3) then
+         write (out,"(/i6,'-points interpolation will be used;')") 2*Nr_t+1
+         write (out,"( i6,' sample points will be selected for symmetry reconstruction.'/)") mpoints
+       end if
+       !
+       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
+                 transform_t(mpoints),&
+                 transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                 !
+       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
+       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
+       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
+       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
+       !
+       ! Select sample points at which we check the transformation of the eigenfunctions
+       !
+       call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+       !
+       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+       allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+       !
        ! This found number of levels and their degeneracy will be checked and corrected 
        ! using a more accurate procedure. We apply a reduction to the irr. representation 
        ! for the levels that though to be degenerate. 
@@ -3031,6 +3065,8 @@ module perturbation
          !
          iroot  = count_index(icount,1)
          Nelem  = count_degen(icount)
+         !
+         mpoints = min(int(real(count_degen(icount))*1.5),Nelem)
          !
          ! In case the number of degenerate levels exceeds the maximal allowed degeneracy 
          ! the degenerate set has to be splitted. 
@@ -30107,7 +30143,7 @@ end subroutine read_contr_matelem_expansion_classN
             ! !
             !endif
             !
-            if (jrot<0) then
+            if (jrot==-1.or.jrot==-2) then
               !
               if (trove%DVR) then 
                 write(out,"('L2@DVR is not implemented in PThamiltonianMat')")
@@ -30145,206 +30181,210 @@ end subroutine read_contr_matelem_expansion_classN
     !
     call TimerStop('PThamil..Mat')
     !
-    ! Diagonalization 
+    ! A special case of jort = -3 is for the Harmnoic basis and Order=4
     !
-    ! The diagonalization will be done with Lapack. 
-    ! We will need matrix "a" prepared in appropriate way 
-    !
-    b = 0
-    !
-    !  diagonalization with lapack_syev
-    !
-    call TimerStart('Diagonalization')
-    !
-    if (job%verbose>=3) then 
-       write(out,"(/'Diagonalization...')")
-    endif 
-    !
-    select case (trim(diagonalizer_used)) 
-    !
-    case default
-      !
-      write (out,"('PThamiltonianMat: type of the diagonalizer  ',a,' unknown')") trim(diagonalizer_used)
-      stop 'PThamiltonianMat - wrong diagonalizer '
-      !
-    case('SYEV') 
-      !
-      !
-      !call lapack_syev(a(1:dimen,1:dimen),b(:))
-      !
-      lwork = 50*size(a,dim=1)
-      !
-      allocate(work(lwork))
-      !
-      call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,info)
-      !
-      if (int(work(1))>size(work)) then 
-        !
-        lwork = int(work(1))
-        !
-        deallocate(work)
-        !
-        allocate(work(lwork))
-        !
-        call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
-        !
-      else
-        !
-        call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
-        !
-      endif 
-      !
-      deallocate(work)
-      !
-      if (info/=0) then
-        write (out,"('PThamiltonianMat-dsyev returned ',i8)") info
-        stop 'PThamiltonianMat-lapack_dsyev - dsyev failed'
-      end if
-      !
+    if ( jrot==-3 ) then
+      c = a
       nroots = dimen
-      !
-    case('SYEVD') 
-      !
-      lwork  = 50*size(a,dim=1)
-      liwork = 50*size(a,dim=1)
-      !
-      allocate(work(lwork),iwork(liwork))
-      !
-      call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,iwork,-1,info)
-      !
-      if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
-        !
-        lwork = int(work(1))
-        liwork = int(iwork(1))
-        !
-        deallocate(work,iwork)
-        !
-        allocate(work(lwork),iwork(liwork))
-        !
-        call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
-        !
-        nroots = dimen
-        !
-      else
-        !
-        call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
-        !
-      endif 
-      !
-      deallocate(work,iwork)
-      !
-      if (info/=0) then
-        write (out,"('PThamiltonianMat-dsyevd returned ',i8)") info
-        stop 'PThamiltonianMat-lapack_dsyevd - dsyev failed'
-      end if
-      nroots = dimen
-      !
-    case('SYEVR') 
-      !
-      vrange(1) = -100000.0_rk ; vrange(2) = upper_ener+a(1,1)
-      !
-      if (upper_ener/=1e9) then 
-         rng = 'V'
-      else
-         rng = 'A'
-      endif 
-      !
-      call lapack_syevr(a(1:dimen,1:dimen),b(1:dimen),rng,iroots=nroot_t,vrange=vrange) 
-      !
-      nroots= nroot_t 
-      !
-    end select 
-    !
-    call TimerStop('Diagonalization')
-    !
-    cf%coeffs(1:dimen,1:dimen) = a(1:dimen,1:dimen)
-    !
-    ! Store eigenvalues
-    ! ZPE
-    !
-    ZPE  = safe_max
-    MaxTerm  = 1
-    !
-    do jb=1,nroots
-       if (b(jb)<=ZPE) then 
-           ZPE = b(jb)
-           write(out,"(/'Zero-point-energy is ',f18.6)") ZPE
-       endif
-    enddo
-    !
-    ! Determine the assignment of the eigenvectors using the largest coefficient principle 
-    ! 
-    ! and Reporting the final results 
-    !
-    write(out,"(/'Variational eigenvalues:',/'      i        value       quanta')") 
-    !
-    do ib=1,nroots
+    else
        !
-       MaxEigenvects  = small_
+       ! Diagonalization 
+       !
+       
+       !
+       ! The diagonalization will be done with Lapack. 
+       ! We will need matrix "a" prepared in appropriate way 
+       !
+       b = 0
+       !
+       !  diagonalization with lapack_syev
+       !
+       call TimerStart('Diagonalization')
+       !
+       if (job%verbose>=3) then 
+          write(out,"(/'Diagonalization...')")
+       endif 
+       !
+       select case (trim(diagonalizer_used)) 
+       !
+       case default
+         !
+         write (out,"('PThamiltonianMat: type of the diagonalizer  ',a,' unknown')") trim(diagonalizer_used)
+         stop 'PThamiltonianMat - wrong diagonalizer '
+         !
+       case('SYEV') 
+         !
+         !
+         !call lapack_syev(a(1:dimen,1:dimen),b(:))
+         !
+         lwork = 50*size(a,dim=1)
+         !
+         allocate(work(lwork))
+         !
+         call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,info)
+         !
+         if (int(work(1))>size(work)) then 
+           !
+           lwork = int(work(1))
+           !
+           deallocate(work)
+           !
+           allocate(work(lwork))
+           !
+           call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
+           !
+         else
+           !
+           call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
+           !
+         endif 
+         !
+         deallocate(work)
+         !
+         if (info/=0) then
+           write (out,"('PThamiltonianMat-dsyev returned ',i8)") info
+           stop 'PThamiltonianMat-lapack_dsyev - dsyev failed'
+         end if
+         !
+         nroots = dimen
+         !
+       case('SYEVD') 
+         !
+         lwork  = 50*size(a,dim=1)
+         liwork = 50*size(a,dim=1)
+         !
+         allocate(work(lwork),iwork(liwork))
+         !
+         call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,iwork,-1,info)
+         !
+         if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
+           !
+           lwork = int(work(1))
+           liwork = int(iwork(1))
+           !
+           deallocate(work,iwork)
+           !
+           allocate(work(lwork),iwork(liwork))
+           !
+           call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
+           !
+           nroots = dimen
+           !
+         else
+           !
+           call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
+           !
+         endif 
+         !
+         deallocate(work,iwork)
+         !
+         if (info/=0) then
+           write (out,"('PThamiltonianMat-dsyevd returned ',i8)") info
+           stop 'PThamiltonianMat-lapack_dsyevd - dsyev failed'
+         end if
+         nroots = dimen
+         !
+       case('SYEVR') 
+         !
+         vrange(1) = -100000.0_rk ; vrange(2) = upper_ener+a(1,1)
+         !
+         if (upper_ener/=1e9) then 
+            rng = 'V'
+         else
+            rng = 'A'
+         endif 
+         !
+         call lapack_syevr(a(1:dimen,1:dimen),b(1:dimen),rng,iroots=nroot_t,vrange=vrange) 
+         !
+         nroots= nroot_t 
+         !
+       end select 
+       !
+       call TimerStop('Diagonalization')
+       !
+       cf%coeffs(1:dimen,1:dimen) = a(1:dimen,1:dimen)
+       !
+       ! Store eigenvalues
+       ! ZPE
+       !
+       ZPE  = safe_max
        MaxTerm  = 1
        !
-       do jb=1,dimen
-          if (abs(a(jb,ib))>=MaxEigenvects) then 
-              MaxEigenvects = abs( a(jb,ib) )
-              MaxTerm = jb
+       do jb=1,nroots
+          if (b(jb)<=ZPE) then 
+              ZPE = b(jb)
+              write(out,"(/'Zero-point-energy is ',f18.6)") ZPE
           endif
-          nu_j(:) = PT%active_space%icoeffs(:,jb)
-          if (job%verbose>=7) write(out,"(2i8,f19.8,30i4)") ib,jb,a(jb,ib), & 
-                       (nu_j(i0),i0=0,min(PT%Nmodes,30))
+       enddo
+       !
+       ! Determine the assignment of the eigenvectors using the largest coefficient principle 
+       ! 
+       ! and Reporting the final results 
+       !
+       write(out,"(/'Variational eigenvalues:',/'      i        value       quanta')") 
+       !
+       do ib=1,nroots
+          !
+          MaxEigenvects  = small_
+          MaxTerm  = 1
+          !
+          do jb=1,dimen
+             if (abs(a(jb,ib))>=MaxEigenvects) then 
+                 MaxEigenvects = abs( a(jb,ib) )
+                 MaxTerm = jb
+             endif
+             nu_j(:) = PT%active_space%icoeffs(:,jb)
+             if (job%verbose>=7) write(out,"(2i8,f19.8,30i4)") ib,jb,a(jb,ib), & 
+                          (nu_j(i0),i0=0,min(PT%Nmodes,30))
+             !
+          enddo
+          !
+          nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
+          PT%quanta%icoeffs(ib,:) = nu_i(:)
+          !
+          if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+            v_i = nu_i(Nmodes)
+            n_i = mod(v_i,nmax+1)
+            k_i = (v_i-n_i)/(nmax+1)
+            PT%lquant%icoeffs(ib,1)=k_i
+            PT%quanta%icoeffs(ib,Nmodes) = n_i
+          endif
+          !
+          termvalue = b(ib)-ZPE
+          !
+          PT%largest%coeffs(ib,1) = a(MaxTerm,ib)
+          !
+          write(out,"(i7,f18.8,40i3)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
           !
        enddo
        !
-       nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
-       PT%quanta%icoeffs(ib,:) = nu_i(:)
+       PT%Ewhole%coeffs(:,1) = b(:)
        !
-       if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
-         v_i = nu_i(Nmodes)
-         n_i = mod(v_i,nmax+1)
-         k_i = (v_i-n_i)/(nmax+1)
-         PT%lquant%icoeffs(ib,1)=k_i
-         PT%quanta%icoeffs(ib,Nmodes) = n_i
-       endif
-       !
-       termvalue = b(ib)-ZPE
-       !
-       PT%largest%coeffs(ib,1) = a(MaxTerm,ib)
-       !
-       write(out,"(i7,f18.8,40i3)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
-       !
-    enddo
+    endif
     !
-    PT%Ewhole%coeffs(:,1) = b(:)
+    ! Define Vibrational angular momenta or Harmonic-osciallators
     !
-    !if (FLl2_coeffs.and.dimen>25) then
-    !    !
-    !    do i = 1,nroots
-    !      !
-    !      PT%lquant%icoeffs(i,1) = nint(sqrt(abs(b(i))),ik)
-    !      !
-    !    enddo
-    !    !
-    !endif
-    !
-    !
-    ! Define Vibrational angular momenta
-    !
-    if (jrot<0) then
+    if (jrot==-1.or.jrot==-2.or.jrot==-3) then
         !
         PT%Hclass%coeffs = c
         !
-        ! transform the matrix elements of the vib. angular momentum 
-        ! to the new basis of eigenfunctions of H-reduced and store in C-matrix
-        !
-        call dgemm('T','N',dimen,dimen,dimen,alpha,& 
-                    cf%coeffs,dimen,&
-                    c,dimen,beta,&
-                    a,dimen)
-        !   
-        call dgemm('N','N',dimen,dimen,dimen,alpha,&
-                   a,dimen,&
-                   cf%coeffs,dimen,beta,&
-                   c,dimen)
-                   !
+        ! Lvib-case
+        if (jrot==-1.or.jrot==-2) then
+           !
+           ! transform the matrix elements of the vib. angular momentum 
+           ! to the new basis of eigenfunctions of H-reduced and store in C-matrix
+           !
+           call dgemm('T','N',dimen,dimen,dimen,alpha,& 
+                       cf%coeffs,dimen,&
+                       c,dimen,beta,&
+                       a,dimen)
+           !   
+           call dgemm('N','N',dimen,dimen,dimen,alpha,&
+                      a,dimen,&
+                      cf%coeffs,dimen,beta,&
+                      c,dimen)
+           !
+        endif
         !
         ! Now c-matrix should be block-diagonal: diagonal for non-degenerate and 
         ! non-diagonal for the clusters of degenerate states.
@@ -30424,7 +30464,8 @@ end subroutine read_contr_matelem_expansion_classN
         ! Lquant matrix Ndeg x Ndeg and diagonalize
         ! This should produce a diagonal Lquant (ang. vibr. mometna) matrix
         !
-        if (job%verbose>=5) write(out,"('diagonalize <i|Lvib|j> for clusters with the same L...')") 
+        if ( jrot/=-3.and.job%verbose>=5 ) write(out,"('diagonalize <i|Lvib|j> for clusters with the same L...')") 
+        if ( jrot==-3.and.job%verbose>=5 ) write(out,"('diagonalize H clusters for degenerate states...')") 
         !
         do icount = 1,Ncount
            !
@@ -30474,7 +30515,7 @@ end subroutine read_contr_matelem_expansion_classN
         ! Transform to the eigenfunctions to the L-representtation, where
         ! Lz^2 is diagonal 
         !
-        if (job%verbose>=5) write(out,"('Transform to the representation Lvib-diagonal ...')") 
+        if (job%verbose>=5) write(out,"('Transform to the diagonal representation ...')") 
         !   
         call dgemm('N','N',dimen,dimen,dimen,alpha,&
                    cf%coeffs,dimen,&
@@ -30486,7 +30527,7 @@ end subroutine read_contr_matelem_expansion_classN
         ! check if L2 is diagonal by transforming the primite 
         ! matrix elemenets of L2 to the new representation 
         !
-        if (job%verbose>=5) write(out,"('Now transform the Hamiltonian and check if Lvib is diagonal ...')")         
+        if (job%verbose>=5) write(out,"('Now transform the Hamiltonian or Lvib and check if it is diagonal ...')")         
         !
         call dgemm('T','N',dimen,dimen,dimen,alpha,& 
                     cf%coeffs,dimen,&
@@ -30502,93 +30543,83 @@ end subroutine read_contr_matelem_expansion_classN
               write(out,"(/a)") " ... with vibrational angular momenta"
         endif
         !
-        Nmodes1 = PT%Nmodes+1
-        factor = 1.0_rk
+        ! Only for the lvib-case 
         !
-        itrial = 2
-        !
-        do i=1,nroots
-          !
-          ! Here we check the diagonality 
-          !
-          largest_coeff = 0
-          MaxTerm = 1
-          !
-          if (i>1) then 
-            largest_coeff = maxval(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk) 
-            MaxTerm = maxloc(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk)
-          endif
-          !
-          if ((largest_coeff>sqrt(small_).and.Jrot==-1).or.(largest_coeff>1e5*sqrt(small_).and.Jrot<-1)) then 
-            !
-            write(out,"('PThamiltonianMat: non-diagonal lquant elements are too large ',g18.4,' i = ',i5,' ; lquant2 =  ',f14.6)") largest_coeff,i,c(i,i)
-            stop 'PThamiltonianMat:  non-diagonal lquant '
-            !
-          endif
-          !
-          ! Check the diagonal elements if they make sense (positive)
-          !
-          if (c(i,i)<-sqrt(small_)) then 
-            write(out,"('PThamiltonianMat: lquant should not be negative:',f18.4,' i = ',i4)") c(i,i),i
-            stop 'PThamiltonianMat: illegal lquant '
-          endif
-          !
-          ! here is the special case when lquant = l x constant
-          ! we take lquant(1) = constant and use it to re-scale all other values else, if this works. 
-          !
-          if ( i==itrial ) then
-            if ( nint( sqrt( abs( c(i,i) ) ) )==1 ) then
-              factor = sqrt(abs(c(i,i)))
-            elseif ( sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
-              factor = sqrt(abs(c(i,i)))
-            else
-              itrial = itrial + 1
-            endif 
-          endif
-          !
-          PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i)))/factor,ik)
-          !
-          !if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then 
-          !  write(out,"('PThamiltonianMat: lquant is not an integer:',i,1x,f18.4,' i = ',i4)") PT%lquant%icoeffs(i,1)**2,c(i,i),i
-          !  !stop 'PThamiltonianMat: illegal lquant '
-          !endif
-          !
-          if (job%verbose>=4) then
-              !
-              termvalue = PT%Ewhole%coeffs(i,1)-ZPE
-              !
-              if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i)*factor)>100.0*sqrt(small_)) then
+        if (jrot==-1.or.jrot==-2) then
+           !
+           Nmodes1 = PT%Nmodes+1
+           factor = 1.0_rk
+           !
+           itrial = 2
+           !
+           do i=1,nroots
+             !
+             ! Here we check the diagonality 
+             !
+             largest_coeff = 0
+             MaxTerm = 1
+             !
+             if (i>1) then 
+               largest_coeff = maxval(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk) 
+               MaxTerm = maxloc(c(:i-1,1)**2,dim=1,mask=c(:i-1,1)**2.ge.0.0_rk)
+             endif
+             !
+             if ((largest_coeff>sqrt(small_).and.Jrot==-1).or.( largest_coeff>1e5*sqrt(small_).and.Jrot==-2 )) then 
+               !
+               write(out,"('PThamiltonianMat: non-diagonal lquant elements are too large ',g18.4,' i = ',i5,' ; lquant2 =  ',f14.6)") largest_coeff,i,c(i,i)
+               stop 'PThamiltonianMat:  non-diagonal lquant '
+               !
+             endif
+             !
+             ! Check the diagonal elements if they make sense (positive)
+             !
+             if (c(i,i)<-sqrt(small_)) then 
+               write(out,"('PThamiltonianMat: non-diagonal should not be negative:',f18.4,' i = ',i4)") c(i,i),i
+               stop 'PThamiltonianMat: illegal non-diagonal'
+             endif
+             !
+             ! here is the special case when lquant = l x constant
+             ! we take lquant(1) = constant and use it to re-scale all other values else, if this works. 
+             !
+             if ( i==itrial ) then
+               if ( nint( sqrt( abs( c(i,i) ) ) )==1 ) then
+                 factor = sqrt(abs(c(i,i)))
+               elseif ( sqrt( abs( c(i,i) ) )>sqrt(small_) ) then
+                 factor = sqrt(abs(c(i,i)))
+               else
+                 itrial = itrial + 1
+               endif 
+             endif
+             !
+             PT%lquant%icoeffs(i,1) = nint(sqrt(abs(c(i,i)))/factor,ik)
+             !
+             !if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i))>100.0*sqrt(small_)) then 
+             !  write(out,"('PThamiltonianMat: lquant is not an integer:',i,1x,f18.4,' i = ',i4)") PT%lquant%icoeffs(i,1)**2,c(i,i),i
+             !  !stop 'PThamiltonianMat: illegal lquant '
+             !endif
+             !
+             if (job%verbose>=4) then
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor,PT%lquant%icoeffs(i,1)
+                 termvalue = PT%Ewhole%coeffs(i,1)-ZPE
                  !
-              else
+                 if (abs(real(PT%lquant%icoeffs(i,1)**2,rk)-c(i,i)*factor)>100.0*sqrt(small_)) then
+                    !
+                    write(out,"(i7,f18.8,<Nmodes1>i3,f15.8,' /= ',i6)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor,PT%lquant%icoeffs(i,1)
+                    !
+                 else
+                    !
+                    write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor
+                    !
+                 endif
                  !
-                 write(out,"(i7,f18.8,<Nmodes1>i3,f15.8)") i,termvalue,(PT%quanta%icoeffs(i,i0),i0=0,PT%Nmodes),sqrt(abs(c(i,i)))/factor
-                 !
-              endif
-              !
-          endif
-
-          !PT%Ewhole%coeffs(i,1) = c(i,i)
-          !
-          ! Re-assign the new eigenfunctions which are also basis functions 
-          !
-          !largest_coeff = maxval(cf%coeffs(:,i)**2,dim=1)-small_
-          !MaxTerm = maxloc(cf%coeffs(:,i)**2,dim=1,mask=cf%coeffs(:,i)**2.ge.largest_coeff)
-          !
-          !nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
-          !PT%quanta%icoeffs(i,:) = nu_i(:)
-          !
-          !PT%largest%coeffs(i,1) = sqrt(largest_coeff)
-          !
-          !nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
-          !
-          !write(out,"(i7,f18.8,<Nmodes>i3,2x,i3)") i,PT%Ewhole%coeffs(i,1)-ZPE,nu_i(1:),PT%lquant%icoeffs(i,1)
-          !
-        enddo
-        !
-        if ( factor>sqrt(small_) ) then
-          write(out,"(' All lquant-values have been rescaled by the lquant(1) factor = 1/',f18.12,' to make lquant(1) ==1 ')") factor
+             endif
+             !
+           enddo
+           !
+           if ( factor>sqrt(small_) ) then
+             write(out,"(' All lquant-values have been rescaled by the lquant(1) factor = 1/',f18.12,' to make lquant(1) ==1 ')") factor
+           endif
+           !
         endif
         !
         ! sort the einvalues ann eigenvectors with the energy 
