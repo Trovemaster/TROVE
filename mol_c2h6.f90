@@ -5977,15 +5977,38 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         gamma = 1
         ideg = 1
         !
-        if (J>0) then 
-          write(out,"('The rotational symmetries have not been implemented for G36(EM)')")
-          stop 'The rotational symmetries have not been implemented for G36(EM)'
-        endif
-        !
-        !if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
-        !if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
-        !if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
-        !if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g        !
+        if(K==0.and.mod(J+2,2)==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.mod(J+2,2)==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+        end if 
         !
      case default
         !

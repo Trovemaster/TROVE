@@ -3002,7 +3002,7 @@ module perturbation
        !
        !mpoints = job%msample_points
        !
-       mpoints_max = max(int(real(maxval(count_degen(1:Ncount)),rk)*2.0_rk),job%msample_points)
+       mpoints_max = max(int(real(maxval(count_degen(1:Ncount)),rk)*1.5_rk),job%msample_points)
        mpoints = mpoints_max
        !
        do i = 1,PT%mode_iclass(iclasses)
@@ -3066,7 +3066,7 @@ module perturbation
          iroot  = count_index(icount,1)
          Nelem  = count_degen(icount)
          !
-         mpoints = max(min(int(real(count_degen(icount))*2.0_rk),Nelem),job%msample_points)
+         mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
          !
          ! In case the number of degenerate levels exceeds the maximal allowed degeneracy 
          ! the degenerate set has to be splitted. 
@@ -3209,6 +3209,7 @@ module perturbation
              kroot = count_index(icount,1) 
              !
              write(out,"('PTcontracted_prediag: Cannot define symmetry for level ',i8,'; Nirr = ',<sym%Nrepresen>g12.4)") ilevel,Nirr_rk
+             write(out,"(4x,'Consider reducing symm_toler, increasing points uless something genially wring with symmetry.f90, potential or kineic.')")
              write(out,"('                      nelem = ',i8,' kroot = ',i8,' to ',i8,' icount = ',i8,' Ncount = ',i8)") nelem,kroot,count_index(icount,Nelem),icount,Ncount
              write(out,"(' Characters = ',40f17.7)") characters(1:min(40,sym%Nclasses))
              write(out,"('Energies = ',40f17.7)") PT%Ewhole%coeffs(kroot:count_index(icount,Nelem),1)-PT%Ewhole%coeffs(1,1)

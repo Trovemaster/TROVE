@@ -15380,7 +15380,7 @@ end subroutine check_read_save_none
       write(chkptIO,"(i8,'   <- Jrot, rotational angular momentum')") bset%dscr(0)%range(1)
       !
       do imode = 0,trove%Nmodes
-        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i2,1x,i2,1x,a10,i9,i2,i2)") imode, bset%dscr(imode)
+        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i2,1x,i2,1x,a10,i9,i3,i3,i3)") imode, bset%dscr(imode)
       enddo
       !
       write(chkptIO,"('End Fingerprints')") 
