@@ -81,7 +81,7 @@ module me_rot
                 jx2y2mat(j,k1,k2) = fjk
                 jxymat(j,k1,k2) = real(pm,ark)*fjk
                 !
-                if (verbose>=7) write(out,"('j,k1,k2,pm,fjk = ',4i,3e18.8)") j,k1,k2,pm,fjk,jx2y2mat(j,k1,k2),jxymat(j,k1,k2)
+                if (verbose>=7) write(out,"('j,k1,k2,pm,fjk = ',4i7,3e18.8)") j,k1,k2,pm,fjk,jx2y2mat(j,k1,k2),jxymat(j,k1,k2)
                 !
              endif 
              !
@@ -244,7 +244,7 @@ module me_rot
       minus12 = -1.0_ark
       if (mod(tau1+tau2+k1+k2,2).eq.0) minus12 = 1.0_ark
       !
-      if (verbose>=6) write(out,"('j,k1,k2,minus1,minus1,minus12 = ',3i,5e18.8)") j,k1,k2,minus1,minus1,minus12
+      if (verbose>=6) write(out,"('j,k1,k2,minus1,minus1,minus12 = ',3i6,5e18.8)") j,k1,k2,minus1,minus1,minus12
       if (verbose>=6) write(out,"('me(j,pm k1, pm k2) = ',4e18.8)") me(j,k1, k2),me(j,-k1, k2),me(j,k1, -k2),me(j,-k1, -k2)
       !
       f = minus0*fk1*fk2*(        me(j,k1, k2) + minus1 *me(j,-k1,k2)   &

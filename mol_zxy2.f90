@@ -312,7 +312,8 @@ module mol_zxy2
              delta = src(6)
              !
              !
-             t1 = ( cos(theta2)-1.0_ark )*( cos(theta2)+2.0_ark*cos(delta)**2-1.0_ark )*( cos(theta1)-1.0_ark )*( cos(theta1)-1.0_ark+2.0_ark*cos(delta)**2 )
+             t1 = ( cos(theta2)-1.0_ark )*( cos(theta2)+2.0_ark*cos(delta)**2-1.0_ark )*&
+                  ( cos(theta1)-1.0_ark )*( cos(theta1)-1.0_ark+2.0_ark*cos(delta)**2 )
              !
              if ( t1<-sqrt(small_) ) then
                 write (out,"('MLcoordinate_transform_func: sqrt(-1) for t1= ',f18.8)") t1
@@ -321,9 +322,12 @@ module mol_zxy2
                 t1 = 0
              endif
              !
-             x1 = -(-1.0_ark+cos(delta)**2+cos(theta2)-cos(theta2)*cos(delta)**2+cos(theta1)-cos(theta1)*cos(delta)**2-cos(theta2)*cos(theta1)+cos(theta1)*cos(theta2)*cos(delta)**2+sqrt( t1 ) )/(cos(delta)**2*sin(theta1)*sin(theta2))
+             x1 = -(-1.0_ark+cos(delta)**2+cos(theta2)-cos(theta2)*cos(delta)**2+cos(theta1)-&
+                   cos(theta1)*cos(delta)**2-cos(theta2)*cos(theta1)+cos(theta1)*cos(theta2)*cos(delta)**2+sqrt( t1 ) )/&
+                   (cos(delta)**2*sin(theta1)*sin(theta2))
              !
-             t1 = ( cos(theta1)-1.0_ark )*( cos(theta1)-1.0_ark+2.0_ark*cos(delta)**2 )*( 2.0_ark*cos(theta2)*cos(delta)**2-2.0_ark*cos(delta)**2+1.0_ark-2.0_ark*cos(theta2)+cos(theta2)**2 ) 
+             t1 = ( cos(theta1)-1.0_ark )*( cos(theta1)-1.0_ark+2.0_ark*cos(delta)**2 )*&
+                  ( 2.0_ark*cos(theta2)*cos(delta)**2-2.0_ark*cos(delta)**2+1.0_ark-2.0_ark*cos(theta2)+cos(theta2)**2 ) 
              !
              if ( t1<-sqrt(small_) ) then
                 write (out,"('MLcoordinate_transform_func: sqrt(-1) for t1= ',f18.8)") t1
@@ -332,7 +336,9 @@ module mol_zxy2
                 t1 = 0
              endif
              !
-             x2 = -(-1.0_ark+cos(delta)**2+cos(theta2)-cos(theta2)*cos(delta)**2+cos(theta1)-cos(theta1)*cos(delta)**2-cos(theta2)*cos(theta1)+cos(theta1)*cos(theta2)*cos(delta)**2-sqrt( t1 ) )/(cos(delta)**2*sin(theta1)*sin(theta2))
+             x2 = -(-1.0_ark+cos(delta)**2+cos(theta2)-cos(theta2)*cos(delta)**2+cos(theta1)-&
+                   cos(theta1)*cos(delta)**2-cos(theta2)*cos(theta1)+cos(theta1)*cos(theta2)*cos(delta)**2-sqrt( t1 ) )/&
+                   (cos(delta)**2*sin(theta1)*sin(theta2))
              !
              cosphi = x1
              !
@@ -438,7 +444,7 @@ module mol_zxy2
      integer(ik),intent(in)  :: Npoints,Natoms
 
      real(ark),   intent(out) :: b0(Natoms,3,0:Npoints)
-     real(ark),   intent(inout),optional  :: rho_i(0:Npoints)
+     real(ark),   intent(in),optional  :: rho_i(0:Npoints)
      real(ark),   intent(out),optional :: rho_ref
      real(ark),   intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
 
@@ -706,10 +712,13 @@ module mol_zxy2
      ! 
      cs=1.0_ark+cos(x)
      !
-     dst(1) = molec%mep_params(1)+molec%mep_params(2)*cs+molec%mep_params(3)*cs**2+molec%mep_params(4)*cs**3+molec%mep_params( 5)*cs**4
-     dst(2) = molec%mep_params(6)+molec%mep_params(7)*cs+molec%mep_params(8)*cs**2+molec%mep_params(9)*cs**3+molec%mep_params(10)*cs**4
+     dst(1) = molec%mep_params(1)+molec%mep_params(2)*cs+molec%mep_params(3)*cs**2+molec%mep_params(4)*cs**3+&
+              molec%mep_params( 5)*cs**4
+     dst(2) = molec%mep_params(6)+molec%mep_params(7)*cs+molec%mep_params(8)*cs**2+molec%mep_params(9)*cs**3+&
+              molec%mep_params(10)*cs**4
      dst(3) = dst(2)
-     dst(4) = molec%mep_params(11)*rad+molec%mep_params(12)*cs+molec%mep_params(13)*cs**2+molec%mep_params(14)*cs**3+molec%mep_params(15)*cs**4
+     dst(4) = molec%mep_params(11)*rad+molec%mep_params(12)*cs+molec%mep_params(13)*cs**2+&
+              molec%mep_params(14)*cs**3+molec%mep_params(15)*cs**4
      dst(5) = dst(4)
      dst(6) = x
      !
@@ -774,9 +783,9 @@ module mol_zxy2
       !
       if ( abs(cosphi)>1.0_ark+sqrt(small_) ) then 
          !
-         write (out,"('ML_coordinate_transform_SOHF: cosphi>1: ',f18.8)") cosphi
+         write (out,"('ML_b0_transform_SOHF: cosphi>1: ',f18.8)") cosphi
          write (out,"('Consider change difftype ')")
-         stop 'ML_coordinate_transform_SOHF - bad cosphi'
+         stop 'ML_b0_transform_SOHF - bad cosphi'
          !
       elseif ( abs(cosphi)>=1.0_ark) then 
          !
@@ -867,6 +876,15 @@ module mol_zxy2
 
 
 
+  !function ML_coordinate_transform_SOHF(src,ndst,direct) result (dst)
+  !  !
+  !  real(ark),intent(in)  :: src(:)
+  !  integer(ik),intent(in) :: ndst
+  !  logical,intent(in):: direct
+  !  !
+  !  real(ark),dimension(ndst) :: dst
+
+
   function ML_coordinate_transform_SOHF(src,ndst,direct) result (dst)
     !
     real(ark),intent(in)  :: src(:)
@@ -874,6 +892,7 @@ module mol_zxy2
     logical,intent(in):: direct
     !
     real(ark),dimension(ndst) :: dst
+    !
     real(ark)                 :: dsrc(size(src))
     real(ark)                 :: cosalpha,c_t(molec%Nmodes,molec%Nmodes)
     real(ark)                 :: alpha,sinrho,s6,alpha1,alpha2,alpha3,tau_2,r1,r2,r3,norm_2,sindelta

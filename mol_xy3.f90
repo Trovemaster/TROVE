@@ -39,7 +39,8 @@ module mol_xy3
      real(ark),   intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
      !
      real(ark)                :: c0(2,2),a0(molec%Natoms,3),cosr,sinr,re14,mH1,mH2,mH3,mX,rho,Mtotal,cosphi,phi,Inert(3),req(6)
-     real(ark)                :: transform1(3,3),alpha,rho0,CM_shift,tmat(3,3),transform(3,3),transform0(3,3),a_t,sinrho,hx,hy,unit(3)
+     real(ark)                :: transform1(3,3),alpha,rho0,CM_shift,tmat(3,3),transform(3,3),transform0(3,3),a_t
+     real(ark)                :: sinrho,hx,hy,unit(3)
      integer(ik)             :: i,n,ix,jx,ioper
      character(cl)           :: method
      !
@@ -191,7 +192,7 @@ module mol_xy3
          !
          transform0 = 0 
          !
-         forall(ix=1:3) transform0(ix,ix) = 1.0_ark
+         forall (ix=1:3) transform0(ix,ix) = 1.0_ark
          !
          do i = 0,npoints
             !
@@ -279,7 +280,7 @@ module mol_xy3
                     !
                     phi = real(ioper-1,ark)*pi*0.5_ark
                     !
-                    tmat = 0 
+                    tmat(:,:) = 0 
                     !
                     tmat(ix,ix) = 1.0_ark
                     !

@@ -1975,8 +1975,7 @@ f(171) = 2*r0**2*(a1**2*a4*r1 + a1*a4**2*r4 + a2**2*a3*r2 + a2*a3**2*r3)
 f(172) = 2*r0**2*(a1*a4*r1**2 + a1*a4*r4**2 + a2*a3*r2**2 + a2*a3*r3**2)
 f(173) = 2*r0**3*(a1*a4*r1 + a1*a4*r4 + a2*a3*r2 + a2*a3*r3)
 f(174) = 2*r0*(a1*b1**2*r1 + a2*b1**2*r2 + a3*b2**2*r3 + a4*b2**2*r4)
-f(175) = 2*r0*(a1**2*b1**2*r1 + a2**2*b1**2*r2 + a3**2*b2**2*r3 + a4**2* &
-      b2**2*r4)
+f(175) = 2*r0*(a1**2*b1**2*r1 + a2**2*b1**2*r2 + a3**2*b2**2*r3 + a4**2*b2**2*r4)
 f(176) = 2*r0*(a1*b1**2*r1**2 + a2*b1**2*r2**2 + a3*b2**2*r3**2 + a4*b2 &
       **2*r4**2)
 f(177) = 2*r0**2*(a1*b1**2*r1 + a2*b1**2*r2 + a3*b2**2*r3 + a4*b2**2*r4)
@@ -4438,8 +4437,9 @@ recursive subroutine ML_dipole_c2h4_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz0(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark),intent(out)  ::  f(rank)
     !
+    f = 0
     !
     stop 'dipole_c2h4_4m_dummy is not implemented'
     !

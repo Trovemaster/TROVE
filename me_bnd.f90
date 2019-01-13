@@ -738,7 +738,8 @@ module me_bnd
   !
   ! Matrix elements with Fourier-eigenfunctions 
   !
-  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,iperiod,verbose,g_numerov,energy)
+  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,&
+                        iperiod,verbose,g_numerov,energy)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
@@ -759,7 +760,8 @@ module me_bnd
    !
    real(ark),allocatable :: poten(:),mu_rr(:),rho_(:)
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),vect(:,:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),&
+                            dphi(:),vect(:,:)
    real(ark),allocatable :: phil_(:),phir_(:),dphil_(:),dphir_(:),phivphi_(:)
    real(ark),allocatable :: psi(:,:),dpsi(:,:),psi_(:,:),dpsi_(:,:)
    real(rk),allocatable ::  h(:,:),ener(:)
@@ -1280,7 +1282,8 @@ module me_bnd
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),dphi(:),x(:),sinrho(:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),&
+                            dphi(:),x(:),sinrho(:)
    real(ark),allocatable :: L(:,:),dL(:,:)
    real(rk),allocatable  :: h(:,:),ener(:),psi(:,:),dpsi(:,:),ddpsi(:,:)
    !
@@ -1656,7 +1659,8 @@ module me_bnd
   !
   ! Matrix elements with Associate Legendre-eigenfunctions 
   !
-  subroutine ME_Associate_Legendre(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,icoord,verbose,g_numerov,energy)
+  subroutine ME_Associate_Legendre(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,icoord,&
+                                   verbose,g_numerov,energy)
    !
    implicit none
    integer(ik),intent(in) :: vmax,kmax,maxorder,npoints,isingular
@@ -2163,7 +2167,8 @@ module me_bnd
   !
   ! Matrix elements with Associate Legendre-eigenfunctions 
   !
-  subroutine ME_sinrho_polynomial(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,icoord,verbose,g_numerov,energy)
+  subroutine ME_sinrho_polynomial(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,icoord,verbose,&
+                                  g_numerov,energy)
    !
    implicit none
    integer(ik),intent(in) :: vmax,kmax,maxorder,npoints,isingular
@@ -2181,7 +2186,8 @@ module me_bnd
    integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
-   real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),phi_rho(:),dphi_rho(:)
+   real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
+                            phi_rho(:),dphi_rho(:)
    real(rk),allocatable  :: h(:,:),ener(:)
    !
    character(len=cl)    :: unitfname 

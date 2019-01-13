@@ -8,8 +8,9 @@ module molecules
   use mol_xy
   use mol_xy2
   use mol_xy3
-  use mol_xy4, only : ML_coordinate_transform_XY4, ML_symmetry_transformation_XY4, ML_b0_XY4, ML_rotsymmetry_XY4
-  use mol_zxy2, only : ML_coordinate_transform_ZXY2, ML_symmetry_transformation_ZXY2, ML_b0_ZXY2, ML_rotsymmetry_ZXY2,ML_coordinate_transform_SOHF,ML_b0_SOHF
+  use mol_xy4, only  : ML_coordinate_transform_XY4, ML_symmetry_transformation_XY4, ML_b0_XY4, ML_rotsymmetry_XY4
+  use mol_zxy2, only : ML_coordinate_transform_ZXY2, ML_symmetry_transformation_ZXY2, ML_b0_ZXY2, ML_rotsymmetry_ZXY2,&
+                       ML_coordinate_transform_SOHF,ML_b0_SOHF
   use mol_zxy3, only : ML_coordinate_transform_ZXY3, ML_symmetry_transformation_ZXY3, ML_b0_ZXY3, ML_rotsymmetry_ZXY3
   use mol_ch3oh
   use mol_abcd
@@ -25,7 +26,8 @@ module molecules
   use pot_xy4
   use pot_ch3oh
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
-  use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
+  use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
+                       MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
                        MLpoten_c2h6_88_cos3tau_G36
   use pot_c3h6, only : MLpoten_c3h6_harmtest
   !
@@ -39,7 +41,8 @@ module molecules
          MLcoordinate_transform_func,ML_check_steps4coordinvert, &
          MLequilibrium_xyz_1d,diff_2d_4points,ML_diffs,MLsymmetry_transform_func
   public MLpotenfunc,MLrotsymmetry_func,ratint,polint,MLinvmat,diff_2d_4points_ark,diff_3d_6points,polintark,&
-         MLextF_func,MLpotentialfunc,ML_MEPfunc,MLinvmatark,MLratintark,MLrotsymmetry_generate_CII,MLrotsymmetry_generate
+         MLextF_func,MLpotentialfunc,ML_MEPfunc,MLinvmatark,MLratintark,MLrotsymmetry_generate_CII,&
+         MLrotsymmetry_generate
   public MLdefine_potenfunc,MLcoordinate_transform_func_define,MLextF_func_define
          !
   public MOrepres_arkT,ddlmn_conj,dlmn,Phi_rot,calc_phirot
@@ -778,7 +781,8 @@ end function ML_MEPfunc
     case default
        !
        if (trim(molec%moltype)=='XY') then  
-          write (out,"('MLcoordinate_transform_func_define: coord. transformation for XY ',a,' unknown')") trim(molec%coords_transform)
+          write (out,"('MLcoordinate_transform_func_define: coord. transformation for XY ',a,' unknown')") &
+                trim(molec%coords_transform)
           stop 'MLcoordinate_transform_func_define - bad coord. type'
        endif
        !
@@ -1446,7 +1450,8 @@ end function ML_MEPfunc
     !
     ! Obtain transformation-matrix 
     !
-    allocate(R(nroots,nroots),T(nroots,nroots),Q(nroots,nroots),a(nroots,nroots),b(nroots),da(nroots,nroots),db(nroots,1),stat=alloc)
+    allocate(R(nroots,nroots),T(nroots,nroots),Q(nroots,nroots),a(nroots,nroots),b(nroots),da(nroots,nroots),&
+             db(nroots,1),stat=alloc)
     if (alloc/=0) stop 'MLrotsymmetry_generate_CII - out of memory'
     !
     allocate(tmat(sym%Noper,nroots,nroots),rmat(sym%Noper,nroots,nroots),stat=alloc)
@@ -2219,7 +2224,8 @@ end function ML_MEPfunc
        do i = 1,molec%Natoms
          do ix = 1,3
            !
-           call diff_2d_4points_ark(Npoints,arho_borders,b0(i,ix,0:npoints),periodic,0_ik,db0(i,ix,0:npoints,1),db0(i,ix,0:npoints,2))
+           call diff_2d_4points_ark(Npoints,arho_borders,b0(i,ix,0:npoints),periodic,0_ik,db0(i,ix,0:npoints,1),&
+                                    db0(i,ix,0:npoints,2))
            !
            call diff_3d_6points(Npoints,arho_borders,b0(i,ix,0:npoints),periodic,db0(i,ix,0:npoints,3))
            !

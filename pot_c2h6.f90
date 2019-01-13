@@ -7,7 +7,8 @@ use mol_c2h6
 
 implicit none
 
-public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
+public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,&
+       MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
 public MLpoten_c2h6_88_cos3tau_G36
 
 private
@@ -680,7 +681,8 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
 
     xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
     !
-  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7')
+  case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6',&
+       'R-R16-BETA16-THETA-TAU-7')
     !
     tau14 = local(14)
     tau24 = local(15)
@@ -1165,7 +1167,8 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10')
+  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6',&
+       'R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10')
       !
       tau14 = local(14)
       tau24 = local(15)

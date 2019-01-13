@@ -9,10 +9,13 @@ module pot_abcd
   implicit none
 
   public MLloc2pqr_abcd,MLdms2pqr_abcd,ML_MEP_ABCD_tau_ref,MLpoten_h2o2_koput,MLpoten_hsoh
-  public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,MLpoten_v_c2h2_mlt
-  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLdms_HCCH_7D,MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,&
-         MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,&
-         MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,MLdms_HCCH_7D_7ORDER_linear
+  public mlpoten_hsoh_ref,MLdms2xyz_abcd,MLpoten_h2o2_koput_morse,MLdms_hooh_MB,MLpoten_h2o2_koput_unique,MLpoten_v_c2h2_katy,&
+         MLpoten_v_c2h2_mlt
+  public MLpoten_c2h2_morse,MLpoten_c2h2_7,MLpoten_c2h2_7_xyz,MLpoten_c2h2_streymills,MLdms_HCCH_MB,MLdms_HCCH_7D,&
+         MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,&
+         MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
+         MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
+         MLdms_HCCH_7D_7ORDER_linear
 
   private
 
@@ -391,8 +394,10 @@ function MLpoten_c2h2_morse(ncoords,natoms,local,xyz,force) result(f)
    real(ark)              ::  f
       !
       integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,cosalpha1,cosalpha2
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,&
+                      costau,cosalpha1,cosalpha2
       character(len=cl)  :: txt = 'MLpoten_c2h2_morse'
       !
       integer(ik)  :: Nangles
@@ -565,8 +570,10 @@ function MLpoten_c2h2_morse_costau(ncoords,natoms,local,xyz,force) result(f)
    real(ark)              ::  f
       !
       integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,cosalpha1,cosalpha2
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,&
+                      delta2x,delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,&
+                      costau,cosalpha1,cosalpha2
       character(len=cl)  :: txt = 'MLpoten_c2h2_morse_costau'
       !
       integer(ik)  :: Nangles
@@ -741,8 +748,10 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
    real(ark)              ::  f
       !
       integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,cosalpha1,cosalpha2
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,&
+                      costau,cosalpha1,cosalpha2
       character(len=cl)  :: txt = 'MLpoten_c2h2_morse'
       !
       integer(ik)  :: Nangles
@@ -1226,9 +1235,10 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v12(3),v31(3)
-    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
-                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3)
+    real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau,n1(3),n2(3),n3(3),v12(3),v31(3)
+    real(ark)             :: beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,&
+                             sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign
     !
     integer(ik),parameter :: lspace = 150
     integer(ik) :: ierror,rank0
@@ -1422,7 +1432,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
       if (ierror>0) then
         !
         print *,ierror,tmat,mu
-        write(out,"('MLdms_hooh_MB: dgelss error = ',i)") ierror
+        write(out,"('MLdms_hooh_MB: dgelss error = ',i8)") ierror
         stop 'MLdms_hooh_MB: dgelss error'
         !
       endif
@@ -1453,10 +1463,11 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),n3(3),v1(3),v2(3),v3(3)
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),n1(3),n2(3),&
+                             n3(3),v1(3),v2(3),v3(3)
     real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),taue(1:3),e0(3),costau, &
-                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign,&
-                             t1(3),t2(3),t3(3),rx3,ry3,rx2,ry2
+                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords),&
+                             tau_,sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign,t1(3),t2(3),t3(3),rx3,ry3,rx2,ry2
     !
     integer(ik),parameter :: lspace = 150
     integer(ik) :: ierror,rank0
@@ -1716,9 +1727,10 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3)
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),&
+                             tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3)
     real(ark)             :: re1(1:3),re2(1:3),alphae(1:3),e0(3),costau, &
-                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
+                             beta1(1:3),beta2(1:3),y(molec%ncoords,1:3), mu(3),xi(molec%ncoords),tau_,sintau,r0,tau1,tau2,tau_sign
     !
     integer(ik),parameter :: lspace = 150
     integer(ik) :: ierror,rank0,info
@@ -1988,10 +2000,11 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
-    real(ark),intent(out)  ::  f(3)
+    real(ark),intent(out)  ::  f(rank)
 
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),&
+                             n1(3),n2(3),n3(3),xyz_(natoms,3), &
                              y1,y2,y3,y4,y5,y6,y7
     real(ark)             :: re1,re2,alphae,e0(3),costau, &
                              beta1,beta2,y(molec%ncoords), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
@@ -2200,11 +2213,11 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
-    real(ark),intent(out)  ::  f(3)
+    real(ark),intent(out)  ::  f(rank)
 
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
-                             y1,y2,y3,y4,y5,y6,y7
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),&
+                             n1(3),n2(3),n3(3),xyz_(natoms,3),y1,y2,y3,y4,y5,y6,y7
     real(ark)             :: re1,re2,alphae,e0(3),costau, &
                              beta1,beta2,y(molec%ncoords), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
     !
@@ -2413,11 +2426,11 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
-    real(ark),intent(out)  ::  f(3)
+    real(ark),intent(out)  ::  f(rank)
 
     integer(ik)           :: imu, iterm, ind(1:molec%ncoords),dimen,i,k
-    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3), &
-                             y1,y2,y3,y4,y5,y6,y7
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),&
+                             tmatout(3,3),n1(3),n2(3),n3(3),xyz_(natoms,3),y1,y2,y3,y4,y5,y6,y7
     real(ark)             :: re1,re2,alphae,e0(3),costau, &
                              beta1,beta2,y(molec%ncoords), xi(molec%ncoords), tau_,sintau,r0,tau1,tau2,tau_sign
     !
@@ -2476,7 +2489,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
-    real(ark),intent(out)  ::  f(3)
+    real(ark),intent(out)  ::  f(rank)
 
     integer(ik)           :: i,k
     real(ark)             :: y1,y2,y3,y4,y5,y6,y7
@@ -2844,7 +2857,8 @@ function MLpoten_v_c2h2_mlt(ncoords,natoms,local,xyz,force) result(f)
 
 !full pot function
 
-         f = 0.5_ark*((f11*s1*s1)+(f22*s2*s2)+(f33*s3*s3)+(f44*s4*s4)+(f55*s5*s5)+(f66*s6*s6)+(f77*s7*s7)+(f12*((s1*s2)+(s1*s2))))
+         f = 0.5_ark*((f11*s1*s1)+(f22*s2*s2)+(f33*s3*s3)+(f44*s4*s4)+(f55*s5*s5)+(f66*s6*s6)+(f77*s7*s7)+&
+             (f12*((s1*s2)+(s1*s2))))
          !f = 0.5_ark*((f11*s1*s1)+(f33*s3*s3))
          !
          v0 = force(1)
@@ -3554,10 +3568,13 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(85) = y1**5
 
       dF(86) = y4**3*y6**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y5**3*y7**3
-      dF(87) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6**3*y7+2._ark*y6*y7**3)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2
+      dF(87) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+               (2._ark*y6**3*y7+2._ark*y6*y7**3)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2
       dF(88) = y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7
-      dF(89) = (-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(y6**4-y7**4)*y5**2
-      dF(90) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5
+      dF(89) = (-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+               4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(y6**4-y7**4)*y5**2
+      dF(90) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+&
+               y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5
       dF(91) = y5**6+y6**6+y7**6+3._ark*y4**2*y5**4+y4**6+3._ark*y4**4*y5**2+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4
       dF(92) = (y4**2+y5**2)*y2**4+(y6**2+y7**2)*y3**4
       dF(93) = (y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4
@@ -3625,14 +3642,22 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(154) = (y7**2+y6**2)*y2**5+(y5**2+y4**2)*y3**5
       dF(155) = y3**7+y2**7
       dF(156) = (y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y2+(3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y3
-      dF(157) = ((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y2+(y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y3
-      dF(158) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y2+(y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y3
-      dF(159) = ((y7**4-y6**4)*y4**2+(-4._ark*y6*y7**3-4._ark*y6**3*y7)*y5*y4+(y6**4-y7**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3
-      dF(160) = ((y6**2*y7**2+y6**4)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y6**2*y7**2+y7**4)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
-      dF(161) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3
-      dF(162) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+((y6**2*y7**2+y7**4)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**2*y7**2+y6**4)*y5**2)*y3
-      dF(163) = ((-y7**2+y6**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y2+((y6**4-y7**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(y7**4-y6**4)*y5**2)*y3
-      dF(164) = (y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y2+((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y3
+      dF(157) = ((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y2+(y4**5*y6+y5**5*y7+y4**4*y5*y7+&
+                2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y3
+      dF(158) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y2+(y4**3*y6**3+y5**3*y7**3+&
+                 3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y3
+      dF(159) = ((y7**4-y6**4)*y4**2+(-4._ark*y6*y7**3-4._ark*y6**3*y7)*y5*y4+(y6**4-y7**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-&
+                 4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3
+      dF(160) = ((y6**2*y7**2+y6**4)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y6**2*y7**2+y7**4)*y5**2)*y2+(y4**4*y6**2+&
+                 2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
+      dF(161) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+&
+                 (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3
+      dF(162) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+&
+                 ((y6**2*y7**2+y7**4)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**2*y7**2+y6**4)*y5**2)*y3
+      dF(163) = ((-y7**2+y6**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y2+((y6**4-y7**4)*y4**2+&
+                 (4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(y7**4-y6**4)*y5**2)*y3
+      dF(164) = (y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y2+((y6**5+y6*y7**4+2._ark*&
+                 y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y3
       dF(165) = (3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y2+(y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y3
       dF(166) = (y5**2+y4**2)*y3*y2**4+(y7**2+y6**2)*y3**4*y2
       dF(167) = (y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2
@@ -3655,11 +3680,14 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(184) = ((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y2**3+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3**3
       dF(185) = (y5**2+y4**2)*y3**2*y2**3+(y7**2+y6**2)*y3**3*y2**2
       dF(186) = y2**4*y3**3+y2**3*y3**4
-      dF(187) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y6**4)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2)*y1
+      dF(187) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y6**4)*y4**2+(2._ark*y5**3*y6*y7+&
+                 (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2)*y1
       dF(188) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1
       dF(189) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y1
-      dF(190) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y7**4)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**2*y7**2+y6**4)*y5**2)*y1
-      dF(191) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y5**4*y6+y6*y7**4+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y1
+      dF(190) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y7**4)*y4**2+(-2._ark*y5**3*y6*y7+&
+                 (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**2*y7**2+y6**4)*y5**2)*y1
+      dF(191) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y5**4*y6+y6*y7**4+2._ark*y6**3*y7**2)*y4+&
+                 y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y1
       dF(192) = (y4**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y6**6+y7**6+y5**6)*y1
       dF(193) = ((y5**2+y4**2)*y2**4+(y7**2+y6**2)*y3**4)*y1
       dF(194) = ((y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4)*y1
@@ -3724,41 +3752,65 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
 
       dF(253) = y5**4*y6**4+y4**4*y7**4-4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2-4._ark*y4**3*y5*y6*y7**3
       dF(254) = y5**8+y7**8+14._ark*y6**4*y7**4+y6**8+14._ark*y4**4*y5**4+y4**8
-      dF(255) = y4**6*y5*y7/3._ark+y4**5*y5**2*y6-4._ark/3._ark*y4**4*y5**3*y7-4._ark/3._ark*y4**3*y5**4*y6+y4**2*y5**5*y7+(y6**5*y7**2-4._ark/3._ark*y6**3*y7**4+y5**6*y6/3._ark+y6*y7**6/3._ark)*y4+(-4._ark/3._ark*y6**4*y7**3+y6**2*y7**5+y6**6*y7/3._ark)*y5
-      dF(256) = y4**7*y6+7._ark*y4**4*y5**3*y7+7._ark*y4**3*y5**4*y6+(y6**7+7._ark*y6**3*y7**4)*y4+y5**7*y7+(y7**7+7._ark*y6**4*y7**3)*y5
+      dF(255) = y4**6*y5*y7/3._ark+y4**5*y5**2*y6-4._ark/3._ark*y4**4*y5**3*y7-4._ark/3._ark*y4**3*y5**4*y6+y4**2*y5**5*y7+&
+                 (y6**5*y7**2-4._ark/3._ark*y6**3*y7**4+y5**6*y6/3._ark+y6*y7**6/3._ark)*y4+(-4._ark/3._ark*y6**4*y7**3+&
+                 y6**2*y7**5+y6**6*y7/3._ark)*y5
+      dF(256) = y4**7*y6+7._ark*y4**4*y5**3*y7+7._ark*y4**3*y5**4*y6+(y6**7+7._ark*y6**3*y7**4)*y4+y5**7*y7+(y7**7+&
+                 7._ark*y6**4*y7**3)*y5
       dF(257) = (y6**3*y7-y6*y7**3)*y5*y4**3+(y6*y7**3-y6**3*y7)*y5**3*y4
-      dF(258) = 3._ark*y4**5*y6*y7**2+y4**4*y5*y7**3+((5._ark*y6**3-9._ark*y6*y7**2)*y5**2+y6*y7**4+5._ark*y6**3*y7**2)*y4**3+((5._ark*y7**3-9._ark*y6**2*y7)*y5**3+(3._ark*y7**5-9._ark*y6**2*y7**3)*y5)*y4**2+(y5**4*y6**3+(-9._ark*y6**3*y7**2+3._ark*y6**5)*y5**2)*y4+3._ark*y5**5*y6**2*y7+(y6**4*y7+5._ark*y6**2*y7**3)*y5**3
-      dF(259) = y4**6*y7**2+3._ark*y4**4*y5**2*y6**2-8._ark*y4**3*y5**3*y6*y7+(y7**6+3._ark*y6**4*y7**2+3._ark*y5**4*y7**2)*y4**2-8._ark*y4*y5*y6**3*y7**3+y5**6*y6**2+(y6**6+3._ark*y6**2*y7**4)*y5**2
-      dF(260) = y4**6*y6**2+3._ark*y4**5*y5*y6*y7+3._ark*y4**4*y5**2*y6**2+2._ark*y4**3*y5**3*y6*y7+(3._ark*y6**4*y7**2+y6**6+3._ark*y5**4*y7**2)*y4**2+(3._ark*y5**5*y6*y7+(3._ark*y6*y7**5+2._ark*y6**3*y7**3+3._ark*y6**5*y7)*y5)*y4+y5**6*y7**2+(3._ark*y6**2*y7**4+y7**6)*y5**2
-      dF(261) = y4**5*y6*y7**2+y4**4*y5*y6**2*y7+((2._ark*y6**3-4._ark*y6*y7**2)*y5**2+2._ark*y6**3*y7**2)*y4**3+((2._ark*y7**3-4._ark*y6**2*y7)*y5**3+(y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+(y5**4*y6*y7**2+(y6*y7**4+y6**5-4._ark*y6**3*y7**2)*y5**2)*y4+2._ark*y5**3*y6**2*y7**3+y5**5*y6**2*y7
+      dF(258) = 3._ark*y4**5*y6*y7**2+y4**4*y5*y7**3+((5._ark*y6**3-9._ark*y6*y7**2)*y5**2+y6*y7**4+5._ark*y6**3*y7**2)*y4**3+&
+                 ((5._ark*y7**3-9._ark*y6**2*y7)*y5**3+(3._ark*y7**5-9._ark*y6**2*y7**3)*y5)*y4**2+(y5**4*y6**3+&
+                 (-9._ark*y6**3*y7**2+3._ark*y6**5)*y5**2)*y4+3._ark*y5**5*y6**2*y7+(y6**4*y7+5._ark*y6**2*y7**3)*y5**3
+      dF(259) = y4**6*y7**2+3._ark*y4**4*y5**2*y6**2-8._ark*y4**3*y5**3*y6*y7+(y7**6+3._ark*y6**4*y7**2+3._ark*y5**4*y7**2)*y4**2-&
+                 8._ark*y4*y5*y6**3*y7**3+y5**6*y6**2+(y6**6+3._ark*y6**2*y7**4)*y5**2
+      dF(260) = y4**6*y6**2+3._ark*y4**5*y5*y6*y7+3._ark*y4**4*y5**2*y6**2+2._ark*y4**3*y5**3*y6*y7+(3._ark*y6**4*y7**2+y6**6+&
+                 3._ark*y5**4*y7**2)*y4**2+(3._ark*y5**5*y6*y7+(3._ark*y6*y7**5+2._ark*y6**3*y7**3+3._ark*y6**5*y7)*y5)*y4+&
+                 y5**6*y7**2+(3._ark*y6**2*y7**4+y7**6)*y5**2
+      dF(261) = y4**5*y6*y7**2+y4**4*y5*y6**2*y7+((2._ark*y6**3-4._ark*y6*y7**2)*y5**2+2._ark*y6**3*y7**2)*y4**3+((2._ark*y7**3-&
+                 4._ark*y6**2*y7)*y5**3+(y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+(y5**4*y6*y7**2+(y6*y7**4+y6**5-&
+                 4._ark*y6**3*y7**2)*y5**2)*y4+2._ark*y5**3*y6**2*y7**3+y5**5*y6**2*y7
       dF(262) = y4**4*y6**2*y7**2+(-4._ark*y6**2*y7**2+y7**4+y6**4)*y5**2*y4**2+y5**4*y6**2*y7**2
       dF(263) = y4**2*y5**6-2._ark*y4**4*y5**4+y6**6*y7**2-2._ark*y6**4*y7**4+y6**2*y7**6+y4**6*y5**2
-      dF(264) = (-3._ark*y6*y7**2+y6**3)*y4**5+((-5._ark*y6**3+15._ark*y6*y7**2)*y5**2+y6**5-5._ark*y6**3*y7**2)*y4**3+((-5._ark*y7**3+15._ark*y6**2*y7)*y5**3+(-3._ark*y7**5+15._ark*y6**2*y7**3)*y5)*y4**2+(15._ark*y6**3*y7**2-3._ark*y6**5)*y5**2*y4+(-3._ark*y6**2*y7+y7**3)*y5**5+(y7**5-5._ark*y6**2*y7**3)*y5**3
+      dF(264) = (-3._ark*y6*y7**2+y6**3)*y4**5+((-5._ark*y6**3+15._ark*y6*y7**2)*y5**2+y6**5-5._ark*y6**3*y7**2)*y4**3+&
+                 ((-5._ark*y7**3+15._ark*y6**2*y7)*y5**3+(-3._ark*y7**5+15._ark*y6**2*y7**3)*y5)*y4**2+(15._ark*y6**3*y7**2-&
+                 3._ark*y6**5)*y5**2*y4+(-3._ark*y6**2*y7+y7**3)*y5**5+(y7**5-5._ark*y6**2*y7**3)*y5**3
       dF(265) = y4**4*y6**4+4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2+4._ark*y4**3*y5*y6*y7**3+y5**4*y7**4
-      dF(266) = -y4**5*y5*y6*y7+(-y6**2+y7**2)*y5**2*y4**4+2._ark*y4**3*y5**3*y6*y7+((-y7**2+y6**2)*y5**4+y6**2*y7**4-y6**4*y7**2)*y4**2+(-y5**5*y6*y7+(-y6*y7**5+2._ark*y6**3*y7**3-y6**5*y7)*y5)*y4+(-y6**2*y7**4+y6**4*y7**2)*y5**2
+      dF(266) = -y4**5*y5*y6*y7+(-y6**2+y7**2)*y5**2*y4**4+2._ark*y4**3*y5**3*y6*y7+((-y7**2+y6**2)*y5**4+y6**2*y7**4-&
+                 y6**4*y7**2)*y4**2+(-y5**5*y6*y7+(-y6*y7**5+2._ark*y6**3*y7**3-y6**5*y7)*y5)*y4+(-y6**2*y7**4+y6**4*y7**2)*y5**2
       dF(267) = (3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2**2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3**2
-      dF(268) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2**2+((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3**2
-      dF(269) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2**2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3**2
+      dF(268) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2**2+((-y6**2+y7**2)*y4**4-&
+                 4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3**2
+      dF(269) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2**2+(y5**5*y7+y4**5*y6+&
+                 y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3**2
       dF(270) = (y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2**2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3**2
       dF(271) = (y5**2+y4**2)*y2**6+(y7**2+y6**2)*y3**6
       dF(272) = (y7**2+y6**2)*y2**6+(y5**2+y4**2)*y3**6
       dF(273) = y3**8+y2**8
       dF(274) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y3*y2
       dF(275) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3*y2
-      dF(276) = ((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(-y7**4+y6**4)*y5**2)*y3*y2
-      dF(277) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3*y2
+      dF(276) = ((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+                 4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(-y7**4+y6**4)*y5**2)*y3*y2
+      dF(277) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+&
+                 y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3*y2
       dF(278) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3*y2
-      dF(279) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y3*y2
+      dF(279) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                 (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y3*y2
       dF(280) = (y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3*y2**3+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**3*y2
       dF(281) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**3+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**3*y2
       dF(282) = (y5*y7+y4*y6)*y3*y2**5+(y5*y7+y4*y6)*y3**5*y2
       dF(283) = (y7**2+y6**2)*y3*y2**5+(y5**2+y4**2)*y3**5*y2
-      dF(284) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2**2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3**2
-      dF(285) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2**2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3**2
-      dF(286) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2**2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3**2
-      dF(287) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(288) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(289) = (y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2**2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3**2
+      dF(284) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2**2+&
+                 (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3**2
+      dF(285) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2**2+(y5**3*y7**3+&
+                3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3**2
+      dF(286) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2**2+&
+                 (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3**2
+      dF(287) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+&
+                 ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(288) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+&
+                 ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(289) = (y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2**2+((y6**5+&
+                 2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3**2
       dF(290) = (y6**4+y5**4+y7**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3**2*y2**2
       dF(291) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y3**2*y2**2
       dF(292) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2*y2**2
@@ -3784,17 +3836,26 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(312) = (y5*y7+y4*y6)*y2**6+(y5*y7+y4*y6)*y3**6
       dF(313) = y2**6*y3**2+y2**2*y3**6
       dF(314) = y2**7*y3+y2*y3**7
-      dF(315) = ((3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3)*y1
-      dF(316) = ((y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3)*y1
+      dF(315) = ((3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+&
+                 y7**6)*y3)*y1
+      dF(316) = ((y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2+(y5**3*y7**3+&
+                 3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3)*y1
       dF(317) = ((y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3)*y1
-      dF(318) = (((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3)*y1
-      dF(319) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3)*y1
+      dF(318) = (((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+&
+                 2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3)*y1
+      dF(319) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+&
+                 y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3)*y1
       dF(320) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y2**3+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**3)*y1
-      dF(321) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
-      dF(322) = ((y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3)*y1
-      dF(323) = (((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3)*y1
-      dF(324) = ((y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3)*y1
-      dF(325) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
+      dF(321) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-&
+                 2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
+      dF(322) = ((y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+&
+                 (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3)*y1
+      dF(323) = (((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+&
+                 (-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3)*y1
+      dF(324) = ((y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2+((y6**5+&
+                 2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3)*y1
+      dF(325) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+&
+                 ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
       dF(326) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2*y2)*y1
       dF(327) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y3*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2*y2)*y1
       dF(328) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3*y2**2+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**2*y2)*y1
@@ -3821,9 +3882,12 @@ subroutine potC2H2_D8h_diff_V_tmp(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(349) = (y2**7+y3**7)*y1
       dF(350) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1**2
       dF(351) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y1**2
-      dF(352) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1**2
-      dF(353) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
-      dF(354) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y1**2
+      dF(352) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+&
+                 (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(353) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                 (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(354) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+&
+                 y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y1**2
       dF(355) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y1**2
       dF(356) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2)*y1**2
       dF(357) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2**2+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2)*y1**2
@@ -4002,8 +4066,10 @@ dF(100) = (y3**3*y4**2*y6 + y3**3*y5**2*y6 + y2**3*y4*y6**2 + y2**3*y4*y7**2)
 dF(101) = (y2*y3**2*y4**2*y6 + y2*y3**2*y5**2*y6 + y2**2*y3*y4*y6**2 + y2**2*y3*y4*y7**2)
 dF(102) = (y1*y4**3*y6**2 + y1*y4**2*y6**3 + 2*y1*y4**2*y5*y6*y7 + 2*y1*y4*y5*y6**2*y7 + y1*y4*y5**2*y7**2 + y1*y5**2*y6*y7**2)
 dF(103) = (y2*y4**3*y6**2 + y3*y4**2*y6**3 + 2*y2*y4**2*y5*y6*y7 + 2*y3*y4*y5*y6**2*y7 + y2*y4*y5**2*y7**2 + y3*y5**2*y6*y7**2)
-dF(104) = (y3*y4**3*y6**2 + y3*y4*y5**2*y6**2 + y2*y4**2*y6**3 + y3*y4**2*y5*y6*y7 + y3*y5**3*y6*y7 + y2*y4*y5*y6**2*y7 + y2*y4**2*y6*y7**2 + y2*y4*y5*y7**3)
-dF(105) = (-(y3*y4**4*y6) + y3*y5**4*y6 - y2*y4*y6**4 - 2*y3*y4**3*y5*y7 - 2*y3*y4*y5**3*y7 - 2*y2*y5*y6**3*y7 - 2*y2*y5*y6*y7**3 + y2*y4*y7**4)
+dF(104) = (y3*y4**3*y6**2 + y3*y4*y5**2*y6**2 + y2*y4**2*y6**3 + y3*y4**2*y5*y6*y7 + y3*y5**3*y6*y7 + y2*y4*y5*y6**2*y7 + &
+                 y2*y4**2*y6*y7**2 + y2*y4*y5*y7**3)
+dF(105) = (-(y3*y4**4*y6) + y3*y5**4*y6 - y2*y4*y6**4 - 2*y3*y4**3*y5*y7 - 2*y3*y4*y5**3*y7 - 2*y2*y5*y6**3*y7 - &
+                 2*y2*y5*y6*y7**3 + y2*y4*y7**4)
 dF(106) = (y1**4*y3*y4 + y1**4*y2*y6)
 dF(107) = (y1**3*y3**2*y4 + y1**3*y2**2*y6)
 dF(108) = (y1**2*y3**3*y4 + y1**2*y2**3*y6)
@@ -4019,16 +4085,22 @@ dF(117) = (y1*y2**2*y4**2*y6 + y1*y2**2*y5**2*y6 + y1*y3**2*y4*y6**2 + y1*y3**2*
 dF(118) = (y2**3*y4**2*y6 + y2**3*y5**2*y6 + y3**3*y4*y6**2 + y3**3*y4*y7**2)
 dF(119) = (y1*y2*y3*y4**2*y6 + y1*y2*y3*y5**2*y6 + y1*y2*y3*y4*y6**2 + y1*y2*y3*y4*y7**2)
 dF(120) = (y2**2*y3*y4**2*y6 + y2**2*y3*y5**2*y6 + y2*y3**2*y4*y6**2 + y2*y3**2*y4*y7**2)
-dF(121) = (-(y1*y4**4*y6) + y1*y5**4*y6 - y1*y4*y6**4 - 2*y1*y4**3*y5*y7 - 2*y1*y4*y5**3*y7 - 2*y1*y5*y6**3*y7 - 2*y1*y5*y6*y7**3 + y1*y4*y7**4)
-dF(122) = (-(y2*y4**4*y6) + y2*y5**4*y6 - y3*y4*y6**4 - 2*y2*y4**3*y5*y7 - 2*y2*y4*y5**3*y7 - 2*y3*y5*y6**3*y7 - 2*y3*y5*y6*y7**3 + y3*y4*y7**4)
-dF(123) = (y1*y4**4*y6 + y1*y4**2*y5**2*y6 + y1*y4*y6**4 + y1*y4**3*y5*y7 + y1*y4*y5**3*y7 + y1*y5*y6**3*y7 + y1*y4*y6**2*y7**2 + y1*y5*y6*y7**3)
-dF(124) = (y2*y4**4*y6 + y2*y4**2*y5**2*y6 + y3*y4*y6**4 + y2*y4**3*y5*y7 + y2*y4*y5**3*y7 + y3*y5*y6**3*y7 + y3*y4*y6**2*y7**2 + y3*y5*y6*y7**3)
+dF(121) = (-(y1*y4**4*y6) + y1*y5**4*y6 - y1*y4*y6**4 - 2*y1*y4**3*y5*y7 - 2*y1*y4*y5**3*y7 - 2*y1*y5*y6**3*y7 - 2*y1*y5*y6*y7**3+&
+                  y1*y4*y7**4)
+dF(122) = (-(y2*y4**4*y6) + y2*y5**4*y6 - y3*y4*y6**4 - 2*y2*y4**3*y5*y7 - 2*y2*y4*y5**3*y7 - 2*y3*y5*y6**3*y7 - 2*y3*y5*y6*y7**3+&
+                  y3*y4*y7**4)
+dF(123) = (y1*y4**4*y6 + y1*y4**2*y5**2*y6 + y1*y4*y6**4 + y1*y4**3*y5*y7 + y1*y4*y5**3*y7 + y1*y5*y6**3*y7 + y1*y4*y6**2*y7**2 +&
+                  y1*y5*y6*y7**3)
+dF(124) = (y2*y4**4*y6 + y2*y4**2*y5**2*y6 + y3*y4*y6**4 + y2*y4**3*y5*y7 + y2*y4*y5**3*y7 + y3*y5*y6**3*y7 + y3*y4*y6**2*y7**2 +&
+                  y3*y5*y6*y7**3)
 dF(125) = (y1**2*y3*y4**2*y6 + y1**2*y2*y4*y6**2 + y1**2*y3*y4*y5*y7 + y1**2*y2*y5*y6*y7)
 dF(126) = (y1*y3**2*y4**2*y6 + y1*y2**2*y4*y6**2 + y1*y3**2*y4*y5*y7 + y1*y2**2*y5*y6*y7)
 dF(127) = (y3**3*y4**2*y6 + y2**3*y4*y6**2 + y3**3*y4*y5*y7 + y2**3*y5*y6*y7)
 dF(128) = (y2*y3**2*y4**2*y6 + y2**2*y3*y4*y6**2 + y2*y3**2*y4*y5*y7 + y2**2*y3*y5*y6*y7)
-dF(129) = (y1*y4**3*y6**2 + y1*y4**2*y6**3 - y1*y5**2*y6**3 + 3*y1*y4**2*y5*y6*y7 + y1*y5**3*y6*y7 + 3*y1*y4*y5*y6**2*y7 - y1*y4**3*y7**2 + y1*y4*y5*y7**3)
-dF(130) = (y2*y4**3*y6**2 + y3*y4**2*y6**3 - y3*y5**2*y6**3 + 3*y2*y4**2*y5*y6*y7 + y2*y5**3*y6*y7 + 3*y3*y4*y5*y6**2*y7 - y2*y4**3*y7**2 + y3*y4*y5*y7**3)
+dF(129) = (y1*y4**3*y6**2 + y1*y4**2*y6**3 - y1*y5**2*y6**3 + 3*y1*y4**2*y5*y6*y7 + y1*y5**3*y6*y7 + 3*y1*y4*y5*y6**2*y7 -&
+                  y1*y4**3*y7**2 + y1*y4*y5*y7**3)
+dF(130) = (y2*y4**3*y6**2 + y3*y4**2*y6**3 - y3*y5**2*y6**3 + 3*y2*y4**2*y5*y6*y7 + y2*y5**3*y6*y7 + 3*y3*y4*y5*y6**2*y7 -&
+                  y2*y4**3*y7**2 + y3*y4*y5*y7**3)
 dF(131) = (y1**2*y3*y4**3 + y1**2*y3*y4*y5**2 + y1**2*y2*y6**3 + y1**2*y2*y6*y7**2)
 dF(132) = (y1*y3**2*y4**3 + y1*y3**2*y4*y5**2 + y1*y2**2*y6**3 + y1*y2**2*y6*y7**2)
 dF(133) = (y3**3*y4**3 + y3**3*y4*y5**2 + y2**3*y6**3 + y2**3*y6*y7**2)
@@ -4037,7 +4109,8 @@ dF(135) = (y3*y4**3*y6**2 + y2*y4**2*y6**3 + 2*y3*y4**2*y5*y6*y7 + 2*y2*y4*y5*y6
 dF(136) = (y3*y4**5 + 2*y3*y4**3*y5**2 + y3*y4*y5**4 + y2*y6**5 + 2*y2*y6**3*y7**2 + y2*y6*y7**4)
 dF(137) = (y1*y4*y5**2*y6**2 + y1*y5**2*y6**3 - 2*y1*y4**2*y5*y6*y7 - 2*y1*y4*y5*y6**2*y7 + y1*y4**3*y7**2 + y1*y4**2*y6*y7**2)
 dF(138) = (y2*y4*y5**2*y6**2 + y3*y5**2*y6**3 - 2*y2*y4**2*y5*y6*y7 - 2*y3*y4*y5*y6**2*y7 + y2*y4**3*y7**2 + y3*y4**2*y6*y7**2)
-dF(139) = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 + y2*y5*y6*y7**3)
+dF(139) = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 +&
+                  y2*y5*y6*y7**3)
 dF(140) = (y3*y4*y5**2*y6**2 + y2*y5**2*y6**3 - 2*y3*y4**2*y5*y6*y7 - 2*y2*y4*y5*y6**2*y7 + y3*y4**3*y7**2 + y2*y4**2*y6*y7**2)
 dF(141) = (y1**6*y4 + y1**6*y6)
 dF(142) = (y1**5*y2*y4 + y1**5*y3*y6)
@@ -4078,22 +4151,33 @@ dF(176) = (y1**2*y2*y3*y4**2*y6 + y1**2*y2*y3*y4*y6**2 + y1**2*y2*y3*y4*y5*y7 + 
 dF(177) = (y1*y2**2*y3*y4**2*y6 + y1*y2*y3**2*y4*y6**2 + y1*y2**2*y3*y4*y5*y7 + y1*y2*y3**2*y5*y6*y7)
 dF(178) = (y2**3*y3*y4**2*y6 + y2*y3**3*y4*y6**2 + y2**3*y3*y4*y5*y7 + y2*y3**3*y5*y6*y7)
 dF(179) = (y2**2*y3**2*y4**2*y6 + y2**2*y3**2*y4*y6**2 + y2**2*y3**2*y4*y5*y7 + y2**2*y3**2*y5*y6*y7)
-dF(180) = (y4**6*y6 + 2*y4**4*y5**2*y6 + y4**2*y5**4*y6 + y4*y6**6 + y4**5*y5*y7 + 2*y4**3*y5**3*y7 + y4*y5**5*y7 + y5*y6**5*y7 + 2*y4*y6**4*y7**2 + 2*y5*y6**3*y7**3 + y4*y6**2*y7**4 + y5*y6*y7**5)
+dF(180) = (y4**6*y6 + 2*y4**4*y5**2*y6 + y4**2*y5**4*y6 + y4*y6**6 + y4**5*y5*y7 + 2*y4**3*y5**3*y7 + y4*y5**5*y7 + y5*y6**5*y7 +&
+                  2*y4*y6**4*y7**2 + 2*y5*y6**3*y7**3 + y4*y6**2*y7**4 + y5*y6*y7**5)
 dF(181) = (y1**3*y3*y4**2*y6 + y1**3*y3*y5**2*y6 + y1**3*y2*y4*y6**2 + y1**3*y2*y4*y7**2)
 dF(182) = (y1**2*y3**2*y4**2*y6 + y1**2*y3**2*y5**2*y6 + y1**2*y2**2*y4*y6**2 + y1**2*y2**2*y4*y7**2)
 dF(183) = (y1*y3**3*y4**2*y6 + y1*y3**3*y5**2*y6 + y1*y2**3*y4*y6**2 + y1*y2**3*y4*y7**2)
 dF(184) = (y3**4*y4**2*y6 + y3**4*y5**2*y6 + y2**4*y4*y6**2 + y2**4*y4*y7**2)
 dF(185) = (y1*y2*y3**2*y4**2*y6 + y1*y2*y3**2*y5**2*y6 + y1*y2**2*y3*y4*y6**2 + y1*y2**2*y3*y4*y7**2)
 dF(186) = (y2*y3**3*y4**2*y6 + y2*y3**3*y5**2*y6 + y2**3*y3*y4*y6**2 + y2**3*y3*y4*y7**2)
-dF(187) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 + 2*y1**2*y4**2*y5*y6*y7 + 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4*y5**2*y7**2 + y1**2*y5**2*y6*y7**2)
-dF(188) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 + 2*y1*y2*y4**2*y5*y6*y7 + 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4*y5**2*y7**2 + y1*y3*y5**2*y6*y7**2)
-dF(189) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 + 2*y2**2*y4**2*y5*y6*y7 + 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4*y5**2*y7**2 + y3**2*y5**2*y6*y7**2)
-dF(190) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 + 2*y2*y3*y4**2*y5*y6*y7 + 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4*y5**2*y7**2 + y2*y3*y5**2*y6*y7**2)
-dF(191) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 + 2*y4**4*y5*y6*y7 + 2*y4**2*y5**3*y6*y7 + 2*y4*y5*y6**4*y7 + y4**3*y5**2*y7**2 + y4*y5**4*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 + 2*y4*y5*y6**2*y7**3 + y5**2*y6*y7**4)
-dF(192) = (y1*y3*y4**3*y6**2 + y1*y3*y4*y5**2*y6**2 + y1*y2*y4**2*y6**3 + y1*y3*y4**2*y5*y6*y7 + y1*y3*y5**3*y6*y7 + y1*y2*y4*y5*y6**2*y7 + y1*y2*y4**2*y6*y7**2 + y1*y2*y4*y5*y7**3)
-dF(193) = (y3**2*y4**3*y6**2 + y3**2*y4*y5**2*y6**2 + y2**2*y4**2*y6**3 + y3**2*y4**2*y5*y6*y7 + y3**2*y5**3*y6*y7 + y2**2*y4*y5*y6**2*y7 + y2**2*y4**2*y6*y7**2 + y2**2*y4*y5*y7**3)
-dF(194) = (-(y1*y3*y4**4*y6) + y1*y3*y5**4*y6 - y1*y2*y4*y6**4 - 2*y1*y3*y4**3*y5*y7 - 2*y1*y3*y4*y5**3*y7 - 2*y1*y2*y5*y6**3*y7 - 2*y1*y2*y5*y6*y7**3 + y1*y2*y4*y7**4)
-dF(195) = (-(y3**2*y4**4*y6) + y3**2*y5**4*y6 - y2**2*y4*y6**4 - 2*y3**2*y4**3*y5*y7 - 2*y3**2*y4*y5**3*y7 - 2*y2**2*y5*y6**3*y7 - 2*y2**2*y5*y6*y7**3 + y2**2*y4*y7**4)
+dF(187) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 + 2*y1**2*y4**2*y5*y6*y7 + 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4*y5**2*y7**2 +&
+                  y1**2*y5**2*y6*y7**2)
+dF(188) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 + 2*y1*y2*y4**2*y5*y6*y7 + 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4*y5**2*y7**2 +&
+                  y1*y3*y5**2*y6*y7**2)
+dF(189) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 + 2*y2**2*y4**2*y5*y6*y7 + 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4*y5**2*y7**2 +&
+                  y3**2*y5**2*y6*y7**2)
+dF(190) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 + 2*y2*y3*y4**2*y5*y6*y7 + 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4*y5**2*y7**2 +&
+                  y2*y3*y5**2*y6*y7**2)
+dF(191) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 + 2*y4**4*y5*y6*y7 + 2*y4**2*y5**3*y6*y7 + 2*y4*y5*y6**4*y7 +&
+                  y4**3*y5**2*y7**2 + y4*y5**4*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 + 2*y4*y5*y6**2*y7**3 +&
+                  y5**2*y6*y7**4)
+dF(192) = (y1*y3*y4**3*y6**2 + y1*y3*y4*y5**2*y6**2 + y1*y2*y4**2*y6**3 + y1*y3*y4**2*y5*y6*y7 + y1*y3*y5**3*y6*y7 + &
+                 y1*y2*y4*y5*y6**2*y7 + y1*y2*y4**2*y6*y7**2 + y1*y2*y4*y5*y7**3)
+dF(193) = (y3**2*y4**3*y6**2 + y3**2*y4*y5**2*y6**2 + y2**2*y4**2*y6**3 + y3**2*y4**2*y5*y6*y7 + y3**2*y5**3*y6*y7 +&
+                  y2**2*y4*y5*y6**2*y7 + y2**2*y4**2*y6*y7**2 + y2**2*y4*y5*y7**3)
+dF(194) = (-(y1*y3*y4**4*y6) + y1*y3*y5**4*y6 - y1*y2*y4*y6**4 - 2*y1*y3*y4**3*y5*y7 - 2*y1*y3*y4*y5**3*y7 - 2*y1*y2*y5*y6**3*y7 -&
+                  2*y1*y2*y5*y6*y7**3 + y1*y2*y4*y7**4)
+dF(195) = (-(y3**2*y4**4*y6) + y3**2*y5**4*y6 - y2**2*y4*y6**4 - 2*y3**2*y4**3*y5*y7 - 2*y3**2*y4*y5**3*y7 - 2*y2**2*y5*y6**3*y7 -&
+                  2*y2**2*y5*y6*y7**3 + y2**2*y4*y7**4)
 dF(196) = (y1**5*y3*y4 + y1**5*y2*y6)
 dF(197) = (y1**4*y3**2*y4 + y1**4*y2**2*y6)
 dF(198) = (y1**3*y3**3*y4 + y1**3*y2**3*y6)
@@ -4115,49 +4199,79 @@ dF(213) = (y1**2*y2*y3*y4**2*y6 + y1**2*y2*y3*y5**2*y6 + y1**2*y2*y3*y4*y6**2 + 
 dF(214) = (y1*y2**2*y3*y4**2*y6 + y1*y2**2*y3*y5**2*y6 + y1*y2*y3**2*y4*y6**2 + y1*y2*y3**2*y4*y7**2)
 dF(215) = (y2**3*y3*y4**2*y6 + y2**3*y3*y5**2*y6 + y2*y3**3*y4*y6**2 + y2*y3**3*y4*y7**2)
 dF(216) = (y2**2*y3**2*y4**2*y6 + y2**2*y3**2*y5**2*y6 + y2**2*y3**2*y4*y6**2 + y2**2*y3**2*y4*y7**2)
-dF(217) = (-(y1**2*y4**4*y6) + y1**2*y5**4*y6 - y1**2*y4*y6**4 - 2*y1**2*y4**3*y5*y7 - 2*y1**2*y4*y5**3*y7 - 2*y1**2*y5*y6**3*y7 - 2*y1**2*y5*y6*y7**3 + y1**2*y4*y7**4)
-dF(218) = (-(y1*y2*y4**4*y6) + y1*y2*y5**4*y6 - y1*y3*y4*y6**4 - 2*y1*y2*y4**3*y5*y7 - 2*y1*y2*y4*y5**3*y7 - 2*y1*y3*y5*y6**3*y7 - 2*y1*y3*y5*y6*y7**3 + y1*y3*y4*y7**4)
-dF(219) = (-(y2**2*y4**4*y6) + y2**2*y5**4*y6 - y3**2*y4*y6**4 - 2*y2**2*y4**3*y5*y7 - 2*y2**2*y4*y5**3*y7 - 2*y3**2*y5*y6**3*y7 - 2*y3**2*y5*y6*y7**3 + y3**2*y4*y7**4)
-dF(220) = (-(y2*y3*y4**4*y6) + y2*y3*y5**4*y6 - y2*y3*y4*y6**4 - 2*y2*y3*y4**3*y5*y7 - 2*y2*y3*y4*y5**3*y7 - 2*y2*y3*y5*y6**3*y7 - 2*y2*y3*y5*y6*y7**3 + y2*y3*y4*y7**4)
+dF(217) = (-(y1**2*y4**4*y6) + y1**2*y5**4*y6 - y1**2*y4*y6**4 - 2*y1**2*y4**3*y5*y7 - 2*y1**2*y4*y5**3*y7 - 2*y1**2*y5*y6**3*y7 -&
+                  2*y1**2*y5*y6*y7**3 + y1**2*y4*y7**4)
+dF(218) = (-(y1*y2*y4**4*y6) + y1*y2*y5**4*y6 - y1*y3*y4*y6**4 - 2*y1*y2*y4**3*y5*y7 - 2*y1*y2*y4*y5**3*y7 - 2*y1*y3*y5*y6**3*y7 -&
+                  2*y1*y3*y5*y6*y7**3 + y1*y3*y4*y7**4)
+dF(219) = (-(y2**2*y4**4*y6) + y2**2*y5**4*y6 - y3**2*y4*y6**4 - 2*y2**2*y4**3*y5*y7 - 2*y2**2*y4*y5**3*y7 - 2*y3**2*y5*y6**3*y7 -&
+                  2*y3**2*y5*y6*y7**3 + y3**2*y4*y7**4)
+dF(220) = (-(y2*y3*y4**4*y6) + y2*y3*y5**4*y6 - y2*y3*y4*y6**4 - 2*y2*y3*y4**3*y5*y7 - 2*y2*y3*y4*y5**3*y7 - 2*y2*y3*y5*y6**3*y7 -&
+                  2*y2*y3*y5*y6*y7**3 + y2*y3*y4*y7**4)
 dF(221) = (y4**6*y6 + 3*y4**4*y5**2*y6 + 3*y4**2*y5**4*y6 + y5**6*y6 + y4*y6**6 + 3*y4*y6**4*y7**2 + 3*y4*y6**2*y7**4 + y4*y7**6)
-dF(222) = (y1**2*y4**4*y6 + y1**2*y4**2*y5**2*y6 + y1**2*y4*y6**4 + y1**2*y4**3*y5*y7 + y1**2*y4*y5**3*y7 + y1**2*y5*y6**3*y7 + y1**2*y4*y6**2*y7**2 + y1**2*y5*y6*y7**3)
-dF(223) = (y1*y2*y4**4*y6 + y1*y2*y4**2*y5**2*y6 + y1*y3*y4*y6**4 + y1*y2*y4**3*y5*y7 + y1*y2*y4*y5**3*y7 + y1*y3*y5*y6**3*y7 + y1*y3*y4*y6**2*y7**2 + y1*y3*y5*y6*y7**3)
-dF(224) = (y2**2*y4**4*y6 + y2**2*y4**2*y5**2*y6 + y3**2*y4*y6**4 + y2**2*y4**3*y5*y7 + y2**2*y4*y5**3*y7 + y3**2*y5*y6**3*y7 + y3**2*y4*y6**2*y7**2 + y3**2*y5*y6*y7**3)
-dF(225) = (y2*y3*y4**4*y6 + y2*y3*y4**2*y5**2*y6 + y2*y3*y4*y6**4 + y2*y3*y4**3*y5*y7 + y2*y3*y4*y5**3*y7 + y2*y3*y5*y6**3*y7 + y2*y3*y4*y6**2*y7**2 + y2*y3*y5*y6*y7**3)
+dF(222) = (y1**2*y4**4*y6 + y1**2*y4**2*y5**2*y6 + y1**2*y4*y6**4 + y1**2*y4**3*y5*y7 + y1**2*y4*y5**3*y7 + y1**2*y5*y6**3*y7 +&
+                  y1**2*y4*y6**2*y7**2 + y1**2*y5*y6*y7**3)
+dF(223) = (y1*y2*y4**4*y6 + y1*y2*y4**2*y5**2*y6 + y1*y3*y4*y6**4 + y1*y2*y4**3*y5*y7 + y1*y2*y4*y5**3*y7 + y1*y3*y5*y6**3*y7 +&
+                  y1*y3*y4*y6**2*y7**2 + y1*y3*y5*y6*y7**3)
+dF(224) = (y2**2*y4**4*y6 + y2**2*y4**2*y5**2*y6 + y3**2*y4*y6**4 + y2**2*y4**3*y5*y7 + y2**2*y4*y5**3*y7 + y3**2*y5*y6**3*y7 +&
+                  y3**2*y4*y6**2*y7**2 + y3**2*y5*y6*y7**3)
+dF(225) = (y2*y3*y4**4*y6 + y2*y3*y4**2*y5**2*y6 + y2*y3*y4*y6**4 + y2*y3*y4**3*y5*y7 + y2*y3*y4*y5**3*y7 + y2*y3*y5*y6**3*y7 +&
+                  y2*y3*y4*y6**2*y7**2 + y2*y3*y5*y6*y7**3)
 dF(226) = (y1**3*y3*y4**2*y6 + y1**3*y2*y4*y6**2 + y1**3*y3*y4*y5*y7 + y1**3*y2*y5*y6*y7)
 dF(227) = (y1**2*y3**2*y4**2*y6 + y1**2*y2**2*y4*y6**2 + y1**2*y3**2*y4*y5*y7 + y1**2*y2**2*y5*y6*y7)
 dF(228) = (y1*y3**3*y4**2*y6 + y1*y2**3*y4*y6**2 + y1*y3**3*y4*y5*y7 + y1*y2**3*y5*y6*y7)
 dF(229) = (y3**4*y4**2*y6 + y2**4*y4*y6**2 + y3**4*y4*y5*y7 + y2**4*y5*y6*y7)
 dF(230) = (y1*y2*y3**2*y4**2*y6 + y1*y2**2*y3*y4*y6**2 + y1*y2*y3**2*y4*y5*y7 + y1*y2**2*y3*y5*y6*y7)
 dF(231) = (y2*y3**3*y4**2*y6 + y2**3*y3*y4*y6**2 + y2*y3**3*y4*y5*y7 + y2**3*y3*y5*y6*y7)
-dF(232) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 - y1**2*y5**2*y6**3 + 3*y1**2*y4**2*y5*y6*y7 + y1**2*y5**3*y6*y7 + 3*y1**2*y4*y5*y6**2*y7 - y1**2*y4**3*y7**2 + y1**2*y4*y5*y7**3)
-dF(233) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 - y1*y3*y5**2*y6**3 + 3*y1*y2*y4**2*y5*y6*y7 + y1*y2*y5**3*y6*y7 + 3*y1*y3*y4*y5*y6**2*y7 - y1*y2*y4**3*y7**2 + y1*y3*y4*y5*y7**3)
-dF(234) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 - y3**2*y5**2*y6**3 + 3*y2**2*y4**2*y5*y6*y7 + y2**2*y5**3*y6*y7 + 3*y3**2*y4*y5*y6**2*y7 - y2**2*y4**3*y7**2 + y3**2*y4*y5*y7**3)
-dF(235) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 - y2*y3*y5**2*y6**3 + 3*y2*y3*y4**2*y5*y6*y7 + y2*y3*y5**3*y6*y7 + 3*y2*y3*y4*y5*y6**2*y7 - y2*y3*y4**3*y7**2 + y2*y3*y4*y5*y7**3)
-dF(236) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 - y5**2*y6**5 + 3*y4**4*y5*y6*y7 + 4*y4**2*y5**3*y6*y7 + y5**5*y6*y7 + 3*y4*y5*y6**4*y7 - y4**5*y7**2 - y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 - y5**2*y6**3*y7**2 + 4*y4*y5*y6**2*y7**3 + y4*y5*y7**5)
+dF(232) = (y1**2*y4**3*y6**2 + y1**2*y4**2*y6**3 - y1**2*y5**2*y6**3 + 3*y1**2*y4**2*y5*y6*y7 + y1**2*y5**3*y6*y7 +&
+                  3*y1**2*y4*y5*y6**2*y7 - y1**2*y4**3*y7**2 + y1**2*y4*y5*y7**3)
+dF(233) = (y1*y2*y4**3*y6**2 + y1*y3*y4**2*y6**3 - y1*y3*y5**2*y6**3 + 3*y1*y2*y4**2*y5*y6*y7 + y1*y2*y5**3*y6*y7 +&
+                  3*y1*y3*y4*y5*y6**2*y7 - y1*y2*y4**3*y7**2 + y1*y3*y4*y5*y7**3)
+dF(234) = (y2**2*y4**3*y6**2 + y3**2*y4**2*y6**3 - y3**2*y5**2*y6**3 + 3*y2**2*y4**2*y5*y6*y7 + y2**2*y5**3*y6*y7 +&
+                  3*y3**2*y4*y5*y6**2*y7 - y2**2*y4**3*y7**2 + y3**2*y4*y5*y7**3)
+dF(235) = (y2*y3*y4**3*y6**2 + y2*y3*y4**2*y6**3 - y2*y3*y5**2*y6**3 + 3*y2*y3*y4**2*y5*y6*y7 + y2*y3*y5**3*y6*y7 +&
+                  3*y2*y3*y4*y5*y6**2*y7 - y2*y3*y4**3*y7**2 + y2*y3*y4*y5*y7**3)
+dF(236) = (y4**5*y6**2 + y4**3*y5**2*y6**2 + y4**2*y6**5 - y5**2*y6**5 + 3*y4**4*y5*y6*y7 + 4*y4**2*y5**3*y6*y7 + y5**5*y6*y7 +&
+          3*y4*y5*y6**4*y7 - y4**5*y7**2 - y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 - y5**2*y6**3*y7**2 + 4*y4*y5*y6**2*y7**3 +&
+          y4*y5*y7**5)
 dF(237) = (y1**3*y3*y4**3 + y1**3*y3*y4*y5**2 + y1**3*y2*y6**3 + y1**3*y2*y6*y7**2)
 dF(238) = (y1**2*y3**2*y4**3 + y1**2*y3**2*y4*y5**2 + y1**2*y2**2*y6**3 + y1**2*y2**2*y6*y7**2)
 dF(239) = (y1*y3**3*y4**3 + y1*y3**3*y4*y5**2 + y1*y2**3*y6**3 + y1*y2**3*y6*y7**2)
 dF(240) = (y3**4*y4**3 + y3**4*y4*y5**2 + y2**4*y6**3 + y2**4*y6*y7**2)
 dF(241) = (y1*y2*y3**2*y4**3 + y1*y2*y3**2*y4*y5**2 + y1*y2**2*y3*y6**3 + y1*y2**2*y3*y6*y7**2)
 dF(242) = (y2*y3**3*y4**3 + y2*y3**3*y4*y5**2 + y2**3*y3*y6**3 + y2**3*y3*y6*y7**2)
-dF(243) = (y1*y3*y4**3*y6**2 + y1*y2*y4**2*y6**3 + 2*y1*y3*y4**2*y5*y6*y7 + 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4*y5**2*y7**2 + y1*y2*y5**2*y6*y7**2)
-dF(244) = (y3**2*y4**3*y6**2 + y2**2*y4**2*y6**3 + 2*y3**2*y4**2*y5*y6*y7 + 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4*y5**2*y7**2 + y2**2*y5**2*y6*y7**2)
-dF(245) = (-(y4*y5**2*y6**4) + y4**3*y5*y6**2*y7 + y4*y5**3*y6**2*y7 + y4**2*y5*y6**3*y7 - y5**3*y6**3*y7 - y4**4*y6*y7**2 + y5**4*y6*y7**2 - y4**3*y5*y7**3 - y4*y5**3*y7**3 + y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4*y5**2*y7**4)
-dF(246) = ((y4**4*y6**3)/3 + (y4**3*y6**4)/3 + y4**3*y5*y6**2*y7 + y4**2*y5*y6**3*y7 + y4**2*y5**2*y6*y7**2 + y4*y5**2*y6**2*y7**2 + (y4*y5**3*y7**3)/3 + (y5**3*y6*y7**3)/3)
+dF(243) = (y1*y3*y4**3*y6**2 + y1*y2*y4**2*y6**3 + 2*y1*y3*y4**2*y5*y6*y7 + 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4*y5**2*y7**2 +&
+                  y1*y2*y5**2*y6*y7**2)
+dF(244) = (y3**2*y4**3*y6**2 + y2**2*y4**2*y6**3 + 2*y3**2*y4**2*y5*y6*y7 + 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4*y5**2*y7**2 + &
+                 y2**2*y5**2*y6*y7**2)
+dF(245) = (-(y4*y5**2*y6**4) + y4**3*y5*y6**2*y7 + y4*y5**3*y6**2*y7 + y4**2*y5*y6**3*y7 - y5**3*y6**3*y7 - y4**4*y6*y7**2 +&
+                  y5**4*y6*y7**2 - y4**3*y5*y7**3 - y4*y5**3*y7**3 + y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4*y5**2*y7**4)
+dF(246) = ((y4**4*y6**3)/3 + (y4**3*y6**4)/3 + y4**3*y5*y6**2*y7 + y4**2*y5*y6**3*y7 + y4**2*y5**2*y6*y7**2 +&
+                  y4*y5**2*y6**2*y7**2 + (y4*y5**3*y7**3)/3 + (y5**3*y6*y7**3)/3)
 dF(247) = (y1*y3*y4**5 + 2*y1*y3*y4**3*y5**2 + y1*y3*y4*y5**4 + y1*y2*y6**5 + 2*y1*y2*y6**3*y7**2 + y1*y2*y6*y7**4)
 dF(248) = (y3**2*y4**5 + 2*y3**2*y4**3*y5**2 + y3**2*y4*y5**4 + y2**2*y6**5 + 2*y2**2*y6**3*y7**2 + y2**2*y6*y7**4)
-dF(249) = (y1**2*y4*y5**2*y6**2 + y1**2*y5**2*y6**3 - 2*y1**2*y4**2*y5*y6*y7 - 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4**3*y7**2 + y1**2*y4**2*y6*y7**2)
-dF(250) = (y1*y2*y4*y5**2*y6**2 + y1*y3*y5**2*y6**3 - 2*y1*y2*y4**2*y5*y6*y7 - 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4**3*y7**2 + y1*y3*y4**2*y6*y7**2)
-dF(251) = (y2**2*y4*y5**2*y6**2 + y3**2*y5**2*y6**3 - 2*y2**2*y4**2*y5*y6*y7 - 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4**3*y7**2 + y3**2*y4**2*y6*y7**2)
-dF(252) = (y2*y3*y4*y5**2*y6**2 + y2*y3*y5**2*y6**3 - 2*y2*y3*y4**2*y5*y6*y7 - 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4**3*y7**2 + y2*y3*y4**2*y6*y7**2)
-dF(253) = (y4**3*y5**2*y6**2 + y4*y5**4*y6**2 + y5**2*y6**5 - 2*y4**4*y5*y6*y7 - 2*y4**2*y5**3*y6*y7 - 2*y4*y5*y6**4*y7 + y4**5*y7**2 + y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 - 2*y4*y5*y6**2*y7**3 + y4**2*y6*y7**4)
-dF(254) = (y1*y3*y4**4*y6 + y1*y3*y4**2*y5**2*y6 + y1*y2*y4*y6**4 + y1*y3*y4**3*y5*y7 + y1*y3*y4*y5**3*y7 + y1*y2*y5*y6**3*y7 + y1*y2*y4*y6**2*y7**2 + y1*y2*y5*y6*y7**3)
-dF(255) = (y3**2*y4**4*y6 + y3**2*y4**2*y5**2*y6 + y2**2*y4*y6**4 + y3**2*y4**3*y5*y7 + y3**2*y4*y5**3*y7 + y2**2*y5*y6**3*y7 + y2**2*y4*y6**2*y7**2 + y2**2*y5*y6*y7**3)
-dF(256) = (y1*y3*y4*y5**2*y6**2 + y1*y2*y5**2*y6**3 - 2*y1*y3*y4**2*y5*y6*y7 - 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4**3*y7**2 + y1*y2*y4**2*y6*y7**2)
-dF(257) = (y3**2*y4*y5**2*y6**2 + y2**2*y5**2*y6**3 - 2*y3**2*y4**2*y5*y6*y7 - 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4**3*y7**2 + y2**2*y4**2*y6*y7**2)
-dF(258) = (-(y4**4*y6**3) + y5**4*y6**3 - y4**3*y6**4 - 3*y4**3*y5*y6**2*y7 - 3*y4*y5**3*y6**2*y7 - 3*y4**2*y5*y6**3*y7 - y5**3*y6**3*y7 - y4**3*y5*y7**3 - y4*y5**3*y7**3 - 3*y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4**3*y7**4)
-dF(259) = ((2*y4**4*y6**3)/3 + y4**2*y5**2*y6**3 + (2*y4**3*y6**4)/3 + y4*y5**2*y6**4 + y4*y5**3*y6**2*y7 + y5**3*y6**3*y7 + y4**4*y6*y7**2 + y4**3*y6**2*y7**2 + y4**3*y5*y7**3 + (2*y4*y5**3*y7**3)/3 + y4**2*y5*y6*y7**3 + (2*y5**3*y6*y7**3)/3)
+dF(249) = (y1**2*y4*y5**2*y6**2 + y1**2*y5**2*y6**3 - 2*y1**2*y4**2*y5*y6*y7 - 2*y1**2*y4*y5*y6**2*y7 + y1**2*y4**3*y7**2 +&
+                  y1**2*y4**2*y6*y7**2)
+dF(250) = (y1*y2*y4*y5**2*y6**2 + y1*y3*y5**2*y6**3 - 2*y1*y2*y4**2*y5*y6*y7 - 2*y1*y3*y4*y5*y6**2*y7 + y1*y2*y4**3*y7**2 +&
+                  y1*y3*y4**2*y6*y7**2)
+dF(251) = (y2**2*y4*y5**2*y6**2 + y3**2*y5**2*y6**3 - 2*y2**2*y4**2*y5*y6*y7 - 2*y3**2*y4*y5*y6**2*y7 + y2**2*y4**3*y7**2 +&
+                  y3**2*y4**2*y6*y7**2)
+dF(252) = (y2*y3*y4*y5**2*y6**2 + y2*y3*y5**2*y6**3 - 2*y2*y3*y4**2*y5*y6*y7 - 2*y2*y3*y4*y5*y6**2*y7 + y2*y3*y4**3*y7**2 +&
+                  y2*y3*y4**2*y6*y7**2)
+dF(253) = (y4**3*y5**2*y6**2 + y4*y5**4*y6**2 + y5**2*y6**5 - 2*y4**4*y5*y6*y7 - 2*y4**2*y5**3*y6*y7 - 2*y4*y5*y6**4*y7 +&
+                  y4**5*y7**2 + y4**3*y5**2*y7**2 + y4**2*y6**3*y7**2 + y5**2*y6**3*y7**2 - 2*y4*y5*y6**2*y7**3 + y4**2*y6*y7**4)
+dF(254) = (y1*y3*y4**4*y6 + y1*y3*y4**2*y5**2*y6 + y1*y2*y4*y6**4 + y1*y3*y4**3*y5*y7 + y1*y3*y4*y5**3*y7 + y1*y2*y5*y6**3*y7 +&
+                  y1*y2*y4*y6**2*y7**2 + y1*y2*y5*y6*y7**3)
+dF(255) = (y3**2*y4**4*y6 + y3**2*y4**2*y5**2*y6 + y2**2*y4*y6**4 + y3**2*y4**3*y5*y7 + y3**2*y4*y5**3*y7 + y2**2*y5*y6**3*y7 +&
+                  y2**2*y4*y6**2*y7**2 + y2**2*y5*y6*y7**3)
+dF(256) = (y1*y3*y4*y5**2*y6**2 + y1*y2*y5**2*y6**3 - 2*y1*y3*y4**2*y5*y6*y7 - 2*y1*y2*y4*y5*y6**2*y7 + y1*y3*y4**3*y7**2 +&
+                  y1*y2*y4**2*y6*y7**2)
+dF(257) = (y3**2*y4*y5**2*y6**2 + y2**2*y5**2*y6**3 - 2*y3**2*y4**2*y5*y6*y7 - 2*y2**2*y4*y5*y6**2*y7 + y3**2*y4**3*y7**2 +&
+                  y2**2*y4**2*y6*y7**2)
+dF(258) = (-(y4**4*y6**3) + y5**4*y6**3 - y4**3*y6**4 - 3*y4**3*y5*y6**2*y7 - 3*y4*y5**3*y6**2*y7 - 3*y4**2*y5*y6**3*y7 -&
+                  y5**3*y6**3*y7 - y4**3*y5*y7**3 - y4*y5**3*y7**3 - 3*y4**2*y5*y6*y7**3 - y5**3*y6*y7**3 + y4**3*y7**4)
+dF(259) = ((2*y4**4*y6**3)/3 + y4**2*y5**2*y6**3 + (2*y4**3*y6**4)/3 + y4*y5**2*y6**4 + y4*y5**3*y6**2*y7 + y5**3*y6**3*y7 +&
+                  y4**4*y6*y7**2 + y4**3*y6**2*y7**2 + y4**3*y5*y7**3 + (2*y4*y5**3*y7**3)/3 + y4**2*y5*y6*y7**3 +&
+                  (2*y5**3*y6*y7**3)/3)
 end subroutine dmsC2H2_D8h_diff_mux_7th
 
 
@@ -4236,7 +4350,8 @@ dF(64) = (-2*y4**3*y5*y6 - 2*y4*y5**3*y6 + y5*y6**4 + y4**4*y7 - y5**4*y7 - 2*y4
 dF(65) = (y4**3*y5*y6 + y4*y5**3*y6 + y4**2*y5**2*y7 + y5**4*y7 + y4*y6**3*y7 + y5*y6**2*y7**2 + y4*y6*y7**3 + y5*y7**4)
 dF(66) = (y1*y3*y4*y5*y6 + y1*y3*y5**2*y7 + y1*y2*y4*y6*y7 + y1*y2*y5*y7**2)
 dF(67) = (y3**2*y4*y5*y6 + y3**2*y5**2*y7 + y2**2*y4*y6*y7 + y2**2*y5*y7**2)
-dF(68) = (-(y5**3*y6**2) + y4*y5*y6**3 + y4**3*y6*y7 + 3*y4*y5**2*y6*y7 + y5**3*y7**2 + 3*y4*y5*y6*y7**2 - y4**2*y7**3 + y5**2*y7**3)
+dF(68) = (-(y5**3*y6**2) + y4*y5*y6**3 + y4**3*y6*y7 + 3*y4*y5**2*y6*y7 + y5**3*y7**2 + 3*y4*y5*y6*y7**2 - y4**2*y7**3&
+         + y5**2*y7**3)
 dF(69) = (y1*y3*y4**2*y5 + y1*y3*y5**3 + y1*y2*y6**2*y7 + y1*y2*y7**3)
 dF(70) = (y3**2*y4**2*y5 + y3**2*y5**3 + y2**2*y6**2*y7 + y2**2*y7**3)
 dF(71) = (y5**3*y6**2 - 2*y4*y5**2*y6*y7 + y5**2*y6**2*y7 + y4**2*y5*y7**2 - 2*y4*y5*y6*y7**2 + y4**2*y7**3)
@@ -4272,8 +4387,10 @@ dF(100) = (y2**3*y5*y6**2 + y3**3*y4**2*y7 + y3**3*y5**2*y7 + y2**3*y5*y7**2)
 dF(101) = (y2**2*y3*y5*y6**2 + y2*y3**2*y4**2*y7 + y2*y3**2*y5**2*y7 + y2**2*y3*y5*y7**2)
 dF(102) = (y1*y4**2*y5*y6**2 + 2*y1*y4*y5**2*y6*y7 + y1*y4**2*y6**2*y7 + y1*y5**3*y7**2 + 2*y1*y4*y5*y6*y7**2 + y1*y5**2*y7**3)
 dF(103) = (y2*y4**2*y5*y6**2 + 2*y2*y4*y5**2*y6*y7 + y3*y4**2*y6**2*y7 + y2*y5**3*y7**2 + 2*y3*y4*y5*y6*y7**2 + y3*y5**2*y7**3)
-dF(104) = (y2*y4*y5*y6**3 + y3*y4**3*y6*y7 + y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 + y3*y5**3*y7**2 + y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
-dF(105) = (-2*y3*y4**3*y5*y6 - 2*y3*y4*y5**3*y6 + y2*y5*y6**4 + y3*y4**4*y7 - y3*y5**4*y7 - 2*y2*y4*y6**3*y7 - 2*y2*y4*y6*y7**3 - y2*y5*y7**4)
+dF(104) = (y2*y4*y5*y6**3 + y3*y4**3*y6*y7 + y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 + y3*y5**3*y7**2 +&
+                   y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
+dF(105) = (-2*y3*y4**3*y5*y6 - 2*y3*y4*y5**3*y6 + y2*y5*y6**4 + y3*y4**4*y7 - y3*y5**4*y7 - 2*y2*y4*y6**3*y7 - 2*y2*y4*y6*y7**3 -&
+                   y2*y5*y7**4)
 dF(106) = (y1**4*y3*y5 + y1**4*y2*y7)
 dF(107) = (y1**3*y3**2*y5 + y1**3*y2**2*y7)
 dF(108) = (y1**2*y3**3*y5 + y1**2*y2**3*y7)
@@ -4289,16 +4406,22 @@ dF(117) = (y1*y3**2*y5*y6**2 + y1*y2**2*y4**2*y7 + y1*y2**2*y5**2*y7 + y1*y3**2*
 dF(118) = (y3**3*y5*y6**2 + y2**3*y4**2*y7 + y2**3*y5**2*y7 + y3**3*y5*y7**2)
 dF(119) = (y1*y2*y3*y5*y6**2 + y1*y2*y3*y4**2*y7 + y1*y2*y3*y5**2*y7 + y1*y2*y3*y5*y7**2)
 dF(120) = (y2*y3**2*y5*y6**2 + y2**2*y3*y4**2*y7 + y2**2*y3*y5**2*y7 + y2*y3**2*y5*y7**2)
-dF(121) = (-2*y1*y4**3*y5*y6 - 2*y1*y4*y5**3*y6 + y1*y5*y6**4 + y1*y4**4*y7 - y1*y5**4*y7 - 2*y1*y4*y6**3*y7 - 2*y1*y4*y6*y7**3 - y1*y5*y7**4)
-dF(122) = (-2*y2*y4**3*y5*y6 - 2*y2*y4*y5**3*y6 + y3*y5*y6**4 + y2*y4**4*y7 - y2*y5**4*y7 - 2*y3*y4*y6**3*y7 - 2*y3*y4*y6*y7**3 - y3*y5*y7**4)
-dF(123) = (y1*y4**3*y5*y6 + y1*y4*y5**3*y6 + y1*y4**2*y5**2*y7 + y1*y5**4*y7 + y1*y4*y6**3*y7 + y1*y5*y6**2*y7**2 + y1*y4*y6*y7**3 + y1*y5*y7**4)
-dF(124) = (y2*y4**3*y5*y6 + y2*y4*y5**3*y6 + y2*y4**2*y5**2*y7 + y2*y5**4*y7 + y3*y4*y6**3*y7 + y3*y5*y6**2*y7**2 + y3*y4*y6*y7**3 + y3*y5*y7**4)
+dF(121) = (-2*y1*y4**3*y5*y6 - 2*y1*y4*y5**3*y6 + y1*y5*y6**4 + y1*y4**4*y7 - y1*y5**4*y7 - 2*y1*y4*y6**3*y7 - 2*y1*y4*y6*y7**3 -&
+                   y1*y5*y7**4)
+dF(122) = (-2*y2*y4**3*y5*y6 - 2*y2*y4*y5**3*y6 + y3*y5*y6**4 + y2*y4**4*y7 - y2*y5**4*y7 - 2*y3*y4*y6**3*y7 - 2*y3*y4*y6*y7**3 -&
+                   y3*y5*y7**4)
+dF(123) = (y1*y4**3*y5*y6 + y1*y4*y5**3*y6 + y1*y4**2*y5**2*y7 + y1*y5**4*y7 + y1*y4*y6**3*y7 + y1*y5*y6**2*y7**2 +&
+           y1*y4*y6*y7**3 +y1*y5*y7**4)
+dF(124) = (y2*y4**3*y5*y6 + y2*y4*y5**3*y6 + y2*y4**2*y5**2*y7 + y2*y5**4*y7 + y3*y4*y6**3*y7 + y3*y5*y6**2*y7**2 +&
+           y3*y4*y6*y7**3 +y3*y5*y7**4)
 dF(125) = (y1**2*y3*y4*y5*y6 + y1**2*y3*y5**2*y7 + y1**2*y2*y4*y6*y7 + y1**2*y2*y5*y7**2)
 dF(126) = (y1*y3**2*y4*y5*y6 + y1*y3**2*y5**2*y7 + y1*y2**2*y4*y6*y7 + y1*y2**2*y5*y7**2)
 dF(127) = (y3**3*y4*y5*y6 + y3**3*y5**2*y7 + y2**3*y4*y6*y7 + y2**3*y5*y7**2)
 dF(128) = (y2*y3**2*y4*y5*y6 + y2*y3**2*y5**2*y7 + y2**2*y3*y4*y6*y7 + y2**2*y3*y5*y7**2)
-dF(129) = (-(y1*y5**3*y6**2) + y1*y4*y5*y6**3 + y1*y4**3*y6*y7 + 3*y1*y4*y5**2*y6*y7 + y1*y5**3*y7**2 + 3*y1*y4*y5*y6*y7**2 - y1*y4**2*y7**3 + y1*y5**2*y7**3)
-dF(130) = (-(y2*y5**3*y6**2) + y3*y4*y5*y6**3 + y2*y4**3*y6*y7 + 3*y2*y4*y5**2*y6*y7 + y2*y5**3*y7**2 + 3*y3*y4*y5*y6*y7**2 - y3*y4**2*y7**3 + y3*y5**2*y7**3)
+dF(129) = (-(y1*y5**3*y6**2) + y1*y4*y5*y6**3 + y1*y4**3*y6*y7 + 3*y1*y4*y5**2*y6*y7 + y1*y5**3*y7**2 + 3*y1*y4*y5*y6*y7**2 -&
+                   y1*y4**2*y7**3 + y1*y5**2*y7**3)
+dF(130) = (-(y2*y5**3*y6**2) + y3*y4*y5*y6**3 + y2*y4**3*y6*y7 + 3*y2*y4*y5**2*y6*y7 + y2*y5**3*y7**2 + 3*y3*y4*y5*y6*y7**2 -&
+                   y3*y4**2*y7**3 + y3*y5**2*y7**3)
 dF(131) = (y1**2*y3*y4**2*y5 + y1**2*y3*y5**3 + y1**2*y2*y6**2*y7 + y1**2*y2*y7**3)
 dF(132) = (y1*y3**2*y4**2*y5 + y1*y3**2*y5**3 + y1*y2**2*y6**2*y7 + y1*y2**2*y7**3)
 dF(133) = (y3**3*y4**2*y5 + y3**3*y5**3 + y2**3*y6**2*y7 + y2**3*y7**3)
@@ -4307,7 +4430,8 @@ dF(135) = (y3*y4**2*y5*y6**2 + 2*y3*y4*y5**2*y6*y7 + y2*y4**2*y6**2*y7 + y3*y5**
 dF(136) = (y3*y4**4*y5 + 2*y3*y4**2*y5**3 + y3*y5**5 + y2*y6**4*y7 + 2*y2*y6**2*y7**3 + y2*y7**5)
 dF(137) = (y1*y5**3*y6**2 - 2*y1*y4*y5**2*y6*y7 + y1*y5**2*y6**2*y7 + y1*y4**2*y5*y7**2 - 2*y1*y4*y5*y6*y7**2 + y1*y4**2*y7**3)
 dF(138) = (y2*y5**3*y6**2 - 2*y2*y4*y5**2*y6*y7 + y3*y5**2*y6**2*y7 + y2*y4**2*y5*y7**2 - 2*y3*y4*y5*y6*y7**2 + y3*y4**2*y7**3)
-dF(139) = (y3*y4**3*y5*y6 + y3*y4*y5**3*y6 + y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + y2*y4*y6*y7**3 + y2*y5*y7**4)
+dF(139) = (y3*y4**3*y5*y6+y3*y4*y5**3*y6+y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + y2*y4*y6*y7**3 +&
+          y2*y5*y7**4)
 dF(140) = (y3*y5**3*y6**2 - 2*y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 - 2*y2*y4*y5*y6*y7**2 + y2*y4**2*y7**3)
 dF(141) = (y1**6*y5 + y1**6*y7)
 dF(142) = (y1**5*y2*y5 + y1**5*y3*y7)
@@ -4348,22 +4472,32 @@ dF(176) = (y1**2*y2*y3*y4*y5*y6 + y1**2*y2*y3*y5**2*y7 + y1**2*y2*y3*y4*y6*y7 + 
 dF(177) = (y1*y2**2*y3*y4*y5*y6 + y1*y2**2*y3*y5**2*y7 + y1*y2*y3**2*y4*y6*y7 + y1*y2*y3**2*y5*y7**2)
 dF(178) = (y2**3*y3*y4*y5*y6 + y2**3*y3*y5**2*y7 + y2*y3**3*y4*y6*y7 + y2*y3**3*y5*y7**2)
 dF(179) = (y2**2*y3**2*y4*y5*y6 + y2**2*y3**2*y5**2*y7 + y2**2*y3**2*y4*y6*y7 + y2**2*y3**2*y5*y7**2)
-dF(180) = (y4**5*y5*y6 + 2*y4**3*y5**3*y6 + y4*y5**5*y6 + y4**4*y5**2*y7 + 2*y4**2*y5**4*y7 + y5**6*y7 + y4*y6**5*y7 + y5*y6**4*y7**2 + 2*y4*y6**3*y7**3 + 2*y5*y6**2*y7**4 + y4*y6*y7**5 + y5*y7**6)
+dF(180) = (y4**5*y5*y6 + 2*y4**3*y5**3*y6 + y4*y5**5*y6 + y4**4*y5**2*y7 + 2*y4**2*y5**4*y7 + y5**6*y7 + y4*y6**5*y7 +&
+                   y5*y6**4*y7**2 + 2*y4*y6**3*y7**3 + 2*y5*y6**2*y7**4 + y4*y6*y7**5 + y5*y7**6)
 dF(181) = (y1**3*y2*y5*y6**2 + y1**3*y3*y4**2*y7 + y1**3*y3*y5**2*y7 + y1**3*y2*y5*y7**2)
 dF(182) = (y1**2*y2**2*y5*y6**2 + y1**2*y3**2*y4**2*y7 + y1**2*y3**2*y5**2*y7 + y1**2*y2**2*y5*y7**2)
 dF(183) = (y1*y2**3*y5*y6**2 + y1*y3**3*y4**2*y7 + y1*y3**3*y5**2*y7 + y1*y2**3*y5*y7**2)
 dF(184) = (y2**4*y5*y6**2 + y3**4*y4**2*y7 + y3**4*y5**2*y7 + y2**4*y5*y7**2)
 dF(185) = (y1*y2**2*y3*y5*y6**2 + y1*y2*y3**2*y4**2*y7 + y1*y2*y3**2*y5**2*y7 + y1*y2**2*y3*y5*y7**2)
 dF(186) = (y2**3*y3*y5*y6**2 + y2*y3**3*y4**2*y7 + y2*y3**3*y5**2*y7 + y2**3*y3*y5*y7**2)
-dF(187) = (y1**2*y4**2*y5*y6**2 + 2*y1**2*y4*y5**2*y6*y7 + y1**2*y4**2*y6**2*y7 + y1**2*y5**3*y7**2 + 2*y1**2*y4*y5*y6*y7**2 + y1**2*y5**2*y7**3)
-dF(188) = (y1*y2*y4**2*y5*y6**2 + 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y4**2*y6**2*y7 + y1*y2*y5**3*y7**2 + 2*y1*y3*y4*y5*y6*y7**2 + y1*y3*y5**2*y7**3)
-dF(189) = (y2**2*y4**2*y5*y6**2 + 2*y2**2*y4*y5**2*y6*y7 + y3**2*y4**2*y6**2*y7 + y2**2*y5**3*y7**2 + 2*y3**2*y4*y5*y6*y7**2 + y3**2*y5**2*y7**3)
-dF(190) = (y2*y3*y4**2*y5*y6**2 + 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y4**2*y6**2*y7 + y2*y3*y5**3*y7**2 + 2*y2*y3*y4*y5*y6*y7**2 + y2*y3*y5**2*y7**3)
-dF(191) = (y4**4*y5*y6**2 + y4**2*y5**3*y6**2 + 2*y4**3*y5**2*y6*y7 + 2*y4*y5**4*y6*y7 + y4**2*y6**4*y7 + y4**2*y5**3*y7**2 + y5**5*y7**2 + 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 + 2*y4*y5*y6*y7**4 + y5**2*y7**5)
-dF(192) = (y1*y2*y4*y5*y6**3 + y1*y3*y4**3*y6*y7 + y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 + y1*y3*y5**3*y7**2 + y1*y2*y4*y5*y6*y7**2 + y1*y2*y5**2*y7**3)
-dF(193) = (y2**2*y4*y5*y6**3 + y3**2*y4**3*y6*y7 + y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 + y3**2*y5**3*y7**2 + y2**2*y4*y5*y6*y7**2 + y2**2*y5**2*y7**3)
-dF(194) = (-2*y1*y3*y4**3*y5*y6 - 2*y1*y3*y4*y5**3*y6 + y1*y2*y5*y6**4 + y1*y3*y4**4*y7 - y1*y3*y5**4*y7 - 2*y1*y2*y4*y6**3*y7 - 2*y1*y2*y4*y6*y7**3 - y1*y2*y5*y7**4)
-dF(195) = (-2*y3**2*y4**3*y5*y6 - 2*y3**2*y4*y5**3*y6 + y2**2*y5*y6**4 + y3**2*y4**4*y7 - y3**2*y5**4*y7 - 2*y2**2*y4*y6**3*y7 - 2*y2**2*y4*y6*y7**3 - y2**2*y5*y7**4)
+dF(187) = (y1**2*y4**2*y5*y6**2 + 2*y1**2*y4*y5**2*y6*y7 + y1**2*y4**2*y6**2*y7 + y1**2*y5**3*y7**2 + 2*y1**2*y4*y5*y6*y7**2 +&
+                   y1**2*y5**2*y7**3)
+dF(188) = (y1*y2*y4**2*y5*y6**2 + 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y4**2*y6**2*y7 + y1*y2*y5**3*y7**2 + 2*y1*y3*y4*y5*y6*y7**2 +&
+                   y1*y3*y5**2*y7**3)
+dF(189) = (y2**2*y4**2*y5*y6**2 + 2*y2**2*y4*y5**2*y6*y7 + y3**2*y4**2*y6**2*y7 + y2**2*y5**3*y7**2 + 2*y3**2*y4*y5*y6*y7**2 +&
+                   y3**2*y5**2*y7**3)
+dF(190) = (y2*y3*y4**2*y5*y6**2 + 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y4**2*y6**2*y7 + y2*y3*y5**3*y7**2 + 2*y2*y3*y4*y5*y6*y7**2 +&
+                   y2*y3*y5**2*y7**3)
+dF(191) = (y4**4*y5*y6**2 + y4**2*y5**3*y6**2 + 2*y4**3*y5**2*y6*y7 + 2*y4*y5**4*y6*y7 + y4**2*y6**4*y7 + y4**2*y5**3*y7**2 +&
+                   y5**5*y7**2 + 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 + 2*y4*y5*y6*y7**4 + y5**2*y7**5)
+dF(192) = (y1*y2*y4*y5*y6**3 + y1*y3*y4**3*y6*y7 + y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 +&
+                   y1*y3*y5**3*y7**2 + y1*y2*y4*y5*y6*y7**2 + y1*y2*y5**2*y7**3)
+dF(193) = (y2**2*y4*y5*y6**3 + y3**2*y4**3*y6*y7 + y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 +&
+                   y3**2*y5**3*y7**2 + y2**2*y4*y5*y6*y7**2 + y2**2*y5**2*y7**3)
+dF(194) = (-2*y1*y3*y4**3*y5*y6 - 2*y1*y3*y4*y5**3*y6 + y1*y2*y5*y6**4 + y1*y3*y4**4*y7 - y1*y3*y5**4*y7 - 2*y1*y2*y4*y6**3*y7 -&
+                   2*y1*y2*y4*y6*y7**3 - y1*y2*y5*y7**4)
+dF(195) = (-2*y3**2*y4**3*y5*y6 - 2*y3**2*y4*y5**3*y6 + y2**2*y5*y6**4 + y3**2*y4**4*y7 - y3**2*y5**4*y7 - 2*y2**2*y4*y6**3*y7 -&
+                   2*y2**2*y4*y6*y7**3 - y2**2*y5*y7**4)
 dF(196) = (y1**5*y3*y5 + y1**5*y2*y7)
 dF(197) = (y1**4*y3**2*y5 + y1**4*y2**2*y7)
 dF(198) = (y1**3*y3**3*y5 + y1**3*y2**3*y7)
@@ -4385,49 +4519,78 @@ dF(213) = (y1**2*y2*y3*y5*y6**2 + y1**2*y2*y3*y4**2*y7 + y1**2*y2*y3*y5**2*y7 + 
 dF(214) = (y1*y2*y3**2*y5*y6**2 + y1*y2**2*y3*y4**2*y7 + y1*y2**2*y3*y5**2*y7 + y1*y2*y3**2*y5*y7**2)
 dF(215) = (y2*y3**3*y5*y6**2 + y2**3*y3*y4**2*y7 + y2**3*y3*y5**2*y7 + y2*y3**3*y5*y7**2)
 dF(216) = (y2**2*y3**2*y5*y6**2 + y2**2*y3**2*y4**2*y7 + y2**2*y3**2*y5**2*y7 + y2**2*y3**2*y5*y7**2)
-dF(217) = (-2*y1**2*y4**3*y5*y6 - 2*y1**2*y4*y5**3*y6 + y1**2*y5*y6**4 + y1**2*y4**4*y7 - y1**2*y5**4*y7 - 2*y1**2*y4*y6**3*y7 - 2*y1**2*y4*y6*y7**3 - y1**2*y5*y7**4)
-dF(218) = (-2*y1*y2*y4**3*y5*y6 - 2*y1*y2*y4*y5**3*y6 + y1*y3*y5*y6**4 + y1*y2*y4**4*y7 - y1*y2*y5**4*y7 - 2*y1*y3*y4*y6**3*y7 - 2*y1*y3*y4*y6*y7**3 - y1*y3*y5*y7**4)
-dF(219) = (-2*y2**2*y4**3*y5*y6 - 2*y2**2*y4*y5**3*y6 + y3**2*y5*y6**4 + y2**2*y4**4*y7 - y2**2*y5**4*y7 - 2*y3**2*y4*y6**3*y7 - 2*y3**2*y4*y6*y7**3 - y3**2*y5*y7**4)
-dF(220) = (-2*y2*y3*y4**3*y5*y6 - 2*y2*y3*y4*y5**3*y6 + y2*y3*y5*y6**4 + y2*y3*y4**4*y7 - y2*y3*y5**4*y7 - 2*y2*y3*y4*y6**3*y7 - 2*y2*y3*y4*y6*y7**3 - y2*y3*y5*y7**4)
+dF(217) = (-2*y1**2*y4**3*y5*y6 - 2*y1**2*y4*y5**3*y6 + y1**2*y5*y6**4 + y1**2*y4**4*y7 - y1**2*y5**4*y7 - 2*y1**2*y4*y6**3*y7 -&
+                   2*y1**2*y4*y6*y7**3 - y1**2*y5*y7**4)
+dF(218) = (-2*y1*y2*y4**3*y5*y6 - 2*y1*y2*y4*y5**3*y6 + y1*y3*y5*y6**4 + y1*y2*y4**4*y7 - y1*y2*y5**4*y7 - 2*y1*y3*y4*y6**3*y7 -&
+                   2*y1*y3*y4*y6*y7**3 - y1*y3*y5*y7**4)
+dF(219) = (-2*y2**2*y4**3*y5*y6 - 2*y2**2*y4*y5**3*y6 + y3**2*y5*y6**4 + y2**2*y4**4*y7 - y2**2*y5**4*y7 - 2*y3**2*y4*y6**3*y7 -&
+                   2*y3**2*y4*y6*y7**3 - y3**2*y5*y7**4)
+dF(220) = (-2*y2*y3*y4**3*y5*y6 - 2*y2*y3*y4*y5**3*y6 + y2*y3*y5*y6**4 + y2*y3*y4**4*y7 - y2*y3*y5**4*y7 - 2*y2*y3*y4*y6**3*y7 -&
+                   2*y2*y3*y4*y6*y7**3 - y2*y3*y5*y7**4)
 dF(221) = (y5*y6**6 + y4**6*y7 + 3*y4**4*y5**2*y7 + 3*y4**2*y5**4*y7 + y5**6*y7 + 3*y5*y6**4*y7**2 + 3*y5*y6**2*y7**4 + y5*y7**6)
-dF(222) = (y1**2*y4**3*y5*y6 + y1**2*y4*y5**3*y6 + y1**2*y4**2*y5**2*y7 + y1**2*y5**4*y7 + y1**2*y4*y6**3*y7 + y1**2*y5*y6**2*y7**2 + y1**2*y4*y6*y7**3 + y1**2*y5*y7**4)
-dF(223) = (y1*y2*y4**3*y5*y6 + y1*y2*y4*y5**3*y6 + y1*y2*y4**2*y5**2*y7 + y1*y2*y5**4*y7 + y1*y3*y4*y6**3*y7 + y1*y3*y5*y6**2*y7**2 + y1*y3*y4*y6*y7**3 + y1*y3*y5*y7**4)
-dF(224) = (y2**2*y4**3*y5*y6 + y2**2*y4*y5**3*y6 + y2**2*y4**2*y5**2*y7 + y2**2*y5**4*y7 + y3**2*y4*y6**3*y7 + y3**2*y5*y6**2*y7**2 + y3**2*y4*y6*y7**3 + y3**2*y5*y7**4)
-dF(225) = (y2*y3*y4**3*y5*y6 + y2*y3*y4*y5**3*y6 + y2*y3*y4**2*y5**2*y7 + y2*y3*y5**4*y7 + y2*y3*y4*y6**3*y7 + y2*y3*y5*y6**2*y7**2 + y2*y3*y4*y6*y7**3 + y2*y3*y5*y7**4)
+dF(222) = (y1**2*y4**3*y5*y6 + y1**2*y4*y5**3*y6 + y1**2*y4**2*y5**2*y7 + y1**2*y5**4*y7 + y1**2*y4*y6**3*y7 + &
+          y1**2*y5*y6**2*y7**2 +y1**2*y4*y6*y7**3 + y1**2*y5*y7**4)
+dF(223) = (y1*y2*y4**3*y5*y6 + y1*y2*y4*y5**3*y6 + y1*y2*y4**2*y5**2*y7 + y1*y2*y5**4*y7 + y1*y3*y4*y6**3*y7 + &
+          y1*y3*y5*y6**2*y7**2 +y1*y3*y4*y6*y7**3 + y1*y3*y5*y7**4)
+dF(224) = (y2**2*y4**3*y5*y6 + y2**2*y4*y5**3*y6 + y2**2*y4**2*y5**2*y7 + y2**2*y5**4*y7 + y3**2*y4*y6**3*y7 + &
+          y3**2*y5*y6**2*y7**2 +y3**2*y4*y6*y7**3 + y3**2*y5*y7**4)
+dF(225) = (y2*y3*y4**3*y5*y6 + y2*y3*y4*y5**3*y6 + y2*y3*y4**2*y5**2*y7 + y2*y3*y5**4*y7 + y2*y3*y4*y6**3*y7 + &
+          y2*y3*y5*y6**2*y7**2 +y2*y3*y4*y6*y7**3 + y2*y3*y5*y7**4)
 dF(226) = (y1**3*y3*y4*y5*y6 + y1**3*y3*y5**2*y7 + y1**3*y2*y4*y6*y7 + y1**3*y2*y5*y7**2)
 dF(227) = (y1**2*y3**2*y4*y5*y6 + y1**2*y3**2*y5**2*y7 + y1**2*y2**2*y4*y6*y7 + y1**2*y2**2*y5*y7**2)
 dF(228) = (y1*y3**3*y4*y5*y6 + y1*y3**3*y5**2*y7 + y1*y2**3*y4*y6*y7 + y1*y2**3*y5*y7**2)
 dF(229) = (y3**4*y4*y5*y6 + y3**4*y5**2*y7 + y2**4*y4*y6*y7 + y2**4*y5*y7**2)
 dF(230) = (y1*y2*y3**2*y4*y5*y6 + y1*y2*y3**2*y5**2*y7 + y1*y2**2*y3*y4*y6*y7 + y1*y2**2*y3*y5*y7**2)
 dF(231) = (y2*y3**3*y4*y5*y6 + y2*y3**3*y5**2*y7 + y2**3*y3*y4*y6*y7 + y2**3*y3*y5*y7**2)
-dF(232) = (-(y1**2*y5**3*y6**2) + y1**2*y4*y5*y6**3 + y1**2*y4**3*y6*y7 + 3*y1**2*y4*y5**2*y6*y7 + y1**2*y5**3*y7**2 + 3*y1**2*y4*y5*y6*y7**2 - y1**2*y4**2*y7**3 + y1**2*y5**2*y7**3)
-dF(233) = (-(y1*y2*y5**3*y6**2) + y1*y3*y4*y5*y6**3 + y1*y2*y4**3*y6*y7 + 3*y1*y2*y4*y5**2*y6*y7 + y1*y2*y5**3*y7**2 + 3*y1*y3*y4*y5*y6*y7**2 - y1*y3*y4**2*y7**3 + y1*y3*y5**2*y7**3)
-dF(234) = (-(y2**2*y5**3*y6**2) + y3**2*y4*y5*y6**3 + y2**2*y4**3*y6*y7 + 3*y2**2*y4*y5**2*y6*y7 + y2**2*y5**3*y7**2 + 3*y3**2*y4*y5*y6*y7**2 - y3**2*y4**2*y7**3 + y3**2*y5**2*y7**3)
-dF(235) = (-(y2*y3*y5**3*y6**2) + y2*y3*y4*y5*y6**3 + y2*y3*y4**3*y6*y7 + 3*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**3*y7**2 + 3*y2*y3*y4*y5*y6*y7**2 - y2*y3*y4**2*y7**3 + y2*y3*y5**2*y7**3)
-dF(236) = (-(y4**2*y5**3*y6**2) - y5**5*y6**2 + y4*y5*y6**5 + y4**5*y6*y7 + 4*y4**3*y5**2*y6*y7 + 3*y4*y5**4*y6*y7 + y4**2*y5**3*y7**2 + y5**5*y7**2 + 4*y4*y5*y6**3*y7**2 - y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 + 3*y4*y5*y6*y7**4 - y4**2*y7**5 + y5**2*y7**5)
+dF(232) = (-(y1**2*y5**3*y6**2) + y1**2*y4*y5*y6**3 + y1**2*y4**3*y6*y7 + 3*y1**2*y4*y5**2*y6*y7 + y1**2*y5**3*y7**2 +&
+                   3*y1**2*y4*y5*y6*y7**2 - y1**2*y4**2*y7**3 + y1**2*y5**2*y7**3)
+dF(233) = (-(y1*y2*y5**3*y6**2) + y1*y3*y4*y5*y6**3 + y1*y2*y4**3*y6*y7 + 3*y1*y2*y4*y5**2*y6*y7 + y1*y2*y5**3*y7**2 +&
+                   3*y1*y3*y4*y5*y6*y7**2 - y1*y3*y4**2*y7**3 + y1*y3*y5**2*y7**3)
+dF(234) = (-(y2**2*y5**3*y6**2) + y3**2*y4*y5*y6**3 + y2**2*y4**3*y6*y7 + 3*y2**2*y4*y5**2*y6*y7 + y2**2*y5**3*y7**2 +&
+                   3*y3**2*y4*y5*y6*y7**2 - y3**2*y4**2*y7**3 + y3**2*y5**2*y7**3)
+dF(235) = (-(y2*y3*y5**3*y6**2) + y2*y3*y4*y5*y6**3 + y2*y3*y4**3*y6*y7 + 3*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**3*y7**2 +&
+                   3*y2*y3*y4*y5*y6*y7**2 - y2*y3*y4**2*y7**3 + y2*y3*y5**2*y7**3)
+dF(236) = (-(y4**2*y5**3*y6**2) - y5**5*y6**2 + y4*y5*y6**5 + y4**5*y6*y7 + 4*y4**3*y5**2*y6*y7 + 3*y4*y5**4*y6*y7 +&
+                   y4**2*y5**3*y7**2 + y5**5*y7**2 + 4*y4*y5*y6**3*y7**2 - y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 +&
+           3*y4*y5*y6*y7**4 - y4**2*y7**5 + y5**2*y7**5)
 dF(237) = (y1**3*y3*y4**2*y5 + y1**3*y3*y5**3 + y1**3*y2*y6**2*y7 + y1**3*y2*y7**3)
 dF(238) = (y1**2*y3**2*y4**2*y5 + y1**2*y3**2*y5**3 + y1**2*y2**2*y6**2*y7 + y1**2*y2**2*y7**3)
 dF(239) = (y1*y3**3*y4**2*y5 + y1*y3**3*y5**3 + y1*y2**3*y6**2*y7 + y1*y2**3*y7**3)
 dF(240) = (y3**4*y4**2*y5 + y3**4*y5**3 + y2**4*y6**2*y7 + y2**4*y7**3)
 dF(241) = (y1*y2*y3**2*y4**2*y5 + y1*y2*y3**2*y5**3 + y1*y2**2*y3*y6**2*y7 + y1*y2**2*y3*y7**3)
 dF(242) = (y2*y3**3*y4**2*y5 + y2*y3**3*y5**3 + y2**3*y3*y6**2*y7 + y2**3*y3*y7**3)
-dF(243) = (y1*y3*y4**2*y5*y6**2 + 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y4**2*y6**2*y7 + y1*y3*y5**3*y7**2 + 2*y1*y2*y4*y5*y6*y7**2 + y1*y2*y5**2*y7**3)
-dF(244) = (y3**2*y4**2*y5*y6**2 + 2*y3**2*y4*y5**2*y6*y7 + y2**2*y4**2*y6**2*y7 + y3**2*y5**3*y7**2 + 2*y2**2*y4*y5*y6*y7**2 + y2**2*y5**2*y7**3)
-dF(245) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y4**2*y5*y6**4 + y4**4*y6**2*y7 - y5**4*y6**2*y7 - y4**3*y6**3*y7 + y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 + y4*y5**3*y6*y7**2 - y4**3*y6*y7**3 + y4*y5**2*y6*y7**3 - y4**2*y5*y7**4)
-dF(246) = ((y4**3*y5*y6**3)/3 + y4**2*y5**2*y6**2*y7 + (y4**3*y6**3*y7)/3 + y4*y5**3*y6*y7**2 + y4**2*y5*y6**2*y7**2 + (y5**4*y7**3)/3 + y4*y5**2*y6*y7**3 + (y5**3*y7**4)/3)
+dF(243) = (y1*y3*y4**2*y5*y6**2 + 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y4**2*y6**2*y7 + y1*y3*y5**3*y7**2 + 2*y1*y2*y4*y5*y6*y7**2 +&
+                   y1*y2*y5**2*y7**3)
+dF(244) = (y3**2*y4**2*y5*y6**2 + 2*y3**2*y4*y5**2*y6*y7 + y2**2*y4**2*y6**2*y7 + y3**2*y5**3*y7**2 + 2*y2**2*y4*y5*y6*y7**2 +&
+                   y2**2*y5**2*y7**3)
+dF(245) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y4**2*y5*y6**4 + y4**4*y6**2*y7 - y5**4*y6**2*y7 - y4**3*y6**3*y7 +&
+                   y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 + y4*y5**3*y6*y7**2 - y4**3*y6*y7**3 + y4*y5**2*y6*y7**3 - y4**2*y5*y7**4)
+dF(246) = ((y4**3*y5*y6**3)/3 + y4**2*y5**2*y6**2*y7 + (y4**3*y6**3*y7)/3 + y4*y5**3*y6*y7**2 + y4**2*y5*y6**2*y7**2 +&
+                   (y5**4*y7**3)/3 + y4*y5**2*y6*y7**3 + (y5**3*y7**4)/3)
 dF(247) = (y1*y3*y4**4*y5 + 2*y1*y3*y4**2*y5**3 + y1*y3*y5**5 + y1*y2*y6**4*y7 + 2*y1*y2*y6**2*y7**3 + y1*y2*y7**5)
 dF(248) = (y3**2*y4**4*y5 + 2*y3**2*y4**2*y5**3 + y3**2*y5**5 + y2**2*y6**4*y7 + 2*y2**2*y6**2*y7**3 + y2**2*y7**5)
-dF(249) = (y1**2*y5**3*y6**2 - 2*y1**2*y4*y5**2*y6*y7 + y1**2*y5**2*y6**2*y7 + y1**2*y4**2*y5*y7**2 - 2*y1**2*y4*y5*y6*y7**2 + y1**2*y4**2*y7**3)
-dF(250) = (y1*y2*y5**3*y6**2 - 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y5**2*y6**2*y7 + y1*y2*y4**2*y5*y7**2 - 2*y1*y3*y4*y5*y6*y7**2 + y1*y3*y4**2*y7**3)
-dF(251) = (y2**2*y5**3*y6**2 - 2*y2**2*y4*y5**2*y6*y7 + y3**2*y5**2*y6**2*y7 + y2**2*y4**2*y5*y7**2 - 2*y3**2*y4*y5*y6*y7**2 + y3**2*y4**2*y7**3)
-dF(252) = (y2*y3*y5**3*y6**2 - 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**2*y6**2*y7 + y2*y3*y4**2*y5*y7**2 - 2*y2*y3*y4*y5*y6*y7**2 + y2*y3*y4**2*y7**3)
-dF(253) = (y4**2*y5**3*y6**2 + y5**5*y6**2 - 2*y4**3*y5**2*y6*y7 - 2*y4*y5**4*y6*y7 + y5**2*y6**4*y7 + y4**4*y5*y7**2 + y4**2*y5**3*y7**2 - 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 - 2*y4*y5*y6*y7**4 + y4**2*y7**5)
-dF(254) = (y1*y3*y4**3*y5*y6 + y1*y3*y4*y5**3*y6 + y1*y3*y4**2*y5**2*y7 + y1*y3*y5**4*y7 + y1*y2*y4*y6**3*y7 + y1*y2*y5*y6**2*y7**2 + y1*y2*y4*y6*y7**3 + y1*y2*y5*y7**4)
-dF(255) = (y3**2*y4**3*y5*y6 + y3**2*y4*y5**3*y6 + y3**2*y4**2*y5**2*y7 + y3**2*y5**4*y7 + y2**2*y4*y6**3*y7 + y2**2*y5*y6**2*y7**2 + y2**2*y4*y6*y7**3 + y2**2*y5*y7**4)
-dF(256) = (y1*y3*y5**3*y6**2 - 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 - 2*y1*y2*y4*y5*y6*y7**2 + y1*y2*y4**2*y7**3)
-dF(257) = (y3**2*y5**3*y6**2 - 2*y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 - 2*y2**2*y4*y5*y6*y7**2 + y2**2*y4**2*y7**3)
-dF(258) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y5**3*y6**4 - y4**3*y6**3*y7 - 3*y4*y5**2*y6**3*y7 - 3*y4**3*y5*y6*y7**2 - 3*y4*y5**3*y6*y7**2 + y4**4*y7**3 - y5**4*y7**3 - y4**3*y6*y7**3 - 3*y4*y5**2*y6*y7**3 - y5**3*y7**4)
-dF(259) = ((2*y4**3*y5*y6**3)/3 + y4*y5**3*y6**3 + y5**4*y6**2*y7 + (2*y4**3*y6**3*y7)/3 + y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 + y5**3*y6**2*y7**2 + y4**2*y5**2*y7**3 + (2*y5**4*y7**3)/3 + y4**3*y6*y7**3 + y4**2*y5*y7**4 + (2*y5**3*y7**4)/3)
+dF(249) = (y1**2*y5**3*y6**2 - 2*y1**2*y4*y5**2*y6*y7 + y1**2*y5**2*y6**2*y7 + y1**2*y4**2*y5*y7**2 - 2*y1**2*y4*y5*y6*y7**2 +&
+                   y1**2*y4**2*y7**3)
+dF(250) = (y1*y2*y5**3*y6**2 - 2*y1*y2*y4*y5**2*y6*y7 + y1*y3*y5**2*y6**2*y7 + y1*y2*y4**2*y5*y7**2 - 2*y1*y3*y4*y5*y6*y7**2 +&
+                   y1*y3*y4**2*y7**3)
+dF(251) = (y2**2*y5**3*y6**2 - 2*y2**2*y4*y5**2*y6*y7 + y3**2*y5**2*y6**2*y7 + y2**2*y4**2*y5*y7**2 - 2*y3**2*y4*y5*y6*y7**2 +&
+                   y3**2*y4**2*y7**3)
+dF(252) = (y2*y3*y5**3*y6**2 - 2*y2*y3*y4*y5**2*y6*y7 + y2*y3*y5**2*y6**2*y7 + y2*y3*y4**2*y5*y7**2 - 2*y2*y3*y4*y5*y6*y7**2 +&
+                   y2*y3*y4**2*y7**3)
+dF(253) = (y4**2*y5**3*y6**2 + y5**5*y6**2 - 2*y4**3*y5**2*y6*y7 - 2*y4*y5**4*y6*y7 + y5**2*y6**4*y7 + y4**4*y5*y7**2 +&
+                 y4**2*y5**3*y7**2 - 2*y4*y5*y6**3*y7**2 + y4**2*y6**2*y7**3 + y5**2*y6**2*y7**3 - 2*y4*y5*y6*y7**4 + y4**2*y7**5)
+dF(254) = (y1*y3*y4**3*y5*y6 + y1*y3*y4*y5**3*y6 + y1*y3*y4**2*y5**2*y7+y1*y3*y5**4*y7+y1*y2*y4*y6**3*y7+y1*y2*y5*y6**2*y7**2+&
+                   y1*y2*y4*y6*y7**3 + y1*y2*y5*y7**4)
+dF(255) = (y3**2*y4**3*y5*y6+y3**2*y4*y5**3*y6+y3**2*y4**2*y5**2*y7+y3**2*y5**4*y7 + y2**2*y4*y6**3*y7 + y2**2*y5*y6**2*y7**2 +&
+           y2**2*y4*y6*y7**3 + y2**2*y5*y7**4)
+dF(256) = (y1*y3*y5**3*y6**2 - 2*y1*y3*y4*y5**2*y6*y7 + y1*y2*y5**2*y6**2*y7 + y1*y3*y4**2*y5*y7**2 - 2*y1*y2*y4*y5*y6*y7**2 +&
+                   y1*y2*y4**2*y7**3)
+dF(257) = (y3**2*y5**3*y6**2 - 2*y3**2*y4*y5**2*y6*y7 + y2**2*y5**2*y6**2*y7 + y3**2*y4**2*y5*y7**2 - 2*y2**2*y4*y5*y6*y7**2 +&
+                   y2**2*y4**2*y7**3)
+dF(258) = (-(y4**3*y5*y6**3) - y4*y5**3*y6**3 + y5**3*y6**4 - y4**3*y6**3*y7 - 3*y4*y5**2*y6**3*y7 - 3*y4**3*y5*y6*y7**2 -&
+                   3*y4*y5**3*y6*y7**2 + y4**4*y7**3 - y5**4*y7**3 - y4**3*y6*y7**3 - 3*y4*y5**2*y6*y7**3 - y5**3*y7**4)
+dF(259) = ((2*y4**3*y5*y6**3)/3 + y4*y5**3*y6**3 + y5**4*y6**2*y7 + (2*y4**3*y6**3*y7)/3 + y4*y5**2*y6**3*y7 + y4**3*y5*y6*y7**2 +&
+                   y5**3*y6**2*y7**2 + y4**2*y5**2*y7**3 + (2*y5**4*y7**3)/3 + y4**3*y6*y7**3 + y4**2*y5*y7**4 + (2*y5**3*y7**4)/3)
 
 end subroutine dmsC2H2_D8h_diff_muy_7th
 
@@ -4495,7 +4658,8 @@ dF(53) = (-(y1*y3**2*y4**2) - y1*y3**2*y5**2 + y1*y2**2*y6**2 + y1*y2**2*y7**2)
 dF(54) = (-(y3**3*y4**2) - y3**3*y5**2 + y2**3*y6**2 + y2**3*y7**2)
 dF(55) = (-(y2*y3**2*y4**2) - y2*y3**2*y5**2 + y2**2*y3*y6**2 + y2**2*y3*y7**2)
 dF(56) = (y2*y4**2*y6**2 - y3*y4**2*y6**2 + 2*y2*y4*y5*y6*y7 - 2*y3*y4*y5*y6*y7 + y2*y5**2*y7**2 - y3*y5**2*y7**2)
-dF(57) = (-(y3*y4**3*y6) - y3*y4*y5**2*y6 + y2*y4*y6**3 - y3*y4**2*y5*y7 - y3*y5**3*y7 + y2*y5*y6**2*y7 + y2*y4*y6*y7**2 + y2*y5*y7**3)
+dF(57) = (-(y3*y4**3*y6) - y3*y4*y5**2*y6 + y2*y4*y6**3 - y3*y4**2*y5*y7 - y3*y5**3*y7 + y2*y5*y6**2*y7 + &
+         y2*y4*y6*y7**2 + y2*y5*y7**3)
 dF(58) = (-(y3*y4**4) - 2*y3*y4**2*y5**2 - y3*y5**4 + y2*y6**4 + 2*y2*y6**2*y7**2 + y2*y7**4)
 dF(59) = (y2*y5**2*y6**2 - y3*y5**2*y6**2 - 2*y2*y4*y5*y6*y7 + 2*y3*y4*y5*y6*y7 + y2*y4**2*y7**2 - y3*y4**2*y7**2)
 dF(60) = (y1**5*y2 - y1**5*y3)
@@ -4530,27 +4694,36 @@ dF(88) = (y1*y2**3*y4*y6 - y1*y3**3*y4*y6 + y1*y2**3*y5*y7 - y1*y3**3*y5*y7)
 dF(89) = (y2**4*y4*y6 - y3**4*y4*y6 + y2**4*y5*y7 - y3**4*y5*y7)
 dF(90) = (y1*y2**2*y3*y4*y6 - y1*y2*y3**2*y4*y6 + y1*y2**2*y3*y5*y7 - y1*y2*y3**2*y5*y7)
 dF(91) = (y2**3*y3*y4*y6 - y2*y3**3*y4*y6 + y2**3*y3*y5*y7 - y2*y3**3*y5*y7)
-dF(92) = (y1**2*y4**3*y6 + y1**2*y4*y5**2*y6 - y1**2*y4*y6**3 + y1**2*y4**2*y5*y7 + y1**2*y5**3*y7 - y1**2*y5*y6**2*y7 - y1**2*y4*y6*y7**2 - y1**2*y5*y7**3)
-dF(93) = (y1*y2*y4**3*y6 + y1*y2*y4*y5**2*y6 - y1*y3*y4*y6**3 + y1*y2*y4**2*y5*y7 + y1*y2*y5**3*y7 - y1*y3*y5*y6**2*y7 - y1*y3*y4*y6*y7**2 - y1*y3*y5*y7**3)
-dF(94) = (y2**2*y4**3*y6 + y2**2*y4*y5**2*y6 - y3**2*y4*y6**3 + y2**2*y4**2*y5*y7 + y2**2*y5**3*y7 - y3**2*y5*y6**2*y7 - y3**2*y4*y6*y7**2 - y3**2*y5*y7**3)
-dF(95) = (y2*y3*y4**3*y6 + y2*y3*y4*y5**2*y6 - y2*y3*y4*y6**3 + y2*y3*y4**2*y5*y7 + y2*y3*y5**3*y7 - y2*y3*y5*y6**2*y7 - y2*y3*y4*y6*y7**2 - y2*y3*y5*y7**3)
-dF(96) = (y4**5*y6 + 2*y4**3*y5**2*y6 + y4*y5**4*y6 - y4*y6**5 + y4**4*y5*y7 + 2*y4**2*y5**3*y7 + y5**5*y7 - y5*y6**4*y7 - 2*y4*y6**3*y7**2 - 2*y5*y6**2*y7**3 - y4*y6*y7**4 - y5*y7**5)
+dF(92) = (y1**2*y4**3*y6 + y1**2*y4*y5**2*y6 - y1**2*y4*y6**3 + y1**2*y4**2*y5*y7 + y1**2*y5**3*y7 - y1**2*y5*y6**2*y7 -&
+                   y1**2*y4*y6*y7**2 - y1**2*y5*y7**3)
+dF(93) = (y1*y2*y4**3*y6 + y1*y2*y4*y5**2*y6 - y1*y3*y4*y6**3 + y1*y2*y4**2*y5*y7 + y1*y2*y5**3*y7 - y1*y3*y5*y6**2*y7 -&
+                   y1*y3*y4*y6*y7**2 - y1*y3*y5*y7**3)
+dF(94) = (y2**2*y4**3*y6 + y2**2*y4*y5**2*y6 - y3**2*y4*y6**3 + y2**2*y4**2*y5*y7 + y2**2*y5**3*y7 - y3**2*y5*y6**2*y7 -&
+                   y3**2*y4*y6*y7**2 - y3**2*y5*y7**3)
+dF(95) = (y2*y3*y4**3*y6 + y2*y3*y4*y5**2*y6 - y2*y3*y4*y6**3 + y2*y3*y4**2*y5*y7 + y2*y3*y5**3*y7 - y2*y3*y5*y6**2*y7 -&
+                   y2*y3*y4*y6*y7**2 - y2*y3*y5*y7**3)
+dF(96) = (y4**5*y6 + 2*y4**3*y5**2*y6 + y4*y5**4*y6 - y4*y6**5 + y4**4*y5*y7 + 2*y4**2*y5**3*y7 + y5**5*y7 - y5*y6**4*y7 -&
+                   2*y4*y6**3*y7**2 - 2*y5*y6**2*y7**3 - y4*y6*y7**4 - y5*y7**5)
 dF(97) = (-(y1**3*y3*y4**2) - y1**3*y3*y5**2 + y1**3*y2*y6**2 + y1**3*y2*y7**2)
 dF(98) = (-(y1**2*y3**2*y4**2) - y1**2*y3**2*y5**2 + y1**2*y2**2*y6**2 + y1**2*y2**2*y7**2)
 dF(99) = (-(y1*y3**3*y4**2) - y1*y3**3*y5**2 + y1*y2**3*y6**2 + y1*y2**3*y7**2)
 dF(100) = (-(y3**4*y4**2) - y3**4*y5**2 + y2**4*y6**2 + y2**4*y7**2)
 dF(101) = (-(y1*y2*y3**2*y4**2) - y1*y2*y3**2*y5**2 + y1*y2**2*y3*y6**2 + y1*y2**2*y3*y7**2)
 dF(102) = (-(y2*y3**3*y4**2) - y2*y3**3*y5**2 + y2**3*y3*y6**2 + y2**3*y3*y7**2)
-dF(103) = (y1*y2*y4**2*y6**2 - y1*y3*y4**2*y6**2 + 2*y1*y2*y4*y5*y6*y7 - 2*y1*y3*y4*y5*y6*y7 + y1*y2*y5**2*y7**2 - y1*y3*y5**2*y7**2)
-dF(104) = (y2**2*y4**2*y6**2 - y3**2*y4**2*y6**2 + 2*y2**2*y4*y5*y6*y7 - 2*y3**2*y4*y5*y6*y7 + y2**2*y5**2*y7**2 - y3**2*y5**2*y7**2)
-dF(105) = (y4**4*y6**2 + y4**2*y5**2*y6**2 - y4**2*y6**4 + 2*y4**3*y5*y6*y7 + 2*y4*y5**3*y6*y7 - 2*y4*y5*y6**3*y7 + y4**2*y5**2*y7**2 + y5**4*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 - 2*y4*y5*y6*y7**3 - y5**2*y7**4)
-dF(106) = (-(y1*y3*y4**3*y6) - y1*y3*y4*y5**2*y6 + y1*y2*y4*y6**3 - y1*y3*y4**2*y5*y7 - y1*y3*y5**3*y7 + y1*y2*y5*y6**2*y7 + y1*y2*y4*y6*y7**2 + y1*y2*y5*y7**3)
-dF(107) = (-(y3**2*y4**3*y6) - y3**2*y4*y5**2*y6 + y2**2*y4*y6**3 - y3**2*y4**2*y5*y7 - y3**2*y5**3*y7 + y2**2*y5*y6**2*y7 + y2**2*y4*y6*y7**2 + y2**2*y5*y7**3)
+dF(103) = (y1*y2*y4**2*y6**2-y1*y3*y4**2*y6**2 + 2*y1*y2*y4*y5*y6*y7 - 2*y1*y3*y4*y5*y6*y7 + y1*y2*y5**2*y7**2 - y1*y3*y5**2*y7**2)
+dF(104) = (y2**2*y4**2*y6**2-y3**2*y4**2*y6**2 + 2*y2**2*y4*y5*y6*y7 - 2*y3**2*y4*y5*y6*y7 + y2**2*y5**2*y7**2 - y3**2*y5**2*y7**2)
+dF(105) = (y4**4*y6**2 + y4**2*y5**2*y6**2 - y4**2*y6**4 + 2*y4**3*y5*y6*y7 + 2*y4*y5**3*y6*y7 - 2*y4*y5*y6**3*y7 +&
+                   y4**2*y5**2*y7**2 + y5**4*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 - 2*y4*y5*y6*y7**3 - y5**2*y7**4)
+dF(106) = (-(y1*y3*y4**3*y6) - y1*y3*y4*y5**2*y6 + y1*y2*y4*y6**3 - y1*y3*y4**2*y5*y7 - y1*y3*y5**3*y7 + y1*y2*y5*y6**2*y7 +&
+                   y1*y2*y4*y6*y7**2 + y1*y2*y5*y7**3)
+dF(107) = (-(y3**2*y4**3*y6) - y3**2*y4*y5**2*y6 + y2**2*y4*y6**3 - y3**2*y4**2*y5*y7 - y3**2*y5**3*y7 + y2**2*y5*y6**2*y7 +&
+                   y2**2*y4*y6*y7**2 + y2**2*y5*y7**3)
 dF(108) = (-(y1*y3*y4**4) - 2*y1*y3*y4**2*y5**2 - y1*y3*y5**4 + y1*y2*y6**4 + 2*y1*y2*y6**2*y7**2 + y1*y2*y7**4)
 dF(109) = (-(y3**2*y4**4) - 2*y3**2*y4**2*y5**2 - y3**2*y5**4 + y2**2*y6**4 + 2*y2**2*y6**2*y7**2 + y2**2*y7**4)
-dF(110) = (y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3*y4*y5*y6*y7 + y1*y2*y4**2*y7**2 - y1*y3*y4**2*y7**2)
-dF(111) = (y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2 - y3**2*y4**2*y7**2)
-dF(112) = (y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 + y4**4*y7**2 + y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
+dF(110) = (y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3*y4*y5*y6*y7 + y1*y2*y4**2*y7**2-y1*y3*y4**2*y7**2)
+dF(111) = (y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2-y3**2*y4**2*y7**2)
+dF(112) = (y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 + y4**4*y7**2 +&
+                   y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
 dF(113) = (y1**6*y2 - y1**6*y3)
 dF(114) = (y1**5*y2**2 - y1**5*y3**2)
 dF(115) = (y1**4*y2**3 - y1**4*y3**3)
@@ -4596,14 +4769,22 @@ dF(154) = (y1**2*y2**2*y3*y4*y6 - y1**2*y2*y3**2*y4*y6 + y1**2*y2**2*y3*y5*y7 - 
 dF(155) = (y1*y2**3*y3*y4*y6 - y1*y2*y3**3*y4*y6 + y1*y2**3*y3*y5*y7 - y1*y2*y3**3*y5*y7)
 dF(156) = (y2**4*y3*y4*y6 - y2*y3**4*y4*y6 + y2**4*y3*y5*y7 - y2*y3**4*y5*y7)
 dF(157) = (y2**3*y3**2*y4*y6 - y2**2*y3**3*y4*y6 + y2**3*y3**2*y5*y7 - y2**2*y3**3*y5*y7)
-dF(158) = (y1**3*y4**3*y6 + y1**3*y4*y5**2*y6 - y1**3*y4*y6**3 + y1**3*y4**2*y5*y7 + y1**3*y5**3*y7 - y1**3*y5*y6**2*y7 - y1**3*y4*y6*y7**2 - y1**3*y5*y7**3)
-dF(159) = (y1**2*y2*y4**3*y6 + y1**2*y2*y4*y5**2*y6 - y1**2*y3*y4*y6**3 + y1**2*y2*y4**2*y5*y7 + y1**2*y2*y5**3*y7 - y1**2*y3*y5*y6**2*y7 - y1**2*y3*y4*y6*y7**2 - y1**2*y3*y5*y7**3)
-dF(160) = (y1*y2**2*y4**3*y6 + y1*y2**2*y4*y5**2*y6 - y1*y3**2*y4*y6**3 + y1*y2**2*y4**2*y5*y7 + y1*y2**2*y5**3*y7 - y1*y3**2*y5*y6**2*y7 - y1*y3**2*y4*y6*y7**2 - y1*y3**2*y5*y7**3)
-dF(161) = (y2**3*y4**3*y6 + y2**3*y4*y5**2*y6 - y3**3*y4*y6**3 + y2**3*y4**2*y5*y7 + y2**3*y5**3*y7 - y3**3*y5*y6**2*y7 - y3**3*y4*y6*y7**2 - y3**3*y5*y7**3)
-dF(162) = (y1*y2*y3*y4**3*y6 + y1*y2*y3*y4*y5**2*y6 - y1*y2*y3*y4*y6**3 + y1*y2*y3*y4**2*y5*y7 + y1*y2*y3*y5**3*y7 - y1*y2*y3*y5*y6**2*y7 - y1*y2*y3*y4*y6*y7**2 - y1*y2*y3*y5*y7**3)
-dF(163) = (y2**2*y3*y4**3*y6 + y2**2*y3*y4*y5**2*y6 - y2*y3**2*y4*y6**3 + y2**2*y3*y4**2*y5*y7 + y2**2*y3*y5**3*y7 - y2*y3**2*y5*y6**2*y7 - y2*y3**2*y4*y6*y7**2 - y2*y3**2*y5*y7**3)
-dF(164) = (y1*y4**5*y6 + 2*y1*y4**3*y5**2*y6 + y1*y4*y5**4*y6 - y1*y4*y6**5 + y1*y4**4*y5*y7 + 2*y1*y4**2*y5**3*y7 + y1*y5**5*y7 - y1*y5*y6**4*y7 - 2*y1*y4*y6**3*y7**2 - 2*y1*y5*y6**2*y7**3 - y1*y4*y6*y7**4 - y1*y5*y7**5)
-dF(165) = (y2*y4**5*y6 + 2*y2*y4**3*y5**2*y6 + y2*y4*y5**4*y6 - y3*y4*y6**5 + y2*y4**4*y5*y7 + 2*y2*y4**2*y5**3*y7 + y2*y5**5*y7 - y3*y5*y6**4*y7 - 2*y3*y4*y6**3*y7**2 - 2*y3*y5*y6**2*y7**3 - y3*y4*y6*y7**4 - y3*y5*y7**5)
+dF(158) = (y1**3*y4**3*y6 + y1**3*y4*y5**2*y6 - y1**3*y4*y6**3 + y1**3*y4**2*y5*y7 + y1**3*y5**3*y7 - y1**3*y5*y6**2*y7 -&
+                   y1**3*y4*y6*y7**2 - y1**3*y5*y7**3)
+dF(159) = (y1**2*y2*y4**3*y6 + y1**2*y2*y4*y5**2*y6 - y1**2*y3*y4*y6**3 + y1**2*y2*y4**2*y5*y7 + y1**2*y2*y5**3*y7 -&
+                   y1**2*y3*y5*y6**2*y7 - y1**2*y3*y4*y6*y7**2 - y1**2*y3*y5*y7**3)
+dF(160) = (y1*y2**2*y4**3*y6 + y1*y2**2*y4*y5**2*y6 - y1*y3**2*y4*y6**3 + y1*y2**2*y4**2*y5*y7 + y1*y2**2*y5**3*y7 -&
+                   y1*y3**2*y5*y6**2*y7 - y1*y3**2*y4*y6*y7**2 - y1*y3**2*y5*y7**3)
+dF(161) = (y2**3*y4**3*y6 + y2**3*y4*y5**2*y6 - y3**3*y4*y6**3 + y2**3*y4**2*y5*y7 + y2**3*y5**3*y7 - y3**3*y5*y6**2*y7 -&
+                   y3**3*y4*y6*y7**2 - y3**3*y5*y7**3)
+dF(162) = (y1*y2*y3*y4**3*y6 + y1*y2*y3*y4*y5**2*y6 - y1*y2*y3*y4*y6**3 + y1*y2*y3*y4**2*y5*y7 + y1*y2*y3*y5**3*y7 -&
+                   y1*y2*y3*y5*y6**2*y7 - y1*y2*y3*y4*y6*y7**2 - y1*y2*y3*y5*y7**3)
+dF(163) = (y2**2*y3*y4**3*y6 + y2**2*y3*y4*y5**2*y6 - y2*y3**2*y4*y6**3 + y2**2*y3*y4**2*y5*y7 + y2**2*y3*y5**3*y7 -&
+                   y2*y3**2*y5*y6**2*y7 - y2*y3**2*y4*y6*y7**2 - y2*y3**2*y5*y7**3)
+dF(164) = (y1*y4**5*y6 + 2*y1*y4**3*y5**2*y6 + y1*y4*y5**4*y6 - y1*y4*y6**5 + y1*y4**4*y5*y7 + 2*y1*y4**2*y5**3*y7 +&
+                   y1*y5**5*y7 - y1*y5*y6**4*y7 - 2*y1*y4*y6**3*y7**2 - 2*y1*y5*y6**2*y7**3 - y1*y4*y6*y7**4 - y1*y5*y7**5)
+dF(165) = (y2*y4**5*y6 + 2*y2*y4**3*y5**2*y6 + y2*y4*y5**4*y6 - y3*y4*y6**5 + y2*y4**4*y5*y7 + 2*y2*y4**2*y5**3*y7 +&
+                   y2*y5**5*y7 - y3*y5*y6**4*y7 - 2*y3*y4*y6**3*y7**2 - 2*y3*y5*y6**2*y7**3 - y3*y4*y6*y7**4 - y3*y5*y7**5)
 dF(166) = (-(y1**4*y3*y4**2) - y1**4*y3*y5**2 + y1**4*y2*y6**2 + y1**4*y2*y7**2)
 dF(167) = (-(y1**3*y3**2*y4**2) - y1**3*y3**2*y5**2 + y1**3*y2**2*y6**2 + y1**3*y2**2*y7**2)
 dF(168) = (-(y1**2*y3**3*y4**2) - y1**2*y3**3*y5**2 + y1**2*y2**3*y6**2 + y1**2*y2**3*y7**2)
@@ -4613,32 +4794,61 @@ dF(171) = (-(y1**2*y2*y3**2*y4**2) - y1**2*y2*y3**2*y5**2 + y1**2*y2**2*y3*y6**2
 dF(172) = (-(y1*y2*y3**3*y4**2) - y1*y2*y3**3*y5**2 + y1*y2**3*y3*y6**2 + y1*y2**3*y3*y7**2)
 dF(173) = (-(y2*y3**4*y4**2) - y2*y3**4*y5**2 + y2**4*y3*y6**2 + y2**4*y3*y7**2)
 dF(174) = (-(y2**2*y3**3*y4**2) - y2**2*y3**3*y5**2 + y2**3*y3**2*y6**2 + y2**3*y3**2*y7**2)
-dF(175) = (y1**2*y2*y4**2*y6**2 - y1**2*y3*y4**2*y6**2 + 2*y1**2*y2*y4*y5*y6*y7 - 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y5**2*y7**2 - y1**2*y3*y5**2*y7**2)
-dF(176) = (y1*y2**2*y4**2*y6**2 - y1*y3**2*y4**2*y6**2 + 2*y1*y2**2*y4*y5*y6*y7 - 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y5**2*y7**2 - y1*y3**2*y5**2*y7**2)
-dF(177) = (y2**3*y4**2*y6**2 - y3**3*y4**2*y6**2 + 2*y2**3*y4*y5*y6*y7 - 2*y3**3*y4*y5*y6*y7 + y2**3*y5**2*y7**2 - y3**3*y5**2*y7**2)
-dF(178) = (y2**2*y3*y4**2*y6**2 - y2*y3**2*y4**2*y6**2 + 2*y2**2*y3*y4*y5*y6*y7 - 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y5**2*y7**2 - y2*y3**2*y5**2*y7**2)
-dF(179) = (y1*y4**4*y6**2 + y1*y4**2*y5**2*y6**2 - y1*y4**2*y6**4 + 2*y1*y4**3*y5*y6*y7 + 2*y1*y4*y5**3*y6*y7 - 2*y1*y4*y5*y6**3*y7 + y1*y4**2*y5**2*y7**2 + y1*y5**4*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 - 2*y1*y4*y5*y6*y7**3 - y1*y5**2*y7**4)
-dF(180) = (y2*y4**4*y6**2 + y2*y4**2*y5**2*y6**2 - y3*y4**2*y6**4 + 2*y2*y4**3*y5*y6*y7 + 2*y2*y4*y5**3*y6*y7 - 2*y3*y4*y5*y6**3*y7 + y2*y4**2*y5**2*y7**2 + y2*y5**4*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 - 2*y3*y4*y5*y6*y7**3 - y3*y5**2*y7**4)
-dF(181) = (-(y1**2*y3*y4**3*y6) - y1**2*y3*y4*y5**2*y6 + y1**2*y2*y4*y6**3 - y1**2*y3*y4**2*y5*y7 - y1**2*y3*y5**3*y7 + y1**2*y2*y5*y6**2*y7 + y1**2*y2*y4*y6*y7**2 + y1**2*y2*y5*y7**3)
-dF(182) = (-(y1*y3**2*y4**3*y6) - y1*y3**2*y4*y5**2*y6 + y1*y2**2*y4*y6**3 - y1*y3**2*y4**2*y5*y7 - y1*y3**2*y5**3*y7 + y1*y2**2*y5*y6**2*y7 + y1*y2**2*y4*y6*y7**2 + y1*y2**2*y5*y7**3)
-dF(183) = (-(y3**3*y4**3*y6) - y3**3*y4*y5**2*y6 + y2**3*y4*y6**3 - y3**3*y4**2*y5*y7 - y3**3*y5**3*y7 + y2**3*y5*y6**2*y7 + y2**3*y4*y6*y7**2 + y2**3*y5*y7**3)
-dF(184) = (-(y2*y3**2*y4**3*y6) - y2*y3**2*y4*y5**2*y6 + y2**2*y3*y4*y6**3 - y2*y3**2*y4**2*y5*y7 - y2*y3**2*y5**3*y7 + y2**2*y3*y5*y6**2*y7 + y2**2*y3*y4*y6*y7**2 + y2**2*y3*y5*y7**3)
-dF(185) = (y2*y4**3*y6**3 - y3*y4**3*y6**3 + 3*y2*y4**2*y5*y6**2*y7 - 3*y3*y4**2*y5*y6**2*y7 + 3*y2*y4*y5**2*y6*y7**2 - 3*y3*y4*y5**2*y6*y7**2 + y2*y5**3*y7**3 - y3*y5**3*y7**3)
+dF(175) = (y1**2*y2*y4**2*y6**2 - y1**2*y3*y4**2*y6**2 + 2*y1**2*y2*y4*y5*y6*y7 - 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y5**2*y7**2 -&
+                   y1**2*y3*y5**2*y7**2)
+dF(176) = (y1*y2**2*y4**2*y6**2 - y1*y3**2*y4**2*y6**2 + 2*y1*y2**2*y4*y5*y6*y7 - 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y5**2*y7**2 -&
+                   y1*y3**2*y5**2*y7**2)
+dF(177) = (y2**3*y4**2*y6**2 - y3**3*y4**2*y6**2 + 2*y2**3*y4*y5*y6*y7 - 2*y3**3*y4*y5*y6*y7+y2**3*y5**2*y7**2-y3**3*y5**2*y7**2)
+dF(178) = (y2**2*y3*y4**2*y6**2 - y2*y3**2*y4**2*y6**2 + 2*y2**2*y3*y4*y5*y6*y7 - 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y5**2*y7**2 -&
+                   y2*y3**2*y5**2*y7**2)
+dF(179) = (y1*y4**4*y6**2 + y1*y4**2*y5**2*y6**2 - y1*y4**2*y6**4 + 2*y1*y4**3*y5*y6*y7 + 2*y1*y4*y5**3*y6*y7 - &
+          2*y1*y4*y5*y6**3*y7 +&
+          y1*y4**2*y5**2*y7**2 + y1*y5**4*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 - 2*y1*y4*y5*y6*y7**3 -&
+          y1*y5**2*y7**4)
+dF(180) = (y2*y4**4*y6**2 + y2*y4**2*y5**2*y6**2 - y3*y4**2*y6**4 + 2*y2*y4**3*y5*y6*y7 + 2*y2*y4*y5**3*y6*y7 -&
+                   2*y3*y4*y5*y6**3*y7 +&
+                   y2*y4**2*y5**2*y7**2 + y2*y5**4*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 - 2*y3*y4*y5*y6*y7**3 -&
+                   y3*y5**2*y7**4)
+dF(181) = (-(y1**2*y3*y4**3*y6) - y1**2*y3*y4*y5**2*y6 + y1**2*y2*y4*y6**3 - y1**2*y3*y4**2*y5*y7 - y1**2*y3*y5**3*y7 +&
+                   y1**2*y2*y5*y6**2*y7 + y1**2*y2*y4*y6*y7**2 + y1**2*y2*y5*y7**3)
+dF(182) = (-(y1*y3**2*y4**3*y6) - y1*y3**2*y4*y5**2*y6 + y1*y2**2*y4*y6**3 - y1*y3**2*y4**2*y5*y7 - y1*y3**2*y5**3*y7 +&
+                   y1*y2**2*y5*y6**2*y7 + y1*y2**2*y4*y6*y7**2 + y1*y2**2*y5*y7**3)
+dF(183) = (-(y3**3*y4**3*y6) - y3**3*y4*y5**2*y6 + y2**3*y4*y6**3 - y3**3*y4**2*y5*y7 - y3**3*y5**3*y7 + y2**3*y5*y6**2*y7 +&
+                   y2**3*y4*y6*y7**2 + y2**3*y5*y7**3)
+dF(184) = (-(y2*y3**2*y4**3*y6) - y2*y3**2*y4*y5**2*y6 + y2**2*y3*y4*y6**3 - y2*y3**2*y4**2*y5*y7 - y2*y3**2*y5**3*y7 +&
+                   y2**2*y3*y5*y6**2*y7 + y2**2*y3*y4*y6*y7**2 + y2**2*y3*y5*y7**3)
+dF(185) = (y2*y4**3*y6**3 - y3*y4**3*y6**3 + 3*y2*y4**2*y5*y6**2*y7 - 3*y3*y4**2*y5*y6**2*y7 + 3*y2*y4*y5**2*y6*y7**2 -&
+                   3*y3*y4*y5**2*y6*y7**2 + y2*y5**3*y7**3 - y3*y5**3*y7**3)
 dF(186) = (-(y1**2*y3*y4**4) - 2*y1**2*y3*y4**2*y5**2 - y1**2*y3*y5**4 + y1**2*y2*y6**4 + 2*y1**2*y2*y6**2*y7**2 + y1**2*y2*y7**4)
 dF(187) = (-(y1*y3**2*y4**4) - 2*y1*y3**2*y4**2*y5**2 - y1*y3**2*y5**4 + y1*y2**2*y6**4 + 2*y1*y2**2*y6**2*y7**2 + y1*y2**2*y7**4)
 dF(188) = (-(y3**3*y4**4) - 2*y3**3*y4**2*y5**2 - y3**3*y5**4 + y2**3*y6**4 + 2*y2**3*y6**2*y7**2 + y2**3*y7**4)
 dF(189) = (-(y2*y3**2*y4**4) - 2*y2*y3**2*y4**2*y5**2 - y2*y3**2*y5**4 + y2**2*y3*y6**4 + 2*y2**2*y3*y6**2*y7**2 + y2**2*y3*y7**4)
-dF(190) = (-(y3*y4**4*y6**2) + y3*y5**4*y6**2 + y2*y4**2*y6**4 - y2*y5**2*y6**4 - 4*y3*y4**3*y5*y6*y7 - 4*y3*y4*y5**3*y6*y7 + 4*y2*y4*y5*y6**3*y7 + y3*y4**4*y7**2 - y3*y5**4*y7**2 + 4*y2*y4*y5*y6*y7**3 - y2*y4**2*y7**4 + y2*y5**2*y7**4)
-dF(191) = (-(y3*y4**5*y6) - 2*y3*y4**3*y5**2*y6 - y3*y4*y5**4*y6 + y2*y4*y6**5 - y3*y4**4*y5*y7 - 2*y3*y4**2*y5**3*y7 - y3*y5**5*y7 + y2*y5*y6**4*y7 + 2*y2*y4*y6**3*y7**2 + 2*y2*y5*y6**2*y7**3 + y2*y4*y6*y7**4 + y2*y5*y7**5)
-dF(192) = (-(y3*y4**6) - 3*y3*y4**4*y5**2 - 3*y3*y4**2*y5**4 - y3*y5**6 + y2*y6**6 + 3*y2*y6**4*y7**2 + 3*y2*y6**2*y7**4 + y2*y7**6)
-dF(193) = (y1**2*y2*y5**2*y6**2 - y1**2*y3*y5**2*y6**2 - 2*y1**2*y2*y4*y5*y6*y7 + 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y4**2*y7**2 - y1**2*y3*y4**2*y7**2)
-dF(194) = (y1*y2**2*y5**2*y6**2 - y1*y3**2*y5**2*y6**2 - 2*y1*y2**2*y4*y5*y6*y7 + 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y4**2*y7**2 - y1*y3**2*y4**2*y7**2)
-dF(195) = (y2**3*y5**2*y6**2 - y3**3*y5**2*y6**2 - 2*y2**3*y4*y5*y6*y7 + 2*y3**3*y4*y5*y6*y7 + y2**3*y4**2*y7**2 - y3**3*y4**2*y7**2)
-dF(196) = (y2**2*y3*y5**2*y6**2 - y2*y3**2*y5**2*y6**2 - 2*y2**2*y3*y4*y5*y6*y7 + 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y4**2*y7**2 - y2*y3**2*y4**2*y7**2)
-dF(197) = (y1*y4**2*y5**2*y6**2 + y1*y5**4*y6**2 - y1*y5**2*y6**4 - 2*y1*y4**3*y5*y6*y7 - 2*y1*y4*y5**3*y6*y7 + 2*y1*y4*y5*y6**3*y7 + y1*y4**4*y7**2 + y1*y4**2*y5**2*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 + 2*y1*y4*y5*y6*y7**3 - y1*y4**2*y7**4)
-dF(198) = (y2*y4**2*y5**2*y6**2 + y2*y5**4*y6**2 - y3*y5**2*y6**4 - 2*y2*y4**3*y5*y6*y7 - 2*y2*y4*y5**3*y6*y7 + 2*y3*y4*y5*y6**3*y7 + y2*y4**4*y7**2 + y2*y4**2*y5**2*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 + 2*y3*y4*y5*y6*y7**3 - y3*y4**2*y7**4)
-dF(199) = (y2*y4*y5**2*y6**3 - y3*y4*y5**2*y6**3 - 2*y2*y4**2*y5*y6**2*y7 + 2*y3*y4**2*y5*y6**2*y7 + y2*y5**3*y6**2*y7 - y3*y5**3*y6**2*y7 + y2*y4**3*y6*y7**2 - y3*y4**3*y6*y7**2 - 2*y2*y4*y5**2*y6*y7**2 + 2*y3*y4*y5**2*y6*y7**2 + y2*y4**2*y5*y7**3 - y3*y4**2*y5*y7**3)
-dF(200) = (-(y3*y4**2*y5**2*y6**2) - y3*y5**4*y6**2 + y2*y5**2*y6**4 + 2*y3*y4**3*y5*y6*y7 + 2*y3*y4*y5**3*y6*y7 - 2*y2*y4*y5*y6**3*y7 - y3*y4**4*y7**2 - y3*y4**2*y5**2*y7**2 + y2*y4**2*y6**2*y7**2 + y2*y5**2*y6**2*y7**2 - 2*y2*y4*y5*y6*y7**3 + y2*y4**2*y7**4)
+dF(190) = (-(y3*y4**4*y6**2) + y3*y5**4*y6**2 + y2*y4**2*y6**4 - y2*y5**2*y6**4 - 4*y3*y4**3*y5*y6*y7 - 4*y3*y4*y5**3*y6*y7 +&
+                   4*y2*y4*y5*y6**3*y7 + y3*y4**4*y7**2 - y3*y5**4*y7**2 + 4*y2*y4*y5*y6*y7**3 - y2*y4**2*y7**4 + y2*y5**2*y7**4)
+dF(191) = (-(y3*y4**5*y6) - 2*y3*y4**3*y5**2*y6 - y3*y4*y5**4*y6 + y2*y4*y6**5 - y3*y4**4*y5*y7 - 2*y3*y4**2*y5**3*y7 - &
+             y3*y5**5*y7 +&
+                   y2*y5*y6**4*y7 + 2*y2*y4*y6**3*y7**2 + 2*y2*y5*y6**2*y7**3 + y2*y4*y6*y7**4 + y2*y5*y7**5)
+dF(192) = (-(y3*y4**6) - 3*y3*y4**4*y5**2 - 3*y3*y4**2*y5**4 - y3*y5**6 + y2*y6**6 + 3*y2*y6**4*y7**2 +3*y2*y6**2*y7**4+y2*y7**6)
+dF(193) = (y1**2*y2*y5**2*y6**2 - y1**2*y3*y5**2*y6**2 - 2*y1**2*y2*y4*y5*y6*y7 + 2*y1**2*y3*y4*y5*y6*y7 + y1**2*y2*y4**2*y7**2 -&
+                   y1**2*y3*y4**2*y7**2)
+dF(194) = (y1*y2**2*y5**2*y6**2 - y1*y3**2*y5**2*y6**2 - 2*y1*y2**2*y4*y5*y6*y7 + 2*y1*y3**2*y4*y5*y6*y7 + y1*y2**2*y4**2*y7**2 -&
+                   y1*y3**2*y4**2*y7**2)
+dF(195) = (y2**3*y5**2*y6**2 - y3**3*y5**2*y6**2 - 2*y2**3*y4*y5*y6*y7+2*y3**3*y4*y5*y6*y7+y2**3*y4**2*y7**2-y3**3*y4**2*y7**2)
+dF(196) = (y2**2*y3*y5**2*y6**2 - y2*y3**2*y5**2*y6**2 - 2*y2**2*y3*y4*y5*y6*y7 + 2*y2*y3**2*y4*y5*y6*y7 + y2**2*y3*y4**2*y7**2 -&
+                   y2*y3**2*y4**2*y7**2)
+dF(197) = (y1*y4**2*y5**2*y6**2 + y1*y5**4*y6**2 - y1*y5**2*y6**4 - 2*y1*y4**3*y5*y6*y7 - 2*y1*y4*y5**3*y6*y7 + &
+           2*y1*y4*y5*y6**3*y7 +&
+                   y1*y4**4*y7**2 + y1*y4**2*y5**2*y7**2 - y1*y4**2*y6**2*y7**2 - y1*y5**2*y6**2*y7**2 + 2*y1*y4*y5*y6*y7**3 -&
+                   y1*y4**2*y7**4)
+dF(198) = (y2*y4**2*y5**2*y6**2+y2*y5**4*y6**2-y3*y5**2*y6**4-2*y2*y4**3*y5*y6*y7-2*y2*y4*y5**3*y6*y7 + 2*y3*y4*y5*y6**3*y7 +&
+                   y2*y4**4*y7**2 + y2*y4**2*y5**2*y7**2 - y3*y4**2*y6**2*y7**2 - y3*y5**2*y6**2*y7**2 + 2*y3*y4*y5*y6*y7**3 -&
+                   y3*y4**2*y7**4)
+dF(199) = (y2*y4*y5**2*y6**3 - y3*y4*y5**2*y6**3 - 2*y2*y4**2*y5*y6**2*y7 + 2*y3*y4**2*y5*y6**2*y7 + y2*y5**3*y6**2*y7 -&
+                   y3*y5**3*y6**2*y7 + y2*y4**3*y6*y7**2 - y3*y4**3*y6*y7**2 - 2*y2*y4*y5**2*y6*y7**2 + 2*y3*y4*y5**2*y6*y7**2 +&
+                   y2*y4**2*y5*y7**3 - y3*y4**2*y5*y7**3)
+dF(200) = (-(y3*y4**2*y5**2*y6**2) - y3*y5**4*y6**2 + y2*y5**2*y6**4 + 2*y3*y4**3*y5*y6*y7 + 2*y3*y4*y5**3*y6*y7 -&
+                   2*y2*y4*y5*y6**3*y7 - y3*y4**4*y7**2 - y3*y4**2*y5**2*y7**2 + y2*y4**2*y6**2*y7**2 + y2*y5**2*y6**2*y7**2 - &
+                  2*y2*y4*y5*y6*y7**3 + y2*y4**2*y7**4)
 
 end subroutine dmsC2H2_D8h_diff_muz_7th
 
@@ -4719,7 +4929,7 @@ dF( 64)  = (-(y4**4*y6) + y5**4*y6 - y4*y6**4 - 2*y4**3*y5*y7 - 2*y4*y5**3*y7 - 
 dF( 65)  = (y4**4*y6 + y4**2*y5**2*y6 + y4*y6**4 + y4**3*y5*y7 + y4*y5**3*y7 + y5*y6**3*y7 + y4*y6**2*y7**2 + y5*y6*y7**3)
 dF( 66)  = (y1*y3*y4**2*y6 + y1*y2*y4*y6**2 + y1*y3*y4*y5*y7 + y1*y2*y5*y6*y7)
 dF( 67)  = (y3**2*y4**2*y6 + y2**2*y4*y6**2 + y3**2*y4*y5*y7 + y2**2*y5*y6*y7)
-dF( 68)  = (y4**3*y6**2 + y4**2*y6**3 - y5**2*y6**3 + 3*y4**2*y5*y6*y7 + y5**3*y6*y7 + 3*y4*y5*y6**2*y7 - y4**3*y7**2 + y4*y5*y7**3)
+dF( 68)  = (y4**3*y6**2 + y4**2*y6**3 - y5**2*y6**3 + 3*y4**2*y5*y6*y7 + y5**3*y6*y7 + 3*y4*y5*y6**2*y7-y4**3*y7**2+y4*y5*y7**3)
 dF( 69)  = (y1*y3*y4**3 + y1*y3*y4*y5**2 + y1*y2*y6**3 + y1*y2*y6*y7**2)
 dF( 70)  = (y3**2*y4**3 + y3**2*y4*y5**2 + y2**2*y6**3 + y2**2*y6*y7**2)
 dF( 71)  = (y4*y5**2*y6**2 + y5**2*y6**3 - 2*y4**2*y5*y6*y7 - 2*y4*y5*y6**2*y7 + y4**3*y7**2 + y4**2*y6*y7**2)
@@ -4755,8 +4965,10 @@ dF(100)  = (y3**3*y4**2*y6 + y3**3*y5**2*y6 + y2**3*y4*y6**2 + y2**3*y4*y7**2)
 dF(101)  = (y2*y3**2*y4**2*y6 + y2*y3**2*y5**2*y6 + y2**2*y3*y4*y6**2 + y2**2*y3*y4*y7**2)
 dF(102)  = (y1*y4**3*y6**2 + y1*y4**2*y6**3 + 2*y1*y4**2*y5*y6*y7 + 2*y1*y4*y5*y6**2*y7 + y1*y4*y5**2*y7**2 + y1*y5**2*y6*y7**2)
 dF(103)  = (y2*y4**3*y6**2 + y3*y4**2*y6**3 + 2*y2*y4**2*y5*y6*y7 + 2*y3*y4*y5*y6**2*y7 + y2*y4*y5**2*y7**2 + y3*y5**2*y6*y7**2)
-dF(104)  = (y3*y4**3*y6**2 + y3*y4*y5**2*y6**2 + y2*y4**2*y6**3 + y3*y4**2*y5*y6*y7 + y3*y5**3*y6*y7 + y2*y4*y5*y6**2*y7 + y2*y4**2*y6*y7**2 + y2*y4*y5*y7**3)
-dF(105)  = (-(y3*y4**4*y6) + y3*y5**4*y6 - y2*y4*y6**4 - 2*y3*y4**3*y5*y7 - 2*y3*y4*y5**3*y7 - 2*y2*y5*y6**3*y7 - 2*y2*y5*y6*y7**3 + y2*y4*y7**4)
+dF(104)  = (y3*y4**3*y6**2 + y3*y4*y5**2*y6**2 + y2*y4**2*y6**3 + y3*y4**2*y5*y6*y7 + y3*y5**3*y6*y7 + y2*y4*y5*y6**2*y7 +&
+                   y2*y4**2*y6*y7**2 + y2*y4*y5*y7**3)
+dF(105)  = (-(y3*y4**4*y6) + y3*y5**4*y6 - y2*y4*y6**4 - 2*y3*y4**3*y5*y7 - 2*y3*y4*y5**3*y7 - 2*y2*y5*y6**3*y7 -&
+                   2*y2*y5*y6*y7**3 + y2*y4*y7**4)
 dF(106)  = (y1**4*y3*y4 + y1**4*y2*y6)
 dF(107)  = (y1**3*y3**2*y4 + y1**3*y2**2*y6)
 dF(108)  = (y1**2*y3**3*y4 + y1**2*y2**3*y6)
@@ -4772,16 +4984,22 @@ dF(117)  = (y1*y2**2*y4**2*y6 + y1*y2**2*y5**2*y6 + y1*y3**2*y4*y6**2 + y1*y3**2
 dF(118)  = (y2**3*y4**2*y6 + y2**3*y5**2*y6 + y3**3*y4*y6**2 + y3**3*y4*y7**2)
 dF(119)  = (y1*y2*y3*y4**2*y6 + y1*y2*y3*y5**2*y6 + y1*y2*y3*y4*y6**2 + y1*y2*y3*y4*y7**2)
 dF(120)  = (y2**2*y3*y4**2*y6 + y2**2*y3*y5**2*y6 + y2*y3**2*y4*y6**2 + y2*y3**2*y4*y7**2)
-dF(121)  = (-(y1*y4**4*y6) + y1*y5**4*y6 - y1*y4*y6**4 - 2*y1*y4**3*y5*y7 - 2*y1*y4*y5**3*y7 - 2*y1*y5*y6**3*y7 - 2*y1*y5*y6*y7**3 + y1*y4*y7**4)
-dF(122)  = (-(y2*y4**4*y6) + y2*y5**4*y6 - y3*y4*y6**4 - 2*y2*y4**3*y5*y7 - 2*y2*y4*y5**3*y7 - 2*y3*y5*y6**3*y7 - 2*y3*y5*y6*y7**3 + y3*y4*y7**4)
-dF(123)  = (y1*y4**4*y6 + y1*y4**2*y5**2*y6 + y1*y4*y6**4 + y1*y4**3*y5*y7 + y1*y4*y5**3*y7 + y1*y5*y6**3*y7 + y1*y4*y6**2*y7**2 + y1*y5*y6*y7**3)
-dF(124)  = (y2*y4**4*y6 + y2*y4**2*y5**2*y6 + y3*y4*y6**4 + y2*y4**3*y5*y7 + y2*y4*y5**3*y7 + y3*y5*y6**3*y7 + y3*y4*y6**2*y7**2 + y3*y5*y6*y7**3)
+dF(121)  = (-(y1*y4**4*y6) + y1*y5**4*y6 - y1*y4*y6**4 - 2*y1*y4**3*y5*y7 - 2*y1*y4*y5**3*y7-2*y1*y5*y6**3*y7-2*y1*y5*y6*y7**3 +&
+                   y1*y4*y7**4)
+dF(122)  = (-(y2*y4**4*y6) + y2*y5**4*y6 - y3*y4*y6**4 - 2*y2*y4**3*y5*y7 - 2*y2*y4*y5**3*y7-2*y3*y5*y6**3*y7-2*y3*y5*y6*y7**3+&
+                   y3*y4*y7**4)
+dF(123)  = (y1*y4**4*y6 + y1*y4**2*y5**2*y6 + y1*y4*y6**4 + y1*y4**3*y5*y7 + y1*y4*y5**3*y7 + y1*y5*y6**3*y7 + y1*y4*y6**2*y7**2 +&
+                   y1*y5*y6*y7**3)
+dF(124)  = (y2*y4**4*y6 + y2*y4**2*y5**2*y6 + y3*y4*y6**4 + y2*y4**3*y5*y7 + y2*y4*y5**3*y7 + y3*y5*y6**3*y7 + y3*y4*y6**2*y7**2 +&
+                   y3*y5*y6*y7**3)
 dF(125)  = (y1**2*y3*y4**2*y6 + y1**2*y2*y4*y6**2 + y1**2*y3*y4*y5*y7 + y1**2*y2*y5*y6*y7)
 dF(126)  = (y1*y3**2*y4**2*y6 + y1*y2**2*y4*y6**2 + y1*y3**2*y4*y5*y7 + y1*y2**2*y5*y6*y7)
 dF(127)  = (y3**3*y4**2*y6 + y2**3*y4*y6**2 + y3**3*y4*y5*y7 + y2**3*y5*y6*y7)
 dF(128)  = (y2*y3**2*y4**2*y6 + y2**2*y3*y4*y6**2 + y2*y3**2*y4*y5*y7 + y2**2*y3*y5*y6*y7)
-dF(129)  = (y1*y4**3*y6**2 + y1*y4**2*y6**3 - y1*y5**2*y6**3 + 3*y1*y4**2*y5*y6*y7 + y1*y5**3*y6*y7 + 3*y1*y4*y5*y6**2*y7 - y1*y4**3*y7**2 + y1*y4*y5*y7**3)
-dF(130)  = (y2*y4**3*y6**2 + y3*y4**2*y6**3 - y3*y5**2*y6**3 + 3*y2*y4**2*y5*y6*y7 + y2*y5**3*y6*y7 + 3*y3*y4*y5*y6**2*y7 - y2*y4**3*y7**2 + y3*y4*y5*y7**3)
+dF(129)  = (y1*y4**3*y6**2 + y1*y4**2*y6**3 - y1*y5**2*y6**3 + 3*y1*y4**2*y5*y6*y7 + y1*y5**3*y6*y7 + 3*y1*y4*y5*y6**2*y7 - &
+                  y1*y4**3*y7**2 + y1*y4*y5*y7**3)
+dF(130)  = (y2*y4**3*y6**2 + y3*y4**2*y6**3 - y3*y5**2*y6**3 + 3*y2*y4**2*y5*y6*y7 + y2*y5**3*y6*y7 + 3*y3*y4*y5*y6**2*y7 - &
+                  y2*y4**3*y7**2 + y3*y4*y5*y7**3)
 dF(131)  = (y1**2*y3*y4**3 + y1**2*y3*y4*y5**2 + y1**2*y2*y6**3 + y1**2*y2*y6*y7**2)
 dF(132)  = (y1*y3**2*y4**3 + y1*y3**2*y4*y5**2 + y1*y2**2*y6**3 + y1*y2**2*y6*y7**2)
 dF(133)  = (y3**3*y4**3 + y3**3*y4*y5**2 + y2**3*y6**3 + y2**3*y6*y7**2)
@@ -4790,7 +5008,8 @@ dF(135)  = (y3*y4**3*y6**2 + y2*y4**2*y6**3 + 2*y3*y4**2*y5*y6*y7 + 2*y2*y4*y5*y
 dF(136)  = (y3*y4**5 + 2*y3*y4**3*y5**2 + y3*y4*y5**4 + y2*y6**5 + 2*y2*y6**3*y7**2 + y2*y6*y7**4)
 dF(137)  = (y1*y4*y5**2*y6**2 + y1*y5**2*y6**3 - 2*y1*y4**2*y5*y6*y7 - 2*y1*y4*y5*y6**2*y7 + y1*y4**3*y7**2 + y1*y4**2*y6*y7**2)
 dF(138)  = (y2*y4*y5**2*y6**2 + y3*y5**2*y6**3 - 2*y2*y4**2*y5*y6*y7 - 2*y3*y4*y5*y6**2*y7 + y2*y4**3*y7**2 + y3*y4**2*y6*y7**2)
-dF(139)  = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 + y2*y5*y6*y7**3)
+dF(139)  = (y3*y4**4*y6 + y3*y4**2*y5**2*y6 + y2*y4*y6**4 + y3*y4**3*y5*y7 + y3*y4*y5**3*y7 + y2*y5*y6**3*y7 + y2*y4*y6**2*y7**2 +&
+                   y2*y5*y6*y7**3)
 dF(140)  = (y3*y4*y5**2*y6**2 + y2*y5**2*y6**3 - 2*y3*y4**2*y5*y6*y7 - 2*y2*y4*y5*y6**2*y7 + y3*y4**3*y7**2 + y2*y4**2*y6*y7**2)
 
 end subroutine dmsC2H2_D8h_diff_mux_6th
@@ -4871,7 +5090,8 @@ dF( 64)  = (-2*y4**3*y5*y6 - 2*y4*y5**3*y6 + y5*y6**4 + y4**4*y7 - y5**4*y7 - 2*
 dF( 65)  = (y4**3*y5*y6 + y4*y5**3*y6 + y4**2*y5**2*y7 + y5**4*y7 + y4*y6**3*y7 + y5*y6**2*y7**2 + y4*y6*y7**3 + y5*y7**4)
 dF( 66)  = (y1*y3*y4*y5*y6 + y1*y3*y5**2*y7 + y1*y2*y4*y6*y7 + y1*y2*y5*y7**2)
 dF( 67)  = (y3**2*y4*y5*y6 + y3**2*y5**2*y7 + y2**2*y4*y6*y7 + y2**2*y5*y7**2)
-dF( 68)  = (-(y5**3*y6**2) + y4*y5*y6**3 + y4**3*y6*y7 + 3*y4*y5**2*y6*y7 + y5**3*y7**2 + 3*y4*y5*y6*y7**2 - y4**2*y7**3 + y5**2*y7**3)
+dF( 68)  = (-(y5**3*y6**2) + y4*y5*y6**3 + y4**3*y6*y7 + 3*y4*y5**2*y6*y7 + y5**3*y7**2 + 3*y4*y5*y6*y7**2 - y4**2*y7**3 +&
+                   y5**2*y7**3)
 dF( 69)  = (y1*y3*y4**2*y5 + y1*y3*y5**3 + y1*y2*y6**2*y7 + y1*y2*y7**3)
 dF( 70)  = (y3**2*y4**2*y5 + y3**2*y5**3 + y2**2*y6**2*y7 + y2**2*y7**3)
 dF( 71)  = (y5**3*y6**2 - 2*y4*y5**2*y6*y7 + y5**2*y6**2*y7 + y4**2*y5*y7**2 - 2*y4*y5*y6*y7**2 + y4**2*y7**3)
@@ -4907,8 +5127,10 @@ dF(100)  = (y2**3*y5*y6**2 + y3**3*y4**2*y7 + y3**3*y5**2*y7 + y2**3*y5*y7**2)
 dF(101)  = (y2**2*y3*y5*y6**2 + y2*y3**2*y4**2*y7 + y2*y3**2*y5**2*y7 + y2**2*y3*y5*y7**2)
 dF(102)  = (y1*y4**2*y5*y6**2 + 2*y1*y4*y5**2*y6*y7 + y1*y4**2*y6**2*y7 + y1*y5**3*y7**2 + 2*y1*y4*y5*y6*y7**2 + y1*y5**2*y7**3)
 dF(103)  = (y2*y4**2*y5*y6**2 + 2*y2*y4*y5**2*y6*y7 + y3*y4**2*y6**2*y7 + y2*y5**3*y7**2 + 2*y3*y4*y5*y6*y7**2 + y3*y5**2*y7**3)
-dF(104)  = (y2*y4*y5*y6**3 + y3*y4**3*y6*y7 + y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 + y3*y5**3*y7**2 + y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
-dF(105)  = (-2*y3*y4**3*y5*y6 - 2*y3*y4*y5**3*y6 + y2*y5*y6**4 + y3*y4**4*y7 - y3*y5**4*y7 - 2*y2*y4*y6**3*y7 - 2*y2*y4*y6*y7**3 - y2*y5*y7**4)
+dF(104)  = (y2*y4*y5*y6**3 + y3*y4**3*y6*y7 + y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 + y3*y5**3*y7**2 +&
+                   y2*y4*y5*y6*y7**2 + y2*y5**2*y7**3)
+dF(105)  = (-2*y3*y4**3*y5*y6 - 2*y3*y4*y5**3*y6 + y2*y5*y6**4 + y3*y4**4*y7 - y3*y5**4*y7 - 2*y2*y4*y6**3*y7 - 2*y2*y4*y6*y7**3 -&
+                   y2*y5*y7**4)
 dF(106)  = (y1**4*y3*y5 + y1**4*y2*y7)
 dF(107)  = (y1**3*y3**2*y5 + y1**3*y2**2*y7)
 dF(108)  = (y1**2*y3**3*y5 + y1**2*y2**3*y7)
@@ -4924,16 +5146,22 @@ dF(117)  = (y1*y3**2*y5*y6**2 + y1*y2**2*y4**2*y7 + y1*y2**2*y5**2*y7 + y1*y3**2
 dF(118)  = (y3**3*y5*y6**2 + y2**3*y4**2*y7 + y2**3*y5**2*y7 + y3**3*y5*y7**2)
 dF(119)  = (y1*y2*y3*y5*y6**2 + y1*y2*y3*y4**2*y7 + y1*y2*y3*y5**2*y7 + y1*y2*y3*y5*y7**2)
 dF(120)  = (y2*y3**2*y5*y6**2 + y2**2*y3*y4**2*y7 + y2**2*y3*y5**2*y7 + y2*y3**2*y5*y7**2)
-dF(121)  = (-2*y1*y4**3*y5*y6 - 2*y1*y4*y5**3*y6 + y1*y5*y6**4 + y1*y4**4*y7 - y1*y5**4*y7 - 2*y1*y4*y6**3*y7 - 2*y1*y4*y6*y7**3 - y1*y5*y7**4)
-dF(122)  = (-2*y2*y4**3*y5*y6 - 2*y2*y4*y5**3*y6 + y3*y5*y6**4 + y2*y4**4*y7 - y2*y5**4*y7 - 2*y3*y4*y6**3*y7 - 2*y3*y4*y6*y7**3 - y3*y5*y7**4)
-dF(123)  = (y1*y4**3*y5*y6 + y1*y4*y5**3*y6 + y1*y4**2*y5**2*y7 + y1*y5**4*y7 + y1*y4*y6**3*y7 + y1*y5*y6**2*y7**2 + y1*y4*y6*y7**3 + y1*y5*y7**4)
-dF(124)  = (y2*y4**3*y5*y6 + y2*y4*y5**3*y6 + y2*y4**2*y5**2*y7 + y2*y5**4*y7 + y3*y4*y6**3*y7 + y3*y5*y6**2*y7**2 + y3*y4*y6*y7**3 + y3*y5*y7**4)
+dF(121)  = (-2*y1*y4**3*y5*y6 - 2*y1*y4*y5**3*y6 + y1*y5*y6**4 + y1*y4**4*y7 - y1*y5**4*y7 - 2*y1*y4*y6**3*y7 - 2*y1*y4*y6*y7**3 -&
+                   y1*y5*y7**4)
+dF(122)  = (-2*y2*y4**3*y5*y6 - 2*y2*y4*y5**3*y6 + y3*y5*y6**4 + y2*y4**4*y7 - y2*y5**4*y7 - 2*y3*y4*y6**3*y7 - 2*y3*y4*y6*y7**3 -&
+                   y3*y5*y7**4)
+dF(123)  = (y1*y4**3*y5*y6 + y1*y4*y5**3*y6 + y1*y4**2*y5**2*y7 + y1*y5**4*y7+y1*y4*y6**3*y7+y1*y5*y6**2*y7**2 + y1*y4*y6*y7**3 +&
+                   y1*y5*y7**4)
+dF(124)  = (y2*y4**3*y5*y6 + y2*y4*y5**3*y6 + y2*y4**2*y5**2*y7 + y2*y5**4*y7 + y3*y4*y6**3*y7+y3*y5*y6**2*y7**2+y3*y4*y6*y7**3 +&
+                   y3*y5*y7**4)
 dF(125)  = (y1**2*y3*y4*y5*y6 + y1**2*y3*y5**2*y7 + y1**2*y2*y4*y6*y7 + y1**2*y2*y5*y7**2)
 dF(126)  = (y1*y3**2*y4*y5*y6 + y1*y3**2*y5**2*y7 + y1*y2**2*y4*y6*y7 + y1*y2**2*y5*y7**2)
 dF(127)  = (y3**3*y4*y5*y6 + y3**3*y5**2*y7 + y2**3*y4*y6*y7 + y2**3*y5*y7**2)
 dF(128)  = (y2*y3**2*y4*y5*y6 + y2*y3**2*y5**2*y7 + y2**2*y3*y4*y6*y7 + y2**2*y3*y5*y7**2)
-dF(129)  = (-(y1*y5**3*y6**2) + y1*y4*y5*y6**3 + y1*y4**3*y6*y7 + 3*y1*y4*y5**2*y6*y7 + y1*y5**3*y7**2 + 3*y1*y4*y5*y6*y7**2 - y1*y4**2*y7**3 + y1*y5**2*y7**3)
-dF(130)  = (-(y2*y5**3*y6**2) + y3*y4*y5*y6**3 + y2*y4**3*y6*y7 + 3*y2*y4*y5**2*y6*y7 + y2*y5**3*y7**2 + 3*y3*y4*y5*y6*y7**2 - y3*y4**2*y7**3 + y3*y5**2*y7**3)
+dF(129)  = (-(y1*y5**3*y6**2) + y1*y4*y5*y6**3 + y1*y4**3*y6*y7 + 3*y1*y4*y5**2*y6*y7 + y1*y5**3*y7**2 + 3*y1*y4*y5*y6*y7**2 -&
+                   y1*y4**2*y7**3 + y1*y5**2*y7**3)
+dF(130)  = (-(y2*y5**3*y6**2) + y3*y4*y5*y6**3 + y2*y4**3*y6*y7 + 3*y2*y4*y5**2*y6*y7 + y2*y5**3*y7**2 + 3*y3*y4*y5*y6*y7**2 -&
+                   y3*y4**2*y7**3 + y3*y5**2*y7**3)
 dF(131)  = (y1**2*y3*y4**2*y5 + y1**2*y3*y5**3 + y1**2*y2*y6**2*y7 + y1**2*y2*y7**3)
 dF(132)  = (y1*y3**2*y4**2*y5 + y1*y3**2*y5**3 + y1*y2**2*y6**2*y7 + y1*y2**2*y7**3)
 dF(133)  = (y3**3*y4**2*y5 + y3**3*y5**3 + y2**3*y6**2*y7 + y2**3*y7**3)
@@ -4942,7 +5170,8 @@ dF(135)  = (y3*y4**2*y5*y6**2 + 2*y3*y4*y5**2*y6*y7 + y2*y4**2*y6**2*y7 + y3*y5*
 dF(136)  = (y3*y4**4*y5 + 2*y3*y4**2*y5**3 + y3*y5**5 + y2*y6**4*y7 + 2*y2*y6**2*y7**3 + y2*y7**5)
 dF(137)  = (y1*y5**3*y6**2 - 2*y1*y4*y5**2*y6*y7 + y1*y5**2*y6**2*y7 + y1*y4**2*y5*y7**2 - 2*y1*y4*y5*y6*y7**2 + y1*y4**2*y7**3)
 dF(138)  = (y2*y5**3*y6**2 - 2*y2*y4*y5**2*y6*y7 + y3*y5**2*y6**2*y7 + y2*y4**2*y5*y7**2 - 2*y3*y4*y5*y6*y7**2 + y3*y4**2*y7**3)
-dF(139)  = (y3*y4**3*y5*y6 + y3*y4*y5**3*y6 + y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + y2*y4*y6*y7**3 + y2*y5*y7**4)
+dF(139)  = (y3*y4**3*y5*y6 + y3*y4*y5**3*y6 + y3*y4**2*y5**2*y7 + y3*y5**4*y7 + y2*y4*y6**3*y7 + y2*y5*y6**2*y7**2 + &
+            y2*y4*y6*y7**3 +y2*y5*y7**4)
 dF(140)  = (y3*y5**3*y6**2 - 2*y3*y4*y5**2*y6*y7 + y2*y5**2*y6**2*y7 + y3*y4**2*y5*y7**2 - 2*y2*y4*y5*y6*y7**2 + y2*y4**2*y7**3)
 
 end subroutine dmsC2H2_D8h_diff_muy_6th
@@ -5004,14 +5233,15 @@ dF( 46)  =(y1**2*y2*y4*y6 - y1**2*y3*y4*y6 + y1**2*y2*y5*y7 - y1**2*y3*y5*y7)
 dF( 47)  =(y1*y2**2*y4*y6 - y1*y3**2*y4*y6 + y1*y2**2*y5*y7 - y1*y3**2*y5*y7)
 dF( 48)  =(y2**3*y4*y6 - y3**3*y4*y6 + y2**3*y5*y7 - y3**3*y5*y7)
 dF( 49)  =(y2**2*y3*y4*y6 - y2*y3**2*y4*y6 + y2**2*y3*y5*y7 - y2*y3**2*y5*y7)
-dF( 50)  =(y1*y4**3*y6 + y1*y4*y5**2*y6 - y1*y4*y6**3 + y1*y4**2*y5*y7 + y1*y5**3*y7 - y1*y5*y6**2*y7 - y1*y4*y6*y7**2 - y1*y5*y7**3)
-dF( 51)  =(y2*y4**3*y6 + y2*y4*y5**2*y6 - y3*y4*y6**3 + y2*y4**2*y5*y7 + y2*y5**3*y7 - y3*y5*y6**2*y7 - y3*y4*y6*y7**2 - y3*y5*y7**3)
+dF( 50)  =(y1*y4**3*y6 + y1*y4*y5**2*y6 - y1*y4*y6**3 + y1*y4**2*y5*y7 + y1*y5**3*y7 - y1*y5*y6**2*y7-y1*y4*y6*y7**2-y1*y5*y7**3)
+dF( 51)  =(y2*y4**3*y6 + y2*y4*y5**2*y6 - y3*y4*y6**3 + y2*y4**2*y5*y7 + y2*y5**3*y7 - y3*y5*y6**2*y7-y3*y4*y6*y7**2-y3*y5*y7**3)
 dF( 52)  =(-(y1**2*y3*y4**2) - y1**2*y3*y5**2 + y1**2*y2*y6**2 + y1**2*y2*y7**2)
 dF( 53)  =(-(y1*y3**2*y4**2) - y1*y3**2*y5**2 + y1*y2**2*y6**2 + y1*y2**2*y7**2)
 dF( 54)  =(-(y3**3*y4**2) - y3**3*y5**2 + y2**3*y6**2 + y2**3*y7**2)
 dF( 55)  =(-(y2*y3**2*y4**2) - y2*y3**2*y5**2 + y2**2*y3*y6**2 + y2**2*y3*y7**2)
 dF( 56)  =(y2*y4**2*y6**2 - y3*y4**2*y6**2 + 2*y2*y4*y5*y6*y7 - 2*y3*y4*y5*y6*y7 + y2*y5**2*y7**2 - y3*y5**2*y7**2)
-dF( 57)  =(-(y3*y4**3*y6) - y3*y4*y5**2*y6 + y2*y4*y6**3 - y3*y4**2*y5*y7 - y3*y5**3*y7 + y2*y5*y6**2*y7 + y2*y4*y6*y7**2 + y2*y5*y7**3)
+dF( 57)  =(-(y3*y4**3*y6) - y3*y4*y5**2*y6 + y2*y4*y6**3 - y3*y4**2*y5*y7 - y3*y5**3*y7 + y2*y5*y6**2*y7 + y2*y4*y6*y7**2 +&
+                   y2*y5*y7**3)
 dF( 58)  =(-(y3*y4**4) - 2*y3*y4**2*y5**2 - y3*y5**4 + y2*y6**4 + 2*y2*y6**2*y7**2 + y2*y7**4)
 dF( 59)  =(y2*y5**2*y6**2 - y3*y5**2*y6**2 - 2.0d0*y2*y4*y5*y6*y7 + 2.0d0*y3*y4*y5*y6*y7 + y2*y4**2*y7**2 - y3*y4**2*y7**2)
 dF( 60)  =(y1**5*y2 - y1**5*y3)
@@ -5046,27 +5276,38 @@ dF( 88)  =(y1*y2**3*y4*y6 - y1*y3**3*y4*y6 + y1*y2**3*y5*y7 - y1*y3**3*y5*y7)
 dF( 89)  =(y2**4*y4*y6 - y3**4*y4*y6 + y2**4*y5*y7 - y3**4*y5*y7)
 dF( 90)  =(y1*y2**2*y3*y4*y6 - y1*y2*y3**2*y4*y6 + y1*y2**2*y3*y5*y7 - y1*y2*y3**2*y5*y7)
 dF( 91)  =(y2**3*y3*y4*y6 - y2*y3**3*y4*y6 + y2**3*y3*y5*y7 - y2*y3**3*y5*y7)
-dF( 92)  =(y1**2*y4**3*y6 + y1**2*y4*y5**2*y6 - y1**2*y4*y6**3 + y1**2*y4**2*y5*y7 + y1**2*y5**3*y7 - y1**2*y5*y6**2*y7 - y1**2*y4*y6*y7**2 - y1**2*y5*y7**3)
-dF( 93)  =(y1*y2*y4**3*y6 + y1*y2*y4*y5**2*y6 - y1*y3*y4*y6**3 + y1*y2*y4**2*y5*y7 + y1*y2*y5**3*y7 - y1*y3*y5*y6**2*y7 - y1*y3*y4*y6*y7**2 - y1*y3*y5*y7**3)
-dF( 94)  =(y2**2*y4**3*y6 + y2**2*y4*y5**2*y6 - y3**2*y4*y6**3 + y2**2*y4**2*y5*y7 + y2**2*y5**3*y7 - y3**2*y5*y6**2*y7 - y3**2*y4*y6*y7**2 - y3**2*y5*y7**3)
-dF( 95)  =(y2*y3*y4**3*y6 + y2*y3*y4*y5**2*y6 - y2*y3*y4*y6**3 + y2*y3*y4**2*y5*y7 + y2*y3*y5**3*y7 - y2*y3*y5*y6**2*y7 - y2*y3*y4*y6*y7**2 - y2*y3*y5*y7**3)
-dF( 96)  =(y4**5*y6 + 2*y4**3*y5**2*y6 + y4*y5**4*y6 - y4*y6**5 + y4**4*y5*y7 + 2*y4**2*y5**3*y7 + y5**5*y7 - y5*y6**4*y7 - 2*y4*y6**3*y7**2 - 2*y5*y6**2*y7**3 - y4*y6*y7**4 - y5*y7**5)
+dF( 92)  =(y1**2*y4**3*y6 + y1**2*y4*y5**2*y6 - y1**2*y4*y6**3 + y1**2*y4**2*y5*y7 + y1**2*y5**3*y7 - y1**2*y5*y6**2*y7 -&
+                   y1**2*y4*y6*y7**2 - y1**2*y5*y7**3)
+dF( 93)  =(y1*y2*y4**3*y6 + y1*y2*y4*y5**2*y6 - y1*y3*y4*y6**3 + y1*y2*y4**2*y5*y7 + y1*y2*y5**3*y7 - y1*y3*y5*y6**2*y7 -&
+                   y1*y3*y4*y6*y7**2 - y1*y3*y5*y7**3)
+dF( 94)  =(y2**2*y4**3*y6 + y2**2*y4*y5**2*y6 - y3**2*y4*y6**3 + y2**2*y4**2*y5*y7 + y2**2*y5**3*y7 - y3**2*y5*y6**2*y7 -&
+                   y3**2*y4*y6*y7**2 - y3**2*y5*y7**3)
+dF( 95)  =(y2*y3*y4**3*y6 + y2*y3*y4*y5**2*y6 - y2*y3*y4*y6**3 + y2*y3*y4**2*y5*y7 + y2*y3*y5**3*y7 - y2*y3*y5*y6**2*y7 -&
+                   y2*y3*y4*y6*y7**2 - y2*y3*y5*y7**3)
+dF( 96)  =(y4**5*y6 + 2*y4**3*y5**2*y6 + y4*y5**4*y6 - y4*y6**5 + y4**4*y5*y7 + 2*y4**2*y5**3*y7 + y5**5*y7 - y5*y6**4*y7 -&
+                   2*y4*y6**3*y7**2 - 2*y5*y6**2*y7**3 - y4*y6*y7**4 - y5*y7**5)
 dF( 97)  =(-(y1**3*y3*y4**2) - y1**3*y3*y5**2 + y1**3*y2*y6**2 + y1**3*y2*y7**2)
 dF( 98)  =(-(y1**2*y3**2*y4**2) - y1**2*y3**2*y5**2 + y1**2*y2**2*y6**2 + y1**2*y2**2*y7**2)
 dF( 99)  =(-(y1*y3**3*y4**2) - y1*y3**3*y5**2 + y1*y2**3*y6**2 + y1*y2**3*y7**2)
 dF(100)  =(-(y3**4*y4**2) - y3**4*y5**2 + y2**4*y6**2 + y2**4*y7**2)
 dF(101)  =(-(y1*y2*y3**2*y4**2) - y1*y2*y3**2*y5**2 + y1*y2**2*y3*y6**2 + y1*y2**2*y3*y7**2)
 dF(102)  =(-(y2*y3**3*y4**2) - y2*y3**3*y5**2 + y2**3*y3*y6**2 + y2**3*y3*y7**2)
-dF(103)  =(y1*y2*y4**2*y6**2 - y1*y3*y4**2*y6**2 + 2*y1*y2*y4*y5*y6*y7 - 2*y1*y3*y4*y5*y6*y7 + y1*y2*y5**2*y7**2 - y1*y3*y5**2*y7**2)
-dF(104)  =(y2**2*y4**2*y6**2 - y3**2*y4**2*y6**2 + 2*y2**2*y4*y5*y6*y7 - 2*y3**2*y4*y5*y6*y7 + y2**2*y5**2*y7**2 - y3**2*y5**2*y7**2)
-dF(105)  =(y4**4*y6**2 + y4**2*y5**2*y6**2 - y4**2*y6**4 + 2*y4**3*y5*y6*y7 + 2*y4*y5**3*y6*y7 - 2*y4*y5*y6**3*y7 + y4**2*y5**2*y7**2 + y5**4*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 - 2*y4*y5*y6*y7**3 - y5**2*y7**4)
-dF(106)  =(-(y1*y3*y4**3*y6) - y1*y3*y4*y5**2*y6 + y1*y2*y4*y6**3 - y1*y3*y4**2*y5*y7 - y1*y3*y5**3*y7 + y1*y2*y5*y6**2*y7 + y1*y2*y4*y6*y7**2 + y1*y2*y5*y7**3)
-dF(107)  =(-(y3**2*y4**3*y6) - y3**2*y4*y5**2*y6 + y2**2*y4*y6**3 - y3**2*y4**2*y5*y7 - y3**2*y5**3*y7 + y2**2*y5*y6**2*y7 + y2**2*y4*y6*y7**2 + y2**2*y5*y7**3)
+dF(103)  =(y1*y2*y4**2*y6**2-y1*y3*y4**2*y6**2+2*y1*y2*y4*y5*y6*y7-2*y1*y3*y4*y5*y6*y7 + y1*y2*y5**2*y7**2 - y1*y3*y5**2*y7**2)
+dF(104)  =(y2**2*y4**2*y6**2-y3**2*y4**2*y6**2+2*y2**2*y4*y5*y6*y7-2*y3**2*y4*y5*y6*y7 + y2**2*y5**2*y7**2 - y3**2*y5**2*y7**2)
+dF(105)  =(y4**4*y6**2 + y4**2*y5**2*y6**2 - y4**2*y6**4 + 2*y4**3*y5*y6*y7 + 2*y4*y5**3*y6*y7 - 2*y4*y5*y6**3*y7 +&
+                   y4**2*y5**2*y7**2 + y5**4*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 - 2*y4*y5*y6*y7**3 - y5**2*y7**4)
+dF(106)  =(-(y1*y3*y4**3*y6) - y1*y3*y4*y5**2*y6 + y1*y2*y4*y6**3 - y1*y3*y4**2*y5*y7 - y1*y3*y5**3*y7 + y1*y2*y5*y6**2*y7 +&
+                   y1*y2*y4*y6*y7**2 + y1*y2*y5*y7**3)
+dF(107)  =(-(y3**2*y4**3*y6) - y3**2*y4*y5**2*y6 + y2**2*y4*y6**3 - y3**2*y4**2*y5*y7 - y3**2*y5**3*y7 + y2**2*y5*y6**2*y7 +&
+                   y2**2*y4*y6*y7**2 + y2**2*y5*y7**3)
 dF(108)  =(-(y1*y3*y4**4) - 2*y1*y3*y4**2*y5**2 - y1*y3*y5**4 + y1*y2*y6**4 + 2*y1*y2*y6**2*y7**2 + y1*y2*y7**4)
 dF(109)  =(-(y3**2*y4**4) - 2*y3**2*y4**2*y5**2 - y3**2*y5**4 + y2**2*y6**4 + 2*y2**2*y6**2*y7**2 + y2**2*y7**4)
-dF(110)  =(y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3*y4*y5*y6*y7 + y1*y2*y4**2*y7**2 - y1*y3*y4**2*y7**2)
-dF(111)  =(y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2 - y3**2*y4**2*y7**2)
-dF(112)  =(y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 + y4**4*y7**2 + y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
+dF(110)  =(y1*y2*y5**2*y6**2 - y1*y3*y5**2*y6**2 - 2*y1*y2*y4*y5*y6*y7 + 2*y1*y3*y4*y5*y6*y7 + y1*y2*y4**2*y7**2 -&
+           y1*y3*y4**2*y7**2)
+dF(111)  =(y2**2*y5**2*y6**2 - y3**2*y5**2*y6**2 - 2*y2**2*y4*y5*y6*y7 + 2*y3**2*y4*y5*y6*y7 + y2**2*y4**2*y7**2 -&
+           y3**2*y4**2*y7**2)
+dF(112)  =(y4**2*y5**2*y6**2 + y5**4*y6**2 - y5**2*y6**4 - 2*y4**3*y5*y6*y7 - 2*y4*y5**3*y6*y7 + 2*y4*y5*y6**3*y7 +&
+                   y4**4*y7**2 + y4**2*y5**2*y7**2 - y4**2*y6**2*y7**2 - y5**2*y6**2*y7**2 + 2*y4*y5*y6*y7**3 - y4**2*y7**4)
 
 end subroutine dmsC2H2_D8h_diff_muz_6th
 
@@ -5165,9 +5406,12 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(84) = (y2+y3)*y1**4
       dF(85) = y1**5
       dF(86) = 3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y5**6+y4**6+y7**6+y6**6
-      dF(87) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5
-      dF(88) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2
-      dF(89) = (y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(y6**2-y7**2)*y5**4+(-y7**4+y6**4)*y5**2
+      dF(87) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+&
+                  y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5
+      dF(88) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                  (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2
+      dF(89) = (y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+                  4._ark*y6*y7**3)*y5)*y4+(y6**2-y7**2)*y5**4+(-y7**4+y6**4)*y5**2
       dF(90) = y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3
       dF(91) = y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7
       dF(92) = (2._ark*y6**2*y7**2+y6**4+y7**4)*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2
@@ -5230,7 +5474,8 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(149) = y1**4*y2*y3
       dF(150) = (y2+y3)*y1**5
       dF(151) = y1**6
-      dF(152) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3)*y2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3)*y3
+      dF(152) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3)*y2+(y5**3*y7**3+&
+                  3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3)*y3
       dF(153) = (2._ark*y4**2*y5**2+y5**4+y4**4)*y2**3+(2._ark*y6**2*y7**2+y6**4+y7**4)*y3**3
       dF(154) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y2**3+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3**3
       dF(155) = (2._ark*y6**2*y7**2+y6**4+y7**4)*y2**3+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**3
@@ -5239,13 +5484,20 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(158) = (y6**2+y7**2)*y2**5+(y4**2+y5**2)*y3**5
       dF(159) = y3**7+y2**7
       dF(160) = (3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y2+(y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y3
-      dF(161) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2+(2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3
-      dF(162) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
-      dF(163) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(y6**2-y7**2)*y5**4)*y3
-      dF(164) = ((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(y6**2-y7**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3
-      dF(165) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7)*y3
-      dF(166) = (2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3
-      dF(167) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3
+      dF(161) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2+(2._ark*y4**2*y5**3*y7+&
+                  2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3
+      dF(162) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+&
+                  2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
+      dF(163) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-&
+                  4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(y6**2-y7**2)*y5**4)*y3
+      dF(164) = ((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(y6**2-y7**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+&
+                  (-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3
+      dF(165) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7)*y2+&
+                  (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7)*y3
+      dF(166) = (2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2+((y6**5+&
+                  2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3
+      dF(167) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+&
+                  ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3
       dF(168) = (y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y2+(3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y3
       dF(169) = y2*y3**6+y2**6*y3
       dF(170) = (2._ark*y6**2*y7**2+y6**4+y7**4)*y3*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2*y2
@@ -5266,11 +5518,14 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(185) = (y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2
       dF(186) = (y4**2+y5**2)*y3*y2**4+(y6**2+y7**2)*y3**4*y2
       dF(187) = (3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y5**6+y4**6+y7**6+y6**6)*y1
-      dF(188) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1
+      dF(188) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+&
+                  (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1
       dF(189) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7)*y1
       dF(190) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y4**3*y6**3)*y1
-      dF(191) = ((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+(-y7**4+y6**4)*y4**2+(4._ark*y5**3*y6*y7+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5)*y4+(y7**2-y6**2)*y5**4+(-y6**4+y7**4)*y5**2)*y1
-      dF(192) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y1
+      dF(191) = ((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+(-y7**4+y6**4)*y4**2+(4._ark*y5**3*y6*y7+(4._ark*y6**3*y7+&
+                  4._ark*y6*y7**3)*y5)*y4+(y7**2-y6**2)*y5**4+(-y6**4+y7**4)*y5**2)*y1
+      dF(192) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+&
+                  y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y1
       dF(193) = ((y4*y5**2*y6+y5**3*y7+y4**3*y6+y4**2*y5*y7)*y2**2+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**2)*y1
       dF(194) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y2**2+(y4*y5**2*y6+y5**3*y7+y4**3*y6+y4**2*y5*y7)*y3**2)*y1
       dF(195) = ((y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4)*y1
@@ -5331,17 +5586,35 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(250) = (y3**2+y2**2)*y1**5
       dF(251) = (y2+y3)*y1**6
       dF(252) = y1**7
-      dF(253) = 4._ark*y4**6*y5**2+6._ark*y4**4*y5**4+4._ark*y4**2*y5**6+y4**8+4._ark*y6**2*y7**6+6._ark*y6**4*y7**4+4._ark*y6**6*y7**2+y7**8+y5**8+y6**8
-      dF(254) = y4**6*y6**2+2._ark*y4**5*y5*y6*y7+(2._ark*y6**2+y7**2)*y5**2*y4**4+4._ark*y4**3*y5**3*y6*y7+((y6**2+2._ark*y7**2)*y5**4+2._ark*y6**4*y7**2+y6**6+y6**2*y7**4)*y4**2+(2._ark*y5**5*y6*y7+(2._ark*y6**5*y7+2._ark*y6*y7**5+4._ark*y6**3*y7**3)*y5)*y4+y5**6*y7**2+(y7**6+2._ark*y6**2*y7**4+y6**4*y7**2)*y5**2
-      dF(255) = y4**6*y7**2-2._ark*y4**5*y5*y6*y7+(y6**2+2._ark*y7**2)*y5**2*y4**4-4._ark*y4**3*y5**3*y6*y7+((2._ark*y6**2+y7**2)*y5**4+y7**6+2._ark*y6**2*y7**4+y6**4*y7**2)*y4**2+(-2._ark*y5**5*y6*y7+(-2._ark*y6**5*y7-2._ark*y6*y7**5-4._ark*y6**3*y7**3)*y5)*y4+y5**6*y6**2+(2._ark*y6**4*y7**2+y6**6+y6**2*y7**4)*y5**2
-      dF(256) = y4**5*y6**3+3._ark*y4**4*y5*y6**2*y7+((y6**3+3._ark*y6*y7**2)*y5**2+y6**3*y7**2+y6**5)*y4**3+((y7**3+3._ark*y6**2*y7)*y5**3+(3._ark*y6**2*y7**3+3._ark*y6**4*y7)*y5)*y4**2+(3._ark*y5**4*y6*y7**2+(3._ark*y6*y7**4+3._ark*y6**3*y7**2)*y5**2)*y4+y5**5*y7**3+(y7**5+y6**2*y7**3)*y5**3
-      dF(257) = (-y7**4+y6**4)*y4**4+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4**3+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5**3*y4+(-y6**4+y7**4)*y5**4
-      dF(258) = y4**7*y6+y4**6*y5*y7+3._ark*y4**5*y5**2*y6+3._ark*y4**4*y5**3*y7+3._ark*y4**3*y5**4*y6+3._ark*y4**2*y5**5*y7+(3._ark*y6**3*y7**4+y6**7+3._ark*y6**5*y7**2+y5**6*y6+y6*y7**6)*y4+y5**7*y7+(y6**6*y7+3._ark*y6**4*y7**3+3._ark*y6**2*y7**5+y7**7)*y5
-      dF(259) = y5**4*y6**4/6._ark+y4**4*y7**4/6._ark+y4**2*y5**2*y6**2*y7**2-2._ark/3._ark*y4*y5**3*y6**3*y7-2._ark/3._ark*y4**3*y5*y6*y7**3
-      dF(260) = (2._ark/3._ark*y7**4+y6**2*y7**2)*y4**4+(-2._ark/3._ark*y6*y7**3-2._ark*y6**3*y7)*y5*y4**3+(y7**4+y6**4)*y5**2*y4**2+(-2._ark/3._ark*y6**3*y7-2._ark*y6*y7**3)*y5**3*y4+(y6**2*y7**2+2._ark/3._ark*y6**4)*y5**4
-      dF(261) = (-y6**3+y6*y7**2)*y4**5+(-5._ark*y6**2*y7+y7**3)*y5*y4**4+(y6*y7**4-4._ark*y5**2*y6*y7**2-y6**5)*y4**3+(-4._ark*y5**3*y6**2*y7+(-5._ark*y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+((y6**3-5._ark*y6*y7**2)*y5**4+(-4._ark*y6**3*y7**2+y6**5-5._ark*y6*y7**4)*y5**2)*y4+(-y7**3+y6**2*y7)*y5**5+(y6**4*y7-y7**5)*y5**3
-      dF(262) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(263) = ((-y7**4+y6**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(-y6**4+y7**4)*y5**2)*y2**2+((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y3**2
+      dF(253) = 4._ark*y4**6*y5**2+6._ark*y4**4*y5**4+4._ark*y4**2*y5**6+y4**8+4._ark*y6**2*y7**6+6._ark*y6**4*y7**4+&
+                  4._ark*y6**6*y7**2+y7**8+y5**8+y6**8
+      dF(254) = y4**6*y6**2+2._ark*y4**5*y5*y6*y7+(2._ark*y6**2+y7**2)*y5**2*y4**4+4._ark*y4**3*y5**3*y6*y7+((y6**2+&
+                  2._ark*y7**2)*y5**4+2._ark*y6**4*y7**2+y6**6+y6**2*y7**4)*y4**2+(2._ark*y5**5*y6*y7+(2._ark*y6**5*y7+&
+                  2._ark*y6*y7**5+4._ark*y6**3*y7**3)*y5)*y4+y5**6*y7**2+(y7**6+2._ark*y6**2*y7**4+y6**4*y7**2)*y5**2
+      dF(255) = y4**6*y7**2-2._ark*y4**5*y5*y6*y7+(y6**2+2._ark*y7**2)*y5**2*y4**4-4._ark*y4**3*y5**3*y6*y7+&
+                  ((2._ark*y6**2+y7**2)*y5**4+y7**6+2._ark*y6**2*y7**4+y6**4*y7**2)*y4**2+(-2._ark*y5**5*y6*y7+&
+                  (-2._ark*y6**5*y7-2._ark*y6*y7**5-4._ark*y6**3*y7**3)*y5)*y4+y5**6*y6**2+(2._ark*y6**4*y7**2+y6**6+&
+                  y6**2*y7**4)*y5**2
+      dF(256) = y4**5*y6**3+3._ark*y4**4*y5*y6**2*y7+((y6**3+3._ark*y6*y7**2)*y5**2+y6**3*y7**2+y6**5)*y4**3+&
+                  ((y7**3+3._ark*y6**2*y7)*y5**3+(3._ark*y6**2*y7**3+3._ark*y6**4*y7)*y5)*y4**2+(3._ark*y5**4*y6*y7**2+&
+                  (3._ark*y6*y7**4+3._ark*y6**3*y7**2)*y5**2)*y4+y5**5*y7**3+(y7**5+y6**2*y7**3)*y5**3
+      dF(257) = (-y7**4+y6**4)*y4**4+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4**3+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5**3*y4+&
+                  (-y6**4+y7**4)*y5**4
+      dF(258) = y4**7*y6+y4**6*y5*y7+3._ark*y4**5*y5**2*y6+3._ark*y4**4*y5**3*y7+3._ark*y4**3*y5**4*y6+3._ark*y4**2*y5**5*y7+&
+                  (3._ark*y6**3*y7**4+y6**7+3._ark*y6**5*y7**2+y5**6*y6+y6*y7**6)*y4+y5**7*y7+(y6**6*y7+3._ark*y6**4*y7**3+&
+                  3._ark*y6**2*y7**5+y7**7)*y5
+      dF(259) = y5**4*y6**4/6._ark+y4**4*y7**4/6._ark+y4**2*y5**2*y6**2*y7**2-2._ark/3._ark*y4*y5**3*y6**3*y7-&
+                  2._ark/3._ark*y4**3*y5*y6*y7**3
+      dF(260) = (2._ark/3._ark*y7**4+y6**2*y7**2)*y4**4+(-2._ark/3._ark*y6*y7**3-2._ark*y6**3*y7)*y5*y4**3+&
+                  (y7**4+y6**4)*y5**2*y4**2+(-2._ark/3._ark*y6**3*y7-2._ark*y6*y7**3)*y5**3*y4+(y6**2*y7**2+&
+                  2._ark/3._ark*y6**4)*y5**4
+      dF(261) = (-y6**3+y6*y7**2)*y4**5+(-5._ark*y6**2*y7+y7**3)*y5*y4**4+(y6*y7**4-4._ark*y5**2*y6*y7**2-y6**5)*y4**3+&
+                  (-4._ark*y5**3*y6**2*y7+(-5._ark*y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+((y6**3-5._ark*y6*y7**2)*y5**4+&
+                  (-4._ark*y6**3*y7**2+y6**5-5._ark*y6*y7**4)*y5**2)*y4+(-y7**3+y6**2*y7)*y5**5+(y6**4*y7-y7**5)*y5**3
+      dF(262) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+&
+                  ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(263) = ((-y7**4+y6**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(-y6**4+y7**4)*y5**2)*y2**2+&
+                  ((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y3**2
       dF(264) = (3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y2**2+(y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y3**2
       dF(265) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y2**4+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3**4
       dF(266) = (y4**2+y5**2)*y2**6+(y6**2+y7**2)*y3**6
@@ -5350,19 +5623,29 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(269) = (3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y5**6+y4**6+y7**6+y6**6)*y3*y2
       dF(270) = (y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y3*y2
       dF(271) = ((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y3*y2
-      dF(272) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y3*y2
-      dF(273) = ((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+(-y7**4+y6**4)*y4**2+(4._ark*y5**3*y6*y7+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5)*y4+(y7**2-y6**2)*y5**4+(-y6**4+y7**4)*y5**2)*y3*y2
-      dF(274) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3*y2
+      dF(272) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+&
+                  (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y3*y2
+      dF(273) = ((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+(-y7**4+y6**4)*y4**2+(4._ark*y5**3*y6*y7+(4._ark*y6**3*y7+&
+                  4._ark*y6*y7**3)*y5)*y4+(y7**2-y6**2)*y5**4+(-y6**4+y7**4)*y5**2)*y3*y2
+      dF(274) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+&
+                  y5**4*y6+y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3*y2
       dF(275) = (2._ark*y4**2*y5**2+y5**4+y4**4)*y3*y2**3+(2._ark*y6**2*y7**2+y6**4+y7**4)*y3**3*y2
       dF(276) = (y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3*y2**3+(y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3**3*y2
       dF(277) = y2**7*y3+y2*y3**7
-      dF(278) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(279) = (2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2**2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3**2
-      dF(280) = (y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y2**2+(3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y3**2
-      dF(281) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2**2+(2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3**2
-      dF(282) = ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2**2+(y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3**2
-      dF(283) = (y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y2**2+(y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y3**2
-      dF(284) = ((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y2**2+((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y3**2
+      dF(278) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+&
+                  ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(279) = (2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2**2+&
+                  ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3**2
+      dF(280) = (y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y2**2+(3._ark*y6**2*y7**4+y7**6+&
+                  y6**6+3._ark*y6**4*y7**2)*y3**2
+      dF(281) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2**2+(2._ark*y4**2*y5**3*y7+&
+                  2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3**2
+      dF(282) = ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2**2+&
+                  (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3**2
+      dF(283) = (y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y2**2+(y4*y5**2*y6*y7**2+&
+                  y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y3**2
+      dF(284) = ((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y2**2+&
+                  ((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y3**2
       dF(285) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3**2*y2**2
       dF(286) = (y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3**2*y2**2
       dF(287) = (y4**3*y6+y4**2*y5*y7+(y6**3+y6*y7**2+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y3**2*y2**2
@@ -5388,8 +5671,10 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(307) = (y5*y7+y4*y6)*y3*y2**5+(y5*y7+y4*y6)*y3**5*y2
       dF(308) = (y4**2+y5**2)*y3*y2**5+(y6**2+y7**2)*y3**5*y2
       dF(309) = (y5*y7+y4*y6)*y2**6+(y5*y7+y4*y6)*y3**6
-      dF(310) = ((y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3)*y1
-      dF(311) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
+      dF(310) = ((y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+&
+                  ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3)*y1
+      dF(311) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+&
+                  (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
       dF(312) = ((2._ark*y4**2*y5**2+y5**4+y4**4)*y2**3+(2._ark*y6**2*y7**2+y6**4+y7**4)*y3**3)*y1
       dF(313) = ((y4*y5**2*y6+y5**3*y7+y4**3*y6+y4**2*y5*y7)*y2**3+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**3)*y1
       dF(314) = ((-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y2**3+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3**3)*y1
@@ -5397,14 +5682,22 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(316) = ((y6**2+y7**2)*y2**5+(y4**2+y5**2)*y3**5)*y1
       dF(317) = (y3**7+y2**7)*y1
       dF(318) = ((3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y2+(y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y3)*y1
-      dF(319) = (((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y2+((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y3)*y1
-      dF(320) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2+(2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3)*y1
-      dF(321) = ((2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3)*y1
-      dF(322) = (((-y7**4+y6**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(-y6**4+y7**4)*y5**2)*y2+((y6**2-y7**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y3)*y1
-      dF(323) = ((y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y2+(y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y3)*y1
-      dF(324) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
-      dF(325) = ((y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y2+(3._ark*y6**2*y7**4+y7**6+y6**6+3._ark*y6**4*y7**2)*y3)*y1
-      dF(326) = ((-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3*y2**2+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3**2*y2)*y1
+      dF(319) = (((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y2+&
+                  ((2._ark/3._ark*y6**3+y6*y7**2)*y4**3+y4**2*y5*y7**3+y4*y5**2*y6**3+(y6**2*y7+2._ark/3._ark*y7**3)*y5**3)*y3)*y1
+      dF(320) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y2+(2._ark*y4**2*y5**3*y7+&
+                  2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y3)*y1
+      dF(321) = ((2._ark*y4**2*y5**3*y7+2._ark*y4**3*y5**2*y6+y5**5*y7+y4*y5**4*y6+y4**5*y6+y4**4*y5*y7)*y2+((y6**5+&
+                  2._ark*y6**3*y7**2+y6*y7**4)*y4+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y3)*y1
+      dF(322) = (((-y7**4+y6**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(-y6**4+y7**4)*y5**2)*y2+((y6**2-y7**2)*y4**4+&
+                  4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y3)*y1
+      dF(323) = ((y4*y5**2*y6*y7**2+y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y2+(y4*y5**2*y6*y7**2+&
+                  y5**3*y7**3/3._ark+y4**3*y6**3/3._ark+y4**2*y5*y6**2*y7)*y3)*y1
+      dF(324) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y6**2+y7**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+&
+                  ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
+      dF(325) = ((y4**6+y5**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4)*y2+(3._ark*y6**2*y7**4+y7**6+y6**6+&
+                  3._ark*y6**4*y7**2)*y3)*y1
+      dF(326) = ((-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3*y2**2+(-2._ark*y4*y5*y6*y7+y5**2*y6**2+&
+                  y4**2*y7**2)*y3**2*y2)*y1
       dF(327) = ((y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3*y2**2+(y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3**2*y2)*y1
       dF(328) = ((y4**2+y5**2)*y3*y2**4+(y6**2+y7**2)*y3**4*y2)*y1
       dF(329) = (y2*y3**6+y2**6*y3)*y1
@@ -5423,11 +5716,16 @@ subroutine potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(342) = ((y6**2+y7**2)*y3*y2**4+(y4**2+y5**2)*y3**4*y2)*y1
       dF(343) = ((y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2)*y1
       dF(344) = ((y4**2+y5**2)*y2**5+(y6**2+y7**2)*y3**5)*y1
-      dF(345) = ((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(y6**2-y7**2)*y5**4+(-y7**4+y6**4)*y5**2)*y1**2
-      dF(346) = ((y6**3+3._ark/2._ark*y6*y7**2)*y4**3+3._ark/2._ark*y4**2*y5*y7**3+3._ark/2._ark*y4*y5**2*y6**3+(y7**3+3._ark/2._ark*y6**2*y7)*y5**3)*y1**2
-      dF(347) = (-y4**3*y6*y7**2/2._ark+(-y7**3/2._ark+y6**2*y7)*y5*y4**2+(-y6**3/2._ark+y6*y7**2)*y5**2*y4-y5**3*y6**2*y7/2._ark)*y1**2
-      dF(348) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y1**2
-      dF(349) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(345) = ((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+                  4._ark*y6*y7**3)*y5)*y4+(y6**2-y7**2)*y5**4+(-y7**4+y6**4)*y5**2)*y1**2
+      dF(346) = ((y6**3+3._ark/2._ark*y6*y7**2)*y4**3+3._ark/2._ark*y4**2*y5*y7**3+3._ark/2._ark*y4*y5**2*y6**3+(y7**3+&
+                  3._ark/2._ark*y6**2*y7)*y5**3)*y1**2
+      dF(347) = (-y4**3*y6*y7**2/2._ark+(-y7**3/2._ark+y6**2*y7)*y5*y4**2+(-y6**3/2._ark+y6*y7**2)*y5**2*y4-&
+                  y5**3*y6**2*y7/2._ark)*y1**2
+      dF(348) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+&
+                  y6*y7**4)*y4+y5**5*y7+(2._ark*y6**2*y7**3+y6**4*y7+y7**5)*y5)*y1**2
+      dF(349) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                  (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
       dF(350) = (3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y5**6+y4**6+y7**6+y6**6)*y1**2
       dF(351) = (-2._ark*y4*y5*y6*y7+y5**2*y6**2+y4**2*y7**2)*y3*y2*y1**2
       dF(352) = (y4**2*y6**2+2._ark*y4*y5*y6*y7+y5**2*y7**2)*y3*y2*y1**2
@@ -5592,10 +5890,13 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(85) = y1**5
 
       dF(86) = y4**3*y6**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2+y5**3*y7**3
-      dF(87) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6**3*y7+2._ark*y6*y7**3)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2
+      dF(87) = y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y6**2+y7**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                  (2._ark*y6**3*y7+2._ark*y6*y7**3)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2
       dF(88) = y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(y6**3-2._ark*y6*y7**2)*y5**2*y4+y5**3*y6**2*y7
-      dF(89) = (-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(y6**4-y7**4)*y5**2
-      dF(90) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6+y6*y7**4)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5
+      dF(89) = (-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+                  4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(y6**4-y7**4)*y5**2
+      dF(90) = y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+2._ark*y6**3*y7**2+y5**4*y6&
+                  +y6*y7**4)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5
       dF(91) = y5**6+y6**6+y7**6+3._ark*y4**2*y5**4+y4**6+3._ark*y4**4*y5**2+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4
       dF(92) = (y4**2+y5**2)*y2**4+(y6**2+y7**2)*y3**4
       dF(93) = (y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4
@@ -5663,14 +5964,22 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(154) = (y7**2+y6**2)*y2**5+(y5**2+y4**2)*y3**5
       dF(155) = y3**7+y2**7
       dF(156) = (y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y2+(3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y3
-      dF(157) = ((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y2+(y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y3
-      dF(158) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y2+(y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y3
-      dF(159) = ((y7**4-y6**4)*y4**2+(-4._ark*y6*y7**3-4._ark*y6**3*y7)*y5*y4+(y6**4-y7**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3
-      dF(160) = ((y6**2*y7**2+y6**4)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y6**2*y7**2+y7**4)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
-      dF(161) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3
-      dF(162) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+((y6**2*y7**2+y7**4)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**2*y7**2+y6**4)*y5**2)*y3
-      dF(163) = ((-y7**2+y6**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y2+((y6**4-y7**4)*y4**2+(4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(y7**4-y6**4)*y5**2)*y3
-      dF(164) = (y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y2+((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y3
+      dF(157) = ((y6**5+y6*y7**4+2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y2+(y4**5*y6+y5**5*y7+y4**4*y5*y7+&
+                2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y3
+      dF(158) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y2+(y4**3*y6**3+y5**3*y7**3+&
+                3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y3
+      dF(159) = ((y7**4-y6**4)*y4**2+(-4._ark*y6*y7**3-4._ark*y6**3*y7)*y5*y4+(y6**4-y7**4)*y5**2)*y2+((y7**2-y6**2)*y4**4-&
+                4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3
+      dF(160) = ((y6**2*y7**2+y6**4)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y6**2*y7**2+y7**4)*y5**2)*y2+(y4**4*y6**2+&
+                  2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3
+      dF(161) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+&
+                (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3
+      dF(162) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2+&
+                ((y6**2*y7**2+y7**4)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**2*y7**2+y6**4)*y5**2)*y3
+      dF(163) = ((-y7**2+y6**2)*y4**4+4._ark*y4**3*y5*y6*y7+4._ark*y4*y5**3*y6*y7+(y7**2-y6**2)*y5**4)*y2+((y6**4-y7**4)*y4**2+&
+                (4._ark*y6**3*y7+4._ark*y6*y7**3)*y5*y4+(y7**4-y6**4)*y5**2)*y3
+      dF(164) = (y4**5*y6+y5**5*y7+y4**4*y5*y7+2._ark*y4**2*y5**3*y7+y4*y5**4*y6+2._ark*y4**3*y5**2*y6)*y2+((y6**5+y6*y7**4+&
+                2._ark*y6**3*y7**2)*y4+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y3
       dF(165) = (3._ark*y4**2*y5**4+y5**6+y4**6+3._ark*y4**4*y5**2)*y2+(y7**6+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4+y6**6)*y3
       dF(166) = (y5**2+y4**2)*y3*y2**4+(y7**2+y6**2)*y3**4*y2
       dF(167) = (y5*y7+y4*y6)*y3*y2**4+(y5*y7+y4*y6)*y3**4*y2
@@ -5693,11 +6002,14 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(184) = ((y6*y7**2+y6**3)*y4+(y7**3+y6**2*y7)*y5)*y2**3+(y4**3*y6+y5**3*y7+y4**2*y5*y7+y4*y5**2*y6)*y3**3
       dF(185) = (y5**2+y4**2)*y3**2*y2**3+(y7**2+y6**2)*y3**3*y2**2
       dF(186) = y2**4*y3**3+y2**3*y3**4
-      dF(187) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y6**4)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2)*y1
+      dF(187) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y6**4)*y4**2+(2._ark*y5**3*y6*y7+&
+                (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y6**2*y7**2+y7**4)*y5**2)*y1
       dF(188) = (y4**3*y6*y7**2+(y7**3-2._ark*y6**2*y7)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1
       dF(189) = (y4**3*y6**3+y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+3._ark*y4*y5**2*y6*y7**2)*y1
-      dF(190) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y7**4)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**2*y7**2+y6**4)*y5**2)*y1
-      dF(191) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y5**4*y6+y6*y7**4+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y1
+      dF(190) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**2*y7**2+y7**4)*y4**2+(-2._ark*y5**3*y6*y7+&
+                (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**2*y7**2+y6**4)*y5**2)*y1
+      dF(191) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y5**4*y6+y6*y7**4+&
+                2._ark*y6**3*y7**2)*y4+y5**5*y7+(y7**5+y6**4*y7+2._ark*y6**2*y7**3)*y5)*y1
       dF(192) = (y4**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+3._ark*y4**2*y5**4+3._ark*y4**4*y5**2+y6**6+y7**6+y5**6)*y1
       dF(193) = ((y5**2+y4**2)*y2**4+(y7**2+y6**2)*y3**4)*y1
       dF(194) = ((y5*y7+y4*y6)*y2**4+(y5*y7+y4*y6)*y3**4)*y1
@@ -5762,41 +6074,66 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
 
       dF(253) = y5**4*y6**4+y4**4*y7**4-4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2-4._ark*y4**3*y5*y6*y7**3
       dF(254) = y5**8+y7**8+14._ark*y6**4*y7**4+y6**8+14._ark*y4**4*y5**4+y4**8
-      dF(255) = y4**6*y5*y7/3._ark+y4**5*y5**2*y6-4._ark/3._ark*y4**4*y5**3*y7-4._ark/3._ark*y4**3*y5**4*y6+y4**2*y5**5*y7+(y6**5*y7**2-4._ark/3._ark*y6**3*y7**4+y5**6*y6/3._ark+y6*y7**6/3._ark)*y4+(-4._ark/3._ark*y6**4*y7**3+y6**2*y7**5+y6**6*y7/3._ark)*y5
-      dF(256) = y4**7*y6+7._ark*y4**4*y5**3*y7+7._ark*y4**3*y5**4*y6+(y6**7+7._ark*y6**3*y7**4)*y4+y5**7*y7+(y7**7+7._ark*y6**4*y7**3)*y5
+      dF(255) = y4**6*y5*y7/3._ark+y4**5*y5**2*y6-4._ark/3._ark*y4**4*y5**3*y7-4._ark/3._ark*y4**3*y5**4*y6+y4**2*y5**5*y7+&
+                (y6**5*y7**2-4._ark/3._ark*y6**3*y7**4+y5**6*y6/3._ark+y6*y7**6/3._ark)*y4+(-4._ark/3._ark*y6**4*y7**3+&
+                y6**2*y7**5+y6**6*y7/3._ark)*y5
+      dF(256) = y4**7*y6+7._ark*y4**4*y5**3*y7+7._ark*y4**3*y5**4*y6+(y6**7+7._ark*y6**3*y7**4)*y4+y5**7*y7+(y7**7+&
+                7._ark*y6**4*y7**3)*y5
       dF(257) = (y6**3*y7-y6*y7**3)*y5*y4**3+(y6*y7**3-y6**3*y7)*y5**3*y4
-      dF(258) = 3._ark*y4**5*y6*y7**2+y4**4*y5*y7**3+((5._ark*y6**3-9._ark*y6*y7**2)*y5**2+y6*y7**4+5._ark*y6**3*y7**2)*y4**3+((5._ark*y7**3-9._ark*y6**2*y7)*y5**3+(3._ark*y7**5-9._ark*y6**2*y7**3)*y5)*y4**2+(y5**4*y6**3+(-9._ark*y6**3*y7**2+3._ark*y6**5)*y5**2)*y4+3._ark*y5**5*y6**2*y7+(y6**4*y7+5._ark*y6**2*y7**3)*y5**3
-      dF(259) = y4**6*y7**2+3._ark*y4**4*y5**2*y6**2-8._ark*y4**3*y5**3*y6*y7+(y7**6+3._ark*y6**4*y7**2+3._ark*y5**4*y7**2)*y4**2-8._ark*y4*y5*y6**3*y7**3+y5**6*y6**2+(y6**6+3._ark*y6**2*y7**4)*y5**2
-      dF(260) = y4**6*y6**2+3._ark*y4**5*y5*y6*y7+3._ark*y4**4*y5**2*y6**2+2._ark*y4**3*y5**3*y6*y7+(3._ark*y6**4*y7**2+y6**6+3._ark*y5**4*y7**2)*y4**2+(3._ark*y5**5*y6*y7+(3._ark*y6*y7**5+2._ark*y6**3*y7**3+3._ark*y6**5*y7)*y5)*y4+y5**6*y7**2+(3._ark*y6**2*y7**4+y7**6)*y5**2
-      dF(261) = y4**5*y6*y7**2+y4**4*y5*y6**2*y7+((2._ark*y6**3-4._ark*y6*y7**2)*y5**2+2._ark*y6**3*y7**2)*y4**3+((2._ark*y7**3-4._ark*y6**2*y7)*y5**3+(y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+(y5**4*y6*y7**2+(y6*y7**4+y6**5-4._ark*y6**3*y7**2)*y5**2)*y4+2._ark*y5**3*y6**2*y7**3+y5**5*y6**2*y7
+      dF(258) = 3._ark*y4**5*y6*y7**2+y4**4*y5*y7**3+((5._ark*y6**3-9._ark*y6*y7**2)*y5**2+y6*y7**4+5._ark*y6**3*y7**2)*y4**3+&
+                ((5._ark*y7**3-9._ark*y6**2*y7)*y5**3+(3._ark*y7**5-9._ark*y6**2*y7**3)*y5)*y4**2+(y5**4*y6**3+&
+                (-9._ark*y6**3*y7**2+3._ark*y6**5)*y5**2)*y4+3._ark*y5**5*y6**2*y7+(y6**4*y7+5._ark*y6**2*y7**3)*y5**3
+      dF(259) = y4**6*y7**2+3._ark*y4**4*y5**2*y6**2-8._ark*y4**3*y5**3*y6*y7+(y7**6+3._ark*y6**4*y7**2+&
+                3._ark*y5**4*y7**2)*y4**2-8._ark*y4*y5*y6**3*y7**3+y5**6*y6**2+(y6**6+3._ark*y6**2*y7**4)*y5**2
+      dF(260) = y4**6*y6**2+3._ark*y4**5*y5*y6*y7+3._ark*y4**4*y5**2*y6**2+2._ark*y4**3*y5**3*y6*y7+(3._ark*y6**4*y7**2+y6**6+&
+                3._ark*y5**4*y7**2)*y4**2+(3._ark*y5**5*y6*y7+(3._ark*y6*y7**5+2._ark*y6**3*y7**3+3._ark*y6**5*y7)*y5)*y4+&
+                y5**6*y7**2+(3._ark*y6**2*y7**4+y7**6)*y5**2
+      dF(261) = y4**5*y6*y7**2+y4**4*y5*y6**2*y7+((2._ark*y6**3-4._ark*y6*y7**2)*y5**2+2._ark*y6**3*y7**2)*y4**3+((2._ark*y7**3-&
+                4._ark*y6**2*y7)*y5**3+(y6**4*y7-4._ark*y6**2*y7**3+y7**5)*y5)*y4**2+(y5**4*y6*y7**2+(y6*y7**4+y6**5-&
+                4._ark*y6**3*y7**2)*y5**2)*y4+2._ark*y5**3*y6**2*y7**3+y5**5*y6**2*y7
       dF(262) = y4**4*y6**2*y7**2+(-4._ark*y6**2*y7**2+y7**4+y6**4)*y5**2*y4**2+y5**4*y6**2*y7**2
       dF(263) = y4**2*y5**6-2._ark*y4**4*y5**4+y6**6*y7**2-2._ark*y6**4*y7**4+y6**2*y7**6+y4**6*y5**2
-      dF(264) = (-3._ark*y6*y7**2+y6**3)*y4**5+((-5._ark*y6**3+15._ark*y6*y7**2)*y5**2+y6**5-5._ark*y6**3*y7**2)*y4**3+((-5._ark*y7**3+15._ark*y6**2*y7)*y5**3+(-3._ark*y7**5+15._ark*y6**2*y7**3)*y5)*y4**2+(15._ark*y6**3*y7**2-3._ark*y6**5)*y5**2*y4+(-3._ark*y6**2*y7+y7**3)*y5**5+(y7**5-5._ark*y6**2*y7**3)*y5**3
+      dF(264) = (-3._ark*y6*y7**2+y6**3)*y4**5+((-5._ark*y6**3+15._ark*y6*y7**2)*y5**2+y6**5-5._ark*y6**3*y7**2)*y4**3+&
+                ((-5._ark*y7**3+15._ark*y6**2*y7)*y5**3+(-3._ark*y7**5+15._ark*y6**2*y7**3)*y5)*y4**2+(15._ark*y6**3*y7**2-&
+                3._ark*y6**5)*y5**2*y4+(-3._ark*y6**2*y7+y7**3)*y5**5+(y7**5-5._ark*y6**2*y7**3)*y5**3
       dF(265) = y4**4*y6**4+4._ark*y4*y5**3*y6**3*y7+6._ark*y4**2*y5**2*y6**2*y7**2+4._ark*y4**3*y5*y6*y7**3+y5**4*y7**4
-      dF(266) = -y4**5*y5*y6*y7+(-y6**2+y7**2)*y5**2*y4**4+2._ark*y4**3*y5**3*y6*y7+((-y7**2+y6**2)*y5**4+y6**2*y7**4-y6**4*y7**2)*y4**2+(-y5**5*y6*y7+(-y6*y7**5+2._ark*y6**3*y7**3-y6**5*y7)*y5)*y4+(-y6**2*y7**4+y6**4*y7**2)*y5**2
+      dF(266) = -y4**5*y5*y6*y7+(-y6**2+y7**2)*y5**2*y4**4+2._ark*y4**3*y5**3*y6*y7+((-y7**2+y6**2)*y5**4+y6**2*y7**4-&
+                y6**4*y7**2)*y4**2+(-y5**5*y6*y7+(-y6*y7**5+2._ark*y6**3*y7**3-y6**5*y7)*y5)*y4+(-y6**2*y7**4+y6**4*y7**2)*y5**2
       dF(267) = (3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2**2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3**2
-      dF(268) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2**2+((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3**2
-      dF(269) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2**2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3**2
-      dF(270) = (y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2**2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3**2
+      dF(268) = ((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y2**2+((-y6**2+y7**2)*y4**4-&
+                4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y3**2
+      dF(269) = ((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2**2+(y5**5*y7+y4**5*y6+&
+                y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3**2
+      dF(270) = (y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2**2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+&
+                y5**6+y4**6)*y3**2
       dF(271) = (y5**2+y4**2)*y2**6+(y7**2+y6**2)*y3**6
       dF(272) = (y7**2+y6**2)*y2**6+(y5**2+y4**2)*y3**6
       dF(273) = y3**8+y2**8
       dF(274) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y3*y2
       dF(275) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3*y2
-      dF(276) = ((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(-y7**4+y6**4)*y5**2)*y3*y2
-      dF(277) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3*y2
+      dF(276) = ((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7+(-y6**4+y7**4)*y4**2+(-4._ark*y5**3*y6*y7+(-4._ark*y6**3*y7-&
+                4._ark*y6*y7**3)*y5)*y4+(-y7**2+y6**2)*y5**4+(-y7**4+y6**4)*y5**2)*y3*y2
+      dF(277) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+&
+                2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3*y2
       dF(278) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3*y2
-      dF(279) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y3*y2
+      dF(279) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y3*y2
       dF(280) = (y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3*y2**3+((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3**3*y2
       dF(281) = (y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**3+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**3*y2
       dF(282) = (y5*y7+y4*y6)*y3*y2**5+(y5*y7+y4*y6)*y3**5*y2
       dF(283) = (y7**2+y6**2)*y3*y2**5+(y5**2+y4**2)*y3**5*y2
-      dF(284) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2**2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3**2
-      dF(285) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2**2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3**2
-      dF(286) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2**2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3**2
-      dF(287) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(288) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
-      dF(289) = (y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2**2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3**2
+      dF(284) = ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2**2+&
+                (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3**2
+      dF(285) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2**2+(y5**3*y7**3+&
+                3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3**2
+      dF(286) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2**2+&
+                (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3**2
+      dF(287) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y2**2+&
+                ((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(288) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2**2+&
+                ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3**2
+      dF(289) = (y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2**2+((y6**5+&
+                2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3**2
       dF(290) = (y6**4+y5**4+y7**4+y4**4+2._ark*y4**2*y5**2+2._ark*y6**2*y7**2)*y3**2*y2**2
       dF(291) = (y4**3*y6+y4**2*y5*y7+(y6*y7**2+y6**3+y5**2*y6)*y4+y5**3*y7+(y6**2*y7+y7**3)*y5)*y3**2*y2**2
       dF(292) = (y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2*y2**2
@@ -5823,16 +6160,24 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(313) = y2**6*y3**2+y2**2*y3**6
       dF(314) = y2**7*y3+y2*y3**7
       dF(315) = ((3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y2+(y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y3)*y1
-      dF(316) = ((y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2+(y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3)*y1
+      dF(316) = ((y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y2+(y5**3*y7**3+&
+                3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y3)*y1
       dF(317) = ((y6**6+3._ark*y6**2*y7**4+3._ark*y6**4*y7**2+y7**6)*y2+(3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+y5**6+y4**6)*y3)*y1
-      dF(318) = (((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3)*y1
-      dF(319) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3)*y1
+      dF(318) = (((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y6**2+&
+                2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y3)*y1
+      dF(319) = (((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y2+(y5**5*y7+y4**5*y6+y4*y5**4*y6+&
+                y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y3)*y1
       dF(320) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y2**3+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**3)*y1
-      dF(321) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
-      dF(322) = ((y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+(y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3)*y1
-      dF(323) = (((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+(-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3)*y1
-      dF(324) = ((y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2+((y6**5+2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3)*y1
-      dF(325) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
+      dF(321) = (((y7**4+y6**2*y7**2)*y4**2+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5*y4+(y6**4+y6**2*y7**2)*y5**2)*y2+(y4**4*y7**2-&
+                2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2-2._ark*y4*y5**3*y6*y7+y5**4*y6**2)*y3)*y1
+      dF(322) = ((y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y2+&
+                (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y3)*y1
+      dF(323) = (((-y6**2+y7**2)*y4**4-4._ark*y4**3*y5*y6*y7-4._ark*y4*y5**3*y6*y7+(-y7**2+y6**2)*y5**4)*y2+((-y6**4+y7**4)*y4**2+&
+                (-4._ark*y6**3*y7-4._ark*y6*y7**3)*y5*y4+(-y7**4+y6**4)*y5**2)*y3)*y1
+      dF(324) = ((y5**5*y7+y4**5*y6+y4*y5**4*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7)*y2+((y6**5+&
+                2._ark*y6**3*y7**2+y6*y7**4)*y4+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y3)*y1
+      dF(325) = ((y4**4*y6**2+2._ark*y4**3*y5*y6*y7+(y7**2+y6**2)*y5**2*y4**2+2._ark*y4*y5**3*y6*y7+y5**4*y7**2)*y2+&
+                ((y6**4+y6**2*y7**2)*y4**2+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5*y4+(y7**4+y6**2*y7**2)*y5**2)*y3)*y1
       dF(326) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2*y2)*y1
       dF(327) = ((y6**4+y7**4+2._ark*y6**2*y7**2)*y3*y2**2+(2._ark*y4**2*y5**2+y5**4+y4**4)*y3**2*y2)*y1
       dF(328) = (((y6**3+y6*y7**2)*y4+(y6**2*y7+y7**3)*y5)*y3*y2**2+(y4*y5**2*y6+y4**2*y5*y7+y4**3*y6+y5**3*y7)*y3**2*y2)*y1
@@ -5859,9 +6204,12 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
       dF(349) = (y2**7+y3**7)*y1
       dF(350) = (y4**3*y6*y7**2+(-2._ark*y6**2*y7+y7**3)*y5*y4**2+(-2._ark*y6*y7**2+y6**3)*y5**2*y4+y5**3*y6**2*y7)*y1**2
       dF(351) = (y5**3*y7**3+3._ark*y4**2*y5*y6**2*y7+y4**3*y6**3+3._ark*y4*y5**2*y6*y7**2)*y1**2
-      dF(352) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+(-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1**2
-      dF(353) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+(2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
-      dF(354) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y1**2
+      dF(352) = (y4**4*y7**2-2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y7**4+y6**2*y7**2)*y4**2+(-2._ark*y5**3*y6*y7+&
+                (-2._ark*y6**3*y7-2._ark*y6*y7**3)*y5)*y4+y5**4*y6**2+(y6**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(353) = (y4**4*y6**2+2._ark*y4**3*y5*y6*y7+((y7**2+y6**2)*y5**2+y6**4+y6**2*y7**2)*y4**2+(2._ark*y5**3*y6*y7+&
+                (2._ark*y6*y7**3+2._ark*y6**3*y7)*y5)*y4+y5**4*y7**2+(y7**4+y6**2*y7**2)*y5**2)*y1**2
+      dF(354) = (y4**5*y6+y4**4*y5*y7+2._ark*y4**3*y5**2*y6+2._ark*y4**2*y5**3*y7+(y6**5+y6*y7**4+y5**4*y6+2._ark*y6**3*y7**2)*y4+&
+                y5**5*y7+(y6**4*y7+y7**5+2._ark*y6**2*y7**3)*y5)*y1**2
       dF(355) = (y7**6+y6**6+y5**6+y4**6+3._ark*y4**4*y5**2+3._ark*y4**2*y5**4+3._ark*y6**4*y7**2+3._ark*y6**2*y7**4)*y1**2
       dF(356) = ((y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y2**2+(y4**2*y7**2-2._ark*y4*y5*y6*y7+y5**2*y6**2)*y3**2)*y1**2
       dF(357) = ((y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y2**2+(y5**2*y7**2+y4**2*y6**2+2._ark*y4*y5*y6*y7)*y3**2)*y1**2
@@ -5941,8 +6289,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6021,8 +6371,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,&
+                      tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6099,8 +6451,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6177,8 +6531,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6255,8 +6611,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6333,8 +6691,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6412,8 +6772,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3),morphing
       integer(ik)  :: Nangles,NparM
       !
@@ -6514,8 +6876,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6591,8 +6955,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6673,8 +7039,10 @@ subroutine potC2H2_D8h_415_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
     real(ark) :: dF(n)
       !
       integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
-      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau
-      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
       real(ark)    :: r_na(4,3)
       integer(ik)  :: Nangles
       !
@@ -6748,8 +7116,10 @@ function MLpoten_c2h2_streymills(ncoords,natoms,local,xyz,force) result(f)
    real(ark)              ::  f
    !
    integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
-   real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e3,vpot,cphi,q(6),y(6),pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau,y1,y2,y3,y4,y5,y6
-   real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,cosalpha1,cosalpha2,e4
+   real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e3,vpot,cphi,q(6),y(6),pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,delta2y,tau,&
+                   y1,y2,y3,y4,y5,y6
+   real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,costau,&
+                   cosalpha1,cosalpha2,e4
    character(len=cl)  :: txt = 'MLpoten_c2h2_8'
    !
    integer(ik)  :: Nangles
@@ -6853,7 +7223,7 @@ function MLpoten_c2h2_streymills(ncoords,natoms,local,xyz,force) result(f)
          !
       else
         !
-        write(out,"('MLpoten_c2h2_8: only designed for zmatrix-connect( =103 ',i)") molec%zmatrix(3)%connect(4)
+        write(out,"('MLpoten_c2h2_8: only designed for zmatrix-connect( =103 ',i9)") molec%zmatrix(3)%connect(4)
         stop 'only designed for zmat=103'
         !
       endif

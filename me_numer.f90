@@ -8,7 +8,7 @@ module me_numer
   use lapack
   use timer
   implicit none
-  private
+  private  
 
   public ik, rk, out
   public ME_numerov,simpsonintegral,simpsonintegral_ark
@@ -72,9 +72,10 @@ module me_numer
   !
   ! Matrix elements with Numerov-eigenfunctions 
   !
-  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,iperiod_,verbose_,g_numerov,energy)
+  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,iperiod_,&
+                        verbose_,g_numerov,energy)
    !
-   integer(ik),intent(in) :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
+   integer(ik),intent(in)   :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder_,0:vmax_,0:vmax_)
    real(ark),intent(out)    :: energy(0:vmax_)
    !
@@ -455,7 +456,8 @@ module me_numer
    integer(ik) :: icslots(0:maxslots),iright,ileft,ireflect
 
 
-   allocate(pot_eff(0:npoints),i0(0:npoints),phi_f(0:npoints),phi_t(0:npoints),psi_t(-30:npoints+30),phi_f_(0:npoints),phi_d_(0:npoints),stat=alloc)
+   allocate(pot_eff(0:npoints),i0(0:npoints),phi_f(0:npoints),phi_t(0:npoints),psi_t(-30:npoints+30),phi_f_(0:npoints),&
+            phi_d_(0:npoints),stat=alloc)
    if (alloc/=0) then 
       write (6,"('numerov: allocation is faild - out of memory')")
       stop 'numerov: allocation is faild - out of memory'
@@ -699,7 +701,8 @@ module me_numer
            if (abs(phi_t(0)-(-1.0_ark)**iparity*phi_t(npoints  ))>sqrt(thrsh_int).or.&
                abs(df_t1-(-1.0_ark)**iparity*df_t2)>1000.*sqrt(thrsh_int)) then 
               !
-              if (verbose>=5) write(out,"(/'f(0),f(1),...,f(N-1),f(N),f(0)-tau*f(N),energy: ',5g18.8,', energy = ',f12.4,', n = ',i)") phi_t(0),phi_t(npoints  ),phi_t(1),phi_t(npoints-1),& 
+              if (verbose>=5) write(out,"(/'f(0),f(1),.,f(N-1),f(N),f(0)-tau*f(N),energy: ',5g18.8,', energy= ',f12.4,',n=',i9)")&
+                              phi_t(0),phi_t(npoints),phi_t(1),phi_t(npoints-1),& 
                                              phi_t(0)-(-1.0_rk)**iparity*phi_t(npoints ),eguess,numnod
               if (verbose>=5) write(out,"(/'df(0)-df(N): ',3g18.8)") df_t1,df_t2,df_t1-(-1.0_ark)**iparity*df_t2
               !
@@ -730,7 +733,8 @@ module me_numer
            if ( (iparity==0.and.abs(psi_t(npoints  ))>sqrt(thrsh_int)).or.&
                 (iparity==1.and.abs(phi_t(npoints  ))>sqrt(thrsh_int))) then 
               !
-              if (verbose>=5) write(out,"(/'phi(N) and psi(N) = ',2g18.8,', energy = ',f12.4,', n = ',i)") phi_t(npoints  ),psi_t(npoints ),eguess,numnod
+              if (verbose>=5) write(out,"(/'phi(N) and psi(N) = ',2g18.8,', energy = ',f12.4,', n = ',9i7)") &
+                              phi_t(npoints),psi_t(npoints ),eguess,numnod
               !
               if ( numnod+1<maxslots.and.numnod>v) then 
                   enerslot(numnod)=eguess
@@ -773,7 +777,7 @@ module me_numer
           endif 
        endif 
        !
-       if (verbose>=5) write(out,"('v = ',i5,'; numnod = ',i8,', efound = ',f16.7,', ierr = ',i)") v,numnod,eguess,ierr
+       if (verbose>=5) write(out,"('v = ',i5,'; numnod = ',i8,', efound = ',f16.7,', ierr = ',i9)") v,numnod,eguess,ierr
        !
        if ( ierr == 0.and.v==numnod ) notfound = .false.
        !
@@ -1050,7 +1054,8 @@ module me_numer
      !
    enddo
    !
-   write(out,"(/' Outmost points of the nonvanishing wave-functions are: [',i6,'...',i6,'], i.e. [',f12.6,'...',f12.6,'] ')") ileft,iright,rho_b(1)+rhostep*real(ileft,rk),rho_b(1)+rhostep*real(iright,rk)
+   write(out,"(/' Outmost points of the nonvanishing wave-functions are: [',i6,'...',i6,'], i.e. [',f12.6,'...',f12.6,'] ')") &
+                 ileft,iright,rho_b(1)+rhostep*real(ileft,rk),rho_b(1)+rhostep*real(iright,rk)
    !
    ! report the found Numerov energies 
    !

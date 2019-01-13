@@ -31,7 +31,7 @@ module mol_xy4
      integer(ik),intent(in)  :: Npoints,Natoms
 
      real(ark),   intent(out) :: b0(Natoms,3,0:Npoints)
-     real(ark),   intent(inout),optional  :: rho_i(0:Npoints)
+     real(ark),   intent(in),optional  :: rho_i(0:Npoints)
      real(ark),   intent(out),optional :: rho_ref
      real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
 
@@ -44,12 +44,12 @@ module mol_xy4
 
 
       if (size(molec%req)/=4) then
-        write(out,"('ML_b0_XY4: Nbonds must be 4 in this routine, not  ',i)") size(molec%req)
+        write(out,"('ML_b0_XY4: Nbonds must be 4 in this routine, not  ',i8)") size(molec%req)
         stop 'ML_b0_XY4: wrong Nbonds '
       endif 
 
       if (molec%Natoms/=5) then
-        write(out,"('ML_b0_XY4: Natoms must be 5 in this routine, not  ',i)") molec%Natoms
+        write(out,"('ML_b0_XY4: Natoms must be 5 in this routine, not  ',i8)") molec%Natoms
         stop 'ML_b0_XY4: wrong Natoms '
       endif 
 
@@ -177,7 +177,7 @@ module mol_xy4
       !
       if (Npoints/=0) then
          !
-         rho_i = 0
+         !rho_i = 0
          ! 
          write(out,"('ML_b0_XY4: non-rigid  is not implemented yet')") 
          stop 'ML_b0_XY4: non-rigid  is not implemented yet '
@@ -222,8 +222,8 @@ module mol_xy4
     !
     real(ark),dimension(ndst) :: dst
     real(ark)                 :: dsrc(size(src))
-    real(ark)                 :: alpha,alpha12,alpha13,alpha14,alpha23,alpha24,alpha34,s2a,s2b,beta312,beta412
-    real(ark)                 :: cosa23,cosa24,cosa34,cosbeta,s(5)
+    real(ark)                 :: alpha,alpha12,alpha13,alpha14,alpha23,alpha24,alpha34,s2a,s2b
+    real(ark)                 :: cosa23,cosa24,cosa34,cosbeta,s(5),beta312,beta412
     character(len=cl)         :: txt
     !
     !
@@ -1120,7 +1120,8 @@ module mol_xy4
 
       real(ark),intent(in)  :: src(5)
       real(ark),intent(out) :: dst(5),alpha34
-      real(ark)             :: alpha12,alpha13,alpha23,alpha14,alpha24,cosbeta,beta312,beta412,cosa34
+      real(ark)             :: alpha12,alpha13,alpha23,alpha14,alpha24,cosbeta,beta312
+      real(ark)             :: beta412,cosa34
       character(len=cl)     :: txt
        !
        txt = 'calc_sym_from_alpha'

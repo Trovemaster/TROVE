@@ -323,7 +323,7 @@ contains
       sym%characters = transpose(sym%characters)
       sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4/)
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9/)
-      sym%label=(/'A1', 'A2', 'A3', 'A4', 'E1', 'E2', 'E3', 'E4', 'G' /)
+      sym%label=(/'A1', 'A2', 'A3', 'A4', 'E1', 'E2', 'E3', 'E4', 'G ' /)
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -451,8 +451,8 @@ contains
       sym%characters = transpose(sym%characters)
       sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
-      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs', &
-                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd' /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -808,8 +808,8 @@ contains
       sym%characters = transpose(sym%characters)
       sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
-      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs', &
-                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd' /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -1149,8 +1149,8 @@ contains
       sym%characters = transpose(sym%characters)
       sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
-      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs', &
-                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd' /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -1318,7 +1318,7 @@ contains
     sym%characters = transpose(sym%characters)
     sym%degen=(/1,1,1,1,1,1,1,1/)
     sym%Nelements=(/1,1,1,1,1,1,1,1/)
-    sym%label=(/'Ag','Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
+    sym%label=(/'Ag ','Au ','B1g','B1u','B2g','B2u','B3g','B3u'/)
     !
     o  = 0.0_ark
     p2 = 0.5_ark*pi
@@ -1359,7 +1359,7 @@ contains
     sym%characters = transpose(sym%characters)
     sym%degen=(/1,1,1,1,1,1,1,1/)
     sym%Nelements=(/1,1,1,1,1,1,1,1/)
-    sym%label=(/'Ag','Au','B1g','B1u','B2g','B2u','B3g','B3u'/)
+    sym%label=(/'Ag ','Au ','B1g','B1u','B2g','B2u','B3g','B3u'/)
     !
     o  = 0.0_ark
     p2 = 0.5_ark*pi
@@ -1693,7 +1693,8 @@ contains
           !
           if (abs(sym%characters(irep,iclass)-characters_(irep,iclass))>small_) then 
             !
-            write(out,"(' characters do not agree: irep,iclass = ',4i8)") irep,iclass,sym%characters(irep,iclass),characters_(irep,iclass)
+            write(out,"(' characters do not agree: irep,iclass = ',4i8)") irep,iclass,sym%characters(irep,iclass), &
+                  characters_(irep,iclass)
             stop 'simple_arrays_allocation - out of memory'
             !
           endif
@@ -3147,6 +3148,7 @@ contains
 
     integer(ik) :: igamma,jgamma,ioper,ideg,iclass,ielem,k1,k2,m1,m2
     real(ark)   :: temp,f_t
+    character(len=10) :: my_fmt !format for I/O specification
 
     do igamma = 1,sym%Nrepresen
       do jgamma = igamma,sym%Nrepresen
@@ -3154,12 +3156,13 @@ contains
         temp = sum(real(sym%Nelements(:),ark)*sym%characters(igamma,:)*sym%characters(jgamma,:))
         !
         if (igamma/=jgamma.and.abs(temp)>sqrt(small_)) then 
-          write (out,"(' check_characters_and_representation: not orhogonal for igamma,jgamma = ',2i4,' -> ',g18.6)") igamma,jgamma,temp
+          write (out,"(' check_char_and_repres: not orhogonal for igamma,jgamma = ',2i4,' -> ',g18.6)") igamma,jgamma,temp
           !stop 'check_characters_and_representation: not orhogonal'
         endif
         !
         if (igamma==jgamma.and.abs(temp-sym%Noper)>sqrt(small_)) then 
-          write (out,"(' check_characters_and_representation: dot product ',f16.2,' for isym = ',i4,' /= size of the group ',f16.0)") igamma,temp,sym%Noper
+          write (out,"(' check_charac_and_repres: dot product ',f16.2,' for isym = ',i4,' /= size of the group ',f16.0)") & 
+                igamma,temp,sym%Noper
           !stop 'check_characters_and_representation: not orhogonal'
         endif
         !
@@ -3191,12 +3194,14 @@ contains
           if (verbose_>=5) then
             write(out,"('igamma,iclass,ioper = ',3i6)") igamma,iclass,ioper
             do ideg = 1,sym%degen(igamma)
-              write(out,"(<sym%degen(igamma)>f18.8)") sym%irr(igamma,ioper)%repres(ideg,:)
+              write(my_fmt,'(a,i0,a)') "(",sym%degen(igamma),"f18.8)"
+              write(out,my_fmt) sym%irr(igamma,ioper)%repres(ideg,:)
             enddo
           endif
           !
           if (abs(temp-sym%characters(igamma,iclass))>sqrt(small_)) then 
-            write (out,"(' symmetry: character and representation do not agree ',2f18.8,', igamma,iclass,ioper = ',3i5)") sym%characters(igamma,iclass),temp,igamma,iclass,ioper
+            write (out,"(' symmetry: character and representation do not agree ',2f18.8,', igamma,iclass,ioper = ',3i5)") & 
+                  sym%characters(igamma,iclass),temp,igamma,iclass,ioper
             stop 'symmetry: character and representation do not agree'
           endif
           !
@@ -3251,14 +3256,14 @@ contains
     integer(ik) :: nsrc
     real(ark)   ::  mat1(dim,dim),mat2(dim,dim)
      !
-     temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
-     temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+     temp(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19,2,3,2,3,2,3,4,5,6,4,5,6,4,5,6/)
+     temp(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0,7,7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
      !
      !temp(1:36)   = (/0, 0, 2, 0, 4, 5, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
      !temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
      ! 
-     temp(37:72)   = (/ 0, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37/)
-     temp(109:144) = (/ 0,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36/)
+     temp(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
+     temp(109:144)= (/0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
      !
      tn = reshape( temp, (/ 72, 2/))
      !

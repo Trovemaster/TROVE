@@ -21,7 +21,8 @@ module timer
   use accuracy
   implicit none
   private
-  public TimerStart, TimerStop, TimerReport, TimerProbe, IOStart, IOStop , ArrayStart, ArrayStop, ArrayMinus, MemoryReport,memory_limit,maxmemory,memory_now
+  public TimerStart, TimerStop, TimerReport, TimerProbe, IOStart, IOStop , ArrayStart, ArrayStop, ArrayMinus, MemoryReport
+  public memory_limit,maxmemory,memory_now
   !
   integer, parameter :: trk        = selected_real_kind(12)
   integer, parameter :: table_size = 10000 ! Max number of entries to track
@@ -548,7 +549,7 @@ module timer
 
       if (alloc/=0) then
           write(out,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
-          write(out,"( ' Array dimension = ',i,' array size =  ',f20.2,' Gb')") hsize_,size_
+          write(out,"( ' Array dimension = ',i8,' array size =  ',f20.2,' Gb')") hsize_,size_
           call MemoryReport
           stop 'ArrayStart - allocation error'
       end if
@@ -640,7 +641,7 @@ module timer
 
 
     !
-    !  End an array-unit
+    !  allocation
     !
     subroutine ArrayMinus(name,isize,ikind,hsize)
       character(len=*), intent(in) :: name  ! Unit name
@@ -668,7 +669,7 @@ module timer
       size_ = (ikind*real(hsize_))/real(1024**3) ! size in GByte
       !
       memory_now   = memory_now - size_
-      t%size = max(t%size-size_,0.0_hik)
+      t%size = max(t%size-size_,0.0_rk)
       mem = memory_now
       !
       !if (t%size<=0) then 

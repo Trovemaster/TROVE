@@ -793,7 +793,8 @@ module pot_xy3
             !
             alpha1 = acos(cosalpha)
             !
-         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP',&
+              'R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
             !
             alpha3 = local(4)
             alpha2 = local(5)
@@ -930,7 +931,8 @@ module pot_xy3
             write (out,"('MLpoten_xy3_morbid_10: coord. type ',a,' unknown')") trim(molec%coords_transform)
             stop 'MLpoten_xy3_morbid_10 - bad coord. type'
             !
-         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP',&
+              'R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
             !
             alpha3 = local(4)
             alpha2 = local(5)
@@ -2599,7 +2601,7 @@ module pot_xy3
 
      select case ( ix )
      case default
-       write (6,"(' dip. order component',i)") ix
+       write (6,"(' dip. order component',i8)") ix
        stop 'dip. order component'
      case (1)
        xi1=(r14-re14) *exp(-beta*(r14-re14)**2)
@@ -2830,7 +2832,7 @@ module pot_xy3
      (xi3**4*xi6+ xi2**4*xi5)*F33336+ (xi3*xi4**3*xi5+                     &
      xi2*xi4**3*xi6)*F34445+ (xi2*xi3*xi5**3+ xi3*xi2*xi6**3)*F23555
    endif
-                                                                           &
+                                                                           
    if(parmax>=262) then                                                        
      s4 = (xi1*xi2**2*xi4**3+ xi1*xi3**2*xi4**3)*F122444+                  &
      (xi2**2*xi3*xi4**2*xi5+ xi3**2*xi2*xi4**2*xi6)*F223445+               &
@@ -3694,7 +3696,7 @@ module pot_xy3
 
      select case ( ix )
      case default
-       write (6,"(' dip. order component',i)") ix
+       write (6,"(' dip. order component',i8)") ix
        stop 'dip. order component'
      case (1,4,7)
        xi1=(r14-re14)
@@ -3923,7 +3925,7 @@ module pot_xy3
      (xi3**4*xi6+ xi2**4*xi5)*F33336+ (xi3*xi4**3*xi5+                     &
      xi2*xi4**3*xi6)*F34445+ (xi2*xi3*xi5**3+ xi3*xi2*xi6**3)*F23555
    endif
-                                                                           &
+
    if(parmax>=262) then
      s4 = (xi1*xi2**2*xi4**3+ xi1*xi3**2*xi4**3)*F122444+                  &
      (xi2**2*xi3*xi4**2*xi5+ xi3**2*xi2*xi4**2*xi6)*F223445+               &
@@ -6568,9 +6570,12 @@ case (2)
             hea223333*y2**4*y3**2+ hea223333*y2**2*y3**4-sqrt(3.0_ark)*fea11223*y1**2*y2*y3**2+ &
             fea123444*y1*y2*y3*s4a**2*s4b
 
-       s5 = s3+ hea123335*y1*y2*y3**3*s4b-sqrt(3.0_ark)*(hea123335-fea123334)*y1*y2**3*y3*s4a/2.0_ark+ sqrt(3.0_ark)*(9.0_ark*hea13444+ &
-            2.0_ark*fea23455*sqrt(3.0_ark)+ fea12455*sqrt(3.0_ark)+ 9.0_ark*fea12555)*y1*y2*s4a**2*s4b/9.0_ark+ sqrt(3.0_ark)*(-fea122334+ hea122335)*y1**2*y2*y3**2*s4a/4.0_ark-&
-            sqrt(3.0_ark)*(10.0_ark*fea222444*sqrt(3.0_ark)+ 17.0_ark*hea333444-12.0_ark*sqrt(3.0_ark)*hea222555+ 9.0_ark*hea333455)*y1**3*s4a**2*s4b/6.0_ark-sqrt(3.0_ark)*fea11111*y3**5/2.0_ark+ &
+       s5 = s3+ hea123335*y1*y2*y3**3*s4b-sqrt(3.0_ark)*(hea123335-fea123334)*y1*y2**3*y3*s4a/2.0_ark+ &
+            sqrt(3.0_ark)*(9.0_ark*hea13444+ &
+            2.0_ark*fea23455*sqrt(3.0_ark)+ fea12455*sqrt(3.0_ark)+ 9.0_ark*fea12555)*y1*y2*s4a**2*s4b/9.0_ark+  &
+            sqrt(3.0_ark)*(-fea122334+ hea122335)*y1**2*y2*y3**2*s4a/4.0_ark-&
+            sqrt(3.0_ark)*(10.0_ark*fea222444*sqrt(3.0_ark)+ 17.0_ark*hea333444-12.0_ark*sqrt(3.0_ark)*hea222555+  &
+            9.0_ark*hea333455)*y1**3*s4a**2*s4b/6.0_ark-sqrt(3.0_ark)*fea11111*y3**5/2.0_ark+ &
             2.0_ark*fea45555*s4a**2*s4b**3+ (3.0_ark/4.0_ark*fea122334+ hea122335/4.0_ark)*y1**2*y2*y3**2*s4b
 
        s6 = s5-sqrt(3.0_ark)*(3.0_ark*fea133445-hea233444-3.0_ark*fea233445+ &
@@ -6758,7 +6763,8 @@ case (2)
             hea111334*y1**3*y3**2*s4a+ hea133444*y1*y3**2*s4a**3+ &
             hea113344*y1**2*y3**2*s4a**2+ hea344455*y3*s4a**3*s4b**2+ &
             hea233344*y2*y3**3*s4a**2+ (2.0_ark*hea223333+ sqrt(3.0_ark)*fea111122)*y1**4*y2**2+ &
-            hea111145*y1**4*s4a*s4b+ hea11244*y1**2*y2*s4a**2+ hea345555*y3*s4a*s4b**4+ hea344445*y2*s4a**4*s4b+ hea34555*y3*s4a*s4b**3+ (3.0_ark/4.0_ark*fea122334+ &
+            hea111145*y1**4*s4a*s4b+ hea11244*y1**2*y2*s4a**2+ hea345555*y3*s4a*s4b**4+ hea344445*y2*s4a**4*s4b+  &
+            hea34555*y3*s4a*s4b**3+ (3.0_ark/4.0_ark*fea122334+ &
             hea122335/4.0_ark)*y1**2*y2**2*y3*s4b+ hea333455*y3**3*s4a*s4b**2
 
        s5 = s3+ (fea133334*sqrt(3.0_ark)/3.0_ark-fea233334*sqrt(3.0_ark)/3.0_ark+ fea233335)*y1*y3**4*s4a-&
@@ -7322,13 +7328,19 @@ end function MLdms2loc_E_xy3
         end do
         AFUNC=0.0_ark
         do i=1,N_coe
-          AFUNC1=rrr(molec%pot_ind(1,i),molec%pot_ind(2,i),molec%pot_ind(3,i))*aaa(molec%pot_ind(4,i),molec%pot_ind(5,i),molec%pot_ind(6,i))
-          AFUNC2=rrr(molec%pot_ind(1,i),molec%pot_ind(3,i),molec%pot_ind(2,i))*aaa(molec%pot_ind(4,i),molec%pot_ind(6,i),molec%pot_ind(5,i))
-          AFUNC3=rrr(molec%pot_ind(2,i),molec%pot_ind(1,i),molec%pot_ind(3,i))*aaa(molec%pot_ind(5,i),molec%pot_ind(4,i),molec%pot_ind(6,i))
-          AFUNC4=rrr(molec%pot_ind(2,i),molec%pot_ind(3,i),molec%pot_ind(1,i))*aaa(molec%pot_ind(5,i),molec%pot_ind(6,i),molec%pot_ind(4,i))
-          AFUNC5=rrr(molec%pot_ind(3,i),molec%pot_ind(1,i),molec%pot_ind(2,i))*aaa(molec%pot_ind(6,i),molec%pot_ind(4,i),molec%pot_ind(5,i))
-          AFUNC6=rrr(molec%pot_ind(3,i),molec%pot_ind(2,i),molec%pot_ind(1,i))*aaa(molec%pot_ind(6,i),molec%pot_ind(5,i),molec%pot_ind(4,i))
-          AFUNC(i)=afunc1+afunc2+afunc3+afunc4+afunc5+afunc6
+         AFUNC1=rrr(molec%pot_ind(1,i),molec%pot_ind(2,i),molec%pot_ind(3,i))*aaa(molec%pot_ind(4,i),molec%pot_ind(5,i),&
+                molec%pot_ind(6,i))
+         AFUNC2=rrr(molec%pot_ind(1,i),molec%pot_ind(3,i),molec%pot_ind(2,i))*aaa(molec%pot_ind(4,i),molec%pot_ind(6,i),&
+                molec%pot_ind(5,i))
+         AFUNC3=rrr(molec%pot_ind(2,i),molec%pot_ind(1,i),molec%pot_ind(3,i))*aaa(molec%pot_ind(5,i),molec%pot_ind(4,i),&
+                molec%pot_ind(6,i))
+         AFUNC4=rrr(molec%pot_ind(2,i),molec%pot_ind(3,i),molec%pot_ind(1,i))*aaa(molec%pot_ind(5,i),molec%pot_ind(6,i),&
+                molec%pot_ind(4,i))
+         AFUNC5=rrr(molec%pot_ind(3,i),molec%pot_ind(1,i),molec%pot_ind(2,i))*aaa(molec%pot_ind(6,i),molec%pot_ind(4,i),&
+                molec%pot_ind(5,i))
+         AFUNC6=rrr(molec%pot_ind(3,i),molec%pot_ind(2,i),molec%pot_ind(1,i))*aaa(molec%pot_ind(6,i),molec%pot_ind(5,i),&
+                molec%pot_ind(4,i))
+         AFUNC(i)=afunc1+afunc2+afunc3+afunc4+afunc5+afunc6
         end do
 
         sumstr2=sum(coor(1:3)**2)
@@ -8216,7 +8228,8 @@ end function MLdms2loc_E_xy3
             !
             alpha1 = acos(cosalpha)
             !
-         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP',&
+              'R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
             !
             !
             alpha3 = local(4)
@@ -8487,20 +8500,20 @@ end function MLdms2loc_E_xy3
 
 
 s4 = fea333555*y3**3*s4b**3+fea133333*y1**5*y2+fea33334*y3**4*s4a+&
-fea113345*y1**2*y3**2*s4a*s4b+(7.0_ark/12.0_ark*fea334445*sqrt(3.0_ark)+&
-5.0_ark/4.0_ark*fea334455-3.0_ark/2.0_ark*fea335555)*y1**2*s4a**4+fea133333*y2**5&
-*y3+(fea222245*sqrt(3.0_ark)/2.0_ark+fea222255)*y1**4*s4b**2+(-2.0_ark/5.0_ark*fea244455-&
-fea145555/15.0_ark+2.0_ark/9.0_ark*fea244555*sqrt(3.0_ark))*y1*s4a*&
-*5+fea25555*y3*s4b**4-2.0_ark*fea33334*y1**4*s4a+fea23333*y1*y2**4+&
-fea33344*y2**3*s4a**2+fea145555*y1*s4a*s4b**4+(-3.0_ark*fea334445-&
-2.0_ark*fea334455*sqrt(3.0_ark)+4.0_ark*fea335555*sqrt(3.0_ark))*y2**2*s4a*s4b**3+(&
--2.0_ark/3.0_ark*fea334445*sqrt(3.0_ark)-fea334455+3.0_ark*fea335555)*y3**2*s4a**4+&
-fea222233*y1**4*y2**2+fea222255*y2**4*s4b**2+(fea33344+&
-fea33345*sqrt(3.0_ark)/2.0_ark)*y1**3*s4a**2
+     fea113345*y1**2*y3**2*s4a*s4b+(7.0_ark/12.0_ark*fea334445*sqrt(3.0_ark)+&
+     5.0_ark/4.0_ark*fea334455-3.0_ark/2.0_ark*fea335555)*y1**2*s4a**4+fea133333*y2**5*y3+&
+     (fea222245*sqrt(3.0_ark)/2.0_ark+fea222255)*y1**4*s4b**2+(-2.0_ark/5.0_ark*fea244455-&
+     fea145555/15.0_ark+2.0_ark/9.0_ark*fea244555*sqrt(3.0_ark))*y1*s4a**5+fea25555*y3*s4b**4-&
+     2.0_ark*fea33334*y1**4*s4a+fea23333*y1*y2**4+&
+     fea33344*y2**3*s4a**2+fea145555*y1*s4a*s4b**4+(-3.0_ark*fea334445-&
+     2.0_ark*fea334455*sqrt(3.0_ark)+4.0_ark*fea335555*sqrt(3.0_ark))*y2**2*s4a*s4b**3+(&
+     -2.0_ark/3.0_ark*fea334445*sqrt(3.0_ark)-fea334455+3.0_ark*fea335555)*y3**2*s4a**4+&
+     fea222233*y1**4*y2**2+fea222255*y2**4*s4b**2+(fea33344+&
+     fea33345*sqrt(3.0_ark)/2.0_ark)*y1**3*s4a**2
 s3 = s4+fea23333*y1**4*y2+(fea244455/5.0_ark-7.0_ark/15.0_ark*fea145555+&
-fea244555*sqrt(3.0_ark)/18.0_ark)*y2*s4a**5-fea333555*y2**3*s4b**3-&
-3.0_ark*fea44444*s4a*s4b**4+fea23333*y2**4*y3+fea111444*y1**3*s4a**3+&
-fea33334*y2**4*s4a+(-3.0_ark/4.0_ark*fea334445*sqrt(3.0_ark)-3.0_ark/4.0_ark*fea334455+&
+     fea244555*sqrt(3.0_ark)/18.0_ark)*y2*s4a**5-fea333555*y2**3*s4b**3-&
+     3.0_ark*fea44444*s4a*s4b**4+fea23333*y2**4*y3+fea111444*y1**3*s4a**3+&
+     fea33334*y2**4*s4a+(-3.0_ark/4.0_ark*fea334445*sqrt(3.0_ark)-3.0_ark/4.0_ark*fea334455+&
 5.0_ark/2.0_ark*fea335555)*y1**2*s4b**4+fea335555*y2**2*s4b**4+fea222224*y2**5*s4a+&
 (-fea33455/3.0_ark-5.0_ark/9.0_ark*fea33445*sqrt(3.0_ark))*y1**2*s4a**3-&
 fea133345*y1*y2**3*s4a*s4b+(fea111444+fea333555*sqrt(3.0_ark))*y2**3*s4a**3+&
@@ -8508,6 +8521,7 @@ fea133345*y1*y2**3*s4a*s4b+(fea111444+fea333555*sqrt(3.0_ark))*y2**3*s4a**3+&
 fea111233*y1**2*y2*y3**3-fea24445*y3*s4a**3*s4b+(-fea233445*sqrt(3.0_ark)-&
 3.0_ark*fea113555*sqrt(3.0_ark)-2.0_ark*fea133444+3.0_ark*fea233444)*y1**2*y2*s4a**3+&
 fea111123*y1*y2**4*y3+fea133334*y1*y2**4*s4a
+!
 s4 = s3+(-2.0_ark*fea233335+fea133334*sqrt(3.0_ark))*y1*y2**4*s4b+&
 fea111233*y1*y2**3*y3**2-fea113555*y1**2*y2*s4b**3+(-fea222334/2.0_ark-&
 fea222335*sqrt(3.0_ark)/2.0_ark)*y1**2*y3**3*s4a+fea11333*y1**3*y2**2+&
@@ -8729,7 +8743,8 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
             write (out,"('MLpoten_xy3_morbid_10: coord. type ',a,' unknown')") trim(molec%coords_transform)
             stop 'MLpoten_xy3_morbid_10 - bad coord. type'
             !
-         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP',&
+              'R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
             !
             alpha3 = local(4)
             alpha2 = local(5)

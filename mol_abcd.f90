@@ -695,7 +695,8 @@ module mol_abcd
         stop 'ML_b0_ABCD not defined'
       endif 
       !
-      if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
+      if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.&
+          trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
          !
          rho_ark = rho
          !
@@ -830,7 +831,8 @@ module mol_abcd
             ae1   = molec%alphaeq(1)
             ae2   = molec%alphaeq(2)
             !
-            if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
+            if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.&
+                trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
                !
                rho_ark = rho
                !
@@ -2521,7 +2523,9 @@ module mol_abcd
           !
        end select 
        !
-    case('R-R1-R2-TX-TY-TX-TY','R-R1-R2+TX-TY+TX-TY','R-R1-R2+Y-X-Y+X','R-R1-R2-Y+X+Y-X','R-R1-R2-X-Y+X+Y','R-Z1+Z2-X-Y+X+Y','R-Z1+Z2+X+Y-X-Y','R-Z1+Z2-Y-X-Y-X','R-R1-R2+X+Y-X-Y','R-R1-R2-TX+TY-TX+TY','R-R1-R2-TX+TY+TX-TY')
+    case('R-R1-R2-TX-TY-TX-TY','R-R1-R2+TX-TY+TX-TY','R-R1-R2+Y-X-Y+X','R-R1-R2-Y+X+Y-X','R-R1-R2-X-Y+X+Y',&
+         'R-Z1+Z2-X-Y+X+Y','R-Z1+Z2+X+Y-X-Y','R-Z1+Z2-Y-X-Y-X','R-R1-R2+X+Y-X-Y','R-R1-R2-TX+TY-TX+TY',&
+         'R-R1-R2-TX+TY+TX-TY')
        ! 
        select case(trim(molec%symmetry))
        case default

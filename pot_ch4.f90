@@ -92,11 +92,14 @@ module pot_user
 
   subroutine potch4_diff_V(n,local,xyz,dF)
     !
+    implicit none
+    !
     integer(ik),intent(in)  :: n
     real(ark),intent(in)  :: local(:),xyz(5,3)
     real(ark),intent(out) :: dF(n)
     !
-    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,cosa34,alpha34,beta312,beta412,cosbeta
+    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,cosa34,alpha34,&
+                 beta312,beta412,cosbeta
     !
     real(ark) :: s1,s2,s3,s4,dx(4,3)
     real(ark) ::   betac, betaa,rc2,r02,a12,a13,a14,a23,a24,a34,t12,t13,t14,t23,t24,t34,vdump,cosae
@@ -1454,7 +1457,7 @@ module pot_user
          if (ierror>0) then
            !
            print *,i,k,ierror,rmat,dipin
-           write(out,"('MLdipole_xy4_dF: dgelss error = ',i)") ierror
+           write(out,"('MLdipole_xy4_dF: dgelss error = ',i9)") ierror
            stop 'MLdipole_xy4_dF: dgelss error'
            !
          endif

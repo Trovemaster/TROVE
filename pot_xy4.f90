@@ -299,9 +299,8 @@ module pot_xy4
     real(ark),intent(in)   ::  force(:)
     real(ark)              ::  f
     !
-    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,cosa34,alpha34,beta312,beta412,cosbeta
-    !
-    real(ark) :: dx(4,3),g(40612)
+    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,cosa34    !
+    real(ark) :: dx(4,3),g(40612),alpha34,beta312,beta412,cosbeta
     !
     integer(ik) :: k_ind(14),iterm,n
     !

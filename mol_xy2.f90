@@ -781,7 +781,8 @@ module mol_xy2
             rho0 = 0.0
             a02 = (m1/m)
             !
-         case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z','R-S1-S2-Z','R-ALPHA-THETA-Z')
+         case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z',&
+              'R-S1-S2-Z','R-ALPHA-THETA-Z')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -811,7 +812,10 @@ module mol_xy2
             !
             alpha = rho
             !
-            if(any(trim(molec%coords_transform)==(/'R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z'/))) alpha = pi-rho
+            select case(trim(molec%coords_transform))
+              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z')
+               alpha = pi-rho
+            end select 
             !
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
             !

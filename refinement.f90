@@ -4,7 +4,7 @@ module refinement
 
 
  use accuracy,     only : ik, hik, rk, ark, cl, out, small_
- use fields,       only : manifold,job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,FLfrom_local2chi_by_fit,&
+ use fields,       only : manifold,job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,&
                           FLfinitediffs_2d,FLpoten_linearized,analysis,action
  use timer,        only : IOstart,Arraystart,Arraystop,Arrayminus,Timerstart,Timerstop,MemoryReport,TimerReport
  use molecules,    only : MLcoord_direct,MLinvmat,MLinvmatark,MLcoordinate_transform_func,MLpotentialfunc

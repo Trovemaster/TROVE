@@ -56,7 +56,8 @@ module pot_zxy2
      dst(1) = molec%mep_params(1)+molec%mep_params(2)*cs+molec%mep_params(3)*cs**2+molec%mep_params(4)*cs**3+molec%mep_params( 5)*cs**4
      dst(2) = molec%mep_params(6)+molec%mep_params(7)*cs+molec%mep_params(8)*cs**2+molec%mep_params(9)*cs**3+molec%mep_params(10)*cs**4
      dst(3) = dst(2)
-     dst(4) = molec%mep_params(11)*rad+molec%mep_params(12)*cs+molec%mep_params(13)*cs**2+molec%mep_params(14)*cs**3+molec%mep_params(15)*cs**4
+     dst(4) = molec%mep_params(11)*rad+molec%mep_params(12)*cs+molec%mep_params(13)*cs**2+molec%mep_params(14)*cs**3+&
+              molec%mep_params(15)*cs**4
      dst(5) = dst(4)
      dst(6) = x
      !
@@ -1018,7 +1019,7 @@ end function MLpoten_h2cs_damp
      F122001*y1*y2**2*y3**2*y6 + F121001*y1*(y2**2*y3 + y2*y3**2)*y6 + F221001*y1**2*(y2**2*y3 + y2*y3**2)*y6 + &
      F131001*y1*(y2**3*y3 + y2*y3**3)*y6 + F100111*y1*y4*y5*y6 + F200111*y1**2*y4*y5*y6 + F300111*y1**3*y4*y5*y6 + &
      F010111*(y2 + y3)*y4*y5*y6 + F020111*(y2**2 + y3**2)*y4*y5*y6 + F030111*(y2**3 + y3**3)*y4*y5*y6 + &
-     F100221*y1*y4**2*y5**2*y6 + F010221*(y2 + y3)*y4**2*y5**2*y6 + F011101*y2*y3*(y4 + y5)*y6 + F022101*y2**2*y3**2*(y4 + y5)*y6 + &
+     F100221*y1*y4**2*y5**2*y6 + F010221*(y2 + y3)*y4**2*y5**2*y6 + F011101*y2*y3*(y4 + y5)*y6 + F022101*y2**2*y3**2*(y4+y5)*y6+&
      F101101*y1*(y3*y4 + y2*y5)*y6 + F201101*y1**2*(y3*y4 + y2*y5)*y6 + F301101*y1**3*(y3*y4 + y2*y5)*y6 + &
      F102101*y1*(y3**2*y4 + y2**2*y5)*y6 + F202101*y1**2*(y3**2*y4 + y2**2*y5)*y6 + F103101*y1*(y3**3*y4 + y2**3*y5)*y6 + &
      F110101*y1*(y2*y4 + y3*y5)*y6 + F210101*y1**2*(y2*y4 + y3*y5)*y6 + F310101*y1**3*(y2*y4 + y3*y5)*y6 + &
@@ -1975,7 +1976,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
      (xi3**4*xi6+ xi2**4*xi5)*F33336+ (xi3*xi4**3*xi5+                     &
      xi2*xi4**3*xi6)*F34445+ (xi2*xi3*xi5**3+ xi3*xi2*xi6**3)*F23555
    endif
-                                                                           &
+
    if(N>=262) then                                                        
      s4 = (xi1*xi2**2*xi4**3+ xi1*xi3**2*xi4**3)*F122444+                  &
      (xi2**2*xi3*xi4**2*xi5+ xi3**2*xi2*xi4**2*xi6)*F223445+               &
@@ -2437,7 +2438,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)      :: i,imu,iterm,lwork,info,nsv
     real(ark)        :: x(molec%natoms,3),r_CO,r_CH1,r_CH2,a_H1CO,a_H2CO,tau,re_CO(3),re_CH(3),ae_HCO(3),&
@@ -2502,7 +2503,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     endif
     !
     costheta = sum(N1(1:3)*NB2(1:3))
-    if (sign(1.0_ark,costheta)<0.0) then
+    if ( sign(1.0_ark,costheta )<0.0) then
      rho = pi - tau
     else
      rho = pi + tau
@@ -2574,12 +2575,12 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
 
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)      :: i,imu,iterm,lwork,info,nsv
     real(ark)        :: x(molec%natoms,3),r_CO,r_CH1,r_CH2,a_H1CO,a_H2CO,tau,re_CO(3),re_CH(3),ae_HCO(3),&
-                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho
-    double precision :: tmat(3,3),dipd(3,1),work(64*3),sv(3),svtol,costheta,costau
+                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho,costheta,costau
+    double precision :: tmat(3,3),dipd(3,1),work(64*3),sv(3),svtol
     !
     integer(ik) :: IOunit
     logical :: dms_debug = .false., ifopened
@@ -2630,7 +2631,7 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
     endif
     !
     costheta = sum(N1(1:3)*NB2(1:3))
-    if (sign(1.0_ark,costheta)<0.0) then
+    if (sign(1.0_ark,costheta)<0.0_ark) then
      rho = pi - tau
     else
      rho = pi + tau

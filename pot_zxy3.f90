@@ -20,6 +20,8 @@ module pot_zxy3
 
  function MLpoten_zxy3_sym(ncoords,natoms,local,xyz,force) result(f) 
    !
+   implicit none 
+   !
    integer(ik),intent(in) ::  ncoords,natoms
    real(ark),intent(in)   ::  local(ncoords)
    real(ark),intent(in)   ::  xyz(natoms,3)
@@ -194,7 +196,8 @@ module pot_zxy3
         beta413 = aacos(cosbeta,txt)
         !
         if (abs(beta312+beta412+beta413-2.0_rk*pi)>sqrt(small_)) then 
-          write(out,"('MLpoten_zxy3_sym: beta312+beta412+beta413/=2.0_rk*pi for t1,t2,t3',4f16.8)") beta312,beta412,beta413,beta312+beta412+beta413
+          write(out,"('MLpoten_zxy3_sym: beta312+beta412+beta413/=2.0_rk*pi for t1,t2,t3',4f16.8)") beta312,beta412,&
+                beta413,beta312+beta412+beta413
           stop
         endif
         !
@@ -267,7 +270,7 @@ module pot_zxy3
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz0(natoms,3)
-    real(ark)              ::  f(rank)
+    real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)            :: i,k_ind(9),ioper,imu,iterm,lwork,info,nsv
     real(ark)              :: xi(9),chi(9,6),r1,r2,r3,r4,r1e,r2e,beta2,a,b,betae,tau12,tau23,tau13
@@ -557,7 +560,8 @@ module pot_zxy3
     real(ark),intent(in)   ::  force(:)
     real(ark)              ::  f
     !
-    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,cosa34,alpha34,beta312,beta412,cosbeta
+    real(ark) :: r1,r2,r3,r4,cosa12,alpha12,cosa13,alpha13,cosa23,alpha23,cosa14,alpha14,cosa24,alpha24,&
+                 cosa34,alpha34,beta312,beta412,cosbeta
     !
     real(ark) :: dx(4,3)
     !
