@@ -752,8 +752,7 @@ module perturbation
     endif 
     !
     if (job%verbose>=2) then 
-      write(my_fmt,'(a,i0,a)') "(a,",Nmodes,"i5)"
-      write(out)
+      write(my_fmt,'(a,i0,a)') "(/a,",Nmodes,"i5)"
       write(out,my_fmt) 'Polyads estimated from range: ',(imode,imode=1,Nmodes)
       write(out,my_fmt) '                          ->  ',(pol_t(imode),imode=1,Nmodes)
       write(out,"(/'Adjusted (input) maximal polyad is: ',i5,'(',i5,')')") PT%Polyad_max,PT%Npolyads
@@ -1079,8 +1078,7 @@ module perturbation
     endif 
     ! 
     if (job%verbose>=4) then
-       write(my_fmt,'(a,i0,a)') "(a,",NPTorder1,"i8)"
-       write(out)
+       write(my_fmt,'(a,i0,a)') "(/a,",NPTorder1,"i8)"
        write(out,my_fmt) 'RangeOrder vs order ',(iorder               ,iorder=0,NPTorder)
        write(out,my_fmt) 'RangeOrder       -> ',(PT%RangeOrder(iorder),iorder=0,NPTorder)
     endif 
@@ -1094,8 +1092,7 @@ module perturbation
     ! Be verbose !
     ! 
     if (job%verbose>=4) then
-       write(my_fmt,'(a,i0,a)') "(a,",Npolyads1,"i8)"
-       write(out)
+       write(my_fmt,'(a,i0,a)') "(/a,",Npolyads1,"i8)"
        write(out,my_fmt) 'MaxIndex_nu vs polyad ',(ipol,ipol=0,Npolyads)
        write(out,my_fmt) '                   -> ',(PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
     endif 
@@ -8849,7 +8846,8 @@ module perturbation
    integer(hik)         :: ndvr_ktau,matsize
    integer(ik)          :: nelem,chkptIO
    integer(ik)          :: dimen_maxrow,m_,i_,j_,kmax,jb
-   character(len=cl)    :: my_fmt !format for I/O specification
+   character(len=cl)    :: my_fmt   !format for I/O specification
+   character(len=wl)    :: my_fmt_l !format for long I/O specification
      !
      ! Check for the trivial solution 
      if (dimen_s<=0) return 
@@ -10023,6 +10021,14 @@ module perturbation
      nroots_ = 0
      cdimenmax = 1
      !
+     write(my_fmt_l,'(a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
+                     Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i4,a2)"
+     
+     !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
+     !                  sym%label(gamma),iroot,termvalue,&
+     !                  "(",cgamma(0),";",jrot,k,tau," )", &
+     !                  "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,"(",normal(1:PT%Nmodes),normal(0),cnu(1:PT%Nclasses)," )"
+     !
      do iroot=1,nroots
        !
        termvalue = energy(iroot)-ZPE
@@ -10080,14 +10086,20 @@ module perturbation
                       nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2
            !
          else
-            !
-            write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',&
-                       &a2,1x,f9.2,1x,a1,'//fmt%Nmodes//',a2,1x,a1,'//fmt%Nclasses0//',a2)') & 
-                       sym%label(gamma),iroot,termvalue,"(",&
-                       cgamma(0),";",jrot,k,tau," )", &
-                       "(",cgamma(1:PT%Nclasses),";", &
-                       nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,"(",normal(1:PT%Nmodes)," )",&
-                       "(",normal(0),cnu(1:PT%Nclasses)," )"
+            !write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3," )",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//'," )",1x,f9.2,1x,"(",'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//'," )")') & 
+            !           sym%label(gamma),iroot,termvalue,&
+            !           cgamma(0),jrot,k,tau, &
+            !           cgamma(1:PT%Nclasses), &
+            !           nu(1:PT%Nmodes),maxcontrib(iroot)**2,normal(1:PT%Nmodes),normal(0),cnu(1:PT%Nclasses)
+
+            write(out,my_fmt_l)&
+            !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//',a2,1x,a1,'//fmt%Nclasses0//',a2)') & 
+                       sym%label(gamma),iroot,termvalue,&
+                       "(",cgamma(0),";",jrot,k,tau," )", &
+                       "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
+                       "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )"
+
+
             !
          endif
          !
@@ -10228,7 +10240,7 @@ module perturbation
            !
            if (job%IOvector_symm) ilevel = iroot 
            !
-           write(my_fmt,'(a,i0,a,i0,a,i0,a)') "(i8,3i8,f20.12,i8,",nmodes,"i4,i8,",Nclasses1,"i4,i8,",Nmodes,"i4,2x,f17.8,",Nclasses,"i7)"
+           write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') "(i8,3i8,f20.12,i8,",nmodes,"i4,i8,",Nclasses1,"i4,i8,",Nmodes,"i4,2x,f17.8,",Nclasses,"i7)"
            !
            !write(IOunit_quanta,'(i8,3i8,f20.12,i8,<Nmodes>i4,i8,<Nclasses1>i4,i8,<Nmodes>i4,2x,f17.8,<Nclasses>i7)')  irecord,&
            write(IOunit_quanta,my_fmt)  irecord,gamma,ilevel,kdeg,energy(iroot),eignu(iroot,0:PT%Nmodes),ilarge_coef_t,&
