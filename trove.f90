@@ -222,7 +222,8 @@
   end module tp_module
   !
   program driver
-    use tp_module
+    !
+    !use tp_module
     !call ompaffinity()
 
     call pt
@@ -230,5 +231,5 @@
   end program driver
 
 !
-!  S.N. Yurchenko, yurchenko@mpi-muelheim.mpg.de
+!  S.N. Yurchenko, s.yurchenko@ucl.ac.uk
 !

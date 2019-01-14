@@ -638,7 +638,6 @@ module fields
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
    character(len=cl) :: my_fmt !format for I/O specification
-
    !
    !
    ! default values: 

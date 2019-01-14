@@ -4,7 +4,7 @@
 !
 module tran
 
-!dec$ define tran_debug = 1 ! set tran_debug > 2 with small vibrational bases and small expansions only
+!dec define tran_debug = 1 ! set tran_debug > 2 with small vibrational bases and small expansions only
 
  use accuracy,     only : ik, rk, hik, ark, cl, out, small_
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
@@ -46,6 +46,8 @@ module tran
     integer(ik),pointer :: icoeff(:)
  end type coeffT
  !
+ integer(ik),parameter :: tran_debug = 1
+ !
  type(bset_contrT), allocatable,save :: bset_contr(:)  ! information on the contracted basis set
                                                        ! note: bset_contr(1) is always reserved for J=0
  integer(ik),  allocatable           :: i2d_to_1d(:,:) ! a 2d upper diagonal matrix index is transformed into a 1d matrix
@@ -77,6 +79,7 @@ contains
 
     character(4)            :: jchar
     character(cl)           :: filename, ioname,  buf
+    character(len=cl)       :: my_fmt !format for I/O specification
     !
     if (job%verbose>=2) write(out,"(/'Reading the information on the contr. basis...')")
     !
@@ -95,10 +98,10 @@ contains
        filename = trim(job%eigenfile%filebase)//'_quanta'//trim(adjustl(jchar))//'.chk'
 
 
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(/a, 1x, i2, 2(1x, a))') 'read contraction indexes for J =', jval(jind), &
                                                'from file', trim(filename)
-       !dec$ end if
+       end if
 
 
        write(ioname, '(a, i4)') 'contraction indexes for J=', jval(jind)
@@ -120,11 +123,11 @@ contains
        bset_contr(jind)%nclasses     = nclasses
 
 
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(3(/1x, a, 1x, i5))') 'ncases ', ncases, 'ndegmax', nlambdas, 'ncontr ', ncontr
           write(out, '(/1x, a, 1x, a, 4x, a/40x, 1x, a, 1x, a, 6x, a)') 'icase', 'ndeg', 'ilevel(0:nclasses)', 'ideg', &
                                                                         'iroot', 'ideg(0:nclasses)'
-       !dec$ end if
+       end if
        !
        allocate(bset_contr(jind)%index_deg(ncases),bset_contr(jind)%contractive_space(0:nclasses, ncases),stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%contractive_space),kind(bset_contr(jind)%contractive_space))
@@ -148,27 +151,28 @@ contains
           !
           bset_contr(jind)%index_deg(icase)%size1 = nlambdas
           !
-          !dec$ if (tran_debug > 2)
-             write(out, '(1x, i5, 2x, i3, 1x, <nclasses>(1x, i3), 1x, i3)')                                            &
+          if (tran_debug > 2) then
+             write(my_fmt,'(a,i0,a)') "(x, i5, 2x, i3, 1x,",nclasses,"(1x, i3), 1x, i3)"
+             write(out,my_fmt)   &
              icase, nlambdas, bset_contr(jind)%contractive_space(0:nclasses, icase)
-          !dec$ end if
+          end if
           !
           allocate(bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, nlambdas))
-          call ArrayStart('bset_contr',info,size(bset_contr(jind)%index_deg(icase)%icoeffs),kind(bset_contr(jind)%index_deg(icase)%icoeffs))
-
+          call ArrayStart('bset_contr',info,size(bset_contr(jind)%index_deg(icase)%icoeffs),&
+                          kind(bset_contr(jind)%index_deg(icase)%icoeffs))
+          !
           do ilambda = 1, nlambdas
-
-             read(iounit, '(i8, i6, <nclasses>i6)') iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
-
-
-             !dec$ if (tran_debug > 2)
-                write(out, '(42x, i3, 1x, i5, 3x, <nclasses>(1x, i3), 1x, i3)')                                        &
-                ilambda, iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
-             !dec$ end if
-
-
+             !
+             write(my_fmt,'(a,i0,a)') "(i8,i6,",nclasses,"i6)"
+             read(iounit,my_fmt) iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
+             !
+             if (tran_debug > 2) then
+                write(my_fmt,'(a,i0,a)') "(42x, i3, 1x, i5, 3x,",nclasses,"(1x, i3), 1x, i3)"
+                write(out,my_fmt) ilambda, iroot, bset_contr(jind)%index_deg(icase)%icoeffs(0:nclasses, ilambda)
+             end if
+             !
              icontr = icontr + 1
-
+             !
              bset_contr(jind)%icontr2icase(icontr, 1)      = icase
              bset_contr(jind)%icontr2icase(icontr, 2)      = ilambda
              bset_contr(jind)%icase2icontr(icase, ilambda) = icontr
@@ -188,10 +192,10 @@ contains
        read(iounit, '(2i8)') ncases, nlambdas
 
 
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(2(/1x, a, 1x, i2))') 'nrot      ', ncases, 'nrotdegmax', nlambdas
           write(out, '(/1x, a, 1x, a, 8x, a, 3x, a, 1x, a)') 'irot', 'irotdeg', 'J', 'K', 'Tau'
-       !dec$ end if
+       end if
 
 
        allocate(bset_contr(jind)%rot_index(ncases, nlambdas), stat = info)
@@ -205,11 +209,11 @@ contains
                                        bset_contr(jind)%rot_index(icase, ilambda)%k,                                       &
                                        bset_contr(jind)%rot_index(icase, ilambda)%tau
 
-          !dec$ if (tran_debug > 2)
+          if (tran_debug > 2) then
              write(out, '(2x, i3, 5x, i3, 5x, 3(1x, i3))') icase, ilambda, bset_contr(jind)%rot_index(icase, ilambda)%j,   &
                                                                            bset_contr(jind)%rot_index(icase, ilambda)%k,   &
                                                                            bset_contr(jind)%rot_index(icase, ilambda)%tau
-          !dec$ end if
+          end if
 
        end do
 
@@ -230,8 +234,10 @@ contains
          !
          do igamma = 1,sym%Nrepresen
            !
-           allocate(bset_contr(jind)%irr(igamma)%N(bset_contr(jind)%Maxsymcoeffs),bset_contr(jind)%irr(igamma)%repres(Ntotal(igamma),sym%degen(igamma),mat_size),stat = info)
-           call ArrayStart('bset_contr',info,size(bset_contr(jind)%irr(igamma)%repres),kind(bset_contr(jind)%irr(igamma)%repres))
+           allocate(bset_contr(jind)%irr(igamma)%N(bset_contr(jind)%Maxsymcoeffs),&
+                    bset_contr(jind)%irr(igamma)%repres(Ntotal(igamma),sym%degen(igamma),mat_size),stat = info)
+           call ArrayStart('bset_contr',info,size(bset_contr(jind)%irr(igamma)%repres),&
+                    kind(bset_contr(jind)%irr(igamma)%repres))
            !
            do icoeff = 1,bset_contr(jind)%Maxsymcoeffs
               !
@@ -280,6 +286,7 @@ contains
     integer(ik),allocatable  :: cnu_i(:),cnu_j(:)
     !
     logical                 :: found
+    character(len=cl)       :: my_fmt   !format for I/O specification
     !
     if (job%verbose>=2) write(out,"(/'Establish the correlation between the indexes of J=0 and J>0 contr. basis funct.')")
     !
@@ -300,26 +307,27 @@ contains
        !
        nclasses = bset_contr(jind)%nclasses
        if (bset_contr(jind)%nclasses/=bset_contr(1)%nclasses) then 
-         write(out,"('index_correlation: Nclasses are different for diff. J:',2i)") bset_contr(1)%nclasses,bset_contr(jind)%nclasses
+         write(out,"('index_correlation: Nclasses are different for diff. J:',2i0)") &
+                     bset_contr(1)%nclasses,bset_contr(jind)%nclasses
          stop 'index_correlation: Nclasses cannot be different for diff. J'
        endif
        !
        allocate(cnu_i(1:nclasses),cnu_j(1:nclasses),stat = info)
        if (info /= 0) stop 'index_correlation: cnu_i allocation error'
        !
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(/a, 1x, i2)') 'find correlation between contraction indexes for J = 0 and J =', jval(jind)
-       !dec$ end if
+       end if
        !
        if (jind > size(bset_contr)) stop 'index_correlation error: jind > size(bset_contr)'
        !
        allocate(bset_contr(jind)%icontr_correlat_j0(bset_contr(jind)%Maxsymcoeffs,bset_contr(jind)%max_deg_size), stat = info)
        call ArrayStart('bset_contr',info,size(bset_contr(jind)%icontr_correlat_j0),kind(bset_contr(jind)%icontr_correlat_j0))
        !
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(/7x, a, i3, 17x, a/1x, a, 1x, a, 1x, a, 4x, a, 1x, a, 1x, a)')                                  &
           'J =', jval(jind), 'J =  0', 'icase', 'ilambda', 'iroot', 'icase', 'ilambda', 'iroot'
-       !dec$ end if
+       end if
        !
        l_icase : do icase = 1, bset_contr(jind)%Maxsymcoeffs
           !
@@ -348,8 +356,9 @@ contains
              end do l_jcase
              !
              if (.not.found) then 
+               write(my_fmt,'(a,i0,a)') "(a,2i6,",nclasses,"i4,i4)"
                write(out,"('index_correlation: not found for J = ',i8,' -> problems with checkpoints?')") jval(jind)
-               write(out,"('J,icase,cnu,ideg:',2i6,<nclasses>i4,i4)") jval(jind),icase,cnu_i(:),ilambda
+               write(out,my_fmt) 'J,icase,cnu,ideg:',jval(jind),icase,cnu_i(:),ilambda
                stop 'index_correlation: not found'
              endif 
              !
@@ -357,13 +366,13 @@ contains
              !
              bset_contr(jind)%icontr_correlat_j0(icase, ilambda) = jcontr
              !
-             !dec$ if (tran_debug > 2)
+             if (tran_debug > 2) then
                 write(out, '(i6, 6x, i2, i6, 3x, i6, 6x, i2, i6)')   &
                 !                      case,                      lambda, contr
                 icase,ilambda,bset_contr(jind)%icase2icontr(icase,ilambda), &
                 bset_contr(1)%icontr2icase(jcontr,1), bset_contr(1)%icontr2icase(jcontr,2), jcontr
                 !
-             !dec$ end if
+             end if
              !
           end do l_ilambda
           !
@@ -401,15 +410,15 @@ contains
             bset_contr(jind)%k(iroot)    = ideg
           endif 
           !
-          !dec$ if (tran_debug >= 3)
+          if (tran_debug >= 3) then
             write (out,"('iroot,icase,ilambda,jcontr = ',4i7)") iroot,icase,ilambda,jcontr 
-          !dec$ end if
+          end if
           !
        enddo
        !
-       !dec$ if (tran_debug > 2)
+       if (tran_debug > 2) then
           write(out, '(/a)') 'done'
-       !dec$ end if
+       end if
        !
        deallocate(cnu_i,cnu_j)
        !
@@ -451,7 +460,8 @@ contains
 
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
-                               iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),normal(0:FLNmodes),Npolyad_t
+                               iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),&
+                               normal(0:FLNmodes),Npolyad_t
     integer(ik),allocatable :: ktau_rot(:,:),isym(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
@@ -466,6 +476,7 @@ contains
     real(rk)                :: energy_, state_intensity
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
+    character(len=cl) :: my_fmt !format for I/O specification
     ! 
     if (job%verbose>=2) write(out,"(/'Read and sort eigenvalues in increasing order...')")
     !
@@ -522,9 +533,10 @@ contains
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
-          !dec$ if (tran_debug > 2)
-             write(out, '(/a, 1x, i2, 2(1x, a))') 'read eigenvalues for J =', jval(jind), ', gamma = ',i2,' from file', trim(filename)
-          !dec$ end if
+          if (tran_debug > 2) then
+             write(out, '(/a, 1x, i2, 2(1x, a))') 'read eigenvalues for J =', jval(jind),&
+                         ', gamma = ',gamma,' from file', trim(filename)
+          end if
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
@@ -575,7 +587,10 @@ contains
             cycle
           endif
           !
-          if ( .not.job%IOvector_symm.and.nroots_t /= bset_contr(jind)%Maxcontracts) stop 'read_eigenval error: wrong number of contracted solutions'
+          if ( .not.job%IOvector_symm.and.nroots_t /= bset_contr(jind)%Maxcontracts) then
+             write(out,"('read_eigenval error: wrong number of contracted solutions')")
+             stop 'read_eigenval error: wrong number of contracted solutions'
+          endif
           !
           do
              !
@@ -752,11 +767,12 @@ contains
              !
              if (normalmode_input.and.largest_coeff_input) then
                !
-               read(buf500, *) irec, igamma, ilevel, ideg, energy, quanta(0:nmodes), ilarge_coef,isym(0:nclasses),normal(0:nmodes),largest_coeff
+               read(buf500, *) irec, igamma, ilevel, ideg, energy, quanta(0:nmodes), ilarge_coef,isym(0:nclasses),&
+                               normal(0:nmodes),largest_coeff
                !
              elseif (normalmode_input) then 
                !
-               read(buf500, *) irec, igamma, ilevel, ideg, energy, quanta(0:nmodes), ilarge_coef,isym(0:nclasses),normal(0:nmodes)
+               read(buf500, *) irec,igamma,ilevel,ideg,energy,quanta(0:nmodes),ilarge_coef,isym(0:nclasses),normal(0:nmodes)
                !
              elseif (largest_coeff_input) then 
                !
@@ -786,10 +802,16 @@ contains
                !
                J_ = Jval(jind)
                !
-               write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
-               ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),normal(1:nmodes),sym%label(isym(1:nclasses)),&
+               !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
+               !
+               write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
+                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
+               !
+               write(out,my_fmt) & 
+               ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
+               normal(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
-               largest_coeff,ilevel,quanta(1:nmodes)
+               largest_coeff,' ::',ilevel,quanta(1:nmodes)
                !
              endif
              !
@@ -849,22 +871,25 @@ contains
           !
           !
           !print energies
-          !dec$ if (tran_debug > 2)
+          if (tran_debug > 2) then
+             !
+             write(my_fmt,'(a,i0,a)') "(/1x, a, 11x, a, 1x, a, 1x, a, 8x, a,",nmodes,"(2x), 1x, a)"
              write(out, '(/1x, a, 2x, i8/1x, a, 1x, i8)') 'number of roots', nroots, 'number of levels', nlevels
-             write(out, '(/1x, a, 11x, a, 1x, a, 1x, a, 8x, a, <nmodes>(2x), 1x, a)') 'ilevel', 'energy', 'ndeg',       &
-             'igamma', 'nu(0:nmodes)', 'irec'
+             write(out,my_fmt) 'ilevel', 'energy', 'ndeg','igamma', 'nu(0:nmodes)', 'irec'
+             !
+             write(my_fmt,'(a,i0,a,i0,a)') "(2x,i8,1x,f14.8,2x,i3,4x,i3, 5x,",nmodes,"(1x, i3),1x,i7,5x",ndeg,"(1x, i7)))"
              !
              do ilevel = 1, nlevels
                 !
                 ndeg = eigen(ilevel)%ndeg
-                write(out, '(2x, i8, 1x, f14.8, 2x, i3, 4x, i3, 5x, <nmodes>(1x, i3), 1x, i7, 5x,<ndeg>(1x, i7))')  &
+                write(out,my_fmt)  &
                 ilevel, eigen(ilevel)%energy, eigen(ilevel)%ndeg,        &
                 eigen(ilevel)%igamma, eigen(ilevel)%quanta(1:nmodes),    &
                 eigen(ilevel)%irec(1:ndeg)
                 !
              end do
              write(out, '(a)') '...done!'
-          !dec$ end if
+          end if
           !
           16 continue 
           if (present(error)) error = 1 
@@ -1118,7 +1143,7 @@ contains
        Jval(1) = jrot
        !
        if(jrot/=0) then
-          write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i)") jrot 
+          write(out,"('TRconvert_repres_J0_to_contr: illegal jrot (not 0): ',i0)") jrot 
           stop 'TRconvert_repres_J0_to_contr: illegal jrot'
        end if
        !
@@ -1131,7 +1156,7 @@ contains
        endif
        !
        if(PTNclasses/=1) then
-          write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i)") PTNclasses 
+          write(out,"('TRconvert_repres_J0_to_contr: illegal number of classes (not 1): ',i0)") PTNclasses 
        !   stop 'TRconvert_repres_J0_to_contr: illegal PTNclasses'
        end if
        !
@@ -1194,17 +1219,19 @@ contains
       if (job%verbose>=2) call TimerStart('Convert J0-mat.elems to contr. repres.')
       !
       if(jrot/=0) then
-          write(out,"('TRconvert_matel_j0_eigen: illegal jrot (not 0): ',i)") jrot 
+          write(out,"('TRconvert_matel_j0_eigen: illegal jrot (not 0): ',i0)") jrot 
           stop 'TRconvert_matel_j0_eigen: illegal jrot'
       end if
       !
       if(PTNclasses/=1) then
-         write(out,"('TRconvert_matel_j0_eigen: illegal number of classes (not 1): ',i)") PTNclasses 
+         write(out,"('TRconvert_matel_j0_eigen: illegal number of classes (not 1): ',i0)") PTNclasses 
          stop 'TRconvert_matel_j0_eigen: illegal PTNclasses'
       end if
       !
       if (trim(job%IOkinet_action)/='CONVERT'.and.trim(job%IOextF_action)/='CONVERT'.AND..not.job%convert_model_j0) then
-          write(out,"('TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM, at least one must be set to CONVERT or EIGENfunc SAVE CONVERT')")
+          write(out,"(a,a)") &
+                    'TRconvert_matel_j0_eigen: Illegal MATELEM or EXTMATELEM',&
+                    ' at least one must be set to CONVERT or EIGENfunc SAVE CONVERT'
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
       !
@@ -1224,7 +1251,8 @@ contains
       !
       matsize = int(dimen*Neigenroots,hik)
       !
-      if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i,' elements.')") Neigenroots,Neigenroots,matsize
+      if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i0,' elements.')") & 
+                          Neigenroots,Neigenroots,matsize
       !
       allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
       call ArrayStart('psi',info,1,kind(psi),matsize)
@@ -1399,7 +1427,8 @@ contains
           iterm1 = max(job%iswap(1),1)
           iterm2 = min(job%iswap(2),(FLNmodes+3)*3)
           !
-          if (job%verbose>=4) write(out,"('  The j0_matelem.chk will be divided into 3 x 3 + ',i4,'x 3  = ',i5,' chk-slices')") FLNmodes,9+3*FLNmodes
+          if (job%verbose>=4) write(out,"('  The j0_matelem.chk will be divided into 3 x 3 + ',i4,'x 3  = ',i5,' chk-slices')") &
+                                    FLNmodes,9+3*FLNmodes
           if (job%verbose>=4) write(out,"('  islice = 1-9 (Grot), and 10-',i4,'(Gcor). ')") 9+3*FLNmodes
           if (job%verbose>=4) write(out,"('  This run is for the checkpoint slices from ',i4,' to ',i4)") iterm1,iterm2
           !
@@ -1633,7 +1662,7 @@ contains
         rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
         rootsize2= int(ncontr_t*ncontr_t,hik)
         !
-        if (job%verbose>=4) write(out,"(/'restore Extvib...: Number of elements: ',i)") ncontr_t
+        if (job%verbose>=4) write(out,"(/'restore Extvib...: Number of elements: ',i0)") ncontr_t
         !
         allocate(extF_me(ncontr_t,ncontr_t),stat=info)
         call ArrayStart('extF_me',info,1,kind(extF_me),rootsize2)
@@ -1984,7 +2013,7 @@ contains
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i)") bset_contr(1)%Maxcontracts,ncontr_t
+       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") bset_contr(1)%Maxcontracts,ncontr_t
        stop 'PTcontracted_matelem_class - in file - illegal nroots '
      end if
      !
@@ -2033,7 +2062,10 @@ contains
        if (buf18(1:4)/='g_ro') then
          write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") trim(job%kinetmat_file),buf18(1:5)
          !
-         if (buf18(1:4)=='hvib'.or.buf18(1:3)=='End') write (out,"(' Most likely the split chk-points are supposed to be used. Re-do MATELEM SAVE or use SPLIT in MATELEM !')") 
+         if (buf18(1:4)=='hvib'.or.buf18(1:3)=='End') &
+               write (out,"(a,a)") &
+               ' Most likely the split chk-points are supposed to be used.',&
+               'Re-do MATELEM SAVE or use SPLIT in MATELEM !'
          stop 'restore_rot_kinetic_matrix_elements - in file -  g_rot missing'
        end if
        !

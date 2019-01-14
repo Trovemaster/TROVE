@@ -8,7 +8,8 @@ module dipole
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
  use fields,       only : manifold,job,analysis,bset
- use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,TimerProbe,memory_limit,memory_now
+ use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,&
+                          TimerProbe,memory_limit,memory_now
  use molecules,    only : MLcoord_direct,MLrotsymmetry_generate,ddlmn_conj,dlmn,Phi_rot,calc_phirot
  use moltype,      only : molec, extF, intensity, three_j
  use symmetry,     only : sym
@@ -342,7 +343,8 @@ contains
     integer(ik)    :: ilevelI, ilevelF, ndegI, ndegF, idegI, idegF, irec, idimen, nsizeF,nsizeI,ilevelI_
     integer(ik)    :: cdimenI,irep
     integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen,Ntransit_
-    integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),normalI(0:molec%nmodes)
+    integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),&
+                      normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
     real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_
     real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time
@@ -372,13 +374,16 @@ contains
     !
     !
     character(len=1) :: branch
-    character(len=wl) :: my_fmt,my_fmt_tm
+    character(len=wl) :: my_fmt,my_fmt_tm,my_fmt1
     !
     character(cl)           :: filename, ioname
     character(4)            :: jchar,gchar
     integer(ik)             :: iounit
     !
-    real(rk)     :: ddot, boltz_fc, beta, intens_cm_mol, A_coef_s_1, A_einst, absorption_int, dtemp0,dmu(3), intens_cm_molecule
+    real(rk)     :: ddot,boltz_fc,beta,intens_cm_mol,A_coef_s_1,A_einst,absorption_int,dtemp0,dmu(3),&
+                    intens_cm_molecule
+    !
+    character(len=cl) :: my_fmt0 !format for I/O specification
     !
     call TimerStart('Intensity calculations')
     !
@@ -410,7 +415,8 @@ contains
     allocate(Jeigenvec_unit(nJ,sym%Nrepresen), stat = info)
     if (info /= 0) stop 'dm_tranint allocation error: Jeigenvec_unit - out of memory'
     !
-    allocate(nlevelsG(nJ,sym%Nrepresen),ilevelsG(nJ,sym%Nrepresen),ram_size(nJ,sym%Nrepresen),iram(nJ,sym%Nrepresen),stat = info)
+    allocate(nlevelsG(nJ,sym%Nrepresen),ilevelsG(nJ,sym%Nrepresen),ram_size(nJ,sym%Nrepresen),&
+             iram(nJ,sym%Nrepresen),stat = info)
     call ArrayStart('nlevelsG',info,size(nlevelsG),kind(nlevelsG))
     call ArrayStart('ilevelsG',info,size(ilevelsG),kind(ilevelsG))
     call ArrayStart('ram_size',info,size(ram_size),kind(ram_size))
@@ -568,7 +574,7 @@ contains
            !
            if (mod(Ntransit,intensity%int_increm)==0.and.energyI>ener_) then
               ener_ = energyI
-              write(out,"(i,f16.4)") Ntransit,energyI-intensity%ZPE
+              write(out,"(i0,f16.4)") Ntransit,energyI-intensity%ZPE
            endif
            !
          endif 
@@ -632,23 +638,26 @@ contains
        !
     enddo
     !
+    write(my_fmt0,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for J = ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,my_fmt0) 'Number of states for J = ',jI,' each symm = ',nlevelsG(jind,:)
       !
     enddo
     !
     dimenmax_ram = max(nsizemax,1)
     !
-    write(out,"('Max size of vectors: sym = ',i,' prim =  ',i)") dimenmax_ram,matsize
+    write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
     allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
     call ArrayStart('vec_ram',0,1,rk)
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+                             'All vectors will require approx ',f_t,' Gb; number of vectors = ',&
+                             nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
@@ -656,7 +665,9 @@ contains
     !
     ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
+                        'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),&
+                        memory_limit-memory_now,ram_size_max
     !
     do jind = 1, nJ
        !
@@ -675,7 +686,7 @@ contains
           !
           if (ram_size_>0) then
             !
-            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i,4x,f14.5)") jval(jind),irep,ram_size_,f_t
+            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i0,4x,f14.5)") jval(jind),irep,ram_size_,f_t
             !
             !dimenmax_ram_ = max(min(int(bset_contr(jind)%nsize(irep)*intensity%factor),bset_contr(jind)%nsize(irep)),1)
             !
@@ -683,7 +694,8 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',f14.4,'Gb')") &
+                                jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
             !
@@ -736,7 +748,7 @@ contains
     !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -856,9 +868,11 @@ contains
     !
     !write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
     !
+    write(my_fmt0,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
+    !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,my_fmt0) 'Number of states for ',jI,' each symm = ',nlevelsG(jind,:)
       !
     enddo
     !
@@ -977,17 +991,13 @@ contains
     !
     nformat = sym%Maxdegen**2
     !
-    write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') '(i4,1x,a4,3x,"<-",i4,1x,a4,3x,a1,2x,f11.4,1x,"<-",1x,f11.4,1x,f11.4,2x,"(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
+    write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') '(i4,1x,a4,3x,"<-",i4,1x,a4,3x,a1,2x,f11.4,1x,"<-",1x,f11.4,1x,&
+                   f11.4,2x,"(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
                    nclasses,'(x,a3),1x,',nmodes,'(1x, i3),1x,")",1x,"<- ","(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
                    nclasses,'(x,a3),1x,',nmodes,'(1x, i3),1x,")",1x,3(1x, es16.8),2x,1x,i6,1x,"<-",&
                    &1x,i6,1x,i8,1x,i8,1x,"(",1x,',&
                    nmodes,'(1x, i3),1x,")",1x,"<- ",1x,"(",1x,',nmodes,'(1x, i3),1x,")",1x,',nformat,'(1x, es16.8))'
     !
-    write(my_fmt_tm,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') &
-                            '(i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",',&
-                            nclasses,'a3,";",',nmodes,'(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",',&
-                            nclasses,'a3,";",',nmodes,'(1x,i3),")",2(1x,es15.8),i8,2x,"(",',&
-                            nmodes,'(1x, i3),")",2x,"<- ",1x,"(",',nmodes,'(1x, i3),")",3(',nformat,'(1x,f16.8,1x,3i1)))' 
     !
     ! Prepare the table header
     !
@@ -995,20 +1005,37 @@ contains
       !
       case('ABSORPTION','EMISSION')
        !
-       if (job%exomol_format) then 
+       if (job%exomol_format) then
          !
-         write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t50'Ei',t62'nu_if',&
-                     &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
-                     &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
-                     !
+         !write(my_fmt_tm,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') &
+         !                   '(i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",',&
+         !                   nclasses,'a3,";",',nmodes,'(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",',&
+         !                   nclasses,'a3,";",',nmodes,'(1x,i3),")",2(1x,es15.8),i8,2x,"(",',&
+         !                   nmodes,'(1x, i3),")",2x,"<- ",1x,"(",',nmodes,'(1x, i3),")",3(',nformat,'(1x,f16.8,1x,3i1)))' 
+         !
+         write(my_fmt1,'(a,i0,a)') "(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a1,t42a2,t50a1,t62a5,t85,",nclasses,"(4x),1x,",nmodes,"(4x),&
+                                   &3x,a2,14x,",nclasses,"(4x),1x,",nmodes,"(4x),8x,a7,10x,a5,12x,a7,12x,a1,8x,a1,8x,a1)"
+         !
+         !write(out,"(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a1,t42a2,t50a1,t62a5,t85,<nclasses>(4x),1x,<nmodes>(4x),3x,a2,14x,<nclasses>(4x),1x,<nmodes>(4x),8x,a7,10x,a5,12x,a7,12x,a1,8x,a1,8x,a1)") 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'
+         !
+         write(out,my_fmt1) 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'
+         !
       endif
       !
       case('TM')
        !
-       write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ef',t42'<-',t52'Ei',t65'nu_if',&
-                   &t84,<nclasses>(3x),1x,<nmodes>(3x),9x,'<-',8x,<nclasses>(3x),1x,<nmodes>(3x),&
-                   &17x,'TM(f<-i)',8x,'N',12x,'x',18x,'y',18x,'z')")
-
+       write(my_fmt_tm,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') &
+                               '(i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",',&
+                               nclasses,'a3,";",',nmodes,'(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",',&
+                               nclasses,'a3,";",',nmodes,'(1x,i3),")",2(1x,es15.8),i8,2x,"(",',&
+                               nmodes,'(1x, i3),")",2x,"<- ",1x,"(",',nmodes,'(1x, i3),")",3(',nformat,'(1x,f16.8)))' 
+                               !'(1x,f16.8,1x,3i1)))' 
+                               !
+       write(my_fmt1,'(a,i0,a,i0,a,i0,a,i0,a)') &
+                                  "(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a2,t42a2,t52a2,t65a5,t84,",nclasses,"(3x),1x",nmodes,&
+                                  &"(3x),9x,a2,8x,",nclasses,"(3x),1x,",nmodes,"(3x),17x,a8,8x,a1,12x,a1,18x,a1,18x,a1)"
+       !
+       write(out,my_fmt1) 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','TM(f<-i)','N','x','y','z'
        !
     end select 
     !
@@ -1280,7 +1307,8 @@ contains
       end if
       !
       !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,quantaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
-      !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static) 
+      !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,&
+      !$omp& absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static) 
       Flevels_loop: do ilevelF = 1,nlevels
          !
          indF = eigen(ilevelF)%jind
@@ -1650,7 +1678,8 @@ contains
                               eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
                               linestr,absorption_int,itransit,&
                               normalF(1:nmodes),normalI(1:nmodes),&
-                              ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                              !( ( ( ( tm_deg(imu,idegI,idegF),idegF,idegI,imu ), idegF=1,ndegF ),idegI=1,ndegI),imu=1,3 )
+                              ( ( ( ( tm_deg(imu,idegI,idegF) ), idegF=1,ndegF ),idegI=1,ndegI),imu=1,3 )
                  !$omp end critical
                  !
                endif 
@@ -1687,7 +1716,8 @@ contains
       !endif
       !
       if (job%verbose>=3) then
-          write(out,"('--- ',t4,f18.6,2x,i,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
+          write(out,"('--- ',t4,f18.6,2x,i0,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") &
+                    energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
       if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=4) then
@@ -1727,7 +1757,7 @@ contains
                 !
                 if (mod(Ntransit_,int_increm)==0.and.energyI>ener_) then
                    !
-                   write(out,"('|  ',2f16.0,i)") ener_-intensity%ZPE,energyI-intensity%ZPE,Ntransit_
+                   write(out,"('|  ',2f16.0,i0)") ener_-intensity%ZPE,energyI-intensity%ZPE,Ntransit_
                    ener_ = energyI
                 endif
                 !
@@ -1737,7 +1767,7 @@ contains
            !
          enddo
          !
-         write(out,"('|  ',2f16.0,i)") ener_-intensity%ZPE,intensity%erange_low(2),Ntransit_
+         write(out,"('|  ',2f16.0,i0)") ener_-intensity%ZPE,intensity%erange_low(2),Ntransit_
          !
       endif
       !
@@ -2108,6 +2138,8 @@ contains
     double complex,allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
     character(len=1)        :: jobvl,jobvr
     integer(ik)             :: cnu_i(0:molec%nmodes),ktau,tauI
+    character(len=cl)       :: my_fmt !format for I/O specification
+    character(len=wl)       :: my_fmt1 !format for I/O specification
     !
     call TimerStart('Density analysis')
     !
@@ -2213,7 +2245,8 @@ contains
        passed = .false.
        loop_ilist : do ilist=1,nlist
          !
-         if (jF==analysis%j_list(ilist).and.igammaF==analysis%sym_list(ilist).and.eigen(ilevelF)%irec(1)==analysis%dens_list(ilist)) then 
+         if (jF==analysis%j_list(ilist).and.igammaF==analysis%sym_list(ilist).and.&
+             eigen(ilevelF)%irec(1)==analysis%dens_list(ilist)) then 
            passed = .true.
            exit loop_ilist
          endif 
@@ -2233,23 +2266,25 @@ contains
        !
     enddo
     !
+    write(my_fmt,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
     !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for J = ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,my_fmt) 'Number of states for J = ',jI,' each symm = ',nlevelsG(jind,:)
       !
     enddo
     !
     dimenmax_ram = max(nsizemax,1)
     !
-    write(out,"('Max size of vectors: sym = ',i,' prim =  ',i)") dimenmax_ram,matsize
+    write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
     allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
     call ArrayStart('vec_ram',0,1,rk)
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,nlevels,f_t/real(nlevels,rk)
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+        'All vectors will require approx ',f_t,' Gb; number of vectors = ',nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
@@ -2257,7 +2292,9 @@ contains
     !
     ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb; number of vectors to be kept in RAM =  ',i/)") f_t*real(nlevels,rk),memory_limit-memory_now,ram_size_max
+    if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") &
+                               'Memory needed = ',f_t*real(nlevels,rk),'Gb;  memory  available = ',&
+                               memory_limit-memory_now,ram_size_max
     !
     do jind = 1, nJ
        !
@@ -2276,7 +2313,7 @@ contains
           !
           if (ram_size_>0) then
             !
-            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i,4x,f14.5)") jval(jind),irep,ram_size_,f_t
+            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i0,4x,f14.5)") jval(jind),irep,ram_size_,f_t
             !
             !dimenmax_ram_ = max(min(int(bset_contr(jind)%nsize(irep)*intensity%factor),bset_contr(jind)%nsize(irep)),1)
             !
@@ -2284,7 +2321,9 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i,', ',f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,real(matsize*8,rk)/1024.0_rk**3
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',&
+                                f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
+                                real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
             !
@@ -2325,7 +2364,7 @@ contains
     !
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=6.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=6.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -2338,7 +2377,8 @@ contains
       passed = .false.
       loop_ilist1 : do ilist=1,nlist
         !
-        if (jF==analysis%j_list(ilist).and.igammaF==analysis%sym_list(ilist).and.eigen(ilevelF)%irec(1)==analysis%dens_list(ilist)) then 
+        if (jF==analysis%j_list(ilist).and.igammaF==analysis%sym_list(ilist).and.&
+            eigen(ilevelF)%irec(1)==analysis%dens_list(ilist)) then 
           passed = .true.
           exit loop_ilist1
         endif 
@@ -2406,9 +2446,11 @@ contains
     !
     !write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
     !
+    write(my_fmt,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
+    !
     do jind = 1, nJ
       jI = Jval(jind) 
-      write(out,"('Number of states for ',i4,' each symm = ',<Nrepresen>i8)") jI,nlevelsG(jind,:)
+      write(out,my_fmt) 'Number of states for ',jI,' each symm = ',nlevelsG(jind,:)
     enddo
     !
     if (all(nlevelsG(:,:)<1)) then 
@@ -2424,7 +2466,8 @@ contains
     !
     if (analysis%reduced_density) then
       !
-      imode = min(analysis%dens_list(nlist+1),nclasses) ; jmode = min(analysis%dens_list(nlist+2),nclasses) ; kmode = min(analysis%dens_list(nlist+3),nclasses)
+      imode = min(analysis%dens_list(nlist+1),nclasses) ; jmode = min(analysis%dens_list(nlist+2),nclasses)
+      kmode = min(analysis%dens_list(nlist+3),nclasses)
       !
       dens_size(:) = 1
       do jind=1,nJ
@@ -2535,12 +2578,17 @@ contains
            !
            !print*, vec
            !
-           write(out,"(i4,1x, a3,2x,f13.6,1x,'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'(',<nmodes>(1x, i3),')')") & 
+           write(my_fmt1,'(a,i0,a,i0,a,i0,a)') "(i4,1x, a3,2x,f13.6,1x,a1,a3,a1,i3,a1,1x,a1,",nclasses,"a3,a1,",&
+                                               nmodes,"(1x, i3),a1,2x,a1,",nmodes,"(1x, i3),a1)"
+           !
+           !write(out,"(i4,1x, a3,2x,f13.6,1x,a1,a3,a1,i3,a1,1x,a1,<nclasses>a3,a1,<nmodes>(1x, i3),a1,2x,a1,<nmodes>(1x, i3),a1)") & 
+           !
+           write(out,my_fmt1) & 
                             jI,sym%label(igammaI),&
-                            energyI-intensity%ZPE,&
-                            eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                            eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
-                            normalI(1:nmodes)
+                            energyI-intensity%ZPE,'(',&
+                            eigen(ilevelI)%cgamma(0),';',eigen(ilevelI)%krot,')',&
+                            '(',eigen(ilevelI)%cgamma(1:nclasses),';',eigen(ilevelI)%quanta(1:nmodes),')', &
+                            '(',normalI(1:nmodes),')'
            !
            do i1 = 1,dens_size(1)
              do i2 = 1,dens_size(2)
@@ -2560,6 +2608,8 @@ contains
          !
          if (analysis%print_vector) then
             !
+            write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,a1,1x,a1,",Nclasses,"(i3),a1)"
+            !
             do irootI = 1, dimenI
                  !
                  irow = bset_contr(indI)%icontr2icase(irootI,1)
@@ -2573,11 +2623,11 @@ contains
                  !
                  if (abs(vec(irootI))>1e-4) then  
                    !
-                   write(out,'(2x,i4,i7,e16.8,3x,"(",3i3,")",1x,"(",<Nclasses>(i3),")")') & 
+                   write(out,my_fmt1) & 
                               igammaI,irootI,&
-                              vec(irootI), &
-                              jI,kI,tauI, &
-                              cnu_i(1:Nclasses)
+                              vec(irootI),"(", &
+                              jI,kI,tauI,")", &
+                              "(",cnu_i(1:Nclasses),")"
                    !
                  endif
                  !
@@ -2866,13 +2916,15 @@ contains
     integer(ik)    :: ilevelI, ilevelF, ndegI, ndegF, idegI, idegF, irec, idimen, cdimen, cdimenmax
     integer(ik)    :: cdimenI(sym%Maxdegen),cdimenF(sym%Maxdegen),nlevelsG(sym%Nrepresen),ilevelsG(sym%Nrepresen),irep
     integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen
-    integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),normalI(0:molec%nmodes)
+    integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),&
+                      normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,imu,jmax,kI,kF,unitO,unitC
     real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,cfactor,ener_
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
     logical        :: passed,passed_
 
-    integer(ik), allocatable :: icoeffI(:,:), icoeffF(:,:),Jfuncs_unit(:),Jindex_unit(:),cdimens(:,:),istored(:),isave(:),isaved(:,:),idimenmax(:)
+    integer(ik), allocatable :: icoeffI(:,:), icoeffF(:,:),Jfuncs_unit(:),Jindex_unit(:),cdimens(:,:),istored(:),&
+                                isave(:),isaved(:,:),idimenmax(:)
     real(rk),    allocatable :: vecI(:,:), vecF(:,:)
     real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:)
     integer(ik), pointer :: Jeigenvec_unit(:)
@@ -2894,7 +2946,9 @@ contains
     character(len=cl):: unitfname,filename
     character(4)     :: jchar
     !
-    real(rk)     :: boltz_fc, beta, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
+    real(rk)         :: boltz_fc, beta, intens_cm_molecule, A_coef_s_1, A_einst, absorption_int, dtemp
+    character(len=cl):: my_fmt !format for I/O specification
+    character(len=wl) :: my_fmt_a,my_fmt_tm
     !
     call TimerStart('Intensity calculations')
     !
@@ -3045,7 +3099,7 @@ contains
            !
            if (mod(Ntransit,intensity%int_increm)==0.and.energyI>ener_) then
               ener_ = energyI
-              write(out,"(i,f16.4)") Ntransit,energyI-intensity%ZPE
+              write(out,"(i0,f16.4)") Ntransit,energyI-intensity%ZPE
            endif
            !
          endif 
@@ -3083,11 +3137,13 @@ contains
        !
     enddo
     !
-    write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
+    write(my_fmt,'(a,i0,a)') "(a,",Nrepresen,"i8)"
+    !
+    write(out,my_fmt) 'Number of states for each symm = ',nlevelsG(:)
     !
     dimenmax_swap = max(min(int(dimenmax*intensity%factor),dimenmax),1)
     !
-    write(out,"('Size of the reduced vector = ',i,' total =  ',i)") dimenmax_swap,dimenmax
+    write(out,"('Size of the reduced vector = ',i0,' total =  ',i0)") dimenmax_swap,dimenmax
     !
     call ArrayStart('vec_swap',0,1,rk)
     call ArrayStart('icoeff_swap',0,1,ik)
@@ -3097,7 +3153,8 @@ contains
     f_t = 0
     do irep = 1,Nrepresen
        !
-       f_t = f_t + real(nlevelsG(irep),rk)*real(sym%degen(irep),rk)*real(dimenmax_swap,rk)*(real(rk,rk)+real(ik,rk)+1.0_rk)/1024_rk**3
+       f_t = f_t + real(nlevelsG(irep),rk)*real(sym%degen(irep),rk)*real(dimenmax_swap,rk)*(real(rk,rk)+&
+                   real(ik,rk)+1.0_rk)/1024_rk**3
        !
        !f_t = f_t + real(sym%degen(irep),rk)*(real(dimenmax_swap,rk)+1.0_rk)*real(ik,rk)/1024_rk**3
        !
@@ -3105,7 +3162,8 @@ contains
     !
     matsize = int(sum( nlevelsG(:) ),hik)
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i,' per each vector = ',f12.5'Gb')") f_t,matsize,f_t/real(matsize,rk)
+    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i0,&
+                                  ' per each vector = ',f12.5'Gb')") f_t,matsize,f_t/real(matsize,rk)
     !
     ! memory per vector
     !
@@ -3114,7 +3172,9 @@ contains
     !
     swap_size_max = max(0,min( matsize,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,'Gb number of vectors will be shared in RAM =  ',i)") f_t*real(matsize,rk),memory_limit-memory_now,swap_size_max
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
+                                  'Gb number of vectors will be shared in RAM =  ',i0)") f_t*real(matsize,rk),&
+                                  memory_limit-memory_now,swap_size_max
     !
     do irep = 1,Nrepresen
        !
@@ -3125,7 +3185,8 @@ contains
        f_t = real( nlevelsG(irep),rk )/real( sum( nlevelsG(:) ), rk )
        swap_size_ = int(f_t*swap_size_max,ik)
        !
-       if (job%verbose>=4) write(out,"('irep = ',i2,';  total swap ',i,' swap_irep =  ',i,' f_t = ',f14.5)") irep,swap_size_max,swap_size_,f_t
+       if (job%verbose>=4) write(out,"('irep = ',i2,';  total swap ',i0,' swap_irep =  ',i0,' f_t = ',f14.5)") &
+                                       irep,swap_size_max,swap_size_,f_t
        !
        swap_size_ = min(swap_size_,nlevelsG(irep))
        !
@@ -3137,7 +3198,8 @@ contains
          !
          matsize = int(swap_size_,hik)*int(sym%degen(irep),hik)*int(dimenmax_swap,hik)
          !
-         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th  swap matrix   ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*8,rk)/1024.0_rk**3
+         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th  swap matrix   ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')") &
+                                   irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*8,rk)/1024.0_rk**3
          !
          allocate(vec_swap(irep)%mat(swap_size_,sym%degen(irep),dimenmax_swap),stat=info)
          !
@@ -3145,7 +3207,8 @@ contains
          !
          matsize = int(swap_size_,hik)*int(sym%degen(irep),hik)*int(dimenmax_swap,hik)+int(swap_size_,hik)*int(sym%degen(irep),hik)
          !
-         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th iswap matrix   ',i8,' x',i3,' x',i8,' = ',i,', ',f14.4,'Gb')") irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*4,rk)/1024.0_rk**3
+         if (job%verbose>=4) write(out,"('Allocate ',i2,'-th iswap matrix   ',i8,' x',i3,' x',i8,' = ',i0,', ',f14.4,'Gb')")&
+                                        irep,swap_size_,sym%degen(irep),dimenmax_swap,matsize,real(matsize*4,rk)/1024.0_rk**3
          !
          allocate(icoeff_swap(irep)%imat(swap_size_,sym%degen(irep),dimenmax_swap),stat=info)
          allocate(cdimen_swap(irep)%kmat(swap_size_,sym%degen(irep)),stat=info)
@@ -3274,7 +3337,7 @@ contains
        !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
        do ilevelF = 1, nlevels
          !
-         if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+         if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
          !
          jF = eigen(ilevelF)%jval
          !
@@ -3328,8 +3391,10 @@ contains
            !
            if (cdimen>idimenmax(indF)) then 
               !
-              write(out,"('intens: dimenmax_swap is too small (',i,' vs ',i,') reduce the coeff value or increase swap_factor to minimum',f12.4)") idimenmax(indF),cdimen,real(cdimen,rk)/real(bset_contr(jind)%Maxcontracts,rk)
-			  write(out,"('dimenmax_ = ',i,' intensity%factor = ',i)")  dimenmax_,intensity%factor
+              write(out,"(a,i0,' vs ',i0,a,f12.4)") 'intens: dimenmax_swap is too small (',&
+                         idimenmax(indF),cdimen,') reduce the coeff value or increase swap_factor to minimum',&
+                         real(cdimen,rk)/real(bset_contr(jind)%Maxcontracts,rk)
+			  write(out,"('dimenmax_ = ',i0,' intensity%factor = ',i0)")  dimenmax_,intensity%factor
               stop 'intens: increase swap_factor!'
               !
            endif
@@ -3349,7 +3414,8 @@ contains
         return 
       endif
 	  !
-	  write(out,"(/'Maximal number of non-zero values after vector compression  = ',i,' out of ',i,' suggested compression  = ',f12.5/)") cdimenmax,dimenmax,cfactor
+	  write(out,"(/a,i0,' out of ',i0,' suggested compression  = ',f12.5/)") &
+	               'Maximal number of non-zero values after vector compression  = ',cdimenmax,dimenmax,cfactor
       !
     endif
     !
@@ -3361,7 +3427,7 @@ contains
     !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
     do ilevelF = 1, nlevels
       !
-      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i)") ilevelF
+      if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
       !
       jF = eigen(ilevelF)%jval 
       !
@@ -3501,7 +3567,9 @@ contains
        !
     enddo
     !
-    write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
+    write(my_fmt,'(a,i0,a)') "(a,",Nrepresen,"i8)"
+    !
+    write(out,my_fmt) 'Number of states for each symm = ',nlevelsG(:)
     !
     !dec$ if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
@@ -3538,16 +3606,20 @@ contains
     select case (trim(intensity%action))
       !
       case('ABSORPTION','EMISSION')
+
+       write(my_fmt_a,'(a,i0,a,i0,a,i0,a,i0,a)') "(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a1,t42a2,t50a2,t62a5,t85,",&
+                      nclasses,"(4x),1x,",nmodes,"(4x),3x,a2,14x,",nclasses,"(4x),1x,",nmodes,&
+                      "(4x),8x,a7,10x,a7,12x,a7,12x,a2,8x,a2,8x,a1)"
        !
-       write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ei',t42'<-',t50'Ef',t62'nu_if',&
-                   &t85,<nclasses>(4x),1x,<nmodes>(4x),3x,'<-',14x,<nclasses>(4x),1x,<nmodes>(4x),&
-                   &8x,'S(f<-i)',10x,'A(if)',12x,'I(f<-i)',12x,'Ni',8x,'Nf',8x,'N')")
-      !
+       write(out,my_fmt_a) 'J','Gamma <-','J','Gamma','Typ','Ei','<-','Ef','nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'
+       !
       case('TM')
        !
-       write(out,"(/t4'J',t6'Gamma <-',t17'J',t19'Gamma',t25'Typ',t35'Ei',t42'<-',t52'Ef',t65'nu_if',&
-                   &t84,<nclasses>(3x),1x,<nmodes>(3x),9x,'<-',8x,<nclasses>(3x),1x,<nmodes>(3x),&
-                   &17x,'TM(f<-i)',8x,'N',12x,'x',18x,'y',18x,'z')")
+       write(my_fmt_a,'(a,i0,a,i0,a,i0,a,i0,a)') &
+                    "(t4a1,t6a8,t17a1,t19a5,t25a3,t35a2,t42a2,t52a2,t65a5,t84,",nclasses,"(3x),1x,",nmodes,&
+                    "(3x),9x,a2,8x,",nclasses,"(3x),1x,",nmodes,"(3x),17x,a8,8x,a1,12x,a1,18x,a1,18x,a1)"
+       !
+       write(out,my_fmt_a) 'J','Gamma <-','J','Gamma','Typ','Ei','<-','Ef','nu_if','<-','TM(f<-i)','N','x','y'
 
        !
     end select 
@@ -3963,11 +4035,16 @@ contains
                    do idimen = MP1,cdimen,5
                      !
                      dtemp = dtemp + & 
-                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen  ))*vec_swap(igammaF)%mat(iswap_,idegF,idimen  ) + &
-                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+1))*vec_swap(igammaF)%mat(iswap_,idegF,idimen+1) + &
-                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+2))*vec_swap(igammaF)%mat(iswap_,idegF,idimen+2) + &
-                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+3))*vec_swap(igammaF)%mat(iswap_,idegF,idimen+3) + &
-                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+4))*vec_swap(igammaF)%mat(iswap_,idegF,idimen+4)
+                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen  ))*&
+                                   vec_swap(igammaF)%mat(iswap_,idegF,idimen  ) + &
+                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+1))*&
+                                   vec_swap(igammaF)%mat(iswap_,idegF,idimen+1) + &
+                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+2))*&
+                                   vec_swap(igammaF)%mat(iswap_,idegF,idimen+2) + &
+                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+3))*&
+                                   vec_swap(igammaF)%mat(iswap_,idegF,idimen+3) + &
+                     half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,idimen+4))*&
+                                   vec_swap(igammaF)%mat(iswap_,idegF,idimen+4)
                      !
                    enddo
                    !$omp end parallel do
@@ -4013,24 +4090,25 @@ contains
                iswap_ = istored(ilevelF)
                !
                cdimen = maxval(cdimens(ilevelF,1:ndegF),dim=1)
+
+               write(my_fmt_a,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a)') &
+                     "((i4,1x,a4,3x),a2,(i4,1x,a4,3x),a1,(2x,f11.4,1x),a2,(1x,f11.4,1x),f11.4,2x,a1,1x,a3,x,i3,1x,a1,1x,a1,1x,",&
+                     nclasses,"(x,a3),1x,",nmodes,"(1x, i3),1x,a1,1x,a3,a1,1x,a3,x,i3,1x,a1,1x,a1,1x,",&
+                     nclasses,"(x,a3),1x,",nmodes,"(1x, i3),1x,a1,1x,3(1x, es16.8),2x,(1x,i6,1x),",&
+                     "a2,(1x,i6,1x),i8,1x,i12,1x,i8,x,a1,1x,",&
+                     nmodes,"(1x, i3),1x,a1,1x,a3,1x,a1,1x,",nmodes,"(1x, i3),1x,a1,1x,",nformat,"(1x, es16.8))"
+
                !
-               write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
-                            &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
-                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,'<- ',   &
-                            &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,   &
-                            & 3(1x, es16.8),2x,(1x,i6,1x),'<-',(1x,i6,1x),i8,1x,i12,1x,i8,&
-                            1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,'<- ',1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,& 
-                            <nformat>(1x, es16.8))")  &
-                            !
-                            jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
-                            energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                            eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                            eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                            eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
+               write(out,my_fmt_a)  &
+                            jF,sym%label(igammaF),'<-',jI,sym%label(igammaI),branch, &
+                            energyF-intensity%ZPE,'<-',energyI-intensity%ZPE,nu_if,                 &
+                            '(',eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,')',&
+                            '(',eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes),')','<- ', &
+                            '(',eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,')',&
                             eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
                             linestr,A_einst,absorption_int,&
-                            eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
-                            itransit,cdimen,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
+                            eigen(ilevelF)%ilevel,'<-',eigen(ilevelI)%ilevel,&
+                            itransit,cdimen,istored(ilevelF),'(',normalF(1:nmodes),')','<- ','(',normalI(1:nmodes),')',&
                             linestr_deg(1:ndegI,1:ndegF)
              endif
              !
@@ -4047,7 +4125,8 @@ contains
                   !
                   ! complete the tm
                   !
-                  forall(imu=1:3) tm_deg(imu,idegI,idegF) = dot_product( half_linestr(indF,idegI,imu,icoeffF(idegF,1:cdimen)),vecF(idegF,1:cdimen) )
+                  forall(imu=1:3) tm_deg(imu,idegI,idegF) = dot_product( half_linestr(indF,idegI,imu,icoeffF(idegF,1:cdimen)),&
+                                                                         vecF(idegF,1:cdimen) )
                   !
                  end do
                end do
@@ -4063,7 +4142,9 @@ contains
                   !
                   ! complete the tm
                   !
-                  forall(imu=1:3) tm_deg(imu,idegI,idegF) = dot_product( half_linestr(indF,idegI,imu,icoeff_swap(igammaF)%imat(iswap_,idegF,1:cdimen)),vec_swap(igammaF)%mat(iswap_,idegF,1:cdimen) )
+                  forall(imu=1:3) tm_deg(imu,idegI,idegF) = dot_product( &
+                                  half_linestr(indF,idegI,imu,icoeff_swap(igammaF)%imat(iswap_,idegF,1:cdimen)),&
+                                  vec_swap(igammaF)%mat(iswap_,idegF,1:cdimen) )
                   !
                  end do
                end do
@@ -4095,24 +4176,36 @@ contains
                !
                nformat = ndegI*ndegF
                !
-               write(out, "( (i4, 1x, a3, 3x),'<-', (i4, 1x, a3, 3x),a1,&
-                            &(2x, f13.6,1x),'<-',(1x, f13.6,1x),f12.6,2x,&
-                            &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'<- ',   &
-                            &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',   &
-                            &2(1x,es15.8),i8,&
-                            &2x,'(',<nmodes>(1x, i3),')',2x,'<- ',   &
-                            &1x,'(',<nmodes>(1x, i3),')',   &
-                            &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
+               write(my_fmt_a,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a)') &
+                       "(i4,1x,a3,3x,a2,i4,1x,a3,3x,a1,(2x,f13.6,1x),a2,(1x, f13.6,1x),f12.6,2x,a1,a3,a1,i3,a1,1x,a1,",&
+                       nclasses,"a3,a1,",nmodes,"(1x, i3),a1,2x,a3,a1,a3,a1,i3,,1x,a1,",nclasses,"a3,a1,",nmodes,&
+                       "(1x,i3),a1,2(1x,es15.8),i8,2x,a1,",nmodes,"(1x, i3),a1,2x,a3,1x,a1,",nmodes,&
+                       "(1x, i3),a1,3(",nformat,"(1x,f16.8)))"
+                       !"(1x, i3),a1,3(",nformat,"(1x,f16.8,1x,3i1)))"
+
+               !write(out, "((i4, 1x, a3, 3x),a2, (i4, 1x, a3, 3x),a1,&
+               !             &(2x, f13.6,1x),a2,(1x, f13.6,1x),f12.6,2x,&
+               !             &a1,a3,a1,i3,a1,1x,a1,<nclasses>a3,a1,<nmodes>(1x, i3),a1,2x,a3,   &
+               !             &a1,a3,a1,i3,,1x,a1,<nclasses>a3,a1,<nmodes>(1x, i3),a1,   &
+               !             &2(1x,es15.8),i8,&
+               !             &2x,a1,<nmodes>(1x, i3),a1,2x,a3,   &
+               !             &1x,a1,<nmodes>(1x, i3),a1,   &
+               !             &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
+
+
+               !
+               write(out,my_fmt_a) &
                             !
-                            jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
-                            energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                              &
-                            eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                            eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                            eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                            eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
+                            jF,sym%label(igammaF),'<-',jI,sym%label(igammaI),branch, &
+                            energyF-intensity%ZPE,'<-',energyI-intensity%ZPE,nu_if,                              &
+                            '(',eigen(ilevelF)%cgamma(0),';',eigen(ilevelF)%krot,')',&
+                            '(',eigen(ilevelF)%cgamma(1:nclasses),';',eigen(ilevelF)%quanta(1:nmodes),')','<- ', &
+                            '(',eigen(ilevelI)%cgamma(0),';',eigen(ilevelI)%krot,')',&
+                            '(',eigen(ilevelI)%cgamma(1:nclasses),';',eigen(ilevelI)%quanta(1:nmodes),')', &
                             linestr,absorption_int,itransit,&
-                            normalF(1:nmodes),normalI(1:nmodes),&
-                            ( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                            '(',normalF(1:nmodes),')','<- ','(',normalI(1:nmodes),')',&
+                            !( ( ( (tm_deg(imu,idegI,idegF),idegF,idegI,imu),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
+                            ( ( ( (tm_deg(imu,idegI,idegF)),idegF=1,ndegF ),idegI=1,ndegI ),imu=1,3 )
              endif 
              !
          end select
@@ -4664,10 +4757,12 @@ contains
       end subroutine do_1st_half_linestrength_II_symmvec
 
 
-      subroutine do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,cdimen_blk,icoeff_blk,vector_blk,itau_blk,threej,half_ls)
+      subroutine do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,cdimen_blk,icoeff_blk,&
+                                                       vector_blk,itau_blk,threej,half_ls)
 
         implicit none 
-        integer(ik),intent(in)  :: jI,jF,indI,indF,jmax,dimenmax,cdimen_blk(0:jmax),icoeff_blk(dimenmax,0:jmax),itau_blk(dimenmax,0:jmax)
+        integer(ik),intent(in)  :: jI,jF,indI,indF,jmax,dimenmax,cdimen_blk(0:jmax),icoeff_blk(dimenmax,0:jmax),&
+                                   itau_blk(dimenmax,0:jmax)
         real(rk),intent(in)     :: vector_blk(dimenmax,0:jmax),threej(0:jmax,0:jmax,-1:1,-1:1)
         real(rk),intent(out)    :: half_ls(:)
         integer(ik)             :: irootF, icontrF, icontrI, & 
@@ -4689,7 +4784,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,ktau,tauF,kF,startK,endK,sigmaF,kI,f3j,cirootI,irootI,icontrI,tauI,sigmaI,ls) shared(half_ls) schedule(static)
+          !$omp parallel do private(irootF,icontrF,ktau,tauF,kF,startK,endK,sigmaF,kI,f3j,cirootI,irootI,icontrI,tauI,sigmaI,ls) &
+          !$omp& shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -4810,7 +4906,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) shared(half_ls) schedule(static)
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
+          !$omp& shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -5251,7 +5348,8 @@ contains
          dimenF = 2*jF+1 
          nrootsF = dimenF
          !
-         allocate(count_indexF(nrootsF,nrootsF),eigenvectsF(nrootsF,nrootsF),rot_kF(dimenF),rot_tauF(dimenF),NdegF(dimenF),stat=alloc)
+         allocate(count_indexF(nrootsF,nrootsF),eigenvectsF(nrootsF,nrootsF),rot_kF(dimenF),rot_tauF(dimenF),&
+                  NdegF(dimenF),stat=alloc)
          call ArrayStart('rotational_dipoleF',alloc,size(count_indexF),kind(count_indexF))
          call ArrayStart('rotational_dipoleF',alloc,size(eigenvectsF),kind(eigenvectsF))
          ! 
