@@ -8659,7 +8659,7 @@ module perturbation
       !
       isize = PT%Index_deg(irow)%size1
       !
-      !$omp parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,k_i,k_j,tau_i,tau_j,hcontr)
+      !$omp parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,k_i,k_j,tau_i,tau_j,hcontr) &
       !$omp& shared(hsym) schedule(dynamic)
       do jrow = 1,irow
          !
@@ -18385,7 +18385,8 @@ module perturbation
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
         !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) &
-        !$omp& shared(hvib,uniqu_trans)        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        !$omp& shared(hvib,uniqu_trans)        
+        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
            stop 'calc_gvib_contr_matrix_II me_class0_vec'
