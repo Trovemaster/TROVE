@@ -223,7 +223,7 @@
   !
   program driver
     !
-    !use tp_module
+    use tp_module
     !call ompaffinity()
 
     call pt

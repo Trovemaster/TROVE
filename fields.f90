@@ -1782,6 +1782,8 @@ module fields
                  !
               case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE') 
                  !
+              case default 
+                 !
                  job%bset(imode)%coord_kinet = job%bset(imode)%type
                  job%bset(imode)%coord_poten = job%bset(imode)%type
                  !
