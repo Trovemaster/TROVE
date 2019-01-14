@@ -9,7 +9,7 @@ module symmetry
   type  ScIIT
      integer(ik)          :: Noper     ! Number of operations in the CII operator
      integer(ik)          :: Nzeta     ! Number of symmetric elements taking into account the degeneracies 
-     real(ark),pointer    :: ioper(:)  ! the operation number in the MS group
+     integer(ik),pointer    :: ioper(:)  ! the operation number in the MS group
      integer(ik),pointer  :: coeff(:)  ! coefficients of the CII operator
      integer(ik),pointer  :: izeta(:)  ! symmetry indentification as a eigenvalues of the CII operator
   end type ScIIT

@@ -1,10 +1,10 @@
 module diag
  
-!dec$ define arpack_ = 0
-!dec$ define blacs_  = 0
-!dec$ define mpi_    = 0
-!dec$ define omparpack_ = 0
-!dec$ define propack_ = 0
+#define arpack_  0
+#define blacs_   0
+#define mpi_     0
+#define omparpack_  0
+#define propack_  0
 
 !
 !  Simplistic type-agnostic LAPACK interface
@@ -2089,20 +2089,17 @@ module diag
         ! has been exceeded.                          
         !
         
-        !dec$ if (arpack_ > 0)
-        #if arpack_ > 0
+#if (arpack_ > 0)
            !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                          ncv, v, ldv, iparam, ipntr, workd, workl, &
                          lworkl, info )
-        #else                         
-        !dec$ else 
+#else 
             !
             write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
             stop 'Arpack was not activated'
             !
-        #endif
-        !dec$ end if
+#endif
         !
         !if (verbose>=4.and.iparam(5)>0) then 
         !  !
@@ -2138,7 +2135,7 @@ module diag
       !             
       rvec = .true.
       !
-      !dec$ if (arpack_ > 0)
+#if (arpack_ > 0)
         !
         if (verbose>=5) write(out,"(/'Arpack: dseupd')") 
         !
@@ -2152,12 +2149,12 @@ module diag
         !
         if (verbose>=5) write(out,"(/'Arpack: done!')") 
         !
-      !dec$ else 
+#else 
           !
           write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
           stop 'Arpack was not activated'
           !
-      !dec$ end if
+#endif
       !
       if ( ierr < 0 ) then
          write(out,"(/'Error with_seupd, info = ',i8)") ierr
@@ -2443,17 +2440,17 @@ module diag
 	  myid = 1
 	  nprow = 1
       !
-      !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
         myid= myprow
-      !dec$ elseif (mpi_ > 0)
+#elif (mpi_ > 0)
         call MPI_COMM_RANK( comm, myid, ierr )
         call MPI_COMM_SIZE( comm, nprocs_, ierr )
         if (nprocs_/=nprocs) then
           write(out,"('matvec_p: inconsistent number of  nprocs  = ',2i6)") nprocs_,nprocs
           stop 'matvec_p: inconsistent number of  nprocs s'
         endif
-      !dec$ end if
+#endif
       !
       kend = kstart(myid) + nloc-1
       !
@@ -2483,12 +2480,12 @@ module diag
            !
            nx = iend-istart+1
            !
-           !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
              call dgerv2d( comm, nx, 1, mv_buf(istart:iend), nx, iprev, mypcol )
-           !dec$ end if
-           !dec$ if (mpi_ > 0)
+#endif
+#if (mpi_ > 0)
              call mpi_recv(mv_buf(istart),nx,MPI_DOUBLE_PRECISION,iprev,myid,comm,ierr)
-           !dec$ end if
+#endif
            !
            istart = max(istart,bterm(k,1))
            !
@@ -2502,12 +2499,12 @@ module diag
            !
            nx = iend-istart+1
            !
-           !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
              call dgesd2d( comm, nx, 1, z(istart:iend), nx, iprev, mypcol )
-           !dec$ end if
-           !dec$ if (mpi_ > 0)
+#endif
+#if (mpi_ > 0)
              call mpi_send(mv_buf(istart),nx,MPI_DOUBLE_PRECISION,iprev,iprev,comm,ierr)
-           !dec$ end if
+#endif
            !
          enddo
          !
@@ -2524,12 +2521,12 @@ module diag
            !
            nx = iend-istart+1
            !
-           !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
              call dgerv2d( comm, nx, 1, mv_buf(istart:iend), nx, inext, mypcol )
-           !dec$ end if
-           !dec$ if (mpi_ > 0)
+#endif
+#if (mpi_ > 0)
              call mpi_recv(mv_buf(istart),nx,MPI_DOUBLE_PRECISION,inext,myid,comm,ierr)
-           !dec$ end if
+#endif
            !
            iend = min(bterm(k,2),iend)
            !
@@ -2543,12 +2540,12 @@ module diag
            !
            nx = iend-istart+1
            !
-           !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
              call dgesd2d( comm, nx, 1, z(istart:iend), nx, inext, mypcol )
-           !dec$ end if
-           !dec$ if (mpi_ > 0)
+#endif
+#if (mpi_ > 0)
              call mpi_send(mv_buf(istart),nx,MPI_DOUBLE_PRECISION,inext,inext,comm,ierr)
-           !dec$ end if
+#endif
            !
          enddo
          !
@@ -2678,19 +2675,19 @@ module diag
       write(out,"('Start PARPACK-diagonalization')")
 
 
-      !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
         write(out,"('BLAS-PINFO-start')")
         call BLACS_PINFO( iam, nprocs )
         print *,nprocs
         blacs_or_mpi = 'BLACS'
-      !dec$ end if
+#endif
       !
       write(out,"('BLAS-PINFO-done')")
       !
       !call BLACS_PINFO( iam, nprocs )
       !print *,nprocs
 
-      !dec$ if (mpi_ > 0)
+#if (mpi_ > 0)
         call MPI_INIT( ierr )
         comm = MPI_COMM_WORLD
         call MPI_COMM_RANK( comm, myid, ierr )
@@ -2705,7 +2702,7 @@ module diag
         !
         blacs_or_mpi = 'MPI'
         !
-      !dec$ end if
+#endif
       !
 
 
@@ -2714,9 +2711,9 @@ module diag
 !
       if (nprocs .lt. 1) then
          nprocs = 1
-         !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
            call BLACS_SETUP( iam, nprocs )
-         !dec$ end if
+#endif
 	 !
 	 print *,nprocs
 	 !
@@ -2805,14 +2802,14 @@ module diag
       !
       myprow = 1 ; mypcol = 1 ; myid = 1
       !
-      !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
         call BLACS_GET( 0, 0, comm )
         call BLACS_GRIDINIT( comm, 'Row', nprow, npcol )
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
         !
         write(out,"(' myprow, nprow, mypcol, npcol = ',4i8)") myprow, nprow, mypcol, npcol
         !
-      !dec$ end if
+#endif
       !
       if (verbose>=2.and.trim(blacs_or_mpi)=='BLACS') then 
            write(out,"('myprow, nprow, mypcol, npcol, nprocs = ',5i8)") myprow, nprow, mypcol, npcol, nprocs
@@ -2881,19 +2878,19 @@ module diag
         ! has been exceeded.                          
         !
 
-        !dec$ if (blacs_ > 0.or.mpi_ > 0)
+#if (blacs_ > 0 || mpi_ > 0)
            !
            call pdsaupd ( comm, ido, bmat, nloc, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-        !dec$ else 
+#else 
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
             !
-        !dec$ end if
+#endif
         !
         !if (verbose>=4.and.iparam(5)>0) then 
         !  !
@@ -2927,7 +2924,7 @@ module diag
       !             
       rvec = .true.
       !
-      !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
         !
         if (verbose>=5) write(out,"(/'Arpack: dseupd')") 
         !
@@ -2939,12 +2936,12 @@ module diag
         if (verbose>=5) write(out,"(/'Arpack: done!')") 
 
         !                    
-      !dec$ else 
+#else 
           !
           write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
           stop 'Arpack was not activated'
           !
-      !dec$ end if
+#endif
       !
       if ( ierr < 0 ) then
          write(out,"(/'Error with_seupd, info = ',i8)") ierr
@@ -2992,13 +2989,13 @@ module diag
 !
  9000 continue
 !
-      !dec$ if (blacs_ > 0)
+#if (blacs_ > 0)
         call BLACS_GRIDEXIT ( comm )
         call BLACS_EXIT(0)
-      !dec$ end if
-      !dec$ if (mpi_ > 0)
+#endif
+#if (mpi_ > 0)
          call MPI_FINALIZE(rc)
-      !dec$ end if
+#endif
 
 
       deallocate(v,workl,workd,d,resid,select,mv_buf)
@@ -3145,17 +3142,17 @@ module diag
         ! has been exceeded.                          
         !
 
-        !dec$ if (omparpack_ > 0)
+#if (omparpack_ > 0)
            !
            call dsaupd_ ( ido, bmat, n, which, nev, tol, resid, &
                          ncv, v, ldv, iparam, ipntr, workd, workl, &
                          lworkl, info )
-        !dec$ else 
+#else 
             !
             write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
             stop 'Arpack was not activated'
             !
-        !dec$ end if
+#endif
         !
         !if (verbose>=4.and.iparam(5)>0) then 
         !  !
@@ -3191,7 +3188,7 @@ module diag
       !             
       rvec = .true.
       !
-      !dec$ if (omparpack_ > 0)
+#if (omparpack_ > 0)
         !
         if (verbose>=5) write(out,"(/'Arpack: dseupd')") 
         !
@@ -3205,12 +3202,12 @@ module diag
         !
         if (verbose>=5) write(out,"(/'Arpack: done!')") 
         !
-      !dec$ else 
+#else 
           !
           write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
           stop 'Arpack was not activated'
           !
-      !dec$ end if
+#endif
       !
       if ( ierr < 0 ) then
          write(out,"(/'Error with_seupd, info = ',i8)") ierr
@@ -3303,7 +3300,7 @@ module diag
       if (iverbose>=2) call TimerStart('diag_propack: diagonalization')
       !
       !
-      !dec$ if (propack_ < 1)
+#if (propack_ < 1)
         !
         write(out,'("PROPACK is not activated!")')
         stop 'PROPACK is not activated!'
@@ -3311,7 +3308,7 @@ module diag
         nroots = 0
         return
         !
-      !dec$ endif
+#endif
       !
       nev = nroots
       !

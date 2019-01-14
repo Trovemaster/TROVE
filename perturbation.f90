@@ -3103,7 +3103,8 @@ module perturbation
                !
                fv = 0
                !
-               !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) shared(fv) schedule(dynamic) reduction(max:info)
+               !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
+               !$omp& shared(fv) schedule(dynamic) reduction(max:info)
                do k = 1,dimen
                  !
                  nu(:) = PT%active_space%icoeffs(:,k)
@@ -8594,7 +8595,8 @@ module perturbation
       !
       isize = PT%Index_deg(irow)%size1
       !
-      !$omp parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,hcontr) shared(hsym) schedule(dynamic)
+      !$omp  parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,hcontr) shared(hsym) &
+      !$omp& schedule(dynamic)
       do jrow = 1,irow
          !
          cnu_j(:) = PT%contractive_space(:,jrow)
@@ -8657,7 +8659,8 @@ module perturbation
       !
       isize = PT%Index_deg(irow)%size1
       !
-      !$omp parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,k_i,k_j,tau_i,tau_j,hcontr) shared(hsym) schedule(dynamic)
+      !$omp parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,k_i,k_j,tau_i,tau_j,hcontr)
+      !$omp& shared(hsym) schedule(dynamic)
       do jrow = 1,irow
          !
          cnu_j(:) = PT%contractive_space(:,jrow)
@@ -10240,7 +10243,8 @@ module perturbation
            !
            if (job%IOvector_symm) ilevel = iroot 
            !
-           write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') "(i8,3i8,f20.12,i8,",nmodes,"i4,i8,",Nclasses1,"i4,i8,",Nmodes,"i4,2x,f17.8,",Nclasses,"i7)"
+           write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') "(i8,3i8,f20.12,i8,",nmodes,"i4,i8,",&
+                        Nclasses1,"i4,i8,",Nmodes,"i4,2x,f17.8,",Nclasses,"i7)"
            !
            !write(IOunit_quanta,'(i8,3i8,f20.12,i8,<Nmodes>i4,i8,<Nclasses1>i4,i8,<Nmodes>i4,2x,f17.8,<Nclasses>i7)')  irecord,&
            write(IOunit_quanta,my_fmt)  irecord,gamma,ilevel,kdeg,energy(iroot),eignu(iroot,0:PT%Nmodes),ilarge_coef_t,&
@@ -14683,7 +14687,8 @@ module perturbation
            call ArrayStart('PTcontracted_matelem_cl: icoeff2iroot',alloc,1,ik,matsize)
            call ArrayStart('PTcontracted_matelem_cl: icoeff2iroot',alloc,size(icoefficoeff1),ik)
            !
-           !$omp parallel do private(icoeff,icase,ilambda,iclasses,ideg,ilevel,iroot) shared(icoeff2iroot,icoefficoeff1) schedule(dynamic)
+           !$omp  parallel do private(icoeff,icase,ilambda,iclasses,ideg,ilevel,iroot) shared(icoeff2iroot,icoefficoeff1) &
+           !$omp& schedule(dynamic)
            do icoeff=1,PT%Maxcontracts
              !
              icoefficoeff1(icoeff) = int(icoeff*(icoeff-1),hik)/2
@@ -17726,8 +17731,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,matelem,iclass,nu_i,nu_j,icoeff) shared(grot,uniqu_trans) 
-        !
+        !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,matelem,iclass,nu_i,nu_j,icoeff) & 
+        !$omp& shared(grot,uniqu_trans) 
         allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array grot: me_class0_vec')") info_p
@@ -17812,8 +17817,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) shared(gcor,uniqu_trans) 
-        !
+        !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) &
+        !$omp& shared(gcor,uniqu_trans)
         allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array gcor: me_class0_vec')") info_p
@@ -18034,7 +18039,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(nsize,mat1,mat2,info_p,jcontr,jsymcoeff,jsym,energy_j,nu_i,nu_j,iclass,iterm,icoeff,iuniq,matelem) shared(hvib)
+        !$omp  parallel private(nsize,mat1,mat2,info_p,jcontr,jsymcoeff,jsym,energy_j,nu_i,nu_j,iclass,iterm,icoeff,iuniq,matelem) &
+        !$omp& shared(hvib)
         nsize = fl%icoeff(PT%Nclasses-1)%isize(1)
         !
         allocate(mat1(nsize),mat2(nsize),stat=info_p)
@@ -18177,7 +18183,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(nsize,mat1,mat2,info_p,jcontr,jsymcoeff,jsym,energy_j,nu_i,nu_j,iclass,iterm,icoeff,iuniq,matelem) shared(hvib)
+        !$omp  parallel private(nsize,mat1,mat2,info_p,jcontr,jsymcoeff,jsym,energy_j,nu_i,nu_j,iclass,iterm,icoeff,iuniq,matelem)&
+        !$omp& shared(hvib)
         nsize = fl%icoeff(PT%Nclasses-1)%isize(1)
         !
         allocate(mat1(nsize),mat2(nsize),stat=info_p)
@@ -18377,9 +18384,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) shared(hvib,uniqu_trans) 
-        !
-        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
+        !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) &
+        !$omp& shared(hvib,uniqu_trans)        allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
            stop 'calc_gvib_contr_matrix_II me_class0_vec'
@@ -18477,8 +18483,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,iterm,matelem,icoeff) shared(hvib,uniqu_trans) 
-        !
+        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,iterm,matelem,icoeff) &
+        !$omp& shared(hvib,uniqu_trans) 
         allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array gvib: me_class0_vec')") info_p
@@ -18583,7 +18589,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) shared(hvib,uniqu_trans) 
+        !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,jsym,iclass,nu_i,nu_j,matelem,icoeff) &
+        !$omp& shared(hvib,uniqu_trans)
         !
         allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
@@ -18676,8 +18683,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) shared(extF,uniqu_trans) 
-        !
+        !$omp  parallel private(me_class0_vec,info_p,jcontr,energy_j,jsymcoeff,iclass,nu_i,nu_j,matelem,icoeff) &
+        !$omp& shared(extF,uniqu_trans)
         allocate(me_class0_vec(Ncoeff,Nclasses),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' trying to allocate array extF: me_class0_vec')") info_p
@@ -18863,7 +18870,8 @@ module perturbation
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,me_class0) shared(hvib) schedule(dynamic)
+        !$omp  parallel do private(jcontr,energy_j,jsymcoeff,matelem,icoeff,iclass,nu_i,nu_j,iterm,me_class0) &
+        !$omp& shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            if (debug_cut_matelem_with_enermax) then 
@@ -25232,7 +25240,8 @@ end subroutine read_contr_matelem_expansion_classN
     !$omp parallel private(extF_t,extF_) 
     allocate(extF_t(max(extF_rank,1)),extF_(max(extF_rank,1),-2:2))
     ! 
-    !$omp do private(idvrpoint,imode,ispecies,k,dchi,irho,poten_t,gvib_t,grot_t,gcor_t,xval,dchi_,i,irho_,x,poten_,gvib_,grot_,gcor_,fval,df_t,k1,k2,imu)
+    !$omp  do private(idvrpoint,imode,ispecies,k,dchi,irho,poten_t,gvib_t,grot_t,gcor_t,xval,dchi_,i,irho_,x,poten_,gvib_,grot_,&
+    !$omp& gcor_,fval,df_t,k1,k2,imu)
     do idvrpoint = 1,size_total
       !
       do imode = 1,PT%Nmodes
@@ -25810,7 +25819,8 @@ end subroutine read_contr_matelem_expansion_classN
         !
       enddo
       !
-      !$omp parallel do private(iclass,im1,im2,nlevels,ic,ip,ilevel,level_degen,ideg,sum_f,sum_d,iprim,nu,imode,ispecies,mat_f,mat_d,f_prim) schedule(dynamic)
+      !$omp  parallel do private(iclass,im1,im2,nlevels,ic,ip,ilevel,level_degen,ideg,sum_f,sum_d,iprim,nu,imode,&
+      !$omp& ispecies,mat_f,mat_d,f_prim) schedule(dynamic)
       do iclass = 1,PT%Nclasses
          !
          im1 = PT%mode_class(iclass,1)

@@ -446,7 +446,8 @@ module pot_zxy3
          beta413 = aacos(cosbeta,txt)
          !
          if (abs(beta312+beta412+beta413-2.0_rk*pi)>sqrt(small_)) then 
-           write(out,"('MLpoten_zxy3_sym: beta312+beta412+beta413/=2.0_rk*pi for t1,t2,t3',4f16.8)") beta312,beta412,beta413,beta312+beta412+beta413
+           write(out,"('MLpoten_zxy3_sym: beta312+beta412+beta413/=2.0_rk*pi for t1,t2,t3',4f16.8)") beta312,beta412,beta413 &
+           ,beta312+beta412+beta413
            stop
          endif
          !

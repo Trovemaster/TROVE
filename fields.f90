@@ -5083,7 +5083,8 @@ end subroutine check_read_save_none
              !
              if (all(zeta/=(/1,2,3/))) then
                !
-               write (out,"('zmat_to_bonds: illegal zeta = ',i4,' of 3d dihedral for the linear angle of the atom ',i4,'  ')") kappa,iatom
+               write (out,"('zmat_to_bonds: illegal zeta = ',i4,' of 3d dihedral for the linear angle of the atom ',i4,'  ')") &
+                      kappa,iatom
                stop 'zmat_to_bonds - illegal zeta'
                !
              endif
@@ -7028,7 +7029,8 @@ end subroutine check_read_save_none
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
         trim(trove%IO_potential)=='READ') then 
         !
-        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
+        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) &
+            call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
         !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
@@ -7336,7 +7338,8 @@ end subroutine check_read_save_none
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
         trim(trove%IO_potential)=='READ') then 
         !
-        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
+        if (trim(trove%IO_kinetic)/='READ'.and.trim(trove%IO_hamiltonian)/='READ'.and..not.trove%separate_store) &
+            call FLcheck_point_Hamiltonian('KINETIC_SKIP') 
         !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
@@ -13277,7 +13280,8 @@ end subroutine check_read_save_none
                 read(chkptIO) Tcoeff
                 !
                 if (fl%Ncoeff/= Tcoeff) then 
-                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)")  k1,k2,fl%Ncoeff,Tcoeff
+                  write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)") &
+                              k1,k2,fl%Ncoeff,Tcoeff
                   write (out,"('Consider switching BASIS_SET SAVE')")
                   stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
                 end if 
