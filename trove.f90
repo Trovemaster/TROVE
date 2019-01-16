@@ -26,7 +26,7 @@
     !
     ! Here we do the TROVE calculations 
     ! 
-    subroutine pt
+    subroutine ptmain
       !
       integer(ik) :: NPTorder,Natoms,Nmodes,Npolyads
       integer(ik) :: j
@@ -216,7 +216,7 @@
         write(out,"(/'End of TROVE')") 
       endif 
       !
-    end subroutine pt 
+    end subroutine ptmain 
 
 
   end module tp_module
@@ -226,7 +226,7 @@
     use tp_module
     !call ompaffinity()
 
-    call pt
+    call ptmain
 
   end program driver
 

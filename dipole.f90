@@ -1,6 +1,6 @@
 module dipole
-
-!dec$ define dipole_debug = 0 ! set dipole_debug > 2 with small expansions only
+! set dipole_debug > 2 with small expansions only
+#define dipole_debug 0
                               ! 0 - none
                               ! 1 - some checkings only (no printing)
                               ! 2 - minimal printing
@@ -876,10 +876,10 @@ contains
       !
     enddo
     !
-    !dec$ if (dipole_debug >= 0)
+#if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
        write(out,"(' Total number of transitions  = ',i10)") Ntransit
-    !dec$ end if
+#endif
     !
     !
     ! In order to speed up the line strength evaluation, 
@@ -3571,10 +3571,10 @@ contains
     !
     write(out,my_fmt) 'Number of states for each symm = ',nlevelsG(:)
     !
-    !dec$ if (dipole_debug >= 0)
+#if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
        write(out,"(' Total number of transitions  = ',i8)") Ntransit
-    !dec$ end if
+#endif
     !
     !
     ! In order to speed up the line strength evaluation, 
@@ -3766,11 +3766,11 @@ contains
               !
               !if (ndegI>1) ideg_range = mod(idegI,2)+1
               !
-              !dec$ if (dipole_debug >=3)
+              !#if (dipole_debug >=3)
               !  !
               !  ideg_range(1) = 1; ideg_range(2) = ndegF 
               !  !
-              !dec$ end if
+              !#endif
               !
               if (job%rotsym_do) then 
                 !
@@ -3962,11 +3962,11 @@ contains
                 !!
                 !if (ndegI>1) ideg_range = mod(idegI,2)+1
                 !!
-                !!dec$ if (dipole_debug >=3)
+                !#if (dipole_debug >=3)
                 !  !
                 !  ideg_range(1) = 1; ideg_range(2) = ndegF 
                 !  !
-                !!dec$ end if
+                !#endif
                 !
                 ! swtich to a reduced C3v/D3h case by commenting the next loop
                 !
@@ -5173,7 +5173,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,ls) shared(half_ls) schedule(guided)
+          !$omp  parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,ls) shared(half_ls)&
+          !$omp& schedule(guided)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
