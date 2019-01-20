@@ -13545,7 +13545,7 @@ end subroutine check_read_save_none
           !
           imode = bs%mode(1)
           !
-          if( bset%dscr(imode)%type/='NUMEROV'.or.bset%dscr(imode)%type/='FOURIER'.or.&
+          if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE') cycle
           !
           write(unitfname,"('Numerov basis set # ',i6)") imode
@@ -13622,7 +13622,7 @@ end subroutine check_read_save_none
           !
           itype_t = itype_stored(imode)
           !
-          if( bset%dscr(imode)%type/='NUMEROV'.or.bset%dscr(imode)%type/='FOURIER'.or.&
+          if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE') cycle
           !
           npoints = job%bset(imode)%npoints

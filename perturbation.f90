@@ -6001,7 +6001,7 @@ module perturbation
      endif 
      !
      if (job%verbose>=5) then 
-        write(my_fmt,'(a,i0,a)') "(i7,a,",Nclasses+1,"i4,a,2x,",Nrepresen,"(f12.4))"
+        write(my_fmt,'(a,i0,a,i0,a,i0,a)') "(i7,a,",Nclasses+1,"i4,a8,",Nclasses+1,"i4,a1,2x,",Nrepresen,"(f12.4))"
         write(out,my_fmt) icoeff,' : ',cnu(:),' isym= (',&
                          (contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses),')',Nirr_rk(1:Nrepresen)
      endif

@@ -6,7 +6,7 @@ module tran
 ! set tran_debug > 2 with small vibrational bases and small expansions only
 !#define tran_debug  1 
 
- use accuracy,     only : ik, rk, hik, ark, cl, out, small_
+ use accuracy,     only : ik, rk, hik, ark, cl, wl, out, small_
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
  use me_numer,     only : simpsonintegral_ark
  use molecules,    only : MLcoord_direct
@@ -476,7 +476,7 @@ contains
     real(rk)                :: energy_, state_intensity
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
-    character(len=cl) :: my_fmt !format for I/O specification
+    character(len=wl)       :: my_fmt !format for I/O specification
     ! 
     if (job%verbose>=2) write(out,"(/'Read and sort eigenvalues in increasing order...')")
     !
@@ -805,7 +805,7 @@ contains
                !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
                !
                write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
-                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
+                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
                !
                write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
@@ -891,6 +891,7 @@ contains
              write(out, '(a)') '...done!'
           end if
           !
+          cycle
           16 continue 
           if (present(error)) error = 1 
           !
