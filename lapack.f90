@@ -1625,6 +1625,8 @@ module lapack
 #endif
 #if (mpi_ > 0)
              call mpi_recv(mv_buf(istart),nx,MPI_DOUBLE_PRECISION,inext,myid,comm,ierr)
+=======
+           !!! dec $ if (blacs_ > 0)
 #endif
            !
            iend = min(bterm(k,2),iend)
