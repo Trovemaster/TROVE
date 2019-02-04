@@ -1,6 +1,7 @@
 module plasma
  
-!dec$ define plasma_ = 0
+!!! dec $ define plasma_ = 0
+#define plasma_ 0
 
 !
 !  Simplistic type-agnostic PLASMA interface
@@ -21,13 +22,15 @@ module plasma
 
   subroutine plasma_diag_dsytrdx(n,a,w,nroots,Ethres_)
     !
-    !dec$ if (plasma_ > 0) 
+    !!! dec $ if (plasma_ > 0) 
+#if plasma_ > 0
       INCLUDE "plasmaf.h"
       integer(ik), parameter :: VEC = PlasmaVec
       integer(ik), parameter :: UPLO = PlasmaLower
       EXTERNAL PLASMA_DSYTRDX
       INTEGER PLASMA_DSYTRDX
-    !dec$ end if
+    !!! dec $ end if
+#endif
     !
     integer         , intent(in)    :: n
     double precision, intent(inout) :: a(n,n)  ! In:  symmetric matrix to be diagonalized
@@ -69,15 +72,21 @@ module plasma
     !
     if (present(Ethres_)) Ethres = Ethres_
     !
-    !dec$ if (plasma_ == 0) 
+    !!! dec $ if (plasma_ == 0) 
+#if plasma_ == 0
+      !INCLUDE "plasmaf.h"
        write(out,"('Plasma is not activated, in plasma.f90 please set plasma_ to 1')")
-    !dec$ end if
+#endif
+    !!! dec $ end if
     !
-    !dec$ if (plasma_ > 0)
+    !!! dec $ if (plasma_ > 0)
+#if plasma_ > 0
+      INCLUDE "plasmaf.h"
       !
       !call getsize(N,LDA,nprocs_)
       !
-    !dec$ end if
+#endif
+    !!! dec $ end if
     !  
     !$omp parallel private(tid)
       if (tid==0) then
@@ -184,7 +193,9 @@ module plasma
     ! 
     ! set up my PLASMA_DSYTRDX environmenta, then call the eigensolver
     !
-    !dec$ if (plasma_ > 0)
+    !!! dec $ if (plasma_ > 0)
+#if plasma_ > 0
+      INCLUDE "plasmaf.h"
         !
         call resetcore(corea,corec)
         CALL PRINTARGS(VEC, UPLO, N, LDA, LDQ, COREA, COREB, COREC, NB, IB)
@@ -201,8 +212,8 @@ module plasma
           STOP
         END IF
         CALL USETPLASMAENV()
-        !
-    !dec$ end if
+#endif
+    !!! dec $ end if
     !
     real_end = get_real_time()
     cpu_end  = get_cpu_time ()

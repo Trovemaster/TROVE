@@ -753,7 +753,7 @@ module perturbation
     !
     if (job%verbose>=2) then 
       write(my_fmt,'(a,i0,a)') "(a,",Nmodes,"i5)"
-      write(out)
+      !write(out)
       write(out,my_fmt) 'Polyads estimated from range: ',(imode,imode=1,Nmodes)
       write(out,my_fmt) '                          ->  ',(pol_t(imode),imode=1,Nmodes)
       write(out,"(/'Adjusted (input) maximal polyad is: ',i5,'(',i5,')')") PT%Polyad_max,PT%Npolyads
@@ -1080,7 +1080,7 @@ module perturbation
     ! 
     if (job%verbose>=4) then
        write(my_fmt,'(a,i0,a)') "(a,",NPTorder1,"i8)"
-       write(out)
+       !write(out)
        write(out,my_fmt) 'RangeOrder vs order ',(iorder               ,iorder=0,NPTorder)
        write(out,my_fmt) 'RangeOrder       -> ',(PT%RangeOrder(iorder),iorder=0,NPTorder)
     endif 
@@ -1095,7 +1095,7 @@ module perturbation
     ! 
     if (job%verbose>=4) then
        write(my_fmt,'(a,i0,a)') "(a,",Npolyads1,"i8)"
-       write(out)
+       !write(out)
        write(out,my_fmt) 'MaxIndex_nu vs polyad ',(ipol,ipol=0,Npolyads)
        write(out,my_fmt) '                   -> ',(PT%MaxIndex_nu(ipol),ipol=0,Npolyads)
     endif 
