@@ -3,8 +3,8 @@
 ! in terms of the contracted basis state representaion. 
 !
 module tran
-
-!dec define tran_debug = 1 ! set tran_debug > 2 with small vibrational bases and small expansions only
+! set tran_debug > 2 with small vibrational bases and small expansions only
+!#define tran_debug  1 
 
  use accuracy,     only : ik, rk, hik, ark, cl, out, small_
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport

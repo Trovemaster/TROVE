@@ -53,8 +53,10 @@ module pot_zxy2
      ! 
      cs=1.0_ark+cos(x)
      !
-     dst(1) = molec%mep_params(1)+molec%mep_params(2)*cs+molec%mep_params(3)*cs**2+molec%mep_params(4)*cs**3+molec%mep_params( 5)*cs**4
-     dst(2) = molec%mep_params(6)+molec%mep_params(7)*cs+molec%mep_params(8)*cs**2+molec%mep_params(9)*cs**3+molec%mep_params(10)*cs**4
+     dst(1) = molec%mep_params(1)+molec%mep_params(2)*cs+molec%mep_params(3)*cs**2+molec%mep_params(4)*cs**3 &
+              +molec%mep_params( 5)*cs**4
+     dst(2) = molec%mep_params(6)+molec%mep_params(7)*cs+molec%mep_params(8)*cs**2+molec%mep_params(9)*cs**3 &
+              +molec%mep_params(10)*cs**4
      dst(3) = dst(2)
      dst(4) = molec%mep_params(11)*rad+molec%mep_params(12)*cs+molec%mep_params(13)*cs**2+molec%mep_params(14)*cs**3+&
               molec%mep_params(15)*cs**4

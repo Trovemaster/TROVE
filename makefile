@@ -13,7 +13,7 @@ pot_user = pot_ch4
 PLAT = _2205_i17
 ###FOR  = ifort
 FOR = mpif90
-FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer
+FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
 
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a

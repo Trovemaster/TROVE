@@ -1,8 +1,5 @@
 module refinement
 
-!dec$ define fit_debug = 1
-
-
  use accuracy,     only : ik, hik, rk, ark, cl, out, small_
  use fields,       only : manifold,job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,&
                           FLfinitediffs_2d,FLpoten_linearized,analysis,action
@@ -32,6 +29,7 @@ module refinement
  integer(ik), allocatable   :: Jindex(:)
  !
  integer(ik), pointer :: Jeigenvec_unit(:,:)
+ integer(ik),parameter :: fit_debug = 1
 
  type coeffT                      
     real(rk),pointer    :: coeff(:)
@@ -498,9 +496,9 @@ contains
        !
        do i=1,pot_npts
          !
-         !dec$ if (fit_debug > 6)
+         if (fit_debug > 6) then
            write (out,"('i = ',i0)") i
-         !dec$ end if
+         endif
          !
          read (potunit,*) ar_t(1:molec%ncoords),pot_values(i),wtall(en_npts+i)
          local(:,i) = ar_t(:)
@@ -648,10 +646,10 @@ contains
             ! Only fitted energies are printed. 
             !
             write(out,"(/1X,100('-'),/a,/1X,100('-'))") &
-                       '| ## |  N |  J | sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K     vib. quanta'
+                       '|## |  N |  J | sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K     vib. quanta'
             !
             write(enunit,"(/1X,100('-'),/a,/1X,100('-'))") &
-                         '| ## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.) '
+                         '|## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.) '
             !
             do j = 1,jlistmax
                !
@@ -751,9 +749,9 @@ contains
                        !
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
-                       !dec$ if (fit_debug > 3)
+                       if (fit_debug > 3) then
                          write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
-                       !dec$ end if
+                       endif
                        !
                      enddo
                      !
@@ -774,12 +772,12 @@ contains
                     endif
                  enddo
                  !
-                 !dec$ if (fit_debug > 2)
+                 if (fit_debug > 2) then
                     !
                     write (out,"(/'Smallest diag. value of mat = ',es14.7,'at k = ',i8,' upper_range = ',es14.7/)") &
                                   mat(k,k),k,job%upper_ener+mat(k,k)
                     !
-                 !dec$ end if
+                 endif
                  !
                  if (allocated(energy_)) deallocate(energy_)
                  !
@@ -1268,18 +1266,18 @@ contains
                  do icolumn=1,irow    
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
-                   !dec$ if (fit_debug > 2)
+                   if (fit_debug > 2) then
                      write (out,"('al (',i0,',',i0,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
-                   !dec$ end if
+                   endif
                  enddo
                enddo
                !
                ! form B matrix 
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
-                 !dec$ if (fit_debug > 2)
+                 if (fit_debug > 2) then
                    write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
-                 !dec$ end if
+                 endif
                enddo  
                !
                ! Two types of the linear solver are availible: 
@@ -1497,8 +1495,6 @@ contains
             !
             ! Print the potential energy points into a separate unit. 
             !
-            !dec$ if (fit_debug > 1)
-            !dec$ end if
             !
             if (job%verbose>=6) call TimerReport
             !
@@ -2029,10 +2025,10 @@ contains
             ! Only fitted energies are printed. 
             !
             write(out,"(/1X,100('-'),/a,/1X,100('-'))") &
-                       '| ## |  N |  J | sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K     vib. quanta'
+                       '|## |  N |  J | sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K     vib. quanta'
             !
             write(enunit,"(/1X,100('-'),/a,/1X,100('-'))") &
-                         '| ## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.) '
+                         '|## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.) '
             !
             do j = 1,jlistmax
                !
@@ -2115,9 +2111,9 @@ contains
                        !
                        mat(jentry,ientry) = mat(ientry,jentry)
                        !
-                       !dec$ if (fit_debug > 3)
-                         write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
-                       !dec$ end if
+                       if (fit_debug > 3) then
+                          write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
+                       endif
                        !
                      enddo
                      !
@@ -2139,12 +2135,12 @@ contains
                     endif
                  enddo
                  !
-                 !dec$ if (fit_debug > 2)
+                 if (fit_debug > 2) then
                     !
                     write (out,"(/'Smallest diag. value of mat = ',es14.7,'at k = ',i8,' upper_range = ',es14.7/)") &
                                    mat(k,k),k,job%upper_ener+mat(k,k)
                     !
-                 !dec$ end if
+                 endif
                  !
                  if (allocated(energy_)) deallocate(energy_)
                  !
@@ -2493,18 +2489,18 @@ contains
                  do icolumn=1,irow    
                    al(irow,icolumn)=sum(rjacob(1:npts,icolumn)*rjacob(1:npts,irow)*wtall(1:npts))
                    al(icolumn,irow)=al(irow,icolumn)
-                   !dec$ if (fit_debug > 2)
+                   if (fit_debug > 2) then
                      write (out,"('al (',i0,',',i0,')= ',es14.7)") irow,icolumn,al(irow,icolumn)
-                   !dec$ end if
+                   endif
                  enddo
                enddo
                !
                ! form B matrix 
                do irow=1,numpar      
                  bl(irow)=sum(eps(1:npts)*rjacob(1:npts,irow)*wtall(1:npts))
-                 !dec$ if (fit_debug > 2)
+                 if (fit_debug > 2) then
                    write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
-                 !dec$ end if
+                 endif
                enddo  
                !
                ! Two types of the linear solver are availible: 
@@ -2754,9 +2750,6 @@ contains
             !
             ! Print the potential energy points into a separate unit. 
             !
-            !dec$ if (fit_debug > 1)
-            !dec$ end if
-            !
             if (job%verbose>=6) call TimerReport
             !
           enddo  ! --- fititer
@@ -2879,9 +2872,9 @@ contains
    integer(hik)       :: rootsize,rootsize2
 
 
-   !dec$ if (fit_debug > 1)
+   if (fit_debug > 1) then
       write(out, '(/a, 1x, a)') 'read vibrational contracted matrix elements from file', trim(job%extFmat_file)
-   !dec$ end if
+   endif
    !
    job_is ='external field contracted matrix elements for J=0'
    call IOStart(trim(job_is),chkptIO)
@@ -2906,9 +2899,9 @@ contains
    rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
    rootsize2= int(ncontr_t*ncontr_t,hik)
    !
-   !dec$ if (fit_debug > 2)
+   if (fit_debug > 2) then
       write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
-   !dec$ end if
+   endif
    !
    allocate(poten_me(ncontr_t,ncontr_t,extF%rank),stat=alloc)
    call ArrayStart('poten_me',alloc,1,kind(poten_me),rootsize2)
@@ -2934,9 +2927,9 @@ contains
    !
    close(chkptIO,status='keep')
 
-   !dec$ if (fit_debug > 1)
+   if (fit_debug > 2) then
       write(out, '(/a)') 'done'
-   !dec$ end if
+   endif
 
    !
  end subroutine restore_vib_matrix_elements
@@ -2997,10 +2990,10 @@ contains
           !
           !compute me
           !
-          !dec if (fit_debug >= 3)
+          !#if (fit_debug >= 3)
           !  write (out,"('irootF,icontrF,cirootI,icontrI,irow,icol,cindtmat(ientry)%icoef = ',8i,' poten,tmat =  ',2(2x,es18.9))") irootF,icontrF,cirootI,icontrI,irow,icol,cind,tmat(ientry)%icoeff(cirootI),&
           !                            poten(cind),tmat(ientry)%coeff(cirootI)
-          !dec end if
+          !#endif
           !
           half_matelem(irootF) = half_matelem(irootF) + poten(icontrI,icontrF)*tmat(ientry)%coeff(cirootI)
           !
@@ -3009,9 +3002,9 @@ contains
     end do
     !$omp end parallel do
     !
-    !dec$ if (fit_debug > 3)
+    if (fit_debug > 2) then
       write (out,"('ientry = ',i0,'; dimen = ',i0)") ientry,dimen
-    !dec$ end if
+    endif
     !
     !loop over final states
     !
@@ -3032,18 +3025,18 @@ contains
         !
         mat(jentry) = mat(jentry) + half_matelem(tmat(jentry)%icoeff(cirootI))*tmat(jentry)%coeff(cirootI)
         !
-        !dec if (fit_debug >= 3)
+        !#if (fit_debug >= 3)
         !  write (out,"('jentry = ',2i,'; mat,half_matelem,tmat-coef,icoef = ',3es18.8,i0)") & 
         !      jentry,cirootI,mat(jentry),&
         !      half_matelem(tmat(jentry)%icoeff(cirootI)),&
         !      tmat(jentry)%coeff(cirootI),tmat(jentry)%icoeff(cirootI)
-        !dec end if
+        !#endif
         !
        enddo
        !
-       !dec if (fit_debug >= 3)
+       !#if (fit_debug >= 3)
        !  write (out,"('jentry = ',i0,'; mat(jentry) = ',es18.8)") jentry,mat(jentry)
-       !dec end if
+       !#endif
        !
     end do Flevels_loop
     !$omp end parallel do
@@ -3219,7 +3212,7 @@ contains
         do isym=1,sym%Nrepresen
           !
           if (job%verbose>=2) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
-          !write (out,"(/'iparam    #      ilist     matrix   ')")
+          !write (out,"(/'iparam#      ilist     matrix   ')")
           !
           Nentries = fit(isym,jind)%Nentries
           !
@@ -3754,7 +3747,8 @@ contains
                      !
                      cdimen_ = max(kdimen(ientry,icontr,ktau_i),1)
                      !
-                     if (job%verbose>=6) write (out,"(' ientry  =  ',i0,'ktau_i = ',i4,' icontr = ',i0,' cdimen_ = ',i0)") ientry,ktau_i,icontr,cdimen_
+                     if (job%verbose>=6) write (out,"(' ientry  =  ',i0,'ktau_i = ',i4,' icontr = ',i0,' cdimen_ = ',i0)") &
+                                         ientry,ktau_i,icontr,cdimen_
                      !
                      !allocate(kmat(ientry,icontr,ktau_i)%coeff(cdimen_),stat=alloc)
                      !if (alloc /= 0) stop 'fitting-vec allocation error: kmat%coeff - out of memory'
@@ -3833,7 +3827,8 @@ contains
                      !
                      !ij = ientry*(ientry-1)/2+jentry
                      !
-                     !$omp parallel do private(ciroot,iroot,icontr,ktau_i,cjroot,jroot,jcontr,ktau_j) shared(deriv_matrix) schedule(guided) 
+                     !$omp  parallel do private(ciroot,iroot,icontr,ktau_i,cjroot,jroot,jcontr,ktau_j) &
+                     !$omp& shared(deriv_matrix) schedule(guided) 
                      do ciroot = 1, cdimen(ientry)
                        !
                        iroot = tmat(ientry)%icoeff(ciroot)
@@ -3921,7 +3916,8 @@ contains
                    !
                    !ij = ientry*(ientry-1)/2+jentry
                    !
-                   !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,cjroot,jroot,jcontr,ktau_j) shared(deriv_matrix) schedule(guided) 
+                   !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,cjroot,jroot,jcontr,ktau_j) &
+                   !$omp& shared(deriv_matrix) schedule(guided) 
                    l_iroot: do ciroot = 1, cdimen(ientry)
                      !
                      iroot = tmat(ientry)%icoeff(ciroot)
