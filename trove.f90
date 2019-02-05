@@ -13,6 +13,7 @@
     use dipole, only: dm_tranint,dm_analysis_density
     use refinement, only : refinement_by_fit,external_expectation_values
     use tran, only : TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
+    use coarray_aux, only: proc_rank,co_init_comms,co_finalize_comms
 
     implicit none
 
@@ -184,9 +185,12 @@
          return 
       endif
       !
+      call co_init_comms()
       if (job%contrci_me_fast) then 
         !
-        call PTstore_contr_matelem(j)
+        if (proc_rank.eq.0) then
+          call PTstore_contr_matelem(j)
+        endif
         !
         call PTcontracted_matelem_class_fast(j) 
         !
@@ -200,7 +204,7 @@
       !
       ! convert to j=0 representation as part of the first step j=0 calculation
       !
-      if (job%convert_model_j0) then
+      if (proc_rank.eq.0 .and. job%convert_model_j0) then
         !
         call TRconvert_repres_J0_to_contr(j)
         call TRconvert_matel_j0_eigen(j)
@@ -216,6 +220,7 @@
       if (job%verbose>=2) then 
         write(out,"(/'End of TROVE')") 
       endif 
+      call co_finalize_comms()
       !
     end subroutine ptmain 
 
