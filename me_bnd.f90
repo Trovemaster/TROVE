@@ -2217,7 +2217,7 @@ module me_bnd
      ! Do some reporting
      !
      if (verbose>=3) then 
-         write (out,"('vmax = ',i8)") vmax
+         write (out,"('nmax = ',i8)") nmax
          write (out,"('kmax = ',i8)") kmax
          write (out,"('lmax = ',i8)") lmax
          write (out,"('maxorder = ',i8)") maxorder
@@ -2728,6 +2728,18 @@ module me_bnd
               enddo 
               !
           enddo
+          !
+          if (verbose>=6) then 
+             !
+             !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
+             !$omp critical
+             do i=0,npoints 
+                write(out,"(i8,2f18.8,' || ',1x,2i8)") i,phil(i),dphil(i),vl,k
+             enddo
+             !$omp end critical
+             !
+          endif 
+          !
        enddo
        !
        deallocate(L,dL)

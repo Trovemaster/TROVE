@@ -1651,6 +1651,7 @@ module perturbation
      !
      integer(ik) :: v_search(0:PT%Nclasses)
      real(rk)    :: ener0,spread
+     logical     :: switch 
 
      v_t = 1
      !
@@ -1694,13 +1695,24 @@ module perturbation
             !
           endif
           !
-          if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
-              ! LINEAR MOLECULE -> requires optimization !!!
-              .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0 ) ) ) ) then
+          switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
+          if (trove%triatom_sing_resolve) then
+             if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
+                switch = switch.and.( lquant==krot )
+             endif
+          elseif(trove%lincoord/=0) then
+             switch = switch.and.( lquant==krot.or.jrot==0 )
+          endif
+          !
+          !if ( ( ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
+          !    ! LINEAR MOLECULE -> requires optimization !!!
+          !    .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) )           ) then
              ! .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0.or.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.or..not.job%vib_contract ) ) ) ) then
              ! .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0.and.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE' ) ) ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
              ! .and.(trove%lincoord==0.or.( v_search(0)==contr(0)%nlevels.or.v_search(0)==contr(0)%nlevels-1 ) ) ) then
+          !
+          if (switch) then 
             !
             isum = isum +1
             if (present(index_v)) then 
@@ -2860,7 +2872,9 @@ module perturbation
            !
            if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
                trim(bs_t(imode)%type)=='BOX'.or.&
+               trim(bs_t(imode)%type)=='MORSE'.or.&
                trim(bs_t(imode)%type)=='FOURIER'.or.&
+               trim(bs_t(imode)%type)=='SINRHO'.or.&
                trim(bs_t(imode)%type)=='LEGENDRE') then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
@@ -3122,7 +3136,9 @@ module perturbation
                     !
                     if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
                         trim(bs_t(imode)%type)=='BOX'.or.&
+                        trim(bs_t(imode)%type)=='MORSE'.or.&
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
+                        trim(bs_t(imode)%type)=='SINRHO'.or.&
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
@@ -3324,7 +3340,7 @@ module perturbation
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
-             if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+             if (trove%triatom_sing_resolve) then
                contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
                imode = PT%mode_class(iclasses,1)
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
@@ -3667,7 +3683,9 @@ module perturbation
          !
          if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
              trim(bs_t(imode)%type)=='BOX'.or.&
+             trim(bs_t(imode)%type)=='MORSE'.or.&
              trim(bs_t(imode)%type)=='FOURIER'.or.&
+             trim(bs_t(imode)%type)=='SINRHO'.or.&
              trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            if (PT%Mspecies(imode)/=ispecies) then 
@@ -3680,7 +3698,9 @@ module perturbation
        !
        if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
            trim(bs_t(imode)%type)=='BOX'.or.&
+           trim(bs_t(imode)%type)=='MORSE'.or.&
            trim(bs_t(imode)%type)=='FOURIER'.or.&
+           trim(bs_t(imode)%type)=='SINRHO'.or.&
            trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            call ArrayStop('bs_funct(ispecies)%coeffs')
@@ -7701,7 +7721,7 @@ module perturbation
       !
       read(chkptIO) ncontr
       !
-      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.and.job%vib_contract ) ) then
+      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(.not.trove%triatom_sing_resolve ) ) then
         write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") PT%Maxcontracts,ncontr
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
@@ -24074,7 +24094,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
@@ -29939,8 +29959,8 @@ end subroutine read_contr_matelem_expansion_classN
            contr(iclasses)%eigen(ilevel)%nu(0:PT%Nmodes) = nu(0:PT%Nmodes)
            contr(iclasses)%eigen(ilevel)%normal(0:PT%Nmodes) = normal(0:PT%Nmodes)
            !
-           if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
-             contr(iclasses)%eigen(ilevel)%lquant = normal(0)
+           if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
+               contr(iclasses)%eigen(ilevel)%lquant = normal(0)
            endif
            !
            gamma = isym
@@ -30314,7 +30334,7 @@ end subroutine read_contr_matelem_expansion_classN
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
       ! singularity resolved by Associayed Legendres
-      if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+      if (trove%triatom_sing_resolve) then
         v_i = nu_i(Nmodes)
         n_i = mod(v_i,nmax+1)
         k_i = (v_i-n_i)/(nmax+1)
@@ -30325,7 +30345,7 @@ end subroutine read_contr_matelem_expansion_classN
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
         !
-        if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+        if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)
           n_j = mod(v_j,nmax+1)
           k_j = (v_j-n_j)/(nmax+1)
@@ -30568,7 +30588,7 @@ end subroutine read_contr_matelem_expansion_classN
           nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
           PT%quanta%icoeffs(ib,:) = nu_i(:)
           !
-          if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+          if (trove%triatom_sing_resolve) then
             v_i = nu_i(Nmodes)
             n_i = mod(v_i,nmax+1)
             k_i = (v_i-n_i)/(nmax+1)
@@ -32967,7 +32987,7 @@ end subroutine read_contr_matelem_expansion_classN
           contr(1)%eigen(ilevel)%largest_coeff    = eigen(ilevel)%largest_coeff
           contr(1)%eigen(ilevel)%lquant = sym%lquant(contr(1)%eigen(ilevel)%isym)
           !
-          if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
+          if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
             contr(1)%eigen(ilevel)%lquant = eigen(ilevel)%normal(0)
           endif
           !

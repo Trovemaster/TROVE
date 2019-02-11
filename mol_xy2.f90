@@ -31,7 +31,7 @@ module mol_xy2
     real(ark),dimension(ndst) :: dst
     real(ark)                 :: c_t(3,3),dsrc(size(src)),r_e1(2),r_e2(2),radau_e1(2),radau_e2(2),radau_e(2)
     real(ark)                 :: m1,m2,m3,a0,r_t1(2),r_t2(2),radau_t1(2),radau_t2(2),cosalpha,rho,alpha,sinalpha
-    real(ark)                 :: r1,r2,R,r12,r12e,r13e,alpha1,alpha2,theta,sintheta,q0,q,q1,q2,alpha0
+    real(ark)                 :: r1,r2,r3,R,r12,r12e,r13e,alpha1,alpha2,theta,sintheta,q0,q,q1,q2,alpha0
     !
     !
     integer(ik) :: nsrc
@@ -245,34 +245,24 @@ module mol_xy2
           !
           r1 = src(1) ; r2 = src(2) ;  alpha = src(3)
           !
-          R = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
+          r3 = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
           !
           dst(1) = r1-molec%local_eq(1)
           dst(2) = r2-molec%local_eq(1)
-          dst(3) = R -molec%local_eq(1)
+          dst(3) = r3-molec%local_eq(1)
           !
        else
           !
           r1 = src(1)+molec%local_eq(1)
           r2 = src(2)+molec%local_eq(1)
-          R = src(3)+molec%local_eq(1)
+          r3 = src(3)+molec%local_eq(1)
+          !R = src(3)+molec%local_eq(1)
           !
-          cosalpha = (r1**2+r2**2-R**2)/(2.0_ark*r1*r2)
-          !
-          if ( abs(cosalpha)>1.0_ark+sqrt(small_) ) then 
-             !
-             write (out,"('ML_coordinate_transform_XY2: cosalpha>1: ',f18.8)") cosalpha
-             stop 'ML_coordinate_transform_XY2 - bad cosalpha'
-             !
-          elseif ( cosalpha>=1.0_ark) then 
-             alpha = 0
-          else 
-             alpha = acos(cosalpha)
-          endif
+          cosalpha = (r1**2+r2**2-r3**2)/(2.0_ark*r1*r2)
           !
           dst(1) = r1
           dst(2) = r2
-          dst(3) = alpha
+          dst(3) = acos(cosalpha)
           !
        endif
        !
@@ -701,6 +691,22 @@ module mol_xy2
          !b0(:,1,0) = sqrt(0.5_ark)*( a0(:,1)+a0(:,2) )
          !b0(:,2,0) = sqrt(0.5_ark)*( a0(:,1)-a0(:,2) )
          !
+      !case('R-R-R')
+      !   !
+      !   alphaeq = acos((re13**2+re13**2-re13**2)/(2.0_ark*re13*re13))
+      !   !
+      !   b0(1,3,0) = 0.0_ark
+      !   b0(1,2,0) = 0.0_ark
+      !   b0(1,1,0) = 2.0_ark*m3/m*re13*cos(alphaeq)
+      !   !
+      !   b0(2,3,0) =-re13*sin(alphaeq)
+      !   b0(2,2,0) = 0.0_ark
+      !   b0(2,1,0) =-m1/m*re13*cos(alphaeq)
+      !   !
+      !   b0(3,3,0) = re13*sin(alphaeq)
+      !   b0(3,2,0) = 0.0_ark
+      !   b0(3,1,0) =-m1/m*re13*cos(alphaeq)
+      !   !
       end select
       !
       if (any(molec%AtomMasses(2:3)/=m2).or.re13/=re23) then
@@ -1442,9 +1448,31 @@ module mol_xy2
     case('R-R-R')
        !
        select case(trim(molec%symmetry))
+       !
        case default
           write (out,"('ML_symmetry_transformation_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
           stop 'ML_symmetry_transformation_XY2 - bad symm. type'
+          !
+       case('CS','CS(M)')
+          !
+          select case(ioper)
+
+          case (1) ! E 
+
+            dst = src
+
+          case (2) ! (12)
+
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+
+          case default
+
+            write (out,"('ML_symmetry_transformation_XY2: operation ',i8,' unknown')") ioper
+            stop 'ML_symmetry_transformation_XY2 - bad operation. type'
+ 
+          end select 
           !
        case('D3H','D3H(M)')
           !
@@ -1492,7 +1520,6 @@ module mol_xy2
            end select 
           !
        end select
-
        !
     case('R1-R2-Y+X')
        !
