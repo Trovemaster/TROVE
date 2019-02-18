@@ -6866,7 +6866,7 @@ module perturbation
         !
         task = 'rot'
         call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        task = 'cor'
+        !task = 'cor'
         call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
         !
         call TimerStop('Restoring KE matrix')
@@ -7620,7 +7620,7 @@ module perturbation
     !
     if ( trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND' ) then
       !
-      call check_point_active_space('CLOSE')
+      if(proc_rank.eq.0) call check_point_active_space('CLOSE')
       !
     endif 
     !
@@ -8281,6 +8281,7 @@ module perturbation
   ! for the K-factorized rotational basis 
   !
   recursive subroutine symm_mat_element_vector_k(jrot,irow,ijterm,func,mat_t,no_diagonalization)
+    use coarray_aux
 
     integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
     real(rk),external      :: func
@@ -8294,6 +8295,7 @@ module perturbation
     integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
     real(rk)    :: hcontr(PT%max_deg_size,PT%max_deg_size)
     real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
+    logical     :: escape
       !
       !call TimerStart('Symmetrized Hamiltonian - one column')
       !
@@ -8304,6 +8306,7 @@ module perturbation
       isize = PT%Index_deg(irow)%size1
       !
       do jrow = 1,irow
+         escape = .false.
          !
          if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
          !
@@ -8331,11 +8334,17 @@ module perturbation
                !
                ! Matrix elements 
                !
+               if (jcontr .lt. co_startdim .or. jcontr .gt. co_enddim) then
+                 escape = .true.
+                 exit
+               endif
+
                hcontr(ideg,jdeg) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
                !
             enddo
             !
          enddo
+         if (escape) cycle
          !
          do isym = 1,sym%Nrepresen
            !
@@ -14841,6 +14850,8 @@ module perturbation
           islice = 0
           job_is = 'grot'
           !
+          ! create column datatype for MPI-IO
+          ! TODO clean up
           call co_create_type(mdimen)
           do k1 = 1,3
             do k2 = 1,3
@@ -14867,6 +14878,7 @@ module perturbation
                     !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                     do icoeff=startdim,enddim
                       do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                         grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
                       enddo
                     enddo
@@ -14876,6 +14888,7 @@ module perturbation
                 !
               enddo
               !
+              call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
               !
               !POSIXIO!if (trim(job%IOkinet_action)=='SAVE') then
               !POSIXIO!  if (job%IOmatelem_split) then 
@@ -14942,6 +14955,7 @@ module perturbation
                     !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                     do icoeff=startdim,enddim
                       do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                         grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
                       enddo
                     enddo
@@ -15111,7 +15125,7 @@ module perturbation
                   if (islice<iterm1.or.iterm2<islice) cycle
                 endif
                 !
-                if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
+                if (job%verbose>=4) write(out,"('k1,k2 = ',3i8)") k1,k2
                 !
                 gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
                 !
@@ -15130,6 +15144,7 @@ module perturbation
                       !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                       do icoeff=startdim,enddim
                         do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                           gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
                         enddo
                       enddo
@@ -15159,6 +15174,7 @@ module perturbation
                       !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                       do icoeff=startdim,enddim
                         do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                           hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)-0.5_rk*gvib_t(jcoeff,icoeff)
                         enddo
                       enddo
@@ -15197,6 +15213,7 @@ module perturbation
                       !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                       do icoeff=startdim,enddim
                         do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                           gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
                         enddo
                       enddo
@@ -15277,6 +15294,7 @@ module perturbation
                   !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                   do icoeff=startdim,enddim
                     do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                       hvib%me(jcoeff,icoeff) = hvib_t(jcoeff,icoeff) + gvib_t(jcoeff,icoeff)
                     enddo
                   enddo
@@ -15398,6 +15416,7 @@ module perturbation
                     !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
                     do icoeff=startdim,enddim
                       do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
                         extF_t(jcoeff,icoeff) = extF_t(jcoeff,icoeff) + extF_r(jcoeff,icoeff)
                       enddo
                     enddo
@@ -15664,7 +15683,7 @@ module perturbation
         type(PTcoeffT),pointer        :: fl
         !real(rk),intent(in)    :: Hobject(0:,0:)
         !integer(ik),intent(in) :: IndexQ(:)
-        real(rk),intent(inout) :: field(:,:)
+        real(rk),intent(inout) :: field(:,startdim:)
         real(rk),external      :: func
         !
         !real(rk)               :: matclass(1:,1:,1:)
@@ -15764,45 +15783,50 @@ module perturbation
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
-        !$omp parallel do private(icoeff,jcoeff,f_t,iclasses,iroot,jroot) shared(field) schedule(dynamic)
-        do icoeff=1,Maxcontracts
-          !
-          !icase   = PT%icontr2icase(icoeff,1)
-          !ilambda = PT%icontr2icase(icoeff,2)
-          !
-          !ib0 = int(icoeff*(icoeff-1),hik)/2
-          !
-          !ib0 = icoefficoeff1(icoeff)
-          !
-          do jcoeff=1,icoeff
-            !
-            iroot = icoeff2iroot(1,icoeff)
-            jroot = icoeff2iroot(1,jcoeff)
-            !
-            f_t = matclass(1,iroot,jroot)
-            !
-            !f_t = 1.0_rk
-            !
-            do iclasses = 2,Nclasses
+        do b=1,comm_size
+          if (send_or_recv(b) .ge. 0) then
+            !$omp parallel do private(icoeff,jcoeff,f_t,iclasses,iroot,jroot) shared(field) schedule(dynamic)
+            do icoeff=startdim,enddim
               !
-              iroot = icoeff2iroot(iclasses,icoeff)
-              jroot = icoeff2iroot(iclasses,jcoeff)
+              !icase   = PT%icontr2icase(icoeff,1)
+              !ilambda = PT%icontr2icase(icoeff,2)
               !
-              !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
+              !ib0 = int(icoeff*(icoeff-1),hik)/2
               !
-              f_t = f_t*matclass(iclasses,iroot,jroot)
+              !ib0 = icoefficoeff1(icoeff)
               !
+              do jcoeff=(b-1)*mdimen_p+1,b*mdimen_p
+                        if (jcoeff .gt. PT%Maxcontracts) cycle
+                !
+                iroot = icoeff2iroot(1,icoeff)
+                jroot = icoeff2iroot(1,jcoeff)
+                !
+                f_t = matclass(1,iroot,jroot)
+                !
+                !f_t = 1.0_rk
+                !
+                do iclasses = 2,Nclasses
+                  !
+                  iroot = icoeff2iroot(iclasses,icoeff)
+                  jroot = icoeff2iroot(iclasses,jcoeff)
+                  !
+                  !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
+                  !
+                  f_t = f_t*matclass(iclasses,iroot,jroot)
+                  !
+                enddo
+                !
+                !f_t = product(matclass(1:Nclasses,icoeff2iroot(1:Nclasses,icoeff),icoeff2iroot(1:Nclasses,jcoeff)))
+                !
+                !field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
+                !
+                field(jcoeff,icoeff) = f_t
+                !
+              enddo
             enddo
-            !
-            !f_t = product(matclass(1:Nclasses,icoeff2iroot(1:Nclasses,icoeff),icoeff2iroot(1:Nclasses,jcoeff)))
-            !
-            !field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
-            !
-            field(jcoeff,icoeff) = f_t
-            !
-          enddo
+            !$omp end parallel do 
+          endif
         enddo
-        !$omp end parallel do 
         !
         if (job%verbose>=4) call TimerStop('contract_matrix_sum_field')
         !

@@ -1,6 +1,7 @@
 module coarray_aux
   use mpi_f08
   use timer
+  use accuracy
   implicit none
 
   public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr
@@ -27,6 +28,7 @@ module coarray_aux
   integer                           :: co_startdim, co_enddim
   logical                           :: comms_inited = .false., distr_inited=.false.
   type(MPI_Datatype) :: mpitype_column
+  type(MPI_Datatype),dimension(:), allocatable :: mpi_blocktype
 
 contains
 
@@ -110,8 +112,6 @@ contains
     if (.not. comms_inited .or. .not. distr_inited) stop "COMMS NOT INITIALISED"
     if (comm_size .eq. 1) return
 
-    !write(*,*) proc_rank, proc_sizes
-
     call TimerStart('CO_GATHERV_DOUBLE')
     if (proc_rank.eq.0) then
       call mpi_gatherv(x, 0, mpi_double_precision, x, proc_sizes, proc_offsets, mpi_double_precision, 0, mpi_comm_world)
@@ -160,9 +160,6 @@ contains
 
     proc_index = proc_rank+1
 
-    ! While co-arraying
-    !if (this_image().ne.proc_index) stop "coarray/mpi mixup"
-
     allocate(proc_sizes(comm_size),proc_offsets(comm_size),send_or_recv(comm_size),starts(comm_size),ends(comm_size),stat=ierr)
     if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
 
@@ -192,7 +189,6 @@ contains
 
         starts(comm_size) = (i-1) * localsize_ + 1
         ends(comm_size) = dimen!comm_size*localsize_!dimen
-        !proc_sizes(comm_size) = (dimen-localsize*(comm_size-1)) * dimen
         proc_sizes(comm_size) = localsize_*comm_size*localsize_!dimen
 
         proc_offsets(comm_size) = (comm_size-1)*localsize_*(comm_size*localsize_)!dimen
@@ -204,7 +200,6 @@ contains
       call mpi_bcast(proc_offsets, comm_size, mpi_integer, 0, mpi_comm_world)
 
 
-      !if (proc_rank.eq.0) write(*,*) "PROC_SIZES:", proc_sizes
 
       blocksize = proc_sizes(proc_index)
       startdim = starts(proc_index)
@@ -213,37 +208,7 @@ contains
       co_startdim = startdim
       co_enddim = enddim
 
-      !if (mod(comm_size,2)) then
-      !  do i=1,comm_size
-      !    if (i.eq.proc_index) then
-      !      send_or_recv(i) = 0
-      !    !elseif ( (i .ge. (proc_index - to_calc) .and. i .lt. proc_index) ) .or. &
-      !    elseif ( ((i.gt.(proc_index - to_calc) .and. i.lt.proc_index)) .or. &
-      !        ((proc_index-to_calc).lt.1 .and. (i-comm_size).gt.(proc_index-to_calc))) then
-      !      send_or_recv(i) = 1 ! send
-      !    else
-      !      send_or_recv(i) = -1 ! recv
-      !    endif
-      !  end do
-      !else
-      !  do i=1,comm_size
-      !    if (mod(i,2)) then
-      !      to_calc = comm_size/2+1
-      !    else
-      !      to_calc = comm_size/2
-      !    endif
-
-      !    if (i.eq.proc_index) then
-      !      send_or_recv(i) = 0
-      !    !elseif ( (i .ge. (proc_index - to_calc) .and. i .lt. proc_index) ) .or. &
-      !    elseif ( ((i.gt.(proc_index - to_calc) .and. i.lt.proc_index)) .or. &
-      !        ((proc_index-to_calc).lt.1 .and. (i-comm_size).gt.(proc_index-to_calc))) then
-      !      send_or_recv(i) = 1 ! send
-      !    else
-      !      send_or_recv(i) = -1 ! recv
-      !    endif
-      !  end do
-      !endif
+      allocate(mpi_blocktype(comm_size))
 
       do i=1,comm_size
         if (mod(comm_size,2).eq.1) then
@@ -258,23 +223,17 @@ contains
           endif
         endif
 
-        !if (proc_rank .eq. 0) write(*,*) "TOCALC:", i, to_calc, comm_size, mod(comm_size,4)
 
         if (i.eq.proc_index) then
           send_or_recv(i) = 0
-        !!!!!!!!elseif ( (i .ge. (proc_index - to_calc) .and. i .lt. proc_index) ) .or. &
         elseif ( ((i.gt.(proc_index - to_calc) .and. i.lt.proc_index)) .or. &
             ((proc_index-to_calc).lt.1 .and. (i-comm_size).gt.(proc_index-to_calc))) then
           send_or_recv(i) = 1 ! send
-        !elseif (((i.gt.proc_index .and. i.lt.(proc_index+to_calc))) .or. (proc_index+to_calc.gt.comm_size .and. i.lt.mod(proc_index+to_calc,comm_size))) then
-          send_or_recv(i) = 1 ! send
+          call co_create_type_subarray(int(1+real(dimen/comm_size)), blocksize, int(1+real(dimen/comm_size)), i, mpi_blocktype(i))
         else
           send_or_recv(i) = -1 ! recv
         endif
       end do
-
-      !write(*,*) "SENDRECV:", proc_index, send_or_recv
-          
 
     endif
 
@@ -291,19 +250,18 @@ contains
     real(rk),dimension(:,:,:),intent(inout) :: tmp
     integer,intent(in)                :: blocksize, lb, ub
 
-    integer :: i, icoeff, jcoeff, offset, ierr
+    integer :: i, icoeff, jcoeff, offset, ierr, k
     type(MPI_Request)  :: reqs(comm_size)
 
-
-    !!!write(*,*) "DISTR1", proc_rank, send_or_recv
-    !!!write(*,*) "DISTR2", proc_rank, blocksize, lb, ub
-    !!!write(*,*) "DISTR3", proc_rank, shape(x), shape(tmp)
     call TimerStart('MPI_transpose')
     call TimerStart('MPI_transpose_sendrecv')
 
     do i=1,comm_size
+      reqs(i)= MPI_REQUEST_NULL
+    end do
+    do i=1,comm_size
       if (send_or_recv(i).eq.1) then
-        call mpi_isend(x(((i-1)*blocksize)+1:i*blocksize,:),blocksize*blocksize,mpi_double_precision,i-1,0,mpi_comm_world,reqs(i),ierr)
+        call mpi_isend(x,1,mpi_blocktype(i),i-1,0,mpi_comm_world,reqs(i),ierr)
       elseif (send_or_recv(i).eq.-1) then
         call mpi_irecv(tmp(:,:,i),blocksize*blocksize,mpi_double_precision,i-1,mpi_any_tag,mpi_comm_world,reqs(i),ierr)
       else
@@ -318,7 +276,7 @@ contains
     do i=1,comm_size
       if (send_or_recv(i).eq.-1) then
         offset = (i-1)*blocksize
-        !$omp parallel do private(icoeff,jcoeff) shared(i,x) schedule(static)
+        !$omp parallel do private(icoeff,jcoeff) shared(i,x,tmp,lb,ub,offset,blocksize) schedule(static)
         do icoeff=lb,ub
           do jcoeff=offset+1,offset+blocksize
             x(jcoeff,icoeff) = tmp(icoeff-lb+1,jcoeff-offset,i)
@@ -371,5 +329,23 @@ contains
     call MPI_Type_commit(mpitype_column, ierr)
 
   end subroutine co_create_type
+
+  subroutine co_create_type_subarray(extent, coldim, rowdim, blockid, mpi_newtype)
+    integer,intent(in) :: extent, coldim, rowdim, blockid
+    type(MPI_Datatype),intent(inout) :: mpi_newtype
+    integer,dimension(2) :: array_of_sizes, array_of_subsizes, array_of_starts
+    integer :: ierr
+
+    array_of_sizes(1) = comm_size * extent!coldim
+    array_of_sizes(2) = extent
+    array_of_subsizes(:) = extent
+    array_of_starts(1) = (blockid - 1) * extent + 0
+    array_of_starts(2) = 0
+
+
+    call MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes, array_of_starts, MPI_ORDER_FORTRAN, mpi_double_precision, mpi_newtype, ierr)
+    call MPI_Type_commit(mpi_newtype, ierr)
+
+  end subroutine co_create_type_subarray
 
 end module
