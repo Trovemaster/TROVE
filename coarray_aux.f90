@@ -313,8 +313,12 @@ contains
 
     mpioffset = mpioffset + proc_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
 
-    writecount = int(1+real(longdim/comm_size))
     mpi_write_offsetkind = int(1+real(longdim/comm_size),MPI_Offset_kind)
+    if (proc_rank .lt. (comm_size-1)) then
+      writecount = int(1+real(longdim/comm_size))
+    else
+      writecount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
+    endif
     call MPI_File_write_at_all(outfile,mpioffset,x,writecount,mpitype_column,writestat,ierr)
 
     call TimerStop('MPI_write')
