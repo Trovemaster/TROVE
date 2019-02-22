@@ -34,11 +34,11 @@ LIB     =   $(LAPACK)
 trove.x:         trove.o accuracy.o perturbation.o fields.o symmetry.o molecules.o me_numer.o me_str.o me_bnd.o me_rot.o \
 	                 lapack.o plasma.o moltype.o refinement.o dipole.o refinement.o tran.o diag.o timer.o input.o \
                    mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o \
-									          pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o pot_c2h6.o pot_c3h6.o coarray_aux.o $(pot_user).o
+									          pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o pot_c2h6.o pot_c3h6.o mpi_aux.o $(pot_user).o
 	$(FOR) $(FFLAGS) -o j-trove$(PLAT).x $^ $(LIB)
 
 trove.o:        accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o
-perturbation.o: accuracy.o molecules.o lapack.o fields.o timer.o symmetry.o diag.o plasma.o coarray_aux.o
+perturbation.o: accuracy.o molecules.o lapack.o fields.o timer.o symmetry.o diag.o plasma.o mpi_aux.o
 fields.o:       accuracy.o molecules.o lapack.o me_str.o timer.o me_numer.o input.o me_rot.o moltype.o symmetry.o me_bnd.o
 symmetry.o:     accuracy.o
 molecules.o:    accuracy.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o \
@@ -83,7 +83,7 @@ pot_c2h4.o:	    accuracy.o moltype.o
 pot_c3h6.o:     accuracy.o moltype.o
 pot_abcd.o:     accuracy.o moltype.o lapack.o
 
-coarray_aux.o:	timer.o
+mpi_aux.o:	timer.o
 
 clean:
 	rm -f *.mod *.o

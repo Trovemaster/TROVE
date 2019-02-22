@@ -1,4 +1,4 @@
-module coarray_aux
+module mpi_aux
   use mpi_f08
   use timer
   use accuracy
@@ -7,7 +7,7 @@ module coarray_aux
   public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr
   public co_create_type
 
-  public send_or_recv, comm_size, proc_rank
+  public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
 
   interface co_sum
@@ -24,7 +24,7 @@ module coarray_aux
   end interface
 
   integer,dimension(:),allocatable  :: proc_sizes, proc_offsets, send_or_recv
-  integer                           :: comm_size, proc_rank
+  integer                           :: comm_size, mpi_rank
   integer                           :: co_startdim, co_enddim
   logical                           :: comms_inited = .false., distr_inited=.false.
   type(MPI_Datatype) :: mpitype_column
@@ -50,7 +50,7 @@ contains
       !end if
       !sync all
 
-      if (proc_rank .eq. 0) then
+      if (mpi_rank .eq. 0) then
         call mpi_reduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
       else
         call mpi_reduce(x, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
@@ -113,7 +113,7 @@ contains
     if (comm_size .eq. 1) return
 
     call TimerStart('CO_GATHERV_DOUBLE')
-    if (proc_rank.eq.0) then
+    if (mpi_rank.eq.0) then
       call mpi_gatherv(x, 0, mpi_double_precision, x, proc_sizes, proc_offsets, mpi_double_precision, 0, mpi_comm_world)
     else
       call mpi_gatherv(x, size(x), mpi_double_precision, x, proc_sizes, proc_offsets, mpi_double_precision, 0, mpi_comm_world)
@@ -123,7 +123,6 @@ contains
 
   end subroutine co_gatherv_double
 
-
   subroutine co_init_comms()
     integer :: ierr
 
@@ -131,7 +130,7 @@ contains
     if (ierr .gt. 0) stop "MPI_INIT"
     call mpi_comm_size(mpi_comm_world, comm_size, ierr)
     if (ierr .gt. 0) stop "MPI_COMM_SIZE"
-    call mpi_comm_rank(mpi_comm_world, proc_rank, ierr)
+    call mpi_comm_rank(mpi_comm_world, mpi_rank, ierr)
     if (ierr .gt. 0) stop "MPI_COMM_RANK"
 
     comms_inited = .true.
@@ -146,6 +145,7 @@ contains
     call mpi_finalize(ierr)
 
     if (ierr .gt. 0) stop "MPI_FINALIZE"
+
   end subroutine co_finalize_comms
 
   subroutine co_init_distr(dimen, startdim, enddim, blocksize)
@@ -158,7 +158,7 @@ contains
     if (.not. comms_inited) stop "COMMS NOT INITIALISED"
     if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
 
-    proc_index = proc_rank+1
+    proc_index = mpi_rank+1
 
     allocate(proc_sizes(comm_size),proc_offsets(comm_size),send_or_recv(comm_size),starts(comm_size),ends(comm_size),stat=ierr)
     if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
@@ -170,7 +170,7 @@ contains
       send_or_recv(1) = 0
     else
 
-      if (proc_rank .eq. 0) then !root
+      if (mpi_rank .eq. 0) then !root
 
         localsize = dimen/comm_size
         localsize_ = int(1+real(dimen/comm_size))
@@ -245,6 +245,7 @@ contains
   subroutine co_distr_data(x, tmp, blocksize, lb, ub)
     use accuracy
 
+    implicit none
 
     real(rk),dimension(:,lb:),intent(inout) :: x
     real(rk),dimension(:,:,:),intent(inout) :: tmp
@@ -259,6 +260,7 @@ contains
     do i=1,comm_size
       reqs(i)= MPI_REQUEST_NULL
     end do
+
     do i=1,comm_size
       if (send_or_recv(i).eq.1) then
         call mpi_isend(x,1,mpi_blocktype(i),i-1,0,mpi_comm_world,reqs(i),ierr)
@@ -303,7 +305,7 @@ contains
 
     call TimerStart('MPI_write')
 
-    !if (proc_rank .eq. 0) then
+    !if (mpi_rank .eq. 0) then
       call mpi_file_get_size(outfile,mpioffset,ierr)
     !endif
 
@@ -311,10 +313,10 @@ contains
 
     call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
 
-    mpioffset = mpioffset + proc_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
+    mpioffset = mpioffset + mpi_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
 
     mpi_write_offsetkind = int(1+real(longdim/comm_size),MPI_Offset_kind)
-    if (proc_rank .lt. (comm_size-1)) then
+    if (mpi_rank .lt. (comm_size-1)) then
       writecount = int(1+real(longdim/comm_size))
     else
       writecount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
