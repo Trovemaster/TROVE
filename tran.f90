@@ -805,7 +805,8 @@ contains
                !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
                !
                write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
-                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
+                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,&
+                     "(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
                !
                write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&

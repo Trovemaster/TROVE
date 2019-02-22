@@ -9791,7 +9791,7 @@ module perturbation
        !
        spur = spur*exp(-beta*mat0)
        !
-       write(out, '(/1x, a, 1x, es16.8)'), 'qpart = ', spur
+       write(out, '(/1x, a, 1x, es16.8)') 'qpart = ', spur
        !
        !mat = mat / (-planck * vellgt) * (boltz * intensity%temperature)
        !do ielem = 1, dimen_s
@@ -9804,7 +9804,7 @@ module perturbation
        !
        if (gamma==sym%Nrepresen) then
           !
-          write(out, '(/1x, a, 1x, es16.8)'), 'partition function value is', job%partfunc%value
+          write(out, '(/1x, a, 1x, es16.8)') 'partition function value is', job%partfunc%value
           !
        endif 
        !
@@ -32446,7 +32446,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           ! perform squaring
           !
-          write(out, '(/1x, a/1x, a, 1x, a)'), 'perform squaring', 'deg of 2', 'norm'
+          write(out, '(/1x, a/1x, a, 1x, a)') 'perform squaring', 'deg of 2', 'norm'
           !
           if (job%verbose>=2) call TimerStart('Partition function my mat-exp')
           !
@@ -32461,13 +32461,13 @@ end subroutine read_contr_matelem_expansion_classN
           !
           do
                 if (deg > max_deg) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max degree of 2', max_deg, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max degree of 2', max_deg, 'is reached'
                       exit
                 end if
                 !
                 norm = norm / real(2**deg, kind = rk)
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), deg, norm
+                write(out, '(1x, i3, 1x, es16.8)') deg, norm
                 !
                 if (abs(norm) <= norm_thresh) exit
                 deg = deg + 1
@@ -32525,14 +32525,14 @@ end subroutine read_contr_matelem_expansion_classN
           spur   = real(dimen, kind = rk)
           spur0  = spur
           !
-          write(out, '(/1x, a/1x, a, 13x, a)'), 'compute exponential', 'ord', 'spur'
+          write(out, '(/1x, a/1x, a, 13x, a)') 'compute exponential', 'ord', 'spur'
           !
           ! loop over Taylor series
           !
           do
                 iorder = iorder + 1
                 if (iorder > max_order) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max exp degree', max_order, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max exp degree', max_order, 'is reached'
                       exit
                 end if
                 !
@@ -32769,7 +32769,7 @@ end subroutine read_contr_matelem_expansion_classN
                 end do
                 !$omp end parallel do
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), iorder, spur
+                write(out, '(1x, i3, 1x, es16.8)') iorder, spur
                 !
                 if (abs(spur - spur0) <= spur_thresh) exit
                 spur0 = spur
@@ -37866,8 +37866,9 @@ end subroutine combinations
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
-        !$omp&         ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass, &
+        !$omp&         nu_i,nu_j,ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) &
+        !$omp&         shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)

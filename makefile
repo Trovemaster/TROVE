@@ -11,15 +11,16 @@ checkin:
 pot_user = pot_ch4
 
 PLAT = _2205_i17
-###FOR  = ifort
-FOR = mpif90
-FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
+FOR  = ifort
+FFLAGS =  -qopenmp -xHost -O3 -ip -g3
+#FOR = gfortran
+#FFLAGS =  -fopenmp -march=native -O3 -fcray-pointer -g3
 
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
 
-#LAPACK = -mkl
-LAPACK = -lopenblas
+LAPACK = -mkl
+#LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
 
 LIB     =   $(LAPACK) 
@@ -75,10 +76,9 @@ pot_xy3.o:      accuracy.o moltype.o
 pot_xy4.o:      accuracy.o moltype.o symmetry.o
 pot_zxy2.o:     accuracy.o moltype.o
 pot_zxy3.o:     accuracy.o moltype.o
-pot_c2h6.o:     accuracy.o moltype.o
+pot_c2h6.o:     accuracy.o moltype.o mol_c2h6.o
 pot_ch3oh.o:	  accuracy.o moltype.o
 pot_c2h4.o:	    accuracy.o moltype.o
-pot_c2h6.o:     accuracy.o moltype.o
 pot_c3h6.o:     accuracy.o moltype.o
 pot_abcd.o:     accuracy.o moltype.o lapack.o
 
