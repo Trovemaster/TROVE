@@ -4172,7 +4172,7 @@ module fields
    ! to work only with all modes as one class in the contr. vibrational representaion, i.e.
    ! the vibr. Hamiltonian is assumed to be diagonal in this representaion:
    !
-   if ( any( (/trim(job%IOj0ext_action),trim(job%IOj0matel_action)/) /='NONE' ) ) then 
+   if ( any( (/character(len=wl) :: trim(job%IOj0ext_action),trim(job%IOj0matel_action)/) /='NONE' ) ) then 
       !
       job%vib_contract = .true.
       !
