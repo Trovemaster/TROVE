@@ -80,6 +80,16 @@ module mol_xy2
           dst(3) = pi-src(3)
        endif
        !
+    case('R-RHO-HALF')
+       !
+       if (direct) then 
+          dst(1:2) = dsrc(1:2)
+          dst(3) =  (pi-src(3))*0.5_ark
+       else
+          dst(1:2) = src(1:2)+molec%local_eq(1:2)
+          dst(3) = pi-src(3)*2.0_ark
+       endif
+       !
     case('R-PHI-RHO','R-PHI-RHO-Z')
        !
        if (direct) then 
@@ -513,7 +523,7 @@ module mol_xy2
   end function ML_coordinate_transform_XY2
 
 
-  ! Here we define structural parameters for rigid XY3 molecule,
+  ! Here we define structural parameters for an XY2 molecule,
   ! a0/b0
   ! which determine the reference geometry
   !
@@ -794,6 +804,12 @@ module mol_xy2
             rho0 = 0.0_ark
             a02 = (m1/m)
             !
+         case('R-RHO-HALF')
+            !
+            rho_ref = 0.0_ark
+            rho0 = 0.0_ark
+            a02 = (m1/m)
+            !
          case('RADAU')
             !
             rho_ref = 0.0_ark
@@ -821,6 +837,8 @@ module mol_xy2
             select case(trim(molec%coords_transform))
               case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z')
                alpha = pi-rho
+              case('R-RHO-HALF')
+               alpha = pi-rho*2.0_ark
             end select 
             !
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
@@ -1230,7 +1248,7 @@ module mol_xy2
        write (out,"('ML_symmetry_transformation_XY2. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
-    case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z')
+    case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF')
        !
        select case(trim(molec%symmetry))
        case default

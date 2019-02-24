@@ -1674,6 +1674,8 @@ module perturbation
           !krot = PT%rot_primindex(v_search(0)-1)%k
           krot = PT%rot_index(v_search(0),1)%k
           !
+          !if (trim(job%bset(PT%Nmodes)%type)=='SINRHO'.and.krot>0) krot = min(krot,1)
+          !
           if (trove%lincoord/=0) then 
             !
             ! assume that the vib. angular momentum is not zero only for one class or that 
@@ -30333,7 +30335,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
-      ! singularity resolved by Associayed Legendres
+      ! singularity resolved by Associated Legendres
       if (trove%triatom_sing_resolve) then
         v_i = nu_i(Nmodes)
         n_i = mod(v_i,nmax+1)
