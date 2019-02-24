@@ -70,13 +70,13 @@ module pot_user
       real(ark),intent(in)   ::  xyz(natoms,3)
       real(ark),intent(in)   ::  force(:)
       real(ark),parameter :: tocm = 219474.63067_ark
-      real(ark)   :: x(297)
-      real(ark)              ::  f
+      real(ark)   :: x(297),xmass(3),x1,x2,x3
+      real(ark)   ::  f
 
 
       !integer(ik) :: nparam,npol,order
       integer(ik) :: inst,nst,idimp,idimp2
-      real(ark) ::  r1,r2,r3,pot(3),dx(3,3)
+      real(ark) ::  r1,r2,r3,pot(3),dx(3,3),ac,Vas,vr
       real(ark) ::  h(3,3),tb(5),dim(3,3),xdiag,xodiag
       !real(ark) ::  gam1,x0,r0,beta,x
       real(ark) ::  minad,sumad,rmax
@@ -152,30 +152,38 @@ module pot_user
         pot(1)=pot(1) + tb(3)
         pot(2)=pot(2) + tb(4)
         pot(3)=pot(3) + tb(5)
-
-
+        !
         f = (pot(1) + 1.343835625028_ark)*tocm
         !
         !f = ((r1-1.910377821)**2+(r2-1.910377821)**2+(r3-1.910377821)**2)*40000.0
-
-        !call potvAC(ac,r1,r2,23)
-        !if(ac.lt.-200.0d0) ac=-200.0d0
-        !if(ac.gt.0.0d0) ac=0.0d0
-        !ac = -ac*(x1/trove%mass(1)+x1/trove%mass(2)+x1/trove%mass(3))/x3/cmtoau*1836.15/1822.89
-
+        !
+        ac =  0
+        !
+        call potvAC(ac,r1,r2,r3)
+        if(ac.lt.-200.0_ark) ac=-200.0_ark
+        if(ac.gt.0.0_ark) ac=0
+        !
+        x1 = 1.0_ark
+        x2 = 2.0_ark
+        x3 = 3.0_ark
+        xmass = 1.00782505_ark
+        !
+        ac = -ac*( x1/xmass(1)+x1/xmass(2)+x1/xmass(3) )/x3/tocm*1836.15_ark/1822.89_ark
+        !
         ! Asymetric part of AC
+        Vas = 0
         !call potvACasym(Vas,r1,r2,r3)
-        !Vas = Vas*(x1/trove%mass(1)-x1/trove%mass(2))/x3/cmtoau*1836.15/1822.89
+        !Vas = Vas*(x1/xmass(1)-x1/xmass(2))/x3/cmtoau*1836.15/1822.89
+        !
         ! Relativistic correction
-        !call potvRCb(vr,r1,r2,r3)
-        !if(abs(vr).gt.10.0d0) vr=0
-        !vr = vr/cmtoau
-
-! BO+AC+Rel
-!        v = v + ac + Vas + vr
-
-
-
+        vr = 0
+        call potvRCb(vr,r1,r2,r3)
+        if(abs(vr).gt.10.0_ark) vr=0
+        vr = vr/tocm
+        !
+        ! BO+AC+Rel
+        f = f + ac + Vas + vr
+        !
       end function MLpoten_H3p_singlet
 
 
@@ -1083,6 +1091,238 @@ module pot_user
       END SUBROUTINE piksrt
       !  (C) Copr. 1986-92 Numerical Recipes Software
 
+
+
+      subroutine potvRCb(Vrel,P1,P2,P3)
+
+!  Relativistic correction, fit of Barchorz 2009 data
+!     UNITS: HARTREE & BOHR
+!     symmetric part
+
+      IMPLICIT real(ark) (A-H,O-Z)
+      integer(ik),parameter:: ncf=31
+!      dimension ft(ncf)
+!      common /potential/ cv(ncf), der(ncf)
+      dimension cv(ncf), ft(ncf)
+      integer(ik) :: nv,nfmax,npot,norder,n,k,m,i
+      DATA C0/0.0D0/,RE/1.65000/,BET/1.300D0/
+      DATA cv/-2.58247_ark, 0.88025_ark, -0.58043_ark, -0.84413_ark, 0.31196_ark,&
+     1.17078_ark, 0.31370_ark, -0.14455_ark, -0.85299_ark, -0.54332_ark, -0.22522_ark,&
+     0.04732_ark, 0.34433_ark, 0.37552_ark, 0.27914_ark, 0.07864_ark, -0.01041_ark,&
+     -0.06251_ark, -0.11575_ark, -0.12251_ark, -0.06413_ark, -0.00581_ark, -0.00078_ark,&
+     0.00126_ark, 0.00271_ark, 0.01333_ark, 0.01845_ark, 0.01204_ark, 0.00203_ark,&
+     0.00025, 0.00160_ark/
+
+      data nv/ ncf/,nfmax/7/
+      DATA ZERO/0.0_ark/,ONE/1.0_ark/,TWO/2.0_ark/,THREE/3.0_ark/
+
+      SQ3=SQRT(THREE)
+      SQ2=SQRT(TWO)
+!      FACTOR=BET/RE
+      DR1= (P1-RE)
+      DR2= (P2-RE)
+      DR3= (P3-RE)
+
+! Displacement coordinates
+       Y1=DR1
+       Y2=DR2
+       Y3=DR3
+      SA=(Y1+Y2+Y3)/SQ3
+      SX1=(DR2+DR2-DR1-DR3)/(SQ2*SQ3)
+      SY1=(DR1-DR3)/SQ2
+      QUAD1=SX1**2+SY1**2
+      SE1=sqrt(QUAD1)
+      if(abs(se1).lt.1.0e-10) then
+       phi=acos(0.0_ark)
+      else
+       phi=acos(sx1/se1)
+      endif
+
+      npot=1
+      ft(1)=1.0_ark
+      do 100 norder=1,nfmax
+      do 100 n=norder,0,-1
+      do 100 k=0,norder-n,3
+      if(mod(k,3).ne.0) goto 100
+      m=norder-k-n
+      if (mod(m,2) .ne. 0) goto 100
+      npot=npot+1
+      if(npot.gt.ncf) goto 100
+      ft(npot)=sa**n * se1**(m+k) * cos(dble(k)*phi)
+  100 continue
+      V=ZERO
+      DO 40 I=1,NV
+   40 V=V+CV(I)*FT(I)
+      Vrel = V
+      RETURN
+      END subroutine potvRCb
+
+!  Potential from Ludwik's calculations of BO and AC
+!  Calculates AC
+!  input bond lengths in Bohr
+      subroutine potvAC(V,p1,p2,p3)     
+
+      implicit real(ark)(A-H,O-Z)
+      real(ark) Ves, p1,p2,p3
+      integer(ik),parameter :: ncf=98
+      integer(ik) :: nfmax,npot,norder,k,m,n,i
+      dimension ft(ncf), cv(ncf)
+      data RE/1.65_ark/,BET/1.300_ark/
+      data nfmax/12/
+      !save icall, cv
+
+      !icall = icall + 1
+      !
+      !if(icall.eq.1) then
+      !  open(unit=31,status='old',file='f.31.symAC')
+      !do i=1,ncf
+      !  read(31,2) cv(i)
+      !2       format(f20.5)
+      !end do
+      !close(31)
+      !end if
+      !
+      cv( 1) =      -115.13592_ark     
+      cv( 2) =        34.95581_ark     
+      cv( 3) =        -8.94854_ark     
+      cv( 4) =       -19.22486_ark     
+      cv( 5) =        -0.47363_ark     
+      cv( 6) =        20.42779_ark     
+      cv( 7) =        -1.08335_ark     
+      cv( 8) =        -1.18039_ark     
+      cv( 9) =        -0.97418_ark     
+      cv(10) =         1.61562_ark     
+      cv(11) =         0.84843_ark     
+      cv(12) =        -0.76828_ark     
+      cv(13) =        -1.84770_ark     
+      cv(14) =        -1.50647_ark     
+      cv(15) =        -0.27232_ark     
+      cv(16) =         0.26785_ark     
+      cv(17) =        -1.12614_ark     
+      cv(18) =        -0.28722_ark     
+      cv(19) =         2.75205_ark     
+      cv(20) =        -2.17235_ark     
+      cv(21) =         1.90988_ark     
+      cv(22) =        -0.38403_ark     
+      cv(23) =         0.17021_ark     
+      cv(24) =         0.00890_ark     
+      cv(25) =        -1.87033_ark     
+      cv(26) =         1.56787_ark     
+      cv(27) =        -1.46615_ark     
+      cv(28) =        -2.39546_ark     
+      cv(29) =        -0.45831_ark     
+      cv(30) =        -0.38466_ark     
+      cv(31) =         0.00960_ark     
+      cv(32) =        -0.00415_ark     
+      cv(33) =         5.12902_ark     
+      cv(34) =        -7.51230_ark     
+      cv(35) =         3.68779_ark     
+      cv(36) =        -1.19697_ark     
+      cv(37) =         2.50128_ark     
+      cv(38) =         0.59069_ark     
+      cv(39) =        -1.04071_ark     
+      cv(40) =         0.17463_ark     
+      cv(41) =         0.02009_ark     
+      cv(42) =        -1.97854_ark     
+      cv(43) =        -1.28897_ark     
+      cv(44) =        -1.74433_ark     
+      cv(45) =         0.32559_ark     
+      cv(46) =         0.94534_ark     
+      cv(47) =         0.32374_ark     
+      cv(48) =         0.04094_ark     
+      cv(49) =         1.81070_ark     
+      cv(50) =         0.03173_ark     
+      cv(51) =         0.07976_ark     
+      cv(52) =        -0.03801_ark     
+      cv(53) =         0.00163_ark     
+      cv(54) =         1.62614_ark     
+      cv(55) =        -7.38655_ark     
+      cv(56) =        12.42367_ark     
+      cv(57) =        -2.21440_ark     
+      cv(58) =         7.99644_ark     
+      cv(59) =        -4.24962_ark     
+      cv(60) =        -1.12576_ark     
+      cv(61) =        -1.08647_ark     
+      cv(62) =        -1.43964_ark     
+      cv(63) =        -0.61741_ark     
+      cv(64) =         0.31037_ark     
+      cv(65) =        -0.00046_ark     
+      cv(66) =        -0.03831_ark     
+      cv(67) =        -0.01450_ark     
+      cv(68) =         1.61879_ark     
+      cv(69) =         3.07243_ark     
+      cv(70) =        -2.27573_ark     
+      cv(71) =         4.67040_ark     
+      cv(72) =       -13.97697_ark     
+      cv(73) =         1.39648_ark     
+      cv(74) =         0.49974_ark     
+      cv(75) =         0.80347_ark     
+      cv(76) =         1.97912_ark     
+      cv(77) =         0.91585_ark     
+      cv(78) =        -0.53555_ark     
+      cv(79) =        -0.01358_ark     
+      cv(80) =         0.12127_ark     
+      cv(81) =         0.05223_ark     
+      cv(82) =        -0.00432_ark     
+      cv(83) =         0.00048_ark     
+      cv(84) =        -2.34873_ark     
+      cv(85) =         2.20312_ark     
+      cv(86) =        -3.73879_ark     
+      cv(87) =        -3.41559_ark     
+      cv(88) =         5.92814_ark     
+      cv(89) =         0.63597_ark     
+      cv(90) =         0.23146_ark     
+      cv(91) =        -0.13923_ark     
+      cv(92) =        -0.66705_ark     
+      cv(93) =        -0.38679_ark     
+      cv(94) =         0.19273_ark     
+      cv(95) =         0.00978_ark     
+      cv(96) =        -0.09287_ark     
+      cv(97) =        -0.04204_ark     
+      cv(98) =         0.00989_ark     
+      !
+      SQ3=SQRT(3.0_ark)
+      SQ2=SQRT(2.0_ark)
+      FACTOR=BET/RE
+      DR1= (P1-RE)
+      DR2= (P2-RE)
+      DR3= (P3-RE)
+       Y1=(1.0_ark-EXP(-FACTOR*DR1))/BET
+       Y2=(1.0_ark-EXP(-FACTOR*DR2))/BET
+       Y3=(1.0_ark-EXP(-FACTOR*DR3))/BET
+      SA=(Y1+Y2+Y3)/SQ3
+      SX=(Y3+Y3-Y1-Y2)/(SQ2*SQ3)
+      SY=(Y2-Y1)/SQ2
+      SX1=(DR3+DR3-DR1-DR2)/(SQ2*SQ3)
+      SY1=(DR2-DR1)/SQ2
+      QUAD1=SX1**2+SY1**2
+      SE1=SQRT(QUAD1)
+      if(abs(se1).lt.1.0e-10) then
+        phi=acos(0.0_ark)
+      else
+        phi=acos(sx1/se1)
+      end if
+     !
+      npot=1
+      ft(1)=1.0_ark
+      do 100 norder=1,nfmax
+      do 100 n=norder,0,-1
+      do 100 k=0,norder-n,3
+      m=norder-k-n
+      if (mod(m,2) .ne. 0) goto 100
+      npot=npot+1
+      if(npot.gt.ncf) go to 100
+      ft(npot)=sa**n * se1**(m+k) * cos(dble(k)*phi)
+  100 continue
+      Vad=0.0_ark
+
+      do i=1,ncf
+       Vad=Vad + cv(i)*ft(i)
+      end do
+      V = Vad 
+   
+      return
+      end subroutine potvAC
 
 
 end module pot_user
