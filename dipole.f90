@@ -1016,7 +1016,6 @@ contains
          write(my_fmt1,'(a,i0,a,i0,a,i0,a,i0,a)') "(/t4,a1,t6,a8,t17,a1,t19,a5,t25,a3,t35,a2,t42,a2,t50,a2,t62,a5,t85,",nclasses,&
                                    "(4x),1x,",nmodes,"(4x),3x,a2,14x,",nclasses,"(4x),1x,",nmodes,&
                                    "(4x),8x,a7,10x,a5,12x,a7,12x,a2,8x,a2,8x,a1)"
-
          !
          !write(my_fmt1,'(a)') "(/t4,a1,t6,a8,t17,a1,t19,a5)"
          !write(out,"(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a1,t42a2,t50a1,t62a5,t85,<nclasses>(4x),1x,<nmodes>(4x),3x,a2,14x,<nclasses>(4x),1x,<nmodes>(4x),8x,a7,10x,a5,12x,a7,12x,a1,8x,a1,8x,a1)") 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'

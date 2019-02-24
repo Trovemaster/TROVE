@@ -1790,8 +1790,8 @@ module lapack
         !
         blacs_or_mpi = 'MPI'
         !
-#endif
       !
+#endif
 
 
 !

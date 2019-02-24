@@ -16,6 +16,7 @@
 
     implicit none
 
+    public ptmain
 !
 ! Defining the calculations
 !

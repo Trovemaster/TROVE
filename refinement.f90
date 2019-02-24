@@ -1244,7 +1244,7 @@ contains
                !
                v = pot_values(i)-eps(i+en_npts)
                !
-               write (abinitunit,my_fmt_pot2),& 
+               write (abinitunit,my_fmt_pot2) & 
                       local(:,i), &
                       pot_values(i),v, &
                       eps(i+en_npts),wtall(i+en_npts) 

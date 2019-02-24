@@ -1955,7 +1955,6 @@ module fields
                 (job%bset(i)%periodic.eqv.job%bset(i-1)%periodic)   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
                 !
                 job%bset(i)%species = ispecies
-                !
             else 
                 ispecies = ispecies + 1
                 job%bset(i)%species = ispecies
@@ -4038,7 +4037,7 @@ module fields
                   !
                enddo
                !
-               call readi(i_t); extF%ifit(iterm,imu) = i_t
+               call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
                call readf(f_t); extF%coef(iterm,imu) = f_t
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
@@ -4376,7 +4375,7 @@ end subroutine check_read_save_none
     !
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
-    trove%dihedrals(:,:) = dihedrals(:,:)
+    trove%dihedrals(0:Ndihedrals,:) = dihedrals(0:Ndihedrals,:)
     trove%dihedtype(:) = dihedtype(:)
     !
     ! We define the coordinates 
@@ -15494,7 +15493,7 @@ end subroutine check_read_save_none
       write(chkptIO,"(i8,'   <- Jrot, rotational angular momentum')") bset%dscr(0)%range(1)
       !
       do imode = 0,trove%Nmodes
-        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i2,1x,i2,1x,a10,i9,i3,i3,i3)") &
+        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,l,1x,i2,1x,a10,i9,l,l,l)") &
                       imode, bset%dscr(imode)
       enddo
       !
