@@ -8,7 +8,7 @@ module me_bnd
   implicit none
 
   public ik, rk, out
-  public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
+  public integral_rect_ark,degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
          ME_sinrho_polynomial_k_switch
 
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
@@ -2769,7 +2769,7 @@ module me_bnd
   !
   ! Matrix elements with sinrho-k basis 
   !
-  subroutine ME_sinrho_polynomial_k(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,icoord,verbose,&
+  subroutine ME_sinrho_polynomial_k(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,pseudo,icoord,verbose,&
                                   g_numerov,energy)
    !
    implicit none
@@ -2778,16 +2778,17 @@ module me_bnd
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten(0:npoints),mu_rr(0:npoints),drho(0:npoints,3),mu_zz(0:npoints)
+   real(ark),intent(in) :: poten(0:npoints),mu_rr(0:npoints),drho(0:npoints,3),mu_zz(0:npoints),pseudo(0:npoints)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
    real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe
-   real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t
+   real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t,ps_t
    !
    integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
+   real(ark),allocatable :: phil_s(:),phir_s(:)
    real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
                             phi_rho(:),dphi_rho(:)
    real(rk),allocatable  :: h(:,:),ener(:)
@@ -2805,7 +2806,7 @@ module me_bnd
      !
      allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
               phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),&
-              x(0:npoints),sinrho(0:npoints),cosrho(0:npoints),rho(0:npoints),stat=alloc)
+              x(0:npoints),sinrho(0:npoints),cosrho(0:npoints),rho(0:npoints),phil_s(0:npoints),phir_s(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -3043,12 +3044,14 @@ module me_bnd
        do vl = 0,nmax
           !
           phil(:)  = L(:,vl)*sqrt(sinrho(:))*sinrho(:)**k
+          phil_s(:)= L(:,vl)*sinrho(:)**k
           dphil(:) = dL(:,vl)*sinrho(:)**k
           if (k>0) dphil(:) = dphil(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vl)*cosrho(:)
           !
           do vr = vl,nmax
               !
               phir(:)  = L(:,vr)*sqrt(sinrho(:))*sinrho(:)**k
+              phir_s(:)= L(:,vr)*sinrho(:)**k
               dphir(:) = dL(:,vr)*sinrho(:)**k
               if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
               !
@@ -3064,6 +3067,13 @@ module me_bnd
               phivphi(:) = phil(:)*poten(:)*phir(:)
               !
               h(vl+1,vr+1) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              !
+              ! pseudo-part
+              !
+              phivphi(:) = phil_s(:)*pseudo(:)*phir_s(:)
+              ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              !
+              h(vl+1,vr+1) = h(vl+1,vr+1) + ps_t
               !
               ! momenta-quadratic part 
               !
@@ -3185,6 +3195,11 @@ module me_bnd
               !
               h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
+              ! pseudo-part
+              !
+              phivphi(:) = phil(:)*pseudo(:)*phir(:)*sinrho(:)**(2*k)
+              ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              !
               ! momenta-quadratic part 
               !
               phivphi(:) =-mu_rr(:)*dphil(:)*dphir(:)*sinrho(:)
@@ -3203,7 +3218,7 @@ module me_bnd
               !
               ! Add the diagonal kinetic part to the tested mat. elem-s
               !
-              h_t = h_t - 0.5_ark*mu_rr_t+0.5_ark*mu_zz_t
+              h_t = h_t - 0.5_ark*mu_rr_t+0.5_ark*mu_zz_t+ps_t
               !
               ! check the solution
               !
@@ -3357,7 +3372,7 @@ module me_bnd
      deallocate(psi,dpsi,phi_rho,dphi_rho)
      call ArrayStop('psi-Legendre')
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,cosrho,rho)
+     deallocate(phil,phir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,cosrho,rho)
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
@@ -3457,7 +3472,7 @@ module me_bnd
      do i=0,npoints
         !
         rho_ = rho_b(1)+real(i,kind=ark)*rhostep
-        x(i) = cos(rho_)-1.0_ark
+        x(i) = cos(rho_) ! -1.0_ark
         sinrho(i) = sin(rho_)
         cosrho(i) = cos(rho_)
         rho(i) = rho_

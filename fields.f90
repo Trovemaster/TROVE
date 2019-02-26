@@ -7,7 +7,7 @@ module fields
    use lapack
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
-                      ME_sinrho_polynomial_k_switch
+                      ME_sinrho_polynomial_k_switch,integral_rect_ark
    use me_numer
    use me_rot
    use timer
@@ -15921,7 +15921,7 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -16571,6 +16571,10 @@ end subroutine check_read_save_none
            ! standard case of a non-singular pseudo-function
            !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
+           !
+           if (isingular>=0.and.(trim(bs%type)=='SINRHO')) then 
+               f1drho(0:npoints) = trove%poten%field(1,0:npoints)
+           endif
            ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
            if (isingular>=0.and.(.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO')) then 
              !        
@@ -16726,18 +16730,19 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),stat=alloc)
+             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
              if (alloc/=0) then
                 write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
                 stop 'FLbset1DNew, muzz - out of memory'
              end if
              !
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
+             pseudo = trove%pseudo%field(1,0:npoints)
              !
              !call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
                                        !
-             call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
+             call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
              !
              do i = 0,npoints
@@ -16746,7 +16751,7 @@ end subroutine check_read_save_none
                 cosrho(i) = cos(rho)
              enddo
              !
-             deallocate(muzz)
+             deallocate(muzz,pseudo)
              !
            elseif (trim(bs%type)=='FOURIER') then 
              !
@@ -17309,7 +17314,7 @@ end subroutine check_read_save_none
                         !
                         phivphi_t(:) = phil(:)*trove%poten%field(iterm,:)*phir(:)
                         !
-                        trove%poten%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                        trove%poten%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                         !
                       enddo
                       !
@@ -17345,7 +17350,7 @@ end subroutine check_read_save_none
                                  !
                               endif
                               !
-                              trove%g_vib(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                              trove%g_vib(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                               !
                            enddo
                            !
@@ -17367,7 +17372,7 @@ end subroutine check_read_save_none
                          !
                          phivphi_t(:) =-2.0_ark*phil_sin(:)*trove%pseudo%field(iterm,:)*phir_sin(:)
                          !
-                         mat_t = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                         mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
                          !
                          trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)+mat_t
                          !
@@ -17405,7 +17410,7 @@ end subroutine check_read_save_none
                                    !
                                 endif
                                 !
-                                trove%L2_vib(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                                trove%L2_vib(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                 !
                              enddo
                              !
@@ -17439,7 +17444,7 @@ end subroutine check_read_save_none
                                !
                                !!phivphi_t(:) = -phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
                                !
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
                              enddo
                              !
@@ -17452,7 +17457,7 @@ end subroutine check_read_save_none
                                phivphi_t(:) =phil_sin(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_sin(:)
                                !
                                !!phivphi_t(:) =phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                              enddo
                              !
                            else
@@ -17463,7 +17468,7 @@ end subroutine check_read_save_none
                                 !
                                 phivphi_t(:) = phil(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir(:)
                                 !
-                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                 !
                              enddo
                              !
@@ -17493,7 +17498,7 @@ end subroutine check_read_save_none
                                   !
                                endif
                                !
-                               trove%g_cor(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_cor(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
                                !
                             enddo
@@ -17516,7 +17521,7 @@ end subroutine check_read_save_none
                            !
                            phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
                            !
-                           trove%extF(imu)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                           trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                            !
                         enddo
                         !
@@ -17534,7 +17539,7 @@ end subroutine check_read_save_none
              !
              deallocate(sinrho,cosrho,stat=alloc_p)
              !
-           elseif (trim(bs%type)=='SINRHO') then
+           elseif (trim(bs%type)=='SINRHO-1') then
              !
              if (job%verbose>=4) then 
                 write(out,"('   Allocating 11 arrays of ',i8,', Ncore times ',g12.4,' ')") trove%Npoints+1,&
@@ -17589,7 +17594,7 @@ end subroutine check_read_save_none
                         !
                         phivphi_t(:) = phil(:)*trove%poten%field(iterm,:)*phir(:)
                         !
-                        trove%poten%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                        trove%poten%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                         !
                       enddo
                       !
@@ -17625,7 +17630,7 @@ end subroutine check_read_save_none
                                  !
                               endif
                               !
-                              trove%g_vib(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                              trove%g_vib(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                               !
                            enddo
                            !
@@ -17647,7 +17652,7 @@ end subroutine check_read_save_none
                          !
                          phivphi_t(:) =-2.0_ark*phil_sin(:)*trove%pseudo%field(iterm,:)*phir_sin(:)
                          !
-                         mat_t = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                         mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
                          !
                          trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)+mat_t
                          !
@@ -17685,7 +17690,7 @@ end subroutine check_read_save_none
                                    !
                                 endif
                                 !
-                                trove%L2_vib(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                                trove%L2_vib(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                 !
                              enddo
                              !
@@ -17719,7 +17724,7 @@ end subroutine check_read_save_none
                                !
                                !!phivphi_t(:) = -phil_leg(:)*fl%field(iterm,:)*phir_leg(:)
                                !
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
                              enddo
                              !
@@ -17732,7 +17737,7 @@ end subroutine check_read_save_none
                                phivphi_t(:) =phil_sin(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_sin(:)
                                !
                                !!phivphi_t(:) =phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                              enddo
                              !
                            else
@@ -17743,7 +17748,7 @@ end subroutine check_read_save_none
                                 !
                                 phivphi_t(:) = phil(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir(:)
                                 !
-                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                 !
                              enddo
                              !
@@ -17773,7 +17778,7 @@ end subroutine check_read_save_none
                                   !
                                endif
                                !
-                               trove%g_cor(k1,k2)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                               trove%g_cor(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
                                !
                             enddo
@@ -17796,7 +17801,7 @@ end subroutine check_read_save_none
                            !
                            phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
                            !
-                           trove%extF(imu)%me(iterm,vl,vr) = simpsonintegral_ark(npoints,rho_range,phivphi_t)
+                           trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                            !
                         enddo
                         !
