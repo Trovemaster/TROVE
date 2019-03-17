@@ -604,7 +604,7 @@ module perturbation
     integer(ik)                   :: nu_max(0:PT%Nmodes),nu(0:PT%Nmodes),nu_min(0:PT%Nmodes),pol_t(0:PT%Nmodes),j,i,jrot
     real(rk)                      :: ener0,mat_ij
     integer(ik)                   :: nmodes,nmodes1,NPTorder,NPTorder1,Npolyads,Npolyads1,PTDeltaQuanta,dimen,tau0,k0
-    integer(ik)                   :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
+    integer(ik)                   :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),kmax
     integer(ik),allocatable       :: active_nu(:,:)
     real(rk),allocatable          :: a(:),b(:)
     character(len=cl) :: my_fmt !format for I/O specification
@@ -706,6 +706,10 @@ module perturbation
     endif 
     !
     nu_max(:) = PT%range(2,:)
+    !
+    ! For k-dependnent basis set:
+    !
+    kmax = job%bset(0)%range(2)
     ! 
     ! For PT we also need to defined the active space:
     ! all quantum numbers, that will be activated through different PT orders.
@@ -736,6 +740,8 @@ module perturbation
     !
     pol_t(1:Nmodes) = int(real(nu_max(1:Nmodes),rk)*PT%res_coeffs(1:Nmodes),ik)
     !
+    !pol_t(Nmodes) = pol_t(Nmodes)/(kmax+1)
+    !
     ! active space maximal polyad number 
     !
     PTPolyad_active = maxval(pol_t(1:Nmodes))
@@ -745,7 +751,7 @@ module perturbation
        !
        PT%Polyad_max = maxval(pol_t(1:Nmodes))
        !
-       else
+    else
        !
        PT%Polyad_max = PT%Npolyads
        !
@@ -853,13 +859,15 @@ module perturbation
     ! a) the basis set size for the variational problem, or
     ! b) the resonans blocks (zero order) for the Pert. Theory (PT) calculations. 
     !
-    do ipol = 0,PT%Polyad_max
+    loop_ipol : do ipol = 0,PT%Polyad_max
        !
        ! We find the ultimate combination of quanta nu_i that corresponds to PTpolyadRules 
        !
        PT%MaxIndex_nu(ipol) = PTnu_index(nu_max,ipol)
        !
-       if (PT%MaxIndex_nu(ipol)==0) PT%MaxIndex_nu(ipol) = 1
+       if (PT%MaxIndex_nu(ipol)==0) then 
+         PT%MaxIndex_nu(ipol) = 1
+       endif
        !
        ipol_t = PT%MaxIndex_nu(ipol)
        !
@@ -872,7 +880,7 @@ module perturbation
        !
        i0 = PTnu_index(nu_max,ipol,PT%Index_nu(ipol)%icoeffs(:,:))
        ! 
-    enddo 
+    enddo loop_ipol
     !
     icoeffs = 0
     !
@@ -1331,15 +1339,16 @@ module perturbation
 ! Here we define the resonans (polyad) rules
 !
   function PTpolyadRules(nu) result(polynom)
-
-
+    !
     integer(ik),intent(in) :: nu(:)
     integer(ik) :: polynom
-
     !
     polynom  = int(sum( PT%res_coeffs(:)*real(nu(:),rk) ),ik)
     !
-
+    !if (job%bset(0)%range(2)>0) then
+    !    polynom = polynom/(job%bset(0)%range(2)+1)
+    !endif
+    !
   end function PTpolyadRules
 
 !
@@ -1700,7 +1709,8 @@ module perturbation
           switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
           if (trove%triatom_sing_resolve) then
              if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
-                switch = switch.and.( lquant==krot )
+                !switch = switch.and.( lquant==krot )
+                switch = switch.and.lquant==min(krot,1)
              endif
           elseif(trove%lincoord/=0) then
              switch = switch.and.( lquant==krot.or.jrot==0 )
@@ -30338,8 +30348,13 @@ end subroutine read_contr_matelem_expansion_classN
       ! singularity resolved by Associated Legendres
       if (trove%triatom_sing_resolve) then
         v_i = nu_i(Nmodes)
-        n_i = mod(v_i,nmax+1)
-        k_i = (v_i-n_i)/(nmax+1)
+        !
+        !n_i = mod(v_i,nmax+1)
+        !k_i = (v_i-n_i)/(nmax+1)
+        !
+        k_i = mod(v_i,kmax+1)
+        n_i = (v_i-k_i)/(kmax+1)
+        !
         !nu_i(nmodes) = n_i
       endif
       !
@@ -30349,8 +30364,12 @@ end subroutine read_contr_matelem_expansion_classN
         !
         if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)
-          n_j = mod(v_j,nmax+1)
-          k_j = (v_j-n_j)/(nmax+1)
+          !n_j = mod(v_j,nmax+1)
+          !k_j = (v_j-n_j)/(nmax+1)
+          !
+          k_j = mod(v_j,kmax+1)
+          n_j = (v_j-k_j)/(kmax+1)
+          !
           !nu_j(nmodes) = n_j
           if (k_i/=k_j) cycle
         endif
@@ -30592,8 +30611,10 @@ end subroutine read_contr_matelem_expansion_classN
           !
           if (trove%triatom_sing_resolve) then
             v_i = nu_i(Nmodes)
-            n_i = mod(v_i,nmax+1)
-            k_i = (v_i-n_i)/(nmax+1)
+            k_i = mod(v_i,kmax+1)
+            n_i = (v_i-k_i)/(kmax+1)
+            !n_i = mod(v_i,nmax+1)
+            !k_i = (v_i-n_i)/(nmax+1)
             PT%lquant%icoeffs(ib,1)=k_i
             PT%quanta%icoeffs(ib,Nmodes) = n_i
           endif
