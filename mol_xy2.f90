@@ -2627,33 +2627,74 @@ module mol_xy2
        k_ = mod(K+N_Cn,N_Cn)
        l = k_ ; if (k_>N_Cn) l = sym%N-k_
        !
-       if (mod(K+N_Cn,N_Cn)==0) then
+       if (mod(sym%N,2)==1) then
           !
-          if     (tau==0.and.mod(k+2,2)==0) then 
-             gamma = 1 
-          elseif (tau==1.and.mod(k+2,2)==0) then 
-             gamma = 2
-          elseif (tau==0.and.mod(k+2,2)/=0) then 
-             gamma = 4
-          elseif (tau==1.and.mod(k+2,2)/=0) then 
-             gamma = 3
+          if (mod(K+N_Cn,N_Cn)==0) then
+             !
+             if     (tau==0.and.mod(k+2,2)==0) then 
+                gamma = 1 
+             elseif (tau==1.and.mod(k+2,2)==0) then 
+                gamma = 2
+             elseif (tau==0.and.mod(k+2,2)/=0) then 
+                gamma = 4
+             elseif (tau==1.and.mod(k+2,2)/=0) then 
+                gamma = 3
+             else
+                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+             endif
+             !
+          elseif (tau<=1.and.k<=j) then
+             !
+             ideg = 1 ! tau +1
+             if (mod(k+tau,2)/=0) ideg = 2
+             !
+             if     (mod(k+2,2)==0) then 
+                 gamma = 4+2*l-1
+             else
+                gamma = 4+2*l
+             endif
+             !
           else
-             stop 'ML_rotsymmetry_XY2-Dnh: illegal k,tau (K mod N  = 0)'
+               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
           endif
           !
-       elseif (tau<=1.and.k<=j) then
+       else ! even Dnh
           !
-          ideg = tau +1
-          !
-          if     (mod(k+2,2)==0) then 
-              gamma = 4+2*l-1
+          if (mod(K+N_Cn,N_Cn)==0) then
+             !
+             if     (tau==0.and.mod(k+2,2)==0) then 
+                gamma = 1 
+             elseif (tau==1.and.mod(k+2,2)==0) then 
+                gamma = 2
+             elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                gamma = 4
+             elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                gamma = 3
+             else
+                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+             endif
+             !
+          elseif (tau<=1.and.k<=j) then
+             !
+             !ideg = tau +1
+             !
+             ideg = 1
+             !
+             if (mod(k+tau,2)/=0) ideg = 2
+             !
+             gamma = 8+2*l-1
+             !
+             !if     (mod(k+2,2)==0) then 
+             !    gamma = 8+2*l
+             !else
+             !    gamma = 8+2*l-1
+             !endif
+             !
           else
-              gamma = 4+2*l
+               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
           endif
           !
-       else
-            stop 'ML_rotsymmetry_XY2-Dnh: illegal k,tau (K mod N  /= 0)'
-       endif 
+       endif
        !
     end select
     !

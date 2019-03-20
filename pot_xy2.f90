@@ -443,7 +443,9 @@ module pot_xy2
    real(ark)            :: aa1,re12,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
    real(ark)            :: g1,g2,b1,b2,rhh,vhh
    integer(ik)          :: N
-   real(ark)             :: ycos,v_t,q1,q2
+   real(ark)            :: ycos,v_t,q1,q2
+   real(ark)            :: a1(3),a2(3),t1,t2,w(3),cosalpha
+   character(len=cl)    :: txt
    !
    if (verbose>=6) write(out,"('MLpoten_xy2_tyuterev/start')")
    !
@@ -458,6 +460,38 @@ module pot_xy2
      alphae = pi+(-molec%taueq(1)+molec%taueq(2))
      alpha = pi - local(3) 
    endif 
+   !
+   select case(trim(molec%coords_transform))
+   case default
+      !
+      alpha = local(3)
+      !
+   case('R-PHI1-PHI2','R-PHI1-PHI2-Z')
+      !
+      a1(:) = xyz(2,:) - xyz(1,:)
+      a2(:) = xyz(3,:) - xyz(1,:)
+      !
+      t1 =  sqrt(sum(a1(:)**2))
+      t2 =  sqrt(sum(a2(:)**2))
+      !
+      a1 =  a1(:)/t1
+      a2 =  a2(:)/t2
+      !
+      w(:) = MLvector_product(a1,a2)
+      !
+      cosalpha = sum(a1(:)*a2(:))
+      !
+      txt = "pot_xy2"
+      !
+      alpha = aacos(cosalpha,txt)
+      !
+      if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+      !
+      !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
+      !
+   end select 
+
+
    !
    b1   = force(1)
    b2   = force(2)
