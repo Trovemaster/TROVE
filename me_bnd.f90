@@ -985,6 +985,8 @@ module me_bnd
      if (verbose>=4) write(out,"('   Diagonalize the 1D primitive Hamiltonian ...')")
      call lapack_syev(h,ener)
      !
+     if (verbose>=4) write(out,"('ZPE = ',f16.6)") ener(1)
+     !
      energy(0:vmax) = ener(1:vmax+1)-ener(1)
      !
      ! Schmidt orthogonalization to make eigenvectors orthogonal in ark
@@ -1014,11 +1016,13 @@ module me_bnd
      enddo
      !$omp end parallel do
      !
-     write (out,"(/' Fourier-optimized energies are:')") 
-     !
-     do vl=0,vmax   
-       write (out,"(i8,f18.8)") vl,energy(vl)
-     enddo
+     if (verbose>=4) then 
+       write (out,"(/' Fourier-optimized energies are:')") 
+       !
+       do vl=0,vmax   
+         write (out,"(i8,f18.8)") vl,energy(vl)
+       enddo
+     endif
      !
      if (verbose>=4) write(out,"('   Transform primitive to contracted on the grid ...')")
      !

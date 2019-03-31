@@ -5711,7 +5711,7 @@ end subroutine check_read_save_none
     integer(ik),intent(in) :: npoints
     character(len=*),intent(in) :: action,msg
     integer(ik)     :: irho,N_
-    integer(ik),parameter :: N_max = 10,Nattempt_max = 10000
+    integer(ik),parameter :: N_max = 10,Nattempt_max = 1000
     integer(ik)                  :: i,i1,i2,k,ioutlier
     logical                      :: outliers
     real(ark)                    :: rho_(1:N_max),func_(1:N_max),rho,fval,foutlier,fcorr,df
@@ -5740,6 +5740,8 @@ end subroutine check_read_save_none
       outlier = 0
       !
       Ncoeff = object%Ncoeff
+      !
+      !$omp parallel do private(iterm,iattempt,outliers,foutlier,ioutlier_max,ioutlier,irho,i1,i2,k,i,rho_,func_,rho,fval,df,fcorr) shared(outlier) schedule(guided)
       do iterm = 1, Ncoeff
         !
         if (job%verbose>=6) write(out,"('  iterm = ',i5)") iterm
@@ -5755,7 +5757,7 @@ end subroutine check_read_save_none
           ioutlier_max = -1
           ioutlier = 0
           !
-          if (job%verbose>=6) write(out,"('  iattempt = ',i3)") iattempt
+          if (job%verbose>=7) write(out,"('  iattempt = ',i3)") iattempt
           !
           do irho = 0, npoints
             !
@@ -5806,7 +5808,7 @@ end subroutine check_read_save_none
             !
             call polintark(rho_(1:k),func_(1:k),rho,fval,df)
             !
-            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*1000.0*sqrt(small_),100.0*sqrt(small_)) ) then
+            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*10000.0*sqrt(small_),1000.0*sqrt(small_)) ) then
                !
                outliers = .true.
                outlier(irho) = 1
@@ -5825,12 +5827,12 @@ end subroutine check_read_save_none
           !
           if (ioutlier_max>=0) then 
             !
-            write(out,"('check_field_smoothness: ',a)",advance='NO') msg
-            write(out,"('; an outlier found for iterm =  ',i6,' at i = ',i5,': ',e18.11,' vs ',e18.11)") iterm,ioutlier_max,&
+            if (job%verbose>=5) write(out,"('check_field_smoothness: ',a)",advance='NO') msg
+            if (job%verbose>=5) write(out,"('; an outlier found for iterm =  ',i6,' at i = ',i5,': ',e18.11,' vs ',e18.11)") iterm,ioutlier_max,&
                        object%field(iterm,ioutlier_max),fcorr
             !
             if (Nattempt>1) then 
-               write(out,"(e18.11,' will be replaced by the extrapolated value = ',e18.11)") object%field(iterm,ioutlier_max),fcorr
+               if (job%verbose>=5) write(out,"(e18.11,' will be replaced by the extrapolated value = ',e18.11)") object%field(iterm,ioutlier_max),fcorr
                object%field(iterm,ioutlier_max) = fcorr
             endif
             !
@@ -5845,6 +5847,9 @@ end subroutine check_read_save_none
         endif
         !
       enddo
+      !$omp end parallel do
+      !
+      deallocate(outlier)
       call ArrayStop('check_field_smoothness')
       !
  end subroutine check_field_smoothness

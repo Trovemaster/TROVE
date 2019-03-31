@@ -10057,7 +10057,7 @@ module perturbation
      cdimenmax = 1
      !
      write(my_fmt_l,'(a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
-                     Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i4,a2)"
+                     Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
      
      !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
      !                  sym%label(gamma),iroot,termvalue,&
@@ -14775,7 +14775,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -16018,7 +16018,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -36392,7 +36392,7 @@ end subroutine combinations
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !

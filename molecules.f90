@@ -490,7 +490,11 @@ end function ML_MEPfunc
        !
        MLextF_func => MLdms_hooh_MB
        !
-       ! Molecular Bond representaion of the DMS of HPPH
+       ! Molecular Bond representaion of alpha of HOOH
+       !
+    case('HOOH_ALPHA_MB')
+       !
+       MLextF_func => MLalpha_hooh_MB
        !
     case('HPPH_MB')
        !
