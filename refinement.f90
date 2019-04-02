@@ -3112,7 +3112,7 @@ contains
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") bset_contr(1)%Maxcontracts,ncontr_t
+       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',i0,1x,i0)") bset_contr(1)%Maxcontracts,ncontr_t
        stop 'calc_exp_values - in file - illegal ncontracts '
      end if
      !
@@ -3310,9 +3310,9 @@ contains
           !
           do i=1,parmax
             !
-            if (job%verbose>=5) write (out,"('iparam = ',i0)") i
+            if (job%verbose>=6) write (out,"('iparam = ',i0)") i
             !
-            write (out,"(' ')")
+            !write (out,"(' ')")
             !
             read(chkptIO) imu_t
             read(chkptIO) poten_
@@ -3343,7 +3343,7 @@ contains
             !
             call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
             !
-            write (out,"(' ')")
+            !write (out,"(' ')")
             !
             do ientry = 1, Nentries
               !

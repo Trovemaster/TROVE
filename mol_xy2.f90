@@ -2534,169 +2534,292 @@ module mol_xy2
     !
     if (verbose>=5) write(out,"('ML_rotsymmetry_XY2/start')") 
     !
-    !
+    ! the trivial case 
     select case(trim(molec%symmetry))
-    case default
-       !
-       write (out,"('ML_rotsymmetry_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
-       stop 'ML_rotsymmetry_XY2 - bad symm. type'
-       !
-    case('C2V','C2V(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 3 !; return
-       !
-    case('C2H','C2H(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 ! ; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !3 !4 !2 ! ; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 2 !3 !3 !4 !2 !4 ! ; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !4 !2 !2 !3 !3 ! ; return
-       !
-    case('CS','CS(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       !
-       if (molec%AtomMasses(2)/=molec%AtomMasses(3).or.molec%req(1)/=molec%req(2)) then
-         !
-         if (mod(tau+2,2)==0) gamma = 1 !; return
-         if (mod(tau+2,2)/=0) gamma = 2 !; return
-         !
-       else
-         !
-         if (mod(K+tau+2,2)==0) gamma = 1 !; return
-         if (mod(K+tau+2,2)/=0) gamma = 2 !; return
-         !
-       endif 
-       !
     case('C','C(M)')
-       !
-       gamma = 1
-       ideg = 1
-       !
-    case('D2H(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 7 !3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !7 !7 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 5 !5 !5 !; return
-       !
-    case('D3H','D3H(M)')
-       !
-       gamma = 0 
-       ideg = 1 
-       !
-       if     (mod(K+3,3)==0.and.tau==0.and.mod(k+2,2)==0) then 
-          gamma = 1 
-       elseif (mod(K+3,3)==0.and.tau==1.and.mod(k+2,2)==0) then 
-          gamma = 2
-       elseif (mod(K+3,3)==0.and.tau==0.and.mod(k+2,2)/=0) then 
-          gamma = 5
-       elseif (mod(K+3,3)==0.and.tau==1.and.mod(k+2,2)/=0) then 
-          gamma = 4
-       elseif (mod(K+3,3)/=0.and.tau==0.and.mod(k+2,2)==0) then 
-          gamma = 3 ; ideg = 1 
-       elseif (mod(K+3,3)/=0.and.tau==1.and.mod(k+2,2)==0) then 
-          gamma = 3 ; ideg = 2
-       elseif (mod(K+3,3)/=0.and.tau==0.and.mod(k+2,2)/=0) then 
-          gamma = 6 ; ideg = 1 
-       elseif (mod(K+3,3)/=0.and.tau==1.and.mod(k+2,2)/=0) then 
-          gamma = 6 ; ideg = 2
-       else
-          !
-          write(out,"('ML_rotsymmetry_XY2-D3h: illegal j,k,tau - ',3i8)") j,k,tau
-          !
-       endif 
-       !
-    case('DNH','DNH(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       !
-       N = sym%N
-       N_Cn = sym%N/2
-       k_ = mod(K+N_Cn,N_Cn)
-       l = k_ ; if (k_>N_Cn) l = sym%N-k_
-       !
-       if (mod(sym%N,2)==1) then
-          !
-          if (mod(K+N_Cn,N_Cn)==0) then
-             !
-             if     (tau==0.and.mod(k+2,2)==0) then 
-                gamma = 1 
-             elseif (tau==1.and.mod(k+2,2)==0) then 
-                gamma = 2
-             elseif (tau==0.and.mod(k+2,2)/=0) then 
-                gamma = 4
-             elseif (tau==1.and.mod(k+2,2)/=0) then 
-                gamma = 3
-             else
-                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
-             endif
-             !
-          elseif (tau<=1.and.k<=j) then
-             !
-             ideg = 1 ! tau +1
-             if (mod(k+tau,2)/=0) ideg = 2
-             !
-             if     (mod(k+2,2)==0) then 
-                 gamma = 4+2*l-1
-             else
-                gamma = 4+2*l
-             endif
-             !
-          else
-               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
-          endif
-          !
-       else ! even Dnh
-          !
-          if (mod(K+N_Cn,N_Cn)==0) then
-             !
-             if     (tau==0.and.mod(k+2,2)==0) then 
-                gamma = 1 
-             elseif (tau==1.and.mod(k+2,2)==0) then 
-                gamma = 2
-             elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
-                gamma = 4
-             elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
-                gamma = 3
-             else
-                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
-             endif
-             !
-          elseif (tau<=1.and.k<=j) then
-             !
-             !ideg = tau +1
-             !
-             ideg = 1
-             !
-             if (mod(k+tau,2)/=0) ideg = 2
-             !
-             gamma = 8+2*l-1
-             !
-             !if     (mod(k+2,2)==0) then 
-             !    gamma = 8+2*l
-             !else
-             !    gamma = 8+2*l-1
-             !endif
-             !
-          else
-               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
-          endif
-          !
-       endif
-       !
-    end select
+         gamma = 1
+         ideg = 1
+         return
+    end select 
+    !
+    select case(trim(molec%coords_transform))
+      !
+    case default
+      !
+      select case(trim(molec%symmetry))
+      case default
+         !
+         write (out,"('ML_rotsymmetry_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
+         stop 'ML_rotsymmetry_XY2 - bad symm. type'
+         !
+      case('C2V','C2V(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+         if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 3 !; return
+         !
+      case('C2H','C2H(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 ! ; return
+         if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !3 !4 !2 ! ; return
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 2 !3 !3 !4 !2 !4 ! ; return
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !4 !2 !2 !3 !3 ! ; return
+         !
+      case('CS','CS(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         if (molec%AtomMasses(2)/=molec%AtomMasses(3).or.molec%req(1)/=molec%req(2)) then
+           !
+           if (mod(tau+2,2)==0) gamma = 1 !; return
+           if (mod(tau+2,2)/=0) gamma = 2 !; return
+           !
+         else
+           !
+           if (mod(K+tau+2,2)==0) gamma = 1 !; return
+           if (mod(K+tau+2,2)/=0) gamma = 2 !; return
+           !
+         endif 
+         !
+      case('D2H(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !; return
+         if (mod(K+2,2)==0.and.tau==1) gamma = 7 !3 !3 !; return
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !7 !7 !; return
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 5 !5 !5 !; return
+         !
+      case('D3H','D3H(M)')
+         !
+         gamma = 0 
+         ideg = 1 
+         !
+         if     (mod(K+3,3)==0.and.tau==0.and.mod(k+2,2)==0) then 
+            gamma = 1 
+         elseif (mod(K+3,3)==0.and.tau==1.and.mod(k+2,2)==0) then 
+            gamma = 2
+         elseif (mod(K+3,3)==0.and.tau==0.and.mod(k+2,2)/=0) then 
+            gamma = 5
+         elseif (mod(K+3,3)==0.and.tau==1.and.mod(k+2,2)/=0) then 
+            gamma = 4
+         elseif (mod(K+3,3)/=0.and.tau==0.and.mod(k+2,2)==0) then 
+            gamma = 3 ; ideg = 1 
+         elseif (mod(K+3,3)/=0.and.tau==1.and.mod(k+2,2)==0) then 
+            gamma = 3 ; ideg = 2
+         elseif (mod(K+3,3)/=0.and.tau==0.and.mod(k+2,2)/=0) then 
+            gamma = 6 ; ideg = 1 
+         elseif (mod(K+3,3)/=0.and.tau==1.and.mod(k+2,2)/=0) then 
+            gamma = 6 ; ideg = 2
+         else
+            !
+            write(out,"('ML_rotsymmetry_XY2-D3h: illegal j,k,tau - ',3i8)") j,k,tau
+            !
+         endif 
+         !
+      case('DNH','DNH(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         N = sym%N
+         N_Cn = sym%N/2
+         k_ = mod(K+N_Cn,N_Cn)
+         l = k_ ; if (k_>N_Cn) l = sym%N-k_
+         !
+         if (mod(sym%N,2)==1) then
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0.and.mod(k+2,2)==0) then 
+                  gamma = 1 
+               elseif (tau==1.and.mod(k+2,2)==0) then 
+                  gamma = 2
+               elseif (tau==0.and.mod(k+2,2)/=0) then 
+                  gamma = 4
+               elseif (tau==1.and.mod(k+2,2)/=0) then 
+                  gamma = 3
+               else
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               ideg = 1 ! tau +1
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               if     (mod(k+2,2)==0) then 
+                   gamma = 4+2*l-1
+               else
+                  gamma = 4+2*l
+               endif
+               !
+            else
+                 stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         else ! even Dnh
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0.and.mod(k+2,2)==0) then 
+                  gamma = 1 
+               elseif (tau==1.and.mod(k+2,2)==0) then 
+                  gamma = 2
+               elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 4
+               elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 3
+               else
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               !ideg = tau +1
+               !
+               ideg = 1
+               !
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               gamma = 8+2*l-1
+               !
+               !if     (mod(k+2,2)==0) then 
+               !    gamma = 8+2*l
+               !else
+               !    gamma = 8+2*l-1
+               !endif
+               !
+            else
+                 stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         endif
+         !
+      end select
+      !
+    case('R-RHO-Z')
+      !
+      select case(trim(molec%symmetry))
+      case default
+         !
+         write (out,"('ML_rotsymmetry_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
+         stop 'ML_rotsymmetry_XY2 - bad symm. type'
+         !
+      case('CS','CS(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         if (molec%AtomMasses(2)/=molec%AtomMasses(3).or.molec%req(1)/=molec%req(2)) then
+           !
+           if (mod(tau+2,2)==0) gamma = 1 !; return
+           if (mod(tau+2,2)/=0) gamma = 2 !; return
+           !
+         else
+           !
+           if (mod(K+tau+2,2)==0) gamma = 1 !; return
+           if (mod(K+tau+2,2)/=0) gamma = 2 !; return
+           !
+         endif 
+         !
+      case('C2V','C2V(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+         if (mod(K+2,2)==0.and.tau==1) gamma = 3 !; return
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !; return
+         !
+      case('DNH','DNH(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         N = sym%N
+         N_Cn = sym%N/2
+         k_ = mod(K+N_Cn,N_Cn)
+         l = k_ ; if (k_>N_Cn) l = sym%N-k_
+         !
+         if (mod(sym%N,2)==1) then
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0.and.mod(k+2,2)==0) then 
+                  gamma = 1 
+               elseif (tau==1.and.mod(k+2,2)==0) then 
+                  gamma = 2
+               elseif (tau==0.and.mod(k+2,2)/=0) then 
+                  gamma = 4
+               elseif (tau==1.and.mod(k+2,2)/=0) then 
+                  gamma = 3
+               else
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               ideg = 1 ! tau +1
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               if     (mod(k+2,2)==0) then 
+                   gamma = 4+2*l-1
+               else
+                  gamma = 4+2*l
+               endif
+               !
+            else
+                 stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         else ! even Dnh
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0.and.mod(k+2,2)==0) then 
+                  gamma = 1 
+               elseif (tau==1.and.mod(k+2,2)==0) then 
+                  gamma = 2
+               elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 4
+               elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 3
+               else
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               !ideg = tau +1
+               !
+               ideg = 1
+               !
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               gamma = 8+2*l-1
+               !
+               !if     (mod(k+2,2)==0) then 
+               !    gamma = 8+2*l
+               !else
+               !    gamma = 8+2*l-1
+               !endif
+               !
+            else
+                 stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         endif
+         !
+      end select
+      !
+    end select 
     !
     if (verbose>=5) write(out,"('ML_rotsymmetry_XY2/end')") 
     !

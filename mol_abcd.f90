@@ -3181,12 +3181,6 @@ module mol_abcd
           endif
           !
        end select 
-
-
-
-
-
-
        !
     case('R-R1-R2-X-Y-X-Y','R-Z1-Z2-X-Y-X-Y','R-R1-R2+X+Y-X+Y')
        ! 
