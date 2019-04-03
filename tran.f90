@@ -794,7 +794,14 @@ contains
              !
              !if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
              !
-             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0)) then
+             passed = .true.
+             if (job%triatom_sing_resolve) then
+                if (Jval(jind)==0.and.normal(0)/=0) then
+                  passed = .false.
+                endif
+             endif 
+             !
+             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0).and.passed) then
                !
                !write(out,"(/a/)") 'States file in the Exomol format'
                !
@@ -816,6 +823,7 @@ contains
              endif
              !
              passed = .true.
+             !
              if (istate2ilevel(jind,igamma,ilevel)==0) passed = .false.
              !
              !call filter(energy,igamma,passed)

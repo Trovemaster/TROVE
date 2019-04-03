@@ -3275,7 +3275,7 @@ end subroutine polintark
         !
         chi = xi(imode)+ molec%chi_eq(imode)
         !
-     case('COSRHO') 
+    case('COSRHO') 
         !
         rhoe = molec%chi_eq(imode)
         !

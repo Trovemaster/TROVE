@@ -2575,10 +2575,22 @@ endif
     !
     integer(ik)           :: k
     real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae
-    real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8
+    real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8,xyz0(natoms,3)
     !
-    x(1,:) = xyz(2,:) - xyz(1,:)
-    x(2,:) = xyz(3,:) - xyz(1,:)
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
     !
     r1 = sqrt(sum(x(1,:)**2))
     r2 = sqrt(sum(x(2,:)**2))

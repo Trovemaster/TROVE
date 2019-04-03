@@ -364,6 +364,7 @@ module fields
       logical             :: exomol_format  = .false.     ! exomol format of intensity output 
       logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
                                             ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
+      logical             :: triatom_sing_resolve = .false.
       !
    end type FLcalcsT
 
@@ -1799,6 +1800,7 @@ module fields
               !
               if (trim(job%bset(imode)%type)=='LEGENDRE'.or.trim(job%bset(imode)%type)=='SINRHO') then 
                  trove%triatom_sing_resolve = .true.
+                 job%triatom_sing_resolve = .true.
               endif
               !
            endif
@@ -17609,7 +17611,8 @@ end subroutine check_read_save_none
                 !
                 phil_sin(:) = phil_leg(:)*sinrho(:)**krot1
                 phil(:) = sqrt(sinrho(:))*phil_sin(:)
-                dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+sinrho(:)*dphil_leg(:)
+                !dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+sinrho(:)*dphil_leg(:)
+                dphil(:) = cosrho(:)*(krot1+0.5_ark)*phil_leg(:)+sinrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -17627,7 +17630,8 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*sinrho**krot2
                     phir(:) = sqrt(sinrho(:))*phir_sin(:)
-                    dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+sinrho(:)*dphir_leg(:)
+                    !dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+sinrho(:)*dphir_leg(:)
+                    dphir(:) = cosrho(:)*(krot2+0.5_ark)*phir_leg(:)+sinrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -17815,7 +17819,8 @@ end subroutine check_read_save_none
                                !
                                if (k1==Nmodes) then 
                                   !
-                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:))
+                                  !!!!!!!!!!!!!!!! this sign cganged ?!!!!!!!!!!!!!!!!!!!!!!!
+                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*sinrho(:)**(krot1+krot2)
                                   !
                                else
                                   !
@@ -24171,7 +24176,7 @@ end subroutine check_read_save_none
     real(ark),intent(out)   :: mu_xyz(1:rank)
     !
     real(ark)               :: r(molec%ncoords),xyz(molec%natoms, 3),chi(nmodes)
-    integer(ik)             :: natoms,nlocals,iatom,icart
+    integer(ik)             :: natoms,nlocals,iatom,icart,imode
     logical                 :: dir
     character(len=cl)       :: my_fmt !format for I/O specification
     !
@@ -24196,8 +24201,8 @@ end subroutine check_read_save_none
     natoms  = molec%natoms
     nlocals = molec%ncoords
     !
-    do iatom = 1,trove%Nmodes_e
-      chi(iatom) = MLcoord_invert(xi,3,iatom) 
+    do imode = 1,trove%Nmodes
+      chi(imode) = MLcoord_invert(xi,3,imode) 
     enddo
     !
     !chi = xi
@@ -24216,6 +24221,8 @@ end subroutine check_read_save_none
        dir = .false.
        !
        r = MLcoordinate_transform_func(chi,size(r),dir)
+       !
+       xyz = 0
        !
     else
        !

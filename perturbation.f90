@@ -1708,7 +1708,8 @@ module perturbation
           !
           switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
           if (trove%triatom_sing_resolve) then
-             if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
+             !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
+             if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
                 switch = switch.and.lquant==min(krot,1)
              endif
