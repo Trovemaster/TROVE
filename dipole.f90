@@ -778,7 +778,7 @@ contains
       !
       if (unitF==-1) stop 'This file is not supposed to be accessed'
       !
-      indI = eigen(ilevelF)%icoeff ! ???????
+      indI = eigen(ilevelF)%icoeff
       !
       if (nsizeF<=dimenmax_ram.and.iram(indF,igammaF)<ram_size(indF,igammaF)) then
         !
@@ -959,14 +959,14 @@ contains
          !
          !if (indI/=jind.or.igamma/=igammaI) cycle
          !
-         dimenI = bset_contr(indI)%Maxcontracts
+         !dimenI = bset_contr(indI)%Maxcontracts
          !
          !energy, quanta, and gedeneracy order of the initial state
          !
-         jI = eigen(ilevelI)%jval
-         energyI = eigen(ilevelI)%energy-intensity%ZPE
-         quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
-         normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+         !jI = eigen(ilevelI)%jval
+         !energyI = eigen(ilevelI)%energy-intensity%ZPE
+         !quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
+         !normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
          !
          ID_I = eigen(ilevelI)%ilevel + bset_contr(indI)%nsize_base(igammaI)
          !

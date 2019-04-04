@@ -2975,12 +2975,21 @@ endif
 
     a0 = 0
 
-    a0(2, 1) = -r(1) * sin(r(3)*0.5_ark)
-    a0(3, 1) =  r(2) * sin(r(3)*0.5_ark)
-
-    a0(2, 2) = r(1) * cos(r(3)*0.5_ark)
-    a0(3, 2) = r(2) * cos(r(3)*0.5_ark)
-
+    !
+    select case(trim(molec%coords_transform))
+       !
+    case('R-RHO-Z')
+       !
+       a0(2, 1) = -r(1) * cos(r(3)*0.5_ark)
+       a0(2, 3) =  r(1) * sin(r(3)*0.5_ark)
+       !
+       a0(3, 1) = -r(2) * cos(r(3)*0.5_ark)
+       a0(3, 3) = -r(2) * sin(r(3)*0.5_ark)
+       !
+    case default 
+       stop 'MLloc2pqr_xy2: illegla coordinate type'
+    end select
+    
     do icart = 1, 3
        cm = sum(a0(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
        a0(1:molec%natoms, icart) = a0(1:molec%natoms, icart) - cm

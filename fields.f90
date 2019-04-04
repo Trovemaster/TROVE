@@ -17747,6 +17747,26 @@ end subroutine check_read_save_none
                         !
                       endif
                       !
+                      if (FLextF_coeffs) then
+                        !
+                        ! External field part
+                        !
+                        do imu = 1,extF%rank
+                          !
+                          Tcoeff = trove%extF(imu)%Ncoeff
+                          !
+                          do iterm = 1,Tcoeff
+                             !
+                             phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
+                             !
+                             trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                             !
+                          enddo
+                          !
+                        enddo
+                        !
+                      endif 
+                      !
                     endif
                     !
                     if (FLrotation) then
@@ -17838,26 +17858,6 @@ end subroutine check_read_save_none
                        enddo
                        !
                     endif
-                    !
-                    if (FLextF_coeffs) then
-                      !
-                      ! External field part
-                      !
-                      do imu = 1,extF%rank
-                        !
-                        Tcoeff = trove%extF(imu)%Ncoeff
-                        !
-                        do iterm = 1,Tcoeff
-                           !
-                           phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
-                           !
-                           trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
-                           !
-                        enddo
-                        !
-                      enddo
-                      !
-                    endif 
                     !
                 enddo 
                 !

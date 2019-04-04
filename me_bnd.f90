@@ -5020,6 +5020,8 @@ end function ark_factorial
      !
      si = sum(f)*h
      !
+     !si  = simpsonintegral_ark(npoints,xmax,f)
+     !
   end function  integral_rect_ark
 
 

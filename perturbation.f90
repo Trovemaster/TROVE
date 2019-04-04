@@ -3355,8 +3355,8 @@ module perturbation
              !
              if (trove%triatom_sing_resolve) then
                contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
-               imode = PT%mode_class(iclasses,1)
-               contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+               !imode = PT%mode_class(iclasses,1)
+               !contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
              cf => contr(iclasses)%eigen(ilevel)
