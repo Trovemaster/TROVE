@@ -7,7 +7,7 @@ module fields
    use lapack
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
-                      ME_sinrho_polynomial_k_switch,integral_rect_ark,ME_sinrho_polynomial_muzz
+                      ME_sinrho_polynomial_k_switch,integral_rect_ark,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k
    use me_numer
    use me_rot
    use timer
@@ -4898,9 +4898,11 @@ end subroutine check_read_save_none
       !
       !trove%lincoord = 0
       !
-      if (all(trove%a0(:,1)==0.0_rk).and.all(trove%a0(:,2)==0.0_rk)) trove%lincoord = 3
-      if (all(trove%a0(:,2)==0.0_rk).and.all(trove%a0(:,3)==0.0_rk)) trove%lincoord = 1
-      if (all(trove%a0(:,1)==0.0_rk).and.all(trove%a0(:,3)==0.0_rk)) trove%lincoord = 2
+      !if (trove%lincoord==0) then
+      !  if (all(trove%a0(:,1)==0.0_rk).and.all(trove%a0(:,2)==0.0_rk)) trove%lincoord = 3
+      !  if (all(trove%a0(:,2)==0.0_rk).and.all(trove%a0(:,3)==0.0_rk)) trove%lincoord = 1
+      !  if (all(trove%a0(:,1)==0.0_rk).and.all(trove%a0(:,3)==0.0_rk)) trove%lincoord = 2
+      !endif
       !
       Inertm(1) = sum( trove%mass(:)*( trove%a0(:,2)**2+ trove%a0(:,3)**2 ) )
       Inertm(2) = sum( trove%mass(:)*( trove%a0(:,1)**2+ trove%a0(:,3)**2 ) )
@@ -4908,9 +4910,11 @@ end subroutine check_read_save_none
       !
       ! Check if all Inertia moments are non zero 
       !
-      do x1 = 1,3
-        if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
-      enddo
+      if (trove%lincoord==0) then
+        do x1 = 1,3
+          if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
+        enddo
+      endif
       !
       ! This can be a linear-type molecule also when the number of modes = 3N-5
       !
@@ -4933,7 +4937,7 @@ end subroutine check_read_save_none
       call MLequilibrium_xyz_1d(trove%Npoints,trove%rho_border,trove%rhostep,trove%periodic,trove%rho_ref,trove%b0,&
                                 trove%db0,trove%rho_i)
       !
-      trove%lincoord = 0
+      !trove%lincoord = 0
       !
       do irho=0,trove%Npoints
         !
@@ -4953,11 +4957,15 @@ end subroutine check_read_save_none
         Inertm(2) = sum( trove%mass(:)*( trove%b0(:,1,irho)**2+ trove%b0(:,3,irho)**2 ) )
         Inertm(3) = sum( trove%mass(:)*( trove%b0(:,1,irho)**2+ trove%b0(:,2,irho)**2 ) )
         !
-        ! Check if all Inertia moments are non zero 
+        ! Check if all Inertia moments are non zero
         !
-        do x1 = 1,3
-          if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
-        enddo
+        !write(out,"('irho = ',i8,3f16.8)") irho, Inertm
+        !
+        if (trove%lincoord==0) then
+          do x1 = 1,3
+            if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
+          enddo
+        endif
         !
       enddo 
       !
@@ -16749,9 +16757,12 @@ end subroutine check_read_save_none
              !call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
                                        !
-             call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             !call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             !                          job%verbose,bs%matelements,bs%ener0)
+                                       !
+             call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
-
+                                       !
              !call ME_sinrho_polynomial_muzz(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
 
@@ -17747,26 +17758,6 @@ end subroutine check_read_save_none
                         !
                       endif
                       !
-                      if (FLextF_coeffs) then
-                        !
-                        ! External field part
-                        !
-                        do imu = 1,extF%rank
-                          !
-                          Tcoeff = trove%extF(imu)%Ncoeff
-                          !
-                          do iterm = 1,Tcoeff
-                             !
-                             phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
-                             !
-                             trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
-                             !
-                          enddo
-                          !
-                        enddo
-                        !
-                      endif 
-                      !
                     endif
                     !
                     if (FLrotation) then
@@ -17839,7 +17830,7 @@ end subroutine check_read_save_none
                                !
                                if (k1==Nmodes) then 
                                   !
-                                  !!!!!!!!!!!!!!!! this sign cganged ?!!!!!!!!!!!!!!!!!!!!!!!
+                                  !
                                   phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*sinrho(:)**(krot1+krot2)
                                   !
                                else
@@ -17858,6 +17849,26 @@ end subroutine check_read_save_none
                        enddo
                        !
                     endif
+                    !
+                    if (FLextF_coeffs) then
+                      !
+                      ! External field part
+                      !
+                      do imu = 1,extF%rank
+                        !
+                        Tcoeff = trove%extF(imu)%Ncoeff
+                        !
+                        do iterm = 1,Tcoeff
+                           !
+                           phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
+                           !
+                           trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                           !
+                        enddo
+                        !
+                      enddo
+                      !
+                    endif 
                     !
                 enddo 
                 !
@@ -19081,10 +19092,10 @@ end subroutine check_read_save_none
   subroutine FLRotbset_new(Jmax)
   
     integer(ik),intent(in)      :: Jmax
-    integer(ik)                 :: alloc,MatrixSize,k,J,Jk,iref
+    integer(ik)                 :: alloc,MatrixSize,k,J,Jk,iref,jx
     type(Basis1DT), pointer     :: bs  
     character(len=1)            :: char_
-    real(ark)                    :: Bx,By,Bz,factor,Ix,Iy,Iz
+    real(ark)                    :: Bx,By,Bz,factor,Ix,Iy,Iz,Inertm(3)
     !
     if (job%verbose>=4) write(out,"(/'FLRotbset_new/start')") 
     !
@@ -19112,6 +19123,14 @@ end subroutine check_read_save_none
     if (trove%lincoord/=1) Bx = factor/Ix
     if (trove%lincoord/=2) By = factor/Iy
     if (trove%lincoord/=3) Bz = factor/Iz
+    !
+    Inertm = (/Ix,Iy,Iz/)
+    do jx = 1,3
+      if (Inertm(jx)<sqrt(small_).and.trove%lincoord/=jx) then
+        write (out,"('Too small Ix,Iy,Iz: ',3f14.6,'; if it is linear molecule change lincoord ',i)") Ix,Iy,Iz,trove%lincoord
+        stop 'Vanishing Ix,Iy,Iz'
+      endif
+    enddo
     !
     if (job%verbose>=1) then
       write (out,"(/'Rotational constants (Bx,By,Bz, cm-1): ',3f14.6)") Bx,By,Bz

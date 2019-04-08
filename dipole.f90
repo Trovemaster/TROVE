@@ -4885,6 +4885,10 @@ contains
                         !
                     endif
                     !
+                    if (abs(ls)>small_) then
+                      continue
+                    endif
+                    !
                     !if (kI*kF /= 0.and.kF/=kI) ls = ls*sq2
                     !
                     ! The factor I**(tauF-tauI) is equivalent to I*(tauF-tauI)
