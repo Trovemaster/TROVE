@@ -2888,6 +2888,7 @@ module perturbation
                trim(bs_t(imode)%type)=='MORSE'.or.&
                trim(bs_t(imode)%type)=='FOURIER'.or.&
                trim(bs_t(imode)%type)=='SINRHO'.or.&
+               trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
                trim(bs_t(imode)%type)=='LEGENDRE') then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
@@ -3152,6 +3153,7 @@ module perturbation
                         trim(bs_t(imode)%type)=='MORSE'.or.&
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
                         trim(bs_t(imode)%type)=='SINRHO'.or.&
+                        trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
@@ -3183,7 +3185,7 @@ module perturbation
                       !
                     else
                       !
-                      write(out,"('PTcontracted_prediag: this coordinates are not defined here ',a)") trim(bs_t(imode)%type)
+                      write(out,"('PTcontracted_prediag: this basis set is not defined ',a)") trim(bs_t(imode)%type)
                       stop 'PTcontracted_prediag: not implemented coord. type for the symmetry block'
                       !
                     endif 
@@ -3699,6 +3701,7 @@ module perturbation
              trim(bs_t(imode)%type)=='MORSE'.or.&
              trim(bs_t(imode)%type)=='FOURIER'.or.&
              trim(bs_t(imode)%type)=='SINRHO'.or.&
+             trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
              trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            if (PT%Mspecies(imode)/=ispecies) then 
@@ -3714,6 +3717,7 @@ module perturbation
            trim(bs_t(imode)%type)=='MORSE'.or.&
            trim(bs_t(imode)%type)=='FOURIER'.or.&
            trim(bs_t(imode)%type)=='SINRHO'.or.&
+           trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
            trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            call ArrayStop('bs_funct(ispecies)%coeffs')
@@ -24107,7 +24111,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
