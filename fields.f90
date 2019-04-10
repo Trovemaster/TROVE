@@ -16808,9 +16808,9 @@ end subroutine check_read_save_none
              if (trove%ipotmin>0.and.trove%ipotmin<npoints) then
                f_t = ( f1drho(trove%ipotmin+1)+f1drho(trove%ipotmin-1)-2.0_ark*f1drho(trove%ipotmin) )/trove%rhostep**2 
              elseif (trove%ipotmin == 0 ) then
-               f_t = ( 2.0_ark*f1drho(1)-f1drho(0) )/trove%rhostep**2 
+               f_t = ( 2.0_ark*f1drho(2)-2.0_ark*f1drho(0) )/(trove%rhostep*2.0_ark)**2 
              elseif (trove%ipotmin == npoints ) then
-               f_t = ( 2.0_ark*f1drho(npoints-1)-f1drho(npoints) )/trove%rhostep**2 
+               f_t = ( 2.0_ark*f1drho(npoints-1)-2.0_ark*f1drho(npoints) )/trove%rhostep**2 
              else 
                stop 'At ME_laguerre_k: illegal imin'
              endif
