@@ -12,7 +12,8 @@ module pot_xy2
   public MLpoten_xy2_halonen_I,MLpoten_xy2_dmbe,MLdms2pqr_xy2,MLloc2pqr_xy2,MLpoten_xy2_tyuterev
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
-  public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1
+  public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
+         MLdipole_xy2_lorenzo
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -2103,6 +2104,73 @@ endif
 
 
 
+ !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
+ !
+ recursive subroutine MLdipole_ames1(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)            :: i,Ndcoe
+    real(ark)              :: tmat(3,3),n1(3),n2(3),n3(3),mu(3),xyz0(3,3)
+    !
+    real(ark)   :: dcoe(1000),idcoe(1000,3)
+    real(ark)   :: x(3,3),r1,r2,r3,str1,str2,bend3,re,ae
+    real(ark)   :: afunc(1000),afunc1(1000),afunc2(1000)
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+    else
+      !
+      xyz0 = xyz
+      !
+    endif
+    !
+    do i=1,3
+      x(i,:)=xyz0(i,:)-xyz0(1,:)
+    end do
+    !    
+    r1=sqrt(sum(x(2,:)**2)) !r12 distance
+    r2=sqrt(sum(x(3,:)**2)) !r13 distance
+    r3=sqrt(sum((x(2,:)-x(3,:))**2)) !r23 distance
+    ! 
+    !str1=r1-1.15958d0 !Emil: shifting to 0 when in equilibrium geometry?!
+    !str2=r2-1.15958d0
+    !
+    re = extF%coef(1,1)
+    ae = extF%coef(2,1)*pi/180.0_ark
+    !
+    str1=r1-re
+    str2=r2-re
+    !
+    !bend3=1.d0+(r1**2+r2**2-r3**2)/(2*r1*r2) !Emil@: [0;2] <- cos(alpha)+1
+    !
+    bend3=(r1**2+r2**2-r3**2)/(2.0_ark*r1*r2)
+    bend3=max(-1.0_ark,min(1.0_ark,bend3))-cos(ae)
+    !
+    Ndcoe = extF%nterms(1)-2
+    !
+    afunc1=0; afunc2=0; afunc=0
+    do i=1,Ndcoe !Emil: loop over all geometries
+      afunc1(i)=str1**extF%term(1,i+2,1)*str2**extF%term(2,i+2,1)*bend3**extF%term(3,i+2,1)
+      afunc2(i)=str2**extF%term(1,i+2,1)*str1**extF%term(2,i+2,1)*bend3**extF%term(3,i+2,1)
+    end do
+    !
+    do i=1,3
+      afunc(1:Ndcoe)=afunc1(1:Ndcoe)*x(2,i)+afunc2(1:Ndcoe)*x(3,i)
+      mu(i)=dot_product(extF%coef(2+1:2+Ndcoe,1),afunc(1:Ndcoe))
+    end do
+    !
+    f = mu/0.393430307_ark
+    !
+ end subroutine MLdipole_ames1
+
+
+
   !
   ! Defining potential energy function 
   !
@@ -3253,6 +3321,82 @@ endif
        !
  
  end function MLpoten_h2s_dvr3d
+
+
+
+ recursive subroutine MLdipole_xy2_lorenzo(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: k,imu,iterm
+    real(ark)             :: y(3), mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae
+    real(ark)             :: xyz0(natoms,3),xi(3),mu_t
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n1 + n2
+    u2 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u2 = u2 / sqrt(sum(u2(:)**2))
+    !
+    u3 = MLvector_product(u1,u2)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    re = extF%coef(1,1)
+    ae = extF%coef(2,1)*pi/180.0_ark
+    !
+    y(1) = ( r1 + r2 )*0.5_ark - re
+    y(2) = ( r1 - r2 )
+    y(3) = ae - alpha
+    !
+    mu = 0
+    !
+    do imu = 1, 2
+       !
+       do iterm =  3, extF%nterms(imu)
+          !
+          xi(1:3) = y(1:3) ** extF%term(1:3, iterm, imu)
+          !
+          mu_t = product(xi(1:3))
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu)*mu_t
+          !
+       end do
+       !
+    end do
+    !
+    mu(3) = 0
+    !
+    f(1:3) = matmul(mu,tmat)
+    !
+ end subroutine MLdipole_xy2_lorenzo
 
 
 

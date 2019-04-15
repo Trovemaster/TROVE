@@ -466,6 +466,14 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdipole_so2_ames1
         !
+    case('DIPOLE_AMES1')
+        !
+        MLextF_func => MLdipole_ames1
+        !
+    case('DIPOLE_XY2_LORENZO')
+        !
+        MLextF_func => MLdipole_xy2_lorenzo
+        !
     case('XY3_MB')
         !
         MLextF_func => MLdms2xyz_xy3_mb

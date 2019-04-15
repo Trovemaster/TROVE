@@ -16815,6 +16815,17 @@ end subroutine check_read_save_none
                stop 'At ME_laguerre_k: illegal imin'
              endif
              !
+             if (trove%specparam(bs%mode(1))>0d0 ) then
+                !
+                f_t = trove%specparam(bs%mode(1))**2*0.25_ark/g_t
+                !
+                if (job%verbose>=5) then
+                  write(out,"('the input special-parameter ',f18.8,' will be used to obtain m for laguarre basis')") & 
+                        trove%specparam(bs%mode(1)) 
+                endif
+                !
+             endif
+             !
              f_m = sqrt(f_t/g_t)
              !
              call ME_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&

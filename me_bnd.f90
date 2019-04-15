@@ -3980,7 +3980,7 @@ module me_bnd
    !
    character(len=cl)    :: unitfname 
      !
-     if (verbose>=3) write (out,"(/20('*'),' Pseudo Associate laguerre functions primitive matrix elements calculations')")
+     if (verbose>=3) write (out,"(/20('*'),' Associate laguerre functions primitive matrix elements calculations')")
      !
      ! global variables 
      !
@@ -4012,6 +4012,7 @@ module me_bnd
          write (out,"('icoord = ',i4)") icoord
          write (out,"('rho_b (x) = ',2f12.4)") rho_b(1:2)*180.0_ark/pi
          write (out,"('rhostep (x) = ',2f12.4)") rhostep  !*180.0_ark/pi
+         write (out,"('Laguerre parameter sqrt(f/g) = ',f12.4)") f_m  !*180.0_ark/pi
      endif 
      !
      if (kmax>lmax) then
