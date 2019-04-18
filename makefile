@@ -10,7 +10,7 @@ checkin:
 
 pot_user = pot_ch4
 
-PLAT = _0904_i18
+PLAT = 
 ###FOR  = ifort
 FOR = ifort 
 FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp
