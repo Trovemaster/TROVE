@@ -7,7 +7,8 @@ module fields
    use lapack
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
-                      ME_sinrho_polynomial_k_switch,integral_rect_ark,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
+                      ME_sinrho_polynomial_k_switch,integral_rect_ark,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
+                      ME_laguerre_k
    use me_numer
    use me_rot
    use timer
@@ -5820,7 +5821,7 @@ end subroutine check_read_save_none
             !
             call polintark(rho_(1:k),func_(1:k),rho,fval,df)
             !
-            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*10000.0*sqrt(small_),1000.0*sqrt(small_)) ) then
+            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*1e5*sqrt(small_),1e3*sqrt(small_)) ) then
                !
                outliers = .true.
                outlier(irho) = 1
@@ -5840,11 +5841,12 @@ end subroutine check_read_save_none
           if (ioutlier_max>=0) then 
             !
             if (job%verbose>=5) write(out,"('check_field_smoothness: ',a)",advance='NO') msg
-            if (job%verbose>=5) write(out,"('; an outlier found for iterm =  ',i6,' at i = ',i5,': ',e18.11,' vs ',e18.11)") iterm,ioutlier_max,&
-                       object%field(iterm,ioutlier_max),fcorr
+            if (job%verbose>=5) write(out,"('; an outlier found for iterm =  ',i6,' at i = ',i5,': ',e18.11,' vs ',e18.11)") &
+                                      iterm,ioutlier_max,object%field(iterm,ioutlier_max),fcorr
             !
             if (Nattempt>1) then 
-               if (job%verbose>=5) write(out,"(e18.11,' will be replaced by the extrapolated value = ',e18.11)") object%field(iterm,ioutlier_max),fcorr
+               if (job%verbose>=5) write(out,"(e18.11,' will be replaced by the extrapolated value = ',e18.11)") &
+                                   object%field(iterm,ioutlier_max),fcorr
                object%field(iterm,ioutlier_max) = fcorr
             endif
             !
@@ -16730,7 +16732,8 @@ end subroutine check_read_save_none
              !
              !call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
              !
-             call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,job%verbose,bs%matelements,bs%ener0)
+             call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
+                                        job%verbose,bs%matelements,bs%ener0)
              !
              !call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
@@ -16833,7 +16836,7 @@ end subroutine check_read_save_none
              !
              do i = 0,npoints
                 rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-                mrho(i) = rho*sqrt(f_m)
+                mrho(i) = rho
              enddo
              !
              deallocate(muzz,pseudo)             
@@ -17894,7 +17897,8 @@ end subroutine check_read_save_none
                                if (k1==Nmodes) then 
                                   !
                                   !
-                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*sinrho(:)**(krot1+krot2)
+                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*&
+                                                 sinrho(:)**(krot1+krot2)
                                   !
                                else
                                   !
@@ -17992,7 +17996,7 @@ end subroutine check_read_save_none
                 phil_sin(:) = phil_leg(:)*mrho(:)**krot1
                 phil(:) = sqrt(mrho(:))*phil_sin(:)
                 !dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
-                dphil(:) = sqrt(f_m)*(krot1+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
+                dphil(:) = (krot1+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -18011,7 +18015,7 @@ end subroutine check_read_save_none
                     phir_sin(:) = phir_leg(:)*mrho**krot2
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
                     !dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
-                    dphir(:) = sqrt(f_m)*(krot2+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    dphir(:) = (krot2+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -18200,7 +18204,8 @@ end subroutine check_read_save_none
                                if (k1==Nmodes) then 
                                   !
                                   !
-                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*mrho(:)**(krot1+krot2)
+                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*&
+                                                 mrho(:)**(krot1+krot2)
                                   !
                                else
                                   !
@@ -19496,7 +19501,7 @@ end subroutine check_read_save_none
     Inertm = (/Ix,Iy,Iz/)
     do jx = 1,3
       if (Inertm(jx)<sqrt(small_).and.trove%lincoord/=jx) then
-        write (out,"('Too small Ix,Iy,Iz: ',3f14.6,'; if it is linear molecule change lincoord ',i)") Ix,Iy,Iz,trove%lincoord
+        write (out,"('Too small Ix,Iy,Iz: ',3f14.6,'; if it is linear molecule change lincoord ',i0)") Ix,Iy,Iz,trove%lincoord
         stop 'Vanishing Ix,Iy,Iz'
       endif
     enddo
