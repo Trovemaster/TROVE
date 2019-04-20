@@ -237,6 +237,7 @@ module fields
       logical             :: checkpoint_iorder  = .false.
       logical             :: sparse  = .false.                    ! A sparse representation of fields 
       logical             :: triatom_sing_resolve = .false.
+      integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       !
    end type JobT
    !
@@ -591,7 +592,7 @@ module fields
    !
     character(len=cl),parameter  :: Moltype_ ='ABCDEFG'   ! Identifying type of the Molecule (e.g. XY3)
    !
-   real(rk), parameter :: fdstep_ = 0.01   ! finite difference element for the numerical differentiation
+   real(rk), parameter :: fdstep_ = 0.005   ! finite difference element for the numerical differentiation
    !
    ! Perturbation theory parameters 
    !
@@ -1496,6 +1497,8 @@ module fields
             !
          end do
          !
+         extF%fdstep = trove%fdstep
+         !
        case("COORDS")
          !
          call readu(w)
@@ -1844,6 +1847,7 @@ module fields
                 ! we use range(1) to store the Jrot value 
                 !
                 job%bset(imode)%range(2) = i_t
+                trove%krot = i_t
                 !
               case("OVRLP","DVRPOINTS","DPOINTS")
                 !
@@ -18153,9 +18157,13 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)**(krot1+krot2-1)
                                !
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                !
-                               !mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !
+                               trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
+                                                                            mat_t*real(krot1**2,ark)
                                !
                                !trove%poten%me(iterm,vl,vr) = trove%poten%me(iterm,vl,vr) + 0.5_ark*mat_t*real(krot1**2,ark)
                                !
