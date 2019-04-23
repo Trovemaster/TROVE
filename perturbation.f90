@@ -5074,7 +5074,6 @@ module perturbation
    end subroutine reconstruct_transf_matrix
 
 
-
   subroutine reconstruct_transf_matrix_II(Ndeg,mpoints,phi_src,tmat,tol,info)
 
     integer(ik),intent(in)  ::Ndeg,mpoints
@@ -5084,16 +5083,22 @@ module perturbation
     real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
     real(rk),intent(in)     :: tol
     real(ark)               :: t_vect(Ndeg)
+    
     integer(ik), allocatable :: sym_elems_evaluated(:)
     integer(ik) :: total_elem_evaluated
     integer(ik) :: cur_elem_evaluated
     integer(ik) :: i
+    logical, dimension(sym%Noper) :: operations_set    
 
     integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n,nthreads,tid,nsize,alloc
     double precision,allocatable  :: a(:,:),b(:,:),s(:),work(:)
     real(ark),allocatable  :: am(:,:),bm(:),xm(:)
     integer(ik) :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
     character(len=cl) :: my_fmt !format for I/O specification
+    !
+    do i=1, sym%Noper
+      operations_set(i) = .false.
+    enddo
     !
     if (job%verbose>=6) call TimerStart('reconstruct_transf_matrix')
     !
@@ -5176,17 +5181,15 @@ module perturbation
           cur_elem_evaluated = cur_elem_evaluated + 1 
         endif
       enddo  
-    else 
+    else
+      allocate(sym_elems_evaluated(sym%Noper)) 
+      total_elem_evaluated = sym%Noper
       do i = 1, sym%Noper
         sym_elems_evaluated(i) = i
-        total_elem_evaluated = sym%Noper
       enddo
     endif
-    write (*,*) "Generator elements"
     do i = 1, total_elem_evaluated
-      write(*,*) i, " ", sym_elems_evaluated(i)
     enddo 
-    !
     do i=1,total_elem_evaluated
       ioper = sym_elems_evaluated(i)
       !
@@ -5298,19 +5301,18 @@ module perturbation
           !
         enddo 
       enddo
-       
       !$omp end parallel do
-      if(sym%product_table_set) then 
-        do ioper=1, sym%Noper
-          call degenerate_matrix(Ndeg, ioper, tmat)
-        enddo
-      endif 
+      !
+      ! check
+      !
     enddo
-    !
-    ! check
-    !
+    if(sym%product_table_set) then 
+       do ioper=1, sym%Noper
+         call degenerate_matrix(Ndeg, ioper, tmat, operations_set)
+       enddo
+    endif 
     do ioper=1, sym%Noper
-      !$omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
+    !$omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
       do ipoint = 1,mpoints
          !
          t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
@@ -5359,14 +5361,27 @@ module perturbation
     if (job%verbose>=6) call TimerStop('reconstruct_transf_matrix')
     !
     contains 
-    !    
-    subroutine degenerate_matrix(Ndeg, ioper, tmat)
+    !
+    recursive subroutine degenerate_matrix(Ndeg, ioper, tmat, operations_set) 
+      !
+      implicit none 
       integer(ik), intent(in) :: ioper, Ndeg
-      real(ark), intent(inout)  :: tmat(sym%Noper, Ndeg, Ndeg)
-      
+      real(ark), intent(inout), dimension(sym%Noper, Ndeg, Ndeg)  :: tmat
+      logical, intent(inout), dimension(sym%Noper) :: operations_set
+      integer(ik) :: i
+      !
       if(all(sym%product_table(ioper,:)/= 0)) then
-        tmat(ioper, :,:) = matmul(tmat(sym%product_table(ioper, 1),:,:), tmat(sym%product_table(ioper,2),:,:))
-      endif  
+        if(.not. operations_set(sym%product_table(ioper,1)) ) then
+         call degenerate_matrix(Ndeg, sym%product_table(ioper, 1), tmat, operations_set)
+        endif
+        if(.not. operations_set(sym%product_table(ioper,2)) ) then
+         call degenerate_matrix(Ndeg, sym%product_table(ioper, 2), tmat, operations_set)
+        endif
+        tmat(ioper, :,:) = matmul(tmat(sym%product_table(ioper,2), :,:), tmat(sym%product_table(ioper, 1), :, :)) 
+      endif 
+      !
+      operations_set(ioper) = .true.
+      !
     end subroutine degenerate_matrix
     !
    end subroutine reconstruct_transf_matrix_II
@@ -5430,7 +5445,7 @@ module perturbation
        !
     endif 
     !
-    call reconstruct_transf_matrix(Nelem,mpoints,phi_src,tmat_t,tol,info)
+    call reconstruct_transf_matrix_II(Nelem,mpoints,phi_src,tmat_t,tol,info)
     !
     if (info/=0) then 
       if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
