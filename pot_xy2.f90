@@ -2203,11 +2203,11 @@ endif
        ! 
        xcos = cos(alpha)
        !
-       !call potv(v,r12,r32,xcos)
-       v = 0
+       call potv(v,r12,r32,xcos)
+       !v = 0
        v = v*tocm
        !
-       v = v + MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force)
+       !v = v + MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force)
        !
      elseif(molec%AtomMasses(1)>31.9_rk.and.molec%AtomMasses(1)<36.0_rk) then 
        !

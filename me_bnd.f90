@@ -3970,7 +3970,7 @@ module me_bnd
    real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe,g,f,factor,alpha
    real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,mu_zz_t,mu_rr_t,ps_t
    !
-   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect
+   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,k_
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
    real(ark),allocatable :: phil_s(:),phir_s(:)
@@ -4100,6 +4100,11 @@ module me_bnd
        !
        if (verbose>=4) write(out,"(' K = ',i8)") k
        !
+       k_ = 0 ; if (k>0) k_ = 1
+       !
+       rho_m = 1.0_ark      ! factor for K = 0
+       if (k>0) rho_m = rho ! factor for all K>0
+       !
        allocate(L(0:npoints,0:nmax+k),dL(0:npoints,0:nmax+k),Lm(0:npoints,0:nmax+k-1),stat=alloc)
        call ArrayStart('laguerre',alloc,size(L),kind(L))
        call ArrayStart('laguerre',alloc,size(dL),kind(dL))
@@ -4126,6 +4131,8 @@ module me_bnd
            !
            L(:,vl)  =  L(:,vl)*exp(-0.5_ark*x(:))*C_l*sqrt(sqrt(f_m))**(2*k+1)
            !
+           if (k>0) L(:,vl)  =  L(:,vl)*rho(:)**(k-1)
+           !
            ireflect = 0
            !
            call diff_2d_4points_ark(npoints,rho_b,L(:,vl),.false.,ireflect,dL(:,vl))
@@ -4134,11 +4141,11 @@ module me_bnd
        !
        do vl =  0,nmax
          !
-         Psi(vl+1,:) = L(:,vl)*sqrt(rho(:))*rho(:)**k
+         Psi(vl+1,:) = L(:,vl)*sqrt(rho(:))*rho_m(:)
          !
        enddo
        !
-       ! orthogonalisation using the weight sqrt(sin(rho))*sin(rho)^k
+       ! orthogonalisation
        !
        do vl =  0,nmax
          !
@@ -4178,17 +4185,17 @@ module me_bnd
        !
        do vl = 0,nmax
           !
-          phil(:)  = L(:,vl)*sqrt(rho(:))*rho(:)**k
-          phil_s(:)= L(:,vl)*rho(:)**k
-          dphil(:) = dL(:,vl)*rho(:)**k
-          if (k>0) dphil(:) = dphil(:) + real(k,ark)*rho(:)**(k-1)*L(:,vl)
+          phil(:)  = L(:,vl)*sqrt(rho(:))*rho_m(:)
+          phil_s(:)= L(:,vl)*rho_m(:)
+          dphil(:) = dL(:,vl)*rho_m(:)
+          if (k>0) dphil(:) = dphil(:) + L(:,vl)
           !
           do vr = vl,nmax
               !
-              phir(:)  = L(:,vr)*sqrt(rho(:))*rho(:)**k
-              phir_s(:)= L(:,vr)*rho(:)**k
-              dphir(:) = dL(:,vr)*rho(:)**k
-              if (k>0) dphir(:) = dphir(:) + real(k,ark)*rho(:)**(k-1)*L(:,vr)
+              phir(:)  = L(:,vr)*sqrt(rho(:))*rho_m(:)
+              phir_s(:)= L(:,vr)*rho_m(:)
+              dphir(:) = dL(:,vr)*rho_m(:)
+              if (k>0) dphir(:) = dphir(:) + L(:,vr)
               !
               ! check orthagonality and noralisation
               !
@@ -4223,7 +4230,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*rho(:)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*rho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -4287,8 +4294,8 @@ module me_bnd
              !
              phi_rho(vl+1)  = L(i,vl)
              !dphi_rho(vl+1) = dL(i,vl)
-             dphi_rho(vl+1) = dL(i,vl)*rho(i)**k
-             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + real(k,ark)*rho(i)**(k-1)*L(i,vl)
+             dphi_rho(vl+1) = dL(i,vl)*rho_m(i)
+             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + L(i,vl)
              !
           enddo
           !
@@ -4319,20 +4326,20 @@ module me_bnd
               !
               ! check orthagonality and noralisation
               !
-              phivphi(:) = phil(:)*phir(:)*rho(:)**(2*k+1)
+              phivphi(:) = phil(:)*phir(:)*rho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
               ! obtained above by the Numerov
               !
-              phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)**(2*k+1)
+              phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)*rho_m(:)**2
               !
               h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! pseudo-part
               !
-              phivphi(:) = phil(:)*pseudo(:)*phir(:)*rho(:)**(2*k)
+              phivphi(:) = phil(:)*pseudo(:)*phir(:)*rho_m(:)**2
               ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! momenta-quadratic part 
@@ -4345,7 +4352,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*rho(:)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*rho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !

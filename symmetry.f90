@@ -32,6 +32,8 @@ module symmetry
      integer(ik)          :: class_size_max = 8 ! current maximal class size 
      integer(ik)          :: N  = 1         ! The group order, currently desgined for Dnh where N is odd 
      integer(ik),pointer  :: lquant(:)      ! Store the value of the (vibrational) angular momentum 
+     integer(ik), allocatable :: product_table(:,:)        ! Stores information on obtaining all group elements from the generators
+     logical :: product_table_set = .false. ! Whether or not the product table has been set  
      !
   end type SymmetryT
 
@@ -65,7 +67,7 @@ contains
   integer(ik), dimension(6 , 6) :: pos_array
   integer(ik) :: j,r,s
   
-
+  integer(ik), dimension(144) :: tempG36  
 
   
   !   
@@ -421,7 +423,15 @@ contains
       sym%CII%Noper = 0
                                
       call simple_arrays_allocation
-    
+      !
+      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19,2,3,2,3,2,3,4,5,6,4,5,6,4,5,6/)
+      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0,7,7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+      tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
+      tempG36(109:144)= (/0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
+      !
+      sym%product_table = reshape( tempG36, (/ 72, 2/))
+      sym%product_table_set = .false.
+      !
       !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
       sym%characters = reshape( & 
         ! EE  RE  SE  ER  RR  SR  ER  RS  SS EE' RE' SE' ER' RR' SR' ER' RS' SS' 
@@ -3051,7 +3061,8 @@ contains
       sym%euler(3+Nrot+2,:) = (/o,pi-phi,o/) ! Rz
     !enddo
     !
-    call irr_allocation        !
+    call irr_allocation
+    !
   case default
 
     write(out,"('symmetry: undefined symmetry group ',a)") trim(sym_group)

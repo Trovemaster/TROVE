@@ -1305,9 +1305,9 @@ module mol_abcd
            stop 'ML_symmetry_transformation_abcd - bad operation. type'
  
          end select 
-
+         !
        case('C2V','C2V(M)')
-             !
+         !
          select case(ioper)
 
          case (1) ! E 

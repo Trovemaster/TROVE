@@ -5075,6 +5075,302 @@ module perturbation
 
 
 
+  subroutine reconstruct_transf_matrix_II(Ndeg,mpoints,phi_src,tmat,tol,info)
+
+    integer(ik),intent(in)  ::Ndeg,mpoints
+    integer(ik),intent(out) ::info
+
+    real(ark),intent(in)    :: phi_src(sym%Noper,Ndeg,mpoints)
+    real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
+    real(rk),intent(in)     :: tol
+    real(ark)               :: t_vect(Ndeg)
+    integer(ik), allocatable :: sym_elems_evaluated(:)
+    integer(ik) :: total_elem_evaluated
+    integer(ik) :: cur_elem_evaluated
+    integer(ik) :: i
+
+    integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n,nthreads,tid,nsize,alloc
+    double precision,allocatable  :: a(:,:),b(:,:),s(:),work(:)
+    real(ark),allocatable  :: am(:,:),bm(:),xm(:)
+    integer(ik) :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
+    character(len=cl) :: my_fmt !format for I/O specification
+    !
+    if (job%verbose>=6) call TimerStart('reconstruct_transf_matrix')
+    !
+    if (verbose>=4) write(out,"('reconstruct_transf_matrix...')") 
+    !
+    tmat = 0
+    info = 0 
+    !
+    m = Ndeg*mpoints ; n = Ndeg**2 ;  iw = 20*max(m,n)
+    !
+    if (Ndeg>mpoints) then 
+      write(out,"('reconstruct_transf_matrix: sample_points < ndeg: ',2i0)") mpoints,ndeg
+      stop 'sample_points is too small?'
+    endif
+    !
+    nthreads = 1
+    !
+    ! collect number of threads
+    !
+    !     Start parallel region
+    !omp parallel private(nthreads,tid)
+    !!
+    !!  Obtain thread number
+    !tid = OMP_GET_THREAD_NUM()
+    !!
+    !!     Only master thread does this
+    !if (tid==0) then
+    !    !
+    !    nthreads = OMP_GET_NUM_THREADS()
+    !    if (job%verbose>=6) PRINT *, 'Number of threads = ', NTHREADS
+    !    !
+    !endif 
+    !omp end parallel
+    !
+    !alloc = 0
+    !
+    !nsize = Ndeg*mpoints*Ndeg**2*nthreads
+    !call ArrayStart('reconstruct_transf:a',alloc,nsize,rk)
+    !nsize = Ndeg*mpoints*nthreads
+    !call ArrayStart('reconstruct_transf:b',alloc,nsize,rk)
+    !nsize = iw*nthreads
+    !call ArrayStart('reconstruct_transf:w',alloc,nsize,rk)
+    !
+    !omp parallel private(a,b,s,work,alloc_p) shared(tmat)
+    !
+    allocate(a(Ndeg*mpoints,Ndeg**2),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:a',alloc_p,1_ik,rk,size(a,kind=hik))
+    allocate(b(Ndeg*mpoints,1),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:b',alloc_p,1_ik,rk,size(b,kind=hik))
+    allocate(s(min(m,n)),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:s',alloc_p,1_ik,rk,size(s,kind=hik))
+    allocate(work(iw),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:w',alloc_p,1_ik,rk,size(work,kind=hik))
+
+    allocate(am(m,n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(am,kind=hik))
+    allocate(bm(m),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(bm,kind=hik))
+    allocate(xm(n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(xm,kind=hik))
+    !
+    !if (alloc_p/=0) then
+    !    write (out,"(' reconstruct_transf_matrix: ',i9,' trying to allocate array for a and b')") alloc_p
+    !    stop 'reconstruct_transf_matrix, a and b  - out of memory'
+    !end if
+    !
+    !omp do private(ioper,ieq,ipoint,ideg,keq,ig,jg,ndeg2,info_t,t_vect,rank) reduction(max:info) schedule(static) 
+    total_elem_evaluated = 0
+    cur_elem_evaluated = 1
+    if(sym%product_table_set == .true.) then
+      do i = 1, sym%Noper
+        if(sym%product_table(i,1) == 0) then 
+          total_elem_evaluated = total_elem_evaluated + 1 
+        endif
+      enddo
+      allocate(sym_elems_evaluated(total_elem_evaluated))
+      do i = 1,sym%Noper
+        if(sym%product_table(i,1) == 0) then 
+          sym_elems_evaluated(cur_elem_evaluated) = i
+          cur_elem_evaluated = cur_elem_evaluated + 1 
+        endif
+      enddo  
+    else 
+      do i = 1, sym%Noper
+        sym_elems_evaluated(i) = i
+        total_elem_evaluated = sym%Noper
+      enddo
+    endif
+    write (*,*) "Generator elements"
+    do i = 1, total_elem_evaluated
+      write(*,*) i, " ", sym_elems_evaluated(i)
+    enddo 
+    !
+    do i=1,total_elem_evaluated
+      ioper = sym_elems_evaluated(i)
+      !
+      info_t = 0
+      !
+      am = 0
+      bm = 0
+      !
+      !$omp parallel do private(ipoint,ideg,ieq,ig,jg,keq) shared(bm,am)
+      do ipoint = 1,mpoints
+        do ideg = 1,Ndeg
+          !
+          ieq = ideg + (ipoint-1)*Ndeg
+          !
+          bm(ieq) = phi_src(ioper,ideg,ipoint)
+          !
+          do ig = 1,Ndeg
+            do jg = 1,Ndeg
+              !
+              keq = jg + Ndeg*(ig-1)
+              !
+              if (ig==ideg) then 
+                am(ieq,keq) = phi_src(1,jg,ipoint)
+              endif    
+            enddo
+          enddo
+        enddo 
+        !
+      enddo
+      !$omp end parallel do
+      !
+      if (verbose>=6) then
+        !
+        write(out,"('ioper,b(ielem):')")
+        !
+        ndeg2 = Ndeg**2
+        !
+        write(my_fmt,'(a,i0,a)') "(i8,8x,",ndeg2,"f18.10)"
+        !
+        write(out,my_fmt) ioper,bm(1:Ndeg**2)
+        !
+        write(out,"('ioper,ipoint,ideg,a(ieq,:):')")
+        !
+        ieq = 0 
+        !
+        do ipoint = 1,mpoints
+          do ideg = 1,Ndeg
+            !
+            ieq = ieq + 1
+            !
+            write(out,"(3i8,40f18.10)") ioper,ipoint,ideg,am(ieq,1:min(40,Ndeg**2))
+            !
+          enddo
+        enddo
+        !
+      endif
+      !
+      if (verbose>=5) write(out,"('reconst_tr_m: dgelss')")
+      !
+      b(1:m,1) = bm(1:m)
+      a = am
+      !
+      call dgelss(m,n,1,a(1:m,1:n),m,b(1:m,1:1),m,s,-1.0d-12, rank, work, iw, info_t)
+      !
+      if (verbose>=5) write(out,"('reconst_tr_m: dgelss...done!')")
+      !
+      if (info_t<0) then 
+        write(out,"('reconstruct_transf_matrix: (',i9,') probably not sufficient sample_points: ',i8)") info_t,mpoints
+        stop 'sample_points is too small?'
+      endif 
+      !
+      if (rank/=n) then 
+        !
+        info = max(info,2)
+        !
+      endif
+      !
+      !omp parallel do private(ideg,jdeg,ieq) shared(tmat)
+      !do ideg = 1,Ndeg
+      !  do jdeg = 1,Ndeg
+      !    !
+      !    ieq = jdeg + Ndeg*(ideg-1)
+      !    !
+      !    tmat(ioper,ideg,jdeg) = real(b(ieq,1),ark)
+      !    !
+      !  enddo 
+      !enddo
+      !omp end parallel do
+      !
+      ! for higher accuracy try to refine the solution using ark
+      !
+      xm(1:n) = b(1:n,1)    
+      !
+      if (tol<1.0e-11) then 
+        !
+        call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+        !
+      endif
+      !
+      !bm(1:n) = xm(1:n)
+      !
+      !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)
+      do ideg = 1,Ndeg
+        do jdeg = 1,Ndeg
+          !
+          ieq = jdeg + Ndeg*(ideg-1)
+          !
+          tmat(ioper,ideg,jdeg) = xm(ieq)
+          !
+        enddo 
+      enddo
+       
+      !$omp end parallel do
+      if(sym%product_table_set) then 
+        do ioper=1, sym%Noper
+          call degenerate_matrix(Ndeg, ioper, tmat)
+        enddo
+      endif 
+    enddo
+    !
+    ! check
+    !
+    do ioper=1, sym%Noper
+      !$omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
+      do ipoint = 1,mpoints
+         !
+         t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
+         !
+         do ideg=1,ndeg
+           !
+           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>tol) then 
+             if (job%verbose>=6) then 
+               write(out,"('reconstruct_transf_mat: Cannot define presentation, ioper,ipoint,k =  ',3i8)") ioper,ipoint,ideg
+               print *, t_vect(ideg),phi_src(ioper,ideg,ipoint)
+             endif 
+             info = max(info,2)
+             !return 
+           endif 
+           !
+         enddo
+         !
+      enddo
+      !$omp end parallel do
+      !
+    enddo 
+    !omp enddo
+    !
+    deallocate(a,b,work,s)    
+    !omp end parallel
+    !
+    if (job%verbose>=6) call MemoryReport
+    !
+    call ArrayStop('reconstruct_transf:a')
+    call ArrayStop('reconstruct_transf:b')
+    call ArrayStop('reconstruct_transf:s')
+    call ArrayStop('reconstruct_transf:w')
+    !
+    deallocate(am,bm,xm)    
+    call ArrayStop('reconstruct_transf')
+    !
+    if (info==2) then 
+      !
+      if (job%verbose>=6) then 
+        write(out,"('reconst_tr_m: the effect. rank is too small, the points have to be reselected: ')") 
+      endif
+      !
+    endif 
+    !
+    if (verbose>=4) write(out,"('...reconstruct_transf_matrix ')") 
+    if (job%verbose>=6) call TimerStop('reconstruct_transf_matrix')
+    !
+    contains 
+    !    
+    subroutine degenerate_matrix(Ndeg, ioper, tmat)
+      integer(ik), intent(in) :: ioper, Ndeg
+      real(ark), intent(inout)  :: tmat(sym%Noper, Ndeg, Ndeg)
+      
+      if(all(sym%product_table(ioper,:)/= 0)) then
+        tmat(ioper, :,:) = matmul(tmat(sym%product_table(ioper, 1),:,:), tmat(sym%product_table(ioper,2),:,:))
+      endif  
+    end subroutine degenerate_matrix
+    !
+   end subroutine reconstruct_transf_matrix_II
+
 
   !
   subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info)
@@ -28991,7 +29287,6 @@ end subroutine read_contr_matelem_expansion_classN
      !
      write(chkptIO,"('Start Primitive basis set')") 
      !
-     !
      write(chkptIO,"(4i8,' <- Maxsymcoeffs,max_deg_size,Maxcontracts,Nclasses')") PT%Maxsymcoeffs,PT%max_deg_size,&
                      PT%Maxcontracts,PT%Nclasses
      !
@@ -29616,7 +29911,7 @@ end subroutine read_contr_matelem_expansion_classN
      integer(ik)        :: chkptIO,chkptIO_vect,ib,rec_len,maxsize,iclasses,irecord,&
                            level_degen,ideg,dimen,iroots,Nmodes
      real(rk)           :: f_t
-     character(len=cl) :: my_fmt !format for I/O specification
+     character(len=cl)  :: my_fmt !format for I/O specification
      !
      ! File for the conctracted coefficients
      !
@@ -29717,6 +30012,7 @@ end subroutine read_contr_matelem_expansion_classN
      open(chkptIO,action='write',position='rewind',status='replace',file=job%contrfile%primitives) 
      !
      write(chkptIO,"('Start Primitive basis set')") 
+     write(my_fmt,'(a,i0,a)') "(",nmodes+1,"i6)"
      !
      do iclasses = 1,PT%Nclasses
        !
@@ -29724,7 +30020,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        do ib = 1,contr(iclasses)%dimen
         !
-        write(chkptIO,'('//fmt%Nmodes//')')  contr(iclasses)%prim_bs%icoeffs(:,ib)
+        write(chkptIO,my_fmt)  contr(iclasses)%prim_bs%icoeffs(:,ib)
         !
        enddo 
        !

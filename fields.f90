@@ -15936,7 +15936,7 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
-                                   kmax,nmax,krot1,krot2,krot11,krot21
+                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r
     integer(ik)                 :: nl,nr,irho
     type(FLpolynomT),pointer    :: fl
     type(Basis1DT), pointer     :: bs           ! 1D bset
@@ -15993,7 +15993,7 @@ end subroutine check_read_save_none
     end if
     !
     allocate (bs%matelements(-1:3,0:trove%MaxOrder,0:BSsize,0:BSsize),bs%ener0(0:BSsize),stat=alloc)
-    call ArrayStart('bs%matelements',alloc,size(bs%matelements),kind(bs%matelements))
+    call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
     call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
     !
     ! at the last mode we allocate the matrix elements arrays:
@@ -17984,42 +17984,32 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew, phivphi_t  - out of memory'
              end if
              !
-             !$omp do private(vl,nl,krot1,vr,nr,krot2,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
+             !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
              do vl = 0,bs%Size
                 !
                 read (io_slot,rec=vl+1) (phil_leg(k),k=0,npoints),(dphil_leg(k),k=0,npoints)
                 !
-                !nl = mod(vl,nmax+1)
-                !krot1 = (vl-nl)/(nmax+1)
-                !
                 krot1 = mod(vl,kmax+1)
                 nl = (vl-krot1)/(kmax+1)
                 !                
-                !krot11 = 0 ; if (krot1>0) krot11 = 1
+                k_l = 0 ; if (krot1>0) k_l = 1
                 !
-                phil_sin(:) = phil_leg(:)*mrho(:)**krot1
+                phil_sin(:) = phil_leg(:)*mrho(:)**k_l
                 phil(:) = sqrt(mrho(:))*phil_sin(:)
-                !dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
-                dphil(:) = (krot1+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
+                dphil(:) = (k_l+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
                     read (io_slot,rec=vr+1) (phir_leg(k),k=0,npoints),(dphir_leg(k),k=0,npoints)
                     !
-                    !nr = mod(vr,nmax+1)
-                    !krot2 = (vr-nr)/(nmax+1)
-                    !
                     krot2 = mod(vr,kmax+1)
                     nr = (vr-krot2)/(kmax+1)
                     !
-                    !krot21 = 0 ; if (krot2>0) krot21 = 1
+                    k_r = 0 ; if (krot2>0) k_r = 1
                     !
-                    !if ( krot2/=krot1 ) cycle
-                    !
-                    phir_sin(:) = phir_leg(:)*mrho**krot2
+                    phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    !dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
-                    dphir(:) = (krot2+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    dphir(:) = (k_r+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -18155,7 +18145,7 @@ end subroutine check_read_save_none
                              !
                              do iterm = 1,Tcoeff
                                !
-                               phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)**(krot1+krot2-1)
+                               phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
                                !trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
@@ -18213,7 +18203,7 @@ end subroutine check_read_save_none
                                   !
                                   !
                                   phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*&
-                                                 mrho(:)**(krot1+krot2)
+                                                 mrho(:)**(k_l+k_r)
                                   !
                                else
                                   !
