@@ -3409,7 +3409,7 @@ module me_bnd
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
    real(ark),allocatable :: phil_s(:),phir_s(:)
    real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
-                            phi_rho(:),dphi_rho(:),Lm(:,:)
+                            phi_rho(:),dphi_rho(:),Lm(:,:),sinrho_(:)
    real(rk),allocatable  :: h(:,:),ener(:)
    !
    character(len=cl)    :: unitfname 
@@ -3425,7 +3425,8 @@ module me_bnd
      !
      allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
               phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),&
-              x(0:npoints),sinrho(0:npoints),cosrho(0:npoints),rho(0:npoints),phil_s(0:npoints),phir_s(0:npoints),stat=alloc)
+              x(0:npoints),sinrho(0:npoints),cosrho(0:npoints),rho(0:npoints),phil_s(0:npoints),phir_s(0:npoints),&
+              sinrho_(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -3545,16 +3546,20 @@ module me_bnd
            !
          enddo
          !
+         sinrho_ = 1.0_ark
+         !
        else
          !
          call pmn_polynomial_reduced_value( npoints+1, k+nmax, k, x(0:), L(0:,0:) )
          !
          ! associated polynomials for k-1
-         call pmn_polynomial_reduced_value( npoints+1, k-1+nmax, k-1, x(0:), Lm(0:,0:) )
+         !call pmn_polynomial_reduced_value( npoints+1, k-1+nmax, k-1, x(0:), Lm(0:,0:) )
          !
          do vl =  0,nmax
            !
            !dL(:,vl) =-( sqrt( real((vl+k)*(vl-k+1),ark) )*Lm(:,vl)+2.0_ark*real(k,ark)*cosrho(:)*L(:,vl) ) !*sinrho(:)
+           !
+           L(0:,vl) = L(0:,vl)*sinrho(:)**(k-1)
            !
            ireflect = 0 ! (-1)**(vl+k)
            !
@@ -3566,11 +3571,13 @@ module me_bnd
          !
          dL = eoshift(dL,shift=k,dim=2)
          !
+         sinrho_ = sinrho
+         !
        endif
        !
        do vl =  0,nmax
          !
-         Psi(vl+1,:) = L(:,vl)*sqrt(sinrho(:))*sinrho(:)**k
+         Psi(vl+1,:) = L(:,vl)*sqrt(sinrho(:))*sinrho_(:)
          !
        enddo
        !
@@ -3614,17 +3621,17 @@ module me_bnd
        !
        do vl = 0,nmax
           !
-          phil(:)  = L(:,vl)*sqrt(sinrho(:))*sinrho(:)**k
-          phil_s(:)= L(:,vl)*sinrho(:)**k
-          dphil(:) = dL(:,vl)*sinrho(:)**k
-          if (k>0) dphil(:) = dphil(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vl)*cosrho(:)
+          phil(:)  = L(:,vl)*sqrt(sinrho(:))*sinrho_(:)
+          phil_s(:)= L(:,vl)*sinrho_(:)
+          dphil(:) = dL(:,vl)*sinrho_(:)
+          if (k>0) dphil(:) = dphil(:) + L(:,vl)*cosrho(:)
           !
           do vr = vl,nmax
               !
-              phir(:)  = L(:,vr)*sqrt(sinrho(:))*sinrho(:)**k
-              phir_s(:)= L(:,vr)*sinrho(:)**k
-              dphir(:) = dL(:,vr)*sinrho(:)**k
-              if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
+              phir(:)  = L(:,vr)*sqrt(sinrho(:))*sinrho_(:)
+              phir_s(:)= L(:,vr)*sinrho_(:)
+              dphir(:) = dL(:,vr)*sinrho_(:)
+              if (k>0) dphir(:) = dphir(:) + L(:,vr)*cosrho(:)
               !
               ! check orthagonality and noralisation
               !
@@ -3659,7 +3666,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(:)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -3723,8 +3730,8 @@ module me_bnd
              !
              phi_rho(vl+1)  = L(i,vl)
              !dphi_rho(vl+1) = dL(i,vl)
-             dphi_rho(vl+1) = dL(i,vl)*sinrho(i)**k
-             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + real(k,ark)*sinrho(i)**(k-1)*L(i,vl)*cosrho(i)
+             dphi_rho(vl+1) = dL(i,vl)*sinrho_(i)
+             if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + L(i,vl)*cosrho(i)
              !
           enddo
           !
@@ -3755,20 +3762,20 @@ module me_bnd
               !
               ! check orthagonality and noralisation
               !
-              phivphi(:) = phil(:)*phir(:)*sinrho(:)**(2*k+1)
+              phivphi(:) = phil(:)*phir(:)*sinrho(:)*sinrho_(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
               ! obtained above by the Numerov
               !
-              phivphi(:) = phil(:)*poten(:)*phir(:)*sinrho(:)**(2*k+1)
+              phivphi(:) = phil(:)*poten(:)*phir(:)*sinrho(:)*sinrho_(:)**2
               !
               h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! pseudo-part
               !
-              phivphi(:) = phil(:)*pseudo(:)*phir(:)*sinrho(:)**(2*k)
+              phivphi(:) = phil(:)*pseudo(:)*phir(:)*sinrho_(:)**2
               ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! momenta-quadratic part 
@@ -3781,7 +3788,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*sinrho(:)**(2*k-1)
+                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*sinrho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -3943,7 +3950,7 @@ module me_bnd
      deallocate(psi,dpsi,phi_rho,dphi_rho)
      call ArrayStop('psi-Legendre')
      !
-     deallocate(phil,phir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,cosrho,rho)
+     deallocate(phil,phir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,sinrho,cosrho,rho,sinrho_)
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !

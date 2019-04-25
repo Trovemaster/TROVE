@@ -17677,42 +17677,36 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew, phivphi_t  - out of memory'
              end if
              !
-             !$omp do private(vl,nl,krot1,vr,nr,krot2,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
+             !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
              do vl = 0,bs%Size
                 !
                 read (io_slot,rec=vl+1) (phil_leg(k),k=0,npoints),(dphil_leg(k),k=0,npoints)
                 !
-                !nl = mod(vl,nmax+1)
-                !krot1 = (vl-nl)/(nmax+1)
-                !
                 krot1 = mod(vl,kmax+1)
                 nl = (vl-krot1)/(kmax+1)
                 !                
-                !krot11 = 0 ; if (krot1>0) krot11 = 1
+                k_l = 0 ; if (krot1>0) k_l = 1
                 !
-                phil_sin(:) = phil_leg(:)*sinrho(:)**krot1
+                phil_sin(:) = phil_leg(:)*sinrho(:)**k_l
                 phil(:) = sqrt(sinrho(:))*phil_sin(:)
-                !dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+sinrho(:)*dphil_leg(:)
-                dphil(:) = cosrho(:)*(krot1+0.5_ark)*phil_leg(:)+sinrho(:)*dphil_leg(:)
+                dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+sinrho(:)*dphil_leg(:)
+                !dphil(:) = cosrho(:)*(k_l+0.5_ark)*phil_leg(:)+sinrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
                     read (io_slot,rec=vr+1) (phir_leg(k),k=0,npoints),(dphir_leg(k),k=0,npoints)
                     !
-                    !nr = mod(vr,nmax+1)
-                    !krot2 = (vr-nr)/(nmax+1)
-                    !
                     krot2 = mod(vr,kmax+1)
                     nr = (vr-krot2)/(kmax+1)
                     !
-                    !krot21 = 0 ; if (krot2>0) krot21 = 1
+                    k_r = 0 ; if (krot2>0) k_r = 1
                     !
                     !if ( krot2/=krot1 ) cycle
                     !
-                    phir_sin(:) = phir_leg(:)*sinrho**krot2
+                    phir_sin(:) = phir_leg(:)*sinrho(:)**k_r
                     phir(:) = sqrt(sinrho(:))*phir_sin(:)
-                    !dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+sinrho(:)*dphir_leg(:)
-                    dphir(:) = cosrho(:)*(krot2+0.5_ark)*phir_leg(:)+sinrho(:)*dphir_leg(:)
+                    dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+sinrho(:)*dphir_leg(:)
+                    !dphir(:) = cosrho(:)*(k_r+0.5_ark)*phir_leg(:)+sinrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -17848,13 +17842,16 @@ end subroutine check_read_save_none
                              !
                              do iterm = 1,Tcoeff
                                !
-                               phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*sinrho(:)**(krot1+krot2-1)
+                               phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*sinrho(:)
                                !
-                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
-                               !mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                !
-                               !trove%poten%me(iterm,vl,vr) = trove%poten%me(iterm,vl,vr) + 0.5_ark*mat_t*real(krot1**2,ark)
+                               mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !
+                               trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
+                                                                            mat_t*real(krot1**2,ark)
                                !
                              enddo
                              !
@@ -17866,7 +17863,6 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) =phil_sin(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_sin(:)
                                !
-                               !!phivphi_t(:) =phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)
                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                              enddo
                              !
@@ -17901,8 +17897,7 @@ end subroutine check_read_save_none
                                if (k1==Nmodes) then 
                                   !
                                   !
-                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*&
-                                                 sinrho(:)**(krot1+krot2)
+                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:))
                                   !
                                else
                                   !
@@ -17996,7 +17991,8 @@ end subroutine check_read_save_none
                 !
                 phil_sin(:) = phil_leg(:)*mrho(:)**k_l
                 phil(:) = sqrt(mrho(:))*phil_sin(:)
-                dphil(:) = (k_l+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
+                dphil(:) = 0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
+                !dphil(:) = (k_l+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -18009,7 +18005,8 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    dphir(:) = (k_r+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    dphir(:) = 0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    !dphir(:) = (k_r+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -18070,10 +18067,6 @@ end subroutine check_read_save_none
                          ! The gvib term can be combined with the pseudopotential part.
                          ! It will allow us to spare additional array and i.e. memory
                          ! and it is also necessary in case of the singular solution to do so.
-                         !
-                         !!phivphi_t(:) =-2.0_ark*phil(:)*trove%pseudo%field(iterm,:)*phir(:)
-                         !
-                         !!phivphi_t(:) =-2.0_ark*phil_leg(:)*trove%pseudo%field(iterm,:)*phir_leg(:)
                          !
                          phivphi_t(:) =-2.0_ark*phil_sin(:)*trove%pseudo%field(iterm,:)*phir_sin(:)
                          !
@@ -18148,14 +18141,13 @@ end subroutine check_read_save_none
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
                                !trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !
                                trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                !
                                mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
                                !
                                trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
                                                                             mat_t*real(krot1**2,ark)
-                               !
-                               !trove%poten%me(iterm,vl,vr) = trove%poten%me(iterm,vl,vr) + 0.5_ark*mat_t*real(krot1**2,ark)
                                !
                              enddo
                              !
@@ -18202,8 +18194,8 @@ end subroutine check_read_save_none
                                if (k1==Nmodes) then 
                                   !
                                   !
-                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_leg(:)*dphir(:) - dphil(:)*phir_leg(:))*&
-                                                 mrho(:)**(k_l+k_r)
+                                  phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:))
+                                  !               mrho(:)**(k_l+k_r)
                                   !
                                else
                                   !
