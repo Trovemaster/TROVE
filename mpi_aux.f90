@@ -4,11 +4,14 @@ module mpi_aux
   use accuracy
   implicit none
 
-  public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr
+  public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr, co_read_matrix_distr
   public co_create_type
 
   public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
+
+  public blacs_size, blacs_rank, blacs_ctxt
+  public nprow,npcol,myprow,mypcol, desca,descb,descc
 
   interface co_sum
     module procedure :: co_sum_double
@@ -30,7 +33,26 @@ module mpi_aux
   type(MPI_Datatype) :: mpitype_column
   type(MPI_Datatype),dimension(:), allocatable :: mpi_blocktype
 
+  !blacs/pblas
+  integer :: blacs_size, blacs_rank, blacs_ctxt
+  integer :: nprow,npcol,myprow,mypcol
+  integer :: desca(9)
+  integer :: descb(9)
+  integer :: descc(9)
+  integer :: descd(9)
+
 contains
+
+  subroutine co_init_pblas()
+    call blacs_pinfo(blacs_rank, blacs_size)
+    if (blacs_rank .lt. 0) return
+
+    call blacs_get(-1, 0, blacs_ctxt)
+    call blacs_gridinit(blacs_ctxt, 'R', blacs_size/8, 8)
+    call blacs_gridinfo(blacs_ctxt, nprow, npcol, myprow, mypcol)
+
+    write(*,"('BLACS: [',i2,',',i2'](',i4,i4,i4,i4',)')") mpi_rank,blacs_rank,nprow,npcol,myprow,mypcol
+  end subroutine co_init_pblas
 
   subroutine co_sum_double(x, result_image)
     real*8, intent(inout), dimension(:,:) :: x
@@ -38,6 +60,7 @@ contains
     integer :: i
     !integer, save :: result_image_mpi[*]
 
+    if (comm_size.eq.1) return
     call TimerStart('co_sum_double')
 
     !if (present(result_image)) then
@@ -237,7 +260,10 @@ contains
 
     endif
 
+    call co_create_type(dimen)
     deallocate(starts,ends)
+
+    call co_init_pblas()
 
     distr_inited = .true.
   end subroutine co_init_distr
@@ -292,37 +318,65 @@ contains
 
   end subroutine co_distr_data
 
+  subroutine co_read_matrix_distr(x, longdim, lb, ub, infile)
+    use accuracy
+
+    real(rk),dimension(:,lb:),intent(in) :: x
+    integer,intent(in)                :: longdim, lb, ub
+
+    type(MPI_File),intent(in) :: infile
+    type(MPI_Status) :: writestat
+    integer(kind=MPI_Offset_kind) :: offset_start,offset_end
+    integer :: readcount, mpi_real_size, ierr
+
+    call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
+
+    if (mpi_rank .lt. (comm_size-1)) then
+      readcount = int(1+real(longdim/comm_size))
+    else
+      readcount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
+    endif
+
+    offset_start = mpi_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
+    offset_end = longdim
+    offset_end = (offset_end * offset_end * mpi_real_size) - offset_start
+
+    call MPI_File_seek(infile, offset_start, MPI_SEEK_CUR)
+    call MPI_File_read_all(infile,x,readcount,mpitype_column,writestat,ierr)
+    call MPI_File_seek(infile, offset_end, MPI_SEEK_CUR)
+
+  end subroutine co_read_matrix_distr
+
   subroutine co_write_matrix_distr(x, longdim, lb, ub, outfile)
     use accuracy
 
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
     type(MPI_File),intent(in) :: outfile
-    integer :: ierr, mpi_real_size, writecount
-    integer(kind=MPI_Offset_kind) :: mpioffset,mpi_write_offsetkind
+    integer :: ierr, mpi_real_size, writecount, mpi_col_size
+    !integer(kind=MPI_Offset_kind) :: mpioffset,mpi_write_offsetkind
+    integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
 
+    call mpi_barrier(mpi_comm_world, ierr)
 
     call TimerStart('MPI_write')
 
-    !if (mpi_rank .eq. 0) then
-      call mpi_file_get_size(outfile,mpioffset,ierr)
-    !endif
-
-    !call mpi_bcast(mpioffset,1,mpi_integer,0,mpi_comm_world,ierr)
-
     call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
+    call MPI_Type_size(mpitype_column, mpi_col_size,ierr)
 
-    mpioffset = mpioffset + mpi_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
-
-    mpi_write_offsetkind = int(1+real(longdim/comm_size),MPI_Offset_kind)
     if (mpi_rank .lt. (comm_size-1)) then
       writecount = int(1+real(longdim/comm_size))
     else
       writecount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
     endif
-    call MPI_File_write_at_all(outfile,mpioffset,x,writecount,mpitype_column,writestat,ierr)
 
+    offset_start = mpi_rank * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_col_size
+    offset_end = 0
+
+    call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
+    call MPI_File_write_all(outfile,x,writecount,mpitype_column,writestat,ierr)
+    call MPI_File_seek(outfile, offset_end, MPI_SEEK_END)
     call TimerStop('MPI_write')
 
   end subroutine co_write_matrix_distr
