@@ -50,7 +50,7 @@ contains
 
 
   subroutine SymmetryInitialize(sym_group)
-  character(len=cl),intent(in) :: sym_group
+  character(len=cl),intent(inout) :: sym_group
   integer(ik):: alloc,iclass,gamma,ioper,ielem,irepr,Nrot,irep,k,irot,N_Cn,ioper_,icn,NC2,joper,jclass
   real(ark)  :: a,b,e,o,p2,p3,p4,p23,p43,phi,phi_n,factor,f_t,mat_t(2,2),repres_(2,2), m_one,mat_tt(4,4)
   character(len=4) :: Kchar
@@ -65,12 +65,15 @@ contains
   real(ark), dimension(6, 2, 2) :: E_rep_1, E_rep_2
   integer(ik), dimension(6) :: A2_char  
   integer(ik), dimension(6 , 6) :: pos_array
-  integer(ik) :: j,r,s
-  
+  integer(ik) :: j,r,s,n_c2v
+  real :: log_n  
   integer(ik), dimension(144) :: tempG36  
-
-  
+  integer, dimension(2,2) :: z2_mat
+  character(len = 5) :: k_num 
+  character(len=3) :: sym_sub_label
+  character(len=10) :: sym_cur_label
   !   
+  !
   sym%group=sym_group
   !
   select case(trim(sym_group))
@@ -152,8 +155,60 @@ contains
     sym%euler( 4,:) = (/p2,pi,p3/)
     !
     call irr_allocation
+    !
+  case("C2VN","C2V(N)","C2VN(M)")
+    !
+    sym_group = "C2VN"
+    !
+    log_n = log(4.0_rk*( real(sym%N,rk)+1.0_rk ))/log(2.0_rk)
+    n_c2v = ceiling(log_n)
+
+    sym%Nrepresen = 2**n_c2v
+    sym%Noper = 2**n_c2v
+    sym%Nclasses = 2**n_c2v
+    sym%CII%Noper = 0
+
+    call simple_arrays_allocation
+
+    z2_mat = reshape( (/1, 1, &
+                      1,-1/),(/2,2/))
 
 
+    sym%characters(1:2,1:2) = z2_mat
+    do j = 2, n_c2v
+      sym%characters(1:2**(j-1), 2**(j-1)+1:2**j) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,1)
+      sym%characters(2**(j-1)+1:2**j, 1:2**(j-1)) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(1,2)
+      sym%characters(2**(j-1)+1:2**j, 2**(j-1)+1:2**j) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,2)
+    enddo
+
+    !do j=1, 2**n_c2v
+    !  do k=1, 2**n_c2v
+    !    !write(*,*) sym%characters(k,j)
+    !  enddo
+    !enddo
+    
+    do j=1, 2**n_c2v
+      sym%degen(j) = 1
+      sym%Nelements(j) = 1
+      if(mod(j,4) == 1) then
+        sym_sub_label = 'e'
+      elseif(mod(j,4) == 2) then
+        sym_sub_label = 'f' 
+      elseif(mod(j,4) == 3) then
+        sym_sub_label = 'g' 
+      elseif(mod(j,4) == 0) then
+        sym_sub_label = 'h'
+      endif
+      write(k_num,'(i5)') (j-1-mod(j-1,4))/4
+      sym_cur_label = trim(sym_sub_label)//trim(adjustl(k_num))
+      sym%label(j) =  sym_cur_label
+      !write(*,*) sym%label(j)
+    enddo
+    !
+    sym%label(1:4)=(/'A1','A2','B1','B2'/)
+    !
+    call irr_allocation
+    !
   case("C2H(M)","C2H")
 
     sym%Nrepresen=4

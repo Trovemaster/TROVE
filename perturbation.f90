@@ -3355,16 +3355,24 @@ module perturbation
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
-             if (trove%triatom_sing_resolve) then
-               contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
-               !imode = PT%mode_class(iclasses,1)
-               !contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
-             endif
-             !
              cf => contr(iclasses)%eigen(ilevel)
              !
              cf%isym = gamma    
              cf%gamma = trim(sym%label(gamma))
+             !
+             if (trove%triatom_sing_resolve) then
+               contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
+               !imode = PT%mode_class(iclasses,1)
+               !contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+               !
+               if (trim(trove%symmetry)=='C2VN') then
+                 !
+                 cf%isym = gamma + 4*contr(iclasses)%eigen(ilevel)%lquant
+                 cf%gamma = trim(sym%label(cf%isym))
+                 !
+               endif
+               !
+             endif
              !
              ! determine the maximal degeneracy for all values of the given classes
              !

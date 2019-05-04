@@ -1288,6 +1288,40 @@ module mol_xy2
  
           end select 
           !
+       case('C2VN')
+          !
+          irot = mod(ioper-1,4)+1
+          !
+          select case(irot)
+
+          case (1) ! E 
+
+            dst = src
+
+          case (2) ! (12)
+
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+
+          case (3) ! (E*)
+
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+
+          case (4) ! (12)*
+
+            dst(1) = src(2)
+            dst(2) = src(1)
+            dst(3) = src(3)
+
+          case default
+            write (out,"('ML_symmetry_transformation_XY2: irot ',i8,' unknown')") irot
+            stop 'ML_symmetry_transformation_XY2 - bad irot. type'
+ 
+          end select 
+          !
        case('CS','CS(M)')
           !
           select case(ioper)
@@ -2737,6 +2771,15 @@ module mol_xy2
          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !; return
          if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !; return
+         !
+      case('C2VN')
+         !
+         gamma = 0 
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1+4*K
+         if (mod(K+2,2)==0.and.tau==1) gamma = 4+4*K
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 2+4*K
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 3+4*K
          !
       case('DNH','DNH(M)')
          !

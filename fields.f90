@@ -4107,8 +4107,13 @@ module fields
      !
      call print_symmetries
      !    
-   endif  
+   endif
    !
+   if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
+      write (out,"('FLinput: The C2VN number must be defined and equal to (larger than) krot')") 
+      stop 'FLinput - The C2VN number is undefined or too small'
+   endif
+    !
    if (.not.refer_defined) then 
       !
       trove%local_ref = trove%local_eq
