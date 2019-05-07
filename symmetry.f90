@@ -43,7 +43,7 @@ module symmetry
 
 
   type(SymmetryT) , save  :: sym
-  integer(ik),parameter   :: max_irreps=100
+  integer(ik),parameter   :: max_irreps=600
   integer(ik),parameter   :: verbose_ = 3
 
 contains 
@@ -3127,7 +3127,7 @@ contains
   !
   if (max_irreps<sym%Nrepresen) then 
     !
-    write(out,"('symmetry: number of elements in _select_gamma_ is too small: ',i8)") 100 ! size(job%select_gamma)
+    write(out,"('symmetry: max_irreps is too small: ',i5,' increase to > ',i5)") max_irreps,sym%Nrepresen
     stop 'symmetry: size of _select_gamma_ is too small'
     !
   endif 
@@ -3278,7 +3278,7 @@ contains
     enddo
 
     do igamma = 1,sym%Nrepresen
-      do jgamma = 1,sym%Nrepresen
+      do jgamma = igamma,sym%Nrepresen
         do k1 = 1,sym%degen(igamma)
           do k2 = 1,sym%degen(igamma)
             do m1 = 1,sym%degen(jgamma)

@@ -637,7 +637,7 @@ module fields
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
    character(len=wl) :: w
    real(rk)    :: lfact,f_t
-   integer(ik) :: i,iatom,imode,natoms,alloc,Nparam,iparam,i_t
+   integer(ik) :: i,iatom,imode,natoms,alloc,Nparam,iparam,i_t,i_tt
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
    character(len=4) :: char_j
    integer :: arg_status, arg_length, arg_unit
@@ -1314,19 +1314,48 @@ module fields
                stop 'FLinput - illegal number of gammas in DIAGONALIZER'
              endif
              !
-             i = 1 
+             i = 0
              job%select_gamma = .false.
-             call readi(i_t)
              !
-             do while (i_t/=0.and.i<=size(job%select_gamma))
+             do while (item<Nitems.and.i<size(job%select_gamma))
                 !
-                i = i+1
+                i = i + 1
                 !
-                job%select_gamma(i_t) = .true.
+                call readu(w)
                 !
-                call readi(i_t)
+                if (trim(w)/="-") then
+                  !
+                  read(w,*) i_t
+                  job%select_gamma(i_t) = .true.
+                  !
+                else
+                  !
+                  call readi(i_tt)
+                  !
+                  do while (i_t<i_tt.and.i<size(job%select_gamma))
+                    !
+                    i_t = i_t + 1
+                    job%select_gamma(i_t) = .true.
+                    i = i + 1
+                    !
+                  enddo
+                  i = i - 1
+                  !
+                endif
                 !
-             enddo 
+             enddo
+             !
+             !call readi(i_t)
+             !
+             !do while (i_t/=0.and.i<=size(job%select_gamma))
+             !   !
+             !   i = i+1
+             !   !
+             !   job%select_gamma(i_t) = .true.
+             !   !
+             !   call readi(i_t)
+             !   !
+             !enddo 
              !
            case ("GRAM-SCHMIDT","SVD","SCHMIDT")
              !
@@ -4110,7 +4139,7 @@ module fields
    endif
    !
    if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
-      write (out,"('FLinput: The C2VN number must be defined and equal to (larger than) krot')") 
+      write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
       stop 'FLinput - The C2VN number is undefined or too small'
    endif
     !
@@ -18006,6 +18035,8 @@ end subroutine check_read_save_none
                     krot2 = mod(vr,kmax+1)
                     nr = (vr-krot2)/(kmax+1)
                     !
+                    if (abs(krot1-krot2)>2) cycle 
+                    !
                     k_r = 0 ; if (krot2>0) k_r = 1
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
@@ -18158,6 +18189,8 @@ end subroutine check_read_save_none
                              !
                            elseif (k1==3.or.k2==3) then
                              !
+                             if (abs(krot1-krot2)>1) cycle
+                             !
                              Tcoeff = trove%g_rot(k1,k2)%Ncoeff
                              !
                              do iterm = 1,Tcoeff
@@ -18192,15 +18225,16 @@ end subroutine check_read_save_none
                          !
                          do k2 = 1,3
                             !
+                            if (k2==3.and.krot1/=krot2) cycle
+                            if (abs(krot1-krot2)>1) cycle
+                            !
                             Tcoeff = trove%g_cor(k1,k2)%Ncoeff
                             !
                             do iterm = 1,Tcoeff
                                !
                                if (k1==Nmodes) then 
                                   !
-                                  !
                                   phivphi_t(:) = trove%g_cor(k1,k2)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:))
-                                  !               mrho(:)**(k_l+k_r)
                                   !
                                else
                                   !
@@ -18222,6 +18256,8 @@ end subroutine check_read_save_none
                     if (FLextF_coeffs) then
                       !
                       ! External field part
+                      !
+                      if (abs(krot1-krot2)>1) cycle
                       !
                       do imu = 1,extF%rank
                         !

@@ -916,7 +916,7 @@ contains
          do igammaI = 1,sym%Nrepresen
            !
            write(jchar, '(i4)') jval(indI)
-           write(gchar, '(i2)') igammaI
+           write(gchar, '(i3)') igammaI
            !
            filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
            !
@@ -1789,7 +1789,7 @@ contains
            do igammaF = 1,sym%Nrepresen
              !
              write(jchar, '(i4)') jval(indF)
-             write(gchar, '(i2)') igammaF
+             write(gchar, '(i3)') igammaF
              !
              filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
              !
@@ -1840,7 +1840,7 @@ contains
          do igammaI = 1,sym%Nrepresen
            !
            write(jchar, '(i4)') jval(indI)
-           write(gchar, '(i2)') igammaI
+           write(gchar, '(i3)') igammaI
            !
            filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
            !

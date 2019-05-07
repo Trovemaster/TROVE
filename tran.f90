@@ -529,7 +529,7 @@ contains
           if (.not.job%select_gamma(gamma)) cycle
           !
           write(jchar, '(i4)') jval(jind)
-          write(gchar, '(i2)') gamma
+          write(gchar, '(i3)') gamma
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
@@ -540,7 +540,7 @@ contains
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
-          write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
+          write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename, err=15)
@@ -551,7 +551,7 @@ contains
              !
              filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
              !
-             write(ioname, '(a, i4,2x,i2)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
+             write(ioname, '(a, i4,2x,i4)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
              !
              call IOstart(trim(ioname), jounit)
              open(unit = jounit, action = 'read',status='old' , file = filename)
@@ -735,13 +735,13 @@ contains
           if (.not.job%select_gamma(gamma)) cycle
           !
           write(jchar, '(i4)') jval(jind)
-          write(gchar, '(i2)') gamma
+          write(gchar, '(i3)') gamma
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
-          write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
+          write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename, err=16)
@@ -1007,7 +1007,7 @@ contains
          return
        endif
        !
-       write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),igamma
+       write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),igamma
        !
     else
        write(ioname, '(a, i4)') 'eigenvectors for J=', jval(jind)
@@ -1024,7 +1024,7 @@ contains
     TReigenvec_unit = iounit
     !
     write(jchar, '(i4)') jval(jind)
-    if (present(igamma)) write(gchar, '(i2)') igamma
+    if (present(igamma)) write(gchar, '(i3)') igamma
     !
     !filename = trim(job%eigenfile%filebase)//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
     !if (job%IOvector_symm) 

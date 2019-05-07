@@ -1149,7 +1149,7 @@ module perturbation
     if (job%verbose>=4) then 
       write(out,"(/'Active_space table')")
       write(out,"('i   nu_i')")
-      write(my_fmt,'(a,i0,a)') "(i8,1x,",nmodes+1,"i4)"
+      write(my_fmt,'(a,i0,a)') "(i8,1x,",nmodes+1,"i6)"
       do ib = 1,PT%Maxcoeffs
             write(out,my_fmt) ib,(PT%active_space%icoeffs(imode,ib),imode=0,PT%Nmodes)
       enddo 
@@ -6410,7 +6410,8 @@ module perturbation
    PT%Max_sym_levels(:) = Ntotal(:)
    !
    if (job%verbose>=3) then 
-      write(out,"(/'Total number of irr. representations: ',40i10/)") Ntotal
+      write(my_fmt,'(a,i0,a)') "(/'Total number of irr. representations: ',",sym%Nrepresen,"i6/)"
+      write(out,my_fmt) Ntotal(:)
    endif 
    if (job%verbose>=5)  write(out,"('icoef  isym  ideg  irr. repres. ')")
    !
@@ -6561,7 +6562,8 @@ module perturbation
    !
    !
    write(out,"(/'Size of the primitive basis set : ',i12)") dimen
-   write(out,"( 'Total number of irr. representations: ',40i10)") PT%Max_sym_levels
+   write(my_fmt,'(a,i0,a)') "('Total number of irr. representations: ',",sym%Nrepresen,"i6)"
+   write(out,my_fmt) PT%Max_sym_levels
    !
    do ioper =1,sym%Noper
      deallocate (r_represent(ioper)%coeffs)
@@ -7702,7 +7704,7 @@ module perturbation
         else 
           !
           matsize = int(dimen_s,hik)*int(dimen_maxrow,hik)
-          if (job%verbose>=4) write(out,"('Allocate array a (sparse)',i8,'x',i8,' = ',i9)") dimen_s,dimen_maxrow,matsize
+          if (job%verbose>=4) write(out,"('Allocate array a (sparse)',i8,'x',i8,' = ',i0)") dimen_s,dimen_maxrow,matsize
           allocate (a(dimen_s,dimen_maxrow),stat=alloc)
           !
           call ArrayStart('PThamiltonian_contract:a',alloc,1,kind(a),matsize)
@@ -10291,12 +10293,12 @@ module perturbation
      !
      if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND') then
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") gamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") gamma
        !
        !unitfname ='Quantum numbers of the eigensolution'
        call IOStart(trim(unitfname),IOunit_quanta)
        !
-       write(unitfname,"('Eigenvectors for ',i2)") gamma
+       write(unitfname,"('Eigenvectors for ',i4)") gamma
        !
        !unitfname ='Eigenvectors in the primitive basis set'
        !
@@ -10530,8 +10532,8 @@ module perturbation
          if (job%IOvector_symm.and.kdeg>1) exit
          !
          do iroot=1,nroots_
-         !
-         if (.not.job%IOvector_symm) then 
+           !
+           if (.not.job%IOvector_symm) then 
              !
              !$omp parallel do private(icoeff,irow,ib,iterm,ielem) shared(vec_t) schedule(dynamic)
              do icoeff = 1,PT%Maxcontracts
@@ -29239,7 +29241,7 @@ end subroutine read_contr_matelem_expansion_classN
        if (.not.job%select_gamma(igamma)) cycle
        !
        if(.not.job%ignore_vectors) then
-	       write(unitfname,"('Eigenvectors for ',i2)") igamma
+	       write(unitfname,"('Eigenvectors for ',i4)") igamma
 	       call IOStart(trim(unitfname),chkptIO)
 	       inquire(iolength=rec_len) f_t
 	       !
@@ -29249,20 +29251,20 @@ end subroutine read_contr_matelem_expansion_classN
 		     rec_len = rec_len*PT%Maxcontracts
 	       endif 
 	       !
-	       write(char_j,"(i2)") igamma
+	       write(char_j,"(i3)") igamma
 	       !
 	       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
 	       !
-	
-		open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+		   open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+		   !
        endif
        !
        !if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        filename = trim(job%eigenfile%dscr)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -29420,7 +29422,7 @@ end subroutine read_contr_matelem_expansion_classN
         !
         do igamma  =1,sym%Nrepresen
           !
-          write(unitfname,"('Eigenvectors for ',i2)") igamma
+          write(unitfname,"('Eigenvectors for ',i4)") igamma
           call IOStart(trim(unitfname),chkptIO)
           inquire(iolength=rec_len) f_t
           !
@@ -29430,7 +29432,7 @@ end subroutine read_contr_matelem_expansion_classN
             rec_len = rec_len*PT%Maxcontracts
           endif 
           !
-          write(char_j,"(i2)") igamma
+          write(char_j,"(i3)") igamma
           !
           job%eigenfile%vectors    = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
           !
@@ -29504,13 +29506,13 @@ end subroutine read_contr_matelem_expansion_classN
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i2)") igamma
+       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i4)") igamma
        !
        if(.not.job%ignore_vectors) call IOStart(trim(unitfname),chkptIO)
        !
        if(.not.job%ignore_vectors)close(chkptIO,status='keep') 
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
        write(chkptIO,"('End Quantum numbers and energies')") 
@@ -29546,10 +29548,10 @@ end subroutine read_contr_matelem_expansion_classN
 
      do igamma  =1,sym%Nrepresen
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        filename = trim(job%eigenfile%dscr)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -29569,7 +29571,7 @@ end subroutine read_contr_matelem_expansion_classN
      !
      do igamma  =1,sym%Nrepresen
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
+       write(unitfname,"('Eigenvectors for ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        inquire(iolength=rec_len) f_t
        !
@@ -29579,7 +29581,7 @@ end subroutine read_contr_matelem_expansion_classN
          rec_len = rec_len*PT%Maxcontracts
        endif 
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        job%eigenfile%vectors    = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -30925,7 +30927,7 @@ end subroutine read_contr_matelem_expansion_classN
                  MaxTerm = jb
              endif
              nu_j(:) = PT%active_space%icoeffs(:,jb)
-             if (job%verbose>=7) write(out,"(2i8,f19.8,30i4)") ib,jb,a(jb,ib), & 
+             if (job%verbose>=7) write(out,"(2i8,f19.8,30i6)") ib,jb,a(jb,ib), & 
                           (nu_j(i0),i0=0,min(PT%Nmodes,30))
              !
           enddo
@@ -30947,7 +30949,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           PT%largest%coeffs(ib,1) = a(MaxTerm,ib)
           !
-          write(out,"(i7,f18.8,40i3)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
+          write(out,"(i7,f18.8,40i4)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
           !
        enddo
        !
