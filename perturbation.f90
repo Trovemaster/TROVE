@@ -16579,14 +16579,6 @@ module perturbation
         integer(ik) :: iroot,jroot,Maxcontracts,Nclasses
         integer(hik):: ib,ib0
         real(rk)    :: f_t,f_prod(PT%Nclasses)
-        !integer(ik) :: dps,dpe
-        integer :: mloc_a, mloc_b, mloc_c, mloc_d
-        integer :: nloc_a, nloc_b, nloc_c, nloc_d
-        integer :: mb_a, mb_b, mb_c, mb_d
-        integer :: nb_a, nb_b, nb_c, nb_d
-        integer :: NUMROC
-        real(rk),allocatable,dimension(:,:)      :: As, Bs, Cs, Ds,mat_tts
-        integer :: i,j,i_loc,j_loc,proc_row,proc_col
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
@@ -16602,89 +16594,77 @@ module perturbation
           !
           im2 = min(PT%Nmodes-1,im2)
           !
-          if(mpi_rank .eq. mod(iclasses,comm_size)) then
-            !dps = mpi_rank * (dimen_p/comm_size)+1
-            !dpe = (mpi_rank+1) * (dimen_p/comm_size)
-            !if (dpe.gt.dimen_p) dpe = dimen_p
-            if (job%verbose>=4) call TimerStart('contract_matrix')
+          if (job%verbose>=4) call TimerStart('contract_matrix')
+          !
+          me_t = 0 
+          !
+          if (iclasses/=PT%Nclasses) then 
             !
-            me_t = 0 
-            !
-            if (iclasses/=PT%Nclasses) then 
+            !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
+            do jprim=1,contr(iclasses)%dimen
               !
-              !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
-              do jprim=1,contr(iclasses)%dimen
-              !do jprim=dps,dpe
+              nu_j(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
+              !
+              do iprim=1,contr(iclasses)%dimen
                 !
-                nu_j(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
+                nu_i(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
                 !
-                do iprim=1,contr(iclasses)%dimen
-                !do iprim=dps,dpe
-                  !
-                  nu_i(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
-                  !
-                  ! Primitive matrix elements of all Hamiltonian components ....
-                  !
-                  me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
-                  !
-                enddo
+                ! Primitive matrix elements of all Hamiltonian components ....
+                !
+                me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
+                !
               enddo
-              !$omp end parallel do
-              !
-            else
-              !
-              !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
-              do jprim=1,contr(iclasses)%dimen
-              !do jprim=dps,dpe
-                !
-                nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,jprim)
-                !
-                do iprim=1,contr(iclasses)%dimen
-                !do iprim=dps,dpe
-                  !
-                  nu_i(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,iprim)
-                  !
-                  ! Primitive matrix elements of all Hamiltonian components ....
-                  !
-                  me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
-                  !
-                  me_t(iprim,jprim) = me_t(iprim,jprim)*fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
-                  !
-                  !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
-                  !
-                enddo
-              enddo
-              !$omp end parallel do
-              !
-            endif 
+            enddo
+            !$omp end parallel do
             !
-            if (job%verbose>=4) call TimerStop('contract_matrix')
-            !
-            if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
-            !
-            !mat_t(1:nroots,1:dimen_p) = matmul(transpose(tmat(iclasses)%coeffs(1:dimen_p,1:nroots)),me_t(1:dimen_p,1:dimen_p))
-            !mat_tt(iclasses)%coeffs(1:nroots,1:nroots) = matmul(mat_t(1:nroots,1:dimen_p),tmat(iclasses)%coeffs(1:dimen_p,1:nroots))
-            !
-
-            call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
-                        me_t,dimen_p_max,beta,mat_t,nroots_max)
-            call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
-                        tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeffs,nroots)
-
-            matclass(iclasses,1:nroots,1:nroots) = mat_tt(iclasses)%coeffs
-            !
-            !call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,& 
-            !            me_t(1:dimen_p,1:dimen_p),dimen_p,beta,mat_t(1:nroots,1:dimen_p),nroots)
-            !call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t(1:nroots,1:dimen_p),nroots,& 
-            !            tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,beta,mat_tt(iclasses)%coeffs(1:nroots,1:nroots),nroots)
-            !
-            if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
           else
-            matclass(iclasses,1:nroots,1:nroots) = 0.0
-          endif
+            !
+            !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
+            do jprim=1,contr(iclasses)%dimen
+              !
+              nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,jprim)
+              !
+              do iprim=1,contr(iclasses)%dimen
+                !
+                nu_i(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,iprim)
+                !
+                ! Primitive matrix elements of all Hamiltonian components ....
+                !
+                me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
+                !
+                me_t(iprim,jprim) = me_t(iprim,jprim)*fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                !
+                !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                !
+              enddo
+            enddo
+            !$omp end parallel do
+            !
+          endif 
+          !
+          if (job%verbose>=4) call TimerStop('contract_matrix')
+          !
+          if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
+          !
+          !mat_t(1:nroots,1:dimen_p) = matmul(transpose(tmat(iclasses)%coeffs(1:dimen_p,1:nroots)),me_t(1:dimen_p,1:dimen_p))
+          !mat_tt(iclasses)%coeffs(1:nroots,1:nroots) = matmul(mat_t(1:nroots,1:dimen_p),tmat(iclasses)%coeffs(1:dimen_p,1:nroots))
+          !
+
+          call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
+                      me_t,dimen_p_max,beta,mat_t,nroots_max)
+          call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
+                      tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeffs,nroots)
+
+          matclass(iclasses,1:nroots,1:nroots) = mat_tt(iclasses)%coeffs
+          !
+          !call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,& 
+          !            me_t(1:dimen_p,1:dimen_p),dimen_p,beta,mat_t(1:nroots,1:dimen_p),nroots)
+          !call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t(1:nroots,1:dimen_p),nroots,& 
+          !            tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,beta,mat_tt(iclasses)%coeffs(1:nroots,1:nroots),nroots)
+          !
+          if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
           !
         enddo 
-        call mpi_allreduce(mpi_in_place, matclass, PT%Nclasses*nroots_max*nroots_max, mpi_double_precision, mpi_sum, mpi_comm_world)
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
