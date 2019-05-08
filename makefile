@@ -11,9 +11,9 @@ checkin:
 pot_user = pot_ch4
 
 PLAT = _2205_i17
-###FOR  = ifort
+#FOR  = ifort
 FOR = mpif90
-FFLAGS =  -qopenmp -xcore-avx2 -O3 -ip
+FFLAGS =  -qopenmp -xHost -O3 -ip
 #FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
 
 

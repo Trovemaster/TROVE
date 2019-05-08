@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH -J TROVE-MPI-<input>
+#SBATCH -p <PARTIITON>
+#SBATCH -A <ACCOUNT>
+#SBATCH -N <NUM_NODES>
+#SBATCH -n <NUM_TASKS>      # Recommend number of sockets
+#SBATCH -c <CORES_PER_TASK> # for OpenMP, NOTE recommend number of cores per socket
+#SBATCH -t 3:0:0
+#SBATCH --exclusive
+#SBATCH -o "trove.%j.out"
+
+# This batch script runs TROVE-MPI using hybrid MPI/OpenMP. For best
+# performance, it is recommended to run one MPI task per socket, and <ncores per
+# socket> OpenMP threads per task.
+
+module purge
+module load rhel7/default-peta4
+module unload intel/bundles/complib/2017.4
+module load intel/bundles/complib/2019.3
+
+# Set to number of cores per socket
+export OMP_NUM_THREADS=16
+
+# Prevent processes from migrating and ensure each task + threads is exclusive
+# to one socket.
+export I_MPI_PIN=1
+export I_MPI_PIN_DOMAIN=omp:compact
+
+
+mpirun trove.x file1.inp
