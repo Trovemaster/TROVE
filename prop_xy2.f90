@@ -5,6 +5,7 @@ module prop_xy2
   use accuracy
   use moltype
   use timer
+  use pot_xy2, only : MLloc2pqr_xy2
 
   implicit none
 
@@ -65,15 +66,7 @@ recursive subroutine xy2_dipole_sym(rank, ncoords, natoms, local, xyz, f)
   mu_mb(2) = fit_xy2_dipole_B2(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
   mu_mb(3) = 0.0
 
-  !tmat_inv = tmat
-  !call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
-  !
-  call MLinvmatark(tmat,tmat_inv,3,ierr)
-  !
-  if (ierr/=0) then
-    write(out,"('xy2_dipole_sym error: failed inverse',i0)") ierr
-    stop 'xy2_dipole_sym error: failed inverse'
-  endif
+  call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
   !
   f(1:3) = matmul(tmat_inv(1:3,1:3), mu_mb(1:3))
   !
@@ -306,8 +299,7 @@ recursive subroutine xy2_efg_y(rank, ncoords, natoms, local, xyz, f)
 
   ! transform EFG tensor into coordinate frame defined by the input xyz coordinates
 
-  stop 'matrix_pseudoinverse_ark needs to be not activated'
-  !!call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
+  call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
 
   efg_xyz_(1:3,1:3) = matmul(tmat_inv(1:3,1:3), efg_mb1(1:3,1:3))
   efg_xyz(1:3,1:3,1) = matmul(efg_xyz_(1:3,1:3), transpose(tmat_inv(1:3,1:3)))
@@ -407,18 +399,39 @@ recursive subroutine prop_xy2_qmom_sym(rank, ncoords, natoms, local, xyz, f)
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
   real(ark),intent(out)  ::  f(rank)
 
-  integer(ik) :: iatom
+  integer(ik) :: iatom,ierr
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), n1(3), n2(3), n3(3), tmat(3,3), &!
-               coords(3), qmom_mb(3,3), qmom_xyz(3,3), qmom_xyz_(3,3), tmat_inv(3,3)
+               coords(3), qmom_mb(3,3), qmom_xyz(3,3), qmom_xyz_(3,3), tmat_inv(3,3), x(3,3)
 
   if (rank/=6) then
     write(out, '(/a,1x,i3,1x,a)') 'xy2_qmom_sym error: rank of the dipole moment vector =', rank, ', expected 6'
     stop
   endif
 
-  xyz0 = xyz(1,:)
+
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_qmom_sym: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_qmom_sym - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+
+  xyz0 = x(1,:)
   do iatom=1, natoms
-    xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
   enddo
 
   r1 = sqrt(sum(xyz_(2,:)**2))
@@ -453,9 +466,15 @@ recursive subroutine prop_xy2_qmom_sym(rank, ncoords, natoms, local, xyz, f)
   qmom_mb(3,3) = -( qmom_mb(1,1) + qmom_mb(2,2) )
   qmom_mb(2,1) = qmom_mb(1,2)
 
-  stop 'matrix_pseudoinverse_ark needs to be not activated'
-  !call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
-
+  call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
+  !
+  !call MLinvmatark(tmat,tmat_inv,3,ierr)
+  !
+  !if (ierr/=0) then
+  !  write(out,"('xy2_dipole_sym error: failed inverse',i0)") ierr
+  !  stop 'xy2_dipole_sym error: failed inverse'
+  !endif
+  !
   qmom_xyz_(1:3,1:3) = matmul(tmat_inv(1:3,1:3), qmom_mb(1:3,1:3))
   qmom_xyz(1:3,1:3) = matmul(qmom_xyz_(1:3,1:3), transpose(tmat_inv(1:3,1:3)))
 
@@ -511,7 +530,7 @@ subroutine TEST_xy2_qmom_sym(rank, ncoords, natoms, local, xyz, f)
     read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), (mu_xyz0(i,1:3), i=1, 3)
     if (info/=0) exit
     xyz_ = xyz_ * angs
-    call xy2_qmom_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
+    call prop_xy2_qmom_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
     ii = 0
     dmu = 0
     do i=1, 3
@@ -594,8 +613,7 @@ recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
   alpha_mb(1,2) = fit_xy2_dipole_B2(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)
   alpha_mb(2,1) = alpha_mb(1,2)
 
-  stop 'matrix_pseudoinverse_ark needs to be not activated'
-  !call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
+  call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
 
   alpha_xyz_(1:3,1:3) = matmul(tmat_inv(1:3,1:3), alpha_mb(1:3,1:3))
   alpha_xyz(1:3,1:3) = matmul(alpha_xyz_(1:3,1:3), transpose(tmat_inv(1:3,1:3)))
@@ -927,5 +945,71 @@ f(12) = a1**2*r1*r2*(-r1**2 + r2**2)
 v = sum(f*params)
 end function xy2_func_b2_n3_d6
 
+
+subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
+
+  integer(ik), intent(in) :: m, n
+  real(ark), intent(in) :: mat(m,n)
+  real(ark), intent(out) :: invmat(n,m)
+  integer(ik), intent(out), optional :: info
+
+  integer(ik) lwork, info_, i, j
+  double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
+  double precision, allocatable :: work(:)
+
+  tol = 1.0d-08 !epsilon(1.0d0)
+
+  matd = dble(mat)
+
+  lwork = -1
+  call dgesvd('A', 'A', m, n, matd, m, sv, matu, m, matvt, n, work1, lwork, info_)
+  lwork = int(work1(1), kind=ik)
+
+  allocate(work(lwork), stat=info_)
+  if (info_/=0) then
+    write(out, '(/a,1x,i6)') 'matrix_pseudoinverse_ark error: failed to allocate workspace array required for SVD, size =', lwork
+    stop
+  endif
+
+  call dgesvd('A', 'A', m, n, matd, m, sv, matu, m, matvt, n, work, lwork, info_)
+
+  if (info_/=0) then
+    write(out, '(/a,1x,i6)') 'matrix_pseudoinverse_ark error: SVD failed, info =', info_
+    stop
+  endif
+
+  if (present(info)) info = 0
+
+  mat_d = 0.0
+  do i=1, n
+    if (sv(i)>=tol) then
+      mat_d(i,i) = 1.0d0/sv(i)
+    else
+      if (present(info)) then
+        info = i
+        mat_d(i,i) = 0.0
+      else
+        write(out, '(/a)') 'matrix_pseudoinverse_ark error: matrix is singular'
+        write(out, '(a)') 'matrix:'
+        do j=1, m
+          write(out, '(<n>(1x,f10.6))') mat(j,1:n)
+        enddo
+        write(out, '(a)') 'singular elements:'
+        do j=1, n
+          write(out, '(1x,f)') sv(j)
+        enddo
+        stop 'STOP'
+      endif
+    endif
+  enddo
+
+  call dgemm('N', 'T', n, m, m, 1.0d0, mat_d(1:n,1:m), n, matu(1:m,1:m), m, 0.0d0, tmat(1:n,1:m), n)
+  call dgemm('T', 'N', n, m, n, 1.0d0, matvt(1:n,1:n), n, tmat(1:n,1:m), n, 0.0d0, invmatd(1:n,1:m), n)
+
+  invmat = real(invmatd,kind=ark)
+
+  deallocate(work)
+
+end subroutine matrix_pseudoinverse_ark
 
 end module prop_xy2

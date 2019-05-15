@@ -2122,7 +2122,15 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      xyz0 = MLloc2pqr_xy2(local)
+      select case(trim(molec%coords_transform))
+      case default
+         write (out,"('MLdipole_ames1: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'MLdipole_ames1 - bad coord. type'
+      case('R-RHO-Z')
+         !
+         xyz0 = MLloc2pqr_xy2(local)
+         !
+      end select
       !
     else
       !
@@ -2648,10 +2656,18 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      xyz0 = MLloc2pqr_xy2(local)
-      !
-      x(1,:) = xyz0(2,:) - xyz0(1,:)
-      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      select case(trim(molec%coords_transform))
+      case default
+         write (out,"('MLdms2pqr_xy2_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'MLdms2pqr_xy2_coeff - bad coord. type'
+      case('R-RHO-Z')
+         !
+         xyz0 = MLloc2pqr_xy2(local)
+         !
+         x(1,:) = xyz0(2,:) - xyz0(1,:)
+         x(2,:) = xyz0(3,:) - xyz0(1,:)
+         !
+      end select
       !
     else
       !
@@ -3337,10 +3353,18 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      xyz0 = MLloc2pqr_xy2(local)
-      !
-      x(1,:) = xyz0(2,:) - xyz0(1,:)
-      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      select case(trim(molec%coords_transform))
+      case default
+         write (out,"('MLdipole_xy2_lorenzo: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'MLdipole_xy2_lorenzo - bad coord. type'
+      case('R-RHO-Z')
+         !
+         xyz0 = MLloc2pqr_xy2(local)
+         !
+         x(1,:) = xyz0(2,:) - xyz0(1,:)
+         x(2,:) = xyz0(3,:) - xyz0(1,:)
+         !
+      end select
       !
     else
       !
