@@ -13,7 +13,7 @@ module fields
    use me_rot
    use timer
    use moltype
-   use symmetry , only : SymmetryInitialize,sym,max_irreps
+   use symmetry , only : SymmetryInitialize,sym
 
    ! use perturbation
 
@@ -277,7 +277,6 @@ module fields
       real(rk)            :: ener_thresh = -1  ! energy threshold for the basis set reduction using contributions to the primitive energies estimated from the matrix elements by PT
       integer(ik)         :: maxiter = 1000 ! maximal number of iterations in arpack 
       real(rk)            :: tolerance = 0  ! tolerance for arpack diagonalization, 0 means the machine accuracy
-      logical             :: select_gamma(max_irreps)! the diagonalization will be done only for selected gamma's
       logical             :: restart=.false. ! restart the eigensolutions using the stored eigenvectors of a lower dimension
       integer(ik)         :: PTDeltaQuanta  ! Every new Perturb. order brings increment of the the MaxPolyad(iorder)
       character(len=cl)   :: PTtype         ! Defines type of the perturbationa theory - standard or diagonal
@@ -286,7 +285,6 @@ module fields
       character(len=cl)   :: orthogonalizer  = 'GRAM-SCHMIDT'
       real(rk)            :: cluster = -1     ! the factor to porepare clustering of the basis set
       integer(ik)         :: swap_after       ! The Hamiltonian will be stoted, read, and transformed vector by vector
-      integer(ik)         :: nroots(max_irreps) ! number of the roots to be found in variational diagonalization with syevr
       real(rk)            :: upper_ener       ! upper energy limit for the eigenvalues to be found in variational diagonalization with syevr
       real(rk)            :: thresh           ! thresh of general use
       real(rk)            :: max_swap_size              ! maximal allowed disk space 
@@ -367,6 +365,8 @@ module fields
       logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
                                             ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
       logical             :: triatom_sing_resolve = .false.
+      logical,pointer     :: select_gamma(:)! the diagonalization will be done only for selected gamma's
+      integer(ik),pointer :: nroots(:) ! number of the roots to be found in variational diagonalization with syevr
       !
    end type FLcalcsT
 
@@ -1585,6 +1585,12 @@ module fields
          !
          allocate(job%isym_do(sym%Nrepresen),stat=alloc)
          if (alloc/=0)  stop 'FLinput, isym_do - out of memory'
+
+         allocate(job%select_gamma(sym%Nrepresen),stat=alloc)
+         if (alloc/=0)  stop 'FLinput, select_gamma - out of memory'
+         !
+         allocate(job%nroots(sym%Nrepresen),stat=alloc)
+         call ArrayStart('nroots:sym',alloc,size(job%nroots),kind(job%nroots))
          !
          job%isym_do = .true.
          !

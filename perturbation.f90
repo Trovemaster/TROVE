@@ -10,7 +10,7 @@ module perturbation
   use plasma
   use fields
   use timer
-  use symmetry , only : SymmetryInitialize,sym,max_irreps
+  use symmetry , only : SymmetryInitialize,sym
   use me_numer
   use diag
   ! use omp_lib

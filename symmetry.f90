@@ -1,9 +1,10 @@
 !
 module symmetry
   use accuracy
+  use timer
 
   implicit none
-  public SymmetryInitialize,sym,max_irreps
+  public SymmetryInitialize,sym
 
 
   type  ScIIT
@@ -43,7 +44,7 @@ module symmetry
 
 
   type(SymmetryT) , save  :: sym
-  integer(ik),parameter   :: max_irreps=600
+  integer(ik),parameter   :: max_irreps=100
   integer(ik),parameter   :: verbose_ = 3
 
 contains 
@@ -205,8 +206,23 @@ contains
       !write(*,*) sym%label(j)
     enddo
     !
-    sym%label(1:4)=(/'A1','A2','B1','B2'/)
+    sym%label(1:4)=(/'A1','B2','A2','B1'/)
     !
+    ! generators and the product table  
+    !
+    allocate(sym%product_table(sym%Noper,2),stat=alloc)
+    call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+    !
+    sym%product_table(1:4,1:2) = reshape((/0,0,0,0, &
+                                           0,0,0,0/), (/4,2/))
+    !
+    do j = 1,2**(n_c2v-2)-1
+      sym%product_table(4*j+1: 4*j+4,1:2) = reshape((/1,2,3,4, &
+                                                      1,1,1,1/), (/4,2/))
+    enddo
+    !
+    sym%product_table_set = .true.
+
     call irr_allocation
     !
   case("C2H(M)","C2H")
@@ -484,8 +500,11 @@ contains
       tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
       tempG36(109:144)= (/0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
       !
+      allocate(sym%product_table(72,2),stat=alloc)
+      call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+      !
       sym%product_table = reshape( tempG36, (/ 72, 2/))
-      sym%product_table_set = .false.
+      sym%product_table_set = .true.
       !
       !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
       sym%characters = reshape( & 
@@ -3125,12 +3144,12 @@ contains
 
   end select
   !
-  if (max_irreps<sym%Nrepresen) then 
-    !
-    write(out,"('symmetry: max_irreps is too small: ',i5,' increase to > ',i5)") max_irreps,sym%Nrepresen
-    stop 'symmetry: size of _select_gamma_ is too small'
-    !
-  endif 
+  !if (max_irreps<sym%Nrepresen) then 
+  !  !
+  !  write(out,"('symmetry: max_irreps is too small: ',i5,' increase to > ',i5)") max_irreps,sym%Nrepresen
+  !  stop 'symmetry: size of _select_gamma_ is too small'
+  !  !
+  !endif 
   !
   sym%maxdegen = maxval(sym%degen(:),dim=1)
 

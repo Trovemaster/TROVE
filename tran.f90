@@ -664,6 +664,8 @@ contains
           !
           15 continue 
           !
+          call IOStop(trim(ioname))
+          !
           write(out,"('read_eigenval warninig: eigenfilefile ',a,'is missing')") filename
           if (present(error)) error = 1 
           !
