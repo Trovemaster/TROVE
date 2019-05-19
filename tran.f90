@@ -526,7 +526,7 @@ contains
        nsize_base = 0
        do gamma = 1,sym%Nrepresen
           !
-          if (.not.job%select_gamma(gamma)) cycle
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) cycle
           !
           write(jchar, '(i4)') jval(jind)
           write(gchar, '(i3)') gamma
@@ -582,7 +582,7 @@ contains
           !
           nsize_base = nsize_base + nsize
           !
-          if (.not.job%select_gamma(gamma)) then
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) then
             close(iounit)
             cycle
           endif
@@ -734,7 +734,7 @@ contains
           !
           bset_contr(jind)%nsize(gamma) = 0
           !
-          if (.not.job%select_gamma(gamma)) cycle
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) cycle
           !
           write(jchar, '(i4)') jval(jind)
           write(gchar, '(i3)') gamma
@@ -1004,7 +1004,7 @@ contains
     !
     if (present(igamma)) then
        !
-       if (.not.job%select_gamma(igamma)) then 
+       if (.not.job%select_gamma(igamma).and.(jval(jind)/=0.or.igamma/=1)) then 
          TReigenvec_unit = -1
          return
        endif
