@@ -7723,7 +7723,7 @@ module perturbation
         elseif (.not.only_store) then 
           !
           matsize = int(dimen_s,hik)*int(dimen_s,hik)
-          if (job%verbose>=4) write(out,"('Allocate array a',i8,'x',i8,' = ',i9)") dimen_s,dimen_s,matsize
+          if (job%verbose>=4) write(out,"('Allocate array a',i0,'x',i0,' = ',i0)") dimen_s,dimen_s,matsize
           allocate (a(dimen_s,dimen_s),stat=alloc)
           !
           call ArrayStart('PThamiltonian_contract:a',alloc,1,kind(a),matsize)

@@ -13272,7 +13272,7 @@ end subroutine check_read_save_none
                ! Only the first imode within the givem type is unique  
                !
                allocate (bs%matelements(-1:3,0:trove%MaxOrder,0:isize,0:isize),bs%ener0(0:isize),stat=alloc)
-               call ArrayStart('bs%matelements',alloc,size(bs%matelements),kind(bs%matelements))
+               call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
                call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
                !
                bs%matelements(-1:3,0:trove%MaxOrder,0:isize,0:isize) = matelements_t(-1:3,0:trove%MaxOrder,0:isize,0:isize)
@@ -13371,7 +13371,7 @@ end subroutine check_read_save_none
               if (fl%Ncoeff>0) then 
                  !
                  allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-                 call ArrayStart('trove%g_vib%me',alloc,size(fl%me),kind(fl%me))
+                 call ArrayStart('trove%g_vib%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
                  read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
                  !
               endif
@@ -13409,7 +13409,7 @@ end subroutine check_read_save_none
               !
               if (fl%Ncoeff>0) then 
                  allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-                 call ArrayStart('trove%g_rot%me',alloc,size(fl%me),kind(fl%me))
+                 call ArrayStart('trove%g_rot%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
                  read(chkptIO) fl%me     !(fl%Ncoeff,0:bs%Size,0:bs%Size)
               endif
               !
@@ -13444,7 +13444,7 @@ end subroutine check_read_save_none
               !
               if (fl%Ncoeff>0) then 
                 allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-                call ArrayStart('trove%g_cor%me',alloc,size(fl%me),kind(fl%me))
+                call ArrayStart('trove%g_cor%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
                 read(chkptIO) fl%me
               endif
               !
@@ -13474,7 +13474,7 @@ end subroutine check_read_save_none
         trove%poten%Ncoeff = Tcoeff
         !
         allocate (trove%poten%me(trove%poten%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-        call ArrayStart('trove%poten%me',alloc,size(fl%me),kind(fl%me))
+        call ArrayStart('trove%poten%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
         !
         fl => trove%poten
         read(chkptIO) fl%me  
@@ -13516,7 +13516,7 @@ end subroutine check_read_save_none
                 !
                 if (fl%Ncoeff>0) then 
                   allocate (fl%me(fl%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
-                  call ArrayStart('trove%L2_vib%me',alloc,size(fl%me),kind(fl%me))
+                  call ArrayStart('trove%L2_vib%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
                   read(chkptIO) fl%me
                 endif
                 !
