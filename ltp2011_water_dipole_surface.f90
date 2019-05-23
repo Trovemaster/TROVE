@@ -62,7 +62,7 @@ real(dp) :: damp, muOH
 !  LTP2011P           Pople      Yes             [8,8]/[9,8]
 !  LTP2011NR          Davidson   No              [8,8]/[9,8]
 !  LTP2011S           Davidson   Yes             [6,7]/[7,7]
-character(len=8), parameter :: dipole_surface = "LTP2011"
+character(len=8), parameter :: dipole_surface = "LTP2011S"
 !**********************************************************************************************
 save n_r_X, n_theta_X, ncoeffs_X, index_X, d_X
 save n_r_Y, n_theta_Y, ncoeffs_Y, index_Y, d_Y
