@@ -703,7 +703,6 @@ module fields
    !
    job%swap_after = swap_after_
    job%max_swap_size = max_swap_size_
-   job%nroots = nroots_
    job%upper_ener = uv_syevr_
    job%thresh = small_
    trove%symmetry = 'C(M)'
@@ -711,8 +710,6 @@ module fields
    job%degen_threshold = 10.0**(-4-(ark/8))
    job%test_diag = .false.
    job%verbose = 2
-   !
-   job%select_gamma = .true.
    !
    job%eigenfile%filebase   = 'eigen'
    job%eigenfile%dscr       = 'eigen_descr'
@@ -1404,6 +1401,13 @@ module fields
              !
              !call readi(job%nroots)
              !
+             if (.not.symmetry_defined) then 
+                !
+                write (out,"('FLinput: keyword nroots cannot appear before symmetry is defined')") 
+                stop 'FLinput - symmetry should be defined before NROOTS '
+                !
+             endif
+             !
              if (nitems-1==1) then 
                 !
                 call readi(i)
@@ -1411,9 +1415,9 @@ module fields
                 !
              else
                !
-               if (nitems-1>20) then 
+               if (nitems-1>sym%Nrepresen) then 
                   !
-                  write (out,"('FLinput: too many entries in roots (>20): ',i8)") nitems-1
+                  write (out,"('FLinput: too many entries in roots (>sym%Nrepresen): ',i8)") nitems-1
                   stop 'FLinput - illigal number of entries in nroots'
                   !
                endif 
@@ -1589,8 +1593,12 @@ module fields
          allocate(job%select_gamma(sym%Nrepresen),stat=alloc)
          if (alloc/=0)  stop 'FLinput, select_gamma - out of memory'
          !
+         job%select_gamma = .true.
+         !
          allocate(job%nroots(sym%Nrepresen),stat=alloc)
          call ArrayStart('nroots:sym',alloc,size(job%nroots),kind(job%nroots))
+         !
+         job%nroots = nroots_
          !
          job%isym_do = .true.
          !

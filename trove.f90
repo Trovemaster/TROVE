@@ -186,7 +186,7 @@
       if (job%contrci_me_fast) then 
         !
         call PTstore_contr_matelem(j)
-        call PTcontracted_matelem_class_fast_II(j) 
+        call PTcontracted_matelem_class_fast(j) 
         !
         !call PTstore_contr_matelem_II(j)
         !

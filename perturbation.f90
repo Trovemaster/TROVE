@@ -1712,6 +1712,8 @@ module perturbation
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
                 switch = switch.and.lquant==min(krot,trove%krot)
+                !switch = switch.and.lquant==min(krot,trove%krot)
+                switch = switch.and.lquant==krot
              endif
           elseif(trove%lincoord/=0) then
              switch = switch.and.( lquant==krot.or.jrot==0 )
@@ -14842,7 +14844,7 @@ module perturbation
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
-    integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
+    integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice,k1_,k2_
     real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
                             matclass(:,:,:),hrot_t(:,:),gcor_t(:,:)
@@ -14850,7 +14852,7 @@ module perturbation
     !
     real(rk)           :: f_t
     integer(ik)        :: isize,iroot
-    integer(ik)        :: dimen_p,nroots,chkptIO,extF_rank,chkptIO_
+    integer(ik)        :: dimen_p,nroots,chkptIO,extF_rank,chkptIO_,dumpIO_
     integer(hik)       :: rootsize,rootsize_,matsize
     !
     logical            :: treat_rotation =.false.  ! switch off/on the rotation 
@@ -15083,7 +15085,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15414,15 +15416,44 @@ module perturbation
             hvib_t = 0
             job_is = 'gvib'
             !
+            if (job%matelem_append.or.job%IOmatelem_dump) then
+              !
+              islice = 0
+              !
+              call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+              if (job%matelem_append) then
+                read(dumpIO_) k1_,k2_,hvib_t
+                close(dumpIO_) 
+                if ( k1_>PT%Nmodes.or.k2_>PT%Nmodes ) then
+                 write(out,"('Wrong gvib indices ',2i9,' > ',i9,' in the gvib dump-chk file ')") k1_,k2_,PT%Nmodes
+                 stop 'Wrong record in the gvib dump-file'
+                endif
+              endif
+            endif
+            !
             do k1 = 1,PT%Nmodes
               !
               if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
               do k2 = 1,PT%Nmodes
                 !
-                if (job%IOmatelem_divide) then
-                  islice = islice + 1
-                  if (islice<iterm1.or.iterm2<islice) cycle
+                !if (job%IOmatelem_divide) then
+                !  islice = islice + 1
+                !  if (islice<iterm1.or.iterm2<islice) cycle
+                !endif
+                !
+                fl => me%gvib(k1,k2)
+                !
+                if (job%matelem_append) then
+                   !
+                   if ( k2+PT%Nmodes*(k1-1)<=k2_+PT%Nmodes*(k1_-1) ) cycle
+                   !islice = islice + 1
+                   !if (islice<iterm1.or.iterm2<islice) cycle
+                   !
+                   !read(dumpIO_) k1_,k2_,hvib_t
+                   !
+                   job%matelem_append = .false.
+                   !
                 endif
                 !
                 if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
@@ -15430,8 +15461,6 @@ module perturbation
                 gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
                 !
                 gvib_t = 0
-                !
-                fl => me%gvib(k1,k2)
                 !
                 do iterm = 1,gvib_N
                   !
@@ -15472,10 +15501,20 @@ module perturbation
                   enddo
                   !$omp end parallel do
                   !
+                endif
+                !
+                if (job%IOmatelem_dump.and..not.job%matelem_append) then
+                  !
+                  call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+                  write(dumpIO_) k1,k2,hvib_t
+                  close(dumpIO_)
+                  !
                 endif 
                 !
               enddo
             enddo
+            !
+            !if (job%IOmatelem_dump) close(dumpIO_)
             !
             !hvib_t = -0.5_rk*hvib_t
             !
@@ -16083,6 +16122,33 @@ module perturbation
         !
       end subroutine calc_contract_matrix_elements_II
       !
+      subroutine open_dump_slice(islice,name,suffix,append,dump,chkptIO)
+          !
+          integer(ik),intent(in) :: islice
+          character(len=*),intent(in) :: name,suffix
+          logical,intent(in) :: append,dump
+          integer(ik),intent(out)     :: chkptIO
+          character(len=4) :: jchar
+          character(len=cl) :: filename,job_is
+            !
+            write(job_is,"('dump matrix')")
+            !
+            call IOStart(trim(job_is),chkptIO)
+            !
+            write(jchar, '(i4)') islice
+            !
+            filename = trim(suffix)//trim(adjustl(jchar))//'_dump.chk'
+            !
+            if (append.and.dump) then 
+              open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
+            elseif(dump) then
+              open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
+            else
+              open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+            endif
+            !
+      end subroutine open_dump_slice
+      !
   end subroutine PTcontracted_matelem_class 
 
   !
@@ -16326,7 +16392,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
