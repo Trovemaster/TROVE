@@ -7,7 +7,7 @@ module fields
    use lapack
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
-                      ME_sinrho_polynomial_k_switch,integral_rect_ark,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
+                      ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
                       ME_laguerre_k
    use me_numer
    use me_rot
@@ -3906,6 +3906,10 @@ module fields
               call readu(w)
               !
               exfF_coeff_type = trim(w)
+              !
+            case("THRESHOLD")
+              !
+              call readf(extF%matelem_threshold)
               !
             case("COORDS")
               !
@@ -18287,7 +18291,11 @@ end subroutine check_read_save_none
                            !
                            phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
                            !
-                           trove%extF(imu)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
+                           mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                           !
+                           if (abs(mat_t)>extF%matelem_threshold) then
+                             trove%extF(imu)%me(iterm,vl,vr) = mat_t
+                           endif
                            !
                         enddo
                         !
@@ -19456,7 +19464,11 @@ end subroutine check_read_save_none
                    !
                    do vr = 0,bs%Size
                      !
-                     fl%me(icoeff,vl,vr) =  bs%matelements(3,ipower,vl,vr)*fl%field(icoeff,0)
+                     if (abs(bs%matelements(3,ipower,vl,vr)*fl%field(icoeff,0))>extF%matelem_threshold) then
+                       fl%me(icoeff,vl,vr) =  bs%matelements(3,ipower,vl,vr)*fl%field(icoeff,0)
+                     endif
+                     !
+                     !fl%me(icoeff,vl,vr) =  bs%matelements(3,ipower,vl,vr)*fl%field(icoeff,0)
                      !
                    enddo
                    !

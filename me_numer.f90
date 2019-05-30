@@ -11,7 +11,7 @@ module me_numer
   private  
 
   public ik, rk, out
-  public ME_numerov,simpsonintegral,simpsonintegral_ark
+  public ME_numerov,simpsonintegral,simpsonintegral_ark,integral_rect_ark
 
   !
   real(ark), parameter :: enermax=  700000.0_rk   !  Upper limit for the energy search (1/cm)
@@ -266,13 +266,13 @@ module me_numer
             !
             phivphi(:) = phil(:)*poten_(:)*phir(:)
             !
-            h_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            h_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
             phivphi(:) =-dphil(:)*mu_rr_(:)*dphir(:)
             !
-            psipsi_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -290,7 +290,8 @@ module me_numer
                   phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
                endif
                !
-               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               !g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! external field expansion
                !
@@ -300,7 +301,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
                endif
                !
-               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
                ! momenta-free in kinetic part 
@@ -311,7 +312,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
                endif
                !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -327,7 +328,7 @@ module me_numer
                   phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
@@ -341,7 +342,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
                   !
@@ -351,7 +352,7 @@ module me_numer
                      phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
                   endif
                   !
-                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
                endif 
                !
@@ -674,7 +675,7 @@ module me_numer
            !
            phi_t(:) = phi_f(:)/sqrt(mu_rr(:))
            !
-           tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
+           tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
            !
            phi_t(:)=phi_t(:)/sqrt(tsum)
            !
@@ -721,7 +722,7 @@ module me_numer
            !
            phi_t(:) = phi_f(:)/sqrt(mu_rr(:))
            !
-           tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
+           tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
            !
            phi_t(:)=phi_t(:)/sqrt(tsum)
            !
@@ -921,7 +922,7 @@ module me_numer
      !
      !   numerical intagration with simpson's rule #2
      !
-     tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t)
+     tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t)
      !
      phi_f(:)=phi_f(:)/sqrt(tsum)
      !
@@ -1656,6 +1657,30 @@ module me_numer
      si =  h/3.0_ark*( 4.0_ark*fodd + 2.0_ark*feven + f0 + fmax)
 
   end function  simpsonintegral
+
+
+! integration with Simpson rules 
+!                                      
+  function integral_rect_ark(npoints,xmax,f) result (si) 
+    integer(ik),intent(in) :: npoints
+    !
+    real(ark),intent(in) :: xmax,f(0:npoints)
+    !
+    real(ark) :: si
+    !
+    integer(ik) :: i
+    !
+    real(ark) ::  feven,fodd,f0,fmax,h
+     !
+     h = xmax/real(Npoints,kind=ark)  !   integration step   
+     !
+     !  sum of odd and even contributions 
+     !
+     si = sum(f)*h
+     !
+     !si  = simpsonintegral_ark(npoints,xmax,f)
+     !
+  end function  integral_rect_ark
 
 
 

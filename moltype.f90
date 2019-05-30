@@ -163,7 +163,8 @@ module moltype
      character(cl), pointer :: intcoords(:)
      real(ark), pointer     :: geom_ref(:)
      integer(ik)            :: irho_ref
-     character(cl)          :: ftype = 'GENERAL'        ! field type 
+     character(cl)          :: ftype = 'GENERAL'  ! field type 
+     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, required to reduce numerical noice in overtone intensities
   end type MLext_locexp
 
   !

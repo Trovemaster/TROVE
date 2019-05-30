@@ -8,7 +8,7 @@ module me_bnd
   implicit none
 
   public ik, rk, out
-  public integral_rect_ark,degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,&
+  public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,&
          ME_sinrho_polynomial_k,ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
 
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
@@ -6399,30 +6399,6 @@ function ark_factorial ( n )
   return
 end function ark_factorial
 
-
-
-! integration with Simpson rules 
-!                                      
-  function integral_rect_ark(npoints,xmax,f) result (si) 
-    integer(ik),intent(in) :: npoints
-    !
-    real(ark),intent(in) :: xmax,f(0:npoints)
-    !
-    real(ark) :: si
-    !
-    integer(ik) :: i
-    !
-    real(ark) ::  feven,fodd,f0,fmax,h
-     !
-     h = xmax/real(Npoints,kind=ark)  !   integration step   
-     !
-     !  sum of odd and even contributions 
-     !
-     si = sum(f)*h
-     !
-     !si  = simpsonintegral_ark(npoints,xmax,f)
-     !
-  end function  integral_rect_ark
 
 
   !
