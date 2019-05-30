@@ -4157,7 +4157,7 @@ module me_bnd
        do vl =  0,nmax
          !
          phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
-         cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+         cross_prod = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
          !
          !cross_prod = sum(psi(vl+1,:)*psi(vl+1,:))*rhostep
          !
@@ -4170,14 +4170,14 @@ module me_bnd
          do vr = vl+1,nmax
            !
            phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
-           cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+           cross_prod = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
            !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
            !
            psi(vr+1,:) = psi(vr+1,:)-cross_prod*psi(vl+1,:)
            !
            phivphi(:) = psi(vr+1,:)*psi(vr+1,:)
-           factor = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+           factor = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
            !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
            !
@@ -4207,7 +4207,7 @@ module me_bnd
               ! check orthagonality and noralisation
               !
               phivphi(:) = phil(:)*phir(:)
-              psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
@@ -4215,12 +4215,12 @@ module me_bnd
               !
               phivphi(:) = phil(:)*poten(:)*phir(:)
               !
-              h(vl+1,vr+1) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              h(vl+1,vr+1) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! pseudo-part
               !
               phivphi(:) = phil_s(:)*pseudo(:)*phir_s(:)
-              ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              ps_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               h(vl+1,vr+1) = h(vl+1,vr+1) + ps_t
               !
@@ -4231,7 +4231,7 @@ module me_bnd
               !phivphi(:) =-mu_rr(:)*( dphil(:)*dphir(:)*rho_m(:)- &
               !                        cosrho(:)*real(k,ark)*( dphil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
               !
-              mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              mu_rr_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               mu_zz_t = 0
               !
@@ -4239,7 +4239,7 @@ module me_bnd
                 !
                 phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*rho(:)
                 !
-                mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                mu_zz_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
               endif
               !
@@ -4334,7 +4334,7 @@ module me_bnd
               ! check orthagonality and noralisation
               !
               phivphi(:) = phil(:)*phir(:)*rho(:)*rho_m(:)**2
-              psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
@@ -4342,18 +4342,18 @@ module me_bnd
               !
               phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)*rho_m(:)**2
               !
-              h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              h_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! pseudo-part
               !
               phivphi(:) = phil(:)*pseudo(:)*phir(:)*rho_m(:)**2
-              ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              ps_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! momenta-quadratic part 
               !
               phivphi(:) =-mu_rr(:)*dphil(:)*dphir(:)*rho(:)
               !
-              mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+              mu_rr_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               mu_zz_t = 0
               !
@@ -4361,7 +4361,7 @@ module me_bnd
                 !
                 phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*rho(:)
                 !
-                mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                mu_zz_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
               endif
               !
@@ -4413,7 +4413,7 @@ module me_bnd
                     phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
                  endif
                  !
-                 g_numerov(0,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 g_numerov(0,lambda,il,ir) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  !
                  ! external field expansion
                  !
@@ -4423,7 +4423,7 @@ module me_bnd
                     phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
                  endif
                  !
-                 g_numerov(3,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 g_numerov(3,lambda,il,ir) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  if (il/=ir) g_numerov(3,lambda,ir,il) = g_numerov(3,lambda,il,ir)
                  !
                  ! momenta-free in kinetic part 
@@ -4434,7 +4434,7 @@ module me_bnd
                     phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
                  endif
                  !
-                 g_numerov(-1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 g_numerov(-1,lambda,il,ir) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  !
                  ! We also control the orthogonality of the basis set 
                  !
@@ -4450,7 +4450,7 @@ module me_bnd
                     phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
                  endif
                  !
-                 g_numerov(2,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 g_numerov(2,lambda,il,ir) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  !
                  if (vl/=vr) g_numerov(2,lambda,ir,il) = g_numerov(2,lambda,il,ir)
                  !
@@ -4464,7 +4464,7 @@ module me_bnd
                     phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
                  endif
                  !
-                 g_numerov(1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 g_numerov(1,lambda,il,ir) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  !
                  if (vl/=vr) then
                     !
@@ -4474,7 +4474,7 @@ module me_bnd
                        phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
                     endif
                     !
-                    g_numerov(1,lambda,ir,il) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                    g_numerov(1,lambda,ir,il) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                     !
                  endif 
                  !

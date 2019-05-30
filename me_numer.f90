@@ -266,13 +266,13 @@ module me_numer
             !
             phivphi(:) = phil(:)*poten_(:)*phir(:)
             !
-            h_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            h_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
             phivphi(:) =-dphil(:)*mu_rr_(:)*dphir(:)
             !
-            psipsi_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -291,7 +291,7 @@ module me_numer
                endif
                !
                !g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! external field expansion
                !
@@ -301,7 +301,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
                endif
                !
-               g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
                ! momenta-free in kinetic part 
@@ -312,7 +312,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
                endif
                !
-               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -328,7 +328,7 @@ module me_numer
                   phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
@@ -342,7 +342,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
                   !
@@ -352,7 +352,7 @@ module me_numer
                      phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
                   endif
                   !
-                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
                endif 
                !
@@ -675,7 +675,7 @@ module me_numer
            !
            phi_t(:) = phi_f(:)/sqrt(mu_rr(:))
            !
-           tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
+           tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
            !
            phi_t(:)=phi_t(:)/sqrt(tsum)
            !
@@ -722,7 +722,7 @@ module me_numer
            !
            phi_t(:) = phi_f(:)/sqrt(mu_rr(:))
            !
-           tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
+           tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t(:)**2)
            !
            phi_t(:)=phi_t(:)/sqrt(tsum)
            !
@@ -922,7 +922,7 @@ module me_numer
      !
      !   numerical intagration with simpson's rule #2
      !
-     tsum = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi_t)
+     tsum = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phi_t)
      !
      phi_f(:)=phi_f(:)/sqrt(tsum)
      !
