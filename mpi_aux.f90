@@ -263,7 +263,7 @@ contains
     call co_create_type(dimen)
     deallocate(starts,ends)
 
-    call co_init_pblas()
+    !call co_init_pblas()
 
     distr_inited = .true.
   end subroutine co_init_distr
