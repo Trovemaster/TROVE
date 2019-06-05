@@ -464,6 +464,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xy2_coeff
         !
+    case('XY2_PQ_SIN')
+        !
+        MLextF_func => MLdms2pqr_xy2_sin
+        !
     case('DIPOLE_SO2_AMES1')
         !
         MLextF_func => MLdipole_so2_ames1
