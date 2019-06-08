@@ -258,6 +258,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy2_dmbe
          !
+    case('POTEN_H2O_BUBUKINA') 
+         !
+         MLpotentialfunc => MLpoten_xy2_bubukina
+         !
     case('POTEN_XY2_TYUTEREV') 
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev

@@ -13,7 +13,7 @@ module pot_xy2
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
-         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_sin
+         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_sin,MLpoten_xy2_bubukina
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -2211,9 +2211,9 @@ endif
        ! 
        xcos = cos(alpha)
        !
-       call potv(v,r12,r32,xcos)
-       !v = 0
-       v = v*tocm
+       !call potv(v,r12,r32,xcos)
+       v = 0
+       !v = v*tocm
        !
        !v = v + MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force)
        !
@@ -3109,7 +3109,8 @@ endif
     !
     y1 = r1 - re
     y2 = r2 - re
-    y3 = cos(alpha) - cos(ae)
+    !y3 = cos(alpha) - cos(ae)
+    y3 = alpha
     !
     k = extF%nterms(1)
     !
@@ -3269,7 +3270,8 @@ endif
     !
     y1 = (r1 - re)
     y2 = (r2 - re)
-    y3 = sin(alpha)
+    !y3 = sin(alpha)
+    y3 = alpha
     !
     k = extF%nterms(2) 
     !
