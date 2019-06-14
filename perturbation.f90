@@ -6532,7 +6532,9 @@ module perturbation
     character(len=cl)  :: unitfname,filename,statusf,symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
+    !AT
     type(MPI_File) :: mpiiofile
+    integer :: startdim,enddim,localrootsize
     !
     ! A special case when the diagonlization is to be skipped 
     !
@@ -6851,7 +6853,6 @@ module perturbation
     task = 'top'
     !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
     call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-      !PT, PTvibrational_me_calc,grot,gcor,hvib, &
       ncontr,maxcontr)
     !
     ! We have two calculation options: fast and cheap and slow but expensive.  
@@ -7089,6 +7090,11 @@ module perturbation
       if (FLrotation.and.jrot/=0.and..not.job%vib_rot_contr) then 
         !
         if (job%verbose>=4) write(out,"('   Rotational part...')")
+    !
+        ! AT - Initialise parallel distribution (if not done yet)
+        ! TODO - find correct spot to place this w/ appropriate guard clauses
+        ! NOTE don't know `ncontr` until after calling PTrestore.. with `task=='top'`
+        call co_init_distr(ncontr, startdim, enddim, localrootsize)
         !
         task = 'rot'
         !
@@ -7729,7 +7735,7 @@ module perturbation
     endif
   end subroutine close_chkptfile_mpi
 
-  subroutine PTrestore_rot_kinetic_matrix_elements_MPI(jrot, task, fileh, dimen, &
+  subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, fileh, dimen, &
       !PT, PTvibrational_me_calc,grot,gcor,hvib, &
       ncontr, maxcontr, icontr)
     use mpi_f08
@@ -7758,6 +7764,9 @@ module perturbation
     real(rk) :: f_t
 
     integer :: k1,k2,islice
+    !AT
+    integer      :: localmatrix_x,localmatrix_y
+    integer(hik) :: localrootsize
 
     if ( trim(job%IOkinet_action)/='VIB_READ'.and.trim(job%IOkinet_action)/='READ'.and..not.job%contrci_me_fast) return
 
@@ -7772,11 +7781,18 @@ module perturbation
     !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
 
     call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
-    call MPI_Type_size(mpi_integer, mpi_real_size,ierr)
+    call MPI_Type_size(mpi_integer, mpi_int_size,ierr)
 
     if (mpi_rank .eq. 0 .and. (job%verbose>=6.and.present(icontr)) ) write(out,"('icontr = ',i9)") icontr
 
-    if (mpi_rank .eq. 0) write(*,*) "DEBUG|TASK =", task
+    !AT - determine task-local matrix dimensions
+    if (comm_size.eq.1) then
+      localmatrix_y = ncontr
+    else
+      localmatrix_y = int(1+real(ncontr/comm_size))*comm_size
+    endif
+    localmatrix_x = co_enddim-co_startdim+1
+    localrootsize = int(localmatrix_x*localmatrix_y,hik)
 
     select case (trim(task))
     case('top')
@@ -7787,7 +7803,6 @@ module perturbation
 
       !TODO set filename dynamically
       filename = trim(job%matelem_suffix)//'.chk'
-      write(*,*) "FILENAME", filename
 
       call open_chkptfile_mpi(fileh, filename, 'read')
 
@@ -7853,7 +7868,7 @@ module perturbation
         file_offset = (PT%Nclasses+1)*ncontr*mpi_int_size
         call mpi_file_seek(fileh, file_offset,  MPI_SEEK_CUR)
 
-        deallocate(imat_t)
+        !deallocate(imat_t)
 
       else
 
@@ -7930,7 +7945,7 @@ module perturbation
       !
       ! Read the rotational part only 
       !
-      allocate(mat_(maxcontr,maxcontr),stat=ierr)
+      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
       call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
       !
       if (.not.job%IOmatelem_split) then
@@ -7946,6 +7961,28 @@ module perturbation
       !
       allocate(grot(3,3),stat=ierr)
       !
+      !islice = 0
+      !
+      !do k1 = 1,3
+      !  !
+      !  do k2 = 1,3
+      !    !
+      !    islice = islice + 1
+      !    !
+      !    call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
+      !    !
+      !    allocate(grot(k1,k2)%me(maxcontr,maxcontr),stat=ierr)
+      !    call ArrayStart('grot-matrix',ierr,1,kind(f_t),rootsize2_)
+      !    !
+      !    call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
+      !    !
+      !    grot(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+      !    !
+      !    call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
+      !    !
+      !  enddo
+      !enddo
+      !
       islice = 0
       !
       do k1 = 1,3
@@ -7956,19 +7993,16 @@ module perturbation
           !
           call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
           !
-          allocate(grot(k1,k2)%me(maxcontr,maxcontr),stat=ierr)
-          call ArrayStart('grot-matrix',ierr,1,kind(f_t),rootsize2_)
+          allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+          call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
           !
-          call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-          !
-          grot(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+          call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh)
           !
           call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
           !
         enddo
       enddo
-      !
-      deallocate(mat_)
+      !deallocate(mat_)
       call ArrayStop('PThamiltonian_contract: mat_')
       !
       if (job%verbose>=4) write(out,"('   ...done!')")
@@ -7977,8 +8011,8 @@ module perturbation
       !
       if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   Read and process Coriolis part...')")
       !
-      allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
+      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
+      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
       !
       if (.not.job%IOmatelem_split) then
         !
@@ -7995,25 +8029,40 @@ module perturbation
       !
       islice  = 9
       !
+      !do k1 = 1,3
+      !  !
+      !  islice = islice + 1
+      !  !
+      !  allocate(gcor(k1)%me(maxcontr,maxcontr),stat=ierr)
+      !  call ArrayStart('gcor-matrix',ierr,1,kind(f_t),rootsize2_)
+      !  !
+      !  call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
+      !  !
+      !  call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
+      !  !
+      !  gcor(k1)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+      !  !
+      !  call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
+      !  !
+      !enddo
+      !
       do k1 = 1,3
         !
         islice = islice + 1
         !
-        allocate(gcor(k1)%me(maxcontr,maxcontr),stat=ierr)
-        call ArrayStart('gcor-matrix',ierr,1,kind(f_t),rootsize2_)
+        allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+        call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
         !
         call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
         !
-        call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-        !
-        gcor(k1)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+        call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh)
         !
         call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
         !
       enddo
       !
-      deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
+      !deallocate(mat_)
+      !call ArrayStop('PThamiltonian_contract: mat_')
       !
       if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   ...done!')")
       !
@@ -8023,8 +8072,8 @@ module perturbation
       !
       if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
         !
-        allocate(mat_t(maxcontr,maxcontr),stat=ierr)
-        call ArrayStart('PThamiltonian_contract: mat_t',ierr,1,kind(mat_t),rootsize2_)
+        !allocate(mat_t(maxcontr,maxcontr),stat=ierr)
+        !call ArrayStart('PThamiltonian_contract: mat_t',ierr,1,kind(mat_t),rootsize2_)
         !
         call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
         if (readbuf(1:5)/='g_rot') then
@@ -8033,13 +8082,15 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-        do k1 = 1,3
-          do k2 = 1,3
-            !
-            call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-            !
-          enddo
-        enddo
+        !do k1 = 1,3
+        !  do k2 = 1,3
+        !    !
+        !    call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
+        !    !
+        !  enddo
+        !enddo
+        file_offset = 9*ncontr*ncontr*mpi_real_size
+        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
         call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
         if (readbuf(1:5)/='g_cor') then
@@ -8048,16 +8099,18 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        !do k1 = 1,PT%Nmodes
-        do k2 = 1,3
-          !
-          call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-          !
-        enddo
+        !!do k1 = 1,PT%Nmodes
+        !do k2 = 1,3
+        !  !
+        !  call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
+        !  !
         !enddo
+        !!enddo
+        file_offset = 3*ncontr*ncontr*mpi_real_size
+        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
-        deallocate(mat_t)
-        call ArrayStop('mat_t')
+        !deallocate(mat_t)
+        !call ArrayStop('mat_t')
         !
       endif
       !
@@ -8074,18 +8127,19 @@ module perturbation
         stop 'PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
       end if
       !
-      allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
+      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
+      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
       !
-      allocate(hvib%me(maxcontr,maxcontr),stat=ierr)
-      call ArrayStart('hvib-matrix',ierr,1,kind(f_t),rootsize2_)
+      allocate(hvib%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+      call ArrayStart('hvib-matrix',ierr,1,kind(f_t),localrootsize)
       !
-      call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
+      call co_read_matrix_distr(hvib%me, ncontr, co_startdim, co_enddim, fileh)
+      !call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
       !
-      hvib%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
+      !hvib%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
       !
-      deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
+      !deallocate(mat_)
+      !call ArrayStop('PThamiltonian_contract: mat_')
       !
       call MPI_File_read_all(fileh, readbuf, 16, mpi_character, mpi_status_ignore, ierr)
       if (readbuf(1:16)/='End Kinetic part') then
@@ -9834,7 +9888,6 @@ module perturbation
      !
      ! diagonalization schemes 
      !
-     write(*,*) "DIAGONALIZER", trim(job%diagonalizer)
      select case (trim(job%diagonalizer)) 
      !
      case default
@@ -15290,11 +15343,15 @@ module perturbation
       rootsize = int(mdimen*mdimen,hik)
       call co_init_distr(mdimen, startdim, enddim, blocksize_)
       allocate(reqs(comm_size))
-      write(*,*) "SENDRECV:", mpi_rank, send_or_recv
+      !write(*,*) "SENDRECV:", mpi_rank, send_or_recv, startdim, enddim
 
-      mdimen_p = int(1+real(mdimen/comm_size))
-      mdimen_b = comm_size*mdimen_p
-      !DEBUG!write(*,*) "DIMS", mpi_rank, mdimen, mdimen_b, mdimen_p, comm_size*mdimen_b*mdimen_p
+      if (comm_size .gt. 1) then
+        mdimen_p = int(1+real(mdimen/comm_size))
+        mdimen_b = comm_size*mdimen_p
+      else
+        mdimen_p = mdimen
+        mdimen_b = mdimen
+      endif
       blocksize = blocksize_
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 

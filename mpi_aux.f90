@@ -5,7 +5,6 @@ module mpi_aux
   implicit none
 
   public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr, co_read_matrix_distr
-  public co_create_type
 
   public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
@@ -179,16 +178,22 @@ contains
     integer :: i, ierr, to_calc
 
     if (.not. comms_inited) stop "COMMS NOT INITIALISED"
-    if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
+    !if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
 
     proc_index = mpi_rank+1
 
-    allocate(proc_sizes(comm_size),proc_offsets(comm_size),send_or_recv(comm_size),starts(comm_size),ends(comm_size),stat=ierr)
-    if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
+    if (.not. distr_inited) then
+      allocate(proc_sizes(comm_size),proc_offsets(comm_size),send_or_recv(comm_size),starts(comm_size),ends(comm_size),stat=ierr)
+      if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
+    else
+      allocate(starts(comm_size),ends(comm_size),stat=ierr)
+    endif
 
     if (comm_size .eq. 1) then
       startdim = 1
       enddim = dimen
+      co_startdim = 1
+      co_enddim = dimen
       blocksize = dimen*dimen
       send_or_recv(1) = 0
     else
@@ -231,7 +236,9 @@ contains
       co_startdim = startdim
       co_enddim = enddim
 
-      allocate(mpi_blocktype(comm_size))
+      if(.not. distr_inited) then
+        allocate(mpi_blocktype(comm_size))
+      endif
 
       do i=1,comm_size
         if (mod(comm_size,2).eq.1) then
@@ -260,7 +267,12 @@ contains
 
     endif
 
-    call co_create_type(dimen)
+    if (comm_size .eq. 1) then
+      call co_create_type_column(dimen,dimen,dimen)
+    else
+      call co_create_type_column(dimen,comm_size*(int(1+real(dimen/comm_size))),enddim-startdim+1)
+    endif
+
     deallocate(starts,ends)
 
     !call co_init_pblas()
@@ -279,6 +291,8 @@ contains
 
     integer :: i, icoeff, jcoeff, offset, ierr, k
     type(MPI_Request)  :: reqs(comm_size)
+
+    if (comm_size.eq.1) return
 
     call TimerStart('MPI_transpose')
     call TimerStart('MPI_transpose_sendrecv')
@@ -329,21 +343,18 @@ contains
     integer(kind=MPI_Offset_kind) :: offset_start,offset_end
     integer :: readcount, mpi_real_size, ierr
 
-    call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
+    if (comm_size.gt.1) then
+      call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
 
-    if (mpi_rank .lt. (comm_size-1)) then
-      readcount = int(1+real(longdim/comm_size))
+      offset_start = (lb-1)*longdim*mpi_real_size
+      offset_end = (longdim-ub)*longdim*mpi_real_size
+
+      call MPI_File_seek(infile, offset_start, MPI_SEEK_CUR)
+      call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
+      call MPI_File_seek(infile, offset_end, MPI_SEEK_CUR)
     else
-      readcount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
+      call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
     endif
-
-    offset_start = mpi_rank * (longdim * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_real_size)
-    offset_end = longdim
-    offset_end = (offset_end * offset_end * mpi_real_size) - offset_start
-
-    call MPI_File_seek(infile, offset_start, MPI_SEEK_CUR)
-    call MPI_File_read_all(infile,x,readcount,mpitype_column,writestat,ierr)
-    call MPI_File_seek(infile, offset_end, MPI_SEEK_CUR)
 
   end subroutine co_read_matrix_distr
 
@@ -353,8 +364,7 @@ contains
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
     type(MPI_File),intent(in) :: outfile
-    integer :: ierr, mpi_real_size, writecount, mpi_col_size
-    !integer(kind=MPI_Offset_kind) :: mpioffset,mpi_write_offsetkind
+    integer :: ierr, mpi_real_size
     integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
 
@@ -362,33 +372,31 @@ contains
 
     call TimerStart('MPI_write')
 
-    call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
-    call MPI_Type_size(mpitype_column, mpi_col_size,ierr)
+    if (comm_size.gt.1) then
+      call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
 
-    if (mpi_rank .lt. (comm_size-1)) then
-      writecount = int(1+real(longdim/comm_size))
+      offset_start = (lb-1)*longdim*mpi_real_size
+      offset_end = 0
+
+      call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
+      call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)
+      call MPI_File_seek(outfile, offset_end, MPI_SEEK_END)
     else
-      writecount = longdim-((comm_size-1)*int(1+real(longdim/comm_size)))
+      call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)
     endif
 
-    offset_start = mpi_rank * int(1+real(longdim/comm_size),mpi_offset_kind) * mpi_col_size
-    offset_end = 0
-
-    call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
-    call MPI_File_write_all(outfile,x,writecount,mpitype_column,writestat,ierr)
-    call MPI_File_seek(outfile, offset_end, MPI_SEEK_END)
     call TimerStop('MPI_write')
 
   end subroutine co_write_matrix_distr
 
-  subroutine co_create_type(extent)
-    integer, intent(in) :: extent
-    integer :: ierr
+  subroutine co_create_type_column(extent, blocksize, ncols)
+    integer, intent(in) :: extent, blocksize, ncols
+    integer :: ierr,writecount
 
-    call MPI_Type_contiguous(extent, mpi_double_precision, mpitype_column, ierr)
+    call MPI_Type_vector(ncols, extent, blocksize, mpi_double_precision, mpitype_column, ierr)
     call MPI_Type_commit(mpitype_column, ierr)
 
-  end subroutine co_create_type
+  end subroutine co_create_type_column
 
   subroutine co_create_type_subarray(extent, coldim, rowdim, blockid, mpi_newtype)
     integer,intent(in) :: extent, coldim, rowdim, blockid

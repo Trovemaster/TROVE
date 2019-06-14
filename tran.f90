@@ -1403,23 +1403,28 @@ contains
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-          !open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kineteigen_file)
-          !write(chkptIO) 'Start Kinetic part'
-          call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
-          call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
-          mpioffset = 0
-          call MPI_File_set_size(fileh_w, mpioffset, ierr)
-          call MPI_File_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
-          call MPI_File_write(fileh_w, 'Start Kinetic part', 18, mpi_character, mpi_status_ignore, ierr)
-          !
-          treat_vibration = .false.
-          !
-          !call PTstore_icontr_cnu(Neigenroots,chkptIO,job%IOj0matel_action)
-          call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
-          !
-          if (job%vib_rot_contr) then
-            !write(chkptIO) 'vib-rot'
-            call MPI_File_write(fileh_w, 'vib-rot', 7, mpi_character, mpi_status_ignore, ierr)
+            !open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kineteigen_file)
+            !write(chkptIO) 'Start Kinetic part'
+            call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
+            call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
+            mpioffset = 0
+            call MPI_File_set_size(fileh_w, mpioffset, ierr)
+          if(mpi_rank .eq. 0) then
+            call MPI_File_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
+            call MPI_File_write(fileh_w, 'Start Kinetic part', 18, mpi_character, mpi_status_ignore, ierr)
+            !
+            treat_vibration = .false.
+            !
+            !call PTstore_icontr_cnu(Neigenroots,chkptIO,job%IOj0matel_action)
+            call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
+            !
+            if (job%vib_rot_contr) then
+              !write(chkptIO) 'vib-rot'
+              call MPI_File_write(fileh_w, 'vib-rot', 7, mpi_character, mpi_status_ignore, ierr)
+            endif
+          else
+            mpioffset = 0
+            treat_vibration = .false.
           endif
           !
         endif
@@ -1459,7 +1464,7 @@ contains
           task = 'rot'
           !
           !write(chkptIO) 'g_rot'
-          call MPI_File_write(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
+          if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
           !
           !call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
           call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
@@ -1511,16 +1516,16 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s)
+              if(mpi_rank.eq.0) call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
-              call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
+              if(mpi_rank.eq.0) call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
               !
             else
               !
               !write (chkptIO) mat_s
-              call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+              if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
               !
             endif
             !
@@ -1541,7 +1546,7 @@ contains
           call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
           !
           !write(chkptIO) 'g_cor'
-          call MPI_File_write(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
+          if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
           !
         endif
         !
@@ -1584,16 +1589,16 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s)
+              if(mpi_rank.eq.0) call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
-              call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
+              if(mpi_rank.eq.0) call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s)
               !
             else
               !
               !write (chkptIO) mat_s
-              call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+              if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
               !
             endif
             !
@@ -1604,7 +1609,7 @@ contains
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
         !if (.not.job%IOmatelem_split.or.job%iswap(1)==1) write(chkptIO) 'End Kinetic part'
-        if (.not.job%IOmatelem_split.or.job%iswap(1)==1) call MPI_File_write(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
+        if ((.not.job%IOmatelem_split.or.job%iswap(1)==1).and.(mpi_rank.eq.0)) call MPI_File_write(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
         !
         if (.not.job%vib_rot_contr) then 
           !close(chkptIO,status='keep')
@@ -1692,13 +1697,15 @@ contains
           call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
           mpioffset = 0
           call MPI_File_set_size(fileh_w, mpioffset, ierr)
+          if(mpi_rank.eq.0) then
           call MPI_File_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
           call MPI_File_write(fileh_w, 'Start external field', 20, mpi_character, mpi_status_ignore, ierr)
+          endif
           !
           ! store the matrix elements 
           !
           !write(chkptIO) Neigenroots
-          call MPI_File_write(fileh_w, Neigenroots, 1, mpi_integer, mpi_status_ignore, ierr)
+          if(mpi_rank.eq.0) call MPI_File_write(fileh_w, Neigenroots, 1, mpi_integer, mpi_status_ignore, ierr)
           !
         endif
         !
@@ -1769,12 +1776,12 @@ contains
             !
             !write(chkptIO) imu
             !write(chkptIO) mat_s
-            call MPI_File_write_all(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
-            call MPI_File_write_all(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
+            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
             !
           else
             !
-            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
+            if(mpi_rank.eq.0) call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
             !
           endif
           !
@@ -1803,7 +1810,7 @@ contains
         if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
           !
           !write(chkptIO) 'End external field'
-          call MPI_File_write_all(fileh_w, 'End external field', 18, mpi_character, mpi_status_ignore, ierr)
+          if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'End external field', 18, mpi_character, mpi_status_ignore, ierr)
           !close(chkptIO,status='keep')
           call MPI_File_close(fileh_w, ierr)
           !
@@ -2312,12 +2319,12 @@ contains
      !read(chkptIO) buf18
      call MPI_File_read_all(fileh, buf18, 7, mpi_character, mpi_status_ignore, ierr)
      if (buf18(1:7)/='[MPIIO]') then
-       write (out,"(' Vib. kinetic checkpoint file ',a,' is not an MPIIO file: ',a)") 'mpiiofile',buf18
+       write (out,"(' Vib. kinetic checkpoint file ',a,' is not an MPIIO file: ',a)") job%kinetmat_file,buf18
        stop 'PTcontracted_matelem_class - Not an MPIIO file'
      end if
      call MPI_File_read_all(fileh, buf18, 18, mpi_character, mpi_status_ignore, ierr)
      if (buf18/='Start Kinetic part') then
-       write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus header: ',a)") 'mpiiofile',buf18
+       write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus header: ',a)") job%kinetmat_file,buf18
        stop 'PTcontracted_matelem_class - bogus file format'
      end if
      !
