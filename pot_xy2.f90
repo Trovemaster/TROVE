@@ -13,7 +13,7 @@ module pot_xy2
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
-         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_sin,MLpoten_xy2_bubukina
+         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -2650,7 +2650,7 @@ endif
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: k
-    real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae
+    real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae,b0
     real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8,xyz0(natoms,3)
     !
     ! xyz are undefined for the local case
@@ -2698,9 +2698,10 @@ endif
     !
     re = extF%coef(1,1)
     ae = extF%coef(2,1)*pi/180.0_ark
+    b0 = extF%coef(3,1)
     !
-    y1 = r1 - re
-    y2 = r2 - re
+    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
+    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
     y3 = cos(alpha) - cos(ae)
     !
     k = extF%nterms(1)
@@ -2858,9 +2859,10 @@ endif
     !
     re = extF%coef(1,2)
     ae = extF%coef(2,2)*pi/180.0_ark
+    b0 = extF%coef(3,2)
     !
-    y1 = r1 - re
-    y2 = r2 - re
+    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
+    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
     y3 = cos(alpha) - cos(ae)
     !
     k = extF%nterms(2) 
@@ -3051,14 +3053,14 @@ endif
 
  !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
  !
- recursive subroutine MLdms2pqr_xy2_sin(rank,ncoords,natoms,local,xyz,f)
+ recursive subroutine MLdms2pqr_xy2_linear(rank,ncoords,natoms,local,xyz,f)
 
     integer(ik),intent(in) ::  rank,ncoords,natoms
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: k
-    real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae
+    real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae,b0
     real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8,xyz0(natoms,3)
     !
     ! xyz are undefined for the local case
@@ -3066,8 +3068,8 @@ endif
       !
       select case(trim(molec%coords_transform))
       case default
-         write (out,"('MLdms2pqr_xy2_sin: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xy2_sin - bad coord. type'
+         write (out,"('MLdms2pqr_xy2_linear: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'MLdms2pqr_xy2_linear - bad coord. type'
       case('R-RHO-Z')
          !
          xyz0 = MLloc2pqr_xy2(local)
@@ -3106,11 +3108,12 @@ endif
     !
     re = extF%coef(1,1)
     ae = extF%coef(2,1)*pi/180.0_ark
+    b0 = extF%coef(3,1)
     !
-    y1 = r1 - re
-    y2 = r2 - re
-    !y3 = cos(alpha) - cos(ae)
-    y3 = alpha
+    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
+    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
+    !
+    y3 = alpha-ae
     !
     k = extF%nterms(1)
     !
@@ -3267,11 +3270,12 @@ endif
     !
     re = extF%coef(1,2)
     ae = extF%coef(2,2)*pi/180.0_ark
+    b0 = extF%coef(3,1)
     !
-    y1 = (r1 - re)
-    y2 = (r2 - re)
-    !y3 = sin(alpha)
-    y3 = alpha
+    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
+    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
+    !
+    y3 = alpha-ae
     !
     k = extF%nterms(2) 
     !
@@ -3454,7 +3458,7 @@ endif
     !
     f(1:3) = matmul(mu,tmat)
     !
- end subroutine MLdms2pqr_xy2_sin
+ end subroutine MLdms2pqr_xy2_linear
 
 
 

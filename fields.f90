@@ -438,6 +438,7 @@ module fields
       integer(ik)         :: dens_list(1:100) = -1      ! List of eigenvalues for the reduced density analysis 
       integer(ik)         :: j_list(1:100) = -1
       integer(ik)         :: sym_list(1:100) = -1
+      real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
       !
    end type FLanalysisT
 
@@ -2853,6 +2854,8 @@ module fields
            case('PRINT_VECTOR')
              !
              analysis%print_vector = .true.
+             !
+             if (nitems>1) call readf(analysis%threshold)
              !
            case('ROT_MATRIX')
              !
@@ -5877,7 +5880,7 @@ end subroutine check_read_save_none
             !
             call polintark(rho_(1:k),func_(1:k),rho,fval,df)
             !
-            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*1e5*sqrt(small_),1e3*sqrt(small_)) ) then
+            if ( abs(fval-object%field(iterm,irho))>max(abs(object%field(iterm,irho))*1e4*sqrt(small_),1e3*sqrt(small_)) ) then
                !
                outliers = .true.
                outlier(irho) = 1
@@ -16876,7 +16879,7 @@ end subroutine check_read_save_none
              !
              if (trove%specparam(bs%mode(1))>0d0 ) then
                 !
-                f_t = trove%specparam(bs%mode(1))**2*0.25_ark/g_t
+                f_t = trove%specparam(bs%mode(1))**2*g_t
                 !
                 if (job%verbose>=5) then
                   write(out,"('the input special-parameter ',f18.8,' will be used to obtain m for laguarre basis')") & 

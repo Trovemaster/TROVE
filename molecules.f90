@@ -29,7 +29,7 @@ module molecules
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
                        MLpoten_c2h6_88_cos3tau_G36
-  use pot_c3h6, only : MLpoten_c3h6_harmtest
+  use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
   !
@@ -386,6 +386,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c3h6_harmtest
          !
+    case('POTEN_C3H6_SYM') 
+         !
+         MLpotentialfunc => MLpoten_c3h6_sym_II
+         !
     end select
     !
    if (verbose>=6) write(out,"('MLdefine_potenfunc/end')") 
@@ -468,9 +472,9 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xy2_coeff
         !
-    case('XY2_PQ_SIN')
+    case('XY2_PQ_LINEAR')
         !
-        MLextF_func => MLdms2pqr_xy2_sin
+        MLextF_func => MLdms2pqr_xy2_linear
         !
     case('DIPOLE_SO2_AMES1')
         !

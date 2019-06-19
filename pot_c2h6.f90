@@ -2114,8 +2114,8 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(c123,src(14:15))
       dst(16:17) = matmul(c123,src(16:17))
       !
-      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
-      !dst(18) = src(18)
+      !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      dst(18) = src(18)
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi
@@ -2139,9 +2139,9 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(sxy,src(16:17))
       dst(16:17) = matmul(sxy,src(14:15))
       !!
-      dst(18) =  2.0_ark*pi - src(18)
+      !dst(18) =  2.0_ark*pi - src(18)
       !
-      !dst(18) = src(18)
+      dst(18) = src(18)
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi

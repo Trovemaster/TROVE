@@ -452,6 +452,7 @@ module mol_c3h6
       delta4e    = molec%taueq(4)
       delta5e    = molec%taueq(5)
       delta6e    = molec%taueq(6)
+      !
       a0 = 0
       !
       a0(1,1) = 0.0_ark
@@ -468,15 +469,15 @@ module mol_c3h6
       !
       a0(4,1) = rH1e*sin(PI - alpha2e)
       a0(4,2) = 0.0_ark  
-      a0(4,3) = -rH1e*cos(PI - alpha2e) - rC1e
+      a0(4,3) =-rH1e*cos(PI - alpha2e) - rC1e
       !
       a0(5,1) = rH2e*sin(PI - alpha3e)*cos(delta2e)
       a0(5,2) = rH2e*sin(PI - alpha3e)*sin(delta2e)
-      a0(5,3) = -rH2e*cos(PI - alpha3e) - rC1e
+      a0(5,3) =-rH2e*cos(PI - alpha3e) - rC1e
       !
       a0(6,1) = rH3e*sin(PI - alpha4e)*cos(delta3e)
       a0(6,2) =-rH3e*sin(PI - alpha4e)*sin(delta3e)
-      a0(6,3) = -rH3e*cos(PI - alpha4e) - rC1e
+      a0(6,3) =-rH3e*cos(PI - alpha4e) - rC1e
       !
       r3 = cosine1(rh4e,rc2e,alpha5e)
       thet = cosine2(rc2e,r3,rh4e)

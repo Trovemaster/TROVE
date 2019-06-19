@@ -2619,7 +2619,7 @@ contains
          !
          if (analysis%print_vector) then
             !
-            write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,a1,1x,a1,",Nclasses,"(i3),a1)"
+            write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,1x,i4,i2,a1,1x,a1,",Nclasses,"(i3),a1)"
             !
             do irootI = 1, dimenI
                  !
@@ -2632,12 +2632,14 @@ contains
                  tauI  = mod(ktau,2_ik)
                  kI = bset_contr(indI)%k(irootI)
                  !
-                 if (abs(vec(irootI))>1e-4) then  
+                 !ndeg = bset_contr(jind)%index_deg(irow)%size1
+                 !
+                 if (abs(vec(irootI))>analysis%threshold) then  
                    !
                    write(out,my_fmt1) & 
                               igammaI,irootI,&
                               vec(irootI),"(", &
-                              jI,kI,tauI,")", &
+                              jI,kI,tauI,irow,ib,")", &
                               "(",cnu_i(1:Nclasses),")"
                    !
                  endif
