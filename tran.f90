@@ -1215,8 +1215,13 @@ contains
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
     character(len=cl)  :: jchar,filename
     type(MPI_File) :: fileh, fileh_w
-    integer(kind=MPI_OFFSET_KIND) :: mpioffset
+    integer(kind=MPI_OFFSET_KIND) :: mpioffset,read_offset,write_offset
     integer :: ierr
+
+    type(MPI_Datatype)                      :: gmat_block_type, psi_block_type, mat_t_block_type, mat_s_block_type, extF_block_type
+    integer,dimension(9)                    :: desc_gmat, desc_mat_t, desc_mat_s, desc_psi, desc_extF
+    integer                                 :: blacs_row, blacs_col, i_local, j_local
+    integer                                 :: i, j
       !
       if (job%verbose>=2) write(out,"(/'Compute J=0 vib. matrix elements of the kinetic energy operator...')")
       !
@@ -1251,17 +1256,31 @@ contains
       !
       dimen = bset_contr(1)%Maxcontracts
       !
-      allocate(mat_s(Neigenroots,Neigenroots),stat=info)
-      call ArrayStart('mat_s',info,1,kind(mat_s),matsize2)
+      if (blacs_size.eq.1) then
+        allocate(mat_s(Neigenroots,Neigenroots),stat=info)
+        call ArrayStart('mat_s',info,1,kind(mat_s),matsize2)
+      else
+        call co_block_type_init(mat_s, Neigenroots, Neigenroots, desc_mat_s, info, mat_s_block_type)
+        call ArrayStart('mat_s',info,1,kind(mat_s),int(size(mat_s),hik))
+      endif
       !
       matsize = int(dimen*Neigenroots,hik)
       !
       if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i0,' elements.')") & 
                           Neigenroots,Neigenroots,matsize
       !
-      allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
-      call ArrayStart('psi',info,1,kind(psi),matsize)
-      call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
+      if (blacs_size.eq.1) then
+        allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
+        !
+        call ArrayStart('psi',info,1,kind(psi),matsize)
+        call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
+      else
+        call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
+        call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
+        !
+        call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
+        call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
+      endif
       !
       psi = 0
       !
@@ -1315,41 +1334,72 @@ contains
         iroot = 0
         !
         do ilevel = 1,Neigenlevels
-           !
-           igamma = eigen(ilevel)%igamma
-           iunit = TReigenvec_unit(1,(/0/),igamma)
-           !
-           irec = eigen(ilevel)%irec(1)
-           !
-           Nsize = bset_contr(1)%nsize(igamma)
-           !
-           read(iunit, rec = irec) vec(1:Nsize)
-           !
-           do ideg = 1, eigen(ilevel)%ndeg
-             !
-             iroot = iroot + 1
-             !
-             !$omp parallel do private(icoeff,irow,ib,iterm,ielem) shared(vec) schedule(dynamic)
-             do icoeff = 1,dimen
-                !
-                psi(icoeff,iroot) = 0 
-                !
-                irow = bset_contr(1)%icontr2icase(icoeff,1)
-                ib   = bset_contr(1)%icontr2icase(icoeff,2)
-                !
-                iterm = ijterm(irow,igamma) 
-                !
-                do ielem = 1,bset_contr(1)%irr(igamma)%N(irow)
+          !
+          igamma = eigen(ilevel)%igamma
+          iunit = TReigenvec_unit(1,(/0/),igamma)
+          !
+          irec = eigen(ilevel)%irec(1)
+          !
+          Nsize = bset_contr(1)%nsize(igamma)
+          !
+          read(iunit, rec = irec) vec(1:Nsize)
+          !
+          if(blacs_size.gt.1) then
+            do ideg = 1, eigen(ilevel)%ndeg
+              !
+              iroot = iroot + 1
+              !
+              ! $omp parallel do private(icoeff,irow,ib,iterm,ielem) shared(vec) schedule(dynamic)
+              do icoeff = 1,dimen
+                 !
+                 call infog2l(icoeff,iroot,desc_psi,nprow,npcol,myprow,mypcol,i_local,j_local,blacs_row,blacs_col)
+                 if (myprow.eq.blacs_row.and.mypcol.eq.blacs_col) then
                    !
-                   psi(icoeff,iroot) = psi(icoeff,iroot) + vec(iterm+ielem)*bset_contr(1)%irr(igamma)%repres(iterm+ielem,ideg,ib)
+                   psi(i_local,j_local) = 0 
                    !
-                enddo
-                !
-             enddo 
-             !$omp end parallel do
-             !
-           end do
-           !
+                   irow = bset_contr(1)%icontr2icase(icoeff,1)
+                   ib   = bset_contr(1)%icontr2icase(icoeff,2)
+                   !
+                   iterm = ijterm(irow,igamma) 
+                   !
+                   do ielem = 1,bset_contr(1)%irr(igamma)%N(irow)
+                      !
+                      psi(i_local,j_local) = psi(i_local,j_local) + vec(iterm+ielem)*bset_contr(1)%irr(igamma)%repres(iterm+ielem,ideg,ib)
+                      !
+                   enddo
+                 endif
+                 !
+              enddo 
+              ! $omp end parallel do
+              !
+            end do
+          else
+            do ideg = 1, eigen(ilevel)%ndeg
+              !
+              iroot = iroot + 1
+              !
+              !$omp parallel do private(icoeff,irow,ib,iterm,ielem) shared(vec) schedule(dynamic)
+              do icoeff = 1,dimen
+                 !
+                 psi(icoeff,iroot) = 0 
+                 !
+                 irow = bset_contr(1)%icontr2icase(icoeff,1)
+                 ib   = bset_contr(1)%icontr2icase(icoeff,2)
+                 !
+                 iterm = ijterm(irow,igamma) 
+                 !
+                 do ielem = 1,bset_contr(1)%irr(igamma)%N(irow)
+                    !
+                    psi(icoeff,iroot) = psi(icoeff,iroot) + vec(iterm+ielem)*bset_contr(1)%irr(igamma)%repres(iterm+ielem,ideg,ib)
+                    !
+                 enddo
+                 !
+              enddo 
+              !$omp end parallel do
+              !
+            end do
+          endif
+          !
         end do
         !
         deallocate(vec)
@@ -1364,24 +1414,55 @@ contains
         !
         iroot = 0
         !
-        do ilevel = 1,Neigenlevels
-           !
-           igamma = eigen(ilevel)%igamma
-           iunit = TReigenvec_unit(1,(/0/),igamma)
-           !
-           do ideg = 1, eigen(ilevel)%ndeg
+        if (blacs_size.eq.1) then
+          do ilevel = 1,Neigenlevels
              !
-             iroot = iroot + 1
+             igamma = eigen(ilevel)%igamma
+             iunit = TReigenvec_unit(1,(/0/),igamma)
              !
-             iroot = eigen(ilevel)%iroot(ideg)
+             do ideg = 1, eigen(ilevel)%ndeg
+               !
+               iroot = iroot + 1
+               !
+               iroot = eigen(ilevel)%iroot(ideg)
+               !
+               irec = eigen(ilevel)%irec(ideg)
+               !
+               read(iunit, rec = irec) psi(1:dimen,iroot)
+               !
+             enddo
              !
-             irec = eigen(ilevel)%irec(ideg)
-             !
-             read(iunit, rec = irec) psi(1:dimen,iroot)
-             !
-           enddo
-           !
-        enddo
+          enddo
+        else
+          write(*,*) "TODO: This info2gl loop needs to be verified for correctness@TRAN.f90"
+          allocate(vec(dimen),stat = info)
+          !
+          do ilevel = 1,Neigenlevels
+            !
+            igamma = eigen(ilevel)%igamma
+            iunit = TReigenvec_unit(1,(/0/),igamma)
+            !
+            do ideg = 1, eigen(ilevel)%ndeg
+              !
+              iroot = iroot + 1
+              !
+              iroot = eigen(ilevel)%iroot(ideg)
+              !
+              irec = eigen(ilevel)%irec(ideg)
+              !
+              read(iunit, rec = irec) vec
+              !
+              do i=1,dimen
+                call infog2l(i,iroot,desc_psi,nprow,npcol,myprow,mypcol,i_local,j_local,blacs_row,blacs_col)
+                if (myprow.eq.blacs_row.and.mypcol.eq.blacs_col) then
+                  psi(i_local,j_local) = vec(i)
+                endif
+              enddo
+              !
+            enddo
+            !
+          enddo
+        endif
         !
       endif
       !
@@ -1403,12 +1484,12 @@ contains
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-            !open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kineteigen_file)
-            !write(chkptIO) 'Start Kinetic part'
-            call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
-            call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
-            mpioffset = 0
-            call MPI_File_set_size(fileh_w, mpioffset, ierr)
+          !open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kineteigen_file)
+          !write(chkptIO) 'Start Kinetic part'
+          call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
+          call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
+          mpioffset = 0
+          call MPI_File_set_size(fileh_w, mpioffset, ierr)
           if(mpi_rank .eq. 0) then
             call MPI_File_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
             call MPI_File_write(fileh_w, 'Start Kinetic part', 18, mpi_character, mpi_status_ignore, ierr)
@@ -1434,8 +1515,14 @@ contains
         rootsize2= int(bset_contr(1)%Maxcontracts,hik)
         rootsize2 = rootsize2*rootsize2
         !
-        allocate(gmat(dimen,dimen),stat=info)
-        call ArrayStart('gmat-fields',info,1,kind(gmat),rootsize2)
+        if(blacs_size.eq.1) then
+          allocate(gmat(dimen,dimen),stat=info)
+          call ArrayStart('gmat-fields',info,1,kind(gmat),rootsize2)
+        else
+          call co_block_type_init(gmat, dimen, dimen, desc_gmat, info, gmat_block_type)
+          call ArrayStart('gmat-fields',info,1,kind(gmat),int(size(gmat),hik))
+        endif
+        !
         !
         ! Preparing slicing 
         !
@@ -1465,6 +1552,8 @@ contains
           !
           !write(chkptIO) 'g_rot'
           if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
+          call mpi_barrier(MPI_COMM_WORLD, ierr)
+          call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
           !
           !call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
           call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
@@ -1484,6 +1573,14 @@ contains
         !
         islice = 0
         !
+        if (blacs_size.gt.1) then
+          call MPI_File_get_position(fileh, read_offset, ierr)
+          call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
+
+          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+        endif
+        !
         do k1 = 1,3
           !
           do k2 = 1,3
@@ -1502,17 +1599,24 @@ contains
               !
             else
               !
-     !         read(iunit) gmat
-     call MPI_File_read_all(fileh, gmat, dimen*dimen, mpi_double_precision, mpi_status_ignore, ierr)
+              !         read(iunit) gmat
+              call MPI_File_read_all(fileh, gmat, size(gmat), mpi_double_precision, mpi_status_ignore, ierr)
               !write (chkptIO) gmat
               !
             endif
             !
             !
-            call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
-                        gmat,dimen,beta,mat_t,Neigenroots)
-            call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
-                        psi,dimen,beta,mat_s,Neigenroots)
+            if (blacs_size.gt.1) then
+              call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
+                          gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
+              call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                          psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+            else
+              call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
+                          gmat,dimen,beta,mat_t,Neigenroots)
+              call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
+                          psi,dimen,beta,mat_s,Neigenroots)
+            endif
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
@@ -1525,13 +1629,24 @@ contains
             else
               !
               !write (chkptIO) mat_s
-              if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+              call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
               !
             endif
             !
           enddo
           !
         enddo
+        !
+        ! Reset view to flat file
+        if (blacs_size.gt.1) then
+          read_offset = read_offset + 9*dimen*dimen*mpi_real_size
+          call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
+
+          write_offset = write_offset + 9*Neigenroots*Neigenroots*mpi_real_size
+          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+        endif
 
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_rot')
@@ -1547,6 +1662,8 @@ contains
           !
           !write(chkptIO) 'g_cor'
           if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
+          call MPI_Barrier(MPI_COMM_WORLD, ierr)
+          call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
           !
         endif
         !
@@ -1555,6 +1672,14 @@ contains
         ! Run the loop over all term of the expansion of the Hamiltonian 
         !
         islice = 9
+        !
+        if (blacs_size.gt.1) then
+          call MPI_File_get_position(fileh, read_offset, ierr)
+          call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
+
+          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+        endif
         !
         !do k1 = 1,FLNmodes
           !
@@ -1576,15 +1701,22 @@ contains
               !
             else
               !
-     !         read(iunit) gmat
-     call MPI_File_read_all(fileh, gmat, dimen*dimen, mpi_double_precision, mpi_status_ignore, ierr)
+              !         read(iunit) gmat
+              call MPI_File_read_all(fileh, gmat, size(gmat), mpi_double_precision, mpi_status_ignore, ierr)
               !
             endif
             !
-            call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
-                        gmat,dimen,beta,mat_t,Neigenroots)
-            call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
-                        psi,dimen,beta,mat_s,Neigenroots)
+            if (blacs_size.gt.1) then
+              call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
+                          gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
+              call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                          psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+            else
+              call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
+                          gmat,dimen,beta,mat_t,Neigenroots)
+              call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
+                          psi,dimen,beta,mat_s,Neigenroots)
+            endif
             !
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
@@ -1598,13 +1730,24 @@ contains
             else
               !
               !write (chkptIO) mat_s
-              if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+              call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
               !
             endif
             !
           enddo
           ! 
         !enddo
+        !
+        ! Reset view to flat file
+        if (blacs_size.gt.1) then
+          read_offset = read_offset + 3*dimen*dimen*mpi_real_size
+          call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
+
+          write_offset = write_offset + 3*Neigenroots*Neigenroots*mpi_real_size
+          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+        endif
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
@@ -1630,7 +1773,6 @@ contains
       !
       ! External field part 
       !
-      !!!!! MPIIO TODO !!!!!
       if (FLextF_matelem) then
         !
         if (job%verbose>=3) write(out,"(/' Transform extF to J0-representation...')")
@@ -1706,6 +1848,8 @@ contains
           !
           !write(chkptIO) Neigenroots
           if(mpi_rank.eq.0) call MPI_File_write(fileh_w, Neigenroots, 1, mpi_integer, mpi_status_ignore, ierr)
+          call mpi_barrier(mpi_comm_world, ierr)
+          call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
           !
         endif
         !
@@ -1716,8 +1860,21 @@ contains
         !
         if (job%verbose>=4) write(out,"(/'restore Extvib...: Number of elements: ',i0)") ncontr_t
         !
-        allocate(extF_me(ncontr_t,ncontr_t),stat=info)
-        call ArrayStart('extF_me',info,1,kind(extF_me),rootsize2)
+        if(blacs_size.eq.1) then
+          allocate(extF_me(ncontr_t,ncontr_t),stat=info)
+          call ArrayStart('extF_me',info,1,kind(extF_me),rootsize2)
+        else
+          call co_block_type_init(extF_me, ncontr_t, ncontr_t, desc_extF, info, extF_block_type)
+          call ArrayStart('extF_me',info,1,kind(extF_me),int(size(extF_me),hik))
+        endif
+        !
+        if (blacs_size.gt.1) then
+          call MPI_File_get_position(fileh, read_offset, ierr)
+          call MPI_File_set_view(fileh, read_offset, mpi_byte, extF_block_type, "native", MPI_INFO_NULL, ierr)
+
+          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+        endif
         !
         do imu = fitting%iparam(1),fitting%iparam(2)
           !
@@ -1737,14 +1894,21 @@ contains
             call MPI_File_read_all(fileh, imu_t, 1, mpi_integer, mpi_status_ignore, ierr)
             !
             !read(iunit) extF_me
-            call MPI_File_read_all(fileh, extF_me, dimen*dimen, mpi_double_precision, mpi_status_ignore, ierr)
+            call MPI_File_read_all(fileh, extF_me, size(extF_me), mpi_double_precision, mpi_status_ignore, ierr)
             !
           endif
           !
-          call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
-                      extF_me,dimen,beta,mat_t,Neigenroots)
-          call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
-                      psi,dimen,beta,mat_s,Neigenroots)
+          if(blacs_size.gt.1) then
+            call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
+                        extF_me,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
+            call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                        psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+          else
+            call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
+                        extF_me,dimen,beta,mat_t,Neigenroots)
+            call dgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,Neigenroots,& 
+                        psi,dimen,beta,mat_s,Neigenroots)
+          endif
           !
           !mat_s = 0 
           !
@@ -1777,7 +1941,9 @@ contains
             !write(chkptIO) imu
             !write(chkptIO) mat_s
             if(mpi_rank.eq.0) call MPI_File_write(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
-            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, mat_s, Neigenroots*Neigenroots, mpi_double_precision, mpi_status_ignore, ierr)
+            call MPI_Barrier(mpi_comm_world, ierr)
+            call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+            call MPI_File_write(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
             !
           else
             !
@@ -1786,6 +1952,17 @@ contains
           endif
           !
         enddo
+        ! Reset view to flat file
+        if (blacs_size.gt.1) then
+          read_offset = read_offset + (fitting%iparam(2)-fitting%iparam(1)+1)*ncontr_t*ncontr_t*mpi_real_size &
+            + (fitting%iparam(2)-fitting%iparam(1)+1)*mpi_int_size
+          call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
+
+          write_offset = write_offset + 3*Neigenroots*Neigenroots*mpi_real_size
+          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+        endif
         !
         if (allocated(extF_me)) deallocate(extF_me)
         call ArrayStop('extF_me')
