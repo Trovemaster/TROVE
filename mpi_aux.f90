@@ -57,16 +57,16 @@ contains
     !write(*,"('BLACS: [',i2,',',i2'](',i4,i4,i4,i4',)')") mpi_rank,blacs_rank,nprow,npcol,myprow,mypcol
   end subroutine co_init_blacs
 
-  subroutine co_block_type_init(smat, dimx, dimy, descr, mpi_type)
+  subroutine co_block_type_init(smat, dimx, dimy, descr, allocinfo, mpi_type)
     implicit none
 
     real(rk),intent(out),dimension(:,:),allocatable   :: smat
 
     integer,intent(in)                                :: dimx, dimy
     integer,intent(out),dimension(9)                  :: descr
+    integer,intent(out)                               :: allocinfo
 
     type(MPI_Datatype),intent(out),optional           :: mpi_type
-
 
     integer,dimension(2)                              :: global_size, distr, dargs
     integer :: MB,NB,MLOC,NLOC,ierr
@@ -81,7 +81,8 @@ contains
     NLOC = NUMROC( dimy, NB, mypcol, 0, npcol )
     call DESCINIT(descr, dimx, dimy, MB, NB, 0, 0, blacs_ctxt, max(MLOC,1), ierr)
 
-    allocate(smat(MLOC,NLOC))
+    allocate(smat(MLOC,NLOC), stat=allocinfo)
+    if(allocinfo) return
 
     if (present(mpi_type)) then
       global_size = (/dimx, dimy/)
