@@ -7757,7 +7757,7 @@ module perturbation
     type(MPI_File)    :: fileh_slice
     character(len=cl) :: job_id,filename,readbuf
     integer(kind=MPI_Offset_kind) :: file_offset
-    integer :: ierr, mpi_real_size, mpi_int_size
+    integer :: ierr
     integer(hik)         :: rootsize,rootsize_,rootsize2,rootsize2_,nprocs,tid,icontr1,icontr2
     integer(ik),allocatable :: imat_t(:,:)
     real(rk),allocatable :: mat_t(:,:),mat_(:,:)
@@ -7779,9 +7779,6 @@ module perturbation
     rootsize2_ = int(maxcontr*maxcontr,hik)
     !
     !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
-
-    call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
-    call MPI_Type_size(mpi_integer, mpi_int_size,ierr)
 
     if (mpi_rank .eq. 0 .and. (job%verbose>=6.and.present(icontr)) ) write(out,"('icontr = ',i9)") icontr
 

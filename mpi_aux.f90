@@ -5,24 +5,17 @@ module mpi_aux
   implicit none
 
   public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr, co_read_matrix_distr
+  public co_block_type_init
 
   public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
 
   public blacs_size, blacs_rank, blacs_ctxt
   public nprow,npcol,myprow,mypcol, desca,descb,descc
+  public mpi_real_size, mpi_int_size
 
   interface co_sum
     module procedure :: co_sum_double
-  end interface
-
-  !interface co_max
-  !  module procedure :: co_max_double
-  !end interface
-
-  interface co_gather
-    module procedure :: co_gather_double
-    module procedure :: co_gatherv_double
   end interface
 
   integer,dimension(:),allocatable  :: proc_sizes, proc_offsets, send_or_recv
@@ -31,6 +24,7 @@ module mpi_aux
   logical                           :: comms_inited = .false., distr_inited=.false.
   type(MPI_Datatype) :: mpitype_column
   type(MPI_Datatype),dimension(:), allocatable :: mpi_blocktype
+  integer                           :: mpi_real_size, mpi_int_size
 
   !blacs/pblas
   integer :: blacs_size, blacs_rank, blacs_ctxt
@@ -39,111 +33,93 @@ module mpi_aux
   integer :: descb(9)
   integer :: descc(9)
   integer :: descd(9)
+  integer,dimension(2)  :: blacs_dims
 
 contains
 
-  subroutine co_init_pblas()
+  subroutine co_init_blacs()
+    implicit none
+
+    if (.not. comms_inited) stop "CO_INIT_BLACS COMMS NOT INITED"
+
+    ! Must be initialised to zero - if stack contains garbage here MPI_Dims_create WILL fail
+    blacs_dims = 0
+
     call blacs_pinfo(blacs_rank, blacs_size)
     if (blacs_rank .lt. 0) return
 
+    call MPI_Dims_create(blacs_size, 2, blacs_dims)
+
     call blacs_get(-1, 0, blacs_ctxt)
-    call blacs_gridinit(blacs_ctxt, 'R', blacs_size/8, 8)
+    call blacs_gridinit(blacs_ctxt, 'R', blacs_dims(1), blacs_dims(2))
     call blacs_gridinfo(blacs_ctxt, nprow, npcol, myprow, mypcol)
 
-    write(*,"('BLACS: [',i2,',',i2'](',i4,i4,i4,i4',)')") mpi_rank,blacs_rank,nprow,npcol,myprow,mypcol
-  end subroutine co_init_pblas
+    !write(*,"('BLACS: [',i2,',',i2'](',i4,i4,i4,i4',)')") mpi_rank,blacs_rank,nprow,npcol,myprow,mypcol
+  end subroutine co_init_blacs
 
-  subroutine co_sum_double(x, result_image)
-    real*8, intent(inout), dimension(:,:) :: x
-    integer, optional :: result_image
+  subroutine co_block_type_init(smat, dimx, dimy, descr, mpi_type)
+    implicit none
+
+    real(rk),intent(out),dimension(:,:),allocatable   :: smat
+
+    integer,intent(in)                                :: dimx, dimy
+    integer,intent(out),dimension(9)                  :: descr
+
+    type(MPI_Datatype),intent(out),optional           :: mpi_type
+
+
+    integer,dimension(2)                              :: global_size, distr, dargs
+    integer :: MB,NB,MLOC,NLOC,ierr
+
+    integer,external  :: NUMROC
+
+    if (.not. comms_inited) stop "CO_BLOCK_TYPE_INIT COMMS NOT INITED"
+
+    MB = dimx/nprow
+    NB = dimy/npcol
+    MLOC = NUMROC( dimx, MB, myprow, 0, nprow )
+    NLOC = NUMROC( dimy, NB, mypcol, 0, npcol )
+    call DESCINIT(descr, dimx, dimy, MB, NB, 0, 0, blacs_ctxt, max(MLOC,1), ierr)
+
+    allocate(smat(MLOC,NLOC))
+
+    if (present(mpi_type)) then
+      global_size = (/dimx, dimy/)
+      distr = (/MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC/)
+      dargs = (/MB, NB/)
+      call MPI_Type_create_darray(blacs_size, blacs_rank, 2, global_size, distr, dargs, blacs_dims, &
+        MPI_ORDER_FORTRAN, MPI_DOUBLE_PRECISION, mpi_type, ierr)
+      call MPI_Type_commit(mpi_type, ierr)
+    endif
+
+  end subroutine co_block_type_init
+
+  subroutine co_sum_double(x, root_process)
+    use accuracy
+
+    implicit none
+
+    real(rk), intent(inout), dimension(:,:) :: x
+    integer, optional :: root_process
     integer :: i
     !integer, save :: result_image_mpi[*]
 
     if (comm_size.eq.1) return
     call TimerStart('co_sum_double')
 
-    !if (present(result_image)) then
-
-      !if (this_image() .eq. 1) then
-      !  call mpi_comm_rank(mpi_comm_world, result_image_mpi)
-      !  do i = 2, num_images()
-      !   result_image_mpi[i] = result_image_mpi
-      !  end do
-      !end if
-      !sync all
+    if (present(root_process)) then
 
       if (mpi_rank .eq. 0) then
         call mpi_reduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
       else
         call mpi_reduce(x, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
       endif
-    !else
-    !  call mpi_allreduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, mpi_comm_world)
-    !end if
+    else
+      call mpi_allreduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, mpi_comm_world)
+    end if
+
     call TimerStop('co_sum_double')
   end subroutine
-
-  !subroutine co_max_double(x, result_image)
-  !  real*8, intent(inout), dimension(:,:) :: x
-  !  integer, optional :: result_image
-  !  integer :: i
-  !  integer, save :: result_image_mpi[*]
-
-  !  call TimerStart('co_max_double')
-
-  !  if (present(result_image)) then
-
-  !    if (this_image() .eq. 1) then
-  !      call mpi_comm_rank(mpi_comm_world, result_image_mpi)
-  !      do i = 2, num_images()
-  !       result_image_mpi[i] = result_image_mpi
-  !      end do
-  !    end if
-  !    sync all
-
-  !    if (this_image() .eq. 1) then
-  !      call mpi_reduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_max, result_image_mpi, mpi_comm_world)
-  !    else
-  !      call mpi_reduce(x, x, size(x), mpi_double_precision, mpi_max, result_image_mpi, mpi_comm_world)
-  !    endif
-  !  else
-  !    call mpi_allreduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_max, mpi_comm_world)
-  !  end if
-  !  call TimerStop('co_max_double')
-  !end subroutine
-
-  subroutine co_gather_double(x, static)
-    real*8, intent(inout), dimension(:,:) :: x
-    logical, intent(in) :: static
-    integer :: ierr
-
-    if (.not. comms_inited .or. .not. distr_inited) stop "COMMS NOT INITIALISED"
-    if (comm_size .eq. 1) return
-
-    call TimerStart('CO_GATHER_DOUBLE')
-    call mpi_gather(x, 0, mpi_double_precision, x, proc_sizes(2), mpi_double_precision, 0, mpi_comm_world)
-    if (ierr .gt. 0) stop "co_gather_double"
-    call TimerStop('CO_GATHER_DOUBLE')
-
-  end subroutine co_gather_double
-
-  subroutine co_gatherv_double(x)
-    real*8, intent(inout), dimension(:,:) :: x
-    integer :: ierr
-
-    if (.not. comms_inited .or. .not. distr_inited) stop "COMMS NOT INITIALISED"
-    if (comm_size .eq. 1) return
-
-    call TimerStart('CO_GATHERV_DOUBLE')
-    if (mpi_rank.eq.0) then
-      call mpi_gatherv(x, 0, mpi_double_precision, x, proc_sizes, proc_offsets, mpi_double_precision, 0, mpi_comm_world)
-    else
-      call mpi_gatherv(x, size(x), mpi_double_precision, x, proc_sizes, proc_offsets, mpi_double_precision, 0, mpi_comm_world)
-    endif
-    if (ierr .gt. 0) stop "co_gatherv_double"
-    call TimerStop('CO_GATHERV_DOUBLE')
-
-  end subroutine co_gatherv_double
 
   subroutine co_init_comms()
     integer :: ierr
@@ -155,7 +131,12 @@ contains
     call mpi_comm_rank(mpi_comm_world, mpi_rank, ierr)
     if (ierr .gt. 0) stop "MPI_COMM_RANK"
 
+    call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
+    call MPI_Type_size(mpi_integer, mpi_int_size,ierr)
+
     comms_inited = .true.
+
+    call co_init_blacs()
 
   end subroutine co_init_comms
 
@@ -275,8 +256,6 @@ contains
 
     deallocate(starts,ends)
 
-    !call co_init_pblas()
-
     distr_inited = .true.
   end subroutine co_init_distr
 
@@ -341,11 +320,9 @@ contains
     type(MPI_File),intent(in) :: infile
     type(MPI_Status) :: writestat
     integer(kind=MPI_Offset_kind) :: offset_start,offset_end
-    integer :: readcount, mpi_real_size, ierr
+    integer :: readcount, ierr
 
     if (comm_size.gt.1) then
-      call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
-
       offset_start = (lb-1)*longdim*mpi_real_size
       offset_end = (longdim-ub)*longdim*mpi_real_size
 
@@ -364,7 +341,7 @@ contains
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
     type(MPI_File),intent(in) :: outfile
-    integer :: ierr, mpi_real_size
+    integer :: ierr
     integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
 
@@ -373,8 +350,6 @@ contains
     call TimerStart('MPI_write')
 
     if (comm_size.gt.1) then
-      call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
-
       offset_start = (lb-1)*longdim*mpi_real_size
       offset_end = 0
 
