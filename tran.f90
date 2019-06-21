@@ -1243,7 +1243,6 @@ contains
                     ' at least one must be set to CONVERT or EIGENfunc SAVE CONVERT'
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
-      call co_init_comms()!TODO get rid of this one
       !
       matsize  = int(Neigenroots*(Neigenroots+1)/2,hik)
       matsize2 = int(Neigenroots*Neigenroots,hik)
@@ -1275,10 +1274,10 @@ contains
         call ArrayStart('psi',info,1,kind(psi),matsize)
         call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
       else
-        call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
+        call co_block_type_init(psi, dimen, Neigenroots, desc_psi, info)
         call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
         !
-        call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
+        call co_block_type_init(mat_t, Neigenroots, dimen, desc_mat_t, info)
         call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
       endif
       !
@@ -2482,7 +2481,6 @@ contains
    !
    nclasses = bset_contr(1)%nclasses
    !
-   !call co_init_comms()
    select case (kinetic_part)
    !
    case('rot','top')

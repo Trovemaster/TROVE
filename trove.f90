@@ -180,12 +180,12 @@
       ! 
       ! Convert the J=0 basis set and mat.elements to the contracted represent. 
       !
+      call co_init_comms()
       if (action%convert_vibme) then 
          call TRconvert_matel_j0_eigen(j)
          return 
       endif
       !
-      call co_init_comms()
       if (job%contrci_me_fast) then 
         !
         if (mpi_rank.eq.0) then

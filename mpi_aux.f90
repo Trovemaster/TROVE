@@ -102,8 +102,6 @@ contains
 
     real(rk), intent(inout), dimension(:,:) :: x
     integer, optional :: root_process
-    integer :: i
-    !integer, save :: result_image_mpi[*]
 
     if (comm_size.eq.1) return
     call TimerStart('co_sum_double')
