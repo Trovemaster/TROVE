@@ -261,18 +261,11 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
     Ax1  = (T2 + T3)*3.0_ark/sqrt(6.0_ark)   
     Ax2  = (T2 - T3)/sqrt(2.0_ark)   
     !
-    !tbar = (src(16) + src(17) + src(18))/3.0_ark 
-    !
     T2 = T2 + T1
     T3 =-T3 + T1
     !
     tbar = (T1 + T2 + T3)/3.0_ark 
-
-
-!       SUBTRACT EQUILBRIUM THETA VALUES TO MAKE A1/A2 ZERO AT EQUILIBRIUM
-!       AND ENSURE CONSISTENT TRANSFROMS
     !
-
     xi(19) = Ax1 
     xi(20) = Ax2 
     xi(21) = (1.0_ark - cos(3.d0*tbar) )
@@ -342,15 +335,16 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
   real(ark),intent(in)   :: force(:)
   real(ark)              :: f
 
-  real(ark) :: xi(21)
+  real(ark) :: xi(21),y(21)
   real(ark) :: chi(21,6),term,deg
   integer(ik) :: ioper,ipower(21),i,nparam_eq
   !
   real(ark) :: rC1,rC2,rH1 ,rH2 ,rH3 ,rH4 ,rH5 ,rH6 ,rC1e,rC2e,rH1e,rH2e,rH4e,rH5e,rH6e,&
                       alpha1e,alpha2e,alpha3e ,alpha4e ,alpha5e,alpha6e,taue,delta1e ,delta2e ,delta3e ,&
-                      delta4e ,delta5e ,delta6e 
-  real(ark) :: b1,b2,b3,b4,b5,theta1,theta2,theta3,a1,a2,tau
+                      delta4e ,delta5e ,delta6e,di_ccch
+  real(ark) :: b1,b2,b3,b4,b5,theta1,theta2,theta3,a1,a2,tau,tol,theta12,theta23,theta13
   !
+  tol = sqrt(small_)
   nparam_eq = 22
   deg = pi/180.0_ark
   !
@@ -388,9 +382,8 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
   case default
     !
     write(out, '(/a,1x,a,1x,a)') &
-    'MLpoten_c3h6_harmtest error', trim(molec%coords_transform), 'is unknown'
-    stop 'MLpoten_c3h6_harmtest error error: bad coordinate type'
-
+    'MLpoten_c3h6_sym_II error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_c3h6_sym_II error error: bad coordinate type'
       !
   case('7ALF_TAU_1RHO')
     !
@@ -430,26 +423,123 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
     xi(14) = local(14)- alpha5e
     xi(15) = local(15)- alpha6e
     !
-    xi(16) = local(19)- delta4e
-    xi(17) = local(20)- delta5e
-    xi(18) = local(21)- delta6e
+    di_ccch = local(19)
     !
-    theta2 = local(17)- delta2e
-    theta3 = local(18)- delta2e
+    if(di_ccch>1.1*pi) then
+       di_ccch = di_ccch - 2.0_ark*pi
+    end if
+    !
+    xi(16) = di_ccch-delta4e
+    xi(17) = mod(local(20)+2.0_ark*pi,2.0_ark*pi)- delta5e
+    xi(18) = mod(local(21)+2.0_ark*pi,2.0_ark*pi)- delta6e
+    !
+    theta2 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    theta3 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)- delta2e
     !
     theta1 = 2.0_ark*pi-theta2-theta3
     !
-    xi(19)  = ( theta2 + theta3 )*3.d0/sqrt(6.0_ark)
+    xi(19)  = ( theta2 + theta3 )*3.0_ark/sqrt(6.0_ark)
     xi(20)  = ( theta2 - theta3 )/sqrt(2.0_ark)
     !
-    theta1 = local(16)-delta1e
+    theta1 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)-delta1e
+    !
+    if (theta1<-tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
     !
     theta2 = theta2 + theta1
     theta3 =-theta3 + theta1
     !
     tau = (theta1 + theta2 + theta3)/3.0_ark
     !
-    xi(21) = 1.0_ark - cos(3.0_ark*tau)
+    xi(21) = tau
+    !
+  case('7ALF_5THETA_1TAU')
+    !
+    rC1      = local(1)
+    rC2      = local(2)
+    rH1      = local(3)
+    rH2      = local(4)
+    rH3      = local(5)
+    rH4      = local(6)
+    rH5      = local(7)
+    rH6      = local(8)
+    !
+    ! C-C
+    xi(1)=1.0d+00-exp(-a1*(rC1-rC1e))
+    xi(2)=1.0d+00-exp(-a2*(rC2-rC2e))
+    !CH3
+    xi(3)=1.0d+00-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0d+00-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0d+00-exp(-b1*(rH3-rH1e))
+    !CHs
+    xi(6)=1.0d+00-exp(-b3*(rH4-rH4e))
+    xi(7)=1.0d+00-exp(-b4*(rH5-rH5e))
+    xi(8)=1.0d+00-exp(-b5*(rH6-rH6e))
+    !
+    !CCH1
+    xi(9) = local(9)- alpha1e
+    !xi(9) = cos(local(9))- cos(alpha1e)
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(10) = local(10)- alpha2e
+    xi(11) = local(11)- alpha2e
+    xi(12) = local(12)- alpha2e
+    !
+    !other CHs
+    xi(13) = local(13)- alpha4e
+    xi(14) = local(14)- alpha5e
+    xi(15) = local(15)- alpha6e
+    !
+    di_ccch = local(19)
+    !
+    if(di_ccch>1.1*pi) then
+       di_ccch = di_ccch - 2.0_ark*pi
+    end if
+    !
+    xi(16) = di_ccch-delta4e
+    xi(17) = mod(local(20)+2.0_ark*pi,2.0_ark*pi)- delta5e
+    xi(18) = mod(local(21)+2.0_ark*pi,2.0_ark*pi)- delta6e
+    !
+    theta1 = local(16)
+    !
+    theta2 = local(17)
+    theta3 = local(18)
+    !
+    if (theta2-theta1<small_) theta2 = theta2 + 2.0_ark*pi
+    if (theta3-theta2<small_) theta3 = theta3 + 2.0_ark*pi
+    !
+    theta12 = mod(theta2-theta1+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(theta3-theta2+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    !theta2 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    !theta3 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    !
+    !theta1 = 2.0_ark*pi-theta2-theta3
+    !
+    xi(19)  = ( 2.0_ark*theta13 - theta23 - theta12 )/sqrt(6.0_ark)
+    xi(20)  = (                   theta23 - theta12 )/sqrt(2.0_ark)
+    !
+    !theta1 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)-delta1e
+    !
+    if (theta1<-tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    !
+    !theta2 = theta2 + theta1
+    !theta3 =-theta3 + theta1
+    !
+    tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
+    !
+    xi(21) = tau
     !
   end select
   !
@@ -465,7 +555,10 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
     !
     do ioper = 1,6
       !
-      term = term + product(chi(1:21,ioper)**ipower(1:21))
+      y(1:20) = chi(1:20,ioper)**ipower(1:20)
+      y(21) = cos( real(ipower(21),ark)*chi(21,ioper) )
+      !
+      term = term + product( y(1:21) )
       !
     end do
     !
@@ -478,11 +571,6 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
 end function  MLpoten_c3h6_sym_II
 
 
-
-
-
-
-
 subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     implicit none
     !
@@ -491,11 +579,23 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     real(ark),intent(out)     :: dst(1:ndeg,6)
     !
     real(ark)         :: repres(6,ndeg,ndeg),a,b,e,o
+    real(ark)         :: c123(2,2),c132(2,2),sxy(2,2),s3(2,2),s2(2,2)
     integer(rk)       :: ioper
     !
     if (verbose>=5) write(out,"('ML_symmetry_transformation_XY3/start')")
     !
     a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
+    !
+    c123 = transpose(reshape( (/ -a, -b, &
+                                  b, -a/), (/ 2, 2/)))
+    c132  = matmul(c123,c123)
+    !
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))    !
+    !
+	s3 = matmul(c123, sxy)
+    !
+    s2 = matmul(c123,s3)
     !
     repres = 0
     !
@@ -514,8 +614,8 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(:,16,16) = 1.0_ark
     repres(:,17,17) = 1.0_ark
     repres(:,18,18) = 1.0_ark
+    !
     repres(:,21,21) = 1.0_ark
-
     !
     ! E
     ! r123
@@ -527,37 +627,37 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(1,11,11) = 1.0_ark
     repres(1,12,12) = 1.0_ark
     !d12
-    repres(1,16,16) = 1.0_ark
-    repres(1,17,17) = 1.0_ark
+    repres(1,19,19) = 1.0_ark
+    repres(1,20,20) = 1.0_ark
     !
-    !C3+/(123)
-    repres(2,3,4) = 1.0_ark
-    repres(2,4,5) = 1.0_ark
-    repres(2,5,3) = 1.0_ark
+    !C3+/(132)
+    repres(2,3,5) = 1.0_ark
+    repres(2,4,3) = 1.0_ark
+    repres(2,5,4) = 1.0_ark
     !
-    repres(2,10,11) = 1.0_ark
-    repres(2,11,12) = 1.0_ark
-    repres(2,12,10) = 1.0_ark
+    repres(2,10,12) = 1.0_ark
+    repres(2,11,10) = 1.0_ark
+    repres(2,12,11) = 1.0_ark
     !
     repres(2,19,19) = -a
-    repres(2,20,19) = -b
-    repres(2,19,20) =  b
+    repres(2,19,20) = -b
+    repres(2,20,19) =  b
     repres(2,20,20) = -a
     !
-    !C3-/(132)
+    !C3-/(123)
     !
-    repres(3,3,5) = 1.0_ark
-    repres(3,4,3) = 1.0_ark
-    repres(3,5,4) = 1.0_ark
+    repres(3,3,4) = 1.0_ark
+    repres(3,4,5) = 1.0_ark
+    repres(3,5,3) = 1.0_ark
     !
-    repres(3,10,12) =  1.0_ark
-    repres(3,11,10) = 1.0_ark
-    repres(3,12,11) = 1.0_ark
+    repres(3,10,11) = 1.0_ark
+    repres(3,11,12) = 1.0_ark
+    repres(3,12,10) = 1.0_ark
     !
-    repres(3,19,19) = -a
-    repres(3,20,19) =  b
-    repres(3,19,20) = -b
-    repres(3,20,20) = -a
+    repres(2,19,19) = -a
+    repres(2,19,20) =  b
+    repres(2,20,19) = -b
+    repres(2,20,20) = -a
     !
     !C2/(23)->(45)
     !
@@ -566,50 +666,54 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(4,5,4) = 1.0_ark
     !
     repres(4,10,10) = 1.0_ark
-    repres(4,11,12) =  1.0_ark
+    repres(4,11,12) = 1.0_ark
     repres(4,12,11) = 1.0_ark
     !
     repres(4,19,19) =  1.0_ark
-    repres(4,20,20) = -1._ark
+    repres(4,20,20) = -1.0_ark
     !
     !C2'/(12)->(34)
-    repres(5,3,4) = 1.0_ark
-    repres(5,4,3) = 1.0_ark
-    repres(5,5,5) = 1.0_ark
+    repres(5,3,5) = 1.0_ark
+    repres(5,4,4) = 1.0_ark
+    repres(5,5,3) = 1.0_ark
     !
-    repres(5,9,10) = 1.0_ark
-    repres(5,10,9) = 1.0_ark
-    repres(5,11,11) =  1.0_ark
+    repres(5,10,12) = 1.0_ark
+    repres(5,11,11) = 1.0_ark
+    repres(5,12,10) = 1.0_ark
     !
     repres(5,19,19) = -a
-    repres(5,19,20) = b
-    repres(5,20,19) = b
-    repres(5,20,20) = a
+    repres(5,19,20) =  b
+    repres(5,20,19) =  b
+    repres(5,20,20) =  a
     !
     !(13)->(35)
-    repres(6,3,5) = 1.0_ark
-    repres(6,4,4) = 1.0_ark
-    repres(6,5,3) = 1.0_ark
+    repres(6,3,4) = 1.0_ark
+    repres(6,4,3) = 1.0_ark
+    repres(6,5,5) = 1.0_ark
     !
-    repres(6,10,12) = 1.0_ark
-    repres(6,11,11) = 1.0_ark
-    repres(6,12,10) =  1.0_ark
+    repres(6,10,11)  = 1.0_ark
+    repres(6,11,10)  = 1.0_ark
+    repres(6,12,12)  = 1.0_ark
+    !
     repres(6,19,19) = -a
     repres(6,19,20) = -b
     repres(6,20,19) = -b
-    repres(6,20,20) = a
+    repres(6,20,20) =  a
     !
     do ioper = 1,nsym
-      dst(:,ioper) = matmul(repres(ioper,:,:),src) 
+      dst(1:20,ioper) = matmul(repres(ioper,1:20,1:20),src(1:20)) 
     enddo
-
+    !
+    dst(21,1) = src(21)
+    dst(21,2) = src(21)+2.0_ark*pi/3.0_ark
+    dst(21,3) = src(21)-2.0_ark*pi/3.0_ark
+    dst(21,4) =-src(21)
+    dst(21,5) =-src(21)-2.0_ark*pi/3.0_ark
+    dst(21,6) =-src(21)+2.0_ark*pi/3.0_ark
+    !
   end subroutine ML_symmetry_transformation_XY3_II
-
-
-
-
-
-recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
+  !
+  recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     !
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
@@ -619,7 +723,7 @@ recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     !
     stop 'dipole_c3h6_4m_dummy is not implemented'
     !
-end subroutine ML_dipole_c3h6_4m_dummy
+  end subroutine ML_dipole_c3h6_4m_dummy
 
 
 

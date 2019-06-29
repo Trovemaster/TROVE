@@ -3267,8 +3267,9 @@ module perturbation
              write(out,"('                      nelem = ',i8,' kroot = ',i8,' to ',i8,' icount = ',i8,' Ncount = ',i8)") &
                    nelem,kroot,count_index(icount,Nelem),icount,Ncount
 
-             write(my_fmt,'(a,i0,a)') "(a,",count_index(icount,Nelem)-kroot,"f17.7)"
-             write(out,my_fmt) ' Characters = ',characters(1:min(40,sym%Nclasses))
+             write(my_fmt,'(a,i0,a)') "(a,",sym%Nclasses,"f17.7)"
+             write(out,my_fmt) ' Characters = ',characters(1:sym%Nclasses)
+             write(my_fmt,'(a,i0,a)') "(a,",count_index(icount,Nelem)-kroot+1,"f17.7)"
              write(out,my_fmt) 'Energies = ',PT%Ewhole%coeffs(kroot:count_index(icount,Nelem),1)-PT%Ewhole%coeffs(1,1)
              stop 'impossible to define symmetry'
              !
