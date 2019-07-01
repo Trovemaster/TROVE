@@ -7943,7 +7943,7 @@ module perturbation
       ! Read the rotational part only 
       !
       !allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
+      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
       !
       if (.not.job%IOmatelem_split) then
         !
@@ -7954,53 +7954,50 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-      endif
-      !
-      allocate(grot(3,3),stat=ierr)
-      !
-      !islice = 0
-      !
-      !do k1 = 1,3
-      !  !
-      !  do k2 = 1,3
-      !    !
-      !    islice = islice + 1
-      !    !
-      !    call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
-      !    !
-      !    allocate(grot(k1,k2)%me(maxcontr,maxcontr),stat=ierr)
-      !    call ArrayStart('grot-matrix',ierr,1,kind(f_t),rootsize2_)
-      !    !
-      !    call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-      !    !
-      !    grot(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-      !    !
-      !    call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
-      !    !
-      !  enddo
-      !enddo
-      !
-      islice = 0
-      !
-      do k1 = 1,3
+        allocate(grot(3,3),stat=ierr)
         !
-        do k2 = 1,3
+        islice = 0
+        !
+        do k1 = 1,3
           !
-          islice = islice + 1
-          !
-          call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
-          !
-          allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-          call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
-          !
-          call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh)
-          !
-          call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
-          !
+          do k2 = 1,3
+            !
+            islice = islice + 1
+            !
+            allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+            call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
+            !
+            call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh)
+            !
+          enddo
         enddo
-      enddo
+        !
+      else
+        !
+        allocate(grot(3,3),stat=ierr)
+        !
+        islice = 0
+        !
+        do k1 = 1,3
+          !
+          do k2 = 1,3
+            !
+            islice = islice + 1
+            !
+            call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
+            !
+            allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+            call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
+            !
+            call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh_slice)
+            !
+            call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
+            !
+          enddo
+        enddo
+      endif
       !deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
+      !call ArrayStop('PThamiltonian_contract: mat_')
       !
       if (job%verbose>=4) write(out,"('   ...done!')")
       !
@@ -8020,43 +8017,43 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
+        allocate(gcor(3),stat=ierr)
+        !
+        islice  = 9
+        !
+        do k1 = 1,3
+          !
+          islice = islice + 1
+          !
+          allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+          call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
+          !
+          call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh)
+          !
+        enddo
+        !
+      else
+        !
+        allocate(gcor(3),stat=ierr)
+        !
+        islice  = 9
+        !
+        do k1 = 1,3
+          !
+          islice = islice + 1
+          !
+          allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
+          call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
+          !
+          call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
+          !
+          call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh_slice)
+          !
+          call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
+          !
+        enddo
+        !
       endif
-      !
-      allocate(gcor(3),stat=ierr)
-      !
-      islice  = 9
-      !
-      !do k1 = 1,3
-      !  !
-      !  islice = islice + 1
-      !  !
-      !  allocate(gcor(k1)%me(maxcontr,maxcontr),stat=ierr)
-      !  call ArrayStart('gcor-matrix',ierr,1,kind(f_t),rootsize2_)
-      !  !
-      !  call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
-      !  !
-      !  call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-      !  !
-      !  gcor(k1)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-      !  !
-      !  call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
-      !  !
-      !enddo
-      !
-      do k1 = 1,3
-        !
-        islice = islice + 1
-        !
-        allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-        call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
-        !
-        call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
-        !
-        call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh)
-        !
-        call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
-        !
-      enddo
       !
       !deallocate(mat_)
       !call ArrayStop('PThamiltonian_contract: mat_')
@@ -8079,13 +8076,6 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-        !do k1 = 1,3
-        !  do k2 = 1,3
-        !    !
-        !    call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-        !    !
-        !  enddo
-        !enddo
         file_offset = 9*ncontr*ncontr*mpi_real_size
         call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
@@ -8096,13 +8086,6 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        !!do k1 = 1,PT%Nmodes
-        !do k2 = 1,3
-        !  !
-        !  call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-        !  !
-        !enddo
-        !!enddo
         file_offset = 3*ncontr*ncontr*mpi_real_size
         call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
@@ -8355,8 +8338,8 @@ module perturbation
     !
     call MPI_File_read_all(fileh, readbuf, ilen, mpi_character, mpi_status_ignore, ierr)
     if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
-      if (mpi_rank .eq. 0) write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
-      stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
+      if (mpi_rank .eq. 0) write (out,"(' [MPI] kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
+      stop 'PTrestore_rot_kinetic_matrix_elements_mpi - in slice -  header missing or wrong'
     end if
   end subroutine divided_slice_open_mpi
 
@@ -8377,8 +8360,8 @@ module perturbation
     !
     call MPI_File_read_all(fileh, readbuf, ilen, mpi_character, mpi_status_ignore, ierr)
     if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
-      if(mpi_rank .eq. 0) write (out,"(' divided_slice_close, kinetic checkpoint slice: footer is missing or wrong',a)") readbuf(1:ilen)
-      stop 'divided_slice_close - in slice -  footer missing or wrong'
+      if(mpi_rank .eq. 0) write (out,"(' divided_slice_close_mpi, kinetic checkpoint slice: footer is missing or wrong',a)") readbuf(1:ilen)
+      stop 'divided_slice_close_mpi - in slice -  footer missing or wrong'
     end if
     !
     call close_chkptfile_mpi(fileh)
@@ -16150,6 +16133,7 @@ module perturbation
            (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) ) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+            call mpi_barrier(mpi_comm_world, ierr)
             if(mpi_rank.eq.0) then
               call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
               call MPI_File_write(chkptMPIIO,'End Kinetic Part',16,mpi_character,mpi_status_ignore,ierr)
@@ -16326,7 +16310,7 @@ module perturbation
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             if (mpi_rank.eq.0) then !AT
               if(.not.job%IOextF_divide) then 
-                call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
+                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
                 call MPI_File_write(chkptMPIIO,'End external field',18,mpi_character,mpi_status_ignore,ierr)
               endif
             endif
@@ -16456,16 +16440,16 @@ module perturbation
 
       subroutine write_divided_slice_mpi(islice,name,suffix,N,field)
         !
-        integer(ik),intent(in)        :: islice
-        character(len=*),intent(in)   :: name,suffix
-        integer(ik),intent(in)        :: N
-        real(rk),intent(in)           :: field(N,N)
-        character(len=4)              :: jchar
-        character(len=cl)             :: filename
-        character(len=cl)             :: job_is
-        type(MPI_File)                :: chkptMPIIO
-        integer(kind=MPI_OFFSET_KIND) :: offset
-        integer                       :: ierr
+        integer(ik),intent(in)              :: islice
+        character(len=*),intent(in)         :: name,suffix
+        integer(ik),intent(in)              :: N
+        real(rk),dimension(:,:),intent(in)  :: field
+        character(len=4)                    :: jchar
+        character(len=cl)                   :: filename
+        character(len=cl)                   :: job_is
+        type(MPI_File)                      :: chkptMPIIO
+        integer(kind=MPI_OFFSET_KIND)       :: offset
+        integer                             :: ierr
         !
         write(job_is,"('single swap_matrix')")
         !
@@ -16475,14 +16459,15 @@ module perturbation
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
+        offset = 0
         call MPI_File_open(mpi_comm_world, filename, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
+        call MPI_File_set_size(chkptMPIIO, offset, ierr)
         !
-        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,trim(name),len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
         !
-        call co_write_matrix_distr(field,mdimen, startdim, enddim,chkptMPIIO)
+        call co_write_matrix_distr(field, N, co_startdim, co_enddim,chkptMPIIO)
         !
-        call MPI_File_seek(chkptMPIIO, offset, MPI_SEEK_END)
-        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,trim(name),len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
         !
         call MPI_File_close(chkptMPIIO, ierr)
         !
@@ -29886,6 +29871,7 @@ end subroutine read_contr_matelem_expansion_classN
   ! all necessary information 
   !
   subroutine check_point_active_space(action)
+    use mpi_aux
 
    character(len=*), intent(in) :: action ! 'SAVE' or 'READ'
    !
@@ -29895,11 +29881,11 @@ end subroutine read_contr_matelem_expansion_classN
        write (out,"(' check_point_active_space - action ',a,' is not valid')") trim(action)
        stop 'check_point_active_space - bogus command'
      case ('SAVE','save')
-       call checkpointSave
+       if(mpi_rank.eq.0) call checkpointSave
      case ('APPEND')
-       call checkpointAppend
+       if(mpi_rank.eq.0) call checkpointAppend
      case ('CLOSE','close')
-       call checkpointClose
+       if(mpi_rank.eq.0) call checkpointClose
      case ('READ','read')
        call checkpointRestore
    end select
@@ -30301,6 +30287,7 @@ end subroutine read_contr_matelem_expansion_classN
   ! read-write the contracted basis sets 
   !
   subroutine PTcheck_point_dvr(action)
+    use mpi_aux
 
    character(len=*), intent(in) :: action ! 'SAVE' or 'READ'
    !
@@ -30310,7 +30297,7 @@ end subroutine read_contr_matelem_expansion_classN
        write (out,"(' PTcheck_point_dvr - action ',a,' is not valid')") trim(action)
        stop 'PTcheck_point_dvr - bogus command'
      case ('SAVE','save')
-       call checkpointSave
+       if(mpi_rank.eq.0) call checkpointSave
      case ('READ','read')
        call checkpointRestore
      case ('NONE','none')
@@ -30595,6 +30582,7 @@ end subroutine read_contr_matelem_expansion_classN
   ! read-write the contracted basis sets 
   !
   subroutine PTcheck_point_contracted_space(action)
+    use mpi_aux
      !
      implicit none
      !
@@ -30606,9 +30594,9 @@ end subroutine read_contr_matelem_expansion_classN
        write (out,"(' PTcheck_point_contracted_space - action ',a,' is not valid')") trim(action)
        stop 'PTcheck_point_contracted_space - bogus command'
      case ('SAVE','save')
-       call checkpointSave
+       if(mpi_rank.eq.0) call checkpointSave
      case ('CLOSE','close')
-       call checkpointClose
+       if(mpi_rank.eq.0) call checkpointClose
      case ('READ','read')
        call checkpointRestore
    end select

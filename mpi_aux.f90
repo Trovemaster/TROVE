@@ -75,17 +75,17 @@ contains
 
     if (.not. comms_inited) stop "CO_BLOCK_TYPE_INIT COMMS NOT INITED"
 
-    MB = dimx/nprow
-    NB = dimy/npcol
-    MLOC = NUMROC( dimx, MB, myprow, 0, nprow )
-    NLOC = NUMROC( dimy, NB, mypcol, 0, npcol )
-    call DESCINIT(descr, dimx, dimy, MB, NB, 0, 0, blacs_ctxt, max(MLOC,1), ierr)
+    MB = dimy/nprow
+    NB = dimx/npcol
+    MLOC = NUMROC( dimy, MB, myprow, 0, nprow )
+    NLOC = NUMROC( dimx, NB, mypcol, 0, npcol )
+    call DESCINIT(descr, dimy, dimx, MB, NB, 0, 0, blacs_ctxt, max(MLOC,1), ierr)
 
     allocate(smat(MLOC,NLOC), stat=allocinfo)
     if(allocinfo) return
 
     if (present(mpi_type)) then
-      global_size = (/dimx, dimy/)
+      global_size = (/dimy, dimx/)
       distr = (/MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC/)
       dargs = (/MB, NB/)
       call MPI_Type_create_darray(blacs_size, blacs_rank, 2, global_size, distr, dargs, blacs_dims, &
@@ -313,13 +313,17 @@ contains
   subroutine co_read_matrix_distr(x, longdim, lb, ub, infile)
     use accuracy
 
-    real(rk),dimension(:,lb:),intent(in) :: x
+    real(rk),dimension(:,lb:),intent(out) :: x
     integer,intent(in)                :: longdim, lb, ub
 
-    type(MPI_File),intent(in) :: infile
+    type(MPI_File),intent(inout) :: infile
     type(MPI_Status) :: writestat
     integer(kind=MPI_Offset_kind) :: offset_start,offset_end
     integer :: readcount, ierr
+
+    call mpi_barrier(mpi_comm_world, ierr)
+
+    call TimerStart('MPI_read_matrix')
 
     if (comm_size.gt.1) then
       offset_start = (lb-1)*longdim*mpi_real_size
@@ -329,8 +333,10 @@ contains
       call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
       call MPI_File_seek(infile, offset_end, MPI_SEEK_CUR)
     else
-      call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
+      call MPI_File_read(infile,x,1,mpitype_column,writestat,ierr)
     endif
+
+    call TimerStop('MPI_read_matrix')
 
   end subroutine co_read_matrix_distr
 
@@ -339,14 +345,14 @@ contains
 
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
-    type(MPI_File),intent(in) :: outfile
+    type(MPI_File),intent(inout) :: outfile
     integer :: ierr
     integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
 
     call mpi_barrier(mpi_comm_world, ierr)
 
-    call TimerStart('MPI_write')
+    call TimerStart('MPI_write_matrix')
 
     if (comm_size.gt.1) then
       offset_start = (lb-1)*longdim*mpi_real_size
@@ -354,12 +360,13 @@ contains
 
       call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
       call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)
+      call mpi_barrier(mpi_comm_world, ierr)
       call MPI_File_seek(outfile, offset_end, MPI_SEEK_END)
     else
-      call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)
+      call MPI_File_write(outfile,x,1,mpitype_column,writestat,ierr)
     endif
 
-    call TimerStop('MPI_write')
+    call TimerStop('MPI_write_matrix')
 
   end subroutine co_write_matrix_distr
 

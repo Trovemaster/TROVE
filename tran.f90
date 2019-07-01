@@ -1274,10 +1274,10 @@ contains
         call ArrayStart('psi',info,1,kind(psi),matsize)
         call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
       else
-        call co_block_type_init(psi, dimen, Neigenroots, desc_psi, info)
+        call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
         call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
         !
-        call co_block_type_init(mat_t, Neigenroots, dimen, desc_mat_t, info)
+        call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
         call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
       endif
       !
@@ -1572,7 +1572,7 @@ contains
         !
         islice = 0
         !
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
@@ -1590,7 +1590,11 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
+              if (trim(job%kinetmat_format).eq.'MPIIO') then
+                call divided_slice_read_mpi(islice,'g_rot',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
+              else
+                call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
+              endif
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1619,7 +1623,11 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              if(mpi_rank.eq.0) call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s)
+              if (trim(job%kinetmat_format).eq.'MPIIO') then
+                call divided_slice_write_mpi(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s,mat_s_block_type)
+              else
+                if(mpi_rank.eq.0) call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s)
+              endif
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1637,7 +1645,7 @@ contains
         enddo
         !
         ! Reset view to flat file
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
           read_offset = read_offset + 9*dimen*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
@@ -1672,7 +1680,7 @@ contains
         !
         islice = 9
         !
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
@@ -1692,7 +1700,11 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
+              if (trim(job%kinetmat_format).eq.'MPIIO') then
+                call divided_slice_read_mpi(islice,'g_cor',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
+              else
+                call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
+              endif
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1720,7 +1732,11 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              if(mpi_rank.eq.0) call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s)
+              if (trim(job%kinetmat_format).eq.'MPIIO') then
+                call divided_slice_write_mpi(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s,mat_s_block_type)
+              else
+                if(mpi_rank.eq.0) call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s)
+              endif
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1738,7 +1754,7 @@ contains
         !enddo
         !
         ! Reset view to flat file
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
           read_offset = read_offset + 3*dimen*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
@@ -1867,7 +1883,7 @@ contains
           call ArrayStart('extF_me',info,1,kind(extF_me),int(size(extF_me),hik))
         endif
         !
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, extF_block_type, "native", MPI_INFO_NULL, ierr)
 
@@ -1881,7 +1897,11 @@ contains
           !
           if (job%IOextF_divide) then
             !
-            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,ierror)
+            if (trim(job%kinetmat_format).eq.'MPIIO') then
+              call divided_slice_read_mpi(imu,'extF',job%extmat_suffix,dimen,extF_me,extF_block_type,ierror)
+            else
+              call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,ierror)
+            endif
             !
             if (ierror==1) cycle
             !
@@ -1946,13 +1966,17 @@ contains
             !
           else
             !
-            if(mpi_rank.eq.0) call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
+            if (trim(job%kinetmat_format).eq.'MPIIO') then
+              call divided_slice_write_mpi(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s,mat_s_block_type)
+            else
+              if(mpi_rank.eq.0) call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s)
+            endif
             !
           endif
           !
         enddo
         ! Reset view to flat file
-        if (blacs_size.gt.1) then
+        if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
           read_offset = read_offset + (fitting%iparam(2)-fitting%iparam(1)+1)*ncontr_t*ncontr_t*mpi_real_size &
             + (fitting%iparam(2)-fitting%iparam(1)+1)*mpi_int_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
@@ -2049,6 +2073,50 @@ contains
         close(chkptIO)
         !
       end subroutine divided_slice_write
+      !
+      !
+      subroutine divided_slice_write_mpi(islice,name,suffix,N,field,block_type)
+        !
+        implicit none
+        !
+        integer(ik),intent(in)                :: islice
+        character(len=*),intent(in)           :: name,suffix
+        integer(ik),intent(in)                :: N
+        real(rk),dimension(:,:),intent(in)    :: field
+        type(MPI_Datatype),intent(in)         :: block_type
+        character(len=4)                      :: jchar
+        character(len=cl)                     :: filename
+        type(MPI_File)                        :: chkptMPIIO
+        integer(kind=MPI_OFFSET_KIND)         :: offset
+        integer                               :: ierr
+        !
+        write(job_is,"('single swap_matrix MPI')")
+        !
+        !
+        write(jchar, '(i4)') islice
+        !
+        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
+        !
+        offset = 0
+        call MPI_File_open(mpi_comm_world, filename, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
+        call MPI_File_set_size(chkptMPIIO, offset, ierr)
+        !
+        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        !
+        !call MPI_File_get_position(chkptMPIIO, offset, ierr)
+        offset = int(len(trim(name)),MPI_OFFSET_KIND)
+        call MPI_File_set_view(chkptMPIIO, offset, mpi_byte, block_type, "native", MPI_INFO_NULL, ierr)
+        !
+        call MPI_File_write_all(chkptMPIIO, field, size(field), mpi_double_precision, mpi_status_ignore, ierr)
+        !
+        offset = offset + N*N*mpi_real_size
+        call MPI_File_set_view(chkptMPIIO, offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+        !
+        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        !
+        call MPI_File_close(chkptMPIIO, ierr)
+        !
+      end subroutine divided_slice_write_mpi
       !       
       !
       subroutine divided_slice_read(islice,name,suffix,N,field,ierror)
@@ -2112,6 +2180,78 @@ contains
         if (job%verbose>=4) write (out,"(' (skipped).')",advance='YES') 
         !
       end subroutine divided_slice_read
+      !
+      !
+      subroutine divided_slice_read_mpi(islice,name,suffix,N,field,block_type,ierr)
+        !
+        implicit none
+        !
+        integer(ik),intent(in)                :: islice
+        character(len=*),intent(in)           :: name,suffix
+        integer(ik),intent(in)                :: N
+        real(rk),dimension(:,:),intent(out)   :: field
+        type(MPI_Datatype),intent(in)         :: block_type
+        integer(ik),intent(out)               :: ierr
+        character(len=4)                      :: jchar
+        type(MPI_File)                        :: chkptMPIIO
+        character(len=cl)                     :: buf,filename,job_is
+        integer(ik)                           :: ilen
+        integer(MPI_OFFSET_KIND)              :: offset
+        !
+        ierror = 0
+        !
+        write(job_is,"('single swap_matrix MPI')")
+        !
+        write(jchar, '(i4)') islice
+        !
+        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
+        ilen = LEN_TRIM(name)
+        !
+        call MPI_File_open(mpi_comm_world, filename, mpi_mode_rdonly, mpi_info_null, chkptMPIIO, ierr)
+        !
+        if (ierr .ne. 0) then
+          !
+          ! This error code will allow simply skipping the corresponding record/file without crashing the program 
+          !
+          ierr = 1
+          !
+          ! we allow to skip opening the file only for the external matrix elements
+          !
+          if (trim(name)/="extF") then 
+            write (out,"(' kinetic divided_slice_read_mpi in slice ',a20,': file does not exist')") filename
+            stop 'divided_slice_read_mpi - in slice -  file does not exist'
+          endif
+          !
+          if (job%verbose>=4) write (out,"(' (skipped).')",advance='YES') 
+          !
+          return
+        endif
+        !
+        call MPI_File_read_all(chkptMPIIO,buf,ilen,mpi_character,mpi_status_ignore,ierr)
+        !
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+          write (out,"(' kinetic divided_slice_read_mpi in slice ',a20,': header is missing or wrong: ',a)") filename,buf(1:ilen)
+          stop 'divided_slice_read_mpi - in slice -  header missing or wrong'
+        end if
+        !
+        offset = ilen
+        call MPI_File_set_view(chkptMPIIO, int(ilen,MPI_OFFSET_KIND), mpi_byte, block_type, "native", MPI_INFO_NULL, ierr)
+        call MPI_File_read_all(chkptMPIIO, field, size(field), mpi_double_precision, mpi_status_ignore, ierr)
+        !
+        offset = offset + N*N*mpi_real_size
+        call MPI_File_set_view(chkptMPIIO, offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
+        !
+        call MPI_File_read_all(chkptMPIIO,buf,ilen,mpi_character,mpi_status_ignore,ierr)
+        !
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+          write (out,"(' kinetic divided_slice_read_mpi in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+          stop 'divided_slice_read_mpi - in slice -  header missing or wrong'
+        end if
+        !
+        call MPI_File_close(chkptMPIIO, ierr)
+        !
+      end subroutine divided_slice_read_mpi
+      !
       !
       subroutine divided_slice_read_vibrot(islice,suffix,N,field)
         !
@@ -2542,7 +2682,7 @@ contains
      !read(chkptIO) buf18(1:11)
      call MPI_File_read_all(fileh, buf18, 11, mpi_character, mpi_status_ignore, ierr)
      if (buf18(1:11)/='icontr_ideg') then
-       write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
+       write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") trim(job%kinetmat_file),buf18(1:11)
        stop 'restore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
      end if
      !
@@ -2560,7 +2700,7 @@ contains
        !read(chkptIO) buf18(1:4)
        call MPI_File_read_all(fileh, buf18, 5, mpi_character, mpi_status_ignore, ierr)
        if (buf18(1:5)/='g_rot') then
-         write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") 'mpiiofile',buf18(1:5)
+         write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") trim(job%kinetmat_file),buf18(1:5)
          !
          if (buf18(1:4)=='hvib'.or.buf18(1:3)=='End') &
                write (out,"(a,a)") &
