@@ -514,6 +514,26 @@ module mol_xy2
           dst(3) = pi-(src(3)+molec%local_eq(3))
        endif
        !
+    case('R1-Z-R2-RHO')
+       !
+       if (direct) then 
+          dst(1:2) = dsrc(1:2)
+          dst(3) =  pi-src(3)
+       else
+          dst(1:2) = src(1:2)+molec%local_eq(1:2)
+          dst(3) = pi-src(3)
+       endif
+       !
+    case('R1-Z-R2-ALPHA')
+       !
+       if (direct) then 
+          dst(1:2) = dsrc(1:2)
+          dst(3) =  dsrc(3)
+       else
+          dst(1:2) = src(1:2)+molec%local_eq(1:2)
+          dst(3) = src(3)+molec%local_eq(3)
+       endif
+       !
     end select
     !
     !
@@ -701,6 +721,73 @@ module mol_xy2
          !b0(:,1,0) = sqrt(0.5_ark)*( a0(:,1)+a0(:,2) )
          !b0(:,2,0) = sqrt(0.5_ark)*( a0(:,1)-a0(:,2) )
          !
+       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+         !
+         b0(1,1,0) = 0
+         b0(1,2,0) = 0
+         b0(1,3,0) = 0
+         !
+         b0(2,1,0) = 0
+         b0(2,2,0) = 0
+         b0(2,3,0) = re13
+         !
+         b0(3,1,0) = re23*sin(alphaeq)
+         b0(3,2,0) = 0.0_ark
+         b0(3,3,0) = re23*cos(alphaeq)
+         !
+         do i = 1,3
+           CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,i,0) = b0(:,i,0) - CM_shift
+         enddo 
+         !
+       case('R1-R2-ALPHA-Z')
+         !
+         if (all(molec%AtomMasses(2:3)==m2).and.re13==re23) then
+           stop 'R1-R2-ALPHA-Z is not meant for symmeitric XY2 molecules' 
+         endif
+         !
+         b0(1,1,0) = 0
+         b0(1,2,0) = 0
+         b0(1,3,0) = 0
+         !
+         b0(2,1,0) = 0
+         b0(2,2,0) = 0
+         b0(2,3,0) = re13
+         !
+         b0(3,1,0) = re23*sin(alphaeq)
+         b0(3,2,0) = 0.0_ark
+         b0(3,3,0) = re23*cos(alphaeq)
+         !
+         do i = 1,3
+           CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,i,0) = b0(:,i,0) - CM_shift
+         enddo 
+         !
+         call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
+         !
+         Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,0)**2+ b0(:,3,0)**2) )
+         Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,3,0)**2) )
+         Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,2,0)**2) )
+         !
+         ! Second Eckart equation
+         ! 
+         do ix = 1,3 
+            do jx = 1,3 
+               if (ix/=jx) then  
+                  !
+                  a_t =  sum(molec%AtomMasses(:)*b0(:,ix,0)*b0(:,jx,0) )
+                  !
+                  if (abs(a_t)>100.0_rk*small_) then 
+                      write(out,"('ML_b0_XY3: b0 is not a solution of Eckart 2 for ix,jx =',2i4,d18.8)") ix,jx,a_t
+                      stop 'ML_b0_XY3: b0 is not solution of Eckart2'
+                  endif
+               endif
+            enddo
+            !
+         enddo
+
+
+         !
       !case('R-R-R')
       !   !
       !   alphaeq = acos((re13**2+re13**2-re13**2)/(2.0_ark*re13*re13))
@@ -717,56 +804,8 @@ module mol_xy2
       !   b0(3,2,0) = 0.0_ark
       !   b0(3,1,0) =-m1/m*re13*cos(alphaeq)
       !   !
-      end select
       !
-      if (any(molec%AtomMasses(2:3)/=m2).or.re13/=re23) then
-        !
-        b0(1,1,0) = 0
-        b0(1,2,0) = 0
-        b0(1,3,0) = 0
-        !
-        b0(2,1,0) = 0
-        b0(2,2,0) = 0
-        b0(2,3,0) = re13
-        !
-        b0(3,1,0) = re23*sin(alphaeq)
-        b0(3,2,0) = 0.0_ark
-        b0(3,3,0) = re23*cos(alphaeq)
-        !
-        do i = 1,3
-          CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-          b0(:,i,0) = b0(:,i,0) - CM_shift
-        enddo 
-        !
-        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
-        !
-        Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,0)**2+ b0(:,3,0)**2) )
-        Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,3,0)**2) )
-        Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,2,0)**2) )
-        !
-        ! Second Eckart equation
-        ! 
-        do ix = 1,3 
-           do jx = 1,3 
-              if (ix/=jx) then  
-                 !
-                 a_t =  sum(molec%AtomMasses(:)*b0(:,ix,0)*b0(:,jx,0) )
-                 !
-                 if (abs(a_t)>100.0_rk*small_) then 
-                     write(out,"('ML_b0_XY3: b0 is not a solution of Eckart 2 for ix,jx =',2i4,d18.8)") ix,jx,a_t
-                     stop 'ML_b0_XY3: b0 is not solution of Eckart2'
-                 endif
-              endif
-           enddo
-           !
-        enddo
-
-        !call MLorienting_a0(Natoms,molec%AtomMasses,b0(:,:,0))
-        
-        !write(out,"('ML_b0_XY2: masses-s are given in wrong order, must be M m m: ',3f14.6)") molec%AtomMasses(:)
-        !stop 'ML_b0_XY2: ,masses are in wrong order'
-        !
-      endif 
+      end select
       !
       !
       ! define the rho-type coordinate 
@@ -821,6 +860,11 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA')
+            !
+            rho_ref = 0.0_ark
+            rho0 = 0.0_ark
+            !
          end select
          !
          if ( rho0+rho_borders(1)<0.0.or.rho0+rho_borders(2)>pi) then  
@@ -835,7 +879,7 @@ module mol_xy2
             alpha = rho
             !
             select case(trim(molec%coords_transform))
-              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z')
+              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z','R1-Z-R2-RHO')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -1015,170 +1059,70 @@ module mol_xy2
                b0(3,2,i) = 0.0_ark
                b0(3,1,i) =-m1/m*re13*cos(alphae_h)
                !
+             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+               !
+               b0(1,1,i) = 0
+               b0(1,2,i) = 0
+               b0(1,3,i) = 0
+               !
+               b0(2,1,i) = 0
+               b0(2,2,i) = 0
+               b0(2,3,i) = re13
+               !
+               b0(3,1,i) = re23*sin(alpha)
+               b0(3,2,i) = 0.0_ark
+               b0(3,3,i) = re23*cos(alpha)
+             
+               do ix = 1,3
+                 CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,ix,i) = b0(:,ix,i) - CM_shift
+               enddo 
+               !
+             case('R1-R2-ALPHA-Z')
+               !
+               b0(1,1,i) = 0
+               b0(1,2,i) = 0
+               b0(1,3,i) = 0
+               !
+               b0(2,1,i) = 0
+               b0(2,2,i) = 0
+               b0(2,3,i) = re13
+               !
+               b0(3,1,i) = re23*sin(alpha)
+               b0(3,2,i) = 0.0_ark
+               b0(3,3,i) = re23*cos(alpha)
+               !             
+               do ix = 1,3
+                 CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,ix,i) = b0(:,ix,i) - CM_shift
+               enddo 
+               !
+               call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform)
+               ! 
+               do ix = 1,3 
+                  do jx = 1,3 
+                     if (ix/=jx) then  
+                        !
+                        a_t =  sum(molec%AtomMasses(:)*b0(:,ix,i)*b0(:,jx,i) )
+                        !
+                        if (abs(a_t)>100.0_rk*(small_)) then 
+                            write(out,"('ML_b0_XY3: b0 is not a solution of Eckart 2 for ix,jx =',3i4,d18.8)") ix,jx,i,a_t
+                            stop 'ML_b0_XY3: b0 is not solution of Eckart2'
+                        endif
+                     endif
+                  enddo
+                  !
+               enddo
+               !
             end select
-            !
-            !if (any(molec%AtomMasses(2:3)/=m2)) then
-            !  !
-            !  b0(1,1,i) = 0.0_ark
-            !  b0(1,2,i) = 0.0_ark
-            !  b0(1,3,i) = 0.0_ark
-            !  !
-            !  b0(2,1,i) =-re13*cos(alphae_h)
-            !  b0(2,2,i) = 0.0_ark
-            !  b0(2,3,i) =-re13*sin(alphae_h)
-            !  !
-            !  b0(3,1,i) =-re13*cos(alphae_h)
-            !  b0(3,2,i) = 0.0_ark
-            !  b0(3,3,i) = re13*sin(alphae_h)
-            !  !
-            !  do ix = 1,3
-            !    CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-            !    b0(:,ix,i) = b0(:,ix,i) - CM_shift
-            !  enddo 
-            !  !
-            !  ijk(1,1) = 2 ; ijk(1,2) = 3
-            !  ijk(2,1) = 3 ; ijk(2,2) = 1
-            !  ijk(3,1) = 1 ; ijk(3,2) = 2
-            !  !
-            !  method = 'ULEN'
-            !  !
-            !  a0 = b0(:,:,i)
-            !  !
-            !  call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform,method=method)
-            !  !
-            !  loop_xyz : do ix =1,3
-            !    !
-            !    do ioper = 1,4
-            !      !
-            !      phi = real(ioper-1,ark)*pi*0.5_ark
-            !      !
-            !      tmat = 0 
-            !      !
-            !      tmat(ix,ix) = 1.0_ark
-            !      !
-            !      tmat(ijk(ix,1),ijk(ix,1)) = cos(phi)
-            !      tmat(ijk(ix,1),ijk(ix,2)) = sin(phi)
-            !      tmat(ijk(ix,2),ijk(ix,1)) =-sin(phi)
-            !      tmat(ijk(ix,2),ijk(ix,2)) = cos(phi)
-            !      !
-            !      transform1 = matmul(tmat,transform)
-            !      !
-            !      forall(ix=1:3) unit(ix) = dot_product(transform0(ix,:),transform1(ix,:))
-            !      !
-            !      unit = unit - 1.0_ark
-            !      !
-            !      if ( all( abs( unit(:) )<1.0e-1  ) ) exit loop_xyz
-            !      !
-            !    enddo
-            !  enddo loop_xyz
-            !  !
-            !  transform0 = matmul(tmat,transform)
-            !  !
-            !  forall(ix=1:3) b0(ix,:,i) = matmul(transpose(tmat),b0(ix,:,i))
-            !  !
-            !endif
-            !
-            if (any(molec%AtomMasses(2:3)/=m2)) then
-              !
-              b0(1,1,0) = 0
-              b0(1,2,0) = 0
-              b0(1,3,0) = 0
-              !
-              b0(2,1,0) = 0
-              b0(2,2,0) = 0
-              b0(2,3,0) = re13
-              !
-              b0(3,1,0) = re23*sin(alpha)
-              b0(3,2,0) = 0.0_ark
-              b0(3,3,0) = re23*cos(alpha)
-              !
-              !b0(1,1,i) = re13*cos(alphae_h)*(m2+m3)/(m1+m2+m3)
-              !b0(1,2,i) = 0.0_ark
-              !b0(1,3,i) = re13*sin(alphae_h)*(m2-m3)/(m1+m2+m3)
-              !
-              !b0(2,1,i) = -re13*cos(alphae_h)*m1/(m1+m2+m3)
-              !b0(2,2,i) = 0.0_ark
-              !b0(2,3,i) = -re13*sin(alphae_h)*(m1+2.0_ark*m3)/(m1+m2+m3)
-              !
-              !b0(3,1,i) = -re13*cos(alphae_h)*m1/(m1+m2+m3)
-              !b0(3,2,i) = 0.0_ark
-              !b0(3,3,i) = re13*sin(alphae_h)*(m1+2.0_ark*m2)/(m1+m2+m3)
-
-              do ix = 1,3
-                CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-                b0(:,ix,i) = b0(:,ix,i) - CM_shift
-              enddo 
-              !
-              !tanphi = -0.5_ark*(m1*sin(alpha)*(m2-m3))/(m2*m1*cos(alpha)-2*m2*m3+2*m2*m3*cos(alpha)+m1*m3*cos(alpha))
-              !
-              !phi = atan(tanphi)
-              !
-              !print *,i,phi
-              !
-              !phi =-0.25_ark*atan(m1*sin(alpha)*(m2-m3)/(2.0_ark*m2*m3*cos(alpha)-2.0_ark*m2*m3+m1*m3*cos(alpha)+m1*m2*cos(alpha)))
-              !
-              !tmat = 0 ; tmat(2,2) = 1.0_ark
-              !
-              !tmat(1,1) = cos(phi)
-              !tmat(1,3) =-sin(phi)
-              !tmat(3,1) = sin(phi)
-              !tmat(3,3) = cos(phi)
-              !
-              !forall(ix=1:3) b0(ix,:,i) = matmul((tmat),b0(ix,:,i))
-              !
-              !transform1 = matmul(tmat,transform)
-              !
-              !do ix = 1,3
-              !  CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-              !  b0(:,ix,i) = b0(:,ix,i) - CM_shift
-              !enddo 
-              !
-              call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform)
-              ! 
-              do ix = 1,3 
-                 do jx = 1,3 
-                    if (ix/=jx) then  
-                       !
-                       a_t =  sum(molec%AtomMasses(:)*b0(:,ix,i)*b0(:,jx,i) )
-                       !
-                       if (abs(a_t)>100.0_rk*(small_)) then 
-                           write(out,"('ML_b0_XY3: b0 is not a solution of Eckart 2 for ix,jx =',3i4,d18.8)") ix,jx,i,a_t
-                           stop 'ML_b0_XY3: b0 is not solution of Eckart2'
-                       endif
-                    endif
-                 enddo
-                 !
-              enddo
-              !
-            endif
-            !
-            !if (verbose>=4) then 
-            !  write(out,"(i6)") molec%natoms
-            !  !
-            !  write(out,"(/'O',3x,3f14.8)") b0(1,:,i)*bohr
-            !  write(out,"( 'D',3x,3f14.8)") b0(2,:,i)*bohr
-            !  write(out,"( 'H',3x,3f14.8)") b0(3,:,i)*bohr
-            !  !
-            !endif
             !
          enddo
          !
-      else
-         !
-         !if (verbose>=4) then 
-         !  write(out,"(i6)") molec%natoms
-         !  !
-         !  write(out,"(/'O',3x,3f14.8)") b0(1,:,0)
-         !  write(out,"( 'H',3x,3f14.8)") b0(2,:,0)
-         !  write(out,"( 'H',3x,3f14.8)") b0(3,:,0)
-         !  !
-         !endif
-         !
       endif
       !
-      ! For special angles of a linear molecule
+      ! Print XYZ gemetries
       !
-      if (Nangles==0) then
+      if (Nangles>=1) then
          !
          do i = 0,npoints
             !
@@ -1203,7 +1147,7 @@ module mol_xy2
               write(out,"(i6)") molec%natoms
               !
               write(out,"(/'O',3x,3f14.8)") b0(1,:,i) !*bohr
-              write(out,"( 'H',3x,3f14.8)") b0(2,:,i) !*bohr
+              write(out,"( 'K',3x,3f14.8)") b0(2,:,i) !*bohr
               write(out,"( 'H',3x,3f14.8)") b0(3,:,i) !*bohr
               !
             endif
@@ -2415,9 +2359,9 @@ module mol_xy2
           select case(ioper)
 
           case (1) ! E 
-
+            !
             dst = src
-
+            !
           case (2) ! (12)
 
             dst(1) = src(2)
@@ -2536,20 +2480,25 @@ module mol_xy2
  
           endif 
           !
-          !do ioper_=1,sym%Noper/2
-          !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-          !  repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
-          !enddo
-          !
           do ioper_=1,sym%Noper
             repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
             !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
           enddo
           !
-          !dst(3) = repres(ioper,1,1)*src(3)+repres(ioper,1,2)*src(4)
-          !dst(4) = repres(ioper,2,1)*src(3)+repres(ioper,2,2)*src(4)
-          !
        end select       
+       !
+    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_XY2 - bad symm. type'
+          !
+       case('CS','CS(M)')
+          !
+          dst = src
+          !
+       end select
        !
     end select
     !

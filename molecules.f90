@@ -266,6 +266,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev
          !
+    case('POTEN_XYZ_TYUTEREV') 
+         !
+         MLpotentialfunc => MLpoten_xyz_tyuterev
+         !
     case('POTEN_SO2_PES_8D') 
          !
          MLpotentialfunc => MLpoten_SO2_pes_8d
@@ -491,6 +495,10 @@ end function ML_MEPfunc
     case('DIPOLE_H2O_LPT2011')
         !
         MLextF_func => MLdipole_h2o_lpt2011
+        !
+    case('DIPOLE_PQR_XYZ')
+        !
+        MLextF_func => MLdms2pqr_xyz_coeff
         !
     case('XY2_QMOM_SYM')
         !

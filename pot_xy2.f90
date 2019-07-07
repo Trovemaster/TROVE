@@ -13,7 +13,7 @@ module pot_xy2
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
-         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina
+         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -491,8 +491,6 @@ module pot_xy2
       !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
       !
    end select 
-
-
    !
    b1   = force(1)
    b2   = force(2)
@@ -3462,8 +3460,6 @@ endif
 
 
 
-
-
  function MLloc2pqr_xy2(r) result(f)
 
  !return cartesian coordinates of atoms in the user-defined frame for locals specified
@@ -3499,6 +3495,44 @@ endif
     f(1:molec%natoms, 1:3) = a0(1:molec%natoms, 1:3)
 
  end function MLloc2pqr_xy2
+
+
+ function MLloc2pqr_xyz(r) result(f)
+
+ !return cartesian coordinates of atoms in the user-defined frame for locals specified
+
+    real(ark), intent(in) :: r(molec%ncoords)
+    real(ark)             :: f(molec%natoms, 3)
+
+    integer(ik)           :: icart
+    real(ark)             :: a0(molec%natoms, 3), cm
+    !
+    a0 = 0
+    !
+    select case(trim(molec%coords_transform))
+       !
+    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+       !
+       a0(2, 1) =  0
+       a0(2, 3) =  r(1)
+       !
+       a0(3, 1) =  r(2) * sin(r(3))
+       a0(3, 3) =  r(2) * cos(r(3))
+       !
+    case default 
+       stop 'MLloc2pqr_xyz: illegla coordinate type'
+    end select
+    
+    do icart = 1, 3
+       cm = sum(a0(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
+       a0(1:molec%natoms, icart) = a0(1:molec%natoms, icart) - cm
+    end do
+
+    f(1:molec%natoms, 1:3) = a0(1:molec%natoms, 1:3)
+
+ end function MLloc2pqr_xyz
+
+
 
   !
   ! Defining potential energy function 
@@ -3838,6 +3872,661 @@ endif
     f(1:3) = matmul(mu,tmat)
     !
  end subroutine MLdipole_xy2_lorenzo
+
+
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xyz_tyuterev(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r1,r2,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
+
+   real(ark)            :: aa1,aa2,re1,re2,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh
+   integer(ik)          :: N
+   real(ark)            :: ycos,v_t,q1,q2
+   real(ark)            :: a1(3),a2(3),t1,t2,w(3),cosalpha
+   character(len=cl)    :: txt
+   !
+   if (verbose>=6) write(out,"('MLpoten_xyz_tyuterev/start')")
+   !
+   r1  = local(1) ;  r2    = local(2) ;  alpha = local(3)
+   !
+   if (molec%Nangles>0) then
+     alphae  = molec%alphaeq(1)
+   else
+     alphae = pi+(-molec%taueq(1)+molec%taueq(2))
+     alpha = pi - local(3) 
+   endif 
+   !
+   re1    = force(1)
+   re2    = force(2)
+   alphae = force(3)
+   aa1  = force(4)
+   aa2  = force(5)
+   !
+   b1   = force(6)
+   b2   = force(7)
+   g1   = force(8)
+   g2   = force(9)
+   !
+   rhh=sqrt(r1**2+r2**2-2._ark*r1*r2*cos(alpha))
+   vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+   !
+   ! calculate potential energy function values
+   !
+   y1=1.0_ark-exp(-aa1*(r1-re1))
+   y2=1.0_ark-exp(-aa1*(r2-re2))
+   !
+   y3=cos(alpha)-cos(alphae)
+   !
+   N = size(force)
+   !
+   v4 = 0 ; v5 = 0 ; v6 = 0 ; v7 = 0 ; v8 = 0
+   !
+   v0 = force( 10)*y1**0*y2**0*y3**0
+   v1 = force( 11)*y1**0*y2**0*y3**1& 
+      + force( 12)*y1**1*y2**0*y3**0& 
+      + force( 13)*y1**0*y2**1*y3**0
+   v2 = force( 14)*y1**0*y2**0*y3**2& 
+      + force( 15)*y1**1*y2**0*y3**1& 
+      + force( 16)*y1**0*y2**1*y3**1& 
+      + force( 17)*y1**1*y2**1*y3**0& 
+      + force( 18)*y1**2*y2**0*y3**0& 
+      + force( 19)*y1**0*y2**2*y3**0
+   v3 = force( 20)*y1**0*y2**0*y3**3& 
+      + force( 21)*y1**1*y2**0*y3**2& 
+      + force( 22)*y1**0*y2**1*y3**2& 
+      + force( 23)*y1**1*y2**1*y3**1& 
+      + force( 24)*y1**2*y2**0*y3**1& 
+      + force( 25)*y1**0*y2**2*y3**1& 
+      + force( 26)*y1**2*y2**1*y3**0& 
+      + force( 27)*y1**1*y2**2*y3**0& 
+      + force( 28)*y1**3*y2**0*y3**0& 
+      + force( 29)*y1**0*y2**3*y3**0
+   v4 = force( 30)*y1**0*y2**0*y3**4& 
+      + force( 31)*y1**1*y2**0*y3**3& 
+      + force( 32)*y1**0*y2**1*y3**3& 
+      + force( 33)*y1**1*y2**1*y3**2& 
+      + force( 34)*y1**2*y2**0*y3**2& 
+      + force( 35)*y1**0*y2**2*y3**2& 
+      + force( 36)*y1**2*y2**1*y3**1& 
+      + force( 37)*y1**1*y2**2*y3**1& 
+      + force( 38)*y1**2*y2**2*y3**0& 
+      + force( 39)*y1**3*y2**0*y3**1& 
+      + force( 40)*y1**0*y2**3*y3**1& 
+      + force( 41)*y1**3*y2**1*y3**0& 
+      + force( 42)*y1**1*y2**3*y3**0& 
+      + force( 43)*y1**4*y2**0*y3**0& 
+      + force( 44)*y1**0*y2**4*y3**0
+   v5 = force( 45)*y1**0*y2**0*y3**5& 
+      + force( 46)*y1**1*y2**0*y3**4& 
+      + force( 47)*y1**0*y2**1*y3**4& 
+      + force( 48)*y1**1*y2**1*y3**3& 
+      + force( 49)*y1**2*y2**0*y3**3& 
+      + force( 50)*y1**0*y2**2*y3**3& 
+      + force( 51)*y1**2*y2**1*y3**2& 
+      + force( 52)*y1**1*y2**2*y3**2& 
+      + force( 53)*y1**2*y2**2*y3**1& 
+      + force( 54)*y1**3*y2**0*y3**2& 
+      + force( 55)*y1**0*y2**3*y3**2& 
+      + force( 56)*y1**3*y2**1*y3**1& 
+      + force( 57)*y1**1*y2**3*y3**1& 
+      + force( 58)*y1**3*y2**2*y3**0& 
+      + force( 59)*y1**2*y2**3*y3**0& 
+      + force( 60)*y1**4*y2**0*y3**1& 
+      + force( 61)*y1**0*y2**4*y3**1& 
+      + force( 62)*y1**4*y2**1*y3**0& 
+      + force( 63)*y1**1*y2**4*y3**0& 
+      + force( 64)*y1**5*y2**0*y3**0& 
+      + force( 65)*y1**0*y2**5*y3**0
+   v6 = force( 66)*y1**0*y2**0*y3**6& 
+      + force( 67)*y1**1*y2**0*y3**5& 
+      + force( 68)*y1**0*y2**1*y3**5& 
+      + force( 69)*y1**1*y2**1*y3**4& 
+      + force( 70)*y1**2*y2**0*y3**4& 
+      + force( 71)*y1**0*y2**2*y3**4& 
+      + force( 72)*y1**2*y2**1*y3**3& 
+      + force( 73)*y1**1*y2**2*y3**3& 
+      + force( 74)*y1**2*y2**2*y3**2& 
+      + force( 75)*y1**3*y2**0*y3**3& 
+      + force( 76)*y1**0*y2**3*y3**3& 
+      + force( 77)*y1**3*y2**1*y3**2& 
+      + force( 78)*y1**1*y2**3*y3**2& 
+      + force( 79)*y1**3*y2**2*y3**1& 
+      + force( 80)*y1**2*y2**3*y3**1& 
+      + force( 81)*y1**3*y2**3*y3**0& 
+      + force( 82)*y1**4*y2**0*y3**2& 
+      + force( 83)*y1**0*y2**4*y3**2& 
+      + force( 84)*y1**4*y2**1*y3**1& 
+      + force( 85)*y1**1*y2**4*y3**1& 
+      + force( 86)*y1**4*y2**2*y3**0& 
+      + force( 87)*y1**2*y2**4*y3**0& 
+      + force( 88)*y1**5*y2**0*y3**1& 
+      + force( 89)*y1**0*y2**5*y3**1& 
+      + force( 90)*y1**5*y2**1*y3**0& 
+      + force( 91)*y1**1*y2**5*y3**0& 
+      + force( 92)*y1**6*y2**0*y3**0& 
+      + force( 93)*y1**0*y2**6*y3**0
+   v7 = force( 94)*y1**0*y2**0*y3**7&
+      + force( 95)*y1**1*y2**0*y3**6&
+      + force( 96)*y1**0*y2**1*y3**6&
+      + force( 97)*y1**1*y2**1*y3**5&
+      + force( 98)*y1**2*y2**0*y3**5&
+      + force( 99)*y1**0*y2**2*y3**5&
+      + force(100)*y1**2*y2**1*y3**4&
+      + force(101)*y1**1*y2**2*y3**4&
+      + force(102)*y1**2*y2**2*y3**3&
+      + force(103)*y1**3*y2**0*y3**4&
+      + force(104)*y1**0*y2**3*y3**4&
+      + force(105)*y1**3*y2**1*y3**3&
+      + force(106)*y1**1*y2**3*y3**3&
+      + force(107)*y1**3*y2**2*y3**2&
+      + force(108)*y1**2*y2**3*y3**2&
+      + force(109)*y1**3*y2**3*y3**1&
+      + force(110)*y1**4*y2**0*y3**3&
+      + force(111)*y1**0*y2**4*y3**3&
+      + force(112)*y1**4*y2**1*y3**2&
+      + force(113)*y1**1*y2**4*y3**2&
+      + force(114)*y1**4*y2**2*y3**1&
+      + force(115)*y1**2*y2**4*y3**1&
+      + force(116)*y1**4*y2**3*y3**0&
+      + force(117)*y1**3*y2**4*y3**0&
+      + force(118)*y1**5*y2**0*y3**2&
+      + force(119)*y1**0*y2**5*y3**2&
+      + force(120)*y1**5*y2**1*y3**1&
+      + force(121)*y1**1*y2**5*y3**1&
+      + force(122)*y1**5*y2**2*y3**0&
+      + force(123)*y1**2*y2**5*y3**0&
+      + force(124)*y1**6*y2**0*y3**1&
+      + force(125)*y1**0*y2**6*y3**1&
+      + force(126)*y1**6*y2**1*y3**0&
+      + force(127)*y1**1*y2**6*y3**0&
+      + force(128)*y1**7*y2**0*y3**0&
+      + force(129)*y1**0*y2**7*y3**0
+   v8 = force(130)*y1**0*y2**0*y3**8&
+      + force(131)*y1**1*y2**0*y3**7&
+      + force(132)*y1**0*y2**1*y3**7&
+      + force(133)*y1**1*y2**1*y3**6&
+      + force(134)*y1**2*y2**0*y3**6&
+      + force(135)*y1**0*y2**2*y3**6&
+      + force(136)*y1**2*y2**1*y3**5&
+      + force(137)*y1**1*y2**2*y3**5&
+      + force(138)*y1**2*y2**2*y3**4&
+      + force(139)*y1**3*y2**0*y3**5&
+      + force(140)*y1**0*y2**3*y3**5&
+      + force(141)*y1**3*y2**1*y3**4&
+      + force(142)*y1**1*y2**3*y3**4&
+      + force(143)*y1**3*y2**2*y3**3&
+      + force(144)*y1**2*y2**3*y3**3&
+      + force(145)*y1**3*y2**3*y3**2&
+      + force(146)*y1**4*y2**0*y3**4&
+      + force(147)*y1**0*y2**4*y3**4&
+      + force(148)*y1**4*y2**1*y3**3&
+      + force(149)*y1**1*y2**4*y3**3&
+      + force(150)*y1**4*y2**2*y3**2&
+      + force(151)*y1**2*y2**4*y3**2&
+      + force(152)*y1**4*y2**3*y3**1&
+      + force(153)*y1**3*y2**4*y3**1&
+      + force(154)*y1**4*y2**4*y3**0&
+      + force(155)*y1**5*y2**0*y3**3&
+      + force(156)*y1**0*y2**5*y3**3&
+      + force(157)*y1**5*y2**1*y3**2&
+      + force(158)*y1**1*y2**5*y3**2&
+      + force(159)*y1**5*y2**2*y3**1&
+      + force(160)*y1**2*y2**5*y3**1&
+      + force(161)*y1**5*y2**3*y3**0&
+      + force(162)*y1**3*y2**5*y3**0&
+      + force(163)*y1**6*y2**0*y3**2&
+      + force(164)*y1**0*y2**6*y3**2&
+      + force(165)*y1**6*y2**1*y3**1&
+      + force(166)*y1**1*y2**6*y3**1&
+      + force(167)*y1**6*y2**2*y3**0&
+      + force(168)*y1**2*y2**6*y3**0&
+      + force(169)*y1**7*y2**0*y3**1&
+      + force(170)*y1**0*y2**7*y3**1&
+      + force(171)*y1**7*y2**1*y3**0&
+      + force(172)*y1**1*y2**7*y3**0&
+      + force(173)*y1**8*y2**0*y3**0&
+      + force(174)*y1**0*y2**8*y3**0
+    !
+    f=v0+v1+v2+v3+v4+v5+v6+v7+v8+vhh
+    !
+    if (verbose>=6) write(out,"('MLpoten_xyz_tyuterev/end')")
+
+ end function MLpoten_xyz_tyuterev
+
+
+ !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
+ !
+ recursive subroutine MLdms2pqr_xyz_coeff(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: k
+    real(ark)             :: y1,y2,y3, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re1,re2,ae,a0,b0
+    real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8,xyz0(natoms,3)
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      select case(trim(molec%coords_transform))
+      case default
+         write (out,"('MLdms2pqr_xyz_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'MLdms2pqr_xyz_coeff - bad coord. type'
+      case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+         !
+         xyz0 = MLloc2pqr_xyz(local)
+         !
+         x(1,:) = xyz0(2,:) - xyz0(1,:)
+         x(2,:) = xyz0(3,:) - xyz0(1,:)
+         !
+      end select
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n1 + n2
+    u2 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u2 = u2 / sqrt(sum(u2(:)**2))
+    !
+    u3 = MLvector_product(u1,u2)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    re1 = extF%coef(1,1)
+    re2 = extF%coef(2,1)
+    ae = extF%coef(3,1)*pi/180.0_ark
+    a0 = extF%coef(4,1)
+    b0 = extF%coef(5,1)
+    !
+    y1 = (r1 - re1)*exp(-a0*(r1-re1)**2)
+    y2 = (r2 - re2)*exp(-b0*(r1-re2)**2)
+    y3 = cos(alpha) - cos(ae)
+    !
+    k = extF%nterms(1)
+    !
+    p(7:k) = extF%coef(7:k,1)
+    !
+ v0 = p(  7)*y1**0*y2**0*y3**0
+ v1 = p(  8)*y1**0*y2**0*y3**1& 
+    + p(  9)*y1**1*y2**0*y3**0& 
+    + p( 10)*y1**0*y2**1*y3**0
+ v2 = p( 11)*y1**0*y2**0*y3**2& 
+    + p( 12)*y1**1*y2**0*y3**1& 
+    + p( 13)*y1**0*y2**1*y3**1& 
+    + p( 14)*y1**1*y2**1*y3**0& 
+    + p( 15)*y1**2*y2**0*y3**0& 
+    + p( 16)*y1**0*y2**2*y3**0
+ v3 = p( 17)*y1**0*y2**0*y3**3& 
+    + p( 18)*y1**1*y2**0*y3**2& 
+    + p( 19)*y1**0*y2**1*y3**2& 
+    + p( 20)*y1**1*y2**1*y3**1& 
+    + p( 21)*y1**2*y2**0*y3**1& 
+    + p( 22)*y1**0*y2**2*y3**1& 
+    + p( 23)*y1**2*y2**1*y3**0& 
+    + p( 24)*y1**1*y2**2*y3**0& 
+    + p( 25)*y1**3*y2**0*y3**0& 
+    + p( 26)*y1**0*y2**3*y3**0
+  v4 =p( 27)*y1**0*y2**0*y3**4& 
+    + p( 28)*y1**1*y2**0*y3**3& 
+    + p( 29)*y1**0*y2**1*y3**3& 
+    + p( 30)*y1**1*y2**1*y3**2& 
+    + p( 31)*y1**2*y2**0*y3**2& 
+    + p( 32)*y1**0*y2**2*y3**2& 
+    + p( 33)*y1**2*y2**1*y3**1& 
+    + p( 34)*y1**1*y2**2*y3**1& 
+    + p( 35)*y1**2*y2**2*y3**0& 
+    + p( 36)*y1**3*y2**0*y3**1& 
+    + p( 37)*y1**0*y2**3*y3**1& 
+    + p( 38)*y1**3*y2**1*y3**0& 
+    + p( 39)*y1**1*y2**3*y3**0& 
+    + p( 40)*y1**4*y2**0*y3**0& 
+    + p( 41)*y1**0*y2**4*y3**0
+  v5 =p( 42)*y1**0*y2**0*y3**5& 
+    + p( 43)*y1**1*y2**0*y3**4& 
+    + p( 44)*y1**0*y2**1*y3**4& 
+    + p( 45)*y1**1*y2**1*y3**3& 
+    + p( 46)*y1**2*y2**0*y3**3& 
+    + p( 47)*y1**0*y2**2*y3**3& 
+    + p( 48)*y1**2*y2**1*y3**2& 
+    + p( 49)*y1**1*y2**2*y3**2& 
+    + p( 50)*y1**2*y2**2*y3**1& 
+    + p( 51)*y1**3*y2**0*y3**2& 
+    + p( 52)*y1**0*y2**3*y3**2& 
+    + p( 53)*y1**3*y2**1*y3**1& 
+    + p( 54)*y1**1*y2**3*y3**1& 
+    + p( 55)*y1**3*y2**2*y3**0& 
+    + p( 56)*y1**2*y2**3*y3**0& 
+    + p( 57)*y1**4*y2**0*y3**1& 
+    + p( 58)*y1**0*y2**4*y3**1& 
+    + p( 59)*y1**4*y2**1*y3**0& 
+    + p( 60)*y1**1*y2**4*y3**0& 
+    + p( 61)*y1**5*y2**0*y3**0& 
+    + p( 62)*y1**0*y2**5*y3**0
+  v6 =p( 63)*y1**0*y2**0*y3**6& 
+    + p( 64)*y1**1*y2**0*y3**5& 
+    + p( 65)*y1**0*y2**1*y3**5& 
+    + p( 66)*y1**1*y2**1*y3**4& 
+    + p( 67)*y1**2*y2**0*y3**4& 
+    + p( 68)*y1**0*y2**2*y3**4& 
+    + p( 69)*y1**2*y2**1*y3**3& 
+    + p( 70)*y1**1*y2**2*y3**3& 
+    + p( 71)*y1**2*y2**2*y3**2& 
+    + p( 72)*y1**3*y2**0*y3**3& 
+    + p( 73)*y1**0*y2**3*y3**3& 
+    + p( 74)*y1**3*y2**1*y3**2& 
+    + p( 75)*y1**1*y2**3*y3**2& 
+    + p( 76)*y1**3*y2**2*y3**1& 
+    + p( 77)*y1**2*y2**3*y3**1& 
+    + p( 78)*y1**3*y2**3*y3**0& 
+    + p( 79)*y1**4*y2**0*y3**2& 
+    + p( 80)*y1**0*y2**4*y3**2& 
+    + p( 81)*y1**4*y2**1*y3**1& 
+    + p( 82)*y1**1*y2**4*y3**1& 
+    + p( 83)*y1**4*y2**2*y3**0& 
+    + p( 84)*y1**2*y2**4*y3**0& 
+    + p( 85)*y1**5*y2**0*y3**1& 
+    + p( 86)*y1**0*y2**5*y3**1& 
+    + p( 87)*y1**5*y2**1*y3**0& 
+    + p( 88)*y1**1*y2**5*y3**0& 
+    + p( 89)*y1**6*y2**0*y3**0& 
+    + p( 90)*y1**0*y2**6*y3**0
+ v7 = p( 91)*y1**0*y2**0*y3**7& 
+    + p( 92)*y1**1*y2**0*y3**6& 
+    + p( 93)*y1**0*y2**1*y3**6& 
+    + p( 94)*y1**1*y2**1*y3**5& 
+    + p( 95)*y1**2*y2**0*y3**5& 
+    + p( 96)*y1**0*y2**2*y3**5& 
+    + p( 97)*y1**2*y2**1*y3**4& 
+    + p( 98)*y1**1*y2**2*y3**4& 
+    + p( 99)*y1**2*y2**2*y3**3& 
+    + p(100)*y1**3*y2**0*y3**4& 
+    + p(101)*y1**0*y2**3*y3**4& 
+    + p(102)*y1**3*y2**1*y3**3& 
+    + p(103)*y1**1*y2**3*y3**3& 
+    + p(104)*y1**3*y2**2*y3**2& 
+    + p(105)*y1**2*y2**3*y3**2& 
+    + p(106)*y1**3*y2**3*y3**1& 
+    + p(107)*y1**4*y2**0*y3**3& 
+    + p(108)*y1**0*y2**4*y3**3& 
+    + p(109)*y1**4*y2**1*y3**2& 
+    + p(110)*y1**1*y2**4*y3**2& 
+    + p(111)*y1**4*y2**2*y3**1& 
+    + p(112)*y1**2*y2**4*y3**1& 
+    + p(113)*y1**4*y2**3*y3**0& 
+    + p(114)*y1**3*y2**4*y3**0& 
+    + p(115)*y1**5*y2**0*y3**2& 
+    + p(116)*y1**0*y2**5*y3**2& 
+    + p(117)*y1**5*y2**1*y3**1& 
+    + p(118)*y1**1*y2**5*y3**1& 
+    + p(119)*y1**5*y2**2*y3**0& 
+    + p(120)*y1**2*y2**5*y3**0& 
+    + p(121)*y1**6*y2**0*y3**1& 
+    + p(122)*y1**0*y2**6*y3**1& 
+    + p(123)*y1**6*y2**1*y3**0& 
+    + p(124)*y1**1*y2**6*y3**0& 
+    + p(125)*y1**7*y2**0*y3**0& 
+    + p(126)*y1**0*y2**7*y3**0
+ v8 = p(127)*y1**0*y2**0*y3**8& 
+    + p(128)*y1**1*y2**0*y3**7& 
+    + p(129)*y1**0*y2**1*y3**7& 
+    + p(130)*y1**1*y2**1*y3**6& 
+    + p(131)*y1**2*y2**0*y3**6& 
+    + p(132)*y1**0*y2**2*y3**6& 
+    + p(133)*y1**2*y2**1*y3**5& 
+    + p(134)*y1**1*y2**2*y3**5& 
+    + p(135)*y1**2*y2**2*y3**4& 
+    + p(136)*y1**3*y2**0*y3**5& 
+    + p(137)*y1**0*y2**3*y3**5& 
+    + p(138)*y1**3*y2**1*y3**4& 
+    + p(139)*y1**1*y2**3*y3**4& 
+    + p(140)*y1**3*y2**2*y3**3& 
+    + p(141)*y1**2*y2**3*y3**3& 
+    + p(142)*y1**3*y2**3*y3**2& 
+    + p(143)*y1**4*y2**0*y3**4& 
+    + p(144)*y1**0*y2**4*y3**4& 
+    + p(145)*y1**4*y2**1*y3**3& 
+    + p(146)*y1**1*y2**4*y3**3& 
+    + p(147)*y1**4*y2**2*y3**2& 
+    + p(148)*y1**2*y2**4*y3**2& 
+    + p(149)*y1**4*y2**3*y3**1& 
+    + p(150)*y1**3*y2**4*y3**1& 
+    + p(151)*y1**4*y2**4*y3**0& 
+    + p(152)*y1**5*y2**0*y3**3& 
+    + p(153)*y1**0*y2**5*y3**3& 
+    + p(154)*y1**5*y2**1*y3**2& 
+    + p(155)*y1**1*y2**5*y3**2& 
+    + p(156)*y1**5*y2**2*y3**1& 
+    + p(157)*y1**2*y2**5*y3**1& 
+    + p(158)*y1**5*y2**3*y3**0& 
+    + p(159)*y1**3*y2**5*y3**0& 
+    + p(160)*y1**6*y2**0*y3**2& 
+    + p(161)*y1**0*y2**6*y3**2& 
+    + p(162)*y1**6*y2**1*y3**1& 
+    + p(163)*y1**1*y2**6*y3**1& 
+    + p(164)*y1**6*y2**2*y3**0& 
+    + p(165)*y1**2*y2**6*y3**0& 
+    + p(166)*y1**7*y2**0*y3**1& 
+    + p(167)*y1**0*y2**7*y3**1& 
+    + p(168)*y1**7*y2**1*y3**0& 
+    + p(169)*y1**1*y2**7*y3**0& 
+    + p(170)*y1**8*y2**0*y3**0& 
+    + p(171)*y1**0*y2**8*y3**0
+    !
+    mu(2) = v0+v1+v2+v3+v4+v5+v6+v7+v8
+    !
+    re1 = extF%coef(1,1)
+    re2 = extF%coef(2,1)
+    ae = extF%coef(3,1)*pi/180.0_ark
+    a0 = extF%coef(4,1)
+    b0 = extF%coef(5,1)
+    !
+    y1 = (r1 - re1)*exp(-a0*(r1-re1)**2)
+    y2 = (r2 - re2)*exp(-b0*(r1-re2)**2)
+    !
+    k = extF%nterms(2) 
+    !
+    q(5:k) = extF%coef(5:k,2)
+    !
+    v0 = q(  7)*y1**0*y2**0*y3**0
+    v1 = q(  8)*y1**0*y2**0*y3**1& 
+       + q(  9)*y1**1*y2**0*y3**0& 
+       + q( 10)*y1**0*y2**1*y3**0
+    v2 = q( 11)*y1**0*y2**0*y3**2& 
+       + q( 12)*y1**1*y2**0*y3**1& 
+       + q( 13)*y1**0*y2**1*y3**1& 
+       + q( 14)*y1**1*y2**1*y3**0& 
+       + q( 15)*y1**2*y2**0*y3**0& 
+       + q( 16)*y1**0*y2**2*y3**0
+    v3 = q( 17)*y1**0*y2**0*y3**3& 
+       + q( 18)*y1**1*y2**0*y3**2& 
+       + q( 19)*y1**0*y2**1*y3**2& 
+       + q( 20)*y1**1*y2**1*y3**1& 
+       + q( 21)*y1**2*y2**0*y3**1& 
+       + q( 22)*y1**0*y2**2*y3**1& 
+       + q( 23)*y1**2*y2**1*y3**0& 
+       + q( 24)*y1**1*y2**2*y3**0& 
+       + q( 25)*y1**3*y2**0*y3**0& 
+       + q( 26)*y1**0*y2**3*y3**0
+     v4 =q( 27)*y1**0*y2**0*y3**4& 
+       + q( 28)*y1**1*y2**0*y3**3& 
+       + q( 29)*y1**0*y2**1*y3**3& 
+       + q( 30)*y1**1*y2**1*y3**2& 
+       + q( 31)*y1**2*y2**0*y3**2& 
+       + q( 32)*y1**0*y2**2*y3**2& 
+       + q( 33)*y1**2*y2**1*y3**1& 
+       + q( 34)*y1**1*y2**2*y3**1& 
+       + q( 35)*y1**2*y2**2*y3**0& 
+       + q( 36)*y1**3*y2**0*y3**1& 
+       + q( 37)*y1**0*y2**3*y3**1& 
+       + q( 38)*y1**3*y2**1*y3**0& 
+       + q( 39)*y1**1*y2**3*y3**0& 
+       + q( 40)*y1**4*y2**0*y3**0& 
+       + q( 41)*y1**0*y2**4*y3**0
+     v5 =q( 42)*y1**0*y2**0*y3**5& 
+       + q( 43)*y1**1*y2**0*y3**4& 
+       + q( 44)*y1**0*y2**1*y3**4& 
+       + q( 45)*y1**1*y2**1*y3**3& 
+       + q( 46)*y1**2*y2**0*y3**3& 
+       + q( 47)*y1**0*y2**2*y3**3& 
+       + q( 48)*y1**2*y2**1*y3**2& 
+       + q( 49)*y1**1*y2**2*y3**2& 
+       + q( 50)*y1**2*y2**2*y3**1& 
+       + q( 51)*y1**3*y2**0*y3**2& 
+       + q( 52)*y1**0*y2**3*y3**2& 
+       + q( 53)*y1**3*y2**1*y3**1& 
+       + q( 54)*y1**1*y2**3*y3**1& 
+       + q( 55)*y1**3*y2**2*y3**0& 
+       + q( 56)*y1**2*y2**3*y3**0& 
+       + q( 57)*y1**4*y2**0*y3**1& 
+       + q( 58)*y1**0*y2**4*y3**1& 
+       + q( 59)*y1**4*y2**1*y3**0& 
+       + q( 60)*y1**1*y2**4*y3**0& 
+       + q( 61)*y1**5*y2**0*y3**0& 
+       + q( 62)*y1**0*y2**5*y3**0
+     v6 =q( 63)*y1**0*y2**0*y3**6& 
+       + q( 64)*y1**1*y2**0*y3**5& 
+       + q( 65)*y1**0*y2**1*y3**5& 
+       + q( 66)*y1**1*y2**1*y3**4& 
+       + q( 67)*y1**2*y2**0*y3**4& 
+       + q( 68)*y1**0*y2**2*y3**4& 
+       + q( 69)*y1**2*y2**1*y3**3& 
+       + q( 70)*y1**1*y2**2*y3**3& 
+       + q( 71)*y1**2*y2**2*y3**2& 
+       + q( 72)*y1**3*y2**0*y3**3& 
+       + q( 73)*y1**0*y2**3*y3**3& 
+       + q( 74)*y1**3*y2**1*y3**2& 
+       + q( 75)*y1**1*y2**3*y3**2& 
+       + q( 76)*y1**3*y2**2*y3**1& 
+       + q( 77)*y1**2*y2**3*y3**1& 
+       + q( 78)*y1**3*y2**3*y3**0& 
+       + q( 79)*y1**4*y2**0*y3**2& 
+       + q( 80)*y1**0*y2**4*y3**2& 
+       + q( 81)*y1**4*y2**1*y3**1& 
+       + q( 82)*y1**1*y2**4*y3**1& 
+       + q( 83)*y1**4*y2**2*y3**0& 
+       + q( 84)*y1**2*y2**4*y3**0& 
+       + q( 85)*y1**5*y2**0*y3**1& 
+       + q( 86)*y1**0*y2**5*y3**1& 
+       + q( 87)*y1**5*y2**1*y3**0& 
+       + q( 88)*y1**1*y2**5*y3**0& 
+       + q( 89)*y1**6*y2**0*y3**0& 
+       + q( 90)*y1**0*y2**6*y3**0
+    v7 = q( 91)*y1**0*y2**0*y3**7& 
+       + q( 92)*y1**1*y2**0*y3**6& 
+       + q( 93)*y1**0*y2**1*y3**6& 
+       + q( 94)*y1**1*y2**1*y3**5& 
+       + q( 95)*y1**2*y2**0*y3**5& 
+       + q( 96)*y1**0*y2**2*y3**5& 
+       + q( 97)*y1**2*y2**1*y3**4& 
+       + q( 98)*y1**1*y2**2*y3**4& 
+       + q( 99)*y1**2*y2**2*y3**3& 
+       + q(100)*y1**3*y2**0*y3**4& 
+       + q(101)*y1**0*y2**3*y3**4& 
+       + q(102)*y1**3*y2**1*y3**3& 
+       + q(103)*y1**1*y2**3*y3**3& 
+       + q(104)*y1**3*y2**2*y3**2& 
+       + q(105)*y1**2*y2**3*y3**2& 
+       + q(106)*y1**3*y2**3*y3**1& 
+       + q(107)*y1**4*y2**0*y3**3& 
+       + q(108)*y1**0*y2**4*y3**3& 
+       + q(109)*y1**4*y2**1*y3**2& 
+       + q(110)*y1**1*y2**4*y3**2& 
+       + q(111)*y1**4*y2**2*y3**1& 
+       + q(112)*y1**2*y2**4*y3**1& 
+       + q(113)*y1**4*y2**3*y3**0& 
+       + q(114)*y1**3*y2**4*y3**0& 
+       + q(115)*y1**5*y2**0*y3**2& 
+       + q(116)*y1**0*y2**5*y3**2& 
+       + q(117)*y1**5*y2**1*y3**1& 
+       + q(118)*y1**1*y2**5*y3**1& 
+       + q(119)*y1**5*y2**2*y3**0& 
+       + q(120)*y1**2*y2**5*y3**0& 
+       + q(121)*y1**6*y2**0*y3**1& 
+       + q(122)*y1**0*y2**6*y3**1& 
+       + q(123)*y1**6*y2**1*y3**0& 
+       + q(124)*y1**1*y2**6*y3**0& 
+       + q(125)*y1**7*y2**0*y3**0& 
+       + q(126)*y1**0*y2**7*y3**0
+    v8 = q(127)*y1**0*y2**0*y3**8& 
+       + q(128)*y1**1*y2**0*y3**7& 
+       + q(129)*y1**0*y2**1*y3**7& 
+       + q(130)*y1**1*y2**1*y3**6& 
+       + q(131)*y1**2*y2**0*y3**6& 
+       + q(132)*y1**0*y2**2*y3**6& 
+       + q(133)*y1**2*y2**1*y3**5& 
+       + q(134)*y1**1*y2**2*y3**5& 
+       + q(135)*y1**2*y2**2*y3**4& 
+       + q(136)*y1**3*y2**0*y3**5& 
+       + q(137)*y1**0*y2**3*y3**5& 
+       + q(138)*y1**3*y2**1*y3**4& 
+       + q(139)*y1**1*y2**3*y3**4& 
+       + q(140)*y1**3*y2**2*y3**3& 
+       + q(141)*y1**2*y2**3*y3**3& 
+       + q(142)*y1**3*y2**3*y3**2& 
+       + q(143)*y1**4*y2**0*y3**4& 
+       + q(144)*y1**0*y2**4*y3**4& 
+       + q(145)*y1**4*y2**1*y3**3& 
+       + q(146)*y1**1*y2**4*y3**3& 
+       + q(147)*y1**4*y2**2*y3**2& 
+       + q(148)*y1**2*y2**4*y3**2& 
+       + q(149)*y1**4*y2**3*y3**1& 
+       + q(150)*y1**3*y2**4*y3**1& 
+       + q(151)*y1**4*y2**4*y3**0& 
+       + q(152)*y1**5*y2**0*y3**3& 
+       + q(153)*y1**0*y2**5*y3**3& 
+       + q(154)*y1**5*y2**1*y3**2& 
+       + q(155)*y1**1*y2**5*y3**2& 
+       + q(156)*y1**5*y2**2*y3**1& 
+       + q(157)*y1**2*y2**5*y3**1& 
+       + q(158)*y1**5*y2**3*y3**0& 
+       + q(159)*y1**3*y2**5*y3**0& 
+       + q(160)*y1**6*y2**0*y3**2& 
+       + q(161)*y1**0*y2**6*y3**2& 
+       + q(162)*y1**6*y2**1*y3**1& 
+       + q(163)*y1**1*y2**6*y3**1& 
+       + q(164)*y1**6*y2**2*y3**0& 
+       + q(165)*y1**2*y2**6*y3**0& 
+       + q(166)*y1**7*y2**0*y3**1& 
+       + q(167)*y1**0*y2**7*y3**1& 
+       + q(168)*y1**7*y2**1*y3**0& 
+       + q(169)*y1**1*y2**7*y3**0& 
+       + q(170)*y1**8*y2**0*y3**0& 
+       + q(171)*y1**0*y2**8*y3**0
+    !
+    mu(1) =(v0+v1+v2+v3+v4+v5+v6+v7+v8)*sin(pi-alpha)
+    !
+    mu(3) = 0
+    !
+    f(1:3) = matmul(mu,tmat)
+    !
+ end subroutine MLdms2pqr_xyz_coeff
 
 
 end module pot_xy2

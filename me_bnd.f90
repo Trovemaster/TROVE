@@ -4,6 +4,7 @@ module me_bnd
   use molecules
   use timer
   use lapack
+  use moltype,only : MLdiag_ulen_ark
   !
   implicit none
 
@@ -1418,7 +1419,7 @@ module me_bnd
                !
             enddo
             !
-            ! check orthagonality and noralisation
+            ! check orthagonality and normalisation
             !
             phivphi(:) = phil(:)*phir(:)
             psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -1850,7 +1851,7 @@ module me_bnd
                  !
               enddo
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -1984,7 +1985,7 @@ module me_bnd
               phir = Psi(nr+1,:)
               dphir = dPsi(nr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*sinrho(:)
               psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -2338,7 +2339,7 @@ module me_bnd
        !   !
        !   do vr = vl,nmax
        !       !
-       !       ! check orthagonality and noralisation
+       !       ! check orthagonality and normalisation
        !       !
        !       phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
        !       !
@@ -2457,7 +2458,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*sinrho(:)**k1
               if (k>0) dphir(:) = dphir(:) + real(k1,ark)*sinrho(:)**(k1-1)*L(:,vr)*cosrho(:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -2577,7 +2578,7 @@ module me_bnd
               phir = Psi(vr+1,:)
               dphir = dPsi(vr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*sinrho(:)**(2*k1+1)
               psipsi_t = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -2938,7 +2939,7 @@ module me_bnd
        !   !
        !   do vr = vl,nmax
        !       !
-       !       ! check orthagonality and noralisation
+       !       ! check orthagonality and normalisation
        !       !
        !       phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
        !       !
@@ -3059,7 +3060,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*sinrho(:)**k
               if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3186,7 +3187,7 @@ module me_bnd
               phir = Psi(vr+1,:)
               dphir = dPsi(vr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*sinrho(:)**(2*k+1)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3633,7 +3634,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*sinrho_(:)
               if (k>0) dphir(:) = dphir(:) + L(:,vr)*cosrho(:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3760,7 +3761,7 @@ module me_bnd
               phir = Psi(vr+1,:)
               dphir = dPsi(vr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*sinrho(:)*sinrho_(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3974,7 +3975,7 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
-   real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe,g,f,factor,alpha
+   real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe,g,f,factor,alpha,ener_,ener_t
    real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,mu_zz_t,mu_rr_t,ps_t
    !
    integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,k_
@@ -3983,7 +3984,8 @@ module me_bnd
    real(ark),allocatable :: phil_s(:),phir_s(:)
    real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),rho_m(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
                             phi_rho(:),dphi_rho(:),Lm(:,:)
-   real(rk),allocatable  :: h(:,:),ener(:)
+   real(ark),allocatable  :: h(:,:),ener(:)
+   !real(ark),allocatable  :: h_ark(:,:),ener_ark(:)
    !
    character(len=cl)    :: unitfname 
      !
@@ -4204,7 +4206,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*rho_m(:)
               if (k>0) dphir(:) = dphir(:) + L(:,vr)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -4256,7 +4258,31 @@ module me_bnd
           enddo
        enddo
        !
-       call lapack_syev(h,ener)
+       !call lapack_syev(h,ener)
+       !
+       call MLdiag_ulen_ark(nmax1,h,ener,vect)
+       !
+       do vl=1,nmax1
+         !
+         ener_t = ener(vl)
+         !
+         do vr =vl,nmax1
+           !
+           if (ener_t>ener(vr)) then 
+             !
+             phi  = vect(:,vr)
+             vect(:,vr) = vect(:,vl)
+             vect(:,vl) = phi
+             !
+             ener_t = ener(vr)
+             ener(vr) = ener(vl)
+             ener(vl) = ener_t
+             !
+           endif 
+           !
+         enddo
+         !
+       enddo       
        !
        write (out,"(/' Optimized energies are:')") 
        !
@@ -4270,30 +4296,30 @@ module me_bnd
        !
        ! Schmidt orthogonalization to make eigenvectors orthogonal in ark
        !
-       vect = h
+       !vect = h
        !
-       do vl =  1,nmax1
-         !
-         cross_prod = sum(vect(:,vl)*vect(:,vl))
-         !
-         factor = 1.0_ark/sqrt(cross_prod)
-         !
-         vect(:,vl) = vect(:,vl)*factor
-         !
-         do vr = vl+1,nmax1
-           !
-           cross_prod = sum(vect(:,vl)*vect(:,vr))
-           !
-           vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
-           ! 
-         enddo
-         !
-         cross_prod = sum(vect(:,vl)*vect(:,vl))
-         !
-         factor = 1.0_ark/sqrt(cross_prod)
-         vect(:,vl) = vect(:,vl)*factor
-         !
-       enddo 
+       !do vl =  1,nmax1
+       !  !
+       !  cross_prod = sum(vect(:,vl)*vect(:,vl))
+       !  !
+       !  factor = 1.0_ark/sqrt(cross_prod)
+       !  !
+       !  vect(:,vl) = vect(:,vl)*factor
+       !  !
+       !  do vr = vl+1,nmax1
+       !    !
+       !    cross_prod = sum(vect(:,vl)*vect(:,vr))
+       !    !
+       !    vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
+       !    ! 
+       !  enddo
+       !  !
+       !  cross_prod = sum(vect(:,vl)*vect(:,vl))
+       !  !
+       !  factor = 1.0_ark/sqrt(cross_prod)
+       !  vect(:,vl) = vect(:,vl)*factor
+       !  !
+       !enddo 
        !
        do i=0,npoints
           !
@@ -4331,7 +4357,7 @@ module me_bnd
               phir = Psi(vr+1,:)
               dphir = dPsi(vr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*rho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -4698,7 +4724,7 @@ module me_bnd
        !   !
        !   do vr = vl,nmax
        !       !
-       !       ! check orthagonality and noralisation
+       !       ! check orthagonality and normalisation
        !       !
        !       phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
        !       !
@@ -4819,7 +4845,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*sinrho(:)**k
               !if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -5326,7 +5352,7 @@ module me_bnd
        !   !
        !   do vr = vl,nmax
        !       !
-       !       ! check orthagonality and noralisation
+       !       ! check orthagonality and normalisation
        !       !
        !       phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
        !       !
@@ -5445,7 +5471,7 @@ module me_bnd
               dphir(:) = dL(:,vr)*sinrho(:)**k
               if (k>0) dphir(:) = dphir(:) + real(k,ark)*sinrho(:)**(k-1)*L(:,vr)*cosrho(:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -5565,7 +5591,7 @@ module me_bnd
               phir = Psi(vr+1,:)
               dphir = dPsi(vr+1,:)
               !
-              ! check orthagonality and noralisation
+              ! check orthagonality and normalisation
               !
               phivphi(:) = phil(:)*phir(:)*sinrho(:)**(2*k+1)
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
