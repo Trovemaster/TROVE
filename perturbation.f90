@@ -7180,7 +7180,7 @@ module perturbation
       !
       matsize = int(dimen_s,hik)*int(dimen_maxrow,hik)
       !
-      if (job%verbose>=4) write(out,"('Allocate array ',i7,'x',i7,' = ',i8)") dimen_s,dimen_maxrow,matsize
+      if (job%verbose>=4) write(out,"('Allocate array ',i7,'x',i7,' = ',i0)") dimen_s,dimen_maxrow,matsize
       allocate (smat(isym)%coeffs(dimen_s,dimen_maxrow),stat=alloc)
       call ArrayStart('PThamiltonian_contract:smat'//sym%label(isym),alloc,1,kind(smat(isym)%coeffs),matsize)
       !
