@@ -2124,7 +2124,7 @@ endif
       case default
          write (out,"('MLdipole_ames1: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLdipole_ames1 - bad coord. type'
-      case('R-RHO-Z')
+      case('R-RHO-Z','R-RHO-Z-ECKART')
          !
          xyz0 = MLloc2pqr_xy2(local)
          !
@@ -2658,7 +2658,7 @@ endif
       case default
          write (out,"('MLdms2pqr_xy2_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLdms2pqr_xy2_coeff - bad coord. type'
-      case('R-RHO-Z')
+      case('R-RHO-Z','R-RHO-Z-ECKART')
          !
          xyz0 = MLloc2pqr_xy2(local)
          !
@@ -3068,7 +3068,7 @@ endif
       case default
          write (out,"('MLdms2pqr_xy2_linear: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLdms2pqr_xy2_linear - bad coord. type'
-      case('R-RHO-Z')
+      case('R-RHO-Z','R-RHO-Z-ECKART')
          !
          xyz0 = MLloc2pqr_xy2(local)
          !
@@ -3468,10 +3468,9 @@ endif
     real(ark)             :: f(molec%natoms, 3)
 
     integer(ik)           :: icart
-    real(ark)             :: a0(molec%natoms, 3), cm
+    real(ark)             :: a0(molec%natoms, 3), cm,mX,mY,R1,R2,alpha,alpha_2,v
 
     a0 = 0
-
     !
     select case(trim(molec%coords_transform))
        !
@@ -3482,6 +3481,24 @@ endif
        !
        a0(3, 1) = -r(2) * cos(r(3)*0.5_ark)
        a0(3, 3) = -r(2) * sin(r(3)*0.5_ark)
+       !
+    case('R-RHO-Z-ECKART')
+       !
+       R1 = r(1)
+       R2 = r(2)
+       alpha = r(3)
+       alpha_2 = alpha*0.5_ark
+       v = -atan(cos(alpha_2)*(R1-R2)/(sin(alpha_2)*(R1+R2)))
+       !
+       mX  = molec%atommasses(1)
+       mY  = molec%atommasses(2)
+       !
+       a0(1,1) =  mY*(cos(v)*cos(alpha_2)*R1+cos(v)*cos(alpha_2)*R2+sin(v)*sin(alpha_2)*R1-sin(v)*sin(alpha_2)*R2)/(mX+2*mY)
+       a0(1,3) =  mY*(sin(v)*cos(alpha_2)*R1+sin(v)*cos(alpha_2)*R2-cos(v)*sin(alpha_2)*R1+cos(v)*sin(alpha_2)*R2)/(mX+2*mY)
+       a0(2,1) =  -(cos(v)*cos(alpha_2)*R1*mX+cos(v)*cos(alpha_2)*R1*mY-cos(v)*cos(alpha_2)*mY*R2+sin(v)*sin(alpha_2)*R1*mX+sin(v)*sin(alpha_2)*R1*mY+sin(v)*sin(alpha_2)*mY*R2)/(mX+2*mY)
+       a0(2,3) =  -(sin(v)*cos(alpha_2)*R1*mX+sin(v)*cos(alpha_2)*R1*mY-sin(v)*cos(alpha_2)*mY*R2-cos(v)*sin(alpha_2)*R1*mX-cos(v)*sin(alpha_2)*R1*mY-cos(v)*sin(alpha_2)*mY*R2)/(mX+2*mY)
+       a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2*mY)
+       a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2*mY)
        !
     case default 
        stop 'MLloc2pqr_xy2: illegla coordinate type'
@@ -3808,7 +3825,7 @@ endif
       case default
          write (out,"('MLdipole_xy2_lorenzo: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLdipole_xy2_lorenzo - bad coord. type'
-      case('R-RHO-Z')
+      case('R-RHO-Z','R-RHO-Z-ECKART')
          !
          xyz0 = MLloc2pqr_xy2(local)
          !

@@ -70,7 +70,7 @@ module mol_xy2
            dst(:) = dst(:) +  molec%local_eq(:)
        endif
        !
-    case('R-RHO','R-RHO-Z')
+    case('R-RHO','R-RHO-Z','R-RHO-Z-ECKART')
        !
        if (direct) then 
           dst(1:2) = dsrc(1:2)
@@ -644,7 +644,7 @@ module mol_xy2
       select case(trim(molec%coords_transform))
       case default
          !
-      case('R-RHO-Z','R-PHI-RHO-Z')
+      case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART')
          !
          if (Nangles>0) then
            alphaeq = molec%alphaeq(1)
@@ -837,7 +837,7 @@ module mol_xy2
             a02 = (m1/m)
             !
          case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z',&
-              'R-S1-S2-Z','R-ALPHA-THETA-Z')
+              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -879,7 +879,7 @@ module mol_xy2
             alpha = rho
             !
             select case(trim(molec%coords_transform))
-              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z','R1-Z-R2-RHO')
+              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z','R1-Z-R2-RHO','R-RHO-Z-ECKART')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -986,7 +986,7 @@ module mol_xy2
             !
             select case(trim(molec%coords_transform))
                !
-            case('R-RHO-Z','R-PHI-RHO-Z')
+            case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART')
                !
                b0(1,3,i) = 0.0_ark
                b0(1,2,i) = 0.0_ark
@@ -1192,7 +1192,7 @@ module mol_xy2
        write (out,"('ML_symmetry_transformation_XY2. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
-    case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF')
+    case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF','R-RHO-Z-ECKART')
        !
        select case(trim(molec%symmetry))
        case default
@@ -2687,7 +2687,7 @@ module mol_xy2
          !
       end select
       !
-    case('R-RHO-Z')
+    case('R-RHO-Z','R-RHO-Z-ECKART')
       !
       select case(trim(molec%symmetry))
       case default
