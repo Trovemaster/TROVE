@@ -514,7 +514,7 @@ module mol_xy2
           dst(3) = pi-(src(3)+molec%local_eq(3))
        endif
        !
-    case('R1-Z-R2-RHO')
+    case('R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
        !
        if (direct) then 
           dst(1:2) = dsrc(1:2)
@@ -721,7 +721,7 @@ module mol_xy2
          !b0(:,1,0) = sqrt(0.5_ark)*( a0(:,1)+a0(:,2) )
          !b0(:,2,0) = sqrt(0.5_ark)*( a0(:,1)-a0(:,2) )
          !
-       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
          !
          b0(1,1,0) = 0
          b0(1,2,0) = 0
@@ -860,7 +860,7 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
-         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA')
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -879,7 +879,8 @@ module mol_xy2
             alpha = rho
             !
             select case(trim(molec%coords_transform))
-              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z','R1-Z-R2-RHO','R-RHO-Z-ECKART')
+              case('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
+                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -1059,7 +1060,7 @@ module mol_xy2
                b0(3,2,i) = 0.0_ark
                b0(3,1,i) =-m1/m*re13*cos(alphae_h)
                !
-             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
                !
                b0(1,1,i) = 0
                b0(1,2,i) = 0
@@ -2487,7 +2488,7 @@ module mol_xy2
           !
        end select       
        !
-    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO')
+    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
        !
        select case(trim(molec%symmetry))
        case default

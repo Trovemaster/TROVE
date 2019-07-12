@@ -3522,7 +3522,7 @@ endif
     real(ark)             :: f(molec%natoms, 3)
 
     integer(ik)           :: icart
-    real(ark)             :: a0(molec%natoms, 3), cm
+    real(ark)             :: a0(molec%natoms, 3), cm,alpha0,r10,r20,r1,r2,alpha,v,mX,mY,mZ
     !
     a0 = 0
     !
@@ -3535,6 +3535,30 @@ endif
        !
        a0(3, 1) =  r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
+       !
+    case('R1-Z-R2-RHO-ECKART')
+       !
+       R1 = r(1)
+       R2 = r(2)
+       !
+       R10  =  molec%req(1)
+       R20  =  molec%req(2)
+       alpha0  =  molec%alphaeq(1)
+       !
+       alpha = r(3)
+       alpha0 = pi
+       mX = molec%atommasses(1)
+       mY = molec%atommasses(2)
+       mZ = molec%atommasses(3)
+       v = -atan(mZ*R2*sin(alpha)*(mX*R20+R20*mY+mY*R10)/(-mX*mY*R10*R1+mX*mZ*R20*R2*cos(alpha)-&
+            mZ*R20*mY*R1-mY*R10*R1*mZ+mY*R10*mZ*R2*cos(alpha)+mZ*R20*R2*cos(alpha)*mY))
+       !
+       a0(1,1) = (cos(v)*mZ*R2*sin(alpha)+sin(v)*mY*R1+sin(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
+       a0(1,3) = (sin(v)*mZ*R2*sin(alpha)-cos(v)*mY*R1-cos(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
+       a0(2,1) = (cos(v)*mZ*R2*sin(alpha)-sin(v)*R1*mX-sin(v)*R1*mZ+sin(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
+       a0(2,3) = (sin(v)*mZ*R2*sin(alpha)+cos(v)*R1*mX+cos(v)*R1*mZ-cos(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
+       a0(3,1) = -(cos(v)*R2*sin(alpha)*mX+cos(v)*R2*sin(alpha)*mY+sin(v)*R2*cos(alpha)*mX+sin(v)*R2*cos(alpha)*mY-sin(v)*mY*R1)/(mX+mY+mZ)
+       a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+cos(v)*mY*R1)/(mX+mY+mZ)
        !
     case default 
        stop 'MLloc2pqr_xyz: illegla coordinate type'
@@ -4140,7 +4164,7 @@ endif
       case default
          write (out,"('MLdms2pqr_xyz_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLdms2pqr_xyz_coeff - bad coord. type'
-      case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+      case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
          !
          xyz0 = MLloc2pqr_xyz(local)
          !

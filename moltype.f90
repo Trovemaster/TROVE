@@ -2257,6 +2257,10 @@ module moltype
     integer(ik),parameter :: itmax=100
     integer(ik) :: iter,k,irow,icolumn,ierror,alloc
     !
+    if (verbose>=5) then
+      write(out,"('ML_rjacobi_fit_ark start ')") 
+    endif
+    !
     rjacob = 0 
     iter = 0
     stadev_old = 1.e10
@@ -2341,6 +2345,10 @@ module moltype
       !
       if (ierror>0) then
         !
+        if (verbose>=5) then
+          write(out,"('ML_rjacobi_fit_ark error: ',3i7,g12.4)") n,m,ierror,tolerance
+        endif
+        !
         ad = am ; bd(:,1) = bm(:) 
         !
         call lapack_gelss(ad(:,:),bd(:,:))
@@ -2373,6 +2381,10 @@ module moltype
     deallocate(rjacob,am,bm,cm,b_,b_r,b_l,ad,bd)
     !
     call ArrayStop('ML_rjacobi_fit_ark')
+    !
+    if (verbose>=5) then
+      write(out,"('ML_rjacobi_fit_ark end, rms = ',g18.4)") stadev  
+    endif
     !
   end subroutine ML_rjacobi_fit_ark
   !

@@ -5198,9 +5198,9 @@ module perturbation
         sym_elems_evaluated(i) = i
       enddo
     endif
-    do i = 1, total_elem_evaluated
-    enddo 
+    !
     do i=1,total_elem_evaluated
+      !
       ioper = sym_elems_evaluated(i)
       !
       info_t = 0

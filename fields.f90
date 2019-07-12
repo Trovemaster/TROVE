@@ -18197,7 +18197,7 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               if (krot1<kmax) then 
+                               if (krot1<=kmax) then 
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                  !
