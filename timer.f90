@@ -548,8 +548,8 @@ module timer
       size_ = (ikind*real(hsize_))/real(1024**3) ! size in GByte
 
       if (alloc/=0) then
-          write(out,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
-          write(out,"( ' Array dimension = ',i8,' array size =  ',f20.2,' Gb')") hsize_,size_
+          write(0,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
+          write(0,"( ' Array dimension = ',i8,' array size =  ',f20.2,' Gb')") hsize_,size_
           call MemoryReport
           stop 'ArrayStart - allocation error'
       end if

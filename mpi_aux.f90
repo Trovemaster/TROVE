@@ -11,7 +11,7 @@ module mpi_aux
   public co_startdim, co_enddim
 
   public blacs_size, blacs_rank, blacs_ctxt
-  public nprow,npcol,myprow,mypcol, desca,descb,descc
+  public nprow,npcol,myprow,mypcol
   public mpi_real_size, mpi_int_size
 
   interface co_sum
@@ -29,10 +29,6 @@ module mpi_aux
   !blacs/pblas
   integer :: blacs_size, blacs_rank, blacs_ctxt
   integer :: nprow,npcol,myprow,mypcol
-  integer :: desca(9)
-  integer :: descb(9)
-  integer :: descc(9)
-  integer :: descd(9)
   integer,dimension(2)  :: blacs_dims
 
 contains
@@ -69,7 +65,7 @@ contains
     type(MPI_Datatype),intent(out),optional           :: mpi_type
 
     integer,dimension(2)                              :: global_size, distr, dargs
-    integer :: MB,NB,MLOC,NLOC,ierr
+    integer                                           :: MB,NB,MLOC,NLOC,ierr
 
     integer,external  :: NUMROC
 
@@ -132,6 +128,10 @@ contains
 
     call MPI_Type_size(mpi_double_precision, mpi_real_size,ierr)
     call MPI_Type_size(mpi_integer, mpi_int_size,ierr)
+
+    if (mpi_rank.ne.0) then
+      open(newunit=out, file='/dev/null', status='replace', iostat=ierr, action="write")
+    endif
 
     comms_inited = .true.
 
@@ -326,8 +326,8 @@ contains
     call TimerStart('MPI_read_matrix')
 
     if (comm_size.gt.1) then
-      offset_start = (lb-1)*longdim*mpi_real_size
-      offset_end = (longdim-ub)*longdim*mpi_real_size
+      offset_start = (lb-1)*int(longdim, MPI_OFFSET_KIND)*mpi_real_size
+      offset_end = (longdim-ub)*int(longdim, MPI_OFFSET_KIND)*mpi_real_size
 
       call MPI_File_seek(infile, offset_start, MPI_SEEK_CUR)
       call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
@@ -355,8 +355,9 @@ contains
     call TimerStart('MPI_write_matrix')
 
     if (comm_size.gt.1) then
-      offset_start = (lb-1)*longdim*mpi_real_size
+      offset_start = (lb-1)*int(longdim,MPI_OFFSET_KIND)*mpi_real_size
       offset_end = 0
+      call mpi_barrier(mpi_comm_world, ierr)
 
       call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
       call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)

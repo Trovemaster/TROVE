@@ -6851,9 +6851,12 @@ module perturbation
     call TimerStart('Calculating the Hamiltonian matrix')
     !
     task = 'top'
-    !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-    call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-      ncontr,maxcontr)
+    if (trim(job%kinetmat_format).eq.'MPIIO') then
+      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+        ncontr,maxcontr)
+    else
+      call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+    endif
     !
     ! We have two calculation options: fast and cheap and slow but expensive.  
     !
@@ -6870,15 +6873,20 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'rot'
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
+        !
         task = 'cor'
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
         !
         call TimerStop('Restoring KE matrix')
         !
@@ -6893,10 +6901,12 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'vib'
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
         
         call TimerStop('Restoring KE matrix')
         !
@@ -6978,10 +6988,12 @@ module perturbation
       if (job%verbose>=4) write(out,"(/' Construct the Hamiltonian matrix...')") 
       !
       task = 'top-icontr'
-      !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-        !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-        ncontr,maxcontr)
+      if (trim(job%kinetmat_format).eq.'MPIIO') then
+        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          ncontr,maxcontr)
+      else
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+      endif
       !
       if (job%verbose>=5) write(out,"(' N Arrays of ',f12.5,'Gb each will be allocated (N is the number of processors)')") &
                           real(sym%Nrepresen,rk)*real(PT%max_deg_size,rk)*real(max_dim,rk)*real(rk,rk)/1024.0_rk**3
@@ -7001,25 +7013,32 @@ module perturbation
          if (FLrotation.and.jrot/=0) then
            !
            task = 'rot-icontr'
-           !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-             !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-             ncontr,maxcontr)
+           if (trim(job%kinetmat_format).eq.'MPIIO') then
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+               ncontr,maxcontr)
+           else
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+           endif
+           !
            task = 'cor-icontr'
-           !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-             !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-             ncontr,maxcontr)
+           if (trim(job%kinetmat_format).eq.'MPIIO') then
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+               ncontr,maxcontr)
+           else
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+           endif
            !
          endif
          !
          if ( PTvibrational_me_calc ) then
            !
            task = 'vib-icontr'
-           !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-             !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-             ncontr,maxcontr)
+           if (trim(job%kinetmat_format).eq.'MPIIO') then
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+               ncontr,maxcontr)
+           else
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+           endif
            !
          endif
          !
@@ -7098,10 +7117,12 @@ module perturbation
         !
         task = 'rot'
         !
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
         !
         !$omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -7167,10 +7188,12 @@ module perturbation
         !
         task = 'cor'
         !
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
         !
         !$omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -7242,10 +7265,12 @@ module perturbation
         !
         task = 'vib'
         !
-        !call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          !PT, PTvibrational_me_calc,grot,gcor,hvib, &
-          ncontr,maxcontr)
+        if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+            ncontr,maxcontr)
+        else
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        endif
         !
         !$omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -7848,11 +7873,8 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
-        !call mpi_file_get_size(fileh,file_offset,ierr)
-        file_offset = (PT%Nclasses+1)*ncontr*mpi_int_size
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
         call mpi_file_seek(fileh, file_offset, MPI_SEEK_CUR)
-
-        !call MPI_File_read_all(fileh, imat_t, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
 
         call MPI_File_read_all(fileh, readbuf, 11, mpi_character, mpi_status_ignore, ierr)
         if (readbuf(1:11)/='icontr_ideg') then
@@ -7861,8 +7883,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
-        !call MPI_File_read_all(fileh, imat_t, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
-        file_offset = (PT%Nclasses+1)*ncontr*mpi_int_size
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
         call mpi_file_seek(fileh, file_offset,  MPI_SEEK_CUR)
 
         !deallocate(imat_t)
@@ -8076,7 +8097,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-        file_offset = 9*ncontr*ncontr*mpi_real_size
+        file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
         call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
         call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
@@ -8086,7 +8107,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        file_offset = 3*ncontr*ncontr*mpi_real_size
+        file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
         call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
         !
         !deallocate(mat_t)
@@ -9131,14 +9152,14 @@ module perturbation
                       !
                       if(abs(mat_elem)>1.0_rk) then 
                         !write(out,"(/'Non-diagonal element between different symmetries:')")
-                           write(out,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,a)") & 
+                           write(0,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,a)") & 
                                       sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem,&
                                       ' Non-diagonal element between different symmetries is too large!'
                         !
                         !
                         ! special case for linear molecules and E-symmetries. Not an ideal solution!
                         if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                           stop 'non-zero element between two symmetries'
+                           stop 'non-zero element between two symmetries - symm_mat_element_vector_k'
                         endif 
                       endif
                    endif
@@ -9283,7 +9304,7 @@ module perturbation
                         write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,a)") & 
                                       sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem,&
                                       ' Non-diagonal element (euler) between different symmetries is too large!'
-                        stop 'non-zero element between two symmetries'
+                        stop 'non-zero element between two symmetries - symm_mat_element_vector'
                       endif
                       !
                    endif
@@ -9529,7 +9550,7 @@ module perturbation
                       !
                       ! special case for linear molecules and E-symmetries. Not an ideal solution!
                       if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                         stop 'non-zero element between two symmetries'
+                         stop 'non-zero element between two symmetries - transfer_to_symmetric_representatoin'
                       endif 
                     endif
                     !
@@ -15499,7 +15520,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i12,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen_b,startdim:startdim+mdimen_p-1),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15517,7 +15538,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i12,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -15584,7 +15605,6 @@ module perturbation
           islice = 0
           job_is = 'grot'
           !
-          ! create column datatype for MPI-IO
           ! TODO clean up
           do k1 = 1,3
             do k2 = 1,3
@@ -15654,7 +15674,6 @@ module perturbation
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
               if(mpi_rank.eq.0) then
-                call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
                 call MPI_File_write(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
               endif
             else
@@ -15710,7 +15729,9 @@ module perturbation
                 enddo
                 !
               enddo
+              !
               call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
+              !
               do icoeff=startdim,enddim
                 do jcoeff=1,icoeff-1
                   grot_t(jcoeff,icoeff) = -1*grot_t(jcoeff,icoeff)
@@ -15775,7 +15796,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          !if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
+          !if (job%verbose>=4) write(out,"('  allocating hvib, ',i12,' elements...')") rootsize
           !
           !allocate(hvib%me(rootsize),stat=alloc)
           !call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15820,36 +15841,41 @@ module perturbation
             !
             if (job%verbose>=2) write(out,"('...end!')")
             !
-            !POSIXIO!if (treat_rotation.and.trim(job%IOkinet_action)=='SAVE') then
-            !POSIXIO!   !
-            !POSIXIO!   ! store the rotational matrix elements 
-            !POSIXIO!   !
-            !POSIXIO!   write(chkptIO) 'g_rot'
-            !POSIXIO!   !
-            !POSIXIO!   do k1 = 1,3
-            !POSIXIO!     do k2 = 1,3
-            !POSIXIO!       !
-            !POSIXIO!       write(chkptIO) grot_(k1,k2,:,:)
-            !POSIXIO!       ! 
-            !POSIXIO!     enddo
-            !POSIXIO!   enddo
-            !POSIXIO!   !
-            !POSIXIO!   write(chkptIO) 'g_cor'
-            !POSIXIO!   !
-            !POSIXIO!   ! store the Coriolis matrix elements 
-            !POSIXIO!   !
-            !POSIXIO!   do k1 = 1,PT%Nmodes
-            !POSIXIO!     do k2 = 1,3
-            !POSIXIO!       !
-            !POSIXIO!       write(chkptIO) gcor_(k1,k2,:,:)
-            !POSIXIO!       ! 
-            !POSIXIO!     enddo
-            !POSIXIO!   enddo
-            !POSIXIO!   !
-            !POSIXIO!   deallocate(grot_,gcor_)
-            !POSIXIO!   call ArrayStop('grot-gcor-fields')
-            !POSIXIO!   !
-            !POSIXIO!endif
+            if (treat_rotation.and.trim(job%IOkinet_action)=='SAVE') then
+              if (trim(job%kinetmat_format).eq.'MPIIO') then
+                write(out,*) "TODO implement MPI-IO version !POSIXIO!"
+                stop "Not yet implemented"
+              else
+                !
+                ! store the rotational matrix elements 
+                !
+                write(chkptIO) 'g_rot'
+                !
+                do k1 = 1,3
+                  do k2 = 1,3
+                    !
+                    write(chkptIO) grot_(k1,k2,:,:)
+                    ! 
+                  enddo
+                enddo
+                !
+                write(chkptIO) 'g_cor'
+                !
+                ! store the Coriolis matrix elements 
+                !
+                do k1 = 1,PT%Nmodes
+                  do k2 = 1,3
+                    !
+                    write(chkptIO) gcor_(k1,k2,:,:)
+                    ! 
+                  enddo
+                enddo
+                !
+                deallocate(grot_,gcor_)
+                call ArrayStop('grot-gcor-fields')
+                !
+              endif
+            endif
             !
           else ! if (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) then
             !
@@ -16720,10 +16746,15 @@ module perturbation
               !ib0 = icoefficoeff1(icoeff)
               !
               do jcoeff=(b-1)*mdimen_p+1,b*mdimen_p
-                        if (jcoeff .gt. PT%Maxcontracts) cycle
+                if (jcoeff .gt. PT%Maxcontracts) cycle
                 !
-                iroot = icoeff2iroot(1,icoeff)
-                jroot = icoeff2iroot(1,jcoeff)
+                if (jcoeff.le.icoeff) then
+                  iroot = icoeff2iroot(1,icoeff)
+                  jroot = icoeff2iroot(1,jcoeff)
+                else
+                  iroot = icoeff2iroot(1,jcoeff)
+                  jroot = icoeff2iroot(1,icoeff)
+                endif
                 !
                 f_t = matclass(1,iroot,jroot)
                 !
@@ -16731,8 +16762,13 @@ module perturbation
                 !
                 do iclasses = 2,Nclasses
                   !
-                  iroot = icoeff2iroot(iclasses,icoeff)
-                  jroot = icoeff2iroot(iclasses,jcoeff)
+                  if (jcoeff.le.icoeff) then
+                    iroot = icoeff2iroot(iclasses,icoeff)
+                    jroot = icoeff2iroot(iclasses,jcoeff)
+                  else
+                    iroot = icoeff2iroot(iclasses,jcoeff)
+                    jroot = icoeff2iroot(iclasses,icoeff)
+                  endif
                   !
                   !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
                   !

@@ -40,6 +40,7 @@
       ! Begin with constants intitialization
       !
       call TimerStart('TROVE')
+      call co_init_comms()
       !
       call accuracyInitialize
       !
@@ -180,9 +181,9 @@
       ! 
       ! Convert the J=0 basis set and mat.elements to the contracted represent. 
       !
-      call co_init_comms()
       if (action%convert_vibme) then 
          call TRconvert_matel_j0_eigen(j)
+         call co_finalize_comms()
          return 
       endif
       !
@@ -204,7 +205,7 @@
       !
       ! convert to j=0 representation as part of the first step j=0 calculation
       !
-      if (mpi_rank.eq.0 .and. job%convert_model_j0) then
+      if (job%convert_model_j0) then
         !
         call TRconvert_repres_J0_to_contr(j)
         call TRconvert_matel_j0_eigen(j)
