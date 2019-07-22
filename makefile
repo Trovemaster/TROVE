@@ -13,7 +13,7 @@ pot_user = pot_ch4
 PLAT = 
 ###FOR  = ifort
 FOR = ifort 
-FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp
+FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp -nostandard-realloc-lhs
 
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
