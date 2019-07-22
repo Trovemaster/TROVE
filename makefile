@@ -23,7 +23,8 @@ LAPACK = -mkl=parallel -qopenmp
 #LIBS   =  ./libplasma.a ./libcoreblas.a ./libquark.a ./libmrrr.a  -lpthread  -lnuma -lm
 LIBS   =   -lpthread  -lnuma -lm
 
-LIB     =   $(LAPACK) $(LIBS)
+LIB     =   $(LAPACK) $(LIBS) wigxjpf-1.5/lib/libwigxjpf.a
+
 
 %.o : %.f90
 	$(FOR) -c $(FFLAGS) $<
@@ -35,7 +36,7 @@ trove.x:        trove.o accuracy.o perturbation.o fields.o symmetry.o molecules.
                 mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o \
 				pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o pot_c2h6.o pot_c3h6.o  $(pot_user).o \
 				prop_xy2.o \
-				rotme_cart_tens fwigxjpf extfield richmol_data hyperfine
+				rotme_cart_tens.o fwigxjpf.o extfield.o richmol_data.o hyperfine.o
 				$(FOR) $(FFLAGS) -o j-trove$(PLAT).x $^ $(LIB)
 
 trove.o:        accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o
@@ -87,21 +88,13 @@ pot_abcd.o:     accuracy.o moltype.o lapack.o
 prop_xy2.o:     accuracy.o moltype.o timer.o pot_xy2.o
 
 
-extfield:  extfield/extfield.f90 accuracy.o moltype.o fields.o symmetry.o tran.o timer.o rotme_cart_tens tran.o richmol_data hyperfine
-	$(FOR) -c $(FFLAGS) -cpp extfield/extfield.f90
-
-rotme_cart_tens:  extfield/rotme_cart_tens.f90 accuracy.o timer.o fwigxjpf
-	$(FOR) -c $(FFLAGS) -cpp extfield/rotme_cart_tens.f90
-
-hyperfine:  extfield/hyperfine.f90 accuracy.o timer.o fwigxjpf richmol_data
-	$(FOR) -c $(FFLAGS) -cpp extfield/hyperfine.f90
-
-richmol_data:  extfield/richmol_data.f90 accuracy.o timer.o
-	$(FOR) -c $(FFLAGS) -cpp extfield/richmol_data.f90
-
-fwigxjpf: extfield/fwigxjpf.f90
-	$(FOR) -c $(FFLAGS) -cpp extfield/fwigxjpf.f90
-	cd extfield/wigxjpf-1.5  && $(MAKE)
+extfield.o:         accuracy.o moltype.o fields.o symmetry.o tran.o timer.o rotme_cart_tens.o tran.o richmol_data.o hyperfine.o
+rotme_cart_tens.o:  accuracy.o timer.o fwigxjpf.o
+hyperfine.o:        accuracy.o timer.o fwigxjpf.o richmol_data.o
+richmol_data.o:     accuracy.o timer.o
+fwigxjpf.o:
+	$(FOR) -c $(FFLAGS) -cpp fwigxjpf.f90
+	cd wigxjpf-1.5  && $(MAKE)
 
 
 clean:
