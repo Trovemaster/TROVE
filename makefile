@@ -22,7 +22,6 @@ FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -par
 LAPACK = -mkl=parallel -qopenmp
 #LIBS   =  ./libplasma.a ./libcoreblas.a ./libquark.a ./libmrrr.a  -lpthread  -lnuma -lm
 #LIBS   =   -lpthread  -lnuma -lm
-LIBS = -mkl=parallel
 
 LIB     =   $(LAPACK) $(LIBS) wigxjpf-1.5/lib/libwigxjpf.a
 
