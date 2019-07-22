@@ -1,4 +1,4 @@
-module emfield2
+module extfield
 
 
 use accuracy
@@ -1720,4 +1720,4 @@ function tran_filter_intens(jval1, isym1, energy1, jval2, isym2, energy2, nu, ca
 end function tran_filter_intens
 
 
-end module emfield2
+end module extfield
