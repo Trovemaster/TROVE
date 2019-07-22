@@ -349,7 +349,7 @@ module mol_c3h6
         !
         theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
-        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
         !
         !t1 = t1 - molec%local_eq(16)
         !t2 = t2 - molec%local_eq(17)
@@ -378,7 +378,7 @@ module mol_c3h6
         !
         A1 = src(19) 
         A2 = src(20) 
-        tbar = src(21) + 2.0_ark*pi/3.0_ark
+        tbar = src(21) ! + 2.0_ark*pi/3.0_ark
         !
         !T2 = ( A1/sqrt(3.0_ark)+A2 )/sqrt(2.0_ark)
         !T3 = ( A1/sqrt(3.0_ark)-A2 )/sqrt(2.0_ark)
@@ -389,8 +389,12 @@ module mol_c3h6
         !t2 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*A2+tbar
         !t3 = 1.0_ark/6.0_ark*sqrt(2.0_ark)*A2+2.0_ark/3.0_ark*pi-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1+tbar 
         
-        t1 = tbar+1.0_ark/3*sqrt(2.0_ark)*A2
-        t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1 
+        !t1 = tbar+1.0_ark/3*sqrt(2.0_ark)*A2
+        !t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1 
+        !t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
+        !
+        t1 = tbar+1.0_ark/3.0_ark*sqrt(2.0_ark)*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1
         t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
         !
         dst(16) =  mod(t1+4.0_ark*pi,4.0_ark*pi)
@@ -421,8 +425,9 @@ module mol_c3h6
     real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12
     real(ark) :: rC1e,rC2e,rH1e,rH2e,rH3e,rH4e,rH5e,rH6e,alpha1e,alpha2e,alpha3e
     real(ark) :: alpha4e,alpha5e,alpha6e,alpha7e,delta1e,delta2e,delta3e,delta4e
-    real(ark) :: delta5e,delta6e
-    integer(ik) :: i, n, iatom, ix
+    real(ark) :: delta5e,delta6e,transform(3,3)
+    integer(ik) :: i, n, iatom, ix, alloc
+    real(ark),allocatable    :: db0(:,:,:)
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C3H6/start'
     !
@@ -843,31 +848,31 @@ module mol_c3h6
         !
       case('7ALF_5THETA_1TAU')
         !
+        rC1e      = molec%req(1)
+        rC2e      = molec%req(2)
+        rH1e      = molec%req(3)
+        rH2e      = molec%req(4)
+        rH3e      = molec%req(5)
+        rH4e      = molec%req(6)
+        rH5e      = molec%req(7)
+        rH6e      = molec%req(8)
+        !
+        alpha1e    = molec%alphaeq(1)
+        alpha2e    = molec%alphaeq(2)
+        alpha3e    = molec%alphaeq(3)
+        alpha4e    = molec%alphaeq(4)
+        alpha5e    = molec%alphaeq(5)
+        alpha6e    = molec%alphaeq(6)
+        alpha7e    = molec%alphaeq(7)
+        delta4e    = molec%taueq(4)
+        delta5e    = molec%taueq(5)
+        delta6e    = molec%taueq(6)
+        !
         do i=0, npoints
-          !
-          rC1e      = molec%req(1)
-          rC2e      = molec%req(2)
-          rH1e      = molec%req(3)
-          rH2e      = molec%req(4)
-          rH3e      = molec%req(5)
-          rH4e      = molec%req(6)
-          rH5e      = molec%req(7)
-          rH6e      = molec%req(8)
-          !
-          alpha1e    = molec%alphaeq(1)
-          alpha2e    = molec%alphaeq(2)
-          alpha3e    = molec%alphaeq(3)
-          alpha4e    = molec%alphaeq(4)
-          alpha5e    = molec%alphaeq(5)
-          alpha6e    = molec%alphaeq(6)
-          alpha7e    = molec%alphaeq(7)
           !
           delta1e    = rho_i(i)
           delta2e    = molec%taueq(2) + delta1e
           delta3e    = molec%taueq(3) + delta1e
-          delta4e    = molec%taueq(4)
-          delta5e    = molec%taueq(5)
-          delta6e    = molec%taueq(6)
           !
           b0(1,1,i) = 0.0_ark
           b0(1,2,i) = 0.0_ark
@@ -915,9 +920,86 @@ module mol_c3h6
         !
       end select 
       !
-      do i=0, npoints
+      select case(trim(molec%coords_transform))
         !
-        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
+      case default
+        !
+        ! standart PAS 
+        !
+        do i=0, npoints
+          !
+          ! Saywitz-like (jensen's) reorientation
+          !
+          call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
+          !
+        enddo
+        !
+      case('7ALF_5THETA_1TAU-XXX')
+        !
+        allocate(db0(Natoms,3,0:Npoints),stat=alloc)
+        if (alloc/=0) then
+            write (out,"(' Error ',i9,' trying to allocate db0-field')") alloc
+            stop 'ML_b0_C3H6_db0, db0 - out of memory'
+        end if
+        !
+        rC1e      = molec%req(1)
+        rC2e      = molec%req(2)
+        rH1e      = molec%req(3)
+        rH2e      = molec%req(4)
+        rH3e      = molec%req(5)
+        rH4e      = molec%req(6)
+        rH5e      = molec%req(7)
+        rH6e      = molec%req(8)
+        !
+        alpha1e    = molec%alphaeq(1)
+        alpha2e    = molec%alphaeq(2)
+        alpha3e    = molec%alphaeq(3)
+        alpha4e    = molec%alphaeq(4)
+        alpha5e    = molec%alphaeq(5)
+        alpha6e    = molec%alphaeq(6)
+        alpha7e    = molec%alphaeq(7)
+        delta4e    = molec%taueq(4)
+        delta5e    = molec%taueq(5)
+        delta6e    = molec%taueq(6)
+        !
+        db0 = 0
+        !
+        do i=0, npoints
+          !
+          delta1e    = rho_i(i)
+          delta2e    = molec%taueq(2) + delta1e
+          delta3e    = molec%taueq(3) + delta1e
+          !      
+          db0(4,1,i) =-rh1e*sin(PI - alpha2e)*sin(delta1e)
+          db0(4,2,i) = rh1e*sin(PI - alpha2e)*cos(delta1e)
+          !      
+          db0(5,1,i) =-rH2e*sin(PI - alpha3e)*sin(delta2e)
+          db0(5,2,i) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+          !     
+          db0(6,1,i) =-rH3e*sin(PI - alpha4e)*sin(delta3e)
+          db0(6,2,i) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+          !
+        enddo
+        !
+        do i=0, npoints
+          !
+          ! Saywitz-like (jensen's) reorientation
+          !
+          !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform=transform)
+          !
+          !do ix = 1,Natoms
+          !   db0(ix,:,i) = matmul(transpose(transform),db0(ix,:,i))
+          !enddo
+          !
+        enddo
+        !
+        Call MLorienting_a0_across_dadrho(Natoms,npoints,molec%AtomMasses,rho_borders,b0,db0,periodic=.true.)
+        !
+        deallocate(db0)
+        !
+      end select 
+      !
+      do i=0, npoints
         !
         do n = 1,3
           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
@@ -1276,7 +1358,7 @@ module mol_c3h6
       stop 'ML_rotsymmetry_C3H6 error: bad coordinate type'
       !
       !
-    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU','7ALF_TAU_1RHO')
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU','7ALF_TAU_1RHO','7ALF_5THETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !

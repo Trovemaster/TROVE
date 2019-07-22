@@ -445,6 +445,8 @@ module perturbation
                                                 ! This can be used if we employ the contracted basis set for J/=0 
                                                 ! constructed with all vib. modes (J=0) combined as one class.   
    logical :: PTreduced_model                   ! whether reduced model has been employed for the contracted basis set construction
+   logical :: PTuse_gauss_quadrature = .true.           ! Use Gauss quadrature poitns for symmetry mapping 
+   
    !integer(ik)   :: PTMaxcontracts ! Maximal number of the contracted basis functions 
    integer(ik)   :: PTNclasses     ! Number of different classes
    integer(ik)   :: PTNspecies     ! Number of different species
@@ -2584,7 +2586,7 @@ module perturbation
     integer(ik)        :: nroots,jrot,icount,ideg,kdeg,ndeg,Ncount,k0,ioper
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
-    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max
+    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
@@ -3050,6 +3052,18 @@ module perturbation
        mpoints_max = max(int(real(maxval(count_degen(1:Ncount)),rk)*1.5_rk),job%msample_points)
        mpoints = mpoints_max
        !
+       if (PTuse_gauss_quadrature) then
+         !
+         mpoints_dvr = 1
+         do i = 1,PT%mode_iclass(iclasses)
+           imode = PT%mode_class(iclasses,i)
+           mpoints_dvr = mpoints_dvr*(job%bset(imode)%range(2)+1)
+         enddo
+         !
+         mpoints = min(mpoints_dvr,mpoints_max) 
+         !
+       endif
+       !
        do i = 1,PT%mode_iclass(iclasses)
          !
          imode = PT%mode_class(iclasses,i)
@@ -3111,7 +3125,11 @@ module perturbation
          iroot  = count_index(icount,1)
          Nelem  = count_degen(icount)
          !
-         mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
+         if (.not.PTuse_gauss_quadrature) then
+           mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
+         else
+           mpoints = min(mpoints_dvr,mpoints_max) 
+         endif
          !
          ! In case the number of degenerate levels exceeds the maximal allowed degeneracy 
          ! the degenerate set has to be splitted. 
@@ -4332,14 +4350,18 @@ module perturbation
 
 
 
-  subroutine PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+  subroutine PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_grid)
      !
      integer(ik),intent(in)  :: iclasses,mpoints,Nr_t
      real(ark),intent(in)    :: rhostep(PT%Nmodes)
-     real(ark),intent(out)   :: chi_t(:,:,:)
+     real(ark),intent(out)   :: chi_grid(:,:,:)
      integer(ik)             :: jpoint,i,ipoint_t,imode,ioper,pshift
-     real(ark)               :: chi(PT%Nmodes),f_t,chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
+     real(ark)               :: chi(PT%Nmodes),chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
      logical                 :: go
+     integer(ik)             :: alloc,ilevel,jlevel,idvrpoints,Nmodes_calss
+     real(rk)                :: f_t
+     !
+     real(rk),allocatable    :: H1dvr(:,:),e1dvr(:)
      !
      ! choose the geometry that we use to check the symmetry
      !
@@ -4347,7 +4369,87 @@ module perturbation
      !
      if (job%verbose>=5) call TimerStart('PTselect_sample_points')
      !
+     Nmodes_calss = PT%mode_iclass(iclasses)
+     !
      call random_seed()
+     !
+     if (PTuse_gauss_quadrature) then
+         !
+         chi_grid = 0
+         !
+         imode = PT%mode_class(iclasses,1)
+         idvrpoints = job%bset(imode)%range(2)+1
+         !
+         allocate (H1dvr(idvrpoints,idvrpoints),e1dvr(idvrpoints),stat=alloc)
+         call ArrayStart('H1dvr',alloc,size(H1dvr),kind(H1dvr))
+         call ArrayStart('H1dvr',alloc,size(e1dvr),kind(e1dvr))
+         !      
+         do i = 1,PT%mode_iclass(iclasses)
+           !
+           imode = PT%mode_class(iclasses,i)
+           !
+           do ilevel = 1,idvrpoints
+             do jlevel = ilevel,idvrpoints
+                !
+                H1dvr(ilevel,jlevel) = me%vibmode(imode,-1)%coeff(1,ilevel-1,jlevel-1)
+                H1dvr(jlevel,ilevel) = H1dvr(ilevel,jlevel)
+                !
+             enddo
+           enddo
+           !
+           call lapack_syev(H1dvr,e1dvr)
+           !
+         enddo
+         !
+         ipoint_t = 0
+         !
+         if (mpoints<idvrpoints**Nmodes_calss) then
+           !
+           do jpoint = 1,mpoints
+             !
+             do i = 1,PT%mode_iclass(iclasses)
+               !
+               imode = PT%mode_class(iclasses,i)
+               !
+               call random_number(f_t)
+               f_t = idvrpoints*f_t
+               ipoint_t = nint(f_t)
+               !
+               ipoint_t = max(min(ipoint_t,idvrpoints),1)
+               !
+               chi_grid(imode,1,jpoint) = e1dvr(ipoint_t)
+               !
+             enddo
+             !
+           enddo
+           !
+         elseif(idvrpoints**Nmodes_calss==mpoints) then
+           !
+           do i = 1,PT%mode_iclass(iclasses)
+             !
+             imode = PT%mode_class(iclasses,i)
+             !
+             do jpoint = 1,idvrpoints
+               !
+               ipoint_t = ipoint_t+1
+               !
+               chi_grid(imode,1,ipoint_t) = e1dvr(jpoint)
+               !
+             enddo
+             !
+           enddo
+           !
+         else
+           !
+           write(out,"('PTselect_sample_points error: illegal too large mpoints = ',i0)") mpoints
+           stop 'PTselect_sample_points error: illegal mpoints'
+           !
+         endif
+         !
+         deallocate(H1dvr,e1dvr)
+         call ArrayStop('H1dvr')
+         !
+     endif
      !
      do imode = 1,PT%Nmodes
        !
@@ -4358,75 +4460,108 @@ module perturbation
      !
      if (verbose>=4) write(out,"('PTselect_sample_points...')")   
      !
-     !$omp parallel do private(jpoint,chi,pshift,go,i,imode,f_t,ipoint_t,ioper,chi_) shared(chi_t) schedule(dynamic)
-     do jpoint = 1,mpoints
-       !
-       chi_t(:,:,jpoint) = huge(1.0_ark)
-       chi = 0 
-       !
-       pshift = 0 
-       !
-       go = .true.
-       !
-       do while(go)  ! cycle_go
-         !
-         do i = 1,PT%mode_iclass(iclasses)
-           !
-           imode = PT%mode_class(iclasses,i)
-           !
-           call random_number(f_t)
-           !
-           ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
-           !
-           !ipoint_t = mod(jpoint*(bs(imode)%npoints/mpoints)+i*(bs(imode)%npoints/50+i)+pshift,bs(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
-           !
-           if (ipoint_t<Nr_t.or.ipoint_t>job%bset(imode)%npoints-Nr_t) ipoint_t = mod(ipoint_t+10,job%bset(imode)%npoints)
-           !
-           !ipoint_t = 2*jpoint + Nr_t
-           !
-           chi(imode) = job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t,ark)
-           !
-         enddo
-         !
-         go = .false.
-         !
-         !do iclass = 1,sym%Nclasses
-         !
-         ioper = 0
-         !
-         do while (.not.go.and.ioper <sym%Noper)
-           !
-           !do ioper = 1,sym%Noper
-           !
-           ioper = ioper+1
-           !
-           call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
-           chi_t(:,ioper,jpoint) = chi_(:)
-           !
-           i = 0 
-           do while(.not.go.and.i<PT%mode_iclass(iclasses))
-             !
-             i = i + 1
-             !
-             imode = PT%mode_class(iclasses,i)
-             !
-             if (chi_(imode)<b1(imode).or.&
-                 chi_(imode)>b2(imode) ) then 
-                 go = .true.
-                 !
-                 pshift = pshift + imode
-                 !cycle cycle_go
-             endif
-             !
-           enddo
-           !
-         enddo
-         !
-       enddo
-       !enddo cycle_go
-       !
-     enddo 
-     !$omp end parallel do
+     if (PTuse_gauss_quadrature) then
+        !
+        do jpoint = 1,mpoints
+          !
+          chi(:) = chi_grid(:,1,jpoint)
+          !
+          do ioper = 1,sym%Noper
+            !
+            call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
+            chi_grid(:,ioper,jpoint) = chi_(:)
+            !
+            do i=1,PT%mode_iclass(iclasses)
+              !
+              imode = PT%mode_class(iclasses,i)
+              !
+              if (chi_(imode)<b1(imode).or.&
+                  chi_(imode)>b2(imode) ) then 
+                  !
+                  write(out,"('PTselect_sample_points: two small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
+                  stop 'PTselect_sample_points error: two small interval'
+                  !
+              endif
+              !
+            enddo
+            !
+          enddo
+          !
+        enddo
+        !
+     else 
+        !
+        !$omp parallel do private(jpoint,chi,pshift,go,i,imode,f_t,ipoint_t,ioper,chi_) shared(chi_grid) schedule(dynamic)
+        do jpoint = 1,mpoints
+          !
+          chi_grid(:,:,jpoint) = huge(1.0_ark)
+          chi = 0 
+          !
+          pshift = 0 
+          !
+          go = .true.
+          !
+          do while(go)  ! cycle_go
+            !
+            do i = 1,PT%mode_iclass(iclasses)
+              !
+              imode = PT%mode_class(iclasses,i)
+              !
+              call random_number(f_t)
+              !
+              ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
+              !
+              !ipoint_t = mod(jpoint*(bs(imode)%npoints/mpoints)+i*(bs(imode)%npoints/50+i)+pshift,bs(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
+              !
+              if (ipoint_t<Nr_t.or.ipoint_t>job%bset(imode)%npoints-Nr_t) ipoint_t = mod(ipoint_t+10,job%bset(imode)%npoints)
+              !
+              !ipoint_t = 2*jpoint + Nr_t
+              !
+              chi(imode) = job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t,ark)
+              !
+            enddo
+            !
+            go = .false.
+            !
+            !do iclass = 1,sym%Nclasses
+            !
+            ioper = 0
+            !
+            do while (.not.go.and.ioper <sym%Noper)
+              !
+              !do ioper = 1,sym%Noper
+              !
+              ioper = ioper+1
+              !
+              call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
+              chi_grid(:,ioper,jpoint) = chi_(:)
+              !
+              i = 0 
+              do while(.not.go.and.i<PT%mode_iclass(iclasses))
+                !
+                i = i + 1
+                !
+                imode = PT%mode_class(iclasses,i)
+                !
+                if (chi_(imode)<b1(imode).or.&
+                    chi_(imode)>b2(imode) ) then 
+                    go = .true.
+                    !
+                    !pshift = pshift + imode
+                    !cycle cycle_go
+                endif
+                !
+              enddo
+              !
+            enddo
+            !
+          enddo
+          !enddo cycle_go
+          !
+        enddo 
+        !$omp end parallel do
+        !
+     endif
      !
      if (job%verbose>=5) call TimerStop('PTselect_sample_points')
      !
@@ -5092,7 +5227,7 @@ module perturbation
     real(ark),intent(in)    :: phi_src(sym%Noper,Ndeg,mpoints)
     real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
     real(rk),intent(in)     :: tol
-    real(ark)               :: t_vect(Ndeg)
+    real(ark)               :: t_vect(Ndeg),rms,ms0
     
     integer(ik), allocatable :: sym_elems_evaluated(:)
     integer(ik) :: total_elem_evaluated
@@ -5277,29 +5412,7 @@ module perturbation
         !
       endif
       !
-      !omp parallel do private(ideg,jdeg,ieq) shared(tmat)
-      !do ideg = 1,Ndeg
-      !  do jdeg = 1,Ndeg
-      !    !
-      !    ieq = jdeg + Ndeg*(ideg-1)
-      !    !
-      !    tmat(ioper,ideg,jdeg) = real(b(ieq,1),ark)
-      !    !
-      !  enddo 
-      !enddo
-      !omp end parallel do
-      !
-      ! for higher accuracy try to refine the solution using ark
-      !
-      xm(1:n) = b(1:n,1)    
-      !
-      if (tol<1.0e-11) then 
-        !
-        call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
-        !
-      endif
-      !
-      !bm(1:n) = xm(1:n)
+      xm(1:n) = b(1:n,1)
       !
       !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)
       do ideg = 1,Ndeg
@@ -5314,40 +5427,76 @@ module perturbation
       !$omp end parallel do
       !
       ! check
+      rms = 0
+      do ipoint = 1,mpoints
+         !
+         t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
+         !
+         ms0 = sum((t_vect(:)-phi_src(ioper,:,ipoint))**2)
+         !
+         do ideg=1,ndeg
+           !
+           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>tol) then 
+             continue  
+           endif
+         enddo 
+         !
+         rms = rms + ms0
+         if ( sqrt(rms/mpoints)>tol ) then 
+           !
+           continue
+           !
+         endif
+         !
+      enddo
+      rms = sqrt(rms/mpoints)
+      !
+      ! for higher accuracy try to refine the solution using ark
+      if (rms>tol) then 
+        !
+        call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+        !
+      endif
       !
     enddo
+    !
     if(sym%product_table_set) then 
        do ioper=1, sym%Noper
          call degenerate_matrix(Ndeg, ioper, tmat, operations_set)
        enddo
     endif 
+    !
+    rms = 0
+    !
     do ioper=1, sym%Noper
-    !$omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
+      !omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
       do ipoint = 1,mpoints
          !
          t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
          !
-         do ideg=1,ndeg
-           !
-           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>tol) then 
-             if (job%verbose>=6) then 
-               write(out,"('reconstruct_transf_mat: Cannot define presentation, ioper,ipoint,k =  ',3i8)") ioper,ipoint,ideg
-               print *, t_vect(ideg),phi_src(ioper,ideg,ipoint)
-             endif 
-             info = max(info,2)
-             !return 
-           endif 
-           !
-         enddo
+         ms0 = sum((t_vect(:)-phi_src(ioper,:,ipoint))**2)
+         !
+         rms = rms + ms0
          !
       enddo
-      !$omp end parallel do
+      !omp end parallel do
       !
     enddo 
     !omp enddo
     !
     deallocate(a,b,work,s)    
     !omp end parallel
+    !
+    rms = sqrt(rms/(sym%Noper*mpoints))
+    !
+    if (rms>tol) then 
+      if (job%verbose>=6) then 
+        write(out,"('reconstruct_transf_mat: Cannot define presentation, ioper,ipoint,k =  ',3i8)") ioper,ipoint,ideg
+        print *, rms
+      endif 
+      info = max(info,2)
+      !return 
+    endif 
     !
     if (job%verbose>=6) call MemoryReport
     !
@@ -5569,7 +5718,7 @@ module perturbation
          write(out,my_fmt) '                    Nirr : ',Nirr(1:isym)
          info = 1
          !
-         if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
+         !if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
          !
          !return
          !

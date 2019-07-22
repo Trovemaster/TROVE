@@ -447,7 +447,7 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
       theta1 = theta1 + 2.0_ark*pi
     endif
     if (theta1>2.0_ark*pi+tol) then
-      theta1 = theta1 + 2.0_ark*pi
+      theta1 = theta1 - 2.0_ark*pi
     endif
     !
     theta2 = theta2 + theta1
@@ -522,8 +522,8 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
     !
     !theta1 = 2.0_ark*pi-theta2-theta3
     !
-    xi(19)  = ( 2.0_ark*theta13 - theta23 - theta12 )/sqrt(6.0_ark)
-    xi(20)  = (                   theta23 - theta12 )/sqrt(2.0_ark)
+    xi(19)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(20)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
     !
     !theta1 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)-delta1e
     !
@@ -531,7 +531,7 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
       theta1 = theta1 + 2.0_ark*pi
     endif
     if (theta1>2.0_ark*pi+tol) then
-      theta1 = theta1 + 2.0_ark*pi
+      theta1 = theta1 - 2.0_ark*pi
     endif
     !
     !theta2 = theta2 + theta1
@@ -654,10 +654,10 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(3,11,12) = 1.0_ark
     repres(3,12,10) = 1.0_ark
     !
-    repres(2,19,19) = -a
-    repres(2,19,20) =  b
-    repres(2,20,19) = -b
-    repres(2,20,20) = -a
+    repres(3,19,19) = -a
+    repres(3,19,20) =  b
+    repres(3,20,19) = -b
+    repres(3,20,20) = -a
     !
     !C2/(23)->(45)
     !
@@ -673,13 +673,13 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(4,20,20) = -1.0_ark
     !
     !C2'/(12)->(34)
-    repres(5,3,5) = 1.0_ark
-    repres(5,4,4) = 1.0_ark
-    repres(5,5,3) = 1.0_ark
+    repres(5,3,4) = 1.0_ark
+    repres(5,4,3) = 1.0_ark
+    repres(5,5,5) = 1.0_ark
     !
-    repres(5,10,12) = 1.0_ark
-    repres(5,11,11) = 1.0_ark
-    repres(5,12,10) = 1.0_ark
+    repres(5,10,11)  = 1.0_ark
+    repres(5,11,10)  = 1.0_ark
+    repres(5,12,12)  = 1.0_ark
     !
     repres(5,19,19) = -a
     repres(5,19,20) =  b
@@ -687,13 +687,13 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     repres(5,20,20) =  a
     !
     !(13)->(35)
-    repres(6,3,4) = 1.0_ark
-    repres(6,4,3) = 1.0_ark
-    repres(6,5,5) = 1.0_ark
+    repres(6,3,5) = 1.0_ark
+    repres(6,4,4) = 1.0_ark
+    repres(6,5,3) = 1.0_ark
     !
-    repres(6,10,11)  = 1.0_ark
-    repres(6,11,10)  = 1.0_ark
-    repres(6,12,12)  = 1.0_ark
+    repres(6,10,12) = 1.0_ark
+    repres(6,11,11) = 1.0_ark
+    repres(6,12,10) = 1.0_ark
     !
     repres(6,19,19) = -a
     repres(6,19,20) = -b

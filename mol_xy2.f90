@@ -785,25 +785,6 @@ module mol_xy2
             enddo
             !
          enddo
-
-
-         !
-      !case('R-R-R')
-      !   !
-      !   alphaeq = acos((re13**2+re13**2-re13**2)/(2.0_ark*re13*re13))
-      !   !
-      !   b0(1,3,0) = 0.0_ark
-      !   b0(1,2,0) = 0.0_ark
-      !   b0(1,1,0) = 2.0_ark*m3/m*re13*cos(alphaeq)
-      !   !
-      !   b0(2,3,0) =-re13*sin(alphaeq)
-      !   b0(2,2,0) = 0.0_ark
-      !   b0(2,1,0) =-m1/m*re13*cos(alphaeq)
-      !   !
-      !   b0(3,3,0) = re13*sin(alphaeq)
-      !   b0(3,2,0) = 0.0_ark
-      !   b0(3,1,0) =-m1/m*re13*cos(alphaeq)
-      !   !
       !
       end select
       !

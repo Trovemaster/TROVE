@@ -6340,7 +6340,7 @@ end subroutine check_read_save_none
       do imode = 1,Nmodes
           do ix = 1,3
              !if (ix==lincoord) cycle 
-             a_t = sum(sqrt(trove%mass(:))*Amat(:,ix,imode))
+             a_t = sum(sqrt(trove%mass(1:Natoms))*Amat(1:Natoms,ix,imode))
              if (abs(a_t)>1000.0_rk*sqrt(small_)) then 
                  write(out,"('Lmat_generation1d: Eckart 1 is not =0 for irho = ',i6,',imode = ',i4,', ix =',i4,d18.8)") & 
                                                         irho,imode,ix,a_t
@@ -6360,7 +6360,7 @@ end subroutine check_read_save_none
              a_t = 0.0_ark
              do jx = 1,3 
                 do kx = 1,3 
-                   a_t = a_t + sum(sqrt(trove%mass(:))*a0(:,jx)*epsil(ix,jx,kx)*Amat(:,kx,imode) )
+                   a_t = a_t + sum(sqrt(trove%mass(1:Natoms))*a0(1:Natoms,jx)*epsil(ix,jx,kx)*Amat(1:Natoms,kx,imode) )
                 enddo
              enddo
              if (abs(a_t)>1000.0_rk*sqrt(small_)) then 
@@ -6392,11 +6392,11 @@ end subroutine check_read_save_none
                !
                if (jmode==trove%Nmodes_n) then 
                   !
-                  a_t = a_t + sum(trove%db0(:,ix,irho,1)*sqrt(trove%mass(:))*Amat(:,ix,imode) )
+                  a_t = a_t + sum(trove%db0(:,ix,irho,1)*sqrt(trove%mass(1:Natoms))*Amat(1:Natoms,ix,imode) )
                   !
                else
                   !
-                  a_t = a_t + sum(Bmat(jmode,:,ix)/sqrt(trove%mass(:))*Amat(:,ix,imode) )
+                  a_t = a_t + sum(Bmat(jmode,1:Natoms,ix)/sqrt(trove%mass(1:Natoms))*Amat(1:Natoms,ix,imode) )
                   !
                endif 
                !

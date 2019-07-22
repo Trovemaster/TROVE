@@ -3949,7 +3949,7 @@ endif
    !
    re1    = force(1)
    re2    = force(2)
-   alphae = force(3)
+   alphae = force(3)*pi/180.0_ark
    aa1  = force(4)
    aa2  = force(5)
    !
