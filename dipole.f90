@@ -1730,7 +1730,7 @@ contains
                     energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
-      if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
+      if (mod(ilevelI,min(100000,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
          !
          write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !

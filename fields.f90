@@ -1464,11 +1464,13 @@ module fields
              !
              i = 0
              !
+             job%isym_do = .false.
+             !
              do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
                call readf(job%partfunc%gns(i))
-               if (job%partfunc%gns(i)<small_) job%isym_do(i) = .false.
+               if (job%partfunc%gns(i)>small_) job%isym_do(i) = .true.
                !
              enddo
              !
@@ -3426,18 +3428,16 @@ module fields
              !
              intensity%gns = 0
              if( trim(intensity%action)=='TM') intensity%gns = 1 
+             job%select_gamma = .false.
+             job%isym_do = .false.
              !
              do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
                call readf(intensity%gns(i))
-               if (intensity%gns(i)<small_) then 
+               if (intensity%gns(i)>small_) then 
                  !
-                 job%isym_do(i) = .false.
-                 job%select_gamma(i) = .false.
-                 !
-               else
-                 !
+                 job%isym_do(i) = .true.
                  job%select_gamma(i) = .true.
                  !
                endif

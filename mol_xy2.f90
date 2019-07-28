@@ -2046,7 +2046,7 @@ module mol_xy2
                !
                irot = ioper-(1+2*N_Cn)
                !
-               phi_n = phi*irot
+               phi_n = phi*irot*2.0_ark
                !
                dst(1) = src(2)
                dst(2) = src(1)
@@ -2080,7 +2080,7 @@ module mol_xy2
                !
                irot = ioper-(1+2*N_Cn+Nrot+1+2*N_Cn)
                !
-               phi_n = phi*irot
+               phi_n = phi*irot*2.0_ark
                !
                dst(1) = src(1)
                dst(2) = src(2)
@@ -2654,6 +2654,18 @@ module mol_xy2
                if (mod(k+tau,2)/=0) ideg = 2
                !
                gamma = 8+2*l-1
+
+               ideg = 1 ! tau +1
+               !if (mod(k+tau,2)/=0) ideg = 2
+               if (mod(tau,2)/=0) ideg = 2
+               !
+               !if     (mod(k+2,2)==0) then 
+               !    gamma = 8+2*l-1
+               !else
+               !   gamma = 8+2*l
+               !endif
+
+
                !
                !if     (mod(k+2,2)==0) then 
                !    gamma = 8+2*l
