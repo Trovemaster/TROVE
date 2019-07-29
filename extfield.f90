@@ -1063,7 +1063,7 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
   j1 = bset_contr(jind1)%jval
   j2 = bset_contr(jind2)%jval
 
-#if defined(_EMFIELD2_DEBUG_)
+#if defined(_EXTFIELD_DEBUG_)
   dimen2 = bset_contr(jind2)%Maxcontracts
   if (idimen2>dimen2) then
     write(out, '(/a,1x,i6,1x,a,1x,i6)') &!
@@ -1075,7 +1075,7 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
   icontr2 = bset_contr(jind2)%iroot_correlat_j0(idimen2)
   ktau2   = bset_contr(jind2)%ktau(idimen2)
 
-#if defined(_EMFIELD2_DEBUG_)
+#if defined(_EXTFIELD_DEBUG_)
   k2     = bset_contr(jind2)%k(idimen2)
   tau2   = mod(ktau2,2)
   ktau2_ = tens%ktau_ind(k2,tau2)
@@ -1095,7 +1095,7 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
 
       idimen = ind(ielem)
 
-#if defined(_EMFIELD2_DEBUG_)
+#if defined(_EXTFIELD_DEBUG_)
       dimen1 = bset_contr(jind1)%Maxcontracts
       if (idimen>dimen1) then
         write(out, '(/a,1x,i6,1x,a,1x,i6)') &!
@@ -1107,7 +1107,7 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
       icontr1 = bset_contr(jind1)%iroot_correlat_j0(idimen)
       ktau1   = bset_contr(jind1)%ktau(idimen)
 
-#if defined(_EMFIELD2_DEBUG_)
+#if defined(_EXTFIELD_DEBUG_)
       k1     = bset_contr(jind1)%k(idimen)
       tau1   = mod(ktau1,2)
       ktau1_ = tens%ktau_ind(k1,tau1)

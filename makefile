@@ -15,6 +15,7 @@ PLAT =
 FOR = ifort 
 #FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp -nostandard-realloc-lhs
 FFLAGS = -O3 -qopenmp -cpp
+CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
@@ -28,7 +29,7 @@ LIB     =   $(LAPACK) $(LIBS) wigxjpf-1.5/lib/libwigxjpf.a
 
 
 %.o : %.f90
-	$(FOR) -c $(FFLAGS) $<
+	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
 
 ###############################################################################
 
