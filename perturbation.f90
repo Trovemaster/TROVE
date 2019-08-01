@@ -16560,7 +16560,7 @@ module perturbation
       filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
       !
       call MPI_File_open(mpi_comm_world, filename, mpi_mode_rdonly, mpi_info_null, chkptMPIIO, ierr)
-      if (ierr) then
+      if (ierr.ne.0) then
         if(mpi_rank.eq.0) write(out,"('divided_slice_open-error: The split-file ',a,' does not exist')") trim(filename)
         stop 'divided_slice_open-error: The split-file does not exist'
       endif

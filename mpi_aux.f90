@@ -78,7 +78,7 @@ contains
     call DESCINIT(descr, dimy, dimx, MB, NB, 0, 0, blacs_ctxt, max(MLOC,1), ierr)
 
     allocate(smat(MLOC,NLOC), stat=allocinfo)
-    if(allocinfo) return
+    if(allocinfo.ne.0) return
 
     if (present(mpi_type)) then
       global_size = (/dimy, dimx/)
