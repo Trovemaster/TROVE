@@ -1658,7 +1658,7 @@ module me_numer
   end function  simpsonintegral
 
 
-! integration with Simpson rules 
+! integration with rectangular rules 
 !                                      
   function integral_rect_ark(npoints,xmax,f) result (si) 
     integer(ik),intent(in) :: npoints

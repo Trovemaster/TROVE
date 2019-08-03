@@ -8,7 +8,7 @@ module fields
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                      ME_laguerre_k
+                      ME_laguerre_k,ME_laguerre_simple_k
    use me_numer
    use me_rot
    use timer
@@ -510,7 +510,7 @@ module fields
 
 
    integer, parameter       :: verbose     = 2    ! Verbosity level
-   integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differencies
+   integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differences
    !
    integer(ik), save        :: FLNelements        ! number of all real elements we use to count used memory 
    !
@@ -4903,12 +4903,12 @@ end subroutine check_read_save_none
           !
           factor = real(1.0e11_rk*planck*vellgt,ark)
           !
-          ! Here we calculate derivatives by the finite differencies 
+          ! Here we calculate derivatives by the finite differences 
           ! of the function "poten_local" (or poten_xi)
           ! with respect to local coordinates r1^k1 r2^k2 r3^k3 ...
           ! at the equilibrium given by q_eq,
           ! while k1,k2,k3... are stored in "kindex".
-          ! fdstep defines the finite differencies spacings 
+          ! fdstep defines the finite differences spacings 
           !
           df = FLfinitediffs(kindex,poten_chi,trove%chi_ref(:,0),step) 
           !
@@ -5504,7 +5504,7 @@ end subroutine check_read_save_none
         hstep = epsilon(1.0_ark)**(1.0_rk/(trove%NPotOrder+difftype))
         diferror = hstep**(difftype-1)
         write(out,"(' Optimal spacing / actual spacing : ',2d18.8)") sum(trove%fdstep)/trove%Nmodes,hstep
-        write(out,"(' Estimation for the finite differencies computational error: ',d18.8)") diferror
+        write(out,"(' Estimation for the finite differences computational error: ',d18.8)") diferror
         !
     endif
     !
@@ -7009,23 +7009,23 @@ end subroutine check_read_save_none
          !
          if (trove%internal_coords=='LOCAL') then 
             !
-            ! Here we calculate derivatives by the finite differencies 
+            ! Here we calculate derivatives by the finite differences 
             ! of the function "poten_local"
             ! with respect to local coordinates r1^k1 r2^k2 r3^k3 ...
             ! at the equilibrium given by q_eq,
             ! while k1,k2,k3... are stored in "kindex".
-            ! fdstep defines the finite differencies spacings 
+            ! fdstep defines the finite differences spacings 
             !
             df = FLfinitediffs(kindex,poten_xi,xi_eq,step(2:1:-1,:)) 
             !
          else
             !
-            ! Here we calculate derivatives by the finite differencies 
+            ! Here we calculate derivatives by the finite differences 
             ! of the function "poten_normal"
             ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
             ! at the equilibrium given by q_eq, which is zero, 
             ! while k1,k2,k3... are stored in "kindex".
-            ! fdstep defines finite differencies spacings 
+            ! fdstep defines finite differences spacings 
             !
             df = FLfinitediffs(kindex,poten_normal,xi_eq,step) 
             !
@@ -7298,12 +7298,12 @@ end subroutine check_read_save_none
            enddo
          enddo 
          !
-         ! Here we calculate derivatives by the finite differencies 
+         ! Here we calculate derivatives by the finite differences 
          ! of the function "poten_normal"
          ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
          ! at the equilibrium given by q_eq, which is zero, 
          ! while k1,k2,k3... are stored in "kindex".
-         ! fdstep defines finite differencies spacings 
+         ! fdstep defines finite differences spacings 
          !
          df = FLfinitediffs_precomp(kindex,ipoint_address,pot_points,trove%fdstep,istep) 
          !
@@ -7640,12 +7640,12 @@ end subroutine check_read_save_none
                  enddo
                enddo 
                !
-               ! Here we calculate derivatives by the finite differencies 
+               ! Here we calculate derivatives by the finite differences 
                ! of the function "poten_normal"
                ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
                ! at the equilibrium given by q_eq, which is zero, 
                ! while k1,k2,k3... are stored in "kindex".
-               ! fdstep defines finite differencies spacings 
+               ! fdstep defines finite differences spacings 
                !
                df = FLfinitediffs_precomp(kindex,ipoint_address,pot_points,trove%fdstep,istep) 
                !
@@ -8049,12 +8049,12 @@ end subroutine check_read_save_none
                    enddo
                  enddo 
                  !
-                 ! Here we calculate derivatives by the finite differencies 
+                 ! Here we calculate derivatives by the finite differences 
                  ! of the function "poten_normal"
                  ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
                  ! at the equilibrium given by q_eq, which is zero, 
                  ! while k1,k2,k3... are stored in "kindex".
-                 ! fdstep defines finite differencies spacings 
+                 ! fdstep defines finite differences spacings 
                  !
                  df = FLfinitediffs_precomp(kindex,ipoint_address,extF_points(:,imu),extF%fdstep,istep)
                  !
@@ -16893,6 +16893,9 @@ end subroutine check_read_save_none
              call ME_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
              !
+             !call ME_laguerre_simple_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+             !                          job%verbose,bs%matelements,bs%ener0)
+             !
              do i = 0,npoints
                 rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
                 mrho(i) = rho
@@ -18197,20 +18200,20 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               if (krot1<=kmax) then 
-                                 !
-                                 trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
-                                 !
-                                 mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
-                                 !
-                                 trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
-                                                                              mat_t*real(krot1**2,ark)
-                                 !
-                               else
+                               !if (krot1<=kmax) then 
+                               !  !
+                               !  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
+                               !  !
+                               !  mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                               !  !
+                               !  trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
+                               !                                               mat_t*real(krot1**2,ark)
+                               !  !
+                               !else
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                  !
-                               endif
+                               !endif
                                !
                              enddo
                              !
@@ -21153,7 +21156,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    function FLfinitediffs(itarget,func,ax,astep) result(f)
@@ -21295,7 +21298,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    recursive function FLfinitediffs_2d(itarget,ipoint,get_func,x,step) result(f)
@@ -21624,7 +21627,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    function FLfinitediffs_imode(itarget,func,x,step,kmode) result(f)
@@ -21764,7 +21767,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives of a vector function func(:)
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    subroutine FLfinitediffs_vect(job_str,Nmodes,Nsize_f,itarget,ax,astep,irho,f)
@@ -21810,7 +21813,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives of a vector function func(:)
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    recursive function FLvect_finitediffs(job_str,Nsize_f,itarget,ax,astep,irho) result (f)

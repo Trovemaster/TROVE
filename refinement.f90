@@ -1,6 +1,6 @@
 module refinement
 
- use accuracy,     only : ik, hik, rk, ark, cl, out, small_
+ use accuracy,     only : ik, hik, rk, ark, cl, wl, out, small_
  use fields,       only : manifold,job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,&
                           FLfinitediffs_2d,FLpoten_linearized,analysis,action
  use timer,        only : IOstart,Arraystart,Arraystop,Arrayminus,Timerstart,Timerstop,MemoryReport,TimerReport
@@ -370,7 +370,8 @@ contains
       character(len=1)   :: rng
       character(len=1),allocatable  :: mark(:)
       character(len=cl) :: my_fmt,my_fmt_pot1,my_fmt_pot2 !format for I/O specification
-      character(len=cl) :: my_fmt_en1,my_fmt_en2,my_fmt_par1,my_fmt_par2 !format for I/O specification
+      character(len=cl) :: my_fmt_en2,my_fmt_par1,my_fmt_par2 !format for I/O specification
+      character(len=wl) :: my_fmt_en1 !wider format for I/O specification
        !
        if (job%verbose>=2) write(out,"(/'The least-squares fitting ...')")
        !
@@ -577,7 +578,7 @@ contains
        !
        ! define printing formats
        write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(1x, i3),a1,a)"
-       write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a3,a1,i3,a2,1x,a2,",&
+       write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                               nclasses,"a3,a1,",nmodes,"(1x, i3),a2,1x,a1,",nmodes,"(1x, i3),a1,a)"
                                               !
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
@@ -1088,7 +1089,7 @@ contains
                          !
                        enddo
                        !
-                       if (jener<en_npts) then 
+                       if (jener<=en_npts) then 
                          !
                          write(enunit,my_fmt_en1) &
                             i,fitting%obs(jener)%N,Jrot,&
@@ -1149,7 +1150,7 @@ contains
             enddo 
             !
             ! Alternative way of calculating the derivatives  - with the finite 
-            ! differencies. It is essentially slower and we use it only for 
+            ! differences. It is essentially slower and we use it only for 
             ! the testing of the xpect3 derivativies.
             !
             if (trim(deriv_type)/='hellman'.and.itmax.ge.1.and.fit_factor>1e-12) then

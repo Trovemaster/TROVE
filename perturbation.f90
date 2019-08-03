@@ -1713,8 +1713,8 @@ module perturbation
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
-                !switch = switch.and.lquant==min(krot,trove%krot)
-                switch = switch.and.lquant==krot
+                switch = switch.and.lquant==min(krot,trove%krot)
+                !switch = switch.and.lquant==krot
              endif
           elseif(trove%lincoord/=0) then
              switch = switch.and.( lquant==krot.or.jrot==0 )
@@ -2638,6 +2638,9 @@ module perturbation
          bs_t(imode)%dvrpoints = 1
        enddo
        !
+       PTuse_gauss_quadrature = .true.
+       if (iclasses==Nclasses) PTuse_gauss_quadrature = .false.
+       !
        res_min = huge(1)
        !
        reduced_model = .false.
@@ -3262,13 +3265,15 @@ module perturbation
            !
          elseif (info/=0) then
            !
+           if (PTuse_gauss_quadrature) PTuse_gauss_quadrature = .false.
+           !
            call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t)
            !
            iattempts = iattempts + 1
            !
            if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
            !
-           if (iattempts>=maxattempts.or.(PTuse_gauss_quadrature.and.info==2) ) then
+           if (iattempts>=maxattempts ) then
              !
              if (PTuse_gauss_quadrature) write(out,"('PTcontracted_prediag: error is too large to determine the symmetry')")
              !
@@ -4513,8 +4518,8 @@ module perturbation
               if (chi_(imode)<b1(imode).or.&
                   chi_(imode)>b2(imode) ) then 
                   !
-                  write(out,"('PTselect_sample_points: two small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
-                  stop 'PTselect_sample_points error: two small interval'
+                  write(out,"('PTselect_sample_points (quadr): too small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
+                  stop 'PTselect_sample_points error (quadr): too small interval'
                   !
               endif
               !
