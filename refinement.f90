@@ -341,6 +341,7 @@ contains
       real(rk),allocatable :: deriv0(:),rjacob(:,:),eps(:),energy_(:),enercalc(:)
       real(rk),allocatable :: local(:,:),pot_values(:),wspace(:),Tsing(:),chi_(:,:)
       real(rk),allocatable :: al(:,:),bl(:),dx(:),ai(:,:),sterr(:),sigma(:)
+      real(rk),allocatable :: am(:,:),bm(:)
       real(ark),allocatable :: al_ark(:,:),ai_ark(:,:)
       real(rk),allocatable :: mat(:,:),dmat(:,:),vector(:)
       character(len=cl),allocatable :: nampar(:)    ! parameter names 
@@ -349,13 +350,13 @@ contains
       integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:)
       !
       logical      :: still_run,do_deriv,deriv_recalc
-      real(rk)     :: stadev_old,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
+      real(rk)     :: stadev_old,stadev_before,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
       real(rk)     :: ssq,rms,ssq1,ssq2,rms1,rms2,fit_factor,Smallest,Largest
-      real(rk)     :: ezero_,a_wats = 1.0_rk
+      real(rk)     :: ezero_,a_wats = 1.0_rk, lambda = 0.01_rk,nu = 10.0_rk
       integer(ik)  :: iener1,iener2,i,numpar,itmax,j,jlistmax,rank,ncol,nroots
       integer(ik)  :: iJ,isym,jsym,iener,jener,irow,icolumn,l,ndigits,imu_t
       integer(ik)  :: potunit,enunit,abinitunit,i0,iter_th
-      integer(ik)  :: nlevels,ilevel,Nentries,ientry,jentry,k,imode,iunit,irange(2),quanta(1:FLNmodes)
+      integer(ik)  :: nlevels,ilevel,Nentries,ientry,jentry,k,imode,iunit,irange(2),quanta(0:FLNmodes)
       real(rk)     :: vrange(2),f_t,v_l,v_r
       real(ark)    :: ar_t(1:molec%ncoords)
       real(rk)     :: xi(1:FLNmodes)
@@ -463,6 +464,10 @@ contains
        call ArrayStart('a-b-mat',info,size(al),kind(al))
        call ArrayStart('a-b-mat',info,size(bl),kind(bl))
        call ArrayStart('pot_terms',info,size(pot_terms),kind(pot_terms))
+       !
+       allocate (am(parmax,parmax),bm(parmax),stat=info)
+       call ArrayStart('potparam-mat',info,size(am),kind(am))
+       call ArrayStart('potparam-mat',info,size(bm),kind(bm))
        !
        allocate (pot_values(pot_npts),stat=info)
        call ArrayStart('pot_values-mat',info,size(pot_values),kind(pot_values))
@@ -577,12 +582,12 @@ contains
        !
        !
        ! define printing formats
-       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(1x, i3),a1,a)"
+       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes+1,"(i3),a1,a)"
        write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
-                                              nclasses,"a3,a1,",nmodes,"(1x, i3),a2,1x,a1,",nmodes,"(1x, i3),a1,a)"
+                                              nclasses,"a3,a1,",nmodes,"(1x, i3),a2,1x,a1,",nmodes+1,"(i3),a1,a)"
                                               !
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
-                                               nclasses,"a3,a1,",nmodes,"(1x, i3),a2)"
+                                               nclasses,"a3,a1,",nmodes,"(i3),a2)"
 
        write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
 
@@ -601,6 +606,7 @@ contains
           ! Initial values for the standard error and  stability.
           !
           stadev_old = 1e10
+          stadev_before = 1e10
           stability = 1e10
           stadev    = 1e10
           !
@@ -1017,10 +1023,10 @@ contains
                               !
                             enddo
                             !
-                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
+                            quanta(0:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(0:nmodes)
                             !
                             if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
-                                .and.all(quanta(1:nmodes)==fitting%obs(iener)%quanta(1:nmodes))) then 
+                                .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
                                 !
                                 fitting%obs(iener)%N = i
                                 mark(iener) = ' '
@@ -1059,7 +1065,7 @@ contains
                      write (out,my_fmt) &
                             iener,i,iJ,sym%label(isym),enercalc(iener)+eps(iener),enercalc(iener),eps(iener),&
                             wtall(iener),&
-                            '(',eigen(ilevel)%krot,')','(',eigen(ilevel)%quanta(1:nmodes),')',mark(iener)
+                            '(',eigen(ilevel)%krot,')','(',eigen(ilevel)%quanta(0:nmodes),')',mark(iener)
                             !fitting%obs(i)%quanta(1:nmodes)
                      !
                    endif 
@@ -1097,7 +1103,7 @@ contains
                             enercalc(jener),eps(jener),wtall(jener),&
                             '( ',eigen(ilevel)%cgamma(0),';',eigen(ilevel)%krot,' )',&
                             '( ',eigen(ilevel)%cgamma(1:nclasses),';',eigen(ilevel)%quanta(1:nmodes),' )',&
-                            '(',fitting%obs(jener)%quanta(1:nmodes),')',mark(jener)
+                            '(',fitting%obs(jener)%quanta(0:nmodes),')',mark(jener)
                          !
                        else
                          !
@@ -1258,6 +1264,7 @@ contains
             ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
             rms=sqrt(sum(eps(1:npts)*eps(1:npts))/npts)
             !
+            !
             ! Prepare the linear system a x = b as in the Newton fitting approach.  
             !
             if (itmax>=1) then
@@ -1279,7 +1286,30 @@ contains
                  if (fit_debug > 2) then
                    write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
                  endif
-               enddo  
+               enddo
+               !
+               !
+               ! Using Marquardt's fitting method
+               !
+               ! solve the linear equatins for two values of lambda and lambda/10
+               !
+               ! Defining scalled (with covariance) A and b
+               ! 
+               ! form A matrix 
+               do irow=1,numpar       
+                 do icolumn=1,irow    
+                   Am(irow,icolumn)=al(irow,icolumn)/sqrt( al(irow,irow)*al(icolumn,icolumn) )
+                   Am(icolumn,irow)=Am(irow,icolumn)
+                 enddo
+                 bm(irow) = bl(irow)/sqrt(al(irow,irow))
+               enddo
+               !
+               ! define shifted A as A =  A+lambda I
+               ! lambda is Marquard's scaling factor
+               !
+               do irow=1,numpar       
+                   Am(irow,irow)=Am(irow,irow)*(1.0_rk+lambda)
+               enddo
                !
                ! Two types of the linear solver are availible: 
                ! 1. linur (integrated into the program, from Ulenikov Oleg)
@@ -1294,7 +1324,7 @@ contains
                  !
                case('LINUR') 
                  !
-                 call MLlinur(numpar,numpar,al(1:numpar,1:numpar),bl(1:numpar),dx(1:numpar),ierror)
+                 call MLlinur(numpar,numpar,am(1:numpar,1:numpar),bm(1:numpar),dx(1:numpar),ierror)
                  !
                  ! In case of dependent parameters  "linur" reports an error = ierror, 
                  ! which is a number of the dependent parameter. We can remove this paramter 
@@ -1328,17 +1358,23 @@ contains
                   !
                case ('DGELSS')
                  !
-                 ai = al 
-                 call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bl(1:numpar),numpar,Tsing,-1.D-12,rank,wspace,lwork,info)
+                 ai = am 
+                 call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bm(1:numpar),numpar,Tsing,-1.D-12,rank,wspace,lwork,info)
                  !
                  if (info/=0) then
                    write(out,"('dgelss:error',i0)") info
                    stop 'dgelss'
                  endif
                  !
-                 dx = bl
+                 dx = bm
                  !
                end select 
+               !
+               ! convert back from Marquardt's representation
+               !
+               do ncol=1,numpar
+                  dx(ncol) =  dx(ncol)/sqrt(al(ncol,ncol))
+               enddo
                !
                !----- update the parameter values ------!
                !
@@ -1366,6 +1402,14 @@ contains
                else 
                  stadev=sqrt(ssq/nused)
                endif
+               !               
+               if (stadev<stadev_old) then
+                 lambda = lambda/nu
+               else 
+                 lambda = min(lambda*nu,10000.0)
+               endif
+               !
+               if (job%verbose>=5) write(out,"(/'Marquardts parameter lambda = ',g15.7)") lambda
                !
                ! Estimate the standard errors for each parameter using 
                ! the inverse matrix of a. 
@@ -1392,6 +1436,7 @@ contains
                !
                stability=abs( (stadev-stadev_old)/stadev )
                stadev_old=stadev
+               stadev_before  = stadev_old
                !
             else
                !
@@ -1455,7 +1500,7 @@ contains
                    !
                    if (conf_int>1e10) conf_int = 0
                    !
-                   write(my_fmt_par2,'(a1,i0,a)') "(a8,i4,2x,f22.,",ndigits,"a1,i14,a1)"
+                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,",a1,i14,a1)"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i),'(',nint(conf_int),')'
                    !
@@ -1466,7 +1511,7 @@ contains
                    ndigits =2
                    if (potparam(i).ne.0.0) ndigits = 8
                    !
-                   write(my_fmt_par2,'(a1,i0,a)') "(a8,i4,2x,f22.,",ndigits,")"
+                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,")"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i)
                    !
@@ -1506,6 +1551,7 @@ contains
        if (allocated(potparam)) deallocate(potparam)
        !
        deallocate (nampar,ivar,ifitparam,al,ai,bl,dx,sterr,Tsing,pot_terms,al_ark,ai_ark)
+       deallocate (am,bm)
        call ArrayStop('potparam-mat')
        call ArrayStop('potparam-dx')
        call ArrayStop('potparam-sterr')
@@ -1911,10 +1957,10 @@ contains
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                                nclasses,"a3,a1,",nmodes,"(1x, i3),a2)"
 
-       write(my_fmt_en3,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes,"(1x, i3),f8.2,1x,a1,",nmodes,&
-                         "(1x, i3),a1,2x,a1,",nmodes,"(1x, i3),a1,f12.4,2x,f12.4)"
+       write(my_fmt_en3,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes+1,"(1x, i3),f8.2,1x,a1,",nmodes+1,&
+                         "(1x, i3),a1,2x,a1,",nmodes+1,"(1x, i3),a1,f12.4,2x,f12.4)"
 
-       write(my_fmt_en4,'(a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes,"(1x, i3),f8.2)"
+       write(my_fmt_en4,'(a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes+1,"(1x, i3),f8.2)"
 
        !write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),3(x,g18.10),x,e12.4)"
        !write(my_fmt_par1,'(a1,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
@@ -2657,24 +2703,24 @@ contains
                 !
                 write(out,my_fmt_en3) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk), &
                    '(',eigen(jlevel)%quanta(1:nmodes),')',&
-                   '(',fitting%obs(iener)%quanta(1:nmodes),')',&
+                   '(',fitting%obs(iener)%quanta(0:nmodes),')',&
                    ener_j0(isym,ilevel),fitting%obs(iener)%energy
                    !
               else if (ilevel<=nroots_j0(isym)) then
                 !
                 write(out,my_fmt_en3) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
-                   '(',eigen(jlevel)%quanta(1:nmodes),')',&
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk), &
+                   '(',eigen(jlevel)%quanta(0:nmodes),')',&
                    ener_j0(isym,ilevel)
                    !
               else 
                 !
                 write(out,my_fmt_en4) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk)
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk)
                
               endif
               !

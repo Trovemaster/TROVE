@@ -3748,6 +3748,12 @@ module fields
                    write (out,"('FLinput: wrong number of records in obs_fitting_energies on row=',i6,'()')") i
                    stop 'FLinput - illigal number of records in obs_fitting_energies'
                    !
+                elseif(nitems==trove%Nmodes+5) then
+                   !
+                   write (out,"('FLinput: old format in number of records in obs_fitting_energies on row=',i6)") i
+                   write (out,"('Please include K-quantum number as the column after energies')")
+                   stop 'FLinput - illigal number of records in obs_fitting_energies, missing K?'
+                   !
                 endif 
                 !
                 read(w,*) fitting%obs(i)%Jrot
@@ -3756,7 +3762,7 @@ module fields
                 call readi(fitting%obs(i)%N)
                 call readf(fitting%obs(i)%energy)
                 !
-                do j=1,trove%nmodes
+                do j=0,trove%nmodes
                   call readi( fitting%obs(i)%quanta(j) )
                 enddo
                 !
@@ -4999,7 +5005,7 @@ end subroutine check_read_save_none
       call MLequilibrium_xyz_1d(trove%Npoints,trove%rho_border,trove%rhostep,trove%periodic,trove%rho_ref,trove%b0,&
                                 trove%db0,trove%rho_i)
       !
-      !trove%lincoord = 0
+      if (job%verbose>=6)  write(out,"(2x,'rho values:')") 
       !
       do irho=0,trove%Npoints
         !
@@ -5011,7 +5017,7 @@ end subroutine check_read_save_none
         !
         trove%chi_ref(:,irho) = MLcoordinate_transform_func(ar_t,Nmodes,dir)
         !
-        if (job%verbose>=6)  write(out,"(2x,f17.6)") trove%chi_ref(1,irho)*180.0_ark/pi
+        if (job%verbose>=6)  write(out,"(i5,1x,f15.7)") irho,trove%chi_ref(trove%Nmodes,irho)*180.0_ark/pi
         !
         ! Check for the linearity 
         !
@@ -6271,7 +6277,7 @@ end subroutine check_read_save_none
                   !
                   Tmat(ieq,ivar) = trove%db0(jatom,jx,irho,1)*sqrt(trove%mass(jatom))
                   !
-                  else
+               else
                   !
                   Tmat(ieq,ivar) = Bmat(jmode,jatom,jx)/sqrt(trove%mass(jatom))
                   !
@@ -18200,20 +18206,20 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               !if (krot1<=kmax) then 
-                               !  !
-                               !  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
-                               !  !
-                               !  mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
-                               !  !
-                               !  trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
-                               !                                               mat_t*real(krot1**2,ark)
-                               !  !
-                               !else
+                               if (krot1<=kmax) then 
+                                 !
+                                 trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
+                                 !
+                                 mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                                 !
+                                 trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
+                                                                              mat_t*real(krot1**2,ark)
+                                 !
+                               else
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                  !
-                               !endif
+                               endif
                                !
                              enddo
                              !
@@ -18288,6 +18294,9 @@ end subroutine check_read_save_none
                       ! External field part
                       !
                       if (abs(krot1-krot2)>1) cycle
+                      !
+                      !if (imu==3.and.krot1/=krot2) cycle
+                      !if ((imu==1.or.imu==2).and.krot1==krot2) cycle
                       !
                       do imu = 1,extF%rank
                         !
@@ -22149,7 +22158,7 @@ end subroutine check_read_save_none
      !
      chi_eq(:) = trove%chi_ref(:,FLirho)
      !
-     !call from_local2cartesian_by_fit(chi,chi_eq,r_na_t)
+     ! reconstruct the TROVE-ccordinates from Zmat curvelinear coordinates 
      !
      dir = .false.
      !

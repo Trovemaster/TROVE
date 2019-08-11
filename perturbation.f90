@@ -3199,6 +3199,8 @@ module perturbation
                          write(out,"('xval = ',g18.8,' func = ',30g18.8)") xval,& 
                                       bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
                          !
+                         PTuse_gauss_quadrature = .false.
+                         !
                       endif 
                       !
                     elseif (trim(bs_t(imode)%type)=='HARMONIC'.or.trim(bs_t(imode)%type)=='NORMAL') then 

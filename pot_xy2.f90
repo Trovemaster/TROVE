@@ -2652,15 +2652,7 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdipole_ames1: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdipole_ames1 - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-      end select
+      xyz0 = MLloc2pqr_xy2(local)
       !
     else
       !
@@ -3186,18 +3178,10 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xy2_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xy2_coeff - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -3596,18 +3580,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xy2_linear: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xy2_linear - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -4000,26 +3977,35 @@ endif
     real(ark)             :: f(molec%natoms, 3)
 
     integer(ik)           :: icart
-    real(ark)             :: a0(molec%natoms, 3), cm,mX,mY,R1,R2,alpha,alpha_2,v
+    real(ark)             :: a0(molec%natoms, 3), cm,mX,mY,R1,R2,alpha,alpha_2,v,mu
 
     a0 = 0
+    !
+    alpha_2 = r(3)*0.5_ark
     !
     select case(trim(molec%coords_transform))
        !
     case('R-RHO-Z')
        !
-       a0(2, 1) = -r(1) * cos(r(3)*0.5_ark)
-       a0(2, 3) =  r(1) * sin(r(3)*0.5_ark)
+       a0(2, 1) = -r(1) * cos(alpha_2)
+       a0(2, 3) = -r(1) * sin(alpha_2)
        !
-       a0(3, 1) = -r(2) * cos(r(3)*0.5_ark)
-       a0(3, 3) = -r(2) * sin(r(3)*0.5_ark)
+       a0(3, 1) = -r(2) * cos(alpha_2)
+       a0(3, 3) =  r(2) * sin(alpha_2)
+       !
+    case('R-RHO-HALF')
+       !
+       a0(2, 1) = -r(1) * cos(r(3))
+       a0(2, 3) =  r(1) * sin(r(3))
+       !
+       a0(3, 1) = -r(2) * cos(r(3))
+       a0(3, 3) = -r(2) * sin(r(3))
        !
     case('R-RHO-Z-ECKART')
        !
        R1 = r(1)
        R2 = r(2)
        alpha = r(3)
-       alpha_2 = alpha*0.5_ark
        v = -atan(cos(alpha_2)*(R1-R2)/(sin(alpha_2)*(R1+R2)))
        !
        mX  = molec%atommasses(1)
@@ -4032,8 +4018,29 @@ endif
        a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
        a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
        !
+    case('RADAU-R-ALPHA-Z')
+       !
+       mX  = molec%atommasses(1)
+       mY  = molec%atommasses(2)
+       !
+       mu  = sqrt(mX/(mX+mY+mY))
+       alpha = r(3)
+       alpha_2 = alpha*0.5_ark
+       !
+       a0 = 0 
+       !
+       a0(1,1) = -0.5_ark*cos(alpha_2)*(r(1)+r(2))*(mu-1.0_ark)/(mu)
+       a0(1,3) =  0.5_ark*sin(alpha_2)*(r(1)-r(2))*(mu-1.0_ark)/(mu)
+       !
+       a0(2,1) =  -r(1)*cos(alpha_2)
+       a0(2,3) =   r(1)*sin(alpha_2)
+       !
+       a0(3,1) =  -r(2)*cos(alpha_2)
+       a0(3,3) =  -r(2)*sin(alpha_2)
+       !
     case default 
-       stop 'MLloc2pqr_xy2: illegla coordinate type'
+       write(out,"('MLloc2pqr_xy2: illegal coordinate type',a)") trim(molec%coords_transform)
+       stop 'MLloc2pqr_xy2: illegal coordinate type'
     end select
     
     do icart = 1, 3
@@ -4377,18 +4384,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdipole_xy2_lorenzo: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdipole_xy2_lorenzo - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -4692,18 +4692,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xyz_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xyz_coeff - bad coord. type'
-      case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
-         !
-         xyz0 = MLloc2pqr_xyz(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xyz(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
