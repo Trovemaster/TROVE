@@ -10575,8 +10575,8 @@ module perturbation
      	allocate (maxTerm(nroots),maxcontrib(nroots))
      	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
     	maxTerm  = 1
-     
-     
+        !
+        !     
         !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
         do iroot=1,nroots
           !
@@ -10589,8 +10589,21 @@ module perturbation
                      MaxEigenvects = abs( mat(jroot,iroot) )
                      maxTerm(iroot) = jroot
                  endif
+                 !
+                 icase    = PT%symactive_space(gamma)%sym_N(jroot,1)
+                 ideg     = PT%symactive_space(gamma)%sym_N(jroot,2)
+                 cnu(:) = PT%contractive_space(:,icase)
+                 !
+                 kdeg = PT%Index_deg(icase)%icoeffs(0,ideg)
+                 !
+                 k   = PT%rot_index(cnu(0),kdeg)%k
+                 !
+                 if (contr(PT%Nclasses)%eigen(cnu(PT%Nclasses))%lquant/=k) then
+                    write(out,"('Inconsistent l and l:',2i8,'i,j = ',2i8)") contr(PT%Nclasses)%eigen(cnu(PT%Nclasses))%lquant,k,iroot,jroot
+                 endif
+                 !
             enddo
-              !
+            !
             maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
             !
           else
@@ -10599,13 +10612,12 @@ module perturbation
             maxcontrib(iroot)  = 1.0_rk
             !
           endif
-       !
+          !
         enddo
-     !$omp end parallel do
-     !
-     
+        !$omp end parallel do
+        !
      endif
-     
+     !
      if (no_diagonalization) then 
        !
        deallocate(ivec)

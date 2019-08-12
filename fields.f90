@@ -18262,6 +18262,7 @@ end subroutine check_read_save_none
                          do k2 = 1,3
                             !
                             if (k2==3.and.krot1/=krot2) cycle
+                            if (k2/=3.and.krot1==krot2) cycle
                             if (abs(krot1-krot2)>1) cycle
                             !
                             Tcoeff = trove%g_cor(k1,k2)%Ncoeff
@@ -18294,9 +18295,6 @@ end subroutine check_read_save_none
                       ! External field part
                       !
                       if (abs(krot1-krot2)>1) cycle
-                      !
-                      !if (imu==3.and.krot1/=krot2) cycle
-                      !if ((imu==1.or.imu==2).and.krot1==krot2) cycle
                       !
                       do imu = 1,extF%rank
                         !
