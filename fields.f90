@@ -5717,7 +5717,7 @@ end subroutine check_read_save_none
        implicit none
        !
        integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
-       type(FLpolynomT),pointer     :: fl
+       type(FLpolynomT),pointer     :: fl,gl
        !
        if (job%verbose>=4) write(out,"('Compacting the kinetic energy matrices into a sparse representation ...')")
        !
@@ -5749,6 +5749,9 @@ end subroutine check_read_save_none
           do k2 = 1,3
              !
              fl => trove%g_rot(k1,k2)
+             !
+             if (trove%triatom_sing_resolve.and.(k1==3.and.k2==3)) cycle
+             !
              call FLCompact_a_field_sparse(fl,"g_rot")
              !
           enddo
@@ -5756,7 +5759,16 @@ end subroutine check_read_save_none
        !
        fl => trove%g_vib(Nmodes,Nmodes)
        !
-       call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+       if (.not.trove%triatom_sing_resolve) then 
+         call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+         !
+       else
+         !
+         gl => trove%g_rot(3,3)
+         !
+         call FLCompact_and_combine_three_fields_sparse(fl,"g_vib",gl,"g_rot",trove%pseudo,"pseudo")
+         !
+       endif
        !
        if (FLl2_coeffs) then
          !
@@ -15528,6 +15540,166 @@ end subroutine check_read_save_none
      !
    end subroutine FLCompact_and_combine_fields_sparse
    !
+   !
+   subroutine FLCompact_and_combine_three_fields_sparse(fl1,name1,fl2,name2,fl3,name3)
+
+     type(FLpolynomT),pointer  :: fl1,fl2,fl3
+     character(len=*),intent(in) :: name1,name2,name3
+     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,Ncoeff3,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
+     real(ark),allocatable    :: sfield1(:,:),sfield2(:,:),sfield3(:,:)    ! Expansion parameters in the sparse representation
+     integer(ik),allocatable  :: siorder1(:),siorder2(:),siorder3(:)       ! iorder in sparse
+     integer(ik)   :: target_index(trove%Nmodes)
+     logical :: check = .true.
+     !
+     Ncoeff1 = fl1%Ncoeff
+     Ncoeff2 = fl2%Ncoeff
+     Ncoeff3 = fl3%Ncoeff
+     !
+     Npoints = fl1%Npoints
+     !
+     if (Npoints/=fl2%Npoints.or.Npoints/=fl3%Npoints) then
+       write(out,"('FLCompact_and_combine_three_fields_sparse: Illegal Npoints in 3 fields, should be the same',3i8)") & 
+             fl1%Npoints,fl2%Npoints,fl3%Npoints
+       stop 'FLCompact_and_combine_three_fields_sparse: Illegal Npoints in 3 fields'
+     endif
+     !    
+     target_index = 0
+     target_index(1) = trove%NKinOrder 
+     Ncoeffmax= FLQindex(trove%Nmodes_e,target_index)
+     !
+     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl3%field(icoeff,:))>job%exp_coeff_thresh)) then
+          iterm = iterm + 1
+       endif
+     enddo
+     !
+     nterms = iterm
+     !
+     if (Nterms==0) then
+       !
+       stop 'FLCompact_and_combine_three_fields_sparse is not implemented for Nterms=0' 
+       !
+       deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
+       call ArrayStop(name1//'IndexQ')
+       call ArrayStop(name2//'IndexQ')
+       call ArrayStop(name3//'IndexQ')
+       !
+       deallocate(fl1%ifromsparse,fl2%ifromsparse,fl3%ifromsparse)
+       call ArrayStop(name1//"ifromsparse")
+       call ArrayStop(name2//"ifromsparse")
+       call ArrayStop(name3//"ifromsparse")
+       !
+       return
+       !
+     endif 
+     !
+     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),Sfield3(nterms,0:Npoints),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
+     call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
+     call ArrayStart("Sfield",alloc,size(Sfield3),kind(Sfield3))
+     !
+     allocate(Siorder1(nterms),Siorder2(nterms),Siorder3(nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
+     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
+     call ArrayStart("Sfield",alloc,size(Siorder3),kind(Siorder3))
+     !
+     deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     call ArrayStop(name3//'IndexQ')
+     !
+     deallocate(fl1%ifromsparse,fl2%ifromsparse,fl3%ifromsparse)
+     call ArrayStop(name1//"ifromsparse")
+     call ArrayStop(name2//"ifromsparse")
+     call ArrayStop(name3//"ifromsparse")
+     !
+     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl3%ifromsparse(nterms),fl3%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
+     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
+     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     call ArrayStart(name3//"ifromsparse",alloc,size(fl3%ifromsparse),kind(fl3%ifromsparse))
+     call ArrayStart(name3//"IndexQ",alloc,size(fl3%IndexQ),kind(fl3%IndexQ))
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl3%field(icoeff,:))>job%exp_coeff_thresh)) then
+          !
+          iterm = iterm + 1
+          !
+          Sfield1(iterm,:) = fl1%field(icoeff,:)
+          Sfield2(iterm,:) = fl2%field(icoeff,:)
+          Sfield3(iterm,:) = fl3%field(icoeff,:)
+          !
+          siorder1(iterm) = fl1%iorder(icoeff)
+          siorder2(iterm) = fl2%iorder(icoeff)
+          siorder3(iterm) = fl3%iorder(icoeff)
+          !
+          fl1%ifromsparse(iterm) = icoeff
+          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+          fl2%ifromsparse(iterm) = icoeff
+          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+          fl3%ifromsparse(iterm) = icoeff
+          fl3%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+       endif
+     enddo
+     !
+     deallocate(fl1%iorder,fl2%iorder,fl3%iorder)
+     call ArrayStop(name1)
+     call ArrayStop(name2)
+     call ArrayStop(name3)
+     !
+     ! Create a field in a sparse representaion
+     !
+     allocate(fl1%iorder(nterms),fl2%iorder(nterms),fl3%iorder(nterms),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
+     call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
+     call ArrayStart(name3,alloc,size(fl3%iorder),kind(fl3%iorder))
+     !
+     deallocate(fl1%field,fl2%field,fl3%field,stat=alloc)
+     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
+     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     call ArrayMinus(name3,isize=size(fl3%field),ikind=kind(fl3%field))
+     !
+     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),fl3%field(nterms,0:Npoints),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
+     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
+     call ArrayStart(name3,alloc,size(fl3%field),kind(fl3%field))
+     !
+     fl1%field = Sfield1
+     fl1%Ncoeff = Nterms
+     fl1%iorder = Siorder1
+     !
+     fl2%field = Sfield2
+     fl2%Ncoeff = Nterms
+     fl2%iorder = Siorder2
+     !
+     fl3%field = Sfield3
+     fl3%Ncoeff = Nterms
+     fl3%iorder = Siorder3
+     !
+     deallocate(Sfield1,siorder1,Sfield2,siorder2,Sfield3,siorder3)
+     !
+     call ArrayStop("Sfield")
+     !
+   end subroutine FLCompact_and_combine_three_fields_sparse
+
+
+   !
    subroutine FLfingerprint(action,chkptIO,PTorder,Npolyads,enercut)
     !
     character(len=*), intent(in) :: action ! 'read'  or 'write'
@@ -15997,9 +16169,9 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
-                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r
+                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2
     integer(ik)                 :: nl,nr,irho
-    type(FLpolynomT),pointer    :: fl
+    type(FLpolynomT),pointer    :: fl,gl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m
     real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),chi(trove%Nmodes)
@@ -16007,7 +16179,7 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:),xton(:,:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -16677,11 +16849,57 @@ end subroutine check_read_save_none
              !
            endif 
            !
+           ! These are grid-based corfinates 
+           !
+           allocate (drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
+              stop 'FLbset1DNew, drho - out of memory'
+           end if
+           !
+           do i = 0,npoints
+              !
+              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+              !
+              drho(i,1) = MLcoord_direct(rho,1,nu_i)
+              drho(i,2) = MLcoord_direct(rho,2,nu_i)
+              drho(i,3) = MLcoord_direct(rho,3,nu_i)
+              !
+              do ipower = 0, trove%NKinorder
+                 xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+              enddo
+              !
+           enddo
+           !
            ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
            !
            nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
            !
            g1drho(0:npoints) = fl%field(1,0:npoints)
+           !
+           if (trove%sparse) then
+             !
+             call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
+             !
+             if (i==0) then 
+                !
+                g1drho = 0 
+                !
+                do icoeff = 1, fl%Ncoeff 
+                   f_t = 1.0_ark
+                   do imode  = 1,Nmodes
+                     rho =  trove%chi_eq(imode)
+                     ipower = fl%IndexQ(imode,icoeff)
+                     rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                     f_t = f_t*rho_kin0
+                  enddo
+                  g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                  !
+                enddo
+                !
+             endif
+             !
+           endif
            !
            reduced_model = .false.
            !
@@ -16744,24 +16962,6 @@ end subroutine check_read_save_none
            ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
            ! now we need them:
            !
-           ! This NUMEROV for the last (could be also non-rigid) coordinate
-          !
-           allocate (drho(0:Npoints,3),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
-              stop 'FLbset1DNew, drho - out of memory'
-           end if
-           !
-           do i = 0,npoints
-              !
-              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-              !
-              drho(i,1) = MLcoord_direct(rho,1,nu_i)
-              drho(i,2) = MLcoord_direct(rho,2,nu_i)
-              drho(i,3) = MLcoord_direct(rho,3,nu_i)
-              !
-           enddo
-           !
            weight = 1.0_ark
            !
            numerpoints = trove%numerpoints
@@ -16770,7 +16970,7 @@ end subroutine check_read_save_none
            !
            if (trim(bs%type)=='NUMEROV') then
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='BOX') then 
@@ -16865,6 +17065,35 @@ end subroutine check_read_save_none
              !
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
              pseudo = trove%pseudo%field(1,0:npoints)
+             !
+             if (trove%sparse) then
+               !
+               fl => trove%g_rot(3,3)
+               gl => trove%pseudo
+               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
+               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
+               !
+               if (i1==0.or.i2==0) then 
+                  !
+                  muzz = 0 
+                  pseudo = 0
+                  !
+                  do icoeff = 1, fl%Ncoeff 
+                     f_t = 1.0_ark
+                     do imode  = 1,Nmodes
+                       rho =  trove%chi_eq(imode)
+                       ipower = fl%IndexQ(imode,icoeff)
+                       rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                       f_t = f_t*rho_kin0
+                    enddo
+                    muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                    pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                    !
+                  enddo
+                  !
+               endif
+               !
+             endif
              !
              g_t = g1drho(trove%ipotmin)
              !
@@ -18298,6 +18527,9 @@ end subroutine check_read_save_none
                       !
                       do imu = 1,extF%rank
                         !
+                        !if (imu==3.and.krot1/=krot2) cycle
+                        !if (imu/=3.and.krot1==krot2) cycle
+                        !
                         Tcoeff = trove%extF(imu)%Ncoeff
                         !
                         do iterm = 1,Tcoeff
@@ -18872,11 +19104,13 @@ end subroutine check_read_save_none
            step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
            !rho_ref = molec%chi_eq(nu_i)
            !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),stat=alloc)
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
            end if
+           !
+           xton = 0
            !
            ! Defining 1D potential and kinetic energy functions
            !
@@ -19136,10 +19370,17 @@ end subroutine check_read_save_none
                    !
                 enddo 
                 !
+                do ipower = 0, trove%NKinorder 
+                   xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+                enddo
+                !
                 do ipower = 0,trove%NKinorder
                    !
-                   f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
-                   g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
+                   !f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
+                   !g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
+                   !
+                   f1drho(i) = f1drho(i) + p1d(ipower)*xton(i,ipower)
+                   g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
                    !
                 enddo 
                 !
@@ -19212,7 +19453,7 @@ end subroutine check_read_save_none
            !
            if (trim(bs%type)=='NUMEROV') then
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='BOX') then
@@ -19232,8 +19473,7 @@ end subroutine check_read_save_none
             !
            endif
            !
-           deallocate (f1drho,g1drho,drho)
-           !close(nfilenumerov)
+           deallocate (f1drho,g1drho,drho,xton)
            !
         endif 
         !

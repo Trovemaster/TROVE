@@ -72,7 +72,7 @@ module me_numer
   !
   ! Matrix elements with Numerov-eigenfunctions 
   !
-  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,iperiod_,&
+  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,iperiod_,&
                         verbose_,g_numerov,energy)
    !
    integer(ik),intent(in)   :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
@@ -80,7 +80,7 @@ module me_numer
    real(ark),intent(out)    :: energy(0:vmax_)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder_)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose_   ! Verbosity level
    !
@@ -90,7 +90,7 @@ module me_numer
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
-   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:)
+   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xton(:,:)
    character(len=cl)     :: unitfname 
    real(ark),allocatable :: enerslot(:),enerslot_(:)
     !
@@ -113,7 +113,8 @@ module me_numer
      !
      allocate(phil(0:npoints_),phir(0:npoints_),dphil(0:npoints_),dphir(0:npoints_), &
               phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),enerslot(0:maxslots), &
-              f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),stat=alloc)
+              f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),&
+              xton(0:npoints,0:maxorder_),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -140,6 +141,12 @@ module me_numer
        poten = poten_
        mu_rr = mu_rr_
        !
+       do lambda  = 0,maxorder_
+         !
+         xton(:,lambda) = xton_(:,lambda)
+         !
+       enddo
+       !
      else
        !
        allocate(rho_(0:npoints_),stat=alloc)
@@ -160,6 +167,13 @@ module me_numer
           !
           call polintark(rho_(i1:i2),mu_rr_(i1:i2),rho,fval,df_t)
           mu_rr(i) = fval
+          !
+          do lambda = 0,maxorder
+            !
+            call polintark(rho_(i1:i2),xton_(i1:i2,lambda),rho,fval,df_t)
+            xton(i,lambda) = fval
+            !
+          enddo
           !
        enddo
        !
@@ -311,6 +325,8 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
                endif
                !
+               phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
+               !
                g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! We also control the orthogonality of the basis set 
@@ -327,6 +343,8 @@ module me_numer
                   phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
+               phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
+               !
                g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
@@ -341,6 +359,8 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
+               phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
+               !
                g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
@@ -350,6 +370,8 @@ module me_numer
                   else
                      phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
                   endif
+                  !
+                  phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
                   !
                   g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
@@ -413,7 +435,7 @@ module me_numer
         write(out,"('rms deviation is ',f18.8)") sqrt(rms)
      endif 
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,enerslot,f,poten,mu_rr,d2fdr2,dfdr)
+     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,enerslot,f,poten,mu_rr,d2fdr2,dfdr,xton)
      !
      !
   end subroutine ME_numerov

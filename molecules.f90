@@ -3129,11 +3129,12 @@ end subroutine polintark
   !
   ! Defining the rho-coordinate 
   !
-  function MLcoord_direct(x,itype,imode)  result(v)
+  function MLcoord_direct(x,itype,imode,iorder)  result(v)
 
    real(ark),intent(in)   ::  x
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
+   integer(ik),optional   :: iorder
    real(ark)              ::  rhoe,v,amorse
      !
      if (verbose>=6) write(out,"(/'MLcoord_direct/start')") 
@@ -3208,12 +3209,50 @@ end subroutine polintark
         !
         v = 1.0_ark-exp( -amorse*( x ) )
         !
-     end select 
+     case('RATIONAL') 
+        !
+        v = x
+        !
+     end select
+     !
+     if (present(iorder)) then 
+       select case(trim(molec%coordinates(itype,imode)))
+          !
+       case default
+          !
+          v = v**iorder 
+          !
+       case('RATIONAL') 
+          !
+          if (iorder<0) stop 'MLcoord_direct error: negative iorder'
+          !
+          select case(iorder) 
+            !
+          case (0)
+            !
+            v = 1.0_ark
+            !
+          case (1)
+            !
+            v = 1.0_ark/(molec%local_eq(imode)+x)
+            !
+          case (2)
+            !
+            v = 1.0_ark/(molec%local_eq(imode)+x)**2
+            !
+          case default
+            !
+            v = x**(iorder-2)
+            !
+          end select 
+          !
+       end select
+       !
+     endif 
      !
      if (verbose>=6) write(out,"('MLcoord_direct/end')") 
  
  end function MLcoord_direct
-
 
   !
   ! Defining the rho-coordinate 
@@ -3546,6 +3585,9 @@ end subroutine polintark
             !
         endif
         !
+     case('RATIONAL')
+        !
+        fstep(1:2) = 1.0_ark
         !
     end select 
 
