@@ -16899,6 +16899,22 @@ end subroutine check_read_save_none
                 !
              endif
              !
+           elseif (abs(g1drho(trove%ipotmin))<small_) then 
+             !
+             g1drho = 0 
+             !
+             do icoeff = 1, fl%Ncoeff 
+                f_t = 1.0_ark
+                do imode  = 1,Nmodes
+                  rho =  trove%chi_eq(imode)
+                  ipower = fl%IndexQ(imode,icoeff)
+                  rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                  f_t = f_t*rho_kin0
+               enddo
+               g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+               !
+             enddo
+             !
            endif
            !
            reduced_model = .false.
@@ -17066,10 +17082,10 @@ end subroutine check_read_save_none
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
              pseudo = trove%pseudo%field(1,0:npoints)
              !
+             fl => trove%g_rot(3,3)
+             gl => trove%pseudo
+             !
              if (trove%sparse) then
-               !
-               fl => trove%g_rot(3,3)
-               gl => trove%pseudo
                call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
                call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
                !
@@ -17092,6 +17108,24 @@ end subroutine check_read_save_none
                   enddo
                   !
                endif
+               !
+             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(pseudo(trove%ipotmin))<small_) then
+               !
+               muzz = 0 
+               pseudo = 0
+               !
+               do icoeff = 1, fl%Ncoeff 
+                  f_t = 1.0_ark
+                  do imode  = 1,Nmodes
+                    rho =  trove%chi_eq(imode)
+                    ipower = fl%IndexQ(imode,icoeff)
+                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                    f_t = f_t*rho_kin0
+                 enddo
+                 muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                 pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                 !
+               enddo
                !
              endif
              !

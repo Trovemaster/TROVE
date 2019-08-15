@@ -1713,8 +1713,8 @@ module perturbation
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
-                switch = switch.and.lquant==min(krot,trove%krot)
-                !switch = switch.and.lquant==krot
+                !switch = switch.and.lquant==min(krot,trove%krot)
+                switch = switch.and.lquant==krot
              endif
           elseif(trove%lincoord/=0) then
              switch = switch.and.( lquant==krot.or.jrot==0 )
@@ -4521,7 +4521,10 @@ module perturbation
                   chi_(imode)>b2(imode) ) then 
                   !
                   write(out,"('PTselect_sample_points (quadr): too small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
-                  stop 'PTselect_sample_points error (quadr): too small interval'
+                  !
+                  PTuse_gauss_quadrature = .false.
+                  return
+                  !stop 'PTselect_sample_points error (quadr): too small interval'
                   !
               endif
               !
