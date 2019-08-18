@@ -1713,7 +1713,7 @@ module perturbation
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
-                !switch = switch.and.lquant==min(krot,trove%krot)
+                !switch = switch.and.krot==min(lquant,trove%krot)
                 switch = switch.and.lquant==krot
              endif
           elseif(trove%lincoord/=0) then
