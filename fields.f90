@@ -18318,8 +18318,9 @@ end subroutine check_read_save_none
                 !
                 phil_sin(:) = phil_leg(:)*mrho(:)**k_l
                 phil(:) = sqrt(mrho(:))*phil_sin(:)
-                dphil(:) = 0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
-                !dphil(:) = (k_l+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
+                !dphil(:) = 0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
+                !
+                dphil(:) = 0.5_ark*phil_sin(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -18334,8 +18335,9 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    dphir(:) = 0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
-                    !dphir(:) = (k_r+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    !dphir(:) = 0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    !
+                    dphir(:) = 0.5_ark*phir_sin(:)+mrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
