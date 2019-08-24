@@ -1414,17 +1414,17 @@ contains
                ! Estimate the standard errors for each parameter using 
                ! the inverse matrix of a. 
                !
-               al_ark = al
+               al_ark = am
                call MLinvmatark(al_ark,ai_ark,numpar,info)
                ai = ai_ark
                !
-               sum_sterr=0.d0
+               sum_sterr=0.0_rk
                do ncol=1,numpar 
                   i = ifitparam(ncol)
                   if (nused.eq.numpar) then  
                      sterr(ncol)=0
                   else
-                     sterr(ncol)=sqrt(abs(ai(ncol,ncol)))*stadev
+                     sterr(ncol)=sqrt(abs(ai(ncol,ncol)))*stadev/sqrt(al(ncol,ncol))
                      sum_sterr=sum_sterr+abs(sterr(ncol)/potparam(i))
                   endif
                enddo    
