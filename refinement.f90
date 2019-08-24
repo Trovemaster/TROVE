@@ -582,9 +582,9 @@ contains
        !
        !
        ! define printing formats
-       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes+1,"(i3),a1,a)"
+       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(i3),a1,a)"
        write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
-                                              nclasses,"a3,a1,",nmodes,"(1x, i3),a2,1x,a1,",nmodes+1,"(i3),a1,a)"
+                                              nclasses,"a3,a1,",nmodes,"(i3),a2,1x,a1,",nmodes+1,"(i3),a1,a)"
                                               !
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                                nclasses,"a3,a1,",nmodes,"(i3),a2)"
@@ -1023,7 +1023,8 @@ contains
                               !
                             enddo
                             !
-                            quanta(0:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(0:nmodes)
+                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
+                            quanta(0) = eigen(fit(isym,j)%ilevel(ilargest(i)))%krot
                             !
                             if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
                                 .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
@@ -1065,7 +1066,7 @@ contains
                      write (out,my_fmt) &
                             iener,i,iJ,sym%label(isym),enercalc(iener)+eps(iener),enercalc(iener),eps(iener),&
                             wtall(iener),&
-                            '(',eigen(ilevel)%krot,')','(',eigen(ilevel)%quanta(0:nmodes),')',mark(iener)
+                            '(',eigen(ilevel)%krot,')','(',eigen(ilevel)%quanta(1:nmodes),')',mark(iener)
                             !fitting%obs(i)%quanta(1:nmodes)
                      !
                    endif 

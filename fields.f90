@@ -18471,20 +18471,20 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               !if (krot1<=kmax) then 
-                               !  !
-                               !  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
-                               !  !
-                               !  mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
-                               !  !
-                               !  trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
-                               !                                               mat_t*real(krot1**2,ark)
-                               !  !
-                               !else
+                               if (krot1<=kmax) then 
+                                 !
+                                 trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
+                                 !
+                                 mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
+                                 !
+                                 trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)-&
+                                                                              mat_t*real(krot1**2,ark)
+                                 !
+                               else
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = integral_rect_ark(npoints,rho_range,phivphi_t)
                                  !
-                               !endif
+                               endif
                                !
                              enddo
                              !
