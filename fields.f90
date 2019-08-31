@@ -18559,7 +18559,7 @@ end subroutine check_read_save_none
                       !
                       ! External field part
                       !
-                      if (abs(krot1-krot2)>1) cycle
+                      if (abs(krot1-krot2)>2) cycle
                       !
                       do imu = 1,extF%rank
                         !
