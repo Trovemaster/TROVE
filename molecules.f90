@@ -33,6 +33,8 @@ module molecules
   !
   use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
   !
+  use kin_xy2, only  : MLkinetic_xy2_bisect_EKE
+  !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
   use symmetry,     only : sym
@@ -44,8 +46,8 @@ module molecules
          MLequilibrium_xyz_1d,diff_2d_4points,ML_diffs,MLsymmetry_transform_func
   public MLpotenfunc,MLrotsymmetry_func,ratint,polint,MLinvmat,diff_2d_4points_ark,diff_3d_6points,polintark,&
          MLextF_func,MLpotentialfunc,ML_MEPfunc,MLinvmatark,MLratintark,MLrotsymmetry_generate_CII,&
-         MLrotsymmetry_generate
-  public MLdefine_potenfunc,MLcoordinate_transform_func_define,MLextF_func_define
+         MLrotsymmetry_generate,MLkineticfunc
+  public MLdefine_potenfunc,MLcoordinate_transform_func_define,MLextF_func_define,MLdefine_kinetic_subroutine
          !
   public MOrepres_arkT,ddlmn_conj,dlmn,Phi_rot,calc_phirot
    !
@@ -65,6 +67,7 @@ module molecules
    procedure (MLtemplate_extF),pointer :: MLextF_func => null()
    procedure (MLtemplate_symmetry_transformation),pointer :: MLsymmetry_transform_func => null()
    procedure (MLtemplate_rotsymmetry),pointer :: MLrotsymmetry_func => null()
+   procedure (MLtemplate_kinetic),pointer :: MLkineticfunc => null()
    !
   contains
 
@@ -84,19 +87,19 @@ module molecules
      f=MLpotentialfunc(molec%ncoords,molec%natoms,local,xyz,molec%force)
      !
   end function MLpotenfunc
-
-
+  !
   !
   subroutine MLdefine_potenfunc
    !
-
    if (verbose>=6) write(out,"(/'MLdefine_potenfunc/start')") 
 
     select case(trim(molec%potentype))
+         !
     case default
+         !
          write (out,"('MLdefine_potenfunc: potential type ',a,' unknown')") trim(molec%potentype)
          stop 'MLdefine_potenfunc - bad potential'
-
+         !
     case('POTEN_XY3_MLT') 
          !
          MLpotentialfunc => MLpoten_xy3_mlt
@@ -108,7 +111,6 @@ module molecules
     case('POTEN_XY3_MORBID_11') 
          !
          MLpotentialfunc => MLpoten_xy3_morbid_11
-         !
          !
     case('POTEN_XY3_MORBID_MORPHING') 
          !
@@ -407,6 +409,28 @@ module molecules
    if (verbose>=6) write(out,"('MLdefine_potenfunc/end')") 
  
 end subroutine MLdefine_potenfunc
+
+
+  !
+  subroutine MLdefine_kinetic_subroutine
+   !
+   if (verbose>=6) write(out,"(/'MLdefine_kinetic_subroutine/start')") 
+    !
+    select case(trim(molec%kinetic_type))
+    case default
+         !
+         write (out,"('MLdefine_kinetic_subroutine: kinetic type ',a,' unknown')") trim(molec%kinetic_type)
+         stop 'MLdefine_kinetic_subroutine - bad kinetic'
+         !
+    case('KINETIC_XY2_EKE_BISECT') 
+         !
+         MLkineticfunc => MLkinetic_xy2_bisect_EKE
+         !
+    end select
+    !
+   if (verbose>=6) write(out,"('MLdefine_kinetic_subroutine/end')") 
+ 
+  end subroutine MLdefine_kinetic_subroutine
 
   !
   ! Defining MEP function 

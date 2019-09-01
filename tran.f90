@@ -10,8 +10,8 @@ module tran
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
  use me_numer,     only : simpsonintegral_ark
  use molecules,    only : MLcoord_direct
- use fields,       only : manifold, FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
- use moltype,      only : intensity,extF
+ use fields,       only : FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
+ use moltype,      only : manifold,intensity,extF
  use symmetry,     only : sym
 
  use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT

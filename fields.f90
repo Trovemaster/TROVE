@@ -27,7 +27,7 @@ module fields
    public FLread_coeff_matelem,FLinitilize_Potential_original
    public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
    public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
-   public jobt, trove, manifold, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
+   public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
    !
@@ -203,7 +203,8 @@ module fields
       !
       type(FLpolynomT),pointer ::  extF(:)       ! External field
       !
-      character(len=cl)        ::  potentype      ! Type of the potential energy function representaion
+      character(len=cl)        ::  potentype    ='GENERAL'  ! Type of the potential energy function representaion
+      character(len=cl)        ::  kinetic_type ='GENERAL'  ! Type of the kinetic energy representaion
       real(ark),pointer        ::  qwforce(:,:,:)  ! qwadratic force constants f(l,m) in case of rank=1
       real(ark),pointer        ::  omega(:)      ! Harmonic frequencies 
       real(ark),pointer        ::  coord_f(:)      ! conversion factor to the standard coordinate (normal, morse ...)
@@ -519,9 +520,6 @@ module fields
    ! as expansions around each point rho. Thus the manifold has the rank "1"
    ! If it is "0" - all functions are given by the expansions around the 0d manifold, i.e. one point
    !
-   !integer(ik),parameter :: manifold = 0
-   integer(ik) :: manifold
-   !
    character(len=cl),parameter :: axis_system = 'Eckart'
    !
    !
@@ -635,6 +633,7 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
+   logical :: kinetic_defined
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
    character(len=wl) :: w
    real(rk)    :: lfact,f_t
@@ -691,11 +690,11 @@ module fields
    !
    zmat_defined  = .false.
    basis_defined = .false.
-   trove%potentype = 'GENERAL'
    equil_defined = .false.
    refer_defined = .false.
    chk_defined = .false.
    pot_defined   = .false.
+   kinetic_defined = .false.
    extF_defined  = .false.
    symmetry_defined = .false.
    Nparam = 1 
@@ -3011,6 +3010,39 @@ module fields
             !
          endif 
          !
+       case("KIN","KINET","KINETIC")
+         !
+         if (kinetic_defined) then 
+            write (out,"(' Error: trying to read KINETIC  second time!')") 
+            stop 'FLinput - reading KINETIC  second time'
+         endif 
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+              !
+           case("KIN_TYPE","KINETIC_TYPE")
+              !
+              call readu(w)
+              !
+              trove%kinetic_type = trim(w)
+              !
+              case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+           end select 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo
+         !
+         kinetic_defined = .true.
+         !
        case("POT","POTEN","POTENTIAL","PES")
          !
          if (pot_defined) then 
@@ -4796,8 +4828,8 @@ end subroutine check_read_save_none
                               trove%Nbonds,trove%Nangles,trove%Ndihedrals,&
                               trove%dihedtype,&
                               trove%mass,trove%local_eq,&
-                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%symmetry,&
-                              trove%rho_border,trove%zmatrix)
+                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
+                              trove%symmetry,trove%rho_border,trove%zmatrix)
     !
     ! define the potential function method
     !
@@ -4807,6 +4839,9 @@ end subroutine check_read_save_none
     !
     call MLextF_func_define
     !
+    ! define the kinetic energy method
+    !
+    call MLdefine_kinetic_subroutine
     !
     ! define the coordinate-transformation method
     !
@@ -5308,49 +5343,11 @@ end subroutine check_read_save_none
     ! s_rot vector = (d rot_angles / d r_Na )     !
     ! r_na   vector = r_na - cartesian coordinates !
     !
-    ! Allocation 
-    !
-    allocate (s_vib(Nmodes,Natoms,3),s_rot(3,Natoms,3),stat=alloc)
-    if (alloc/=0) then
-        write (out,"(' Error ',i9,' trying to allocate s_vib, s_rot-fields')") alloc
-        stop 'FLinitilize_Kinetic, s_vib, s_rot-fields -  out of memory'
-    end if
     !
     ! Calculate Ncoeff: number of elements in the kinetic fields for NkinOrder
     !
-    ! old version
-    !
-    !Tcoeff = 1
-    !do iM = 1,Nmodes
-    !   Tcoeff = Tcoeff*(trove%NKinOrder+iM)/iM
-    !enddo
-    !
-    ! new version
-    !
     Tcoeff  = trove%RangeOrder(trove%NKinOrder+2)
     Tcoeff1 = trove%RangeOrder(trove%NKinOrder+1)
-    !
-    ! Vibrational vector s_vib : 
-    !
-    do imode = 1,Nmodes
-      do iatom = 1,Natoms
-        do ix = 1,3
-           fl => s_vib(imode,iatom,ix)
-           call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_vib')
-        enddo
-      enddo
-    enddo
-    !
-    ! Rotational vector s_rot : 
-    !
-    do imode = 1,3
-      do iatom = 1,Natoms
-        do ix = 1,3
-           fl => s_rot(imode,iatom,ix)
-           call polynom_initialization(fl,trove%NKinOrder+1,Tcoeff1,Npoints,'s_rot')
-        enddo
-      enddo
-    enddo
     !do k1 = 1,size(s_rot)
     !   fl => s_rot(k1)
     !   call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_rot')
@@ -5379,24 +5376,57 @@ end subroutine check_read_save_none
        !
     endif
     !
-    ! Generate the Amat/Lmat matrix with first derivatives of cartesian coordinates 
-    ! with respect to the local linearized coordinates or thier combinations 
-    ! Lmat is generated for the Normal-coordinates, when the diagonal potential part 
-    ! is required. In all other cases we work with Lmat = Amat with non-diagonal 
-    !  potential representaion
-    !
-    call Lmat_generation1d
-    !
-    ! Testing the new routine
-    !
-    ! call fromlocal2cartesian((/trove%req,trove%alphaeq,trove%taueq/),trove%a0)
-    !
-    ! We calculate the s_vib vector = (d xi_l / d r_Na )
-    !
-    !call s_vib_s_rot_polynom1d(s_vib,s_rot)
-    !
-    call s_vib_s_rot_Sorensen(s_vib,s_rot)
-    !
+    if (trove%internal_coords/='LOCAL') then
+      !
+      ! Allocation 
+      !
+      allocate (s_vib(Nmodes,Natoms,3),s_rot(3,Natoms,3),stat=alloc)
+      if (alloc/=0) then
+          write (out,"(' Error ',i9,' trying to allocate s_vib, s_rot-fields')") alloc
+          stop 'FLinitilize_Kinetic, s_vib, s_rot-fields -  out of memory'
+      end if
+      !
+      ! Vibrational vector s_vib : 
+      !
+      do imode = 1,Nmodes
+        do iatom = 1,Natoms
+          do ix = 1,3
+             fl => s_vib(imode,iatom,ix)
+             call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_vib')
+          enddo
+        enddo
+      enddo
+      !
+      ! Rotational vector s_rot : 
+      !
+      do imode = 1,3
+        do iatom = 1,Natoms
+          do ix = 1,3
+             fl => s_rot(imode,iatom,ix)
+             call polynom_initialization(fl,trove%NKinOrder+1,Tcoeff1,Npoints,'s_rot')
+          enddo
+        enddo
+      enddo
+      !
+      ! Generate the Amat/Lmat matrix with first derivatives of cartesian coordinates 
+      ! with respect to the local linearized coordinates or thier combinations 
+      ! Lmat is generated for the Normal-coordinates, when the diagonal potential part 
+      ! is required. In all other cases we work with Lmat = Amat with non-diagonal 
+      !  potential representaion
+      !
+      call Lmat_generation1d
+      !
+      ! Testing the new routine
+      !
+      ! call fromlocal2cartesian((/trove%req,trove%alphaeq,trove%taueq/),trove%a0)
+      !
+      ! We calculate the s_vib vector = (d xi_l / d r_Na )
+      !
+      !call s_vib_s_rot_polynom1d(s_vib,s_rot)
+      !
+      call s_vib_s_rot_Sorensen(s_vib,s_rot)
+      !
+    endif
     !-------------------------------------
     ! We come to the g-s fields definition 
     !-------------------------------------
@@ -5448,17 +5478,24 @@ end subroutine check_read_save_none
     fl => trove%pseudo
     call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
     !
-    ! With s_vib and s_rot we can calculate the kinetic energy operator expansions, namely:
-    ! g_vib, g_rot, and the first part of the pseudopotential pseudo1
-    ! 
-    call gmat_polynom(s_vib,s_rot,trove%g_vib,trove%g_rot,trove%g_cor,trove%pseudo)
-    !
-    ! We can destroy some fields
-    !
-    call ArrayStop('s_vib')
-    call ArrayStop('s_rot')
-    deallocate(s_vib,s_rot)
-
+    if (trove%internal_coords=='LOCAL') then
+       !
+       call compute_kinetic_on_rho_grid(Tcoeff)
+       !
+    else
+       !
+       ! With s_vib and s_rot we can calculate the kinetic energy operator expansions, namely:
+       ! g_vib, g_rot, and the first part of the pseudopotential pseudo1
+       ! 
+       call gmat_polynom(s_vib,s_rot,trove%g_vib,trove%g_rot,trove%g_cor,trove%pseudo)
+       !
+       ! We can destroy some fields
+       !
+       call ArrayStop('s_vib')
+       call ArrayStop('s_rot')
+       deallocate(s_vib,s_rot)
+       !
+    endif
     !
     ! be verbose
     ! 
@@ -5945,6 +5982,69 @@ end subroutine check_read_save_none
       !
  end subroutine check_field_smoothness
 
+
+
+  !
+  ! This procedure is to compute kinetic fields on the rho-grid
+  !
+  subroutine compute_kinetic_on_rho_grid(Nterms)
+    !
+    !
+    integer(ik),intent(in) :: Nterms
+    real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes
+    real(ark)    :: rho,factor
+      !
+      Nmodes = trove%Nmodes
+      !
+      ! Conversion factor to the cm-1 units 
+      !
+      factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
+      !
+      allocate (g_vib(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+      allocate (g_cor(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+      allocate (g_rot(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+      allocate (pseudo(Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+      !
+      npoints = trove%npoints 
+      !
+      do irho = 0, npoints
+         !
+         rho = trove%rho_i(irho)
+         !
+         call MLkineticfunc(trove%nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+               trove%g_vib(k1,k2)%field(:,irho) = g_vib(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,3
+               trove%g_cor(k1,k2)%field(:,irho) = g_cor(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,3
+            do k2 = 1,3
+               trove%g_rot(k1,k2)%field(:,irho) = g_rot(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         trove%pseudo%field(:,irho) = pseudo(:)*factor
+        !
+      enddo
+      !
+      !
+      deallocate(g_vib,g_rot,g_cor,pseudo)
+      call ArrayStop('kinetic_on_grid-fields')
+      !
+ end subroutine compute_kinetic_on_rho_grid
 
 
 
@@ -14626,11 +14726,11 @@ end subroutine check_read_save_none
         read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
         if (Tpoints/=Npoints) then
-          write(out,"('Kinetci-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetci-ASCII-chk npoints is wrong"
+          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+          stop "Kinetic-ASCII-chk npoints is wrong"
         endif
         if (Torder/=KinOrder) then 
-          write(out,"('Kinetci-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
           stop "Kinetic-ASCII-chk Norder is wrong"
         endif
         !

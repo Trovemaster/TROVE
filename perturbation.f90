@@ -3085,14 +3085,13 @@ module perturbation
          write (out,"( i6,' sample points will be selected for symmetry reconstruction.'/)") mpoints
        end if
        !
-       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
-                 transform_t(mpoints),&
+       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
                  transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
                  !
-       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
-       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
-       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
-       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
        !
        ! Select sample points at which we check the transformation of the eigenfunctions
        !
@@ -3129,7 +3128,20 @@ module perturbation
          Nelem  = count_degen(icount)
          !
          if (.not.PTuse_gauss_quadrature) then
+           !
            mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
          else
            mpoints = min(mpoints_dvr,mpoints_max) 
          endif
@@ -3155,7 +3167,7 @@ module perturbation
                !
                !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
                !$omp& shared(fv) schedule(dynamic) reduction(max:info)
-               do k = 1,dimen
+               loop_sampling: do k = 1,dimen
                  !
                  nu(:) = PT%active_space%icoeffs(:,k)
                  !
@@ -3179,6 +3191,19 @@ module perturbation
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
+                      !
+                      if (ipoint_t>npoints.or.ipoint_t<0) then 
+                         !
+                         info = max(info,1)
+                         !
+                         fval = 0
+                         ! 
+                         if (job%verbose>=5) write(out,"('PTcontr..: sampling geometry is out of range ',i0)") ipoint_t
+                         PTuse_gauss_quadrature = .false.
+                         !
+                         exit loop_sampling
+                         !
+                      endif 
                       !
                       do v = -Nr_t,Nr_t
                         !
@@ -3222,7 +3247,7 @@ module perturbation
                  !
                  fv(k) = PT%Htotal%coeffs(k,kroot)*f_prim
                  !
-               enddo 
+               enddo loop_sampling
                !$omp end parallel do
                !
                transform(ioper,ideg,jpoint) = sum(fv(1:dimen))
@@ -3721,10 +3746,7 @@ module perturbation
        call ArrayStop('PTcontracted:sample_vector')
        call ArrayStop('PTcontracted:tmat')
        call ArrayStop('PTcontracted:fv')
-       call ArrayStop('PTcontracted:chi_t')
-       call ArrayStop('PTcontracted:transform_t')
-       call ArrayStop('PTcontracted:transform_maxval')
-       call ArrayStop('PTcontracted:numpoints')
+       call ArrayStop('PTcontracted:sampling')
        call ArrayStop('PTcontracted:mat')
        !
        ispecies = 0
@@ -24794,7 +24816,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          irho_eq = 0 
          !
-         if (manifold/=0) irho_eq = mod(&
+         if (npoints/=0) irho_eq = mod(&
                           nint( ( trove%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
          !
          powers = 0 ; powers(imode) = 2

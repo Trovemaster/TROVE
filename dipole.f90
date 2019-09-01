@@ -7,11 +7,11 @@ module dipole
                               ! 3 - extendent printing
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
- use fields,       only : manifold,job,analysis,bset
+ use fields,       only : job,analysis,bset
  use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,&
                           TimerProbe,memory_limit,memory_now
  use molecules,    only : MLcoord_direct,MLrotsymmetry_generate,ddlmn_conj,dlmn,Phi_rot,calc_phirot
- use moltype,      only : molec, extF, intensity, three_j
+ use moltype,      only : manifold,molec, extF, intensity, three_j
  use symmetry,     only : sym
 
 
