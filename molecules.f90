@@ -33,7 +33,7 @@ module molecules
   !
   use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
   !
-  use kin_xy2, only  : MLkinetic_xy2_bisect_EKE
+  use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -425,6 +425,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_XY2_EKE_BISECT') 
          !
          MLkineticfunc => MLkinetic_xy2_bisect_EKE
+         !
+    case('KINETIC_XYZ_EKE_BISECT') 
+         !
+         MLkineticfunc => MLkinetic_xyz_bisect_EKE
          !
     end select
     !

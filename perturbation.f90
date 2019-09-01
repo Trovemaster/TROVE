@@ -2579,7 +2579,7 @@ module perturbation
 
     integer(ik)        :: Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift,kmode
     integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
-    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in
+    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in,ierror
     character(len=cl)  :: unitfname,diag_
     real(ark)          :: f_value,f_prim,f_t
     real(ark)          :: df_t,fval,xval
@@ -3095,7 +3095,38 @@ module perturbation
        !
        ! Select sample points at which we check the transformation of the eigenfunctions
        !
-       call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t)
+       ierror = 0
+       call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
+       !
+       ! change the method to random sampling and redefine the sampling grid if 
+       ! quadratures did not work
+       !
+       if (ierror>0) then
+         !
+         Nelem  = maxval(count_degen(:))
+         !
+         mpoints = max(Nelem,job%msample_points)
+         !
+         if (mpoints>size(transform_t)) then 
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif 
+         !
+         ierror = 0
+         call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
+         !
+       endif
+       !
        !
        call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
@@ -3129,18 +3160,7 @@ module perturbation
          !
          if (.not.PTuse_gauss_quadrature) then
            !
-           mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
-           !
-           deallocate(chi_t,transform_t,transform_maxval,numpoints)
-           call ArrayStop('PTcontracted:sampling')
-           !
-           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
-                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
-                     !
-           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
-           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
-           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
-           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           mpoints = max(Nelem,job%msample_points)
            !
          else
            mpoints = min(mpoints_dvr,mpoints_max) 
@@ -3259,7 +3279,7 @@ module perturbation
                     stop 'PTcontracted_prediag: not possible to select optimal points'
                   endif
                   !
-                  call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t)
+                  call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
                   !
                   iattempts = iattempts + 1
                   !
@@ -3294,7 +3314,7 @@ module perturbation
            !
            if (PTuse_gauss_quadrature) PTuse_gauss_quadrature = .false.
            !
-           call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t)
+           call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
            !
            iattempts = iattempts + 1
            !
@@ -4381,11 +4401,12 @@ module perturbation
 
 
 
-  subroutine PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_grid)
+  subroutine PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_grid,ierror)
      !
      integer(ik),intent(in)  :: iclasses,mpoints,Nr_t,mpoints_dvr
      real(ark),intent(in)    :: rhostep(PT%Nmodes)
      real(ark),intent(out)   :: chi_grid(:,:,:)
+     integer(ik),intent(out) :: ierror
      integer(ik)             :: jpoint,i,ipoint_t,imode,ioper,pshift
      real(ark)               :: chi(PT%Nmodes),chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
      logical                 :: go
@@ -4542,9 +4563,11 @@ module perturbation
               if (chi_(imode)<b1(imode).or.&
                   chi_(imode)>b2(imode) ) then 
                   !
-                  write(out,"('PTselect_sample_points (quadr): too small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
+                  if (job%verbose>=5) &
+                     write(out,"('PTselect_sample_points(quad): small interval, class=',i8,' coord=',f15.6)") iclasses,chi_(imode)
                   !
                   PTuse_gauss_quadrature = .false.
+                  ierror =1 
                   return
                   !stop 'PTselect_sample_points error (quadr): too small interval'
                   !
