@@ -3221,7 +3221,7 @@ module perturbation
                          if (job%verbose>=5) write(out,"('PTcontr..: sampling geometry is out of range ',i0)") ipoint_t
                          PTuse_gauss_quadrature = .false.
                          !
-                         exit loop_sampling
+                         cycle loop_sampling
                          !
                       endif 
                       !
