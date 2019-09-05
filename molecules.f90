@@ -430,11 +430,34 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_bisect_EKE
          !
+    case('GENERAL') 
+         !
+         MLkineticfunc => MLkinetic_xyz_bisect_EKE
+         !
     end select
     !
    if (verbose>=6) write(out,"('MLdefine_kinetic_subroutine/end')") 
  
   end subroutine MLdefine_kinetic_subroutine
+
+
+  ! A dummy kinetic energy function 
+  !
+  subroutine MLkinetic_dummy(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+     !
+     write(out,"('MLkinetic_MLkinetic_dummy: If you are here you use LOCAL but KINETIC is undefined')")
+     stop 'MLkinetic_MLkinetic_dummy: KINETIC is undefined but it should be to be used with LOCAL'
+     !
+     g_vib=0
+     g_rot=0
+     g_cor=0
+     pseudo=0
+     !
+   end subroutine  MLkinetic_dummy
 
   !
   ! Defining MEP function 

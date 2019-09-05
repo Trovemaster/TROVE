@@ -440,6 +440,7 @@ module fields
       integer(ik)         :: j_list(1:100) = -1
       integer(ik)         :: sym_list(1:100) = -1
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
+      integer(ik)         :: j_contribution(1:100)
       !
    end type FLanalysisT
 
