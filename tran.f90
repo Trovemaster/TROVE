@@ -1220,7 +1220,7 @@ contains
     character(len=20)  :: buf20
     integer(ik)        :: ncontr_t,rootsize_t,junit,iterm1=0,iterm2=1e6,islice,Nterms,iterm,icoeff
     integer(hik)       :: matsize2,matsize,rootsize,rootsize2
-    real(rk),allocatable :: gmat(:,:),psi(:,:)
+    real(rk),allocatable :: gmat(:,:),psi(:,:),psi_t(:,:)
     real(rk),allocatable :: mat_s(:,:),mat_t(:,:)
     integer(ik),allocatable :: ijterm(:,:)
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
@@ -1277,17 +1277,21 @@ contains
       matsize = int(dimen*Neigenroots,hik)
       !
       if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i0,' elements.')") & 
-                          Neigenroots,Neigenroots,matsize
+                          dimen,Neigenroots,matsize
       !
       if (blacs_size.eq.1) then
         allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
         !
         call ArrayStart('psi',info,1,kind(psi),matsize)
+        call ArrayStart('psi_t',info,1,kind(psi_t),matsize)
         call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
       else
         call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
         call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
-        !
+        
+        !shape(psi_t) == shape(psi^T) == shape(mat_t)
+        call co_block_type_init(psi_t, dimen, Neigenroots, desc_mat_t, info)
+        call ArrayStart('psi_t',info,1,kind(mat_t),int(size(mat_t),hik))
         call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
         call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
       endif
@@ -1478,6 +1482,13 @@ contains
       !
       !if (job%verbose>=5) write(out,"(/'Maximal number of non-zero values after vector compression  = ',i,' out of ',i/)") cdimenmax,dimen
       !
+      ! TODO TEMP intel bugaround - explicitly transpose psi into psi_t
+      if (blacs_size .gt. 1) then
+        write(out,*) "Explicitly transposing psi into psi_t"
+        call pdtran(Neigenroots, dimen, 1.0d0, psi, 1, 1, desc_psi, 0.0d0, psi_t, &
+          1, 1, desc_mat_t)
+      endif
+      !
       if (job%verbose>=3) write(out,"(' ...done!')") 
       !
       !if (job%verbose>=5) call TimerStop('Prepare fcoeff for J0-convertion')
@@ -1647,8 +1658,8 @@ contains
             if (blacs_size.gt.1) then
               call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                           gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
-              call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
-                          psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+              call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                          psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
             else
               call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                           gmat,dimen,beta,mat_t,Neigenroots)
@@ -1766,8 +1777,8 @@ contains
             if (blacs_size.gt.1) then
               call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                           gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
-              call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
-                          psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+              call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                          psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
             else
               call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                           gmat,dimen,beta,mat_t,Neigenroots)
@@ -1886,7 +1897,7 @@ contains
             call MPI_File_read_all(fileh, buf20, 7, mpi_character, mpi_status_ignore, ierr)
             if (buf20(1:7)/='[MPIIO]') then
               write (out,"(' Vib. kinetic checkpoint file ',a,' is not an MPIIO file: ',a)") filename, buf20
-              stop 'restore_vib_matric_elemets - Not an MPIIO file'
+              stop 'restore_vib_matric_elements - Not an MPIIO file'
             end if
             !
             call MPI_File_read_all(fileh, buf20, 20, mpi_character, mpi_status_ignore, ierr)
@@ -2017,8 +2028,8 @@ contains
           if(blacs_size.gt.1) then
             call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                         extF_me,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
-            call pdgemm('N','N',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
-                        psi,1,1,desc_psi,beta,mat_s,1,1,desc_mat_s)
+            call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
+                        psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
           else
             call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                         extF_me,dimen,beta,mat_t,Neigenroots)
