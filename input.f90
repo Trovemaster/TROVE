@@ -1,6 +1,6 @@
 MODULE input
 
-!use accuracy
+use accuracy
 
 !  Fortran90 input parsing module
 !
@@ -247,7 +247,7 @@ lines: do
 
 !  Find last non-blank character
 10  last=verify(char,space//tab,back=.true.)
-    if (echo) print "(a)", char(m:last)
+    if (echo) write(out,"(a)") char(m:last)
 !  Look for concatenation string
     if (lc .gt. 0 .and. last .ge. lc) then
       more=(char(last-lc+1:last) .eq. concat)
