@@ -12,7 +12,6 @@ pot_user = pot_ch4
 
 PLAT =
 #PLAT = _2205_i17
-#FOR  = ifort
 FOR = mpif90
 FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback
 #FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
@@ -20,8 +19,6 @@ FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
 
-#LAPACK =  -L/usr/local/software/spack/spack-0.11.2/opt/spack/linux-rhel7-x86_64/gcc-5.4.0/openblas-0.2.20-gbzlk5wei7fsojje2fiwj7w5wssikb73/lib -lopenblas
-#LAPACK = -mkl=parallel -lscalapack
 LAPACK = -mkl=parallel -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 #LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
@@ -85,7 +82,8 @@ pot_c2h4.o:	    accuracy.o moltype.o
 pot_c3h6.o:     accuracy.o moltype.o
 pot_abcd.o:     accuracy.o moltype.o lapack.o
 
-mpi_aux.o:	timer.o
+input.o:				accuracy.o
+mpi_aux.o:			accuracy.o timer.o
 
 clean:
 	rm -f *.mod *.o

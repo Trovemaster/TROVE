@@ -92,9 +92,6 @@ contains
   end subroutine co_block_type_init
 
   subroutine co_sum_double(x, root_process)
-    use accuracy
-
-    implicit none
 
     real(rk), intent(inout), dimension(:,:) :: x
     integer, optional :: root_process
@@ -259,9 +256,6 @@ contains
   end subroutine co_init_distr
 
   subroutine co_distr_data(x, tmp, blocksize, lb, ub)
-    use accuracy
-
-    implicit none
 
     real(rk),dimension(:,lb:),intent(inout) :: x
     real(rk),dimension(:,:,:),intent(inout) :: tmp
@@ -311,7 +305,6 @@ contains
   end subroutine co_distr_data
 
   subroutine co_read_matrix_distr(x, longdim, lb, ub, infile)
-    use accuracy
 
     real(rk),dimension(:,lb:),intent(out) :: x
     integer,intent(in)                :: longdim, lb, ub
@@ -341,7 +334,6 @@ contains
   end subroutine co_read_matrix_distr
 
   subroutine co_write_matrix_distr(x, longdim, lb, ub, outfile)
-    use accuracy
 
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
