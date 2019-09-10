@@ -7340,7 +7340,7 @@ module perturbation
     !
     do isym = 1,sym%Nrepresen
       if (.not.job%select_gamma(isym)) cycle
-      call co_sum(smat(isym)%coeffs)
+      call co_sum(smat(isym)%coeffs,0)
     enddo
     call TimerStop('Calculating the Hamiltonian matrix')
     !
