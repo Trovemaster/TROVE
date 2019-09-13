@@ -33,7 +33,7 @@ module fields
    !
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
-          FLDVR_gmat_dvr,FLfromcartesian2local
+          FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
    !
    !FLfrom_local2chi_by_fit
    !
@@ -121,6 +121,12 @@ module fields
      logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
      logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
    end type  FLbasissetT 
+
+   type FLcoeffprunT
+    !
+    real(rk)           :: contribution_threshold = 1e-4_rk
+    !
+   end type FLcoeffprunT
 
 
 
@@ -232,6 +238,7 @@ module fields
       character(len=cl)   :: chk_poten_fname   = 'potential.chk'     ! file name to store the expansion parameters 
       character(len=cl)   :: chk_kinet_fname   = 'kinetic.chk'       ! file name to store the expansion parameters 
       character(len=cl)   :: chk_external_fname   = 'external.chk'       ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_contrib_fname = 'contribution.chk'  ! file name to store the highest contribution to eigenfunctions of contracted basis set 
       !
       logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
       logical             :: separate_convert  = .false.          ! convert hamiltonian.chk to potential.chk and kinetic.chk
@@ -342,6 +349,7 @@ module fields
       integer(ik)         :: verbose          ! soft verbose level (from input, not precompiled)
       logical             :: vib_contract     ! whether the vibrational contraction is used 
                                               ! Vibrational contraction  - we use the computed J=0 basis functions for rovibr. problem)
+      logical             :: eigen_contract = .false.   ! whether we contract based on the contracted basis coefficients of the eigenfunctions
       logical             :: fast = .true.    ! fast and exensive calculation of the contracted matrix elements 
       logical             :: vib_rot_contr = .false.    ! the contracted basis is computed using vibration-rotation scheme where 
                                               !  the vibrational indeces run first and K runs last in contrast to the default rot-vib scheme 
@@ -440,12 +448,11 @@ module fields
       integer(ik)         :: j_list(1:100) = -1
       integer(ik)         :: sym_list(1:100) = -1
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
-      integer(ik)         :: j_contribution(1:100)
+      logical             :: reducible_eigen_contribution = .false. 
       !
    end type FLanalysisT
-
-
-
+   !
+   !
    type FLactionT
      !
      logical :: fitting       = .false.
@@ -553,6 +560,7 @@ module fields
    type(FLanalysisT),save        :: analysis
    type(FLfittingT),save         :: fitting     ! objects defining the fitting to the observed energies
    type(FLfittingT),save         :: j0fit       ! objects defining the refinement of the band centers
+   type(FLcoeffprunT)            :: coeffprun   ! object for pruning basis funcitons 
    !
    ! Andrey's temporale measure: it is not adviceble to use an enviroment variable for that. 
    ! it can bbe very bad for the parallelization. 
@@ -1072,6 +1080,14 @@ module fields
            case ("VIBRATIONAL")
              !
              job%vib_contract = .true.
+             !
+           case ("EIGEN_COEFF","EIGEN_PRUNING")
+             ! 
+             job%eigen_contract = .true.
+             !
+           case("EIGEN_PRUNING_THRES")
+             !
+             call readf(coeffprun%contribution_threshold)
              !
            case ("FAST_CI","FAST","FAST-CI")
              !
@@ -2851,6 +2867,15 @@ module fields
            case('DENSITY')
              !
              analysis%reduced_density = .true.
+             analysis%density = .true.
+             !
+           case("PRINT_CONTRIBUTION")
+             analysis%reducible_eigen_contribution = .true.   
+             i = 0
+             do while(trim(w)/="".and.item<Nitems.and.i<100)
+                i = i + 1
+                call readi(analysis%j_list(i)) 
+             enddo 
              analysis%density = .true.
              !
            case('PRINT_VECTOR')

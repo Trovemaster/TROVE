@@ -276,6 +276,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy2_morse_cos
          !
+    case('POTEN_XYZ_KOPUT') 
+         !
+         MLpotentialfunc => MLpoten_xyz_Koput
+         !
     case('POTEN_XYZ_TYUTEREV') 
          !
          MLpotentialfunc => MLpoten_xyz_tyuterev

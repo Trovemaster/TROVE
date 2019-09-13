@@ -316,9 +316,19 @@ contains
       !
     endif 
     !
-    imode = analysis%dens_list(nlist+1) ; jmode = analysis%dens_list(nlist+2) ; kmode = analysis%dens_list(nlist+3)
-    !
-    call DM_density_symmvec(Jval)
+    if (analysis%reducible_eigen_contribution) then 
+      !
+      call DM_contribution_symmvec(Jval)
+      !
+    else 
+      !
+      imode = analysis%dens_list(nlist+1) ; jmode = analysis%dens_list(nlist+2) ; kmode = analysis%dens_list(nlist+3)
+      !
+      call DM_density_symmvec(Jval)
+      !
+      call DM_contribution_symmvec(Jval)
+      !
+    endif
     !
     write(out, '(/a)') 'done'
     !
@@ -349,9 +359,9 @@ contains
     i = 1
     Jmin = 1000 ; Jmax = 0
     !
-    do while (i<100.and.analysis%j_contribution(i)/=-1)
+    do while (i<100.and.analysis%j_list(i)/=-1)
       !
-      j = analysis%j_contribution(i)
+      j = analysis%j_list(i)
       !
       Jmin = min(Jmin,j)
       Jmax = max(Jmax,j)
@@ -386,7 +396,7 @@ contains
     if (ierror/=0) then 
         write(out,"('dm_tranint: read_eigenval error, some eigen-files do not exists')")
         stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
-    endif 
+    endif
     !
     call DM_contribution_symmvec(Jval)
     !
@@ -549,7 +559,7 @@ contains
        passed = .false.
        loop_ilist : do ilist=1,nJ
          !
-         if (jF==analysis%j_contribution(ilist)) then 
+         if (jF==analysis%j_list(ilist)) then 
            passed = .true.
            exit loop_ilist
          endif 
@@ -682,7 +692,7 @@ contains
       passed = .false.
       loop_ilist1 : do ilist=1,nJ
         !
-        if (jF==analysis%j_contribution(ilist)) then 
+        if (jF==analysis%j_list(ilist)) then 
           passed = .true.
           exit loop_ilist1
         endif 
@@ -837,51 +847,55 @@ contains
          !
          call convert_symvector_to_contrvector(indI,dimenI,igammaI,idegI,ijterm(indI)%kmat(:,:),vecI,vec)
          !
-            !
-            write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,1x,i4,i2,a1,1x,a1,",Nclasses,"(i3),a1)"
-            !
-            do irootI = 1, dimenI
-                 !
-                 irow = bset_contr(indI)%icontr2icase(irootI,1)
-                 ib   = bset_contr(indI)%icontr2icase(irootI,2)
-                 !
-                 cnu_i(0:Nclasses) = bset_contr(indI)%contractive_space(0:Nclasses, irow)
-                 !
-                 ktau = bset_contr(indI)%ktau(irootI)
-                 tauI  = mod(ktau,2_ik)
-                 kI = bset_contr(indI)%k(irootI)
-                 !
-                 !ndeg = bset_contr(jind)%index_deg(irow)%size1
-                 !
-                 if(abs(vec(irootI))>highest_contribution(irow)) then 
-                    highest_contribution(irow) = abs(vec(irootI))
-                    ener_top_contri(irow) = energyI
-                 endif
-                 basis_set_contraction(irow,0:Nclasses) = cnu_i(0:Nclasses)
-                 basis_set_contraction(irow,Nclasses+1) = jI
-                 if (.false.) then  
-                   !
-                   write(out,my_fmt1) & 
-                              igammaI,irootI,&
-                              vec(irootI),"(", &
-                              jI,kI,tauI,irow,ib,")", &
-                              "(",cnu_i(1:Nclasses),")"
-                   !
-                 endif
-                 !
-            end do
-            !
+         write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,1x,i4,i2,a1,1x,a1,",Nclasses,"(i3),a1)"
+         !
+         do irootI = 1, dimenI
+              !
+              irow = bset_contr(indI)%icontr2icase(irootI,1)
+              ib   = bset_contr(indI)%icontr2icase(irootI,2)
+              !
+              cnu_i(0:Nclasses) = bset_contr(indI)%contractive_space(0:Nclasses, irow)
+              !
+              ktau = bset_contr(indI)%ktau(irootI)
+              tauI  = mod(ktau,2_ik)
+              kI = bset_contr(indI)%k(irootI)
+              !
+              !ndeg = bset_contr(jind)%index_deg(irow)%size1
+              !
+              if(abs(vec(irootI))>highest_contribution(irow)) then 
+                 highest_contribution(irow) = abs(vec(irootI))
+                 ener_top_contri(irow) = energyI
+              endif
+              basis_set_contraction(irow,0:Nclasses) = cnu_i(0:Nclasses)
+              basis_set_contraction(irow,Nclasses+1) = jI
+              if (.false.) then  
+                !
+                write(out,my_fmt1) & 
+                           igammaI,irootI,&
+                           vec(irootI),"(", &
+                           jI,kI,tauI,irow,ib,")", &
+                           "(",cnu_i(1:Nclasses),")"
+                !
+              endif
+              !
+         end do
+         !
       enddo
       !
     end do Ilevels_loop
     !
-    write(my_fmt1,'(a,i0,a)') "(2x,i7,e16.8,3x,e10.5,3x,i3,1x,",Nclasses,"(1x,i5))"
+    write(iounit,"(a)") "Start-contract"
+    !
+    write(my_fmt1,'(a,i0,a)') "(2x,i7,e16.8,3x,f13.6,3x,i3,1x,",Nclasses,"(1x,i5))"
+    !
     do i = 1, size(highest_contribution)
-      write(iounit, my_fmt1) i, highest_contribution(i), ener_top_contri(i) -intensity%ZPE,  &
+      write(iounit,my_fmt1) i, highest_contribution(i), ener_top_contri(i) -intensity%ZPE,  &
                           basis_set_contraction(i, Nclasses+1), &
                            basis_set_contraction(i,1:Nclasses) 
     enddo
-
+    !
+    write(iounit,"(a)") "End-contract"
+    !
     deallocate(highest_contribution)
     deallocate(basis_set_contraction)
     enddo

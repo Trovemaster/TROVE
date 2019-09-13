@@ -14,7 +14,7 @@ module pot_xy2
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,MLpoten_xy2_tyuterev_alpha
-  public MLpoten_xy2_morse_cos
+  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -2733,8 +2733,8 @@ endif
        ! 
        xcos = cos(alpha)
        !
-       !call potv(v,r12,r32,xcos)
-       v = 0
+       call potv(v,r12,r32,xcos)
+       !v = 0
        !v = v*tocm
        !
        !v = v + MLpoten_xy2_bubukina(ncoords,natoms,local,xyz,force)
@@ -5093,6 +5093,66 @@ endif
     f(1:3) = matmul(mu,tmat)
     !
  end subroutine MLdms2pqr_xyz_coeff
+
+
+
+
+
+  !
+  ! Defining potential energy function
+  !     Jacek Koput
+  !     the potential energy surface of CaOH
+  !     q1 - CaO, q2 - OH, q3 - CaOH
+  !     bond stretches in the SPF coordinates
+  !     energy in atomic units !
+  !
+  function MLpoten_xyz_Koput(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)   ::  i,i1,i2,i3
+   real(ark)    :: x1,x2,x3,e1,e2,e3,e6,vpot,q1,q2,q3,pd
+      !
+      real(ark),parameter :: tocm = 219474.63067_ark
+      !
+      if (verbose>=6) write(out,"('MLpoten_xyz_Koput/start')")
+      !
+      x1 = local(1)
+      x2 = local(2)
+      x3 = local(3)
+      !
+      pd=pi/180.0_ark
+      !
+      e1=force(1)
+      e2=force(2)
+      e3=force(3)*pd
+      !
+      q1=(x1-e1)/x1
+      q2=(x2-e2)/x2
+      q3=(x3-e3)
+      !
+      vpot=0.0_ark
+      !
+      do i=4,molec%parmax
+        !
+        i1=molec%pot_ind(1,i)
+        i2=molec%pot_ind(2,i)
+        i3=molec%pot_ind(3,i)
+        !
+        vpot=vpot+force(i)*q1**i1*q2**i2*q3**i3
+        !
+      enddo
+      !
+      f = tocm*vpot
+      !
+      if (verbose>=6) write(out,"('MLpoten_xyz_Koput/end')")
+      !
+ end function MLpoten_xyz_Koput
+
 
 
 end module pot_xy2

@@ -584,7 +584,7 @@ contains
        ! define printing formats
        write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(i3),a1,a)"
        write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
-                                              nclasses,"a3,a1,",nmodes,"(i3),a2,1x,a1,",nmodes+1,"(i3),a1,a)"
+                                              nclasses,"a3,a1,",nmodes,"(i3),a2,a1,",nmodes+1,"(i3),a1,a)"
                                               !
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                                nclasses,"a3,a1,",nmodes,"(i3),a2)"

@@ -1924,6 +1924,96 @@ module perturbation
   end subroutine PTdegener_index
 
 
+  !
+  ! Prunning the contracted basis using contribution.chk with the largest eigencoefficients 
+  ! for a set of J=0 eigenfuncitons. contribution.chk must be precomputed using the analysis_density tool. 
+  !
+  subroutine PTpruning_contracted_basis(Ncoeff,enermax)
+
+   integer(ik),intent(inout) :: Ncoeff
+   real(ark),intent(in)       :: enermax
+   integer(ik), allocatable :: retained_basis_nums(:)
+   integer(ik), allocatable :: pruned_basis_set(:,:)
+   character(len=cl) :: unitfname,buff
+   integer(ik)       :: chkptIO
+   integer(ik)       :: num_contr,iprune_count,i,alloc
+   real(rk)          :: contrib, ener
+   real(rk)          :: x
+      !
+      allocate(retained_basis_nums(Ncoeff), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(retained_basis_nums),kind(retained_basis_nums))
+      !
+      unitfname = "File of the contribution"
+      call IOStart(trim(unitfname),chkptIO)
+      !
+      open(chkptIO,action='read',status='old',file=trove%chk_contrib_fname)
+      !
+      read(chkptIO,"(a)") buff(1:14)
+      !
+      if (trim(buff(1:14))/="Start-contract") then
+          write(out,"('contribution.chk: wrong header ',a)") buff
+          stop 'contribution.chk: wrong header'
+      endif
+      !
+      iprune_count = 0
+      !
+      contrib_loop: do i =1,Ncoeff
+        !
+        read(chkptIO,*) num_contr, contrib, ener
+        !
+        if (num_contr/=i) then
+           write(out,"('contribution.chk: bogus state number ',i0,'<>',i0)") num_contr,i
+           stop 'contribution.chk: bogus state number'
+        endif
+        !
+        x = 10.0_rk*(ener/enermax) 
+        if(x < 7.0_rk) then
+          !
+          if(exp(1.5_rk*(x-7.0_rk))/(1.0_rk+exp(1.5_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        else
+          !
+          if(exp(3.0_rk*(x-7.0_rk))/(1.0_rk+exp(3.0_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        endif
+        !
+      enddo contrib_loop
+      !
+      read(chkptIO,"(a)") buff(1:12)
+      !
+      if (trim(buff(1:12))/="End-contract") then
+          write(out,"('contribution.chk: wrong footer ',a)") buff
+          stop 'contribution.chk: wrong footer'
+      endif
+      !
+      allocate(pruned_basis_set(0:PT%Nclasses,iprune_count), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(pruned_basis_set),kind(pruned_basis_set))
+      !
+      do i = 1, iprune_count
+        !
+        pruned_basis_set(:,i) = PT%contractive_space(:,retained_basis_nums(i))
+        if (job%verbose>=6) write(*,"(i0,1x,i0,2x,i0)") i,retained_basis_nums(i),pruned_basis_set(:,i)
+        !
+      enddo
+      !
+      deallocate(PT%contractive_space, stat = alloc)
+      allocate(PT%contractive_space(0:PT%Nclasses, iprune_count), stat=alloc)
+      PT%contractive_space = pruned_basis_set
+      !
+      deallocate(pruned_basis_set, stat = alloc)
+      deallocate(retained_basis_nums)
+      call ArrayStop('pruned_basis')
+      !
+      Ncoeff = iprune_count
+      !
+  end subroutine PTpruning_contracted_basis
+
 
   subroutine PTglobalind_count(max_deg_size,isum,iactive,Index_icnu,Index_ideg,Index_prim,Index_active)
 
@@ -6373,6 +6463,14 @@ module perturbation
         !
      enddo 
    endif 
+   !
+   if(job%eigen_contract) then
+      !
+      ener0 = PTcontrenergy_zero(PT%contractive_space(:,icoeff))
+      !
+      call PTpruning_contracted_basis(Maxsymcoeffs,ener0)
+      !
+   endif
    !
    ! esimate the size if the primitive basis set (total)
    !
