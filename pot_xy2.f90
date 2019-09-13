@@ -4496,7 +4496,7 @@ endif
    ! calculate potential energy function values
    !
    y1=1.0_ark-exp(-aa1*(r1-re1))
-   y2=1.0_ark-exp(-aa1*(r2-re2))
+   y2=1.0_ark-exp(-aa2*(r2-re2))
    !
    y3=cos(alpha)-cos(alphae)
    !
