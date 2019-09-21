@@ -120,7 +120,7 @@ module mol_xy2
           !
        endif       
        !
-    case('R-PHI1-PHI2','R-PHI1-PHI2-Z')
+    case('R-PHI1-PHI2','R-PHI1-PHI2-Z','R1-R2-PHI1-PHI2-Z')
        !
        if (direct) then 
           dst(1:4) = dsrc(1:4)
@@ -840,7 +840,7 @@ module mol_xy2
          !b0(:,1,0) = sqrt(0.5_ark)*( a0(:,1)+a0(:,2) )
          !b0(:,2,0) = sqrt(0.5_ark)*( a0(:,1)-a0(:,2) )
          !
-       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
+       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
          !
          b0(1,1,0) = 0
          b0(1,2,0) = 0
@@ -960,7 +960,7 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
-         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART')
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1187,7 +1187,19 @@ module mol_xy2
                b0(3,2,i) = 0.0_ark
                b0(3,1,i) =-m1/m*re13*cos(alphae_h)
                !
-             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
+             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
+               !
+               if (Nangles>0) then
+                 alphaeq = molec%alphaeq(1)
+               elseif (molec%Ndihedrals>1) then
+                 !
+                 tau = rho
+                 !
+                 alphaeq = pi-asin( sqrt( sin(tau)**2+sin(tau)**2 ))
+                 !
+               else
+                 alphaeq = pi-rho
+               endif 
                !
                b0(1,1,i) = 0
                b0(1,2,i) = 0
@@ -1853,7 +1865,6 @@ module mol_xy2
           end select 
           !
        end select
-          !
        !
     case('R-PHI1-PHI2','R-PHI1-PHI2-Z')
        !
@@ -2246,10 +2257,10 @@ module mol_xy2
              !  repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
              !enddo
              !
-             do ioper_=1,sym%Noper
-               repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
-               !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
-             enddo
+             !do ioper_=1,sym%Noper
+             !  repres ( ioper_,            :,:)= sym%irr(5, ioper_)%repres
+             !  !repres ( ioper_+sym%Noper/2,:,:)= sym%irr(5, ioper_)%repres
+             !enddo
              !
              !dst(3) = repres(ioper,1,1)*src(3)+repres(ioper,1,2)*src(4)
              !dst(4) = repres(ioper,2,1)*src(3)+repres(ioper,2,2)*src(4)
@@ -2368,7 +2379,78 @@ module mol_xy2
              !
           endif
           !
-       end select 
+       end select
+       !
+    case('R1-R2-PHI1-PHI2-Z')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry.. R1-R2-PHI1-PHI2-Z: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_XY2 - bad symm. type'
+         !
+       case('CNV','CNV(M)')
+          !
+          ! Number of eq. rotations 
+          Nrot = sym%N
+          !
+          ! Number of Cn classes 
+          N_Cn = sym%N/2
+          !
+          phi = 2.0_ark*pi/real(Nrot,ark)
+          !
+          q1 = src(3)
+          q2 = src(4)
+          !
+          r = sqrt(q1**2+q2**2)
+          theta = atan2(q2,q1)
+          !
+          if (mod(sym%N,2)==1) then 
+             !
+             if (ioper==1) then ! E 
+               !
+               dst = src
+               !
+             elseif (ioper<=1+2*N_Cn) then !  Cinf
+               !
+               ioper_ =ioper-1 
+               irot = (ioper_+1)/2
+               !
+               phi_n = phi*irot
+               !
+               ! Second oper in a class is with negative phi
+               if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) = q1*cos(phi_n)-q2*sin(phi_n)
+               dst(4) = q1*sin(phi_n)+q2*cos(phi_n)
+               !
+             elseif (ioper<=1+2*N_Cn+Nrot) then !  sigmav
+               !
+               irot = ioper-(1+2*N_Cn)
+               !
+               phi_n = phi*irot*2.0_ark
+               !
+               dst(1) = src(1)
+               dst(2) = src(2)
+               dst(3) = ( q1*cos(phi_n)+q2*sin(phi_n))
+               dst(4) = ( q1*sin(phi_n)-q2*cos(phi_n))
+               !
+             else
+               !
+               write (out,"('ML_symmetry_transformation_XY2  in Dinfty: operation ',i8,' unknown')") ioper
+               stop 'ML_symmetry_transformation_XY2 Dinfty - bad operation. type'
+         
+             endif 
+             !
+          else ! even n
+             !
+             write(out,"('CNV for N even and r-phi1-phi2-z has not been implemented')")
+             stop 'CNV for N even and r-phi1-phi2-z has not been implemented'
+             !
+          endif
+          !
+       end select
        !
     case('R-ALPHA-THETA-Z')
        !
@@ -2789,7 +2871,7 @@ module mol_xy2
                elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
                   gamma = 3
                else
-                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+                  stop 'ML_rotsymmetry_xy2-Dnh: illegal k,tau (K mod N  = 0)'
                endif
                !
             elseif (tau<=1.and.k<=j) then
@@ -2821,10 +2903,86 @@ module mol_xy2
                !endif
                !
             else
+                 stop 'ML_rotsymmetry_xy2-Dnh: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         endif
+         !
+      case('CNV','VNV(M)')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         N = sym%N
+         N_Cn = sym%N/2
+         k_ = mod(K+N_Cn,N_Cn)
+         l = k_ ; if (k_>N_Cn) l = sym%N-k_
+         !
+         if (mod(sym%N,2)==1) then
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0) then 
+                  gamma = 1 
+               elseif (tau==1) then 
+                  gamma = 2
+               else
+                  stop 'ML_rotsymmetry_xy2-CNV: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               ideg = 1 ! tau +1
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               if     (mod(k+2,2)==0) then 
+                   gamma = 2+2*l-1
+               else
+                  gamma = 2+2*l
+               endif
+               !
+            else
+                 stop 'ML_rotsymmetry_xy2-CNV: illegal k,tau (K mod N  /= 0)'
+            endif
+            !
+         else ! even Dnh
+            !
+            write(out,"('ML_rotsymmetry_XY2: CNV for N even is not working')")
+            stop 'ML_rotsymmetry_XY2: CNV for N even is not working'
+            !
+            if (mod(K+N_Cn,N_Cn)==0) then
+               !
+               if     (tau==0.and.mod(k+2,2)==0) then 
+                  gamma = 1 
+               elseif (tau==1.and.mod(k+2,2)==0) then 
+                  gamma = 2
+               elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 4
+               elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                  gamma = 3
+               else
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+               endif
+               !
+            elseif (tau<=1.and.k<=j) then
+               !
+               !ideg = tau +1
+               !
+               ideg = 1
+               !
+               if (mod(k+tau,2)/=0) ideg = 2
+               !
+               gamma = 4+2*l-1
+
+               ideg = 1 ! tau +1
+               if (mod(tau,2)/=0) ideg = 2
+               !
+            else
                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
             endif
             !
          endif
+
          !
       end select
       !

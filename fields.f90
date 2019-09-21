@@ -5379,29 +5379,6 @@ end subroutine check_read_save_none
     !   call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_rot')
     !enddo
     !
-    ! Vibrational angular momentum
-    !
-    if (FLl2_coeffs) then
-       !
-       allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
-       if (alloc/=0) then
-           write (out,"(' Error ',i9,' trying to allocate L2_vib')") alloc
-           stop 'FLinitilize_Kinetic, L2_vib - out of memory'
-       end if
-       !
-       NKinOrder_ = 2
-       !
-       Tcoeff  = trove%RangeOrder(2)
-       !
-       do k1 = 1,Nmodes
-          do k2 = 1,Nmodes
-             fl => trove%L2_vib(k1,k2)
-             call polynom_initialization(fl,NKinOrder_,Tcoeff,Npoints,'L2_vib')
-          enddo
-       enddo
-       !
-    endif
-    !
     if (trove%internal_coords/='LOCAL') then
       !
       ! Allocation 
@@ -5433,6 +5410,29 @@ end subroutine check_read_save_none
           enddo
         enddo
       enddo
+      !
+      ! Vibrational angular momentum
+      !
+      if (FLl2_coeffs) then
+         !
+         allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate L2_vib')") alloc
+             stop 'FLinitilize_Kinetic, L2_vib - out of memory'
+         end if
+         !
+         NKinOrder_ = 2
+         !
+         Tcoeff  = trove%RangeOrder(2)
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+               fl => trove%L2_vib(k1,k2)
+               call polynom_initialization(fl,NKinOrder_,Tcoeff,Npoints,'L2_vib')
+            enddo
+         enddo
+         !
+      endif      
       !
       ! Generate the Amat/Lmat matrix with first derivatives of cartesian coordinates 
       ! with respect to the local linearized coordinates or thier combinations 

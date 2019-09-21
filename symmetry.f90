@@ -3036,6 +3036,214 @@ contains
        !
     endif
     !
+  case("CNV(M)","CNV") ! C_infinity_V(M)
+    !
+    if (mod(sym%N,2)==1) then
+       !
+       ! Number of rotations 
+       !
+       Nrot = sym%N ! must be >=1
+       !
+       ! Number of Cn classes 
+       N_Cn = sym%N/2
+       !
+       sym%Noper=1+2*N_Cn+Nrot
+       sym%Nclasses=2+N_Cn
+       sym%Nrepresen= 2+N_Cn
+       sym%CII%Noper = 0
+       !
+       phi = 2.0_ark*pi/real(Nrot,ark)
+       !
+       call simple_arrays_allocation
+       !
+       ! E nrotxCinf nrotxsigmav i  nrotxSinf nrotxC'2
+       !
+       allocate(iclass_of(sym%Noper),stat=alloc)
+       if (alloc/=0) stop 'symmetry: iclass_ alloc error'
+       iclass_of = 0
+       !
+       sym%label(1:2)=(/'A1','A2'/)
+       !
+       sym%characters(:,:) = 0
+       !
+       ! A1g,A1u,A2g,A2u:
+       ! E
+       sym%characters(1:2,1) = 1.0_ark
+       ! Cinf
+       sym%characters(1:2,1+N_Cn) = 1.0_ark
+       ! sigmav
+       sym%characters(1,1+N_Cn+1) = 1._ark
+       sym%characters(2,1+N_Cn+1) =-1._ark
+       !
+       ! E1' E1" E2' E2" E3' E3" ....
+       !
+       sym%lquant(1:2) = 0 
+       !
+       irep = 2
+       do k = 1,(sym%Nrepresen-2)/2
+         !
+         irep = irep + 1
+         !
+         sym%lquant(irep  ) = k
+         sym%lquant(irep+1) = k
+         !
+         write(Kchar, '(i4)') K
+         !
+         sym%label(irep  ) = 'E'//trim(adjustl(Kchar))
+         !
+         ! E 
+         !
+         sym%characters(irep  ,1) = 2.0_ark
+         !
+         ! Cn
+         !
+         do irot = 1,N_Cn
+           !
+           sym%characters(irep  ,1+irot)          = 2.0_ark*cos(phi*irot*k)
+           !
+         enddo
+         !
+         sym%characters(irep,1+N_Cn+1) = 0 
+         !
+         irep = irep + 1
+         !
+       enddo
+       !
+       sym%degen(:)   = 2
+       sym%degen(1:2) = 1
+       !
+       sym%Nelements(1) = 1
+       sym%Nelements(1+1:1+ N_Cn) = 2
+       sym%Nelements(1+N_Cn+1) = Nrot
+       !
+       o  = 0.0_ark
+       p2 = 0.5_ark*pi
+       p3 = 1.5_ark*pi
+       !
+       sym%euler(:,:) = 0
+       !
+       ioper = 1
+       do irot = 1,N_Cn
+         !
+         sym%euler(1+ioper  ,:) = (/o, phi*irot,o/) ! Rz
+         sym%euler(1+ioper+1,:) = (/o,-phi*irot,o/) ! Rz
+         !
+         ioper = ioper + 2
+       enddo
+       !
+       call irr_allocation
+       !
+       ! Generate irr-representations
+       !
+       do ioper = 1,sym%Noper
+         !
+         factor = 1.0_ark
+         !
+         if (ioper==1) then ! E 
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn) then !  Cinf
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then ! sigmav
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) =-1.0_ark
+           !
+         else
+           !
+           stop  'symmetry: illegal ioper'
+           !
+         endif
+         !
+       enddo
+       !
+       irep = 2
+       do k = 1,(sym%Nrepresen-2)
+         !
+         irep = irep + 1
+         !
+         ioper = 1
+         do ioper = 1,sym%Noper
+           !
+           factor = 1.0_ark
+           !
+           if (ioper==1) then ! E 
+             !
+             sym%irr(irep,ioper)%repres(1,1) = 1.0_ark
+             sym%irr(irep,ioper)%repres(1,2) = 0.0_ark
+             !
+             sym%irr(irep,ioper)%repres(2,1) = 0.0_ark
+             sym%irr(irep,ioper)%repres(2,2) = 1.0_ark
+             !
+           elseif (ioper<=1+2*N_Cn) then !  Cinf
+             !
+             ioper_ =ioper-1 
+             irot = (ioper_+1)/2
+             !
+             phi_n = phi*irot*k
+             !
+             ! Second oper in a class is with negative phi
+             if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+             !
+             sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
+             sym%irr(irep,ioper)%repres(1,2) =-sin(phi_n)
+             !
+             sym%irr(irep,ioper)%repres(2,1) = sin(phi_n)
+             sym%irr(irep,ioper)%repres(2,2) = cos(phi_n)
+             !
+           elseif (ioper<=1+2*N_Cn+Nrot) then ! sigmav
+             !
+             irot = ioper-(1+2*N_Cn)
+             !
+             phi_n  = phi*irot*k*2.0_ark
+             !
+             sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
+             sym%irr(irep,ioper)%repres(1,2) = sin(phi_n)
+             !
+             sym%irr(irep,ioper)%repres(2,1) = sin(phi_n)
+             sym%irr(irep,ioper)%repres(2,2) =-cos(phi_n)
+             !
+           else
+             !
+             stop  'symmetry: illegal ioper'
+             !
+           endif
+           !
+         enddo
+         !
+       enddo
+       ! characters as traces of the corresponding representations 
+       !
+       do irep = 1,sym%Nrepresen
+         ioper = 0
+         do iclass = 1,sym%Nclasses
+           do ielem =1,sym%Nelements(iclass)
+             ioper = ioper + 1
+             f_t = 0
+             do k = 1,sym%degen(irep)
+                 f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+             enddo
+             sym%characters(irep,iclass) = f_t
+           enddo
+         enddo
+       enddo
+       !
+       deallocate(iclass_of)
+       !
+       ! do the even part in the same order of operations as the odd  part
+       !
+    elseif (mod(sym%N,2)==0) then
+       !
+       write(out,"('CNV for N-even has not been implemented yet, not working')")
+       stop 'CNV for N-even has not been implemented yet, not working'
+       !
+    endif
+    !
   case("DINFTYH(M)") ! D_infinity_H(M)
 
     ! Number of rotations to test for < infinity 
@@ -3247,7 +3455,7 @@ contains
         !
         if (igamma==jgamma.and.abs(temp-sym%Noper)>sqrt(small_)) then 
           write (out,"(' check_charac_and_repres: dot product ',f16.2,' for isym = ',i4,' /= size of the group ',f16.0)") & 
-                igamma,temp,sym%Noper
+                temp,igamma,sym%Noper
           !stop 'check_characters_and_representation: not orhogonal'
         endif
         !

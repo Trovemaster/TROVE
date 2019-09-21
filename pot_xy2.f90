@@ -4475,8 +4475,20 @@ endif
    if (molec%Nangles>0) then
      alphae  = molec%alphaeq(1)
    else
-     alphae = pi+(-molec%taueq(1)+molec%taueq(2))
-     alpha = pi - local(3) 
+     !
+     alphae = pi
+     alpha = asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+     !
+     a1(:) = xyz(2,:)-xyz(1,:)
+     a2(:) = xyz(3,:)-xyz(1,:)
+     !
+     t1 = sqrt(sum(a1(:)**2))
+     t2 = sqrt(sum(a2(:)**2))
+     !
+     cosalpha = sum( a1(:)*a2(:))/(t1*t2)
+     !
+     alpha  = aacos(cosalpha,txt)-pi
+     !
    endif 
    !
    re1    = force(1)

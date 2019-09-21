@@ -436,7 +436,7 @@ end subroutine MLdefine_potenfunc
          !
     case('GENERAL') 
          !
-         MLkineticfunc => MLkinetic_xyz_bisect_EKE
+         MLkineticfunc => MLkinetic_dummy
          !
     end select
     !
