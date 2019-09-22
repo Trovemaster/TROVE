@@ -2387,7 +2387,7 @@ module mol_xy2
        case default
           write (out,"('ML_symmetry.. R1-R2-PHI1-PHI2-Z: symmetry ',a,' unknown')") trim(molec%symmetry)
           stop 'ML_symmetry_transformation_XY2 - bad symm. type'
-         !
+          !
        case('CNV','CNV(M)')
           !
           ! Number of eq. rotations 
@@ -2449,6 +2449,28 @@ module mol_xy2
              stop 'CNV for N even and r-phi1-phi2-z has not been implemented'
              !
           endif
+          !
+       case('CS','CS(M)')
+          !
+          select case(ioper)
+          !
+          case (1) ! E 
+            !
+            dst = src
+            !
+          case (2) ! (12)
+            !
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+            dst(4) = src(4)
+            !
+          case default
+            !
+            write (out,"('ML_symmetry_transformation_XY2: operation ',i8,' unknown')") ioper
+            stop 'ML_symmetry_transformation_XY2 - bad operation. type'
+            !
+          end select 
           !
        end select
        !
@@ -2918,7 +2940,7 @@ module mol_xy2
          k_ = mod(K+N_Cn,N_Cn)
          l = k_ ; if (k_>N_Cn) l = sym%N-k_
          !
-         if (mod(sym%N,2)==1) then
+         if (mod(sym%N,2)==1) then ! odd CnV
             !
             if (mod(K+N_Cn,N_Cn)==0) then
                !
@@ -2935,17 +2957,21 @@ module mol_xy2
                ideg = 1 ! tau +1
                if (mod(k+tau,2)/=0) ideg = 2
                !
-               if     (mod(k+2,2)==0) then 
-                   gamma = 2+2*l-1
-               else
-                  gamma = 2+2*l
-               endif
+               gamma = 2+l
+               !
+               !ideg = tau+1
+               !
+               !if     (mod(k+2,2)==0) then 
+               !   gamma = 2+l-1
+               !else
+               !   gamma = 2+l
+               !endif
                !
             else
                  stop 'ML_rotsymmetry_xy2-CNV: illegal k,tau (K mod N  /= 0)'
             endif
             !
-         else ! even Dnh
+         else ! even CnV
             !
             write(out,"('ML_rotsymmetry_XY2: CNV for N even is not working')")
             stop 'ML_rotsymmetry_XY2: CNV for N even is not working'

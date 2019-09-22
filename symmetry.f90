@@ -3080,12 +3080,11 @@ contains
        sym%lquant(1:2) = 0 
        !
        irep = 2
-       do k = 1,(sym%Nrepresen-2)/2
+       do k = 1,sym%Nrepresen-2
          !
-         irep = irep + 1
+         irep = k + 2
          !
          sym%lquant(irep  ) = k
-         sym%lquant(irep+1) = k
          !
          write(Kchar, '(i4)') K
          !
@@ -3104,8 +3103,6 @@ contains
          enddo
          !
          sym%characters(irep,1+N_Cn+1) = 0 
-         !
-         irep = irep + 1
          !
        enddo
        !
@@ -3163,9 +3160,9 @@ contains
        enddo
        !
        irep = 2
-       do k = 1,(sym%Nrepresen-2)
+       do k = 1,sym%Nrepresen-2
          !
-         irep = irep + 1
+         irep = k+2
          !
          ioper = 1
          do ioper = 1,sym%Noper

@@ -4476,18 +4476,24 @@ endif
      alphae  = molec%alphaeq(1)
    else
      !
-     alphae = pi
-     alpha = asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+     a1(:) = xyz(2,:) - xyz(1,:)
+     a2(:) = xyz(3,:) - xyz(1,:)
      !
-     a1(:) = xyz(2,:)-xyz(1,:)
-     a2(:) = xyz(3,:)-xyz(1,:)
+     t1 =  sqrt(sum(a1(:)**2))
+     t2 =  sqrt(sum(a2(:)**2))
      !
-     t1 = sqrt(sum(a1(:)**2))
-     t2 = sqrt(sum(a2(:)**2))
+     a1 =  a1(:)/t1
+     a2 =  a2(:)/t2
      !
-     cosalpha = sum( a1(:)*a2(:))/(t1*t2)
+     w(:) = MLvector_product(a1,a2)
      !
-     alpha  = aacos(cosalpha,txt)-pi
+     cosalpha = sum(a1(:)*a2(:))
+     !
+     txt = "pot_xyz"
+     !
+     alpha = aacos(cosalpha,txt)
+     !
+     if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
      !
    endif 
    !
