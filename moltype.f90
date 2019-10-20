@@ -243,6 +243,7 @@ module moltype
      logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
+     logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
      !
  end type MLIntensityT
 

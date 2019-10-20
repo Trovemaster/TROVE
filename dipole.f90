@@ -121,40 +121,11 @@ contains
        !
        call restore_vib_matrix_elements
        !
-       ! For eigenvectors in the irred-representation
-       !
-       !if (trim(job%IOvector_symm)/='NONE') then
-       !  !
-       !  allocate (irr(nJ,sym%Nrepresen),stat=alloc)
-       !  if (alloc/=0) call report ("dm_tranint: alloc-error from irr",.true.)
-       !  !
-       !  do jind=1,nJ
-       !    !
-       !    jrot = Jval(jind)
-       !    !
-       !    call PTsymmetrization(jrot)
-       !    !
-       !    mat_size = bset_contr(jind)%Maxcontracts
-       !    !
-       !    do igamma = 1,sym%Nrepresen
-       !      !
-       !      Ntotal(jind,igamma)  = PT%Max_sym_levels(isym)
-       !      !
-       !      allocate (irr(jind,igamma)%repres(Ntotal(jind,igamma),sym%degen(igamma),mat_size),stat=alloc)
-       !      !
-       !      call ArrayStart('irr(j,gamma)%repres',alloc,size(irr(jind,igamma)%repres,kind(irr(jind,igamma)%repres))
-       !      !
-       !      irr(jind,igamma)%repres(:,:,:) = PT%irr(igamma)%repres(:,:,:)
-       !      !
-       !      deallocate(PT%irr(igamma)%repres)
-       !      !
-       !    enddo
-       !    !
-       !    call ArrayStop('PT%irr(isym)%coeffs')
-       !    !
-       !  enddo
-       !  !
-       !endif 
+       if (intensity%tdm_replace) then
+         !
+         call replace_vib_trans_dipole_moments
+         !
+       endif
        !
        ! Run intensity simulations 
        !
@@ -2675,6 +2646,68 @@ contains
    if (job%verbose>=4)   write(out, '(a/)') '...done'
    !
  end subroutine restore_vib_matrix_elements
+ !
+ !
+ ! Here we reaplce the vibrational (J=0) dipole moment elements
+ !
+ subroutine replace_vib_trans_dipole_moments
+   !
+   implicit none 
+   !
+   integer(ik)        :: chkptIO
+   integer(ik)        :: ncontr_t,imu,nclasses,i1,i2
+   logical            :: eof
+   character(len=cl)  :: job_is
+   real(rk)           :: tdm
+   !
+   nclasses = size(eigen(1)%cgamma)-1
+   !
+   if (nclasses/=1) then
+     !
+     write(out,"('replace_vib_trans_dipole_moments error: only works for J=0, nclasse=1 not ',i0)") nclasses
+     stop 'replace_vib_trans_dipole_moments is only for model J=0'
+     !
+   endif
+   !
+   job_is ='replace J=0 dipole moment'
+   call IOStart(trim(job_is),chkptIO)
+   !
+   if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%tdm_file)
+   !
+   open(chkptIO,action='read',status='old',file=job%tdm_file)
+   !
+   read(chkptIO,*) ncontr_t
+   !
+   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+     write (out,"(' Vib TDM file ',a)") job%tdm_file
+     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
+     stop 'replace_vib_trans_dipole_moments - in file - illegal ncontracts '
+   end if
+   !
+   ncontr_t = bset_contr(1)%Maxcontracts
+   !
+   if (job%verbose>=5) write(out,"(/'replace_vib_trans_dipole_moments...: Number of elements: ',i8)") ncontr_t
+   !
+   if (job%verbose>=4) write(out,"(a)") "Replace dipole moments:"
+   !
+   eof = .false.
+   !
+   loop_tdm: do
+     !
+     if (eof) exit loop_tdm
+     read(chkptIO,*,end=111) i1,i2,imu,tdm
+     !
+     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7)") i1,i2,imu,dipole_me(i1,i2,:),tdm
+     !
+     111 continue
+       eof = .true.
+     exit
+     !
+   enddo loop_tdm
+   !
+   if (job%verbose>=4)   write(out, '(a/)') '...done'
+   !
+ end subroutine replace_vib_trans_dipole_moments
  !
  !
  function cg(j0, k0, dj, dk)

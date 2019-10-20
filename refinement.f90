@@ -592,7 +592,7 @@ contains
        write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
 
        write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),3(x,g18.10),x,e12.4)"
-       write(my_fmt_par1,'(a1,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
+       write(my_fmt_par1,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
        !
        nlevels = Neigenlevels
        !

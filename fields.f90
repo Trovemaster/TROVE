@@ -337,6 +337,7 @@ module fields
       character(len=cl)   :: j0extmat_suffix  = 'j0_extmatelem'  ! filename suffix  for storing j=0 extF matrix elements of the Hamiltonian
       character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
       character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
+      character(len=cl)   :: tdm_file          = 'j0_tdm'      ! filename name for vibrational j=0 transition dipole moments for replacement 
 
        
       real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
@@ -3467,6 +3468,10 @@ module fields
            case('PRUNING')
              !              
              intensity%pruning = .true.
+             !
+           case('TDM_REPLACE','DIPOLE_REPLACE')
+             !              
+             intensity%tdm_replace = .true.
              !
            case('OUTPUT')
              !

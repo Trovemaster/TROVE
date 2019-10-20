@@ -469,6 +469,7 @@ contains
     character(cl)           :: filename, ioname, buf
     character(4)            :: jchar,gchar
     character(500)          :: buf500
+    character(3)            :: grep   ! for a string to indicate specific type of output to be grepped from 
     !
     logical                 :: passed
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
@@ -811,6 +812,10 @@ contains
                !
                J_ = Jval(jind)
                !
+               ! using different string for the last J in order to prevent double counting 
+               !
+               grep = ' ::' ; if (jind ==njval) grep = ' :;'
+               !
                !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
                !
                write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
@@ -820,7 +825,7 @@ contains
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
                normal(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
-               largest_coeff,' ::',ilevel,quanta(1:nmodes)
+               largest_coeff,grep,ilevel,quanta(1:nmodes)
                !
              endif
              !
