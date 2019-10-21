@@ -2672,9 +2672,9 @@ contains
    job_is ='replace J=0 dipole moment'
    call IOStart(trim(job_is),chkptIO)
    !
-   if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%tdm_file)
+   if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%tdm_file)//'.chk'
    !
-   open(chkptIO,action='read',status='old',file=job%tdm_file)
+   open(chkptIO,action='read',status='old',file=trim(job%tdm_file)//'.chk')
    !
    read(chkptIO,*) ncontr_t
    !
@@ -2697,8 +2697,12 @@ contains
      if (eof) exit loop_tdm
      read(chkptIO,*,end=111) i1,i2,imu,tdm
      !
-     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7)") i1,i2,imu,dipole_me(i1,i2,:),tdm
+     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7,1x,'][')") i1,i2,imu,dipole_me(i1,i2,:),tdm
      !
+     dipole_me(i1,i2,imu) = tdm
+     dipole_me(i2,i1,imu) = tdm
+     !
+     cycle
      111 continue
        eof = .true.
      exit

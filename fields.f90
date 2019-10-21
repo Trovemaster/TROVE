@@ -246,6 +246,7 @@ module fields
       logical             :: sparse  = .false.                    ! A sparse representation of fields 
       logical             :: triatom_sing_resolve = .false.
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
+      integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       !
    end type JobT
    !
@@ -1911,6 +1912,15 @@ module fields
                 !
                 job%bset(imode)%range(2) = i_t
                 trove%krot = i_t
+                if (trove%kmax==0) trove%kmax = i_t
+                !
+              case("KMAX")
+                !
+                call readi(i_t)
+                !
+                ! we use range(1) to store the Jrot value 
+                !
+                trove%kmax = i_t
                 !
               case("OVRLP","DVRPOINTS","DPOINTS")
                 !
@@ -4080,7 +4090,8 @@ module fields
               !
               do i =1,Nmodes
                  !
-                 call readf(extF%fdstep(i))
+                 call readf(f_t)
+                 extF%fdstep(i) = f_t
                  !
               end do
               !
@@ -18602,7 +18613,7 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               if (krot1<=kmax) then 
+                               if (trove%kmax<=trove%krot) then 
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                  !
