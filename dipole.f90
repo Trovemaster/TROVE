@@ -2658,7 +2658,7 @@ contains
    integer(ik)        :: ncontr_t,imu,nclasses,i1,i2
    logical            :: eof
    character(len=cl)  :: job_is
-   real(rk)           :: tdm
+   real(rk)           :: f_tdm
    !
    nclasses = size(eigen(1)%cgamma)-1
    !
@@ -2695,12 +2695,12 @@ contains
    loop_tdm: do
      !
      if (eof) exit loop_tdm
-     read(chkptIO,*,end=111) i1,i2,imu,tdm
+     read(chkptIO,*,end=111) i1,i2,f_tdm
      !
-     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7,1x,'][')") i1,i2,imu,dipole_me(i1,i2,:),tdm
+     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7,1x,'//')") i1,i2,imu,dipole_me(i1,i2,:),f_tdm
      !
-     dipole_me(i1,i2,imu) = tdm
-     dipole_me(i2,i1,imu) = tdm
+     dipole_me(i1,i2,:) = dipole_me(i1,i2,:)*f_tdm
+     dipole_me(i2,i1,:) = dipole_me(i2,i1,:)*f_tdm
      !
      cycle
      111 continue

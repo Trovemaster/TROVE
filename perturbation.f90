@@ -1714,8 +1714,8 @@ module perturbation
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
                 !switch = switch.and.krot==min(lquant,trove%krot)
-                if (trove%kmax<=trove%krot) then 
-                  switch = switch.and.lquant==min(krot,trove%kmax)
+                if (trove%kmax>trove%krot) then 
+                  switch = switch.and.lquant==min(krot,trove%krot)
                 else
                   switch = switch.and.lquant==krot
                 endif

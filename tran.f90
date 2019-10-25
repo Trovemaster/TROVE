@@ -462,7 +462,7 @@ contains
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
                                iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),&
                                normal(0:FLNmodes),Npolyad_t
-    integer(ik),allocatable :: ktau_rot(:,:),isym(:)
+    integer(ik),allocatable :: ktau_rot(:,:),isym(:),cnu(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
     !
@@ -507,7 +507,7 @@ contains
     !
     ! create a temp. array needed for filtering out levels
     !
-    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
+    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2),cnu(nclasses),stat=info) 
     !
     allocate(istate2ilevel(njval,sym%Nrepresen,nroots_t),stat=info) 
     !
@@ -771,7 +771,7 @@ contains
              if (normalmode_input.and.largest_coeff_input) then
                !
                read(buf500, *) irec, igamma, ilevel, ideg, energy, quanta(0:nmodes), ilarge_coef,isym(0:nclasses),&
-                               normal(0:nmodes),largest_coeff
+                               normal(0:nmodes),largest_coeff,cnu(1:nclasses)
                !
              elseif (normalmode_input) then 
                !
@@ -818,14 +818,15 @@ contains
                !
                !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
                !
-               write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
-                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
+               write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') &
+                             "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",&
+                             nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3,",nclasses,"i9)"
                !
                write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
                normal(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
-               largest_coeff,grep,ilevel,quanta(1:nmodes)
+               largest_coeff,grep,ilevel,quanta(1:nmodes),cnu(1:Nclasses)
                !
              endif
              !
@@ -952,7 +953,7 @@ contains
       enddo
     enddo
     !
-    deallocate(ktau_rot,isym) 
+    deallocate(ktau_rot,isym,cnu) 
     !
     if (job%verbose>=2) write(out,"('...done!')")
     !
