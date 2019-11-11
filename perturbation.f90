@@ -15317,10 +15317,6 @@ module perturbation
       !
       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
       !
-      ! We assume that all matrix elements are simmetric, therefore we can use 
-      ! a 1D array for storing only the upper half of the matrix.
-      ! And this is the size of such 1D array.
-      !
       mdimen = PT%Maxcontracts
       !
       rootsize = int(mdimen*mdimen,hik)

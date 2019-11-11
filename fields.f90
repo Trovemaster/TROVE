@@ -3479,7 +3479,7 @@ module fields
              !              
              intensity%pruning = .true.
              !
-           case('TDM_REPLACE','DIPOLE_REPLACE')
+           case('TDM_REPLACE','DIPOLE_REPLACE','DIPOLE_SCALE')
              !              
              intensity%tdm_replace = .true.
              !
