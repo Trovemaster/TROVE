@@ -15,7 +15,8 @@ module mpi_aux
   public mpi_real_size, mpi_int_size
 
   interface co_sum
-    module procedure :: co_sum_double
+    module procedure :: co_sum_double_1d
+    module procedure :: co_sum_double_2d
   end interface
 
   integer,dimension(:),allocatable  :: proc_sizes, proc_offsets, send_or_recv
@@ -91,7 +92,29 @@ contains
 
   end subroutine co_block_type_init
 
-  subroutine co_sum_double(x, root_process)
+  subroutine co_sum_double_1d(x, root_process)
+
+    real(rk), intent(inout), dimension(:) :: x
+    integer, optional :: root_process
+
+    if (comm_size.eq.1) return
+    call TimerStart('co_sum_double')
+
+    if (present(root_process)) then
+
+      if (mpi_rank .eq. 0) then
+        call mpi_reduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
+      else
+        call mpi_reduce(x, x, size(x), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
+      endif
+    else
+      call mpi_allreduce(mpi_in_place, x, size(x), mpi_double_precision, mpi_sum, mpi_comm_world)
+    end if
+
+    call TimerStop('co_sum_double')
+  end subroutine
+
+  subroutine co_sum_double_2d(x, root_process)
 
     real(rk), intent(inout), dimension(:,:) :: x
     integer, optional :: root_process

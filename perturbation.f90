@@ -6919,14 +6919,14 @@ module perturbation
       if (job%verbose>=5) write(out,"(' N Arrays of ',f12.5,'Gb each will be allocated (N is the number of processors)')")&
                           real(sym%Nrepresen,rk)*real(PT%max_deg_size,rk)*real(max_dim,rk)*real(rk,rk)/1024.0_rk**3
       !
-      !$omp parallel private(mat_t,alloc_p) 
+      ! $omp parallel private(mat_t,alloc_p) 
       allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
       if (alloc_p/=0)  then 
       write(out,"('PThamiltonian_contract: mat_t - out of memory')") 
          stop 'PThamiltonian_contract - mat_t out of memory'
       endif 
       !
-      !$omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
+      ! $omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
       do irow = 1,dimen
         !
         ! ithread = omp_get_thread_num()
@@ -6963,10 +6963,10 @@ module perturbation
         enddo
         !
       enddo
-      !$omp enddo
+      ! $omp enddo
       !
       deallocate (mat_t)
-      !$omp end parallel
+      ! $omp end parallel
       !
       if (associated(grot)) deallocate(grot)
       if (associated(gcor)) deallocate(gcor)
@@ -7124,14 +7124,14 @@ module perturbation
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
         endif
         !
-        !$omp parallel private(mat_t,alloc_p) 
+        ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
         if (alloc_p/=0)  then 
         write(out,"('PThamiltonian_contract: mat_t - out of memory')") 
            stop 'PThamiltonian_contract - mat_t out of memory'
         endif
         !
-        !$omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
+        ! $omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
         do irow = 1,dimen
           !
           ! ithread = omp_get_thread_num()
@@ -7170,10 +7170,10 @@ module perturbation
           enddo
           !
         enddo
-        !$omp enddo
+        ! $omp enddo
         !
         deallocate (mat_t)
-        !$omp end parallel
+        ! $omp end parallel
         !
         do k_i = 1,3
           do k_j = 1,3
@@ -7195,14 +7195,14 @@ module perturbation
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
         endif
         !
-        !$omp parallel private(mat_t,alloc_p) 
+        ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
         if (alloc_p/=0)  then 
         write(out,"('PThamiltonian_contract: mat_t - out of memory')") 
            stop 'PThamiltonian_contract - mat_t out of memory'
         endif 
         !
-        !$omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
+        ! $omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
         do irow = 1,dimen
           !
           ! ithread = 1
@@ -7243,10 +7243,10 @@ module perturbation
           enddo
           !
         enddo
-        !$omp enddo
+        ! $omp enddo
         !
         deallocate (mat_t)
-        !$omp end parallel
+        ! $omp end parallel
         !
         do k_i = 1,3
           deallocate(gcor(k_i)%me)
@@ -7272,14 +7272,14 @@ module perturbation
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
         endif
         !
-        !$omp parallel private(mat_t,alloc_p) 
+        ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
         if (alloc_p/=0)  then 
         write(out,"('PThamiltonian_contract: mat_t - out of memory')") 
            stop 'PThamiltonian_contract - mat_t out of memory'
         endif 
         !
-        !$omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
+        ! $omp do private(irow,isym,dimen_s,iterm,ielem,k_i,dimen_row,istart,iend) schedule(static) 
         do irow = 1,dimen
           !
           ! ithread = 1
@@ -7320,10 +7320,10 @@ module perturbation
           enddo
           !
         enddo
-        !$omp enddo
+        ! $omp enddo
         !
         deallocate (mat_t)
-        !$omp end parallel
+        ! $omp end parallel
         !
         deallocate(hvib%me)
         !
@@ -7338,14 +7338,18 @@ module perturbation
       !
     endif
     !
-    do isym = 1,sym%Nrepresen
-      if (.not.job%select_gamma(isym)) cycle
-      call co_sum(smat(isym)%coeffs,0)
-    enddo
+    !do isym = 1,sym%Nrepresen
+    !  if (.not.job%select_gamma(isym)) cycle
+    !  call co_sum(smat(isym)%coeffs,0)
+    !enddo
     call TimerStop('Calculating the Hamiltonian matrix')
     !
     if (job%verbose>=4) write(out,"('...done!')")
     if (mpi_rank.eq.0) then!mpiio
+      do isym = 1,sym%Nrepresen
+        if (.not.job%select_gamma(isym)) cycle
+        write(6,*) "Todays sum:", sum(smat(isym)%coeffs)
+      enddo
       ! Correction for the case we do not compute the vibrational part of the 
       ! Hamiltonian:
       !
@@ -7852,7 +7856,7 @@ module perturbation
         if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         if (mpi_rank .eq. 0) write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i9)") PT%Maxcontracts,ncontr
         call mpi_barrier(mpi_comm_world, ierr)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
+        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
       end if
 
       rootsize = int(ncontr*(ncontr+1)/2,hik)
@@ -7871,7 +7875,7 @@ module perturbation
         if (readbuf(1:10)/='icontr_cnu') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,readbuf(1:10)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
         file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
@@ -7881,7 +7885,7 @@ module perturbation
         if (readbuf(1:11)/='icontr_ideg') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,readbuf(1:11)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
         file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
@@ -7905,7 +7909,7 @@ module perturbation
         if (readbuf(1:10)/='icontr_cnu') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,readbuf(1:10)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
         call MPI_File_read_all(fileh, PT%icontr_cnu, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
@@ -7914,7 +7918,7 @@ module perturbation
         if (readbuf(1:11)/='icontr_ideg') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,readbuf(1:11)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
         call MPI_File_read_all(fileh, PT%icontr_ideg, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
@@ -7927,7 +7931,7 @@ module perturbation
         if (readbuf(1:7)/='vib-rot') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': label vib-rot is missing ',a)") job%kinetmat_file,readbuf(1:7)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  vib-rot missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  vib-rot missing'
         end if
 
         call close_chkptfile_mpi(fileh)
@@ -7956,7 +7960,7 @@ module perturbation
       if (maxcontr>ncontr) then
         if (mpi_rank .eq. 0) write (out,"(' Actual and stored basis sizes at J=0 do not agree (maxcontr,ncontr)  ',2i8)") maxcontr,ncontr
         call mpi_barrier(mpi_comm_world, ierr)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal ncontr '
+        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file - illegal ncontr '
       end if
     case('rot')
       !
@@ -7973,7 +7977,7 @@ module perturbation
         if (readbuf(1:5)/='g_rot') then
           if(mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,readbuf(1:5)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
         allocate(grot(3,3),stat=ierr)
@@ -8036,7 +8040,7 @@ module perturbation
         if (readbuf(1:5)/='g_cor') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,readbuf(1:5)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
         allocate(gcor(3),stat=ierr)
@@ -8095,7 +8099,7 @@ module perturbation
         if (readbuf(1:5)/='g_rot') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,readbuf(1:5)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
         file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
@@ -8105,7 +8109,7 @@ module perturbation
         if (readbuf(1:5)/='g_cor') then
           if (mpi_rank .eq. 0)  write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,readbuf(1:5)
           call mpi_barrier(mpi_comm_world, ierr)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
+          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
         file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
@@ -8126,7 +8130,7 @@ module perturbation
           write (out,"(' Re-do MATELEM SAVE SPLIT or use MATELEM SPLIT READ')") 
         endif
         call mpi_barrier(mpi_comm_world, ierr)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
+        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
       end if
       !
       !allocate(mat_(maxcontr,maxcontr),stat=ierr)
@@ -8147,7 +8151,7 @@ module perturbation
       if (readbuf(1:16)/='End Kinetic part') then
         if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,readbuf(1:16)
         call mpi_barrier(mpi_comm_world, ierr)
-        stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
+        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - bogus file format'
       end if
       !
       call close_chkptfile_mpi(fileh)
@@ -8881,7 +8885,7 @@ module perturbation
         !
         read(chkptIO) buf18(1:4)
         if (buf18(1:4)/='hvib') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,buf18(1:16)
+          write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,buf18(1:4)
           stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
         end if
         !
@@ -9037,7 +9041,7 @@ module perturbation
     integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
     real(rk)    :: hcontr(PT%max_deg_size,PT%max_deg_size)
     real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
-    logical     :: escape
+    !logical     :: escape
       !
       !call TimerStart('Symmetrized Hamiltonian - one column')
       !
@@ -9048,7 +9052,7 @@ module perturbation
       isize = PT%Index_deg(irow)%size1
       !
       do jrow = 1,irow
-         escape = .false.
+         !escape = .false.
          !
          if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
          !
@@ -9077,16 +9081,20 @@ module perturbation
                ! Matrix elements 
                !
                if (jcontr .lt. co_startdim .or. jcontr .gt. co_enddim) then
-                 escape = .true.
-                 exit
+                 !write(*,*) "ESCAPE:", jcontr, co_startdim, co_enddim
+                 !escape = .true.
+                 hcontr(ideg,jdeg) = 0.0_rk
+                 !exit
+               else
+                 hcontr(ideg,jdeg) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
                endif
 
-               hcontr(ideg,jdeg) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
                !
             enddo
             !
          enddo
-         if (escape) cycle
+         call co_sum(hcontr)
+         !if (escape) cycle
          !
          do isym = 1,sym%Nrepresen
            !
@@ -10688,7 +10696,8 @@ module perturbation
        !
      endif
      !
-     if (gamma==1) write(out,"(/'Zero-point-energy is ',f18.6)") ZPE
+     if (gamma==1) write(6,"(/'Todays Zero-point-energy is ',f18.6)") ZPE
+     if (gamma==1) write(6,*) energy
      !
      if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND') then
        !
@@ -15384,14 +15393,20 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             call MPI_File_open(mpi_comm_world, job%kinetmat_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
+
             call MPI_File_set_errhandler(chkptMPIIO, MPI_ERRORS_ARE_FATAL)
+
             mpioffset=0
+
             call MPI_File_set_size(chkptMPIIO, mpioffset, ierr)
-            if (mpi_rank.eq.0) then !AT
-              call TimerStart('mpiiosingle') !AT
+
+            call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_CUR, ierr)
+
 
               call MPI_File_write(chkptMPIIO,'[MPIIO]',7,mpi_character,mpi_status_ignore,ierr)
               call MPI_File_write(chkptMPIIO,'Start Kinetic part',18,mpi_character,mpi_status_ignore,ierr)
+            if (mpi_rank.eq.0) then !AT
+              call TimerStart('mpiiosingle') !AT
               !
               ! store the bookkeeping information about the contr. basis set
               !
@@ -15399,6 +15414,8 @@ module perturbation
 
               call TimerStop('mpiiosingle') !AT
             endif
+            call MPI_Barrier(mpi_comm_world, ierr)
+            call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END, ierr)
           else
             call IOStart(trim(job_is),chkptIO)
             !
@@ -15723,6 +15740,7 @@ module perturbation
                       do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
                         if (jcoeff .gt. PT%Maxcontracts) cycle
                         grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
+                        !write(6,*) jcoeff, icoeff, grot_t(jcoeff,icoeff)
                       enddo
                     enddo
                     !$omp end parallel do
@@ -15733,11 +15751,13 @@ module perturbation
               !
               call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
               !
+              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(static)
               do icoeff=startdim,enddim
                 do jcoeff=1,icoeff-1
                   grot_t(jcoeff,icoeff) = -1*grot_t(jcoeff,icoeff)
                 enddo
               enddo
+              !$omp end parallel do
               !
               if (job%IOmatelem_divide) then
                 !
@@ -15749,9 +15769,9 @@ module perturbation
                 !
               else
                 !
-                !$omp parallel do private(icoeff) shared(gcor_t) schedule(dynamic)
+                !$omp parallel do private(icoeff) shared(gcor_t,grot_t) schedule(static)
                 do icoeff=startdim,enddim
-                    gcor_t(icoeff,:) = gcor_t(icoeff,:)+grot_t(icoeff,:)
+                    gcor_t(:,icoeff) = gcor_t(:,icoeff)+grot_t(:,icoeff)
                 enddo
                 !$omp end parallel do
                 !
@@ -16163,7 +16183,7 @@ module perturbation
             call mpi_barrier(mpi_comm_world, ierr)
             if(mpi_rank.eq.0) then
               call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-              call MPI_File_write(chkptMPIIO,'End Kinetic Part',16,mpi_character,mpi_status_ignore,ierr)
+              call MPI_File_write(chkptMPIIO,'End Kinetic part',16,mpi_character,mpi_status_ignore,ierr)
             endif
             call MPI_File_close(chkptMPIIO, ierr)
           else

@@ -902,6 +902,9 @@ contains
              write(out, '(a)') '...done!'
           end if
           !
+          ! Keep going if all is well
+          cycle
+          ! Error condition (file could not be opened)
           16 continue 
           if (present(error)) error = 1 
           !
