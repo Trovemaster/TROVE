@@ -31,7 +31,7 @@ module molecules
                        MLpoten_c2h6_88_cos3tau_G36
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
-  use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
+  use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011, prop_xy2_sr
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -503,6 +503,10 @@ end function ML_MEPfunc
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym
+        !
+    case('XY2_SR')
+        !
+        MLextF_func => prop_xy2_sr
         !
     case('XY3_MB')
         !
