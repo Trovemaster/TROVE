@@ -208,6 +208,7 @@ module moltype
      real(rk) :: intensity    = -1e0    ! threshold defining the output intensities
      real(rk) :: linestrength = -1e0    ! threshold defining the output linestrength
      real(rk) :: coeff        = -1e0    ! threshold defining the eigenfunction coefficients
+     real(rk) :: leading_coeff = 0.1
                                         ! taken into account in the matrix elements evaluation.
   end type MLthresholdsT
 
@@ -244,6 +245,21 @@ module moltype
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
      logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
+     !
+     ! variables used in extfield module
+     integer(ik)   :: tens_rank = 1
+     integer(ik)   :: tens_ialpha = 3
+     integer(ik)   :: tens_ibeta = 3
+     character(cl) :: tens_oper = 'NA'
+     integer(ik)   :: tens_oper_ielem = 1
+     character(cl) :: tens_frame = 'NA'
+     integer(ik)   :: tens_ibatch = 1
+     real(rk)      :: tens_omega
+     !
+     integer(ik) :: nvib_quanta_upp = 0
+     integer(ik) :: nvib_quanta_low = 0
+     integer(ik) :: vib_quanta_upp(20,1000)
+     integer(ik) :: vib_quanta_low(20,1000)
      !
  end type MLIntensityT
 
