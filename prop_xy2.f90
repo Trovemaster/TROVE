@@ -27,7 +27,8 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik) :: iatom, icentre
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), e3(3), n1(3), n2(3), n3(3), tmat(3,3), &!
-               coords(3), c_mb(3,3), c_xyz(3,3), c_xyz_(3,3), tmat_inv(3,3)
+               coords(3), c_mb(3,3), c_xyz(3,3), c_xyz_(3,3), tmat_inv(3,3), x(natoms,3)
+  character(len=cl)         :: txt
 
   icentre = nint(extf%coef(1,1)) ! icentre=1 means centre on Y1 and icentre=2 - on Y2
 
@@ -35,11 +36,37 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
     write(out, '(/a,1x,i3,1x,a)') 'prop_xy2_sr error: rank of the dipole moment vector =', rank, ', expected 9'
     stop
   endif
+  !
+  txt = 'prop_xy2_sr'
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then 
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_sr: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_sr - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+       xyz0 = x(1,:)
+       do iatom=1, natoms
+         xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+       enddo
+       !
+    end select
+    !
+  else
+    !
+    xyz0 = xyz(1,:)
+    do iatom=1, natoms
+      xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
+    enddo
+    !
+  endif
+  !
 
-  xyz0 = xyz(1,:)
-  do iatom=1, natoms
-    xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
-  enddo
 
   r1 = sqrt(sum(xyz_(2,:)**2))
   r2 = sqrt(sum(xyz_(3,:)**2))
@@ -47,9 +74,9 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
   e1 = xyz_(2,:)/r1
   e2 = xyz_(3,:)/r2
 
-  alpha1 = acos(sum(e1*e2))
+  alpha1 = aacos(sum(e1*e2))
 
-  if (abs(alpha1-pi)<0.0001) stop 'prop_xy2_sr error: valence bond angle is 180 degrees (does not work for linear molecule)'
+  !if (abs(alpha1-pi)<0.0001) stop 'prop_xy2_sr error: valence bond angle is 180 degrees (does not work for linear molecule)'
 
   coords = (/r1,r2,alpha1/)
 
