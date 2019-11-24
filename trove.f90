@@ -13,6 +13,7 @@
     use dipole, only: dm_tranint,dm_analysis_density
     use refinement, only : refinement_by_fit,external_expectation_values
     use tran, only : TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
+    use extfield
 
     implicit none
 
@@ -70,7 +71,11 @@
          !
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
          !
-         call dm_tranint
+         if (trim(intensity%action)=='FIELD_ME') then
+           call emf2_matelem
+         else
+           call dm_tranint
+         endif
          !
          return
          !
