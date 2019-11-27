@@ -3217,13 +3217,31 @@ module perturbation
          endif 
          !
          ierror = 0
+         !
+         if (size(numpoints,dim=1)<mpoints) then 
+           !
+           PTuse_gauss_quadrature = .false.
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           !
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif
+         !
          call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
          !
        endif
        !
-       !
-       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        !
        ! This found number of levels and their degeneracy will be checked and corrected 
        ! using a more accurate procedure. We apply a reduction to the irr. representation 
@@ -3406,7 +3424,31 @@ module perturbation
            !
          elseif (info/=0) then
            !
-           if (PTuse_gauss_quadrature) PTuse_gauss_quadrature = .false.
+           if (PTuse_gauss_quadrature) then 
+             !
+             PTuse_gauss_quadrature = .false.
+             !
+             deallocate(chi_t,transform_t,transform_maxval,numpoints)
+             !
+             call ArrayStop('PTcontracted:sampling')
+             !
+             mpoints = max(Nelem,job%msample_points)
+             !
+             allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                       transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                       !
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+             !
+             deallocate(transform)
+             call ArrayStop('PTcontracted:transform')
+             !
+             allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+             call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+             !
+           endif
            !
            call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
            !
