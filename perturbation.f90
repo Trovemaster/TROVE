@@ -2732,7 +2732,7 @@ module perturbation
          bs_t(imode)%dvrpoints = 1
        enddo
        !
-       PTuse_gauss_quadrature = .true.
+       PTuse_gauss_quadrature = .false.
        if (iclasses==Nclasses) PTuse_gauss_quadrature = .false.
        !
        res_min = huge(1)
@@ -3150,6 +3150,9 @@ module perturbation
        mpoints = mpoints_max
        !
        if (PTuse_gauss_quadrature) then
+         !
+         write(out,"('Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!')")
+         stop 'Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!'
          !
          mpoints_dvr = 1
          do i = 1,PT%mode_iclass(iclasses)
