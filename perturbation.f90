@@ -7319,7 +7319,7 @@ module perturbation
     integer(ik) :: ncontr,maxcontr,maxcontr0
     character(len=cl)   :: task
     character(len=4)   :: jchar
-    character(len=cl)  :: unitfname,filename,statusf,symchar
+    character(len=cl)  :: unitfname,filename,statusf='old',symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
     !

@@ -32,6 +32,7 @@ module molecules
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011,prop_xy2_sr
+  use prop_xy2_quad, only : prop_xy2_qmom_bisect_frame
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE
   !
@@ -566,6 +567,10 @@ end function ML_MEPfunc
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym
+        !
+    case('XY2_QMOM_BISECT_FRAME')
+        !
+        MLextF_func => prop_xy2_qmom_bisect_frame
         !
     case('XY2_SR')
         !
