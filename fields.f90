@@ -378,6 +378,7 @@ module fields
       logical             :: triatom_sing_resolve = .false.
       logical,pointer     :: select_gamma(:)! the diagonalization will be done only for selected gamma's
       integer(ik),pointer :: nroots(:) ! number of the roots to be found in variational diagonalization with syevr
+      integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
       !
    end type FLcalcsT
 
@@ -1590,6 +1591,7 @@ module fields
        case("SINGULAR-AXIS") 
          !
          call readi(trove%lincoord)
+         job%lincoord = trove%lincoord
          !
        case("SYMGROUP","SYMMETRY","SYMM","SYM","SYM_GROUP") 
          !
@@ -5057,7 +5059,10 @@ end subroutine check_read_save_none
       !
       if (trove%lincoord==0) then
         do x1 = 1,3
-          if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
+          if (Inertm(x1)<sqrt(small_)) then 
+             trove%lincoord=x1
+             job%lincoord = trove%lincoord
+          endif
         enddo
       endif
       !
@@ -5065,6 +5070,7 @@ end subroutine check_read_save_none
       !
       if (Nmodes==(3*Natoms-5).and.trove%lincoord==0) then
           trove%lincoord = minloc(Inertm,dim=1)
+          job%lincoord = trove%lincoord
       endif
       !
     case (1)
@@ -25400,6 +25406,8 @@ end subroutine check_read_save_none
              case ('THETA_PHI')
                !
                tau = analysis%res%tau/180.0_rk*pi
+               tau = max(trove%chi_ref(Nmodes,0),tau)
+               tau = min(tau,trove%chi_ref(Nmodes,trove%npoints))
                !
                xi(Nmodes)= tau
                !
@@ -25415,6 +25423,13 @@ end subroutine check_read_save_none
              case ('OPTIM_COORDS')
                !
                ivar(Nmodes+1:2*Nmodes+2) = 0
+               !
+               tau = analysis%res%tau/180.0_rk*pi
+               !
+               tau = max(trove%chi_ref(Nmodes,0),tau)
+               tau = min(tau,trove%chi_ref(Nmodes,trove%npoints))
+               !
+               xi(Nmodes)= tau
                !
              case ('GLOBAL_SEARCH')
                !

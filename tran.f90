@@ -579,7 +579,16 @@ contains
           !
           read(iounit,*) nroots_t,nsize
           !
+          ! The size of the basis for any Js is required for predicting the state ID as part of the ExoMol basis 
           bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
+          !
+          ! trove%lincoord is a special case of a linear molecules where the basis set does not increase with J
+          ! because a contraint on K=L and the total size increase with J linearaly 
+          if (job%lincoord.or.job%triatom_sing_resolve) then
+            if (jind>1) then 
+              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)
+            endif
+          endif 
           !
           nsize_base = nsize_base + nsize
           !
@@ -824,9 +833,9 @@ contains
                !
                write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
-               normal(1:nmodes),sym%label(isym(1:nclasses)),&
+               quanta(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
-               largest_coeff,grep,ilevel,quanta(1:nmodes),cnu(1:Nclasses)
+               largest_coeff,grep,ilevel,normal(1:nmodes),cnu(1:Nclasses)
                !
              endif
              !
