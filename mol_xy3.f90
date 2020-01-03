@@ -81,7 +81,7 @@ module mol_xy3
       !
       if (any(molec%AtomMasses(2:4)>molec%AtomMasses(1))) then
         write(out,"('ML_b0_XY3: masses-s are given in wrong order, must be M m m m: ',4f14.6)") molec%AtomMasses(:)
-        stop 'ML_b0_XY3: ,masses are in wrong order'
+        !stop 'ML_b0_XY3: ,masses are in wrong order'
       endif 
       !
       re14 = molec%req(1)
