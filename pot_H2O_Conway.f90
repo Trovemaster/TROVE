@@ -110,52 +110,7 @@ module pot_user
    real(ark),intent(in)   ::  force(:)
    real(ark)              ::  f
    !
-   real(ark)              ::  local0(ncoords)
-   integer(ik)            :: i,j
-   !
-   do i = 1,1000
-     !
-     local0 = molec%local_eq
-     !
-     local0(1) = 0.3+2.0/1000.0*real(i)
-     !
-     f = MLpoten_xy2_dmbe(ncoords,natoms,local0,xyz,force)
-     !
-     write(out,"(3f15.6,f18.4)")local0(1),local0(2),local0(3)*180.0d0/pi,f
-     !
-   enddo
-   !
-   do i = 1,1000
-     !
-     local0 = molec%local_eq
-     !
-     local0(3) = (20+160.0/1000.0*real(i))*pi/180.0
-     !
-     f = MLpoten_xy2_dmbe(ncoords,natoms,local0,xyz,force)
-     !
-     write(out,"(3f15.6,f18.4)")local0(1),local0(2),local0(3)*180.0d0/pi,f
-     !
-   enddo
-   !
-   print*,"2D"
-   !
-   do i = 1,200
-     do j = 1,200
-      !
-      local0 = molec%local_eq
-      !
-      local0(1) = 0.5+2.0/200.0*real(i)
-      local0(2) = 0.5+2.0/200.0*real(i)
-      !
-      local0(3) = (40+120.0/200.0*real(j))*pi/180.0
-      !
-      f = MLpoten_xy2_dmbe(ncoords,natoms,local0,xyz,force)
-      !
-      write(out,"(3f15.6,f18.4)")local0(1),local0(2),local0(3)*180.0d0/pi,f
-      !
-     enddo
-     !
-   enddo
+   f = MLpoten_xy2_dmbe(ncoords,natoms,local,xyz,force)
    !
  end function MLpoten
  !
