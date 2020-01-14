@@ -1341,7 +1341,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
 
   integer(ik), intent(in) :: nJ, Jval(nJ), nlevels(nJ), level_ind(:,:)
 
-  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses
+  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses, nclasses_, nmodes_
   real(rk) :: energy
   character(cl) :: sj1, sj2, fname
 
@@ -1368,6 +1368,8 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
   write(out, '(/1x,a,1x,i3,1x,a,100(1x,i3))') 'J quanta (', nJ, '):', Jval(1:nJ)
   write(out, '(1x,a,1x,100(1x,i6))') '.. and respective number of energy levels:', nlevels(1:nJ)
 
+  nclasses_ = nclasses + 1
+  nmodes_ = nmodes + 1
   do jind=1, nJ
     do ilevel_=1, nlevels(jind)
       ilevel = level_ind(ilevel_,jind)
@@ -1375,9 +1377,9 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,i8,a5,i2,i4,f,i4,<nmodes>(i4),a5,<nclasses>(a5))') &!
+      write(iounit, '(i4,1x,i8,1x,a5,1x,i2,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &!
       Jrot, ilevel_, sym%label(isym),isym, ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, eigen(ilevel)%quanta(1:nmodes), &!
-      eigen(ilevel)%cgamma(0), eigen(ilevel)%cgamma(1:nclasses)
+      eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
     enddo
   enddo
 

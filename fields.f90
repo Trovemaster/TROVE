@@ -15686,7 +15686,7 @@ end subroutine check_read_save_none
         if (bs_%range(2)/=job%bset(imode)%range(2)) then
           write (out,"('fingerprintRead:  parameters mismatch for  ',i9,'th mode:')") imode
           write (out,"('range2 (stored) /=  range (given)  : ',2i8)") bs_%range(2),job%bset(imode)%range(2)
-          !stop 'fingerprintRead - parameters mismatch:range'
+          stop 'fingerprintRead - parameters mismatch:range'
         end if
         !
         if (bs_%IPERIOD/=job%bset(imode)%IPERIOD) then
