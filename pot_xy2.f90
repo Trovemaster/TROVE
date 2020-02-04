@@ -5165,7 +5165,7 @@ endif
         !
       enddo
       !
-      f = tocm*vpot
+      f = vpot
       !
       if (verbose>=6) write(out,"('MLpoten_xyz_Koput/end')")
       !

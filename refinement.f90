@@ -728,7 +728,7 @@ contains
                      !
                      ! we can sckip the parameter if it is zero and not used in refinement for the sliced-representation
                      ! 
-                     if (ivar(i)<=0.and.abs(pot_terms(i))<small_) cycle
+                     if ( ivar(i)==0.and.abs(pot_terms(i))<small_.or.ivar(i)<0 ) cycle
                      !
                      call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                      !
