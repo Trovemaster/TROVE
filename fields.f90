@@ -34,6 +34,8 @@ module fields
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
           FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
+   
+   public choose, sum_choose, powers_from_index
    !
    !FLfrom_local2chi_by_fit
    !
@@ -5689,7 +5691,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=6.or.(job%verbose>=5.and.manifold==0)) then
+       if (job%verbose>=6.or.(job%verbose>=6.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes
@@ -14814,8 +14816,15 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "grot-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "grot-ASCII-chk Order is wrong"
+        if (Tpoints/=Npoints) then 
+           print*,"grot-ASCII-chk npoints is wrong"
+           stop "grot-ASCII-chk npoints is wrong"
+        endif
+        !
+        if (Torder/=KinOrder) then
+          print*,"grot-ASCII-chk Order is wrong"
+          stop "grot-ASCII-chk Order is wrong"
+        endif
         !
         do k1 = 1,3
           do k2 = 1,3
@@ -16317,7 +16326,7 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
-                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2
+                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
     type(FLpolynomT),pointer    :: fl,gl
     type(Basis1DT), pointer     :: bs           ! 1D bset
@@ -16348,6 +16357,7 @@ end subroutine check_read_save_none
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
+    real(ark)   :: g2_term
     !
     ! substitute for easier reference 
     !
@@ -19443,39 +19453,78 @@ end subroutine check_read_save_none
              !
              do ipower = 0,min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
                 !
-                do imode =1,bs%imodes  
+                !
+                do imode = 1,bs%imodes
+                  !             
                   nu_i = bs%mode(imode)
-                  fl => trove%g_vib(nu_i,nu_i)
+                  fl => trove%g_vib(nu_i,nu_i) 
                   !
-                  powers = 0 ; powers(nu_i) = ipower
-                  k = FLQindex(trove%Nmodes_e,powers)
-                  !
-                  ! shift the minimum by the period of the last mode if present
-                  if (periodic_model) then 
+                  select case(job%bset(imode)%coord_kinet)
                     !
-                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                    !
-                  endif
-                  !
-                  if (trove%sparse) then
-                    !
-                    call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
-                    !
-                    g2(imode) = 0
-                    !
-                    if (i/=0) g2(imode) = fl%field(i,irho_eq)
-                    !
-                    if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
-                      write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                      stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
-                    endif
-                    !
-                  else
-                    !
-                    g2(imode) = fl%field(k,irho_eq)
-                    !
-                  endif
+                    case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+                      !
+                      g2(imode) = 0
+                      !
+                      do j = 1, size(fl%ifromsparse)
+                        !
+                        g2_term = 0
+                        !write(*,*) fl%ifromsparse(j)
+                        !
+                        powers = powers_from_index(Nmodes, fl%ifromsparse(j))
+                        !
+                        !write(*,*) "powers ", powers, " end"
+                        !
+                        if (powers(nu_i)/= ipower) cycle
+                        g2_term  =  fl%field(j,irho_eq)
+                        !
+                        do i = 1, size(powers)
+                          if(i == nu_i) cycle
+                          !write(*,*) "eq ", trove%chi_eq(nu_i)   
+                          !write(*,*) "powers(I) ", powers(i)
+                          !write(*,*) "MLcoord", MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i))
+                          !
+                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i)) 
+                          !
+                        enddo
+                        !
+                        g2(imode) = g2(imode) + g2_term
+                        !write(*,*) "nu_i ", nu_i, " g2(imode) ", g2(imode) 
+                        !
+                     enddo
+                     !    
+                  case default 
+                     !
+                     powers = 0 ; powers(nu_i) = ipower
+                     k = FLQindex(trove%Nmodes_e,powers)
+                     !
+                     ! shift the minimum by the period of the last mode if present
+                     if (periodic_model) then 
+                       !
+                       rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                       irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                       !
+                     endif
+                     !
+                     if (trove%sparse) then
+                       !
+                       call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
+                       !
+                       g2(imode) = 0
+                       !
+                       if (i/=0) g2(imode) = fl%field(i,irho_eq)
+                       !
+                       if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
+                         write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                         stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
+                       endif
+                       !
+                     else
+                       !
+                       g2(imode) = fl%field(k,irho_eq)
+                       !
+                     endif
+                     !
+                  end select 
                   !
                 enddo
                 ! 
@@ -25875,6 +25924,87 @@ end subroutine check_read_save_none
     end function classic_hamilt
     !
   end subroutine FL_rotation_energy_surface
+
+
+  function choose(n, k) result(res) 
+    !
+    implicit none
+    integer(ik), intent (in) :: n
+    integer(ik), intent (in) :: k
+    integer(ik) :: res
+    integer(ik) :: i, k_  
+    
+    res = 1
+    k_ = k 
+    if(k > n - k) then
+      k_ = n - k
+    endif
+    
+    do i = 0, k_ - 1
+      res = res*(n - i)
+      res = res/(i + 1)
+    enddo
+  end function choose
+   
+  function sum_choose(num_pos, high_order, pos_val) result(res)
+    implicit none 
+    integer(ik), intent(in) :: num_pos 
+    integer(ik), intent(in) :: high_order
+    integer(ik), intent(in) :: pos_val
+    integer(ik) :: res  
+    integer (ik):: i
+       
+    res = 0
+    if(pos_val == 0) then
+      res = res + choose(high_order + num_pos - 1, num_pos - 1)
+    else 
+      do i = 0, pos_val - 1 
+        res = res + choose(high_order + num_pos - 1 - i, num_pos - 1) 
+      end do
+    endif 
+
+  end function sum_choose
+  !
+  function powers_from_index(Nmodes, Nindex) result(powers) 
+     implicit none 
+     integer(ik), intent(in) :: Nmodes, Nindex
+     integer(ik) :: powers(Nmodes)   
+     integer(ik) :: polyad, max_index, diff, j, term_val, remaining_order 
+     !
+     polyad = -1
+     max_index = 0
+     powers = 0
+     !
+     do while(max_index < Nindex)
+       polyad = polyad + 1
+       max_index = choose(Nmodes + polyad, Nmodes)
+     end do
+     if(polyad == 0) then
+       diff = Nindex - 1
+     else 
+       diff = Nindex - choose(Nmodes + polyad - 1, Nmodes)
+     endif 
+     remaining_order = polyad 
+     do j = 1, Nmodes - 1 
+       if(remaining_order == 0) then
+         powers(j) = 0
+         continue 
+       else 
+           term_val = 1
+           do while(diff - sum_choose(Nmodes - j, remaining_order, term_val) > 0)
+             term_val = term_val + 1
+           end do
+           term_val = term_val - 1 
+           powers(j) = term_val
+           if( term_val > 0) then 
+             diff  = diff - sum_choose(Nmodes - j, remaining_order, term_val)
+           endif
+           remaining_order = remaining_order - term_val
+       endif 
+     end do 
+     powers(Nmodes) = remaining_order
+     !
+  end function powers_from_index 
 
 
   end module fields

@@ -3277,6 +3277,10 @@ end subroutine polintark
         !
         v = x
         !
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+        !
+        v = x
+        !
      end select
      !
      if (present(iorder)) then 
@@ -3310,12 +3314,124 @@ end subroutine polintark
             !
           end select 
           !
+       case('BOND-LENGTH')
+          !
+          if(iorder < 0) stop 'MLcoord_direct (BOND-LE.) error: negative iorder'
+          !
+          select case(iorder)
+            !
+            case(0)
+              !
+              v = 1.0_ark
+              !
+            case(1)
+              !
+              v = 1.0_ark/(molec%local_eq(imode) + x)
+              !
+            case(2)
+              !
+              v = 1.0_ark/(molec%local_eq(imode) + x)**2
+              !
+            case default
+              !
+              v = 1.0_ark
+              !
+          end select 
+          !
+       case('ANGLE')
+          !
+          if(iorder < 0) stop 'MLcoord_direct (A) error: negative iorder'
+          !
+          select case(iorder)
+            !
+            case(0)          
+              !
+              v = 1.0_ark
+              !
+            case(1)
+              !
+              v = Cos(molec%local_eq(imode) + x) 
+              !
+            case(2)
+              !
+              v = 1.0_ark/Tan(molec%local_eq(imode) + x)
+              !
+            case(3)
+              !
+              v = 1.0_ark/Sin(molec%local_eq(imode) + x)
+              !
+            case(4)
+              !
+              v = Sin(molec%local_eq(imode) + x)
+              !
+            case(5)
+              !
+              v = Cos(molec%local_eq(imode) + x)**2
+              !
+            case(6)
+              !
+              v = 1.0_ark/Tan(molec%local_eq(imode) + x)**2
+              !
+            case(7)
+              !
+              v = 1.0_ark/(Sin(molec%local_eq(imode) +x)*Tan(molec%local_eq(imode) + x))
+              !
+            case(8)
+              !
+              v = 1.0_ark/(Sin(molec%local_eq(imode) + x))**2
+              !
+            case(9)
+              !
+              v = Sin(molec%local_eq(imode) +x)**2
+              !
+            case default
+              !
+              v = 1.0_ark
+              !
+           end select
+           !
+       case('DIHEDRAL')
+          !
+          if(iorder < 0) stop 'MLcoord_direct (D) error: negative order'
+          !
+          select case(iorder) 
+            !
+            case(0)
+              !
+              v = 1.0_ark
+              !
+            case(1)
+              !
+              v = Cos((molec%local_eq(imode) +x)/2.0_ark)
+              !
+            case(2)
+              !
+              v = Sin((molec%local_eq(imode) +x)/2.0_ark)
+              !
+            case(3)
+              !
+              v = Cos((molec%local_eq(imode) +x)/2.0_ark)**2
+              !
+            case(4)
+              !
+              v = Cos((molec%local_eq(imode) + x)/2.0_ark)*Sin((molec%local_eq(imode)+x)/2.0_ark)
+              !
+            case(5)
+              !
+              v = Sin((molec%local_eq(imode) + x)/2.0_ark)**2
+              !
+            case default
+              !
+              v = 1.0_ark
+              !
+          end select
+          !
        end select
        !
      endif 
      !
      if (verbose>=6) write(out,"('MLcoord_direct/end')") 
- 
+     !
  end function MLcoord_direct
 
   !
@@ -3653,18 +3769,21 @@ end subroutine polintark
         !
         fstep(1:2) = 1.0_ark
         !
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+        !
+        write(out, "('ML_check_steps4coordinvert (BLAD) ','a', 'not applicable')")  trim(molec%coordinates(itype,imode))
+        stop 'ML_check_steps4coordinvert - bad coordinate-type'
+        !
     end select 
-
+    !
     if (fstep(1)+fstep(2)==0.0_ark) then 
        write (out,"('ML_check_steps4coordinvert: no numerical derivatives allowed around point ',f18.8)") xi(imode)
        write (out,"('imode -  ',i8)") imode
        stop 'ML_check_steps4coordinvert - bad point for derivatives'
     endif
-
-   
-   if (verbose>=6) write(out,"('ML_check_steps4coordinvert/end')") 
-   
-    
+    !
+    if (verbose>=6) write(out,"('ML_check_steps4coordinvert/end')") 
+    !    
  end subroutine ML_check_steps4coordinvert
 
 
