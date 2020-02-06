@@ -3284,6 +3284,7 @@ end subroutine polintark
      end select
      !
      if (present(iorder)) then 
+       !
        select case(trim(molec%coordinates(itype,imode)))
           !
        case default
@@ -3314,9 +3315,12 @@ end subroutine polintark
             !
           end select 
           !
-       case('BOND-LENGTH')
+        case('BOND-LENGTH')
           !
-          if(iorder < 0) stop 'MLcoord_direct (BOND-LE.) error: negative iorder'
+          if (iorder < 0) then
+            print*,'MLcoord_direct error: negative iorder'
+            stop 'MLcoord_direct error: negative iorder'
+          endif
           !
           select case(iorder)
             !
@@ -3338,10 +3342,13 @@ end subroutine polintark
               !
           end select 
           !
-       case('ANGLE')
-          !
-          if(iorder < 0) stop 'MLcoord_direct (A) error: negative iorder'
-          !
+        case('ANGLE')
+           !
+           if(iorder < 0) then 
+              print*, 'MLcoord_direct error: negative iorder'
+              stop 'MLcoord_direct error: negative iorder'
+           endif
+           !
           select case(iorder)
             !
             case(0)          
@@ -3366,23 +3373,15 @@ end subroutine polintark
               !
             case(5)
               !
-              v = Cos(molec%local_eq(imode) + x)**2
+              v = 1.0_ark/Tan(molec%local_eq(imode) + x)**2
               !
             case(6)
               !
-              v = 1.0_ark/Tan(molec%local_eq(imode) + x)**2
+              v = 1.0_ark/(Sin(molec%local_eq(imode) +x)*Tan(molec%local_eq(imode) + x))
               !
             case(7)
               !
-              v = 1.0_ark/(Sin(molec%local_eq(imode) +x)*Tan(molec%local_eq(imode) + x))
-              !
-            case(8)
-              !
               v = 1.0_ark/(Sin(molec%local_eq(imode) + x))**2
-              !
-            case(9)
-              !
-              v = Sin(molec%local_eq(imode) +x)**2
               !
             case default
               !
@@ -3390,21 +3389,24 @@ end subroutine polintark
               !
            end select
            !
-       case('DIHEDRAL')
-          !
-          if(iorder < 0) stop 'MLcoord_direct (D) error: negative order'
-          !
-          select case(iorder) 
+        case('DIHEDRAL')
+           !
+           if(iorder < 0) then 
+              print*, 'MLcoord_direct error: negative iorder'
+              stop 'MLcoord_direct error: negative iorder'
+           endif
             !
-            case(0)
+           select case(iorder) 
+            !
+           case(0)
               !
               v = 1.0_ark
               !
-            case(1)
+           case(1)
               !
               v = Cos((molec%local_eq(imode) +x)/2.0_ark)
               !
-            case(2)
+           case(2)
               !
               v = Sin((molec%local_eq(imode) +x)/2.0_ark)
               !
