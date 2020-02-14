@@ -564,6 +564,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xyz_coeff
         !
+    case('DIPOLE_BISECT_S1S2T_XYZ')
+        !
+        MLextF_func => MLdipole_bisect_s1s2theta_xy2
+        !
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym

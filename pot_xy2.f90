@@ -14,7 +14,7 @@ module pot_xy2
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,MLpoten_xy2_tyuterev_alpha
-  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput
+  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -5171,6 +5171,104 @@ endif
       !
  end function MLpoten_xyz_Koput
 
+
+
+ !===============================================================================
+ !                   electric dipole moment section
+ !===============================================================================
+
+ !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
+ !using the s1,s2,(theta-thetae)
+ recursive subroutine MLdipole_bisect_s1s2theta_xy2(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: i,ik(1:3)
+    real(ark)             :: mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,dipp,dipq,xyz0(3,3),s(3)
+    real(ark)             :: r_e,alpha_e
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n1 + n2
+    u2 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u2 = u2 / sqrt(sum(u2(:)**2))
+    !
+    u3 = MLvector_product(u1,u2)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    r_e     = extF%coef(1,1)
+    alpha_e = extF%coef(2,1)
+    !
+    s(1)=(r1+r2)*0.5_ark-r_e
+    s(2)=(r1-r2)*0.5_ark*0.5_ark
+    s(3)=alpha_e - alpha
+    !
+    dipp = 0
+    !
+    do i=3,extF%nterms(1)
+       !
+       ik(:) = extF%term(:,i,1)
+       !
+       dipp = dipp + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,1)
+       !
+    enddo
+    !
+    mu(2) = dipp
+    !
+    r_e     = extF%coef(1,2)
+    alpha_e = extF%coef(2,2)
+    !
+    s(1)=(r1+r2)*0.5_ark-r_e
+    s(2)=(r1-r2)*0.5_ark*0.5_ark
+    s(3)=alpha_e - alpha
+    !
+    dipq = 0 
+    !
+    do i=3,extF%nterms(2)
+       !
+       ik(:) = extF%term(:,i,2)
+       !
+       dipq = dipq + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,2)
+       !
+    enddo
+    !
+    mu(1) = dipq
+    !
+    mu(3) = 0
+    !
+    f(1:3) = matmul(mu,tmat)
+    !
+ end subroutine MLdipole_bisect_s1s2theta_xy2
+ !
 
 
 end module pot_xy2
