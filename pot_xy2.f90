@@ -5229,7 +5229,7 @@ endif
     alpha_e = extF%coef(2,1)
     !
     s(1)=(r1+r2)*0.5_ark-r_e
-    s(2)=(r1-r2)*0.5_ark*0.5_ark
+    s(2)=(r1-r2)*0.5_ark
     s(3)=alpha_e - alpha
     !
     dipp = 0
@@ -5248,7 +5248,7 @@ endif
     alpha_e = extF%coef(2,2)
     !
     s(1)=(r1+r2)*0.5_ark-r_e
-    s(2)=(r1-r2)*0.5_ark*0.5_ark
+    s(2)=(r1-r2)*0.5_ark
     s(3)=alpha_e - alpha
     !
     dipq = 0 

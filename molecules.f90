@@ -28,7 +28,7 @@ module molecules
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
-                       MLpoten_c2h6_88_cos3tau_G36
+                       MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2, only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011,prop_xy2_sr
@@ -655,6 +655,10 @@ end function ML_MEPfunc
     case('DIPOLE_C2H4_4M') 
        !
        MLextF_func => ML_dipole_c2h4_4m_dummy  ! dummy dipole does not work
+       !
+    case('ALPHA_C2H6_ZERO') 
+       !
+       MLextF_func => ML_alpha_C2H6_zero_order  ! alpha polarizablity of a zero order type 
        !
     case('DIPOLE','USER','GENERAL','DIPOLE_USER')
        !
