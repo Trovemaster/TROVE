@@ -2501,16 +2501,16 @@ end subroutine ML_dipole_c2h6_4m_dummy
       !
       rhobar = ( tau14+tau25+tau36 )/3.0_ark
       !
-      xi(18) = cos(6.0_ark*rhobar)
+      xi(18) = cos(3.0_ark*rhobar)
       !
     end select
     !
     f(1) = extF%coef(4,1)+extF%coef(5,1)*xi(18) !(1,1)
-    f(2) = extF%coef(4,2)+extF%coef(5,2)*xi(18) !(1,2)
-    f(3) = extF%coef(4,3)+extF%coef(5,3)*xi(18) !(1,3)
-    f(4) = extF%coef(4,4)+extF%coef(5,4)*xi(18) !(2,2)
-    f(5) = extF%coef(4,5)+extF%coef(5,5)*xi(18) !(2,3)
-    f(6) = extF%coef(4,6)+extF%coef(5,6)*xi(18) !(3,3)
+    f(2) = extF%coef(1,2)+extF%coef(2,2)*xi(18) !(1,2)
+    f(3) = extF%coef(1,3)+extF%coef(2,3)*xi(18) !(1,3)
+    f(4) = extF%coef(1,4)+extF%coef(2,4)*xi(18) !(2,2)
+    f(5) = extF%coef(1,5)+extF%coef(2,5)*xi(18) !(2,3)
+    f(6) = extF%coef(1,6)+extF%coef(2,6)*xi(18) !(3,3)
     !
   end subroutine ML_alpha_C2H6_zero_order
 
