@@ -1451,7 +1451,6 @@ contains
              !
           enddo
         else
-          write(*,*) "TODO: This info2gl loop needs to be verified for correctness@TRAN.f90"
           allocate(vec(dimen),stat = info)
           !
           do ilevel = 1,Neigenlevels
@@ -1519,11 +1518,9 @@ contains
               !
               treat_vibration = .false.
               !
-              !call PTstore_icontr_cnu(Neigenroots,chkptIO,job%IOj0matel_action)
               call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
               !
               if (job%vib_rot_contr) then
-                !write(chkptIO) 'vib-rot'
                 call MPI_File_write(fileh_w, 'vib-rot', 7, mpi_character, mpi_status_ignore, ierr)
               endif
             else

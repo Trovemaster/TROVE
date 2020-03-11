@@ -7348,7 +7348,6 @@ module perturbation
     if (mpi_rank.eq.0) then!mpiio
       do isym = 1,sym%Nrepresen
         if (.not.job%select_gamma(isym)) cycle
-        write(6,*) "Todays sum:", sum(smat(isym)%coeffs)
       enddo
       ! Correction for the case we do not compute the vibrational part of the 
       ! Hamiltonian:
@@ -9028,7 +9027,7 @@ module perturbation
   !
   recursive subroutine symm_mat_element_vector_k(jrot,irow,ijterm,func,mat_t,no_diagonalization)
     use mpi_aux
-
+    !
     integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
     real(rk),external      :: func
     real(rk),intent(out)   :: mat_t(:,:,:)
@@ -9039,63 +9038,77 @@ module perturbation
     real(rk)    :: mat_elem
     integer(ik) :: isize,jsize,ielem,jelem,k_i,k_j,tau_i,tau_j
     integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
-    real(rk)    :: hcontr(PT%max_deg_size,PT%max_deg_size)
     real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
-    !logical     :: escape
-      !
-      !call TimerStart('Symmetrized Hamiltonian - one column')
-      !
-      mat_t = 0 
-      !
-      cnu_i(:) = PT%contractive_space(:,irow)
-      !
-      isize = PT%Index_deg(irow)%size1
-      !
-      do jrow = 1,irow
-         !escape = .false.
-         !
-         if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
-         !
-         cnu_j(:) = PT%contractive_space(:,jrow)
-         !
-         jsize = PT%Index_deg(jrow)%size1 
-         !
-         do ideg = 1,isize
-            !
-            deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
-            !
-            do jdeg = 1,jsize
-               !
-               deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
-               !
-               !iroot = contr(iclass)%iroot(cnu_i(iclass),deg_i(iclass))
-               !jroot = contr(iclass)%iroot(cnu_j(iclass),deg_j(iclass))
-               !
-               icontr = PT%icase2icontr(irow,ideg)
-               jcontr = PT%icase2icontr(jrow,jdeg)
-               k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
-               k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
-               tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
-               tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
-               !
-               ! Matrix elements 
-               !
-               if (jcontr .lt. co_startdim .or. jcontr .gt. co_enddim) then
-                 !write(*,*) "ESCAPE:", jcontr, co_startdim, co_enddim
-                 !escape = .true.
-                 hcontr(ideg,jdeg) = 0.0_rk
-                 !exit
-               else
-                 hcontr(ideg,jdeg) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
-               endif
+    !
+    real(rk), dimension(:,:,:), allocatable :: hcontr
+    !
+    !call TimerStart('Symmetrized Hamiltonian - one column')
+    !
+    mat_t = 0 
+    !
+    cnu_i(:) = PT%contractive_space(:,irow)
+    !
+    isize = PT%Index_deg(irow)%size1
+    !
+    ! AT: hcontr is now an array of irow * PT%max_deg_size^2. This way we can calculate all hcontr values in advance,
+    ! collect them to root, then run the matelem calculation loop.
+    ! The reduction to root is necessary as we are doing apparently random access over a distributed matrix.
+    allocate(hcontr(PT%max_deg_size,PT%max_deg_size,irow))
+    !
+    do jrow = 1,irow
+       !
+       if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
+       !
+       cnu_j(:) = PT%contractive_space(:,jrow)
+       !
+       jsize = PT%Index_deg(jrow)%size1 
+       !
+       do ideg = 1,isize
+          !
+          deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
+          !
+          do jdeg = 1,jsize
+             !hcontr(ideg,jdeg) = 0.0_rk
+             !
+             deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
+             !
+             !iroot = contr(iclass)%iroot(cnu_i(iclass),deg_i(iclass))
+             !jroot = contr(iclass)%iroot(cnu_j(iclass),deg_j(iclass))
+             !
+             icontr = PT%icase2icontr(irow,ideg)
+             jcontr = PT%icase2icontr(jrow,jdeg)
+             k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
+             k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
+             tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
+             tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
+             !
+             ! Matrix elements 
+             !
+             if (jcontr .lt. co_startdim .or. jcontr .gt. co_enddim) then
+               hcontr(ideg,jdeg,jrow) = 0.0_rk
+             else
+               hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
+             endif
 
-               !
-            enddo
-            !
-         enddo
-         call co_sum(hcontr)
-         !if (escape) cycle
-         !
+             !
+          enddo
+          !
+       enddo
+    end do
+    !
+    ! Collect all pre-calculated hcontr values to MPI root. Non-local values have been initialised to 0 so it's safe to just do
+    ! MPI_SUM.
+    call co_sum(hcontr, 0)
+    !if (mpi_rank .eq. 0) then
+    !  call mpi_reduce(mpi_in_place, hcontr, size(hcontr), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
+    !else
+    !  call mpi_reduce(hcontr, hcontr, size(hcontr), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
+    !end if
+    !
+    ! We could do an allreduce above then distribute this loop, but all subsequent calculation is serialised so far.
+    ! TODO future work?
+    if (mpi_rank .eq. 0) then
+      do jrow=1,irow
          do isym = 1,sym%Nrepresen
            !
            iterm = ijterm(irow,isym) 
@@ -9112,7 +9125,7 @@ module perturbation
                  !
                  vec_j(1:jsize) = PT%irr(jsym)%repres(jterm+jelem,1,1:jsize)
                  !
-                 vec_j(1:isize) = matmul(hcontr(1:isize,1:jsize),vec_j(1:jsize))  
+                 vec_j(1:isize) = matmul(hcontr(1:isize,1:jsize,jrow),vec_j(1:jsize))  
                  !
                  mat_elem = dot_product(vec_i(1:isize),vec_j(1:isize))
                  !
@@ -9181,9 +9194,12 @@ module perturbation
          enddo
          !
       enddo
-      !
-      !call TimerStop('Symmetrized Hamiltonian - one column')
-      !
+    endif
+    !
+    deallocate(hcontr)
+    !
+    !call TimerStop('Symmetrized Hamiltonian - one column')
+    !
   end subroutine symm_mat_element_vector_k
 
 
@@ -16509,8 +16525,10 @@ module perturbation
         offset = 0
         call MPI_File_open(mpi_comm_world, filename, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
         call MPI_File_set_size(chkptMPIIO, offset, ierr)
+        call mpi_barrier(mpi_comm_world, ierr)
         !
         if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        call mpi_barrier(mpi_comm_world, ierr)
         !
         call co_write_matrix_distr(field, N, co_startdim, co_enddim,chkptMPIIO)
         !
