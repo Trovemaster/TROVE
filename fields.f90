@@ -7243,7 +7243,7 @@ end subroutine check_read_save_none
       !
       call FLCompact_a_field_sparse(trove%poten,"poten")
       !
-      if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+      if (job%verbose>=6.or.(job%verbose>=3.and.manifold==0)) then
         !
         write(out,"('After compacting:')")
         call print_poten
@@ -7295,7 +7295,7 @@ end subroutine check_read_save_none
         !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
-        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=6.and.trove%sparse)) then
            call print_poten
         endif 
         !
@@ -7303,7 +7303,7 @@ end subroutine check_read_save_none
            !
           call FLCompact_a_field_sparse(trove%poten,"poten")
           !
-          if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+          if (job%verbose>=6.or.(job%verbose>=3.and.manifold==0)) then
             !
             write(out,"('After compacting:')")
             call print_poten
