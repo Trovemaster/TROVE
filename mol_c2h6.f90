@@ -5993,7 +5993,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
         if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
         !
-      case('G36(EM)-01')
+      case('G36(EM)')
         !
         gamma = 1
         ideg = 1
@@ -6032,7 +6032,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         end if 
 
 
-      case('G36(EM)')
+      case('G36(EM)-test')
         !
         gamma = 1
         ideg = 1
