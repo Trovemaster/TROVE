@@ -18730,6 +18730,22 @@ end subroutine check_read_save_none
                            !
                            phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
                            !
+                           ! special case of spin-rotational tensor of rank 9 
+                           !
+                           if (trim(extF%ftype)=='XY2_SR-BISECT') then 
+                             !
+                             if    (nint(extF%coef(1,imu))==-1) then 
+                               !
+                               phivphi_t(:) = phil_sin(:)*trove%extF(imu)%field(iterm,:)*phir_sin(:)
+                               !
+                             elseif(nint(extF%coef(1,imu))==-2) then 
+                               !
+                               phivphi_t(:) = phil_leg(:)*trove%extF(imu)%field(iterm,:)*phir_leg(:)*mrho(:)
+                               !
+                             endif
+                             !
+                           endif 
+                           !
                            mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
                            !
                            if (abs(mat_t)>extF%matelem_threshold) then
