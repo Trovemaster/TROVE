@@ -211,10 +211,10 @@ subroutine rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   nlevels(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels(jind) = nlevels(jind) + 1
-      if (.not.enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 2)) then
+      if (.not.enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 2)) then
         write(out, '(/a)') &!
         'emfield2/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END" block are different for lower and upper states (must be the same)'
         stop 'STOP, error in emfield2/rovib_me_storeall'
@@ -232,7 +232,7 @@ subroutine rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   nlevels(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels(jind) = nlevels(jind) + 1
       level_ind(nlevels(jind),jind) = ilevel
@@ -290,10 +290,10 @@ subroutine store_richmol_enr(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   nlevels(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels(jind) = nlevels(jind) + 1
-      if (.not.enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 2)) then
+      if (.not.enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 2)) then
         write(out, '(/a)') &!
         'emfield2/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END" block are different for lower and upper states (must be the same)'
         stop 'STOP, error in emfield2/rovib_me_storeall'
@@ -311,7 +311,7 @@ subroutine store_richmol_enr(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   nlevels(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels(jind) = nlevels(jind) + 1
       level_ind(nlevels(jind),jind) = ilevel
@@ -348,11 +348,11 @@ subroutine intens_storeall(tens, nJ, Jval, coef_tol, print_tol)
   nlevels2(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels1(jind) = nlevels1(jind) + 1
     endif
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 2)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 2)) then
       jind = eigen(ilevel)%jind
       nlevels2(jind) = nlevels2(jind) + 1
     endif
@@ -371,12 +371,12 @@ subroutine intens_storeall(tens, nJ, Jval, coef_tol, print_tol)
   nlevels2(:) = 0
 
   do ilevel=1, Neigenlevels
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 1)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 1)) then
       jind = eigen(ilevel)%jind
       nlevels1(jind) = nlevels1(jind) + 1
       level_ind1(nlevels1(jind),jind) = ilevel
     endif
-    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%energy, 2)) then
+    if (enr_filter_intens(eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), eigen(ilevel)%energy, 2)) then
       jind = eigen(ilevel)%jind
       nlevels2(jind) = nlevels2(jind) + 1
       level_ind2(nlevels2(jind),jind) = ilevel
@@ -1341,7 +1341,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
 
   integer(ik), intent(in) :: nJ, Jval(nJ), nlevels(nJ), level_ind(:,:)
 
-  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses
+  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses, nclasses_, nmodes_
   real(rk) :: energy
   character(cl) :: sj1, sj2, fname
 
@@ -1368,6 +1368,8 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
   write(out, '(/1x,a,1x,i3,1x,a,100(1x,i3))') 'J quanta (', nJ, '):', Jval(1:nJ)
   write(out, '(1x,a,1x,100(1x,i6))') '.. and respective number of energy levels:', nlevels(1:nJ)
 
+  nclasses_ = nclasses + 1
+  nmodes_ = nmodes + 1
   do jind=1, nJ
     do ilevel_=1, nlevels(jind)
       ilevel = level_ind(ilevel_,jind)
@@ -1375,9 +1377,9 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,i8,a5,i2,i4,f,i4,<nmodes>(i4),a5,<nclasses>(a5))') &!
+      write(iounit, '(i4,1x,i8,1x,a5,1x,i2,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &!
       Jrot, ilevel_, sym%label(isym),isym, ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, eigen(ilevel)%quanta(1:nmodes), &!
-      eigen(ilevel)%cgamma(0), eigen(ilevel)%cgamma(1:nclasses)
+      eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
     enddo
   enddo
 
@@ -1592,14 +1594,14 @@ end subroutine store_wf_leading
 
 
 
-function enr_filter_intens(jval, vib_quanta, energy, uplow) result(f)
+function enr_filter_intens(jval, vib_quanta, normal, energy, uplow) result(f)
 
-  integer(ik), intent(in) :: jval, vib_quanta(:), uplow
+  integer(ik), intent(in) :: jval, vib_quanta(:), uplow, normal(0:)
   real(rk), intent(in) :: energy
   logical :: f
 
   integer(ik) :: nmodes, i
-  logical :: passed_qv, passed_enr, passed_j
+  logical :: passed_qv, passed_enr, passed_j, passed_vibmom
 
   nmodes = molec%nmodes
 
@@ -1674,7 +1676,16 @@ function enr_filter_intens(jval, vib_quanta, energy, uplow) result(f)
     endif
   endif
 
-  f = passed_j .and. passed_qv .and. passed_enr
+  ! vibrational angular momentum filter, only for linear molecules
+
+  passed_vibmom = .true.
+  if (job%triatom_sing_resolve) then
+    if (jval==0.and.normal(0)/=0) then
+        passed_vibmom = .false.
+    endif
+  endif 
+
+  f = passed_j .and. passed_qv .and. passed_enr .and. passed_vibmom
 
 end function enr_filter_intens
 

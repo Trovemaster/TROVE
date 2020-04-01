@@ -576,6 +576,10 @@ end function ML_MEPfunc
         !
         MLextF_func => prop_xy2_qmom_bisect_frame
         !
+    case('TEST_XY2_QMOM_BISECT_FRAME')
+        !
+        MLextF_func => TEST_xy2_qmom_bisect_frame
+        !
     case('XY2_SR')
         !
         MLextF_func => prop_xy2_sr

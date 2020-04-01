@@ -66,8 +66,6 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
     !
   endif
   !
-
-
   r1 = sqrt(sum(xyz_(2,:)**2))
   r2 = sqrt(sum(xyz_(3,:)**2))
 

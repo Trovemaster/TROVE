@@ -5,7 +5,9 @@ module rotme_cart_tens
 use accuracy
 use timer
 use fwigxjpf
+
 use moltype
+
 implicit none
 
 
@@ -61,6 +63,15 @@ end interface
 
 contains
 
+
+!#include 'rotme_vzz.f90'
+!#include 'rotme_alpha.f90'
+!#include 'rotme_beta.f90'
+!#include 'rotme_mu.f90'
+!#include 'rotme_costheta.f90'
+!#include 'rotme_3cos2theta_min1.f90'
+!#include 'rotme_mf.f90'
+!#include 'rotme_j.f90'
 
 !#include 'rotme_vzz.f90'
 subroutine rotme_vzz_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)

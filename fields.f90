@@ -3433,14 +3433,15 @@ module fields
            !
            select case(w)
            !
-           case('NONE','ABSORPTION','EMISSION','TM','DIPOLE-TM','RAMAN','POLARIZABILITY-TM','PARTFUNC')
+           case('NONE','ABSORPTION','EMISSION','TM','DIPOLE-TM','RAMAN','POLARIZABILITY-TM','PARTFUNC','FIELD_ME')
              !
              intensity%action = trim(w)
              !
              if (trim(intensity%action)=='DIPOLE-TM') intensity%action = 'TM'
              !
              if (trim(intensity%action)=='TM'      .or.trim(intensity%action)=='ABSORPTION'.or.&
-                 trim(intensity%action)=='EMISSION'.or.trim(intensity%action)=='PARTFUNC') then 
+                 trim(intensity%action)=='EMISSION'.or.trim(intensity%action)=='PARTFUNC' .or. &
+                 trim(intensity%action)=='FIELD_ME') then 
                !
                action%intensity = .true.
                intensity%do = .true.
@@ -3454,6 +3455,10 @@ module fields
                endif 
                !
              endif
+             !
+           case('OPER')
+             !
+             call readu(intensity%tens_oper)
              !
            case('THRESH_INTES','THRESH_TM','THRESH_INTENS')
              !
