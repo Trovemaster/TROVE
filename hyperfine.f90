@@ -1,10 +1,13 @@
 module hyperfine
 
 #define fwig  0
+!
 use accuracy
 use timer
 use richmol_data
-use fwigxjpf
+#if (fwig>0)
+  use fwigxjpf
+#endif
 use lapack
 implicit none
 

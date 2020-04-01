@@ -32,7 +32,7 @@ module molecules
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011,prop_xy2_sr,prop_xy2_spin_rotation_bisector
-  use prop_xy2_quad, only : prop_xy2_qmom_bisect_frame
+  use prop_xy2_quad, only : prop_xy2_qmom_bisect_frame,TEST_xy2_qmom_bisect_frame
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE
   !

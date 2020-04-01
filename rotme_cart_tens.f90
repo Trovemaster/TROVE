@@ -4,7 +4,9 @@ module rotme_cart_tens
 
 use accuracy
 use timer
-use fwigxjpf
+#if (fwig>0)
+  use fwigxjpf
+#endif
 
 use moltype
 

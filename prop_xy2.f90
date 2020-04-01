@@ -757,6 +757,8 @@ subroutine TEST_xy2_qmom_sym(rank, ncoords, natoms, local, xyz, f)
   character(cl) :: fname
   integer(ik), external :: omp_get_thread_num
 
+
+  f = 0
   ithread = omp_get_thread_num()
 
   if (ithread==0) then
@@ -897,6 +899,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
   character(cl) :: fname
   integer(ik), external :: omp_get_thread_num
 
+  f = 0 
   ithread = omp_get_thread_num()
 
   if (ithread==0) then
