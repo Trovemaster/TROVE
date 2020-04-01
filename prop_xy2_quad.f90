@@ -28,14 +28,12 @@ recursive subroutine prop_xy2_qmom_bisect_frame(rank, ncoords, natoms, local, xy
   real(ark),intent(out)  ::  f(rank)
 
   integer(ik) :: iatom,ierr
-  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), coords(3), x(3,3), q11_A1, q22_A1, q33_A1, q11_min_q22_A1, q13_B2
-
+  real(ark) :: xyz0(3), xyz_(natoms,3),r1,r2,alpha1,e1(3),e2(3),coords(3),x(3,3),q11_A1,q22_A1,q33_A1,q11_min_q22_A1,q13_B2
   if (rank/=6) then
     write(out, '(/a,1x,i3,1x,a)') 'xy2_qmom_bisect_frame error: rank of the dipole moment vector =', rank, ', expected 6'
     stop
   endif
-
-
+  !
   ! xyz are undefined for the local case
   if (all(abs(xyz)<small_)) then
     !
@@ -54,7 +52,6 @@ recursive subroutine prop_xy2_qmom_bisect_frame(rank, ncoords, natoms, local, xy
     x = xyz
     !
   endif
-
 
   xyz0 = x(1,:)
   do iatom=1, natoms
@@ -100,6 +97,8 @@ subroutine TEST_xy2_qmom_bisect_frame(rank, ncoords, natoms, local, xyz, f)
   integer(ik), external :: omp_get_thread_num
 
   ithread = omp_get_thread_num()
+  
+  f = 0
 
   if (ithread==0) then
 

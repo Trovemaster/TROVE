@@ -10,9 +10,9 @@ module moltype
          MLZmatrixT,MLfromlocal2cartesian,MLdiag_ulen,ML_check_steps,three_j,&
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
-  public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF
+  public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho
+  public MLorienting_a0_across_dadrho,manifold
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -47,6 +47,15 @@ module moltype
       real(ark),intent(out)  ::  mu_xyz(rank)
       !
     end subroutine MLtemplate_extF
+    !
+    subroutine MLtemplate_kinetic(nmodes,nterms,rho,g_vib,g_rot,g_cor,pseudo)
+      use accuracy
+      !
+      integer(ik),intent(in) ::  nmodes,nterms
+      real(ark),intent(in)   ::  rho
+      real(ark),intent(out)  ::  g_vib(nmodes,nmodes,nterms),g_rot(3,3,nterms),g_cor(nmodes,3,nterms),pseudo(Nterms)
+      !
+    end subroutine MLtemplate_kinetic
     !
     subroutine MLtemplate_symmetry_transformation(ioper,natoms,src,dst)
       use accuracy
@@ -128,6 +137,7 @@ module moltype
      integer(ik)               :: parmax        ! number of pot. parameters 
      integer(ik)               :: N_meppars     ! number of MEP. parameters 
      character(len=cl)         :: potentype     ! type of potential function 
+     character(len=cl)         :: kinetic_type  ! type of the kinetic function 
      character(len=cl)         :: meptype       ! type of MEP function
      real(ark),pointer         :: force(:)      ! force field
      real(ark),pointer         :: mep_params(:) ! MEP parameters
@@ -198,6 +208,7 @@ module moltype
      real(rk) :: intensity    = -1e0    ! threshold defining the output intensities
      real(rk) :: linestrength = -1e0    ! threshold defining the output linestrength
      real(rk) :: coeff        = -1e0    ! threshold defining the eigenfunction coefficients
+     real(rk) :: leading_coeff = 0.1
                                         ! taken into account in the matrix elements evaluation.
     real(rk) :: leading_coeff = 0.1
   end type MLthresholdsT
@@ -234,6 +245,22 @@ module moltype
      logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
+     logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
+     !
+     ! variables used in extfield module
+     integer(ik)   :: tens_rank = 1
+     integer(ik)   :: tens_ialpha = 3
+     integer(ik)   :: tens_ibeta = 3
+     character(cl) :: tens_oper = 'NA'
+     integer(ik)   :: tens_oper_ielem = 1
+     character(cl) :: tens_frame = 'NA'
+     integer(ik)   :: tens_ibatch = 1
+     real(rk)      :: tens_omega
+     !
+     integer(ik) :: nvib_quanta_upp = 0
+     integer(ik) :: nvib_quanta_low = 0
+     integer(ik) :: vib_quanta_upp(20,1000)
+     integer(ik) :: vib_quanta_low(20,1000)
      !
 
      ! variables used in extfield module
@@ -255,9 +282,7 @@ module moltype
 
  type(MLIntensityT),save :: intensity
  !
- !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
- !
-
+ integer(ik) :: manifold
 
   contains
 
@@ -271,8 +296,8 @@ module moltype
   subroutine MLinitialize_molec(Moltype,Coordinates,coords_transform,&
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
                                   AtomMasses,local_eq, &
-                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,symmetry_,rho_border,&
-                                  zmatrix_)
+                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
+                                  symmetry_,rho_border,zmatrix_)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -289,7 +314,7 @@ module moltype
   character(len=16),intent(in) :: forcename_(:)
   real(ark),   intent(in)      :: specparam(:)
   !
-  character(len=cl),intent(in)  :: potentype
+  character(len=cl),intent(in)  :: potentype,kinetic_type
   character(len=cl),intent(in)  :: symmetry_
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
@@ -348,6 +373,7 @@ module moltype
     !
     molec%local_eq = local_eq
     molec%potentype = potentype
+    molec%kinetic_type = kinetic_type
     molec%atomMasses = AtomMasses
     molec%specparam = specparam
     molec%dihedtype = dihedtype_

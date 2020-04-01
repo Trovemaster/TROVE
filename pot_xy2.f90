@@ -13,7 +13,8 @@ module pot_xy2
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
-         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff
+         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,MLpoten_xy2_tyuterev_alpha
+  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -427,7 +428,6 @@ module pot_xy2
   end function MLpoten_xy2_mlt_co2
 
 
-
   !
   ! Defining potential energy function
   !
@@ -711,6 +711,538 @@ endif
     if (verbose>=6) write(out,"('MLpoten_xy2_tyuterev/end')")
 
  end function MLpoten_xy2_tyuterev
+
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xy2_morse_cos(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r12,r32,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
+
+   real(ark)            :: aa1,re12,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh
+   integer(ik)          :: N
+   real(ark)            :: ycos,v_t,q1,q2
+   real(ark)            :: a1(3),a2(3),t1,t2,w(3),cosalpha
+   character(len=cl)    :: txt
+   !
+   if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/start')")
+   !
+   r12  = local(1) ;  r32    = local(2) ;  alpha = local(3)
+   !
+   re12    = force(1)
+   alphae  = force(2)*pi/180.0_ark
+   aa1     = force(3)
+   !
+   select case(trim(molec%coords_transform))
+   case default
+      !
+      alpha = local(3)
+      !
+   case('R-PHI1-PHI2','R-PHI1-PHI2-Z')
+      !
+      a1(:) = xyz(2,:) - xyz(1,:)
+      a2(:) = xyz(3,:) - xyz(1,:)
+      !
+      t1 =  sqrt(sum(a1(:)**2))
+      t2 =  sqrt(sum(a2(:)**2))
+      !
+      a1 =  a1(:)/t1
+      a2 =  a2(:)/t2
+      !
+      w(:) = MLvector_product(a1,a2)
+      !
+      cosalpha = sum(a1(:)*a2(:))
+      !
+      txt = "pot_xy2"
+      !
+      alpha = aacos(cosalpha,txt)
+      !
+      if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+      !
+      !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
+      !
+   end select 
+   !
+   b1   = force(4)
+   b2   = force(5)
+   g1   = force(6)
+   g2   = force(7)
+   !
+   rhh=sqrt(r12**2+r32**2-2._ark*r12*r32*cos(alpha))
+   vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+   !
+   ! calculate potential energy function values
+   !
+   y1=1.0_ark-exp(-aa1*(r12-re12))
+   y2=1.0_ark-exp(-aa1*(r32-re12))
+   !
+   y3=cos(alpha)-cos(alphae)
+   !
+ v0 = force( 8)*y1**0*y2**0*y3**0
+ v1 = force( 9)*y1**0*y2**0*y3**1&
+    + force(10)*y1**1*y2**0*y3**0&
+    + force(10)*y1**0*y2**1*y3**0
+ v2 = force(11)*y1**0*y2**0*y3**2&
+    + force(12)*y1**1*y2**0*y3**1&
+    + force(12)*y1**0*y2**1*y3**1&
+    + force(13)*y1**1*y2**1*y3**0&
+    + force(14)*y1**2*y2**0*y3**0&
+    + force(14)*y1**0*y2**2*y3**0
+ v3 = force(15)*y1**0*y2**0*y3**3&
+    + force(16)*y1**1*y2**0*y3**2&
+    + force(16)*y1**0*y2**1*y3**2&
+    + force(17)*y1**1*y2**1*y3**1&
+    + force(18)*y1**2*y2**0*y3**1&
+    + force(18)*y1**0*y2**2*y3**1&
+    + force(19)*y1**2*y2**1*y3**0&
+    + force(19)*y1**1*y2**2*y3**0&
+    + force(20)*y1**3*y2**0*y3**0&
+    + force(20)*y1**0*y2**3*y3**0
+  v4 =force(21)*y1**0*y2**0*y3**4&
+    + force(22)*y1**1*y2**0*y3**3&
+    + force(22)*y1**0*y2**1*y3**3&
+    + force(23)*y1**1*y2**1*y3**2&
+    + force(24)*y1**2*y2**0*y3**2&
+    + force(24)*y1**0*y2**2*y3**2&
+    + force(25)*y1**2*y2**1*y3**1&
+    + force(25)*y1**1*y2**2*y3**1&
+    + force(26)*y1**2*y2**2*y3**0&
+    + force(27)*y1**3*y2**0*y3**1&
+    + force(27)*y1**0*y2**3*y3**1&
+    + force(28)*y1**3*y2**1*y3**0&
+    + force(28)*y1**1*y2**3*y3**0&
+    + force(29)*y1**4*y2**0*y3**0&
+    + force(29)*y1**0*y2**4*y3**0
+  v5 =force(30)*y1**0*y2**0*y3**5&
+    + force(31)*y1**1*y2**0*y3**4&
+    + force(31)*y1**0*y2**1*y3**4&
+    + force(32)*y1**1*y2**1*y3**3&
+    + force(33)*y1**2*y2**0*y3**3&
+    + force(33)*y1**0*y2**2*y3**3&
+    + force(34)*y1**2*y2**1*y3**2&
+    + force(34)*y1**1*y2**2*y3**2&
+    + force(35)*y1**2*y2**2*y3**1&
+    + force(36)*y1**3*y2**0*y3**2&
+    + force(36)*y1**0*y2**3*y3**2&
+    + force(37)*y1**3*y2**1*y3**1&
+    + force(37)*y1**1*y2**3*y3**1&
+    + force(38)*y1**3*y2**2*y3**0&
+    + force(38)*y1**2*y2**3*y3**0&
+    + force(39)*y1**4*y2**0*y3**1&
+    + force(39)*y1**0*y2**4*y3**1&
+    + force(40)*y1**4*y2**1*y3**0&
+    + force(40)*y1**1*y2**4*y3**0&
+    + force(41)*y1**5*y2**0*y3**0&
+    + force(41)*y1**0*y2**5*y3**0
+  v6 =force(42)*y1**0*y2**0*y3**6&
+    + force(43)*y1**1*y2**0*y3**5&
+    + force(43)*y1**0*y2**1*y3**5&
+    + force(44)*y1**1*y2**1*y3**4&
+    + force(45)*y1**2*y2**0*y3**4&
+    + force(45)*y1**0*y2**2*y3**4&
+    + force(46)*y1**2*y2**1*y3**3&
+    + force(46)*y1**1*y2**2*y3**3&
+    + force(47)*y1**2*y2**2*y3**2&
+    + force(48)*y1**3*y2**0*y3**3&
+    + force(48)*y1**0*y2**3*y3**3&
+    + force(49)*y1**3*y2**1*y3**2&
+    + force(49)*y1**1*y2**3*y3**2&
+    + force(50)*y1**3*y2**2*y3**1&
+    + force(50)*y1**2*y2**3*y3**1&
+    + force(51)*y1**3*y2**3*y3**0&
+    + force(52)*y1**4*y2**0*y3**2&
+    + force(52)*y1**0*y2**4*y3**2&
+    + force(53)*y1**4*y2**1*y3**1&
+    + force(53)*y1**1*y2**4*y3**1&
+    + force(54)*y1**4*y2**2*y3**0&
+    + force(54)*y1**2*y2**4*y3**0&
+    + force(55)*y1**5*y2**0*y3**1&
+    + force(55)*y1**0*y2**5*y3**1&
+    + force(56)*y1**5*y2**1*y3**0&
+    + force(56)*y1**1*y2**5*y3**0&
+    + force(57)*y1**6*y2**0*y3**0&
+    + force(57)*y1**0*y2**6*y3**0
+ v7 = force(58)*y1**0*y2**0*y3**7&
+    + force(59)*y1**1*y2**0*y3**6&
+    + force(59)*y1**0*y2**1*y3**6&
+    + force(60)*y1**1*y2**1*y3**5&
+    + force(61)*y1**2*y2**0*y3**5&
+    + force(61)*y1**0*y2**2*y3**5&
+    + force(62)*y1**2*y2**1*y3**4&
+    + force(62)*y1**1*y2**2*y3**4&
+    + force(63)*y1**2*y2**2*y3**3&
+    + force(64)*y1**3*y2**0*y3**4&
+    + force(64)*y1**0*y2**3*y3**4&
+    + force(65)*y1**3*y2**1*y3**3&
+    + force(65)*y1**1*y2**3*y3**3&
+    + force(66)*y1**3*y2**2*y3**2&
+    + force(66)*y1**2*y2**3*y3**2&
+    + force(67)*y1**3*y2**3*y3**1&
+    + force(68)*y1**4*y2**0*y3**3&
+    + force(68)*y1**0*y2**4*y3**3&
+    + force(69)*y1**4*y2**1*y3**2&
+    + force(69)*y1**1*y2**4*y3**2&
+    + force(70)*y1**4*y2**2*y3**1&
+    + force(70)*y1**2*y2**4*y3**1&
+    + force(71)*y1**4*y2**3*y3**0&
+    + force(71)*y1**3*y2**4*y3**0&
+    + force(72)*y1**5*y2**0*y3**2&
+    + force(72)*y1**0*y2**5*y3**2&
+    + force(73)*y1**5*y2**1*y3**1&
+    + force(73)*y1**1*y2**5*y3**1&
+    + force(74)*y1**5*y2**2*y3**0&
+    + force(74)*y1**2*y2**5*y3**0&
+    + force(75)*y1**6*y2**0*y3**1&
+    + force(75)*y1**0*y2**6*y3**1&
+    + force(76)*y1**6*y2**1*y3**0&
+    + force(76)*y1**1*y2**6*y3**0&
+    + force(77)*y1**7*y2**0*y3**0&
+    + force(77)*y1**0*y2**7*y3**0
+ v8 = force(78)*y1**0*y2**0*y3**8&
+    + force(79)*y1**1*y2**0*y3**7&
+    + force(79)*y1**0*y2**1*y3**7&
+    + force(80)*y1**1*y2**1*y3**6&
+    + force(81)*y1**2*y2**0*y3**6&
+    + force(81)*y1**0*y2**2*y3**6&
+    + force(82)*y1**2*y2**1*y3**5&
+    + force(82)*y1**1*y2**2*y3**5&
+    + force(83)*y1**2*y2**2*y3**4&
+    + force(84)*y1**3*y2**0*y3**5&
+    + force(84)*y1**0*y2**3*y3**5&
+    + force(85)*y1**3*y2**1*y3**4&
+    + force(85)*y1**1*y2**3*y3**4&
+    + force(86)*y1**3*y2**2*y3**3&
+    + force(86)*y1**2*y2**3*y3**3&
+    + force(87)*y1**3*y2**3*y3**2&
+    + force(88)*y1**4*y2**0*y3**4&
+    + force(88)*y1**0*y2**4*y3**4&
+    + force(89)*y1**4*y2**1*y3**3&
+    + force(89)*y1**1*y2**4*y3**3&
+    + force(90)*y1**4*y2**2*y3**2&
+    + force(90)*y1**2*y2**4*y3**2&
+    + force(91)*y1**4*y2**3*y3**1&
+    + force(91)*y1**3*y2**4*y3**1&
+    + force(92)*y1**4*y2**4*y3**0&
+    + force(93)*y1**5*y2**0*y3**3&
+    + force(93)*y1**0*y2**5*y3**3&
+    + force(94)*y1**5*y2**1*y3**2&
+    + force(94)*y1**1*y2**5*y3**2&
+    + force(95)*y1**5*y2**2*y3**1&
+    + force(95)*y1**2*y2**5*y3**1&
+    + force(96)*y1**5*y2**3*y3**0&
+    + force(96)*y1**3*y2**5*y3**0&
+    + force(97)*y1**6*y2**0*y3**2&
+    + force(97)*y1**0*y2**6*y3**2&
+    + force(98)*y1**6*y2**1*y3**1&
+    + force(98)*y1**1*y2**6*y3**1&
+    + force(99)*y1**6*y2**2*y3**0&
+    + force(99)*y1**2*y2**6*y3**0&
+    + force(100)*y1**7*y2**0*y3**1&
+    + force(100)*y1**0*y2**7*y3**1&
+    + force(101)*y1**7*y2**1*y3**0&
+    + force(101)*y1**1*y2**7*y3**0&
+    + force(102)*y1**8*y2**0*y3**0&
+    + force(102)*y1**0*y2**8*y3**0
+    !
+    f=v0+v1+v2+v3+v4+v5+v6+v7+v8+vhh
+    !
+    if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/end')")
+
+ end function MLpoten_xy2_morse_cos
+
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xy2_tyuterev_alpha(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r12,r32,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
+
+   real(ark)            :: aa1,re12,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh
+   integer(ik)          :: N
+   real(ark)            :: ycos,v_t,q1,q2
+   real(ark)            :: a1(3),a2(3),t1,t2,w(3),cosalpha
+   character(len=cl)    :: txt
+   !
+   if (verbose>=6) write(out,"('MLpoten_xy2_tyuterev_alpha/start')")
+   !
+   r12  = local(1) ;  r32    = local(2) ;  alpha = local(3)
+   !
+   re12    = molec%req(1)
+   aa1     = molec%specparam(1)
+   !
+   if (molec%Nangles>0) then
+     alphae  = molec%alphaeq(1)
+   else
+     alphae = pi+(-molec%taueq(1)+molec%taueq(2))
+     alpha = pi - local(3) 
+   endif 
+   !
+   select case(trim(molec%coords_transform))
+   case default
+      !
+      alpha = local(3)
+      !
+   case('R-PHI1-PHI2','R-PHI1-PHI2-Z')
+      !
+      a1(:) = xyz(2,:) - xyz(1,:)
+      a2(:) = xyz(3,:) - xyz(1,:)
+      !
+      t1 =  sqrt(sum(a1(:)**2))
+      t2 =  sqrt(sum(a2(:)**2))
+      !
+      a1 =  a1(:)/t1
+      a2 =  a2(:)/t2
+      !
+      w(:) = MLvector_product(a1,a2)
+      !
+      cosalpha = sum(a1(:)*a2(:))
+      !
+      txt = "pot_xy2"
+      !
+      alpha = aacos(cosalpha,txt)
+      !
+      if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+      !
+      !alpha = pi-asin( sqrt( (local(3))**2+(local(4))**2 ))
+      !
+   end select 
+   !
+   b1   = force(1)
+   b2   = force(2)
+   g1   = force(3)
+   g2   = force(4)
+   !
+   rhh=sqrt(r12**2+r32**2-2._ark*r12*r32*cos(alpha))
+   vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+   !
+   ! calculate potential energy function values
+   !
+   y1=1.0_ark-exp(-aa1*(r12-re12))
+   y2=1.0_ark-exp(-aa1*(r32-re12))
+   !
+   !y3=cos(alpha)-cos(alphae)
+   y3=alpha-alphae
+   !
+   N = size(force)
+   !
+   v4 = 0 ; v5 = 0 ; v6 = 0 ; v7 = 0 ; v8 = 0
+   !
+ v0 = force(5)*y1**0*y2**0*y3**0
+ v1 = force(6)*y1**0*y2**0*y3**1&
+    + force(7)*y1**1*y2**0*y3**0&
+    + force(7)*y1**0*y2**1*y3**0
+ v2 = force(8)*y1**0*y2**0*y3**2&
+    + force(9)*y1**1*y2**0*y3**1&
+    + force(9)*y1**0*y2**1*y3**1&
+    + force(10)*y1**1*y2**1*y3**0&
+    + force(11)*y1**2*y2**0*y3**0&
+    + force(11)*y1**0*y2**2*y3**0
+ v3 = force(12)*y1**0*y2**0*y3**3&
+    + force(13)*y1**1*y2**0*y3**2&
+    + force(13)*y1**0*y2**1*y3**2&
+    + force(14)*y1**1*y2**1*y3**1&
+    + force(15)*y1**2*y2**0*y3**1&
+    + force(15)*y1**0*y2**2*y3**1&
+    + force(16)*y1**2*y2**1*y3**0&
+    + force(16)*y1**1*y2**2*y3**0&
+    + force(17)*y1**3*y2**0*y3**0&
+    + force(17)*y1**0*y2**3*y3**0
+
+ if (N>18) then
+  v4 = force(18)*y1**0*y2**0*y3**4&
+    + force(19)*y1**1*y2**0*y3**3&
+    + force(19)*y1**0*y2**1*y3**3&
+    + force(20)*y1**1*y2**1*y3**2&
+    + force(21)*y1**2*y2**0*y3**2&
+    + force(21)*y1**0*y2**2*y3**2&
+    + force(22)*y1**2*y2**1*y3**1&
+    + force(22)*y1**1*y2**2*y3**1&
+    + force(23)*y1**2*y2**2*y3**0&
+    + force(24)*y1**3*y2**0*y3**1&
+    + force(24)*y1**0*y2**3*y3**1&
+    + force(25)*y1**3*y2**1*y3**0&
+    + force(25)*y1**1*y2**3*y3**0&
+    + force(26)*y1**4*y2**0*y3**0&
+    + force(26)*y1**0*y2**4*y3**0
+endif
+
+ if (N>26) then
+  v5 = force(27)*y1**0*y2**0*y3**5&
+    + force(28)*y1**1*y2**0*y3**4&
+    + force(28)*y1**0*y2**1*y3**4&
+    + force(29)*y1**1*y2**1*y3**3&
+    + force(30)*y1**2*y2**0*y3**3&
+    + force(30)*y1**0*y2**2*y3**3&
+    + force(31)*y1**2*y2**1*y3**2&
+    + force(31)*y1**1*y2**2*y3**2&
+    + force(32)*y1**2*y2**2*y3**1&
+    + force(33)*y1**3*y2**0*y3**2&
+    + force(33)*y1**0*y2**3*y3**2&
+    + force(34)*y1**3*y2**1*y3**1&
+    + force(34)*y1**1*y2**3*y3**1&
+    + force(35)*y1**3*y2**2*y3**0&
+    + force(35)*y1**2*y2**3*y3**0&
+    + force(36)*y1**4*y2**0*y3**1&
+    + force(36)*y1**0*y2**4*y3**1&
+    + force(37)*y1**4*y2**1*y3**0&
+    + force(37)*y1**1*y2**4*y3**0&
+    + force(38)*y1**5*y2**0*y3**0&
+    + force(38)*y1**0*y2**5*y3**0
+endif
+
+ if (N>38) then
+  v6 = force(39)*y1**0*y2**0*y3**6&
+    + force(40)*y1**1*y2**0*y3**5&
+    + force(40)*y1**0*y2**1*y3**5&
+    + force(41)*y1**1*y2**1*y3**4&
+    + force(42)*y1**2*y2**0*y3**4&
+    + force(42)*y1**0*y2**2*y3**4&
+    + force(43)*y1**2*y2**1*y3**3&
+    + force(43)*y1**1*y2**2*y3**3&
+    + force(44)*y1**2*y2**2*y3**2&
+    + force(45)*y1**3*y2**0*y3**3&
+    + force(45)*y1**0*y2**3*y3**3&
+    + force(46)*y1**3*y2**1*y3**2&
+    + force(46)*y1**1*y2**3*y3**2&
+    + force(47)*y1**3*y2**2*y3**1&
+    + force(47)*y1**2*y2**3*y3**1&
+    + force(48)*y1**3*y2**3*y3**0&
+    + force(49)*y1**4*y2**0*y3**2&
+    + force(49)*y1**0*y2**4*y3**2&
+    + force(50)*y1**4*y2**1*y3**1&
+    + force(50)*y1**1*y2**4*y3**1&
+    + force(51)*y1**4*y2**2*y3**0&
+    + force(51)*y1**2*y2**4*y3**0&
+    + force(52)*y1**5*y2**0*y3**1&
+    + force(52)*y1**0*y2**5*y3**1&
+    + force(53)*y1**5*y2**1*y3**0&
+    + force(53)*y1**1*y2**5*y3**0&
+    + force(54)*y1**6*y2**0*y3**0&
+    + force(54)*y1**0*y2**6*y3**0
+ endif
+
+ if (N>54) then
+ v7 = force(55)*y1**0*y2**0*y3**7&
+    + force(56)*y1**1*y2**0*y3**6&
+    + force(56)*y1**0*y2**1*y3**6&
+    + force(57)*y1**1*y2**1*y3**5&
+    + force(58)*y1**2*y2**0*y3**5&
+    + force(58)*y1**0*y2**2*y3**5&
+    + force(59)*y1**2*y2**1*y3**4&
+    + force(59)*y1**1*y2**2*y3**4&
+    + force(60)*y1**2*y2**2*y3**3&
+    + force(61)*y1**3*y2**0*y3**4&
+    + force(61)*y1**0*y2**3*y3**4&
+    + force(62)*y1**3*y2**1*y3**3&
+    + force(62)*y1**1*y2**3*y3**3&
+    + force(63)*y1**3*y2**2*y3**2&
+    + force(63)*y1**2*y2**3*y3**2&
+    + force(64)*y1**3*y2**3*y3**1&
+    + force(65)*y1**4*y2**0*y3**3&
+    + force(65)*y1**0*y2**4*y3**3&
+    + force(66)*y1**4*y2**1*y3**2&
+    + force(66)*y1**1*y2**4*y3**2&
+    + force(67)*y1**4*y2**2*y3**1&
+    + force(67)*y1**2*y2**4*y3**1&
+    + force(68)*y1**4*y2**3*y3**0&
+    + force(68)*y1**3*y2**4*y3**0&
+    + force(69)*y1**5*y2**0*y3**2&
+    + force(69)*y1**0*y2**5*y3**2&
+    + force(70)*y1**5*y2**1*y3**1&
+    + force(70)*y1**1*y2**5*y3**1&
+    + force(71)*y1**5*y2**2*y3**0&
+    + force(71)*y1**2*y2**5*y3**0&
+    + force(72)*y1**6*y2**0*y3**1&
+    + force(72)*y1**0*y2**6*y3**1&
+    + force(73)*y1**6*y2**1*y3**0&
+    + force(73)*y1**1*y2**6*y3**0&
+    + force(74)*y1**7*y2**0*y3**0&
+    + force(74)*y1**0*y2**7*y3**0
+ endif
+
+ if (N>74) then
+ v8 = force(75)*y1**0*y2**0*y3**8&
+    + force(76)*y1**1*y2**0*y3**7&
+    + force(76)*y1**0*y2**1*y3**7&
+    + force(77)*y1**1*y2**1*y3**6&
+    + force(78)*y1**2*y2**0*y3**6&
+    + force(78)*y1**0*y2**2*y3**6&
+    + force(79)*y1**2*y2**1*y3**5&
+    + force(79)*y1**1*y2**2*y3**5&
+    + force(80)*y1**2*y2**2*y3**4&
+    + force(81)*y1**3*y2**0*y3**5&
+    + force(81)*y1**0*y2**3*y3**5&
+    + force(82)*y1**3*y2**1*y3**4&
+    + force(82)*y1**1*y2**3*y3**4&
+    + force(83)*y1**3*y2**2*y3**3&
+    + force(83)*y1**2*y2**3*y3**3&
+    + force(84)*y1**3*y2**3*y3**2&
+    + force(85)*y1**4*y2**0*y3**4&
+    + force(85)*y1**0*y2**4*y3**4&
+    + force(86)*y1**4*y2**1*y3**3&
+    + force(86)*y1**1*y2**4*y3**3&
+    + force(87)*y1**4*y2**2*y3**2&
+    + force(87)*y1**2*y2**4*y3**2&
+    + force(88)*y1**4*y2**3*y3**1&
+    + force(88)*y1**3*y2**4*y3**1&
+    + force(89)*y1**4*y2**4*y3**0&
+    + force(90)*y1**5*y2**0*y3**3&
+    + force(90)*y1**0*y2**5*y3**3&
+    + force(91)*y1**5*y2**1*y3**2&
+    + force(91)*y1**1*y2**5*y3**2&
+    + force(92)*y1**5*y2**2*y3**1&
+    + force(92)*y1**2*y2**5*y3**1&
+    + force(93)*y1**5*y2**3*y3**0&
+    + force(93)*y1**3*y2**5*y3**0&
+    + force(94)*y1**6*y2**0*y3**2&
+    + force(94)*y1**0*y2**6*y3**2&
+    + force(95)*y1**6*y2**1*y3**1&
+    + force(95)*y1**1*y2**6*y3**1&
+    + force(96)*y1**6*y2**2*y3**0&
+    + force(96)*y1**2*y2**6*y3**0&
+    + force(97)*y1**7*y2**0*y3**1&
+    + force(97)*y1**0*y2**7*y3**1&
+    + force(98)*y1**7*y2**1*y3**0&
+    + force(98)*y1**1*y2**7*y3**0&
+    + force(99)*y1**8*y2**0*y3**0&
+    + force(99)*y1**0*y2**8*y3**0
+endif
+    !
+    !th1 = 0.5d0*( 1.0d0-tanh( 0.0001_ark*( v0+v1+v2-50000_ark ) ) )
+    !
+    !f=(v0+v1+v2)+(v3+v4+v5+v6+v7+v8)*th1+vhh
+    !
+    !vhh = (v0+v1+v2)*(1.0_ark/r12**12+1.0_ark/r32**12+1.0_ark/rhh**12)*b1
+    !
+    f=v0+v1+v2+v3+v4+v5+v6+v7+v8+vhh
+    !
+    q1 = local(1)/bohr ; q2 = local(2)/bohr ;  ycos = cos(alpha)
+    !
+    v_t = 0
+    !
+    !call potv(v_t,q1,q2,ycos)
+    !
+    f = f + v_t*219474.630670_ark
+    !
+    if (verbose>=6) write(out,"('MLpoten_xy2_tyuterev_alpha/end')")
+
+ end function MLpoten_xy2_tyuterev_alpha
 
 
 
@@ -2120,15 +2652,7 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdipole_ames1: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdipole_ames1 - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-      end select
+      xyz0 = MLloc2pqr_xy2(local)
       !
     else
       !
@@ -2654,18 +3178,10 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xy2_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xy2_coeff - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -2696,10 +3212,10 @@ endif
     !
     re = extF%coef(1,1)
     ae = extF%coef(2,1)*pi/180.0_ark
-    b0 = extF%coef(3,1)
+    !b0 = extF%coef(3,1)
     !
-    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
-    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
+    y1 = (r1 - re)
+    y2 = (r2 - re)
     y3 = cos(alpha) - cos(ae)
     !
     k = extF%nterms(1)
@@ -3064,18 +3580,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xy2_linear: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xy2_linear - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -3108,8 +3617,8 @@ endif
     ae = extF%coef(2,1)*pi/180.0_ark
     b0 = extF%coef(3,1)
     !
-    y1 = (r1 - re)*exp(-b0*(r1-re)**2)
-    y2 = (r2 - re)*exp(-b0*(r1-re)**2)
+    y1 = (r1 - re)
+    y2 = (r2 - re)
     !
     y3 = alpha-ae
     !
@@ -3468,40 +3977,70 @@ endif
     real(ark)             :: f(molec%natoms, 3)
 
     integer(ik)           :: icart
-    real(ark)             :: a0(molec%natoms, 3), cm,mX,mY,R1,R2,alpha,alpha_2,v
+    real(ark)             :: a0(molec%natoms, 3), cm,mX,mY,R1,R2,alpha,alpha_2,v,mu
 
     a0 = 0
+    !
+    alpha_2 = r(3)*0.5_ark
     !
     select case(trim(molec%coords_transform))
        !
     case('R-RHO-Z')
        !
-       a0(2, 1) = -r(1) * cos(r(3)*0.5_ark)
-       a0(2, 3) =  r(1) * sin(r(3)*0.5_ark)
+       a0(2, 1) = -r(1) * cos(alpha_2)
+       a0(2, 3) = -r(1) * sin(alpha_2)
        !
-       a0(3, 1) = -r(2) * cos(r(3)*0.5_ark)
-       a0(3, 3) = -r(2) * sin(r(3)*0.5_ark)
+       a0(3, 1) = -r(2) * cos(alpha_2)
+       a0(3, 3) =  r(2) * sin(alpha_2)
+       !
+    case('R-RHO-HALF')
+       !
+       a0(2, 1) = -r(1) * cos(r(3))
+       a0(2, 3) =  r(1) * sin(r(3))
+       !
+       a0(3, 1) = -r(2) * cos(r(3))
+       a0(3, 3) = -r(2) * sin(r(3))
        !
     case('R-RHO-Z-ECKART')
        !
        R1 = r(1)
        R2 = r(2)
        alpha = r(3)
-       alpha_2 = alpha*0.5_ark
        v = -atan(cos(alpha_2)*(R1-R2)/(sin(alpha_2)*(R1+R2)))
        !
        mX  = molec%atommasses(1)
        mY  = molec%atommasses(2)
        !
-       a0(1,1) =  mY*(cos(v)*cos(alpha_2)*R1+cos(v)*cos(alpha_2)*R2+sin(v)*sin(alpha_2)*R1-sin(v)*sin(alpha_2)*R2)/(mX+2*mY)
-       a0(1,3) =  mY*(sin(v)*cos(alpha_2)*R1+sin(v)*cos(alpha_2)*R2-cos(v)*sin(alpha_2)*R1+cos(v)*sin(alpha_2)*R2)/(mX+2*mY)
-       a0(2,1) =  -(cos(v)*cos(alpha_2)*R1*mX+cos(v)*cos(alpha_2)*R1*mY-cos(v)*cos(alpha_2)*mY*R2+sin(v)*sin(alpha_2)*R1*mX+sin(v)*sin(alpha_2)*R1*mY+sin(v)*sin(alpha_2)*mY*R2)/(mX+2*mY)
-       a0(2,3) =  -(sin(v)*cos(alpha_2)*R1*mX+sin(v)*cos(alpha_2)*R1*mY-sin(v)*cos(alpha_2)*mY*R2-cos(v)*sin(alpha_2)*R1*mX-cos(v)*sin(alpha_2)*R1*mY-cos(v)*sin(alpha_2)*mY*R2)/(mX+2*mY)
-       a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2*mY)
-       a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2*mY)
+       a0(1,1) =  mY*(cos(v)*cos(alpha_2)*R1+cos(v)*cos(alpha_2)*R2+sin(v)*sin(alpha_2)*R1-sin(v)*sin(alpha_2)*R2)/(mX+2.0_ark*mY)
+       a0(1,3) =  mY*(sin(v)*cos(alpha_2)*R1+sin(v)*cos(alpha_2)*R2-cos(v)*sin(alpha_2)*R1+cos(v)*sin(alpha_2)*R2)/(mX+2.0_ark*mY)
+       a0(2,1) =  -(cos(v)*cos(alpha_2)*R1*mX+cos(v)*cos(alpha_2)*R1*mY-cos(v)*cos(alpha_2)*mY*R2+sin(v)*sin(alpha_2)*R1*mX+sin(v)*sin(alpha_2)*R1*mY+sin(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
+       a0(2,3) =  -(sin(v)*cos(alpha_2)*R1*mX+sin(v)*cos(alpha_2)*R1*mY-sin(v)*cos(alpha_2)*mY*R2-cos(v)*sin(alpha_2)*R1*mX-cos(v)*sin(alpha_2)*R1*mY-cos(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
+       a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
+       a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
+       !
+    case('RADAU-R-ALPHA-Z')
+       !
+       mX  = molec%atommasses(1)
+       mY  = molec%atommasses(2)
+       !
+       mu  = sqrt(mX/(mX+mY+mY))
+       alpha = r(3)
+       alpha_2 = alpha*0.5_ark
+       !
+       a0 = 0 
+       !
+       a0(1,1) = -0.5_ark*cos(alpha_2)*(r(1)+r(2))*(mu-1.0_ark)/(mu)
+       a0(1,3) =  0.5_ark*sin(alpha_2)*(r(1)-r(2))*(mu-1.0_ark)/(mu)
+       !
+       a0(2,1) =  -r(1)*cos(alpha_2)
+       a0(2,3) =   r(1)*sin(alpha_2)
+       !
+       a0(3,1) =  -r(2)*cos(alpha_2)
+       a0(3,3) =  -r(2)*sin(alpha_2)
        !
     case default 
-       stop 'MLloc2pqr_xy2: illegla coordinate type'
+       write(out,"('MLloc2pqr_xy2: illegal coordinate type',a)") trim(molec%coords_transform)
+       stop 'MLloc2pqr_xy2: illegal coordinate type'
     end select
     
     do icart = 1, 3
@@ -3845,18 +4384,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdipole_xy2_lorenzo: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdipole_xy2_lorenzo - bad coord. type'
-      case('R-RHO-Z','R-RHO-Z-ECKART')
-         !
-         xyz0 = MLloc2pqr_xy2(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -3943,8 +4475,26 @@ endif
    if (molec%Nangles>0) then
      alphae  = molec%alphaeq(1)
    else
-     alphae = pi+(-molec%taueq(1)+molec%taueq(2))
-     alpha = pi - local(3) 
+     !
+     a1(:) = xyz(2,:) - xyz(1,:)
+     a2(:) = xyz(3,:) - xyz(1,:)
+     !
+     t1 =  sqrt(sum(a1(:)**2))
+     t2 =  sqrt(sum(a2(:)**2))
+     !
+     a1 =  a1(:)/t1
+     a2 =  a2(:)/t2
+     !
+     w(:) = MLvector_product(a1,a2)
+     !
+     cosalpha = sum(a1(:)*a2(:))
+     !
+     txt = "pot_xyz"
+     !
+     alpha = aacos(cosalpha,txt)
+     !
+     if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+     !
    endif 
    !
    re1    = force(1)
@@ -3964,7 +4514,7 @@ endif
    ! calculate potential energy function values
    !
    y1=1.0_ark-exp(-aa1*(r1-re1))
-   y2=1.0_ark-exp(-aa1*(r2-re2))
+   y2=1.0_ark-exp(-aa2*(r2-re2))
    !
    y3=cos(alpha)-cos(alphae)
    !
@@ -4160,18 +4710,11 @@ endif
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      select case(trim(molec%coords_transform))
-      case default
-         write (out,"('MLdms2pqr_xyz_coeff: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'MLdms2pqr_xyz_coeff - bad coord. type'
-      case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
-         !
-         xyz0 = MLloc2pqr_xyz(local)
-         !
-         x(1,:) = xyz0(2,:) - xyz0(1,:)
-         x(2,:) = xyz0(3,:) - xyz0(1,:)
-         !
-      end select
+      !
+      xyz0 = MLloc2pqr_xyz(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
@@ -4568,6 +5111,164 @@ endif
     f(1:3) = matmul(mu,tmat)
     !
  end subroutine MLdms2pqr_xyz_coeff
+
+
+
+
+
+  !
+  ! Defining potential energy function
+  !     Jacek Koput
+  !     the potential energy surface of CaOH
+  !     q1 - CaO, q2 - OH, q3 - CaOH
+  !     bond stretches in the SPF coordinates
+  !     energy in atomic units !
+  !
+  function MLpoten_xyz_Koput(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)   ::  i,i1,i2,i3
+   real(ark)    :: x1,x2,x3,e1,e2,e3,e6,vpot,q1,q2,q3,pd
+      !
+      real(ark),parameter :: tocm = 219474.63067_ark
+      !
+      if (verbose>=6) write(out,"('MLpoten_xyz_Koput/start')")
+      !
+      x1 = local(1)
+      x2 = local(2)
+      x3 = local(3)
+      !
+      pd=pi/180.0_ark
+      !
+      e1=force(1)
+      e2=force(2)
+      e3=force(3)*pd
+      !
+      q1=(x1-e1)/x1
+      q2=(x2-e2)/x2
+      q3=(x3-e3)
+      !
+      vpot=0.0_ark
+      !
+      do i=4,molec%parmax
+        !
+        i1=molec%pot_ind(1,i)
+        i2=molec%pot_ind(2,i)
+        i3=molec%pot_ind(3,i)
+        !
+        vpot=vpot+force(i)*q1**i1*q2**i2*q3**i3
+        !
+      enddo
+      !
+      f = vpot
+      !
+      if (verbose>=6) write(out,"('MLpoten_xyz_Koput/end')")
+      !
+ end function MLpoten_xyz_Koput
+
+
+
+ !===============================================================================
+ !                   electric dipole moment section
+ !===============================================================================
+
+ !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
+ !using the s1,s2,(theta-thetae)
+ recursive subroutine MLdipole_bisect_s1s2theta_xy2(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: i,ik(1:3)
+    real(ark)             :: mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,dipp,dipq,xyz0(3,3),s(3)
+    real(ark)             :: r_e,alpha_e
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n1 + n2
+    u2 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u2 = u2 / sqrt(sum(u2(:)**2))
+    !
+    u3 = MLvector_product(u1,u2)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    r_e     = extF%coef(1,1)
+    alpha_e = extF%coef(2,1)
+    !
+    s(1)=(r1+r2)*0.5_ark-r_e
+    s(2)=(r1-r2)*0.5_ark
+    s(3)=alpha_e - alpha
+    !
+    dipp = 0
+    !
+    do i=3,extF%nterms(1)
+       !
+       ik(:) = extF%term(:,i,1)
+       !
+       dipp = dipp + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,1)
+       !
+    enddo
+    !
+    mu(2) = dipp
+    !
+    r_e     = extF%coef(1,2)
+    alpha_e = extF%coef(2,2)
+    !
+    s(1)=(r1+r2)*0.5_ark-r_e
+    s(2)=(r1-r2)*0.5_ark
+    s(3)=alpha_e - alpha
+    !
+    dipq = 0 
+    !
+    do i=3,extF%nterms(2)
+       !
+       ik(:) = extF%term(:,i,2)
+       !
+       dipq = dipq + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,2)
+       !
+    enddo
+    !
+    mu(1) = dipq
+    !
+    mu(3) = 0
+    !
+    f(1:3) = matmul(mu,tmat)
+    !
+ end subroutine MLdipole_bisect_s1s2theta_xy2
+ !
 
 
 end module pot_xy2

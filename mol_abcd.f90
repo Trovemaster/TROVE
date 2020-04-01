@@ -3502,9 +3502,9 @@ module mol_abcd
        gamma = 0 
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma =3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma =2 !4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma =4 !2 !; return
+       if (mod(K+2,2)==0.and.tau==1) gamma =2 !3 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma =4 !4 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma =3 !2 !; return
        !
     case('C2V','C2V(M)')
        !

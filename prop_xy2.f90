@@ -9,7 +9,7 @@ module prop_xy2
 
   implicit none
 
-  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_sr
+  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_sr, prop_xy2_spin_rotation_bisector
 
   private
  
@@ -27,7 +27,8 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik) :: iatom, icentre
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), e3(3), n1(3), n2(3), n3(3), tmat(3,3), &!
-               coords(3), c_mb(3,3), c_xyz(3,3), c_xyz_(3,3), tmat_inv(3,3)
+               coords(3), c_mb(3,3), c_xyz(3,3), c_xyz_(3,3), tmat_inv(3,3), x(natoms,3)
+  character(len=cl)         :: txt
 
   icentre = nint(extf%coef(1,1)) ! icentre=1 means centre on Y1 and icentre=2 - on Y2
 
@@ -35,21 +36,45 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
     write(out, '(/a,1x,i3,1x,a)') 'prop_xy2_sr error: rank of the dipole moment vector =', rank, ', expected 9'
     stop
   endif
-
-  xyz0 = xyz(1,:)
-  do iatom=1, natoms
-    xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
-  enddo
-
+  !
+  txt = 'prop_xy2_sr'
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then 
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_sr: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_sr - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+       xyz0 = x(1,:)
+       do iatom=1, natoms
+         xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+       enddo
+       !
+    end select
+    !
+  else
+    !
+    xyz0 = xyz(1,:)
+    do iatom=1, natoms
+      xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
+    enddo
+    !
+  endif
+  !
   r1 = sqrt(sum(xyz_(2,:)**2))
   r2 = sqrt(sum(xyz_(3,:)**2))
 
   e1 = xyz_(2,:)/r1
   e2 = xyz_(3,:)/r2
 
-  alpha1 = acos(sum(e1*e2))
+  alpha1 = aacos(sum(e1*e2))
 
-  if (abs(alpha1-pi)<0.0001) stop 'prop_xy2_sr error: valence bond angle is 180 degrees (does not work for linear molecule)'
+  !if (abs(alpha1-pi)<0.0001) stop 'prop_xy2_sr error: valence bond angle is 180 degrees (does not work for linear molecule)'
 
   coords = (/r1,r2,alpha1/)
 
@@ -3057,6 +3082,152 @@ recursive subroutine MLdipole_h2o_lpt2011(rank,ncoords,natoms,local,xyz,f)
     !
  end subroutine MLdipole_h2o_lpt2011
 
+subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
+
+  implicit none 
+  !
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+  integer(ik) :: iatom
+  !
+  real(ark) :: xyz0(3), xyz_(natoms,3),r1,r2,alpha,rho,rho_over_sinrho,rho2_over_sinrho2
+  real(ark) :: c(3,3), mat(3,3), c_out(5,-2:0), e1(3), e2(3), e3(3),x(natoms,3)
+  real(ark),parameter  :: rho_threshold = 0.01_rk
+  !
+  if (rank/=9) then
+    write(out, '(/a,1x,i3,1x,a)') 'prop_xy2_spin_rotation_bisector: rank of the dipole moment vector =', rank, ', expected 9'
+    stop
+  endif
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_qmom_bisect_frame: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_qmom_bisect_frame - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+  !
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+  !
+  e1 = xyz_(2,:)/r1
+  e2 = xyz_(3,:)/r2
+  !
+  alpha = aacos(sum(e1*e2))
+  !
+  rho = pi-alpha
+  !
+  ! fitted tensor elements
+  c = 0
+  !
+  c(1,1) = fit_xy2_sr(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r1, r2, alpha/))
+  c(2,2) = fit_xy2_sr(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r1, r2, alpha/))
+  c(3,3) = fit_xy2_sr(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r1, r2, alpha/))
+  c(1,3) = fit_xy2_sr(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r1, r2, alpha/))
+  c(3,1) = fit_xy2_sr(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r1, r2, alpha/))
+  !
+  ! inverse transform
+  !
+  mat = 0
+  !
+  !
+  if (rho>rho_threshold) then
+    !
+    ! rho/sin(rho)
+    rho_over_sinrho = rho/sin(rho)
+    rho2_over_sinrho2 = rho**2/sin(0.5_ark*rho)**2
+    !
+  else
+    ! up to rho^7
+    rho_over_sinrho = 1.0_ark+1.0_ark/6.0_ark*rho**2+7.0_ark/360.0_ark*rho**4+31.0_ark/15120.0_ark*rho**6
+    rho2_over_sinrho2 = 4.0_ark+1.0_ark/3.0_ark*rho**2+1.0_ark/60.0_ark*rho**4+1.0_ark/1512.0_ark*rho**6
+    !
+  endif
+  !
+  mat(1,1) = 1.0_ark/cos(0.5_ark*rho)**2 * (-1.0_ark)/(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2)
+  mat(2,2) = 1.0_ark
+  mat(3,3) = rho2_over_sinrho2 * (-1.0_ark)/(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2)
+  mat(1,3) = rho_over_sinrho * ( 4.0_ark*(r1-r2) )/( (r1+r2)*(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2) )
+  mat(3,1) = mat(1,3) 
+  !
+  !1,1
+  c_out(1,0)  = mat(1,1)*c(1,1)
+  c_out(1,-1) = mat(1,3)*c(3,1)
+  c_out(1,-2) = 0
+  !
+  !1,3
+  c_out(2,0)  = mat(1,1)*c(1,3)
+  c_out(2,-1) = mat(1,3)*c(3,3)
+  c_out(2,-2) = 0
+  !
+  !2,2
+  c_out(3,0)  = mat(2,2)*c(2,2)
+  c_out(3,-1) = 0
+  c_out(3,-2) = 0
+  !
+  !3,1
+  c_out(4,0)  = 0
+  c_out(4,-1) = mat(1,3)*c(1,1)
+  c_out(4,-2) = mat(3,3)*c(3,1)
+  !
+  !3,3
+  c_out(5,0)  = 0
+  c_out(5,-1) = mat(1,3)*c(1,3)
+  c_out(5,-2) = mat(3,3)*c(3,3)
+  !
+  f = (/c_out(1,0),c_out(1,-1),c_out(2,0),c_out(2,-1),c_out(3,0),c_out(4,-1),c_out(4,-2),c_out(5,-1),c_out(5,-2)/)
+  !
+end subroutine prop_xy2_spin_rotation_bisector
+
+
+!###################################################################################################
+
+
+function fit_xy2_sr(nparams, params, coords) result(f)
+
+  integer(ik), intent(in) :: nparams 
+  real(ark), intent(in) :: params(nparams), coords(3)
+  real(ark) :: f
+
+  real(ark) :: y1, y2, y3, alpha, rho, rad, f0, f1, f2, f3, req, alphaeq, beta
+
+  rad = pi/180.0_ark
+
+  req     = params(1)
+  alphaeq = params(2)*rad ! obsolete
+  beta    = params(3)
+
+  y1     = (coords(1)-req) *exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) *exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  y3     = 1.0_ark - cos(rho)
+
+  f0 = params(4)
+  f1 = xy2_func_n1_d6( (/y1,y2,y3/), params(5:22)  )  ! nparams = 18
+  f2 = xy2_func_n2_d6( (/y1,y2,y3/), params(23:67) )  ! nparams = 45
+  f3 = xy2_func_n3_d6( (/y1,y2,y3/), params(68:87) )  ! nparams = 20
+
+  f = f0 + f1 + f2 + f3
+
+end function fit_xy2_sr
 
 
 end module prop_xy2

@@ -8,7 +8,7 @@ module fields
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                      ME_laguerre_k
+                      ME_laguerre_k,ME_laguerre_simple_k
    use me_numer
    use me_rot
    use timer
@@ -27,13 +27,15 @@ module fields
    public FLread_coeff_matelem,FLinitilize_Potential_original
    public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
    public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
-   public jobt, trove, manifold, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
+   public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
    !
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
-          FLDVR_gmat_dvr,FLfromcartesian2local
+          FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
+   
+   public choose, sum_choose, powers_from_index
    !
    !FLfrom_local2chi_by_fit
    !
@@ -122,6 +124,12 @@ module fields
      logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
    end type  FLbasissetT 
 
+   type FLcoeffprunT
+    !
+    real(rk)           :: contribution_threshold = 1e-4_rk
+    !
+   end type FLcoeffprunT
+
 
 
 
@@ -203,7 +211,8 @@ module fields
       !
       type(FLpolynomT),pointer ::  extF(:)       ! External field
       !
-      character(len=cl)        ::  potentype      ! Type of the potential energy function representaion
+      character(len=cl)        ::  potentype    ='GENERAL'  ! Type of the potential energy function representaion
+      character(len=cl)        ::  kinetic_type ='GENERAL'  ! Type of the kinetic energy representaion
       real(ark),pointer        ::  qwforce(:,:,:)  ! qwadratic force constants f(l,m) in case of rank=1
       real(ark),pointer        ::  omega(:)      ! Harmonic frequencies 
       real(ark),pointer        ::  coord_f(:)      ! conversion factor to the standard coordinate (normal, morse ...)
@@ -231,6 +240,7 @@ module fields
       character(len=cl)   :: chk_poten_fname   = 'potential.chk'     ! file name to store the expansion parameters 
       character(len=cl)   :: chk_kinet_fname   = 'kinetic.chk'       ! file name to store the expansion parameters 
       character(len=cl)   :: chk_external_fname   = 'external.chk'       ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_contrib_fname = 'contribution.chk'  ! file name to store the highest contribution to eigenfunctions of contracted basis set 
       !
       logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
       logical             :: separate_convert  = .false.          ! convert hamiltonian.chk to potential.chk and kinetic.chk
@@ -238,6 +248,7 @@ module fields
       logical             :: sparse  = .false.                    ! A sparse representation of fields 
       logical             :: triatom_sing_resolve = .false.
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
+      integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       !
    end type JobT
    !
@@ -329,6 +340,7 @@ module fields
       character(len=cl)   :: j0extmat_suffix  = 'j0_extmatelem'  ! filename suffix  for storing j=0 extF matrix elements of the Hamiltonian
       character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
       character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
+      character(len=cl)   :: tdm_file          = 'j0_tdm'      ! filename name for vibrational j=0 transition dipole moments for replacement 
 
        
       real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
@@ -341,6 +353,7 @@ module fields
       integer(ik)         :: verbose          ! soft verbose level (from input, not precompiled)
       logical             :: vib_contract     ! whether the vibrational contraction is used 
                                               ! Vibrational contraction  - we use the computed J=0 basis functions for rovibr. problem)
+      logical             :: eigen_contract = .false.   ! whether we contract based on the contracted basis coefficients of the eigenfunctions
       logical             :: fast = .true.    ! fast and exensive calculation of the contracted matrix elements 
       logical             :: vib_rot_contr = .false.    ! the contracted basis is computed using vibration-rotation scheme where 
                                               !  the vibrational indeces run first and K runs last in contrast to the default rot-vib scheme 
@@ -367,6 +380,7 @@ module fields
       logical             :: triatom_sing_resolve = .false.
       logical,pointer     :: select_gamma(:)! the diagonalization will be done only for selected gamma's
       integer(ik),pointer :: nroots(:) ! number of the roots to be found in variational diagonalization with syevr
+      integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
       !
    end type FLcalcsT
 
@@ -439,11 +453,11 @@ module fields
       integer(ik)         :: j_list(1:100) = -1
       integer(ik)         :: sym_list(1:100) = -1
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
+      logical             :: reducible_eigen_contribution = .false. 
       !
    end type FLanalysisT
-
-
-
+   !
+   !
    type FLactionT
      !
      logical :: fitting       = .false.
@@ -510,7 +524,7 @@ module fields
 
 
    integer, parameter       :: verbose     = 2    ! Verbosity level
-   integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differencies
+   integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differences
    !
    integer(ik), save        :: FLNelements        ! number of all real elements we use to count used memory 
    !
@@ -518,9 +532,6 @@ module fields
    ! if it is "1", this special variable will be given as a 1D table, as well all functions will be represented 
    ! as expansions around each point rho. Thus the manifold has the rank "1"
    ! If it is "0" - all functions are given by the expansions around the 0d manifold, i.e. one point
-   !
-   !integer(ik),parameter :: manifold = 0
-   integer(ik) :: manifold
    !
    character(len=cl),parameter :: axis_system = 'Eckart'
    !
@@ -554,6 +565,7 @@ module fields
    type(FLanalysisT),save        :: analysis
    type(FLfittingT),save         :: fitting     ! objects defining the fitting to the observed energies
    type(FLfittingT),save         :: j0fit       ! objects defining the refinement of the band centers
+   type(FLcoeffprunT)            :: coeffprun   ! object for pruning basis funcitons 
    !
    ! Andrey's temporale measure: it is not adviceble to use an enviroment variable for that. 
    ! it can bbe very bad for the parallelization. 
@@ -635,6 +647,7 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
+   logical :: kinetic_defined
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
    character(len=wl) :: w
    real(rk)    :: lfact,f_t
@@ -691,11 +704,11 @@ module fields
    !
    zmat_defined  = .false.
    basis_defined = .false.
-   trove%potentype = 'GENERAL'
    equil_defined = .false.
    refer_defined = .false.
    chk_defined = .false.
    pot_defined   = .false.
+   kinetic_defined = .false.
    extF_defined  = .false.
    symmetry_defined = .false.
    Nparam = 1 
@@ -1072,6 +1085,14 @@ module fields
            case ("VIBRATIONAL")
              !
              job%vib_contract = .true.
+             !
+           case ("EIGEN_COEFF","EIGEN_PRUNING")
+             ! 
+             job%eigen_contract = .true.
+             !
+           case("EIGEN_PRUNING_THRES")
+             !
+             call readf(coeffprun%contribution_threshold)
              !
            case ("FAST_CI","FAST","FAST-CI")
              !
@@ -1464,11 +1485,13 @@ module fields
              !
              i = 0
              !
+             job%isym_do = .false.
+             !
              do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
                call readf(job%partfunc%gns(i))
-               if (job%partfunc%gns(i)<small_) job%isym_do(i) = .false.
+               if (job%partfunc%gns(i)>small_) job%isym_do(i) = .true.
                !
              enddo
              !
@@ -1570,6 +1593,7 @@ module fields
        case("SINGULAR-AXIS") 
          !
          call readi(trove%lincoord)
+         job%lincoord = trove%lincoord
          !
        case("SYMGROUP","SYMMETRY","SYMM","SYM","SYM_GROUP") 
          !
@@ -1892,6 +1916,15 @@ module fields
                 !
                 job%bset(imode)%range(2) = i_t
                 trove%krot = i_t
+                if (trove%kmax==0) trove%kmax = i_t
+                !
+              case("KMAX")
+                !
+                call readi(i_t)
+                !
+                ! we use range(1) to store the Jrot value 
+                !
+                trove%kmax = i_t
                 !
               case("OVRLP","DVRPOINTS","DPOINTS")
                 !
@@ -2851,6 +2884,15 @@ module fields
              analysis%reduced_density = .true.
              analysis%density = .true.
              !
+           case("PRINT_CONTRIBUTION")
+             analysis%reducible_eigen_contribution = .true.   
+             i = 0
+             do while(trim(w)/="".and.item<Nitems.and.i<100)
+                i = i + 1
+                call readi(analysis%j_list(i)) 
+             enddo 
+             analysis%density = .true.
+             !
            case('PRINT_VECTOR')
              !
              analysis%print_vector = .true.
@@ -3008,6 +3050,39 @@ module fields
             stop 'FLinput - illegal last line in CHECK_POINTS'
             !
          endif 
+         !
+       case("KIN","KINET","KINETIC")
+         !
+         if (kinetic_defined) then 
+            write (out,"(' Error: trying to read KINETIC  second time!')") 
+            stop 'FLinput - reading KINETIC  second time'
+         endif 
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+              !
+           case("KIN_TYPE","KINETIC_TYPE")
+              !
+              call readu(w)
+              !
+              trove%kinetic_type = trim(w)
+              !
+              case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+           end select 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo
+         !
+         kinetic_defined = .true.
          !
        case("POT","POTEN","POTENTIAL","PES")
          !
@@ -3413,6 +3488,10 @@ module fields
              !              
              intensity%pruning = .true.
              !
+           case('TDM_REPLACE','DIPOLE_REPLACE','DIPOLE_SCALE')
+             !              
+             intensity%tdm_replace = .true.
+             !
            case('OUTPUT')
              !
              call readu(w)
@@ -3431,18 +3510,16 @@ module fields
              !
              intensity%gns = 0
              if( trim(intensity%action)=='TM') intensity%gns = 1 
+             job%select_gamma = .false.
+             job%isym_do = .false.
              !
              do while (item<Nitems.and.i<sym%Nrepresen)
                !
                i = i + 1
                call readf(intensity%gns(i))
-               if (intensity%gns(i)<small_) then 
+               if (intensity%gns(i)>small_) then 
                  !
-                 job%isym_do(i) = .false.
-                 job%select_gamma(i) = .false.
-                 !
-               else
-                 !
+                 job%isym_do(i) = .true.
                  job%select_gamma(i) = .true.
                  !
                endif
@@ -3753,6 +3830,12 @@ module fields
                    write (out,"('FLinput: wrong number of records in obs_fitting_energies on row=',i6,'()')") i
                    stop 'FLinput - illigal number of records in obs_fitting_energies'
                    !
+                elseif(nitems==trove%Nmodes+5) then
+                   !
+                   write (out,"('FLinput: old format in number of records in obs_fitting_energies on row=',i6)") i
+                   write (out,"('Please include K-quantum number as the column after energies')")
+                   stop 'FLinput - illigal number of records in obs_fitting_energies, missing K?'
+                   !
                 endif 
                 !
                 read(w,*) fitting%obs(i)%Jrot
@@ -3761,7 +3844,7 @@ module fields
                 call readi(fitting%obs(i)%N)
                 call readf(fitting%obs(i)%energy)
                 !
-                do j=1,trove%nmodes
+                do j=0,trove%nmodes
                   call readi( fitting%obs(i)%quanta(j) )
                 enddo
                 !
@@ -4016,7 +4099,8 @@ module fields
               !
               do i =1,Nmodes
                  !
-                 call readf(extF%fdstep(i))
+                 call readf(f_t)
+                 extF%fdstep(i) = f_t
                  !
               end do
               !
@@ -4795,8 +4879,8 @@ end subroutine check_read_save_none
                               trove%Nbonds,trove%Nangles,trove%Ndihedrals,&
                               trove%dihedtype,&
                               trove%mass,trove%local_eq,&
-                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%symmetry,&
-                              trove%rho_border,trove%zmatrix)
+                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
+                              trove%symmetry,trove%rho_border,trove%zmatrix)
     !
     ! define the potential function method
     !
@@ -4806,6 +4890,9 @@ end subroutine check_read_save_none
     !
     call MLextF_func_define
     !
+    ! define the kinetic energy method
+    !
+    call MLdefine_kinetic_subroutine
     !
     ! define the coordinate-transformation method
     !
@@ -4908,12 +4995,12 @@ end subroutine check_read_save_none
           !
           factor = real(1.0e11_rk*planck*vellgt,ark)
           !
-          ! Here we calculate derivatives by the finite differencies 
+          ! Here we calculate derivatives by the finite differences 
           ! of the function "poten_local" (or poten_xi)
           ! with respect to local coordinates r1^k1 r2^k2 r3^k3 ...
           ! at the equilibrium given by q_eq,
           ! while k1,k2,k3... are stored in "kindex".
-          ! fdstep defines the finite differencies spacings 
+          ! fdstep defines the finite differences spacings 
           !
           df = FLfinitediffs(kindex,poten_chi,trove%chi_ref(:,0),step) 
           !
@@ -4979,7 +5066,10 @@ end subroutine check_read_save_none
       !
       if (trove%lincoord==0) then
         do x1 = 1,3
-          if (Inertm(x1)<sqrt(small_)) trove%lincoord=x1
+          if (Inertm(x1)<sqrt(small_)) then 
+             trove%lincoord=x1
+             job%lincoord = trove%lincoord
+          endif
         enddo
       endif
       !
@@ -4987,6 +5077,7 @@ end subroutine check_read_save_none
       !
       if (Nmodes==(3*Natoms-5).and.trove%lincoord==0) then
           trove%lincoord = minloc(Inertm,dim=1)
+          job%lincoord = trove%lincoord
       endif
       !
     case (1)
@@ -5004,7 +5095,7 @@ end subroutine check_read_save_none
       call MLequilibrium_xyz_1d(trove%Npoints,trove%rho_border,trove%rhostep,trove%periodic,trove%rho_ref,trove%b0,&
                                 trove%db0,trove%rho_i)
       !
-      !trove%lincoord = 0
+      if (job%verbose>=6)  write(out,"(2x,'rho values:')") 
       !
       do irho=0,trove%Npoints
         !
@@ -5016,7 +5107,7 @@ end subroutine check_read_save_none
         !
         trove%chi_ref(:,irho) = MLcoordinate_transform_func(ar_t,Nmodes,dir)
         !
-        if (job%verbose>=6)  write(out,"(2x,f17.6)") trove%chi_ref(1,irho)*180.0_ark/pi
+        if (job%verbose>=6)  write(out,"(i5,1x,f15.7)") irho,trove%chi_ref(trove%Nmodes,irho)*180.0_ark/pi
         !
         ! Check for the linearity 
         !
@@ -5307,95 +5398,90 @@ end subroutine check_read_save_none
     ! s_rot vector = (d rot_angles / d r_Na )     !
     ! r_na   vector = r_na - cartesian coordinates !
     !
-    ! Allocation 
-    !
-    allocate (s_vib(Nmodes,Natoms,3),s_rot(3,Natoms,3),stat=alloc)
-    if (alloc/=0) then
-        write (out,"(' Error ',i9,' trying to allocate s_vib, s_rot-fields')") alloc
-        stop 'FLinitilize_Kinetic, s_vib, s_rot-fields -  out of memory'
-    end if
     !
     ! Calculate Ncoeff: number of elements in the kinetic fields for NkinOrder
     !
-    ! old version
-    !
-    !Tcoeff = 1
-    !do iM = 1,Nmodes
-    !   Tcoeff = Tcoeff*(trove%NKinOrder+iM)/iM
-    !enddo
-    !
-    ! new version
-    !
     Tcoeff  = trove%RangeOrder(trove%NKinOrder+2)
     Tcoeff1 = trove%RangeOrder(trove%NKinOrder+1)
-    !
-    ! Vibrational vector s_vib : 
-    !
-    do imode = 1,Nmodes
-      do iatom = 1,Natoms
-        do ix = 1,3
-           fl => s_vib(imode,iatom,ix)
-           call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_vib')
-        enddo
-      enddo
-    enddo
-    !
-    ! Rotational vector s_rot : 
-    !
-    do imode = 1,3
-      do iatom = 1,Natoms
-        do ix = 1,3
-           fl => s_rot(imode,iatom,ix)
-           call polynom_initialization(fl,trove%NKinOrder+1,Tcoeff1,Npoints,'s_rot')
-        enddo
-      enddo
-    enddo
     !do k1 = 1,size(s_rot)
     !   fl => s_rot(k1)
     !   call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_rot')
     !enddo
     !
-    ! Vibrational angular momentum
-    !
-    if (FLl2_coeffs) then
-       !
-       allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
-       if (alloc/=0) then
-           write (out,"(' Error ',i9,' trying to allocate L2_vib')") alloc
-           stop 'FLinitilize_Kinetic, L2_vib - out of memory'
-       end if
-       !
-       NKinOrder_ = 2
-       !
-       Tcoeff  = trove%RangeOrder(2)
-       !
-       do k1 = 1,Nmodes
-          do k2 = 1,Nmodes
-             fl => trove%L2_vib(k1,k2)
-             call polynom_initialization(fl,NKinOrder_,Tcoeff,Npoints,'L2_vib')
+    if (trove%internal_coords/='LOCAL') then
+      !
+      ! Allocation 
+      !
+      allocate (s_vib(Nmodes,Natoms,3),s_rot(3,Natoms,3),stat=alloc)
+      if (alloc/=0) then
+          write (out,"(' Error ',i9,' trying to allocate s_vib, s_rot-fields')") alloc
+          stop 'FLinitilize_Kinetic, s_vib, s_rot-fields -  out of memory'
+      end if
+      !
+      ! Vibrational vector s_vib : 
+      !
+      do imode = 1,Nmodes
+        do iatom = 1,Natoms
+          do ix = 1,3
+             fl => s_vib(imode,iatom,ix)
+             call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_vib')
           enddo
-       enddo
-       !
+        enddo
+      enddo
+      !
+      ! Rotational vector s_rot : 
+      !
+      do imode = 1,3
+        do iatom = 1,Natoms
+          do ix = 1,3
+             fl => s_rot(imode,iatom,ix)
+             call polynom_initialization(fl,trove%NKinOrder+1,Tcoeff1,Npoints,'s_rot')
+          enddo
+        enddo
+      enddo
+      !
+      ! Vibrational angular momentum
+      !
+      if (FLl2_coeffs) then
+         !
+         allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate L2_vib')") alloc
+             stop 'FLinitilize_Kinetic, L2_vib - out of memory'
+         end if
+         !
+         NKinOrder_ = 2
+         !
+         Tcoeff  = trove%RangeOrder(2)
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+               fl => trove%L2_vib(k1,k2)
+               call polynom_initialization(fl,NKinOrder_,Tcoeff,Npoints,'L2_vib')
+            enddo
+         enddo
+         !
+      endif      
+      !
+      ! Generate the Amat/Lmat matrix with first derivatives of cartesian coordinates 
+      ! with respect to the local linearized coordinates or thier combinations 
+      ! Lmat is generated for the Normal-coordinates, when the diagonal potential part 
+      ! is required. In all other cases we work with Lmat = Amat with non-diagonal 
+      !  potential representaion
+      !
+      call Lmat_generation1d
+      !
+      ! Testing the new routine
+      !
+      ! call fromlocal2cartesian((/trove%req,trove%alphaeq,trove%taueq/),trove%a0)
+      !
+      ! We calculate the s_vib vector = (d xi_l / d r_Na )
+      !
+      !call s_vib_s_rot_polynom1d(s_vib,s_rot)
+      !
+      call s_vib_s_rot_Sorensen(s_vib,s_rot)
+      !
     endif
-    !
-    ! Generate the Amat/Lmat matrix with first derivatives of cartesian coordinates 
-    ! with respect to the local linearized coordinates or thier combinations 
-    ! Lmat is generated for the Normal-coordinates, when the diagonal potential part 
-    ! is required. In all other cases we work with Lmat = Amat with non-diagonal 
-    !  potential representaion
-    !
-    call Lmat_generation1d
-    !
-    ! Testing the new routine
-    !
-    ! call fromlocal2cartesian((/trove%req,trove%alphaeq,trove%taueq/),trove%a0)
-    !
-    ! We calculate the s_vib vector = (d xi_l / d r_Na )
-    !
-    !call s_vib_s_rot_polynom1d(s_vib,s_rot)
-    !
-    call s_vib_s_rot_Sorensen(s_vib,s_rot)
-    !
     !-------------------------------------
     ! We come to the g-s fields definition 
     !-------------------------------------
@@ -5447,17 +5533,24 @@ end subroutine check_read_save_none
     fl => trove%pseudo
     call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
     !
-    ! With s_vib and s_rot we can calculate the kinetic energy operator expansions, namely:
-    ! g_vib, g_rot, and the first part of the pseudopotential pseudo1
-    ! 
-    call gmat_polynom(s_vib,s_rot,trove%g_vib,trove%g_rot,trove%g_cor,trove%pseudo)
-    !
-    ! We can destroy some fields
-    !
-    call ArrayStop('s_vib')
-    call ArrayStop('s_rot')
-    deallocate(s_vib,s_rot)
-
+    if (trove%internal_coords=='LOCAL') then
+       !
+       call compute_kinetic_on_rho_grid(Tcoeff)
+       !
+    else
+       !
+       ! With s_vib and s_rot we can calculate the kinetic energy operator expansions, namely:
+       ! g_vib, g_rot, and the first part of the pseudopotential pseudo1
+       ! 
+       call gmat_polynom(s_vib,s_rot,trove%g_vib,trove%g_rot,trove%g_cor,trove%pseudo)
+       !
+       ! We can destroy some fields
+       !
+       call ArrayStop('s_vib')
+       call ArrayStop('s_rot')
+       deallocate(s_vib,s_rot)
+       !
+    endif
     !
     ! be verbose
     ! 
@@ -5509,7 +5602,7 @@ end subroutine check_read_save_none
         hstep = epsilon(1.0_ark)**(1.0_rk/(trove%NPotOrder+difftype))
         diferror = hstep**(difftype-1)
         write(out,"(' Optimal spacing / actual spacing : ',2d18.8)") sum(trove%fdstep)/trove%Nmodes,hstep
-        write(out,"(' Estimation for the finite differencies computational error: ',d18.8)") diferror
+        write(out,"(' Estimation for the finite differences computational error: ',d18.8)") diferror
         !
     endif
     !
@@ -5603,7 +5696,7 @@ end subroutine check_read_save_none
        Nmodes = trove%Nmodes
        Npoints = trove%Npoints
        !
-       if (job%verbose>=6.or.(job%verbose>=5.and.manifold==0)) then
+       if (job%verbose>=6.or.(job%verbose>=6.and.manifold==0)) then
            write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
            !
            do k1 = 1,Nmodes
@@ -5716,7 +5809,7 @@ end subroutine check_read_save_none
        implicit none
        !
        integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
-       type(FLpolynomT),pointer     :: fl
+       type(FLpolynomT),pointer     :: fl,gl
        !
        if (job%verbose>=4) write(out,"('Compacting the kinetic energy matrices into a sparse representation ...')")
        !
@@ -5748,6 +5841,9 @@ end subroutine check_read_save_none
           do k2 = 1,3
              !
              fl => trove%g_rot(k1,k2)
+             !
+             if (trove%triatom_sing_resolve.and.(k1==3.and.k2==3)) cycle
+             !
              call FLCompact_a_field_sparse(fl,"g_rot")
              !
           enddo
@@ -5755,7 +5851,16 @@ end subroutine check_read_save_none
        !
        fl => trove%g_vib(Nmodes,Nmodes)
        !
-       call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+       if (.not.trove%triatom_sing_resolve) then 
+         call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+         !
+       else
+         !
+         gl => trove%g_rot(3,3)
+         !
+         call FLCompact_and_combine_three_fields_sparse(fl,"g_vib",gl,"g_rot",trove%pseudo,"pseudo")
+         !
+       endif
        !
        if (FLl2_coeffs) then
          !
@@ -5932,6 +6037,69 @@ end subroutine check_read_save_none
       !
  end subroutine check_field_smoothness
 
+
+
+  !
+  ! This procedure is to compute kinetic fields on the rho-grid
+  !
+  subroutine compute_kinetic_on_rho_grid(Nterms)
+    !
+    !
+    integer(ik),intent(in) :: Nterms
+    real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes
+    real(ark)    :: rho,factor
+      !
+      Nmodes = trove%Nmodes
+      !
+      ! Conversion factor to the cm-1 units 
+      !
+      factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
+      !
+      allocate (g_vib(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+      allocate (g_cor(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+      allocate (g_rot(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+      allocate (pseudo(Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+      !
+      npoints = trove%npoints 
+      !
+      do irho = 0, npoints
+         !
+         rho = trove%rho_i(irho)
+         !
+         call MLkineticfunc(trove%nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+               trove%g_vib(k1,k2)%field(:,irho) = g_vib(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,3
+               trove%g_cor(k1,k2)%field(:,irho) = g_cor(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,3
+            do k2 = 1,3
+               trove%g_rot(k1,k2)%field(:,irho) = g_rot(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         trove%pseudo%field(:,irho) = pseudo(:)*factor
+        !
+      enddo
+      !
+      !
+      deallocate(g_vib,g_rot,g_cor,pseudo)
+      call ArrayStop('kinetic_on_grid-fields')
+      !
+ end subroutine compute_kinetic_on_rho_grid
 
 
 
@@ -6276,7 +6444,7 @@ end subroutine check_read_save_none
                   !
                   Tmat(ieq,ivar) = trove%db0(jatom,jx,irho,1)*sqrt(trove%mass(jatom))
                   !
-                  else
+               else
                   !
                   Tmat(ieq,ivar) = Bmat(jmode,jatom,jx)/sqrt(trove%mass(jatom))
                   !
@@ -7014,23 +7182,23 @@ end subroutine check_read_save_none
          !
          if (trove%internal_coords=='LOCAL') then 
             !
-            ! Here we calculate derivatives by the finite differencies 
+            ! Here we calculate derivatives by the finite differences 
             ! of the function "poten_local"
             ! with respect to local coordinates r1^k1 r2^k2 r3^k3 ...
             ! at the equilibrium given by q_eq,
             ! while k1,k2,k3... are stored in "kindex".
-            ! fdstep defines the finite differencies spacings 
+            ! fdstep defines the finite differences spacings 
             !
             df = FLfinitediffs(kindex,poten_xi,xi_eq,step(2:1:-1,:)) 
             !
          else
             !
-            ! Here we calculate derivatives by the finite differencies 
+            ! Here we calculate derivatives by the finite differences 
             ! of the function "poten_normal"
             ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
             ! at the equilibrium given by q_eq, which is zero, 
             ! while k1,k2,k3... are stored in "kindex".
-            ! fdstep defines finite differencies spacings 
+            ! fdstep defines finite differences spacings 
             !
             df = FLfinitediffs(kindex,poten_normal,xi_eq,step) 
             !
@@ -7080,7 +7248,7 @@ end subroutine check_read_save_none
       !
       call FLCompact_a_field_sparse(trove%poten,"poten")
       !
-      if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+      if (job%verbose>=6.or.(job%verbose>=3.and.manifold==0)) then
         !
         write(out,"('After compacting:')")
         call print_poten
@@ -7132,7 +7300,7 @@ end subroutine check_read_save_none
         !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
-        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=6.and.trove%sparse)) then
            call print_poten
         endif 
         !
@@ -7140,7 +7308,7 @@ end subroutine check_read_save_none
            !
           call FLCompact_a_field_sparse(trove%poten,"poten")
           !
-          if (job%verbose>=5.or.(job%verbose>=2.and.manifold==0)) then
+          if (job%verbose>=6.or.(job%verbose>=3.and.manifold==0)) then
             !
             write(out,"('After compacting:')")
             call print_poten
@@ -7303,12 +7471,12 @@ end subroutine check_read_save_none
            enddo
          enddo 
          !
-         ! Here we calculate derivatives by the finite differencies 
+         ! Here we calculate derivatives by the finite differences 
          ! of the function "poten_normal"
          ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
          ! at the equilibrium given by q_eq, which is zero, 
          ! while k1,k2,k3... are stored in "kindex".
-         ! fdstep defines finite differencies spacings 
+         ! fdstep defines finite differences spacings 
          !
          df = FLfinitediffs_precomp(kindex,ipoint_address,pot_points,trove%fdstep,istep) 
          !
@@ -7645,12 +7813,12 @@ end subroutine check_read_save_none
                  enddo
                enddo 
                !
-               ! Here we calculate derivatives by the finite differencies 
+               ! Here we calculate derivatives by the finite differences 
                ! of the function "poten_normal"
                ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
                ! at the equilibrium given by q_eq, which is zero, 
                ! while k1,k2,k3... are stored in "kindex".
-               ! fdstep defines finite differencies spacings 
+               ! fdstep defines finite differences spacings 
                !
                df = FLfinitediffs_precomp(kindex,ipoint_address,pot_points,trove%fdstep,istep) 
                !
@@ -8054,12 +8222,12 @@ end subroutine check_read_save_none
                    enddo
                  enddo 
                  !
-                 ! Here we calculate derivatives by the finite differencies 
+                 ! Here we calculate derivatives by the finite differences 
                  ! of the function "poten_normal"
                  ! with respect to normal coordinates q^k1 q^k2 q^k3 ...
                  ! at the equilibrium given by q_eq, which is zero, 
                  ! while k1,k2,k3... are stored in "kindex".
-                 ! fdstep defines finite differencies spacings 
+                 ! fdstep defines finite differences spacings 
                  !
                  df = FLfinitediffs_precomp(kindex,ipoint_address,extF_points(:,imu),extF%fdstep,istep)
                  !
@@ -14613,11 +14781,11 @@ end subroutine check_read_save_none
         read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
         if (Tpoints/=Npoints) then
-          write(out,"('Kinetci-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetci-ASCII-chk npoints is wrong"
+          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+          stop "Kinetic-ASCII-chk npoints is wrong"
         endif
         if (Torder/=KinOrder) then 
-          write(out,"('Kinetci-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
           stop "Kinetic-ASCII-chk Norder is wrong"
         endif
         !
@@ -14653,8 +14821,15 @@ end subroutine check_read_save_none
         !
         read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "grot-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "grot-ASCII-chk Order is wrong"
+        if (Tpoints/=Npoints) then 
+           print*,"grot-ASCII-chk npoints is wrong"
+           stop "grot-ASCII-chk npoints is wrong"
+        endif
+        !
+        if (Torder/=KinOrder) then
+          print*,"grot-ASCII-chk Order is wrong"
+          stop "grot-ASCII-chk Order is wrong"
+        endif
         !
         do k1 = 1,3
           do k2 = 1,3
@@ -15527,6 +15702,166 @@ end subroutine check_read_save_none
      !
    end subroutine FLCompact_and_combine_fields_sparse
    !
+   !
+   subroutine FLCompact_and_combine_three_fields_sparse(fl1,name1,fl2,name2,fl3,name3)
+
+     type(FLpolynomT),pointer  :: fl1,fl2,fl3
+     character(len=*),intent(in) :: name1,name2,name3
+     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,Ncoeff3,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
+     real(ark),allocatable    :: sfield1(:,:),sfield2(:,:),sfield3(:,:)    ! Expansion parameters in the sparse representation
+     integer(ik),allocatable  :: siorder1(:),siorder2(:),siorder3(:)       ! iorder in sparse
+     integer(ik)   :: target_index(trove%Nmodes)
+     logical :: check = .true.
+     !
+     Ncoeff1 = fl1%Ncoeff
+     Ncoeff2 = fl2%Ncoeff
+     Ncoeff3 = fl3%Ncoeff
+     !
+     Npoints = fl1%Npoints
+     !
+     if (Npoints/=fl2%Npoints.or.Npoints/=fl3%Npoints) then
+       write(out,"('FLCompact_and_combine_three_fields_sparse: Illegal Npoints in 3 fields, should be the same',3i8)") & 
+             fl1%Npoints,fl2%Npoints,fl3%Npoints
+       stop 'FLCompact_and_combine_three_fields_sparse: Illegal Npoints in 3 fields'
+     endif
+     !    
+     target_index = 0
+     target_index(1) = trove%NKinOrder 
+     Ncoeffmax= FLQindex(trove%Nmodes_e,target_index)
+     !
+     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl3%field(icoeff,:))>job%exp_coeff_thresh)) then
+          iterm = iterm + 1
+       endif
+     enddo
+     !
+     nterms = iterm
+     !
+     if (Nterms==0) then
+       !
+       stop 'FLCompact_and_combine_three_fields_sparse is not implemented for Nterms=0' 
+       !
+       deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
+       call ArrayStop(name1//'IndexQ')
+       call ArrayStop(name2//'IndexQ')
+       call ArrayStop(name3//'IndexQ')
+       !
+       deallocate(fl1%ifromsparse,fl2%ifromsparse,fl3%ifromsparse)
+       call ArrayStop(name1//"ifromsparse")
+       call ArrayStop(name2//"ifromsparse")
+       call ArrayStop(name3//"ifromsparse")
+       !
+       return
+       !
+     endif 
+     !
+     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),Sfield3(nterms,0:Npoints),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
+     call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
+     call ArrayStart("Sfield",alloc,size(Sfield3),kind(Sfield3))
+     !
+     allocate(Siorder1(nterms),Siorder2(nterms),Siorder3(nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
+     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
+     call ArrayStart("Sfield",alloc,size(Siorder3),kind(Siorder3))
+     !
+     deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     call ArrayStop(name3//'IndexQ')
+     !
+     deallocate(fl1%ifromsparse,fl2%ifromsparse,fl3%ifromsparse)
+     call ArrayStop(name1//"ifromsparse")
+     call ArrayStop(name2//"ifromsparse")
+     call ArrayStop(name3//"ifromsparse")
+     !
+     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl3%ifromsparse(nterms),fl3%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
+     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
+     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     call ArrayStart(name3//"ifromsparse",alloc,size(fl3%ifromsparse),kind(fl3%ifromsparse))
+     call ArrayStart(name3//"IndexQ",alloc,size(fl3%IndexQ),kind(fl3%IndexQ))
+     !
+     iterm = 0
+     !
+     do icoeff = 1,Ncoeffmax
+       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh).or.&
+           any(abs(fl3%field(icoeff,:))>job%exp_coeff_thresh)) then
+          !
+          iterm = iterm + 1
+          !
+          Sfield1(iterm,:) = fl1%field(icoeff,:)
+          Sfield2(iterm,:) = fl2%field(icoeff,:)
+          Sfield3(iterm,:) = fl3%field(icoeff,:)
+          !
+          siorder1(iterm) = fl1%iorder(icoeff)
+          siorder2(iterm) = fl2%iorder(icoeff)
+          siorder3(iterm) = fl3%iorder(icoeff)
+          !
+          fl1%ifromsparse(iterm) = icoeff
+          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+          fl2%ifromsparse(iterm) = icoeff
+          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+          fl3%ifromsparse(iterm) = icoeff
+          fl3%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          !
+       endif
+     enddo
+     !
+     deallocate(fl1%iorder,fl2%iorder,fl3%iorder)
+     call ArrayStop(name1)
+     call ArrayStop(name2)
+     call ArrayStop(name3)
+     !
+     ! Create a field in a sparse representaion
+     !
+     allocate(fl1%iorder(nterms),fl2%iorder(nterms),fl3%iorder(nterms),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
+     call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
+     call ArrayStart(name3,alloc,size(fl3%iorder),kind(fl3%iorder))
+     !
+     deallocate(fl1%field,fl2%field,fl3%field,stat=alloc)
+     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
+     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     call ArrayMinus(name3,isize=size(fl3%field),ikind=kind(fl3%field))
+     !
+     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),fl3%field(nterms,0:Npoints),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
+     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
+     call ArrayStart(name3,alloc,size(fl3%field),kind(fl3%field))
+     !
+     fl1%field = Sfield1
+     fl1%Ncoeff = Nterms
+     fl1%iorder = Siorder1
+     !
+     fl2%field = Sfield2
+     fl2%Ncoeff = Nterms
+     fl2%iorder = Siorder2
+     !
+     fl3%field = Sfield3
+     fl3%Ncoeff = Nterms
+     fl3%iorder = Siorder3
+     !
+     deallocate(Sfield1,siorder1,Sfield2,siorder2,Sfield3,siorder3)
+     !
+     call ArrayStop("Sfield")
+     !
+   end subroutine FLCompact_and_combine_three_fields_sparse
+
+
+   !
    subroutine FLfingerprint(action,chkptIO,PTorder,Npolyads,enercut)
     !
     character(len=*), intent(in) :: action ! 'read'  or 'write'
@@ -15996,9 +16331,9 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
-                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r
+                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
-    type(FLpolynomT),pointer    :: fl
+    type(FLpolynomT),pointer    :: fl,gl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m
     real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),chi(trove%Nmodes)
@@ -16006,7 +16341,7 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:),xton(:,:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -16027,6 +16362,7 @@ end subroutine check_read_save_none
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
+    real(ark)   :: g2_term
     !
     ! substitute for easier reference 
     !
@@ -16676,11 +17012,73 @@ end subroutine check_read_save_none
              !
            endif 
            !
+           ! These are grid-based corfinates 
+           !
+           allocate (drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
+              stop 'FLbset1DNew, drho - out of memory'
+           end if
+           !
+           do i = 0,npoints
+              !
+              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+              !
+              drho(i,1) = MLcoord_direct(rho,1,nu_i)
+              drho(i,2) = MLcoord_direct(rho,2,nu_i)
+              drho(i,3) = MLcoord_direct(rho,3,nu_i)
+              !
+              do ipower = 0, trove%NKinorder
+                 xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+              enddo
+              !
+           enddo
+           !
            ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
            !
            nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
            !
            g1drho(0:npoints) = fl%field(1,0:npoints)
+           !
+           if (trove%sparse) then
+             !
+             call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
+             !
+             if (i==0) then 
+                !
+                g1drho = 0 
+                !
+                do icoeff = 1, fl%Ncoeff 
+                   f_t = 1.0_ark
+                   do imode  = 1,Nmodes
+                     rho =  trove%chi_eq(imode)
+                     ipower = fl%IndexQ(imode,icoeff)
+                     rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                     f_t = f_t*rho_kin0
+                  enddo
+                  g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                  !
+                enddo
+                !
+             endif
+             !
+           elseif (abs(g1drho(trove%ipotmin))<small_) then 
+             !
+             g1drho = 0 
+             !
+             do icoeff = 1, fl%Ncoeff 
+                f_t = 1.0_ark
+                do imode  = 1,Nmodes
+                  rho =  trove%chi_eq(imode)
+                  ipower = fl%IndexQ(imode,icoeff)
+                  rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                  f_t = f_t*rho_kin0
+               enddo
+               g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+               !
+             enddo
+             !
+           endif
            !
            reduced_model = .false.
            !
@@ -16743,24 +17141,6 @@ end subroutine check_read_save_none
            ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
            ! now we need them:
            !
-           ! This NUMEROV for the last (could be also non-rigid) coordinate
-          !
-           allocate (drho(0:Npoints,3),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
-              stop 'FLbset1DNew, drho - out of memory'
-           end if
-           !
-           do i = 0,npoints
-              !
-              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-              !
-              drho(i,1) = MLcoord_direct(rho,1,nu_i)
-              drho(i,2) = MLcoord_direct(rho,2,nu_i)
-              drho(i,3) = MLcoord_direct(rho,3,nu_i)
-              !
-           enddo
-           !
            weight = 1.0_ark
            !
            numerpoints = trove%numerpoints
@@ -16769,7 +17149,7 @@ end subroutine check_read_save_none
            !
            if (trim(bs%type)=='NUMEROV') then
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='BOX') then 
@@ -16865,6 +17245,53 @@ end subroutine check_read_save_none
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
              pseudo = trove%pseudo%field(1,0:npoints)
              !
+             fl => trove%g_rot(3,3)
+             gl => trove%pseudo
+             !
+             if (trove%sparse) then
+               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
+               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
+               !
+               if (i1==0.or.i2==0) then 
+                  !
+                  muzz = 0 
+                  pseudo = 0
+                  !
+                  do icoeff = 1, fl%Ncoeff 
+                     f_t = 1.0_ark
+                     do imode  = 1,Nmodes
+                       rho =  trove%chi_eq(imode)
+                       ipower = fl%IndexQ(imode,icoeff)
+                       rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                       f_t = f_t*rho_kin0
+                    enddo
+                    muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                    pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                    !
+                  enddo
+                  !
+               endif
+               !
+             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(pseudo(trove%ipotmin))<small_) then
+               !
+               muzz = 0 
+               pseudo = 0
+               !
+               do icoeff = 1, fl%Ncoeff 
+                  f_t = 1.0_ark
+                  do imode  = 1,Nmodes
+                    rho =  trove%chi_eq(imode)
+                    ipower = fl%IndexQ(imode,icoeff)
+                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                    f_t = f_t*rho_kin0
+                 enddo
+                 muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                 pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                 !
+               enddo
+               !
+             endif
+             !
              g_t = g1drho(trove%ipotmin)
              !
              if (g_t<small_) then 
@@ -16897,6 +17324,9 @@ end subroutine check_read_save_none
              !
              call ME_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
+             !
+             !call ME_laguerre_simple_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+             !                          job%verbose,bs%matelements,bs%ener0)
              !
              do i = 0,npoints
                 rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
@@ -18051,8 +18481,9 @@ end subroutine check_read_save_none
                 !
                 phil_sin(:) = phil_leg(:)*mrho(:)**k_l
                 phil(:) = sqrt(mrho(:))*phil_sin(:)
-                dphil(:) = 0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
-                !dphil(:) = (k_l+0.5_ark)*phil_leg(:)+mrho(:)*dphil_leg(:)
+                !dphil(:) = 0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
+                !
+                dphil(:) = 0.5_ark*phil_sin(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -18067,8 +18498,9 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    dphir(:) = 0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
-                    !dphir(:) = (k_r+0.5_ark)*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    !dphir(:) = 0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    !
+                    dphir(:) = 0.5_ark*phir_sin(:)+mrho(:)*dphir_leg(:)
                     !
                     if (krot1==krot2) then
                       !
@@ -18202,7 +18634,7 @@ end subroutine check_read_save_none
                                !
                                phivphi_t(:) = phil_leg(:)*trove%g_rot(k1,k2)%field(iterm,:)*phir_leg(:)*mrho(:)
                                !
-                               if (krot1<=kmax) then 
+                               if (trove%kmax<=trove%krot) then 
                                  !
                                  trove%g_rot(k1,k2)%me(iterm,vl,vr) = 0
                                  !
@@ -18258,6 +18690,7 @@ end subroutine check_read_save_none
                          do k2 = 1,3
                             !
                             if (k2==3.and.krot1/=krot2) cycle
+                            if (k2/=3.and.krot1==krot2) cycle
                             if (abs(krot1-krot2)>1) cycle
                             !
                             Tcoeff = trove%g_cor(k1,k2)%Ncoeff
@@ -18289,15 +18722,34 @@ end subroutine check_read_save_none
                       !
                       ! External field part
                       !
-                      if (abs(krot1-krot2)>1) cycle
+                      if (abs(krot1-krot2)>2) cycle
                       !
                       do imu = 1,extF%rank
+                        !
+                        !if (imu==3.and.krot1/=krot2) cycle
+                        !if (imu/=3.and.krot1==krot2) cycle
                         !
                         Tcoeff = trove%extF(imu)%Ncoeff
                         !
                         do iterm = 1,Tcoeff
                            !
                            phivphi_t(:) = phil(:)*trove%extF(imu)%field(iterm,:)*phir(:)
+                           !
+                           ! special case of spin-rotational tensor of rank 9 
+                           !
+                           if (trim(extF%ftype)=='XY2_SR-BISECT') then 
+                             !
+                             if    (nint(extF%coef(1,imu))==-1) then 
+                               !
+                               phivphi_t(:) = phil_sin(:)*trove%extF(imu)%field(iterm,:)*phir_sin(:)
+                               !
+                             elseif(nint(extF%coef(1,imu))==-2) then 
+                               !
+                               phivphi_t(:) = phil_leg(:)*trove%extF(imu)%field(iterm,:)*phir_leg(:)*mrho(:)
+                               !
+                             endif
+                             !
+                           endif 
                            !
                            mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
                            !
@@ -18867,11 +19319,13 @@ end subroutine check_read_save_none
            step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
            !rho_ref = molec%chi_eq(nu_i)
            !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),stat=alloc)
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
            end if
+           !
+           xton = 0
            !
            ! Defining 1D potential and kinetic energy functions
            !
@@ -19020,39 +19474,78 @@ end subroutine check_read_save_none
              !
              do ipower = 0,min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
                 !
-                do imode =1,bs%imodes  
+                !
+                do imode = 1,bs%imodes
+                  !             
                   nu_i = bs%mode(imode)
-                  fl => trove%g_vib(nu_i,nu_i)
+                  fl => trove%g_vib(nu_i,nu_i) 
                   !
-                  powers = 0 ; powers(nu_i) = ipower
-                  k = FLQindex(trove%Nmodes_e,powers)
-                  !
-                  ! shift the minimum by the period of the last mode if present
-                  if (periodic_model) then 
+                  select case(job%bset(imode)%coord_kinet)
                     !
-                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                    !
-                  endif
-                  !
-                  if (trove%sparse) then
-                    !
-                    call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
-                    !
-                    g2(imode) = 0
-                    !
-                    if (i/=0) g2(imode) = fl%field(i,irho_eq)
-                    !
-                    if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
-                      write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                      stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
-                    endif
-                    !
-                  else
-                    !
-                    g2(imode) = fl%field(k,irho_eq)
-                    !
-                  endif
+                    case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+                      !
+                      g2(imode) = 0
+                      !
+                      do j = 1, size(fl%ifromsparse)
+                        !
+                        g2_term = 0
+                        !write(*,*) fl%ifromsparse(j)
+                        !
+                        powers = powers_from_index(Nmodes, fl%ifromsparse(j))
+                        !
+                        !write(*,*) "powers ", powers, " end"
+                        !
+                        if (powers(nu_i)/= ipower) cycle
+                        g2_term  =  fl%field(j,irho_eq)
+                        !
+                        do i = 1, size(powers)
+                          if(i == nu_i) cycle
+                          !write(*,*) "eq ", trove%chi_eq(nu_i)   
+                          !write(*,*) "powers(I) ", powers(i)
+                          !write(*,*) "MLcoord", MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i))
+                          !
+                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i)) 
+                          !
+                        enddo
+                        !
+                        g2(imode) = g2(imode) + g2_term
+                        !write(*,*) "nu_i ", nu_i, " g2(imode) ", g2(imode) 
+                        !
+                     enddo
+                     !    
+                  case default 
+                     !
+                     powers = 0 ; powers(nu_i) = ipower
+                     k = FLQindex(trove%Nmodes_e,powers)
+                     !
+                     ! shift the minimum by the period of the last mode if present
+                     if (periodic_model) then 
+                       !
+                       rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                       irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                       !
+                     endif
+                     !
+                     if (trove%sparse) then
+                       !
+                       call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
+                       !
+                       g2(imode) = 0
+                       !
+                       if (i/=0) g2(imode) = fl%field(i,irho_eq)
+                       !
+                       if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
+                         write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                         stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
+                       endif
+                       !
+                     else
+                       !
+                       g2(imode) = fl%field(k,irho_eq)
+                       !
+                     endif
+                     !
+                  end select 
                   !
                 enddo
                 ! 
@@ -19131,10 +19624,17 @@ end subroutine check_read_save_none
                    !
                 enddo 
                 !
+                do ipower = 0, trove%NKinorder 
+                   xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+                enddo
+                !
                 do ipower = 0,trove%NKinorder
                    !
-                   f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
-                   g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
+                   !f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
+                   !g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
+                   !
+                   f1drho(i) = f1drho(i) + p1d(ipower)*xton(i,ipower)
+                   g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
                    !
                 enddo 
                 !
@@ -19207,7 +19707,7 @@ end subroutine check_read_save_none
            !
            if (trim(bs%type)=='NUMEROV') then
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='BOX') then
@@ -19227,8 +19727,7 @@ end subroutine check_read_save_none
             !
            endif
            !
-           deallocate (f1drho,g1drho,drho)
-           !close(nfilenumerov)
+           deallocate (f1drho,g1drho,drho,xton)
            !
         endif 
         !
@@ -21158,7 +21657,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    function FLfinitediffs(itarget,func,ax,astep) result(f)
@@ -21300,7 +21799,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    recursive function FLfinitediffs_2d(itarget,ipoint,get_func,x,step) result(f)
@@ -21629,7 +22128,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives  
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    function FLfinitediffs_imode(itarget,func,x,step,kmode) result(f)
@@ -21769,7 +22268,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives of a vector function func(:)
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    subroutine FLfinitediffs_vect(job_str,Nmodes,Nsize_f,itarget,ax,astep,irho,f)
@@ -21815,7 +22314,7 @@ end subroutine check_read_save_none
    ! Finite difference derivatives of a vector function func(:)
    ! d^n func / d q1^k1 d q2^k2 d q3^k3 .. | at q = x
    ! where (k1,k2,k3,..) = itarget(:)
-   ! step(:) - finite differencies spacing factor defined for every coordinate 
+   ! step(:) - finite differences spacing factor defined for every coordinate 
    ! 
    !
    recursive function FLvect_finitediffs(job_str,Nsize_f,itarget,ax,astep,irho) result (f)
@@ -22151,7 +22650,7 @@ end subroutine check_read_save_none
      !
      chi_eq(:) = trove%chi_ref(:,FLirho)
      !
-     !call from_local2cartesian_by_fit(chi,chi_eq,r_na_t)
+     ! reconstruct the TROVE-ccordinates from Zmat curvelinear coordinates 
      !
      dir = .false.
      !
@@ -24977,6 +25476,8 @@ end subroutine check_read_save_none
              case ('THETA_PHI')
                !
                tau = analysis%res%tau/180.0_rk*pi
+               tau = max(trove%chi_ref(Nmodes,0),tau)
+               tau = min(tau,trove%chi_ref(Nmodes,trove%npoints))
                !
                xi(Nmodes)= tau
                !
@@ -24992,6 +25493,13 @@ end subroutine check_read_save_none
              case ('OPTIM_COORDS')
                !
                ivar(Nmodes+1:2*Nmodes+2) = 0
+               !
+               tau = analysis%res%tau/180.0_rk*pi
+               !
+               tau = max(trove%chi_ref(Nmodes,0),tau)
+               tau = min(tau,trove%chi_ref(Nmodes,trove%npoints))
+               !
+               xi(Nmodes)= tau
                !
              case ('GLOBAL_SEARCH')
                !
@@ -25437,6 +25945,87 @@ end subroutine check_read_save_none
     end function classic_hamilt
     !
   end subroutine FL_rotation_energy_surface
+
+
+  function choose(n, k) result(res) 
+    !
+    implicit none
+    integer(ik), intent (in) :: n
+    integer(ik), intent (in) :: k
+    integer(ik) :: res
+    integer(ik) :: i, k_  
+    
+    res = 1
+    k_ = k 
+    if(k > n - k) then
+      k_ = n - k
+    endif
+    
+    do i = 0, k_ - 1
+      res = res*(n - i)
+      res = res/(i + 1)
+    enddo
+  end function choose
+   
+  function sum_choose(num_pos, high_order, pos_val) result(res)
+    implicit none 
+    integer(ik), intent(in) :: num_pos 
+    integer(ik), intent(in) :: high_order
+    integer(ik), intent(in) :: pos_val
+    integer(ik) :: res  
+    integer (ik):: i
+       
+    res = 0
+    if(pos_val == 0) then
+      res = res + choose(high_order + num_pos - 1, num_pos - 1)
+    else 
+      do i = 0, pos_val - 1 
+        res = res + choose(high_order + num_pos - 1 - i, num_pos - 1) 
+      end do
+    endif 
+
+  end function sum_choose
+  !
+  function powers_from_index(Nmodes, Nindex) result(powers) 
+     implicit none 
+     integer(ik), intent(in) :: Nmodes, Nindex
+     integer(ik) :: powers(Nmodes)   
+     integer(ik) :: polyad, max_index, diff, j, term_val, remaining_order 
+     !
+     polyad = -1
+     max_index = 0
+     powers = 0
+     !
+     do while(max_index < Nindex)
+       polyad = polyad + 1
+       max_index = choose(Nmodes + polyad, Nmodes)
+     end do
+     if(polyad == 0) then
+       diff = Nindex - 1
+     else 
+       diff = Nindex - choose(Nmodes + polyad - 1, Nmodes)
+     endif 
+     remaining_order = polyad 
+     do j = 1, Nmodes - 1 
+       if(remaining_order == 0) then
+         powers(j) = 0
+         continue 
+       else 
+           term_val = 1
+           do while(diff - sum_choose(Nmodes - j, remaining_order, term_val) > 0)
+             term_val = term_val + 1
+           end do
+           term_val = term_val - 1 
+           powers(j) = term_val
+           if( term_val > 0) then 
+             diff  = diff - sum_choose(Nmodes - j, remaining_order, term_val)
+           endif
+           remaining_order = remaining_order - term_val
+       endif 
+     end do 
+     powers(Nmodes) = remaining_order
+     !
+  end function powers_from_index 
 
 
   end module fields

@@ -574,7 +574,7 @@ end function  MLpoten_c3h6_sym_II
 subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     implicit none
     !
-    integer(rk),intent(in)    :: nsym,ndeg  ! group operation  
+    integer(ik),intent(in)    :: nsym,ndeg  ! group operation  
     real(ark),intent(in)      :: src(1:ndeg)
     real(ark),intent(out)     :: dst(1:ndeg,6)
     !

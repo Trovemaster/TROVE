@@ -1713,8 +1713,12 @@ module perturbation
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
-                !switch = switch.and.lquant==min(krot,trove%krot)
-                switch = switch.and.lquant==krot
+                !switch = switch.and.krot==min(lquant,trove%krot)
+                if (trove%kmax>trove%krot) then 
+                  switch = switch.and.lquant==min(krot,trove%krot)
+                else
+                  switch = switch.and.lquant==krot
+                endif
              endif
           elseif(trove%lincoord/=0) then
              switch = switch.and.( lquant==krot.or.jrot==0 )
@@ -1923,6 +1927,96 @@ module perturbation
    !
   end subroutine PTdegener_index
 
+
+  !
+  ! Prunning the contracted basis using contribution.chk with the largest eigencoefficients 
+  ! for a set of J=0 eigenfuncitons. contribution.chk must be precomputed using the analysis_density tool. 
+  !
+  subroutine PTpruning_contracted_basis(Ncoeff,enermax)
+
+   integer(ik),intent(inout) :: Ncoeff
+   real(ark),intent(in)       :: enermax
+   integer(ik), allocatable :: retained_basis_nums(:)
+   integer(ik), allocatable :: pruned_basis_set(:,:)
+   character(len=cl) :: unitfname,buff
+   integer(ik)       :: chkptIO
+   integer(ik)       :: num_contr,iprune_count,i,alloc
+   real(rk)          :: contrib, ener
+   real(rk)          :: x
+      !
+      allocate(retained_basis_nums(Ncoeff), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(retained_basis_nums),kind(retained_basis_nums))
+      !
+      unitfname = "File of the contribution"
+      call IOStart(trim(unitfname),chkptIO)
+      !
+      open(chkptIO,action='read',status='old',file=trove%chk_contrib_fname)
+      !
+      read(chkptIO,"(a)") buff(1:14)
+      !
+      if (trim(buff(1:14))/="Start-contract") then
+          write(out,"('contribution.chk: wrong header ',a)") buff
+          stop 'contribution.chk: wrong header'
+      endif
+      !
+      iprune_count = 0
+      !
+      contrib_loop: do i =1,Ncoeff
+        !
+        read(chkptIO,*) num_contr, contrib, ener
+        !
+        if (num_contr/=i) then
+           write(out,"('contribution.chk: bogus state number ',i0,'<>',i0)") num_contr,i
+           stop 'contribution.chk: bogus state number'
+        endif
+        !
+        x = 10.0_rk*(ener/enermax) 
+        if(x < 7.0_rk) then
+          !
+          if(exp(1.5_rk*(x-7.0_rk))/(1.0_rk+exp(1.5_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        else
+          !
+          if(exp(3.0_rk*(x-7.0_rk))/(1.0_rk+exp(3.0_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        endif
+        !
+      enddo contrib_loop
+      !
+      read(chkptIO,"(a)") buff(1:12)
+      !
+      if (trim(buff(1:12))/="End-contract") then
+          write(out,"('contribution.chk: wrong footer ',a)") buff
+          stop 'contribution.chk: wrong footer'
+      endif
+      !
+      allocate(pruned_basis_set(0:PT%Nclasses,iprune_count), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(pruned_basis_set),kind(pruned_basis_set))
+      !
+      do i = 1, iprune_count
+        !
+        pruned_basis_set(:,i) = PT%contractive_space(:,retained_basis_nums(i))
+        if (job%verbose>=6) write(*,"(i0,1x,i0,2x,i0)") i,retained_basis_nums(i),pruned_basis_set(:,i)
+        !
+      enddo
+      !
+      deallocate(PT%contractive_space, stat = alloc)
+      allocate(PT%contractive_space(0:PT%Nclasses, iprune_count), stat=alloc)
+      PT%contractive_space = pruned_basis_set
+      !
+      deallocate(pruned_basis_set, stat = alloc)
+      deallocate(retained_basis_nums)
+      call ArrayStop('pruned_basis')
+      !
+      Ncoeff = iprune_count
+      !
+  end subroutine PTpruning_contracted_basis
 
 
   subroutine PTglobalind_count(max_deg_size,isum,iactive,Index_icnu,Index_ideg,Index_prim,Index_active)
@@ -2579,14 +2673,14 @@ module perturbation
 
     integer(ik)        :: Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift,kmode
     integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
-    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in
+    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in,ierror
     character(len=cl)  :: unitfname,diag_
     real(ark)          :: f_value,f_prim,f_t
     real(ark)          :: df_t,fval,xval
     integer(ik)        :: nroots,jrot,icount,ideg,kdeg,ndeg,Ncount,k0,ioper
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
-    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr
+    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
@@ -2595,7 +2689,7 @@ module perturbation
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
  
     type(PTcoeffs_arkT)    :: overlap(PT%Nspecies,sym%Noper)
-    real(rk)               :: zpe,largest_coeff
+    real(rk)               :: zpe,largest_coeff,error
     integer(ik)            :: ilargest_coeff
     character(len=cl)      :: my_fmt !format for I/O specification
 
@@ -2637,6 +2731,9 @@ module perturbation
          bs_t(imode)%res_coeffs = 10000.0
          bs_t(imode)%dvrpoints = 1
        enddo
+       !
+       PTuse_gauss_quadrature = .false.
+       if (iclasses==Nclasses) PTuse_gauss_quadrature = .false.
        !
        res_min = huge(1)
        !
@@ -3054,10 +3151,13 @@ module perturbation
        !
        if (PTuse_gauss_quadrature) then
          !
+         write(out,"('Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!')")
+         stop 'Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!'
+         !
          mpoints_dvr = 1
          do i = 1,PT%mode_iclass(iclasses)
            imode = PT%mode_class(iclasses,i)
-           mpoints_dvr = mpoints_dvr*(job%bset(imode)%range(2)+1)
+           mpoints_dvr = mpoints_dvr*(job%bset(imode)%range(2)+i)/real(i,rk)
          enddo
          !
          mpoints = min(mpoints_dvr,mpoints_max) 
@@ -3082,21 +3182,69 @@ module perturbation
          write (out,"( i6,' sample points will be selected for symmetry reconstruction.'/)") mpoints
        end if
        !
-       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
-                 transform_t(mpoints),&
+       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
                  transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
                  !
-       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
-       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
-       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
-       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
        !
        ! Select sample points at which we check the transformation of the eigenfunctions
        !
-       call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+       ierror = 0
+       call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
        !
-       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+       ! change the method to random sampling and redefine the sampling grid if 
+       ! quadratures did not work
+       !
+       if (ierror>0) then
+         !
+         Nelem  = maxval(count_degen(:))
+         !
+         mpoints = max(Nelem,job%msample_points)
+         !
+         if (mpoints>size(transform_t)) then 
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif 
+         !
+         ierror = 0
+         !
+         if (size(numpoints,dim=1)<mpoints) then 
+           !
+           PTuse_gauss_quadrature = .false.
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           !
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif
+         !
+         call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
+         !
+       endif
+       !
        allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        !
        ! This found number of levels and their degeneracy will be checked and corrected 
        ! using a more accurate procedure. We apply a reduction to the irr. representation 
@@ -3126,7 +3274,9 @@ module perturbation
          Nelem  = count_degen(icount)
          !
          if (.not.PTuse_gauss_quadrature) then
-           mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
+           !
+           mpoints = max(Nelem,job%msample_points)
+           !
          else
            mpoints = min(mpoints_dvr,mpoints_max) 
          endif
@@ -3152,7 +3302,7 @@ module perturbation
                !
                !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
                !$omp& shared(fv) schedule(dynamic) reduction(max:info)
-               do k = 1,dimen
+               loop_sampling: do k = 1,dimen
                  !
                  nu(:) = PT%active_space%icoeffs(:,k)
                  !
@@ -3177,6 +3327,19 @@ module perturbation
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
                       !
+                      if (ipoint_t>npoints.or.ipoint_t<0) then 
+                         !
+                         info = max(info,1)
+                         !
+                         fval = 0
+                         ! 
+                         if (job%verbose>=5) write(out,"('PTcontr..: sampling geometry is out of range ',i0)") ipoint_t
+                         PTuse_gauss_quadrature = .false.
+                         !
+                         cycle loop_sampling
+                         !
+                      endif 
+                      !
                       do v = -Nr_t,Nr_t
                         !
                         r_t(v)=job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t+v,ark)
@@ -3195,6 +3358,8 @@ module perturbation
                                       df_t,ideg,ioper,jpoint,k,i
                          write(out,"('xval = ',g18.8,' func = ',30g18.8)") xval,& 
                                       bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
+                         !
+                         PTuse_gauss_quadrature = .false.
                          !
                       endif 
                       !
@@ -3217,25 +3382,23 @@ module perturbation
                  !
                  fv(k) = PT%Htotal%coeffs(k,kroot)*f_prim
                  !
-               enddo 
+               enddo loop_sampling
                !$omp end parallel do
                !
                transform(ioper,ideg,jpoint) = sum(fv(1:dimen))
                !
                if (info/=0) then 
                   !
-                  call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+                  if (iattempts>=maxattempts) then
+                    write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
+                    stop 'PTcontracted_prediag: not possible to select optimal points'
+                  endif
+                  !
+                  call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
                   !
                   iattempts = iattempts + 1
                   !
-                  if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' select sample points again')") iattempts
-                  !
-                  if (iattempts>=maxattempts) then
-                    !
-                    write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
-                    stop 'PTcontracted_prediag: not possible to select optimal points'
-                    !
-                  endif
+                  if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
                   !
                   cycle icount_loop
                   !
@@ -3248,7 +3411,7 @@ module perturbation
          if (job%verbose>=6) call TimerStop('Contract: The points')
          !
          call degenerate_symmetrization(Nelem,mpoints,transform(1:sym%Noper,1:Nelem,1:mpoints),&
-                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info)
+                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info,error)
          !
          ! Sometimes the last level in the list does not have all degenerate components.
          ! In this case we remove the last root and set nroots = nroots - 1
@@ -3264,17 +3427,45 @@ module perturbation
            !
          elseif (info/=0) then
            !
-           info = 0
+           if (PTuse_gauss_quadrature) then 
+             !
+             PTuse_gauss_quadrature = .false.
+             !
+             deallocate(chi_t,transform_t,transform_maxval,numpoints)
+             !
+             call ArrayStop('PTcontracted:sampling')
+             !
+             mpoints = max(Nelem,job%msample_points)
+             !
+             allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                       transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                       !
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+             !
+             deallocate(transform)
+             call ArrayStop('PTcontracted:transform')
+             !
+             allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+             call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+             !
+           endif
            !
-           call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+           call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
            !
            iattempts = iattempts + 1
            !
-           if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' select sample points again')") iattempts
+           if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
            !
-           if (iattempts>=maxattempts) then
+           if (iattempts>=maxattempts ) then
              !
-             write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
+             if (PTuse_gauss_quadrature) write(out,"('PTcontracted_prediag: error is too large to determine the symmetry')")
+             !
+             write(out,"('PTcontracted_prediag: sampling error = ',g15.7)") error
+             !
+             write(out,"('PTcontracted_prediag: optimal sampling could not be found after ',i8,' attempts, error= ',g16.7)") iattempts,error
              !
              kroot = count_index(icount,1) 
              write(my_fmt,'(a,i0,a)') "(a,i8,a,",sym%Nrepresen,"g12.4)"
@@ -3294,6 +3485,8 @@ module perturbation
              stop 'PTcontracted_prediag: not possible to select optimal points'
              !
            endif
+           !
+           info = 0
            !
            cycle icount_loop
            !
@@ -3712,10 +3905,7 @@ module perturbation
        call ArrayStop('PTcontracted:sample_vector')
        call ArrayStop('PTcontracted:tmat')
        call ArrayStop('PTcontracted:fv')
-       call ArrayStop('PTcontracted:chi_t')
-       call ArrayStop('PTcontracted:transform_t')
-       call ArrayStop('PTcontracted:transform_maxval')
-       call ArrayStop('PTcontracted:numpoints')
+       call ArrayStop('PTcontracted:sampling')
        call ArrayStop('PTcontracted:mat')
        !
        ispecies = 0
@@ -4103,7 +4293,7 @@ module perturbation
     subroutine calc_overlap(iclasses)
 
      integer(ik),intent(in)  :: iclasses
-     integer(ik)  :: ispecies,i,imode,ioper,vi,vj,jpoint,ipoint,ipshift,npoints_t,nmodes,imode1,imode2,jmode,bs_size
+     integer(ik)  :: ispecies,i,imode,ioper,vi,vj,jpoint,ipoint,ipshift,npoints_t,nmodes,imode1,imode2,jmode,bs_size,npoints
      real(rk)     :: xval_i,xval_j
      real(ark)    :: r_t(-Nr_t:Nr_t),fval,df_t,chi_i,chi_j(PT%Nmodes),chi_(PT%Nmodes),rho_range
      real(ark),allocatable  :: chi_t(:,:,:)
@@ -4350,18 +4540,20 @@ module perturbation
 
 
 
-  subroutine PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_grid)
+  subroutine PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_grid,ierror)
      !
-     integer(ik),intent(in)  :: iclasses,mpoints,Nr_t
+     integer(ik),intent(in)  :: iclasses,mpoints,Nr_t,mpoints_dvr
      real(ark),intent(in)    :: rhostep(PT%Nmodes)
      real(ark),intent(out)   :: chi_grid(:,:,:)
+     integer(ik),intent(out) :: ierror
      integer(ik)             :: jpoint,i,ipoint_t,imode,ioper,pshift
      real(ark)               :: chi(PT%Nmodes),chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
      logical                 :: go
-     integer(ik)             :: alloc,ilevel,jlevel,idvrpoints,Nmodes_calss
+     integer(ik)             :: alloc,ilevel,jlevel,idvrpoints,Nmodes_class
      real(rk)                :: f_t
      !
      real(rk),allocatable    :: H1dvr(:,:),e1dvr(:)
+     integer(ik),allocatable :: igrid(:,:),igrid_t(:)
      !
      ! choose the geometry that we use to check the symmetry
      !
@@ -4369,7 +4561,7 @@ module perturbation
      !
      if (job%verbose>=5) call TimerStart('PTselect_sample_points')
      !
-     Nmodes_calss = PT%mode_iclass(iclasses)
+     Nmodes_class = PT%mode_iclass(iclasses)
      !
      call random_seed()
      !
@@ -4401,9 +4593,55 @@ module perturbation
            !
          enddo
          !
+         allocate (igrid(Nmodes_class,mpoints_dvr),igrid_t(Nmodes_class),stat=alloc)
+         call ArrayStart('sample_points-grid',alloc,size(igrid),kind(igrid))
+         call ArrayStart('sample_points-grid',alloc,size(igrid_t),kind(igrid_t))
+         !
          ipoint_t = 0
          !
-         if (mpoints<idvrpoints**Nmodes_calss) then
+         if (mpoints<=mpoints_dvr) then
+           !
+           jpoint = 0 
+           !
+           call find_ipoint(idvrpoints,Nmodes_class,mpoints_dvr,igrid,igrid_t,i0=idvrpoints,isum=jpoint,ilevel=1)
+           !
+           do jpoint = 1,mpoints
+             !
+             do i = 1,PT%mode_iclass(iclasses)
+               !
+               imode = PT%mode_class(iclasses,i)
+               !
+               !call random_number(f_t)
+               !f_t = idvrpoints*f_t
+               !ipoint_t = nint(f_t)
+               !
+               !ipoint_t = max(min(ipoint_t,idvrpoints),1)
+               !
+               ipoint_t = igrid(i,jpoint)
+               !
+               chi_grid(imode,1,jpoint) = e1dvr(ipoint_t)
+               !
+             enddo
+             !
+           enddo
+           !
+         elseif(mpoints==-mpoints_dvr) then
+           !
+           do i = 1,PT%mode_iclass(iclasses)
+             !
+             imode = PT%mode_class(iclasses,i)
+             !
+             do jpoint = 1,idvrpoints
+               !
+               ipoint_t = ipoint_t+1
+               !
+               chi_grid(imode,1,ipoint_t) = e1dvr(jpoint)
+               !
+             enddo
+             !
+           enddo
+           !
+         elseif (.false.) then
            !
            do jpoint = 1,mpoints
              !
@@ -4423,22 +4661,6 @@ module perturbation
              !
            enddo
            !
-         elseif(idvrpoints**Nmodes_calss==mpoints) then
-           !
-           do i = 1,PT%mode_iclass(iclasses)
-             !
-             imode = PT%mode_class(iclasses,i)
-             !
-             do jpoint = 1,idvrpoints
-               !
-               ipoint_t = ipoint_t+1
-               !
-               chi_grid(imode,1,ipoint_t) = e1dvr(jpoint)
-               !
-             enddo
-             !
-           enddo
-           !
          else
            !
            write(out,"('PTselect_sample_points error: illegal too large mpoints = ',i0)") mpoints
@@ -4448,6 +4670,8 @@ module perturbation
          !
          deallocate(H1dvr,e1dvr)
          call ArrayStop('H1dvr')
+         deallocate (igrid,igrid_t)
+         call ArrayStop('sample_points-grid')
          !
      endif
      !
@@ -4478,8 +4702,13 @@ module perturbation
               if (chi_(imode)<b1(imode).or.&
                   chi_(imode)>b2(imode) ) then 
                   !
-                  write(out,"('PTselect_sample_points: two small interval for class = ',i8,' coord = ',f15.6)") iclasses,chi_(imode)
-                  stop 'PTselect_sample_points error: two small interval'
+                  if (job%verbose>=5) &
+                     write(out,"('PTselect_sample_points(quad): small interval, class=',i8,' coord=',f15.6)") iclasses,chi_(imode)
+                  !
+                  PTuse_gauss_quadrature = .false.
+                  ierror =1 
+                  return
+                  !stop 'PTselect_sample_points error (quadr): too small interval'
                   !
               endif
               !
@@ -4566,6 +4795,42 @@ module perturbation
      if (job%verbose>=5) call TimerStop('PTselect_sample_points')
      !
      if (verbose>=4) write(out,"(' ... PTselect_sample_points - done!')")   
+     !
+     contains
+     !
+     !
+     recursive subroutine find_ipoint(N,Nlevels,Npoints,igrid,Isearch,i0,isum,ilevel) 
+     !
+     integer(ik),intent(in)    :: N,i0,Nlevels,ilevel,Npoints
+     integer(ik),intent(inout) :: Isearch(Nlevels)
+   
+     integer(ik),intent(out) :: igrid(Nlevels,Npoints),isum
+     integer(ik) :: ipoint,j,i
+     !
+     i = 1
+     !
+     do while(i<=i0)
+       !
+       Isearch(ilevel) = i
+       !
+       if (ilevel == Nlevels) then
+         !
+         isum = isum  +  1
+         igrid(:,isum) = Isearch(:)
+         !
+         !if (i==N) flag_go = .false.
+         !
+       else
+         !
+         call find_ipoint(N,Nlevels,Npoints,igrid,Isearch,i,isum,ilevel+1) 
+         !
+       endif
+       !
+       i = i + 1 
+       !
+     enddo
+     !
+     end subroutine find_ipoint
 
   end subroutine PTselect_sample_points
   !
@@ -5219,7 +5484,7 @@ module perturbation
    end subroutine reconstruct_transf_matrix
 
 
-  subroutine reconstruct_transf_matrix_II(Ndeg,mpoints,phi_src,tmat,tol,info)
+  subroutine reconstruct_transf_matrix_II(Ndeg,mpoints,phi_src,tmat,tol,info,error)
 
     integer(ik),intent(in)  ::Ndeg,mpoints
     integer(ik),intent(out) ::info
@@ -5227,6 +5492,7 @@ module perturbation
     real(ark),intent(in)    :: phi_src(sym%Noper,Ndeg,mpoints)
     real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
     real(rk),intent(in)     :: tol
+    real(rk),intent(out)    :: error
     real(ark)               :: t_vect(Ndeg),rms,ms0
     
     integer(ik), allocatable :: sym_elems_evaluated(:)
@@ -5251,6 +5517,7 @@ module perturbation
     !
     tmat = 0
     info = 0 
+    error = 0
     !
     m = Ndeg*mpoints ; n = Ndeg**2 ;  iw = 20*max(m,n)
     !
@@ -5488,11 +5755,11 @@ module perturbation
     !omp end parallel
     !
     rms = sqrt(rms/(sym%Noper*mpoints))
+    error = rms
     !
     if (rms>tol) then 
       if (job%verbose>=6) then 
-        write(out,"('reconstruct_transf_mat: Cannot define presentation, ioper,ipoint,k =  ',3i8)") ioper,ipoint,ideg
-        print *, rms
+        write(out,"('reconstruct_transf_mat: Cannot define presentation, rms =  ',g13.6)") rms
       endif 
       info = max(info,2)
       !return 
@@ -5547,7 +5814,7 @@ module perturbation
 
 
   !
-  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info)
+  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info,error)
 
     integer(ik),intent(in)  ::Nelem,mpoints
     integer(ik),intent(out) ::info
@@ -5557,6 +5824,7 @@ module perturbation
     integer(ik),intent(out)  :: Nirr(sym%Nrepresen)
     real(ark),intent(out)    :: Nirr_rk(sym%Nrepresen)
     real(rk),intent(in)      :: tol
+    real(rk),intent(out)     :: error
 
     real(ark)                :: t_vect(Nelem,Nelem),tmat_t(sym%Noper,Nelem,Nelem)
     real(ark)                :: tmat(sym%Noper,Nelem,Nelem),fnormal,f_t,g_t
@@ -5604,12 +5872,7 @@ module perturbation
        !
     endif 
     !
-    call reconstruct_transf_matrix_II(Nelem,mpoints,phi_src,tmat_t,tol,info)
-    !
-    if (info/=0) then 
-      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
-      return
-    endif 
+    call reconstruct_transf_matrix_II(Nelem,mpoints,phi_src,tmat_t,tol,info,error)
     !
     if (job%verbose>=7) then  
       !
@@ -5648,6 +5911,17 @@ module perturbation
       ioper = ioper+sym%Nelements(iclass)
       !
     enddo 
+    !
+    if (info/=0) then 
+      !
+      do isym =1,sym%Nrepresen
+         Nirr_rk(isym) = sum(real(sym%Nelements(:)*sym%characters(isym,:),ark)*chi(:))/real(sym%Noper,ark)
+         Nirr(isym) = nint(Nirr_rk(isym))
+      enddo
+      !
+      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
+      return
+    endif 
     !
     ! estimate the number of the irreducible representasions 
     !
@@ -6238,6 +6512,14 @@ module perturbation
         !
      enddo 
    endif 
+   !
+   if(job%eigen_contract) then
+      !
+      ener0 = PTcontrenergy_zero(PT%contractive_space(:,icoeff))
+      !
+      call PTpruning_contracted_basis(Maxsymcoeffs,ener0)
+      !
+   endif
    !
    ! esimate the size if the primitive basis set (total)
    !
@@ -7037,7 +7319,7 @@ module perturbation
     integer(ik) :: ncontr,maxcontr,maxcontr0
     character(len=cl)   :: task
     character(len=4)   :: jchar
-    character(len=cl)  :: unitfname,filename,statusf,symchar
+    character(len=cl)  :: unitfname,filename,statusf='old',symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
     !
@@ -10488,8 +10770,8 @@ module perturbation
      	allocate (maxTerm(nroots),maxcontrib(nroots))
      	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
     	maxTerm  = 1
-     
-     
+        !
+        !     
         !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
         do iroot=1,nroots
           !
@@ -10502,8 +10784,9 @@ module perturbation
                      MaxEigenvects = abs( mat(jroot,iroot) )
                      maxTerm(iroot) = jroot
                  endif
+                 !
             enddo
-              !
+            !
             maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
             !
           else
@@ -10512,13 +10795,12 @@ module perturbation
             maxcontrib(iroot)  = 1.0_rk
             !
           endif
-       !
+          !
         enddo
-     !$omp end parallel do
-     !
-     
+        !$omp end parallel do
+        !
      endif
-     
+     !
      if (no_diagonalization) then 
        !
        deallocate(ivec)
@@ -15079,10 +15361,6 @@ module perturbation
       ! Turn on the external field
       !
       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
-      !
-      ! We assume that all matrix elements are simmetric, therefore we can use 
-      ! a 1D array for storing only the upper half of the matrix.
-      ! And this is the size of such 1D array.
       !
       mdimen = PT%Maxcontracts
       !
@@ -24704,7 +24982,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          irho_eq = 0 
          !
-         if (manifold/=0) irho_eq = mod(&
+         if (npoints/=0) irho_eq = mod(&
                           nint( ( trove%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
          !
          powers = 0 ; powers(imode) = 2

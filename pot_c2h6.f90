@@ -9,7 +9,7 @@ implicit none
 
 public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,&
        MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
-public MLpoten_c2h6_88_cos3tau_G36
+public MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order
 
 private
 
@@ -2407,6 +2407,112 @@ recursive subroutine ML_dipole_c2h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
 end subroutine ML_dipole_c2h6_4m_dummy
 
 
+
+!define cartesian components of the polarizabilityin space-fixed system
+ !
+ !
+ recursive subroutine ML_alpha_C2H6_zero_order(rank,ncoords,natoms,local,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    real(ark)              :: e1(3),e2(3),e3(3),rad,r1e,r2e,betae,r1,r2,r3,r4,r5,r6,r7,xi(18)
+    real(ark)              :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46
+    real(ark)              :: rhobar
+
+    !
+    e1(:) = xyz(1,:)-xyz(2,:)
+    e2(:) = xyz(3,:)-xyz(1,:)
+    e3(:) = xyz(4,:)-xyz(2,:)
+    !
+    rad = pi/180.0_ark
+    !
+    r1e   = extF%coef(1, 1)
+    r2e   = extF%coef(2, 1)
+    betae = extF%coef(3, 1)*rad
+    !
+    select case(trim(molec%coords_transform))
+      !
+    case default
+      !
+      write(out, '(/a,1x,a,1x,a)') &
+      'ML_alpha_C2H6_zero_order error', trim(molec%coords_transform), 'is unknown'
+      stop 'ML_alpha_C2H6_zero_order error: bad coordinate type'
+      !
+    case('R-R16-BETA16-THETA-TAU-11')
+      !
+      r1 = local(1)
+      r2 = local(2)
+      r3 = local(4)
+      r4 = local(6)
+      r5 = local(3)
+      r6 = local(7)
+      r7 = local(5)
+      !
+      xi(1)=(r1-r1e)
+      xi(2)=(r2-r2e)
+      xi(3)=(r3-r2e)
+      xi(4)=(r4-r2e)
+      xi(5)=(r5-r2e)
+      xi(6)=(r6-r2e)
+      xi(7)=(r7-r2e)
+      !
+      xi(8)  = local(8)  - betae
+      xi(9)  = local(10) - betae
+      xi(10) = local(12) - betae
+      xi(11) = local(9)  - betae
+      xi(12) = local(13) - betae
+      xi(13) = local(11) - betae
+      !
+      tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+      tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+      tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+      tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+      tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+      !
+      if (tau14>2.0_ark*pi) then 
+         tau25 = tau25 + 2.0_ark*pi
+         tau36 = tau36 + 2.0_ark*pi
+      endif
+      !
+      rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+      !
+      tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+      tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+      tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+      tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+      tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+      !
+      theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+      !
+      xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+      xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+      xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+      xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+      !
+      rhobar = ( tau14+tau25+tau36 )/3.0_ark
+      !
+      xi(18) = cos(3.0_ark*rhobar)
+      !
+    end select
+    !
+    f(1) = extF%coef(4,1)+extF%coef(5,1)*xi(18) !(1,1)
+    f(2) = extF%coef(1,2)+extF%coef(2,2)*xi(18) !(1,2)
+    f(3) = extF%coef(1,3)+extF%coef(2,3)*xi(18) !(1,3)
+    f(4) = extF%coef(1,4)+extF%coef(2,4)*xi(18) !(2,2)
+    f(5) = extF%coef(1,5)+extF%coef(2,5)*xi(18) !(2,3)
+    f(6) = extF%coef(1,6)+extF%coef(2,6)*xi(18) !(3,3)
+    !
+  end subroutine ML_alpha_C2H6_zero_order
 
 
 

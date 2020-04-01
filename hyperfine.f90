@@ -1,5 +1,6 @@
 module hyperfine
 
+#define fwig  0
 use accuracy
 use timer
 use richmol_data
@@ -231,8 +232,11 @@ subroutine hyper_hmat(hyper)
 
   write(out, '(/1x,a,1x,i2,a,1x,i3)') 'initialize "fwigxjpf" for max', 6, '-j symbols and max angular momentum =', max_ang
 
+
+#if (fwig>0)
   call fwig_table_init( int(2*max_ang,kind=4), int(6,kind=4) )
   call fwig_temp_init( int(2*max_ang,kind=4) )
+#endif
 
 
 
@@ -969,8 +973,12 @@ subroutine hyper_int_fpair(hyper, f1, f2, linestr_tol, intens_tol)
 
   write(out, '(/1x,a,1x,i2,a,1x,i3)') 'initialize "fwigxjpf" for max', 6, '-j symbols and max angular momentum =', max_ang
 
+
+#if (fwig>0)
   call fwig_table_init( int(2*max_ang,kind=4), int(6,kind=4) )
   call fwig_temp_init( int(2*max_ang,kind=4) )
+#endif
+
 
   ! read energies and quantum numbers
 
@@ -1923,7 +1931,13 @@ function threej_symbol(j1,m1, j2,m2, j3,m3) result(f)
   two_m2 = nint(2.0_rk*m2)
   two_m3 = nint(2.0_rk*m3)
 
+
+#if (fwig>0)
   f = fwig3jj(two_j1, two_j2, two_j3, two_m1, two_m2, two_m3)
+#else
+  f = 0 
+#endif
+
 
 end function threej_symbol
 
@@ -1948,7 +1962,13 @@ function sixj_symbol(j1,j2,j3, j4,j5,j6) result(f)
   two_j5 = nint(2.0_rk*j5)
   two_j6 = nint(2.0_rk*j6)
 
+
+#if (fwig>0)
   f = fwig6jj(two_j1, two_j2, two_j3, two_j4, two_j5, two_j6)
+#else
+  f = 0 
+#endif
+
 
 end function sixj_symbol
 

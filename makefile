@@ -8,9 +8,9 @@ checkin:
 
 
 
-pot_user = pot_ch4
+pot_user = pot_H2O_Conway
 
-PLAT = 
+PLAT = _0209
 ###FOR  = ifort
 FOR = ifort 
 #FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp -nostandard-realloc-lhs
@@ -30,6 +30,7 @@ LIB     =   $(LAPACK) $(LIBS) wigxjpf-1.5/lib/libwigxjpf.a
 
 %.o : %.f90
 	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
+
 
 ###############################################################################
 
@@ -70,8 +71,8 @@ mol_zxy2.o:     accuracy.o moltype.o
 mol_zxy3.o:     accuracy.o moltype.o
 mol_ch3oh.o:    accuracy.o moltype.o pot_ch3oh.o
 mol_c2h4.o:	    accuracy.o moltype.o
+mol_c3h6.o:	    accuracy.o moltype.o
 mol_c2h6.o:     accuracy.o moltype.o
-mol_c3h6.o:     accuracy.o moltype.o
 mol_abcd.o:     accuracy.o moltype.o pot_abcd.o
 
 pot_ch4.o:      accuracy.o moltype.o
@@ -80,11 +81,19 @@ pot_xy3.o:      accuracy.o moltype.o
 pot_xy4.o:      accuracy.o moltype.o symmetry.o
 pot_zxy2.o:     accuracy.o moltype.o
 pot_zxy3.o:     accuracy.o moltype.o
+pot_c2h6.o:     accuracy.o moltype.o
 pot_ch3oh.o:	  accuracy.o moltype.o
 pot_c2h4.o:	    accuracy.o moltype.o
+pot_c3h6.o:	    accuracy.o moltype.o
 pot_c2h6.o:     accuracy.o moltype.o
-pot_c3h6.o:     accuracy.o moltype.o
 pot_abcd.o:     accuracy.o moltype.o lapack.o
+prop_xy2.o:     accuracy.o moltype.o
+
+kin_xy2.o:      accuracy.o moltype.o
+
+
+#H2O_POTV_2018.o:    
+
 
 prop_xy2.o:     accuracy.o moltype.o timer.o pot_xy2.o
 prop_xy2_quad.o:     accuracy.o moltype.o timer.o pot_xy2.o

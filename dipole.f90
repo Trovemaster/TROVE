@@ -7,11 +7,11 @@ module dipole
                               ! 3 - extendent printing
 
  use accuracy,     only : hik, ik, rk, ark, cl, wl, out, vellgt, planck, avogno, boltz, pi, small_, rad
- use fields,       only : manifold,job,analysis,bset
+ use fields,       only : job,analysis,bset
  use timer,        only : IOstart,IOStop,Arraystart,Arraystop,Timerstart,Timerstop,MemoryReport,TimerReport,&
                           TimerProbe,memory_limit,memory_now
  use molecules,    only : MLcoord_direct,MLrotsymmetry_generate,ddlmn_conj,dlmn,Phi_rot,calc_phirot
- use moltype,      only : molec, extF, intensity, three_j
+ use moltype,      only : manifold,molec, extF, intensity, three_j
  use symmetry,     only : sym
 
 
@@ -19,7 +19,7 @@ module dipole
                           read_eigenval,index_correlation,eigen,Neigenlevels,istate2ilevel
 
  private
- public dm_tranint,dm_analysis_density
+ public dm_tranint,dm_analysis_density,dm_analysis_contribution
 
  real(rk),allocatable,save  :: dipole_me(:,:,:)
 
@@ -121,40 +121,11 @@ contains
        !
        call restore_vib_matrix_elements
        !
-       ! For eigenvectors in the irred-representation
-       !
-       !if (trim(job%IOvector_symm)/='NONE') then
-       !  !
-       !  allocate (irr(nJ,sym%Nrepresen),stat=alloc)
-       !  if (alloc/=0) call report ("dm_tranint: alloc-error from irr",.true.)
-       !  !
-       !  do jind=1,nJ
-       !    !
-       !    jrot = Jval(jind)
-       !    !
-       !    call PTsymmetrization(jrot)
-       !    !
-       !    mat_size = bset_contr(jind)%Maxcontracts
-       !    !
-       !    do igamma = 1,sym%Nrepresen
-       !      !
-       !      Ntotal(jind,igamma)  = PT%Max_sym_levels(isym)
-       !      !
-       !      allocate (irr(jind,igamma)%repres(Ntotal(jind,igamma),sym%degen(igamma),mat_size),stat=alloc)
-       !      !
-       !      call ArrayStart('irr(j,gamma)%repres',alloc,size(irr(jind,igamma)%repres,kind(irr(jind,igamma)%repres))
-       !      !
-       !      irr(jind,igamma)%repres(:,:,:) = PT%irr(igamma)%repres(:,:,:)
-       !      !
-       !      deallocate(PT%irr(igamma)%repres)
-       !      !
-       !    enddo
-       !    !
-       !    call ArrayStop('PT%irr(isym)%coeffs')
-       !    !
-       !  enddo
-       !  !
-       !endif 
+       if (intensity%tdm_replace) then
+         !
+         call replace_vib_trans_dipole_moments
+         !
+       endif
        !
        ! Run intensity simulations 
        !
@@ -316,9 +287,19 @@ contains
       !
     endif 
     !
-    imode = analysis%dens_list(nlist+1) ; jmode = analysis%dens_list(nlist+2) ; kmode = analysis%dens_list(nlist+3)
-    !
-    call DM_density_symmvec(Jval)
+    if (analysis%reducible_eigen_contribution) then 
+      !
+      call DM_contribution_symmvec(Jval)
+      !
+    else 
+      !
+      imode = analysis%dens_list(nlist+1) ; jmode = analysis%dens_list(nlist+2) ; kmode = analysis%dens_list(nlist+3)
+      !
+      call DM_density_symmvec(Jval)
+      !
+      call DM_contribution_symmvec(Jval)
+      !
+    endif
     !
     write(out, '(/a)') 'done'
     !
@@ -328,6 +309,606 @@ contains
     !
  end subroutine dm_analysis_density
 
+
+
+ subroutine dm_analysis_contribution
+ !
+ ! Analysis of the reducible functions' contribution to the eigenfunction
+    !
+    implicit none
+    !
+    integer(ik)          :: info
+    !
+    integer(ik)              :: Jmin, Jmax, nJ, jind, j, ierror
+    integer(ik), allocatable :: Jval(:)
+
+    integer(ik)          :: i,ilist,nlist,imode,kmode,jmode
+
+    ! initialize array of J values
+    ! J=0 is always present no matter if we use it in intensity calcs or not. 
+    !
+    i = 1
+    Jmin = 1000 ; Jmax = 0
+    !
+    do while (i<100.and.analysis%j_list(i)/=-1)
+      !
+      j = analysis%j_list(i)
+      !
+      Jmin = min(Jmin,j)
+      Jmax = max(Jmax,j)
+      i = i + 1
+      !
+    enddo
+    !
+    nJ   = Jmax - Jmin + 1
+    !
+    if (Jmin>0) nJ = nJ + 1
+    !
+    allocate(Jval(nJ), stat = info)
+    if (info /= 0) stop 'dm_tranint allocation error: Jval - out of memory'
+    !
+    Jval = 0 
+    jind = 1
+    do j = max(Jmin,1), Jmax
+       jind = jind + 1
+       Jval(jind) = j
+    end do
+    !
+    !
+    call read_contrind(nJ, Jval(1:nJ))
+    !
+    call index_correlation(nJ, Jval(1:nJ))
+    !
+    ! read eigenvalues and their labeling, i.e. description;
+    ! initialize file-units for reading eigenvectors
+    !
+    call read_eigenval(nJ, Jval(1:nJ),ierror)
+    !
+    if (ierror/=0) then 
+        write(out,"('dm_tranint: read_eigenval error, some eigen-files do not exists')")
+        stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
+    endif
+    !
+    call DM_contribution_symmvec(Jval)
+    !
+    write(out, '(/a)') 'done'
+    !
+    call MemoryReport
+    !
+    call TimerReport
+    !
+ end subroutine dm_analysis_contribution
+
+
+ subroutine DM_contribution_symmvec(Jval)
+    implicit none
+    !
+    integer(ik),intent(in)  :: Jval(:)
+    !
+    integer(ik)    :: nJ,dimenmax
+    integer(ik)    :: ilevelI, ilevelF, ndegI, ndegF, idegI, idegF, irec, idimen, nsizeF,nsizeI
+    integer(ik)    :: irep
+    integer(ik)    :: nmodes,info,indI,indF,jI,jF,Nrepresen
+    integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalI(0:molec%nmodes)
+    integer(ik)    :: dimenI,dimenF,unitI,unitF,jmax,kI,kF
+    real(rk)       :: energyI, energyF, f_t,ener_
+    logical        :: passed
+    !
+    integer(ik), allocatable :: icoeffI(:),istored(:),isave(:),isaved(:),ilevel_analyse(:)
+    integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
+    real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vec_(:),rot_density(:,:,:,:), highest_contribution(:), ener_top_contri(:)
+    complex(rk), allocatable :: dens_coord(:,:,:,:)
+    real(rk),allocatable     :: density(:,:,:),Jrot_mat(:,:,:)
+    integer(ik), pointer :: Jeigenvec_unit(:,:)
+    type(DmatT),pointer  :: vec_ram(:,:)
+    type(DkmatT),pointer :: ijterm(:)
+    !
+    integer(ik)  :: jind,nlevels,igamma,nclasses,nsize_need,nlevelI,dimenmax_,nsizemax,itauI,itauF,termI,termF
+    !
+    integer(ik)  :: ram_size_
+    !
+    integer(ik)  :: iram_,Nterms,iterm
+    !
+    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_
+    integer(ik)  :: ilist,nlist,imode,kmode,jmode,dens_size(3),Nstored,i,k,i1,i2,i3,ipp,ip,npp,itheta,iphi
+    real(rk)     :: rot(3),dens_,dtheta,dphi
+    !
+    integer(ik)  :: irootI,irow,ib,nelem,ielem,isrooti
+    real(rk)     :: dtemp0 
+    !
+    double precision,allocatable  :: rw(:)
+    double complex,allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
+    character(len=1)        :: jobvl,jobvr
+    integer(ik)             :: cnu_i(0:molec%nmodes),ktau,tauI
+    character(len=cl)       :: my_fmt !format for I/O specification
+    character(len=wl)       :: my_fmt1 !format for I/O specification
+    integer(ik), allocatable :: basis_set_contraction(:,:)
+    integer(ik)                 :: iounit
+    character(cl)               :: ioname
+    !
+    call TimerStart('Contribution analysis')
+    !
+    nmodes = molec%nmodes
+    nclasses = size(eigen(1)%cgamma)-1
+    Nrepresen = sym%Nrepresen
+    !
+    nJ = size(Jval)
+    !
+    ! Prepare the list of units with the stored eigenvectors
+    !
+    allocate(Jeigenvec_unit(nJ,sym%Nrepresen), stat = info)
+    if (info /= 0) stop 'dm_tranint allocation error: Jeigenvec_unit - out of memory'
+    !
+    allocate(nlevelsG(nJ,sym%Nrepresen),ilevelsG(nJ,sym%Nrepresen),ram_size(nJ,sym%Nrepresen),iram(nJ,sym%Nrepresen),stat = info)
+    call ArrayStart('nlevelsG',info,size(nlevelsG),kind(nlevelsG))
+    call ArrayStart('ilevelsG',info,size(ilevelsG),kind(ilevelsG))
+    call ArrayStart('ram_size',info,size(ram_size),kind(ram_size))
+    call ArrayStart('iram',info,size(iram),kind(iram))
+    !
+    do jind=1,nJ
+      do igamma = 1,sym%Nrepresen
+        Jeigenvec_unit(jind,igamma) = TReigenvec_unit(jind,Jval,igamma)
+      enddo
+    enddo
+    !
+    ! maximal size of basis functions 
+    !
+    dimenmax = 0
+    nsizemax = 0
+    !
+    !loop over J quantities
+    !
+    do jind = 1, nJ
+        !
+        ! Estimate the maximal size of the basis functions. 
+        !
+        dimenmax = max(dimenmax,bset_contr(jind)%Maxcontracts)
+        nsizemax = max(nsizemax,maxval(bset_contr(jind)%nsize(:)))
+        !
+    enddo 
+    !
+    jmax = Jval(nJ)
+    !
+    nlevelI = 0
+    !
+    !number of initial states
+    !
+    nlevels = Neigenlevels 
+    !
+    allocate (ijterm(nJ),stat=info)
+    !
+    do jind=1,nJ
+      !
+      idimen = bset_contr(jind)%Maxcontracts
+      !
+      allocate (ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen),stat=info)
+      call ArrayStart('ijterm',info,size(ijterm(jind)%kmat),kind(ijterm(jind)%kmat))
+      !
+      do igammaI = 1,sym%Nrepresen
+         !
+         Nterms = 0 
+         !
+         do iterm = 1,bset_contr(jind)%Maxsymcoeffs
+           !
+           ijterm(jind)%kmat(iterm,igammaI) = Nterms
+           !
+           Nterms = Nterms + bset_contr(jind)%irr(igammaI)%N(iterm) 
+           !
+         enddo
+         !
+      enddo
+    enddo
+    !
+    ! loop over initial states
+    !
+    ener_ = 0
+    !
+    matsize = 0
+    !
+    nsizemax = 1
+    nlevelsG = 0
+    !
+    ilist = 1 
+    do while (ilist<nlevels)
+      ilist = ilist + 1 
+    enddo
+    nlist = ilist-4
+    f_t = 0
+    !
+    do ilevelF = 1, nlevels
+       !
+       jF = eigen(ilevelF)%jval
+       indF = eigen(ilevelF)%jind
+       ndegF   = eigen(ilevelF)%ndeg
+       !
+       !energy and and quanta of the final state
+       !
+       energyF = eigen(ilevelF)%energy
+       igammaF = eigen(ilevelF)%igamma        
+       quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes)
+       !
+       passed = .false.
+       loop_ilist : do ilist=1,nJ
+         !
+         if (jF==analysis%j_list(ilist)) then 
+           passed = .true.
+           exit loop_ilist
+         endif 
+         !
+       enddo loop_ilist
+       !
+       if (.not.passed) cycle
+       !
+       nlevelsG(indF,igammaF) = nlevelsG(indF,igammaF) + 1
+       !
+       nsize_need = max(bset_contr(nJ)%nsize(igammaF),1)
+       !
+       f_t = f_t + real(nsize_need,rk)*( real(rk,rk) )/1024_rk**3
+       !
+       matsize = matsize + nsize_need
+       nsizemax = max(nsizemax,nsize_need)
+       !
+    enddo
+    !
+    write(my_fmt,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
+    !
+    do jind = 1, nJ
+      jI = Jval(jind) 
+      write(out,my_fmt) 'Number of states for J = ',jI,' each symm = ',nlevelsG(jind,:)
+      !
+    enddo
+    !
+    dimenmax_ram = max(nsizemax,1)
+    !
+    write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
+    !
+    allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
+    call ArrayStart('vec_ram',0,1,rk)
+    !
+    ! estimate the memory requirements 
+    !
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+        'All vectors will require approx ',f_t,' Gb; number of vectors = ',nlevels,f_t/real(nlevels,rk)
+    !
+    ! memory per vector
+    !
+    f_t = f_t/real(nlevels,rk)
+    !
+    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
+    !
+    if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") &
+                               'Memory needed = ',f_t*real(nlevels,rk),'Gb;  memory  available = ',&
+                               memory_limit-memory_now,ram_size_max
+    !
+    do jind = 1, nJ
+       !
+       !if (job%verbose>=4) write(out,"(' J    irep  N-RAM-irep   Nreps/Ntotal   ')") 
+       !
+       do irep = 1,Nrepresen
+          !
+          f_t = real( nlevelsG(jind,irep),rk )/real(nlevels, rk )
+          ram_size_ = int(f_t*ram_size_max,ik)
+          !
+          ram_size_ = min(ram_size_,nlevelsG(jind,irep))
+          !
+          if (abs(ram_size_-nlevelsG(jind,irep))<=1) ram_size_=nlevelsG(jind,irep)
+          !
+          ram_size(jind,irep)  = ram_size_
+          !
+          if (ram_size_>0) then
+            !
+            if (job%verbose>=5) write(out,"(i3,4x,i2,4x,i0,4x,f14.5)") jval(jind),irep,ram_size_,f_t
+            !
+            !dimenmax_ram_ = max(min(int(bset_contr(jind)%nsize(irep)*intensity%factor),bset_contr(jind)%nsize(irep)),1)
+            !
+            dimenmax_ram_ = max(bset_contr(jind)%nsize(irep),1)
+            !
+            matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
+            !
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',&
+                                f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
+                                real(matsize*8,rk)/1024.0_rk**3
+            !
+            allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
+            !
+            call ArrayStart('vec_ram',info,1,rk,matsize)
+            !
+          endif
+          !
+       enddo
+    enddo
+    !
+    allocate(istored(nlevels),stat=info)
+    !
+    call ArrayStart('istored',info,size(istored),kind(istored))
+    !
+    istored = 0
+    !
+    allocate(isaved(nlevels),stat=info)
+    !
+    call ArrayStart('isaved',info,size(isaved),kind(isaved))
+    !
+    isaved = 0
+    !
+    allocate(isave(nJ),stat=info)
+    !
+    if (job%verbose>=5) call MemoryReport
+    !
+    if (job%verbose>=6) write(out,"(/'Pre-screening, compacting and storing...')")
+    !
+    ! prescreen all eigenfunctions, compact and store on the disk
+    !
+    call TimerStart('Distributing memory')
+    !
+    iram = 0
+    isave = 0
+    ilevelsG = 0
+    !
+    Nstored  = 0
+    !
+    write(*,*) "test"
+    allocate(ilevel_analyse(nlevels))
+    do ilevelF = 1, nlevels
+      !
+      if (job%verbose>=6.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
+      !
+      jF = eigen(ilevelF)%jval 
+      !
+      !energy and and quanta of the final state
+      !
+      energyF = eigen(ilevelF)%energy
+      igammaF = eigen(ilevelF)%igamma        
+      quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
+      !
+      passed = .false.
+      loop_ilist1 : do ilist=1,nJ
+        !
+        if (jF==analysis%j_list(ilist)) then 
+          passed = .true.
+          exit loop_ilist1
+        endif 
+        !
+      enddo loop_ilist1
+      !
+      if (.not.passed) cycle
+      !
+      Nstored  = Nstored + 1
+      !
+      ilevel_analyse(Nstored) = ilevelF
+      !
+      indF = eigen(ilevelF)%jind
+      !
+      ilevelsG(indF,igammaF) = ilevelsG(indF,igammaF) + 1
+      !
+      ndegF   = eigen(ilevelF)%ndeg
+      dimenF = bset_contr(indF)%Maxcontracts
+      nsizeF = bset_contr(indF)%nsize(igammaF)
+      !
+      unitF = Jeigenvec_unit(indF,igammaF)
+    !
+      !
+      if (nsizeF<=dimenmax_ram.and.iram(indF,igammaF)<ram_size(indF,igammaF)) then
+        !
+        iram(indF,igammaF) = iram(indF,igammaF) + 1
+        !
+        istored(ilevelF) = iram(indF,igammaF)
+        !
+        irec = eigen(ilevelF)%irec(1)
+        !
+        read(unitF,rec=irec) vec_ram(indF,igammaF)%mat(1:nsizeF,iram(indF,igammaF))
+        !
+      else
+        !
+        isave(indF) = isave(indF) + 1
+        !
+        isaved(ilevelF) = eigen(ilevelF)%irec(1)
+        !
+      endif
+      !
+    enddo
+    !
+    !deallocate(vecI,vecF)
+    !call ArrayStop('intensity-vec')
+    !
+    call TimerStop('Distributing memory')
+    !
+    write(out,"(/'...done!')")
+    !
+    dimenmax_ = 1
+    do jind = 1, nJ
+       do irep = 1,Nrepresen
+         dimenmax_ = max(bset_contr(jind)%nsize(irep),dimenmax_)
+       enddo
+    enddo
+    !
+    allocate(vecI(dimenmax_),vecF(dimenmax_),vec(dimenmax),vec_(dimenmax), stat = info)
+    !
+    !
+    allocate(icoeffI(dimenmax), stat = info)
+    call ArrayStart('density-vectors',info,size(icoeffI),kind(icoeffI))
+    !
+    !write(out,"('Number of states for each symm = ',<Nrepresen>i8)") nlevelsG(:)
+    !
+    write(my_fmt,'(a,i0,a)') "(a,i4,a,",Nrepresen,"i8)"
+    !
+    do jind = 1, nJ
+      jI = Jval(jind) 
+      write(out,my_fmt) 'Number of states for ',jI,' each symm = ',nlevelsG(jind,:)
+    enddo
+    !
+    if (all(nlevelsG(:,:)<1)) then 
+      !
+      write(out,"('DM_contribution_symmvec error: number of states to analyse is zero!')") 
+      return 
+      !
+    endif
+    !
+    !  The matrix where some of the eigenvectors will be stored
+    !
+    if (job%verbose>=5) call MemoryReport
+    !
+    ! loop over initial states
+    !
+    ioname = "highest eigen contributions" 
+    call IOstart(trim(ioname),iounit)
+    open(unit = iounit, action = 'write',status='replace',file = "contribution.chk")
+    do jind = 1, nJ 
+    indI = eigen(ilevel_analyse(1))%jind
+    dimenI = bset_contr(eigen(ilevel_analyse(1))%jind)%Maxcontracts
+    allocate(highest_contribution(bset_contr(indI)%icontr2icase(dimenI,1)))
+    allocate(ener_top_contri(bset_contr(indI)%icontr2icase(dimenI,1)))
+    highest_contribution = 0.0_ark
+    allocate(basis_set_contraction(bset_contr(indI)%icontr2icase(dimenI,1),0:Nclasses + 1))
+    ipp = 0 
+    !
+    Ilevels_loop: do i =1,Nstored
+      !
+      ilevelI = ilevel_analyse(i)
+      !
+      ! start measuring time per line
+      !
+      indI = eigen(ilevelI)%jind
+      ! 
+      !dimension of the bases for the initial states
+      !
+      dimenI = bset_contr(indI)%Maxcontracts
+      !
+      !energy, quanta, and gedeneracy order of the initial state
+      !
+      jI = eigen(ilevelI)%jval
+      !
+      if(jI/=Jval(jind)) then
+        cycle
+      endif
+      energyI = eigen(ilevelI)%energy
+      igammaI  = eigen(ilevelI)%igamma
+      quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
+      normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+      ndegI   = eigen(ilevelI)%ndeg
+      nsizeI = bset_contr(indI)%nsize(igammaI)
+      !
+      ! where the eigenvector is stored 
+      !
+      unitI = Jeigenvec_unit(indI,igammaI) 
+      !
+      !read eigenvector of initial state
+      !
+      !
+      if (istored(ilevelI)==0) then
+          !
+          call TimerStart('Reading eigenfuncs')
+          !
+          irec = isaved(ilevelI)
+          !
+          read(unitI,rec=irec) vecI(1:nsizeI)
+          !
+          call TimerStop('Reading eigenfuncs')
+          !
+      else
+          !
+          iram_ = istored(ilevelI)
+          !
+          vecI(1:nsizeI) = vec_ram(indI,igammaI)%mat(1:nsizeI,iram_)
+          !
+      endif
+      !
+      ndegF  = ndegI
+      !
+      do idegI = 1, ndegI
+         !
+         call convert_symvector_to_contrvector(indI,dimenI,igammaI,idegI,ijterm(indI)%kmat(:,:),vecI,vec)
+         !
+         write(my_fmt1,'(a,i0,a)') "(2x,i4,i7,e16.8,3x,a1,3i3,1x,i4,i2,a1,1x,a1,",Nclasses,"(i3),a1)"
+         !
+         do irootI = 1, dimenI
+              !
+              irow = bset_contr(indI)%icontr2icase(irootI,1)
+              ib   = bset_contr(indI)%icontr2icase(irootI,2)
+              !
+              cnu_i(0:Nclasses) = bset_contr(indI)%contractive_space(0:Nclasses, irow)
+              !
+              ktau = bset_contr(indI)%ktau(irootI)
+              tauI  = mod(ktau,2_ik)
+              kI = bset_contr(indI)%k(irootI)
+              !
+              !ndeg = bset_contr(jind)%index_deg(irow)%size1
+              !
+              if(abs(vec(irootI))>highest_contribution(irow)) then 
+                 highest_contribution(irow) = abs(vec(irootI))
+                 ener_top_contri(irow) = energyI
+              endif
+              basis_set_contraction(irow,0:Nclasses) = cnu_i(0:Nclasses)
+              basis_set_contraction(irow,Nclasses+1) = jI
+              if (.false.) then  
+                !
+                write(out,my_fmt1) & 
+                           igammaI,irootI,&
+                           vec(irootI),"(", &
+                           jI,kI,tauI,irow,ib,")", &
+                           "(",cnu_i(1:Nclasses),")"
+                !
+              endif
+              !
+         end do
+         !
+      enddo
+      !
+    end do Ilevels_loop
+    !
+    write(iounit,"(a)") "Start-contract"
+    !
+    write(my_fmt1,'(a,i0,a)') "(2x,i7,e16.8,3x,f13.6,3x,i3,1x,",Nclasses,"(1x,i5))"
+    !
+    do i = 1, size(highest_contribution)
+      write(iounit,my_fmt1) i, highest_contribution(i), ener_top_contri(i) -intensity%ZPE,  &
+                          basis_set_contraction(i, Nclasses+1), &
+                           basis_set_contraction(i,1:Nclasses) 
+    enddo
+    !
+    write(iounit,"(a)") "End-contract"
+    !
+    deallocate(highest_contribution)
+    deallocate(basis_set_contraction)
+    enddo
+    close(iounit)
+    !
+    deallocate(vecI, vecF, vec, vec_,icoeffI)
+    call ArrayStop('density-vectors')
+    !
+    do irep = 1,Nrepresen
+     do jind = 1,nJ
+      !
+      nullify(vec_ram(jind,irep)%mat)
+      !
+      if (associated(vec_ram(jind,irep)%mat)) deallocate(vec_ram(jind,irep)%mat)
+      !
+     enddo
+    enddo
+    !
+    call ArrayStop('vec_ram')
+    !
+    do jind = 1,nJ
+      !
+      if (associated(ijterm(jind)%kmat)) deallocate(ijterm(jind)%kmat)
+      !
+    enddo
+    call ArrayStop('ijterm')
+    !
+    deallocate(nlevelsG,ilevelsG,ram_size,iram)
+    call ArrayStop('nlevelsG')
+    call ArrayStop('ilevelsG')
+    call ArrayStop('ram_size')
+    call ArrayStop('iram')
+    !
+    deallocate(istored)
+    call ArrayStop('istored')
+    !
+    deallocate(isaved)
+    call ArrayStop('isaved')
+    !
+    call TimerStop('Contribution analysis')
+    !
+  end subroutine DM_contribution_symmvec
 
 
 
@@ -1730,7 +2311,7 @@ contains
                     energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
-      if (mod(ilevelI,min(100,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
+      if (mod(ilevelI,min(100000,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
          !
          write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !
@@ -2065,6 +2646,72 @@ contains
    if (job%verbose>=4)   write(out, '(a/)') '...done'
    !
  end subroutine restore_vib_matrix_elements
+ !
+ !
+ ! Here we reaplce the vibrational (J=0) dipole moment elements
+ !
+ subroutine replace_vib_trans_dipole_moments
+   !
+   implicit none 
+   !
+   integer(ik)        :: chkptIO
+   integer(ik)        :: ncontr_t,imu,nclasses,i1,i2
+   logical            :: eof
+   character(len=cl)  :: job_is
+   real(rk)           :: f_tdm
+   !
+   nclasses = size(eigen(1)%cgamma)-1
+   !
+   if (nclasses/=1) then
+     !
+     write(out,"('replace_vib_trans_dipole_moments error: only works for J=0, nclasse=1 not ',i0)") nclasses
+     stop 'replace_vib_trans_dipole_moments is only for model J=0'
+     !
+   endif
+   !
+   job_is ='replace J=0 dipole moment'
+   call IOStart(trim(job_is),chkptIO)
+   !
+   if (job%verbose>=4) write(out, '(a, 1x, a)') 'chk = file', trim(job%tdm_file)//'.chk'
+   !
+   open(chkptIO,action='read',status='old',file=trim(job%tdm_file)//'.chk')
+   !
+   read(chkptIO,*) ncontr_t
+   !
+   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+     write (out,"(' Vib TDM file ',a)") job%tdm_file
+     write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
+     stop 'replace_vib_trans_dipole_moments - in file - illegal ncontracts '
+   end if
+   !
+   ncontr_t = bset_contr(1)%Maxcontracts
+   !
+   if (job%verbose>=5) write(out,"(/'replace_vib_trans_dipole_moments...: Number of elements: ',i8)") ncontr_t
+   !
+   if (job%verbose>=4) write(out,"(a)") "Replace dipole moments:"
+   !
+   eof = .false.
+   !
+   loop_tdm: do
+     !
+     if (eof) exit loop_tdm
+     read(chkptIO,*,end=111) i1,i2,f_tdm
+     !
+     if (job%verbose>=4) write(out,"(2i8,2x,i3,2x,3e15.7,2x,e15.7,1x,'//')") i1,i2,imu,dipole_me(i1,i2,:),f_tdm
+     !
+     dipole_me(i1,i2,:) = dipole_me(i1,i2,:)*f_tdm
+     dipole_me(i2,i1,:) = dipole_me(i2,i1,:)*f_tdm
+     !
+     cycle
+     111 continue
+       eof = .true.
+     exit
+     !
+   enddo loop_tdm
+   !
+   if (job%verbose>=4)   write(out, '(a/)') '...done'
+   !
+ end subroutine replace_vib_trans_dipole_moments
  !
  !
  function cg(j0, k0, dj, dk)
