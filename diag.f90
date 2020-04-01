@@ -5,7 +5,7 @@ module diag
 #define mpi_     0
 #define omparpack_  0
 #define propack_  0
-
+!
 !
 !  Simplistic type-agnostic LAPACK interface
 !
