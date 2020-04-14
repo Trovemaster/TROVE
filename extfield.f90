@@ -1377,8 +1377,8 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,1x,i8,1x,a5,1x,i2,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &!
-      Jrot, ilevel_, sym%label(isym),isym, ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, eigen(ilevel)%quanta(1:nmodes), &!
+      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &!
+      Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, eigen(ilevel)%quanta(1:nmodes), &!
       eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
     enddo
   enddo
