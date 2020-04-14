@@ -1,3 +1,5 @@
+! Electric quadrupole moment tensor for XY2-type moleucles.
+
 module prop_xy2_quad
   use accuracy
   use moltype
@@ -18,6 +20,10 @@ module prop_xy2_quad
 
 !###################################################################################################################################
 
+
+! Electric quadrupole function in the bisector frame, here X axis bisects the
+! valence bond angle and the Z axis is aligned along the linear axis of the
+! molecule at linearity.
 
 recursive subroutine prop_xy2_qmom_bisect_frame(rank, ncoords, natoms, local, xyz, f)
 
@@ -83,7 +89,8 @@ end subroutine prop_xy2_qmom_bisect_frame
 !###################################################################################################################################
 
 
-! Subroutine to test xy2_qmom_bisect_frame if it is able to reproduce the original ab initio Cartesian components
+! This is to test the prop_xy2_qmom_bisect_frame functions if it is able to
+! reproduce the original data used for the fitting.
 
 subroutine TEST_xy2_qmom_bisect_frame(rank, ncoords, natoms, local, xyz, f)
 
