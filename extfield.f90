@@ -1332,16 +1332,16 @@ subroutine read_extf_vib_me_ielem(ielem)
 end subroutine read_extf_vib_me_ielem
 
 
-
 !###################################################################################################################################
 
-
+! Stores the rovibrational energies of selected state into a Richmol-energy file.
 
 subroutine store_energies(nJ, Jval, nlevels, level_ind)
 
   integer(ik), intent(in) :: nJ, Jval(nJ), nlevels(nJ), level_ind(:,:)
 
-  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses, nclasses_, nmodes_
+  integer(ik) :: iounit, ilevel_, ilevel, jind, Jrot, isym, ndeg, nmodes, info, nclasses, nclasses_, &
+      nmodes_
   real(rk) :: energy
   character(cl) :: sj1, sj2, fname
 
@@ -1377,9 +1377,10 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &!
-      Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, eigen(ilevel)%quanta(1:nmodes), &!
-      eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
+      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &
+          Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, &
+          eigen(ilevel)%quanta(1:nmodes), eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), &
+          eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
     enddo
   enddo
 
@@ -1388,10 +1389,10 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
 end subroutine store_energies
 
 
-
 !###################################################################################################################################
 
-
+! Stores the leading contributions to the rovibraitonal wavefunctions of
+! selected states into a Richmol-coefficients file.
 
 subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
 
@@ -1399,8 +1400,9 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
   real(rk), intent(in) :: leading_coef_tol
 
   integer(ik), parameter :: maxnelem = 1000000
-  integer(ik) :: ilevel, jind, Jrot, isym, ndeg, dimen, nsize, eigunit, ideg, irec, icontr, k, tau, ktau, irow, ib, iterm, idimen, nelem, isroot, &!
-                 Jeigenvec_unit(size(Jval),sym%Nrepresen), Nterms, info, maxnsize, maxdimen, maxdeg, ielem, iounit, rot_ncoefs, ilevel_, ksign(2), icoef
+  integer(ik) :: ilevel, jind, Jrot, isym, ndeg, dimen, nsize, eigunit, ideg, irec, icontr, k, tau, &
+      ktau, irow, ib, iterm, idimen, nelem, isroot, Jeigenvec_unit(size(Jval),sym%Nrepresen), Nterms, &
+      info, maxnsize, maxdimen, maxdeg, ielem, iounit, rot_ncoefs, ilevel_, ksign(2), icoef
   integer(ik), allocatable :: v0(:), img(:), k0(:)
   real(rk) :: energy, coef_tol
   real(rk), allocatable :: vec_sym(:), vec(:,:), coef0(:), vec0(:)
@@ -1423,7 +1425,7 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
   open(iounit, form='formatted', action='write', position='rewind', status='unknown', file=fname,iostat=info)
   if (info/=0) then
     write(out, '(/a,a,a)') 'emfield2/store_wf_leading error while opening file "', trim(fname), '"'
-    stop
+    stop 'STOP, error in emfield2/store_wf_leading'
   endif
   write(out, '(/1x,a,a,a)') 'store leading contributions in file "', trim(fname), '"'
 
@@ -1460,12 +1462,14 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
 
   ! allocate workspace arrays
 
-  allocate(vec_sym(maxnsize), vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), v0(maxnelem), img(maxnelem), k0(maxnelem), stat=info)
+  allocate(vec_sym(maxnsize), vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), &
+      v0(maxnelem), img(maxnelem), k0(maxnelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i8))') &!
-    'emfield2/store_wf_leading error: failed to allocate vec_sym(maxnsize), vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), v0(maxnelem), img(maxnelem), k0(maxnelem)', &!
-    'maxnsize, maxdeg, maxdimen, nJ, maxnelem =', maxnsize, maxdeg, maxdimen, nJ, maxnelem
-    stop
+    write(out, '(/a/a,10(1x,i8))') 'emfield2/store_wf_leading error: failed to allocate vec_sym(maxnsize), &
+        vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), v0(maxnelem), img(maxnelem), &
+        k0(maxnelem)', 'maxnsize, maxdeg, maxdimen, nJ, maxnelem =', maxnsize, maxdeg, maxdimen, nJ, &
+        maxnelem
+    stop 'STOP, error in emfield2/store_wf_leading'
   endif
 
 
@@ -1473,9 +1477,11 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
     dimen = bset_contr(jind)%Maxcontracts
     allocate (ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen), stat=info)
     if (info/=0) then
-      write(out, '(/a/a,10(1x,i6))') 'emfield2/store_wf_leading error: failed to allocate ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen)', &!
-      'jind, bset_contr(jind)%Maxsymcoeffs, sym%Nrepresen = ', jind, bset_contr(jind)%Maxsymcoeffs, sym%Nrepresen
-      stop
+      write(out, '(/a/a,10(1x,i6))') 'emfield2/store_wf_leading error: failed to allocate &
+          ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen)', &
+          'jind, bset_contr(jind)%Maxsymcoeffs, sym%Nrepresen = ', jind, bset_contr(jind)%Maxsymcoeffs, &
+          sym%Nrepresen
+      stop 'STOP, error in emfield2/store_wf_leading'
     endif
     do isym=1, sym%Nrepresen
       Nterms = 0
@@ -1550,8 +1556,10 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
               nelem = nelem + 1
 
               if (nelem>maxnelem) then
-                write(out, '(/a,1x,i6,1x,a,1x,es16.8)') 'emfield2/store_wf_leading error: number of leading contributions to the wave function exceeds maximum =', maxnelem, ', coefficient thresh =', leading_coef_tol
-                stop
+                write(out, '(/a,1x,i6,1x,a,1x,es16.8)') 'emfield2/store_wf_leading error: number &
+                    of leading contributions to the wave function exceeds maximum =', maxnelem, ', &
+                    coefficient thresh =', leading_coef_tol
+                stop 'STOP, error in emfield2/store_wf_leading'
               endif
 
               vec0_ = vec(ideg,idimen) * rot_coefs(icoef)
@@ -1565,9 +1573,10 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
                 img(nelem) = 1
                 vec0(nelem) = aimag(vec0_)
               else
-                write(out, '(/a,2(1x,f))') 'emfield2/store_wf_leading error: coefficient of the wave function, re-expressed in terms of symmetric-top functions, is neither pure real or pure imaginary:', &!
-                vec0_
-                stop
+                write(out, '(/a,2(1x,f))') 'emfield2/store_wf_leading error: coefficient of the wave &
+                    function, re-expressed in terms of symmetric-top functions, is neither pure real &
+                        or pure imaginary:', vec0_
+                stop 'STOP, error in emfield2/store_wf_leading'
               endif
 
             enddo !icoef
@@ -1576,8 +1585,9 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
 
         enddo ! idimen
 
-        write(iounit, '(1x,i4,1x,i8,1x,i4,1x,f,1x,i6,<maxnelem>(1x,f,1x,i1,1x,i6,1x,i4))') &!
-        Jrot, ilevel_, ideg, energy-intensity%ZPE, nelem, (vec0(ielem), img(ielem), v0(ielem), k0(ielem), ielem=1, nelem)
+        write(iounit, '(1x,i4,1x,i8,1x,a5,1x,i4,1x,f,1x,i6,<maxnelem>(1x,f,1x,i1,1x,i6,1x,i4))') &
+            Jrot, ilevel_, sym%label(isym), ideg, energy-intensity%ZPE, nelem, &
+            (vec0(ielem), img(ielem), v0(ielem), k0(ielem), ielem=1, nelem)
 
       enddo ! ideg
 
@@ -1587,7 +1597,6 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
   close(iounit)
 
 end subroutine store_wf_leading
-
 
 
 !###################################################################################################################################
