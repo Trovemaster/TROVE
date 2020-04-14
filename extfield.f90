@@ -1601,7 +1601,7 @@ end subroutine store_wf_leading
 
 !###################################################################################################################################
 
-
+! Filters rovibrational states that will be used for computing the Richmol data.
 
 function enr_filter_intens(jval, vib_quanta, normal, energy, uplow) result(f)
 
@@ -1623,7 +1623,7 @@ function enr_filter_intens(jval, vib_quanta, normal, energy, uplow) result(f)
 
   passed_j = .false.
 
-  if ( jval>=intensity%J(1) .and. jval<=intensity%J(2) ) then
+  if ( jval>=minval(intensity%J(1:2)) .and. jval<=maxval(intensity%J(1:2)) ) then
     passed_j = .true.
   endif
 
@@ -1685,7 +1685,8 @@ function enr_filter_intens(jval, vib_quanta, normal, energy, uplow) result(f)
     endif
   endif
 
-  ! vibrational angular momentum filter, only for linear molecules
+  ! vibrational angular momentum filter, it is needed to get rid of unphysical
+  ! states in linear molecules
 
   passed_vibmom = .true.
   if (job%triatom_sing_resolve) then
@@ -1697,7 +1698,6 @@ function enr_filter_intens(jval, vib_quanta, normal, energy, uplow) result(f)
   f = passed_j .and. passed_qv .and. passed_enr .and. passed_vibmom
 
 end function enr_filter_intens
-
 
 
 !###################################################################################################################################
