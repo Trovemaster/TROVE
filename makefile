@@ -47,7 +47,7 @@ fields.o:       accuracy.o molecules.o lapack.o me_str.o timer.o me_numer.o inpu
 symmetry.o:     accuracy.o
 molecules.o:    accuracy.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c3h6.o  mol_c2h6.o \
 				lapack.o pot_xy2.o pot_xy3.o mol_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o  pot_c3h6.o  pot_c2h6.o \
-				symmetry.o $(pot_user).o prop_xy2.o prop_xy2_quad.o
+				symmetry.o $(pot_user).o prop_xy2.o prop_xy2_quad.o kin_xy2.o
 
 me_numer.o:     accuracy.o molecules.o timer.o
 me_str.o:       accuracy.o timer.o me_numer.o
