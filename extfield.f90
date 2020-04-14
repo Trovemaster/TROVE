@@ -26,7 +26,6 @@ subroutine emf2_matelem
   integer(ik), allocatable :: Jval(:)
   real(rk) :: coef_tol, print_tol, linestr_tol, intens_tol, leading_coef_tol
   character(cl) :: oper, sielem
-  type(hyperfine_type) :: hyper
 
   oper = intensity%tens_oper
   oper_ielem = intensity%tens_oper_ielem
