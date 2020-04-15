@@ -1,4 +1,4 @@
-module xy2_spinrot
+module prop_xy2_spinrot
   use accuracy
   use moltype
   use pot_xy2, only : MLloc2pqr_xy2
@@ -290,4 +290,4 @@ v = sum(f*params)
 end function xy2_func_n3_d6
 
 
-end module xy2_spinrot
+end module prop_xy2_spinrot
