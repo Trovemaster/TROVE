@@ -232,7 +232,7 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
                          cmplx(  0.0_rk,  0.0_rk ), &!             xy
                          cmplx( -1.0_rk,  0.0_rk ), &!             xz
                          cmplx(  0.0_rk,  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk,  1.0_rk ), &!             yz
+                         cmplx(  0.0_rk, -1.0_rk ), &!             yz
                          cmplx(  0.0_rk,  0.0_rk ) /) !            zz
 
   ! sigma = 2
