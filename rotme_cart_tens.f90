@@ -189,7 +189,7 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   k2 = q2(2)
   m2 = q2(3)
 
-  name = 'Vzz'
+  name = 'QUAD'
   nelem = 6
   nirrep = 1
   nelem_s = 5
