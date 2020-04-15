@@ -220,12 +220,12 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
                          cmplx(  0.0_rk,  0.0_rk ) /) !            zz
 
   ! sigma = 0
-  tmat_s(3,1:nelem) = (/ cmplx(  -1.0_rk/sqrt(6.0_rk),  0.0_rk ), &!             xx
-                         cmplx(  0.0_rk,  0.0_rk ), &!                           xy
-                         cmplx(  0.0_rk,  0.0_rk ), &!                           xz
-                         cmplx(  -1.0_rk/sqrt(6.0_rk),  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk,  0.0_rk ), &!                           yz
-                         cmplx(  2.0_rk/sqrt(6.0_rk),  0.0_rk ) /) !             zz
+  tmat_s(3,1:nelem) = (/ cmplx(  0.0_rk,  0.0_rk ), &!                    xx
+                         cmplx(  0.0_rk,  0.0_rk ), &!                    xy
+                         cmplx(  0.0_rk,  0.0_rk ), &!                    xz
+                         cmplx(  0.0_rk,  0.0_rk ), &!                    yy
+                         cmplx(  0.0_rk,  0.0_rk ), &!                    yz
+                         cmplx(  3.0_rk/sqrt(6.0_rk),  0.0_rk ) /) !      zz
 
   ! sigma = 1
   tmat_s(4,1:nelem) = (/ cmplx(  0.0_rk,  0.0_rk ), &!             xx
