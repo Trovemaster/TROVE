@@ -7392,19 +7392,21 @@ module perturbation
         !
       case ('APPEND')
         !
-        statusf = 'old'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='old',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='old',file=filename,recl=irec_len)
         !
       case default 
         !
-        statusf = 'replace'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='replace',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='replace',file=filename,recl=irec_len)
         !
       end select 
-      !
-      filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
-      open(unitO,access='direct',action = 'write',status=statusf,file=filename,recl=rec_len) 
-      !
-      filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
-      open(unitC,access='direct',action = 'write',status=statusf,file=filename,recl=irec_len)
       !
       if (job%verbose>=2) write(out,"('The vectors will be compressed before saving using threshold = ',g15.7)") job%coeff_thresh
       !
@@ -31641,7 +31643,7 @@ end subroutine read_contr_matelem_expansion_classN
            !
            itrial = 2
            !
-           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8,a,i6)"
+           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,a,f15.8,i6)"
            write(my_fmt2,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8)"
            !
            do i=1,nroots
