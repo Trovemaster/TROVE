@@ -867,6 +867,119 @@ end subroutine read_extf_vib_me
 
 
 
+!###################################################################################################################################
+
+! Reads vibrational matrix elements of spin-rotational tensor for XY2
+! quasilinear molecule. The order of elements is:
+! Cxx, Cxx/rho, Cxz, Cxz/rho, Cyy, Czx/rho, Czx/rho^2, Czz/rho, Czz/rho2
+
+subroutine read_extf_vib_me_spinrot_xy2(rank)
+
+  integer(ik), intent(in) :: rank
+
+  integer(ik) :: ncontr_t, irank, irank_t, info, chkptIO, i, j
+  character(len=cl) :: job_is
+  character(len=20) :: buf20
+  real(rk), allocatable :: me(:,:,:)
+
+  write(out, '(/a,a,a)') 'extfield/read_extf_vib_me_spinrot_xy2: read vibrational contracted matrix elements from file "', &
+      trim(job%extFmat_file), '"'
+
+  if (rank/=extF%rank) then
+    write(out, '(/a,1x,i4,1x,a,1x,i4)') 'extfield/read_extf_vib_me_spinrot_xy2 error: rank of Cartesian tensor =', &
+        rank, 'does not agree with the rank of TROVE extF tensor =', extF%rank
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+  endif
+
+  ! first read from file tensor elements that correspond to different Cartesian
+  ! components and different powers of rho-coordinate
+
+  job_is ='extf contracted matrix elements'
+  call IOStart(trim(job_is),chkptIO)
+  open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
+
+  read(chkptIO) buf20
+  if (buf20/='Start external field') then
+    write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_spinrot_xy2 error: file "', trim(job%extFmat_file), &
+        '" has bogus header = "', buf20, '"'
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+  endif
+
+  read(chkptIO) ncontr_t
+
+  if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_extf_vib_me_spinrot_xy2 error: actual size of basis &
+        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+  endif
+
+  if (rank<=0) then
+    write(out, '(/a,1x,i3)') 'extfield/read_extf_vib_me_spinrot_xy2 error: rank of external function =', rank
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot)xy2'
+  endif
+
+  allocate(me(rank,ncontr_t,ncontr_t), stat=info)
+  if (info/=0) then
+    write(out, '(/a/a,10(1x,i6))') 'extfield/read_extf_vib_me_spinrot_xy2 error: failed to allocate &
+        me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+  endif
+  extf_vib_me = 0.0
+
+  do irank=1, rank
+
+    read(chkptIO) irank_t
+    if (irank_t/=irank) then
+      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_extf_vib_me_spinrot_xy2 error: file "', &
+          trim(job%extFmat_file), '" has bogus irank = ', irank_t, ', expected irank =', irank
+      stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+    endif
+
+    read(chkptIO) me(irank,:,:)
+
+  enddo
+
+  read(chkptIO) buf20(1:18)
+  if (buf20(1:18)/='End external field') then
+    write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_spinrot_xy2 error: file "', trim(job%extFmat_file), &
+        '" has bogus footer = "', buf20(1:18), '"'
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrto_xy2'
+  endif
+
+  close(chkptIO)
+  call IOStop(job_is)
+
+  ! assemble together matrix elements corresponding to the same Cartesian
+  ! components but different powers of rho-coordinate
+
+  if (allocated(extf_vib_me)) deallocate(extf_vib_me)
+  allocate(extf_vib_me(9,ncontr_t,ncontr_t), stat=info)
+  if (info/=0) then
+    write(out, '(/a/a,10(1x,i6))') 'extfield/read_extf_vib_me_spinrot_xy2 error: failed to allocate &
+        extf_vib_me(9,ncontr_t,ncontr_t)', 'ncontr_t =', ncontr_t
+    stop 'STOP, error in extfield/read_extf_vib_me_spinrot_xy2'
+  endif
+  extf_vib_me = 0.0
+
+  ! for order of Cartesian elements in extf_vib_me, see rotme_spinrot in rotme_cart_tens.f90
+  extf_vib_me(1,:,:) = sum(me(1:2,:,:), dim=1) ! xx
+  extf_vib_me(2,:,:) = 0                       ! xy
+  extf_vib_me(3,:,:) = sum(me(3:4,:,:), dim=1) ! xz
+  extf_vib_me(4,:,:) = 0                       ! yx
+  extf_vib_me(5,:,:) = me(5,:,:)               ! yy
+  extf_vib_me(6,:,:) = 0                       ! yz
+  extf_vib_me(7,:,:) = sum(me(6:7,:,:), dim=1) ! zx
+  extf_vib_me(8,:,:) = 0                       ! zy
+  extf_vib_me(9,:,:) = sum(me(8:9,:,:), dim=1) ! zz
+
+  deallocate(me)
+
+end subroutine read_extf_vib_me_spinrot_xy2
+
+
+!###################################################################################################################################
+
+
 subroutine init_extf_vib_me_overlap(rank)
 
   integer(ik), intent(in) :: rank
