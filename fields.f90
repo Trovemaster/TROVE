@@ -30,6 +30,7 @@ module fields
    public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
+   public FLJGammaLevelT
    !
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
@@ -436,7 +437,13 @@ module fields
      character(len=cl) :: type = 'GLOBAL_SEARCH'      ! to switch between fitting methods. 
      !
    end type FLresT
-
+   !
+   type FLJGammaLevelT
+     integer(ik) :: J = -1
+     integer(ik) :: iGamma = -1
+     integer(ik) :: iLevel = -1
+   end type FLJGammaLevelT
+   !
    type FLanalysisT
       !
       logical             :: density = .false.
@@ -454,9 +461,10 @@ module fields
       integer(ik)         :: sym_list(1:100) = -1
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
       logical             :: reducible_eigen_contribution = .false. 
+      logical             :: population
+      type(FLJGammaLevelT) :: ref  ! reference state (J,Gamma,Level)
       !
    end type FLanalysisT
-   !
    !
    type FLactionT
      !
@@ -2885,6 +2893,7 @@ module fields
              analysis%density = .true.
              !
            case("PRINT_CONTRIBUTION")
+             !
              analysis%reducible_eigen_contribution = .true.   
              i = 0
              do while(trim(w)/="".and.item<Nitems.and.i<100)
@@ -2892,6 +2901,29 @@ module fields
                 call readi(analysis%j_list(i)) 
              enddo 
              analysis%density = .true.
+             !
+           case("POPULATION")
+             !
+             analysis%population = .true.   
+             analysis%density = .true.
+             !
+             i = 0
+             call readu(w)
+             do while( ( trim(w)/="".and.trim(w)/="REF" ).and.item<Nitems.and.i<100)
+                !
+                i = i + 1
+                read(w,*) analysis%j_list(i)
+                call readu(w)
+                !
+             enddo
+             !
+             if ( trim(w)=="REF" ) then
+                !
+                call readi(analysis%ref%J)
+                call readi(analysis%ref%iGamma)
+                call readi(analysis%ref%iLevel)
+                !
+             endif
              !
            case('PRINT_VECTOR')
              !
