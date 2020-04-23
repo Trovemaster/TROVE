@@ -89,6 +89,21 @@ subroutine emf_matelem
 
     call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
 
+  case('SPINROT')
+    tens%func => rotme_spinrot
+    dj = 10 ! use large Delta J for testing
+    call tens%init(jmin, jmax, dj, verbose=.true.)
+
+    if (trim(extF%ftype)=='XY2_SR-BISECT') then
+      call read_extf_vib_me_spinrot_xy2(tens%nelem)
+    else
+      write(out, '(/a,1x,a)') 'extfield/emf_matelem error: spin-rotation tensor&
+          is not implemented for extF%ftype =', trim(extF%ftype)
+      stop 'STOP, error in extfield/emf_matelem'
+    endif
+
+    call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
+
   case('ALPHA')
     tens%func => rotme_alpha
     dj = 2
