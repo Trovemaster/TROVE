@@ -10841,10 +10841,10 @@ module perturbation
      write(my_fmt_l,'(a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
                      Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
       !
-     write(my_fmt_2,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",&
+     write(my_fmt_2,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",&
                      Nclasses,"(1x,a3),a1,",Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2,",&
                      "3x,a1,a4,a1,i1,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
-                     Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nclasses,"i5,a2)"
+                     Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
      
      !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
      !                  sym%label(gamma),iroot,termvalue,&
@@ -10913,16 +10913,16 @@ module perturbation
           nu2 = 0
           normal2 = 0
           do iclasses = 0,PT%Nclasses
-            if (cnu(iclasses)<=contr(iclasses)%nlevels) then
-               nu2(:) = nu2(:) + contr(iclasses)%eigen(cnu(iclasses))%nu(:)
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               nu2(:) = nu2(:) + contr(iclasses)%eigen(cnu2(iclasses))%nu(:)
             endif 
-            cgamma2(iclasses) = contr(iclasses)%eigen(cnu(iclasses))%gamma
+            cgamma2(iclasses) = contr(iclasses)%eigen(cnu2(iclasses))%gamma
             !
           enddo 
           !
           do iclasses = 1,PT%Nclasses
-            if (cnu(iclasses)<=contr(iclasses)%nlevels) then
-               normal2(:) = normal2(:) + contr(iclasses)%eigen(cnu(iclasses))%normal(:)
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               normal2(:) = normal2(:) + contr(iclasses)%eigen(cnu2(iclasses))%normal(:)
             endif
             !
           enddo
@@ -10939,7 +10939,7 @@ module perturbation
                      "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )",&
                      "(",cgamma2(0),";",k2," )", &
                      "(",cgamma2(1:PT%Nclasses),";",nu2(1:PT%Nmodes)," )",maxcontrib2(iroot)**2,&
-                     "(",cnu2(1:PT%Nclasses)," )"
+                     "(",normal2(1:PT%Nmodes),normal2(0)," )","(",cnu2(1:PT%Nclasses)," )"
           !
        endif
        !
