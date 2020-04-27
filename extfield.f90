@@ -91,7 +91,7 @@ subroutine emf_matelem
 
   case('SPINROT')
     tens%func => rotme_spinrot
-    dj = 10 ! use large Delta J for testing
+    dj = 2
     call tens%init(jmin, jmax, dj, verbose=.true.)
 
     if (trim(extF%ftype)=='XY2_SR-BISECT') then
