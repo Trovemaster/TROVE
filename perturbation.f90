@@ -7740,7 +7740,7 @@ module perturbation
       amode = mpi_mode_wronly+mpi_mode_create
     end select
 
-    call MPI_File_Open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
+    call MPI_File_open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
     if (ierr.gt.0) then
       if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file.", filename
       stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error opening MATELEM MPI-IO input file"
@@ -7878,7 +7878,7 @@ module perturbation
         end if
 
         file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
-        call mpi_file_seek(fileh, file_offset, MPI_SEEK_CUR)
+        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
 
         call MPI_File_read_all(fileh, readbuf, 11, mpi_character, mpi_status_ignore, ierr)
         if (readbuf(1:11)/='icontr_ideg') then
@@ -7888,7 +7888,9 @@ module perturbation
         end if
 
         file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
-        call mpi_file_seek(fileh, file_offset,  MPI_SEEK_CUR)
+        call MPI_File_seek(fileh, file_offset,  MPI_SEEK_CUR)
+        file_offset = file_offset+file_offset+mpi_int_size+46
+        call MPI_File_seek_shared(fileh, file_offset,  MPI_SEEK_SET)
 
         !deallocate(imat_t)
 
@@ -8139,6 +8141,8 @@ module perturbation
       call ArrayStart('hvib-matrix',ierr,1,kind(f_t),localrootsize)
       !
       call co_read_matrix_distr(hvib%me, ncontr, co_startdim, co_enddim, fileh)
+      !file_offset = int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
+      !call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
       !call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
       !
       !hvib%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
@@ -15270,7 +15274,7 @@ module perturbation
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
     real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
-                            matclass(:,:,:),hrot_t(:,:),gcor_t(:,:)
+                            matclass(:,:,:),hrot_t(:,:),gcor_t(:,:),extF_test(:,:)
     real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:),extF_r(:,:)
     real(rk),allocatable :: recvbuf(:,:,:)
     !
@@ -15375,6 +15379,7 @@ module perturbation
       if (comm_size .gt. 1) then
         mdimen_p = int(1+real(mdimen/comm_size))
         mdimen_b = comm_size*mdimen_p
+        allocate(recvbuf(mdimen_p,mdimen_p,comm_size),stat=alloc)
       else
         mdimen_p = mdimen
         mdimen_b = mdimen
@@ -15419,9 +15424,9 @@ module perturbation
             call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_CUR, ierr)
 
 
+            if (mpi_rank.eq.0) then !AT
               call MPI_File_write(chkptMPIIO,'[MPIIO]',7,mpi_character,mpi_status_ignore,ierr)
               call MPI_File_write(chkptMPIIO,'Start Kinetic part',18,mpi_character,mpi_status_ignore,ierr)
-            if (mpi_rank.eq.0) then !AT
               call TimerStart('mpiiosingle') !AT
               !
               ! store the bookkeeping information about the contr. basis set
@@ -15431,7 +15436,7 @@ module perturbation
               call TimerStop('mpiiosingle') !AT
             endif
             call MPI_Barrier(mpi_comm_world, ierr)
-            call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END, ierr)
+            call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END, ierr)
           else
             call IOStart(trim(job_is),chkptIO)
             !
@@ -15609,7 +15614,6 @@ module perturbation
           endif
           !
           !
-          allocate(recvbuf(mdimen_p,mdimen_p,comm_size),stat=alloc)
           allocate(grot_t(mdimen_b,startdim:startdim+mdimen_p-1),hrot_t(mdimen_b,startdim:startdim+mdimen_p-1), &
             gcor_t(mdimen_b,startdim:startdim+mdimen_p-1),stat=alloc)
           call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15622,8 +15626,10 @@ module perturbation
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
               if(mpi_rank.eq.0) then
-                call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write(chkptMPIIO,'g_rot',5,mpi_character,mpi_status_ignore,ierr)
+                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
+                call MPI_File_write_shared(chkptMPIIO,'g_rot',5,mpi_character,mpi_status_ignore,ierr)
+              !else
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
             else
               write(chkptIO) 'g_rot'
@@ -15707,8 +15713,11 @@ module perturbation
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+              !  call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END) 
               if(mpi_rank.eq.0) then
-                call MPI_File_write(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
+                call MPI_File_write_shared(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
+              !else
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
             else
               write(chkptIO) 'g_cor'
@@ -16093,7 +16102,7 @@ module perturbation
                    write(*,*) "TODO: NEEDS VERIFICATION"
                    call divided_slice_open_mpi(islice,chkptMPIIO_,'g_vib',job%matelem_suffix)
                    !
-                   call co_read_matrix_distr(gvib_t, mdimen, startdim, enddim, chkptMPIIO_)
+                   call co_read_matrix_distr_ordered(gvib_t, mdimen, startdim, enddim, chkptMPIIO_)
                    !
                    do b=1,comm_size
                      if (send_or_recv(b).ge.0) then
@@ -16176,8 +16185,10 @@ module perturbation
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
               if(mpi_rank.eq.0) then
-                call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write(chkptMPIIO,'hvib',4,mpi_character,mpi_status_ignore,ierr)
+                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
+                call MPI_File_write_shared(chkptMPIIO,'hvib',4,mpi_character,mpi_status_ignore,ierr)
+              !else
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
               call co_write_matrix_distr(hvib%me,mdimen, startdim, enddim,chkptMPIIO)
             else
@@ -16197,9 +16208,9 @@ module perturbation
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             call mpi_barrier(mpi_comm_world, ierr)
+            call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END)
             if(mpi_rank.eq.0) then
-              call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-              call MPI_File_write(chkptMPIIO,'End Kinetic part',16,mpi_character,mpi_status_ignore,ierr)
+              call MPI_File_write_shared(chkptMPIIO,'End Kinetic part',16,mpi_character,mpi_status_ignore,ierr)
             endif
             call MPI_File_close(chkptMPIIO, ierr)
           else
@@ -16238,9 +16249,9 @@ module perturbation
               if (mpi_rank.eq.0) then !AT
                 call TimerStart('mpiiosingle') !AT
 
-                call MPI_File_write(chkptMPIIO,'[MPIIO]',7,mpi_character,mpi_status_ignore,ierr)
-                call MPI_File_write(chkptMPIIO,'Start external field',20,mpi_character,mpi_status_ignore,ierr)
-                call MPI_File_write(chkptMPIIO, PT%Maxcontracts, 1, mpi_integer, mpi_status_ignore, ierr)
+                call MPI_File_write_shared(chkptMPIIO,'[MPIIO]Start external field',27,mpi_character,mpi_status_ignore,ierr)
+                !call MPI_File_write_shared(chkptMPIIO,'Start external field',20,mpi_character,mpi_status_ignore,ierr)
+                call MPI_File_write_shared(chkptMPIIO, PT%Maxcontracts, 1, mpi_integer, mpi_status_ignore, ierr)
                 !
                 ! store the bookkeeping information about the contr. basis set
                 !
@@ -16248,6 +16259,13 @@ module perturbation
 
                 call TimerStop('mpiiosingle') !AT
                 !
+              !else
+              !  call TimerStart('mpiiosingle') !AT
+              !  !
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
+              !  !
+              !  call TimerStop('mpiiosingle') !AT
               endif 
             else
               call IOStart(trim(job_is),chkptIO)
@@ -16316,10 +16334,9 @@ module perturbation
                 !
                 if (trim(job%kinetmat_format).eq.'MPIIO') then
                   if(mpi_rank.eq.0) then
-                    call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                    call MPI_File_write(chkptMPIIO,imu,1,mpi_integer,mpi_status_ignore,ierr)
+                    call MPI_File_write_shared(chkptMPIIO,imu,1,mpi_integer,mpi_status_ignore,ierr)
                   endif
-                  call mpi_barrier(mpi_comm_world,ierr)
+                  !call mpi_barrier(mpi_comm_world,ierr)
                   !
                   call co_write_matrix_distr(extF_t,mdimen, startdim, enddim,chkptMPIIO)
                 else
@@ -16374,7 +16391,9 @@ module perturbation
             if (mpi_rank.eq.0) then !AT
               if(.not.job%IOextF_divide) then 
                 !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write(chkptMPIIO,'End external field',18,mpi_character,mpi_status_ignore,ierr)
+                call MPI_File_write_shared(chkptMPIIO,'End external field',18,mpi_character,mpi_status_ignore,ierr)
+              !else
+              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
             endif
             call MPI_File_close(chkptMPIIO, ierr)
@@ -16527,12 +16546,12 @@ module perturbation
         call MPI_File_set_size(chkptMPIIO, offset, ierr)
         call mpi_barrier(mpi_comm_world, ierr)
         !
-        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        if(mpi_rank .eq. 0) call MPI_File_write_shared(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
         call mpi_barrier(mpi_comm_world, ierr)
         !
         call co_write_matrix_distr(field, N, co_startdim, co_enddim,chkptMPIIO)
         !
-        if(mpi_rank .eq. 0) call MPI_File_write(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
+        if(mpi_rank .eq. 0) call MPI_File_write_shared(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
         !
         call MPI_File_close(chkptMPIIO, ierr)
         !
@@ -16606,11 +16625,14 @@ module perturbation
       !
       ilen = LEN_TRIM(name)
       !
-      call MPI_File_read_all(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        if(mpi_rank.eq.0) write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
-      end if
+      if (mpi_rank.eq.0) then
+        call MPI_File_read_shared(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+          write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+          call MPI_Abort(mpi_comm_world, 1)
+        !stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
+        endif
+      endif
     end subroutine divided_slice_open_mpi
     !
     subroutine divided_slice_close(islice,chkptIO,name)
@@ -16650,11 +16672,14 @@ module perturbation
       !
       ilen = LEN_TRIM(name)
       !
-      call MPI_File_read_all(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        if(mpi_rank .eq. 0) write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
-        stop 'divided_slice_close - in slice -  footer missing or wrong'
-      end if
+      if(mpi_rank .eq. 0) then
+        call MPI_File_read_shared(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+          write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
+          call MPI_Abort(mpi_comm_world, 1)
+          !stop 'divided_slice_close - in slice -  footer missing or wrong'
+        endif
+      endif
       !
       call MPI_File_close(chkptIO, ierr)
       !
@@ -34015,7 +34040,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
     end subroutine PTstore_icontr_cnu
 
-    subroutine PTstorempi_icontr_cnu(maxcontracts,iunit,dir)
+    subroutine PTstoreMPI_icontr_cnu(maxcontracts,iunit,dir)
       use mpi_aux
 
       integer(ik),intent(in) :: maxcontracts

@@ -5,7 +5,7 @@ module mpi_aux
   implicit none
 
   public co_init_comms, co_finalize_comms, co_init_distr, co_distr_data, co_write_matrix_distr, co_read_matrix_distr
-  public co_block_type_init
+  public co_block_type_init, co_read_matrix_distr_ordered
 
   public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
@@ -18,13 +18,13 @@ module mpi_aux
     module procedure :: co_sum_double
   end interface
 
-  integer,dimension(:),allocatable  :: proc_sizes, proc_offsets, send_or_recv
-  integer                           :: comm_size, mpi_rank
-  integer                           :: co_startdim, co_enddim
-  logical                           :: comms_inited = .false., distr_inited=.false.
-  type(MPI_Datatype) :: mpitype_column
-  type(MPI_Datatype),dimension(:), allocatable :: mpi_blocktype
-  integer                           :: mpi_real_size, mpi_int_size
+  integer,dimension(:),allocatable              :: proc_sizes, proc_offsets, send_or_recv
+  integer                                       :: comm_size, mpi_rank
+  integer                                       :: co_startdim, co_enddim
+  logical                                       :: comms_inited = .false., distr_inited=.false.
+  type(MPI_Datatype)                            :: mpitype_column
+  type(MPI_Datatype),dimension(:), allocatable  :: mpi_blocktype
+  integer                                       :: mpi_real_size, mpi_int_size
 
   !blacs/pblas
   integer :: blacs_size, blacs_rank, blacs_ctxt
@@ -153,7 +153,7 @@ contains
     integer,intent(out) :: startdim, enddim, blocksize
     integer,dimension(:),allocatable  :: starts, ends
     integer :: localsize, proc_index, localsize_
-    integer :: i, ierr, to_calc
+    integer :: i, ierr, to_calc, ioslice_width, ioslice_maxwidth
 
     if (.not. comms_inited) stop "COMMS NOT INITIALISED"
     !if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
@@ -245,10 +245,12 @@ contains
 
     endif
 
+    ioslice_width = enddim-startdim+1
+    ioslice_maxwidth = (int(1+real(dimen/comm_size)))
     if (comm_size .eq. 1) then
       call co_create_type_column(dimen,dimen,dimen)
     else
-      call co_create_type_column(dimen,comm_size*(int(1+real(dimen/comm_size))),enddim-startdim+1)
+      call co_create_type_column(dimen, comm_size*ioslice_maxwidth, ioslice_width)
     endif
 
     deallocate(starts,ends)
@@ -305,6 +307,26 @@ contains
 
   end subroutine co_distr_data
 
+  subroutine co_read_matrix_distr_ordered(x, longdim, lb, ub, infile)
+
+    real(rk),dimension(:,lb:),intent(out) :: x
+    integer,intent(in)                :: longdim, lb, ub
+
+    type(MPI_File),intent(inout) :: infile
+    type(MPI_Status) :: writestat
+    integer(kind=MPI_Offset_kind) :: offset_start,offset_end
+    integer :: readcount, ierr
+
+    call mpi_barrier(mpi_comm_world, ierr)
+
+    call TimerStart('MPI_read_matrix')
+
+    call MPI_File_read_ordered(infile,x,1,mpitype_column,writestat,ierr)
+
+    call TimerStop('MPI_read_matrix')
+
+  end subroutine co_read_matrix_distr_ordered
+
   subroutine co_read_matrix_distr(x, longdim, lb, ub, infile)
 
     real(rk),dimension(:,lb:),intent(out) :: x
@@ -327,7 +349,7 @@ contains
       call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
       call MPI_File_seek(infile, offset_end, MPI_SEEK_CUR)
     else
-      call MPI_File_read(infile,x,1,mpitype_column,writestat,ierr)
+      call MPI_File_read_all(infile,x,1,mpitype_column,writestat,ierr)
     endif
 
     call TimerStop('MPI_read_matrix')
@@ -339,7 +361,7 @@ contains
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
     type(MPI_File),intent(inout) :: outfile
-    integer :: ierr
+    integer :: writecount, ierr
     integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
 
@@ -347,18 +369,7 @@ contains
 
     call TimerStart('MPI_write_matrix')
 
-    if (comm_size.gt.1) then
-      offset_start = (lb-1)*int(longdim,MPI_OFFSET_KIND)*mpi_real_size
-      offset_end = 0
-      call mpi_barrier(mpi_comm_world, ierr)
-
-      call MPI_File_seek(outfile, offset_start, MPI_SEEK_END)
-      call MPI_File_write_all(outfile,x,1,mpitype_column,writestat,ierr)
-      call mpi_barrier(mpi_comm_world, ierr)
-      call MPI_File_seek(outfile, offset_end, MPI_SEEK_END)
-    else
-      call MPI_File_write(outfile,x,1,mpitype_column,writestat,ierr)
-    endif
+    call MPI_File_write_ordered(outfile,x,1,mpitype_column,writestat,ierr)
 
     call TimerStop('MPI_write_matrix')
 
@@ -382,7 +393,7 @@ contains
     array_of_sizes(1) = comm_size * extent!coldim
     array_of_sizes(2) = extent
     array_of_subsizes(:) = extent
-    array_of_starts(1) = (blockid - 1) * extent + 0
+    array_of_starts(1) = (blockid - 1) * extent
     array_of_starts(2) = 0
 
 

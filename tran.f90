@@ -1587,9 +1587,9 @@ contains
           task = 'rot'
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
+            call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+            if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
             call mpi_barrier(MPI_COMM_WORLD, ierr)
-            call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
             !
             call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
           else
@@ -1620,7 +1620,8 @@ contains
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
-          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND),MPI_SEEK_END)
+          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
         endif
         !
@@ -1700,8 +1701,11 @@ contains
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
 
           write_offset = write_offset + 9*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
+          !call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
+          !write_offset = 0
+          !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
         endif
 
         !
@@ -1717,9 +1721,9 @@ contains
             !
             call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
             !
-            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
+            if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
             call MPI_Barrier(MPI_COMM_WORLD, ierr)
-            call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+            !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
           else
             call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
             !
@@ -1738,7 +1742,7 @@ contains
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
-          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
         endif
         !
@@ -1820,15 +1824,17 @@ contains
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
 
           write_offset = write_offset + 3*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
+          !call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
+          !write_offset = 0
         endif
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
         if ((.not.job%IOmatelem_split.or.job%iswap(1)==1).and.(mpi_rank.eq.0)) then
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-            call MPI_File_write(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
+            call MPI_File_write_shared(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
           else
             write(chkptIO) 'End Kinetic part'
           endif
@@ -1950,8 +1956,8 @@ contains
             call mpi_file_set_size(fileh_w, mpioffset, ierr)
             !
             if(mpi_rank.eq.0) then
-              call mpi_file_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
-              call mpi_file_write(fileh_w, 'start external field', 20, mpi_character, mpi_status_ignore, ierr)
+              call mpi_file_write_shared(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
+              call mpi_file_write_shared(fileh_w, 'start external field', 20, mpi_character, mpi_status_ignore, ierr)
             endif
             !
             ! store the matrix elements 
@@ -1991,7 +1997,7 @@ contains
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, extF_block_type, "native", MPI_INFO_NULL, ierr)
 
-          call MPI_File_get_position(fileh_w, write_offset, ierr)
+          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
         endif
         !
@@ -2068,8 +2074,8 @@ contains
             if (trim(job%kinetmat_format).eq.'MPIIO') then
               if(mpi_rank.eq.0) call MPI_File_write(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
               call MPI_Barrier(mpi_comm_world, ierr)
-              call MPI_File_seek(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
-              call MPI_File_write(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
+              call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+              call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
             else
               write(chkptIO) imu
               write(chkptIO) mat_s
@@ -2095,7 +2101,9 @@ contains
 
           write_offset = write_offset + 3*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
           call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek(fileh_w, write_offset, MPI_SEEK_SET)
+          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
+          !write_offset = 0
+          !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
         endif
         !
         if (allocated(extF_me)) deallocate(extF_me)
