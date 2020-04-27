@@ -146,6 +146,8 @@ module moltype
      integer(ik),pointer       :: pot_ind(:,:)  ! indexes with the powers for every expansion term
      integer(ik),pointer       :: ifit(:)       ! varying indexes to control fitting
      character(len=cl)         :: symmetry      ! molecular symmetry
+     character(len=cl)         :: IO_primitive  ! control writing/reading of primitive basis sets 
+     character(len=cl)         :: chk_primitive_fname  ! filename to store primitive functions on a grid
      !
      !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
      !
@@ -280,6 +282,7 @@ module moltype
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
                                   AtomMasses,local_eq, &
                                   force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
+                                  IO_primitive,chk_numerov_fname,&
                                   symmetry_,rho_border,zmatrix_)
 
 
@@ -299,6 +302,7 @@ module moltype
   !
   character(len=cl),intent(in)  :: potentype,kinetic_type
   character(len=cl),intent(in)  :: symmetry_
+  character(len=cl),intent(in)  :: IO_primitive,chk_numerov_fname
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
   !
@@ -361,6 +365,8 @@ module moltype
     molec%specparam = specparam
     molec%dihedtype = dihedtype_
     molec%symmetry = symmetry_
+    molec%IO_primitive = IO_primitive
+    molec%chk_primitive_fname = chk_numerov_fname
     !
     !molec%potenfunc => MLpoten_xy2_morbid
     !

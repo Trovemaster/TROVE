@@ -30,6 +30,7 @@ module fields
    public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
+   public FLJGammaLevelT
    !
    public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
    public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
@@ -233,6 +234,7 @@ module fields
       character(len=cl)   :: IO_basisset    = 'NONE'  ! we can either SAVE or READ the primitive basis set
       character(len=cl)   :: IO_ext_coeff   = 'NONE'  ! we can either SAVE or READ the potential objects
       character(len=cl)   :: IO_contrCI   = 'NONE'  ! we can either SAVE or READ the CI contracted matrix elemenents by classes
+      character(len=cl)   :: IO_primitive  = 'NONE'  ! we can either SAVE or READ the primitive numerov functions 
       character(len=cl)   :: IO_primitive_hamiltonian = 'NONE' ! we can either SAVE or READ the primive matrix elements
       character(len=cl)   :: chk_fname = 'prim_bset.chk'   ! file name to store the primitive basis set data 
       character(len=cl)   :: chk_numerov_fname = 'numerov_bset.chk'   ! file name to store the numerov basis set data 
@@ -381,6 +383,7 @@ module fields
       logical,pointer     :: select_gamma(:)! the diagonalization will be done only for selected gamma's
       integer(ik),pointer :: nroots(:) ! number of the roots to be found in variational diagonalization with syevr
       integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
+      integer(ik)         :: Nassignments = 1 ! Number of assignments based the largest (=1), second largest (=2) coefficients  
       !
    end type FLcalcsT
 
@@ -436,7 +439,13 @@ module fields
      character(len=cl) :: type = 'GLOBAL_SEARCH'      ! to switch between fitting methods. 
      !
    end type FLresT
-
+   !
+   type FLJGammaLevelT
+     integer(ik) :: J = -1
+     integer(ik) :: iGamma = -1
+     integer(ik) :: iLevel = -1
+   end type FLJGammaLevelT
+   !
    type FLanalysisT
       !
       logical             :: density = .false.
@@ -454,9 +463,10 @@ module fields
       integer(ik)         :: sym_list(1:100) = -1
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
       logical             :: reducible_eigen_contribution = .false. 
+      logical             :: population
+      type(FLJGammaLevelT) :: ref  ! reference state (J,Gamma,Level)
       !
    end type FLanalysisT
-   !
    !
    type FLactionT
      !
@@ -816,6 +826,44 @@ module fields
          ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
          !
          job%Potential_Simple = .true.
+         !
+       case("PRINT")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+             !
+           case("NASSIGNMENTS","N_EIGEN-CONTRIBUTIONS")
+             !
+             ! Number of eigen-contributions to print 
+             !
+             call readi(job%Nassignments)
+             !
+             job%Nassignments = max(min(job%Nassignments,2),1)
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in PRINT =',a)") trim(w)
+            stop 'FLinput - illegal last line in PRINT'
+            !
+         endif 
+         !
          !
        case ("DVR")
          !
@@ -2267,6 +2315,10 @@ module fields
              !
              call readu(trove%IO_basisset)
              !
+           case('PRIMITIVE')
+             !
+             call readu(trove%IO_primitive)
+             !
            case('CONTR_CI','CONTR-CI','CONTRCI','CI')
              !
              call readu(trove%IO_contrCI)
@@ -2629,6 +2681,10 @@ module fields
                trove%IO_basisset    = 'SAVE'
              endif 
              !
+             if (trim(trove%IO_basisset)== 'SAVE'.and.trim(trove%IO_primitive)=='NONE') then 
+                trove%IO_primitive = 'SAVE'
+             endif
+             !
              if (trim(trove%IO_hamiltonian)=='SAVE'.and.trim(w)/='NONE') then 
                trove%IO_ext_coeff   = 'SAVE'
              endif
@@ -2885,6 +2941,7 @@ module fields
              analysis%density = .true.
              !
            case("PRINT_CONTRIBUTION")
+             !
              analysis%reducible_eigen_contribution = .true.   
              i = 0
              do while(trim(w)/="".and.item<Nitems.and.i<100)
@@ -2892,6 +2949,29 @@ module fields
                 call readi(analysis%j_list(i)) 
              enddo 
              analysis%density = .true.
+             !
+           case("POPULATION")
+             !
+             analysis%population = .true.   
+             analysis%density = .true.
+             !
+             i = 0
+             call readu(w)
+             do while( ( trim(w)/="".and.trim(w)/="REF" ).and.item<Nitems.and.i<100)
+                !
+                i = i + 1
+                read(w,*) analysis%j_list(i)
+                call readu(w)
+                !
+             enddo
+             !
+             if ( trim(w)=="REF" ) then
+                !
+                call readi(analysis%ref%J)
+                call readi(analysis%ref%iGamma)
+                call readi(analysis%ref%iLevel)
+                !
+             endif
              !
            case('PRINT_VECTOR')
              !
@@ -4880,6 +4960,7 @@ end subroutine check_read_save_none
                               trove%dihedtype,&
                               trove%mass,trove%local_eq,&
                               force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
+                              trove%IO_primitive,trove%chk_numerov_fname,&
                               trove%symmetry,trove%rho_border,trove%zmatrix)
     !
     ! define the potential function method
@@ -13033,6 +13114,10 @@ end subroutine check_read_save_none
         !
     else
       !
+      if ( trim(molec%IO_primitive)=='READ') then 
+         call FLcheck_point_Hamiltonian('NUMEROV_READ')
+      endif
+      !
       do itype = 1,isubsp1D
          maxnumax = 0
          do i = 1,bset%bs1D(itype)%imodes
@@ -13083,7 +13168,9 @@ end subroutine check_read_save_none
         stop 'FLcheck_point_Hamiltonian - bogus command'
       case ('BASIS_SAVE')
         call basissetSave
-        call numerovSave
+        if (trim(trove%IO_primitive)/='READ') then
+          call numerovSave
+        endif 
       case ('AMAT_SAVE')
         call AmatBmatSave
       case ('HAMILTONIAN_SAVE')
@@ -13102,6 +13189,8 @@ end subroutine check_read_save_none
           !
         endif
         !
+      case ('NUMEROV_READ')
+        call numerovRestore
       case ('BASIS_READ')
         call basisRestore
         call numerovRestore
@@ -13855,7 +13944,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,io_slot,itype,imode
         type(Basis1DT),pointer      ::  bs
-        integer(ik)        :: rec_len,vrec,v,maxpoints,npoints,alloc,bs_size,i,itype_t
+        integer(ik)        :: rec_len,vrec,v,maxpoints,npoints,alloc,bs_size,i,itype_t,ntypes_stored_
         real(ark) ,allocatable         :: bs_funct(:),dbs_funct(:)
         !
         maxpoints = 0
@@ -13887,7 +13976,13 @@ end subroutine check_read_save_none
           !
           imode = bs%mode(1)
           !
-          itype_t = itype_stored(imode)
+          itype_t = itype
+          ntypes_stored_ = bset%n_bset1D_max
+          !
+          if (trim(trove%IO_basisset)=='READ') then 
+            itype_t = itype_stored(imode)
+            ntypes_stored_ = ntypes_stored
+          endif
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
@@ -13909,7 +14004,7 @@ end subroutine check_read_save_none
             if(v>bs_size.and.bset%dscr(imode)%type/='NUMEROV') cycle
             !
             ! copy:
-            vrec = itype_t+v*ntypes_stored !bset%n_bset1D_max
+            vrec = itype_t+v*ntypes_stored_ !bset%n_bset1D_max
             !
             read (chkptIO,rec=vrec) (bs_funct(i),i=0,npoints),(dbs_funct(i),i=0,npoints)
             !

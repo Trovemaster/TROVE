@@ -120,6 +120,9 @@ module me_numer
        stop 'phi - out of memory'
      endif 
      !
+     enerslot = 0 
+     characvalue = 50000.0
+     !
      ! numerov step size 
      rhostep = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
      !
@@ -226,7 +229,9 @@ module me_numer
      !
      if (iperiod/=0) vmax = vmax/2
      !
-     call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot)
+     if ( trim(molec%IO_primitive)/='READ') then
+       call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot)
+     endif
      !
      if (iperiod/=0) then
        allocate(enerslot_(0:maxslots),stat=alloc)
@@ -234,10 +239,13 @@ module me_numer
          write (out,"('phi - out of memory')")
          stop 'phi - out of memory'
        endif 
+       enerslot_ =0
        ! 
        iparity = 1
        !
-       call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot_)
+       if ( trim(molec%IO_primitive)/='READ') then
+          call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot_)
+       endif
        !
        do vl = vmax,0,-1
          !
@@ -256,8 +264,7 @@ module me_numer
      !
      sigma = 0.0_ark 
      rms   = 0.0_ark 
-     characvalue = maxval(enerslot(0:vmax))
-     energy(0:vmax) = enerslot(0:vmax)-enerslot(0)
+     characvalue = max(maxval(enerslot(0:vmax)),characvalue)
      !
      do vl = 0,vmax
         !
@@ -396,7 +403,10 @@ module me_numer
             ! Count the error, as a maximal deviation sigma =  | <i|H|j>-E delta_ij |
             !
             sigma_t =  abs(h_t)
-            if (vl==vr) sigma_t =  abs(h_t-enerslot(vl))
+            if (vl==vr) then 
+              enerslot(vl) = h_t
+              sigma_t =  abs(h_t-enerslot(vl))
+            endif
             !
             sigma = max(sigma,sigma_t)
             rms = rms + sigma_t**2
@@ -405,7 +415,9 @@ module me_numer
             ! the Schroedinger all right
             if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
                write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-               stop 'ME_numerov: bad Numerov solution'
+               if ( trim(molec%IO_primitive)/='READ') then
+                 stop 'ME_numerov: bad Numerov solution'
+               endif
             endif 
             !
             if (vl==vr.and.abs(h_t-enerslot(vl))>sqrt(small_)*abs(characvalue)*1e4) then 
@@ -427,6 +439,8 @@ module me_numer
             !
         enddo
      enddo
+     !
+     energy(0:vmax) = enerslot(0:vmax)-enerslot(0)
      !
      rms = sqrt(rms/real((vmax+1)*(vmax+2)/2,kind=ark))
      !

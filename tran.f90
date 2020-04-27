@@ -19,7 +19,7 @@ module tran
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
         bset_contr,eigen, index_correlation,Neigenlevels, &
-        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel
+        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel,TReigenvec_unit_external
 
  type bset_contrT
     integer(ik)                 :: jval            ! rotational quantum number that correspond to the contr. basis set
@@ -1151,6 +1151,65 @@ contains
     end if
     !
  end function TReigenvec_unit
+
+
+ function TReigenvec_unit_external(jind,jval,igamma)
+
+ !open a file with eigenfunctions produced externally
+
+    integer(ik), intent(in)          :: jind,jval(:)
+    integer(ik), intent(in) :: igamma
+    !
+    integer(ik)             :: TReigenvec_unit
+    !
+    integer(ik)             :: kind,ilevel,jlevel, ncontr, iounit, info, reclen, irec
+    !
+    real(rk), pointer       :: vec1(:),vec2(:)
+    real(rk)                :: f_t
+    !
+    character(4)            :: jchar,gchar = 'xxxx'
+    character(cl)           :: filename
+    character(cl)           :: ioname
+    logical                 :: exists,hasopened
+    !
+    call iostart(trim(ioname), iounit)
+    !
+    TReigenvec_unit_external = iounit
+    !
+    write(jchar, '(i4)') jval(jind)
+    write(gchar, '(i3)') igamma
+    !
+    !filename = trim(job%eigenfile%filebase)//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+    !if (job%IOvector_symm) 
+    !
+    filename = "external"//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+    !
+    inquire (file = filename, exist = exists)
+    if (.not.exists) then 
+      write (out,"('TReigenvec_unit: Cannot find file for j= ',i3,4x,a)") jval(jind),filename
+      stop 'TReigenvec_unit: file with eigenvectors does not exist' 
+    endif 
+    !
+    inquire (unit = iounit, opened = hasopened)
+    !
+    if (hasopened) return
+    ncontr = max(bset_contr(jind)%nsize(igamma),1)
+    !
+    inquire(iolength = reclen) f_t
+    reclen = ncontr*reclen
+    !
+    open(unit = iounit, access = 'direct', recl = reclen, action='read',status='old' , file = filename,err=22)
+    !
+    return
+    !
+    22 continue
+    !
+    write (out,"('TReigenvec_unit_external: Error opening  eigenvectors-file for j= ',i4,a)") jval(jind),filename
+    stop 'TReigenvec_unit_external: Error opening  eigenvectors-file' 
+    !
+    !
+ end function TReigenvec_unit_external
+
 
 
  subroutine TRconvert_repres_J0_to_contr(Jrot)

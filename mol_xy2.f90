@@ -253,9 +253,9 @@ module mol_xy2
        !
        if (direct) then 
           !
-          r1 = src(1) ; r2 = src(2) ;  alpha = src(3)
+          r2 = src(1) ; r3 = src(2) ;  alpha = src(3)
           !
-          r3 = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
+          r1 = sqrt(r2**2+r3**2-2.0_ark*r2*r3*cos(alpha))
           !
           dst(1) = r1-molec%local_eq(1)
           dst(2) = r2-molec%local_eq(1)
@@ -268,10 +268,10 @@ module mol_xy2
           r3 = src(3)+molec%local_eq(1)
           !R = src(3)+molec%local_eq(1)
           !
-          cosalpha = (r1**2+r2**2-r3**2)/(2.0_ark*r1*r2)
+          cosalpha = (r2**2+r3**2-r1**2)/(2.0_ark*r2*r3)
           !
-          dst(1) = r1
-          dst(2) = r2
+          dst(1) = r2
+          dst(2) = r3
           dst(3) = acos(cosalpha)
           !
        endif
@@ -753,6 +753,20 @@ module mol_xy2
          b0(3,2,0) = 0.0_ark
          b0(3,1,0) =-m1/m*re13*cos(alphae_h)
          !
+      case('R-R-R')
+         !
+         b0(1,2,0) = 0.0_ark
+         b0(1,3,0) = 0.0_ark
+         b0(1,1,0) = 2.0_ark*m3/m*re13*cos(alphae_h)
+         !
+         b0(3,2,0) =-re13*sin(alphae_h)
+         b0(3,3,0) = 0.0_ark
+         b0(3,1,0) =-m1/m*re13*cos(alphae_h)
+         !
+         b0(2,2,0) = re13*sin(alphae_h)
+         b0(2,3,0) = 0.0_ark
+         b0(2,1,0) =-m1/m*re13*cos(alphae_h)
+         !
       case('RADAU-R-ALPHA-Z')
          !
          if (Nangles>0) then
@@ -1107,6 +1121,20 @@ module mol_xy2
                !do ix = 1,Natoms
                !  b0(ix,:,i) = matmul(transpose(rot),b0(ix,:,i))
                !enddo
+               !
+            case('R-R-R')
+               !
+               b0(1,2,i) = 0.0_ark
+               b0(1,3,i) = 0.0_ark
+               b0(1,1,i) = 2.0_ark*m3/m*re13*cos(alphae_h)
+               !
+               b0(3,2,i) =-re13*sin(alphae_h)
+               b0(3,3,i) = 0.0_ark
+               b0(3,1,i) =-m1/m*re13*cos(alphae_h)
+               !
+               b0(2,2,i) = re13*sin(alphae_h)
+               b0(2,3,i) = 0.0_ark
+               b0(2,1,i) =-m1/m*re13*cos(alphae_h)
                !
              case('RADAU-R-ALPHA-Z')
                !

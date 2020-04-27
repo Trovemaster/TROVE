@@ -4849,10 +4849,10 @@ module perturbation
     integer(ik),allocatable   :: count_index(:,:)
     real(rk),allocatable      :: eigenvects(:,:)
     type(PTlevelT),pointer    :: cf
-
-    real(ark)           :: MaxEigenvects
-
-    integer(ik)      :: isym,Ntotal(sym%Nrepresen),ilarge_coeff
+    !
+    real(ark)          :: MaxEigenvects
+    !
+    integer(ik)        :: isym,Ntotal(sym%Nrepresen),ilarge_coeff
     !type(MOrepres_arkT),pointer   :: irr(:)
 
     !integer(ik)        :: ibstype,Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift
@@ -7392,19 +7392,21 @@ module perturbation
         !
       case ('APPEND')
         !
-        statusf = 'old'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='old',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='old',file=filename,recl=irec_len)
         !
       case default 
         !
-        statusf = 'replace'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='replace',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='replace',file=filename,recl=irec_len)
         !
       end select 
-      !
-      filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
-      open(unitO,access='direct',action = 'write',status=statusf,file=filename,recl=rec_len) 
-      !
-      filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
-      open(unitC,access='direct',action = 'write',status=statusf,file=filename,recl=irec_len)
       !
       if (job%verbose>=2) write(out,"('The vectors will be compressed before saving using threshold = ',g15.7)") job%coeff_thresh
       !
@@ -9609,17 +9611,18 @@ module perturbation
    integer(ik),intent(inout) :: bterm(dimen_s,2)
 
    integer(ik)  :: nu(0:PT%Nmodes),k,tau,IOunit_quanta,IOunit_vector,alloc,cnu_0,normal(0:PT%Nmodes)
+   integer(ik)  :: nu2(0:PT%Nmodes),k2,tau2,normal2(0:PT%Nmodes)
    integer(ik)  :: nroots,nroots_,irange(2),iroot,jroot,icase,iclasses,dimen_p,ideg,kdeg,nroots_max,dimen_s_
    integer(ik)  :: level_degen,icoeff,irecord,ilevel,dimen,irow,iterm,ielem,jelem,n1,n2,icol
    integer(ik)  :: Nterms,ib,ilarge_coef_t,Nmodes,Nclasses,Nclasses1,isym(0:PT%Nclasses),cdimen,cdimenmax,unitO,unitC,vector_size
-   integer(ik)  :: cnu(0:PT%Nclasses)
+   integer(ik)  :: cnu(0:PT%Nclasses),cnu2(0:PT%Nclasses)
    real(rk)     :: beta, upper_ener_max
-   real(rk)     :: vrange(2),MaxEigenvects,termvalue,largest_coeff
-   real(rk),allocatable :: energy(:),mat_t(:,:),vec_t(:),dvrvector(:),dvrvector_(:),vec_compress(:),maxcontrib(:)
+   real(rk)     :: vrange(2),MaxEigenvects,MaxEigenvects2,termvalue,largest_coeff
+   real(rk),allocatable :: energy(:),mat_t(:,:),vec_t(:),dvrvector(:),dvrvector_(:),vec_compress(:),maxcontrib(:),maxcontrib2(:)
    real,allocatable     :: mat4(:,:),energy4(:)
    real                 :: vrange4(2),coef4
    integer(ik),allocatable :: eignu(:,:),icoeff_compress(:),eignormal(:,:)
-   integer(ik),allocatable :: maxterm(:) ,ijterm(:),ivec(:)
+   integer(ik),allocatable :: maxterm(:),maxterm2(:),ijterm(:),ivec(:)
    !
    double precision,external :: ddot
    !
@@ -9632,7 +9635,7 @@ module perturbation
    real(rk)                           :: spur,mat1,mat2,mat0
    !real(rk), dimension(:, :), pointer :: mexp
 
-   character(len=3)     :: cgamma(0:PT%Nclasses)
+   character(len=3)     :: cgamma(0:PT%Nclasses),cgamma2(0:PT%Nclasses)
    character(len=cl)    :: unitfname
    character(len=cl)    :: filename,symchar,jchar,buff,buff4
    !
@@ -9641,7 +9644,7 @@ module perturbation
    integer(ik)          :: nelem,chkptIO
    integer(ik)          :: dimen_maxrow,m_,i_,j_,kmax,jb
    character(len=cl)    :: my_fmt   !format for I/O specification
-   character(len=wl)    :: my_fmt_l !format for long I/O specification
+   character(len=wl)    :: my_fmt_l,my_fmt_2 !format for long I/O specification
      !
      ! Check for the trivial solution 
      if (dimen_s<=0) return 
@@ -9974,7 +9977,7 @@ module perturbation
        !
        write(jchar, '(i4)') jrot
        write(symchar, '(i4)') gamma
-       
+       !
        !---Read energy file nroots and dimen_s
        filename = 'energies'//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))//'.chk'
        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trim(filename),iostat=info)
@@ -9982,21 +9985,24 @@ module perturbation
        if(buff(1:14)/='Start energies') then
        	stop 'Invalid energies checkpoint file-energy'
        endif
-       
+       !
        read(chkptIO) dimen, nroots
-       
+       !
        write(out, '(/a,1x,i8,1x,a,1x,i8)') 'read eigenvectors for dimen=', dimen, 'and nroots=', nroots
-       
+       !
        !Allocate maxcontrib and maxterm
-       allocate (maxTerm(nroots),maxcontrib(nroots))
+       allocate (maxTerm(nroots),maxcontrib(nroots),maxTerm2(nroots),maxcontrib2(nroots))
+       call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
        call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-       
+       call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
+       call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
+       !
        read(chkptIO) energy(1:nroots)
        read(chkptIO) buff(1:13)
        if(buff(1:13)/='Start contrib') then
        	stop 'Invalid energies checkpoint file-contrib'
        endif
-
+       !
        !---read contribs
        do ielem=1,nroots
        		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
@@ -10005,7 +10011,7 @@ module perturbation
        		                      maxcontrib(ielem)
     
        enddo
-       
+       !
        write(out,"('Done reading energy file!!!')")
        close(chkptIO)
      case('READ-EIGEN') 
@@ -10763,31 +10769,48 @@ module perturbation
              'Variational solution - irreducible representation','  Gamma     i       value             j  k  t   quanta'
      endif
      !
-     
+     !
      ! Find the largest coefficients only if not provided from external diagonalization.
      if(trim(job%diagonalizer)/='READ-ENERGIES') then
-     
-     	allocate (maxTerm(nroots),maxcontrib(nroots))
-     	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-    	maxTerm  = 1
         !
+     	allocate (maxTerm(nroots),maxcontrib(nroots))
+     	allocate (maxTerm2(nroots),maxcontrib2(nroots))
+     	call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
+     	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+     	call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
+     	call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
+    	maxTerm  = 1
         !     
-        !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
+        !$omp parallel do private(iroot,MaxEigenvects,MaxEigenvects2,jroot) shared(maxTerm,maxcontrib) schedule(dynamic)
         do iroot=1,nroots
           !
           MaxEigenvects  = small_
           !
           if (.not.no_diagonalization) then 
             !
-            do jroot=1,dimen_s
-                 if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
-                     MaxEigenvects = abs( mat(jroot,iroot) )
-                     maxTerm(iroot) = jroot
-                 endif
-                 !
-            enddo
+            MaxEigenvects = maxval(mat(:,iroot)**2,dim=1)-small_
+            jroot = maxloc(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.ge.MaxEigenvects)
+            maxTerm(iroot) = jroot
+            maxcontrib(iroot)  = mat(jroot,iroot)
             !
-            maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
+            if (job%Nassignments > 1) then
+              !
+              MaxEigenvects2 = maxval(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.le.MaxEigenvects)-small_
+              jroot = maxloc(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.ge.MaxEigenvects2.and.mat(:,iroot)**2.le.MaxEigenvects)
+              maxTerm2(iroot) = jroot
+              maxcontrib2(iroot)  = mat(jroot,iroot)
+              !
+            endif
+            !
+            !do jroot=1,dimen_s
+            !     if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
+            !         MaxEigenvects = abs( mat(jroot,iroot) )
+            !         maxTerm(iroot) = jroot
+            !     endif
+            !     !
+            !enddo
+            !!
+            !maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
             !
           else
             ! 
@@ -10817,6 +10840,11 @@ module perturbation
      !
      write(my_fmt_l,'(a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
                      Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
+      !
+     write(my_fmt_2,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",&
+                     Nclasses,"(1x,a3),a1,",Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2,",&
+                     "3x,a1,a4,a1,i1,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
+                     Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
      
      !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
      !                  sym%label(gamma),iroot,termvalue,&
@@ -10869,34 +10897,52 @@ module perturbation
        k   = PT%rot_index(cnu(0),kdeg)%k
        tau = PT%rot_index(cnu(0),kdeg)%tau
        !
-       !if (termvalue>-1e1) then
-         !
-         if (all(nu==normal).and..false.) then 
-           !
-           write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,f9.2)') & 
-                      sym%label(gamma),iroot,termvalue,"(",&
-                      cgamma(0),";",jrot,k,tau," )", &
-                      "(",cgamma(1:PT%Nclasses),";", &
-                      nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2
-           !
-         else
-            !write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3," )",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//'," )",1x,f9.2,1x,"(",'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//'," )")') & 
-            !           sym%label(gamma),iroot,termvalue,&
-            !           cgamma(0),jrot,k,tau, &
-            !           cgamma(1:PT%Nclasses), &
-            !           nu(1:PT%Nmodes),maxcontrib(iroot)**2,normal(1:PT%Nmodes),normal(0),cnu(1:PT%Nclasses)
+       if (job%Nassignments == 1) then
+          !
+          write(out,my_fmt_l)&
+                     sym%label(gamma),iroot,termvalue,&
+                     "(",cgamma(0),";",jrot,k,tau," )", &
+                     "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
+                     "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )"
 
-            write(out,my_fmt_l)&
-            !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//',a2,1x,a1,'//fmt%Nclasses0//',a2)') & 
-                       sym%label(gamma),iroot,termvalue,&
-                       "(",cgamma(0),";",jrot,k,tau," )", &
-                       "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
-                       "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )"
-
-
+       elseif (job%Nassignments > 1) then
+          !
+          icase    = PT%symactive_space(gamma)%sym_N(maxTerm2(iroot),1)
+          ideg     = PT%symactive_space(gamma)%sym_N(maxTerm2(iroot),2)
+          cnu2(:) = PT%contractive_space(:,icase)  
+          nu2 = 0
+          normal2 = 0
+          do iclasses = 0,PT%Nclasses
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               nu2(:) = nu2(:) + contr(iclasses)%eigen(cnu2(iclasses))%nu(:)
+            endif 
+            cgamma2(iclasses) = contr(iclasses)%eigen(cnu2(iclasses))%gamma
             !
-         endif
-         !
+          enddo 
+          !
+          do iclasses = 1,PT%Nclasses
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               normal2(:) = normal2(:) + contr(iclasses)%eigen(cnu2(iclasses))%normal(:)
+            endif
+            !
+          enddo
+          !
+          kdeg = PT%Index_deg(icase)%icoeffs(0,ideg)
+          !
+          k2   = PT%rot_index(cnu2(0),kdeg)%k
+          tau2 = PT%rot_index(cnu2(0),kdeg)%tau
+          !
+          write(out,my_fmt_2)&
+                     sym%label(gamma),iroot,termvalue,&
+                     "(",cgamma(0),";",jrot,k,tau," )", &
+                     "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
+                     "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )",&
+                     "(",cgamma2(0),";",k2," )", &
+                     "(",cgamma2(1:PT%Nclasses),";",nu2(1:PT%Nmodes)," )",maxcontrib2(iroot)**2,&
+                     "(",normal2(1:PT%Nmodes),normal2(0)," )","(",cnu2(1:PT%Nclasses)," )"
+          !
+       endif
+       !
        !endif
        !
      enddo 
@@ -11165,6 +11211,8 @@ module perturbation
      !
      if (allocated(maxterm)) deallocate(maxterm)
      if (allocated(maxcontrib)) deallocate(maxcontrib)
+     if (allocated(maxterm2)) deallocate(maxterm2)
+     if (allocated(maxcontrib2)) deallocate(maxcontrib2)
      call ArrayStop('maxcontrib')
      !
      if (allocated(eignu)) then 
@@ -31641,7 +31689,7 @@ end subroutine read_contr_matelem_expansion_classN
            !
            itrial = 2
            !
-           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8,a,i6)"
+           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,a,f15.8,i6)"
            write(my_fmt2,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8)"
            !
            do i=1,nroots
