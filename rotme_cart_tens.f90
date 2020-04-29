@@ -237,7 +237,7 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   if (present(mf)) then
     mf(:,:) = 0.0
-    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1)i, see cart_to_spher for the order of elements
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
@@ -250,7 +250,7 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   if (present(lf)) then
     call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
     lf(:,:) = 0.0
-    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1)i, see cart_to_spher for the order of elements
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
@@ -357,11 +357,11 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   name = 'ALPHA'
   nelem = 9
-  nirrep = 3
-  rank(1:nirrep) = (/0,1,2/)
+  nirrep = 2
+  rank(1:nirrep) = (/0,2/)
 
   if (present(sirrep)) then
-    sirrep(1:nirrep) = (/'T(0)','T(1)','T(2)'/)
+    sirrep(1:nirrep) = (/'T(0)','T(2)'/)
   endif
 
   if (present(selem)) then
@@ -374,6 +374,7 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     mf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
+      if (irrep==2) isigma = isigma + 3 !!! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
@@ -387,6 +388,7 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     lf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
+      if (irrep==2) isigma = isigma + 3 !!! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
