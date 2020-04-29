@@ -170,7 +170,7 @@ end subroutine cart_to_spher_rank2
 !###################################################################################################
 
 
-subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   integer(ik), intent(in) :: q1(:), q2(:)
   character(cl), intent(out) :: name
@@ -229,7 +229,7 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
   endif
 
-end subroutine rotme_quad_trace0
+end subroutine rotme_quad
 
 
 !###################################################################################################
