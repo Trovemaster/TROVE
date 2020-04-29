@@ -206,7 +206,7 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   if (present(mf)) then
     mf(:,:) = 0.0
-    isigma = 0
+    isigma = 4 ! we skip omega,sigma=0,0 and omega,sigma=1,-1 1,0, and 1,1
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
@@ -219,7 +219,7 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   if (present(lf)) then
     call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
     lf(:,:) = 0.0
-    isigma = 0
+    isigma = 4 ! we skip omega,sigma=0,0 and omega,sigma=1,-1 1,0, and 1,1
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
