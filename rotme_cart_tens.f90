@@ -169,6 +169,7 @@ end subroutine cart_to_spher_rank2
 
 !###################################################################################################
 
+! Traceless symmetric quadrupole moment tensor
 
 subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -178,7 +179,7 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
   character(cl), intent(out), optional :: sirrep(:), selem(:)
 
-  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, rank(3)
+  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, rank(1)
   complex(rk) :: tmat_s(9,9), tmat_x(9,9)
 
   j1 = q1(1)
@@ -190,11 +191,11 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   name = 'QUAD'
   nelem = 9
-  nirrep = 3
-  rank(1:nirrep) = (/0,1,2/)
+  nirrep = 1
+  rank(1:nirrep) = (/2/) ! traceless symmetric tensor, T(0) and T(1) are zero
 
   if (present(sirrep)) then
-    sirrep(1:nirrep) = (/'T(0)','T(1)','T(2)'/)
+    sirrep(1:nirrep) = (/'T(2)'/)
   endif
 
   if (present(selem)) then
