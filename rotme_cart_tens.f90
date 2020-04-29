@@ -68,7 +68,38 @@ contains
 
 !###################################################################################################
 
+
+! Transformation matrix for Cartesian components of rank-1 tensor into the spherical-tensor form
+!
+! Dipole moment
+!  0 {0: 0}
+!  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
+! number of elements: 3
+! order of Cartesian components: [x, y, z]
+! order of spherical components: [[1, -1], [1, 0], [1, 1]]
+
+subroutine cart_to_spher_rank1(tmat_s)
+
+  complex(rk), intent(out) :: tmat_s(3,3)
+
+  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
+  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
+  tmat_s( 1 , 3 )= 0
+  tmat_s( 2 , 1 )= 0
+  tmat_s( 2 , 2 )= 0
+  tmat_s( 2 , 3 )= 1
+  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
+  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
+  tmat_s( 3 , 3 )= 0
+
+end subroutine cart_to_spher_rank1
+
+
+!###################################################################################################
+
+
 ! Transformation matrix for Cartesian components of rank-2 tensor into the spherical-tensor form
+!
 ! Non-symmetric rank-2 tensor
 !  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
 !  1 {0: sqrt(2)*I*xy/2 - sqrt(2)*I*yx/2, 1: -xz/2 - I*yz/2 + zx/2 + I*zy/2, -1: -xz/2 + I*yz/2 + zx/2 - I*zy/2}
@@ -76,7 +107,6 @@ contains
 ! number of elements: 9
 ! order of Cartesian components: [xx, xy, xz, yx, yy, yz, zx, zy, zz]
 ! order of spherical components: [[0, 0], [1, -1], [1, 0], [1, 1], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
-! Cartesian to spherical transformation matrix:
 
 subroutine cart_to_spher_rank2(tmat_s)
 
@@ -169,7 +199,8 @@ end subroutine cart_to_spher_rank2
 
 !###################################################################################################
 
-! Traceless symmetric quadrupole moment tensor
+
+! Traceless symmetric quadrupole moment rank-2 tensor
 
 subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -206,12 +237,12 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   if (present(mf)) then
     mf(:,:) = 0.0
-    isigma = 4 ! we skip omega,sigma=0,0 and omega,sigma=1,-1 1,0, and 1,1
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1)i, see cart_to_spher for the order of elements
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
-            * (-1)**(k2) * tmat_s(isigma,1:nelem)
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -219,12 +250,12 @@ subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   if (present(lf)) then
     call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
     lf(:,:) = 0.0
-    isigma = 4 ! we skip omega,sigma=0,0 and omega,sigma=1,-1 1,0, and 1,1
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1)i, see cart_to_spher for the order of elements
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
-            * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -235,6 +266,8 @@ end subroutine rotme_quad
 
 !###################################################################################################
 
+
+! Non-symmetric spin-rotation rank-2 tensor
 
 subroutine rotme_spinrot(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -276,7 +309,8 @@ subroutine rotme_spinrot(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
+        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -288,7 +322,8 @@ subroutine rotme_spinrot(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -299,6 +334,8 @@ end subroutine rotme_spinrot
 
 !###################################################################################################
 
+
+! Electric polarizability symmetric rank-2 tensor
 
 subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -340,7 +377,7 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
-            * (-1)**(k2) * tmat_s(isigma,1:nelem)
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -353,7 +390,7 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
-            * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -364,6 +401,8 @@ end subroutine rotme_alpha
 
 !###################################################################################################
 
+
+! Electric dipole moment
 
 subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -397,23 +436,7 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     selem(1:nelem) = (/'x','y','z'/)
   endif
 
-  ! Dipole moment
-  !  0 {0: 0}
-  !  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
-  ! number of elements: 3
-  ! order of Cartesian components: [x, y, z]
-  ! order of spherical components: [[1, -1], [1, 0], [1, 1]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
-  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 2 , 1 )= 0
-  tmat_s( 2 , 2 )= 0
-  tmat_s( 2 , 3 )= 1
-  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
-  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 3 , 3 )= 0
-
+  call cart_to_spher_rank1(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
@@ -421,7 +444,8 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
+        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -433,7 +457,8 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -651,23 +676,7 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   coef(1:2,2) = (/cy1,cy2/);  kval(1:2,2) = (/-1,1/)
   coef(1:1,3) = (/cz1/);      kval(1:1,3) = (/0/)
 
-
-  !  0 {0: 0}
-  !  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
-  ! number of elements: 3
-  ! order of Cartesian components: [x, y, z]
-  ! order of spherical components: [[1, -1], [1, 0], [1, 1]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
-  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 2 , 1 )= 0
-  tmat_s( 2 , 2 )= 0
-  tmat_s( 2 , 3 )= 1
-  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
-  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 3 , 3 )= 0
-
+  call cart_to_spher_rank1(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
@@ -679,7 +688,8 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
         res = 0
         do ialpha=1, nelem
           do icoef=1, ncoef(ialpha)
-            res(ialpha) = res(ialpha) + coef(icoef,ialpha) * threej_symbol(j1,rank(irrep),j2,k1-kval(icoef,ialpha),sigma,-k2)
+            res(ialpha) = res(ialpha) + coef(icoef,ialpha) &
+                        * threej_symbol(j1,rank(irrep),j2,k1-kval(icoef,ialpha),sigma,-k2)
           enddo
         enddo
 
@@ -695,7 +705,8 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
