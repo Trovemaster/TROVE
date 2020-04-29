@@ -272,17 +272,16 @@ end subroutine rotme_vzz_trace0
 !###################################################################################################
 
 
-subroutine rotme_quad_trace0(q1, q2, name, nelem_out, nirrep_out, mf_out, lf_out, sirrep_out, selem_out)
+subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   integer(ik), intent(in) :: q1(:), q2(:)
   character(cl), intent(out) :: name
-  integer(ik), intent(inout) :: nelem_out, nirrep_out
-  complex(rk), intent(out), optional :: mf_out(:,:), lf_out(:,:)
-  character(cl), intent(out), optional :: sirrep_out(:), selem_out(:)
+  integer(ik), intent(inout) :: nelem, nirrep
+  complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
+  character(cl), intent(out), optional :: sirrep(:), selem(:)
 
-  integer(ik), parameter :: nelem=9, nirrep=3, rank(1:3)=(/0,1,2/)
-  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2
-  complex(rk) :: tmat_s(9,9), tmat_x(9,9), mf(9,3), lf(9,3)
+  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, rank(3)
+  complex(rk) :: tmat_s(9,9), tmat_x(9,9)
 
   j1 = q1(1)
   k1 = q1(2)
@@ -292,24 +291,21 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem_out, nirrep_out, mf_out, lf_out
   m2 = q2(3)
 
   name = 'QUAD'
-  nelem_out = 6
-  nirrep_out = 1
+  nelem = 9
+  nirrep = 3
+  rank(1:nirrep) = (/0,1,2/)
 
-  if (present(sirrep_out)) then
-    sirrep_out(1:nirrep_out) = (/'T(2)'/)
+  if (present(sirrep)) then
+    sirrep(1:nirrep) = (/'T(0)','T(1)','T(2)'/)
   endif
 
-  if (present(selem_out)) then
-    selem_out(1:nelem_out) = (/'xx','xy','xz','yy','yz','zz'/)
+  if (present(selem)) then
+    selem(1:nelem) = (/'xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   endif
 
-  ! compute full 9x9 matrix but will keep only the symmetric xx,xy,xz,yy,yz,zz Cartesian components
-  ! and only for irrep = T(2), since T(1) is zero because tensor is symmetric and T(0) is zero
-  ! because it is traceless
+  call cart_to_spher_rank2(tmat_s)
 
-  call cart_to_spher_rank2(tmat_s) ! 9x9 matrix
-
-  if (present(mf_out)) then
+  if (present(mf)) then
     mf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
@@ -319,11 +315,9 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem_out, nirrep_out, mf_out, lf_out
             * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
-    mf_out = 0
-    mf_out(1:nelem_out,1) = (/mf(1,3), mf(2,3), mf(3,3), mf(5,3), mf(6,3), mf(9,3)/) ! xx,xy,xz,yy,yz,zz, irrep=T(2)
   endif
 
-  if (present(lf_out)) then
+  if (present(lf)) then
     call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
     lf(:,:) = 0.0
     isigma = 0
@@ -335,8 +329,6 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem_out, nirrep_out, mf_out, lf_out
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
-    lf_out = 0
-    lf_out(1:nelem_out,1) = (/lf(1,3), lf(2,3), lf(3,3), lf(5,3), lf(6,3), lf(9,3)/) ! xx,xy,xz,yy,yz,zz, irrep=T(2)
   endif
 
 end subroutine rotme_quad_trace0
