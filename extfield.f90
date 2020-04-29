@@ -109,7 +109,7 @@ subroutine emf_matelem
     dj = 1
     call tens%init(jmin, jmax, dj, verbose=.true.)
 
-    call read_vibme_rank1_sym
+    call read_vibme_rank1
 
     call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
 
@@ -778,16 +778,16 @@ end subroutine prim_me
 !###################################################################################################################################
 
 
-subroutine read_vibme_rank1_sym()
+! Read vibrational matrix elements of rank-1 tensor
 
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, ji, nelem, nelem_sym
+subroutine read_vibme_rank1()
+
+  integer(ik), parameter :: nelem=3, nelem_sym=3
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, ji
   character(len=cl) :: job_is
   character(len=20) :: buf20
 
-  nelem = 3
-  nelem_sym = 3
-
-  write(out, '(/a,a)') 'read_vibme_rank1_sym: read vibrational matrix elements of symmetric rank-1 &
+  write(out, '(/a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 &
       Cartesian tensor from file', trim(job%extFmat_file)
 
   job_is ='extf contracted matrix elements'
@@ -796,25 +796,25 @@ subroutine read_vibme_rank1_sym()
 
   read(chkptIO) buf20
   if (buf20/='Start external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1_sym error: file "', trim(job%extFmat_file), &
+    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
         '" has bogus header = "', buf20, '"'
-    stop 'STOP, error in extfield/read_vibme_rank1_sym'
+    stop 'STOP, error in extfield/read_vibme_rank1'
   endif
 
   read(chkptIO) ncontr_t
 
   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1_sym error: actual size of basis &
+    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1 error: actual size of basis &
         set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
-    stop 'STOP, error in extfield/read_vibme_rnak1_sym'
+    stop 'STOP, error in extfield/read_vibme_rnak1'
   endif
 
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_rank1_sym error: failed to allocate &
+    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_rank1 error: failed to allocate &
         extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
-    stop 'STOP, error in extfield/read_vibme_rank1_sym'
+    stop 'STOP, error in extfield/read_vibme_rank1'
   endif
   extf_vib_me = 0.0
 
@@ -822,9 +822,9 @@ subroutine read_vibme_rank1_sym()
 
     read(chkptIO) ielem_t
     if (ielem_t/=ielem) then
-      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank1_sym error: file "', &
+      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank1 error: file "', &
           trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
-      stop 'STOP, error in extfield/read_vibme_rank1_sym'
+      stop 'STOP, error in extfield/read_vibme_rank1'
     endif
 
     read(chkptIO) extf_vib_me(ielem_t,:,:)
@@ -833,29 +833,29 @@ subroutine read_vibme_rank1_sym()
 
   read(chkptIO) buf20(1:18)
   if (buf20(1:18)/='End external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1_sym error: file "', trim(job%extFmat_file), &
+    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
         '" has bogus footer = "', buf20(1:18), '"'
-    stop 'STOP, error in extfield/read_vibme_rank1_sym'
+    stop 'STOP, error in extfield/read_vibme_rank1'
   endif
 
   close(chkptIO)
   call IOStop(job_is)
 
-end subroutine read_vibme_rank1_sym
+end subroutine read_vibme_rank1
 
 
 !###################################################################################################################################
 
 
+! Read vibrational matrix elements of symmetric rank-2 tensor
+
 subroutine read_vibme_rank2_sym()
 
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, ji, nelem, nelem_sym, cart_ind(6), ielem_
+  integer(ik), parameter :: nelem=9, nelem_sym=6
+  integer(ik), parameter :: cart_ind(1:nelem_sym) = (/1,2,3,5,6,9/) ! indices of xx,xy,xz,yy,yz,zz components in 3x3 matrix
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, ji, ielem_
   character(len=cl) :: job_is
   character(len=20) :: buf20
-
-  nelem = 9
-  nelem_sym = 6
-  cart_ind(1:nelem_sym) = (/1,2,3,5,6,9/) ! indices of xx,xy,xz,yy,yz,zz components in 3x3 matrix
 
   write(out, '(/a,a)') 'read_vibme_rank2_sym: read vibrational matrix elements of symmetric rank-2 &
       Cartesian tensor from file', trim(job%extFmat_file)
@@ -921,22 +921,21 @@ end subroutine read_vibme_rank2_sym
 
 !###################################################################################################################################
 
-! Reads vibrational matrix elements of spin-rotational tensor for XY2
-! quasilinear molecule. The order of elements is:
+
+! Reads vibrational matrix elements of spin-rotational tensor for XY2 quasilinear molecule.
+! The order of elements is:
 ! Cxx, Cxx/rho, Cxz, Cxz/rho, Cyy, Czx/rho, Czx/rho^2, Czz/rho, Czz/rho2
 
 subroutine read_vibme_spinrot_xy2()
 
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j, nelem, nelem_s
+  integer(ik), parameter :: nelem=9, nelem_s=9
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j
   character(len=cl) :: job_is
   character(len=20) :: buf20
   real(rk), allocatable :: me(:,:,:)
 
-  nelem = 9
-  nelem_s = 9
-
-  write(out, '(/a,a,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational contracted matrix elements from file "', &
-      trim(job%extFmat_file), '"'
+  write(out, '(/a,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
+      trim(job%extFmat_file)
 
   ! first read from file tensor elements that correspond to different Cartesian
   ! components and different powers of rho-coordinate
@@ -973,7 +972,7 @@ subroutine read_vibme_spinrot_xy2()
     read(chkptIO) ielem_t
     if (ielem_t/=ielem) then
       write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_spinrot_xy2 error: file "', &
-          trim(job%extFmat_file), '" has bogus index = ', ielem_t, ', expected index =', ielem
+          trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
       stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
     endif
 
