@@ -71,15 +71,6 @@ subroutine emf_matelem
 
   select case(trim(oper))
 
-  case('VZZ')
-    tens%func => rotme_vzz_trace0
-    dj = 2
-    call tens%init(jmin, jmax, dj, verbose=.true.)
-
-    call read_extf_vib_me(tens%nelem)
-
-    call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
-
   case('QUAD')
     tens%func => rotme_quad_trace0
     dj = 2
@@ -107,15 +98,6 @@ subroutine emf_matelem
   case('ALPHA')
     tens%func => rotme_alpha
     dj = 2
-    call tens%init(jmin, jmax, dj, verbose=.true.)
-
-    call read_extf_vib_me(tens%nelem)
-
-    call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
-
-  case('BETA')
-    tens%func => rotme_beta
-    dj = 3
     call tens%init(jmin, jmax, dj, verbose=.true.)
 
     call read_extf_vib_me(tens%nelem)
