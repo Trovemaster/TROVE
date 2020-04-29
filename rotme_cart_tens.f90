@@ -68,19 +68,20 @@ contains
 
 !###################################################################################################
 
+! Transformation matrix for Cartesian components of rank-2 tensor into the spherical-tensor form
+! Non-symmetric rank-2 tensor
+!  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
+!  1 {0: sqrt(2)*I*xy/2 - sqrt(2)*I*yx/2, 1: -xz/2 - I*yz/2 + zx/2 + I*zy/2, -1: -xz/2 + I*yz/2 + zx/2 - I*zy/2}
+!  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz/2 - I*yz/2 - zx/2 - I*zy/2, 2: xx/2 + I*xy/2 + I*yx/2 - yy/2, -1: xz/2 - I*yz/2 + zx/2 - I*zy/2, -2: xx/2 - I*xy/2 - I*yx/2 - yy/2}
+! number of elements: 9
+! order of Cartesian components: [xx, xy, xz, yx, yy, yz, zx, zy, zz]
+! order of spherical components: [[0, 0], [1, -1], [1, 0], [1, 1], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
+! Cartesian to spherical transformation matrix:
 
 subroutine cart_to_spher_rank2(tmat_s)
 
   complex(rk), intent(out) :: tmat_s(9,9)
 
-  ! Non-symmetric rank-2 tensor
-  !  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
-  !  1 {0: sqrt(2)*I*xy/2 - sqrt(2)*I*yx/2, 1: -xz/2 - I*yz/2 + zx/2 + I*zy/2, -1: -xz/2 + I*yz/2 + zx/2 - I*zy/2}
-  !  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz/2 - I*yz/2 - zx/2 - I*zy/2, 2: xx/2 + I*xy/2 + I*yx/2 - yy/2, -1: xz/2 - I*yz/2 + zx/2 - I*zy/2, -2: xx/2 - I*xy/2 - I*yx/2 - yy/2}
-  ! number of elements: 9
-  ! order of Cartesian components: [xx, xy, xz, yx, yy, yz, zx, zy, zz]
-  ! order of spherical components: [[0, 0], [1, -1], [1, 0], [1, 1], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
-  ! Cartesian to spherical transformation matrix:
   tmat_s( 1 , 1 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
   tmat_s( 1 , 2 )= 0
   tmat_s( 1 , 3 )= 0
