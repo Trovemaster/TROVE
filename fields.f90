@@ -3552,6 +3552,10 @@ module fields
              !
              call readf(intensity%threshold%coeff)
              !
+           case('THRESH_LEADING_COEFF')
+             !
+             call readf(intensity%threshold%leading_coeff)
+             !
            case('TEMPERATURE')
              !
              call readf(intensity%temperature)
