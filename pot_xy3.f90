@@ -4260,7 +4260,7 @@ module pot_xy3
     tmat0(3, :) = real(x(3,:) / r3, kind = rk)
 
     tmat(1,:) = 1.0_ark/sqrt(6.0_ark)*(2.0_ark*tmat0(1,:)-tmat0(2,:)-tmat0(3,:))
-    tmat(2,:) = 1.0_ark/sqrt(2.0_ark)*(                  tmat0(2,:)-tmat0(3,:))
+    tmat(2,:) = 1.0_ark/sqrt(2.0_ark)*(                   tmat0(2,:)-tmat0(3,:))
     tmat(3,:) = real(n3(:), kind = rk)
     !
     edip(1:3, 1) = real(d_t(1:3), kind = rk)
