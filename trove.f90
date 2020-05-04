@@ -72,7 +72,7 @@
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
          !
          if (trim(intensity%action)=='FIELD_ME') then
-           call emf2_matelem
+           call emf_matelem
          else
            call dm_tranint
          endif

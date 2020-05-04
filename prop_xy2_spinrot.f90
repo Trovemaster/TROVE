@@ -64,23 +64,23 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
   !
   rho = pi-alpha
   !
-  icentre = extF%coef(1,1) ! = 1 or 2, determines on which Y-atom spin-rotation tensor is centered
+  icentre = extF%coef(2,1) ! = 1 or 2, determines on which Y-atom spin-rotation tensor is centered
   !
   ! fitted tensor elements
   c = 0
   !
   if (icentre==1) then
-      c(1,1) = fit_xy2_sr(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
-      c(2,2) = fit_xy2_sr(extF%nterms(2), extF%coef(1:extF%nterms(2),2), (/r1, r2, alpha/))
-      c(3,3) = fit_xy2_sr(extF%nterms(3), extF%coef(1:extF%nterms(3),3), (/r1, r2, alpha/))
-      c(1,3) = fit_xy2_sr(extF%nterms(4), extF%coef(1:extF%nterms(4),4), (/r1, r2, alpha/))
-      c(3,1) = fit_xy2_sr(extF%nterms(5), extF%coef(1:extF%nterms(5),5), (/r1, r2, alpha/))
+      c(1,1) = fit_xy2_sr(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r1, r2, alpha/))
+      c(2,2) = fit_xy2_sr(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r1, r2, alpha/))
+      c(3,3) = fit_xy2_sr(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r1, r2, alpha/))
+      c(1,3) = fit_xy2_sr(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r1, r2, alpha/))
+      c(3,1) = fit_xy2_sr(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r1, r2, alpha/))
   elseif (icentre==2) then
-      c(1,1) = fit_xy2_sr(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r2, r1, alpha/))
-      c(2,2) = fit_xy2_sr(extF%nterms(2), extF%coef(1:extF%nterms(2),2), (/r2, r1, alpha/))
-      c(3,3) = fit_xy2_sr(extF%nterms(3), extF%coef(1:extF%nterms(3),3), (/r2, r1, alpha/))
-      c(1,3) = -fit_xy2_sr(extF%nterms(4), extF%coef(1:extF%nterms(4),4), (/r2, r1, alpha/))
-      c(3,1) = -fit_xy2_sr(extF%nterms(5), extF%coef(1:extF%nterms(5),5), (/r2, r1, alpha/))
+      c(1,1) = fit_xy2_sr(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r2, r1, alpha/))
+      c(2,2) = fit_xy2_sr(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r2, r1, alpha/))
+      c(3,3) = fit_xy2_sr(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r2, r1, alpha/))
+      c(1,3) = -fit_xy2_sr(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r2, r1, alpha/))
+      c(3,1) = -fit_xy2_sr(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r2, r1, alpha/))
   else
       write(out, '(a,1x,i3)') 'prop_xy2_qmom_bisect_frame error: icentre /= (1 or 2)'
       stop 'prop_xy2_qmom_bisect_frame - bad icentre parameter' 
