@@ -9,7 +9,7 @@ module prop_xy2
 
   implicit none
 
-  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_sr, prop_xy2_spin_rotation_bisector
+  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_spin_rotation_bisector
 
   private
  
