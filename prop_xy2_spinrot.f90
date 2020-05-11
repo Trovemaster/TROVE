@@ -1,3 +1,13 @@
+! Contains external functions for spin-rotation tensor of XY2-type molecule
+!
+! 1. prop_xy2_spin_rotation_bisector - is used for quasi-linear molecules, where
+!    some of the elements of spin-rotation tensor become singular at linear
+!    geometry. Example is H2O molecule.
+!
+! 2. prop_xy2_spin_rotation_nonlin - is used for non-linear molecules, like H2S.
+!    At near-linear geometries the subroutine breaks as it attempts to compute
+!    inverse of singular matrix.
+
 module prop_xy2_spinrot
   use accuracy
   use moltype
@@ -453,7 +463,8 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
   integer(ik), intent(out), optional :: info
 
   integer(ik) lwork, info_, i, j
-  double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
+  double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), &
+                   tmat(n,m), tol
   double precision, allocatable :: work(:)
 
   tol = 1.0d-08 !epsilon(1.0d0)
@@ -466,7 +477,9 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
 
   allocate(work(lwork), stat=info_)
   if (info_/=0) then
-    write(out, '(/a,1x,i6)') 'matrix_pseudoinverse_ark error: failed to allocate workspace array required for SVD, size =', lwork
+    write(out, '(/a,1x,i6)') &
+      'matrix_pseudoinverse_ark error: failed to allocate workspace array required for SVD, size =', &
+      lwork
     stop
   endif
 
