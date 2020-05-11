@@ -1,28 +1,40 @@
-! Contains external functions for spin-rotation tensor of XY2-type molecule
+! Contains external functions for spin-rotation tensor of XY2-type molecule.
 !
-! 1. prop_xy2_spin_rotation_bisector - is used for quasi-linear molecules, where
-!    some of the elements of spin-rotation tensor become singular at linear
-!    geometry. Example is H2O molecule.
+! 1. prop_xy2_spin_rotation_bisector - to be used for quasi-linear molecules, where
+!    some of the elements of spin-rotation tensor become singular at the linear
+!    geometry. This is because the spin-rotation tensor depends on the inverse
+!    of the moments of inertia tensor, which becomes singular at the linear
+!    geometry. In this case the ab initio computed spin-rotation tensor is
+!    multiplied with a matrix that resembles the moments of inertia tensor and the
+!    resulting non-singular tensor is then least-squares-fitted by analytical
+!    functions. Here, the fitted tensor is transformed back into the original
+!    (singular) form and the singular elements are treated separately.
+!    For details, see the work on ortho-para transitions in water.
 !
-! 2. prop_xy2_spin_rotation_nonlin - is used for non-linear molecules, like H2S.
-!    At near-linear geometries the subroutine breaks as it attempts to compute
-!    inverse of singular matrix.
+! 2. prop_xy2_spin_rotation_bisector_nonlin - to be used for non-linear molecules, like H2S.
+!    At near-linear geometries the subroutine has unpredictable behaviour since
+!    the analytical functions were not fitted to near-linear geometry data points.
+!    This function was created and tested for spin-rotaiton tensor of H2S molecule.
+!    For details, see the work on ortho-para conversion in rotational cluster states
+!    of H2S (and D2S) and polarization of the nuclear-spin density.
 
 module prop_xy2_spinrot
   use accuracy
   use moltype
   use pot_xy2, only : MLloc2pqr_xy2
+  use timer
 
   implicit none
 
-  public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_nonlin
+  public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
+         TEST_prop_xy2_spin_rotation_bisector_nonlin
 
 
 contains
 
 
-! Spin-rotation tensor for quasi-linear molecule, like H2O, where some of the elements
-! become singular at linear geometry
+! Spin-rotation tensor for quasi-linear molecule, like H2O, in the bisector
+! frame, where some of the elements become singular at linear geometry.
 
 subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
 
@@ -50,7 +62,7 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
     select case(trim(molec%coords_transform))
     case default
        write (out,"('prop_xy2_qmom_bisect_frame: coord. type ',a,' unknown')") trim(molec%coords_transform)
-       stop 'prop_xy2_qmom_bisect_frame - bad coord. type'
+       stop 'prop_xy2_spin_rotation_bisector - bad coord. type'
     case('R-RHO-Z')
        !
        x = MLloc2pqr_xy2(local)
@@ -96,8 +108,8 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
       c(1,3) = -fit_xy2_sr(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r2, r1, alpha/))
       c(3,1) = -fit_xy2_sr(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r2, r1, alpha/))
   else
-      write(out, '(a,1x,i3)') 'prop_xy2_qmom_bisect_frame error: icentre /= (1 or 2)'
-      stop 'prop_xy2_qmom_bisect_frame - bad icentre parameter' 
+      write(out, '(a,1x,i3)') 'prop_xy2_spin_rotation_bisector error: icentre /= (1 or 2)'
+      stop 'prop_xy2_spin_rotation_bisector - bad icentre parameter' 
   endif
   !
   ! inverse transform
@@ -191,56 +203,32 @@ end function fit_xy2_sr
 !###################################################################################################
 
 
-! Spin-rotation tensor for non-linear molecule, like H2S
+! Spin-rotation tensor for non-linear molecule, like H2S, in the bisector frame.
+! Care is not taken about the behaviour at near-linear geometries.
 
-recursive subroutine prop_xy2_spin_rotation_nonlin(rank, ncoords, natoms, local, xyz, f)
+recursive subroutine prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
   real(ark),intent(out)  ::  f(rank)
 
   integer(ik) :: iatom, icentre
-  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), e3(3), n1(3), n2(3), n3(3), &
-               tmat(3,3), coords(3), c_mb(3,3), c_xyz(3,3), c_xyz_(3,3), tmat_inv(3,3), x(natoms,3)
-  character(len=cl)         :: txt
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), coords(3), sr(3,3)
 
   icentre = nint(extf%coef(1,1)) ! icentre=1 means centre on Y1 and icentre=2 - on Y2
 
   if (rank/=9) then
     write(out, '(/a,1x,i3,1x,a)') &
-      'prop_xy2_spin_rotation_nonlin error: rank of the dipole moment vector =', rank, ', expected 9'
+      'prop_xy2_spin_rotation_bisector_nonlin error: rank of the external field vector =', rank, &
+      ', expected 9'
     stop
   endif
-  !
-  txt = 'prop_xy2_spin_rotation_nonlin'
-  !
-  ! xyz are undefined for the local case
-  if (all(abs(xyz)<small_)) then 
-    !
-    select case(trim(molec%coords_transform))
-    case default
-       write (out,"('prop_xy2_spin_rotation_nonlin: coord. type ',a,' unknown')") trim(molec%coords_transform)
-       stop 'prop_xy2_spin_rotation_nonlin - bad coord. type'
-    case('R-RHO-Z')
-       !
-       x = MLloc2pqr_xy2(local)
-       !
-       xyz0 = x(1,:)
-       do iatom=1, natoms
-         xyz_(iatom,:) = x(iatom,:) - xyz0(:)
-       enddo
-       !
-    end select
-    !
-  else
-    !
-    xyz0 = xyz(1,:)
-    do iatom=1, natoms
-      xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
-    enddo
-    !
-  endif
-  !
+
+  xyz0 = xyz(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = xyz(iatom,:) - xyz0(:)
+  enddo
+
   r1 = sqrt(sum(xyz_(2,:)**2))
   r2 = sqrt(sum(xyz_(3,:)**2))
 
@@ -249,45 +237,112 @@ recursive subroutine prop_xy2_spin_rotation_nonlin(rank, ncoords, natoms, local,
 
   alpha1 = aacos(sum(e1*e2))
 
-  coords = (/r1,r2,alpha1/)
+  if (abs(alpha1-pi)<0.0001) &
+      stop 'prop_xy2_spin_rotation_bisector_nonlin error: valence bond angle is 180 degrees &
+           (does not work for linear molecule)'
 
-  e3 = vector_product(e1,e2)
+  if (icentre==1) then
+    coords = (/r1,r2,alpha1/)
+  elseif (icentre==2) then
+    coords = (/r2,r1,alpha1/)
+  else
+    stop 'prop_xy2_spin_rotation_bisector_nonlin error: illegal value for "icentre" (can take values 1 or 2)'
+  endif
 
-  tmat(1,:) = e1
-  tmat(2,:) = e2
-  tmat(3,:) = e3
+  sr = 0
+  sr(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  sr(2,2) = fit_xy2_nosym(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
+  sr(3,3) = fit_xy2_nosym(extF%nterms(3), extF%coef(1:extF%nterms(3),3), coords)
+  sr(1,3) = fit_xy2_nosym(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)
+  sr(3,1) = fit_xy2_nosym(extF%nterms(5), extF%coef(1:extF%nterms(5),5), coords)
 
-  ! compute spin-rotation tensor in molecular-bond frame
+  if (icentre==2) then
+    sr(1,3) = -sr(1,3)
+    sr(3,1) = -sr(3,1)
+  endif
 
-  c_mb = 0
-  ! first parameter defines centre on Y1 or Y2, see above
-  c_mb(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) 
-  c_mb(2,2) = fit_xy2_nosym(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
-  c_mb(3,3) = fit_xy2_nosym(extF%nterms(3), extF%coef(1:extF%nterms(3),3), coords)
-  c_mb(1,2) = fit_xy2_nosym(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)
-  c_mb(2,1) = fit_xy2_nosym(extF%nterms(5), extF%coef(1:extF%nterms(5),5), coords)
+  ! the order of elements:
+  ! 11 ==> zz
+  ! 22 ==> yy
+  ! 33 ==> xx
+  ! 13 ==> zx
+  ! 31 ==> xz
 
-  ! transform tensor into coordinate frame defined by the input xyz coordinates
+  !               xx     xy      xz        yx        yy     yz       zx       zy       zz
+  f(1:9) = (/ sr(3,3), 0.0_ark, sr(3,1), 0.0_ark, sr(2,2), 0.0_ark, sr(1,3), 0.0_ark, sr(1,1) /)
 
-  call matrix_pseudoinverse_ark( 3, 3, tmat(1:3,1:3), tmat_inv(1:3,1:3) )
+end subroutine prop_xy2_spin_rotation_bisector_nonlin
 
-  c_xyz_(1:3,1:3) = matmul(tmat_inv(1:3,1:3), c_mb(1:3,1:3))
-  c_xyz(1:3,1:3) = matmul(c_xyz_(1:3,1:3), transpose(tmat_inv(1:3,1:3)))
 
-  f(1:9) = (/ c_xyz(1,1), c_xyz(1,2), c_xyz(1,3), c_xyz(2,1), c_xyz(2,2), c_xyz(2,3), c_xyz(3,1), &
-              c_xyz(3,2), c_xyz(3,3) /)
+!###################################################################################################
 
-  contains
 
-  function vector_product(v1,v2) result (v)
-    real(ark), intent(in) :: v1(3), v2(3)
-    real(ark) :: v(3)
-    v(1) = v1(2)*v2(3)-v1(3)*v2(2)
-    v(2) = v1(3)*v2(1)-v1(1)*v2(3)
-    v(3) = v1(1)*v2(2)-v1(2)*v2(1)
-  end function vector_product
+! Subroutine to test prop_xy2_spin_rotation_bisector_nonline, if it is able to reproduce
+! the original ab initio Cartesian components
 
-end subroutine prop_xy2_spin_rotation_nonlin
+subroutine TEST_prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natoms, local, xyz, f)
+
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+
+  integer(ik) :: iounit, iatom, npoints, ipoint, info, ithread, icentre, i, ii
+  real(ark) :: xyz_(natoms,3), sr_inp(9), sr_calc(9), rms(9), enr, sr(3,3)
+  character(cl) :: fname
+  integer(ik), external :: omp_get_thread_num
+
+  ithread = omp_get_thread_num()
+  print*, ithread
+  icentre = nint(extf%coef(1,1))
+
+  if (ithread==0) then
+
+  write(out, '(/a)') 'TEST_prop_xy2_spin_rotation_bisector_nonlin/start: test spin-rotation tensor transformation'
+
+  if (icentre==1) then
+    fname = 'SR1.dat'
+  elseif (icentre==2) then
+    fname = 'SR2.dat'
+  endif
+
+  call IOstart(fname, iounit)
+
+  open(iounit,form='formatted',file=fname,iostat=info)
+  if (info/=0) then
+    write(out, '(/a,a,a)') 'TEST_prop_xy2_spin_rotation_bisector_nonlin error: file "', trim(fname), '" not found'
+    stop
+  endif
+
+  ipoint = 0
+  rms = 0
+  do
+    read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), enr, (sr(i,1:3), i=1,3)
+    !                   xx      xy      xz        yx        yy     yz       zx       zy       zz
+    sr_inp(1:9) = (/ sr(3,3), sr(3,2), sr(3,1), sr(2,3), sr(2,2), sr(2,1), sr(1,3), sr(1,2), sr(1,1) /)
+    if (info/=0) exit
+    if (enr>10000) cycle
+    ipoint = ipoint + 1
+    call prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natoms, local, xyz_, sr_calc(1:9))
+    write(out, '(1x,i6,1x,f10.4,1x,9(5x,f12.4,1x,f12.4,1x,f12.4))') &
+      ipoint, enr, (sr_inp(i), sr_calc(i), sr_inp(i)-sr_calc(i), i=1, 9)
+    rms = rms + (sr_inp-sr_calc)**2
+  enddo
+  npoints = ipoint
+  close(iounit)
+
+  rms = sqrt(rms/real(npoints,ark))
+
+  write(out, '(/1x,a,9(1x,f12.4))') 'rms =', rms
+
+  write(out, '(/a)') 'TEST_prop_xy2_spin_rotation_bisector_nonlin/done'
+
+  endif
+  f = 0
+
+  !$omp barrier
+  stop
+
+end subroutine TEST_prop_xy2_spin_rotation_bisector_nonlin
 
 
 !###################################################################################################
