@@ -992,14 +992,14 @@ subroutine read_vibme_rank2()
   close(chkptIO)
   call IOStop(job_is)
 
-  job_is = 'extf vibrational matelem'
-  call IOstart(trim(job_is), iounit_tmp)
-  do i=1, ncontr_t
-    do j=1, i
-      write(iounit_tmp,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
-    enddo
-  enddo
-  call IOstop(job_is)
+  !job_is = 'extf vibrational matelem'
+  !call IOstart(trim(job_is), iounit_tmp)
+  !do i=1, ncontr_t
+  !  do j=1, i
+  !    write(iounit_tmp,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
+  !  enddo
+  !enddo
+  !call IOstop(job_is)
 
 end subroutine read_vibme_rank2
 
