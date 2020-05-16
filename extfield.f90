@@ -702,8 +702,9 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
 #if defined(_EMFIELD2_DEBUG_)
   dimen2 = bset_contr(jind2)%Maxcontracts
   if (idimen2>dimen2) then
-    write(out, '(/a,1x,i6,1x,a,1x,i6)') &!
-    'prim_me error: primitive function index for final state =', idimen2,' exceeds dimension of the basis =', dimen2
+    write(out, '(/a,1x,i6,1x,a,1x,i6)') &
+      'prim_me error: primitive function index for final state =', idimen2, &
+      ' exceeds dimension of the basis =', dimen2
     stop 'STOP, error in extfield/prim_me'
   endif
 #endif
@@ -734,8 +735,9 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
 #if defined(_EMFIELD2_DEBUG_)
       dimen1 = bset_contr(jind1)%Maxcontracts
       if (idimen>dimen1) then
-        write(out, '(/a,1x,i6,1x,a,1x,i6)') &!
-        'prim_me error: primitive function index for initial state =', idimen,' exceeds dimension of the basis =', dimen1
+        write(out, '(/a,1x,i6,1x,a,1x,i6)') &
+          'prim_me error: primitive function index for initial state =', idimen, &
+          ' exceeds dimension of the basis =', dimen1
         stop 'STOP, error in extfield/prim_me'
       endif
 #endif
@@ -759,8 +761,15 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
 
       if (dk<=tens%dk) then
 
+        ! Here for primitive rotational matrix elements indices 1 and 2 refer to
+        ! the ket and bra vectors respectively (see rotme_cart_tens.f90),
+        ! while for primitive vibrational basis first and second dimensions refer
+        ! to bra and ket vectors, therefore we swap places icontr1 and icontr2
+        ! This will only have effect for non-symmetric Cartesian tensors, such
+        ! as for example spin-rotaiton tensor
+
         rot_me(1:ncart) = tens%kmat(j1,j2)%me(1:ncart,irrep,ktau1_,ktau2_)
-        vib_me(1:ncart) = extf_vib_me(1:ncart,icontr1,icontr2)
+        vib_me(1:ncart) = extf_vib_me(1:ncart,icontr2,icontr1)
 
         res_vec(ielem,irrep) = sum(rot_me(1:ncart) * vib_me(1:ncart))
 
@@ -925,7 +934,7 @@ end subroutine read_vibme_rank2_sym
 subroutine read_vibme_rank2()
 
   integer(ik), parameter :: nelem=9
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j, iounit_tmp
   character(len=cl) :: job_is
   character(len=20) :: buf20
 
@@ -982,6 +991,15 @@ subroutine read_vibme_rank2()
 
   close(chkptIO)
   call IOStop(job_is)
+
+  job_is = 'extf vibrational matelem'
+  call IOstart(trim(job_is), iounit_tmp)
+  do i=1, ncontr_t
+    do j=1, i
+      write(iounit_tmp,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
+    enddo
+  enddo
+  call IOstop(job_is)
 
 end subroutine read_vibme_rank2
 
