@@ -765,8 +765,7 @@ subroutine prim_me(tens, jind1, jind2, idimen2, nelem, ind, res_vec)
         ! the ket and bra vectors respectively (see rotme_cart_tens.f90),
         ! while for primitive vibrational basis first and second dimensions refer
         ! to bra and ket vectors, therefore we swap places icontr1 and icontr2
-        ! This will only have effect for non-symmetric Cartesian tensors, such
-        ! as for example spin-rotaiton tensor
+        ! This perhaps will have no effect
 
         rot_me(1:ncart) = tens%kmat(j1,j2)%me(1:ncart,irrep,ktau1_,ktau2_)
         vib_me(1:ncart) = extf_vib_me(1:ncart,icontr2,icontr1)
@@ -1014,7 +1013,7 @@ end subroutine read_vibme_rank2
 subroutine read_vibme_spinrot_xy2()
 
   integer(ik), parameter :: nelem=9, nelem_s=9
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j, iounit
   character(len=cl) :: job_is
   character(len=20) :: buf20
   real(rk), allocatable :: me(:,:,:)
@@ -1099,6 +1098,19 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me(9,:,:) = sum(me(8:9,:,:), dim=1) ! zz
 
   deallocate(me)
+
+  ! print vibrational matrix elements into file (for testing purposes)
+
+  job_is = 'extf vibrational matelem'
+  call IOstart(trim(job_is), iounit)
+  open(iounit, form='formatted', action='write', position='rewind', status='unknown', file='extfield_vibme.txt')
+  do i=1, min(ncontr_t,20)
+    do j=1, min(ncontr_t,20)
+      write(iounit,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
+    enddo
+  enddo
+  close(iounit)
+  call IOstop(job_is)
 
 end subroutine read_vibme_spinrot_xy2
 
