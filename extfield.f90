@@ -991,14 +991,7 @@ subroutine read_vibme_rank2()
   close(chkptIO)
   call IOStop(job_is)
 
-  !job_is = 'extf vibrational matelem'
-  !call IOstart(trim(job_is), iounit_tmp)
-  !do i=1, ncontr_t
-  !  do j=1, i
-  !    write(iounit_tmp,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
-  !  enddo
-  !enddo
-  !call IOstop(job_is)
+  call check_extf_vib_me
 
 end subroutine read_vibme_rank2
 
@@ -1013,9 +1006,9 @@ end subroutine read_vibme_rank2
 subroutine read_vibme_spinrot_xy2()
 
   integer(ik), parameter :: nelem=9, nelem_s=9
-  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j, iounit
-  character(len=cl) :: job_is
+  integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j
   character(len=20) :: buf20
+  character(cl) :: job_is
   real(rk), allocatable :: me(:,:,:)
 
   write(out, '(/a,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
@@ -1099,20 +1092,65 @@ subroutine read_vibme_spinrot_xy2()
 
   deallocate(me)
 
-  ! print vibrational matrix elements into file (for testing purposes)
-
-  job_is = 'extf vibrational matelem'
-  call IOstart(trim(job_is), iounit)
-  open(iounit, form='formatted', action='write', position='rewind', status='unknown', file='extfield_vibme.txt')
-  do i=1, min(ncontr_t,20)
-    do j=1, min(ncontr_t,20)
-      write(iounit,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
-    enddo
-  enddo
-  close(iounit)
-  call IOstop(job_is)
-
 end subroutine read_vibme_spinrot_xy2
+
+
+!###################################################################################################################################
+
+
+! Checks if matrix of vibrational contracted matrix elements of a tensor
+! operator is symmetric and if necessary prints it into file
+
+subroutine check_extf_vib_me(tol_, nstates_print_)
+
+  real(rk), intent(in), optional :: tol_
+  integer(ik), intent(in), optional :: nstates_print_
+
+  integer(ik) :: i, ncontr, iounit, j, nelem, nstates_print
+  real(rk) :: maxdiff, tol
+  logical :: if_sym
+  character(cl) :: job_is
+
+  tol = 1.0d-12
+  nstates_print = 20
+  if (present(tol_)) tol=tol_
+  if (present(nstates_print_)) nstates_print=nstates_print_
+
+  ncontr = size(extf_vib_me,dim=2)
+  nelem = size(extf_vib_me,dim=1)
+
+  ! check if matrix is symmetric
+
+  if_sym = .true.
+  maxdiff = 0
+  do i=1, ncontr
+    if (any(abs(extf_vib_me(:,i,:)-extf_vib_me(:,:,i))>tol)) if_sym = .false.
+    maxdiff = max(maxdiff,maxval(abs(extf_vib_me(:,i,:)-extf_vib_me(:,:,i))))
+  enddo
+  if (.not.if_sym) then
+    write(out, '(1x,a,1x,a,1x,es16.8)') &
+      'vibrational contracted matrix elements matrix is NOT symmetric', 'max difference =', maxdiff
+  else
+    write(out, '(1x,a,1x,a,1x,es16.8)') &
+      'vibrational contracted matrix elements matrix is symmetric', 'max difference =', maxdiff
+  endif
+
+  ! print vibrational matrix elements into file
+
+  if (nstates_print>=1) then
+    job_is = 'extf vibrational matelem'
+    call IOstart(trim(job_is), iounit)
+    open(iounit, form='formatted', action='write', position='rewind', status='unknown', file='extfield_vibme.txt')
+    do i=1, min(ncontr,nstates_print)
+      do j=1, min(ncontr,nstates_print)
+        write(iounit,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
+      enddo
+    enddo
+    close(iounit)
+    call IOstop(job_is)
+  endif
+
+end subroutine check_extf_vib_me
 
 
 !###################################################################################################################################
