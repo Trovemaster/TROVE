@@ -1,14 +1,12 @@
 ! Contains external functions for spin-rotation tensor of XY2-type molecule.
 !
-! 1. prop_xy2_spin_rotation_bisector - to be used for quasi-linear molecules, where
-!    some of the elements of spin-rotation tensor become singular at the linear
-!    geometry. This is because the spin-rotation tensor depends on the inverse
-!    of the moments of inertia tensor, which becomes singular at the linear
-!    geometry. In this case the ab initio computed spin-rotation tensor is
-!    multiplied with a matrix that resembles the moments of inertia tensor and the
-!    resulting non-singular tensor is then least-squares-fitted by analytical
-!    functions. Here, the fitted tensor is transformed back into the original
-!    (singular) form and the singular elements are treated separately.
+! 1. prop_xy2_spin_rotation_bisector - to be used for quasi-linear molecules, where some of the
+!    elements of spin-rotation tensor become singular at geometries close to linear geometry.
+!    This happens is because the spin-rotation tensor depends on the inverse of the moments of
+!    inertia tensor, which becomes singular at the linear geometry. In this case the ab initio
+!    computed spin-rotation tensor is multiplied with the inertia tensor (that cancels out singularity)
+!    and then least-squares-fitted by analytical functions. Here, the fitted tensor is transformed
+!    back into the original (singular) form and the singular elements are treated separately.
 !    For details, see the work on ortho-para transitions in water.
 !
 ! 2. prop_xy2_spin_rotation_bisector_nonlin - to be used for non-linear molecules, like H2S.
@@ -46,7 +44,7 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
   integer(ik) :: iatom
   !
   real(ark) :: xyz0(3), xyz_(natoms,3),r1,r2,alpha,rho,rho_over_sinrho,rho2_over_sinrho2
-  real(ark) :: c(3,3), mat(3,3), c_out(5,-2:0), e1(3), e2(3), e3(3),x(natoms,3)
+  real(ark) :: c(3,3), mat(3,3), c_out(5,-2:0), e1(3), e2(3), e3(3),x(natoms,3), mH, mO
   real(ark),parameter  :: rho_threshold = 0.01_rk
   integer(ik) :: icentre
   !
@@ -112,7 +110,7 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
       stop 'prop_xy2_spin_rotation_bisector - bad icentre parameter' 
   endif
   !
-  ! inverse transform
+  ! transform with the inverse inertia tensor
   !
   mat = 0
   !
@@ -130,11 +128,17 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
     !
   endif
   !
-  mat(1,1) = 1.0_ark/cos(0.5_ark*rho)**2 * (-1.0_ark)/(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2)
-  mat(2,2) = 1.0_ark
-  mat(3,3) = rho2_over_sinrho2 * (-1.0_ark)/(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2)
-  mat(1,3) = rho_over_sinrho * ( 4.0_ark*(r1-r2) )/( (r1+r2)*(3.0_ark*(r1-r2)**2-4.0_ark*r1*r2) )
-  mat(3,1) = mat(1,3) 
+  ! inverse tensor of inertia
+  !
+  mO = molec%atomMasses(1) ! masses used in the fitting for H2O: mO = 15.994914630, mH = 1.007825035
+  mH = molec%atomMasses(2)
+  !
+  mat = 0
+  mat(1,1) = ((mH*(r1 - r2)**2 + mO*(r1**2 + r2**2))*(1.0_ark/Cos(rho*0.5_ark))**2)/(4.0_ark*mH*mO*r1**2*r2**2)
+  mat(1,3) = ((mH + mO)*(r1**2 - r2**2)*rho_over_sinrho)/(2.0_ark*mH*mO*r1**2*r2**2)
+  mat(2,2) = (2.0_ark*mH + mO)/(mH*((mH + mO)*(r1**2 + r2**2) + 2.0_ark*mH*r1*r2*Cos(rho)))
+  mat(3,1) = mat(1,3)
+  mat(3,3) = ((mH*(r1 + r2)**2 + mO*(r1**2 + r2**2))*rho2_over_sinrho2)/(4.0_ark*mH*mO*r1**2*r2**2)
   !
   !1,1
   c_out(1,0)  = mat(1,1)*c(1,1)
