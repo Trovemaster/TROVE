@@ -1,4 +1,4 @@
-#define fwig 0 
+#define fwig 1 
 
 module rotme_cart_tens
 
