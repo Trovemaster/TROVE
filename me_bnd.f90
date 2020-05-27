@@ -2930,7 +2930,7 @@ module me_bnd
          if (k==0) then
             dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)
          else
-            dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)**(k-1)+L(:,vl)*real(k-1,rk)*sinrho(:)**(k-1)*cosrho(:)
+            dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)**(k-2)+L(:,vl)*real(k-1,rk)*sinrho(:)**(k-3)*cosrho(:)
          endif
          !
        enddo
