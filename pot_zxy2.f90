@@ -2444,21 +2444,33 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     !
     integer(ik)      :: i,imu,iterm,lwork,info,nsv
     real(ark)        :: x(molec%natoms,3),r_CO,r_CH1,r_CH2,a_H1CO,a_H2CO,tau,re_CO(3),re_CH(3),ae_HCO(3),&
-                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho,costheta,costau,tmat_ark(3,3),dip0(3)
+                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho,costheta,costau,tmat_ark(3,3),&
+                        dip0(3),xyz0(natoms,3)
     double precision :: tmat(3,3),dipd(3,1),work(64*3),sv(3),svtol
     !
     real(ark)        :: x0(molec%natoms,3)
     !
-    ! C atom is in the origin
     !
-    !
-    forall(i=1:4) x(i,1:3)=xyz(i,1:3)-xyz(1,1:3) ! 1:C  2:O  3:H1  4:H2
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_zxy2(local)
+      !
+      forall(i=1:4) x(i,1:3)=xyz0(i,1:3)-xyz0(1,1:3) ! 1:C  2:O  3:H1  4:H2
+      !
+    else
+      !
+      ! C atom is in the origin
+      !
+      forall(i=1:4) x(i,1:3)=xyz(i,1:3)-xyz(1,1:3) ! 1:C  2:O  3:H1  4:H2
+      !
+    endif
     !
 !x0(1,1)=	1.09571974	;		x0(1,2)=	-0.00005285	;	x0(1,3)=	-0.10870311	;
 !x0(2,1)=	-1.09216296	;		x0(2,2)=	-0.010405	;	x0(2,3)=	0.0265336	;
 !x0(3,1)=	1.98402007	;		x0(3,2)=	1.76078934	;	x0(3,3)=	0.41631981	;
 !x0(4,1)=	2.30285151	;		x0(4,2)=	-1.59502514	;	x0(4,3)=	0.45688199	;
-
+!
 !
 !x0 = x0*bohr
 !
@@ -2771,5 +2783,53 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
     if (verbose>=6) write(out,"('MLpoten_SOHF/end')") 
  
  end function MLpoten_SOHF
+ !
+
+
+ function MLloc2pqr_zxy2(r) result(f)
+
+ !return cartesian coordinates of atoms in the user-defined frame for locals specified
+
+    real(ark), intent(in) :: r(molec%ncoords)
+    real(ark)             :: f(molec%natoms, 3)
+
+    integer(ik)           :: icart
+    real(ark)             :: a0(molec%natoms, 3), cm,alpha1,alpha2,tau_2
+
+    a0 = 0    !
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau_2 = r(6)*0.5_ark
+    !
+    select case(trim(molec%coords_transform))
+       !
+    case('R-THETA-TAU')
+       ! 
+       a0(2,3) = r(1)
+       !
+       a0(3,1) = r(2)*sin(alpha1)*cos(tau_2)
+       a0(3,2) =-r(2)*sin(alpha1)*sin(tau_2)
+       a0(3,3) = r(2)*cos(alpha1)
+       !
+       a0(4,1) = r(3)*sin(alpha2)*cos(tau_2)
+       a0(4,2) = r(3)*sin(alpha2)*sin(tau_2)
+       a0(4,3) = r(3)*cos(alpha2)
+       !
+    case default 
+       write(out,"('MLloc2pqr_xy2: illegal coordinate type',a)") trim(molec%coords_transform)
+       stop 'MLloc2pqr_xy2: illegal coordinate type'
+    end select
+    
+    do icart = 1, 3
+       cm = sum(a0(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
+       a0(1:molec%natoms, icart) = a0(1:molec%natoms, icart) - cm
+    end do
+    !
+    f(1:molec%natoms, 1:3) = a0(1:molec%natoms, 1:3)
+    !
+ end function MLloc2pqr_zxy2
+
+
+
   !
 end module pot_zxy2

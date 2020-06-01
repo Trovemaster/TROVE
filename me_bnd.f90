@@ -2956,24 +2956,24 @@ module me_bnd
          L(:,vl)  =  L(:,vl)*factor
          dL(:,vl) = dL(:,vl)*factor
          !
-         do vr = vl+1,nmax
+         do vr = 0,vl-1
            !
            phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
            cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
            !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
            !
-           psi(vr+1,:) = psi(vr+1,:)-cross_prod*psi(vl+1,:)
+           psi(vl+1,:) = psi(vl+1,:)-cross_prod*psi(vr+1,:)
            !
-           phivphi(:) = psi(vr+1,:)*psi(vr+1,:)
+           phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
            factor = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
            !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
            !
            factor = 1.0_ark/sqrt(factor)
-           psi(vr+1,:) = psi(vr+1,:)*factor
-           L(:,vr)   = ( L(:,vr)-cross_prod* L(:,vl))*factor
-           dL(:,vr)  = (dL(:,vr)-cross_prod*dL(:,vl))*factor
+           psi(vl+1,:) = psi(vl+1,:)*factor
+           L(:,vl)   = ( L(:,vl)-cross_prod* L(:,vr))*factor
+           dL(:,vl)  = (dL(:,vl)-cross_prod*dL(:,vr))*factor
            ! 
          enddo
          !
@@ -3018,7 +3018,7 @@ module me_bnd
               !
               ! momenta-quadratic part 
               !
-              phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)*rho(:)
+              phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)*sinrho(:)
               !
               !phivphi(:) =-mu_rr(:)*( dphil(:)*dphir(:)*rho_m(:)- &
               !                        cosrho(:)*real(k,ark)*( dphil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
@@ -3029,7 +3029,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*rho(:)
+                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -3129,7 +3129,7 @@ module me_bnd
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
               ! obtained above by the Numerov
               !
-              phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = phil(:)*poten(:)*phir(:)*sinrho(:)*rho_m(:)**2
               !
               h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
@@ -3140,7 +3140,7 @@ module me_bnd
               !
               ! momenta-quadratic part 
               !
-              phivphi(:) =-mu_rr(:)*dphil(:)*dphir(:)*rho(:)
+              phivphi(:) =-mu_rr(:)*dphil(:)*dphir(:)*sinrho(:)
               !
               mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
@@ -3148,7 +3148,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*rho(:)
+                phivphi = real(k*k,ark)*mu_zz(:)*phil(:)*phir(:)*sinrho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !

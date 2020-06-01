@@ -17297,7 +17297,7 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),mrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
+             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
              if (alloc/=0) then
                 write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
                 stop 'FLbset1DNew, muzz - out of memory'
@@ -17966,7 +17966,6 @@ end subroutine check_read_save_none
              deallocate (phivphi_t,phil,phir,dphil,dphir,phil_leg,phir_leg,phil_sin,phir_sin,dphil_leg,dphir_leg)
              !$omp end parallel 
              !
-
            elseif (trim(bs%type)=='SINRHO-MUZZ') then
              !
              if (job%verbose>=4) then 
@@ -18279,19 +18278,6 @@ end subroutine check_read_save_none
                                 11.0_rk*real(trove%Npoints+1,rk)/1024.0_rk**3
              endif
              !
-             !do i = 0,npoints
-             !   rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-             !   !
-             !   if (rho>0.5_ark*pi) then
-             !     sinrho(i) = 1.0_ark
-             !     cosrho(i) = 0
-             !   else
-             !     sinrho(i) = sin(rho)
-             !     cosrho(i) = cos(rho)
-             !   endif
-             !   !
-             !enddo
-             !
              write(unitfname,"('Numerov basis set # ',i6)") nu_i
              call IOStart(trim(unitfname),io_slot)
              !
@@ -18304,9 +18290,6 @@ end subroutine check_read_save_none
                 write (out,"(' FLbset1DNew error ',i9,' trying to allocate 11 arrays phivphi_t,phi, etc')") alloc_p
                 stop 'FLbset1DNew, phivphi_t  - out of memory'
              end if
-
-
-
              !
              !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
              do vl = 0,bs%Size
@@ -18338,7 +18321,7 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+sinrho(:)*dphir_leg(:)
+                    dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
                     !
                     !dphir(:) = 0.5_ark*phir_sin(:)+mrho(:)*dphir_leg(:)
                     !
@@ -18603,7 +18586,7 @@ end subroutine check_read_save_none
              deallocate (phivphi_t,phil,phir,dphil,dphir,phil_leg,phir_leg,phil_sin,phir_sin,dphil_leg,dphir_leg)
              !$omp end parallel
              !
-             deallocate(mrho,stat=alloc_p)
+             deallocate(mrho,sinrho,cosrho,stat=alloc_p)
              !
            elseif (trim(bs%type)=='LAGUERRE-K') then
              !
