@@ -181,8 +181,8 @@ module kin_xy2
      g_rot(3,1,6) = -0.5_ark*(mX+mY)/(mX*mY)
      !
      g_rot(3,3,4) = cos(rho_2)**2*(mX+mY)/(mX*mY)
-     g_rot(3,3,5) = cos(rho_2)**2*(mX+mY)/(mX*mY)
-     g_rot(3,3,6) = 2.0_ark*cos(rho_2)**2/mX
+     g_rot(3,3,6) = cos(rho_2)**2*(mX+mY)/(mX*mY)
+     g_rot(3,3,5) = 2.0_ark*cos(rho_2)**2/mX
      !
    end subroutine  MLkinetic_xy2_bisect_EKE_sinrho
 

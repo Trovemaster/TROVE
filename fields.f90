@@ -18306,7 +18306,7 @@ end subroutine check_read_save_none
                 !
                 ! dphil(:) = 0.5_ark*phil_sin(:)+mrho(:)*dphil_leg(:)
                 !
-                dphil(:) = cosrho(:)*0.5_ark*phil_leg(:)+mrho(:)*dphil_leg(:)
+                dphil(:) = cosrho(:)*0.5_ark*phil_sin(:)+mrho(:)*dphil_leg(:)
                 !
                 do vr = 0,bs%Size
                     !
@@ -18321,7 +18321,7 @@ end subroutine check_read_save_none
                     !
                     phir_sin(:) = phir_leg(:)*mrho**k_r
                     phir(:) = sqrt(mrho(:))*phir_sin(:)
-                    dphir(:) = cosrho(:)*0.5_ark*phir_leg(:)+mrho(:)*dphir_leg(:)
+                    dphir(:) = cosrho(:)*0.5_ark*phir_sin(:)+mrho(:)*dphir_leg(:)
                     !
                     !dphir(:) = 0.5_ark*phir_sin(:)+mrho(:)*dphir_leg(:)
                     !
