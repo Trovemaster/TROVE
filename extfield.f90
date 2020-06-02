@@ -93,6 +93,15 @@ subroutine emf_matelem
 
     call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
 
+  case('SPINSPIN')
+    tens%func => rotme_spinrot
+    dj = 2
+    call tens%init(jmin, jmax, dj, verbose=.true.)
+
+    call read_vibme_rank2
+
+    call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
+
   case('ALPHA')
     tens%func => rotme_alpha
     dj = 2
