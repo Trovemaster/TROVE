@@ -2923,16 +2923,24 @@ module me_bnd
        !
        do vl =  0,nmax
          !
+         ! L = chi = Polynom x sin(rho)^(k-1)
+         !
          L(:,vl) = x(:)**vl
          !
          if (k>0) L(:,vl) = L(:,vl)*sinrho(:)**(k-1)
          !
-         if (k==0) then
-            dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
-         elseif(k==1) then
-            dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
-         else
-            dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)**(k)+real(k-1,rk)*sinrho(:)**(k-2)*x(:)**(vl+1)
+         ! dL is the derivative of chi = L x sinrho^(k-1) 
+         !
+         dL(:,vl) = 0
+         !
+         if (vl/=0) then 
+           !
+           dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
+           !
+         endif
+         !
+         if (k>1) then
+            dL(:,vl) = dL(:,vl)+real(k-1,rk)*sinrho(:)**(k-2)*x(:)**(vl+1)
          endif
          !
        enddo
@@ -2987,6 +2995,7 @@ module me_bnd
           phil(:)  = L(:,vl)*sqrt(sinrho(:))*rho_m(:)
           phil_s(:)= L(:,vl)*rho_m(:)
           !
+          ! derivative of phi = sinrho x chi
           dphil(:) = dL(:,vl)*rho_m(:)
           if (k>0) dphil(:) = dphil(:) + L(:,vl)*cosrho(:)
           !
@@ -3091,7 +3100,6 @@ module me_bnd
           do vl = 0,nmax
              !
              phi_rho(vl+1)  = L(i,vl)
-             !dphi_rho(vl+1) = dL(i,vl)
              dphi_rho(vl+1) = dL(i,vl)*rho_m(i)
              if (k>0) dphi_rho(vl+1) = dphi_rho(vl+1) + L(i,vl)*cosrho(i)
              !
