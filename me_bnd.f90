@@ -2795,7 +2795,7 @@ module me_bnd
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
    real(ark),allocatable :: phil_s(:),phir_s(:)
-   real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
+   real(ark),allocatable :: chi(:,:),dPhi(:,:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
                             phi_rho(:),dphi_rho(:),rho_m(:)
    real(ark),allocatable  :: h(:,:),ener(:)
    !
@@ -2885,7 +2885,7 @@ module me_bnd
      !
      nmax1 = nmax+1
      !
-     allocate(h(nmax1,nmax1),ener(nmax1),phi(nmax1),dphi(nmax1),vect(nmax1,nmax1),stat=alloc)
+     allocate(h(nmax1,nmax1),ener(nmax1),phi(nmax1),vect(nmax1,nmax1),stat=alloc)
      call ArrayStart('h-sinrho',alloc,size(h),kind(h))
      call ArrayStart('h-sinrho',alloc,size(ener),kind(ener))
      call ArrayStart('h-sinrho',alloc,size(vect),kind(vect))
@@ -2901,6 +2901,10 @@ module me_bnd
      allocate(dphi_rho(nmax1),stat=alloc)
      call ArrayStart('psi-sinrho',alloc,size(dphi_rho),kind(dphi_rho))     
      !
+     allocate(chi(0:npoints,0:nmax),dPhi(0:npoints,0:nmax),stat=alloc)
+     call ArrayStart('sinrho',alloc,size(chi),kind(chi))
+     call ArrayStart('sinrho',alloc,size(dPhi),kind(dPhi))
+     !
      ! start a large loop over k
      !
      loop_k : do k = 0,kmax
@@ -2910,44 +2914,40 @@ module me_bnd
        rho_m = 1.0_ark         ! factor for K = 0
        if (k>0) rho_m = sinrho ! factor for all K>0
        !
-       allocate(L(0:npoints,0:nmax),dL(0:npoints,0:nmax),stat=alloc)
-       call ArrayStart('sinrho',alloc,size(L),kind(L))
-       call ArrayStart('sinrho',alloc,size(dL),kind(dL))
-       !
        ! Generate polynomial sqrt(sin(rho))*sin(rho)^k*L^k_n by orthogonalising L^k_n = cos(rho)^n
        !
        ! for the expansion coefficients of the polynomial wrt x = cos(rho) and we start with a diagonal form
        !
-       L = 0
-       dL = 0
+       chi = 0
+       dPhi = 0
        !
        do vl =  0,nmax
          !
          ! L = chi = Polynom x sin(rho)^(k-1)
          !
-         L(:,vl) = x(:)**vl
+         chi(:,vl) = x(:)**vl
          !
-         if (k>0) L(:,vl) = L(:,vl)*sinrho(:)**(k-1)
+         if (k>0) chi(:,vl) = chi(:,vl)*sinrho(:)**(k-1)
          !
-         ! dL is the derivative of chi = L x sinrho^(k-1) 
+         ! dphi is the derivative of phi = L x sinrho^k
          !
-         dL(:,vl) = 0
+         dPhi(:,vl) = 0
          !
          if (vl/=0) then 
            !
-           dL(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
+           dPhi(:,vl) = -real(vl,ark)*x(:)**(vl-1)*sinrho(:)
            !
          endif
          !
-         if (k>1) then
-            dL(:,vl) = dL(:,vl)+real(k-1,rk)*sinrho(:)**(k-2)*x(:)**(vl+1)
+         if (k>0) then
+            dPhi(:,vl) = dPhi(:,vl)+real(k,rk)*sinrho(:)**(k-1)*x(:)**(vl+1)
          endif
          !
        enddo
        !
        do vl =  0,nmax
          !
-         Psi(vl+1,:) = L(:,vl)*sqrt(sinrho(:))*rho_m(:)
+         Psi(vl+1,:) = chi(:,vl)*sqrt(sinrho(:))*rho_m(:)
          !
        enddo
        !
@@ -2963,8 +2963,8 @@ module me_bnd
          factor = 1.0_ark/sqrt(cross_prod)
          !
          psi(vl+1,:) = psi(vl+1,:)*factor
-         L(:,vl)  =  L(:,vl)*factor
-         dL(:,vl) = dL(:,vl)*factor
+         chi(:,vl)  =  chi(:,vl)*factor
+         dPhi(:,vl) = dPhi(:,vl)*factor
          !
          do vr = 0,vl-1
            !
@@ -2982,8 +2982,8 @@ module me_bnd
            !
            factor = 1.0_ark/sqrt(factor)
            psi(vl+1,:) = psi(vl+1,:)*factor
-           L(:,vl)   = ( L(:,vl)-cross_prod* L(:,vr))*factor
-           dL(:,vl)  = (dL(:,vl)-cross_prod*dL(:,vr))*factor
+           chi(:,vl)   = ( chi(:,vl)-cross_prod* chi(:,vr))*factor
+           dPhi(:,vl)  = (dPhi(:,vl)-cross_prod*dPhi(:,vr))*factor
            ! 
          enddo
          !
@@ -2992,20 +2992,20 @@ module me_bnd
        !
        do vl = 0,nmax
           !
-          phil(:)  = L(:,vl)*sqrt(sinrho(:))*rho_m(:)
-          phil_s(:)= L(:,vl)*rho_m(:)
+          phil(:)  = chi(:,vl)*sqrt(sinrho(:))*rho_m(:)
+          phil_s(:)= chi(:,vl)*rho_m(:)
           !
           ! derivative of phi = sinrho x chi
-          dphil(:) = dL(:,vl)*rho_m(:)
-          if (k>0) dphil(:) = dphil(:) + L(:,vl)*cosrho(:)
+          dphil(:) = dPhi(:,vl)
+          !if (k>0) dphil(:) = dphil(:) + chi(:,vl)*cosrho(:)
           !
           do vr = vl,nmax
               !
-              phir(:)  = L(:,vr)*sqrt(sinrho(:))*rho_m(:)
-              phir_s(:)= L(:,vr)*rho_m(:)
+              phir(:)  = chi(:,vr)*sqrt(sinrho(:))*rho_m(:)
+              phir_s(:)= chi(:,vr)*rho_m(:)
               !
-              dphir(:) = dL(:,vr)*rho_m(:)
-              if (k>0) dphir(:) = dphir(:) + L(:,vr)*cosrho(:)
+              dphir(:) = dPhi(:,vr)
+              !if (k>0) dphir(:) = dphir(:) + chi(:,vr)*cosrho(:)
               !
               ! check orthagonality and normalisation
               !
@@ -3040,7 +3040,7 @@ module me_bnd
               !
               if (k>0) then 
                 !
-                phivphi = real(k*k,ark)*mu_zz(:)*L(:,vl)*L(:,vr)*sinrho(:)
+                phivphi = real(k*k,ark)*mu_zz(:)*chi(:,vl)*chi(:,vr)*sinrho(:)
                 !
                 mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
@@ -3099,9 +3099,9 @@ module me_bnd
           !
           do vl = 0,nmax
              !
-             phi_rho(vl+1)  = L(i,vl)
-             dphi_rho(vl+1) = dL(i,vl)*rho_m(i)
-             if (k>0) dphi_rho(vl+1) = dphi_rho(vl+1) + L(i,vl)*cosrho(i)
+             phi_rho(vl+1)  = chi(i,vl)
+             dphi_rho(vl+1) = dPhi(i,vl)
+             !if (k>0) dphi_rho(vl+1) = dphi_rho(vl+1) + chi(i,vl)*cosrho(i)
              !
           enddo
           !
@@ -3307,14 +3307,13 @@ module me_bnd
           !
        enddo
        !
-       deallocate(L,dL)
-       call ArrayStop('sinrho')
-       !
      enddo loop_k
      !
      ! cleanup
      !
-     deallocate(h,ener,phi,dphi,vect)
+     deallocate(chi,dPhi)
+     call ArrayStop('sinrho')
+     deallocate(h,ener,phi,vect)
      call ArrayStop('h-sinrho')
      call ArrayStop('sinrho-phi')
      deallocate(psi,dpsi,phi_rho,dphi_rho)
