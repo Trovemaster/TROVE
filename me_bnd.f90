@@ -4074,13 +4074,13 @@ module me_bnd
        !
        do vl =  0,nmax
            !
-           factor = exp(faclog(vl+k))
+           factor = exp(faclog(vl)-faclog(vl+k))
            !
-           C_l = sqrt(2.0_ark*sqrt(f_m)/factor)
+           C_l = sqrt(2.0_ark*factor)
            !
            !f(:,i) = sqrt(x(:)**(alpha))*exp(-0.5_ark*x(:))*cx(:,i)/fnorm
            !
-           L(:,vl)  =  L(:,vl)*exp(-0.5_ark*x(:))*C_l*sqrt(sqrt(f_m))**(2*k+1)
+           L(:,vl)  =  L(:,vl)*exp(-0.5_ark*x(:))*C_l*(sqrt(f_m))**(k+1)
            !
            if (k>0) L(:,vl)  =  L(:,vl)*rho(:)**(k-1)
            !
@@ -4111,7 +4111,7 @@ module me_bnd
          L(:,vl)  =  L(:,vl)*factor
          dL(:,vl) = dL(:,vl)*factor
          !
-         do vr = vl+1,nmax
+         do vr = 0,vl-1
            !
            phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
            cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
