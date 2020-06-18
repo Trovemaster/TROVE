@@ -1009,18 +1009,17 @@ end subroutine read_vibme_rank2
 
 
 ! Reads vibrational matrix elements of spin-rotational tensor for XY2 quasilinear molecule.
-! The order of elements is:
-! Cxx, Cxx/rho, Cxz, Cxz/rho, Cyy, Czx/rho, Czx/rho^2, Czz/rho, Czz/rho2
+! The order of elements is: Cxx, Cxz/rho, Cyy, Czx, Czz/rho
 
 subroutine read_vibme_spinrot_xy2()
 
-  integer(ik), parameter :: nelem=9, nelem_s=9
+  integer(ik), parameter :: nelem=9, nelem_s=5
   integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j
   character(len=20) :: buf20
   character(cl) :: job_is
   real(rk), allocatable :: me(:,:,:)
 
-  write(out, '(/a,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
+  write(out, '(/a,1x,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
       trim(job%extFmat_file)
 
   ! first read from file tensor elements that correspond to different Cartesian
@@ -1089,15 +1088,17 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me = 0.0
 
   ! for order of Cartesian elements in extf_vib_me, see rotme_spinrot in rotme_cart_tens.f90
-  extf_vib_me(1,:,:) = sum(me(1:2,:,:), dim=1) ! xx
-  extf_vib_me(2,:,:) = 0                       ! xy
-  extf_vib_me(3,:,:) = sum(me(3:4,:,:), dim=1) ! xz
-  extf_vib_me(4,:,:) = 0                       ! yx
-  extf_vib_me(5,:,:) = me(5,:,:)               ! yy
-  extf_vib_me(6,:,:) = 0                       ! yz
-  extf_vib_me(7,:,:) = sum(me(6:7,:,:), dim=1) ! zx
-  extf_vib_me(8,:,:) = 0                       ! zy
-  extf_vib_me(9,:,:) = sum(me(8:9,:,:), dim=1) ! zz
+  extf_vib_me(1,:,:) = me(1,:,:) ! xx
+  extf_vib_me(2,:,:) = 0         ! xy
+  extf_vib_me(3,:,:) = me(2,:,:) ! xz
+  extf_vib_me(4,:,:) = 0         ! yx
+  extf_vib_me(5,:,:) = me(3,:,:) ! yy
+  extf_vib_me(6,:,:) = 0         ! yz
+  extf_vib_me(7,:,:) = me(4,:,:) ! zx
+  extf_vib_me(8,:,:) = 0         ! zy
+  extf_vib_me(9,:,:) = me(5,:,:) ! zz
+
+  !call check_extf_vib_me
 
   deallocate(me)
 
