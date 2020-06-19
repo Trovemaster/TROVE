@@ -1,20 +1,4 @@
 ! Contains external functions for spin-rotation tensor of XY2-type molecule.
-!
-! 1. prop_xy2_spin_rotation_bisector - to be used for quasi-linear molecules, where some of the
-!    elements of spin-rotation tensor become singular at geometries close to linear geometry.
-!    This happens is because the spin-rotation tensor depends on the inverse of the moments of
-!    inertia tensor, which becomes singular at the linear geometry. In this case the ab initio
-!    computed spin-rotation tensor is multiplied with the inertia tensor (that cancels out singularity)
-!    and then least-squares-fitted by analytical functions. Here, the fitted tensor is transformed
-!    back into the original (singular) form and the singular elements are treated separately.
-!    For details, see the work on ortho-para transitions in water.
-!
-! 2. prop_xy2_spin_rotation_bisector_nonlin - to be used for non-linear molecules, like H2S.
-!    At near-linear geometries the subroutine has unpredictable behaviour since
-!    the analytical functions were not fitted to near-linear geometry data points.
-!    This function was created and tested for spin-rotaiton tensor of H2S molecule.
-!    For details, see the work on ortho-para conversion in rotational cluster states
-!    of H2S (and D2S) and polarization of the nuclear-spin density.
 
 module prop_xy2_spinrot
   use accuracy
@@ -25,10 +9,140 @@ module prop_xy2_spinrot
   implicit none
 
   public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
-         TEST_prop_xy2_spin_rotation_bisector_nonlin
+         TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector
 
 
 contains
+
+
+! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector
+! frame, where some of the elements become singular at linear geometry.
+
+subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
+  !
+  implicit none 
+  !
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+  integer(ik) :: iatom
+  !
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, a, b, c, d
+  real(ark) :: g(3,3), mat(3,3), g_out(5,-2:0), e1(3), e2(3), e3(3), x(natoms,3), mY, mX
+  real(ark) :: rho_over_sinrho, rho2_over_sinrho, rho2_over_sin2rhohalf
+  real(ark),parameter  :: rho_threshold = 0.01_rk
+  integer(ik) :: icentre
+  !
+  if (rank/=5) then
+    write(out, '(/a,1x,i3,1x,a)') &
+      'prop_xy2_gtensor_bisector: rank of the input tensor =', rank, ', expected 5'
+    stop
+  endif
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_gtensor_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_gtensor_bisector - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+  !
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+  !
+  e1 = xyz_(2,:)/r1
+  e2 = xyz_(3,:)/r2
+  !
+  alpha = aacos(sum(e1*e2))
+  !
+  rho = pi-alpha
+  !
+  ! fitted tensor elements
+  !
+  g = 0
+  !
+  g(1,1) = fit_xy2_sr_A1(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r1, r2, alpha/))
+  g(2,2) = fit_xy2_sr_A1(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r1, r2, alpha/))
+  g(3,3) = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r1, r2, alpha/))
+  g(1,3) = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r1, r2, alpha/))
+  g(3,1) = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r1, r2, alpha/))
+  !
+  ! transform with the inverse inertia tensor
+  !
+  if (rho>rho_threshold) then
+    !
+    rho_over_sinrho = rho/sin(rho)
+    rho2_over_sinrho = rho**2/sin(rho)
+    rho2_over_sin2rhohalf = rho**2/sin(rho*0.5_ark)**2
+    !
+  else
+    !
+    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7*rho**4)/360.0_ark + (31*rho**6)/15120.0_ark &
+                    + (127*rho**8)/604800.0_ark + (73*rho**10)/3.42144e6_ark
+    rho2_over_sinrho = rho + rho**3/6.0_ark + (7*rho**5)/360.0_ark + (31*rho**7)/15120.0_ark &
+                     + (127*rho**9)/604800.0_ark
+    rho2_over_sin2rhohalf = 4 + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+                          + rho**8/43200.0_ark + rho**10/1.33056e6_ark
+    !
+  endif
+  !
+  ! inverse tensor of inertia
+  !
+  mX = molec%atomMasses(1)
+  mY = molec%atomMasses(2)
+  ! I^-1 = [[a,0,b/sin(rho)],[0,c,0],[b/sin(rho),0,d/sin(rho/2)^2]]
+  a = ((mY*(r1 - r2)**2 + mX*(r1**2 + r2**2))*(1.0_ark/cos(rho/2.0_ark))**2)/(4.0_ark*mY*mX*r1**2*r2**2)
+  b = ((mY + mX)*(r1**2 - r2**2))/(2.0_ark*mY*mX*r1**2*r2**2)
+  c = (2*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2*mY*r1*r2*cos(rho)))
+  d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
+  !
+  ! 1,1
+  g_out(1,0) = g(1,1)*a + g(1,3)*b*rho_over_sinrho
+  g_out(1,-1) = 0
+  g_out(1,-2) = 0
+  !
+  ! 1,3
+  g_out(2,0) = 0
+  g_out(2,-1) = g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
+  g_out(2,-2) = 0
+  !
+  ! 2,2
+  g_out(3,0) = g(2,2)*c
+  g_out(3,-1) = 0
+  g_out(3,-2) = 0
+  !
+  ! 3,1
+  g_out(4,0) = g(3,1)*a*rho + g(3,3)*b*rho_over_sinrho
+  g_out(4,-1) = 0
+  g_out(4,-2) = 0
+  !
+  ! 3,3
+  g_out(5,0) = 0
+  g_out(5,-1) = g(3,3)*d*rho2_over_sin2rhohalf + g(3,1)*b*rho2_over_sinrho
+  g_out(5,-2) = 0
+  !
+  f = (/g_out(1,0), g_out(2,-1), g_out(3,0), g_out(4,0), g_out(5,-1)/)
+  !
+end subroutine prop_xy2_gtensor_bisector
+
+
+!###################################################################################################
 
 
 ! Spin-rotation tensor for quasi-linear molecule, like H2O, in the bisector
@@ -235,6 +349,108 @@ function fit_xy2_sr_rhopow_min_one(nparams, params, coords) result(f)
   f = f0 + f1 + f2 + f3
 
 end function fit_xy2_sr_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function fit_xy2_sr_A1(nparams, params, coords) result(f)
+
+  integer(ik), intent(in) :: nparams
+  real(ark), intent(in) :: params(nparams), coords(3)
+  real(ark) :: f
+
+  real(ark) :: y1, y2, y3, alpha, rho, rad, f0, f1, f2, f3, req, alphaeq, beta, rhoe
+
+  rad = pi/180.0_ark
+
+  req     = params(1)
+  alphaeq = params(2)*rad ! obsolete
+  beta    = params(3)
+
+  y1     = (coords(1)-req) *exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) *exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  rhoe   = pi - alphaeq
+  y3     = rho
+
+  f0 = params(4)
+  f1 = xy2_func_a1_n1_d6( (/y1,y2,y3/), params(5:16)  )  ! nparams = 12
+  f2 = xy2_func_a1_n2_d6( (/y1,y2,y3/), params(17:40) )  ! nparams = 24
+  f3 = xy2_func_a1_n3_d6( (/y1,y2,y3/), params(41:53) )  ! nparams = 13
+
+  f = f0 + f1 + f2 + f3
+
+end function fit_xy2_sr_A1
+
+
+!###################################################################################################
+
+
+function fit_xy2_sr_A1_rhopow_min_one(nparams, params, coords) result(f)
+
+  integer(ik), intent(in) :: nparams
+  real(ark), intent(in) :: params(nparams), coords(3)
+  real(ark) :: f
+
+  real(ark) :: y1, y2, y3, alpha, rho, rad, f0, f1, f2, f3, req, alphaeq, beta, rhoe
+
+  rad = pi/180.0_ark
+
+  req     = params(1)
+  alphaeq = params(2)*rad ! obsolete
+  beta    = params(3)
+
+  y1     = (coords(1)-req) *exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) *exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  rhoe   = pi - alphaeq
+  y3     = rho
+
+  f0 = params(4)
+  f1 = xy2_func_a1_n1_d6_rhopow_min_one( (/y1,y2,y3/), params(5:16)  )  ! nparams = 12
+  f2 = xy2_func_a1_n2_d6_rhopow_min_one( (/y1,y2,y3/), params(17:40) )  ! nparams = 24
+  f3 = xy2_func_a1_n3_d6_rhopow_min_one( (/y1,y2,y3/), params(41:53) )  ! nparams = 13
+
+  f = f0 + f1 + f2 + f3
+
+end function fit_xy2_sr_A1_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function fit_xy2_sr_B2_rhopow_min_one(nparams, params, coords) result(f)
+
+  integer(ik), intent(in) :: nparams
+  real(ark), intent(in) :: params(nparams), coords(3)
+  real(ark) :: f
+
+  real(ark) :: y1, y2, y3, alpha, rho, rad, f0, f1, f2, f3, req, alphaeq, beta, rhoe
+
+  rad = pi/180.0_ark
+
+  req     = params(1)
+  alphaeq = params(2)*rad ! obsolete
+  beta    = params(3)
+
+  y1     = (coords(1)-req) *exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) *exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  rhoe   = pi - alphaeq
+  y3     = rho
+
+  f0 = params(4)
+  f1 = xy2_func_b2_n1_d6_rhopow_min_one((/y1,y2,y3/), params(5:10))    ! nparams = 6
+  f2 = xy2_func_b2_n2_d6_rhopow_min_one((/y1,y2,y3/), params(11:32))   ! nparams = 22
+  f3 = xy2_func_b2_n3_d6_rhopow_min_one((/y1,y2,y3/), params(33:44))   ! nparams = 12
+
+  f = f0 + f1 + f2 + f3
+
+end function fit_xy2_sr_B2_rhopow_min_one
 
 
 !###################################################################################################
@@ -673,6 +889,376 @@ f(19) = r1**3*r2**2
 f(20) = r1**4*r2
 v = sum(f*params)
 end function xy2_func_n3_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n1_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(12)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(12)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1 + r2
+f(2) = r1**2 + r2**2
+f(3) = r1**3 + r2**3
+f(4) = r1**4 + r2**4
+f(5) = r1**5 + r2**5
+f(6) = r1**6 + r2**6
+f(7) = a1
+f(8) = a1**2
+f(9) = a1**3
+f(10) = a1**4
+f(11) = a1**5
+f(12) = a1**6
+v = sum(f*params)
+end function xy2_func_a1_n1_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n2_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(24)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(24)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2
+f(2) = r1*r2*(r1 + r2)
+f(3) = r1*r2*(r1**2 + r2**2)
+f(4) = r1*r2*(r1**3 + r2**3)
+f(5) = r1*r2*(r1**4 + r2**4)
+f(6) = r1**2*r2**2
+f(7) = r1**2*r2**2*(r1 + r2)
+f(8) = r1**2*r2**2*(r1**2 + r2**2)
+f(9) = r1**3*r2**3
+f(10) = a1*(r1 + r2)
+f(11) = a1**2*(r1 + r2)
+f(12) = a1**3*(r1 + r2)
+f(13) = a1**4*(r1 + r2)
+f(14) = a1**5*(r1 + r2)
+f(15) = a1*(r1**2 + r2**2)
+f(16) = a1**2*(r1**2 + r2**2)
+f(17) = a1**3*(r1**2 + r2**2)
+f(18) = a1**4*(r1**2 + r2**2)
+f(19) = a1*(r1**3 + r2**3)
+f(20) = a1**2*(r1**3 + r2**3)
+f(21) = a1**3*(r1**3 + r2**3)
+f(22) = a1*(r1**4 + r2**4)
+f(23) = a1**2*(r1**4 + r2**4)
+f(24) = a1*(r1**5 + r2**5)
+v = sum(f*params)
+end function xy2_func_a1_n2_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n3_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(13)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(13)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = a1*r1*r2
+f(2) = a1**2*r1*r2
+f(3) = a1**3*r1*r2
+f(4) = a1**4*r1*r2
+f(5) = a1*r1*r2*(r1 + r2)
+f(6) = a1**2*r1*r2*(r1 + r2)
+f(7) = a1**3*r1*r2*(r1 + r2)
+f(8) = a1*r1*r2*(r1**2 + r2**2)
+f(9) = a1**2*r1*r2*(r1**2 + r2**2)
+f(10) = a1*r1*r2*(r1**3 + r2**3)
+f(11) = a1*r1**2*r2**2
+f(12) = a1**2*r1**2*r2**2
+f(13) = a1*r1**2*r2**2*(r1 + r2)
+v = sum(f*params)
+end function xy2_func_a1_n3_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n1_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(6)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(6)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = -r1 + r2
+f(2) = r1**2 - r2**2
+f(3) = r1**3 - r2**3
+f(4) = -r1**4 + r2**4
+f(5) = r1**5 - r2**5
+f(6) = -r1**6 + r2**6
+v = sum(f*params)
+end function xy2_func_b2_n1_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n2_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(22)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(22)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2*(r1 - r2)
+f(2) = r1*r2*(-r1**2 + r2**2)
+f(3) = r1*r2*(r1**3 - r2**3)
+f(4) = r1*r2*(r1**4 - r2**4)
+f(5) = r1**2*r2**2*(r1 - r2)
+f(6) = r1**2*r2**2*(r1**2 - r2**2)
+f(7) = r1**2*r2**2*(-r1**2 + r2**2)
+f(8) = a1*(-r1 + r2)
+f(9) = a1**2*(-r1 + r2)
+f(10) = a1**3*(r1 - r2)
+f(11) = a1**4*(r1 - r2)
+f(12) = a1**5*(r1 - r2)
+f(13) = a1*(-r1**2 + r2**2)
+f(14) = a1**2*(-r1**2 + r2**2)
+f(15) = a1**3*(-r1**2 + r2**2)
+f(16) = a1**4*(r1**2 - r2**2)
+f(17) = a1*(-r1**3 + r2**3)
+f(18) = a1**2*(r1**3 - r2**3)
+f(19) = a1**3*(-r1**3 + r2**3)
+f(20) = a1*(r1**4 - r2**4)
+f(21) = a1**2*(-r1**4 + r2**4)
+f(22) = a1*(r1**5 - r2**5)
+v = sum(f*params)
+end function xy2_func_b2_n2_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n3_d6(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(12)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(12)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = a1*r1*r2*(r1 - r2)
+f(2) = a1**2*r1*r2*(r1 - r2)
+f(3) = a1**3*r1*r2*(r1 - r2)
+f(4) = a1*r1*r2*(r1**2 - r2**2)
+f(5) = a1**2*r1*r2*(r1**2 - r2**2)
+f(6) = a1*r1*r2*(-r1**3 + r2**3)
+f(7) = a1*r1*r2*(-r1 + r2)
+f(8) = a1**2*r1*r2*(-r1 + r2)
+f(9) = a1**3*r1*r2*(-r1 + r2)
+f(10) = a1*r1**2*r2**2*(-r1 + r2)
+f(11) = a1*r1*r2*(-r1**2 + r2**2)
+f(12) = a1**2*r1*r2*(-r1**2 + r2**2)
+v = sum(f*params)
+end function xy2_func_b2_n3_d6
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n1_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(12)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(12)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1 + r2
+f(2) = r1**2 + r2**2
+f(3) = r1**3 + r2**3
+f(4) = r1**4 + r2**4
+f(5) = r1**5 + r2**5
+f(6) = r1**6 + r2**6
+f(7) = 1.0_ark
+f(8) = a1**1
+f(9) = a1**2
+f(10) = a1**3
+f(11) = a1**4
+f(12) = a1**5
+v = sum(f*params)
+end function xy2_func_a1_n1_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n2_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(24)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(24)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2
+f(2) = r1*r2*(r1 + r2)
+f(3) = r1*r2*(r1**2 + r2**2)
+f(4) = r1*r2*(r1**3 + r2**3)
+f(5) = r1*r2*(r1**4 + r2**4)
+f(6) = r1**2*r2**2
+f(7) = r1**2*r2**2*(r1 + r2)
+f(8) = r1**2*r2**2*(r1**2 + r2**2)
+f(9) = r1**3*r2**3
+f(10) = (r1 + r2)
+f(11) = a1**1*(r1 + r2)
+f(12) = a1**2*(r1 + r2)
+f(13) = a1**3*(r1 + r2)
+f(14) = a1**4*(r1 + r2)
+f(15) = (r1**2 + r2**2)
+f(16) = a1**1*(r1**2 + r2**2)
+f(17) = a1**2*(r1**2 + r2**2)
+f(18) = a1**3*(r1**2 + r2**2)
+f(19) = (r1**3 + r2**3)
+f(20) = a1**1*(r1**3 + r2**3)
+f(21) = a1**2*(r1**3 + r2**3)
+f(22) = (r1**4 + r2**4)
+f(23) = a1**1*(r1**4 + r2**4)
+f(24) = (r1**5 + r2**5)
+v = sum(f*params)
+end function xy2_func_a1_n2_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_a1_n3_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(13)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(13)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2
+f(2) = a1**1*r1*r2
+f(3) = a1**2*r1*r2
+f(4) = a1**3*r1*r2
+f(5) = r1*r2*(r1 + r2)
+f(6) = a1**1*r1*r2*(r1 + r2)
+f(7) = a1**2*r1*r2*(r1 + r2)
+f(8) = r1*r2*(r1**2 + r2**2)
+f(9) = a1**1*r1*r2*(r1**2 + r2**2)
+f(10) = r1*r2*(r1**3 + r2**3)
+f(11) = r1**2*r2**2
+f(12) = a1**1*r1**2*r2**2
+f(13) = r1**2*r2**2*(r1 + r2)
+v = sum(f*params)
+end function xy2_func_a1_n3_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n1_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(6)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(6)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = -r1 + r2
+f(2) = r1**2 - r2**2
+f(3) = r1**3 - r2**3
+f(4) = -r1**4 + r2**4
+f(5) = r1**5 - r2**5
+f(6) = -r1**6 + r2**6
+v = sum(f*params)
+end function xy2_func_b2_n1_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n2_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(22)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(22)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2*(r1 - r2)
+f(2) = r1*r2*(-r1**2 + r2**2)
+f(3) = r1*r2*(r1**3 - r2**3)
+f(4) = r1*r2*(r1**4 - r2**4)
+f(5) = r1**2*r2**2*(r1 - r2)
+f(6) = r1**2*r2**2*(r1**2 - r2**2)
+f(7) = r1**2*r2**2*(-r1**2 + r2**2)
+f(8) = (-r1 + r2)
+f(9) = a1**1*(-r1 + r2)
+f(10) = a1**2*(r1 - r2)
+f(11) = a1**3*(r1 - r2)
+f(12) = a1**4*(r1 - r2)
+f(13) = (-r1**2 + r2**2)
+f(14) = a1**1*(-r1**2 + r2**2)
+f(15) = a1**2*(-r1**2 + r2**2)
+f(16) = a1**3*(r1**2 - r2**2)
+f(17) = (-r1**3 + r2**3)
+f(18) = a1**1*(r1**3 - r2**3)
+f(19) = a1**2*(-r1**3 + r2**3)
+f(20) = (r1**4 - r2**4)
+f(21) = a1**1*(-r1**4 + r2**4)
+f(22) = (r1**5 - r2**5)
+v = sum(f*params)
+end function xy2_func_b2_n2_d6_rhopow_min_one
+
+
+!###################################################################################################
+
+
+function xy2_func_b2_n3_d6_rhopow_min_one(coords, params) result(v)
+real(ark), intent(in) :: coords(3)
+real(ark), intent(in) :: params(12)
+real(ark) :: v
+real(ark) :: r1,r2,a1
+real(ark) :: f(12)
+r1 = coords(1)
+r2 = coords(2)
+a1 = coords(3)
+f(1) = r1*r2*(r1 - r2)
+f(2) = a1**1*r1*r2*(r1 - r2)
+f(3) = a1**2*r1*r2*(r1 - r2)
+f(4) = r1*r2*(r1**2 - r2**2)
+f(5) = a1**1*r1*r2*(r1**2 - r2**2)
+f(6) = r1*r2*(-r1**3 + r2**3)
+f(7) = r1*r2*(-r1 + r2)
+f(8) = a1**1*r1*r2*(-r1 + r2)
+f(9) = a1**2*r1*r2*(-r1 + r2)
+f(10) = r1**2*r2**2*(-r1 + r2)
+f(11) = r1*r2*(-r1**2 + r2**2)
+f(12) = a1**1*r1*r2*(-r1**2 + r2**2)
+v = sum(f*params)
+end function xy2_func_b2_n3_d6_rhopow_min_one
 
 
 !###################################################################################################
