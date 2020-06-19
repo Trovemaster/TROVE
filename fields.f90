@@ -18552,7 +18552,7 @@ end subroutine check_read_save_none
                            !
                            ! special case of spin-rotational tensor of rank 9
                            !
-                           if (trim(extF%ftype)=='XY2_SR-BISECT') then
+                           if (trim(extF%ftype)=='XY2_SR-BISECT' .or. trim(extF%ftype)=='XY2_G-BISECT') then
                              !
                              if    (nint(extF%coef(1,imu))==-1) then
                                !
@@ -18889,7 +18889,7 @@ end subroutine check_read_save_none
                            !
                            ! special case of spin-rotational tensor of rank 9 
                            !
-                           if (trim(extF%ftype)=='XY2_SR-BISECT') then 
+                           if (trim(extF%ftype)=='XY2_SR-BISECT' .or. trim(extF%ftype)=='XY2_G-BISECT') then 
                              !
                              if    (nint(extF%coef(1,imu))==-1) then 
                                !
