@@ -1802,6 +1802,21 @@ contains
           !enddo
           !!$omp end parallel do
           !
+          if (job%verbose>=6) then 
+            !
+            ! printout extF matrix elements
+            !
+            do iroot=1,Neigenroots
+              do jroot=1,iroot
+                !
+                if (abs(mat_s(iroot,jroot))>job%coeff_thresh) then
+                  write(out,"(2(i4,1x),i8,1x,g18.11,2x,a2)") imu,iroot,jroot,mat_s(iroot,jroot),"||"
+                endif
+                !
+              enddo
+            enddo
+            !
+          endif
           !
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
