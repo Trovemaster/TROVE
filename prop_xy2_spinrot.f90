@@ -93,11 +93,11 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
     !
   else
     !
-    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7*rho**4)/360.0_ark + (31*rho**6)/15120.0_ark &
-                    + (127*rho**8)/604800.0_ark + (73*rho**10)/3.42144e6_ark
-    rho2_over_sinrho = rho + rho**3/6.0_ark + (7*rho**5)/360.0_ark + (31*rho**7)/15120.0_ark &
-                     + (127*rho**9)/604800.0_ark
-    rho2_over_sin2rhohalf = 4 + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7.0_ark*rho**4)/360.0_ark + (31.0_ark*rho**6)/15120.0_ark &
+                    + (127.0_ark*rho**8)/604800.0_ark + (73.0_ark*rho**10)/3.42144e6_ark
+    rho2_over_sinrho = rho + rho**3/6.0_ark + (7.0_ark*rho**5)/360.0_ark + (31.0_ark*rho**7)/15120.0_ark &
+                     + (127._ark*rho**9)/604800.0_ark
+    rho2_over_sin2rhohalf = 4.0_ark + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
                           + rho**8/43200.0_ark + rho**10/1.33056e6_ark
     !
   endif
@@ -236,11 +236,11 @@ subroutine prop_xy2_spin_rotation_bisector(rank, ncoords, natoms, local, xyz, f)
     !
   else
     !
-    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7*rho**4)/360.0_ark + (31*rho**6)/15120.0_ark &
-                    + (127*rho**8)/604800.0_ark + (73*rho**10)/3.42144e6_ark
-    rho2_over_sinrho = rho + rho**3/6.0_ark + (7*rho**5)/360.0_ark + (31*rho**7)/15120.0_ark &
-                     + (127*rho**9)/604800.0_ark
-    rho2_over_sin2rhohalf = 4 + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7.0_ark*rho**4)/360.0_ark + (31.0_ark*rho**6)/15120.0_ark &
+                    + (127.0_ark*rho**8)/604800.0_ark + (73.0_ark*rho**10)/3.42144e6_ark
+    rho2_over_sinrho = rho + rho**3/6.0_ark + (7.0_ark*rho**5)/360.0_ark + (31.0_ark*rho**7)/15120.0_ark &
+                     + (127.0_ark*rho**9)/604800.0_ark
+    rho2_over_sin2rhohalf = 4.0_ark + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
                           + rho**8/43200.0_ark + rho**10/1.33056e6_ark
     !
   endif
