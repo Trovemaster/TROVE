@@ -102,6 +102,17 @@ subroutine emf_matelem
 
     call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
 
+  case('GTENS')
+    tens%func => rotme_spinrot
+    dj = 2
+    call tens%init(jmin, jmax, dj, verbose=.true.)
+
+    if (trim(extF%ftype)=='XY2_G-BISECT') then
+      call read_vibme_spinrot_xy2
+    else
+      call read_vibme_rank2
+    endif
+
   case('ALPHA')
     tens%func => rotme_alpha
     dj = 2
@@ -1098,7 +1109,7 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me(8,:,:) = 0         ! zy
   extf_vib_me(9,:,:) = me(5,:,:) ! zz
 
-  !call check_extf_vib_me
+  call check_extf_vib_me
 
   deallocate(me)
 
