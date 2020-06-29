@@ -18901,6 +18901,12 @@ end subroutine check_read_save_none
                                !
                              endif
                              !
+                           else
+                             !
+                             !if (abs(krot1-krot2)>1) cycle
+                             !if (imu==3.and.krot1/=krot2) cycle
+                             !!if (imu/=3.and.krot1==krot2) cycle
+                             !
                            endif 
                            !
                            mat_t = integral_rect_ark(npoints,rho_range,phivphi_t)
