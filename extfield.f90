@@ -113,6 +113,8 @@ subroutine emf_matelem
       call read_vibme_rank2
     endif
 
+    call rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_tol)
+
   case('ALPHA')
     tens%func => rotme_alpha
     dj = 2
@@ -1109,7 +1111,7 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me(8,:,:) = 0         ! zy
   extf_vib_me(9,:,:) = me(5,:,:) ! zz
 
-  call check_extf_vib_me
+  !call check_extf_vib_me
 
   deallocate(me)
 
@@ -1338,10 +1340,11 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8)') &
+      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8,2x,<nclasses_>(1x,i4))') &
           Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, &
           eigen(ilevel)%quanta(1:nmodes), eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), &
-          eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff
+          eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff, &
+          eigen(ilevel)%cnu(0:nclasses)
     enddo
   enddo
 

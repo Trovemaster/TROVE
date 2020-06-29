@@ -206,6 +206,7 @@ module perturbation
     integer(ik)          :: krot
     integer(ik)          :: taurot
     real(rk)             :: largest_coeff     ! the largest coeff. in the expansion of the eigenvector
+    integer(ik), pointer :: cnu(:)
  end type PTeigenT
 
 
