@@ -2990,6 +2990,7 @@ module perturbation
                trim(bs_t(imode)%type)=='FOURIER'.or.&
                trim(bs_t(imode)%type)=='SINRHO'.or.&
                trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+               trim(bs_t(imode)%type)=='SINC'.or.&
                trim(bs_t(imode)%type)=='LEGENDRE') then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
@@ -3324,6 +3325,7 @@ module perturbation
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
                         trim(bs_t(imode)%type)=='SINRHO'.or.&
                         trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+                        trim(bs_t(imode)%type)=='SINC'.or.&
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
@@ -3921,6 +3923,7 @@ module perturbation
              trim(bs_t(imode)%type)=='FOURIER'.or.&
              trim(bs_t(imode)%type)=='SINRHO'.or.&
              trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+             trim(bs_t(imode)%type)=='SINC'.or.&
              trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            if (PT%Mspecies(imode)/=ispecies) then 
@@ -3937,6 +3940,7 @@ module perturbation
            trim(bs_t(imode)%type)=='FOURIER'.or.&
            trim(bs_t(imode)%type)=='SINRHO'.or.&
            trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+           trim(bs_t(imode)%type)=='SINC'.or.&
            trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            call ArrayStop('bs_funct(ispecies)%coeffs')
@@ -24974,7 +24978,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !

@@ -8,7 +8,7 @@ module fields
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                      ME_laguerre_k,ME_laguerre_simple_k
+                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc
    use me_numer
    use me_rot
    use timer
@@ -1903,7 +1903,7 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K') 
+              case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC') 
                  !
               case default 
                  !
@@ -12983,10 +12983,10 @@ end subroutine check_read_save_none
     enddo 
     !
     do imode = 1,trove%Nmodes
-       if (job%bset(imode)%type/='NUMEROV') then 
+       if (job%bset(imode)%type/='NUMEROV'.and.job%bset(imode)%type/='SINC') then 
          if ( job%bset(imode)%coord_kinet/=job%bset(imode)%coord_poten  ) then 
-            write(out,"('FLbsetInit: Wrong defenition of coordinates:')")
-            write(out,"('the kinetic and potential parts must be the same for the non/numerov-basis sets, while')")
+            write(out,"('FLbsetInit: Wrong definition of coordinates:')")
+            write(out,"('the kinetic and potential parts must be the same for the non-numerical basis sets, while')")
             write(out,"('The kinetic   coordinate is :',a)") trim(job%bset(imode)%coord_kinet)
             write(out,"('The potential coordinate is :',a)") trim(job%bset(imode)%coord_poten)            
             stop 'FLbsetInit: Wrong defenition of coordinates'
@@ -13906,7 +13906,7 @@ end subroutine check_read_save_none
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
-              bset%dscr(imode)%type/='LAGUERRE-K') cycle
+              bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
           !
           write(unitfname,"('Numerov basis set # ',i6)") imode
           ! get the i/o unit with stored numerov basis functions
@@ -13990,7 +13990,7 @@ end subroutine check_read_save_none
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
-              bset%dscr(imode)%type/='LAGUERRE-K') cycle
+              bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
           !
           npoints = job%bset(imode)%npoints
           !
@@ -17019,7 +17019,7 @@ end subroutine check_read_save_none
            !
         endif
         !
-     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K') 
+     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC') 
         ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
@@ -17476,6 +17476,11 @@ end subroutine check_read_save_none
            elseif (trim(bs%type)=='FOURIER') then 
              !
              call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             !
+           elseif (trim(bs%type)=='SINC') then 
+             !
+             call ME_Sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            endif
@@ -19876,6 +19881,13 @@ end subroutine check_read_save_none
            elseif (trim(bs%type)=='FOURIER') then
              !
              call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             !
+           elseif (trim(bs%type)=='SINC') then
+             !
+             numerpoints = npoints
+             !
+             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            else
