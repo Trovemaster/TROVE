@@ -84,7 +84,7 @@ module me_numer
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose_   ! Verbosity level
    !
-   real(ark)            :: rho 
+   real(ark)            :: rho,cross_prod,factor
    real(ark)            :: h_t,sigma,sigma_t,rms,psipsi_t,characvalue,rhostep_,step_scale,fval,df_t
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2
@@ -93,6 +93,7 @@ module me_numer
    real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xton(:,:)
    character(len=cl)     :: unitfname 
    real(ark),allocatable :: enerslot(:),enerslot_(:)
+   real(ark),allocatable :: psi(:,:),dpsi(:,:)
     !
     if (verbose>=1) write (out,"(/'Numerov matrix elements calculations')")
      !
@@ -260,6 +261,57 @@ module me_numer
        !
      endif
      !
+     ! renormalising-re-orthogonalasing the basis set 
+     !
+     allocate(psi(0:npoints_,0:vmax),dpsi(0:npoints_,0:vmax),stat=alloc)
+     if (alloc/=0) then 
+       write (out,"('psi - out of memory')")
+       stop 'psi - out of memory'
+     endif 
+     !
+     do vl = 0,vmax
+       !
+       read (io_slot,rec=vl+1) (psi(i,vl),i=0,npoints_),(dpsi(i,vl),i=0,npoints_)
+       !
+     enddo
+     !
+     !omp parallel do private(vl,cross_prod,factor,vr) shared(psi,dpsi) schedule(dynamic)
+     do vl =  0,vmax
+       !
+       phivphi(:) = psi(:,vl)*psi(:,vl)
+       cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+       !
+       factor = 1.0_ark/sqrt(cross_prod)
+       !
+       psi(:,vl) = psi(:,vl)*factor
+       dpsi(:,vl) = dpsi(:,vl)*factor
+       !
+       do vr = 0,vl-1
+         !
+         phivphi(:) = psi(:,vl)*psi(:,vr)
+         cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+         !
+         psi(:,vl) = psi(:,vl)-cross_prod*psi(:,vr)
+         dpsi(:,vl) = dpsi(:,vl)-cross_prod*dpsi(:,vr)
+         !
+         phivphi(:) = psi(:,vl)*psi(:,vl)
+         cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+         !
+         factor = 1.0_ark/sqrt(cross_prod)
+         !
+         psi(:,vl) = psi(:,vl)*factor
+         dpsi(:,vl) = dpsi(:,vl)*factor
+         ! 
+       enddo
+       !
+       write (io_slot,rec=vl+1) (psi(i,vl),i=0,npoints_),(dpsi(i,vl),i=0,npoints_)
+       !
+     enddo
+     !omp end parallel do
+     !
+     deallocate(psi,dpsi)
+     !
+     !
      ! Matrix elements 
      !
      sigma = 0.0_ark 
@@ -269,6 +321,8 @@ module me_numer
      do vl = 0,vmax
         !
         read (io_slot,rec=vl+1) (phil(i),i=0,npoints_),(dphil(i),i=0,npoints_)
+        !
+        cross_prod = sum(phil(:)*phil(:))
         !
         do vr = vl,vmax
             !
@@ -281,19 +335,21 @@ module me_numer
                read (io_slot,rec=vr+1) (phir(i),i=0,npoints_),(dphir(i),i=0,npoints_)
             endif
             !
+            cross_prod = sum(phil(:)*phir(:))
+            !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
             ! obtained above by the Numerov
             !
             phivphi(:) = phil(:)*poten_(:)*phir(:)
             !
-            h_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            h_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
             phivphi(:) =-dphil(:)*mu_rr_(:)*dphir(:)
             !
-            psipsi_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -311,7 +367,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
                endif
                !
-               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! external field expansion
                !
@@ -321,7 +377,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
                endif
                !
-               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
                ! momenta-free in kinetic part 
@@ -334,7 +390,7 @@ module me_numer
                !
                phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
                !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -352,7 +408,7 @@ module me_numer
                !
                phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
                !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
@@ -368,7 +424,7 @@ module me_numer
                !
                phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
                !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
                   !
@@ -380,7 +436,7 @@ module me_numer
                   !
                   phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
                   !
-                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
                endif 
                !

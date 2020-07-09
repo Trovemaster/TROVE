@@ -17253,7 +17253,7 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='BOX') then 
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
+             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
                          job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
              !
@@ -17475,12 +17475,12 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='FOURIER') then 
              !
-             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='SINC') then 
              !
-             call ME_Sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_Sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            endif
@@ -19875,19 +19875,19 @@ end subroutine check_read_save_none
              !
            elseif (trim(bs%type)=='BOX') then
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
+             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='FOURIER') then
              !
-             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            elseif (trim(bs%type)=='SINC') then
              !
              numerpoints = npoints
              !
-             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,f1drho,g1drho,nu_i,&
+             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            else

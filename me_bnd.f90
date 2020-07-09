@@ -489,14 +489,14 @@ module me_bnd
   !
   ! Matrix elements with box-eigenfunctions 
   !
-  subroutine ME_box(vmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,icoord,periodic,verbose,g_numerov,energy)
+  subroutine ME_box(vmax,maxorder,rho_b_,isingular,npoints,drho,xton,poten,mu_rr,icoord,periodic,verbose,g_numerov,energy)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten(0:npoints),mu_rr(0:npoints),drho(0:npoints,3)
+   real(ark),intent(in) :: poten(0:npoints),mu_rr(0:npoints),drho(0:npoints,3),xton(0:npoints,0:maxorder)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    logical,intent(in)     :: periodic
@@ -661,13 +661,10 @@ module me_bnd
                g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
+               !
                ! momenta-free in kinetic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
-               endif
+               phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
                !
                g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                !
@@ -679,11 +676,7 @@ module me_bnd
                !
                ! momenta-quadratic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) =-dphil(:)*dphir(:)
-               else
-                  phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
+               phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
                !
                g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                !
@@ -692,27 +685,17 @@ module me_bnd
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*dphir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
+               phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
                !
                g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
                   !
-                  if (lambda==0) then 
-                     phivphi(:) = dphil(:)*phir(:)
-                  else
-                     phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
-                  endif
+                  phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
                   !
                   g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                   !
-               endif 
-               !
+               endif
                !
                if (verbose>=7) then 
                    write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
@@ -741,7 +724,7 @@ module me_bnd
   !
   ! Matrix elements with Fourier-eigenfunctions 
   !
-  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,&
+  subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,&
                         iperiod,verbose,g_numerov,energy)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
@@ -749,7 +732,7 @@ module me_bnd
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
@@ -761,7 +744,7 @@ module me_bnd
    !
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p
    !
-   real(ark),allocatable :: poten(:),mu_rr(:),rho_(:)
+   real(ark),allocatable :: poten(:),mu_rr(:),rho_(:),xton(:,:)
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),&
                             dphi(:),vect(:,:)
@@ -790,6 +773,9 @@ module me_bnd
      allocate(poten(0:npoints),mu_rr(0:npoints),stat=alloc)
      call ArrayStart('mu-poten',alloc,size(poten),kind(poten))
      call ArrayStart('mu-poten',alloc,size(mu_rr),kind(mu_rr))
+     !
+     allocate(xton(0:npoints,0:maxorder),stat=alloc)
+     call ArrayStart('xton',alloc,size(xton),kind(xton))
      !
      allocate(psi(vmax+1,0:npoints),stat=alloc)
      call ArrayStart('psi-phi-Fourier',alloc,size(psi),kind(psi))
@@ -820,6 +806,10 @@ module me_bnd
        poten = poten_
        mu_rr = mu_rr_
        !
+       do lambda  = 0,maxorder
+         xton(:,lambda) = xton_(:,lambda)
+       enddo
+       !
      else
        !
        allocate(rho_(0:npoints_),stat=alloc)
@@ -840,6 +830,13 @@ module me_bnd
           !
           call polintark(rho_(i1:i2),mu_rr_(i1:i2),rho,fval,df_t)
           mu_rr(i) = fval
+          !
+          do lambda = 0,maxorder
+            !
+            call polintark(rho_(i1:i2),xton_(i1:i2,lambda),rho,fval,df_t)
+            xton(i,lambda) = fval
+            !
+          enddo
           !
        enddo
        !
@@ -998,7 +995,7 @@ module me_bnd
      !
      vect = h
      !
-     !$omp parallel do private(vl,cross_prod,factor,vr) shared(vect) schedule(dynamic)
+     !omp parallel do private(vl,cross_prod,factor,vr) shared(vect) schedule(dynamic)
      do vl =  1,vmax+1
        !
        cross_prod = sum(vect(:,vl)*vect(:,vl))
@@ -1007,16 +1004,23 @@ module me_bnd
        !
        vect(:,vl) = vect(:,vl)*factor
        !
-       do vr = vl+1,vmax+1
+       do vr = 1,vl-1
          !
          cross_prod = sum(vect(:,vl)*vect(:,vr))
          !
-         vect(:,vr) = vect(:,vr)-cross_prod*vect(:,vl)
+         vect(:,vl) = vect(:,vl)-cross_prod*vect(:,vr)
+         !
+         cross_prod = sum(vect(:,vl)*vect(:,vl))
+         !
+         factor = 1.0_ark/sqrt(cross_prod)
+         !
+         vect(:,vl) = vect(:,vl)*factor
          ! 
        enddo
        !
      enddo
-     !$omp end parallel do
+     !omp end parallel do
+     !
      !
      if (verbose>=4) then 
        write (out,"(/' Fourier-optimized energies are:')") 
@@ -1169,13 +1173,9 @@ module me_bnd
                !
                ! momenta-free in kinetic part 
                !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*phir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*phir_(:)
-               endif
+               phivphi_(:) = phil_(:)*xton(:,lambda)*phir_(:)
                !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -1185,36 +1185,24 @@ module me_bnd
                !
                ! momenta-quadratic part 
                !
-               if (lambda==0) then 
-                  phivphi_(:) =-dphil_(:)*dphir_(:)
-               else
-                  phivphi_(:) =-dphil_(:)*rho_kinet(:)**lambda*dphir_(:)
-               endif
+               phivphi_(:) =-dphil_(:)*xton(:,lambda)*dphir_(:)
                !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*dphir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*dphir_(:)
-               endif
+               phivphi_(:) = phil_(:)*xton(:,lambda)*dphir_(:)
                !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) then
                   !
-                  if (lambda==0) then 
-                     phivphi_(:) = dphil_(:)*phir_(:)
-                  else
-                     phivphi_(:) = dphil_(:)*rho_kinet(:)**lambda*phir_(:)
-                  endif
+                  phivphi_(:) = dphil_(:)*xton(:,lambda)*phir_(:)
                   !
-                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                   !
                endif 
                !
@@ -1258,6 +1246,9 @@ module me_bnd
      !
      deallocate(poten,mu_rr)
      call ArrayStop('mu-poten')
+     !
+     deallocate(xton)
+     call ArrayStop('xton')
      !
      deallocate(h,ener)
      call ArrayStop('h-Fourier')
@@ -4118,17 +4109,15 @@ module me_bnd
            !
            !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
            !
-           psi(vr+1,:) = psi(vr+1,:)-cross_prod*psi(vl+1,:)
+           psi(vl+1,:) = psi(vl+1,:)-cross_prod*psi(vr+1,:)
            !
-           phivphi(:) = psi(vr+1,:)*psi(vr+1,:)
+           phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
            factor = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
            !
-           !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
-           !
            factor = 1.0_ark/sqrt(factor)
-           psi(vr+1,:) = psi(vr+1,:)*factor
-           L(:,vr)   = ( L(:,vr)-cross_prod* L(:,vl))*factor
-           dL(:,vr)  = (dL(:,vr)-cross_prod*dL(:,vl))*factor
+           psi(vl+1,:) = psi(vl+1,:)*factor
+           L(:,vl)   = ( L(:,vl)-cross_prod* L(:,vr))*factor
+           dL(:,vl)  = (dL(:,vl)-cross_prod*dL(:,vr))*factor
            ! 
          enddo
          !
@@ -6186,7 +6175,7 @@ module me_bnd
 
 
   !
-  subroutine ME_sinc(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,poten_,mu_rr_,icoord,&
+  subroutine ME_sinc(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,&
                         iperiod,verbose,g_numerov,energy)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
@@ -6194,7 +6183,7 @@ module me_bnd
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
@@ -6207,7 +6196,7 @@ module me_bnd
    integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p,igrid,ngrid,jgrid
    integer(ik) :: ireflect
    !
-   real(ark),allocatable :: poten(:),mu_rr(:),rho_(:)
+   real(ark),allocatable :: poten(:),mu_rr(:),rho_(:),xton(:,:)
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:),&
                             dphi(:),vect(:,:)
@@ -6255,6 +6244,9 @@ module me_bnd
      allocate(dpsi_(vmax+1,0:npoints_),stat=alloc)
      call ArrayStart('psi-phi-sinc',alloc,size(dpsi_),kind(dpsi_))
      !
+     allocate(xton(0:npoints,0:maxorder),stat=alloc)
+     call ArrayStart('xton-grids',alloc,size(xton),kind(xton))
+     !
      rho_b = rho_b_
      !
      ! step size 
@@ -6269,6 +6261,12 @@ module me_bnd
        !
        poten = poten_
        mu_rr = mu_rr_
+       !
+       do lambda  = 0,maxorder
+         !
+         xton(:,lambda) = xton_(:,lambda)
+         !
+       enddo
        !
      else
        !
@@ -6290,6 +6288,13 @@ module me_bnd
           !
           call polintark(rho_(i1:i2),mu_rr_(i1:i2),rho,fval,df_t)
           mu_rr(i) = fval
+          !
+          do lambda = 0,maxorder
+            !
+            call polintark(rho_(i1:i2),xton_(i1:i2,lambda),rho,fval,df_t)
+            xton(i,lambda) = fval
+            !
+          enddo
           !
        enddo
        !
@@ -6484,15 +6489,15 @@ module me_bnd
          !
          !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
          !
-         psi(vr+1,:) = psi(vr+1,:)-cross_prod*psi(vl+1,:)
+         psi(vl+1,:) = psi(vl+1,:)-cross_prod*psi(vr+1,:)
          !
-         phi(:) = psi(vr+1,:)*psi(vr+1,:)
+         phi(:) = psi(vl+1,:)*psi(vl+1,:)
          factor = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phi)
          !
          !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
          !
          factor = 1.0_ark/sqrt(factor)
-         psi(vr+1,:) = psi(vr+1,:)*factor
+         psi(vl+1,:) = psi(vl+1,:)*factor
          ! 
        enddo
        !
@@ -6650,13 +6655,9 @@ module me_bnd
                !
                ! momenta-free in kinetic part 
                !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*phir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*phir_(:)
-               endif
+               phivphi_(:) = phil_(:)*xton(:,lambda)*phir_(:)
                !
-               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -6666,36 +6667,24 @@ module me_bnd
                !
                ! momenta-quadratic part 
                !
-               if (lambda==0) then 
-                  phivphi_(:) =-dphil_(:)*dphir_(:)
-               else
-                  phivphi_(:) =-dphil_(:)*rho_kinet(:)**lambda*dphir_(:)
-               endif
+               phivphi_(:) =-dphil_(:)*xton(:,lambda)*dphir_(:)
                !
-               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*dphir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_kinet(:)**lambda*dphir_(:)
-               endif
+               phivphi_(:) = phil_(:)*xton(:,lambda)*dphir_(:)
                !
-               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                !
                if (vl/=vr) then
                   !
-                  if (lambda==0) then 
-                     phivphi_(:) = dphil_(:)*phir_(:)
-                  else
-                     phivphi_(:) = dphil_(:)*rho_kinet(:)**lambda*phir_(:)
-                  endif
+                  phivphi(:) = dphil_(:)*xton(:,lambda)*phir_(:)
                   !
-                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
                   !
                endif 
                !
@@ -6737,7 +6726,7 @@ module me_bnd
      !
      call ArrayStop('rho-grids')
      !
-     deallocate(poten,mu_rr)
+     deallocate(xton)
      call ArrayStop('mu-poten')
      !
      deallocate(h,ener,phi,dphi)
@@ -6750,10 +6739,6 @@ module me_bnd
      call TimerStop('ME_sinc')
      !
   end subroutine ME_sinc
-
-
-
-
 
 
 
