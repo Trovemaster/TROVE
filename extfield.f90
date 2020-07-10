@@ -1344,7 +1344,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
           Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, &
           eigen(ilevel)%quanta(1:nmodes), eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), &
           eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff, &
-          eigen(ilevel)%cnu(0:nclasses)
+          eigen(ilevel)%cnu(1:nclasses)
     enddo
   enddo
 

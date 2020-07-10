@@ -311,7 +311,6 @@ module me_numer
      !
      deallocate(psi,dpsi)
      !
-     !
      ! Matrix elements 
      !
      sigma = 0.0_ark 
@@ -321,8 +320,6 @@ module me_numer
      do vl = 0,vmax
         !
         read (io_slot,rec=vl+1) (phil(i),i=0,npoints_),(dphil(i),i=0,npoints_)
-        !
-        cross_prod = sum(phil(:)*phil(:))
         !
         do vr = vl,vmax
             !
@@ -334,8 +331,6 @@ module me_numer
             else
                read (io_slot,rec=vr+1) (phir(i),i=0,npoints_),(dphir(i),i=0,npoints_)
             endif
-            !
-            cross_prod = sum(phil(:)*phir(:))
             !
             ! Here we prepare integrals of the potential 
             ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 

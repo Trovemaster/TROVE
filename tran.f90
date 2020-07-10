@@ -703,7 +703,7 @@ contains
       !
       allocate(eigen(ilevel)%irec(maxdeg),eigen(ilevel)%iroot(maxdeg),eigen(ilevel)%quanta(0:nmodes),&
                eigen(ilevel)%normal(0:nmodes),eigen(ilevel)%cgamma(0:nclasses), &
-               eigen(ilevel)%cnu(0:nclasses), stat = info)
+               eigen(ilevel)%cnu(1:nclasses), stat = info)
       if (info /= 0) stop 'read_eigenval allocation error: eigen%irec, eigen%quanta - out of memory'
       eigen(ilevel)%ndeg   = 0
       eigen(ilevel)%iroot = 0
