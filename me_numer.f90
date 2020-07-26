@@ -1752,7 +1752,7 @@ module me_numer
     !
     real(ark),intent(in) :: xmax,f(0:npoints)
     !
-    real(ark) :: si
+    real(ark) :: si,st
     !
     integer(ik) :: i
     !
@@ -1764,7 +1764,11 @@ module me_numer
      !
      si = sum(f)*h
      !
-     !si  = simpsonintegral_ark(npoints,xmax,f)
+     !st  = simpsonintegral_ark(npoints,xmax,f)
+     !
+     !if (abs(si-st)>0.1) then 
+     !   continue
+     !endif
      !
   end function  integral_rect_ark
 

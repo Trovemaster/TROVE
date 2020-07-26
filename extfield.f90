@@ -814,28 +814,43 @@ subroutine read_vibme_rank1()
   integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, ji
   character(len=cl) :: job_is
   character(len=20) :: buf20
+  character(len=4)   :: buf4
+  character(len=4)   :: jchar
+  character(len=cl) :: filename
 
+
+  if (.not.job%IOextF_divide) then
   write(out, '(/a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 &
       Cartesian tensor from file', trim(job%extFmat_file)
+  else
+  write(out, '(/a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 &
+      Cartesian tensor from files', trim(job%extFmat_file)
+  endif
+
 
   job_is ='extf contracted matrix elements'
   call IOStart(trim(job_is),chkptIO)
-  open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
-
-  read(chkptIO) buf20
-  if (buf20/='Start external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
-        '" has bogus header = "', buf20, '"'
-    stop 'STOP, error in extfield/read_vibme_rank1'
+    
+  if (.not.job%IOextF_divide) then
+    open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
+ 
+    read(chkptIO) buf20
+    if (buf20/='Start external field') then
+      write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
+          '" has bogus header = "', buf20, '"'
+      stop 'STOP, error in extfield/read_vibme_rank1'
+    endif
+ 
+    read(chkptIO) ncontr_t
+ 
+    if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1 error: actual size of basis &
+          set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+      stop 'STOP, error in extfield/read_vibme_rnak1'
+    endif
   endif
-
-  read(chkptIO) ncontr_t
-
-  if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1 error: actual size of basis &
-        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
-    stop 'STOP, error in extfield/read_vibme_rnak1'
-  endif
+  
+   ncontr_t = bset_contr(1)%Maxcontracts
 
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
@@ -847,26 +862,60 @@ subroutine read_vibme_rank1()
   extf_vib_me = 0.0
 
   do ielem=1, nelem_sym
+    
+    if (job%IOextF_divide) then
+       
+      write(jchar, '(i4)') ielem
+       
+      filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+       
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+       
+      read(chkptIO) buf4
+      if (buf4/='extF') then
+        write (out,"('extfield/read_vibme_rank1 ',a,' has bogus header: ',a,' index = ',i4)") filename,buf4,ielem_t
+        stop 'STOP, error in extfield/read_vibme_rank1'
+      end if
+       
+    else
 
-    read(chkptIO) ielem_t
-    if (ielem_t/=ielem) then
-      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank1 error: file "', &
-          trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
-      stop 'STOP, error in extfield/read_vibme_rank1'
+      read(chkptIO) ielem_t
+      if (ielem_t/=ielem) then
+        write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank1 error: file "', &
+            trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
+        stop 'STOP, error in extfield/read_vibme_rank1'
+      endif
+
     endif
-
+    
     read(chkptIO) extf_vib_me(ielem_t,:,:)
+
+    if (job%IOextF_divide) then
+      !
+      read(chkptIO) buf4
+      if (buf4/='extF') then
+        write (out,"(' in extfield/read_vibme_rank1 ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+        stop 'in extfield/read_vibme_rank1 - bogus file format'
+      end if
+      !
+      close(chkptIO,status='keep')
+      !
+    endif
 
   enddo
 
-  read(chkptIO) buf20(1:18)
-  if (buf20(1:18)/='End external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
-        '" has bogus footer = "', buf20(1:18), '"'
-    stop 'STOP, error in extfield/read_vibme_rank1'
+  if (.not.job%IOextF_divide) then
+    read(chkptIO) buf20(1:18)
+    if (buf20(1:18)/='End external field') then
+      write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank1 error: file "', trim(job%extFmat_file), &
+          '" has bogus footer = "', buf20(1:18), '"'
+      stop 'STOP, error in extfield/read_vibme_rank1'
+    endif
+ 
+    close(chkptIO)
+    !
   endif
 
-  close(chkptIO)
   call IOStop(job_is)
 
 end subroutine read_vibme_rank1
@@ -958,29 +1007,44 @@ subroutine read_vibme_rank2()
   integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j, iounit_tmp
   character(len=cl) :: job_is
   character(len=20) :: buf20
+  character(len=4)   :: buf4
+  character(len=4)   :: jchar
+  character(len=cl) :: filename
 
-  write(out, '(/a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 &
-    Cartesian tensor from file', trim(job%extFmat_file)
+
+  if (.not.job%IOextF_divide) then
+    write(out, '(/a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 &
+       Cartesian tensor from file', trim(job%extFmat_file)
+  else
+    write(out, '(/a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 &
+      Cartesian tensor from files', trim(job%extFmat_file)
+  endif
 
   job_is ='extf contracted matrix elements'
   call IOStart(trim(job_is),chkptIO)
-  open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
 
-  read(chkptIO) buf20
-  if (buf20/='Start external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank2 error: file "', trim(job%extFmat_file), &
-      '" has bogus header = "', buf20, '"'
-    stop 'STOP, error in extfield/read_vibme_rank2'
+  if (.not.job%IOextF_divide) then
+  
+    open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
+
+    read(chkptIO) buf20
+    if (buf20/='Start external field') then
+      write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank2 error: file "', trim(job%extFmat_file), &
+        '" has bogus header = "', buf20, '"'
+      stop 'STOP, error in extfield/read_vibme_rank2'
+    endif
+
+    read(chkptIO) ncontr_t
+
+    if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2 error: actual size of basis &
+        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+      stop 'STOP, error in extfield/read_vibme_rnak2_sym'
+    endif
   endif
-
-  read(chkptIO) ncontr_t
-
-  if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2 error: actual size of basis &
-      set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
-    stop 'STOP, error in extfield/read_vibme_rnak2_sym'
-  endif
-
+  
+  ncontr_t = bset_contr(1)%Maxcontracts
+  
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
@@ -991,26 +1055,61 @@ subroutine read_vibme_rank2()
   extf_vib_me = 0.0
 
   do ielem=1, nelem
+    
+    if (job%IOextF_divide) then
+      !
+      write(jchar, '(i4)') ielem
+      !
+      filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+      !
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+      !
+      read(chkptIO) buf4
+      if (buf4/='extF') then
+        write (out,"('extfield/read_vibme_rank2 ',a,' has bogus header: ',a,' index = ',i4)") filename,buf4,ielem_t
+        stop 'STOP, error in extfield/read_vibme_rank2'
+      end if
+      !
+    else
 
-    read(chkptIO) ielem_t
-    if (ielem_t/=ielem) then
-      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank2 error: file "', &
-        trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
-      stop 'STOP, error in extfield/read_vibme_rank2'
+      read(chkptIO) ielem_t
+      if (ielem_t/=ielem) then
+        write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_rank2 error: file "', &
+          trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
+        stop 'STOP, error in extfield/read_vibme_rank2'
+      endif
+    
     endif
 
     read(chkptIO) extf_vib_me(ielem_t,:,:)
+     
+    if (job%IOextF_divide) then
+      !
+      read(chkptIO) buf4
+      if (buf4/='extF') then
+        write (out,"(' in extfield/read_vibme_rank2 ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+        stop 'in extfield/read_vibme_rank2 - bogus file format'
+      end if
+      !
+      close(chkptIO,status='keep')
+      !
+    endif
 
   enddo
 
-  read(chkptIO) buf20(1:18)
-  if (buf20(1:18)/='End external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank2 error: file "', trim(job%extFmat_file), &
-        '" has bogus footer = "', buf20(1:18), '"'
-    stop 'STOP, error in extfield/read_vibme_rank2'
+  if (.not.job%IOextF_divide) then
+
+    read(chkptIO) buf20(1:18)
+    if (buf20(1:18)/='End external field') then
+      write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_rank2 error: file "', trim(job%extFmat_file), &
+          '" has bogus footer = "', buf20(1:18), '"'
+      stop 'STOP, error in extfield/read_vibme_rank2'
+    endif
+ 
+    close(chkptIO)
+    
   endif
 
-  close(chkptIO)
   call IOStop(job_is)
 
   call check_extf_vib_me
@@ -1030,62 +1129,117 @@ subroutine read_vibme_spinrot_xy2()
   integer(ik) :: ncontr_t, ielem, ielem_t, info, chkptIO, i, j
   character(len=20) :: buf20
   character(cl) :: job_is
+  character(len=4)   :: buf4
+  character(len=4)   :: jchar
+  character(len=cl) :: filename
+
   real(rk), allocatable :: me(:,:,:)
 
-  write(out, '(/a,1x,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
-      trim(job%extFmat_file)
+  if (.not.job%IOextF_divide) then
+    !
+    write(out, '(/a,1x,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from file', &
+          trim(job%extFmat_file)
+    !
+  else
 
+    write(out, '(/a,1x,a)') 'extfield/read_vibme_spinrot_xy2: read vibrational matrix elements from files', &
+          trim(job%extFmat_file)
+
+  endif
+  
   ! first read from file tensor elements that correspond to different Cartesian
   ! components and different powers of rho-coordinate
 
   job_is ='extf contracted matrix elements'
   call IOStart(trim(job_is),chkptIO)
-  open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
 
-  read(chkptIO) buf20
-  if (buf20/='Start external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_spinrot_xy2 error: file "', trim(job%extFmat_file), &
-        '" has bogus header = "', buf20, '"'
-    stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
+  if (.not.job%IOextF_divide) then
+
+     open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
+ 
+     read(chkptIO) buf20
+     if (buf20/='Start external field') then
+       write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_spinrot_xy2 error: file "', trim(job%extFmat_file), &
+           '" has bogus header = "', buf20, '"'
+       stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
+     endif
+ 
+     read(chkptIO) ncontr_t
+ 
+     if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_spinrot_xy2 error: actual size of basis &
+           set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+       stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
+     endif
+     
   endif
-
-  read(chkptIO) ncontr_t
-
-  if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_spinrot_xy2 error: actual size of basis &
-        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
-    stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
-  endif
-
+  !
+  ncontr_t = bset_contr(1)%Maxcontracts
+  !
   allocate(me(nelem_s,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
     write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_spinrot_xy2 error: failed to allocate &
         me(nelem_s,ncontr_t,ncontr_t)', 'ncontr_t, nelem_s =', ncontr_t, nelem_s
     stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
   endif
-  extf_vib_me = 0.0
+  extf_vib_me = 0
 
   do ielem=1, nelem_s
+    
+    if (job%IOextF_divide) then
+      !
+      write(jchar, '(i4)') ielem
+      !
+      filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+      !
+      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+      !
+      read(chkptIO) buf4
+      if (buf4/='extF') then
+        write (out,"(' extfield/read_vibme_spinrot_xy2 ',a,' has bogus header: ',a)") filename,buf4
+        stop 'extfield/read_vibme_spinrot_xy2 - bogus file format'
+      end if
+      !
+    else
 
-    read(chkptIO) ielem_t
-    if (ielem_t/=ielem) then
-      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_spinrot_xy2 error: file "', &
-          trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
-      stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
-    endif
+      read(chkptIO) ielem_t
+      if (ielem_t/=ielem) then
+        write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_vibme_spinrot_xy2 error: file "', &
+            trim(job%extFmat_file), '" has bogus tensor element index = ', ielem_t, ', expected index =', ielem
+        stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
+      endif
 
-    read(chkptIO) me(ielem_t,:,:)
-
+     endif
+     !
+     read(chkptIO) me(ielem,:,:)
+     !
+     if (job%IOextF_divide) then
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' extfield/read_vibme_spinrot_xy2 ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+         stop 'extfield/read_vibme_spinrot_xy2 - bogus file format'
+       end if
+       !
+       close(chkptIO,status='keep')
+       !
+     endif
+     
   enddo
 
-  read(chkptIO) buf20(1:18)
-  if (buf20(1:18)/='End external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_spinrot_xy2 error: file "', trim(job%extFmat_file), &
-        '" has bogus footer = "', buf20(1:18), '"'
-    stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
-  endif
+  if (.not.job%IOextF_divide) then
+  
+     read(chkptIO) buf20(1:18)
+     if (buf20(1:18)/='End external field') then
+       write (out, '(/a,a,a,a,a)') 'extfield/read_vibme_spinrot_xy2 error: file "', trim(job%extFmat_file), &
+           '" has bogus footer = "', buf20(1:18), '"'
+       stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
+     endif
 
-  close(chkptIO)
+     close(chkptIO)
+     
+  endif
+  !
   call IOStop(job_is)
 
   ! assemble together matrix elements corresponding to the same Cartesian
@@ -1098,7 +1252,7 @@ subroutine read_vibme_spinrot_xy2()
         extf_vib_me(nelem,ncontr_t,ncontr_t)', 'nelem, ncontr_t =', nelem, ncontr_t
     stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
   endif
-  extf_vib_me = 0.0
+  extf_vib_me = 0
 
   ! for order of Cartesian elements in extf_vib_me, see rotme_spinrot in rotme_cart_tens.f90
   extf_vib_me(1,:,:) = me(1,:,:) ! xx
@@ -1111,7 +1265,7 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me(8,:,:) = 0         ! zy
   extf_vib_me(9,:,:) = me(5,:,:) ! zz
 
-  !call check_extf_vib_me
+  call check_extf_vib_me
 
   deallocate(me)
 
@@ -1215,35 +1369,31 @@ subroutine read_extf_vib_me_ielem(ielem)
 
   integer(ik) :: ncontr_t, irank, irank_t, info, chkptIO, i, j, rank
   character(len=cl) :: job_is
+  character(len=4)  :: jchar
   character(len=20) :: buf20
+  character(len=4)  :: buf4
+  character(len=cl) :: filename
 
   rank = 1
 
-  write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from &
-        file "', trim(job%extFmat_file), '"'
+  if (job%verbose>=4) then 
+    if (.not.job%IOextF_divide) then
+      !
+      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from &
+            file "', trim(job%extFmat_file), '"'
+      !
+    else
+      !
+      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from &
+            files "', trim(job%extmat_suffix), '"'
+      !
+    endif
+    !
+  endif 
 
   if (ielem>extF%rank) then
     write(out, '(/a,1x,i4,1x,a,1x,i4)') 'extfield/read_extf_vib_me_ielem error: index of Cartesian &
         tensor =', ielem, 'is larger than rank of TROVE extF tensor =', extF%rank
-    stop 'STOP, error in extfield/read_extf_vib_me_ielem'
-  endif
-
-  job_is ='extf contracted matrix elements'
-  call IOStart(trim(job_is),chkptIO)
-  open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
-
-  read(chkptIO) buf20
-  if (buf20/='Start external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_ielem error: file "', trim(job%extFmat_file), &
-        '" has bogus header = "', buf20, '"'
-    stop 'STOP, error in extfield/read_extf_vib_me_ielem'
-  endif
-
-  read(chkptIO) ncontr_t
-
-  if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_extf_vib_me_ielem error: actual size of &
-        basis set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
     stop 'STOP, error in extfield/read_extf_vib_me_ielem'
   endif
 
@@ -1252,6 +1402,30 @@ subroutine read_extf_vib_me_ielem(ielem)
     stop 'STOP, error in extfield/read_extf_vib_me_ielem'
   endif
 
+  job_is ='extf contracted matrix elements'
+  call IOStart(trim(job_is),chkptIO)
+
+  if (.not.job%IOextF_divide) then
+     open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=job%extFmat_file)
+ 
+     read(chkptIO) buf20
+     if (buf20/='Start external field') then
+       write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_ielem error: file "', trim(job%extFmat_file), &
+           '" has bogus header = "', buf20, '"'
+       stop 'STOP, error in extfield/read_extf_vib_me_ielem'
+     endif
+ 
+     read(chkptIO) ncontr_t
+ 
+     if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_extf_vib_me_ielem error: actual size of &
+           basis set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+       stop 'STOP, error in extfield/read_extf_vib_me_ielem'
+     endif
+  endif
+  !
+  ncontr_t = bset_contr(1)%Maxcontracts
+  !
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(rank,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
@@ -1259,37 +1433,71 @@ subroutine read_extf_vib_me_ielem(ielem)
         extf_vib_me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
     stop 'STOP, error in extfield/read_extf_vib_me_ielem'
   endif
-  extf_vib_me = 0.0
+  
+  extf_vib_me = 0
 
   do irank=1, extF%rank
+     !
+     if (job%IOextF_divide.and.irank==ielem) then
+       !
+       write(jchar, '(i4)') irank
+       !
+       filename = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+       !
+       open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' extfield/read_extf_vib_me_ielem ',a,' has bogus header: ',a)") filename,buf4
+         stop 'extfield/read_extf_vib_me_ielem - bogus file format'
+       end if
+       !
+       read(chkptIO) extf_vib_me(1,:,:)
+       !
+       read(chkptIO) buf4
+       if (buf4/='extF') then
+         write (out,"(' rextfield/read_extf_vib_me_ielem error ',a,' has bogus footer: ',a)") job%kinetmat_file,buf4
+         stop 'extfield/read_extf_vib_me_ielem error - bogus file format'
+       end if
+       !
+       close(chkptIO,status='keep')
+       !
+     else
 
-    read(chkptIO) irank_t
-    if (irank_t/=irank) then
-      write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_extf_vib_me_ielem error: file "', &
-          trim(job%extFmat_file), '" has bogus irank = ', irank_t, ', expected irank =', irank
-      stop
-    endif
+       read(chkptIO) irank_t
+       if (irank_t/=irank) then
+         write (out, '(/a,a,a,1x,i3,1x,a,1x,i3)') 'extfield/read_extf_vib_me_ielem error: file "', &
+             trim(job%extFmat_file), '" has bogus irank = ', irank_t, ', expected irank =', irank
+         stop
+       endif
 
-    read(chkptIO) extf_vib_me(1,:,:)
-    if (irank==ielem) exit
+       read(chkptIO) extf_vib_me(1,:,:)
+   
+     endif
+
+     if (irank==ielem) exit
 
   enddo
 
-  read(chkptIO) buf20(1:18)
-  if (buf20(1:18)/='End external field') then
-    write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_ielem error: file "', trim(job%extFmat_file), &
-        '" has bogus footer = "', buf20(1:18), '"'
-    stop 'STOP, error in extfield/read_extf_vib_me_ielem'
+
+  if (.not.job%IOextF_divide) then
+    read(chkptIO) buf20(1:18)
+    if (buf20(1:18)/='End external field') then
+      write (out, '(/a,a,a,a,a)') 'extfield/read_extf_vib_me_ielem error: file "', trim(job%extFmat_file), &
+          '" has bogus footer = "', buf20(1:18), '"'
+      stop 'STOP, error in extfield/read_extf_vib_me_ielem'
+    endif
+
+    ! print vibrational matrix elements
+    !do i=1, ncontr_t
+    !  do j=i, i
+    !    write(out, '(1x,i6,1x,i6,100(1x,f))') i,j, extf_vib_me(:,i,j)
+    !  enddo
+    !enddo
+
+    close(chkptIO)
   endif
-
-  ! print vibrational matrix elements
-  !do i=1, ncontr_t
-  !  do j=i, i
-  !    write(out, '(1x,i6,1x,i6,100(1x,f))') i,j, extf_vib_me(:,i,j)
-  !  enddo
-  !enddo
-
-  close(chkptIO)
+  
   call IOStop(job_is)
 
 end subroutine read_extf_vib_me_ielem

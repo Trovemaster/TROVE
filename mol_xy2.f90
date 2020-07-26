@@ -1311,7 +1311,7 @@ module mol_xy2
             !  b0(iatom,:,i) = matmul(tmat,b0(iatom,:,i))
             !enddo 
             !
-            if (verbose>=4) then 
+            if (verbose>=5) then 
               write(out,"(i6)") molec%natoms
               !
               write(out,"(/'C',3x,3f14.8)") b0(1,:,i) !*bohr

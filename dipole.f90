@@ -2635,7 +2635,7 @@ contains
    character(len=4)   :: buf4
    character(len=4)   :: jchar
    
-   integer(ik)        :: ncontr_t,imu,imu_t
+   integer(ik)        :: ncontr_t,imu,imu_t,i,j
    integer(hik)       :: matsize,rootsize,rootsize2
    !
    real(rk),allocatable  :: dipole_(:,:)
@@ -2724,15 +2724,27 @@ contains
        !
      endif
      !
-     if (job%verbose>=5) write(out,"('read dipole_ ...')",advance='NO')
+     if (job%verbose>=5) write(out,"('read dipole_ ...')") !,advance='NO'
      !
      read(chkptIO) dipole_
      !
-     if (job%verbose>=5) write(out,"('copy to dipole_me ...')",advance='NO')
+     if (job%verbose>=5) write(out,"('copy to dipole_me ...')")
      !
      dipole_me(1:ncontr_t,1:ncontr_t,imu) = dipole_(1:ncontr_t,1:ncontr_t)
      !
-     if (job%verbose>=5) write(out,"(' done')",advance='YES')
+     !if (extF%matelem_threshold>0) then 
+     !  !
+     !  do i = 1,ncontr_t
+     !    do j = 1,ncontr_t
+     !       if ( abs( dipole_me(j,i,imu) )<extF%matelem_threshold) then 
+     !          dipole_me(j,i,imu) = 0
+     !       endif
+     !    enddo
+     !  enddo
+     !  !
+     !endif
+     !
+     if (job%verbose>=5) write(out,"(' done')")
      !
      if (job%IOextF_divide) then
        !
