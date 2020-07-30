@@ -1813,7 +1813,7 @@ contains
               do jroot=1,iroot
                 !
                 if (abs(mat_s(iroot,jroot))>job%coeff_thresh) then
-                  write(out,"(2(i4,1x),i8,1x,g18.11,2x,a2)") imu,iroot,jroot,mat_s(iroot,jroot),"||"
+                  write(out,"(i4,1x,2(i8,1x),g18.11,2x,a2)") imu,iroot,jroot,mat_s(iroot,jroot),"||"
                 endif
                 !
               enddo
