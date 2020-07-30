@@ -137,7 +137,9 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   g_out(5,-1) = g(3,3)*d*rho2_over_sin2rhohalf + g(3,1)*b*rho2_over_sinrho
   g_out(5,-2) = 0
   !
-  f = (/g_out(1,0), g_out(2,-1), g_out(3,0), g_out(4,0), g_out(5,-1)/)
+  f = (/g_out(1,0), -g_out(2,-1), g_out(3,0), -g_out(4,0), g_out(5,-1)/)
+  ! we multiply g(1,3) and g(3,1) here with -1 because of the opposite direction
+  ! of the bisector axis (x-axis) in TROVE and in the actual ab initio data 
   !
 end subroutine prop_xy2_gtensor_bisector
 
