@@ -109,6 +109,7 @@ subroutine prop_xy2_gtens_nuclear_bisector(rank, ncoords, natoms, local, xyz, f)
   g(3,3) = (e1*(-(e1*m0*(r1 - r2)**2) + e0*(2.0_ark*m0*r1*r2 + m1*(r1 + r2)**2))) &
            / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
 
+  g = g * 1.017507105957e-5_ark ! to have final units of magnetic moment m=1/c*g*J in Debye
   f = (/g(1,1), g(1,3), g(2,2), g(3,1), g(3,3)/) ! the second component g(1,3) must be divided by rho
 
 end subroutine prop_xy2_gtens_nuclear_bisector
