@@ -918,6 +918,10 @@ subroutine read_vibme_rank1()
 
   call IOStop(job_is)
 
+  if (intensity%J(1)==0 .and. intensity%J(2)==0) then
+    call check_extf_vib_me
+  endif
+
 end subroutine read_vibme_rank1
 
 
@@ -992,6 +996,10 @@ subroutine read_vibme_rank2_sym()
 
   close(chkptIO)
   call IOStop(job_is)
+
+  if (intensity%J(1)==0 .and. intensity%J(2)==0) then
+    call check_extf_vib_me
+  endif
 
 end subroutine read_vibme_rank2_sym
 
@@ -1112,7 +1120,9 @@ subroutine read_vibme_rank2()
 
   call IOStop(job_is)
 
-  call check_extf_vib_me
+  if (intensity%J(1)==0 .and. intensity%J(2)==0) then
+    call check_extf_vib_me
+  endif
 
 end subroutine read_vibme_rank2
 
@@ -1265,7 +1275,9 @@ subroutine read_vibme_spinrot_xy2()
   extf_vib_me(8,:,:) = 0         ! zy
   extf_vib_me(9,:,:) = me(5,:,:) ! zz
 
-  call check_extf_vib_me
+  if (intensity%J(1)==0 .and. intensity%J(2)==0) then
+    call check_extf_vib_me
+  endif
 
   deallocate(me)
 

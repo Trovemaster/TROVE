@@ -15,6 +15,105 @@ module prop_xy2_spinrot
 contains
 
 
+! Nuclear rotational g-tensor for XY2-type molecule, g_nuc = 1/2 * Ie/Im, where
+! Im is inertia tensor and Ie is Im with atomic masses are replaced by atomic
+! charges.
+! The nuclear contribution to the magnetic moment is then given by m = 1/c * g_nuc * J,
+! where "c" is the speed of light and "J" = [Jx, Jy, Jz] is the angular momentum operator.
+! To have magnetic moment in Debye m = 1/hbar * g_nuc * J * 1.017507105957e-5, 
+! where we assume atomic units for masses and charges and 1/hbar will be cancelled out
+! by the hbar-factor from J operator.
+
+subroutine prop_xy2_gtens_nuclear_bisector(rank, ncoords, natoms, local, xyz, f)
+
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+
+  integer(ik) :: iatom
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3,3), n1(3), n2(3), &
+               x(natoms,3), rho_over_sinrhohalf
+  real(ark), parameter  :: rho_threshold = 0.01_rk
+
+  if (rank/=5) then
+    write(out, '(/a,1x,i3,1x,a)') &
+      'prop_xy2_gtens_nuclear_bisector: rank of the input tensor =', rank, ', expected 5'
+    stop
+  endif
+
+  ! xyz are undefined for the local case
+
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_gtens_nuclear_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_gtens_nuclear_bisector - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  ! internal coordinates
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+
+  n1 = xyz_(2,:)/r1
+  n2 = xyz_(3,:)/r2
+
+  alpha = aacos(sum(n1*n2))
+
+  rho = pi-alpha
+
+  ! g_nuc = 1/2 * Ie/Im, where Im is inertia tensor and Ie is Im with atomic
+  ! masses replaced by charges
+
+  m0 = molec%atomMasses(1) ! mass of atom X in XY2 molecule
+  m1 = molec%atomMasses(2) ! mass of atom Y
+
+  e0 = extF%coef(2,1) ! charge of atom X
+  e1 = extF%coef(3,1) ! charge of atom Y
+! NOTE: extF%coef(1,:) defines the power of rho-singularity for each tensor element
+!       for this function extF%coef(1,1:5) must be equal to (/0,1,0,0,0/)
+
+  if (rho>rho_threshold) then
+    rho_over_sinrhohalf = rho/sin(rho*0.5_ark)
+  else
+    rho_over_sinrhohalf = 2.0_ark + rho**2/12.0_ark + (7.0_ark*rho**4)/2880.0_ark &
+                        + (31.0_ark*rho**6)/483840.0_ark + (127.0_ark*rho**8)/77414400.0_ark &
+                        + (73.0_ark*rho**10)/1751777280.0_ark
+  endif
+
+  g = 0
+  g(1,1) = (e1*(e1*m0*(r1 + r2)**2 + e0*(-(m1*(r1 - r2)**2) + 2.0_ark*m0*r1*r2))) &
+           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
+  g(1,3) = (e1*(e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*cos(rho*0.5_ark)*rho_over_sinrhohalf) &
+           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
+  g(2,2) = (e1*(m0 + 2.0_ark*m1)*((e0 + e1)*(r1**2 + r2**2)+ 2.0_ark*e1*r1*r2*cos(rho))) &
+           / (2.0_ark*(e0 + 2.0_ark*e1)*m1*((m0 + m1)*(r1**2 + r2**2) + 2.0_ark*m1*r1*r2*cos(rho)))
+  g(3,1) = -(e1*(e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*tan(rho*0.5_ark)) &
+           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
+  g(3,3) = (e1*(-(e1*m0*(r1 - r2)**2) + e0*(2.0_ark*m0*r1*r2 + m1*(r1 + r2)**2))) &
+           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
+
+  f = (/g(1,1), g(1,3), g(2,2), g(3,1), g(3,3)/) ! the second component g(1,3) must be divided by rho
+
+end subroutine prop_xy2_gtens_nuclear_bisector
+
+
 ! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector
 ! frame, where some of the elements become singular at linear geometry.
 
