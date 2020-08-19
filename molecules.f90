@@ -37,7 +37,8 @@ module molecules
                                TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector
   use prop_xy2_spinspin, only : prop_xy2_spinspin_dipoleYY
   !
-  use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho
+  use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
+                       MLkinetic_xy2_Radau_bisect_EKE
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -175,6 +176,10 @@ module molecules
     case('POTEN_H2CS_DAMP')
          !
          MLpotentialfunc => MLpoten_h2cs_damp
+         !
+    case('POTEN_H2CS_DAMP_SCALING')
+         !
+         MLpotentialfunc => MLpoten_h2cs_damp_scaling
          !
     case('POTEN_ABCD') 
          !
@@ -433,6 +438,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_XY2_EKE_BISECT') 
          !
          MLkineticfunc => MLkinetic_xy2_bisect_EKE
+         !
+    case('KINETIC_XY2_EKE_RADAU_BISECT') 
+         !
+         MLkineticfunc => MLkinetic_xy2_Radau_bisect_EKE
          !
     case('KINETIC_XY2_EKE_BISECT_SINRHO') 
          !

@@ -32,6 +32,7 @@ module mol_xy2
     real(ark)                 :: c_t(3,3),dsrc(size(src)),r_e1(2),r_e2(2),radau_e1(2),radau_e2(2),radau_e(2)
     real(ark)                 :: m1,m2,m3,a0,r_t1(2),r_t2(2),radau_t1(2),radau_t2(2),cosalpha,rho,alpha,sinalpha
     real(ark)                 :: r1,r2,r3,R,r12,r12e,r13e,alpha1,alpha2,theta,sintheta,q0,q,q1,q2,alpha0
+    real(ark)                 :: mX,mY,M,salpha,s1,s2,t1,t2
     !
     !
     integer(ik) :: nsrc
@@ -420,9 +421,11 @@ module mol_xy2
        !
     case('RADAU-R-ALPHA-Z')
        !
-       m1 = molec%AtomMasses(2) ; m2 = molec%AtomMasses(3) ; m3 = molec%AtomMasses(1)
+       mX = molec%AtomMasses(1) ; mY = molec%AtomMasses(2)
        !
-       a0=sqrt(m3/(m1+m2+m3))
+       M = mX+2.0_ark*mY
+       !
+       a0=sqrt(mX/M)
        !
        r_e1(1) = molec%local_eq(1)
        r_e1(2) = 0
@@ -430,15 +433,20 @@ module mol_xy2
        r_e2(1) = molec%local_eq(2)*cos(molec%local_eq(3))
        r_e2(2) = molec%local_eq(2)*sin(molec%local_eq(3))
 	   !
-       radau_e1(:) = ( 1.0_ark+(a0-1.0_ark)*m1/(m1+m2) )*r_e1(:)+(a0-1.0_ark)*m2/(m1+m2)*r_e2(:)
-       radau_e2(:) = ( 1.0_ark+(a0-1.0_ark)*m2/(m1+m2) )*r_e2(:)+(a0-1.0_ark)*m1/(m1+m2)*r_e1(:)
+       radau_e1(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_e1(:)+(a0-1.0_ark)*mY/(mY+mY)*r_e2(:)
+       radau_e2(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_e2(:)+(a0-1.0_ark)*mY/(mY+mY)*r_e1(:)
 	   !
        radau_e(1) = sqrt( sum( radau_e1(:)**2 )  )
        radau_e(2) = sqrt( sum( radau_e2(:)**2 )  )
        !
        if (direct) then 
           !
+          r1 = src(1) ; r2 = src(2) ;  alpha = src(3)
+          !
 		  alpha1 = src(3)
+          !
+          r_t1 = 0
+          r_t2 = 0
           !
           r_t1(1) = src(1)
           r_t1(2) = 0
@@ -446,8 +454,8 @@ module mol_xy2
           r_t2(1) = src(2)*cos(alpha1)
           r_t2(2) = src(2)*sin(alpha1)
           !
-          radau_t1(:) = ( 1.0_ark+(a0-1.0_ark)*m1/(m1+m2) )*r_t1(:)+(a0-1.0_ark)*m2/(m1+m2)*r_t2(:)
-          radau_t2(:) = ( 1.0_ark+(a0-1.0_ark)*m2/(m1+m2) )*r_t2(:)+(a0-1.0_ark)*m1/(m1+m2)*r_t1(:)
+          radau_t1(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_t1(:)+(a0-1.0_ark)*mY/(mY+mY)*r_t2(:)
+          radau_t2(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_t2(:)+(a0-1.0_ark)*mY/(mY+mY)*r_t1(:)
           !
           dst(1) = sqrt( sum( radau_t1(:)**2 )  )
           dst(2) = sqrt( sum( radau_t2(:)**2 )  )
@@ -472,24 +480,17 @@ module mol_xy2
           !
        else
           !
-          !alpha1 = acos(src(3)-1.0_ark)
-		  alpha1 = pi-src(3)
-		  !
-		  dsrc(1:2) = src(1:2) + radau_e(1:2)
+		  salpha = src(3)+molec%local_eq(3)
+          s1 = src(1)+molec%local_eq(1)
+          s2 = src(2)+molec%local_eq(2)
           !
-          radau_t1(1) = dsrc(1)
-          radau_t1(2) = 0
+          t1 = 0.5_ark*sqrt(mX/M)+sqrt(mX/M)*mY/mX+0.5_ark+0.5_ark*mY/mX
+          t2 = 0.5_ark*mY/mX-0.5_ark*sqrt(mX/M)-sqrt(mX/M)*mY/mX+0.5_ark
           !
-          radau_t2(1) = dsrc(2)*cos(alpha1)
-          radau_t2(2) = dsrc(2)*sin(alpha1)
+          r1 = sqrt( (t1*s1)**2+(t2*s2)**2-s1*mY*s2*cos(salpha)/mX )
+          r2 = sqrt( (t1*s2)**2+(t2*s1)**2-s1*mY*s2*cos(salpha)/mX )
           !
-          r_t1(:) = ( 1.0_ark+(1.0_ark/a0-1.0_ark)*m1/(m1+m2) )*radau_t1(:)+(1.0_ark/a0-1.0_ark)*m2/(m1+m2)*radau_t2(:)
-          r_t2(:) = ( 1.0_ark+(1.0_ark/a0-1.0_ark)*m2/(m1+m2) )*radau_t2(:)+(1.0_ark/a0-1.0_ark)*m1/(m1+m2)*radau_t1(:)
-          !
-          dst(1) = sqrt( sum( r_t1(:)**2 )  )
-          dst(2) = sqrt( sum( r_t2(:)**2 )  )
-
-          cosalpha = sum(r_t1(:)*r_t2(:) )/( dst(1)*dst(2) )
+          cosalpha = -s1*s2*cos(salpha)+(-s1*s2*cos(salpha)+0.5_ark*s1**2+0.5_ark*s2**2)*mY/mX		  
           !
           if ( abs(cosalpha)>1.0_ark+sqrt(small_) ) then 
              !

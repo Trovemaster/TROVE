@@ -7,7 +7,8 @@ module kin_xy2
 
   implicit none
 
-  public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho
+  public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
+         MLkinetic_xy2_Radau_bisect_EKE
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -185,6 +186,83 @@ module kin_xy2
      g_rot(3,3,5) = 2.0_ark*cos(rho_2)**2/mX
      !
    end subroutine  MLkinetic_xy2_bisect_EKE_sinrho
+
+
+
+  !
+  ! Defining kinetic energy function: Radau coordinates 
+  ! This is EKE generated using Maple for a bisecting frame with bond-length-angle and 
+  ! removed singularity by combining U rho with dG/drho and multiplying muzz by rho^2
+  ! and muxz and muyz by rho. The vecinity of zero (singularity) is expanded wrt rho, up to the 7th order 
+  !
+  subroutine MLkinetic_xy2_Radau_bisect_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY,rho_2,rho_over_sinrho,rho2_over_sinrho2,pseudo_fac
+   real(ark),parameter  :: rho_threshold = 0.01_rk
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xy2_Radau_bisect_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xy2_Radau_bisect_EKE can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(2)
+     !
+     rho_2 = rho*0.5_ark
+     !
+     g_vib = 0 
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     g_vib(1,1,1) =  1.0_ark/mY
+     g_vib(2,2,1) =  1.0_ark/mY
+     g_vib(3,3,4) =  1.0_ark/mY
+     g_vib(3,3,6) =  1.0_ark/mY
+     !
+     g_rot(1,1,4) =  0.25_ark/cos(rho_2)**2/mY
+     g_rot(1,1,6) =  0.25_ark/cos(rho_2)**2/mY
+     !
+     g_rot(2,2,4) =  0.25_ark/cos(rho_2)**2/mY
+     g_rot(2,2,6) =  0.25_ark/cos(rho_2)**2/mY
+     !     
+     g_cor(3,2,4) =   .5_ark/mY
+     g_cor(3,2,6) =  -.5_ark/mY
+     !
+     if (rho>rho_threshold) then
+        !
+        rho_over_sinrho = rho/sin(rho)
+        rho2_over_sinrho2 = rho**2/sin(rho)**2
+        pseudo_fac  =  1.0_ark/rho - rho - rho/sin(rho)**2
+        !
+     else
+        !
+        ! expansion around rho=0
+        !
+        rho_over_sinrho = 1.0_ark+1.0_ark/6.0_ark*rho**2+7.0_ark/360.0_ark*rho**4+31.0_ark/15120.0_ark*rho**6+127.0_ark/604800.0_ark*rho**8
+        rho2_over_sinrho2 = 1.0_ark+1.0_ark/3.0_ark*rho**2+1.0_ark/15.0_ark*rho**4+2.0_ark/189.0_ark*rho**6+1.0_ark/675.0_ark*rho**8
+        pseudo_fac = -4.0_ark/3.0_ark*rho-1.0_ark/15.0_ark*rho**3-2.0_ark/189.0_ark*rho**5-1.0_ark/675.0_ark*rho**7-2.0_ark/10395.0_ark*rho**9
+        !
+     endif
+     !
+     g_rot(1,3,4) =  -0.5_ark*rho_over_sinrho/mY 
+     g_rot(1,3,6) =   0.5_ark*rho_over_sinrho/mY 
+     !
+     g_rot(3,1,4) =  -0.5_ark*rho_over_sinrho/mY 
+     g_rot(3,1,6) =   0.5_ark*rho_over_sinrho/mY 
+     !
+     g_rot(3,3,4) =   cos(rho_2)**2/mY*rho2_over_sinrho2
+     g_rot(3,3,6) =   cos(rho_2)**2/mY*rho2_over_sinrho2
+     !
+     pseudo(4) =  .125_ark/mY*pseudo_fac
+     pseudo(6) =  .125_ark/mY*pseudo_fac
+     !
+   end subroutine  MLkinetic_xy2_Radau_bisect_EKE
+
 
 
 !

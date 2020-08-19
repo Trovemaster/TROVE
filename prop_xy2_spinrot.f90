@@ -18,7 +18,7 @@ contains
 ! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector
 ! frame, where some of the elements become singular at linear geometry.
 
-subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
+subroutine prop_xy2_gtensor_bisector_tmp(rank, ncoords, natoms, local, xyz, f)
   !
   implicit none 
   !
@@ -109,7 +109,7 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   ! I^-1 = [[a,0,b/sin(rho)],[0,c,0],[b/sin(rho),0,d/sin(rho/2)^2]]
   a = ((mY*(r1 - r2)**2 + mX*(r1**2 + r2**2))*(1.0_ark/cos(rho/2.0_ark))**2)/(4.0_ark*mY*mX*r1**2*r2**2)
   b = ((mY + mX)*(r1**2 - r2**2))/(2.0_ark*mY*mX*r1**2*r2**2)
-  c = (2*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2*mY*r1*r2*cos(rho)))
+  c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
   d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
   !
   ! 1,1
@@ -141,7 +141,645 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   ! we multiply g(1,3) and g(3,1) here with -1 because of the opposite direction
   ! of the bisector axis (x-axis) in TROVE and in the actual ab initio data 
   !
+end subroutine prop_xy2_gtensor_bisector_tmp
+
+
+
+
+
+! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector
+! frame, where some of the elements become singular at linear geometry.
+
+subroutine prop_xy2_gtensor_bisector_tmp2(rank, ncoords, natoms, local, xyz, f)
+  !
+  implicit none 
+  !
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+  integer(ik) :: iatom
+  !
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, a, b, c, d
+  real(ark) :: g(3,3), mat(3,3), g_out(5,-2:0), e1(3), e2(3), e3(3), x(natoms,3), mY, mX
+  real(ark) :: rho_over_sinrho, rho2_over_sinrho, rho2_over_sin2rhohalf
+  real(ark),parameter  :: rho_threshold = 0.01_rk
+  integer(ik) :: icentre
+  !
+  if (rank/=5) then
+    write(out, '(/a,1x,i3,1x,a)') &
+      'prop_xy2_gtensor_bisector: rank of the input tensor =', rank, ', expected 5'
+    stop
+  endif
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_gtensor_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_gtensor_bisector - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+  !
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+  !
+  e1 = xyz_(2,:)/r1
+  e2 = xyz_(3,:)/r2
+  !
+  alpha = aacos(sum(e1*e2))
+  !
+  rho = pi-alpha
+  !
+  ! fitted tensor elements
+  !
+  g = 0
+  !
+  g(1,1) = fit_xy2_sr_A1(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r1, r2, alpha/))
+  g(2,2) = fit_xy2_sr_A1(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r1, r2, alpha/))
+  g(3,3) = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r1, r2, alpha/))
+  !
+  g(1,3) = fit_xy2_sr_B2(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r1, r2, alpha/))
+  !
+  g(3,1) = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r1, r2, alpha/))
+  !
+  ! transform with the inverse inertia tensor
+  !
+  if (rho>rho_threshold) then
+    !
+    rho_over_sinrho = rho/sin(rho)
+    rho2_over_sinrho = rho**2/sin(rho)
+    rho2_over_sin2rhohalf = rho**2/sin(rho*0.5_ark)**2
+    !
+  else
+    !
+    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7.0_ark*rho**4)/360.0_ark + (31.0_ark*rho**6)/15120.0_ark &
+                    + (127.0_ark*rho**8)/604800.0_ark + (73.0_ark*rho**10)/3.42144e6_ark
+    rho2_over_sinrho = rho + rho**3/6.0_ark + (7.0_ark*rho**5)/360.0_ark + (31.0_ark*rho**7)/15120.0_ark &
+                     + (127._ark*rho**9)/604800.0_ark
+    rho2_over_sin2rhohalf = 4.0_ark + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+                          + rho**8/43200.0_ark + rho**10/1.33056e6_ark
+    !
+  endif
+  !
+  ! inverse tensor of inertia
+  !
+  mX = molec%atomMasses(1)
+  mY = molec%atomMasses(2)
+  ! I^-1 = [[a,0,b/sin(rho)],[0,c,0],[b/sin(rho),0,d/sin(rho/2)^2]]
+  a = ((mY*(r1 - r2)**2 + mX*(r1**2 + r2**2))*(1.0_ark/cos(rho/2.0_ark))**2)/(4.0_ark*mY*mX*r1**2*r2**2)
+  b = ((mY + mX)*(r1**2 - r2**2))/(2.0_ark*mY*mX*r1**2*r2**2)
+  c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
+  d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
+  !
+  ! 1,1
+  g_out(1,0) =  0 !g(1,1)*a + g(1,3)*b*rho_over_sinrho
+  g_out(1,-1) = 0
+  g_out(1,-2) = 0
+  !
+  ! 1,3
+  g_out(2,0) = 0
+  g_out(2,-1) = g(1,3) ! g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
+  g_out(2,-2) = 0
+  !
+  ! 2,2
+  g_out(3,0) =  0 ! g(2,2)*c
+  g_out(3,-1) = 0
+  g_out(3,-2) = 0
+  !
+  ! 3,1
+  g_out(4,0) =  0 ! g(3,1)*a*rho + g(3,3)*b*rho_over_sinrho
+  g_out(4,-1) = 0
+  g_out(4,-2) = 0
+  !
+  ! 3,3
+  g_out(5,0) = 0
+  g_out(5,-1) = 0 ! g(3,3)*d*rho2_over_sin2rhohalf + g(3,1)*b*rho2_over_sinrho
+  g_out(5,-2) = 0
+  !
+  f = (/g_out(1,0), g_out(2,-1), g_out(3,0), -g_out(4,0), g_out(5,-1)/)
+  ! we multiply g(1,3) and g(3,1) here with -1 because of the opposite direction
+  ! of the bisector axis (x-axis) in TROVE and in the actual ab initio data 
+  !
+end subroutine prop_xy2_gtensor_bisector_tmp2
+
+
+
+
+! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector
+! frame, where some of the elements become singular at linear geometry.
+
+subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
+  !
+  implicit none 
+  !
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+  integer(ik) :: iatom
+  !
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, a, b, c, d
+  real(ark) :: g(3,3), mat(3,3), g_out(5,-2:0), e1(3), e2(3), e3(3), x(natoms,3), mY, mX, mP
+  real(ark) :: rho_over_sinrho, rho2_over_sinrho, rho2_over_sin2rhohalf,rho_over_sinrho_2,gtxz
+  real(ark),parameter  :: rho_threshold = 0.01_rk
+  integer(ik) :: icentre
+
+  integer(ik)           :: k
+  real(ark)             :: y1,y2,y3,re,ae,b0,muxz,muzz,Izz,g_zz
+  real(ark)             :: p(3:extF%nterms(4)-2),v0,v1,v2,v3,v4,v5,v6,v7,v8,q(5:extF%nterms(3))
+
+  !
+  if (rank/=5) then
+    write(out, '(/a,1x,i3,1x,a)') &
+      'prop_xy2_gtensor_bisector: rank of the input tensor =', rank, ', expected 5'
+    stop
+  endif
+  !
+  ! xyz are undefined for the local case
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_gtensor_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_gtensor_bisector - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+  !
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+  !
+  e1 = xyz_(2,:)/r1
+  e2 = xyz_(3,:)/r2
+  !
+  alpha = aacos(sum(e1*e2))
+  !
+  rho = pi-alpha
+  !
+  ! fitted tensor elements
+  !
+  g = 0
+  !
+  g(1,1) = fit_xy2_sr_A1(extF%nterms(1)-2, extF%coef(3:extF%nterms(1),1), (/r1, r2, alpha/))
+  g(2,2) = fit_xy2_sr_A1(extF%nterms(2)-2, extF%coef(3:extF%nterms(2),2), (/r1, r2, alpha/))
+  g(3,3) = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(3)-2, extF%coef(3:extF%nterms(3),3), (/r1, r2, alpha/))
+  !g(1,3) = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(4)-2, extF%coef(3:extF%nterms(4),4), (/r1, r2, alpha/))
+  g(3,1) = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(5)-2, extF%coef(3:extF%nterms(5),5), (/r1, r2, alpha/))
+  !
+  ! transform with the inverse inertia tensor
+  !
+  if (rho>rho_threshold) then
+    !
+    rho_over_sinrho = rho/sin(rho)
+    rho_over_sinrho_2 = rho/sin(rho*0.5_ark)
+    rho2_over_sinrho = rho**2/sin(rho)
+    rho2_over_sin2rhohalf = rho**2/sin(rho*0.5_ark)**2
+    !
+  else
+    !
+    rho_over_sinrho = 1.0_ark + rho**2/6.0_ark + (7.0_ark*rho**4)/360.0_ark + (31.0_ark*rho**6)/15120.0_ark &
+                    + (127.0_ark*rho**8)/604800.0_ark + (73.0_ark*rho**10)/3.42144e6_ark
+    rho_over_sinrho_2 = 0.5_ark*rho-1._ark/48._ark*rho**3+1._ark/3840._ark*rho**5-1._ark/645120._ark*rho**7
+    rho2_over_sinrho = rho + rho**3/6.0_ark + (7.0_ark*rho**5)/360.0_ark + (31.0_ark*rho**7)/15120.0_ark &
+                     + (127._ark*rho**9)/604800.0_ark
+    rho2_over_sin2rhohalf = 4.0_ark + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+                          + rho**8/43200.0_ark + rho**10/1.33056e6_ark
+    !
+  endif
+  !
+  mP = 1.007276_ark
+  !
+  mX = molec%atomMasses(1)
+  mY = molec%atomMasses(2)
+  !
+  ! nuclear part of g[x,z] from Cybilski 1994 
+  gtxz = -mP*4.0_ark*cos(rho/2.0_ark)*rho_over_sinrho_2*(&
+            -11.0_ark*mY**2*r1**2+11.0_ark*mY**2*r2**2-4.0_ark*r1**2*mX**2&
+            -8.0_ark*r1**2*mX*mY+4*r2**2*mX**2+8.0_ark*r2**2*mX*mY)/&
+          ( (mX+2.0_ark*mY)*mY*(mX*r1**2+mX*r2**2+mY*r1**2-2.0_ark*mY*r1*r2+mY*r2**2) )
+
+  !
+  Izz = (mY*(mX*r2**2+mX*r1**2-2.0_ark*mY*r1*r2+mY*r1**2+mY*r2**2))/(mX+2.0_ark*mY)/cos(rho*0.5_ark)**2/4.0_ark
+  !
+  g_zz =   cos(rho*0.5_ark)**2/mY*(r1**2+r2**2)
+  !
+  re = extF%coef(3,4) 
+  ae = extF%coef(4,4)*pi/180.0_ark
+  !b0 = extF%coef(3,1)
+  !
+  y1 = (r1 - re)
+  y2 = (r2 - re)
+  y3 = cos(alpha) - cos(ae)
+  !
+  k = extF%nterms(4)
+  !
+  p(3:k-2) = extF%coef(5:k,4)
+  !
+  v1 = p( 3)*y1**1*y2**0*y3**0& 
+     - p( 3)*y1**0*y2**1*y3**0
+  v2 = p( 4)*y1**1*y2**0*y3**1& 
+     - p( 4)*y1**0*y2**1*y3**1&  
+     + p( 5)*y1**2*y2**0*y3**0& 
+     - p( 5)*y1**0*y2**2*y3**0
+     !
+  v3 = p( 6)*y1**1*y2**0*y3**2& 
+     - p( 6)*y1**0*y2**1*y3**2& 
+     + p( 7)*y1**2*y2**0*y3**1& 
+     - p( 7)*y1**0*y2**2*y3**1& 
+     + p( 8)*y1**2*y2**1*y3**0& 
+     - p( 8)*y1**1*y2**2*y3**0& 
+     + p( 9)*y1**3*y2**0*y3**0& 
+     - p( 9)*y1**0*y2**3*y3**0
+     !
+   v4 =p(10)*y1**1*y2**0*y3**3& 
+     - p(10)*y1**0*y2**1*y3**3& 
+     + p(11)*y1**2*y2**0*y3**2& 
+     - p(11)*y1**0*y2**2*y3**2& 
+     + p(12)*y1**2*y2**1*y3**1& 
+     - p(12)*y1**1*y2**2*y3**1& 
+     + p(13)*y1**3*y2**0*y3**1& 
+     - p(13)*y1**0*y2**3*y3**1& 
+     + p(14)*y1**3*y2**1*y3**0& 
+     - p(14)*y1**1*y2**3*y3**0& 
+     + p(15)*y1**4*y2**0*y3**0& 
+     - p(15)*y1**0*y2**4*y3**0
+     !
+   v5 =p(16)*y1**1*y2**0*y3**4& 
+     - p(16)*y1**0*y2**1*y3**4& 
+     + p(17)*y1**2*y2**0*y3**3& 
+     - p(17)*y1**0*y2**2*y3**3& 
+     + p(18)*y1**2*y2**1*y3**2& 
+     - p(18)*y1**1*y2**2*y3**2& 
+     + p(19)*y1**3*y2**0*y3**2& 
+     - p(19)*y1**0*y2**3*y3**2& 
+     + p(20)*y1**3*y2**1*y3**1& 
+     - p(20)*y1**1*y2**3*y3**1& 
+     + p(21)*y1**3*y2**2*y3**0& 
+     - p(21)*y1**2*y2**3*y3**0& 
+     + p(22)*y1**4*y2**0*y3**1& 
+     - p(22)*y1**0*y2**4*y3**1& 
+     + p(23)*y1**4*y2**1*y3**0& 
+     - p(23)*y1**1*y2**4*y3**0& 
+     + p(24)*y1**5*y2**0*y3**0& 
+     - p(24)*y1**0*y2**5*y3**0
+     !
+   v6 =p(25)*y1**1*y2**0*y3**5& 
+     - p(25)*y1**0*y2**1*y3**5& 
+     + p(26)*y1**2*y2**0*y3**4& 
+     - p(26)*y1**0*y2**2*y3**4& 
+     + p(27)*y1**2*y2**1*y3**3& 
+     - p(27)*y1**1*y2**2*y3**3& 
+     + p(28)*y1**3*y2**0*y3**3& 
+     - p(28)*y1**0*y2**3*y3**3& 
+     + p(29)*y1**3*y2**1*y3**2& 
+     - p(29)*y1**1*y2**3*y3**2& 
+     + p(30)*y1**3*y2**2*y3**1& 
+     - p(30)*y1**2*y2**3*y3**1& 
+     + p(31)*y1**4*y2**0*y3**2& 
+     - p(31)*y1**0*y2**4*y3**2& 
+     + p(32)*y1**4*y2**1*y3**1& 
+     - p(32)*y1**1*y2**4*y3**1& 
+     + p(33)*y1**4*y2**2*y3**0& 
+     - p(33)*y1**2*y2**4*y3**0& 
+     + p(34)*y1**5*y2**0*y3**1& 
+     - p(34)*y1**0*y2**5*y3**1& 
+     + p(35)*y1**5*y2**1*y3**0& 
+     - p(35)*y1**1*y2**5*y3**0& 
+     + p(36)*y1**6*y2**0*y3**0& 
+     - p(36)*y1**0*y2**6*y3**0
+     !
+  v7 = p(37)*y1**1*y2**0*y3**6& 
+     - p(37)*y1**0*y2**1*y3**6& 
+     + p(38)*y1**2*y2**0*y3**5& 
+     - p(38)*y1**0*y2**2*y3**5& 
+     + p(39)*y1**2*y2**1*y3**4& 
+     - p(39)*y1**1*y2**2*y3**4& 
+     + p(40)*y1**3*y2**0*y3**4& 
+     - p(40)*y1**0*y2**3*y3**4& 
+     + p(41)*y1**3*y2**1*y3**3& 
+     - p(41)*y1**1*y2**3*y3**3& 
+     + p(42)*y1**3*y2**2*y3**2& 
+     - p(42)*y1**2*y2**3*y3**2& 
+     + p(43)*y1**4*y2**0*y3**3& 
+     - p(43)*y1**0*y2**4*y3**3& 
+     + p(44)*y1**4*y2**1*y3**2& 
+     - p(44)*y1**1*y2**4*y3**2& 
+     + p(45)*y1**4*y2**2*y3**1& 
+     - p(45)*y1**2*y2**4*y3**1& 
+     + p(46)*y1**4*y2**3*y3**0& 
+     - p(46)*y1**3*y2**4*y3**0& 
+     + p(47)*y1**5*y2**0*y3**2& 
+     - p(47)*y1**0*y2**5*y3**2& 
+     + p(48)*y1**5*y2**1*y3**1& 
+     - p(48)*y1**1*y2**5*y3**1& 
+     + p(49)*y1**5*y2**2*y3**0& 
+     - p(49)*y1**2*y2**5*y3**0& 
+     + p(50)*y1**6*y2**0*y3**1& 
+     - p(50)*y1**0*y2**6*y3**1& 
+     + p(51)*y1**6*y2**1*y3**0& 
+     - p(51)*y1**1*y2**6*y3**0& 
+     + p(52)*y1**7*y2**0*y3**0& 
+     - p(52)*y1**0*y2**7*y3**0
+     !
+  v8 = p(53)*y1**1*y2**0*y3**7& 
+     - p(53)*y1**0*y2**1*y3**7& 
+     + p(54)*y1**2*y2**0*y3**6& 
+     - p(54)*y1**0*y2**2*y3**6& 
+     + p(55)*y1**2*y2**1*y3**5& 
+     - p(55)*y1**1*y2**2*y3**5& 
+     + p(56)*y1**3*y2**0*y3**5& 
+     - p(56)*y1**0*y2**3*y3**5& 
+     + p(57)*y1**3*y2**1*y3**4& 
+     - p(57)*y1**1*y2**3*y3**4& 
+     + p(58)*y1**3*y2**2*y3**3& 
+     - p(58)*y1**2*y2**3*y3**3& 
+     + p(59)*y1**4*y2**0*y3**4& 
+     - p(59)*y1**0*y2**4*y3**4& 
+     + p(60)*y1**4*y2**1*y3**3& 
+     - p(60)*y1**1*y2**4*y3**3& 
+     + p(61)*y1**4*y2**2*y3**2& 
+     - p(61)*y1**2*y2**4*y3**2& 
+     + p(62)*y1**4*y2**3*y3**1& 
+     - p(62)*y1**3*y2**4*y3**1& 
+     + p(63)*y1**5*y2**0*y3**3& 
+     - p(63)*y1**0*y2**5*y3**3& 
+     + p(64)*y1**5*y2**1*y3**2& 
+     - p(64)*y1**1*y2**5*y3**2& 
+     + p(65)*y1**5*y2**2*y3**1& 
+     - p(65)*y1**2*y2**5*y3**1& 
+     + p(66)*y1**5*y2**3*y3**0& 
+     - p(66)*y1**3*y2**5*y3**0& 
+     + p(67)*y1**6*y2**0*y3**2& 
+     - p(67)*y1**0*y2**6*y3**2& 
+     + p(68)*y1**6*y2**1*y3**1& 
+     - p(68)*y1**1*y2**6*y3**1& 
+     + p(69)*y1**6*y2**2*y3**0& 
+     - p(69)*y1**2*y2**6*y3**0& 
+     + p(70)*y1**7*y2**0*y3**1& 
+     - p(70)*y1**0*y2**7*y3**1& 
+     + p(71)*y1**7*y2**1*y3**0& 
+     - p(71)*y1**1*y2**7*y3**0& 
+     + p(72)*y1**8*y2**0*y3**0& 
+     - p(72)*y1**0*y2**8*y3**0
+  !
+  muxz = v1+v2+v3+v4+v5+v6+v7+v8
+
+  re = extF%coef(3,3) 
+  ae = extF%coef(4,3)*pi/180.0_ark
+  !b0 = extF%coef(3,1)
+  !
+  y1 = (r1 - re)
+  y2 = (r2 - re)
+  y3 = cos(alpha) - cos(ae)
+
+
+    k = extF%nterms(3) 
+    !
+    q(5:k) = extF%coef(5:k,3)
+    !
+    v0 = q(5)*y1**0*y2**0*y3**0
+    v1 = q(6)*y1**0*y2**0*y3**1& 
+       + q(7)*y1**1*y2**0*y3**0& 
+       + q(7)*y1**0*y2**1*y3**0
+    v2 = q(8)*y1**0*y2**0*y3**2& 
+       + q(9)*y1**1*y2**0*y3**1& 
+       + q(9)*y1**0*y2**1*y3**1& 
+       + q(10)*y1**1*y2**1*y3**0& 
+       + q(11)*y1**2*y2**0*y3**0& 
+       + q(11)*y1**0*y2**2*y3**0
+    v3 = q(12)*y1**0*y2**0*y3**3& 
+       + q(13)*y1**1*y2**0*y3**2& 
+       + q(13)*y1**0*y2**1*y3**2& 
+       + q(14)*y1**1*y2**1*y3**1& 
+       + q(15)*y1**2*y2**0*y3**1& 
+       + q(15)*y1**0*y2**2*y3**1& 
+       + q(16)*y1**2*y2**1*y3**0& 
+       + q(16)*y1**1*y2**2*y3**0& 
+       + q(17)*y1**3*y2**0*y3**0& 
+       + q(17)*y1**0*y2**3*y3**0
+       !
+     v4 = q(18)*y1**0*y2**0*y3**4& 
+       + q(19)*y1**1*y2**0*y3**3& 
+       + q(19)*y1**0*y2**1*y3**3& 
+       + q(20)*y1**1*y2**1*y3**2& 
+       + q(21)*y1**2*y2**0*y3**2& 
+       + q(21)*y1**0*y2**2*y3**2& 
+       + q(22)*y1**2*y2**1*y3**1& 
+       + q(22)*y1**1*y2**2*y3**1& 
+       + q(23)*y1**2*y2**2*y3**0& 
+       + q(24)*y1**3*y2**0*y3**1& 
+       + q(24)*y1**0*y2**3*y3**1& 
+       + q(25)*y1**3*y2**1*y3**0& 
+       + q(25)*y1**1*y2**3*y3**0& 
+       + q(26)*y1**4*y2**0*y3**0& 
+       + q(26)*y1**0*y2**4*y3**0
+       !
+     v5 = q(27)*y1**0*y2**0*y3**5& 
+       + q(28)*y1**1*y2**0*y3**4& 
+       + q(28)*y1**0*y2**1*y3**4& 
+       + q(29)*y1**1*y2**1*y3**3& 
+       + q(30)*y1**2*y2**0*y3**3& 
+       + q(30)*y1**0*y2**2*y3**3& 
+       + q(31)*y1**2*y2**1*y3**2& 
+       + q(31)*y1**1*y2**2*y3**2& 
+       + q(32)*y1**2*y2**2*y3**1& 
+       + q(33)*y1**3*y2**0*y3**2& 
+       + q(33)*y1**0*y2**3*y3**2& 
+       + q(34)*y1**3*y2**1*y3**1& 
+       + q(34)*y1**1*y2**3*y3**1& 
+       + q(35)*y1**3*y2**2*y3**0& 
+       + q(35)*y1**2*y2**3*y3**0& 
+       + q(36)*y1**4*y2**0*y3**1& 
+       + q(36)*y1**0*y2**4*y3**1& 
+       + q(37)*y1**4*y2**1*y3**0& 
+       + q(37)*y1**1*y2**4*y3**0& 
+       + q(38)*y1**5*y2**0*y3**0& 
+       + q(38)*y1**0*y2**5*y3**0
+       !
+    v6 = q(39)*y1**0*y2**0*y3**6& 
+       + q(40)*y1**1*y2**0*y3**5& 
+       + q(40)*y1**0*y2**1*y3**5& 
+       + q(41)*y1**1*y2**1*y3**4& 
+       + q(42)*y1**2*y2**0*y3**4& 
+       + q(42)*y1**0*y2**2*y3**4& 
+       + q(43)*y1**2*y2**1*y3**3& 
+       + q(43)*y1**1*y2**2*y3**3& 
+       + q(44)*y1**2*y2**2*y3**2& 
+       + q(45)*y1**3*y2**0*y3**3& 
+       + q(45)*y1**0*y2**3*y3**3& 
+       + q(46)*y1**3*y2**1*y3**2& 
+       + q(46)*y1**1*y2**3*y3**2& 
+       + q(47)*y1**3*y2**2*y3**1& 
+       + q(47)*y1**2*y2**3*y3**1& 
+       + q(48)*y1**3*y2**3*y3**0& 
+       + q(49)*y1**4*y2**0*y3**2& 
+       + q(49)*y1**0*y2**4*y3**2& 
+       + q(50)*y1**4*y2**1*y3**1& 
+       + q(50)*y1**1*y2**4*y3**1& 
+       + q(51)*y1**4*y2**2*y3**0& 
+       + q(51)*y1**2*y2**4*y3**0& 
+       + q(52)*y1**5*y2**0*y3**1& 
+       + q(52)*y1**0*y2**5*y3**1& 
+       + q(53)*y1**5*y2**1*y3**0& 
+       + q(53)*y1**1*y2**5*y3**0& 
+       + q(54)*y1**6*y2**0*y3**0& 
+       + q(54)*y1**0*y2**6*y3**0
+       !
+    v7 = q(55)*y1**0*y2**0*y3**7& 
+       + q(56)*y1**1*y2**0*y3**6& 
+       + q(56)*y1**0*y2**1*y3**6& 
+       + q(57)*y1**1*y2**1*y3**5& 
+       + q(58)*y1**2*y2**0*y3**5& 
+       + q(58)*y1**0*y2**2*y3**5& 
+       + q(59)*y1**2*y2**1*y3**4& 
+       + q(59)*y1**1*y2**2*y3**4& 
+       + q(60)*y1**2*y2**2*y3**3& 
+       + q(61)*y1**3*y2**0*y3**4& 
+       + q(61)*y1**0*y2**3*y3**4& 
+       + q(62)*y1**3*y2**1*y3**3& 
+       + q(62)*y1**1*y2**3*y3**3& 
+       + q(63)*y1**3*y2**2*y3**2& 
+       + q(63)*y1**2*y2**3*y3**2& 
+       + q(64)*y1**3*y2**3*y3**1& 
+       + q(65)*y1**4*y2**0*y3**3& 
+       + q(65)*y1**0*y2**4*y3**3& 
+       + q(66)*y1**4*y2**1*y3**2& 
+       + q(66)*y1**1*y2**4*y3**2& 
+       + q(67)*y1**4*y2**2*y3**1& 
+       + q(67)*y1**2*y2**4*y3**1& 
+       + q(68)*y1**4*y2**3*y3**0& 
+       + q(68)*y1**3*y2**4*y3**0& 
+       + q(69)*y1**5*y2**0*y3**2& 
+       + q(69)*y1**0*y2**5*y3**2& 
+       + q(70)*y1**5*y2**1*y3**1& 
+       + q(70)*y1**1*y2**5*y3**1& 
+       + q(71)*y1**5*y2**2*y3**0& 
+       + q(71)*y1**2*y2**5*y3**0& 
+       + q(72)*y1**6*y2**0*y3**1& 
+       + q(72)*y1**0*y2**6*y3**1& 
+       + q(73)*y1**6*y2**1*y3**0& 
+       + q(73)*y1**1*y2**6*y3**0& 
+       + q(74)*y1**7*y2**0*y3**0& 
+       + q(74)*y1**0*y2**7*y3**0
+       !
+    v8 = q(75)*y1**0*y2**0*y3**8& 
+       + q(76)*y1**1*y2**0*y3**7& 
+       + q(76)*y1**0*y2**1*y3**7& 
+       + q(77)*y1**1*y2**1*y3**6& 
+       + q(78)*y1**2*y2**0*y3**6& 
+       + q(78)*y1**0*y2**2*y3**6& 
+       + q(79)*y1**2*y2**1*y3**5& 
+       + q(79)*y1**1*y2**2*y3**5& 
+       + q(80)*y1**2*y2**2*y3**4& 
+       + q(81)*y1**3*y2**0*y3**5& 
+       + q(81)*y1**0*y2**3*y3**5& 
+       + q(82)*y1**3*y2**1*y3**4& 
+       + q(82)*y1**1*y2**3*y3**4& 
+       + q(83)*y1**3*y2**2*y3**3& 
+       + q(83)*y1**2*y2**3*y3**3& 
+       + q(84)*y1**3*y2**3*y3**2& 
+       + q(85)*y1**4*y2**0*y3**4& 
+       + q(85)*y1**0*y2**4*y3**4& 
+       + q(86)*y1**4*y2**1*y3**3& 
+       + q(86)*y1**1*y2**4*y3**3& 
+       + q(87)*y1**4*y2**2*y3**2& 
+       + q(87)*y1**2*y2**4*y3**2& 
+       + q(88)*y1**4*y2**3*y3**1& 
+       + q(88)*y1**3*y2**4*y3**1& 
+       + q(89)*y1**4*y2**4*y3**0& 
+       + q(90)*y1**5*y2**0*y3**3& 
+       + q(90)*y1**0*y2**5*y3**3& 
+       + q(91)*y1**5*y2**1*y3**2& 
+       + q(91)*y1**1*y2**5*y3**2& 
+       + q(92)*y1**5*y2**2*y3**1& 
+       + q(92)*y1**2*y2**5*y3**1& 
+       + q(93)*y1**5*y2**3*y3**0& 
+       + q(93)*y1**3*y2**5*y3**0& 
+       + q(94)*y1**6*y2**0*y3**2& 
+       + q(94)*y1**0*y2**6*y3**2& 
+       + q(95)*y1**6*y2**1*y3**1& 
+       + q(95)*y1**1*y2**6*y3**1& 
+       + q(96)*y1**6*y2**2*y3**0& 
+       + q(96)*y1**2*y2**6*y3**0& 
+       + q(97)*y1**7*y2**0*y3**1& 
+       + q(97)*y1**0*y2**7*y3**1& 
+       + q(98)*y1**7*y2**1*y3**0& 
+       + q(98)*y1**1*y2**7*y3**0& 
+       + q(99)*y1**8*y2**0*y3**0& 
+       + q(99)*y1**0*y2**8*y3**0
+       !
+    muzz =(v0+v1+v2+v3+v4+v5+v6+v7+v8)
+
+ 
+  !
+  ! inverse tensor of inertia
+  !
+  mX = molec%atomMasses(1)
+  mY = molec%atomMasses(2)
+  ! I^-1 = [[a,0,b/sin(rho)],[0,c,0],[b/sin(rho),0,d/sin(rho/2)^2]]
+  a = ((mY*(r1 - r2)**2 + mX*(r1**2 + r2**2))*(1.0_ark/cos(rho/2.0_ark))**2)/(4.0_ark*mY*mX*r1**2*r2**2)
+  b = ((mY + mX)*(r1**2 - r2**2))/(2.0_ark*mY*mX*r1**2*r2**2)
+  c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
+  d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
+  !
+  ! 1,1
+  g_out(1,0) =  0 !g(1,1)*a + g(1,3)*b*rho_over_sinrho
+  g_out(1,-1) = 0
+  g_out(1,-2) = 0
+  !
+  ! 1,3
+  g_out(2,0)  = 0    !  muzz !
+  g_out(2,-1) =  muxz !*Izz*g_zz*2.0_ark  ! gtxz ! g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
+  g_out(2,-2) = 0
+  !
+  ! 2,2
+  g_out(3,0)  = 0 !g(2,2)*c
+  g_out(3,-1) = 0
+  g_out(3,-2) = 0
+  !
+  ! 3,1
+  g_out(4,0) =  0 !g(3,1)*a*rho + g(3,3)*b*rho_over_sinrho
+  g_out(4,-1) = 0
+  g_out(4,-2) = 0
+  !
+  ! 3,3
+  g_out(5,0) =  0 ! muzz
+  g_out(5,-1) = 0 ! g(3,3)*d*rho2_over_sin2rhohalf + g(3,1)*b*rho2_over_sinrho
+  g_out(5,-2) = 0
+  !
+  f = (/g_out(1,0), -g_out(2,-1), g_out(3,0), -g_out(4,0), g_out(5,-1)/)
+  ! we multiply g(1,3) and g(3,1) here with -1 because of the opposite direction
+  ! of the bisector axis (x-axis) in TROVE and in the actual ab initio data 
+  !
 end subroutine prop_xy2_gtensor_bisector
+
 
 
 !###################################################################################################
@@ -422,6 +1060,41 @@ end function fit_xy2_sr_A1_rhopow_min_one
 
 
 !###################################################################################################
+
+
+
+function fit_xy2_sr_B2(nparams, params, coords) result(f)
+
+  integer(ik), intent(in) :: nparams
+  real(ark), intent(in) :: params(nparams), coords(3)
+  real(ark) :: f
+
+  real(ark) :: y1, y2, y3, alpha, rho, rad, f0, f1, f2, f3, req, alphaeq, beta, rhoe
+
+  rad = pi/180.0_ark
+
+  req     = params(1)
+  alphaeq = params(2)*rad ! obsolete
+  beta    = params(3)
+
+  y1     = (coords(1)-req) *exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) *exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  rhoe   = pi - alphaeq
+  y3     = rho
+
+  f0 = params(4)
+  f1 = xy2_func_b2_n1_d6((/y1,y2,y3/), params(5:10))    ! nparams = 6
+  f2 = xy2_func_b2_n2_d6((/y1,y2,y3/), params(11:32))   ! nparams = 22
+  f3 = xy2_func_b2_n3_d6((/y1,y2,y3/), params(33:44))   ! nparams = 12
+
+  f = f0 + f1 + f2 + f3
+
+end function fit_xy2_sr_B2
+
+
+
 
 
 function fit_xy2_sr_B2_rhopow_min_one(nparams, params, coords) result(f)

@@ -18896,9 +18896,23 @@ end subroutine check_read_save_none
                            !
                            if (trim(extF%ftype)=='XY2_SR-BISECT' .or. trim(extF%ftype)=='XY2_G-BISECT') then 
                              !
+                             !if (imu==5) then 
+                             !  !
+                             !  if (iterm>2) cycle
+                             !  !
+                             !  phivphi_t(:) = trove%extF(5)%field(iterm,:)*trove%g_cor(3,2)%field(iterm,:)*( phil(:)*dphir(:) - dphil(:)*phir(:))
+                             !  !
+                             !endif
+                             !
                              if    (nint(extF%coef(1,imu))==-1) then 
                                !
-                               phivphi_t(:) = phil_sin(:)*trove%extF(imu)%field(iterm,:)*phir_sin(:)
+                               phivphi_t(:) =  phil_sin(:)*trove%extF(imu)%field(iterm,:)*phir_sin(:)
+                               !
+                               !if (imu==3) then 
+                               !  !
+                               !  phivphi_t(:) = trove%extF(5)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:))
+                               !  !
+                               !endif
                                !
                              elseif(nint(extF%coef(1,imu))==-2) then 
                                !

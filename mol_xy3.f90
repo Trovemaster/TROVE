@@ -99,13 +99,13 @@ module mol_xy3
            !
            !rho = 0
            !
-      !case('MEP_LAF3')
-      !     !
-      !     rho_ark = rho
-      !     !
-      !     re14 = ML_mep_oh3p(rho_ark)
-      !     alpha = 2.0_ark/3.0_ark*pi
-      !     !
+      case('MEP_LAF3')
+           !
+           rho_ark = rho
+           !
+           re14 = ML_mep_oh3p(rho_ark)
+           alpha = 2.0_ark/3.0_ark*pi
+           !
       end select 
       !
       cosr = cos(rho)
