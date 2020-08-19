@@ -9,7 +9,7 @@ module prop_xy2_spinrot
   implicit none
 
   public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
-         TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector
+         TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector,prop_xy2_gtens_nuclear_bisector
 
 
 contains

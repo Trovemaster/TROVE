@@ -34,7 +34,8 @@ module molecules
   use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
   use prop_xy2_quad, only : prop_xy2_qmom_bisect_frame,TEST_xy2_qmom_bisect_frame
   use prop_xy2_spinrot, only : prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
-                               TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector
+                               TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector,&
+                               prop_xy2_gtens_nuclear_bisector
   use prop_xy2_spinspin, only : prop_xy2_spinspin_dipoleYY
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
@@ -615,6 +616,10 @@ end function ML_MEPfunc
     case('XY2_G-BISECT')
         !
         MLextF_func =>  prop_xy2_gtensor_bisector
+        !
+    case('XY2_G-TENS')
+        !
+        MLextF_func =>  prop_xy2_gtens_nuclear_bisector
         !
     case('XY3_MB')
         !
