@@ -135,8 +135,10 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3,3,-1:0), &
-               n1(3), n2(3), x(natoms,3), Grot(3,3), gxx, gxz, gyy, gzx, gzz
+               n1(3), n2(3), x(natoms,3), Grot(3,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu, &
+               RhoOverSinRho, Rho2OverSin2RhoHalf 
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
+  real(ark), parameter  :: rho_threshold = 0.01_rk
 
   if (rank/=5) then
     write(out, '(/a,1x,i3,1x,a)') &
@@ -183,44 +185,45 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   ! compute fitted elements of I*g matrix
 
-  ! NOTE: (1,3)-component ('xz') of I*g matrix must be divided by rho
-  ! NOTE: the first element in extF%coef(1,:) defines the power of rho-singularity (0 or -1)
-  !       of the corresponding element of I*g matrix, the expansion coefficients
-  !       start from index no. 2
+  ! The first element in extF%coef(1,:) defines the power of rho-singularity (0 or -1)
+  ! of the corresponding element in the resulting (output) g-tensor and not fitted I*g tensor
+  ! (which is nonsingular), the expansion coefficients for I*g tensor start from the index no. 2.
 
-  gxx = fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
-  gxz = fit_xy2_sr_B2(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
-  gyy = fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
-  gzx = fit_xy2_sr_B2(extF%nterms(4)-1, extF%coef(2:extF%nterms(4),4), (/r1, r2, alpha/))
-  gzz = fit_xy2_sr_A1(extF%nterms(5)-1, extF%coef(2:extF%nterms(5),5), (/r1, r2, alpha/))
+  ! "_rhopow_min_one" in the name of the function means that the power of the rho coordinate
+  ! in the expansion was reduced by one (since for these functions all expansion coefficients
+  ! at rho**0 are equal to zero), meaning that the returned values must be multiplied by rho
+
+  ! For bisector frame I*g elements (1,3) and (3,1) are equal to each other
+
+  gxx =                fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
+  gxz = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
+  gyy =                fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
+  gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(4)-1, extF%coef(2:extF%nterms(4),4), (/r1, r2, alpha/))
 
   ! compute electronic g-tensor = 0.5 * (I*g + (I*g)^T) * G_rot
-  ! take into account that gxz must be divided by rho
-  ! and split the resulting matrix into two parts: nonsingular and the one divided by rho
 
-  Grot = 0 ! EXPLICIT EXPRESSIONS NEED TO BE IMPLEMENTED
+  if (rho>rho_threshold) then
+    RhoOverSinRho = rho/sin(rho)
+    Rho2OverSin2RhoHalf = rho**2/sin(rho*0.5_ark)**2
+  else
+    RhoOverSinRho = 1.0_ark + rho**2/6.0_ark + (7.0_ark*rho**4)/360.0_ark + (31.0_ark*rho**6)/15120.0_ark &
+                  + (127.0_ark*rho**8)/604800.0_ark + (73.0_ark*rho**10)/3.42144e6_ark
+    Rho2OverSin2RhoHalf = 4.0_ark + rho**2/3.0_ark + rho**4/60.0_ark + rho**6/1512.0_ark &
+                        + rho**8/43200.0_ark + rho**10/1.33056e6_ark
+  endif
 
-  g(1,1,0) = gxx*Grot(1,1) + 0.5_ark*gzx*Grot(3,1)
-  g(1,2,0) = gxx*Grot(1,2) + 0.5_ark*gzx*Grot(3,2)
-  g(1,3,0) = gxx*Grot(1,3) + 0.5_ark*gzx*Grot(3,3)
+  mx = molec%atomMasses(1)
+  my = molec%atomMasses(2)
+  mu = 1.0_ark/mx + 1.0_ark/my
 
-  g(1,1,-1) = (0.5_ark*gxz*Grot(3,1)) !/rho
-  g(1,2,-1) = (0.5_ark*gxz*Grot(3,2)) !/rho
-  g(1,3,-1) = (0.5_ark*gxz*Grot(3,3)) !/rho
+  g = 0
+  g(1,1,0)  = (gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxx*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
+  g(1,3,-1) = (gxz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + gxx*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
+  g(2,2,0)  = (gyy*(0.25_ark*mx*r1**2 + 0.25_ark*mx*r2**2 - 0.5_ark*mu*r1*r2*cos(rho)))/(mu*mx*r1**2*r2**2)
+  g(3,1,0)  = (gzz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxz*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
+  g(3,3,-1) = (gzz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*rho*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
 
-  g(2,1,0) = gyy*Grot(2,1)
-  g(2,2,0) = gyy*Grot(2,2)
-  g(2,3,0) = gyy*Grot(2,3)
-
-  g(3,1,0) = 0.5_ark*gzx*Grot(1,1) + gzz*Grot(3,1)
-  g(3,2,0) = 0.5_ark*gzx*Grot(1,2) + gzz*Grot(3,2)
-  g(3,3,0) = 0.5_ark*gzx*Grot(1,3) + gzz*Grot(3,3)
-
-  g(3,1,-1) = (0.5_ark*gxz*Grot(1,1)) !/rho
-  g(3,2,-1) = (0.5_ark*gxz*Grot(1,2)) !/rho
-  g(3,3,-1) = (0.5_ark*gxz*Grot(1,3)) !/rho
-
-  f = 0 * muN
+  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/) * muN
 
 end subroutine prop_xy2_gtens_electronic_bisector
 
