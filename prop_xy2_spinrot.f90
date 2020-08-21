@@ -136,7 +136,7 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3,3,-1:0), &
                n1(3), n2(3), x(natoms,3), Grot(3,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu, &
-               RhoOverSinRho, Rho2OverSin2RhoHalf 
+               RhoOverSinRho, Rho2OverSin2RhoHalf, muxx, muxz, muzz, muyy, p1, p2
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
   real(ark), parameter  :: rho_threshold = 0.01_rk
 
@@ -214,16 +214,37 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   mx = molec%atomMasses(1)
   my = molec%atomMasses(2)
-  mu = 1.0_ark/mx + 1.0_ark/my
+  !
+  ! mu -> 1/mu
+  mu = 1.0_ark/(1.0_ark/mx + 1.0_ark/my)
 
   g = 0
-  g(1,1,0)  = (gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxx*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
-  g(1,3,-1) = (gxz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + gxx*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
+  !
+  g(1,1,0)  = (gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + &
+               gxx*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
+  g(1,3,-1) = (gxz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + &
+               gxx*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
   g(2,2,0)  = (gyy*(0.25_ark*mx*r1**2 + 0.25_ark*mx*r2**2 - 0.5_ark*mu*r1*r2*cos(rho)))/(mu*mx*r1**2*r2**2)
   g(3,1,0)  = (gzz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxz*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
+  ! 
   g(3,3,-1) = (gzz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*rho*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
 
-  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/) * muN
+  !
+  !p1 = 1.0_ark/r1
+  !p2 = 1.0_ark/r2
+  !
+  !muxx = ( 0.25_ark*(mX+mY)/(mX*mY)*(p1**2+p2**2)- 0.5_ark/mX/(r1*r2) )/cos(rho*0.5_ark)**2
+  !muyy = 0.25_ark*(mX+mY)/(mX*mY)*(p1**2+p2**2)- 0.5_ark/mX*cos(rho*0.5_ark)*p1*p2
+  !muxz  = 0.5_ark*(p2**2 - p1**2)*(mX+mY)/mX/mY
+  !muzz = 0.25_ark*(mX+mY)/mX/mY*(p1**2+p2**2)+.5_ark/mX/(r1*r2)
+  
+  !g(1,1,0)  = gxx*muxx+gxz*muxz*RhoOverSinRho
+  !g(1,3,-1) = gxx*muxz*RhoOverSinRho + gxz*muzz*Rho2OverSin2RhoHalf
+  !g(2,2,0)  = gyy*muyy
+  !g(3,1,0)  = gxz*muxx+gzz*muxz*RhoOverSinRho
+  !g(3,3,-1) = gzz*muzz*Rho2OverSin2RhoHalf+gxz*muxz*RhoOverSinRho*rho
+
+  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/) !* muN
 
 end subroutine prop_xy2_gtens_electronic_bisector
 

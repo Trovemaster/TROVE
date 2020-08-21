@@ -39877,7 +39877,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   ! select only unique terms for each class
   !
-  call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses, iclass_imode(1:2,1:nclasses), &
+  call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses,iclass_imode(1:2,1:nclasses),&
                         nterms_uniq(1:nclasses), iterm_uniq(1:nclasses,1:nterms), terms_uniq(1:nmodes,1:nterms,1:nclasses))
   !
   if (job%verbose>=4) write(out, '(/1x,a,100(1x,i6))') 'max number of unique terms in each class:', nterms_uniq(1:nclasses)
