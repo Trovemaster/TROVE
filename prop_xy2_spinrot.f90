@@ -244,7 +244,7 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
   !g(3,1,0)  = gxz*muxx+gzz*muxz*RhoOverSinRho
   !g(3,3,-1) = gzz*muzz*Rho2OverSin2RhoHalf+gxz*muxz*RhoOverSinRho*rho
 
-  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/) !* muN
+  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/)* muN
 
 end subroutine prop_xy2_gtens_electronic_bisector
 
