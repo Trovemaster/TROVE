@@ -198,7 +198,7 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
   gxx =                fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
   gxz = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
   gyy =                fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
-  gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(4)-1, extF%coef(2:extF%nterms(4),4), (/r1, r2, alpha/))
+  gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(5)-1, extF%coef(2:extF%nterms(5),5), (/r1, r2, alpha/))
 
   ! compute electronic g-tensor = 0.5 * (I*g + (I*g)^T) * G_rot
 
