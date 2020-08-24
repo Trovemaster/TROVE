@@ -6555,7 +6555,7 @@ end subroutine check_read_save_none
       !
       do imode = 1,Nmodes 
          !
-         ! The only place we the right side of the equation appears is in the orthogonalization equations:
+         ! The only place where the right-hand side of the equation appears is in the orthogonalization equations:
          ! bm(i) = delta(i,6+imode)
          !
          bm = 0.0_ark  ;  bm(Nequat-Nmodes+imode) = 1.0_ark
@@ -18897,13 +18897,13 @@ end subroutine check_read_save_none
                            if (trim(extF%ftype)=='XY2_SR-BISECT' .or. trim(extF%ftype)=='XY2_G-BISECT' .or.&
                                trim(extF%ftype)=='XY2_G-TENS-NUC' .or. trim(extF%ftype)=='XY2_G-TENS-ELEC') then 
                              !
-                             !if (imu==5) then 
-                             !  !
-                             !  if (iterm>2) cycle
-                             !  !
-                             !  phivphi_t(:) = trove%extF(5)%field(iterm,:)*trove%g_cor(3,2)%field(iterm,:)*( phil(:)*dphir(:) - dphil(:)*phir(:))
-                             !  !
-                             !endif
+                             if (imu==3) then 
+                               !
+                               !  if (iterm>2) cycle
+                               !
+                               phivphi_t(:) = trove%extF(imu)%field(iterm,:)*( phil_sin(:)*dphir(:) - dphil(:)*phir_sin(:) )
+                               !
+                             endif
                              !
                              if    (nint(extF%coef(1,imu))==-1) then 
                                !
