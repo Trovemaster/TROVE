@@ -10,7 +10,8 @@ module prop_xy2_spinrot
 
   public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
          TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector, &
-         prop_xy2_gtens_nuclear_bisector, prop_xy2_gtens_electronic_bisector
+         prop_xy2_gtens_nuclear_bisector, prop_xy2_grot_electronic_bisector, &
+         prop_xy2_gcor_electronic_bisector
 
 
 contains
@@ -118,16 +119,16 @@ end subroutine prop_xy2_gtens_nuclear_bisector
 
 
 ! Electronic rotational g-tensor for XY2-type molecule:
-!      g_el = 1/hbar * mu_N(CGS) * 0.5 * (I*g + (I*g)^T) * G_rot,
+!      g_el = 1/(2 hbar) * mu_N(CGS) * (g*I) * G_rot,
 !      where mu_N is nuclear magneton in CGS units, g is rotational g-tensor
 !      from the electronic structure calculations, I is inertia tensor,
 !      and G_rot is rotational kinetic energy matrix (same units as I^{-1})
 !      The returned values of g_el are in units of Debye/hbar.
 !
 ! The corresponding electronic contribution to magnetic moment:
-!      mu_el = g_el * J
+!      mu_el = g_el * (J + J^\dagger)
 
-subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz, f)
+subroutine prop_xy2_grot_electronic_bisector(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
@@ -135,14 +136,14 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3,3,-1:0), &
-               n1(3), n2(3), x(natoms,3), Grot(3,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu, &
-               RhoOverSinRho, Rho2OverSin2RhoHalf, muxx, muxz, muzz, muyy, p1, p2
+               n1(3), n2(3), x(natoms,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu, &
+               RhoOverSinRho, Rho2OverSin2RhoHalf
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
   real(ark), parameter  :: rho_threshold = 0.01_rk
 
   if (rank/=5) then
     write(out, '(/a,1x,i3,1x,a)') &
-      'prop_xy2_gtens_electronic_bisector: rank of the input tensor =', rank, ', expected 5'
+      'prop_xy2_grot_electronic_bisector: rank of the input tensor =', rank, ', expected 5'
     stop
   endif
 
@@ -153,7 +154,7 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
     select case(trim(molec%coords_transform))
     case default
        write (out,"('prop_xy2_gtens_electronic_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
-       stop 'prop_xy2_gtens_electronic_bisector - bad coord. type'
+       stop 'prop_xy2_grot_electronic_bisector - bad coord. type'
     case('R-RHO-Z')
        !
        x = MLloc2pqr_xy2(local)
@@ -183,24 +184,24 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   rho = pi - alpha
 
-  ! compute fitted elements of I*g matrix
+  ! compute fitted elements of (g*I) matrix
 
   ! The first element in extF%coef(1,:) defines the power of rho-singularity (0 or -1)
-  ! of the corresponding element in the resulting (output) g-tensor and not fitted I*g tensor
-  ! (which is nonsingular), the expansion coefficients for I*g tensor start from the index no. 2.
+  ! of the corresponding element in the resulting (output) g-tensor and not fitted (g*I) tensor
+  ! (which is nonsingular), the expansion coefficients for (g*I) tensor start from the index no. 2.
 
   ! "_rhopow_min_one" in the name of the function means that the power of the rho coordinate
   ! in the expansion was reduced by one (since for these functions all expansion coefficients
   ! at rho**0 are equal to zero), meaning that the returned values must be multiplied by rho
 
-  ! For bisector frame I*g elements (1,3) and (3,1) are equal to each other
+  ! For bisector frame (g*I) elements (1,3) and (3,1) are equal to each other
 
   gxx =                fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
   gxz = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
   gyy =                fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
   gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(5)-1, extF%coef(2:extF%nterms(5),5), (/r1, r2, alpha/))
 
-  ! compute electronic g-tensor = 0.5 * (I*g + (I*g)^T) * G_rot
+  ! compute electronic g-tensor = 1/2 * (g*I) * G_rot
 
   if (rho>rho_threshold) then
     RhoOverSinRho = rho/sin(rho)
@@ -214,39 +215,131 @@ subroutine prop_xy2_gtens_electronic_bisector(rank, ncoords, natoms, local, xyz,
 
   mx = molec%atomMasses(1)
   my = molec%atomMasses(2)
-  !
-  ! mu -> 1/mu
   mu = 1.0_ark/(1.0_ark/mx + 1.0_ark/my)
 
   g = 0
-  !
-  g(1,1,0)  = (gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + &
-               gxx*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
-  g(1,3,-1) = (gxz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + &
-               gxx*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
-  g(2,2,0)  = (gyy*(0.25_ark*mx*r1**2 + 0.25_ark*mx*r2**2 - 0.5_ark*mu*r1*r2*cos(rho)))/(mu*mx*r1**2*r2**2)
-  g(3,1,0)  = (gzz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxz*(0.25_ark*mx*r1**2 - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2)/(mu*mx*r1**2*r2**2)
-  ! 
-  g(3,3,-1) = (gzz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf + gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*rho*RhoOverSinRho)/(mu*mx*r1**2*r2**2)
 
-  !
-  !p1 = 1.0_ark/r1
-  !p2 = 1.0_ark/r2
-  !
-  !muxx = ( 0.25_ark*(mX+mY)/(mX*mY)*(p1**2+p2**2)- 0.5_ark/mX/(r1*r2) )/cos(rho*0.5_ark)**2
-  !muyy = 0.25_ark*(mX+mY)/(mX*mY)*(p1**2+p2**2)- 0.5_ark/mX*cos(rho*0.5_ark)*p1*p2
-  !muxz  = 0.5_ark*(p2**2 - p1**2)*(mX+mY)/mX/mY
-  !muzz = 0.25_ark*(mX+mY)/mX/mY*(p1**2+p2**2)+.5_ark/mX/(r1*r2)
-  
-  !g(1,1,0)  = gxx*muxx+gxz*muxz*RhoOverSinRho
-  !g(1,3,-1) = gxx*muxz*RhoOverSinRho + gxz*muzz*Rho2OverSin2RhoHalf
-  !g(2,2,0)  = gyy*muyy
-  !g(3,1,0)  = gxz*muxx+gzz*muxz*RhoOverSinRho
-  !g(3,3,-1) = gzz*muzz*Rho2OverSin2RhoHalf+gxz*muxz*RhoOverSinRho*rho
+  g(1,1,0)  = ( gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxx*(0.25_ark*mx*r1**2 &
+              - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)/cos(rho*0.5_ark)**2 ) / (mu*mx*r1**2*r2**2)
 
-  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/)* muN
+  g(1,3,-1) = ( gxz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf &
+              + gxx*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho ) / (mu*mx*r1**2*r2**2)
 
-end subroutine prop_xy2_gtens_electronic_bisector
+  g(2,2,0)  = ( gyy*(0.25_ark*mx*r1**2 + 0.25_ark*mx*r2**2 - 0.5_ark*mu*r1*r2*cos(rho)) ) / (mu*mx*r1**2*r2**2)
+
+  g(3,1,0)  = ( gzz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*RhoOverSinRho + gxz*(0.25_ark*mx*r1**2 &
+              - 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2 )/cos(rho*0.5_ark)**2 ) / (mu*mx*r1**2*r2**2)
+
+  g(3,3,-1) = ( gzz*(0.25_ark*mx*r1**2 + 0.5_ark*mu*r1*r2 + 0.25_ark*mx*r2**2)*Rho2OverSin2RhoHalf &
+              + gxz*mx*(0.5_ark*r1**2 - 0.5_ark*r2**2)*rho*RhoOverSinRho ) / (mu*mx*r1**2*r2**2)
+
+  g = 0.5_ark * g ! since equations above were derived for g-tensor = 1/2 * [(g*I) + (g*I)^T] * G_rot
+                  ! while we need g-tensor = 1/2 * (g*I) * G_rot
+
+  f = (/g(1,1,0), g(1,3,-1), g(2,2,0), g(3,1,0), g(3,3,-1)/) * muN
+
+end subroutine prop_xy2_grot_electronic_bisector
+
+
+
+! Electronic Coriolis g-tensor for XY2-type molecule:
+!      g_el = 1/2 * mu_N(CGS) * (g*I) * G_cor,
+!      where mu_N is nuclear magneton in CGS units, g is rotational g-tensor
+!      from the electronic structure calculations, I is inertia tensor,
+!      and G_cor is Coriolis kinetic energy matrix (same units as I^{-1})
+!      The returned values of g_el are in units of Debye.
+!
+! The corresponding electronic contribution to magnetic moment:
+!      mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger),
+
+subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, f)
+
+  integer(ik),intent(in) ::  rank, ncoords, natoms
+  real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
+  real(ark),intent(out)  ::  f(rank)
+
+  integer(ik) :: iatom
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3), &
+               n1(3), n2(3), x(natoms,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu
+  real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
+
+  if (rank/=5) then
+    write(out, '(/a,1x,i3,1x,a)') &
+      'prop_xy2_gcor_electronic_bisector: rank of the input tensor =', rank, ', expected 5'
+    stop
+  endif
+
+  ! xyz are undefined for the local case
+
+  if (all(abs(xyz)<small_)) then
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('prop_xy2_gtens_electronic_bisector: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'prop_xy2_gcor_electronic_bisector - bad coord. type'
+    case('R-RHO-Z')
+       !
+       x = MLloc2pqr_xy2(local)
+       !
+    end select
+    !
+  else
+    !
+    x = xyz
+    !
+  endif
+
+  ! internal coordinates
+
+  xyz0 = x(1,:)
+  do iatom=1, natoms
+    xyz_(iatom,:) = x(iatom,:) - xyz0(:)
+  enddo
+
+  r1 = sqrt(sum(xyz_(2,:)**2))
+  r2 = sqrt(sum(xyz_(3,:)**2))
+
+  n1 = xyz_(2,:)/r1
+  n2 = xyz_(3,:)/r2
+
+  alpha = aacos(sum(n1*n2))
+
+  rho = pi - alpha
+
+  ! compute fitted elements of (g*I) matrix
+
+  ! The first element in extF%coef(1,:) defines the power of rho-singularity (0 or -1)
+  ! of the corresponding element in the resulting (output) g-tensor and not fitted (g*I) tensor
+  ! (which is nonsingular), the expansion coefficients for (g*I) tensor start from the index no. 2.
+
+  ! "_rhopow_min_one" in the name of the function means that the power of the rho coordinate
+  ! in the expansion was reduced by one (since for these functions all expansion coefficients
+  ! at rho**0 are equal to zero), meaning that the returned values must be multiplied by rho
+
+  ! For bisector frame (g*I) elements (1,3) and (3,1) are equal to each other
+
+  gxx =                fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
+  gxz = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
+  gyy =                fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
+  gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(5)-1, extF%coef(2:extF%nterms(5),5), (/r1, r2, alpha/))
+
+  ! compute electronic g-tensor = 1/2 * (g*I) * G_cor
+
+  mx = molec%atomMasses(1)
+  my = molec%atomMasses(2)
+  mu = 1.0_ark/(1.0_ark/mx + 1.0_ark/my)
+
+  g(1) = (-0.25_ark*gyy*sin(rho))/(mx*r2)
+  g(2) = (0.25_ark*gyy*sin(rho))/(mx*r1)
+  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))/mu
+
+  f = (/g(1), g(2), g(3)/) * muN
+
+  ! output f is g_el, to compute the contribution to magnetic dipole moment
+  ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger), where xi = (r1, r2, rho)
+
+end subroutine prop_xy2_gcor_electronic_bisector
+
 
 
 ! Rotational g-tensor for quasi-linear molecule, like H2O, in the bisector

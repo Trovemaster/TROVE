@@ -18895,7 +18895,7 @@ end subroutine check_read_save_none
                            ! special case of spin-rotational tensor of rank 9 
                            !
                            if (trim(extF%ftype)=='XY2_SR-BISECT' .or. trim(extF%ftype)=='XY2_G-BISECT' .or.&
-                               trim(extF%ftype)=='XY2_G-TENS-NUC' .or. trim(extF%ftype)=='XY2_G-TENS-ELEC') then 
+                               trim(extF%ftype)=='XY2_G-TENS-NUC' .or. trim(extF%ftype)=='XY2_G-ROT-ELEC') then 
                              !
                              !if (imu==5) then 
                              !  !
