@@ -366,8 +366,8 @@ module perturbation
       integer(ik)          :: size       ! size of the primitive active spice - subject to the energy cut off
       integer(ik),pointer  :: primt(:,:) ! primitive   quanta in primitve active space representation 
       integer(ik),pointer  :: in(:)      !>>>>
-      integer(ik),pointer  :: out(:)      !>>>>
-      integer(ik),pointer  :: inout(:)      !>>>>
+      integer(ik),pointer  :: out(:)     !>>>>
+      integer(ik),pointer  :: inout(:)   !>>>>
    end type PTprimindexT 
 
 
