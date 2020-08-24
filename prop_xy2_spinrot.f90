@@ -260,12 +260,12 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
 
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3), &
-               n1(3), n2(3), x(natoms,3), gxx, gxz, gyy, gzx, gzz, mx, my, mu
+               n1(3), n2(3), x(natoms,3), gyy, mx, my, mu
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
 
-  if (rank/=5) then
+  if (rank/=3) then
     write(out, '(/a,1x,i3,1x,a)') &
-      'prop_xy2_gcor_electronic_bisector: rank of the input tensor =', rank, ', expected 5'
+      'prop_xy2_gcor_electronic_bisector: rank of the input tensor =', rank, ', expected 3'
     stop
   endif
 
@@ -306,22 +306,9 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
 
   rho = pi - alpha
 
-  ! compute fitted elements of (g*I) matrix
+  ! compute fitted elements of (g*I) matrix, only "yy" is nedeed
 
-  ! The first element in extF%coef(1,:) defines the power of rho-singularity (0 or -1)
-  ! of the corresponding element in the resulting (output) g-tensor and not fitted (g*I) tensor
-  ! (which is nonsingular), the expansion coefficients for (g*I) tensor start from the index no. 2.
-
-  ! "_rhopow_min_one" in the name of the function means that the power of the rho coordinate
-  ! in the expansion was reduced by one (since for these functions all expansion coefficients
-  ! at rho**0 are equal to zero), meaning that the returned values must be multiplied by rho
-
-  ! For bisector frame (g*I) elements (1,3) and (3,1) are equal to each other
-
-  gxx =                fit_xy2_sr_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), (/r1, r2, alpha/))
-  gxz = fit_xy2_sr_B2_rhopow_min_one(extF%nterms(2)-1, extF%coef(2:extF%nterms(2),2), (/r1, r2, alpha/))
-  gyy =                fit_xy2_sr_A1(extF%nterms(3)-1, extF%coef(2:extF%nterms(3),3), (/r1, r2, alpha/))
-  gzz = fit_xy2_sr_A1_rhopow_min_one(extF%nterms(5)-1, extF%coef(2:extF%nterms(5),5), (/r1, r2, alpha/))
+  gyy = fit_xy2_sr_A1(extF%nterms(1), extF%coef(1:extF%nterms(1),1), (/r1, r2, alpha/))
 
   ! compute electronic g-tensor = 1/2 * (g*I) * G_cor
 
