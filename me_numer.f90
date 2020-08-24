@@ -435,6 +435,13 @@ module me_numer
                   !
                endif 
                !
+               if(trim(extF%ftype)=='XY2_G-COR-ELEC') then
+                  !
+                  g_numerov(3,lambda,vl,vr) = g_numerov(1,lambda,vl,vr)
+                  g_numerov(3,lambda,vr,vl) = g_numerov(1,lambda,vr,vl)
+                  !
+               endif               
+               !
                !
                if (verbose>=7) then 
                    write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)

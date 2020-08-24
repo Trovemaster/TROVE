@@ -318,9 +318,10 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
 
   g(1) = (-0.25_ark*gyy*sin(rho))/(mx*r2)
   g(2) = (0.25_ark*gyy*sin(rho))/(mx*r1)
-  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))/mu
-
+  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))*mu ! <- changed 1/mu to *mu, no sin(rho)? 
   f = (/g(1), g(2), g(3)/) * muN
+  !
+  !g3y =   .5_ark*sin(rho)*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
 
   ! output f is g_el, to compute the contribution to magnetic dipole moment
   ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger), where xi = (r1, r2, rho)
