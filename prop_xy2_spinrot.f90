@@ -11,7 +11,7 @@ module prop_xy2_spinrot
   public prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
          TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector, &
          prop_xy2_gtens_nuclear_bisector, prop_xy2_grot_electronic_bisector, &
-         prop_xy2_gcor_electronic_bisector
+         prop_xy2_gcor_electronic_bisector,prop_xy2_gtensor_bisector_rank3
 
 
 contains
@@ -260,7 +260,7 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
 
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3), &
-               n1(3), n2(3), x(natoms,3), gyy, mx, my, mu
+               n1(3), n2(3), x(natoms,3), gyy, mx, my, mu, gyy_,Iyy,factor
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
 
   if (rank/=3) then
@@ -315,13 +315,25 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
   mx = molec%atomMasses(1)
   my = molec%atomMasses(2)
   mu = 1.0_ark/(1.0_ark/mx + 1.0_ark/my)
-
+  !
+  !
+  ! inverse moments of inertia 
+  ! TROVE
+  gyy_ = .25_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark*(2.0_ark*cos(rho*0.5_ark)**2-1.0_ark)/mX/(r1*r2)
+  ! PAS 
+  Iyy  = (r1**2-4*mY*sin(0.5*rho)**2*r1*r2/mX+mY*r2**2/mX+2*mY*r1*r2/mX+r2**2+mY*r1**2/mX)*mY*mX/(mX+2*mY) 
+  !
+  ! Conversion factor to the cm-1 units we usually apply to g(i) coriolis terms, but
+  ! we don't need to apply here because of the unitless conversion I*g(i) which should be in the same 
+  ! units of [I] = Dalton*Angstrom^2 and thus cancel each other.
+  !factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
+  !
   g(1) = (-0.25_ark*gyy*sin(rho))/(mx*r2)
   g(2) = (0.25_ark*gyy*sin(rho))/(mx*r1)
-  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))*mu ! <- changed 1/mu to *mu, no sin(rho)? 
+  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))*mu ! <- changed 1/mu to *mu
   f = (/g(1), g(2), g(3)/) * muN
   !
-  !g3y =   .5_ark*sin(rho)*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
+  !g3y =   .5_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
 
   ! output f is g_el, to compute the contribution to magnetic dipole moment
   ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger), where xi = (r1, r2, rho)
@@ -1122,8 +1134,8 @@ subroutine prop_xy2_gtensor_bisector_rank3(rank, ncoords, natoms, local, xyz, f)
   integer(ik) :: icentre
 
   integer(ik)           :: k
-  real(ark)             :: y1,y2,y3,re,ae,b0,muxz,muzz,Izz,g_zz,gxx,gyy,g1y,g2y,g3y
-  real(ark)             :: v0,v1,v2,v3,v4,v5,v6,v7,v8,q(3:extF%nterms(3))
+  real(ark)             :: y1,y2,y3,re,ae,b0,muxz,muzz,Izz,g_zz,gxx,gyy,g1y,g2y,g3y,gyy_,Iyy,factor
+  real(ark)             :: v0,v1,v2,v3,v4,v5,v6,v7,v8,q(5:extF%nterms(3))
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
   !
   !
@@ -1397,13 +1409,15 @@ subroutine prop_xy2_gtensor_bisector_rank3(rank, ncoords, natoms, local, xyz, f)
 
 
   !
-  gxx = .25_ark*(mX+mY)/cos(rho*0.5_ark)**2/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark/cos(rho*0.5_ark)**2/mX/r1*r2
+  gxx = .25_ark*(mX+mY)/cos(rho*0.5_ark)**2/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark/cos(rho*0.5_ark)**2/mX/(r1*r2)
   !
-  gyy = .25_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark*(2.0_ark*cos(rho*0.5_ark)**2-1.0_ark)/mX/r1*r2
+  gyy = .25_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark*(2.0_ark*cos(rho*0.5_ark)**2-1.0_ark)/mX/(r1*r2)
+  !
+  gyy = 1.0
   !
   g1y =  -.5_ark*sin(rho)/mX/r2
   g2y =   .5_ark*sin(rho)/mX/r1
-  g3y =   .5_ark*sin(rho)*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
+  g3y =   .5_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
   !
   ! inverse tensor of inertia
   !
@@ -1415,22 +1429,27 @@ subroutine prop_xy2_gtensor_bisector_rank3(rank, ncoords, natoms, local, xyz, f)
   c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
   d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
   !
+  gyy_ = .25_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark*(2.0_ark*cos(rho*0.5_ark)**2-1.0_ark)/mX/(r1*r2)
+  Iyy  = (r1**2-4*mY*sin(0.5*rho)**2*r1*r2/mX+mY*r2**2/mX+2*mY*r1*r2/mX+r2**2+mY*r1**2/mX)*mY*mX/(mX+2*mY)
+  !
   ! 1,1
-  g_out(1,0) =  0 !g(1,1)*a + g(1,3)*b*rho_over_sinrho
+  g_out(1,0) =  muzz*Iyy*g1y !g(1,1)*a + g(1,3)*b*rho_over_sinrho
   g_out(1,-1) = 0
   g_out(1,-2) = 0
   !
   ! 1,3
-  g_out(2,0)  = muzz/gyy*g3y    !  muzz !
+  g_out(2,0)  = muzz*Iyy*g2y    !  muzz !
   g_out(2,-1) = 0  ! muxz !*Izz*g_zz*2.0_ark  ! gtxz ! g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
   g_out(2,-2) = 0
   !
   ! 2,2
-  g_out(3,0)  = 0   !g(2,2)*c
+  g_out(3,0)  = muzz*Iyy*g3y  !g(2,2)*c
   g_out(3,-1) = 0
   g_out(3,-2) = 0
   !
-  f = (/g_out(1,0), g_out(2,0), g_out(3,0)/)*muN*0.5_ark
+  factor = real(planck,ark)*real(1.0d+8,kind=ark)
+  !
+  f = (/g_out(1,0), g_out(2,0), g_out(3,0)/)*0.5_ark*muN
   ! we multiply g(1,3) and g(3,1) here with -1 because of the opposite direction
   ! of the bisector axis (x-axis) in TROVE and in the actual ab initio data 
   !

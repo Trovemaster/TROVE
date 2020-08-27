@@ -18913,7 +18913,7 @@ end subroutine check_read_save_none
                                !
                              endif
                              !
-                           elseif(trim(extF%ftype)=='XY2_G-COR-ELEC') then
+                           elseif(trim(extF%ftype)=='XY2_G-COR-ELEC'.or.trim(extF%ftype)=='XY2_G-TENS-RANK3') then
                              !
                              if (imu==3) then 
                                !
