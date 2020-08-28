@@ -5666,9 +5666,8 @@ contains
                         !
                     endif
                     !
-                    if (abs(ls)>small_) then
-                      continue
-                    endif
+                    ! for magnetic moments
+                    !ls  =   sum(dipole_me(icontrI,icontrF, :))
                     !
                     !if (kI*kF /= 0.and.kF/=kI) ls = ls*sq2
                     !
