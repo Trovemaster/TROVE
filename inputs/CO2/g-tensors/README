@@ -1,0 +1,6 @@
+This folder contains files with TROVE external field input for different contributions
+to the so-called rotational g-tensor, calculated for CO2 molecule
+
+trove_extf_cor.inp - input for electronic Coriolis part
+trove_extf.inp - input for electronic rotational part
+trove_extf_nuc.inp - input for pure nuclear part
