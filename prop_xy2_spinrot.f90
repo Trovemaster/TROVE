@@ -250,7 +250,7 @@ end subroutine prop_xy2_grot_electronic_bisector
 !      The returned values of g_el are in units of Debye.
 !
 ! The corresponding electronic contribution to magnetic moment:
-!      mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger),
+!      mu_el = (-i) * g_el * (d/dxi - d/dxi^{<--}),
 
 subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, f)
 
@@ -315,28 +315,15 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
   mx = molec%atomMasses(1)
   my = molec%atomMasses(2)
   mu = 1.0_ark/(1.0_ark/mx + 1.0_ark/my)
-  !
-  !
-  ! inverse moments of inertia 
-  ! TROVE
-  gyy_ = .25_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2+1.0_ark/r2**2)-.5_ark*(2.0_ark*cos(rho*0.5_ark)**2-1.0_ark)/mX/(r1*r2)
-  ! PAS 
-  Iyy  = (r1**2-4*mY*sin(0.5*rho)**2*r1*r2/mX+mY*r2**2/mX+2*mY*r1*r2/mX+r2**2+mY*r1**2/mX)*mY*mX/(mX+2*mY) 
-  !
-  ! Conversion factor to the cm-1 units we usually apply to g(i) coriolis terms, but
-  ! we don't need to apply here because of the unitless conversion I*g(i) which should be in the same 
-  ! units of [I] = Dalton*Angstrom^2 and thus cancel each other.
-  !factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
-  !
+
   g(1) = (-0.25_ark*gyy*sin(rho))/(mx*r2)
   g(2) = (0.25_ark*gyy*sin(rho))/(mx*r1)
-  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))*mu ! <- changed 1/mu to *mu
+  g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))/mu
+
   f = (/g(1), g(2), g(3)/) * muN
-  !
-  !g3y =   .5_ark*(mX+mY)/mX/mY*(1.0_ark/r1**2-1.0_ark/r2**2)
 
   ! output f is g_el, to compute the contribution to magnetic dipole moment
-  ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^\dagger), where xi = (r1, r2, rho)
+  ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^{<--}), where xi = (r1, r2, rho)
 
 end subroutine prop_xy2_gcor_electronic_bisector
 
