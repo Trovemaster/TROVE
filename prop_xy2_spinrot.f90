@@ -610,7 +610,7 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   integer(ik) :: icentre
 
   integer(ik)           :: k
-  real(ark)             :: y1,y2,y3,re,ae,b0,muxz,muzz,Izz,g_zz,gxx,gyy,g1y,g2y,g3y
+  real(ark)             :: y1,y2,y3,re,ae,b0,muxz,muzz,Izz,g_zz,gxx,gyy,g1y,g2y,g3y,gxz,t1,t2,zY,zX
   real(ark)             :: p(3:extF%nterms(4)-2),v0,v1,v2,v3,v4,v5,v6,v7,v8,q(5:extF%nterms(3))
 
   !
@@ -696,6 +696,8 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
             -8.0_ark*r1**2*mX*mY+4*r2**2*mX**2+8.0_ark*r2**2*mX*mY)/&
           ( (mX+2.0_ark*mY)*mY*(mX*r1**2+mX*r2**2+mY*r1**2-2.0_ark*mY*r1*r2+mY*r2**2) )
 
+  !
+  gtxz = 2.0_ark*sin(alpha)*(R1-R2)*(R1+R2)*(4.0_ark*mX**2+8.0_ark*mX*mY+11.0_ark*mY**2)/((mX+2.0_ark*mY)**2)
   !
   Izz = (mY*(mX*r2**2+mX*r1**2-2.0_ark*mY*r1*r2+mY*r1**2+mY*r2**2))/(mX+2.0_ark*mY)/cos(rho*0.5_ark)**2/4.0_ark
   !
@@ -1068,18 +1070,31 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
   d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
   !
+  gxz = 4.0_ark*(R1-R2)*(R1+R2)*(4*mX**2+8.0_ark*mX*mY+11.0_ark*mY**2)*mY*(mX*R1**2+mX*R2**2+mY*R1**2-2*mY*R1*R2+mY*R2**2)/(mX+2.0_ark*mY)
+  gxz = 2.0_ark*sin(alpha*0.5_ark)*rho_over_sinrho*gxz
+  !
+  t1 = (4.0_ark*mX**2+8.0_ark*mX*mY+11*mY**2)/((mX+2.0_ark*mY)**2)
+  t2  = mY*(mX+mY)*(r1**2+r2**2)/(mX+2.0_ark*mY)-2.0_ark*r1*mY**2*r2/(mX+2.0_ark*mY)
+  gxz = 4.0_ark*t1*(r1**2-r2**2)/t2*2.0_ark*cos(rho*0.5_ark)**2*rho_over_sinrho
+  
+  zY = 16.0_ark 
+  zX = 12.0_ark
+  !
+  gxz = (mX*zY*r1**2-mX*zY*r2**2+zX*mY*r2**2-zX*mY*r1**2)/(r1*r2*(mX+2.0_ark*mY)*mX)*cos(rho*0.5_ark)**2*rho_over_sinrho
+  !
+  !
   ! 1,1
-  g_out(1,0) =  g(2,2)/gyy*g1y !g(1,1)*a + g(1,3)*b*rho_over_sinrho
+  g_out(1,0) =  0 !g(2,2)/gyy*g1y !g(1,1)*a + g(1,3)*b*rho_over_sinrho
   g_out(1,-1) = 0
   g_out(1,-2) = 0
   !
   ! 1,3
-  g_out(2,0)  = g(2,2)/gyy*g2y    !  muzz !
-  g_out(2,-1) = 0  ! muxz !*Izz*g_zz*2.0_ark  ! gtxz ! g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
+  g_out(2,0)  = 0 !g(2,2)/gyy*g2y    !  muzz !
+  g_out(2,-1) = gxz   ! muxz !*Izz*g_zz*2.0_ark  ! gtxz ! g(1,3)*d*rho2_over_sin2rhohalf + g(1,1)*b*rho_over_sinrho
   g_out(2,-2) = 0
   !
   ! 2,2
-  g_out(3,0)  = muzz/gyy*g3y   !g(2,2)*c
+  g_out(3,0)  = 0 !muzz/gyy*g3y   !g(2,2)*c
   g_out(3,-1) = 0
   g_out(3,-2) = 0
   !
