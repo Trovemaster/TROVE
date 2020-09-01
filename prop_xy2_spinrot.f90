@@ -260,7 +260,7 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
 
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3), &
-               n1(3), n2(3), x(natoms,3), gyy, mx, my, mu, gyy_,Iyy,factor
+               n1(3), n2(3), x(natoms,3), gyy, mx, my, mu, gyy_,Iyy,factor,zx,zy
   real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
 
   if (rank/=3) then
@@ -320,8 +320,18 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
   g(2) = (0.25_ark*gyy*sin(rho))/(mx*r1)
   g(3) = (gyy*(0.25_ark/r1**2 - 0.25_ark/r2**2))/mu
 
-  f = (/g(1), g(2), g(3)/) * muN
-
+  !
+  ! gcor-nuclear
+  !
+  !zX = 12.0_ark 
+  !zY = 16.0_ark
+  !
+  !g(1) = 0.5_ark*sin(rho)*r2*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
+  !g(2) =-0.5_ark*sin(rho)*r1*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
+  !g(3) = -(zX*mY-2*zX*mY*cos(0.5_ark*rho)**2+2*zY*mX*cos(0.5_ark*rho)**2-zY*mX)*r1/(mX*r2)-(-2.0_ark*zY*mX*cos(0.5_ark*rho)**2+2.0_ark*zX*mY*cos(0.5_ark*rho)**2-zX*mY+zY*mX)*r2/(mX*r1)
+  !
+  f = (/g(1), g(2), g(3)/)* muN
+  !
   ! output f is g_el, to compute the contribution to magnetic dipole moment
   ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^{<--}), where xi = (r1, r2, rho)
 

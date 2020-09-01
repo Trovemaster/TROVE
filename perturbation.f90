@@ -2990,6 +2990,7 @@ module perturbation
                trim(bs_t(imode)%type)=='FOURIER'.or.&
                trim(bs_t(imode)%type)=='SINRHO'.or.&
                trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+               trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
                trim(bs_t(imode)%type)=='SINC'.or.&
                trim(bs_t(imode)%type)=='LEGENDRE') then 
              !
@@ -3325,6 +3326,7 @@ module perturbation
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
                         trim(bs_t(imode)%type)=='SINRHO'.or.&
                         trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+                        trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
                         trim(bs_t(imode)%type)=='SINC'.or.&
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
@@ -3923,6 +3925,7 @@ module perturbation
              trim(bs_t(imode)%type)=='FOURIER'.or.&
              trim(bs_t(imode)%type)=='SINRHO'.or.&
              trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+             trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
              trim(bs_t(imode)%type)=='SINC'.or.&
              trim(bs_t(imode)%type)=='LEGENDRE') then
            !
@@ -3940,6 +3943,7 @@ module perturbation
            trim(bs_t(imode)%type)=='FOURIER'.or.&
            trim(bs_t(imode)%type)=='SINRHO'.or.&
            trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+           trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
            trim(bs_t(imode)%type)=='SINC'.or.&
            trim(bs_t(imode)%type)=='LEGENDRE') then
            !
@@ -24978,7 +24982,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
