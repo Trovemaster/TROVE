@@ -1077,8 +1077,8 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   t2  = mY*(mX+mY)*(r1**2+r2**2)/(mX+2.0_ark*mY)-2.0_ark*r1*mY**2*r2/(mX+2.0_ark*mY)
   gxz = 4.0_ark*t1*(r1**2-r2**2)/t2*2.0_ark*cos(rho*0.5_ark)**2*rho_over_sinrho
   
-  zY = 16.0_ark 
-  zX = 12.0_ark
+  zX = 16.0_ark 
+  zY = 12.0_ark
   !
   gxz = (mX*zY*r1**2-mX*zY*r2**2+zX*mY*r2**2-zX*mY*r1**2)/(r1*r2*(mX+2.0_ark*mY)*mX)*cos(rho*0.5_ark)**2*rho_over_sinrho
   !
