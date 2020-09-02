@@ -323,8 +323,8 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
   !
   ! gcor-nuclear
   !
-  !zX = 12.0_ark 
-  !zY = 16.0_ark
+  !zX = 6.0_ark 
+  !zY = 8.0_ark
   !
   !g(1) = 0.5_ark*sin(rho)*r2*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
   !g(2) =-0.5_ark*sin(rho)*r1*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
@@ -1087,8 +1087,8 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   t2  = mY*(mX+mY)*(r1**2+r2**2)/(mX+2.0_ark*mY)-2.0_ark*r1*mY**2*r2/(mX+2.0_ark*mY)
   gxz = 4.0_ark*t1*(r1**2-r2**2)/t2*2.0_ark*cos(rho*0.5_ark)**2*rho_over_sinrho
   
-  zX = 16.0_ark 
-  zY = 12.0_ark
+  zX = 6.0_ark 
+  zY = 8.0_ark
   !
   gxz = (mX*zY*r1**2-mX*zY*r2**2+zX*mY*r2**2-zX*mY*r1**2)/(r1*r2*(mX+2.0_ark*mY)*mX)*cos(rho*0.5_ark)**2*rho_over_sinrho
   !
