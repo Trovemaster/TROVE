@@ -8,7 +8,7 @@ module fields
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k
+                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k
    use me_numer
    use me_rot
    use timer
@@ -1903,7 +1903,8 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K')
+              case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
+                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
                  !
                  ! do nothing
                  continue
@@ -1921,7 +1922,8 @@ module fields
                  !
               endif
               !
-              if ( any( trim(job%bset(imode)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K'/) ) ) then 
+              if ( any( trim(job%bset(imode)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                      'SINRHO-2XLAGUERRE-K'/) ) ) then 
                  trove%triatom_sing_resolve = .true.
                  job%triatom_sing_resolve = .true.
               endif
@@ -2055,7 +2057,8 @@ module fields
          !
          ! special case of Assoc Legendre or SINRHO-polynomials 
          !
-         if (any(trim(job%bset(Nmodes)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K'/) ) ) then 
+         if (any(trim(job%bset(Nmodes)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                'SINRHO-2XLAGUERRE-K'/) ) ) then 
             !
             if (.not.trove%triatom_sing_resolve ) then
              write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
@@ -13907,7 +13910,7 @@ end subroutine check_read_save_none
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
-              bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.&
+              bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.bset%dscr(imode)%type/='SINRHO-2XLAGUERRE-K'.and.&
               bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
           !
           write(unitfname,"('Numerov basis set # ',i6)") imode
@@ -13992,7 +13995,7 @@ end subroutine check_read_save_none
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
-              bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.&
+              bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.bset%dscr(imode)%type/='SINRHO-2XLAGUERRE-K'.and.&
               bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
           !
           npoints = job%bset(imode)%npoints
@@ -16437,7 +16440,7 @@ end subroutine check_read_save_none
     integer(ik)                 :: nl,nr,irho
     type(FLpolynomT),pointer    :: fl,gl
     type(Basis1DT), pointer     :: bs           ! 1D bset
-    real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m
+    real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m,f_t1,f_t2,g_t1,g_t2,f_m1,f_m2
     real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),chi(trove%Nmodes)
     real(ark)                   :: rho,rho_pot,rho_kin,rho_kin0,rho_pot0,rho_ext,rho_ext0
     real(ark)    :: ar_t(1:molec%ncoords)
@@ -17022,7 +17025,7 @@ end subroutine check_read_save_none
            !
         endif
         !
-     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K') 
+     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K') 
         ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
@@ -17100,7 +17103,8 @@ end subroutine check_read_save_none
            endif
            ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
            if (isingular>=0.and.(.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and.&
-                                 .not.trim(bs%type)=='LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-LAGUERRE-K') ) then 
+                                 .not.trim(bs%type)=='LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and.&
+                                 .not.trim(bs%type)=='SINRHO-2XLAGUERRE-K') ) then 
              !        
              rho_switch = trove%specparam(nu_i)
              iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
@@ -17210,7 +17214,7 @@ end subroutine check_read_save_none
            endif
            !
            if ( (.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and..not.trim(bs%type)=='LAGUERRE-K'.and.&
-                 .not.trim(bs%type)=='SINRHO-LAGUERRE-K').and.&
+                 .not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-2XLAGUERRE-K').and.&
                  .not.trove%DVR.or.reduced_model) then
              !
              ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
@@ -17372,7 +17376,7 @@ end subroutine check_read_save_none
              !
              deallocate(muzz,pseudo)
              !
-           case ('LAGUERRE-K','SINRHO-LAGUERRE-K')
+           case ('LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
              !
              kmax = job%bset(0)%range(2)
              nmax = bs%Size
@@ -17482,6 +17486,46 @@ end subroutine check_read_save_none
                !
                call ME_sinrho_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
                                          job%verbose,bs%matelements,bs%ener0)
+               !
+               allocate (sinrho(0:Npoints),cosrho(0:Npoints),stat=alloc)
+               if (alloc/=0) then
+                  write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
+                  stop 'FLbset1DNew, sinrho/cosrho - out of memory ME_sinrho_laguerre_k'
+               end if
+               !
+               do i = 0,npoints
+                  rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                  mrho(i) = rho
+                  sinrho(i) = sin(rho)
+                  cosrho(i) = cos(rho)
+                  mrho(i) = sin(rho)
+               enddo
+               !
+             case ('SINRHO-2XLAGUERRE-K')
+               !
+               g_t1 = g1drho(0)
+               g_t2 = g1drho(npoints)
+               !
+               if (g_t1<small_.or.g_t2<small_) then 
+                 write(out,"('At ME_laguerre_k: mu_rr(0) and mu_rr(Npoints) cannot be zero ',2g18.8)") g_t1,g_t2
+                 stop 'At ME_laguerre_k: illegal mu_rr(0),mu_rr(N)'
+               endif
+               !
+               f_t1 = ( 2.0_ark*f1drho(2)-2.0_ark*f1drho(0) )/(trove%rhostep*2.0_ark)**2 
+               f_t2 = ( 2.0_ark*f1drho(npoints-1)-2.0_ark*f1drho(npoints) )/trove%rhostep**2 
+               !
+               if (trove%specparam(bs%mode(1))>0d0 ) then
+                  !
+                  f_t1 = trove%specparam(bs%mode(1))**2*g_t1
+                  f_t2 = trove%specparam(bs%mode(1))**2*g_t2
+                  !
+               endif
+               !
+               f_m1 = sqrt(f_t1/g_t1)
+               f_m2 = sqrt(f_t2/g_t2)
+               !
+               call ME_sinrho_2xlaguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
+                                           f_m1,f_m2,pseudo,nu_i,job%verbose,bs%matelements,bs%ener0)
                !
                allocate (sinrho(0:Npoints),cosrho(0:Npoints),stat=alloc)
                if (alloc/=0) then
@@ -17695,7 +17739,7 @@ end subroutine check_read_save_none
            !
            select case (trim(bs%type))
              !
-           case ('SINRHO','SINRHO-LAGUERRE-K')
+           case ('SINRHO','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
              !
              if (job%verbose>=4) then 
                 write(out,"('   Allocating 11 arrays of ',i8,', Ncore times ',g12.4,' ')") trove%Npoints+1,&
