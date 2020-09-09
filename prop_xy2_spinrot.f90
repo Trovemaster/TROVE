@@ -18,9 +18,10 @@ contains
 
 
 ! Nuclear rotational g-tensor for XY2-type molecule:
-!      g_nuc = 1/(2*c) * Ie/Im,
+!      g_nuc = 1/(2*c) * Ie/Im = mu_N(CGS) * m_p / hbar * Ie/Im
 !      where Im is inertia tensor and Ie is Im with atomic masses
-!      replaced by atomic charges.
+!      replaced by atomic charges, mu_N is nuclear magneton in CGS units,
+!      and m_p is proton mass in Dalton.
 !      The returned values of g_nuc are in units of Debye/hbar.
 !
 ! The corresponding nuclear contribution to magnetic moment:
@@ -35,6 +36,8 @@ subroutine prop_xy2_gtens_nuclear_bisector(rank, ncoords, natoms, local, xyz, f)
   integer(ik) :: iatom
   real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha, rho, m0, m1, e0, e1, g(3,3), n1(3), n2(3), &
                x(natoms,3), rho_over_sinrhohalf
+  real(ark), parameter :: muN = 5.050783699e-6 ! nuclear magneton in units of Debye
+  real(ark), parameter :: mP = 1.00727647 ! mass of proton
   real(ark), parameter  :: rho_threshold = 0.01_rk
 
   if (rank/=5) then
@@ -85,8 +88,8 @@ subroutine prop_xy2_gtens_nuclear_bisector(rank, ncoords, natoms, local, xyz, f)
   m0 = molec%atomMasses(1) ! mass of atom X in XY2 molecule
   m1 = molec%atomMasses(2) ! mass of atom Y
 
-  e0 = extF%coef(2,1) ! charge of atom X (in AU)
-  e1 = extF%coef(3,1) ! charge of atom Y (in AU)
+  e0 = extF%coef(2,1) ! charge of atom X
+  e1 = extF%coef(3,1) ! charge of atom Y
 ! NOTE: extF%coef(1,:) defines the power of rho-singularity for each tensor element
 !       for this function extF%coef(1,1:5) must be equal to (/0,-1,0,0,0/)
 
@@ -99,20 +102,23 @@ subroutine prop_xy2_gtens_nuclear_bisector(rank, ncoords, natoms, local, xyz, f)
   endif
 
   g = 0
-  g(1,1) = (e1*(e1*m0*(r1 + r2)**2 + e0*(-(m1*(r1 - r2)**2) + 2.0_ark*m0*r1*r2))) &
-           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
-  g(1,3) = (e1*(e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*cos(rho*0.5_ark)*rho_over_sinrhohalf) &
-           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
-  g(2,2) = (e1*(m0 + 2.0_ark*m1)*((e0 + e1)*(r1**2 + r2**2)+ 2.0_ark*e1*r1*r2*cos(rho))) &
-           / (2.0_ark*(e0 + 2.0_ark*e1)*m1*((m0 + m1)*(r1**2 + r2**2) + 2.0_ark*m1*r1*r2*cos(rho)))
-  g(3,1) = -(e1*(e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*tan(rho*0.5_ark)) &
-           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
-  g(3,3) = (e1*(-(e1*m0*(r1 - r2)**2) + e0*(2.0_ark*m0*r1*r2 + m1*(r1 + r2)**2))) &
-           / (4.0_ark*(e0 + 2.0_ark*e1)*m0*m1*r1*r2)
+  g(1,1) = (-(e0*m1**2*(r1 - r2)**2) + e1*m0*(2.0_ark*m0*r1*r2 + m1*(r1 + r2)**2)) &
+           / (2.0_ark*m0*m1*(m0 + 2.0_ark*m1)*r1*r2)
 
-  g = g * 1.0175071201112751e-05 ! to have units of g_nuc in Debye/hbar
+  g(1,3) = ((e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*cos(rho*0.5_ark)*rho_over_sinrhohalf) &
+           / (2.0_ark*m0*(m0 + 2.0_ark*m1)*r1*r2)
 
-  f = (/g(1,1), g(1,3), g(2,2), g(3,1), g(3,3)/) ! the second component g(1,3) must be divided by rho
+  g(2,2) = ((e1*m0**2 + 2.0_ark*e1*m0*m1 + (e0 + 2.0_ark*e1)*m1**2)*(r1**2 + r2**2) &
+            + 2.0_ark*m1*(-(e0*m1) + 2.0_ark*e1*(m0 + m1))*r1*r2*cos(rho)) &
+           / (m1*(m0 + 2.0_ark*m1)*((m0 + m1)*(r1**2 + r2**2) + 2.0_ark*m1*r1*r2*cos(rho)))
+
+  g(3,1) = -((e1*m0 - e0*m1)*(r1 - r2)*(r1 + r2)*tan(rho*0.5_ark)) &
+           / (2.0_ark*m0*(m0 + 2.0_ark*m1)*r1*r2)
+
+  g(3,3) = (e0*m1**2*(r1 + r2)**2 + e1*m0*(-(m1*(r1 - r2)**2) + 2.0_ark*m0*r1*r2)) &
+           / (2.0_ark*m0*m1*(m0 + 2.0_ark*m1)*r1*r2)
+
+  f = (/g(1,1), g(1,3), g(2,2), g(3,1), g(3,3)/) * muN * mP ! the second component g(1,3) must be divided by rho
 
 end subroutine prop_xy2_gtens_nuclear_bisector
 
