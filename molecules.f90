@@ -40,7 +40,7 @@ module molecules
   use prop_xy2_spinspin, only : prop_xy2_spinspin_dipoleYY
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-                       MLkinetic_xy2_Radau_bisect_EKE
+                       MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_bisect_EKE_sinrho
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -452,6 +452,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_XYZ_EKE_BISECT') 
          !
          MLkineticfunc => MLkinetic_xyz_bisect_EKE
+         !
+    case('KINETIC_XYZ_EKE_BISECT_SINRHO') 
+         !
+         MLkineticfunc => MLkinetic_xyz_bisect_EKE_sinrho
          !
     case('GENERAL') 
          !

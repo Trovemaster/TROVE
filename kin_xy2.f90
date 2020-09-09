@@ -8,7 +8,7 @@ module kin_xy2
   implicit none
 
   public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-         MLkinetic_xy2_Radau_bisect_EKE
+         MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_bisect_EKE_sinrho
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -349,6 +349,71 @@ module kin_xy2
 
      !
    end subroutine  MLkinetic_xyz_bisect_EKE
+
+
+
+  ! Defining kinetic energy function 
+  ! This is EKE generated using Maple for a bisecting frame with bond-length-angle and 
+  ! removed singularity by combining U rho with dG/drho and multiplying muzz by sinrho^2
+  ! and muxz and muyz by sinrho. 
+  !
+  subroutine MLkinetic_xyz_bisect_EKE_sinrho(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY,mZ
+   real(ark),parameter  :: rho_threshold = 0.02_rk
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xyz_bisect_EKE_sinrho-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bisect_EKE_sinrho can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(2)
+     mZ = molec%AtomMasses(3)
+     !
+     !
+     g_vib = 0 
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     g_vib(1,1,1) =  (mX+mY)/mX/mY 
+     g_vib(1,2,1) =  -cos(rho)/mX 
+     g_vib(1,3,2) =  sin(rho)/mX 
+     g_vib(2,1,1) =  -cos(rho)/mX 
+     g_vib(2,2,1) =  (mX+mZ)/mX/mZ 
+     g_vib(2,3,3) =  sin(rho)/mX 
+     g_vib(3,1,2) =  sin(rho)/mX 
+     g_vib(3,2,3) =  sin(rho)/mX 
+     g_vib(3,3,4) =  (mX+mZ)/mX/mZ 
+     g_vib(3,3,5) =  2.0_ark*cos(rho)/mX 
+     g_vib(3,3,6) =  (mX+mY)/mX/mY 
+     !
+     g_rot(1,1,6) =  (mX+mY)/mX/mY 
+     g_rot(2,2,6) =  (mX+mY)/mX/mY 
+     g_cor(2,2,3) =  -sin(rho)/mX 
+     !
+     g_cor(3,2,5) =  -cos(rho)/mX 
+     g_cor(3,2,6) =  -(mX+mY)/mX/mY 
+     !
+     g_rot(1,3,5) =  1.0_ark/mX
+     g_rot(1,3,6) =  cos(rho)*(mX+mY)/mX/mY 
+     !
+     g_rot(3,1,5) =  1.0_ark/mX
+     g_rot(3,1,6) =  cos(rho)*(mX+mY)/mX/mY 
+     !
+     g_rot(3,3,4) =  (mX+mZ)/mX/mZ 
+     g_rot(3,3,5) =  2.0_ark*cos(rho)/mX
+     g_rot(3,3,6) =  cos(rho)**2*(mX+mY)/mX/mY
+     !
+     pseudo(4) =  sin(rho)*cos(rho)/(mX)
+     !
+   end subroutine  MLkinetic_xyz_bisect_EKE_sinrho
+
 
 
 

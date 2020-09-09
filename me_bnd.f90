@@ -1525,13 +1525,13 @@ module me_bnd
             ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
             ! the Schroedinger all right
             if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-               stop 'ME_numerov: bad Numerov solution'
+               write(out,"('ME_Legendre: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               stop 'ME_Legendre: bad  solution'
             endif 
             !
             if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl)
-               stop 'ME_numerov: bad Numerov solution'
+               write(out,"('ME_Legendre: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl)
+               stop 'ME_Legendre: bad  solution'
             endif 
             !
             ! Reporting the quality of the matrix elemenst 
@@ -2028,13 +2028,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (nl/=nr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") nl,nr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_Associate_Legendre: wrong  solution for <',i4,'|H|',i4,'> = ',f20.10)") nl,nr,h_t
+                 stop 'ME_Associate_Legendre: bad  solution'
               endif 
               !
               if (nl==nr.and.abs(h_t-ener(nl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") nl,nr,h_t,ener(vl)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_Associate_Legendre: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") nl,nr,h_t,ener(vl)
+                 stop 'ME_Associate_Legendre: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -2614,13 +2614,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial: wrong  solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_polynomial: bad  solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_polynomial: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -3176,13 +3176,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_polynomial_k: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_polynomial_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -3749,13 +3749,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_legendre_polynomial_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_legendre_polynomial_k: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_legendre_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_legendre_polynomial_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -4304,13 +4304,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_laguerre_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_laguerre_k: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_laguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_laguerre_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -4862,13 +4862,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_2xlaguerre_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_2xlaguerre_k: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_2xlaguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_2xlaguerre_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -5456,13 +5456,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 write(out,"('ME_laguerre_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
                  stop 'ME_numerov: bad Numerov solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_laguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_laguerre_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -6534,13 +6534,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_muzz: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_polynomial_muzz: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_muzz: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_polynomial_muzz: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -7145,13 +7145,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_k_switch: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_polynomial_k_switch: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_numerov: bad Numerov solution'
+                 write(out,"('ME_sinrho_polynomial_k_switch: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_sinrho_polynomial_k_switch: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -7726,13 +7726,13 @@ module me_bnd
             ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
             ! the Schroedinger all right
             if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-               stop 'ME_numerov: bad Numerov solution'
+               write(out,"('ME_sinc: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               stop 'ME_sinc: bad solution'
             endif 
             !
             if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-               stop 'ME_numerov: bad Numerov solution'
+               write(out,"('ME_sinc: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+               stop 'ME_sinc: bad solution'
             endif 
             !
             ! Reporting the quality of the matrix elemenst 

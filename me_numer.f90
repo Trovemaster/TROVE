@@ -472,7 +472,8 @@ module me_numer
             ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
             ! the Schroedinger all right
             if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               write(out,"('ME_numerov: Integration differs from Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               write(out,"('            Try increasing the integration range.')")
                if ( trim(molec%IO_primitive)/='READ') then
                  stop 'ME_numerov: bad Numerov solution'
                endif
@@ -480,6 +481,7 @@ module me_numer
             !
             if (vl==vr.and.abs(h_t-enerslot(vl))>sqrt(small_)*abs(characvalue)*1e4) then 
                write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,enerslot(vl)
+               write(out,"('            Try increasing the integration range.')")
                stop 'ME_numerov: bad Numerov solution'
             endif 
             !
