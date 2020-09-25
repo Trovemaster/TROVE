@@ -1882,15 +1882,8 @@ recursive subroutine prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natom
     sr(3,1) = -sr(3,1)
   endif
 
-  ! the order of elements:
-  ! 11 ==> zz
-  ! 22 ==> yy
-  ! 33 ==> xx
-  ! 13 ==> zx
-  ! 31 ==> xz
-
   !               xx     xy      xz        yx        yy     yz       zx       zy       zz
-  f(1:9) = (/ sr(3,3), 0.0_ark, sr(3,1), 0.0_ark, sr(2,2), 0.0_ark, sr(1,3), 0.0_ark, sr(1,1) /)
+  f(1:9) = (/ sr(1,1), 0.0_ark, sr(1,3), 0.0_ark, sr(2,2), 0.0_ark, sr(3,1), 0.0_ark, sr(3,3) /)
 
 end subroutine prop_xy2_spin_rotation_bisector_nonlin
 
@@ -1937,9 +1930,8 @@ subroutine TEST_prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natoms, lo
   ipoint = 0
   rms = 0
   do
-    read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), enr, (sr(i,1:3), i=1,3)
-    !                   xx      xy      xz        yx        yy     yz       zx       zy       zz
-    sr_inp(1:9) = (/ sr(3,3), sr(3,2), sr(3,1), sr(2,3), sr(2,2), sr(2,1), sr(1,3), sr(1,2), sr(1,1) /)
+    read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), (sr(i,1:3), i=1,3), enr
+    sr_inp(1:9) = (/ sr(1,1), sr(1,2), sr(1,3), sr(2,1), sr(2,2), sr(2,3), sr(3,1), sr(3,2), sr(3,3) /)
     if (info/=0) exit
     if (enr>10000) cycle
     ipoint = ipoint + 1
@@ -1975,7 +1967,7 @@ function fit_xy2_nosym(nparams, params, coords) result(f)
   real(ark), intent(in) :: params(nparams), coords(:)
   real(ark) :: f
 
-  real(ark) :: r1, r2, alpha1, rad, f0, f1, f2, f3, req, alphaeq, beta
+  real(ark) :: y1, y2, y3, alpha, rho, rhoe, rad, f0, f1, f2, f3, req, alphaeq, beta
 
   rad = real(pi,ark)/180.0_ark
 
@@ -1983,14 +1975,17 @@ function fit_xy2_nosym(nparams, params, coords) result(f)
   alphaeq = params(2)*rad
   beta    = params(3)
 
-  r1     = (coords(1)-req) * exp(-beta*(coords(1)-req)**2)
-  r2     = (coords(2)-req) * exp(-beta*(coords(2)-req)**2)
-  alpha1 = coords(3)-alphaeq
+  y1     = (coords(1)-req) * exp(-beta*(coords(1)-req)**2)
+  y2     = (coords(2)-req) * exp(-beta*(coords(2)-req)**2)
+  alpha  = coords(3)
+  rho    = pi - alpha
+  rhoe   = pi - alphaeq
+  y3     = rho - rhoe
 
   f0 = params(4)
-  f1 = xy2_func_n1_d6( (/r1,r2,alpha1/), params(5:22)  )  ! nparams = 18
-  f2 = xy2_func_n2_d6( (/r1,r2,alpha1/), params(23:67) )  ! nparams = 45
-  f3 = xy2_func_n3_d6( (/r1,r2,alpha1/), params(68:87) )  ! nparams = 20
+  f1 = xy2_func_n1_d6( (/y1,y2,y3/), params(5:22)  )  ! nparams = 18
+  f2 = xy2_func_n2_d6( (/y1,y2,y3/), params(23:67) )  ! nparams = 45
+  f3 = xy2_func_n3_d6( (/y1,y2,y3/), params(68:87) )  ! nparams = 20
 
   f = f0 + f1 + f2 + f3
 
