@@ -25,8 +25,12 @@ LAPACK = -mkl=parallel -qopenmp
 #LIBS   =  ./libplasma.a ./libcoreblas.a ./libquark.a ./libmrrr.a  -lpthread  -lnuma -lm
 #LIBS   =   -lpthread  -lnuma -lm
 
-LIB     =   $(LAPACK) $(LIBS) wigxjpf-1.5/lib/libwigxjpf.a
+WIGXJPF_DIR = lib/wigxjpf
+WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
+LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
 
+$(WIGXJPF_LIB):
+	$(MAKE) -C $(WIGXJPF_DIR)
 
 %.o : %.f90
 	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
@@ -51,7 +55,7 @@ diag.o: diag.f90 accuracy.o timer.o
 dipole.o: dipole.f90 accuracy.o fields.o timer.o molecules.o moltype.o symmetry.o tran.o
 extfield.o: extfield.f90 accuracy.o timer.o rotme_cart_tens.o richmol_data.o fields.o moltype.o tran.o symmetry.o
 fields.o: fields.f90 accuracy.o molecules.o lapack.o me_str.o me_bnd.o me_numer.o me_rot.o timer.o moltype.o symmetry.o input.o accuracy.o moltype.o accuracy.o moltype.o accuracy.o moltype.o
-#fwigxjpf.o: fwigxjpf.f90 
+fwigxjpf.o: fwigxjpf.f90 $(WIGXJPF_LIB)
 grid.o: grid.f90 accuracy.o fields.o splines.o iso_c_binding.o iso_c_binding.o
 input.o: input.f90 
 kin_xy2.o: kin_xy2.f90 accuracy.o moltype.o
@@ -99,10 +103,6 @@ symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
-
-fwigxjpf.o:
-	$(FOR) -c $(FFLAGS) -cpp fwigxjpf.f90
-	cd wigxjpf-1.5  && $(MAKE)
 
 clean:
 	rm -f *.mod *.o

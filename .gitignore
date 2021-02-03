@@ -2,6 +2,12 @@
 *.mod
 *.o
 
+lib/wigxjpf/obj
+lib/wigxjpf/gen
+lib/wigxjpf/lib
+lib/wigxjpf/bin
+lib/wigxjpf/mod
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
