@@ -1,15 +1,4 @@
 EXE=trove
-
-all: $(EXE)
-
-tarball:
-	tar cf trove.tar makefile *.f90
-        
-checkin:
-	ci -l Makefile *.f90
-
-
-
 pot_user = pot_H2O_Conway
 
 PLAT = _0209
@@ -31,13 +20,9 @@ WIGXJPF_DIR = lib/wigxjpf
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
 
-$(WIGXJPF_LIB):
-	$(MAKE) -C $(WIGXJPF_DIR)
-
-%.o : %.f90
-	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
-
-BINDIR=.
+BINDIR=bin
+SRCDIR=.
+OBJDIR=.
 
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
@@ -52,12 +37,34 @@ OBJS := ${SRCS:.f90=.o}
 
 ###############################################################################
 
+VPATH = $(SRCDIR):$(SRCDIR)/user_pots:$(OBJDIR)
+
+all: $(BINDIR)/$(EXE)
+
+tarball:
+	tar cf trove.tar makefile *.f90
+
+checkin:
+	ci -l Makefile *.f90
+
+$(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
+	$(FOR) $(FFLAGS) -o $@ $(OBJS) $(LIB)
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+$(WIGXJPF_LIB):
+	$(MAKE) -C $(WIGXJPF_DIR)
+
+%.o : %.f90
+	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
+
+clean:
+	rm -f *.mod *.o
+
 user_pot_dir=.
 pot_user_deps=$(shell grep -io '^\s*use [a-zA-Z0-9_]*' ${user_pot_dir}/${pot_user}.f90 | awk '{print $$2".o"}' | tr '\n' ' ')
 $(pot_user).o: $(pot_user_deps)
-
-$(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
-	$(FOR) $(FFLAGS) -o $@ $(OBJS) $(LIB)
 
 accuracy.o: accuracy.f90 
 diag.o: diag.f90 accuracy.o timer.o

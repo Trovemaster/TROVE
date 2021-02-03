@@ -2,6 +2,10 @@
 *.mod
 *.o
 
+# output files
+bin
+
+# wigxjpf output files
 lib/wigxjpf/obj
 lib/wigxjpf/gen
 lib/wigxjpf/lib
