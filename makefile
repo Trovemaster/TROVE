@@ -5,7 +5,7 @@ PLAT = _0209
 ###FOR  = ifort
 FOR = ifort 
 #FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp -nostandard-realloc-lhs
-FFLAGS = -O3 -qopenmp -cpp
+FFLAGS = -O0 -qopenmp -cpp -module $(OBJDIR)
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 
@@ -21,8 +21,9 @@ WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
 
 BINDIR=bin
-SRCDIR=.
-OBJDIR=.
+SRCDIR=src
+OBJDIR=obj
+user_pot_dir=src/user_pots/
 
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
@@ -35,11 +36,11 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
 OBJS := ${SRCS:.f90=.o}
 
-###############################################################################
-
 VPATH = $(SRCDIR):$(SRCDIR)/user_pots:$(OBJDIR)
 
-all: $(BINDIR)/$(EXE)
+###############################################################################
+
+all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
 
 tarball:
 	tar cf trove.tar makefile *.f90
@@ -47,8 +48,11 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-$(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
-	$(FOR) $(FFLAGS) -o $@ $(OBJS) $(LIB)
+$(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
+	$(FOR) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
@@ -57,12 +61,11 @@ $(WIGXJPF_LIB):
 	$(MAKE) -C $(WIGXJPF_DIR)
 
 %.o : %.f90
-	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
+	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
 clean:
-	rm -f *.mod *.o
+	rm -rf $(BINDIR) $(OBJDIR)
 
-user_pot_dir=.
 pot_user_deps=$(shell grep -io '^\s*use [a-zA-Z0-9_]*' ${user_pot_dir}/${pot_user}.f90 | awk '{print $$2".o"}' | tr '\n' ' ')
 $(pot_user).o: $(pot_user_deps)
 
@@ -120,5 +123,3 @@ timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
 
-clean:
-	rm -f *.mod *.o
