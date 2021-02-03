@@ -1,9 +1,6 @@
-# Fortran files and objects
-*.mod
-*.o
-
 # output files
 bin
+obj
 
 # wigxjpf output files
 lib/wigxjpf/obj
