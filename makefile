@@ -47,7 +47,6 @@ ifeq ($(strip $(COMPILER)),gfortran)
 	#LAPACK = -llapack -lblas
 
 	# Use MKL LAPACK:
-	MKLROOT=/opt/intel/mkl
 	LAPACK += -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 endif
 

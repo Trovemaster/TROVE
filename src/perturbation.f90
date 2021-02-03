@@ -5589,7 +5589,7 @@ module perturbation
     !omp do private(ioper,ieq,ipoint,ideg,keq,ig,jg,ndeg2,info_t,t_vect,rank) reduction(max:info) schedule(static) 
     total_elem_evaluated = 0
     cur_elem_evaluated = 1
-    if(sym%product_table_set == .true.) then
+    if(sym%product_table_set .eqv. .true.) then
       do i = 1, sym%Noper
         if(sym%product_table(i,1) == 0) then 
           total_elem_evaluated = total_elem_evaluated + 1 

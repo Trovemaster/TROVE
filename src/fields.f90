@@ -1922,8 +1922,8 @@ module fields
                  !
               endif
               !
-              if ( any( trim(job%bset(imode)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
-                                                      'SINRHO-2XLAGUERRE-K'/) ) ) then 
+              if ( any( trim(job%bset(imode)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                      'SINRHO-2XLAGUERRE-K'] ) ) then 
                  trove%triatom_sing_resolve = .true.
                  job%triatom_sing_resolve = .true.
               endif
@@ -2057,8 +2057,8 @@ module fields
          !
          ! special case of Assoc Legendre or SINRHO-polynomials 
          !
-         if (any(trim(job%bset(Nmodes)%type)==(/'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
-                                                'SINRHO-2XLAGUERRE-K'/) ) ) then 
+         if (any(trim(job%bset(Nmodes)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                'SINRHO-2XLAGUERRE-K'] ) ) then 
             !
             if (.not.trove%triatom_sing_resolve ) then
              write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
