@@ -1,4 +1,6 @@
-goal:   trove.x
+EXE=trove
+
+all: $(EXE)
 
 tarball:
 	tar cf trove.tar makefile *.f90
@@ -35,6 +37,18 @@ $(WIGXJPF_LIB):
 %.o : %.f90
 	$(FOR) -c $(FFLAGS) $(CPPFLAGS) $<
 
+BINDIR=.
+
+SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
+	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
+	mol_abcd.f90 mol_c2h4.f90 mol_c2h6.f90 mol_c3h6.f90 mol_ch3oh.f90 mol_xy.f90 \
+	mol_xy2.f90 mol_xy3.f90 mol_xy4.f90 mol_zxy2.f90 mol_zxy3.f90 \
+	molecules.f90 moltype.f90 perturbation.f90 plasma.f90 \
+	pot_abcd.f90 pot_c2h4.f90 pot_c2h6.f90 pot_c3h6.f90 pot_ch3oh.f90 \
+	pot_xy2.f90 pot_xy3.f90 pot_xy4.f90 pot_zxy2.f90 pot_zxy3.f90 \
+	prop_xy2.f90 prop_xy2_quad.f90 prop_xy2_spinrot.f90 prop_xy2_spinspin.f90 \
+	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
+OBJS := ${SRCS:.f90=.o}
 
 ###############################################################################
 
@@ -42,13 +56,8 @@ user_pot_dir=.
 pot_user_deps=$(shell grep -io '^\s*use [a-zA-Z0-9_]*' ${user_pot_dir}/${pot_user}.f90 | awk '{print $$2".o"}' | tr '\n' ' ')
 $(pot_user).o: $(pot_user_deps)
 
-trove.x:        trove.o accuracy.o perturbation.o fields.o symmetry.o molecules.o me_numer.o me_str.o me_bnd.o me_rot.o \
-	            lapack.o plasma.o moltype.o refinement.o dipole.o refinement.o tran.o diag.o timer.o input.o \
-                mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o \
-				pot_xy2.o pot_xy3.o pot_xy4.o pot_zxy2.o pot_zxy3.o pot_ch3oh.o pot_abcd.o pot_c2h4.o pot_c2h6.o pot_c3h6.o  $(pot_user).o \
-				prop_xy2.o prop_xy2_quad.o prop_xy2_spinrot.o prop_xy2_spinspin.o rotme_cart_tens.o fwigxjpf.o extfield.o \
-				richmol_data.o kin_xy2.o 
-				$(FOR) $(FFLAGS) -o j-trove$(PLAT).x $^ $(LIB)
+$(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
+	$(FOR) $(FFLAGS) -o $@ $(OBJS) $(LIB)
 
 accuracy.o: accuracy.f90 
 diag.o: diag.f90 accuracy.o timer.o
