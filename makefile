@@ -1,24 +1,69 @@
+################################################################################
+## USER OPTIONS
+################################################################################
+
 EXE=trove
 pot_user = pot_H2O_Conway
 
-PLAT = _0209
-###FOR  = ifort
-FOR = ifort 
-#FFLAGS = -ip -O3 -align -ansi-alias -g -traceback  -qopenmp -mcmodel=medium -parallel -cpp -nostandard-realloc-lhs
-FFLAGS = -O0 -qopenmp -cpp -module $(OBJDIR)
+################################################################################
+## COMPILER OPTIONS
+################################################################################
+
+COMPILER ?= intel
+MODE ?= release
+
+# Intel
+#######
+ifeq ($(strip $(COMPILER)),intel)
+	FOR = ifort
+	FFLAGS = -cpp -qopenmp -module $(OBJDIR)
+	LAPACK = -mkl
+
+	ifeq ($(strip $(MODE)),debug)
+		FFLAGS += -O0 -g
+	else
+		FFLAGS += -O3
+	endif
+
+	# Alternative flags:
+	#FFLAGS = -ip -align -ansi-alias -traceback -qopenmp -mcmodel=medium -parallel -nostandard-realloc-lhs -module $(OBJDIR)
+	#LAPACK = -mkl=parallel
+endif
+
+# gfortran
+##########
+ifeq ($(strip $(COMPILER)),gfortran)
+	FOR = gfortran
+	#FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fallow-argument-mismatch -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+
+	ifeq ($(strip $(MODE)),debug)
+		FFLAGS += -O0 -g -Wunderflow
+	else
+		FFLAGS += -O3
+	endif
+
+	# Use non-MKL LAPACK:
+	#LAPACK = -llapack -lblas
+
+	# Use MKL LAPACK:
+	MKLROOT=/opt/intel/mkl
+	LAPACK += -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+endif
+
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
-
-#ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
-
-#LAPACK = -mkl
-LAPACK = -mkl=parallel -qopenmp
-#LIBS   =  ./libplasma.a ./libcoreblas.a ./libquark.a ./libmrrr.a  -lpthread  -lnuma -lm
-#LIBS   =   -lpthread  -lnuma -lm
+################################################################################
+## LIBRARIES
+################################################################################
 
 WIGXJPF_DIR = lib/wigxjpf
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
+
+################################################################################
+## SOURCES & DIRECTORIES
+################################################################################
 
 BINDIR=bin
 SRCDIR=src
@@ -38,18 +83,20 @@ OBJS := ${SRCS:.f90=.o}
 
 VPATH = $(SRCDIR):$(SRCDIR)/user_pots:$(OBJDIR)
 
-###############################################################################
+################################################################################
+## TARGETS
+################################################################################
 
 all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
 
-tarball:
-	tar cf trove.tar makefile *.f90
-
-checkin:
-	ci -l Makefile *.f90
+%.o : %.f90
+	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
 $(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
 	$(FOR) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
+
+$(WIGXJPF_LIB):
+	$(MAKE) -C $(WIGXJPF_DIR)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -57,14 +104,21 @@ $(OBJDIR):
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-$(WIGXJPF_LIB):
-	$(MAKE) -C $(WIGXJPF_DIR)
-
-%.o : %.f90
-	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
-
 clean:
 	rm -rf $(BINDIR) $(OBJDIR)
+
+cleanall: clean
+	$(MAKE) -C $(WIGXJPF_DIR) clean
+
+tarball:
+	tar cf trove.tar makefile *.f90
+
+checkin:
+	ci -l Makefile *.f90
+
+################################################################################
+## DEPENDENCIES
+################################################################################
 
 pot_user_deps=$(shell grep -io '^\s*use [a-zA-Z0-9_]*' ${user_pot_dir}/${pot_user}.f90 | awk '{print $$2".o"}' | tr '\n' ' ')
 $(pot_user).o: $(pot_user_deps)
@@ -122,4 +176,3 @@ symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
-
