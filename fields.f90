@@ -12535,6 +12535,7 @@ end subroutine check_read_save_none
     integer(ik) :: k1(trove%Nmodes),k2(trove%Nmodes),kdst(trove%Nmodes),n1,iopt,i1,i2,ndst,idst,Norder
     integer(ik) :: kindex(trove%Nmodes)
     integer(ik) :: index1,index2,sig,iterm,jmode
+    logical :: ndst_eq_level
     !
 
       !
@@ -12559,7 +12560,15 @@ end subroutine check_read_save_none
          ! if level is presented we only need the fields for iorder = level
          ! besides the summation must be taken only up to level-1
          !
-         if (iopt==0.or.ndst==level) then
+
+         ! This is to ensure level is present before using it
+         if (iopt==1) then
+           ndst_eq_level = ndst==level
+         else
+           ndst_eq_level = .false.
+         endif
+
+         if (iopt==0.or.ndst_eq_level) then
             !
             ! indexes for summation: i2 = 1..Ncoeff, k2 = (k1,k2,k3,k4...), n2 = k1+k2+k3..
             !
