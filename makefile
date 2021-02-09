@@ -2,7 +2,8 @@
 ## USER OPTIONS
 ################################################################################
 
-EXE=trove
+PLAT ?=
+EXE=j-trove$(PLAT).x
 pot_user = pot_H2O_Conway
 
 ################################################################################
@@ -34,8 +35,8 @@ endif
 ##########
 ifeq ($(strip $(COMPILER)),gfortran)
 	FOR = gfortran
-	#FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fallow-argument-mismatch -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
-	FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fallow-argument-mismatch -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	#FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -Wunderflow
@@ -56,7 +57,7 @@ CPPFLAGS = -D_EXTFIELD_DEBUG_
 ## LIBRARIES
 ################################################################################
 
-WIGXJPF_DIR = lib/wigxjpf
+WIGXJPF_DIR = wigxjpf-1.5
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
 
@@ -64,10 +65,10 @@ LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
 ## SOURCES & DIRECTORIES
 ################################################################################
 
-BINDIR=bin
-SRCDIR=src
-OBJDIR=obj
-user_pot_dir=src/user_pots/
+BINDIR=.
+SRCDIR=.
+OBJDIR=.
+user_pot_dir=.
 
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
@@ -80,7 +81,7 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
 OBJS := ${SRCS:.f90=.o}
 
-VPATH = $(SRCDIR):$(SRCDIR)/user_pots:$(OBJDIR)
+VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
 ################################################################################
 ## TARGETS
@@ -104,7 +105,7 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 clean:
-	rm -rf $(BINDIR) $(OBJDIR)
+	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
 
 cleanall: clean
 	$(MAKE) -C $(WIGXJPF_DIR) clean

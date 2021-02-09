@@ -1,13 +1,14 @@
 # output files
-bin
-obj
+*.mod
+*.o
+j-trove*.x
 
 # wigxjpf output files
-lib/wigxjpf/obj
-lib/wigxjpf/gen
-lib/wigxjpf/lib
-lib/wigxjpf/bin
-lib/wigxjpf/mod
+wigxjpf-1.5/obj
+wigxjpf-1.5/gen
+wigxjpf-1.5/lib
+wigxjpf-1.5/bin
+wigxjpf-1.5/mod
 
 # Windows image file caches
 Thumbs.db
