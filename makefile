@@ -52,7 +52,9 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	#LAPACK = -llapack -lblas
 
 	# Use MKL LAPACK:
-	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+	LAPACK += -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+else
+$(error Compiler option "$(COMPILER)" not defined.)
 endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
