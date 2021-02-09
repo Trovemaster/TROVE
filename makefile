@@ -32,7 +32,7 @@ ifeq ($(strip $(COMPILER)),intel)
 
 # gfortran
 ##########
-else ($(strip $(COMPILER)),gfortran)
+else ifeq ($(strip $(COMPILER)),gfortran)
 	FOR = gfortran
 	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
@@ -51,6 +51,8 @@ else ($(strip $(COMPILER)),gfortran)
 
 	# Use MKL LAPACK:
 	LAPACK += -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+else
+$(error Compiler option "$(COMPILER)" not defined.)
 endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
