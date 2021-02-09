@@ -4622,8 +4622,8 @@ end subroutine check_read_save_none
     !
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
-    trove%dihedrals(:,:) = dihedrals(:,:)
-    trove%dihedtype(:) = dihedtype(:)
+    trove%dihedrals(:,:) = dihedrals(:Ndihedrals,:)
+    trove%dihedtype(:) = dihedtype(:Ndihedrals)
     !
     ! We define the coordinates 
     !
