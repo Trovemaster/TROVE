@@ -29,17 +29,19 @@ ifeq ($(strip $(COMPILER)),intel)
 	# Alternative flags:
 	#FFLAGS = -ip -align -ansi-alias -traceback -qopenmp -mcmodel=medium -parallel -nostandard-realloc-lhs -module $(OBJDIR)
 	#LAPACK = -mkl=parallel
-endif
 
 # gfortran
 ##########
-ifeq ($(strip $(COMPILER)),gfortran)
+else ($(strip $(COMPILER)),gfortran)
 	FOR = gfortran
-	FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fallow-argument-mismatch -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
-	#FFLAGS = -cpp -std=gnu -fbacktrace -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+
+	# This is required for some machines
+	# TODO figure out why
+	FFLAGS += -fallow-argument-mismatch 
 
 	ifeq ($(strip $(MODE)),debug)
-		FFLAGS += -O0 -g -Wunderflow
+		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
 	else
 		FFLAGS += -O3
 	endif
