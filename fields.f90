@@ -4279,7 +4279,7 @@ module fields
                   !
                enddo
                !
-               call readi(i_t); extF%ifit(iterm,imu) = i_t
+               call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
                call readf(f_t); extF%coef(iterm,imu) = f_t
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
