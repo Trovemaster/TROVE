@@ -498,7 +498,7 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
       do m2=-jval2, jval2
         if (abs(m1-m2)>tens%dm) cycle
         if (any(abs(tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2))>print_tol)) then
-          write(iounit_me,'(i4,1x,i4,100(1x,f))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2) * isign
+          write(iounit_me,'(i4,1x,i4,100(1x,f20.12))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2) * isign
         endif
       enddo
     enddo
@@ -574,7 +574,7 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
         do ideg=1, ndeg1
           if (any(abs(me(1:nirrep,ideg,jdeg,ithread))>print_tol)) then
             !$omp critical
-            write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f))') ilevel_, jlevel_, ideg, jdeg, &
+            write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f20.12))') ilevel_, jlevel_, ideg, jdeg, &
                 me(1:nirrep,ideg,jdeg,ithread)
             !$omp end critical
           endif
@@ -1503,7 +1503,7 @@ subroutine read_extf_vib_me_ielem(ielem)
     ! print vibrational matrix elements
     !do i=1, ncontr_t
     !  do j=i, i
-    !    write(out, '(1x,i6,1x,i6,100(1x,f))') i,j, extf_vib_me(:,i,j)
+    !    write(out, '(1x,i6,1x,i6,100(1x,f20.12))') i,j, extf_vib_me(:,i,j)
     !  enddo
     !enddo
 
@@ -1527,6 +1527,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       nmodes_
   real(rk) :: energy
   character(cl) :: sj1, sj2, fname
+  character(cl) :: my_fmt
 
   nmodes = molec%nmodes
   nclasses = size(eigen(1)%cgamma)-1
@@ -1546,7 +1547,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
     stop 'STOP, error in extfield/store_energies'
   endif
   write(out, '(/1x,a,1x,a)') 'store rovibrational energies (RichMol format) in file:', trim(fname)
-  write(out, '(1x,a,1x,f)') 'zero-point energy:', intensity%ZPE
+  write(out, '(1x,a,1x,f20.12)') 'zero-point energy:', intensity%ZPE
 
   write(out, '(/1x,a,1x,i3,1x,a,100(1x,i3))') 'J quanta (', nJ, '):', Jval(1:nJ)
   write(out, '(1x,a,1x,100(1x,i6))') '.. and respective number of energy levels:', nlevels(1:nJ)
@@ -1560,7 +1561,8 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(iounit, '(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,<nmodes>(1x,i4),3x,i8,2x,<nclasses_>(1x,a5),2x,<nmodes_>(1x,i4),3x,es16.8,2x,<nclasses_>(1x,i4))') &
+      write(my_fmt, '("(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,", I0, "(1x,i4),3x,i8,2x,", I0, "(1x,a5),2x,", I0, "(1x,i4),3x,es16.8,2x,", I0, "(1x,i4))")') nmodes, nclasses_, nmodes_, nclasses_
+      write(iounit, my_fmt) &
           Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, &
           eigen(ilevel)%quanta(1:nmodes), eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), &
           eigen(ilevel)%normal(0:nmodes), eigen(ilevel)%largest_coeff, &
@@ -1591,7 +1593,7 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
   real(rk) :: energy, coef_tol
   real(rk), allocatable :: vec_sym(:), vec(:,:), coef0(:), vec0(:)
   complex(rk) :: rot_coefs(2), vec0_
-  character(cl) :: sj1, sj2, fname
+  character(cl) :: sj1, sj2, fname, my_fmt
   type(rotme_cart_tens_type) :: tens0
   type DkmatT
     integer(ik),pointer   :: kmat(:,:)
@@ -1757,7 +1759,7 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
                 img(nelem) = 1
                 vec0(nelem) = aimag(vec0_)
               else
-                write(out, '(/a,2(1x,f))') 'extfield/store_wf_leading error: coefficient of the wave &
+                write(out, '(/a,2(1x,f20.12))') 'extfield/store_wf_leading error: coefficient of the wave &
                     function, re-expressed in terms of symmetric-top functions, is neither pure real &
                         or pure imaginary:', vec0_
                 stop 'STOP, error in extfield/store_wf_leading'
@@ -1769,7 +1771,8 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
 
         enddo ! idimen
 
-        write(iounit, '(1x,i4,1x,i8,1x,a5,1x,i4,1x,f,1x,i6,<maxnelem>(1x,f,1x,i1,1x,i6,1x,i4))') &
+        write(my_fmt, '("(1x,i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i6,", I0, "(1x,f20.12,1x,i1,1x,i6,1x,i4))")') maxnelem
+        write(iounit, my_fmt) &
             Jrot, ilevel_, sym%label(isym), ideg, energy-intensity%ZPE, nelem, &
             (vec0(ielem), img(ielem), v0(ielem), k0(ielem), ielem=1, nelem)
 

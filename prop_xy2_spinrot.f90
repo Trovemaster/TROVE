@@ -2638,6 +2638,7 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
   double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), &
                    tmat(n,m), tol
   double precision, allocatable :: work(:)
+  character(len=cl) :: my_fmt
 
   tol = 1.0d-08 !epsilon(1.0d0)
 
@@ -2676,11 +2677,12 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
         write(out, '(/a)') 'matrix_pseudoinverse_ark error: matrix is singular'
         write(out, '(a)') 'matrix:'
         do j=1, m
-          write(out, '(<n>(1x,f10.6))') mat(j,1:n)
+          write(my_fmt, '("(", I0, "(1x,f10.6))")') n
+          write(out, my_fmt) mat(j,1:n)
         enddo
         write(out, '(a)') 'singular elements:'
         do j=1, n
-          write(out, '(1x,f)') sv(j)
+          write(out, '(1x,f10.6)') sv(j)
         enddo
         stop 'STOP'
       endif
