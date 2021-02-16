@@ -149,8 +149,8 @@ module pot_abcd
    y(1)=1.0_ark-exp(-beta(1)*(local(1)-re(1)))
    y(2)=1.0_ark-exp(-beta(2)*(local(2)-re(2)))
    y(3)=1.0_ark-exp(-beta(3)*(local(3)-re(3)))
-   y(4)= local(4)-(4)
-   y(5)= local(5)-(5)
+   y(4)= local(4)-re(4)
+   y(5)= local(5)-re(5)
    !
    y(6) = cos(rho) - cos(molec%taueq(1))
 
