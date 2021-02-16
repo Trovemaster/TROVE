@@ -269,7 +269,7 @@ module fields
       real(rk)            :: enercut        ! energy cut for the basis set 
       real(rk)            :: potencut=1e6   ! potential energy cut for the dvr-grid points
       real(ark)           :: ZPE = -epsilon(1.0_rk)  ! Zero point energy 
-      logical,pointer     :: isym_do(:)     ! process or not the symmetry in question
+      logical,pointer     :: isym_do(:)  => null()    ! process or not the symmetry in question
       !
       logical             :: sym_C  = .false.   ! if symmetry = C 
       !
@@ -362,8 +362,8 @@ module fields
                                               !  where K is the first index and the matrix is build as K-blocks. 
       logical             :: sparse = .false. ! to switch on sparse matrix processing
       !
-      type(FLbasissetT),pointer  :: bset(:)   ! Basis set specifications: range and type
-      real(rk),pointer    :: symm_toler(:) ! tolerance that decides whether the symmetry transformation matrix 
+      type(FLbasissetT),pointer  :: bset(:)  => null()  ! Basis set specifications: range and type
+      real(rk),pointer    :: symm_toler(:)  => null()! tolerance that decides whether the symmetry transformation matrix 
                                               ! has been properly recostracted at the sample point, i.e. the transformed function
                                               ! coincides with the sampe function at the transformed sample point. 
       integer(ik)         :: msample_points = 40  ! number of sample points for determination of the symmetry transformational properties of the contr. solution
@@ -380,8 +380,8 @@ module fields
       logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
                                             ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
       logical             :: triatom_sing_resolve = .false.
-      logical,pointer     :: select_gamma(:)! the diagonalization will be done only for selected gamma's
-      integer(ik),pointer :: nroots(:) ! number of the roots to be found in variational diagonalization with syevr
+      logical,pointer     :: select_gamma(:) => null() ! the diagonalization will be done only for selected gamma's
+      integer(ik),pointer :: nroots(:) => null() ! number of the roots to be found in variational diagonalization with syevr
       integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
       integer(ik)         :: Nassignments = 1 ! Number of assignments based the largest (=1), second largest (=2) coefficients  
       !
@@ -396,7 +396,7 @@ module fields
      integer(ik) :: N
      real(rk)    :: energy
      real(rk)    :: weight
-     integer(ik),pointer :: quanta(:)
+     integer(ik),pointer :: quanta(:) => null()
      !
    end type FLobsT
 
@@ -1560,6 +1560,11 @@ module fields
             stop 'FLinput - illigal last line in DIAGONALIZER'
             !
          endif 
+         !
+         if (.not. symmetry_defined) then
+              write (out,"('FLinput: DIAGONALIZER cannot appear before symmetry is defined')") 
+              stop 'FLinput - DIAGONALIZER defined before symmetry'
+         endif
          !
          if (job%upper_ener/=uv_syevr_.and.any(job%nroots/=nroots_)) then 
              !
@@ -4274,7 +4279,7 @@ module fields
                   !
                enddo
                !
-               call readi(i_t); extF%ifit(iterm,imu) = i_t
+               call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
                call readf(f_t); extF%coef(iterm,imu) = f_t
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
@@ -4617,8 +4622,8 @@ end subroutine check_read_save_none
     !
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
-    trove%dihedrals(:,:) = dihedrals(:,:)
-    trove%dihedtype(:) = dihedtype(:)
+    trove%dihedrals(:,:) = dihedrals(:Ndihedrals,:)
+    trove%dihedtype(:) = dihedtype(:Ndihedrals)
     !
     ! We define the coordinates 
     !
@@ -12530,6 +12535,7 @@ end subroutine check_read_save_none
     integer(ik) :: k1(trove%Nmodes),k2(trove%Nmodes),kdst(trove%Nmodes),n1,iopt,i1,i2,ndst,idst,Norder
     integer(ik) :: kindex(trove%Nmodes)
     integer(ik) :: index1,index2,sig,iterm,jmode
+    logical :: ndst_eq_level
     !
 
       !
@@ -12554,7 +12560,15 @@ end subroutine check_read_save_none
          ! if level is presented we only need the fields for iorder = level
          ! besides the summation must be taken only up to level-1
          !
-         if (iopt==0.or.ndst==level) then
+
+         ! This is to ensure level is present before using it
+         if (iopt==1) then
+           ndst_eq_level = ndst==level
+         else
+           ndst_eq_level = .false.
+         endif
+
+         if (iopt==0.or.ndst_eq_level) then
             !
             ! indexes for summation: i2 = 1..Ncoeff, k2 = (k1,k2,k3,k4...), n2 = k1+k2+k3..
             !
@@ -16019,7 +16033,8 @@ end subroutine check_read_save_none
       write(chkptIO,"(i8,'   <- Jrot, rotational angular momentum')") bset%dscr(0)%range(1)
       !
       do imode = 0,trove%Nmodes
-        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i2,1x,i2,1x,a10,i9,i3,i3,i3)") &
+        write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,&
+          &2x,i9,1x,2f9.3,1x,L5,1x,i2,1x,a10,i9,L5,L5,L5)") &
                       imode, bset%dscr(imode)
       enddo
       !
@@ -16119,7 +16134,7 @@ end subroutine check_read_save_none
         !
         !read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,3i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i,i)") imode_,bs_
         !
-        read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i2,1x,i2,1x,a10,i9,i2,i2)") & 
+        read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,L5,1x,i2,1x,a10,i9,i2,i2)") & 
         imode_,bs_%type,bs_%COORD_KINET,bs_%COORD_POTEN,bs_%MODEL,bs_%DIM,bs_%SPECIES,bs_%CLASS,bs_%RANGE,&
                bs_%RES_COEFFS,bs_%NPOINTS,bs_%BORDERS,bs_%PERIODIC,bs_%IPERIOD
         !

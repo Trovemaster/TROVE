@@ -36,9 +36,11 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	FOR = gfortran
 	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
-	# This is required for some machines
-	# TODO figure out why
-	FFLAGS += -fallow-argument-mismatch 
+	GCC_VERSION=$(shell gcc -v 2>&1 | grep -Po "^gcc version \K(\d+)")
+	ifeq ($(GCC_VERSION),10)
+		# gcc 10 complains about mismatched argument types
+		FFLAGS += -fallow-argument-mismatch
+	endif
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
