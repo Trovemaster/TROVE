@@ -2,7 +2,7 @@
 
 set -e
 
-exe=j-trove.x
+exe=../j-trove.x
 nproc=1
 
 # TODO check exe is present
@@ -15,7 +15,7 @@ nproc=1
 for benchmark in H2CO; do
   wd=outputs/$benchmark
   mkdir -p $wd
-  cp ../$exe $wd
+  cp $exe $wd
   cp benchmarks/$benchmark/input/*.inp $wd
   cp scripts/$benchmark/run_benchmark.sh $wd
   pushd $wd
