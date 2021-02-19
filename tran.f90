@@ -1453,6 +1453,7 @@ contains
         !
         iroot = 0
         !
+#ifdef TROVE_USE_MPI_
         if (blacs_size.eq.1) then
           do ilevel = 1,Neigenlevels
              !
@@ -1501,6 +1502,26 @@ contains
             !
           enddo
         endif
+#else
+        do ilevel = 1,Neigenlevels
+          !
+          igamma = eigen(ilevel)%igamma
+          iunit = TReigenvec_unit(1,(/0/),igamma)
+          !
+          do ideg = 1, eigen(ilevel)%ndeg
+            !
+            iroot = iroot + 1
+            !
+            iroot = eigen(ilevel)%iroot(ideg)
+            !
+            irec = eigen(ilevel)%irec(ideg)
+            !
+            read(iunit, rec = irec) psi(1:dimen,iroot)
+            !
+          enddo
+          !
+        enddo
+#endif
         !
       endif
       !
