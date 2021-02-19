@@ -26,7 +26,7 @@ LAPACK = -mkl=parallel -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 LIB     =   $(LAPACK) 
 
 %.o : %.f90
-	$(FOR) -cpp -c $(FFLAGS) $<
+	$(FOR) -DTROVE_USE_MPI_ -cpp -c $(FFLAGS) $<
 
 ###############################################################################
 

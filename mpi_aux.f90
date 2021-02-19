@@ -1,3 +1,4 @@
+#ifdef TROVE_USE_MPI_
 module mpi_aux
   use mpi_f08
   use timer
@@ -403,3 +404,4 @@ contains
   end subroutine co_create_type_subarray
 
 end module
+#endif
