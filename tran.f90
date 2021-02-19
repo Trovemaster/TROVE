@@ -13,8 +13,11 @@ module tran
  use fields,       only : manifold, FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
  use moltype,      only : intensity,extF
  use symmetry,     only : sym
-
+#ifdef TROVE_USE_MPI_
  use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT,PTstorempi_icontr_cnu
+#else
+ use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT
+#endif
 
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
@@ -1207,7 +1210,9 @@ contains
  !
 
  subroutine TRconvert_matel_j0_eigen(jrot)
+#ifdef TROVE_USE_MPI_
     use mpi_aux
+#endif
     implicit none
     integer(ik),intent(in) :: Jrot
     integer(ik)        :: info,imu
@@ -1223,11 +1228,15 @@ contains
     character(len=20)  :: buf20
     integer(ik)        :: ncontr_t,rootsize_t,junit,iterm1=0,iterm2=1e6,islice,Nterms,iterm,icoeff
     integer(hik)       :: matsize2,matsize,rootsize,rootsize2
-    real(rk),allocatable :: gmat(:,:),psi(:,:),psi_t(:,:)
+    real(rk),allocatable :: gmat(:,:),psi(:,:)
+#ifdef TROVE_USE_MPI_
+    real(rk),allocatable :: psi_t(:,:)
+#endif
     real(rk),allocatable :: mat_s(:,:),mat_t(:,:)
     integer(ik),allocatable :: ijterm(:,:)
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
     character(len=cl)  :: jchar,filename
+#ifdef TROVE_USE_MPI_
     type(MPI_File) :: fileh, fileh_w
     integer(kind=MPI_OFFSET_KIND) :: mpioffset,read_offset,write_offset
     integer :: ierr
@@ -1236,6 +1245,7 @@ contains
     integer,dimension(9)                    :: desc_gmat, desc_mat_t, desc_mat_s, desc_psi, desc_extF
     integer                                 :: blacs_row, blacs_col, i_local, j_local
     integer                                 :: i, j
+#endif
       !
       if (job%verbose>=2) write(out,"(/'Compute J=0 vib. matrix elements of the kinetic energy operator...')")
       !
@@ -1269,25 +1279,32 @@ contains
       !
       dimen = bset_contr(1)%Maxcontracts
       !
+#ifdef TROVE_USE_MPI_
       if (blacs_size.eq.1) then
+#endif
         allocate(mat_s(Neigenroots,Neigenroots),stat=info)
         call ArrayStart('mat_s',info,1,kind(mat_s),matsize2)
+#ifdef TROVE_USE_MPI_
       else
         call co_block_type_init(mat_s, Neigenroots, Neigenroots, desc_mat_s, info, mat_s_block_type)
         call ArrayStart('mat_s',info,1,kind(mat_s),int(size(mat_s),hik))
       endif
+#endif
       !
       matsize = int(dimen*Neigenroots,hik)
       !
       if (job%verbose>=3) write(out,"(/' Allocate two matrices of ',i8,'x',i8,' = ',i0,' elements.')") & 
                           dimen,Neigenroots,matsize
       !
+#ifdef TROVE_USE_MPI_
       if (blacs_size.eq.1) then
+#endif
         allocate(psi(dimen,Neigenroots),mat_t(Neigenroots,dimen),stat=info)
         !
         call ArrayStart('psi',info,1,kind(psi),matsize)
-        call ArrayStart('psi_t',info,1,kind(psi_t),matsize)
         call ArrayStart('mat_t',info,1,kind(mat_t),matsize)
+#ifdef TROVE_USE_MPI_
+        call ArrayStart('psi_t',info,1,kind(psi_t),matsize)
       else
         call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
         call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
@@ -1298,6 +1315,7 @@ contains
         call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
         call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
       endif
+#endif
       !
       psi = 0
       !
@@ -1361,6 +1379,7 @@ contains
           !
           read(iunit, rec = irec) vec(1:Nsize)
           !
+#ifdef TROVE_USE_MPI_
           if(blacs_size.gt.1) then
             do ideg = 1, eigen(ilevel)%ndeg
               !
@@ -1391,6 +1410,7 @@ contains
               !
             end do
           else
+#endif
             do ideg = 1, eigen(ilevel)%ndeg
               !
               iroot = iroot + 1
@@ -1415,7 +1435,9 @@ contains
               !$omp end parallel do
               !
             end do
+#ifdef TROVE_USE_MPI_
           endif
+#endif
           !
         end do
         !
