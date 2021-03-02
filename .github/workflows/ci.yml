@@ -32,7 +32,7 @@ jobs:
           key: benchmark-data
 
       - name: Build
-        run: make
+        run: make COMPILER=gfortran MODE=debug
 
       - name: Test
         run: make test
