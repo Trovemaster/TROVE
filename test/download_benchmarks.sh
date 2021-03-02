@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-ZENODO_DOI="10.5281/zenodo.4433456" # Project DOI (redirects to latest version)
+ZENODO_DOI="10.5281/zenodo.4546263" # Project DOI (redirects to latest version)
 
 # Extract ID from DOI
 ZENODO_ID=$(echo $ZENODO_DOI | cut -d"." -f3)
+echo $ZENODO_ID
 
 # Get correct URL from redirect
 REDIRECT_SUFFIX=$(curl -s https://zenodo.org/api/records/$ZENODO_ID | jq -r '.location')
