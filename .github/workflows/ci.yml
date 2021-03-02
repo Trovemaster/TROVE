@@ -35,7 +35,7 @@ jobs:
         run: sudo apt-get install -y intel-mkl
 
       - name: Build
-        run: make COMPILER=gfortran MODE=debug
+        run: make COMPILER=gfortran MODE=ci
 
       - name: Test
         run: make test
