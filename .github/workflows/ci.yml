@@ -31,6 +31,9 @@ jobs:
           path: ~/test/benchmarks
           key: benchmark-data
 
+      - name: Install Intel MKL
+        run: sudo apt install intel-mkl
+
       - name: Build
         run: make COMPILER=gfortran MODE=debug
 
