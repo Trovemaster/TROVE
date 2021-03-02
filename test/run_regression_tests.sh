@@ -4,7 +4,6 @@ set -e
 
 exe=../j-trove.x
 nproc=1
-benchmarks_file=benchmarks.tar.gz
 
 # Check exe is present
 if [ ! -f $exe ]; then
@@ -13,10 +12,10 @@ if [ ! -f $exe ]; then
 fi
 
 # If benchmarks haven't been downloaded, download them
-if [ ! -f $benchmarks_file ]; then
+if [ ! -d benchmarks ]; then
   echo "Downloading benchmarks"
   ./download_benchmarks.sh
-  tar xzf $benchmarks_file
+  tar xzf benchmarks.tar.gz
 fi
 
 # Run series of benchmarks

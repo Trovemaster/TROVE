@@ -1,0 +1,38 @@
+name: Regression Test
+
+on:
+  push:
+    branches: [develop, master, feature/regression-test]
+  pull_request:
+
+jobs:
+  test:
+    name: TROVE ${{ matrix.os }} - ${{ matrix.arch }} - ${{ matrix.compiler }}
+    env:
+      OMP_NUM_THREADS: 1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+        compiler:
+          - gfortran
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache benchmark data
+        uses: actions/cache@v2
+        env:
+          cache-name: benchmark-data
+        with:
+          path: ~/test/benchmarks
+          key: benchmark-data
+
+      - name: Build
+        run: make
+
+      - name: Test
+        run: make test

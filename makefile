@@ -93,6 +93,8 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 ## TARGETS
 ################################################################################
 
+.PHONY: all, clean, cleanall, tarball, checkin, test
+
 all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
 
 %.o : %.f90
@@ -121,6 +123,9 @@ tarball:
 
 checkin:
 	ci -l Makefile *.f90
+
+test: $(BINDIR)/$(EXE)
+	cd test; ./run_regression_tests.sh
 
 ################################################################################
 ## DEPENDENCIES
