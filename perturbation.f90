@@ -7574,7 +7574,7 @@ module perturbation
         !
         select case (trim( trove%symmetry ))
         case('TD','TD(M)','C2V(M)','C2V','C3V(M)',&
-             'C3V','D3H(M)','D3H','C2H(M)','C2H','G4(M)','G4','G4(EM)','D2H(M)','D2H')
+             'C3V','D3H(M)','D3H','C2H(M)','C2H','G4(M)','G4','G4(EM)','D2H(M)','D2H','G36(EM)')
         case default
             write(out,"('Error PThamiltonian_contract: rotsym_do is not implemented for ',a)") trim( trove%symmetry )
             stop 'Error PThamiltonian_contract: illegal symmetry for rotsym_do'

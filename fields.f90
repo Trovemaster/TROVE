@@ -2928,6 +2928,49 @@ module fields
             !
          endif 
          !
+       case("CONTROL")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         chk_defined = .true.
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           case('HAMILTONIAN')
+             !
+             call readu(w)
+             !
+           case('EXTERNAL','DIPOLE')
+             !
+             call readu(w)
+             !
+           case('JROT','J')
+             !
+             call readi(Jrot)
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CONTROL =',a)") trim(w)
+            stop 'FLinput - illegal last line in CONTROL'
+            !
+         endif          
+         !
        case("ANALYSIS")
          !
          call readu(w)
@@ -8674,14 +8717,21 @@ end subroutine check_read_save_none
     !
     if (job%verbose>=7) write(out,"(/'Bmat_generation/start  ')") 
 
-
     !
-    ! for (102) and (103,104) cases fo numerical derivatives 
+    ! for easy reference 
+    !
+    Nmodes = trove%Nmodes
+    Natoms = trove%Natoms
+    Nbonds = trove%Nbonds
+    Nangles = trove%Nangles
+    Ndihedrals = trove%Ndihedrals
+    !
+    ! for (102) and (103,104) cases with numerical derivatives 
     ! instead of more acurate analytical 
     !
     if ( any(trove%dihedtype(:)==101).or.any(trove%dihedtype(:)==102).or.any(trove%dihedtype(:)==103).or.&
          any(trove%dihedtype(:)==104).or.any(trove%dihedtype(:)==105).or.any(trove%dihedtype(:)==106).or.&
-         any(trove%dihedtype(:)==107).or.any(trove%dihedtype(:)==108) ) then
+         any(trove%dihedtype(:)==107).or.any(trove%dihedtype(:)==108).or.any(trove%dihedtype(:)==-999) ) then
        !
        do icoord = 1,trove%Ncoords
         !
@@ -8691,17 +8741,35 @@ end subroutine check_read_save_none
         !
       enddo
       !
+      ! specal case 
+      !
+      do iangle = 1,Ndihedrals
+        !
+        J = trove%dihedtype(iangle)
+        !
+        select case (J) 
+        !
+        case(1) ! type 1 
+           !
+        case(202,-202)
+           !
+           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
+           !
+           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
+           !
+        case(402,-402)
+           !
+           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
+           !
+           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
+           !
+        end select 
+        !
+      enddo
+      !
       return 
       !
     endif
-    !
-    ! for easy reference 
-    !
-    Nmodes = trove%Nmodes
-    Natoms = trove%Natoms
-    Nbonds = trove%Nbonds
-    Nangles = trove%Nangles
-    Ndihedrals = trove%Ndihedrals
     !
     ! defining the delta function
     !

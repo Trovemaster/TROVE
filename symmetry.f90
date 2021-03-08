@@ -537,6 +537,16 @@ contains
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
       sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
                   'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
+
+      p2 = 0.5_ark*pi
+      p3 = 1.5_ark*pi
+      !
+      sym%euler( 1,:) = 0
+      sym%euler( 2,:) = (/o,o,o/)
+      sym%euler( 4,:) = (/o,o,pi/)
+      sym%euler( 7,:) = (/o,o,2.0_ark/3.0_ark*pi/)
+      sym%euler( 19,:) = (/p2,pi,p3/)
+      !
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -567,12 +577,12 @@ contains
     E_rep_1(4,:,:) = sxy
     E_rep_1(5,:,:) = s2
     E_rep_1(6,:,:) = s3
-    
+    !
     A2_char(:3) = 1.0_ark
     A2_char(4:6) = -1.0_ark
-  
+    !
     call irr_allocation 
-  
+    !
     pos_array = transpose( reshape((/  1,  7,  8, 19, 20, 21, &
                                        2,  9, 11, 22, 24, 26, &
                                        3, 10, 12, 23, 25, 27, &
@@ -580,7 +590,7 @@ contains
                                        5, 14, 17, 29, 32, 35, &
                                        6, 15, 18, 30, 33, 36/), (/6,6/))) 
     ! E1s, E2s, E1d, and E2d 
- 
+    !
     do j = 1, 6
       do k = 1, 6 
         sym%irr(5, pos_array(k,j))%repres = E_rep_1(j,:,:)
@@ -596,9 +606,9 @@ contains
         sym%irr(6+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)*m_one
       end do
     end do
-
+    !
     !E3s and E4s
-    
+    !
     do j = 1, 6
       do k = 1, 6
         sym%irr(7,pos_array(k,j))%repres = E_rep_1(k,:,:)
