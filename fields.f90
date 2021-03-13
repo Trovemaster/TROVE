@@ -7860,7 +7860,7 @@ end subroutine check_read_save_none
       !
       jpar = jpar + 1
       !
-      if (job%verbose>=3) write(out,my_fmt) jpar,' -> ',par(1:trove%Nmodes)
+      if (job%verbose>=4) write(out,my_fmt) jpar,' -> ',par(1:trove%Nmodes)
       !
       do imode = 1,trove%Nmodes
         !
@@ -8277,7 +8277,7 @@ end subroutine check_read_save_none
       !
       jpar = jpar + 1
       !
-      if (job%verbose>=2) write(out,my_fmt) jpar,' -> ',par(1:trove%Nmodes)
+      if (job%verbose>=4) write(out,my_fmt) jpar,' -> ',par(1:trove%Nmodes)
       !
       do imode = 1,trove%Nmodes
         !
@@ -13691,10 +13691,10 @@ end subroutine check_read_save_none
           !
           read(chkptIO) exp_coeff_thresh
           !
-          if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+          if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>1e5*small_ ) then
             !
-            write(out,"(a,e18.10,a,e18.10,a)") & 
-                        'basisRestore-gvib: exp_coeff_thresh used ',job%exp_coeff_thresh>exp_coeff_thresh,&
+            write(out,"(a,e18.10,a,e18.10,a,a)") & 
+                        'basisRestore-gvib: exp_coeff_thresh used ',job%exp_coeff_thresh,'>',exp_coeff_thresh,&
                         ' is incompatible with stored ',', change threshold or redo BASIS_SET SAVE'
             stop 'basisRestore-gvib: exp_coeff_thresh is incompatible with BASIS, change threshold or BASIS_SET SAVE'
             !

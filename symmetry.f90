@@ -540,6 +540,7 @@ contains
 
       p2 = 0.5_ark*pi
       p3 = 1.5_ark*pi
+      o  = 0.0_ark
       !
       sym%euler( 1,:) = 0
       sym%euler( 2,:) = (/o,o,o/)

@@ -3173,7 +3173,8 @@ module perturbation
          !
          if (mpoints>job%bset(imode)%npoints) then 
            !
-           write(out,"('PTcontracted_prediag..: For class ',i4,' number of points is too small.')") iclasses
+           write(out,"('PTcontracted_prediag..1: For class ',i4,' number of points is too small.')") iclasses
+           write(out,"('npoints = ',i,' < dvr-ref points = ',i)") job%bset(imode)%npoints,mpoints
            stop 'PTcontracted_prediag..: illegal number of points in class'
            !
          endif
@@ -24989,6 +24990,7 @@ end subroutine read_contr_matelem_expansion_classN
          if (dvr_size>bs(imode)%npoints) then 
            !
            write(out,"('PTDVR_initialize..: For ispecies ',i4,' number of points is too small.')") ispecies
+           write(out,"('npoints = ',i,' < dvr-ref points = ',i)") bs(imode)%npoints,dvr_size
            stop 'PTDVR_initialize..: illegal number of points in ispecies'
            !
          endif

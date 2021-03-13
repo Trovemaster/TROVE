@@ -1291,7 +1291,7 @@ module mol_c2h6
         !
       endif
       ! 
-    case('R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-13')
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
         !
@@ -1903,7 +1903,7 @@ module mol_c2h6
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
          !
-         if (verbose>=3) then
+         if (verbose>=4) then
            write(out, '(i5)') 8
            write(out,'(a)') ""
            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
@@ -1915,7 +1915,7 @@ module mol_c2h6
          !  
       enddo
       !
-    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-13')
       !
       tau = pi
       !
@@ -1986,7 +1986,7 @@ module mol_c2h6
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
          !
-         if (verbose>=3) then
+         if (verbose>=4) then
            write(out, '(i5)') 8
            write(out,'(a)') ""
            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
@@ -2073,7 +2073,7 @@ module mol_c2h6
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
          !
-         if (verbose>=3) then
+         if (verbose>=4) then
            write(out, '(i5)') 8
            write(out,'(a)') ""
            write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
@@ -6280,6 +6280,144 @@ module mol_c2h6
         !
       end select
       !
+    case('R-R16-BETA16-THETA-TAU-13')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05 <- working for tau-11
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          !dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
     end select
     !
     if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/end'
@@ -6333,7 +6471,8 @@ module mol_c2h6
       !
     case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4',&
          'R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8',&
-         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12')
+         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12',&
+         'R-R16-BETA16-THETA-TAU-13')
       !
       select case(trim(molec%symmetry))
       !
