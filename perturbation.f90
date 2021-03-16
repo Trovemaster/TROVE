@@ -9177,7 +9177,7 @@ module perturbation
                              PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
                           write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
                              PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                          stop 'something wrong with sym-counting'
+                          stop 'symm_mat_element_vector_k: something wrong with sym-counting'
                       endif 
                     endif
                     !
@@ -9203,12 +9203,12 @@ module perturbation
                         !write(out,"(/'Non-diagonal element between different symmetries:')")
                            write(out,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,a)") & 
                                       sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem,&
-                                      ' Non-diagonal element between different symmetries is too large!'
+                                      'Non-diagonal element between different symmetries is too large! (k)'
                         !
                         !
                         ! special case for linear molecules and E-symmetries. Not an ideal solution!
                         if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                           stop 'non-zero element between two symmetries'
+                           stop 'symm_mat_element_vector_k: non-zero element between two symmetries'
                         endif 
                       endif
                    endif

@@ -1217,7 +1217,7 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       !
       xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
       !
-  case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13')
+  case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14')
       !
       r1 = local(1)
       r2 = local(2)
@@ -2241,7 +2241,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13')
+  case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14')
     !
     r1 = local(1)
     r2 = local(2)
@@ -2442,7 +2442,7 @@ end subroutine ML_dipole_c2h6_4m_dummy
       'ML_alpha_C2H6_zero_order error', trim(molec%coords_transform), 'is unknown'
       stop 'ML_alpha_C2H6_zero_order error: bad coordinate type'
       !
-    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13')
+    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14')
       !
       r1 = local(1)
       r2 = local(2)

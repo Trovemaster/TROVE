@@ -1087,11 +1087,11 @@ module mol_abcd
      !
      subroutine extrapolate(N,x,src,dst)
      !
-     integer,intent(in)   :: N
+     integer(ik),intent(in)   :: N
      real(ark),intent(inout)  :: src(1:N),x(1:N+1)
      real(ark),intent(out)    :: dst
 
-     integer            :: i1,i2
+     integer(ik)        :: i1,i2
      real(rk)           :: a(N,N),b(N,1)
         !
         !

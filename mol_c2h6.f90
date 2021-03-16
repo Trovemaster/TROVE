@@ -3,13 +3,14 @@
 module mol_c2h6
   use accuracy
   use moltype
+  use lapack
 
   implicit none
 
   public ML_coordinate_transform_C2H6, ML_b0_C2H6, ML_symmetry_transformation_C2H6, ML_rotsymmetry_C2H6
   private
 
-  integer(ik), parameter :: verbose = 3 ! Verbosity level
+  integer(ik), parameter :: verbose = 4 ! Verbosity level
 
   !--------------------------
   !      ZMAT_4BETA_1TAU
@@ -1291,7 +1292,7 @@ module mol_c2h6
         !
       endif
       ! 
-    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-13')
+    case('R-R16-BETA16-THETA-TAU-11')
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
         !
@@ -1453,7 +1454,7 @@ module mol_c2h6
         dst(1) = src(1)+molec%local_eq(1)
         !
         dst(3) = src(2)+molec%local_eq(2)
-        dst(5) = src(3)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(3)
         dst(7) = src(4)+molec%local_eq(4)
         dst(2) = src(5)+molec%local_eq(5)
         dst(4) = src(6)+molec%local_eq(6)
@@ -1473,6 +1474,203 @@ module mol_c2h6
         S18 = src(18)
         !
 
+        tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
+        tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
+        tau25 = 1.0_ark/6.0_ark*(-Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau53 = 1.0_ark/6.0_ark*(Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18) 
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,2.0_ark*pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(6)-molec%local_eq(6)
+        dst(7) = src(4)-molec%local_eq(4)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(6+6)-molec%local_eq(6+6)
+        dst(13) = src(4+6)-molec%local_eq(4+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
+        tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
+        tau25 = 1.0_ark/6.0_ark*(-Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau53 = 1.0_ark/6.0_ark*(Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18) 
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,2.0_ark*pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-XX')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      ! 14 = 14 but with 5<->7
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(7)-molec%local_eq(7)
+        dst(4) = src(5)-molec%local_eq(5)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(4)-molec%local_eq(4)
+        dst(7) = src(6)-molec%local_eq(6)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(7+6)-molec%local_eq(7+6)
+        dst(10) = src(5+6)-molec%local_eq(5+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(4+6)-molec%local_eq(4+6)
+        dst(13) = src(6+6)-molec%local_eq(6+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(7) = src(3)+molec%local_eq(3)
+        dst(5) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(4) = src(6)+molec%local_eq(6)
+        dst(6) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(7+6) = src( 9)+molec%local_eq( 9)
+        dst(5+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(4+6) = src(12)+molec%local_eq(12)
+        dst(6+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
         tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
         tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
         tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
@@ -1508,6 +1706,7 @@ module mol_c2h6
     real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12,tau14,tau15,tau16
     real(ark) :: transform(3,3),phi
     integer(ik) :: i, n, iatom, ix
+    character(2) :: atoms(molec%Natoms)
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/start'
     !
@@ -1915,7 +2114,7 @@ module mol_c2h6
          !  
       enddo
       !
-    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-13')
+    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11')
       !
       tau = pi
       !
@@ -1998,7 +2197,7 @@ module mol_c2h6
          !  
       enddo
       !
-    case('R-R16-BETA16-THETA-TAU-12')
+    case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13')
       !
       tau = pi
       theta = 2.0_ark*pi/3.0_ark
@@ -2072,64 +2271,116 @@ module mol_c2h6
          do n = 1,Natoms
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
-         !
-         if (verbose>=4) then
-           write(out, '(i5)') 8
-           write(out,'(a)') ""
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-           do iatom=3, Natoms
-             write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-           enddo
-         endif
          !  
       enddo
       !
-      a0 = 0
+    case('R-R16-BETA16-THETA-TAU-14')
+      !
+      ! y -> -y 
       !
       tau = pi
+      theta = 2.0_ark*pi/3.0_ark
       !
-      tau14 = tau
-      tau15 = tau-theta
-      tau16 = tau+theta
-   
-      a0(1,:) = 0
-      a0(2,:) = 0
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
       !
-      a0(3,1) = r*sin(alpha)
-      a0(3,2) = 0
-      a0(3,3) = r*cos(alpha)
+      if (present(rho_ref)) rho_ref = 0
       !
-      a0(4,1) = r*sin(alpha)*cos(tau14)
-      a0(4,2) = r*sin(alpha)*sin(tau14)
-      a0(4,3) =-r*cos(alpha)
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)
+         !
+         tau14 = tau
+         tau16 = theta - tau
+         tau15 = theta + tau
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(4,1,i) = r*sin(alpha)
+         b0(4,2,i) = 0
+         b0(4,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(theta)
+         b0(6,2,i) =-r*sin(alpha)*sin(theta)
+         b0(6,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(theta)
+         b0(8,2,i) = r*sin(alpha)*sin(theta)
+         b0(8,3,i) =-r*cos(alpha)
+         !
+         b0(3,1,i) = r*sin(alpha)*cos(tau14)
+         b0(3,2,i) = r*sin(alpha)*sin(tau14)
+         b0(3,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(tau16)
+         b0(5,2,i) =-r*sin(alpha)*sin(tau16)
+         b0(5,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(tau15)
+         b0(7,2,i) = r*sin(alpha)*sin(tau15)
+         b0(7,3,i) = r*cos(alpha)
+         !
+         b0(1,3,i) = b0(1,3,i) + r12*0.5_ark
+         b0(2,3,i) = b0(2,3,i) - r12*0.5_ark
+
+         b0(4:8:2,3,i) =b0(4:8:2,3,i)+r12*0.5_ark
+         b0(3:7:2,3,i) =b0(3:7:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi =-tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !
+         !if (verbose>=4) then
+         !  write(out, '(i5)') 8
+         !  write(out,'(a)') ""
+         !  write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
+         !  write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
+         !  do iatom=3, Natoms
+         !    write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
+         !  enddo
+         !endif
+         !  
+      enddo
       !
-      a0(5,1) = r*sin(alpha)*cos(theta)
-      a0(5,2) =-r*sin(alpha)*sin(theta)
-      a0(5,3) = r*cos(alpha)
-      !
-      a0(6,1) = r*sin(alpha)*cos(tau15)
-      a0(6,2) = r*sin(alpha)*sin(tau15)
-      a0(6,3) =-r*cos(alpha)
-      !
-      a0(7,1) = r*sin(alpha)*cos(theta)
-      a0(7,2) = r*sin(alpha)*sin(theta)
-      a0(7,3) = r*cos(alpha)
-      !
-      a0(8,1) = r*sin(alpha)*cos(tau16)
-      a0(8,2) = r*sin(alpha)*sin(tau16)
-      a0(8,3) =-r*cos(alpha)
-      !
-      a0(1:7:2,3) =a0(1:7:2,3)-r12*0.5_ark
-      a0(2:8:2,3) =a0(2:8:2,3)+r12*0.5_ark
-      !
-      !
-      do ix=1, 3
-        CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-        a0(:,ix) = a0(:,ix) - CM_shift
-      end do 
+      !call ML_non_rigid_reference_PAS(Natoms,npoints,rho_i,b0)
       !
     end select 
+    !
+    if (verbose>=4) then
+      !
+      atoms(1:Natoms) = (/'C ','C ','H ','H ','H ','H ','H ','H '/)
+      !
+      do i = 0,npoints
+         write(out, '(i5)') 8
+         write(out,'(a)') ""
+         do iatom=1, Natoms
+           write(out, '(1x,a,1x,3(1x,es16.8))') atoms(iatom), b0(iatom,1:3,i)
+         enddo
+         !  
+      enddo
+      !
+    endif
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
@@ -6142,7 +6393,7 @@ module mol_c2h6
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU-12')
+    case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13')
       !
       select case(trim(molec%symmetry))
         !
@@ -6280,7 +6531,8 @@ module mol_c2h6
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU-13')
+    case('R-R16-BETA16-THETA-TAU-14')
+      !
       !
       select case(trim(molec%symmetry))
         !
@@ -6302,10 +6554,11 @@ module mol_c2h6
           dst(8:10) = matmul(a123,src(8:10))
           dst(11:13) = matmul(a123,src(11:13))
           !
-          !! a07
+          !! a07: this is how G1x and G1y actually transform 
           !dst(14:15) = matmul(c132,src(14:15))
           !dst(16:17) = matmul(c132,src(16:17))
           !!
+          !! a00 is a working version of tau-11
           dst(14:15) = matmul(c123,src(14:15))
           dst(16:17) = matmul(c123,src(16:17))
           !
@@ -6313,10 +6566,9 @@ module mol_c2h6
           !dst(14:15) = matmul(c132,src(14:15))
           !dst(16:17) = matmul(c132,src(16:17))
           !!
-          !! a00
           !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
           !
-          ! a05 <- working for tau-11
+          ! a05
           dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
           !
           ! a04
@@ -6347,10 +6599,10 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          !dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  2.0_ark*pi - src(18)
           !
           ! a12
-          dst(18) = -2.0_ark*pi - src(18)
+          !dst(18) = -2.0_ark*pi - src(18)
           !
           do while(dst(18) < 0.0_ark) 
                 dst(18) = dst(18) + 4.0_ark*pi
@@ -6472,7 +6724,7 @@ module mol_c2h6
     case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4',&
          'R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8',&
          'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12',&
-         'R-R16-BETA16-THETA-TAU-13')
+         'R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14')
       !
       select case(trim(molec%symmetry))
       !
@@ -6585,6 +6837,170 @@ module mol_c2h6
     if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C2H6/end'
     !
   end subroutine ML_rotsymmetry_C2H6
+
+
+
+  ! 
+  ! this subroutine is to reorient the molecule to a non-rigid reference PAS 
+  !
+  subroutine ML_non_rigid_reference_PAS(Natoms,npoints,rho_i,b0)
+    !
+    implicit none 
+     !
+     integer(ik),intent(in)  :: Natoms,npoints
+     real(ark),   intent(inout) :: b0(Natoms,3,0:npoints)
+     real(ark),  intent(in) :: rho_i(0:Npoints)
+     !
+     real(ark)   :: AtomMasses(Natoms),a0(Natoms,3),Inert0(3),Inert(3),Inert1(3),a(3,3)
+     real(ark)   :: x(5),a0_tt,a0_t(molec%Natoms,3),transform(3,3)
+     integer(ik) :: i0,istep,ipar,ix,jx,j0,i,in,n
+           !
+           i0 = npoints/2
+           !
+           do ipar = 0,1
+             !
+             istep = (-1)**(ipar+2)
+             !
+             i = npoints/2
+
+             a0(:,:) = b0(:,:,i)
+             !
+             call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
+             !
+             Inert0(1) = sum(molec%AtomMasses(:)*( a0(:,2)**2+ a0(:,3)**2) )
+             Inert0(2) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
+             Inert0(3) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
+             !
+             do ix = 1,molec%Natoms
+                a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+             enddo
+             !
+             b0(:,:,i) = a0(:,:)
+             !
+             do j0 = 1,npoints/2
+                !
+                !write(out,'("j0 = ",i8)') j0
+                !
+                i = i + istep
+                !
+                do ix = 1,molec%Natoms
+                   a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+                enddo
+                !
+                Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,i)**2+ b0(:,3,i)**2) )
+                Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,3,i)**2) )
+                Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,2,i)**2) )
+                !
+                ! Second Eckart equation
+                ! 
+                do ix = 1,3 
+                   do jx = 1,3 
+                      a(ix,jx) =  sum(molec%AtomMasses(:)*a0(:,ix)*a0(:,jx) )
+                   enddo
+                   !
+                enddo
+                !
+                call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,a)
+                !
+                ! Found coordinate transformation "c"
+                !
+                transform = matmul(transform,real(a,kind=rk))
+                !
+                ! Transformation of a0 
+                !
+                do ix = 1,molec%Natoms
+                   a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+                enddo
+                !
+                do ix = 1,3 
+                   do jx = 1,3 
+                      a(ix,jx) =  sum(molec%AtomMasses(:)*a0(:,ix)*a0(:,jx) )
+                   enddo
+                   !
+                enddo
+                !
+                Inert(1) = sum(molec%AtomMasses(:)*( a0(:,2)**2+ a0(:,3)**2) )
+                Inert(2) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
+                Inert(3) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
+                !
+                Inert1 = 1
+                !
+                if (abs(i-i0)>2) then 
+                  !
+                  do in = 1,molec%Natoms
+                     !
+                     do ix = 1,3
+                       !
+                       N = min(4,abs(i-i0))
+                       !
+                       x(1:N+1) = rho_i(i-istep*N:i:istep)
+                       !
+                       call extrapolate(N,x,b0(in,ix,i-istep*N:i-istep:istep),a0_tt)
+                       a0_t(in,ix) = a0_tt
+                     enddo 
+                  enddo
+                  !
+                  !
+                  Inert1(1) = sum(molec%AtomMasses(:)*( a0_t(:,2)**2+ a0_t(:,3)**2) )
+                  Inert1(2) = sum(molec%AtomMasses(:)*( a0_t(:,1)**2+ a0_t(:,3)**2) )
+                  Inert1(3) = sum(molec%AtomMasses(:)*( a0_t(:,1)**2+ a0_t(:,2)**2) )
+                  !
+                endif 
+                !
+                if (all(abs(Inert(:)-Inert0(:))<5.0).or.all(abs(Inert(:)-Inert1(:))<5.0)) then 
+                  Inert0 = Inert
+                  b0(:,:,i) = a0(:,:)
+                  cycle 
+                endif 
+                !
+                if (verbose>=4) then 
+                  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+                endif
+                !
+             enddo
+             !    
+           enddo
+           
+     contains 
+       !      
+       subroutine extrapolate(N,x,src,dst)
+       !
+       integer(ik),intent(in)   :: N
+       real(ark),intent(inout)  :: src(1:N),x(1:N+1)
+       real(ark),intent(out)    :: dst
+       !
+       integer(ik)              :: i1,i2
+       real(rk)           :: a(N,N),b(N,1)
+          !
+          !
+          do i1 = 1,N
+             !
+             a(i1,1) = 1.0_ark
+             !
+             b(i1,1) = src(i1)
+             !
+             do i2 = 2,N
+               !
+               a(i1,i2) = x(i1)**(i2-1)
+               !
+             enddo
+          enddo
+          !
+          !  lapack_gelss 
+          ! 
+          call lapack_gelss(a(:,:),b(:,:))
+          !
+          dst = b(1,1)
+          !
+          do i1 = 2,N
+            !
+            dst = dst + real(b(i1,1),ark)*x(N+1)**(i1-1)
+            !
+          enddo
+          !
+       end subroutine extrapolate           
+
+   end subroutine ML_non_rigid_reference_PAS
 
 
 end module mol_c2h6
