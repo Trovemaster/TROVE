@@ -6823,11 +6823,11 @@ module mol_c2h6
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i2,src(5:7))
-          dst(5:7) = matmul(i2,src(2:4))
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
           !
-          dst(8:10) = matmul(i2,src(11:13))
-          dst(11:13) = matmul(i2,src(8:10))
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
           !
           ! a02
           !dst(14:15) = src(16:17)
@@ -6873,11 +6873,11 @@ module mol_c2h6
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i,src(5:7))
-          dst(5:7) = matmul(i,src(2:4))
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
           !
-          dst(8:10) = matmul(i,src(11:13))
-          dst(11:13) = matmul(i,src(8:10))
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
           !!
           dst(14:15) = src(16:17)
           dst(16:17) = src(14:15)
