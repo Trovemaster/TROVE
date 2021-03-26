@@ -5,10 +5,7 @@ set -e
 ## ARGUMENTS
 
 nproc=$1 # Number of cores
-
-## DEFAULT OPTIONS
-
-exe=j-trove.x
+exe=$2
 
 ## SYSTEM OPTIONS
 

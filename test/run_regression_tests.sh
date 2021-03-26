@@ -2,7 +2,8 @@
 
 set -e
 
-exe=../j-trove.x
+exe_name=j-trove.x
+exe=../$exe_name
 nproc=1
 
 # Check exe is present
@@ -30,7 +31,7 @@ for benchmark in H2CO; do
   # Run benchmark
   pushd $wd
   echo "Running $benchmark"
-  ./run_benchmark.sh $nproc
+  ./run_benchmark.sh $nproc $exe_name
   popd
 
   # Compare results with "truth"
