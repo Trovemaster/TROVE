@@ -183,7 +183,7 @@ module molecules
          !
          MLpotentialfunc => MLpoten_h2cs_damp_scaling
          !
-    case('POTEN_H2CS_MORSE_COS')
+    case('POTEN_ZXY2_MORSE_COS')
          !
          MLpotentialfunc => MLpoten_zxy2_morse_cos
          !

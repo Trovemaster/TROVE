@@ -248,12 +248,12 @@ function MLpoten_zxy2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
  !
  ! transformation to the standard form 
  !
- y(1) = 1.0_ark-exp(-a1*(xi(1)-re1)) 
- y(2) = 1.0_ark-exp(-a2*(xi(2)-re2))
- y(3) = 1.0_ark-exp(-a2*(xi(3)-re2))
- y(4) = xi(4)-ae
- y(5) = xi(5)-ae
- y(6) = 1.0_ark+cos(xi(6))
+ y(1) = 1.0_ark-exp(-a1*(local(1)-re1)) 
+ y(2) = 1.0_ark-exp(-a2*(local(2)-re2))
+ y(3) = 1.0_ark-exp(-a2*(local(3)-re2))
+ y(4) = local(4)-ae
+ y(5) = local(5)-ae
+ y(6) = 1.0_ark+cos(local(6))
  !
  !
  v = 0.0_ark

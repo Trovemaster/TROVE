@@ -4246,8 +4246,9 @@ contains
      character(len=cl) :: unitfname,job_file
      !
      integer(ik)        :: chkptIO
-     character(len=cl)  :: job_is,filename,iostatus,symchar,jchar,parchar,pot_suffix
+     character(len=cl)  :: job_is,filename,symchar,jchar,parchar,pot_suffix
      !
+     character(len=cl)  :: iostatus = 'scratch'
      character(len=20)  :: buf20
      integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,nsize,irec,cdimen_,idimen,j,iterm1,iterm2,ktau,icontr,k,itau
@@ -4936,7 +4937,7 @@ contains
    !
    filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
    !
-   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=22)
    !
    ilen = LEN_TRIM(name)
    !
@@ -4955,6 +4956,11 @@ contains
    end if
    !
    close(chkptIO)
+   !
+   22 write(out,"(a,a)") 'divided_slice_read error: file does not exist = ',filename
+      write(out,"(a)") 'If it is not supposed to exist (not used in fitting), consider setting pot. parameters and ifit to zero'
+      write(out,"(a)") 'For structural parameters ifit must be set to -1 to retain their values in the fitting to ab initio'
+      stop 'divided_slice_read error: file potfit_mat does not exist'
    !
  end subroutine divided_slice_read
 
