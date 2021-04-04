@@ -8,7 +8,8 @@ module fields
    use me_str
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k
+                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
+                      ME_Fourier_pure
    use me_numer
    use me_rot
    use timer
@@ -1908,7 +1909,7 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('NUMEROV','BOX','LAGUERRE','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
+              case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
                     'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
                  !
                  ! do nothing
@@ -6051,6 +6052,10 @@ end subroutine check_read_save_none
        !
        Nattempt = Nattempt_max
        !
+       if (job%verbose>=4) then
+          write(out,"(a,a)") 'check_field_smoothness: ',msg,' attempts, iterm:'
+        endif
+       !
       end select 
       !
       N_ = min(N_max,npoints)
@@ -6161,9 +6166,7 @@ end subroutine check_read_save_none
         enddo
         !
         if ( iattempt==Nattempt.and.outliers.and.Nattempt>1) then
-          write(out,"('check_field_smoothness: ',a)") msg
-          write(out,"('      Too many outliers, it was impossible to fix after ',i9,' attempts for iterm = ',i5 )") Nattempt,iterm
-          !stop 'check_field_smoothness: too many outliers'
+          write(out,"(15x,i9,i5)") Nattempt,iterm
         endif
         !
       enddo
@@ -13991,6 +13994,7 @@ end subroutine check_read_save_none
           imode = bs%mode(1)
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
+              bset%dscr(imode)%type/='FOURIER_PURE'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
               bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.bset%dscr(imode)%type/='SINRHO-2XLAGUERRE-K'.and.&
               bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
@@ -14076,6 +14080,7 @@ end subroutine check_read_save_none
           endif
           !
           if( bset%dscr(imode)%type/='NUMEROV'.and.bset%dscr(imode)%type/='FOURIER'.and.&
+              bset%dscr(imode)%type/='FOURIER_PURE'.and.&
               bset%dscr(imode)%type/='LEGENDRE'.and.bset%dscr(imode)%type/='SINRHO'.and.&
               bset%dscr(imode)%type/='SINRHO-LAGUERRE-K'.and.bset%dscr(imode)%type/='SINRHO-2XLAGUERRE-K'.and.&
               bset%dscr(imode)%type/='LAGUERRE-K'.and.bset%dscr(imode)%type/='SINC') cycle
@@ -17108,7 +17113,8 @@ end subroutine check_read_save_none
            !
         endif
         !
-     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K') 
+     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
+          'FOURIER_PURE') 
         ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
@@ -17631,10 +17637,18 @@ end subroutine check_read_save_none
              !
              deallocate(muzz,pseudo)             
              !
+           case ('FOURIER_PURE')
+             !
+             call ME_Fourier_pure(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             !
            case ('FOURIER')
              !
              call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             !
+             !call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             !                job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINC')
              !
@@ -22450,14 +22464,19 @@ end subroutine check_read_save_none
      !
      call FLfromcartesian2local(r_na,r_)
      !
-     if ( any( abs( r(:)-r_(:) )>sqrt(small_) ) ) then 
+     if ( any( abs( r(:)-r_(:) )>sqrt(small_) ) ) then
        !
-       write(my_fmt,'(a,i0,a)') "(4x,",Ncoords,"f18.6)"
-       !
-       write(out,'("poten_xi: Error in MLfromlocal2cartesian, r /= r_:")')
-       write(out,my_fmt) r(:)
-       write(out,my_fmt) r_(:)
-       stop "poten_xi: Error in MLfromlocal2cartesian, r /= r_"
+       do i = 1,trove%Nmodes
+          if( abs( r(i)-r_(i) )>sqrt(small_).and.sin(abs( r(i)-r_(i) ))>sqrt(small_)) then
+            !
+            write(my_fmt,'(a,i0,a)') "(4x,",Ncoords,"f18.6)"
+            !
+            write(out,'("poten_xi: Error in MLfromlocal2cartesian, r /= r_:")')
+            write(out,my_fmt) r(:)
+            write(out,my_fmt) r_(:)
+            stop "poten_xi: Error in MLfromlocal2cartesian, r /= r_"
+          endif
+       enddo
        !
      endif 
      !

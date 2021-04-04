@@ -11,7 +11,7 @@ module me_bnd
   public ik, rk, out
   public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,&
          ME_sinrho_polynomial_k,ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
-  public ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k
+  public ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,ME_Fourier_pure
   !
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
   integer(ik) :: Nr = 4                          ! 2*Nr+1 is the number of interpolation points
@@ -723,7 +723,7 @@ module me_bnd
 
 
   !
-  ! Matrix elements with Fourier-eigenfunctions 
+  ! Matrix elements with Fourier-eigenfunctions
   !
   subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,&
                         iperiod,verbose,g_numerov,energy)
@@ -738,7 +738,7 @@ module me_bnd
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
    !
-   integer(ik),parameter  :: Factor_FF=30 ! factor to increase the Fourier basis set size 
+   integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
    !
    real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale
@@ -1263,8 +1263,6 @@ module me_bnd
   end subroutine ME_Fourier
 
 
-
-
   !
   ! Matrix elements with pure Fourier-eigenfunctions 
   !
@@ -1281,7 +1279,7 @@ module me_bnd
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
    !
-   integer(ik),parameter  :: Factor_FF=30 ! factor to increase the Fourier basis set size 
+   integer(ik),parameter  :: Factor_FF=1 ! factor to increase the Fourier basis set size 
    !
    real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale

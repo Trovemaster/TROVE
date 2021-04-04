@@ -255,10 +255,11 @@ function MLpoten_zxy2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
  y(5) = local(5)-ae
  y(6) = 1.0_ark+cos(local(6))
  !
- !
  v = 0.0_ark
  !
  do iterm = 6, molec%parmax
+  !
+  if (abs(force(iterm))<small_) cycle
   !
   xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
   !

@@ -2819,7 +2819,8 @@ module perturbation
        ! We skip the diagonalization  of the reduced Hamiltonian in this case 
        ! and use the primitive basis functions as the contracted basis set.
        !
-       if (bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2) then 
+       if ((bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2).or.bs_t(kmode)%type=='FOURIER_PURE') then 
+       !if ((bs_t(kmode)%type=='HARMONIC').and.bs_t(kmode)%model<=2) then 
          !
          ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
          ! to learn the symmetric properties of the contracted basis function. 
@@ -2988,6 +2989,7 @@ module perturbation
                trim(bs_t(imode)%type)=='BOX'.or.&
                trim(bs_t(imode)%type)=='MORSE'.or.&
                trim(bs_t(imode)%type)=='FOURIER'.or.&
+               trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
                trim(bs_t(imode)%type)=='SINRHO'.or.&
                trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
                trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
@@ -3325,6 +3327,7 @@ module perturbation
                         trim(bs_t(imode)%type)=='BOX'.or.&
                         trim(bs_t(imode)%type)=='MORSE'.or.&
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
+                        trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
                         trim(bs_t(imode)%type)=='SINRHO'.or.&
                         trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
                         trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
