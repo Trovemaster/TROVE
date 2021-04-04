@@ -1323,6 +1323,9 @@ contains
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
       !
+      ! restore the status if IOmatelem_split if it was changed at previous stages:
+      if (job%IOmatelem_split_changed) job%IOmatelem_split = .not.job%IOmatelem_split
+      !
       matsize  = int(Neigenroots*(Neigenroots+1)/2,hik)
       matsize2 = int(Neigenroots*Neigenroots,hik)
       !

@@ -318,6 +318,7 @@ module fields
       logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
       logical             :: IOmatelem_stitch = .false.   ! stitch the matelem checkpoints from split pieces 
       logical             :: IOmatelem_split  = .false.   ! split the matelem checkpoint into pieces (can be different from divide)
+      logical             :: IOmatelem_split_changed = .false.  ! in case we need to change the status of IOmatelem_split and do this again later 
       logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
       logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
@@ -16121,6 +16122,8 @@ end subroutine check_read_save_none
       real(ark)     :: enercut_t(1:2),f_t(1:trove%Nmodes), mass_t(1:trove%Natoms),g_t(1:trove%Ncoords)
       character(len=18) :: buf
       character(len=43) :: buf43
+      character(len=5)  :: buf5
+      character(len=2)  :: buf2
       character(len=10) :: char_t
       type(FLbasissetT) :: bs_
       !
@@ -16206,16 +16209,28 @@ end subroutine check_read_save_none
       do imode = 0,trove%Nmodes
         !
         !read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,3i4,2x,f6.1,2x,i9,1x,2f9.3,1x,i,i)") imode_,bs_
+        !,1x,i2,1x,a10,i9,i2,i2 !bs_%PERIODIC,bs_%IPERIOD
         !
-        read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,L5,1x,i2,1x,a10,i9,i2,i2)") & 
+        read(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,2x,i9,1x,2f9.3,1x,a5,1x,a2)",err=9)&
         imode_,bs_%type,bs_%COORD_KINET,bs_%COORD_POTEN,bs_%MODEL,bs_%DIM,bs_%SPECIES,bs_%CLASS,bs_%RANGE,&
-               bs_%RES_COEFFS,bs_%NPOINTS,bs_%BORDERS,bs_%PERIODIC,bs_%IPERIOD
+               bs_%RES_COEFFS,bs_%NPOINTS,bs_%BORDERS,buf5,buf2
         !
         if (bs_%range(2)/=job%bset(imode)%range(2)) then
           write (out,"('fingerprintRead:  parameters mismatch for  ',i9,'th mode:')") imode
           write (out,"('range2 (stored) /=  range (given)  : ',2i8)") bs_%range(2),job%bset(imode)%range(2)
           stop 'fingerprintRead - parameters mismatch:range'
         end if
+        !
+        ! this trick is to handle the old format used to store false/true as -1,0 by reading it as a string
+        if (trim(adjustl(buf5))=="F".or.trim(adjustl(buf5))=="T") then 
+          ! new format
+          read(buf5,"(L5)") bs_%PERIODIC
+          read(buf2,"(i2)") bs_%IPERIOD
+        else
+          ! old format 
+          read(buf5,"(i2,x,i2)") bs_%PERIODIC,bs_%IPERIOD
+          !
+        endif
         !
         if (bs_%IPERIOD/=job%bset(imode)%IPERIOD) then
           write (out,"('fingerprintRead:  parameters mismatch for  ',i9,'th mode:')") imode
@@ -16238,6 +16253,14 @@ end subroutine check_read_save_none
         write (out,"(' fingerprintRead file has bogus footer: ',a)") buf
         stop 'fingerprintRead - bogus file footer'
       end if
+      !
+      return
+      !
+      ! read error 
+      9 continue
+      !
+      write(out,"('fingerprintRead eigen_descr error J = ',i4,' symm = ',a,' imode =  ',i4)") jrot_t,trim(trove%symmetry),imode 
+      stop 'fingerprintRead eigen_descr error in imode-lines' 
       !
     end subroutine fingerprintRead
     !

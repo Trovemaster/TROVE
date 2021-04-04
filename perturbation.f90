@@ -16097,7 +16097,11 @@ module perturbation
             ! now we can switch off IOmatelem_split and compute the vibrational energies 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) job%IOmatelem_divide = .false.
-            if (job%IOmatelem_split.and.job%iswap(1)==0) job%IOmatelem_split = .false.
+            if (job%IOmatelem_split.and.job%iswap(1)==0) then 
+              job%IOmatelem_split = .false.
+              ! remember the status of IOmatelem_split was changed: 
+              job%IOmatelem_split_changed = .true.
+            endif
             !
             ! combining and symmetrizing 
             !
