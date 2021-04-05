@@ -1304,7 +1304,7 @@ module moltype
                                       + sin(alpha)*cos(phi)*n1(:) &
                                       - sin(alpha)*sin(phi)*n3(:) )
            !
-        case(-2,2,-202,202,-302,302,-402,402)
+        case(-2,2,-202,202,-302,302,-402,402,-502,502)
            !
            idihedral = idihedral + 1
            !
