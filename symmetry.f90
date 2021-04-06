@@ -495,10 +495,10 @@ contains
                                
       call simple_arrays_allocation
       !
-      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19,2,3,2,3,2,3,4,5,6,4,5,6,4,5,6/)
-      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0,7,7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
       tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
-      tempG36(109:144)= (/0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
+      tempG36(109:144)= (/0, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
       !
       allocate(sym%product_table(72,2),stat=alloc)
       call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
@@ -862,6 +862,402 @@ contains
       enddo
     enddo
     !
+
+    !
+    case("G36(EM1)") 
+
+      sym%Nrepresen = 18
+      sym%Noper = 72
+      sym%Nclasses = 18
+      sym%CII%Noper = 0
+                               
+      call simple_arrays_allocation
+      !
+      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+      tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
+      tempG36(109:144)= (/0, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
+      !
+      allocate(sym%product_table(72,2),stat=alloc)
+      call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+      !
+      sym%product_table = reshape( tempG36, (/ 72, 2/))
+      sym%product_table_set = .true.
+      !
+      !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
+      sym%characters = reshape( & 
+        ! EE  RE  SE  ER  RR  SR  ER  RS  SS EE' RE' SE' ER' RR' SR' ER' RS' SS' 
+        (/ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, & ! A1s
+           1,  1,  1,  1,  1,  1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, & ! A2s
+           1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1, & ! A3s
+           1,  1, -1,  1,  1, -1, -1, -1,  1,  1,  1, -1,  1,  1, -1, -1, -1,  1, & ! A4s
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0,  2,  2,  2, -1, -1, -1,  0,  0,  0, & ! E1s
+           2,  2, -2, -1, -1,  1,  0,  0,  0,  2,  2, -2, -1, -1,  1,  0,  0,  0, & ! E2s
+           2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0, & ! E3s
+           2, -1,  0,  2, -1,  0, -2,  1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, & ! E4s
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0,  4, -2,  0, -2,  1,  0,  0,  0,  0, & ! Gs
+           !
+           1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, & ! A1d
+           1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1, & ! A2d 
+           1,  1, -1,  1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1, & ! A3d
+           1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1,  1,  1, -1, & ! A4d
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0, -2, -2, -2,  1,  1,  1,  0,  0,  0, & ! E1d
+           2,  2, -2, -1, -1,  1,  0,  0,  0, -2, -2,  2,  1,  1, -1,  0,  0,  0, & ! E2d
+           2, -1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0, & ! E3d
+           2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0,  2, -1,  0, & ! E4d
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0, -4,  2,  0,  2, -1,  0,  0,  0,  0 /),(/18,18/)) ! Gd                                                                                                                                                     
+      sym%characters = transpose(sym%characters)
+      sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
+      sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
+
+      p2 = 0.5_ark*pi
+      p3 = 1.5_ark*pi
+      o  = 0.0_ark
+      !
+      sym%euler( 1,:) = 0
+      sym%euler( 2,:) = (/o,o,o/)
+      sym%euler( 4,:) = (/o,o,pi/)
+      sym%euler( 7,:) = (/o,o,2.0_ark/3.0_ark*pi/)
+      sym%euler( 19,:) = (/p2,pi,p3/)
+      !
+      a = 0.5_ark
+      b = 0.5_ark*sqrt(3.0_ark)
+      e = 1.0_ark
+      o = 0.0_ark
+      m_one = -1.0_ark       
+ 
+      i = transpose(reshape( (/ e, o, &
+                                o, e /), (/ 2, 2/)))
+  
+      c = transpose(reshape( (/ -a, -b, &
+                                 b, -a/), (/ 2, 2/)))
+  
+    c2 = matmul(c,c)
+  
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
+    !
+  	s3 = matmul(c, sxy)
+    !
+    s2 = matmul(c,s3)
+    ! 
+    E_rep_1(1,:,:) = i
+    E_rep_1(2,:,:) = c
+    E_rep_1(3,:,:) = c2
+    E_rep_1(4,:,:) = sxy
+    E_rep_1(5,:,:) = s2
+    E_rep_1(6,:,:) = s3
+    !
+    A2_char(:3) = 1.0_ark
+    A2_char(4:6) = -1.0_ark
+    !
+    call irr_allocation 
+    !
+    pos_array = transpose( reshape((/  1,  7,  8, 19, 20, 21, &
+                                       2,  9, 11, 22, 24, 26, &
+                                       3, 10, 12, 23, 25, 27, &
+                                       4, 13, 16, 28, 31, 34, &
+                                       5, 14, 17, 29, 32, 35, &
+                                       6, 15, 18, 30, 33, 36/), (/6,6/))) 
+    ! E1s, E2s, E1d, and E2d 
+    !
+    do j = 1, 6
+      do k = 1, 6 
+        sym%irr(5, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)
+        
+        sym%irr(6, pos_array(k,j))%repres = E_rep_1(j,:,:)*A2_char(k)
+        sym%irr(6, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)
+       
+        sym%irr(5+9, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*m_one
+        
+        sym%irr(6+9, pos_array(k,j))%repres = E_rep_1(j,:,:)*A2_char(k)
+        sym%irr(6+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)*m_one
+      end do
+    end do
+    !
+    !E3s and E4s
+    !
+    do j = 1, 6
+      do k = 1, 6
+        sym%irr(7,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)
+
+        sym%irr(8,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)
+
+        sym%irr(7+9,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*m_one
+
+        sym%irr(8+9,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)*m_one
+
+      end do    
+    end do
+  
+    g1 = transpose(reshape( (/ e, o, o ,o, &
+                               o, e, o, o, &
+                               o, o, e, o, &
+                               o, o, o, e/), (/4,4/)))
+    !
+    ! q01 try this 
+    ! u07 
+    ! b08
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    ! y01
+    g7 = transpose(reshape( (/ -a, o, o,-b, &
+                                o,-a, b, o, &
+                                o,-b,-a, o, &
+                                b, o, o,-a  /), (/4,4/))) 
+
+
+
+
+    !c01
+    !
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    !!
+    !g2 = transpose(reshape( (/ -a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    !t02
+    !g4 = transpose(reshape( (/o, o,-e, o, &
+    !                           o, o, o, e, &
+    !                          -e, o, o, o, &
+    !                           o, e, o, o  /), (/4,4/)))
+    !!
+    g4 = transpose(reshape( (/ e, o, o, o, &
+                               o,-e, o, o, &
+                               o, o,-e, o, &
+                               o, o, o, e  /), (/4,4/)))
+    !
+    ! t03
+    !g4 = transpose(reshape( (/-e, o, o, o, &
+    !                           o, e, o, o, &
+    !                           o, o, e, o, &
+    !                           o, o, o,-e  /), (/4,4/)))
+
+    ! a10
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
+    !                            o,-a, b, o, &
+    !                            o,-b,-a, o, &
+    !                            b, o, o,-a  /), (/4,4/))) 
+
+    !y01
+    g7 = transpose(reshape( (/ -a,-b, o, o, &
+                                b,-a, o, o, &
+                                o, o,-a,-b, &
+                                o, o,-b,-a  /), (/4,4/))) 
+
+
+    ! c02
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
+    !                            o,-a,-b, o, &
+    !                            o, b,-a, o, &
+    !                            b, o, o,-a  /), (/4,4/))) 
+    !!
+    !g7 = transpose(reshape( (/ -a, o, o, b, &
+    !                            o,-a,-b, o, &
+    !                            o, b,-a, o, &
+    !                           -b, o, o,-a  /), (/4,4/))) 
+
+    ! sy5: try this instd of !! wrong character 
+    !g7 = transpose(reshape( (/-a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o, b,-a  /), (/4,4/))) 
+    ! t06 
+    !g19= transpose(reshape( (/-e, o, o, o, &
+    !                           o, e, o, o, &
+    !                           o, o,-e, o, &
+    !                           o, o, o, e  /), (/4,4/)))
+
+    !!
+    g19= transpose(reshape( (/ e, o, o, o, &
+                               o, e, o, o, &
+                               o, o,-e, o, &
+                               o, o, o,-e  /), (/4,4/)))
+
+    ! sy7: try this for !! completely wrong 
+    !g19= transpose(reshape( (/o, o, e, o, &
+    !                           o, o, o, e, &
+    !                           e, o, o, o, &
+    !                           o, e, o, o  /), (/4,4/)))
+
+
+    i = transpose(reshape( (/ e, o, &
+                              o, e /), (/ 2, 2/)))
+    !!
+    c = transpose(reshape( (/ -a, -b, &
+                               b, -a/), (/ 2, 2/)))
+    !
+    !t08
+    !u09
+    ! b07
+    ! b16: still same problem 
+    !c = transpose(reshape( (/ -a,  b, &
+    !                          -b, -a/), (/ 2, 2/)))
+
+  
+    c2 = matmul(c,c)
+    !!
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    ! t07 
+    ! u10
+    ! b10
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
+    !
+  	s3 = matmul(c, sxy)
+    !
+    s2 = matmul(c,s3)
+    !
+    sym%irr( 5, 1)%repres = i
+    sym%irr( 6, 1)%repres = i
+    sym%irr( 7, 1)%repres = i
+    sym%irr( 8, 1)%repres = i
+    !
+    sym%irr( 5, 2)%repres = i
+    sym%irr( 6, 2)%repres = i
+    sym%irr( 7, 2)%repres = c
+    sym%irr( 8, 2)%repres = c
+    !!
+    sym%irr( 5, 4)%repres = i
+    sym%irr( 6, 4)%repres = i*m_one
+    sym%irr( 7, 4)%repres = sxy
+    sym%irr( 8, 4)%repres = sxy
+    !
+    !u11
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy
+    !
+    ! u12
+    !
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i*m_one
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy*m_one
+    !
+    !!
+    sym%irr( 5, 7)%repres = c2
+    sym%irr( 6, 7)%repres = c2
+    sym%irr( 7, 7)%repres = i
+    sym%irr( 8, 7)%repres = i
+    !
+    ! a09 
+    !
+    !sym%irr( 5, 7)%repres = c
+    !sym%irr( 6, 7)%repres = c
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
+    !
+    ! p06 try changing sign for oper 6  did not work 
+    !
+    !sym%irr( 5, 7)%repres = c2
+    !sym%irr( 6, 7)%repres = c2*m_one
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
+    !!
+    sym%irr( 5,19)%repres = sxy
+    sym%irr( 6,19)%repres = sxy
+    sym%irr( 7,19)%repres = i
+    sym%irr( 8,19)%repres = i*m_one
+    !
+    ! b15
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i
+    !
+    ! p07 change E2 sign according with character of A2, did not help
+    ! p08 the same but with sxy from alternative choice , did not work
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy*m_one
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
+    ! p10 another test, did not work 
+    !sym%irr( 5,19)%repres = sxy*m_one
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
+    !
+    sym%irr( 5,37)%repres = i
+    sym%irr( 6,37)%repres = i
+    sym%irr( 7,37)%repres = i
+    sym%irr( 8,37)%repres = i
+    !
+    do irep = 5,8
+      sym%irr(irep+9, 1)%repres = sym%irr(irep, 1)%repres
+      sym%irr(irep+9, 2)%repres = sym%irr(irep, 2)%repres
+      sym%irr(irep+9, 4)%repres = sym%irr(irep, 4)%repres
+      sym%irr(irep+9, 7)%repres = sym%irr(irep, 7)%repres
+      sym%irr(irep+9,19)%repres = sym%irr(irep,19)%repres
+    enddo
+    !
+    sym%irr(5+9,37)%repres = i*m_one
+    sym%irr(6+9,37)%repres = i*m_one
+    sym%irr(7+9,37)%repres = i*m_one
+    sym%irr(8+9,37)%repres = i*m_one
+    !
+    sym%irr( 9, 1)%repres = g1
+    sym%irr( 9, 2)%repres = g2
+    sym%irr( 9, 4)%repres = g4
+    sym%irr( 9, 7)%repres = g7
+    sym%irr( 9,19)%repres = g19
+    !
+    sym%irr(18, 1)%repres = g1
+    sym%irr(18, 2)%repres = g2
+    sym%irr(18, 4)%repres = g4
+    sym%irr(18, 7)%repres = g7
+    sym%irr(18,19)%repres = g19
+    !
+    sym%irr( 9, 1+36)%repres = g1
+    sym%irr(18, 1+36)%repres = g1*m_one
+    !
+    do irep = 1,sym%Nrepresen
+      ioper = 0
+      do iclass = 1,sym%Nclasses
+        do ielem =1,sym%Nelements(iclass)
+          ioper = ioper + 1
+          !
+          call do_g36_transform(irep,ioper,sym%degen(irep),sym%irr(irep,ioper)%repres)
+          !
+          f_t = 0
+          do k = 1,sym%degen(irep)
+              f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+          enddo
+          !
+          !sym%characters(irep,iclass) = f_t
+          !
+        enddo
+      enddo
+    enddo
+    !
+
 
 
 
