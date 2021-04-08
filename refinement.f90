@@ -648,16 +648,20 @@ contains
               !
             enddo
             !
+            dummy_xyz = 0 
+            !
             do ncol=1,numpar 
                !
                i = ifitparam(ncol)
                !
                pot_terms(i) = 1.0_ark
                !
-               !$omp parallel do private(ientry,ar_t) shared(rjacob) schedule(guided)
+               !$omp parallel do private(ientry,ar_t,dummy_xyz) shared(rjacob) schedule(guided)
                do ientry=1,pot_npts
                  !
                  ar_t = local(:,ientry)
+                 !
+                 call MLfromlocal2cartesian(1,ar_t,dummy_xyz)
                  !
                  rjacob(en_npts+ientry,ncol) =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
                  !
