@@ -1470,15 +1470,15 @@ module mol_c2h6
         dst(5) = src(3)+molec%local_eq(3)
         dst(7) = src(4)+molec%local_eq(4)
         dst(2) = src(5)+molec%local_eq(5)
-        dst(4) = src(6)+molec%local_eq(6)
-        dst(6) = src(7)+molec%local_eq(7)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
         !
         dst(3+6) = src( 8)+molec%local_eq( 8)
         dst(5+6) = src( 9)+molec%local_eq( 9)
         dst(7+6) = src(10)+molec%local_eq(10)
         dst(2+6) = src(11)+molec%local_eq(11)
-        dst(4+6) = src(12)+molec%local_eq(12)
-        dst(6+6) = src(13)+molec%local_eq(13)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
         !
         S14 = src(14)
         S15 = src(15)
@@ -2952,7 +2952,7 @@ module mol_c2h6
          endif
       endif
       !
-      if (present(rho_ref)) rho_ref = rho_i(0)
+      if (present(rho_ref)) rho_ref = 0
       !
       do i = 0,npoints
          !
@@ -7454,10 +7454,10 @@ module mol_c2h6
           dst(1) = src(1)
           !
           dst(2:4) = matmul(a123,src(2:4))
-          dst(5:7) = matmul(a132,src(5:7))
+          dst(5:7) = matmul(a123,src(5:7))
           !
           dst(8:10) = matmul(a123,src(8:10))
-          dst(11:13) = matmul(a132,src(11:13))
+          dst(11:13) = matmul(a123,src(11:13))
           !
           !! a07: this is how G1x and G1y actually transform 
           !dst(14:15) = matmul(c132,src(14:15))
@@ -7465,7 +7465,7 @@ module mol_c2h6
           !!
           !! a00 is a working version of tau-11
           dst(14:15) = matmul(c123,src(14:15))
-          dst(16:17) = matmul(c132,src(16:17))
+          dst(16:17) = matmul(c123,src(16:17))
           !
           ! a02
           !dst(14:15) = matmul(c132,src(14:15))
@@ -7491,18 +7491,18 @@ module mol_c2h6
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i,src(5:7))
-          dst(5:7) = matmul(i,src(2:4))
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
           !
-          dst(8:10) = matmul(i,src(11:13))
-          dst(11:13) = matmul(i,src(8:10))
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
           !
           ! a02
-          dst(14:15) = src(16:17)
-          dst(16:17) = src(14:15)
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
           !!
-          !dst(14:15) = matmul(sxy,src(16:17))
-          !dst(16:17) = matmul(sxy,src(14:15))
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) =  2.0_ark*pi - src(18)
           !
@@ -7521,13 +7521,13 @@ module mol_c2h6
           dst(1) = src(1)
           !
           dst(2:4) = matmul(a132,src(2:4))
-          dst(5:7) = matmul(a132,src(5:7))
+          dst(5:7) = matmul(a123,src(5:7))
           !
           dst(8:10) = matmul(a132,src(8:10))
-          dst(11:13) = matmul(a132,src(11:13))
+          dst(11:13) = matmul(a123,src(11:13))
           !!
           dst(14:15) = matmul(c132,src(14:15))
-          dst(16:17) = matmul(c132,src(16:17))
+          dst(16:17) = matmul(c123,src(16:17))
           !
           !a07,a08
           !dst(14:15) = matmul(c123,src(14:15))
@@ -7541,18 +7541,18 @@ module mol_c2h6
           !
           dst(1) = src(1)
           !
-          dst(2:4) = matmul(i2,src(5:7))
-          dst(5:7) = matmul(i2,src(2:4))
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
           !
-          dst(8:10) = matmul(i2,src(11:13))
-          dst(11:13) = matmul(i2,src(8:10))
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
           !!
-          !dst(14:15) = src(16:17)
-          !dst(16:17) = src(14:15)
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
           !
           !a02
-          dst(14:15) = matmul(sxy,src(16:17))
-          dst(16:17) = matmul(sxy,src(14:15))
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) = src(18)
           !
@@ -8455,7 +8455,7 @@ module mol_c2h6
       !
     case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4',&
          'R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8',&
-         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12',&
+         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12-X',&
          'R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14','R-R16-BETA16-THETA-TAU-15','R-R16-BETA16-THETA-TAU-16',&
          'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-19','R-R16-BETA16-THETA-TAU-20')
       !
@@ -8564,6 +8564,153 @@ module mol_c2h6
         stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
         !
       end select
+
+
+      !
+    case('R-R16-BETA16-THETA-TAU-12')
+      !
+      select case(trim(molec%symmetry))
+      !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('D3D(M)')
+        !
+        gamma = 0
+        ideg = 1
+        !
+       ! if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+       ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+       ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
+       ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      case('G36(EM)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        if(K==0.and.mod(J+2,2)==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.mod(J+2,2)==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+        end if 
+        !
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      end select
+
+      !
+    case('R-R16-BETA16-THETA-TAU-14X')
+      !
+      select case(trim(molec%symmetry))
+      !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('D3D(M)')
+        !
+        gamma = 0
+        ideg = 1
+        !
+       ! if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+       ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+       ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
+       ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      case('G36(EM)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        !if(K==0.and.mod(J+2,2)==0) then 
+        !  gamma = 1; ideg = 1 ! A1s
+        !else if(K==0.and.mod(J+2,2)==1) then 
+        !  gamma = 2; ideg = 1 ! A2s
+        !
+        if(K==0.and.tau==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.tau==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 7; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 7; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 14; ideg = 1 ! E2d,15,_17_(J=1),15,(2)
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 14; ideg = 2 ! E2d,15,_17_,     15,(1)
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s 5,7,8,6,14,15,16,5,7,17
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s  5,7,8,6,14,15,16,5,7,17
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 17; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 17; ideg = 2 ! E2d
+        end if 
+
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      end select
+
       !
     end select
     !
