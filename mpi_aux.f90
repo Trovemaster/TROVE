@@ -74,8 +74,8 @@ contains
     blacs_rank = 0
     nprow = 1
     npcol = 1
-    myprow = 1
-    mypcol = 1
+    myprow = 0
+    mypcol = 0
 #endif
   end subroutine co_init_blacs
 
