@@ -16,9 +16,24 @@ module mpi_aux
   public nprow,npcol,myprow,mypcol
   public mpi_real_size, mpi_int_size
 
+#ifndef TROVE_USE_MPI_
+  public MPI_Datatype
+#endif
+
   interface co_sum
     module procedure :: co_sum_double
   end interface
+
+#ifndef TROVE_USE_MPI_
+  !
+  ! When not using MPI, create a dummy type to maintain the interface of this module,
+  ! specifically the last argument of co_block_type_init.
+  ! The value passed will not be accessed.
+  !
+  type MPI_Datatype
+    integer :: dummy = 0
+  end type MPI_Datatype
+#endif
 
   integer,dimension(:),allocatable              :: proc_sizes, proc_offsets, send_or_recv
   integer                                       :: comm_size, mpi_rank
@@ -69,12 +84,14 @@ contains
 
     real(rk),intent(out),dimension(:,:),allocatable   :: smat
 
+    ! Note: allocated matrix will have total dimensions (dimy x dimx)
     integer,intent(in)                                :: dimx, dimy
     integer,intent(out),dimension(9)                  :: descr
     integer,intent(out)                               :: allocinfo
 
     type(MPI_Datatype),intent(out),optional           :: mpi_type
 
+#ifdef TROVE_USE_MPI_
     integer,dimension(2)                              :: global_size, distr, dargs
     integer                                           :: MB,NB,MLOC,NLOC,ierr
 
@@ -99,6 +116,10 @@ contains
         MPI_ORDER_FORTRAN, MPI_DOUBLE_PRECISION, mpi_type, ierr)
       call MPI_Type_commit(mpi_type, ierr)
     endif
+#else
+    allocate(smat(dimy,dimx), stat=allocinfo)
+    if(allocinfo.ne.0) return
+#endif
 
   end subroutine co_block_type_init
 
