@@ -1,5 +1,7 @@
 module mpi_aux
+ #ifdef TROVE_USE_MPI_
   use mpi_f08
+ #endif
   use timer
   use accuracy
   implicit none
@@ -10,7 +12,7 @@ module mpi_aux
   public send_or_recv, comm_size, mpi_rank
   public co_startdim, co_enddim
 
-  public blacs_size, blacs_rank, blacs_ctxt
+  public blacs_size, blacs_rank
   public nprow,npcol,myprow,mypcol
   public mpi_real_size, mpi_int_size
 
@@ -38,6 +40,7 @@ contains
 
     if (.not. comms_inited) stop "CO_INIT_BLACS COMMS NOT INITED"
 
+#ifdef TROVE_USE_MPI_
     ! Must be initialised to zero - if stack contains garbage here MPI_Dims_create WILL fail
     blacs_dims = 0
 
@@ -51,6 +54,14 @@ contains
     call blacs_gridinfo(blacs_ctxt, nprow, npcol, myprow, mypcol)
 
     !write(*,"('BLACS: [',i2,',',i2'](',i4,i4,i4,i4',)')") mpi_rank,blacs_rank,nprow,npcol,myprow,mypcol
+#else
+    blacs_size = 1
+    blacs_rank = 0
+    nprow = 1
+    npcol = 1
+    myprow = 1
+    mypcol = 1
+#endif
   end subroutine co_init_blacs
 
   subroutine co_block_type_init(smat, dimx, dimy, descr, allocinfo, mpi_type)
@@ -97,6 +108,7 @@ contains
     integer, optional :: root_process
 
     if (comm_size.eq.1) return
+#ifdef TROVE_USE_MPI_
     call TimerStart('co_sum_double')
 
     if (present(root_process)) then
@@ -111,10 +123,12 @@ contains
     end if
 
     call TimerStop('co_sum_double')
+#endif
   end subroutine
 
 
   subroutine co_init_comms()
+#ifdef TROVE_USE_MPI_
     integer :: ierr
 
     call mpi_init(ierr)
@@ -130,10 +144,16 @@ contains
     if (mpi_rank.ne.0) then
       open(newunit=out, file='/dev/null', status='replace', iostat=ierr, action="write")
     endif
-
+#else
+      comm_size = 1
+      mpi_rank = 0
+#endif
     comms_inited = .true.
 
     call co_init_blacs()
+
+
+
 
   end subroutine co_init_comms
 
@@ -142,15 +162,20 @@ contains
 
     if (.not. comms_inited) stop "CO_FINALIZE_COMMS COMMS NOT INITED"
 
+#ifdef TROVE_USE_MPI_
     call mpi_finalize(ierr)
 
     if (ierr .gt. 0) stop "MPI_FINALIZE"
+#endif
 
   end subroutine co_finalize_comms
+
 
   subroutine co_init_distr(dimen, startdim, enddim, blocksize)
     integer,intent(in) :: dimen
     integer,intent(out) :: startdim, enddim, blocksize
+
+#ifdef TROVE_USE_MPI_
     integer,dimension(:),allocatable  :: starts, ends
     integer :: localsize, proc_index, localsize_
     integer :: i, ierr, to_calc, ioslice_width, ioslice_maxwidth
@@ -256,14 +281,28 @@ contains
     deallocate(starts,ends)
 
     distr_inited = .true.
+#else
+    startdim = 1
+    enddim = dimen
+    co_startdim = 1
+    co_enddim = dimen
+    blocksize = dimen*dimen
+    send_or_recv(1) = 0
+#endif
+
   end subroutine co_init_distr
 
+  !
+  ! Distribute the contents of an array among processes.
+  ! If only using one process or not using MPI, do nothing.
+  !
   subroutine co_distr_data(x, tmp, blocksize, lb, ub)
 
     real(rk),dimension(:,lb:),intent(inout) :: x
     real(rk),dimension(:,:,:),intent(inout) :: tmp
     integer,intent(in)                :: blocksize, lb, ub
 
+#ifdef TROVE_USE_MPI_
     integer :: i, icoeff, jcoeff, offset, ierr, k
     type(MPI_Request)  :: reqs(comm_size)
 
@@ -304,6 +343,7 @@ contains
     enddo
     call TimerStop('MPI_transpose_local')
     call TimerStop('MPI_transpose')
+#endif
 
   end subroutine co_distr_data
 
@@ -375,6 +415,7 @@ contains
 
   end subroutine co_write_matrix_distr
 
+#ifdef TROVE_USE_MPI_
   subroutine co_create_type_column(extent, blocksize, ncols)
     integer, intent(in) :: extent, blocksize, ncols
     integer :: ierr,writecount
@@ -401,5 +442,6 @@ contains
     call MPI_Type_commit(mpi_newtype, ierr)
 
   end subroutine co_create_type_subarray
+#endif
 
 end module
