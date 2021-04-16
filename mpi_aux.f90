@@ -195,11 +195,12 @@ contains
   subroutine co_init_distr(dimen, startdim, enddim, blocksize)
     integer,intent(in) :: dimen
     integer,intent(out) :: startdim, enddim, blocksize
+    integer :: ierr
 
 #ifdef TROVE_USE_MPI_
     integer,dimension(:),allocatable  :: starts, ends
     integer :: localsize, proc_index, localsize_
-    integer :: i, ierr, to_calc, ioslice_width, ioslice_maxwidth
+    integer :: i, to_calc, ioslice_width, ioslice_maxwidth
 
     if (.not. comms_inited) stop "COMMS NOT INITIALISED"
     !if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
@@ -301,8 +302,12 @@ contains
 
     deallocate(starts,ends)
 
-    distr_inited = .true.
 #else
+    if (.not. comms_inited) stop "COMMS NOT INITIALISED"
+    if (.not. distr_inited) then
+      allocate(send_or_recv(1),stat=ierr)
+      if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
+    endif
     startdim = 1
     enddim = dimen
     co_startdim = 1
@@ -311,6 +316,7 @@ contains
     send_or_recv(1) = 0
 #endif
 
+    distr_inited = .true.
   end subroutine co_init_distr
 
   !
