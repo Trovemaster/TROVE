@@ -13,7 +13,7 @@ pot_user = pot_ch4
 PLAT =
 #PLAT = _2205_i17
 FOR = mpif90
-FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback
+FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback -DTROVE_USE_MPI_
 #FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
 
 
