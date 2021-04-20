@@ -1,7 +1,7 @@
 module mpi_aux
- #ifdef TROVE_USE_MPI_
+#ifdef TROVE_USE_MPI_
   use mpi_f08
- #endif
+#endif
   use timer
   use accuracy
   implicit none
