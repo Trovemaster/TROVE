@@ -1789,11 +1789,11 @@ module fields
                   NAngles = NAngles + 1 
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(2,202,302,402,502) 
+               case(2,202,302,402,502,602) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
-               case(-2,-202,-302,-402,-502) 
+               case(-2,-202,-302,-402,-502,-602) 
                   !
                   Ndihedrals = Ndihedrals + 1
                   !
@@ -5365,7 +5365,7 @@ end subroutine check_read_save_none
              dihedrals(Ndihedrals,3) = trove%zmatrix(iatom)%connect(2)
              dihedrals(Ndihedrals,4) = trove%zmatrix(iatom)%connect(3)
              !
-          case(-2,2,-202,202,-302,302,-402,402,-502,502) 
+          case(-2,2,-202,202,-302,302,-402,402,-502,502,-602,602) 
              !
              ! J=2 -> beta = dihedral-beta(p0,p1,p2,p3) - type 2
              !
@@ -6512,6 +6512,8 @@ end subroutine check_read_save_none
          endif
          !
       enddo
+      !
+      !write(out,"(i5,<Nmodes*3*Natoms>f15.8)") irho,trove%Bmatrho(:,:,:,irho)
       !
       ! Quadratic force constants in local coordinates are stored in "f"
       !
@@ -8779,6 +8781,12 @@ end subroutine check_read_save_none
            !
            Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
            !
+        case(602,-602)
+           !
+           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
+           !
+           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
+           !
         end select 
         !
       enddo
@@ -9063,13 +9071,13 @@ end subroutine check_read_save_none
           !
           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
           !
-       case(402,-402)
+       case(402,-402,502,-502)
           !
           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
           !
           Bmat(Nbonds+Nangles+iangle,:,:) = Bmat_t(:,:)
           !
-       case(502,-502)
+       case(602,-602)
           !
           call diff_local2cartesian(Nbonds+Nangles+iangle,a0,Bmat_t,fmod=2.0_ark*pi)
           !
@@ -23969,7 +23977,7 @@ end subroutine check_read_save_none
           !
           r(trove%Nbonds+trove%Nangles+iangle) = delta
           !
-       case(-402,402) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+       case(-402,402,-502,502) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
           !           ! special case of tau defined for the range 0..720
           !
           n1 = trove%dihedrals(iangle,1)
@@ -24083,10 +24091,19 @@ end subroutine check_read_save_none
             !
           endif
           !
+          ! this is a special case of delta=60..780
+          !
+          if (abs(J)==502.and.delta<pi/3.0_ark ) then 
+            !
+            delta  = delta+4.0_ark*pi
+            !
+          endif
+          !
           r(trove%Nbonds+trove%Nangles+iangle) = delta          
           !
-       case(-502,502) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
-          !           ! special case of tau defined for the range -360..360
+       case(-602,602) ! type 2   B = (a*b)/(|a|*|b|), a = [y1 times y2]; b = [y2 times y3]
+          !           ! special case of tau defined for the range 0..720
+          !           ! definition as by Bakken and Helgaker JCP 2002
           !
           n1 = trove%dihedrals(iangle,1)
           n2 = trove%dihedrals(iangle,2)
@@ -24158,6 +24175,20 @@ end subroutine check_read_save_none
           !
           delta = atan2(sindelta,cosdelta)
           !
+          !u0(:) = trove%b0(n4,:,0) - trove%b0(n3,:,0) 
+          !v0(:) = trove%b0(n1,:,0) - trove%b0(n2,:,0) 
+          !
+          !u0 = u0/sqrt(sum(u0(:)**2))
+          !v0 = v0/sqrt(sum(v0(:)**2))
+          !
+          !cosa1 = sum(u0*u)
+          !cosa2 = sum(v0*v)
+          !
+          !a_t = MLvector_product(u0(:),u(:))
+          !sina1 = sqrt(sum(a_t(:)**2))
+          !          
+          !a_t = MLvector_product(v0(:),v(:))
+          !sina2 = sqrt(sum(a_t(:)**2))
           !
           fmod = 2.0_ark*pi
           if ( abs(dvec1(1))<sqrt(small_) ) then 
@@ -24185,13 +24216,7 @@ end subroutine check_read_save_none
             !
           endif
           !
-          if ( delta<pi/3.0_ark ) then 
-            !
-            delta  = delta+4.0_ark*pi
-            !
-          endif
-          !
-          r(trove%Nbonds+trove%Nangles+iangle) = delta
+          r(trove%Nbonds+trove%Nangles+iangle) = delta         
           !
        case(101) ! The special bond-angles for the linear molecule case 
           !
