@@ -88,7 +88,7 @@ contains
 
     call simple_arrays_allocation
 
-    sym%characters(1,1)=1.0_rk
+    sym%characters(1,1)=1.0_ark
     sym%degen=(/1/)
     sym%Nelements=(/1/)
     sym%label=(/'A'/)
@@ -161,7 +161,7 @@ contains
     !
     sym_group = "C2VN"
     !
-    log_n = log(4.0_rk*( real(sym%N,rk)+1.0_rk ))/log(2.0_rk)
+    log_n = log(4.0_ark*( real(sym%N,ark)+1.0_ark ))/log(2.0_ark)
     n_c2v = ceiling(log_n)
 
     sym%Nrepresen = 2**n_c2v
