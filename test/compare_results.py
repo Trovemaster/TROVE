@@ -5,7 +5,6 @@ import argparse
 from pytest import approx
 
 QUANTUM_ENERGY_IDX=4
-ENERGY_DIFF_THRESHOLD=1e-10 # How different can two energies be?
 
 def find_start_end_block(lines, blockname):
     """Identifies start and end of blocks"""
@@ -17,7 +16,7 @@ def find_start_end_block(lines, blockname):
     return start_idx, end_idx
 
 def extract_quantum_block(lines):
-    """Extracts only the quantum block from """
+    """Extracts only the quantum block from a chk file"""
     idxs = find_start_end_block(lines, "Quantum")
     temp = lines[idxs[0]+4:idxs[-1]]
     return [line.split() for line in temp]
@@ -25,25 +24,41 @@ def extract_quantum_block(lines):
 def extract_quantum_energies(block):
     return [float(line[QUANTUM_ENERGY_IDX]) for line in block]
 
-def read_quantum_file(fname):
+def read_chk_file(fname):
     with open(fname, 'r') as fp:
         lines = fp.readlines()
         if lines:
             lines  = list(filter( lambda x : x != '\n', lines )) # remove empty lines
     return lines
 
+def read_energy_column(fname, column_no):
+    lines = read_chk_file(fname)
+    return [float(line.split()[column_no]) for line in lines[1:-3]]
+
 def read_quantum_block(fname):
-    lines = read_quantum_file(fname)
+    lines = read_chk_file(fname)
     return extract_quantum_block(lines)
 
-def compare_quantum_files(fname1, fname2):
+def compare_columns(fname1, fname2, column_no, precision=1e-10):
+    energies1 = read_energy_column(fname1, column_no)
+    energies2 = read_energy_column(fname2, column_no)
+
+    # energies1 = [round(e, 8) for e in energies1]
+    # energies2 = [round(e, 8) for e in energies2]
+
+    for e1, e2 in zip(energies1, energies2):
+        if not e1 == approx(e2, abs=precision):
+            print(e1, e2, abs(e1-e2))
+            raise AssertionError
+
+def compare_quantum_files(fname1, fname2, precision=1e-10):
     energy_block1 = read_quantum_block(fname1)
     energy_block2 = read_quantum_block(fname2)
 
     energies1 = extract_quantum_energies(energy_block1)
     energies2 = extract_quantum_energies(energy_block2)
 
-    assert energies1 == approx(energies2, rel=ENERGY_DIFF_THRESHOLD)
+    assert energies1 == approx(energies2, rel=precision)
 
 def main():
     parser = argparse.ArgumentParser(description='Compare output files from TROVE')
@@ -54,7 +69,8 @@ def main():
     parser.add_argument('--folder2', required=True,
                         help='second folder to compare')
     parser.add_argument('--kind', choices=['quantum', 'column'], required=True, help='type of file')
-    parser.add_argument('--column', default=-1, type=int, help='column to compare when \'column\' is supplied to --kind')
+    parser.add_argument('--column', default=-1, type=int, help='column to compare when \'column\' is supplied to --kind (index starts at 0)')
+    parser.add_argument('--precision', default=1e-10, type=float, help='relative precision of which two values must differ by to be considered nonequal')
 
     args = parser.parse_args()
 
@@ -67,15 +83,16 @@ def main():
         raise argparse.ArgumentError('column number must be supplied when using --kind=column')
 
     if args.kind == 'column':
-        raise NotImplementedError('column format not supported')
+        for fname in filelist:
+            compare_columns(folder1 + "/" + fname, folder2 + "/" + fname, args.column, precision=args.precision)
     elif args.kind == 'quantum':
         for fname in filelist:
             try:
-                compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname)
+                compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
             except IndexError:
                 print(folder1 + "/" + fname, "does not match regular quantum file format")
 
-    exit 0
+    exit(0)
 
 if __name__ == '__main__':
     main()

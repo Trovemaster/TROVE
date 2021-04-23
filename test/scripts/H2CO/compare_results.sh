@@ -3,22 +3,7 @@
 folder1=$1
 folder2=$2
 
-process_quantum_energies () {
-  # extract energies per quantum state
-  filename=$1
-
-  precision=6 # round energies to this number of significant figures
-
-  # print fingerprints
-  fingerprints=$(awk '/^Start Fingerprints/,/^End Fingerprints/ {print $0}' $filename)
-  printf "$fingerprints"
-  echo -e "\n"
-
-  # extract quantum numbers block
-  quantum_numbers=$(awk '/^Start Quantum/,/^End Quantum/ {print $0}' $filename)
-  # print only the energies
-  printf "$quantum_numbers" | awk '!/number|Class/ {printf("%0.'$precision'e\n", $5);}'
-}
+precision=5 # round to this many significant figures
 
 extract_column () {
   # Extract column for comparison
@@ -28,10 +13,27 @@ extract_column () {
   # print only single column to certain precision and round 
   cat $filename | awk '{
   if(sqrt(($'$column_no')^2) > 1e-10)
-    printf("%0.'$precision'e\n", $'$column_no');
+    if($'$column_no' > 10)
+      printf("%0.4e\n", $'$column_no');
+    else
+      printf("%0.2f\n", $'$column_no');
+  else
+    print 0
+  }' | awk '{
+  if(sqrt(($0)^2) > 1e-10)
+      print $0
   else
     print 0
   }'
+
+}
+
+compare_columns () {
+  col1=$1
+  col2=$2
+
+  merged=$(paste <(echo $1) <(echo $2))
+  printf "$merged" | awk '{printf("%s\t%5.1f\n", $0, sqrt(($2-$1)^2))}'
 }
 
 # These are files where a single column should be compared
@@ -47,7 +49,7 @@ pipenv run python compare_results.py --kind quantum --folder1 "$folder1" --folde
 
 for f in $column_files; do
   if [[ "$f" == "external.chk" ]]; then
-    diff -u <(extract_column $folder1/$f 4) <(extract_column $folder2/$f 4)
+    pipenv run python compare_results.py --kind column --column 3 --precision 5e-3 --folder1 "$folder1" --folder2 "$folder2" $f
   elif [[ "$f" == "potential.chk" ]]; then
     diff -u <(extract_column $folder1/$f 3) <(extract_column $folder2/$f 3)
   elif [[ "$f" == "kinetic.chk" ]]; then
