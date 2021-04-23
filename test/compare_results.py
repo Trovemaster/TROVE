@@ -8,6 +8,7 @@ QUANTUM_ENERGY_IDX=4
 ENERGY_DIFF_THRESHOLD=1e-10 # How different can two energies be?
 
 def find_start_end_block(lines, blockname):
+    """Identifies start and end of blocks"""
     for i, line in enumerate(lines):
         if "Start " + blockname in line:
             start_idx = i
@@ -15,7 +16,9 @@ def find_start_end_block(lines, blockname):
             end_idx = i
     return start_idx, end_idx
 
-def extract_quantum_block(lines, idxs):
+def extract_quantum_block(lines):
+    """Extracts only the quantum block from """
+    idxs = find_start_end_block(lines, "Quantum")
     temp = lines[idxs[0]+4:idxs[-1]]
     return [line.split() for line in temp]
 
@@ -31,8 +34,7 @@ def read_quantum_file(fname):
 
 def read_quantum_block(fname):
     lines = read_quantum_file(fname)
-    quantum_idxs = find_start_end_block(lines, "Quantum")
-    return extract_quantum_block(lines, quantum_idxs)
+    return extract_quantum_block(lines)
 
 def compare_quantum_files(fname1, fname2):
     energy_block1 = read_quantum_block(fname1)
@@ -47,21 +49,33 @@ def main():
     parser = argparse.ArgumentParser(description='Compare output files from TROVE')
     parser.add_argument('filenames', nargs='+',
                         help='names of files to compare in each folder')
-    parser.add_argument('--folder1', require=True,
+    parser.add_argument('--folder1', required=True,
                         help='first folder to compare')
-    parser.add_argument('--folder2', require=True,
+    parser.add_argument('--folder2', required=True,
                         help='second folder to compare')
+    parser.add_argument('--kind', choices=['quantum', 'column'], required=True, help='type of file')
+    parser.add_argument('--column', default=-1, type=int, help='column to compare when \'column\' is supplied to --kind')
 
     args = parser.parse_args()
 
-    quantum_filelist=args.filenames
+    filelist=args.filenames
 
     folder1=args.folder1
     folder2=args.folder2
 
-    for fname in quantum_filelist:
-        try:
-            compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname)
-        except IndexError:
-            print(folder1 + "/" + fname, "does not match regular quantum file format")
+    if args.kind == 'column' and args.column == -1:
+        raise argparse.ArgumentError('column number must be supplied when using --kind=column')
 
+    if args.kind == 'column':
+        raise NotImplementedError('column format not supported')
+    elif args.kind == 'quantum':
+        for fname in filelist:
+            try:
+                compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname)
+            except IndexError:
+                print(folder1 + "/" + fname, "does not match regular quantum file format")
+
+    exit 0
+
+if __name__ == '__main__':
+    main()
