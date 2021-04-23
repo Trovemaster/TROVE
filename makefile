@@ -44,7 +44,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
-	else ifeq($(strip $(MODE)),ci)
+	else ifeq ($(strip $(MODE)),ci)
 		FFLAGS += -O0 -g
 	else
 		FFLAGS += -O3
@@ -109,10 +109,14 @@ $(WIGXJPF_LIB):
 	$(MAKE) -C $(WIGXJPF_DIR)
 
 $(OBJDIR):
+ifneq ($(OBJDIR),.)
 	mkdir -p $(OBJDIR)
+endif
 
 $(BINDIR):
+ifneq ($(BINDIR),.)
 	mkdir -p $(BINDIR)
+endif
 
 clean:
 	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
