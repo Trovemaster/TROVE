@@ -50,7 +50,9 @@ jobs:
         run: cd test && pip install pipenv && pipenv install
 
       - name: Build
-        run: make COMPILER=gfortran MODE=ci
+        run: |
+          gfortran --version
+          make COMPILER=gfortran MODE=ci
 
       - name: Test
         run: make test
