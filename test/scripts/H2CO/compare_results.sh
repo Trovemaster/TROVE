@@ -25,8 +25,6 @@ extract_column () {
   filename=$1
   column_no=$2
 
-  precision=4 # round energies to this number of significant figures
-
   # print only single column to certain precision and round 
   cat $filename | awk '{
   if(sqrt(($'$column_no')^2) > 1e-10)
@@ -48,7 +46,8 @@ let return_sum=0
 column_no=3
 echo -e '{printf("%0.10f\n", $'$column_no');}'
 
-for f in $column_files $quantum_files; do
+pipenv run python compare_results.py --folder1 "$folder1" --folder2 "$folder2" "$quantum_files"
+for f in $column_files; do
   if grep -q 'Start Quantum' $folder1/$f; then
     diff -u <(process_quantum_energies $folder1/$f) <(process_quantum_energies $folder2/$f)
   elif [[ "$f" == "external.chk" ]]; then
