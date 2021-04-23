@@ -31,8 +31,23 @@ jobs:
           #path: test/benchmarks
           #key: benchmark-data
 
+      - name: Setup python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: x64
+
+      - name: Install gcc 10
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y gcc-10
+
       - name: Install Intel MKL
         run: sudo apt-get install -y intel-mkl
+
+      - name: Install pipenv environment
+        run: cd test && pip install pipenv && pipenv install
 
       - name: Build
         run: make COMPILER=gfortran MODE=ci
