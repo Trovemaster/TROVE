@@ -28,12 +28,14 @@ def read_chk_file(fname):
     with open(fname, 'r') as fp:
         lines = fp.readlines()
         if lines:
-            lines  = list(filter( lambda x : x != '\n', lines )) # remove empty lines
-    return lines
+            lines  = filter( lambda x : x != '\n', lines ) # remove empty lines
+            lines  = filter( lambda x : '<-' not in x, lines ) # remove commented lines
+    return list(lines)
 
 def read_energy_column(fname, column_no):
     lines = read_chk_file(fname)
-    return [float(line.split()[column_no]) for line in lines[1:-3]]
+    lines = lines[:-1] # remove last line
+    return [float(line.split()[column_no]) for line in lines]
 
 def read_quantum_block(fname):
     lines = read_chk_file(fname)
@@ -42,9 +44,6 @@ def read_quantum_block(fname):
 def compare_columns(fname1, fname2, column_no, precision=1e-10):
     energies1 = read_energy_column(fname1, column_no)
     energies2 = read_energy_column(fname2, column_no)
-
-    # energies1 = [round(e, 8) for e in energies1]
-    # energies2 = [round(e, 8) for e in energies2]
 
     for e1, e2 in zip(energies1, energies2):
         if not e1 == approx(e2, abs=precision):

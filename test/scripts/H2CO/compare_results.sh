@@ -47,20 +47,11 @@ let return_sum=0
 
 pipenv run python compare_results.py --kind quantum --folder1 "$folder1" --folder2 "$folder2" $quantum_files
 
-for f in $column_files; do
-  if [[ "$f" == "external.chk" ]]; then
-    pipenv run python compare_results.py --kind column --column 3 --precision 5e-3 --folder1 "$folder1" --folder2 "$folder2" $f
-  elif [[ "$f" == "potential.chk" ]]; then
-    diff -u <(extract_column $folder1/$f 3) <(extract_column $folder2/$f 3)
-  elif [[ "$f" == "kinetic.chk" ]]; then
-    diff -u <(extract_column $folder1/$f 5) <(extract_column $folder2/$f 5)
-  fi
-  ret=$?
-  if [[ $ret -ne 0 ]]; then
-    echo "Differences in $f"
-  fi
-  let return_sum+=$ret
-done
+pipenv run python compare_results.py --kind column --column 3 --precision 5e-3 --folder1 "$folder1" --folder2 "$folder2" external.chk
+
+pipenv run python compare_results.py --kind column --column 2 --precision 1e-8 --folder1 "$folder1" --folder2 "$folder2" potential.chk
+
+pipenv run python compare_results.py --kind column --column 4 --precision 1e-8 --folder1 "$folder1" --folder2 "$folder2" kinetic.chk
 
 if [ $return_sum -eq 0 ]; then
   exit 0
