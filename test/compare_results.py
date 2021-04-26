@@ -27,9 +27,7 @@ def extract_quantum_energies(block):
 
 def read_chk_file(fname):
     with open(fname, 'r') as fp:
-        lines = fp.readlines()
-        if lines:
-            lines = [line for line in lines if line != '\n' and '<-' not in line]
+        lines = [line for line in fp.readlines() if line != '\n' and '<-' not in line]
     return lines
 
 def read_energy_column(fname, column_no):
