@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import argparse
 from pytest import approx
 
@@ -81,7 +82,7 @@ def main():
 
     if args.kind == 'column':
         for fname in filelist:
-            compare_columns(folder1 + "/" + fname, folder2 + "/" + fname, args.column, precision=args.precision)
+            compare_columns(os.path.join(folder1, fname), os.path.join(folder2, fname), args.column, precision=args.precision)
     elif args.kind == 'quantum':
         for fname in filelist:
             try:
