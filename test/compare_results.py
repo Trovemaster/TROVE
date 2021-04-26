@@ -46,9 +46,8 @@ def compare_columns(fname1, fname2, column_no, precision=1e-10):
     energies2 = read_energy_column(fname2, column_no)
 
     for e1, e2 in zip(energies1, energies2):
-        if not e1 == approx(e2, abs=precision):
-            print(e1, e2, abs(e1-e2))
-            raise AssertionError
+        assert e1 == approx(e2, abs=precision), \
+            f"{e1} and {e2} differ by {abs(e1-e2)}"
 
 def compare_quantum_files(fname1, fname2, precision=1e-10):
     energy_block1 = read_quantum_block(fname1)
