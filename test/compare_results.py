@@ -28,9 +28,8 @@ def read_chk_file(fname):
     with open(fname, 'r') as fp:
         lines = fp.readlines()
         if lines:
-            lines  = filter( lambda x : x != '\n', lines ) # remove empty lines
-            lines  = filter( lambda x : '<-' not in x, lines ) # remove commented lines
-    return list(lines)
+            lines = [line for line in lines if line != '\n' and '<-' not in line]
+    return lines
 
 def read_energy_column(fname, column_no):
     lines = read_chk_file(fname)
