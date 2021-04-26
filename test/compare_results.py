@@ -33,7 +33,7 @@ def read_chk_file(fname):
 
 def read_energy_column(fname, column_no):
     lines = read_chk_file(fname)
-    lines = lines[:-1] # remove last line
+    lines = lines[:-1] # remove last line (which is not part of the actual data)
     return [float(line.split()[column_no]) for line in lines]
 
 def read_quantum_block(fname):
