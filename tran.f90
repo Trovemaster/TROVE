@@ -1369,7 +1369,9 @@ contains
               !$omp parallel do private(icoeff,irow,ib,iterm,ielem,blacs_row,blacs_col,i_local,j_local) default(shared) schedule(dynamic)
               do icoeff = 1,dimen
                  !
+#ifdef TROVE_USE_MPI_
                  call infog2l(icoeff,iroot,desc_psi,nprow,npcol,myprow,mypcol,i_local,j_local,blacs_row,blacs_col)
+#endif
                  if (myprow.eq.blacs_row.and.mypcol.eq.blacs_col) then
                    !
                    psi(i_local,j_local) = 0 
@@ -1469,7 +1471,9 @@ contains
               read(iunit, rec = irec) vec
               !
               do i=1,dimen
+#ifdef TROVE_USE_MPI_
                 call infog2l(i,iroot,desc_psi,nprow,npcol,myprow,mypcol,i_local,j_local,blacs_row,blacs_col)
+#endif
                 if (myprow.eq.blacs_row.and.mypcol.eq.blacs_col) then
                   psi(i_local,j_local) = vec(i)
                 endif
@@ -1486,9 +1490,11 @@ contains
       !
       ! TODO TEMP intel bugaround - explicitly transpose psi into psi_t
       if (blacs_size .gt. 1) then
+#ifdef TROVE_USE_MPI_
         write(out,*) "Explicitly transposing psi into psi_t"
         call pdtran(Neigenroots, dimen, 1.0d0, psi, 1, 1, desc_psi, 0.0d0, psi_t, &
           1, 1, desc_mat_t)
+#endif
       endif
       !
       if (job%verbose>=3) write(out,"(' ...done!')") 
@@ -1507,6 +1513,7 @@ contains
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
             call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
             mpioffset = 0
@@ -1527,6 +1534,7 @@ contains
               mpioffset = 0
               treat_vibration = .false.
             endif
+#endif
           else
             call IOStart(trim(job_is),chkptIO)
             !
@@ -1576,7 +1584,9 @@ contains
         endif
         !
 
+#ifdef TROVE_USE_MPI_
         call MPI_File_open(mpi_comm_world, job%kinetmat_file, mpi_mode_rdonly, mpi_info_null, fileh, ierr)
+#endif
         ! The eigen-vibrational (J=0) matrix elements of the rotational and coriolis 
         ! kinetic parts are being computed here. 
         !
@@ -1587,11 +1597,13 @@ contains
           task = 'rot'
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
             if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
             call mpi_barrier(MPI_COMM_WORLD, ierr)
             !
             call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
+#endif
           else
             write(chkptIO) 'g_rot'
             !
@@ -1617,12 +1629,14 @@ contains
         islice = 0
         !
         if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
           !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND),MPI_SEEK_END)
           call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+#endif
         endif
         !
         do k1 = 1,3
@@ -1648,7 +1662,9 @@ contains
             else
               !
               if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
                 call MPI_File_read_all(fileh, gmat, size(gmat), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
               else
                 read(iunit) gmat
               endif
@@ -1657,10 +1673,12 @@ contains
             !
             !
             if (blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
               call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                           gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
               call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
                           psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
+#endif
             else
               call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                           gmat,dimen,beta,mat_t,Neigenroots)
@@ -1683,7 +1701,9 @@ contains
             else
               !
               if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
                 call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
               else
                 write (chkptIO) mat_s
               endif
@@ -1696,6 +1716,7 @@ contains
         !
         ! Reset view to flat file
         if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           read_offset = read_offset + 9*int(dimen,MPI_OFFSET_KIND)*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
@@ -1706,6 +1727,7 @@ contains
           call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
           !write_offset = 0
           !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
+#endif
         endif
 
         !
@@ -1719,11 +1741,13 @@ contains
           task = 'cor'
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             !
+#ifdef TROVE_USE_MPI_
             call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
             !
             if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
             call MPI_Barrier(MPI_COMM_WORLD, ierr)
             !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+#endif
           else
             call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
             !
@@ -1739,11 +1763,13 @@ contains
         islice = 9
         !
         if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
 
           call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+#endif
         endif
         !
         !do k1 = 1,FLNmodes
@@ -1771,7 +1797,9 @@ contains
             else
               !
               if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
                 call MPI_File_read_all(fileh, gmat, size(gmat), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
               else
                 read(iunit) gmat
               endif
@@ -1779,10 +1807,12 @@ contains
             endif
             !
             if (blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
               call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                           gmat,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
               call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
                           psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
+#endif
             else
               call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                           gmat,dimen,beta,mat_t,Neigenroots)
@@ -1806,7 +1836,9 @@ contains
             else
               !
               if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
                 call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
               else
                 write (chkptIO) mat_s
               endif
@@ -1819,6 +1851,7 @@ contains
         !
         ! Reset view to flat file
         if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           read_offset = read_offset + 3*int(dimen,MPI_OFFSET_KIND)*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
@@ -1828,13 +1861,16 @@ contains
           call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
           !write_offset = 0
+#endif
         endif
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
         if ((.not.job%IOmatelem_split.or.job%iswap(1)==1).and.(mpi_rank.eq.0)) then
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_write_shared(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
+#endif
           else
             write(chkptIO) 'End Kinetic part'
           endif
@@ -1842,7 +1878,9 @@ contains
         !
         if (.not.job%vib_rot_contr) then 
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_close(fileh_w, ierr)
+#endif
           else
             close(chkptIO,status='keep')
           endif
@@ -1864,7 +1902,9 @@ contains
       endif 
       !
       if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
         call MPI_File_close(fileh, ierr)
+#endif
       else
         close(chkptIO,status='keep')
       endif
@@ -1898,6 +1938,7 @@ contains
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             !
+#ifdef TROVE_USE_MPI_
             call MPI_File_open(mpi_comm_world, filename, mpi_mode_rdonly, mpi_info_null, fileh, ierr)
             !
             call MPI_File_read_all(fileh, buf20, 7, mpi_character, mpi_status_ignore, ierr)
@@ -1920,6 +1961,7 @@ contains
               stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
             end if
             !
+#endif
           else
             open(iunit,form='unformatted',action='read',position='rewind',status='old',file=filename)
             !
@@ -1948,6 +1990,7 @@ contains
           call IOStart(trim(job_is),chkptIO)
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             !
             call mpi_file_open(mpi_comm_world, job%exteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
             call mpi_file_set_errhandler(fileh_w, mpi_errors_are_fatal)
@@ -1966,6 +2009,7 @@ contains
             call mpi_barrier(mpi_comm_world, ierr)
             call mpi_file_seek(fileh_w, int(0,mpi_offset_kind), mpi_seek_end)
             !
+#endif
           else
             !
             open(chkptio,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
@@ -1994,11 +2038,13 @@ contains
         endif
         !
         if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, extF_block_type, "native", MPI_INFO_NULL, ierr)
 
           call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
           call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
+#endif
         endif
         !
         do imu = fitting%iparam(1),fitting%iparam(2)
@@ -2020,9 +2066,11 @@ contains
           else
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               call MPI_File_read_all(fileh, imu_t, 1, mpi_integer, mpi_status_ignore, ierr)
               !
               call MPI_File_read_all(fileh, extF_me, size(extF_me), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
             else
               read(iunit) imu_t
               !
@@ -2032,10 +2080,12 @@ contains
           endif
           !
           if(blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
             call pdgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,1,1,desc_psi,& 
                         extF_me,1,1,desc_gmat,beta,mat_t,1,1,desc_mat_t)
             call pdgemm('N','T',Neigenroots,Neigenroots,dimen,alpha,mat_t,1,1,desc_mat_t,& 
                         psi_t,1,1,desc_mat_t,beta,mat_s,1,1,desc_mat_s)
+#endif
           else
             call dgemm('T','N',Neigenroots,dimen,dimen,alpha,psi,dimen,& 
                         extF_me,dimen,beta,mat_t,Neigenroots)
@@ -2072,10 +2122,12 @@ contains
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               if(mpi_rank.eq.0) call MPI_File_write(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
               call MPI_Barrier(mpi_comm_world, ierr)
               call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
               call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
+#endif
             else
               write(chkptIO) imu
               write(chkptIO) mat_s
@@ -2094,6 +2146,7 @@ contains
         enddo
         ! Reset view to flat file
         if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
+#ifdef TROVE_USE_MPI_
           read_offset = read_offset + (fitting%iparam(2)-fitting%iparam(1)+1)*int(ncontr_t,MPI_OFFSET_KIND)*ncontr_t*mpi_real_size &
             + (fitting%iparam(2)-fitting%iparam(1)+1)*mpi_int_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
@@ -2104,6 +2157,7 @@ contains
           call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
           !write_offset = 0
           !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
+#endif
         endif
         !
         if (allocated(extF_me)) deallocate(extF_me)
@@ -2112,7 +2166,9 @@ contains
         if (.not.job%IOextF_divide) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_read_all(fileh, buf20, 18, mpi_character, mpi_status_ignore, ierr)
+#endif
           else
             read(iunit) buf20(1:18)
           endif
@@ -2123,7 +2179,9 @@ contains
           end if
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_close(fileh, ierr)
+#endif
           else
             close(iunit,status='keep')
           endif
@@ -2136,8 +2194,10 @@ contains
         if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'End external field', 18, mpi_character, mpi_status_ignore, ierr)
             call MPI_File_close(fileh_w, ierr)
+#endif
           else
             write(chkptIO) 'End external field'
             close(chkptIO,status='keep')
@@ -2213,6 +2273,8 @@ contains
         integer(ik),intent(in)                :: N
         real(rk),dimension(:,:),intent(in)    :: field
         type(MPI_Datatype),intent(in)         :: block_type
+
+#ifdef TROVE_USE_MPI_
         character(len=4)                      :: jchar
         character(len=cl)                     :: filename
         type(MPI_File)                        :: chkptMPIIO
@@ -2245,6 +2307,7 @@ contains
         !
         call MPI_File_close(chkptMPIIO, ierr)
         !
+#endif
       end subroutine divided_slice_write_mpi
       !       
       !
@@ -2321,6 +2384,7 @@ contains
         real(rk),dimension(:,:),intent(out)   :: field
         type(MPI_Datatype),intent(in)         :: block_type
         integer(ik),intent(out)               :: ierr
+#ifdef TROVE_USE_MPI_
         character(len=4)                      :: jchar
         type(MPI_File)                        :: chkptMPIIO
         character(len=cl)                     :: buf,filename,job_is
@@ -2379,6 +2443,7 @@ contains
         !
         call MPI_File_close(chkptMPIIO, ierr)
         !
+#endif
       end subroutine divided_slice_read_mpi
       !
       !
@@ -2738,6 +2803,7 @@ contains
    logical,intent(in)           :: treat_vibration
    character(len=3),intent(in)  :: kinetic_part
    type(MPI_File),intent(in) :: fileh
+#ifdef TROVE_USE_MPI_
    !
    integer(ik)        :: iclasses,alloc,ilevel,ib,max_deg_size,nclasses,islice
    character(len=cl)  :: job_is
@@ -2968,6 +3034,7 @@ contains
        !
     end subroutine find_groundstate_icontr
     !
+#endif
  end subroutine restore_rot_kinetic_matrix_elements_mpi
  !
  !

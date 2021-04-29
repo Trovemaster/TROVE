@@ -7725,12 +7725,15 @@ module perturbation
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine open_chkptfile_mpi(fileh, filename, mode)
+#ifdef TROVE_USE_MPI_
     use mpi_f08
+#endif
     use mpi_aux
 
     type(MPI_File),intent(inout) :: fileh
     character(len=*),intent(in) :: filename, mode
 
+#ifdef TROVE_USE_MPI_
     integer :: amode, ierr
 
     select case(mode)
@@ -7748,13 +7751,17 @@ module perturbation
 
     !File errors indicate big trouble, so we set errors to be fatal - not likely to be recoverable
     call MPI_File_set_errhandler(fileh, MPI_ERRORS_ARE_FATAL)
+#endif
   end subroutine open_chkptfile_mpi
 
   subroutine close_chkptfile_mpi(fileh)
+#ifdef TROVE_USE_MPI_
     use mpi_f08
+#endif
     use mpi_aux
 
     type(MPI_File), intent(inout) :: fileh
+#ifdef TROVE_USE_MPI_
     integer :: ierr
 
     call mpi_file_close(fileh, ierr)
@@ -7762,26 +7769,25 @@ module perturbation
       if (mpi_rank .eq. 0) write(*,*) "Error closing MPI-IO-formatted Vib. kinetic checkpoint file."
       stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error closing MATELEM MPI-IO input file"
     endif
+#endif
   end subroutine close_chkptfile_mpi
 
   subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, fileh, dimen, &
       ncontr, maxcontr, icontr)
+#ifdef TROVE_USE_MPI_
     use mpi_f08
+#endif
     use mpi_aux
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
     type(MPI_File),intent(inout)    :: fileh
     integer(ik),intent(in)       :: dimen
 
-    !type(PTelementsT),intent(in) :: PT
-    !logical,intent(in) :: PTvibrational_me_calc
-    !type(PTcontrME),pointer :: grot(:,:),gcor(:)  ! rot. kinetic part
-    !type(PTcontrME) :: hvib  ! rot. kinetic part
-
     integer(ik),intent(inout),optional :: ncontr
     integer(ik),intent(inout),optional  :: maxcontr
     integer(ik),intent(in),optional     :: icontr
 
+#ifdef TROVE_USE_MPI_
     type(MPI_File)    :: fileh_slice
     character(len=cl) :: job_id,filename,readbuf
     integer(kind=MPI_Offset_kind) :: file_offset
@@ -8336,16 +8342,20 @@ module perturbation
     !!  endif
     !!  !
     end select
+#endif
   end subroutine
 
   subroutine divided_slice_open_mpi(islice,fileh,chkpt_type,suffix)
+#ifdef TROVE_USE_MPI_
     use mpi_f08
+#endif
     use mpi_aux
     implicit none
     integer(ik),intent(in) :: islice
     type(MPI_File),intent(inout) :: fileh
     character(len=*),intent(in) :: chkpt_type,suffix
 
+#ifdef TROVE_USE_MPI_
     integer(ik) :: ilen
     character(len=cl) :: readbuf,filename,jchar
     integer :: ierr
@@ -8369,15 +8379,20 @@ module perturbation
       if (mpi_rank .eq. 0) write (out,"(' [MPI] kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
       stop 'PTrestore_rot_kinetic_matrix_elements_mpi - in slice -  header missing or wrong'
     end if
+#endif
   end subroutine divided_slice_open_mpi
 
   subroutine divided_slice_close_mpi(islice,fileh,chkpt_type)
+#ifdef TROVE_USE_MPI_
     use mpi_f08
+#endif
+
     use mpi_aux
     integer(ik),intent(in) :: islice
     type(MPI_File),intent(inout) :: fileh
     character(len=*),intent(in) :: chkpt_type
 
+#ifdef TROVE_USE_MPI_
     integer(ik) :: ilen
     character(len=cl) :: readbuf
     integer :: ierr
@@ -8393,6 +8408,7 @@ module perturbation
     end if
     !
     call close_chkptfile_mpi(fileh)
+#endif
   end subroutine divided_slice_close_mpi
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15408,6 +15424,7 @@ module perturbation
           !
           job_is ='Vib. matrix elements of the rot. kinetic part'
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call MPI_File_open(mpi_comm_world, job%kinetmat_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
 
             call MPI_File_set_errhandler(chkptMPIIO, MPI_ERRORS_ARE_FATAL)
@@ -15432,6 +15449,7 @@ module perturbation
             endif
             call MPI_Barrier(mpi_comm_world, ierr)
             call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END, ierr)
+#endif
           else
             call IOStart(trim(job_is),chkptIO)
             !
@@ -15620,12 +15638,14 @@ module perturbation
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               if(mpi_rank.eq.0) then
                 !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
                 call MPI_File_write_shared(chkptMPIIO,'g_rot',5,mpi_character,mpi_status_ignore,ierr)
               !else
               !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
+#endif
             else
               write(chkptIO) 'g_rot'
             endif
@@ -15708,12 +15728,14 @@ module perturbation
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               !  call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END) 
               if(mpi_rank.eq.0) then
                 call MPI_File_write_shared(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
               !else
               !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
+#endif
             else
               write(chkptIO) 'g_cor'
             endif
@@ -16179,6 +16201,7 @@ module perturbation
                   (.not.job%IOmatelem_split.or.job%iswap(1)==0)) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               if(mpi_rank.eq.0) then
                 !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
                 call MPI_File_write_shared(chkptMPIIO,'hvib',4,mpi_character,mpi_status_ignore,ierr)
@@ -16186,6 +16209,7 @@ module perturbation
               !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
               endif
               call co_write_matrix_distr(hvib%me,mdimen, startdim, enddim,chkptMPIIO)
+#endif
             else
               write(chkptIO) 'hvib'
               write(chkptIO) hvib%me
@@ -16202,12 +16226,14 @@ module perturbation
            (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) ) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             call mpi_barrier(mpi_comm_world, ierr)
             call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END)
             if(mpi_rank.eq.0) then
               call MPI_File_write_shared(chkptMPIIO,'End Kinetic part',16,mpi_character,mpi_status_ignore,ierr)
             endif
             call MPI_File_close(chkptMPIIO, ierr)
+#endif
           else
             write(chkptIO) 'End Kinetic part'
             close(chkptIO,status='keep')
@@ -16238,6 +16264,7 @@ module perturbation
             !
             job_is ='external field contracted matrix elements for J=0'
             if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
               call MPI_File_open(mpi_comm_world, job%extFmat_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
               mpioffset=0
               call MPI_File_set_size(chkptMPIIO, mpioffset, ierr)
@@ -16262,6 +16289,7 @@ module perturbation
               !  !
               !  call TimerStop('mpiiosingle') !AT
               endif 
+#endif
             else
               call IOStart(trim(job_is),chkptIO)
               !
@@ -16328,12 +16356,14 @@ module perturbation
                 ! always store the matrix elements of the extF moment 
                 !
                 if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
                   if(mpi_rank.eq.0) then
                     call MPI_File_write_shared(chkptMPIIO,imu,1,mpi_integer,mpi_status_ignore,ierr)
                   endif
                   !call mpi_barrier(mpi_comm_world,ierr)
                   !
                   call co_write_matrix_distr(extF_t,mdimen, startdim, enddim,chkptMPIIO)
+#endif
                 else
                   write(chkptIO) imu
                   !
@@ -16381,8 +16411,11 @@ module perturbation
             !
           endif 
           !
+#ifdef TROVE_USE_MPI_
           call mpi_barrier(mpi_comm_world,ierr)
+#endif
           if (trim(job%kinetmat_format).eq.'MPIIO') then
+#ifdef TROVE_USE_MPI_
             if (mpi_rank.eq.0) then !AT
               if(.not.job%IOextF_divide) then 
                 !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
@@ -16392,6 +16425,7 @@ module perturbation
               endif
             endif
             call MPI_File_close(chkptMPIIO, ierr)
+#endif
           else
             if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
           endif
@@ -16521,6 +16555,8 @@ module perturbation
         character(len=*),intent(in)         :: name,suffix
         integer(ik),intent(in)              :: N
         real(rk),dimension(:,:),intent(in)  :: field
+
+#ifdef TROVE_USE_MPI_
         character(len=4)                    :: jchar
         character(len=cl)                   :: filename
         character(len=cl)                   :: job_is
@@ -16550,6 +16586,7 @@ module perturbation
         !
         call MPI_File_close(chkptMPIIO, ierr)
         !
+#endif
       end subroutine write_divided_slice_mpi
 
 
@@ -16597,6 +16634,8 @@ module perturbation
       integer(ik),intent(in)      :: islice
       type(MPI_File),intent(inout)   :: chkptIO
       character(len=*),intent(in) :: name,suffix
+
+#ifdef TROVE_USE_MPI_
       character(len=4)            :: jchar
       character(len=cl)           :: buf,filename,job_is
       integer(ik)                 :: ilen
@@ -16628,6 +16667,7 @@ module perturbation
         !stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
         endif
       endif
+#endif
     end subroutine divided_slice_open_mpi
     !
     subroutine divided_slice_close(islice,chkptIO,name)
@@ -16668,15 +16708,19 @@ module perturbation
       ilen = LEN_TRIM(name)
       !
       if(mpi_rank .eq. 0) then
+#ifdef TROVE_USE_MPI_
         call MPI_File_read_shared(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
         if ( trim(buf(1:ilen))/=trim(name) ) then
           write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
           call MPI_Abort(mpi_comm_world, 1)
           !stop 'divided_slice_close - in slice -  footer missing or wrong'
         endif
+#endif
       endif
       !
+#ifdef TROVE_USE_MPI_
       call MPI_File_close(chkptIO, ierr)
+#endif
       !
     end subroutine divided_slice_close_mpi
 
@@ -34051,6 +34095,7 @@ end subroutine read_contr_matelem_expansion_classN
         !
       case ('SAVE')
         !
+#ifdef TROVE_USE_MPI_
         call mpi_file_write(iunit, maxcontracts, 1,mpi_integer,mpi_status_ignore,ierr)
         !
         call mpi_file_write(iunit, 'icontr_cnu', 10,mpi_character,mpi_status_ignore,ierr)
@@ -34063,6 +34108,7 @@ end subroutine read_contr_matelem_expansion_classN
         call mpi_file_write(iunit, pt%icontr_ideg(0:pt%nclasses,1:maxcontracts), (1+pt%nclasses)*maxcontracts, mpi_integer, &
           mpi_status_ignore, ierr)
 
+#endif
       end select
 
     end subroutine PTstorempi_icontr_cnu

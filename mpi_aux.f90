@@ -17,7 +17,7 @@ module mpi_aux
   public mpi_real_size, mpi_int_size
 
 #ifndef TROVE_USE_MPI_
-  public MPI_Datatype
+  public MPI_Datatype, MPI_File, MPI_Status, MPI_Request
 #endif
 
   interface co_sum
@@ -33,6 +33,20 @@ module mpi_aux
   type MPI_Datatype
     integer :: dummy = 0
   end type MPI_Datatype
+
+  type MPI_File
+    integer :: dummy = 0
+  end type MPI_File
+
+  type MPI_Status
+    integer :: dummy = 0
+  end type MPI_Status
+
+  type MPI_Request
+    integer :: dummy = 0
+  end type MPI_Request
+
+  parameter MPI_OFFSET_KIND=8
 #endif
 
   integer,dimension(:),allocatable              :: proc_sizes, proc_offsets, send_or_recv
@@ -378,8 +392,9 @@ contains
 
     real(rk),dimension(:,lb:),intent(out) :: x
     integer,intent(in)                :: longdim, lb, ub
-
     type(MPI_File),intent(inout) :: infile
+
+#ifdef TROVE_USE_MPI_
     type(MPI_Status) :: writestat
     integer(kind=MPI_Offset_kind) :: offset_start,offset_end
     integer :: readcount, ierr
@@ -391,6 +406,7 @@ contains
     call MPI_File_read_ordered(infile,x,1,mpitype_column,writestat,ierr)
 
     call TimerStop('MPI_read_matrix')
+#endif
 
   end subroutine co_read_matrix_distr_ordered
 
@@ -398,8 +414,9 @@ contains
 
     real(rk),dimension(:,lb:),intent(out) :: x
     integer,intent(in)                :: longdim, lb, ub
-
     type(MPI_File),intent(inout) :: infile
+
+#ifdef TROVE_USE_MPI_
     type(MPI_Status) :: writestat
     integer(kind=MPI_Offset_kind) :: offset_start,offset_end
     integer :: readcount, ierr
@@ -420,6 +437,7 @@ contains
     endif
 
     call TimerStop('MPI_read_matrix')
+#endif
 
   end subroutine co_read_matrix_distr
 
@@ -428,6 +446,8 @@ contains
     real(rk),dimension(:,lb:),intent(in) :: x
     integer,intent(in)                :: longdim, lb, ub
     type(MPI_File),intent(inout) :: outfile
+
+#ifdef TROVE_USE_MPI_
     integer :: writecount, ierr
     integer(kind=MPI_Offset_kind) :: offset_start, offset_end
     type(MPI_Status) :: writestat
@@ -439,6 +459,7 @@ contains
     call MPI_File_write_ordered(outfile,x,1,mpitype_column,writestat,ierr)
 
     call TimerStop('MPI_write_matrix')
+#endif
 
   end subroutine co_write_matrix_distr
 
