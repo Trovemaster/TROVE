@@ -7765,7 +7765,6 @@ module perturbation
   end subroutine close_chkptfile_mpi
 
   subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, fileh, dimen, &
-      !PT, PTvibrational_me_calc,grot,gcor,hvib, &
       ncontr, maxcontr, icontr)
     use mpi_f08
     use mpi_aux
@@ -10616,8 +10615,6 @@ module perturbation
          write (out,"(' diagonalization_contract: size of mat(SEUPD) < nroots  = ',2i9)") size(mat,dim=2)<nroots
          stop 'diagonalization_contract, mat  - too small'
        endif
-       !
-       !call dseupd_p_arpack(dimen_s,bterm,nroots,job%factor,job%maxiter,job%tolerance,mat,energy)
        !
        !call diag_dseupd_p(dimen_s,bterm,nroots,job%factor,job%maxiter,job%tolerance,mat,energy)
        !
