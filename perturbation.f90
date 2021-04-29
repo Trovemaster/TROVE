@@ -10616,8 +10616,6 @@ module perturbation
          stop 'diagonalization_contract, mat  - too small'
        endif
        !
-       !call diag_dseupd_p(dimen_s,bterm,nroots,job%factor,job%maxiter,job%tolerance,mat,energy)
-       !
        call dseupd_omp_arpack(dimen_s,bterm,nroots,job%factor,job%maxiter,job%tolerance,mat,energy)
        !
      case('SEUPD')
