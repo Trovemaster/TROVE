@@ -13,17 +13,15 @@ pot_user = pot_ch4
 PLAT =
 #PLAT = _2205_i17
 FOR = mpif90
-FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback -DTROVE_USE_MPI_
-#FFLAGS =  -fopenmp -ffree-line-length-none -march=native -O3   -fcray-pointer -g3
+#FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback -DTROVE_USE_MPI_
+FFLAGS = -fopenmp -ffree-line-length-512 -march=native -O0 -fcray-pointer -g -fallow-argument-mismatch -fbacktrace -DTROVE_USE_MPI_ 
 
+#LAPACK = -mkl=parallel -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64 -lmkl_core -lgomp -lpthread -lm -ldl
 
-#ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
+ARPACK = -larpack
 
-LAPACK = -mkl=parallel -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
-#LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
-
-
-LIB     =   $(LAPACK) 
+LIB = $(LAPACK) $(ARPACK)
 
 %.o : %.f90
 	$(FOR) -cpp -c $(FFLAGS) $<
