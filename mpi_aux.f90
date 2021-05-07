@@ -46,7 +46,7 @@ module mpi_aux
     integer :: dummy = 0
   end type MPI_Request
 
-  parameter MPI_OFFSET_KIND=8
+  integer, parameter :: MPI_OFFSET_KIND=8
 #endif
 
   integer,dimension(:),allocatable              :: proc_sizes, proc_offsets, send_or_recv
