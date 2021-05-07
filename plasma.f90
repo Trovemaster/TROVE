@@ -201,6 +201,7 @@ module plasma
           STOP
         END IF
         CALL USETPLASMAENV()
+#endif
     !
     real_end = get_real_time()
     cpu_end  = get_cpu_time ()
