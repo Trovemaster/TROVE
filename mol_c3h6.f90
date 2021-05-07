@@ -63,7 +63,7 @@ module mol_c3h6
     !
     real(ark),dimension(ndst) :: dst
     integer(ik) :: nsrc
-    real(ark) :: thet78,thet79,thet89,tbar,A1,A2
+    real(ark) :: thet78,thet79,thet89,tbar,A1,A2,theta12,theta13,theta23
     real(ark) :: T1,T2,T3,tol,T1_
 
     tol = 1.0d-11
@@ -316,6 +316,93 @@ module mol_c3h6
         !
       endif
       !
+    case('7ALF_5THETA_1TAU')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:15) = src(1:15)-molec%local_eq(1:15)
+        !
+        !for ccch 'c1 to h5' dihedral angle, also rigid, try just subtracting equilibrium
+        dst(16) = src(19) - molec%local_eq(19)
+        !make sure that angle is around 0
+        if( abs( dst(16)-2.0_ark*pi).lt.1d-4 ) then
+          dst(16) = dst(16) - 2.0_ark*pi
+        end if
+        !
+        !for ch2 hch 'book' dihedral angle, rigid, try just subtracting equilibrium
+        dst(17) = src(20) - molec%local_eq(20)
+        !
+        !for ch hcch dihedral angle, try subtracting equilibrium
+        dst(18) = src(21) - molec%local_eq(21)
+        !
+        t1 = src(16)
+        !
+        ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
+        ! and ensure consistent transfroms
+        !
+        t2 = src(17)
+        t3 = src(18)
+        !
+        if (t2-t1<small_) t2 = t2 + 2.0_ark*pi
+        if (t3-t2<small_) t3 = t3 + 2.0_ark*pi
+        !
+        theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        !t1 = t1 - molec%local_eq(16)
+        !t2 = t2 - molec%local_eq(17)
+        !t3 = t3 - molec%local_eq(18)
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(19) = a1
+        dst(20) = a2
+        dst(21) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:15) = src(1:15)+molec%local_eq(1:15)
+        !
+        dst(19) = src(16) + molec%local_eq(19)
+        if( abs( dst(19)-2.0_ark*pi).lt.1d-4 ) then
+          dst(19) =  dst(19) - 2.0_ark*pi
+        end if
+        !
+        dst(20) = src(17) + molec%local_eq(20)
+        dst(21) = src(18) + molec%local_eq(21)
+        !
+        A1 = src(19) 
+        A2 = src(20) 
+        tbar = src(21) ! + 2.0_ark*pi/3.0_ark
+        !
+        !T2 = ( A1/sqrt(3.0_ark)+A2 )/sqrt(2.0_ark)
+        !T3 = ( A1/sqrt(3.0_ark)-A2 )/sqrt(2.0_ark)
+        !
+        !T1 = tbar-(T2-T3)/3.0_ark
+        !
+        !t1 = -2.0_ark/3.0_ark*pi+1.0_ark/6.0_ark*sqrt(2.0_ark)*A2+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1+tbar
+        !t2 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*A2+tbar
+        !t3 = 1.0_ark/6.0_ark*sqrt(2.0_ark)*A2+2.0_ark/3.0_ark*pi-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1+tbar 
+        
+        !t1 = tbar+1.0_ark/3*sqrt(2.0_ark)*A2
+        !t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1 
+        !t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
+        !
+        t1 = tbar+1.0_ark/3.0_ark*sqrt(2.0_ark)*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
+        !
+        dst(16) =  mod(t1+4.0_ark*pi,4.0_ark*pi)
+        dst(17) =  mod(t2+4.0_ark*pi,4.0_ark*pi)
+        dst(18) =  mod(t3+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
     end select
     !
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/end'
@@ -338,8 +425,9 @@ module mol_c3h6
     real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12
     real(ark) :: rC1e,rC2e,rH1e,rH2e,rH3e,rH4e,rH5e,rH6e,alpha1e,alpha2e,alpha3e
     real(ark) :: alpha4e,alpha5e,alpha6e,alpha7e,delta1e,delta2e,delta3e,delta4e
-    real(ark) :: delta5e,delta6e
-    integer(ik) :: i, n, iatom, ix
+    real(ark) :: delta5e,delta6e,transform(3,3)
+    integer(ik) :: i, n, iatom, ix, alloc
+    real(ark),allocatable    :: db0(:,:,:)
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C3H6/start'
     !
@@ -452,6 +540,7 @@ module mol_c3h6
       delta4e    = molec%taueq(4)
       delta5e    = molec%taueq(5)
       delta6e    = molec%taueq(6)
+      !
       a0 = 0
       !
       a0(1,1) = 0.0_ark
@@ -468,15 +557,15 @@ module mol_c3h6
       !
       a0(4,1) = rH1e*sin(PI - alpha2e)
       a0(4,2) = 0.0_ark  
-      a0(4,3) = -rH1e*cos(PI - alpha2e) - rC1e
+      a0(4,3) =-rH1e*cos(PI - alpha2e) - rC1e
       !
       a0(5,1) = rH2e*sin(PI - alpha3e)*cos(delta2e)
       a0(5,2) = rH2e*sin(PI - alpha3e)*sin(delta2e)
-      a0(5,3) = -rH2e*cos(PI - alpha3e) - rC1e
+      a0(5,3) =-rH2e*cos(PI - alpha3e) - rC1e
       !
       a0(6,1) = rH3e*sin(PI - alpha4e)*cos(delta3e)
       a0(6,2) =-rH3e*sin(PI - alpha4e)*sin(delta3e)
-      a0(6,3) = -rH3e*cos(PI - alpha4e) - rC1e
+      a0(6,3) =-rH3e*cos(PI - alpha4e) - rC1e
       !
       r3 = cosine1(rh4e,rc2e,alpha5e)
       thet = cosine2(rc2e,r3,rh4e)
@@ -496,7 +585,89 @@ module mol_c3h6
       a0(9,2) = rh6e*SIN(PI - alpha7e)*SIN(delta6e)
       a0(9,3) = rh6e*cos(pi - alpha7e) 
       !
-    end select
+      !
+    case('7ALF_5THETA_1TAU')
+      !
+      !ZMAT
+      !C   0  0  0  0  12.00000000
+      !C   1  0  0  0  12.00000000
+      !C   2  1  0  0  12.00000000
+      !H   1  2  3  202 1.00782505
+      !H   1  2  3  202 1.00782505
+      !H   1  2  3  202 1.00782505
+      !H   3  2  1  202 1.00782505
+      !H   3  2  7  202 1.00782505
+      !H   2  1  7  202 1.00782505
+      !
+      rC1e      = molec%req(1)
+      rC2e      = molec%req(2)
+      rH1e      = molec%req(3)
+      rH2e      = molec%req(4)
+      rH3e      = molec%req(5)
+      rH4e      = molec%req(6)
+      rH5e      = molec%req(7)
+      rH6e      = molec%req(8)
+      !
+      alpha1e    = molec%alphaeq(1)
+      alpha2e    = molec%alphaeq(2)
+      alpha3e    = molec%alphaeq(3)
+      alpha4e    = molec%alphaeq(4)
+      alpha5e    = molec%alphaeq(5)
+      alpha6e    = molec%alphaeq(6)
+      alpha7e    = molec%alphaeq(7)
+      !
+      delta1e    = molec%taueq(1)
+      delta2e    = molec%taueq(2)
+      delta3e    = molec%taueq(3)
+      delta4e    = molec%taueq(4)
+      delta5e    = molec%taueq(5)
+      delta6e    = molec%taueq(6)
+      !
+      a0 = 0
+      !
+      a0(1,1) = 0.0_ark
+      a0(1,2) = 0.0_ark
+      a0(1,3) = -rC1e
+      !
+      a0(2,1) = 0.0_ark
+      a0(2,2) = 0.0_ark
+      a0(2,3) = 0.0_ark
+      !
+      a0(3,1) = rC2e*sin(PI - alpha1e)
+      a0(3,2) = 0.0_ark  
+      a0(3,3) = rC2e*cos(PI - alpha1e)
+      !
+      a0(4,1) = rH1e*sin(PI - alpha2e)
+      a0(4,2) = 0.0_ark  
+      a0(4,3) =-rH1e*cos(PI - alpha2e) - rC1e
+      !
+      a0(5,1) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+      a0(5,2) = rH2e*sin(PI - alpha3e)*sin(delta2e)
+      a0(5,3) =-rH2e*cos(PI - alpha3e) - rC1e
+      !
+      a0(6,1) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+      a0(6,2) = rH3e*sin(PI - alpha4e)*sin(delta3e)
+      a0(6,3) =-rH3e*cos(PI - alpha4e) - rC1e
+      !
+      r3 = cosine1(rh4e,rc2e,alpha5e)
+      thet = cosine2(rc2e,r3,rh4e)
+      !
+      a0(7,1) = r3*sin(PI + thet - alpha1e)
+      a0(7,2) = 0.0_ark
+      a0(7,3) = r3*cos(PI + thet - alpha1e)   
+      !
+      r3 = cosine1(rh5e,rc2e,alpha6e)
+      thet = cosine2(rc2e,r3,rh5e)
+      !
+      a0(8,1) = r3*sin(PI - thet - alpha1e)
+      a0(8,2) = 0.0_ark
+      a0(8,3) = r3*cos(PI - thet - alpha1e)   
+      !
+      a0(9,1) = rh6e*SIN(pi - alpha7e)*COS(delta6e)
+      a0(9,2) = rh6e*SIN(pi - alpha7e)*SIN(delta6e)
+      a0(9,3) = rh6e*cos(pi - alpha7e) 
+      !
+    end select  
     !
     do ix=1, 3
       CM_shift = sum(a0(:,ix)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
@@ -675,11 +846,160 @@ module mol_c3h6
           !
         enddo
         !
+      case('7ALF_5THETA_1TAU')
+        !
+        rC1e      = molec%req(1)
+        rC2e      = molec%req(2)
+        rH1e      = molec%req(3)
+        rH2e      = molec%req(4)
+        rH3e      = molec%req(5)
+        rH4e      = molec%req(6)
+        rH5e      = molec%req(7)
+        rH6e      = molec%req(8)
+        !
+        alpha1e    = molec%alphaeq(1)
+        alpha2e    = molec%alphaeq(2)
+        alpha3e    = molec%alphaeq(3)
+        alpha4e    = molec%alphaeq(4)
+        alpha5e    = molec%alphaeq(5)
+        alpha6e    = molec%alphaeq(6)
+        alpha7e    = molec%alphaeq(7)
+        delta4e    = molec%taueq(4)
+        delta5e    = molec%taueq(5)
+        delta6e    = molec%taueq(6)
+        !
+        do i=0, npoints
+          !
+          delta1e    = rho_i(i)
+          delta2e    = molec%taueq(2) + delta1e
+          delta3e    = molec%taueq(3) + delta1e
+          !
+          b0(1,1,i) = 0.0_ark
+          b0(1,2,i) = 0.0_ark
+          b0(1,3,i) = -rC1e
+          !     
+          b0(2,1,i) = 0.0_ark
+          b0(2,2,i) = 0.0_ark
+          b0(2,3,i) = 0.0_ark
+          !
+          b0(3,1,i) = rC2e*sin(PI - alpha1e)
+          b0(3,2,i) = 0.0_ark  
+          b0(3,3,i) = rC2e*cos(PI - alpha1e)
+          !      
+          b0(4,1,i) = rh1e*sin(PI - alpha2e)*cos(delta1e)
+          b0(4,2,i) = rh1e*sin(PI - alpha2e)*sin(delta1e)
+          b0(4,3,i) = -rH1e*cos(PI - alpha2e) - rC1e
+          !      
+          b0(5,1,i) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+          b0(5,2,i) = rH2e*sin(PI - alpha3e)*sin(delta2e)
+          b0(5,3,i) = -rH2e*cos(PI - alpha3e) - rC1e
+          !     
+          b0(6,1,i) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+          b0(6,2,i) = rH3e*sin(PI - alpha4e)*sin(delta3e)
+          b0(6,3,i) = -rH3e*cos(PI - alpha4e) - rC1e
+          !     
+          r3 = cosine1(rh4e,rc2e,alpha5e)
+          thet = cosine2(rc2e,r3,rh4e)
+          !        
+          b0(7,1,i) = r3*sin(pi + thet - alpha1e)
+          b0(7,2,i) = 0.0_ark
+          b0(7,3,i) = r3*cos(pi + thet - alpha1e)   
+          !
+          r3 = cosine1(rh5e,rc2e,alpha6e)
+          thet = cosine2(rc2e,r3,rh5e)
+          !
+          b0(8,1,i) = r3*sin(pi - thet - alpha1e)
+          b0(8,2,i) = 0.0_ark
+          b0(8,3,i) = r3*cos(pi - thet - alpha1e)   
+          !
+          b0(9,1,i) = rh6e*sin(pi - alpha7e)*cos(delta6e)
+          b0(9,2,i) = rh6e*sin(pi - alpha7e)*sin(delta6e)
+          b0(9,3,i) = rh6e*cos(pi - alpha7e) 
+          !
+        enddo
+        !
+      end select 
+      !
+      select case(trim(molec%coords_transform))
+        !
+      case default
+        !
+        ! standart PAS 
+        !
+        do i=0, npoints
+          !
+          ! Saywitz-like (jensen's) reorientation
+          !
+          call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
+          !
+        enddo
+        !
+      case('7ALF_5THETA_1TAU-XXX')
+        !
+        allocate(db0(Natoms,3,0:Npoints),stat=alloc)
+        if (alloc/=0) then
+            write (out,"(' Error ',i9,' trying to allocate db0-field')") alloc
+            stop 'ML_b0_C3H6_db0, db0 - out of memory'
+        end if
+        !
+        rC1e      = molec%req(1)
+        rC2e      = molec%req(2)
+        rH1e      = molec%req(3)
+        rH2e      = molec%req(4)
+        rH3e      = molec%req(5)
+        rH4e      = molec%req(6)
+        rH5e      = molec%req(7)
+        rH6e      = molec%req(8)
+        !
+        alpha1e    = molec%alphaeq(1)
+        alpha2e    = molec%alphaeq(2)
+        alpha3e    = molec%alphaeq(3)
+        alpha4e    = molec%alphaeq(4)
+        alpha5e    = molec%alphaeq(5)
+        alpha6e    = molec%alphaeq(6)
+        alpha7e    = molec%alphaeq(7)
+        delta4e    = molec%taueq(4)
+        delta5e    = molec%taueq(5)
+        delta6e    = molec%taueq(6)
+        !
+        db0 = 0
+        !
+        do i=0, npoints
+          !
+          delta1e    = rho_i(i)
+          delta2e    = molec%taueq(2) + delta1e
+          delta3e    = molec%taueq(3) + delta1e
+          !      
+          db0(4,1,i) =-rh1e*sin(PI - alpha2e)*sin(delta1e)
+          db0(4,2,i) = rh1e*sin(PI - alpha2e)*cos(delta1e)
+          !      
+          db0(5,1,i) =-rH2e*sin(PI - alpha3e)*sin(delta2e)
+          db0(5,2,i) = rH2e*sin(PI - alpha3e)*cos(delta2e)
+          !     
+          db0(6,1,i) =-rH3e*sin(PI - alpha4e)*sin(delta3e)
+          db0(6,2,i) = rH3e*sin(PI - alpha4e)*cos(delta3e)
+          !
+        enddo
+        !
+        do i=0, npoints
+          !
+          ! Saywitz-like (jensen's) reorientation
+          !
+          !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform=transform)
+          !
+          !do ix = 1,Natoms
+          !   db0(ix,:,i) = matmul(transpose(transform),db0(ix,:,i))
+          !enddo
+          !
+        enddo
+        !
+        Call MLorienting_a0_across_dadrho(Natoms,npoints,molec%AtomMasses,rho_borders,b0,db0,periodic=.true.)
+        !
+        deallocate(db0)
+        !
       end select 
       !
       do i=0, npoints
-        !
-        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
         !
         do n = 1,3
           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
@@ -877,7 +1197,7 @@ module mol_c3h6
         !
       end select 
       !
-    case('7ALF_TAU_1RHO')
+    case('7ALF_TAU_1RHO','7ALF_5THETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -925,21 +1245,22 @@ module mol_c3h6
         case (3) !(132)
           !
           dst(1:2) = src(1:2)
-
+          !
           dst(3) = src(5)
           dst(4) = src(3)
           dst(5) = src(4)
-
+          !
           dst(6:9) = src(6:9)
-
+          !
           dst(10) = src(12)
           dst(11) = src(10)
           dst(12) = src(11)
-
+          !
           dst(13:18) = src(13:18)
-
+          !
           dst(19) = -a*src(19) - b*src(20)
           dst(20) = +b*src(19) - a*src(20)
+          !
           dst(21) = mod(src(21) + 2.0_ark*p,2.0_ark*pi)
           !
         case (4) ! (32)
@@ -1037,7 +1358,7 @@ module mol_c3h6
       stop 'ML_rotsymmetry_C3H6 error: bad coordinate type'
       !
       !
-    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU','7ALF_TAU_1RHO')
+    case('ZMAT_7ALF_5TAU','C3H6_7ALF_5TAU','7ALF_TAU_1RHO','7ALF_5THETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -1073,7 +1394,7 @@ module mol_c3h6
     !
     real(ark) :: r1,r2,thet,r3
     !
-    r3 = sqrt(r1**2.0 + r2**2.d0 - 2.d0*r1*r2*cos(thet) )
+    r3 = sqrt(r1**2 + r2**2 - 2.0_ark*r1*r2*cos(thet) )
     !
   end function cosine1
   !
@@ -1081,7 +1402,7 @@ module mol_c3h6
      !
      real(ark) :: r1,r2,r3,thet
      !
-     thet = acos( (r1**2.d0 + r2**2.d0 - r3**2.0)/(2.d0*r1*r2) )
+     thet = acos( (r1**2 + r2**2 - r3**2)/(2.0_ark*r1*r2) )
      !
   end function cosine2
   !

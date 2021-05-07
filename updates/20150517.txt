@@ -1,7 +1,0 @@
-The vibrational angular momentum is implemented for the Harmmonic basis:
-The reduced problem solved for the reduced Hamiltonian is then post-processed
-by diaogonalizing the Lz^2 matrix for the degenerate states only. 
-
-This procedure can be invoked by the new keyword vib_momentum. 
-
-The vib-angular momenta can be controlled by NVibmomentum X, where X  is the largest value. 

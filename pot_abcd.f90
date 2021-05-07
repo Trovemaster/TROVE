@@ -15,7 +15,7 @@ module pot_abcd
          MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,&
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
-         MLdms_HCCH_7D_7ORDER_linear
+         MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB
 
   private
 
@@ -149,8 +149,8 @@ module pot_abcd
    y(1)=1.0_ark-exp(-beta(1)*(local(1)-re(1)))
    y(2)=1.0_ark-exp(-beta(2)*(local(2)-re(2)))
    y(3)=1.0_ark-exp(-beta(3)*(local(3)-re(3)))
-   y(4)= local(4)-(4)
-   y(5)= local(5)-(5)
+   y(4)= local(4)-re(4)
+   y(5)= local(5)-re(5)
    !
    y(6) = cos(rho) - cos(molec%taueq(1))
 
@@ -7352,4 +7352,233 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
   end function MLpoten_p2h2_morse_cos
 
 
+ !define cartesian components of the polarizabilityin space-fixed system
+ !
+ !
+ recursive subroutine MLalpha_hooh_MB(rank,ncoords,natoms,r,xyz,f)
+    !
+    implicit none
+    !
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: imu, iterm, ind(1:molec%ncoords)
+    real(ark)             :: mu_t,f_t,r21,r31,r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3)
+    real(ark)             :: re1(1:6),re2(1:6),alphae(1:6),taue(1:6),e0(3),costau,n1(3),n2(3),n3(3),v12(3),v31(3)
+    real(ark)             :: beta1(1:6),beta2(1:6),y(molec%ncoords,1:6), mu(6), xi(molec%ncoords), tau_,&
+                             sintau,r0,tau1,tau2,x1,x2,y1,y2,tau_sign,alpha(3,3),alpha_(3,3),xyz0(4,3)
+    !
+    !integer(ik),parameter :: lspace = 150
+    !integer(ik) :: ierror,rank0
+    !real(rk)    :: dip_rk(3, 1), tmat_rk(3, 3), tsing(3), wspace(lspace),tol = -1.0d-12
+    !character(len=cl)  :: txt
+
+    !
+    !write(out,"(i6)") molec%natoms
+    !
+    !write(out,"(/'O',3x,3f14.8)") xyz(1,:)
+    !write(out,"( 'O',3x,3f14.8)") xyz(2,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(3,:)
+    !write(out,"( 'H',3x,3f14.8)") xyz(4,:)
+    !
+    !xyz0(1,1) =       0.0000000000      
+    !xyz0(1,1) =       0.0000000000      
+    !xyz0(1,2) =       0.0000000000      
+    !xyz0(2,1) =       0.0000000000      
+    !xyz0(2,2) =       0.0000000000      
+    !xyz0(2,3) =       1.4557772800      
+    !xyz0(3,1) =       0.0000000000      
+    !xyz0(3,2) =       0.9445820272     
+    !xyz0(3,3) =       -0.1850105679     
+    !xyz0(4,1) =       -0.5046923676      
+    !xyz0(4,2) =       0.8741528230      
+    !xyz0(4,3) =       1.4910257717    
+    !   
+    !-12.417804814646    -14.143922118848     -18.564111151420      0.628758089150      0.426967879719      0.158786980009   0.99997000     3574.645636    -151.357983308233          1.455780        0.962530        1.010000      101.081950       92.000000       30.000000  
+    !
+    e1(:) = xyz(1,:)-xyz(2,:)
+    e2(:) = xyz(3,:)-xyz(1,:)
+    e3(:) = xyz(4,:)-xyz(2,:)
+    !
+    r1 = sqrt(sum(e1(:)**2))
+    r2 = sqrt(sum(e2(:)**2))
+    r3 = sqrt(sum(e3(:)**2))
+    !
+    alpha1 = acos(sum(-e1(:)*e2(:))/(r1*r2))
+    alpha2 = acos(sum( e1(:)*e3(:))/(r1*r3))
+    !
+    v12(:) = MLvector_product(e1(:),e2(:))
+    v31(:) = MLvector_product(e3(:),e1(:))
+    r21 = sqrt(sum(v12(:)**2))
+    r31 = sqrt(sum(v31(:)**2))
+    v12(:) = v12(:)/r21
+    v31(:) = v31(:)/r31
+    !
+    n3(:) = MLvector_product(v12(:),v31(:))
+    !
+    sintau =  sqrt( sum( n3(:)**2 ) )
+    costau = -sum( v12(:)*v31(:) )
+    !
+    tau = atan2(sintau,costau)
+    !
+    e0 = MLvector_product(v12(:),v31(:))
+    !
+    tau_sign = -sum( e1(:)*e0(:) )
+    !
+    if (tau_sign<-small_a) then
+       !
+       tau = 2.0_ark*pi-tau
+       !
+    endif
+    !
+    if ( tau<-small_) then
+      tau  = mod(tau+2.0_ark*pi,2.0_ark*pi)
+    endif
+    !
+    n3(:) = e1(:)/sqrt(sum(e1(:)**2))
+    !
+    e2(:) =  MLvector_product(v12(:),n3(:))
+    e2(:) =  e2(:)/sqrt(sum(e2(:)**2))
+    e3(:) = -MLvector_product(v31(:),n3(:))
+    e3(:) =  e3(:)/sqrt(sum(e3(:)**2))
+    !
+    n1(:) = (v12(:) + v31(:))
+    e1(:) = e2(:) + e3(:)
+    !
+    if (e2(2)>0.or.e3(2)>0) then
+      e1 = -e1
+    endif
+    !
+    if (v12(2)>0.or.v31(2)>0) then
+      n1 = -n1
+    endif
+    !
+    if (sum(n1(:)**2)>1e-1.and.sum(e1(:)**2)>1e-1) then
+      !
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      e1(:) = e1(:)/sqrt(sum(e1(:)**2))
+      !
+      if (any(abs(n1-e1)>1e-12)) then
+        !
+        write(out,"('MLalpha_hooh_MB: n1<>e1 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
+        stop 'MLalpha_hooh_MB: n1<>e1 '
+        !
+      endif
+      !
+    elseif (sum(n1(:)**2)>1e-1) then
+      !
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      !
+    elseif (sum(e1(:)**2)>1e-1) then
+      !
+      n1(:) = e1(:)
+      n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+      !
+    else
+      !
+      write(out,"('MLalpha_hooh_MB: both n1 and e1 are  0 : n1 = ',3g12.5,' e1 = ',3g12.5)") n1,e1
+      stop 'MLalpha_hooh_MB: n1 = e1 = 0 '
+      !
+    endif
+    !
+    !n1(:) =  MLvector_product(v12(:),e1(:))
+    !n1(:) = n1(:)/sqrt(sum(n1(:)**2))
+    !
+    n2(:) = MLvector_product(n3(:),n1(:))
+    n2(:) = n2(:)/sqrt(sum(n2(:)**2))
+    !
+    tmat(1,:) = n1(:)
+    tmat(2,:) = n2(:)
+    tmat(3,:) = n3(:)
+    !
+    r1 = r(1)
+    r2 = r(2)
+    r3 = r(3)
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau_ = r(6)
+    !
+    tau_ = tau
+    !
+    if (v12(2)>small_) tau_ = 2.0_ark*pi + tau
+    !
+    re1(1:6)    = extF%coef(1,1:6)
+    re2(1:6)    = extF%coef(2,1:6)
+    alphae(1:6) = extF%coef(3,1:6)/rad
+    taue(1:6)    = extF%coef(4,1:6)/rad
+    !
+    beta1(1:6)   = extF%coef(5,1:6)
+    beta2(1:6)   = extF%coef(6,1:6)
+    !
+    y(1,:) = (r1 - re1(:)) * exp(-beta1(:) * (r1 - re1(:)) ** 2)
+    y(2,:) = (r2 - re2(:)) * exp(-beta2(:) * (r2 - re2(:)) ** 2)
+    y(3,:) = (r3 - re2(:)) * exp(-beta2(:) * (r3 - re2(:)) ** 2)
+    y(4,:) = (alpha1 - alphae(:))
+    y(5,:) = (alpha2 - alphae(:))
+    !
+    y(6,:) = cos(tau_)-cos(taue(:))
+    !
+    mu = 0
+    !
+    do imu = 1, 6
+       !
+       do iterm =  7, extF%nterms(imu)
+          !
+          ind(1:6) = extF%term(1:6, iterm, imu)
+          xi(1:6) = y(1:6,imu) ** ind(1:6)
+          !
+          mu_t = product(xi(1:molec%ncoords))
+          !
+          if (ind(2)/=ind(3).or.ind(4)/=ind(5)) then
+            !
+            ind(2) = extF%term(3, iterm, imu)
+            ind(3) = extF%term(2, iterm, imu)
+            ind(4) = extF%term(5, iterm, imu)
+            ind(5) = extF%term(4, iterm, imu)
+            !
+            xi(2:5) = y(2:5,imu) ** ind(2:5)
+            !
+            f_t = 1.0_ark
+            if (imu==2)  f_t = -1.0_ark
+            if (imu==3)  f_t = -1.0_ark
+            !
+            mu_t = mu_t + f_t*product(xi(1:molec%ncoords))
+            !
+          endif
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu)*mu_t
+          !
+       end do
+       !
+    end do
+    !
+    mu(2) = mu(2)*sin(tau_)                  ! xy
+    mu(3) = mu(3)*cos(tau_*0.5_ark)          ! xz
+    mu(5) = mu(5)*sin(tau_*0.5_ark)          ! yz
+    !
+    !tmat = transpose(tmat)
+    !
+    alpha_(1,1) = mu(1)
+    alpha_(1,2) = mu(2)
+    alpha_(1,3) = mu(3)
+    alpha_(2,2) = mu(4)
+    alpha_(2,3) = mu(5)
+    alpha_(3,3) = mu(6)
+    alpha_(2,1) = mu(2)
+    alpha_(3,1) = mu(3)
+    alpha_(3,2) = mu(5)
+    !
+    alpha = matmul(transpose(tmat),matmul(alpha_,tmat))
+    !
+    f(1) = alpha(1,1)
+    f(2) = alpha(1,2)
+    f(3) = alpha(1,3)
+    f(4) = alpha(2,2)
+    f(5) = alpha(2,3)
+    f(6) = alpha(3,3)
+    !
+  end subroutine MLalpha_hooh_MB
+  !
+  !
 end module pot_abcd

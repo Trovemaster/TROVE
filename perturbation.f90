@@ -10,7 +10,7 @@ module perturbation
   use plasma
   use fields
   use timer
-  use symmetry , only : SymmetryInitialize,sym,max_irreps
+  use symmetry , only : SymmetryInitialize,sym
   use me_numer
   use diag
   ! use omp_lib
@@ -206,6 +206,7 @@ module perturbation
     integer(ik)          :: krot
     integer(ik)          :: taurot
     real(rk)             :: largest_coeff     ! the largest coeff. in the expansion of the eigenvector
+    integer(ik), pointer :: cnu(:)
  end type PTeigenT
 
 
@@ -365,8 +366,8 @@ module perturbation
       integer(ik)          :: size       ! size of the primitive active spice - subject to the energy cut off
       integer(ik),pointer  :: primt(:,:) ! primitive   quanta in primitve active space representation 
       integer(ik),pointer  :: in(:)      !>>>>
-      integer(ik),pointer  :: out(:)      !>>>>
-      integer(ik),pointer  :: inout(:)      !>>>>
+      integer(ik),pointer  :: out(:)     !>>>>
+      integer(ik),pointer  :: inout(:)   !>>>>
    end type PTprimindexT 
 
 
@@ -445,6 +446,8 @@ module perturbation
                                                 ! This can be used if we employ the contracted basis set for J/=0 
                                                 ! constructed with all vib. modes (J=0) combined as one class.   
    logical :: PTreduced_model                   ! whether reduced model has been employed for the contracted basis set construction
+   logical :: PTuse_gauss_quadrature = .true.           ! Use Gauss quadrature poitns for symmetry mapping 
+   
    !integer(ik)   :: PTMaxcontracts ! Maximal number of the contracted basis functions 
    integer(ik)   :: PTNclasses     ! Number of different classes
    integer(ik)   :: PTNspecies     ! Number of different species
@@ -604,7 +607,7 @@ module perturbation
     integer(ik)                   :: nu_max(0:PT%Nmodes),nu(0:PT%Nmodes),nu_min(0:PT%Nmodes),pol_t(0:PT%Nmodes),j,i,jrot
     real(rk)                      :: ener0,mat_ij
     integer(ik)                   :: nmodes,nmodes1,NPTorder,NPTorder1,Npolyads,Npolyads1,PTDeltaQuanta,dimen,tau0,k0
-    integer(ik)                   :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
+    integer(ik)                   :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),kmax
     integer(ik),allocatable       :: active_nu(:,:)
     real(rk),allocatable          :: a(:),b(:)
     character(len=cl) :: my_fmt !format for I/O specification
@@ -706,6 +709,10 @@ module perturbation
     endif 
     !
     nu_max(:) = PT%range(2,:)
+    !
+    ! For k-dependnent basis set:
+    !
+    kmax = job%bset(0)%range(2)
     ! 
     ! For PT we also need to defined the active space:
     ! all quantum numbers, that will be activated through different PT orders.
@@ -736,6 +743,8 @@ module perturbation
     !
     pol_t(1:Nmodes) = int(real(nu_max(1:Nmodes),rk)*PT%res_coeffs(1:Nmodes),ik)
     !
+    !pol_t(Nmodes) = pol_t(Nmodes)/(kmax+1)
+    !
     ! active space maximal polyad number 
     !
     PTPolyad_active = maxval(pol_t(1:Nmodes))
@@ -745,7 +754,7 @@ module perturbation
        !
        PT%Polyad_max = maxval(pol_t(1:Nmodes))
        !
-       else
+    else
        !
        PT%Polyad_max = PT%Npolyads
        !
@@ -853,13 +862,15 @@ module perturbation
     ! a) the basis set size for the variational problem, or
     ! b) the resonans blocks (zero order) for the Pert. Theory (PT) calculations. 
     !
-    do ipol = 0,PT%Polyad_max
+    loop_ipol : do ipol = 0,PT%Polyad_max
        !
        ! We find the ultimate combination of quanta nu_i that corresponds to PTpolyadRules 
        !
        PT%MaxIndex_nu(ipol) = PTnu_index(nu_max,ipol)
        !
-       if (PT%MaxIndex_nu(ipol)==0) PT%MaxIndex_nu(ipol) = 1
+       if (PT%MaxIndex_nu(ipol)==0) then 
+         PT%MaxIndex_nu(ipol) = 1
+       endif
        !
        ipol_t = PT%MaxIndex_nu(ipol)
        !
@@ -872,7 +883,7 @@ module perturbation
        !
        i0 = PTnu_index(nu_max,ipol,PT%Index_nu(ipol)%icoeffs(:,:))
        ! 
-    enddo 
+    enddo loop_ipol
     !
     icoeffs = 0
     !
@@ -1141,7 +1152,7 @@ module perturbation
     if (job%verbose>=4) then 
       write(out,"(/'Active_space table')")
       write(out,"('i   nu_i')")
-      write(my_fmt,'(a,i0,a)') "(i8,1x,",nmodes+1,"i4)"
+      write(my_fmt,'(a,i0,a)') "(i8,1x,",nmodes+1,"i6)"
       do ib = 1,PT%Maxcoeffs
             write(out,my_fmt) ib,(PT%active_space%icoeffs(imode,ib),imode=0,PT%Nmodes)
       enddo 
@@ -1331,15 +1342,16 @@ module perturbation
 ! Here we define the resonans (polyad) rules
 !
   function PTpolyadRules(nu) result(polynom)
-
-
+    !
     integer(ik),intent(in) :: nu(:)
     integer(ik) :: polynom
-
     !
     polynom  = int(sum( PT%res_coeffs(:)*real(nu(:),rk) ),ik)
     !
-
+    !if (job%bset(0)%range(2)>0) then
+    !    polynom = polynom/(job%bset(0)%range(2)+1)
+    !endif
+    !
   end function PTpolyadRules
 
 !
@@ -1651,6 +1663,7 @@ module perturbation
      !
      integer(ik) :: v_search(0:PT%Nclasses)
      real(rk)    :: ener0,spread
+     logical     :: switch 
 
      v_t = 1
      !
@@ -1673,6 +1686,8 @@ module perturbation
           !krot = PT%rot_primindex(v_search(0)-1)%k
           krot = PT%rot_index(v_search(0),1)%k
           !
+          !if (trim(job%bset(PT%Nmodes)%type)=='SINRHO'.and.krot>0) krot = min(krot,1)
+          !
           if (trove%lincoord/=0) then 
             !
             ! assume that the vib. angular momentum is not zero only for one class or that 
@@ -1694,13 +1709,31 @@ module perturbation
             !
           endif
           !
-          if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
-              ! LINEAR MOLECULE -> requires optimization !!!
-              .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0 ) ) ) ) then
+          switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
+          if (trove%triatom_sing_resolve) then
+             !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
+             if ( jrot>0 ) then 
+                !switch = switch.and.( lquant==krot )
+                !switch = switch.and.krot==min(lquant,trove%krot)
+                if (trove%kmax>trove%krot) then 
+                  switch = switch.and.lquant==min(krot,trove%krot)
+                else
+                  switch = switch.and.lquant==krot
+                endif
+             endif
+          elseif(trove%lincoord/=0) then
+             switch = switch.and.( lquant==krot.or.jrot==0 )
+          endif
+          !
+          !if ( ( ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
+          !    ! LINEAR MOLECULE -> requires optimization !!!
+          !    .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) )           ) then
              ! .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0.or.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.or..not.job%vib_contract ) ) ) ) then
              ! .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0.and.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE' ) ) ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
              ! .and.(trove%lincoord==0.or.( v_search(0)==contr(0)%nlevels.or.v_search(0)==contr(0)%nlevels-1 ) ) ) then
+          !
+          if (switch) then 
             !
             isum = isum +1
             if (present(index_v)) then 
@@ -1895,6 +1928,96 @@ module perturbation
    !
   end subroutine PTdegener_index
 
+
+  !
+  ! Prunning the contracted basis using contribution.chk with the largest eigencoefficients 
+  ! for a set of J=0 eigenfuncitons. contribution.chk must be precomputed using the analysis_density tool. 
+  !
+  subroutine PTpruning_contracted_basis(Ncoeff,enermax)
+
+   integer(ik),intent(inout) :: Ncoeff
+   real(ark),intent(in)       :: enermax
+   integer(ik), allocatable :: retained_basis_nums(:)
+   integer(ik), allocatable :: pruned_basis_set(:,:)
+   character(len=cl) :: unitfname,buff
+   integer(ik)       :: chkptIO
+   integer(ik)       :: num_contr,iprune_count,i,alloc
+   real(rk)          :: contrib, ener
+   real(rk)          :: x
+      !
+      allocate(retained_basis_nums(Ncoeff), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(retained_basis_nums),kind(retained_basis_nums))
+      !
+      unitfname = "File of the contribution"
+      call IOStart(trim(unitfname),chkptIO)
+      !
+      open(chkptIO,action='read',status='old',file=trove%chk_contrib_fname)
+      !
+      read(chkptIO,"(a)") buff(1:14)
+      !
+      if (trim(buff(1:14))/="Start-contract") then
+          write(out,"('contribution.chk: wrong header ',a)") buff
+          stop 'contribution.chk: wrong header'
+      endif
+      !
+      iprune_count = 0
+      !
+      contrib_loop: do i =1,Ncoeff
+        !
+        read(chkptIO,*) num_contr, contrib, ener
+        !
+        if (num_contr/=i) then
+           write(out,"('contribution.chk: bogus state number ',i0,'<>',i0)") num_contr,i
+           stop 'contribution.chk: bogus state number'
+        endif
+        !
+        x = 10.0_rk*(ener/enermax) 
+        if(x < 7.0_rk) then
+          !
+          if(exp(1.5_rk*(x-7.0_rk))/(1.0_rk+exp(1.5_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        else
+          !
+          if(exp(3.0_rk*(x-7.0_rk))/(1.0_rk+exp(3.0_rk*(x-7.0_rk)))*coeffprun%contribution_threshold < contrib) then
+            iprune_count = iprune_count + 1
+            retained_basis_nums(iprune_count) = num_contr
+          endif
+          !
+        endif
+        !
+      enddo contrib_loop
+      !
+      read(chkptIO,"(a)") buff(1:12)
+      !
+      if (trim(buff(1:12))/="End-contract") then
+          write(out,"('contribution.chk: wrong footer ',a)") buff
+          stop 'contribution.chk: wrong footer'
+      endif
+      !
+      allocate(pruned_basis_set(0:PT%Nclasses,iprune_count), stat=alloc)
+      call ArrayStart('pruned_basis',alloc,size(pruned_basis_set),kind(pruned_basis_set))
+      !
+      do i = 1, iprune_count
+        !
+        pruned_basis_set(:,i) = PT%contractive_space(:,retained_basis_nums(i))
+        if (job%verbose>=6) write(*,"(i0,1x,i0,2x,i0)") i,retained_basis_nums(i),pruned_basis_set(:,i)
+        !
+      enddo
+      !
+      deallocate(PT%contractive_space, stat = alloc)
+      allocate(PT%contractive_space(0:PT%Nclasses, iprune_count), stat=alloc)
+      PT%contractive_space = pruned_basis_set
+      !
+      deallocate(pruned_basis_set, stat = alloc)
+      deallocate(retained_basis_nums)
+      call ArrayStop('pruned_basis')
+      !
+      Ncoeff = iprune_count
+      !
+  end subroutine PTpruning_contracted_basis
 
 
   subroutine PTglobalind_count(max_deg_size,isum,iactive,Index_icnu,Index_ideg,Index_prim,Index_active)
@@ -2551,14 +2674,14 @@ module perturbation
 
     integer(ik)        :: Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift,kmode
     integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
-    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in
+    integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in,ierror
     character(len=cl)  :: unitfname,diag_
     real(ark)          :: f_value,f_prim,f_t
     real(ark)          :: df_t,fval,xval
     integer(ik)        :: nroots,jrot,icount,ideg,kdeg,ndeg,Ncount,k0,ioper
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
-    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max
+    integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
     logical           ::  reduced_model,diagonal
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
@@ -2567,7 +2690,7 @@ module perturbation
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
  
     type(PTcoeffs_arkT)    :: overlap(PT%Nspecies,sym%Noper)
-    real(rk)               :: zpe,largest_coeff
+    real(rk)               :: zpe,largest_coeff,error
     integer(ik)            :: ilargest_coeff
     character(len=cl)      :: my_fmt !format for I/O specification
 
@@ -2609,6 +2732,9 @@ module perturbation
          bs_t(imode)%res_coeffs = 10000.0
          bs_t(imode)%dvrpoints = 1
        enddo
+       !
+       PTuse_gauss_quadrature = .false.
+       if (iclasses==Nclasses) PTuse_gauss_quadrature = .false.
        !
        res_min = huge(1)
        !
@@ -2693,7 +2819,8 @@ module perturbation
        ! We skip the diagonalization  of the reduced Hamiltonian in this case 
        ! and use the primitive basis functions as the contracted basis set.
        !
-       if (bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2) then 
+       if ((bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2).or.bs_t(kmode)%type=='FOURIER_PURE') then 
+       !if ((bs_t(kmode)%type=='HARMONIC').and.bs_t(kmode)%model<=2) then 
          !
          ! for the N-dim Harmonic osilator we do not need to diagonalize the rediced Hamiltonian 
          ! to learn the symmetric properties of the contracted basis function. 
@@ -2860,7 +2987,13 @@ module perturbation
            !
            if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
                trim(bs_t(imode)%type)=='BOX'.or.&
+               trim(bs_t(imode)%type)=='MORSE'.or.&
                trim(bs_t(imode)%type)=='FOURIER'.or.&
+               trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
+               trim(bs_t(imode)%type)=='SINRHO'.or.&
+               trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+               trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
+               trim(bs_t(imode)%type)=='SINC'.or.&
                trim(bs_t(imode)%type)=='LEGENDRE') then 
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
@@ -3021,13 +3154,29 @@ module perturbation
        mpoints_max = max(int(real(maxval(count_degen(1:Ncount)),rk)*1.5_rk),job%msample_points)
        mpoints = mpoints_max
        !
+       if (PTuse_gauss_quadrature) then
+         !
+         write(out,"('Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!')")
+         stop 'Warning: PTuse_gauss_quadrature was not working for C2H6 and now disabled, debug before swithing it on!'
+         !
+         mpoints_dvr = 1
+         do i = 1,PT%mode_iclass(iclasses)
+           imode = PT%mode_class(iclasses,i)
+           mpoints_dvr = mpoints_dvr*(job%bset(imode)%range(2)+i)/real(i,rk)
+         enddo
+         !
+         mpoints = min(mpoints_dvr,mpoints_max) 
+         !
+       endif
+       !
        do i = 1,PT%mode_iclass(iclasses)
          !
          imode = PT%mode_class(iclasses,i)
          !
          if (mpoints>job%bset(imode)%npoints) then 
            !
-           write(out,"('PTcontracted_prediag..: For class ',i4,' number of points is too small.')") iclasses
+           write(out,"('PTcontracted_prediag..1: For class ',i4,' number of points is too small.')") iclasses
+           write(out,"('npoints = ',i4,' < dvr-ref points = ',i4)") job%bset(imode)%npoints,mpoints
            stop 'PTcontracted_prediag..: illegal number of points in class'
            !
          endif
@@ -3039,21 +3188,69 @@ module perturbation
          write (out,"( i6,' sample points will be selected for symmetry reconstruction.'/)") mpoints
        end if
        !
-       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),&
-                 transform_t(mpoints),&
+       allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
                  transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
                  !
-       call ArrayStart('PTcontracted:chi_t' ,alloc,size(chi_t),kind(chi_t))
-       call ArrayStart('PTcontracted:transform_t' ,alloc,size(transform_t),kind(transform_t))
-       call ArrayStart('PTcontracted:transform_maxval' ,alloc,size(transform_maxval),kind(transform_maxval))
-       call ArrayStart('PTcontracted:numpoints' ,alloc,size(numpoints),kind(numpoints))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+       call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
        !
        ! Select sample points at which we check the transformation of the eigenfunctions
        !
-       call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+       ierror = 0
+       call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
        !
-       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+       ! change the method to random sampling and redefine the sampling grid if 
+       ! quadratures did not work
+       !
+       if (ierror>0) then
+         !
+         Nelem  = maxval(count_degen(:))
+         !
+         mpoints = max(Nelem,job%msample_points)
+         !
+         if (mpoints>size(transform_t)) then 
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif 
+         !
+         ierror = 0
+         !
+         if (size(numpoints,dim=1)<mpoints) then 
+           !
+           PTuse_gauss_quadrature = .false.
+           !
+           deallocate(chi_t,transform_t,transform_maxval,numpoints)
+           !
+           call ArrayStop('PTcontracted:sampling')
+           !
+           allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                     transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                     !
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+           call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+           !
+         endif
+         !
+         call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
+         !
+       endif
+       !
        allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+       call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
        !
        ! This found number of levels and their degeneracy will be checked and corrected 
        ! using a more accurate procedure. We apply a reduction to the irr. representation 
@@ -3082,7 +3279,13 @@ module perturbation
          iroot  = count_index(icount,1)
          Nelem  = count_degen(icount)
          !
-         mpoints = max(min(int(real(count_degen(icount))*1.5_rk),Nelem),job%msample_points)
+         if (.not.PTuse_gauss_quadrature) then
+           !
+           mpoints = max(Nelem,job%msample_points)
+           !
+         else
+           mpoints = min(mpoints_dvr,mpoints_max) 
+         endif
          !
          ! In case the number of degenerate levels exceeds the maximal allowed degeneracy 
          ! the degenerate set has to be splitted. 
@@ -3105,7 +3308,7 @@ module perturbation
                !
                !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
                !$omp& shared(fv) schedule(dynamic) reduction(max:info)
-               do k = 1,dimen
+               loop_sampling: do k = 1,dimen
                  !
                  nu(:) = PT%active_space%icoeffs(:,k)
                  !
@@ -3122,10 +3325,29 @@ module perturbation
                     !
                     if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
                         trim(bs_t(imode)%type)=='BOX'.or.&
+                        trim(bs_t(imode)%type)=='MORSE'.or.&
                         trim(bs_t(imode)%type)=='FOURIER'.or.&
+                        trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
+                        trim(bs_t(imode)%type)=='SINRHO'.or.&
+                        trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+                        trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
+                        trim(bs_t(imode)%type)=='SINC'.or.&
                         trim(bs_t(imode)%type)=='LEGENDRE') then
                         !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
+                      !
+                      if (ipoint_t>npoints.or.ipoint_t<0) then 
+                         !
+                         info = max(info,1)
+                         !
+                         fval = 0
+                         ! 
+                         if (job%verbose>=5) write(out,"('PTcontr..: sampling geometry is out of range ',i0)") ipoint_t
+                         PTuse_gauss_quadrature = .false.
+                         !
+                         cycle loop_sampling
+                         !
+                      endif 
                       !
                       do v = -Nr_t,Nr_t
                         !
@@ -3146,6 +3368,8 @@ module perturbation
                          write(out,"('xval = ',g18.8,' func = ',30g18.8)") xval,& 
                                       bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
                          !
+                         PTuse_gauss_quadrature = .false.
+                         !
                       endif 
                       !
                     elseif (trim(bs_t(imode)%type)=='HARMONIC'.or.trim(bs_t(imode)%type)=='NORMAL') then 
@@ -3154,7 +3378,7 @@ module perturbation
                       !
                     else
                       !
-                      write(out,"('PTcontracted_prediag: this coordinates are not defined here ',a)") trim(bs_t(imode)%type)
+                      write(out,"('PTcontracted_prediag: this basis set is not defined ',a)") trim(bs_t(imode)%type)
                       stop 'PTcontracted_prediag: not implemented coord. type for the symmetry block'
                       !
                     endif 
@@ -3167,25 +3391,23 @@ module perturbation
                  !
                  fv(k) = PT%Htotal%coeffs(k,kroot)*f_prim
                  !
-               enddo 
+               enddo loop_sampling
                !$omp end parallel do
                !
                transform(ioper,ideg,jpoint) = sum(fv(1:dimen))
                !
                if (info/=0) then 
                   !
-                  call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+                  if (iattempts>=maxattempts) then
+                    write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
+                    stop 'PTcontracted_prediag: not possible to select optimal points'
+                  endif
+                  !
+                  call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
                   !
                   iattempts = iattempts + 1
                   !
-                  if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' select sample points again')") iattempts
-                  !
-                  if (iattempts>=maxattempts) then
-                    !
-                    write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
-                    stop 'PTcontracted_prediag: not possible to select optimal points'
-                    !
-                  endif
+                  if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
                   !
                   cycle icount_loop
                   !
@@ -3198,7 +3420,7 @@ module perturbation
          if (job%verbose>=6) call TimerStop('Contract: The points')
          !
          call degenerate_symmetrization(Nelem,mpoints,transform(1:sym%Noper,1:Nelem,1:mpoints),&
-                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info)
+                                        tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info,error)
          !
          ! Sometimes the last level in the list does not have all degenerate components.
          ! In this case we remove the last root and set nroots = nroots - 1
@@ -3214,17 +3436,45 @@ module perturbation
            !
          elseif (info/=0) then
            !
-           info = 0
+           if (PTuse_gauss_quadrature) then 
+             !
+             PTuse_gauss_quadrature = .false.
+             !
+             deallocate(chi_t,transform_t,transform_maxval,numpoints)
+             !
+             call ArrayStop('PTcontracted:sampling')
+             !
+             mpoints = max(Nelem,job%msample_points)
+             !
+             allocate (chi_t(PT%Nmodes,sym%Noper,1:mpoints),transform_t(mpoints),&
+                       transform_maxval(mpoints),numpoints(mpoints),stat=alloc)
+                       !
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(chi_t),kind(chi_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_t),kind(transform_t))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(transform_maxval),kind(transform_maxval))
+             call ArrayStart('PTcontracted:sampling' ,alloc,size(numpoints),kind(numpoints))
+             !
+             deallocate(transform)
+             call ArrayStop('PTcontracted:transform')
+             !
+             allocate (transform(sym%Noper,Ndeg,mpoints),stat=alloc)
+             call ArrayStart('PTcontracted:transform' ,alloc,size(transform),kind(transform))
+             !
+           endif
            !
-           call PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+           call PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_t,ierror)
            !
            iattempts = iattempts + 1
            !
-           if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' select sample points again')") iattempts
+           if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
            !
-           if (iattempts>=maxattempts) then
+           if (iattempts>=maxattempts ) then
              !
-             write(out,"('PTcontracted_prediag: optimal sample points not found after ',i8,' attempts')") iattempts
+             if (PTuse_gauss_quadrature) write(out,"('PTcontracted_prediag: error is too large to determine the symmetry')")
+             !
+             write(out,"('PTcontracted_prediag: sampling error = ',g15.7)") error
+             !
+             write(out,"('PTcontracted_prediag: optimal sampling could not be found after ',i8,' attempts, error= ',g16.7)") iattempts,error
              !
              kroot = count_index(icount,1) 
              write(my_fmt,'(a,i0,a)') "(a,i8,a,",sym%Nrepresen,"g12.4)"
@@ -3235,14 +3485,17 @@ module perturbation
              write(out,"('                      nelem = ',i8,' kroot = ',i8,' to ',i8,' icount = ',i8,' Ncount = ',i8)") &
                    nelem,kroot,count_index(icount,Nelem),icount,Ncount
 
-             write(my_fmt,'(a,i0,a)') "(a,",count_index(icount,Nelem)-kroot,"f17.7)"
-             write(out,my_fmt) ' Characters = ',characters(1:min(40,sym%Nclasses))
+             write(my_fmt,'(a,i0,a)') "(a,",sym%Nclasses,"f17.7)"
+             write(out,my_fmt) ' Characters = ',characters(1:sym%Nclasses)
+             write(my_fmt,'(a,i0,a)') "(a,",count_index(icount,Nelem)-kroot+1,"f17.7)"
              write(out,my_fmt) 'Energies = ',PT%Ewhole%coeffs(kroot:count_index(icount,Nelem),1)-PT%Ewhole%coeffs(1,1)
              stop 'impossible to define symmetry'
              !
              stop 'PTcontracted_prediag: not possible to select optimal points'
              !
            endif
+           !
+           info = 0
            !
            cycle icount_loop
            !
@@ -3324,16 +3577,24 @@ module perturbation
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
-             if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
-               contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
-               imode = PT%mode_class(iclasses,1)
-               contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
-             endif
-             !
              cf => contr(iclasses)%eigen(ilevel)
              !
              cf%isym = gamma    
              cf%gamma = trim(sym%label(gamma))
+             !
+             if (trove%triatom_sing_resolve) then
+               contr(iclasses)%eigen(ilevel)%normal(0) = contr(iclasses)%eigen(ilevel)%lquant
+               !imode = PT%mode_class(iclasses,1)
+               !contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+               !
+               if (trim(trove%symmetry)=='C2VN') then
+                 !
+                 cf%isym = gamma + 4*contr(iclasses)%eigen(ilevel)%lquant
+                 cf%gamma = trim(sym%label(cf%isym))
+                 !
+               endif
+               !
+             endif
              !
              ! determine the maximal degeneracy for all values of the given classes
              !
@@ -3653,10 +3914,7 @@ module perturbation
        call ArrayStop('PTcontracted:sample_vector')
        call ArrayStop('PTcontracted:tmat')
        call ArrayStop('PTcontracted:fv')
-       call ArrayStop('PTcontracted:chi_t')
-       call ArrayStop('PTcontracted:transform_t')
-       call ArrayStop('PTcontracted:transform_maxval')
-       call ArrayStop('PTcontracted:numpoints')
+       call ArrayStop('PTcontracted:sampling')
        call ArrayStop('PTcontracted:mat')
        !
        ispecies = 0
@@ -3667,7 +3925,12 @@ module perturbation
          !
          if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
              trim(bs_t(imode)%type)=='BOX'.or.&
+             trim(bs_t(imode)%type)=='MORSE'.or.&
              trim(bs_t(imode)%type)=='FOURIER'.or.&
+             trim(bs_t(imode)%type)=='SINRHO'.or.&
+             trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+             trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
+             trim(bs_t(imode)%type)=='SINC'.or.&
              trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            if (PT%Mspecies(imode)/=ispecies) then 
@@ -3680,7 +3943,12 @@ module perturbation
        !
        if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
            trim(bs_t(imode)%type)=='BOX'.or.&
+           trim(bs_t(imode)%type)=='MORSE'.or.&
            trim(bs_t(imode)%type)=='FOURIER'.or.&
+           trim(bs_t(imode)%type)=='SINRHO'.or.&
+           trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
+           trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
+           trim(bs_t(imode)%type)=='SINC'.or.&
            trim(bs_t(imode)%type)=='LEGENDRE') then
            !
            call ArrayStop('bs_funct(ispecies)%coeffs')
@@ -4038,7 +4306,7 @@ module perturbation
     subroutine calc_overlap(iclasses)
 
      integer(ik),intent(in)  :: iclasses
-     integer(ik)  :: ispecies,i,imode,ioper,vi,vj,jpoint,ipoint,ipshift,npoints_t,nmodes,imode1,imode2,jmode,bs_size
+     integer(ik)  :: ispecies,i,imode,ioper,vi,vj,jpoint,ipoint,ipshift,npoints_t,nmodes,imode1,imode2,jmode,bs_size,npoints
      real(rk)     :: xval_i,xval_j
      real(ark)    :: r_t(-Nr_t:Nr_t),fval,df_t,chi_i,chi_j(PT%Nmodes),chi_(PT%Nmodes),rho_range
      real(ark),allocatable  :: chi_t(:,:,:)
@@ -4285,14 +4553,20 @@ module perturbation
 
 
 
-  subroutine PTselect_sample_points(iclasses,mpoints,Nr_t,rhostep,chi_t)
+  subroutine PTselect_sample_points(iclasses,mpoints,mpoints_dvr,Nr_t,rhostep,chi_grid,ierror)
      !
-     integer(ik),intent(in)  :: iclasses,mpoints,Nr_t
+     integer(ik),intent(in)  :: iclasses,mpoints,Nr_t,mpoints_dvr
      real(ark),intent(in)    :: rhostep(PT%Nmodes)
-     real(ark),intent(out)   :: chi_t(:,:,:)
+     real(ark),intent(out)   :: chi_grid(:,:,:)
+     integer(ik),intent(out) :: ierror
      integer(ik)             :: jpoint,i,ipoint_t,imode,ioper,pshift
-     real(ark)               :: chi(PT%Nmodes),f_t,chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
+     real(ark)               :: chi(PT%Nmodes),chi_(PT%Nmodes),b1(PT%Nmodes),b2(PT%Nmodes)
      logical                 :: go
+     integer(ik)             :: alloc,ilevel,jlevel,idvrpoints,Nmodes_class
+     real(rk)                :: f_t
+     !
+     real(rk),allocatable    :: H1dvr(:,:),e1dvr(:)
+     integer(ik),allocatable :: igrid(:,:),igrid_t(:)
      !
      ! choose the geometry that we use to check the symmetry
      !
@@ -4300,7 +4574,119 @@ module perturbation
      !
      if (job%verbose>=5) call TimerStart('PTselect_sample_points')
      !
+     Nmodes_class = PT%mode_iclass(iclasses)
+     !
      call random_seed()
+     !
+     if (PTuse_gauss_quadrature) then
+         !
+         chi_grid = 0
+         !
+         imode = PT%mode_class(iclasses,1)
+         idvrpoints = job%bset(imode)%range(2)+1
+         !
+         allocate (H1dvr(idvrpoints,idvrpoints),e1dvr(idvrpoints),stat=alloc)
+         call ArrayStart('H1dvr',alloc,size(H1dvr),kind(H1dvr))
+         call ArrayStart('H1dvr',alloc,size(e1dvr),kind(e1dvr))
+         !      
+         do i = 1,PT%mode_iclass(iclasses)
+           !
+           imode = PT%mode_class(iclasses,i)
+           !
+           do ilevel = 1,idvrpoints
+             do jlevel = ilevel,idvrpoints
+                !
+                H1dvr(ilevel,jlevel) = me%vibmode(imode,-1)%coeff(1,ilevel-1,jlevel-1)
+                H1dvr(jlevel,ilevel) = H1dvr(ilevel,jlevel)
+                !
+             enddo
+           enddo
+           !
+           call lapack_syev(H1dvr,e1dvr)
+           !
+         enddo
+         !
+         allocate (igrid(Nmodes_class,mpoints_dvr),igrid_t(Nmodes_class),stat=alloc)
+         call ArrayStart('sample_points-grid',alloc,size(igrid),kind(igrid))
+         call ArrayStart('sample_points-grid',alloc,size(igrid_t),kind(igrid_t))
+         !
+         ipoint_t = 0
+         !
+         if (mpoints<=mpoints_dvr) then
+           !
+           jpoint = 0 
+           !
+           call find_ipoint(idvrpoints,Nmodes_class,mpoints_dvr,igrid,igrid_t,i0=idvrpoints,isum=jpoint,ilevel=1)
+           !
+           do jpoint = 1,mpoints
+             !
+             do i = 1,PT%mode_iclass(iclasses)
+               !
+               imode = PT%mode_class(iclasses,i)
+               !
+               !call random_number(f_t)
+               !f_t = idvrpoints*f_t
+               !ipoint_t = nint(f_t)
+               !
+               !ipoint_t = max(min(ipoint_t,idvrpoints),1)
+               !
+               ipoint_t = igrid(i,jpoint)
+               !
+               chi_grid(imode,1,jpoint) = e1dvr(ipoint_t)
+               !
+             enddo
+             !
+           enddo
+           !
+         elseif(mpoints==-mpoints_dvr) then
+           !
+           do i = 1,PT%mode_iclass(iclasses)
+             !
+             imode = PT%mode_class(iclasses,i)
+             !
+             do jpoint = 1,idvrpoints
+               !
+               ipoint_t = ipoint_t+1
+               !
+               chi_grid(imode,1,ipoint_t) = e1dvr(jpoint)
+               !
+             enddo
+             !
+           enddo
+           !
+         elseif (.false.) then
+           !
+           do jpoint = 1,mpoints
+             !
+             do i = 1,PT%mode_iclass(iclasses)
+               !
+               imode = PT%mode_class(iclasses,i)
+               !
+               call random_number(f_t)
+               f_t = idvrpoints*f_t
+               ipoint_t = nint(f_t)
+               !
+               ipoint_t = max(min(ipoint_t,idvrpoints),1)
+               !
+               chi_grid(imode,1,jpoint) = e1dvr(ipoint_t)
+               !
+             enddo
+             !
+           enddo
+           !
+         else
+           !
+           write(out,"('PTselect_sample_points error: illegal too large mpoints = ',i0)") mpoints
+           stop 'PTselect_sample_points error: illegal mpoints'
+           !
+         endif
+         !
+         deallocate(H1dvr,e1dvr)
+         call ArrayStop('H1dvr')
+         deallocate (igrid,igrid_t)
+         call ArrayStop('sample_points-grid')
+         !
+     endif
      !
      do imode = 1,PT%Nmodes
        !
@@ -4311,79 +4697,153 @@ module perturbation
      !
      if (verbose>=4) write(out,"('PTselect_sample_points...')")   
      !
-     !$omp parallel do private(jpoint,chi,pshift,go,i,imode,f_t,ipoint_t,ioper,chi_) shared(chi_t) schedule(dynamic)
-     do jpoint = 1,mpoints
-       !
-       chi_t(:,:,jpoint) = huge(1.0_ark)
-       chi = 0 
-       !
-       pshift = 0 
-       !
-       go = .true.
-       !
-       do while(go)  ! cycle_go
-         !
-         do i = 1,PT%mode_iclass(iclasses)
-           !
-           imode = PT%mode_class(iclasses,i)
-           !
-           call random_number(f_t)
-           !
-           ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
-           !
-           !ipoint_t = mod(jpoint*(bs(imode)%npoints/mpoints)+i*(bs(imode)%npoints/50+i)+pshift,bs(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
-           !
-           if (ipoint_t<Nr_t.or.ipoint_t>job%bset(imode)%npoints-Nr_t) ipoint_t = mod(ipoint_t+10,job%bset(imode)%npoints)
-           !
-           !ipoint_t = 2*jpoint + Nr_t
-           !
-           chi(imode) = job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t,ark)
-           !
-         enddo
-         !
-         go = .false.
-         !
-         !do iclass = 1,sym%Nclasses
-         !
-         ioper = 0
-         !
-         do while (.not.go.and.ioper <sym%Noper)
-           !
-           !do ioper = 1,sym%Noper
-           !
-           ioper = ioper+1
-           !
-           call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
-           chi_t(:,ioper,jpoint) = chi_(:)
-           !
-           i = 0 
-           do while(.not.go.and.i<PT%mode_iclass(iclasses))
-             !
-             i = i + 1
-             !
-             imode = PT%mode_class(iclasses,i)
-             !
-             if (chi_(imode)<b1(imode).or.&
-                 chi_(imode)>b2(imode) ) then 
-                 go = .true.
-                 !
-                 pshift = pshift + imode
-                 !cycle cycle_go
-             endif
-             !
-           enddo
-           !
-         enddo
-         !
-       enddo
-       !enddo cycle_go
-       !
-     enddo 
-     !$omp end parallel do
+     if (PTuse_gauss_quadrature) then
+        !
+        do jpoint = 1,mpoints
+          !
+          chi(:) = chi_grid(:,1,jpoint)
+          !
+          do ioper = 1,sym%Noper
+            !
+            call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
+            chi_grid(:,ioper,jpoint) = chi_(:)
+            !
+            do i=1,PT%mode_iclass(iclasses)
+              !
+              imode = PT%mode_class(iclasses,i)
+              !
+              if (chi_(imode)<b1(imode).or.&
+                  chi_(imode)>b2(imode) ) then 
+                  !
+                  if (job%verbose>=5) &
+                     write(out,"('PTselect_sample_points(quad): small interval, class=',i8,' coord=',f15.6)") iclasses,chi_(imode)
+                  !
+                  PTuse_gauss_quadrature = .false.
+                  ierror =1 
+                  return
+                  !stop 'PTselect_sample_points error (quadr): too small interval'
+                  !
+              endif
+              !
+            enddo
+            !
+          enddo
+          !
+        enddo
+        !
+     else 
+        !
+        !$omp parallel do private(jpoint,chi,pshift,go,i,imode,f_t,ipoint_t,ioper,chi_) shared(chi_grid) schedule(dynamic)
+        do jpoint = 1,mpoints
+          !
+          chi_grid(:,:,jpoint) = huge(1.0_ark)
+          chi = 0 
+          !
+          pshift = 0 
+          !
+          go = .true.
+          !
+          do while(go)  ! cycle_go
+            !
+            do i = 1,PT%mode_iclass(iclasses)
+              !
+              imode = PT%mode_class(iclasses,i)
+              !
+              call random_number(f_t)
+              !
+              ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
+              !
+              !ipoint_t = mod(jpoint*(bs(imode)%npoints/mpoints)+i*(bs(imode)%npoints/50+i)+pshift,bs(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
+              !
+              if (ipoint_t<Nr_t.or.ipoint_t>job%bset(imode)%npoints-Nr_t) ipoint_t = mod(ipoint_t+10,job%bset(imode)%npoints)
+              !
+              !ipoint_t = 2*jpoint + Nr_t
+              !
+              chi(imode) = job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t,ark)
+              !
+            enddo
+            !
+            go = .false.
+            !
+            !do iclass = 1,sym%Nclasses
+            !
+            ioper = 0
+            !
+            do while (.not.go.and.ioper <sym%Noper)
+              !
+              !do ioper = 1,sym%Noper
+              !
+              ioper = ioper+1
+              !
+              call MLsymmetry_transform_func(ioper,PT%Nmodes,chi,chi_)
+              chi_grid(:,ioper,jpoint) = chi_(:)
+              !
+              i = 0 
+              do while(.not.go.and.i<PT%mode_iclass(iclasses))
+                !
+                i = i + 1
+                !
+                imode = PT%mode_class(iclasses,i)
+                !
+                if (chi_(imode)<b1(imode).or.&
+                    chi_(imode)>b2(imode) ) then 
+                    go = .true.
+                    !
+                    !pshift = pshift + imode
+                    !cycle cycle_go
+                endif
+                !
+              enddo
+              !
+            enddo
+            !
+          enddo
+          !enddo cycle_go
+          !
+        enddo 
+        !$omp end parallel do
+        !
+     endif
      !
      if (job%verbose>=5) call TimerStop('PTselect_sample_points')
      !
      if (verbose>=4) write(out,"(' ... PTselect_sample_points - done!')")   
+     !
+     contains
+     !
+     !
+     recursive subroutine find_ipoint(N,Nlevels,Npoints,igrid,Isearch,i0,isum,ilevel) 
+     !
+     integer(ik),intent(in)    :: N,i0,Nlevels,ilevel,Npoints
+     integer(ik),intent(inout) :: Isearch(Nlevels)
+   
+     integer(ik),intent(out) :: igrid(Nlevels,Npoints),isum
+     integer(ik) :: ipoint,j,i
+     !
+     i = 1
+     !
+     do while(i<=i0)
+       !
+       Isearch(ilevel) = i
+       !
+       if (ilevel == Nlevels) then
+         !
+         isum = isum  +  1
+         igrid(:,isum) = Isearch(:)
+         !
+         !if (i==N) flag_go = .false.
+         !
+       else
+         !
+         call find_ipoint(N,Nlevels,Npoints,igrid,Isearch,i,isum,ilevel+1) 
+         !
+       endif
+       !
+       i = i + 1 
+       !
+     enddo
+     !
+     end subroutine find_ipoint
 
   end subroutine PTselect_sample_points
   !
@@ -4402,10 +4862,10 @@ module perturbation
     integer(ik),allocatable   :: count_index(:,:)
     real(rk),allocatable      :: eigenvects(:,:)
     type(PTlevelT),pointer    :: cf
-
-    real(ark)           :: MaxEigenvects
-
-    integer(ik)      :: isym,Ntotal(sym%Nrepresen),ilarge_coeff
+    !
+    real(ark)          :: MaxEigenvects
+    !
+    integer(ik)        :: isym,Ntotal(sym%Nrepresen),ilarge_coeff
     !type(MOrepres_arkT),pointer   :: irr(:)
 
     !integer(ik)        :: ibstype,Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift
@@ -5037,10 +5497,337 @@ module perturbation
    end subroutine reconstruct_transf_matrix
 
 
+  subroutine reconstruct_transf_matrix_II(Ndeg,mpoints,phi_src,tmat,tol,info,error)
+
+    integer(ik),intent(in)  ::Ndeg,mpoints
+    integer(ik),intent(out) ::info
+
+    real(ark),intent(in)    :: phi_src(sym%Noper,Ndeg,mpoints)
+    real(ark),intent(inout) :: tmat(sym%Noper,Ndeg,Ndeg)
+    real(rk),intent(in)     :: tol
+    real(rk),intent(out)    :: error
+    real(ark)               :: t_vect(Ndeg),rms,ms0
+    
+    integer(ik), allocatable :: sym_elems_evaluated(:)
+    integer(ik) :: total_elem_evaluated
+    integer(ik) :: cur_elem_evaluated
+    integer(ik) :: i
+    logical, dimension(sym%Noper) :: operations_set    
+
+    integer(ik) :: alloc_p,ideg,ig,jg,ioper,ieq,ipoint,keq,jdeg,ndeg2,info_t,rank,iw,m,n,nthreads,tid,nsize,alloc
+    double precision,allocatable  :: a(:,:),b(:,:),s(:),work(:)
+    real(ark),allocatable  :: am(:,:),bm(:),xm(:)
+    integer(ik) :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
+    character(len=cl) :: my_fmt !format for I/O specification
+    !
+    do i=1, sym%Noper
+      operations_set(i) = .false.
+    enddo
+    !
+    if (job%verbose>=6) call TimerStart('reconstruct_transf_matrix')
+    !
+    if (verbose>=4) write(out,"('reconstruct_transf_matrix...')") 
+    !
+    tmat = 0
+    info = 0 
+    error = 0
+    !
+    m = Ndeg*mpoints ; n = Ndeg**2 ;  iw = 20*max(m,n)
+    !
+    if (Ndeg>mpoints) then 
+      write(out,"('reconstruct_transf_matrix: sample_points < ndeg: ',2i0)") mpoints,ndeg
+      stop 'sample_points is too small?'
+    endif
+    !
+    nthreads = 1
+    !
+    ! collect number of threads
+    !
+    !     Start parallel region
+    !omp parallel private(nthreads,tid)
+    !!
+    !!  Obtain thread number
+    !tid = OMP_GET_THREAD_NUM()
+    !!
+    !!     Only master thread does this
+    !if (tid==0) then
+    !    !
+    !    nthreads = OMP_GET_NUM_THREADS()
+    !    if (job%verbose>=6) PRINT *, 'Number of threads = ', NTHREADS
+    !    !
+    !endif 
+    !omp end parallel
+    !
+    !alloc = 0
+    !
+    !nsize = Ndeg*mpoints*Ndeg**2*nthreads
+    !call ArrayStart('reconstruct_transf:a',alloc,nsize,rk)
+    !nsize = Ndeg*mpoints*nthreads
+    !call ArrayStart('reconstruct_transf:b',alloc,nsize,rk)
+    !nsize = iw*nthreads
+    !call ArrayStart('reconstruct_transf:w',alloc,nsize,rk)
+    !
+    !omp parallel private(a,b,s,work,alloc_p) shared(tmat)
+    !
+    allocate(a(Ndeg*mpoints,Ndeg**2),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:a',alloc_p,1_ik,rk,size(a,kind=hik))
+    allocate(b(Ndeg*mpoints,1),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:b',alloc_p,1_ik,rk,size(b,kind=hik))
+    allocate(s(min(m,n)),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:s',alloc_p,1_ik,rk,size(s,kind=hik))
+    allocate(work(iw),stat=alloc_p)
+    call ArrayStart('reconstruct_transf:w',alloc_p,1_ik,rk,size(work,kind=hik))
+
+    allocate(am(m,n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(am,kind=hik))
+    allocate(bm(m),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(bm,kind=hik))
+    allocate(xm(n),stat=alloc_p)
+    call ArrayStart('reconstruct_transf',alloc_p,1_ik,rk,size(xm,kind=hik))
+    !
+    !if (alloc_p/=0) then
+    !    write (out,"(' reconstruct_transf_matrix: ',i9,' trying to allocate array for a and b')") alloc_p
+    !    stop 'reconstruct_transf_matrix, a and b  - out of memory'
+    !end if
+    !
+    !omp do private(ioper,ieq,ipoint,ideg,keq,ig,jg,ndeg2,info_t,t_vect,rank) reduction(max:info) schedule(static) 
+    total_elem_evaluated = 0
+    cur_elem_evaluated = 1
+    if(sym%product_table_set .eqv. .true.) then
+      do i = 1, sym%Noper
+        if(sym%product_table(i,1) == 0) then 
+          total_elem_evaluated = total_elem_evaluated + 1 
+        endif
+      enddo
+      allocate(sym_elems_evaluated(total_elem_evaluated))
+      do i = 1,sym%Noper
+        if(sym%product_table(i,1) == 0) then 
+          sym_elems_evaluated(cur_elem_evaluated) = i
+          cur_elem_evaluated = cur_elem_evaluated + 1 
+        endif
+      enddo  
+    else
+      allocate(sym_elems_evaluated(sym%Noper)) 
+      total_elem_evaluated = sym%Noper
+      do i = 1, sym%Noper
+        sym_elems_evaluated(i) = i
+      enddo
+    endif
+    !
+    do i=1,total_elem_evaluated
+      !
+      ioper = sym_elems_evaluated(i)
+      !
+      info_t = 0
+      !
+      am = 0
+      bm = 0
+      !
+      !$omp parallel do private(ipoint,ideg,ieq,ig,jg,keq) shared(bm,am)
+      do ipoint = 1,mpoints
+        do ideg = 1,Ndeg
+          !
+          ieq = ideg + (ipoint-1)*Ndeg
+          !
+          bm(ieq) = phi_src(ioper,ideg,ipoint)
+          !
+          do ig = 1,Ndeg
+            do jg = 1,Ndeg
+              !
+              keq = jg + Ndeg*(ig-1)
+              !
+              if (ig==ideg) then 
+                am(ieq,keq) = phi_src(1,jg,ipoint)
+              endif    
+            enddo
+          enddo
+        enddo 
+        !
+      enddo
+      !$omp end parallel do
+      !
+      if (verbose>=6) then
+        !
+        write(out,"('ioper,b(ielem):')")
+        !
+        ndeg2 = Ndeg**2
+        !
+        write(my_fmt,'(a,i0,a)') "(i8,8x,",ndeg2,"f18.10)"
+        !
+        write(out,my_fmt) ioper,bm(1:Ndeg**2)
+        !
+        write(out,"('ioper,ipoint,ideg,a(ieq,:):')")
+        !
+        ieq = 0 
+        !
+        do ipoint = 1,mpoints
+          do ideg = 1,Ndeg
+            !
+            ieq = ieq + 1
+            !
+            write(out,"(3i8,40f18.10)") ioper,ipoint,ideg,am(ieq,1:min(40,Ndeg**2))
+            !
+          enddo
+        enddo
+        !
+      endif
+      !
+      if (verbose>=5) write(out,"('reconst_tr_m: dgelss')")
+      !
+      b(1:m,1) = bm(1:m)
+      a = am
+      !
+      call dgelss(m,n,1,a(1:m,1:n),m,b(1:m,1:1),m,s,-1.0d-12, rank, work, iw, info_t)
+      !
+      if (verbose>=5) write(out,"('reconst_tr_m: dgelss...done!')")
+      !
+      if (info_t<0) then 
+        write(out,"('reconstruct_transf_matrix: (',i9,') probably not sufficient sample_points: ',i8)") info_t,mpoints
+        stop 'sample_points is too small?'
+      endif 
+      !
+      if (rank/=n) then 
+        !
+        info = max(info,2)
+        !
+      endif
+      !
+      xm(1:n) = b(1:n,1)
+      !
+      !$omp parallel do private(ideg,jdeg,ieq) shared(tmat)
+      do ideg = 1,Ndeg
+        do jdeg = 1,Ndeg
+          !
+          ieq = jdeg + Ndeg*(ideg-1)
+          !
+          tmat(ioper,ideg,jdeg) = xm(ieq)
+          !
+        enddo 
+      enddo
+      !$omp end parallel do
+      !
+      ! check
+      rms = 0
+      do ipoint = 1,mpoints
+         !
+         t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
+         !
+         ms0 = sum((t_vect(:)-phi_src(ioper,:,ipoint))**2)
+         !
+         do ideg=1,ndeg
+           !
+           if (abs(t_vect(ideg)-phi_src(ioper,ideg,ipoint))>tol) then 
+             continue  
+           endif
+         enddo 
+         !
+         rms = rms + ms0
+         if ( sqrt(rms/mpoints)>tol ) then 
+           !
+           continue
+           !
+         endif
+         !
+      enddo
+      rms = sqrt(rms/mpoints)
+      !
+      ! for higher accuracy try to refine the solution using ark
+      if (rms>tol) then 
+        !
+        call ML_rjacobi_fit_ark(m,n,am,bm,xm,tol)
+        !
+      endif
+      !
+    enddo
+    !
+    if(sym%product_table_set) then 
+       do ioper=1, sym%Noper
+         call degenerate_matrix(Ndeg, ioper, tmat, operations_set)
+       enddo
+    endif 
+    !
+    rms = 0
+    !
+    do ioper=1, sym%Noper
+      !omp parallel do private(ipoint,t_vect,ideg) reduction(max:info) schedule(static)
+      do ipoint = 1,mpoints
+         !
+         t_vect(:) = matmul(tmat(ioper,:,:),phi_src(1,:,ipoint))
+         !
+         ms0 = sum((t_vect(:)-phi_src(ioper,:,ipoint))**2)
+         !
+         rms = rms + ms0
+         !
+      enddo
+      !omp end parallel do
+      !
+    enddo 
+    !omp enddo
+    !
+    deallocate(a,b,work,s)    
+    !omp end parallel
+    !
+    rms = sqrt(rms/(sym%Noper*mpoints))
+    error = rms
+    !
+    if (rms>tol) then 
+      if (job%verbose>=6) then 
+        write(out,"('reconstruct_transf_mat: Cannot define presentation, rms =  ',g13.6)") rms
+      endif 
+      info = max(info,2)
+      !return 
+    endif 
+    !
+    if (job%verbose>=6) call MemoryReport
+    !
+    call ArrayStop('reconstruct_transf:a')
+    call ArrayStop('reconstruct_transf:b')
+    call ArrayStop('reconstruct_transf:s')
+    call ArrayStop('reconstruct_transf:w')
+    !
+    deallocate(am,bm,xm)    
+    call ArrayStop('reconstruct_transf')
+    !
+    if (info==2) then 
+      !
+      if (job%verbose>=6) then 
+        write(out,"('reconst_tr_m: the effect. rank is too small, the points have to be reselected: ')") 
+      endif
+      !
+    endif 
+    !
+    if (verbose>=4) write(out,"('...reconstruct_transf_matrix ')") 
+    if (job%verbose>=6) call TimerStop('reconstruct_transf_matrix')
+    !
+    contains 
+    !
+    recursive subroutine degenerate_matrix(Ndeg, ioper, tmat, operations_set) 
+      !
+      implicit none 
+      integer(ik), intent(in) :: ioper, Ndeg
+      real(ark), intent(inout), dimension(sym%Noper, Ndeg, Ndeg)  :: tmat
+      logical, intent(inout), dimension(sym%Noper) :: operations_set
+      integer(ik) :: i
+      !
+      if(all(sym%product_table(ioper,:)/= 0)) then
+        if(.not. operations_set(sym%product_table(ioper,1)) ) then
+         call degenerate_matrix(Ndeg, sym%product_table(ioper, 1), tmat, operations_set)
+        endif
+        if(.not. operations_set(sym%product_table(ioper,2)) ) then
+         call degenerate_matrix(Ndeg, sym%product_table(ioper, 2), tmat, operations_set)
+        endif
+        tmat(ioper, :,:) = matmul(tmat(sym%product_table(ioper,2), :,:), tmat(sym%product_table(ioper, 1), :, :)) 
+      endif 
+      !
+      operations_set(ioper) = .true.
+      !
+    end subroutine degenerate_matrix
+    !
+   end subroutine reconstruct_transf_matrix_II
 
 
   !
-  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info)
+  subroutine degenerate_symmetrization(Nelem,mpoints,phi_src,transform,tol,Nirr,Nirr_rk,chi,info,error)
 
     integer(ik),intent(in)  ::Nelem,mpoints
     integer(ik),intent(out) ::info
@@ -5050,6 +5837,7 @@ module perturbation
     integer(ik),intent(out)  :: Nirr(sym%Nrepresen)
     real(ark),intent(out)    :: Nirr_rk(sym%Nrepresen)
     real(rk),intent(in)      :: tol
+    real(rk),intent(out)     :: error
 
     real(ark)                :: t_vect(Nelem,Nelem),tmat_t(sym%Noper,Nelem,Nelem)
     real(ark)                :: tmat(sym%Noper,Nelem,Nelem),fnormal,f_t,g_t
@@ -5097,12 +5885,7 @@ module perturbation
        !
     endif 
     !
-    call reconstruct_transf_matrix(Nelem,mpoints,phi_src,tmat_t,tol,info)
-    !
-    if (info/=0) then 
-      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
-      return
-    endif 
+    call reconstruct_transf_matrix_II(Nelem,mpoints,phi_src,tmat_t,tol,info,error)
     !
     if (job%verbose>=7) then  
       !
@@ -5141,6 +5924,17 @@ module perturbation
       ioper = ioper+sym%Nelements(iclass)
       !
     enddo 
+    !
+    if (info/=0) then 
+      !
+      do isym =1,sym%Nrepresen
+         Nirr_rk(isym) = sum(real(sym%Nelements(:)*sym%characters(isym,:),ark)*chi(:))/real(sym%Noper,ark)
+         Nirr(isym) = nint(Nirr_rk(isym))
+      enddo
+      !
+      if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
+      return
+    endif 
     !
     ! estimate the number of the irreducible representasions 
     !
@@ -5211,7 +6005,7 @@ module perturbation
          write(out,my_fmt) '                    Nirr : ',Nirr(1:isym)
          info = 1
          !
-         if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
+         !if (job%verbose>=5) call TimerStop('Degenerate symmetrization')
          !
          !return
          !
@@ -5732,6 +6526,14 @@ module perturbation
      enddo 
    endif 
    !
+   if(job%eigen_contract) then
+      !
+      ener0 = PTcontrenergy_zero(PT%contractive_space(:,icoeff))
+      !
+      call PTpruning_contracted_basis(Maxsymcoeffs,ener0)
+      !
+   endif
+   !
    ! esimate the size if the primitive basis set (total)
    !
    dimen = 1 
@@ -6001,7 +6803,7 @@ module perturbation
      endif 
      !
      if (job%verbose>=5) then 
-        write(my_fmt,'(a,i0,a,i0,a)') "(i7,a,2(",Nclasses+1,"i4,a),,2x,",Nrepresen,"(f12.4))"
+        write(my_fmt,'(a,i0,a,i0,a,i0,a)') "(i7,a,",Nclasses+1,"i4,a8,",Nclasses+1,"i4,a1,2x,",Nrepresen,"(f12.4))"
         write(out,my_fmt) icoeff,' : ',cnu(:),' isym= (',&
                          (contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses),')',Nirr_rk(1:Nrepresen)
      endif
@@ -6054,7 +6856,8 @@ module perturbation
    PT%Max_sym_levels(:) = Ntotal(:)
    !
    if (job%verbose>=3) then 
-      write(out,"(/'Total number of irr. representations: ',40i10/)") Ntotal
+      write(my_fmt,'(a,i0,a)') "(/'Total number of irr. representations: ',",sym%Nrepresen,"i6/)"
+      write(out,my_fmt) Ntotal(:)
    endif 
    if (job%verbose>=5)  write(out,"('icoef  isym  ideg  irr. repres. ')")
    !
@@ -6205,7 +7008,8 @@ module perturbation
    !
    !
    write(out,"(/'Size of the primitive basis set : ',i12)") dimen
-   write(out,"( 'Total number of irr. representations: ',40i10)") PT%Max_sym_levels
+   write(my_fmt,'(a,i0,a)') "('Total number of irr. representations: ',",sym%Nrepresen,"i6)"
+   write(out,my_fmt) PT%Max_sym_levels
    !
    do ioper =1,sym%Noper
      deallocate (r_represent(ioper)%coeffs)
@@ -6529,7 +7333,7 @@ module perturbation
     integer(ik) :: ncontr,maxcontr,maxcontr0
     character(len=cl)   :: task
     character(len=4)   :: jchar
-    character(len=cl)  :: unitfname,filename,statusf,symchar
+    character(len=cl)  :: unitfname,filename,statusf='old',symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
     !AT
@@ -6605,19 +7409,21 @@ module perturbation
         !
       case ('APPEND')
         !
-        statusf = 'old'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='old',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='old',file=filename,recl=irec_len)
         !
       case default 
         !
-        statusf = 'replace'
+        filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
+        open(unitO,access='direct',action = 'write',status='replace',file=filename,recl=rec_len) 
+        !
+        filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
+        open(unitC,access='direct',action = 'write',status='replace',file=filename,recl=irec_len)
         !
       end select 
-      !
-      filename = trim(job%compress_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
-      open(unitO,access='direct',action = 'write',status=statusf,file=filename,recl=rec_len) 
-      !
-      filename = trim(job%compress_file)//'_coef'//trim(adjustl(jchar))//'.tmp'
-      open(unitC,access='direct',action = 'write',status=statusf,file=filename,recl=irec_len)
       !
       if (job%verbose>=2) write(out,"('The vectors will be compressed before saving using threshold = ',g15.7)") job%coeff_thresh
       !
@@ -6776,7 +7582,7 @@ module perturbation
         !
         select case (trim( trove%symmetry ))
         case('TD','TD(M)','C2V(M)','C2V','C3V(M)',&
-             'C3V','D3H(M)','D3H','C2H(M)','C2H','G4(M)','G4','G4(EM)','D2H(M)','D2H')
+             'C3V','D3H(M)','D3H','C2H(M)','C2H','G4(M)','G4','G4(EM)','D2H(M)','D2H','G36(EM)')
         case default
             write(out,"('Error PThamiltonian_contract: rotsym_do is not implemented for ',a)") trim( trove%symmetry )
             stop 'Error PThamiltonian_contract: illegal symmetry for rotsym_do'
@@ -6824,7 +7630,7 @@ module perturbation
       !
       matsize = int(dimen_s,hik)*int(dimen_maxrow,hik)
       !
-      if (job%verbose>=4) write(out,"('Allocate array ',i7,'x',i7,' = ',i8)") dimen_s,dimen_maxrow,matsize
+      if (job%verbose>=4) write(out,"('Allocate array ',i7,'x',i7,' = ',i0)") dimen_s,dimen_maxrow,matsize
       allocate (smat(isym)%coeffs(dimen_s,dimen_maxrow),stat=alloc)
       call ArrayStart('PThamiltonian_contract:smat'//sym%label(isym),alloc,1,kind(smat(isym)%coeffs),matsize)
       !
@@ -8471,7 +9277,7 @@ module perturbation
       !
       read(chkptIO) ncontr
       !
-      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.and.job%vib_contract ) ) then
+      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(.not.trove%triatom_sing_resolve ) ) then
         write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") PT%Maxcontracts,ncontr
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
@@ -9169,7 +9975,7 @@ module perturbation
                              PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
                           write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
                              PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                          stop 'something wrong with sym-counting'
+                          stop 'symm_mat_element_vector_k: something wrong with sym-counting'
                       endif 
                     endif
                     !
@@ -9195,12 +10001,12 @@ module perturbation
                         !write(out,"(/'Non-diagonal element between different symmetries:')")
                            write(0,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,a)") & 
                                       sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem,&
-                                      ' Non-diagonal element between different symmetries is too large!'
+                                      'Non-diagonal element between different symmetries is too large! (k)'
                         !
                         !
                         ! special case for linear molecules and E-symmetries. Not an ideal solution!
                         if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                           stop 'non-zero element between two symmetries - symm_mat_element_vector_k'
+                           stop 'symm_mat_element_vector_k: non-zero element between two symmetries'
                         endif 
                       endif
                    endif
@@ -9618,17 +10424,18 @@ module perturbation
    integer(ik),intent(inout) :: bterm(dimen_s,2)
 
    integer(ik)  :: nu(0:PT%Nmodes),k,tau,IOunit_quanta,IOunit_vector,alloc,cnu_0,normal(0:PT%Nmodes)
+   integer(ik)  :: nu2(0:PT%Nmodes),k2,tau2,normal2(0:PT%Nmodes)
    integer(ik)  :: nroots,nroots_,irange(2),iroot,jroot,icase,iclasses,dimen_p,ideg,kdeg,nroots_max,dimen_s_
    integer(ik)  :: level_degen,icoeff,irecord,ilevel,dimen,irow,iterm,ielem,jelem,n1,n2,icol
    integer(ik)  :: Nterms,ib,ilarge_coef_t,Nmodes,Nclasses,Nclasses1,isym(0:PT%Nclasses),cdimen,cdimenmax,unitO,unitC,vector_size
-   integer(ik)  :: cnu(0:PT%Nclasses)
+   integer(ik)  :: cnu(0:PT%Nclasses),cnu2(0:PT%Nclasses)
    real(rk)     :: beta, upper_ener_max
-   real(rk)     :: vrange(2),MaxEigenvects,termvalue,largest_coeff
-   real(rk),allocatable :: energy(:),mat_t(:,:),vec_t(:),dvrvector(:),dvrvector_(:),vec_compress(:),maxcontrib(:)
+   real(rk)     :: vrange(2),MaxEigenvects,MaxEigenvects2,termvalue,largest_coeff
+   real(rk),allocatable :: energy(:),mat_t(:,:),vec_t(:),dvrvector(:),dvrvector_(:),vec_compress(:),maxcontrib(:),maxcontrib2(:)
    real,allocatable     :: mat4(:,:),energy4(:)
    real                 :: vrange4(2),coef4
    integer(ik),allocatable :: eignu(:,:),icoeff_compress(:),eignormal(:,:)
-   integer(ik),allocatable :: maxterm(:) ,ijterm(:),ivec(:)
+   integer(ik),allocatable :: maxterm(:),maxterm2(:),ijterm(:),ivec(:)
    !
    double precision,external :: ddot
    !
@@ -9641,7 +10448,7 @@ module perturbation
    real(rk)                           :: spur,mat1,mat2,mat0
    !real(rk), dimension(:, :), pointer :: mexp
 
-   character(len=3)     :: cgamma(0:PT%Nclasses)
+   character(len=3)     :: cgamma(0:PT%Nclasses),cgamma2(0:PT%Nclasses)
    character(len=cl)    :: unitfname
    character(len=cl)    :: filename,symchar,jchar,buff,buff4
    !
@@ -9650,7 +10457,7 @@ module perturbation
    integer(ik)          :: nelem,chkptIO
    integer(ik)          :: dimen_maxrow,m_,i_,j_,kmax,jb
    character(len=cl)    :: my_fmt   !format for I/O specification
-   character(len=wl)    :: my_fmt_l !format for long I/O specification
+   character(len=wl)    :: my_fmt_l,my_fmt_2 !format for long I/O specification
      !
      ! Check for the trivial solution 
      if (dimen_s<=0) return 
@@ -9983,7 +10790,7 @@ module perturbation
        !
        write(jchar, '(i4)') jrot
        write(symchar, '(i4)') gamma
-       
+       !
        !---Read energy file nroots and dimen_s
        filename = 'energies'//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))//'.chk'
        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trim(filename),iostat=info)
@@ -9991,21 +10798,24 @@ module perturbation
        if(buff(1:14)/='Start energies') then
        	stop 'Invalid energies checkpoint file-energy'
        endif
-       
+       !
        read(chkptIO) dimen, nroots
-       
+       !
        write(out, '(/a,1x,i8,1x,a,1x,i8)') 'read eigenvectors for dimen=', dimen, 'and nroots=', nroots
-       
+       !
        !Allocate maxcontrib and maxterm
-       allocate (maxTerm(nroots),maxcontrib(nroots))
+       allocate (maxTerm(nroots),maxcontrib(nroots),maxTerm2(nroots),maxcontrib2(nroots))
+       call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
        call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-       
+       call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
+       call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
+       !
        read(chkptIO) energy(1:nroots)
        read(chkptIO) buff(1:13)
        if(buff(1:13)/='Start contrib') then
        	stop 'Invalid energies checkpoint file-contrib'
        endif
-
+       !
        !---read contribs
        do ielem=1,nroots
        		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
@@ -10014,7 +10824,7 @@ module perturbation
        		                      maxcontrib(ielem)
     
        enddo
-       
+       !
        write(out,"('Done reading energy file!!!')")
        close(chkptIO)
      case('READ-EIGEN') 
@@ -10732,12 +11542,12 @@ module perturbation
      !
      if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND') then
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") gamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") gamma
        !
        !unitfname ='Quantum numbers of the eigensolution'
        call IOStart(trim(unitfname),IOunit_quanta)
        !
-       write(unitfname,"('Eigenvectors for ',i2)") gamma
+       write(unitfname,"('Eigenvectors for ',i4)") gamma
        !
        !unitfname ='Eigenvectors in the primitive basis set'
        !
@@ -10769,30 +11579,48 @@ module perturbation
              'Variational solution - irreducible representation','  Gamma     i       value             j  k  t   quanta'
      endif
      !
-     
+     !
      ! Find the largest coefficients only if not provided from external diagonalization.
      if(trim(job%diagonalizer)/='READ-ENERGIES') then
-     
+        !
      	allocate (maxTerm(nroots),maxcontrib(nroots))
+     	allocate (maxTerm2(nroots),maxcontrib2(nroots))
+     	call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
      	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+     	call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
+     	call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
     	maxTerm  = 1
-     
-     
-        !$omp parallel do private(iroot,MaxEigenvects,jroot) shared(maxTerm) schedule(dynamic)
+        !     
+        !$omp parallel do private(iroot,MaxEigenvects,MaxEigenvects2,jroot) shared(maxTerm,maxcontrib) schedule(dynamic)
         do iroot=1,nroots
           !
           MaxEigenvects  = small_
           !
           if (.not.no_diagonalization) then 
             !
-            do jroot=1,dimen_s
-                 if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
-                     MaxEigenvects = abs( mat(jroot,iroot) )
-                     maxTerm(iroot) = jroot
-                 endif
-            enddo
+            MaxEigenvects = maxval(mat(:,iroot)**2,dim=1)-small_
+            jroot = maxloc(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.ge.MaxEigenvects)
+            maxTerm(iroot) = jroot
+            maxcontrib(iroot)  = mat(jroot,iroot)
+            !
+            if (job%Nassignments > 1) then
               !
-            maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
+              MaxEigenvects2 = maxval(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.le.MaxEigenvects)-small_
+              jroot = maxloc(mat(:,iroot)**2,dim=1,mask=mat(:,iroot)**2.ge.MaxEigenvects2.and.mat(:,iroot)**2.le.MaxEigenvects)
+              maxTerm2(iroot) = jroot
+              maxcontrib2(iroot)  = mat(jroot,iroot)
+              !
+            endif
+            !
+            !do jroot=1,dimen_s
+            !     if (abs(mat(jroot,iroot))>=MaxEigenvects) then 
+            !         MaxEigenvects = abs( mat(jroot,iroot) )
+            !         maxTerm(iroot) = jroot
+            !     endif
+            !     !
+            !enddo
+            !!
+            !maxcontrib(iroot)  = mat(maxTerm(iroot),iroot)
             !
           else
             ! 
@@ -10800,13 +11628,12 @@ module perturbation
             maxcontrib(iroot)  = 1.0_rk
             !
           endif
-       !
+          !
         enddo
-     !$omp end parallel do
-     !
-     
+        !$omp end parallel do
+        !
      endif
-     
+     !
      if (no_diagonalization) then 
        !
        deallocate(ivec)
@@ -10822,7 +11649,12 @@ module perturbation
      cdimenmax = 1
      !
      write(my_fmt_l,'(a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
-                     Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i4,a2)"
+                     Nmodes,"i4,a2,1x,f9.2,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
+      !
+     write(my_fmt_2,'(a,i0,a,i0,a,i0,a,i0,a,a,i0,a,i0,a,i0,a,i0,a)') "(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,",&
+                     Nclasses,"(1x,a3),a1,",Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2,",&
+                     "3x,a1,a4,a1,i1,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
+                     Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
      
      !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
      !                  sym%label(gamma),iroot,termvalue,&
@@ -10875,34 +11707,52 @@ module perturbation
        k   = PT%rot_index(cnu(0),kdeg)%k
        tau = PT%rot_index(cnu(0),kdeg)%tau
        !
-       !if (termvalue>-1e1) then
-         !
-         if (all(nu==normal).and..false.) then 
-           !
-           write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1,'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,f9.2)') & 
-                      sym%label(gamma),iroot,termvalue,"(",&
-                      cgamma(0),";",jrot,k,tau," )", &
-                      "(",cgamma(1:PT%Nclasses),";", &
-                      nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2
-           !
-         else
-            !write(out,'(2x,a,i7,f14.6,3x,"(",a4,";",3i3," )",1x,"("'//fmt%Aclasses//',";",'//fmt%Nmodes0//'," )",1x,f9.2,1x,"(",'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//'," )")') & 
-            !           sym%label(gamma),iroot,termvalue,&
-            !           cgamma(0),jrot,k,tau, &
-            !           cgamma(1:PT%Nclasses), &
-            !           nu(1:PT%Nmodes),maxcontrib(iroot)**2,normal(1:PT%Nmodes),normal(0),cnu(1:PT%Nclasses)
+       if (job%Nassignments == 1) then
+          !
+          write(out,my_fmt_l)&
+                     sym%label(gamma),iroot,termvalue,&
+                     "(",cgamma(0),";",jrot,k,tau," )", &
+                     "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
+                     "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )"
 
-            write(out,my_fmt_l)&
-            !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//',a2,1x,a1,'//fmt%Nclasses0//',a2)') & 
-                       sym%label(gamma),iroot,termvalue,&
-                       "(",cgamma(0),";",jrot,k,tau," )", &
-                       "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
-                       "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )"
-
-
+       elseif (job%Nassignments > 1) then
+          !
+          icase    = PT%symactive_space(gamma)%sym_N(maxTerm2(iroot),1)
+          ideg     = PT%symactive_space(gamma)%sym_N(maxTerm2(iroot),2)
+          cnu2(:) = PT%contractive_space(:,icase)  
+          nu2 = 0
+          normal2 = 0
+          do iclasses = 0,PT%Nclasses
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               nu2(:) = nu2(:) + contr(iclasses)%eigen(cnu2(iclasses))%nu(:)
+            endif 
+            cgamma2(iclasses) = contr(iclasses)%eigen(cnu2(iclasses))%gamma
             !
-         endif
-         !
+          enddo 
+          !
+          do iclasses = 1,PT%Nclasses
+            if (cnu2(iclasses)<=contr(iclasses)%nlevels) then
+               normal2(:) = normal2(:) + contr(iclasses)%eigen(cnu2(iclasses))%normal(:)
+            endif
+            !
+          enddo
+          !
+          kdeg = PT%Index_deg(icase)%icoeffs(0,ideg)
+          !
+          k2   = PT%rot_index(cnu2(0),kdeg)%k
+          tau2 = PT%rot_index(cnu2(0),kdeg)%tau
+          !
+          write(out,my_fmt_2)&
+                     sym%label(gamma),iroot,termvalue,&
+                     "(",cgamma(0),";",jrot,k,tau," )", &
+                     "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,&
+                     "(",normal(1:PT%Nmodes),normal(0)," )","(",cnu(1:PT%Nclasses)," )",&
+                     "(",cgamma2(0),";",k2," )", &
+                     "(",cgamma2(1:PT%Nclasses),";",nu2(1:PT%Nmodes)," )",maxcontrib2(iroot)**2,&
+                     "(",normal2(1:PT%Nmodes),normal2(0)," )","(",cnu2(1:PT%Nclasses)," )"
+          !
+       endif
+       !
        !endif
        !
      enddo 
@@ -10971,8 +11821,8 @@ module perturbation
          if (job%IOvector_symm.and.kdeg>1) exit
          !
          do iroot=1,nroots_
-         !
-         if (.not.job%IOvector_symm) then 
+           !
+           if (.not.job%IOvector_symm) then 
              !
              !$omp parallel do private(icoeff,irow,ib,iterm,ielem) shared(vec_t) schedule(dynamic)
              do icoeff = 1,PT%Maxcontracts
@@ -11171,6 +12021,8 @@ module perturbation
      !
      if (allocated(maxterm)) deallocate(maxterm)
      if (allocated(maxcontrib)) deallocate(maxcontrib)
+     if (allocated(maxterm2)) deallocate(maxterm2)
+     if (allocated(maxcontrib2)) deallocate(maxcontrib2)
      call ArrayStop('maxcontrib')
      !
      if (allocated(eignu)) then 
@@ -15282,7 +16134,7 @@ module perturbation
     integer(ik),intent(in)   :: jrot
     integer(ik)        :: PotOrder,KinOrder,extForder
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
-    integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice
+    integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice,k1_,k2_
     real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
                             matclass(:,:,:),hrot_t(:,:),gcor_t(:,:),extF_test(:,:)
@@ -15291,7 +16143,7 @@ module perturbation
     !
     real(rk)           :: f_t
     integer(ik)        :: isize,iroot
-    integer(ik)        :: dimen_p,nroots,chkptIO,extF_rank,chkptIO_
+    integer(ik)        :: dimen_p,nroots,chkptIO,extF_rank,chkptIO_,dumpIO_
     integer(hik)       :: rootsize,rootsize_,matsize,blocksize
     integer            :: startdim, enddim, blocksize_, ierr, b, req_count, offset
     type(MPI_Request),allocatable :: reqs(:)
@@ -15375,10 +16227,6 @@ module perturbation
       ! Turn on the external field
       !
       if (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT') treat_exfF = .true.
-      !
-      ! We assume that all matrix elements are simmetric, therefore we can use 
-      ! a 1D array for storing only the upper half of the matrix.
-      ! And this is the size of such 1D array.
       !
       mdimen = PT%Maxcontracts
       !
@@ -15572,7 +16420,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i12,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen_b,startdim:startdim+mdimen_p-1),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -15590,7 +16438,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i12,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -15960,15 +16808,44 @@ module perturbation
             hvib_t = 0
             job_is = 'gvib'
             !
+            if (job%matelem_append.or.job%IOmatelem_dump) then
+              !
+              islice = 0
+              !
+              call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+              if (job%matelem_append) then
+                read(dumpIO_) k1_,k2_,hvib_t
+                close(dumpIO_) 
+                if ( k1_>PT%Nmodes.or.k2_>PT%Nmodes ) then
+                 write(out,"('Wrong gvib indices ',2i9,' > ',i9,' in the gvib dump-chk file ')") k1_,k2_,PT%Nmodes
+                 stop 'Wrong record in the gvib dump-file'
+                endif
+              endif
+            endif
+            !
             do k1 = 1,PT%Nmodes
               !
               if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
               do k2 = 1,PT%Nmodes
                 !
-                if (job%IOmatelem_divide) then
-                  islice = islice + 1
-                  if (islice<iterm1.or.iterm2<islice) cycle
+                !if (job%IOmatelem_divide) then
+                !  islice = islice + 1
+                !  if (islice<iterm1.or.iterm2<islice) cycle
+                !endif
+                !
+                fl => me%gvib(k1,k2)
+                !
+                if (job%matelem_append) then
+                   !
+                   if ( k2+PT%Nmodes*(k1-1)<=k2_+PT%Nmodes*(k1_-1) ) cycle
+                   !islice = islice + 1
+                   !if (islice<iterm1.or.iterm2<islice) cycle
+                   !
+                   !read(dumpIO_) k1_,k2_,hvib_t
+                   !
+                   job%matelem_append = .false.
+                   !
                 endif
                 !
                 if (job%verbose>=4) write(out,"('k1,k2 = ',3i8)") k1,k2
@@ -15976,8 +16853,6 @@ module perturbation
                 gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
                 !
                 gvib_t = 0
-                !
-                fl => me%gvib(k1,k2)
                 !
                 do iterm = 1,gvib_N
                   !
@@ -16032,10 +16907,20 @@ module perturbation
                     endif
                   enddo
                   !
+                endif
+                !
+                if (job%IOmatelem_dump.and..not.job%matelem_append) then
+                  !
+                  call open_dump_slice(islice,'h_vib',job%matelem_suffix,job%matelem_append,job%IOmatelem_dump,dumpIO_)
+                  write(dumpIO_) k1,k2,hvib_t
+                  close(dumpIO_)
+                  !
                 endif 
                 !
               enddo
             enddo
+            !
+            !if (job%IOmatelem_dump) close(dumpIO_)
             !
             !hvib_t = -0.5_rk*hvib_t
             !
@@ -16165,7 +17050,11 @@ module perturbation
             ! now we can switch off IOmatelem_split and compute the vibrational energies 
             !
             if (job%IOmatelem_divide.and.job%iswap(1)==0) job%IOmatelem_divide = .false.
-            if (job%IOmatelem_split.and.job%iswap(1)==0) job%IOmatelem_split = .false.
+            if (job%IOmatelem_split.and.job%iswap(1)==0) then 
+              job%IOmatelem_split = .false.
+              ! remember the status of IOmatelem_split was changed: 
+              job%IOmatelem_split_changed = .true.
+            endif
             !
             ! combining and symmetrizing 
             !
@@ -16895,6 +17784,33 @@ module perturbation
         !
       end subroutine calc_contract_matrix_elements_II
       !
+      subroutine open_dump_slice(islice,name,suffix,append,dump,chkptIO)
+          !
+          integer(ik),intent(in) :: islice
+          character(len=*),intent(in) :: name,suffix
+          logical,intent(in) :: append,dump
+          integer(ik),intent(out)     :: chkptIO
+          character(len=4) :: jchar
+          character(len=cl) :: filename,job_is
+            !
+            write(job_is,"('dump matrix')")
+            !
+            call IOStart(trim(job_is),chkptIO)
+            !
+            write(jchar, '(i4)') islice
+            !
+            filename = trim(suffix)//trim(adjustl(jchar))//'_dump.chk'
+            !
+            if (append.and.dump) then 
+              open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
+            elseif(dump) then
+              open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
+            else
+              open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+            endif
+            !
+      end subroutine open_dump_slice
+      !
   end subroutine PTcontracted_matelem_class 
 
   !
@@ -17138,7 +18054,7 @@ module perturbation
           !
           ! The vibrational part of the Hamiltonian
           !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
           call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
@@ -17156,7 +18072,7 @@ module perturbation
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -25244,11 +26160,12 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
            write(out,"('PTDVR_initialize..: For ispecies ',i4,' number of points is too small.')") ispecies
+           write(out,"('npoints = ',i4,' < dvr-ref points = ',i4)") bs(imode)%npoints,dvr_size
            stop 'PTDVR_initialize..: illegal number of points in ispecies'
            !
          endif
@@ -25301,7 +26218,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          irho_eq = 0 
          !
-         if (manifold/=0) irho_eq = mod(&
+         if (npoints/=0) irho_eq = mod(&
                           nint( ( trove%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
          !
          powers = 0 ; powers(imode) = 2
@@ -30054,7 +30971,7 @@ end subroutine read_contr_matelem_expansion_classN
        if (.not.job%select_gamma(igamma)) cycle
        !
        if(.not.job%ignore_vectors) then
-	       write(unitfname,"('Eigenvectors for ',i2)") igamma
+	       write(unitfname,"('Eigenvectors for ',i4)") igamma
 	       call IOStart(trim(unitfname),chkptIO)
 	       inquire(iolength=rec_len) f_t
 	       !
@@ -30064,20 +30981,20 @@ end subroutine read_contr_matelem_expansion_classN
 		     rec_len = rec_len*PT%Maxcontracts
 	       endif 
 	       !
-	       write(char_j,"(i2)") igamma
+	       write(char_j,"(i3)") igamma
 	       !
 	       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
 	       !
-	
-		open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+		   open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+		   !
        endif
        !
        !if (.not.job%select_gamma(igamma)) cycle
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        filename = trim(job%eigenfile%dscr)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -30124,7 +31041,6 @@ end subroutine read_contr_matelem_expansion_classN
      open(chkptIO,action='write',position='rewind',status='replace',file=filename)
      !
      write(chkptIO,"('Start Primitive basis set')") 
-     !
      !
      write(chkptIO,"(4i8,' <- Maxsymcoeffs,max_deg_size,Maxcontracts,Nclasses')") PT%Maxsymcoeffs,PT%max_deg_size,&
                      PT%Maxcontracts,PT%Nclasses
@@ -30236,7 +31152,7 @@ end subroutine read_contr_matelem_expansion_classN
         !
         do igamma  =1,sym%Nrepresen
           !
-          write(unitfname,"('Eigenvectors for ',i2)") igamma
+          write(unitfname,"('Eigenvectors for ',i4)") igamma
           call IOStart(trim(unitfname),chkptIO)
           inquire(iolength=rec_len) f_t
           !
@@ -30246,7 +31162,7 @@ end subroutine read_contr_matelem_expansion_classN
             rec_len = rec_len*PT%Maxcontracts
           endif 
           !
-          write(char_j,"(i2)") igamma
+          write(char_j,"(i3)") igamma
           !
           job%eigenfile%vectors    = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
           !
@@ -30320,13 +31236,13 @@ end subroutine read_contr_matelem_expansion_classN
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i2)") igamma
+       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i4)") igamma
        !
        if(.not.job%ignore_vectors) call IOStart(trim(unitfname),chkptIO)
        !
        if(.not.job%ignore_vectors)close(chkptIO,status='keep') 
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
        write(chkptIO,"('End Quantum numbers and energies')") 
@@ -30362,10 +31278,10 @@ end subroutine read_contr_matelem_expansion_classN
 
      do igamma  =1,sym%Nrepresen
        !
-       write(unitfname,"('Quantum numbers of solution gamma = ',i2)") igamma
+       write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        filename = trim(job%eigenfile%dscr)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -30385,7 +31301,7 @@ end subroutine read_contr_matelem_expansion_classN
      !
      do igamma  =1,sym%Nrepresen
        !
-       write(unitfname,"('Eigenvectors for ',i2)") igamma
+       write(unitfname,"('Eigenvectors for ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)
        inquire(iolength=rec_len) f_t
        !
@@ -30395,7 +31311,7 @@ end subroutine read_contr_matelem_expansion_classN
          rec_len = rec_len*PT%Maxcontracts
        endif 
        !
-       write(char_j,"(i2)") igamma
+       write(char_j,"(i3)") igamma
        !
        job%eigenfile%vectors    = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
        !
@@ -30752,7 +31668,7 @@ end subroutine read_contr_matelem_expansion_classN
      integer(ik)        :: chkptIO,chkptIO_vect,ib,rec_len,maxsize,iclasses,irecord,&
                            level_degen,ideg,dimen,iroots,Nmodes
      real(rk)           :: f_t
-     character(len=cl) :: my_fmt !format for I/O specification
+     character(len=cl)  :: my_fmt !format for I/O specification
      !
      ! File for the conctracted coefficients
      !
@@ -30853,6 +31769,7 @@ end subroutine read_contr_matelem_expansion_classN
      open(chkptIO,action='write',position='rewind',status='replace',file=job%contrfile%primitives) 
      !
      write(chkptIO,"('Start Primitive basis set')") 
+     write(my_fmt,'(a,i0,a)') "(",nmodes+1,"i6)"
      !
      do iclasses = 1,PT%Nclasses
        !
@@ -30860,7 +31777,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        do ib = 1,contr(iclasses)%dimen
         !
-        write(chkptIO,'('//fmt%Nmodes//')')  contr(iclasses)%prim_bs%icoeffs(:,ib)
+        write(chkptIO,my_fmt)  contr(iclasses)%prim_bs%icoeffs(:,ib)
         !
        enddo 
        !
@@ -31112,8 +32029,8 @@ end subroutine read_contr_matelem_expansion_classN
            contr(iclasses)%eigen(ilevel)%nu(0:PT%Nmodes) = nu(0:PT%Nmodes)
            contr(iclasses)%eigen(ilevel)%normal(0:PT%Nmodes) = normal(0:PT%Nmodes)
            !
-           if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
-             contr(iclasses)%eigen(ilevel)%lquant = normal(0)
+           if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
+               contr(iclasses)%eigen(ilevel)%lquant = normal(0)
            endif
            !
            gamma = isym
@@ -31486,11 +32403,16 @@ end subroutine read_contr_matelem_expansion_classN
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
-      ! singularity resolved by Associayed Legendres
-      if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+      ! singularity resolved by Associated Legendres
+      if (trove%triatom_sing_resolve) then
         v_i = nu_i(Nmodes)
-        n_i = mod(v_i,nmax+1)
-        k_i = (v_i-n_i)/(nmax+1)
+        !
+        !n_i = mod(v_i,nmax+1)
+        !k_i = (v_i-n_i)/(nmax+1)
+        !
+        k_i = mod(v_i,kmax+1)
+        n_i = (v_i-k_i)/(kmax+1)
+        !
         !nu_i(nmodes) = n_i
       endif
       !
@@ -31498,10 +32420,14 @@ end subroutine read_contr_matelem_expansion_classN
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
         !
-        if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+        if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)
-          n_j = mod(v_j,nmax+1)
-          k_j = (v_j-n_j)/(nmax+1)
+          !n_j = mod(v_j,nmax+1)
+          !k_j = (v_j-n_j)/(nmax+1)
+          !
+          k_j = mod(v_j,kmax+1)
+          n_j = (v_j-k_j)/(kmax+1)
+          !
           !nu_j(nmodes) = n_j
           if (k_i/=k_j) cycle
         endif
@@ -31733,7 +32659,7 @@ end subroutine read_contr_matelem_expansion_classN
                  MaxTerm = jb
              endif
              nu_j(:) = PT%active_space%icoeffs(:,jb)
-             if (job%verbose>=7) write(out,"(2i8,f19.8,30i4)") ib,jb,a(jb,ib), & 
+             if (job%verbose>=7) write(out,"(2i8,f19.8,30i6)") ib,jb,a(jb,ib), & 
                           (nu_j(i0),i0=0,min(PT%Nmodes,30))
              !
           enddo
@@ -31741,10 +32667,12 @@ end subroutine read_contr_matelem_expansion_classN
           nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
           PT%quanta%icoeffs(ib,:) = nu_i(:)
           !
-          if (trim(job%bset(Nmodes)%type)=='LEGENDRE') then
+          if (trove%triatom_sing_resolve) then
             v_i = nu_i(Nmodes)
-            n_i = mod(v_i,nmax+1)
-            k_i = (v_i-n_i)/(nmax+1)
+            k_i = mod(v_i,kmax+1)
+            n_i = (v_i-k_i)/(kmax+1)
+            !n_i = mod(v_i,nmax+1)
+            !k_i = (v_i-n_i)/(nmax+1)
             PT%lquant%icoeffs(ib,1)=k_i
             PT%quanta%icoeffs(ib,Nmodes) = n_i
           endif
@@ -31753,7 +32681,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           PT%largest%coeffs(ib,1) = a(MaxTerm,ib)
           !
-          write(out,"(i7,f18.8,40i3)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
+          write(out,"(i7,f18.8,40i4)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
           !
        enddo
        !
@@ -31952,7 +32880,7 @@ end subroutine read_contr_matelem_expansion_classN
            !
            itrial = 2
            !
-           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8,a,i6)"
+           write(my_fmt1,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,a,f15.8,i6)"
            write(my_fmt2,'(a,i0,a)') "(i7,f18.8,",nmodes+1,"i3,f15.8)"
            !
            do i=1,nroots
@@ -34174,7 +35102,7 @@ end subroutine read_contr_matelem_expansion_classN
           contr(1)%eigen(ilevel)%largest_coeff    = eigen(ilevel)%largest_coeff
           contr(1)%eigen(ilevel)%lquant = sym%lquant(contr(1)%eigen(ilevel)%isym)
           !
-          if (job%bset(PT%Nmodes)%type=='LEGENDRE'.and.job%bset(0)%range(2)/=0) then
+          if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
             contr(1)%eigen(ilevel)%lquant = eigen(ilevel)%normal(0)
           endif
           !
@@ -37556,7 +38484,7 @@ end subroutine combinations
           !
           if (job%verbose>=2) write(out,"(/'Rotational part of the Kinetic energy operator...')")
           !
-          if (job%verbose>=4) write(out,"('  allocating grot, ',i9,' elements...')") rootsize
+          if (job%verbose>=4) write(out,"('  allocating grot, ',i0,' elements...')") rootsize
           !
           if (job%IOmatelem_split) then
             !
@@ -40169,7 +41097,7 @@ subroutine PTstore_contr_matelem(jrot)
   !
   ! select only unique terms for each class
   !
-  call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses, iclass_imode(1:2,1:nclasses), &
+  call split_terms_uniq(nmodes, nterms, terms(1:nmodes,1:nterms), nclasses,iclass_imode(1:2,1:nclasses),&
                         nterms_uniq(1:nclasses), iterm_uniq(1:nclasses,1:nterms), terms_uniq(1:nmodes,1:nterms,1:nclasses))
   !
   if (job%verbose>=4) write(out, '(/1x,a,100(1x,i6))') 'max number of unique terms in each class:', nterms_uniq(1:nclasses)

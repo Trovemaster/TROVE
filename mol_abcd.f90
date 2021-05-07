@@ -1087,11 +1087,11 @@ module mol_abcd
      !
      subroutine extrapolate(N,x,src,dst)
      !
-     integer,intent(in)   :: N
+     integer(ik),intent(in)   :: N
      real(ark),intent(inout)  :: src(1:N),x(1:N+1)
      real(ark),intent(out)    :: dst
 
-     integer            :: i1,i2
+     integer(ik)        :: i1,i2
      real(rk)           :: a(N,N),b(N,1)
         !
         !
@@ -1305,9 +1305,9 @@ module mol_abcd
            stop 'ML_symmetry_transformation_abcd - bad operation. type'
  
          end select 
-
+         !
        case('C2V','C2V(M)')
-             !
+         !
          select case(ioper)
 
          case (1) ! E 
@@ -3181,12 +3181,6 @@ module mol_abcd
           endif
           !
        end select 
-
-
-
-
-
-
        !
     case('R-R1-R2-X-Y-X-Y','R-Z1-Z2-X-Y-X-Y','R-R1-R2+X+Y-X+Y')
        ! 
@@ -3508,9 +3502,9 @@ module mol_abcd
        gamma = 0 
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma =3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma =2 !4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma =4 !2 !; return
+       if (mod(K+2,2)==0.and.tau==1) gamma =2 !3 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma =4 !4 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma =3 !2 !; return
        !
     case('C2V','C2V(M)')
        !
@@ -3541,8 +3535,8 @@ module mol_abcd
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !; return
        if (mod(K+2,2)==0.and.tau==1) gamma = 3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 7 !7 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 5 !5 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
        !
     case('DNH','DNH(M)')
        !

@@ -6,7 +6,7 @@ use moltype
 
 implicit none
 
-public MLpoten_c3h6_harmtest
+public MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
 
 private
 
@@ -261,18 +261,11 @@ function MLpoten_c3h6_harmtest(ncoords, natoms, local, xyz, force) result(f)
     Ax1  = (T2 + T3)*3.0_ark/sqrt(6.0_ark)   
     Ax2  = (T2 - T3)/sqrt(2.0_ark)   
     !
-    !tbar = (src(16) + src(17) + src(18))/3.0_ark 
-    !
     T2 = T2 + T1
     T3 =-T3 + T1
     !
     tbar = (T1 + T2 + T3)/3.0_ark 
-
-
-!       SUBTRACT EQUILBRIUM THETA VALUES TO MAKE A1/A2 ZERO AT EQUILIBRIUM
-!       AND ENSURE CONSISTENT TRANSFROMS
     !
-
     xi(19) = Ax1 
     xi(20) = Ax2 
     xi(21) = (1.0_ark - cos(3.d0*tbar) )
@@ -334,322 +327,393 @@ end function  MLpoten_c3h6_harmtest
 
 
 
+function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
+
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+
+  real(ark) :: xi(21),y(21)
+  real(ark) :: chi(21,6),term,deg
+  integer(ik) :: ioper,ipower(21),i,nparam_eq
+  !
+  real(ark) :: rC1,rC2,rH1 ,rH2 ,rH3 ,rH4 ,rH5 ,rH6 ,rC1e,rC2e,rH1e,rH2e,rH4e,rH5e,rH6e,&
+                      alpha1e,alpha2e,alpha3e ,alpha4e ,alpha5e,alpha6e,taue,delta1e ,delta2e ,delta3e ,&
+                      delta4e ,delta5e ,delta6e,di_ccch
+  real(ark) :: b1,b2,b3,b4,b5,theta1,theta2,theta3,a1,a2,tau,tol,theta12,theta23,theta13
+  !
+  tol = sqrt(small_)
+  nparam_eq = 22
+  deg = pi/180.0_ark
+  !
+  ! expansion functions
+  !
+  rC1e      = force(1)
+  rC2e      = force(2)
+  rH1e      = force(3)
+  rH4e      = force(4)
+  rH5e      = force(5)
+  rH6e      = force(6)
+  !
+  alpha1e    = force( 7)*deg
+  alpha2e    = force( 8)*deg
+  alpha4e    = force( 9)*deg
+  alpha5e    = force(10)*deg
+  alpha6e    = force(11)*deg
+  !
+  delta1e    = force(12)*deg
+  delta2e    = force(13)*deg
+  delta4e    = force(14)*deg
+  delta5e    = force(15)*deg
+  delta6e    = force(16)*deg
+  !
+  a1       = force(17)
+  a2       = force(18)
+  b1       = force(19)
+  b3       = force(20)
+  b4       = force(21)
+  b5       = force(22)
 
 
+  select case(trim(molec%coords_transform))
+    !
+  case default
+    !
+    write(out, '(/a,1x,a,1x,a)') &
+    'MLpoten_c3h6_sym_II error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_c3h6_sym_II error error: bad coordinate type'
+      !
+  case('7ALF_TAU_1RHO')
+    !
+    rC1      = local(1)
+    rC2      = local(2)
+    rH1      = local(3)
+    rH2      = local(4)
+    rH3      = local(5)
+    rH4      = local(6)
+    rH5      = local(7)
+    rH6      = local(8)
+    !
+    ! C-C
+    xi(1)=1.0d+00-exp(-a1*(rC1-rC1e))
+    xi(2)=1.0d+00-exp(-a2*(rC2-rC2e))
+    !CH3
+    xi(3)=1.0d+00-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0d+00-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0d+00-exp(-b1*(rH3-rH1e))
+    !CHs
+    xi(6)=1.0d+00-exp(-b3*(rH4-rH4e))
+    xi(7)=1.0d+00-exp(-b4*(rH5-rH5e))
+    xi(8)=1.0d+00-exp(-b5*(rH6-rH6e))
+    !
+    !CCH1
+    xi(9) = local(9)- alpha1e
+    !xi(9) = cos(local(9))- cos(alpha1e)
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(10) = local(10)- alpha2e
+    xi(11) = local(11)- alpha2e
+    xi(12) = local(12)- alpha2e
+    !
+    !other CHs
+    xi(13) = local(13)- alpha4e
+    xi(14) = local(14)- alpha5e
+    xi(15) = local(15)- alpha6e
+    !
+    di_ccch = local(19)
+    !
+    if(di_ccch>1.1*pi) then
+       di_ccch = di_ccch - 2.0_ark*pi
+    end if
+    !
+    xi(16) = di_ccch-delta4e
+    xi(17) = mod(local(20)+2.0_ark*pi,2.0_ark*pi)- delta5e
+    xi(18) = mod(local(21)+2.0_ark*pi,2.0_ark*pi)- delta6e
+    !
+    theta2 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    theta3 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    !
+    theta1 = 2.0_ark*pi-theta2-theta3
+    !
+    xi(19)  = ( theta2 + theta3 )*3.0_ark/sqrt(6.0_ark)
+    xi(20)  = ( theta2 - theta3 )/sqrt(2.0_ark)
+    !
+    theta1 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)-delta1e
+    !
+    if (theta1<-tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+tol) then
+      theta1 = theta1 - 2.0_ark*pi
+    endif
+    !
+    theta2 = theta2 + theta1
+    theta3 =-theta3 + theta1
+    !
+    tau = (theta1 + theta2 + theta3)/3.0_ark
+    !
+    xi(21) = tau
+    !
+  case('7ALF_5THETA_1TAU')
+    !
+    rC1      = local(1)
+    rC2      = local(2)
+    rH1      = local(3)
+    rH2      = local(4)
+    rH3      = local(5)
+    rH4      = local(6)
+    rH5      = local(7)
+    rH6      = local(8)
+    !
+    ! C-C
+    xi(1)=1.0d+00-exp(-a1*(rC1-rC1e))
+    xi(2)=1.0d+00-exp(-a2*(rC2-rC2e))
+    !CH3
+    xi(3)=1.0d+00-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0d+00-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0d+00-exp(-b1*(rH3-rH1e))
+    !CHs
+    xi(6)=1.0d+00-exp(-b3*(rH4-rH4e))
+    xi(7)=1.0d+00-exp(-b4*(rH5-rH5e))
+    xi(8)=1.0d+00-exp(-b5*(rH6-rH6e))
+    !
+    !CCH1
+    xi(9) = local(9)- alpha1e
+    !xi(9) = cos(local(9))- cos(alpha1e)
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(10) = local(10)- alpha2e
+    xi(11) = local(11)- alpha2e
+    xi(12) = local(12)- alpha2e
+    !
+    !other CHs
+    xi(13) = local(13)- alpha4e
+    xi(14) = local(14)- alpha5e
+    xi(15) = local(15)- alpha6e
+    !
+    di_ccch = local(19)
+    !
+    if(di_ccch>1.1*pi) then
+       di_ccch = di_ccch - 2.0_ark*pi
+    end if
+    !
+    xi(16) = di_ccch-delta4e
+    xi(17) = mod(local(20)+2.0_ark*pi,2.0_ark*pi)- delta5e
+    xi(18) = mod(local(21)+2.0_ark*pi,2.0_ark*pi)- delta6e
+    !
+    theta1 = local(16)
+    !
+    theta2 = local(17)
+    theta3 = local(18)
+    !
+    if (theta2-theta1<small_) theta2 = theta2 + 2.0_ark*pi
+    if (theta3-theta2<small_) theta3 = theta3 + 2.0_ark*pi
+    !
+    theta12 = mod(theta2-theta1+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(theta3-theta2+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    !theta2 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    !theta3 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)- delta2e
+    !
+    !theta1 = 2.0_ark*pi-theta2-theta3
+    !
+    xi(19)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(20)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    !theta1 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)-delta1e
+    !
+    if (theta1<-tol) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+tol) then
+      theta1 = theta1 - 2.0_ark*pi
+    endif
+    !
+    !theta2 = theta2 + theta1
+    !theta3 =-theta3 + theta1
+    !
+    tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
+    !
+    xi(21) = tau
+    !
+  end select
+  !
+  f = 0
+  !
+  call ML_symmetry_transformation_XY3_II(6,xi,chi,21)
+  ! 
+  do i = nparam_eq+1, molec%parmax
+    !
+    ipower(1:21) = molec%pot_ind(1:21,i)
+    !
+    term = 0 
+    !
+    do ioper = 1,6
+      !
+      y(1:20) = chi(1:20,ioper)**ipower(1:20)
+      y(21) = cos( real(ipower(21),ark)*chi(21,ioper) )
+      !
+      term = term + product( y(1:21) )
+      !
+    end do
+    !
+    term = term/6.0_ark
+    !
+    f = f + term*force(i)
+    !
+  end do
+  !  
+end function  MLpoten_c3h6_sym_II
 
 
-
-
-
-
-
-subroutine ML_symmetry_transformation_XY3_II(ioper,src,dst,NDEG)
-!       THIS COULD ALSO BE MADE AS GENERAL AS POSSIBLE BUT WILL ALWAYS NEED TO
-!       DEFINE MATRICES FOR EACH MOLECULE BPM
+subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     implicit none
     !
-    integer,intent(in)    :: ioper,NDEG  ! group operation  
-    real(ark),intent(in)      :: src(1:NDEG)
-    real(ark),intent(out)     :: dst(1:NDEG)
+    integer(ik),intent(in)    :: nsym,ndeg  ! group operation  
+    real(ark),intent(in)      :: src(1:ndeg)
+    real(ark),intent(out)     :: dst(1:ndeg,6)
     !
-    double precision         :: repres(12,NDEG,NDEG),a,b,e,o
-    INTEGER NSYM
+    real(ark)         :: repres(6,ndeg,ndeg),a,b,e,o
+    real(ark)         :: c123(2,2),c132(2,2),sxy(2,2),s3(2,2),s2(2,2)
+    integer(rk)       :: ioper
     !
     if (verbose>=5) write(out,"('ML_symmetry_transformation_XY3/start')")
     !
     a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
-    NSYM = 12
+    !
+    c123 = transpose(reshape( (/ -a, -b, &
+                                  b, -a/), (/ 2, 2/)))
+    c132  = matmul(c123,c123)
+    !
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))    !
+    !
+	s3 = matmul(c123, sxy)
+    !
+    s2 = matmul(c123,s3)
     !
     repres = 0
     !
+    repres(:,1,1) = 1.0_ark
+    repres(:,2,2) = 1.0_ark
+    !
+    repres(:,6,6) = 1.0_ark
+    repres(:,7,7) = 1.0_ark
+    repres(:,8,8) = 1.0_ark
+    repres(:,9,9) = 1.0_ark
+    !
+    repres(:,13,13) = 1.0_ark
+    repres(:,14,14) = 1.0_ark
+    repres(:,15,15) = 1.0_ark
+    !
+    repres(:,16,16) = 1.0_ark
+    repres(:,17,17) = 1.0_ark
+    repres(:,18,18) = 1.0_ark
+    !
+    repres(:,21,21) = 1.0_ark
+    !
     ! E
-    repres(1,1,1) = 1.0_ark
-    repres(1,2,2) = 1.0_ark
+    ! r123
     repres(1,3,3) = 1.0_ark
     repres(1,4,4) = 1.0_ark
     repres(1,5,5) = 1.0_ark
-    repres(1,6,6) = 1.0_ark
-    repres(1,7,7) = 1.0_ark
-    repres(1,8,8) = 1.0_ark
-    repres(1,9,9) = 1.0_ark
-    REPRES(1,10,10) = 1.0_ark
-    REPRES(1,11,11) = 1.0_ark
-    REPRES(1,12,12) = 1.0_ark
-    REPRES(1,13,13) = 1.0_ark
-    REPRES(1,14,14) = 1.0_ark
-    REPRES(1,15,15) = 1.0_ark
-    REPRES(1,16,16) = 1.0_ark
-    REPRES(1,17,17) = 1.0_ark
-    REPRES(1,18,18)  = 1.0_ark
-!
-    !C3+/(123)(465)
-    repres(2,1,1) = 1.0_ark
-    repres(2,4,2) = 1.0_ark
-    repres(2,2,3) = 1.0_ark
-    repres(2,3,4) = 1.0_ark
-    repres(2,6,5) = 1.0_ark
-    repres(2,7,6) = 1.0_ark
-    repres(2,5,7) = 1.0_ark
-    repres(2,10,8) = 1.0_ark
-    repres(2,8,9) = 1.0_ark
-    repres(2,9,10) =  1.0_ark
+    ! a123
+    repres(1,10,10) = 1.0_ark
+    repres(1,11,11) = 1.0_ark
+    repres(1,12,12) = 1.0_ark
+    !d12
+    repres(1,19,19) = 1.0_ark
+    repres(1,20,20) = 1.0_ark
+    !
+    !C3+/(132)
+    repres(2,3,5) = 1.0_ark
+    repres(2,4,3) = 1.0_ark
+    repres(2,5,4) = 1.0_ark
+    !
+    repres(2,10,12) = 1.0_ark
+    repres(2,11,10) = 1.0_ark
     repres(2,12,11) = 1.0_ark
-    repres(2,13,12) = 1.0_ark
-    repres(2,11,13) = 1.0_ark
-    repres(2,14,14) = -a
-    repres(2,15,14) = b
-    repres(2,14,15) = -b
-    repres(2,15,15) = -a
-    repres(2,16,16) = -a
-    repres(2,17,16) = b
-    repres(2,16,17) = -b
-    repres(2,17,17) = -a
-    REPRES(2,18,18)  = 1.0_ark
     !
-!C3-/(123)(465)
-    repres(3,1,1) = 1.0_ark
-    repres(3,3,2) = 1.0_ark
-    repres(3,4,3) = 1.0_ark
-    repres(3,2,4) = 1.0_ark
-    repres(3,7,5) = 1.0_ark
-    repres(3,5,6) = 1.0_ark
-    repres(3,6,7) = 1.0_ark
-    repres(3,9,8) = 1.0_ark
-    repres(3,10,9) = 1.0_ark
-    repres(3,8,10) =  1.0_ark
-    repres(3,13,11) = 1.0_ark
+    repres(2,19,19) = -a
+    repres(2,19,20) = -b
+    repres(2,20,19) =  b
+    repres(2,20,20) = -a
+    !
+    !C3-/(123)
+    !
+    repres(3,3,4) = 1.0_ark
+    repres(3,4,5) = 1.0_ark
+    repres(3,5,3) = 1.0_ark
+    !
+    repres(3,10,11) = 1.0_ark
     repres(3,11,12) = 1.0_ark
-    repres(3,12,13) = 1.0_ark
-    repres(3,14,14) = -a
-    repres(3,15,14) = -b
-    repres(3,14,15) = b
-    repres(3,15,15) = -a
-    repres(3,16,16) = -a
-    repres(3,17,16) = -b
-    repres(3,16,17) = b
-    repres(3,17,17) = -a
-    REPRES(3,18,18)  = 1.0_ark
+    repres(3,12,10) = 1.0_ark
     !
-    !C2/(16)(24)(35)(78)
-    repres(4,1,1) = 1.0_ark
-    repres(4,7,2) = 1.0_ark
-    repres(4,5,3) = 1.0_ark
-    repres(4,6,4) = 1.0_ark
-    repres(4,3,5) = 1.0_ark
-    repres(4,4,6) = 1.0_ark
-    repres(4,2,7) = 1.0_ark
-    repres(4,13,8) = 1.0_ark
-    repres(4,11,9) = 1.0_ark
-    repres(4,12,10) =  1.0_ark
-    repres(4,9,11) = 1.0_ark
-    repres(4,10,12) = 1.0_ark
-    repres(4,8,13) = 1.0_ark
-    repres(4,16,14) = 1._ark
-    repres(4,17,15) = -1._ark
-    repres(4,14,16) = 1._ark
-    repres(4,15,17) = -1._ark
-    REPRES(4,18,18)  = 1.0_ark
+    repres(3,19,19) = -a
+    repres(3,19,20) =  b
+    repres(3,20,19) = -b
+    repres(3,20,20) = -a
     !
+    !C2/(23)->(45)
     !
-    !C2'/(16)(24)(35)(78)
-    repres(5,1,1) = 1.0_ark
-    repres(5,6,2) = 1.0_ark
-    repres(5,7,3) = 1.0_ark
-    repres(5,5,4) = 1.0_ark
-    repres(5,4,5) = 1.0_ark
-    repres(5,2,6) = 1.0_ark
-    repres(5,3,7) = 1.0_ark
-    repres(5,12,8) = 1.0_ark
-    repres(5,13,9) = 1.0_ark
-    repres(5,11,10) =  1.0_ark
-    repres(5,10,11) = 1.0_ark
-    repres(5,8,12) = 1.0_ark
-    repres(5,9,13) = 1.0_ark
-    repres(5,16,14) = -a
-    repres(5,17,14) = -b
-    repres(5,16,15) = -b
-    repres(5,17,15) = a
-    repres(5,14,16) = -a
-    repres(5,15,16) = -b
-    repres(5,14,17) = -b
-    repres(5,15,17) =  a
-    REPRES(5,18,18)  = 1.0_ark
+    repres(4,3,3) = 1.0_ark
+    repres(4,4,5) = 1.0_ark
+    repres(4,5,4) = 1.0_ark
     !
-    !C2''/(16)(24)(35)(78)
-    repres(6,1,1) = 1.0_ark
-    repres(6,5,2) = 1.0_ark
-    repres(6,6,3) = 1.0_ark
-    repres(6,7,4) = 1.0_ark
-    repres(6,2,5) = 1.0_ark
-    repres(6,3,6) = 1.0_ark
-    repres(6,4,7) = 1.0_ark
-    repres(6,11,8) = 1.0_ark
-    repres(6,12,9) = 1.0_ark
-    repres(6,13,10) =  1.0_ark
-    repres(6,8,11) = 1.0_ark
-    repres(6,9,12) = 1.0_ark
-    repres(6,10,13) = 1.0_ark
-    repres(6,16,14) = -a
-    repres(6,17,14) = b
-    repres(6,16,15) = b
-    repres(6,17,15) = a
-    repres(6,14,16) = -a
-    repres(6,14,16) = -a
-    repres(6,15,16) = b
-    repres(6,14,17) = b
-    repres(6,15,17) = a
-    REPRES(6,18,18)  = 1.0_ark
+    repres(4,10,10) = 1.0_ark
+    repres(4,11,12) = 1.0_ark
+    repres(4,12,11) = 1.0_ark
     !
-    !i/(14)(26)(35)(78)*
-    repres(7,1,1) = 1.0_ark
-    repres(7,5,2) = 1.0_ark
-    repres(7,7,3) = 1.0_ark
-    repres(7,6,4) = 1.0_ark
-    repres(7,2,5) = 1.0_ark
-    repres(7,4,6) = 1.0_ark
-    repres(7,3,7) = 1.0_ark
-    repres(7,11,8) = 1.0_ark
-    repres(7,13,9) = 1.0_ark
-    repres(7,12,10) =  1.0_ark
-    repres(7,8,11) = 1.0_ark
-    repres(7,10,12) = 1.0_ark
-    repres(7,9,13) = 1.0_ark
-    repres(7,16,14) = 1._ark
-    repres(7,17,15) = 1._ark
-    repres(7,14,16) = 1._ark
-    repres(7,15,17) = 1._ark
-    REPRES(7,18,18)  = -1.0_ark
+    repres(4,19,19) =  1.0_ark
+    repres(4,20,20) = -1.0_ark
     !
-    !S6/(163425)(78)*
-    repres(8,1,1) = 1.0_ark
-    repres(8,6,2) = 1.0_ark
-    repres(8,5,3) = 1.0_ark
-    repres(8,7,4) = 1.0_ark
-    repres(8,4,5) = 1.0_ark
-    repres(8,3,6) = 1.0_ark
-    repres(8,2,7) = 1.0_ark
-    repres(8,12,8) = 1.0_ark
-    repres(8,11,9) = 1.0_ark
-    repres(8,13,10) =  1.0_ark
-    repres(8,10,11) = 1.0_ark
-    repres(8,9,12) = 1.0_ark
-    repres(8,8,13) = 1.0_ark
-    repres(8,16,14) = -a
-    repres(8,17,14) = b
-    repres(8,16,15) = -b
-    repres(8,17,15) = -a
-    repres(8,14,16) = -a
-    repres(8,15,16) = b
-    repres(8,14,17) = -b
-    repres(8,15,17) = -a
-    REPRES(8,18,18)  = -1.0_ark
+    !C2'/(12)->(34)
+    repres(5,3,4) = 1.0_ark
+    repres(5,4,3) = 1.0_ark
+    repres(5,5,5) = 1.0_ark
     !
-    !S6'/(14)(26)(35)(78)*
-    repres(9,1,1) = 1.0_ark
-    repres(9,7,2) = 1.0_ark
-    repres(9,6,3) = 1.0_ark
-    repres(9,5,4) = 1.0_ark
-    repres(9,3,5) = 1.0_ark
-    repres(9,2,6) = 1.0_ark
-    repres(9,4,7) = 1.0_ark
-    repres(9,13,8) = 1.0_ark
-    repres(9,12,9) = 1.0_ark
-    repres(9,11,10) =  1.0_ark
-    repres(9,9,11) = 1.0_ark
-    repres(9,8,12) = 1.0_ark
-    repres(9,10,13) = 1.0_ark
-    repres(9,16,14) = -a
-    repres(9,17,14) = -b
-    repres(9,16,15) = b
-    repres(9,17,15) = -a
-    repres(9,14,16) = -a
-    repres(9,15,16) = -b
-    repres(9,14,17) = b
-    repres(9,15,17) = -a
-    REPRES(9,18,18)  = -1.0_ark
+    repres(5,10,11)  = 1.0_ark
+    repres(5,11,10)  = 1.0_ark
+    repres(5,12,12)  = 1.0_ark
     !
- !sigmad/(12)(46)*
-    repres(10,1,1) = 1.0_ark
-    repres(10,4,2) = 1.0_ark
-    repres(10,3,3) = 1.0_ark
-    repres(10,2,4) = 1.0_ark
-    repres(10,6,5) = 1.0_ark
-    repres(10,5,6) = 1.0_ark
-    repres(10,7,7) = 1.0_ark
-    repres(10,10,8) = 1.0_ark
-    repres(10,9,9) = 1.0_ark
-    repres(10,8,10) =  1.0_ark
-    repres(10,12,11) = 1.0_ark
-    repres(10,11,12) = 1.0_ark
-    repres(10,13,13) = 1.0_ark
-    repres(10,14,14) = -a
-    repres(10,15,14) = -b
-    repres(10,14,15) = -b
-    repres(10,15,15) = a
-    repres(10,16,16) = -a
-    repres(10,17,16) = -b
-    repres(10,16,17) = -b
-    repres(10,17,17) = a
-    REPRES(10,18,18)  = -1.0_ark
-!sigmad'/(12)(46)*
-    repres(11,1,1) = 1.0_ark
-    repres(11,2,2) = 1.0_ark
-    repres(11,4,3) = 1.0_ark
-    repres(11,3,4) = 1.0_ark
-    repres(11,5,5) = 1.0_ark
-    repres(11,7,6) = 1.0_ark
-    repres(11,6,7) = 1.0_ark
-    repres(11,8,8) = 1.0_ark
-    repres(11,10,9) = 1.0_ark
-    repres(11,9,10) =  1.0_ark
-    repres(11,11,11) = 1.0_ark
-    repres(11,13,12) = 1.0_ark
-    repres(11,12,13) = 1.0_ark
-    repres(11,14,14) =  -a
-    repres(11,15,14) =  b
-    repres(11,14,15) =  b
-    repres(11,15,15) =  a
-    repres(11,16,16) = -a
-    repres(11,17,16) =  b
-    repres(11,16,17) =  b
-    repres(11,17,17) =  a
-    REPRES(11,18,18)  = -1.0_ark
+    repres(5,19,19) = -a
+    repres(5,19,20) =  b
+    repres(5,20,19) =  b
+    repres(5,20,20) =  a
     !
-!sigmad''/(12)(46)*
-    repres(12,1,1) = 1.0_ark
-    repres(12,3,2) = 1.0_ark
-    repres(12,2,3) = 1.0_ark
-    repres(12,4,4) = 1.0_ark
-    repres(12,7,5) = 1.0_ark
-    repres(12,6,6) = 1.0_ark
-    repres(12,5,7) = 1.0_ark
-    repres(12,9,8) = 1.0_ark
-    repres(12,8,9) = 1.0_ark
-    repres(12,10,10) =  1.0_ark
-    repres(12,13,11) = 1.0_ark
-    repres(12,12,12) = 1.0_ark
-    repres(12,11,13) = 1.0_ark
-    repres(12,14,14) = 1.0_ark
-    repres(12,15,15) =  -1.0_ark
-    repres(12,16,16) = 1.0_ark
-    repres(12,17,17) =  -1.0_ark
-    REPRES(12,18,18)  = -1.0_ark
+    !(13)->(35)
+    repres(6,3,5) = 1.0_ark
+    repres(6,4,4) = 1.0_ark
+    repres(6,5,3) = 1.0_ark
     !
-    if (ioper<0.or.ioper>NSYM) then
-      write (6,"('symmetry_transformation_local: operation ',i8,' unknown')")
-      stop 'symmetry_transformation_local - bad operation. type'
-    endif
+    repres(6,10,12) = 1.0_ark
+    repres(6,11,11) = 1.0_ark
+    repres(6,12,10) = 1.0_ark
     !
-    ! BPM : REVERSED MULTIPLICATION ORDER TO AGREE WITH MY NOTES
-    dst = matmul(src,repres(ioper,:,:))
-
+    repres(6,19,19) = -a
+    repres(6,19,20) = -b
+    repres(6,20,19) = -b
+    repres(6,20,20) =  a
+    !
+    do ioper = 1,nsym
+      dst(1:20,ioper) = matmul(repres(ioper,1:20,1:20),src(1:20)) 
+    enddo
+    !
+    dst(21,1) = src(21)
+    dst(21,2) = src(21)+2.0_ark*pi/3.0_ark
+    dst(21,3) = src(21)-2.0_ark*pi/3.0_ark
+    dst(21,4) =-src(21)
+    dst(21,5) =-src(21)-2.0_ark*pi/3.0_ark
+    dst(21,6) =-src(21)+2.0_ark*pi/3.0_ark
+    !
   end subroutine ML_symmetry_transformation_XY3_II
-
-
-
-
-
-recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
+  !
+  recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     !
     implicit none
     integer(ik),intent(in) ::  rank,ncoords,natoms
@@ -659,7 +723,7 @@ recursive subroutine ML_dipole_c3h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
     !
     stop 'dipole_c3h6_4m_dummy is not implemented'
     !
-end subroutine ML_dipole_c3h6_4m_dummy
+  end subroutine ML_dipole_c3h6_4m_dummy
 
 
 

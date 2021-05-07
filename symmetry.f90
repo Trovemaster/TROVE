@@ -1,9 +1,10 @@
 !
 module symmetry
   use accuracy
+  use timer
 
   implicit none
-  public SymmetryInitialize,sym,max_irreps
+  public SymmetryInitialize,sym
 
 
   type  ScIIT
@@ -32,6 +33,8 @@ module symmetry
      integer(ik)          :: class_size_max = 8 ! current maximal class size 
      integer(ik)          :: N  = 1         ! The group order, currently desgined for Dnh where N is odd 
      integer(ik),pointer  :: lquant(:)      ! Store the value of the (vibrational) angular momentum 
+     integer(ik), allocatable :: product_table(:,:)        ! Stores information on obtaining all group elements from the generators
+     logical :: product_table_set = .false. ! Whether or not the product table has been set  
      !
   end type SymmetryT
 
@@ -48,7 +51,7 @@ contains
 
 
   subroutine SymmetryInitialize(sym_group)
-  character(len=cl),intent(in) :: sym_group
+  character(len=cl),intent(inout) :: sym_group
   integer(ik):: alloc,iclass,gamma,ioper,ielem,irepr,Nrot,irep,k,irot,N_Cn,ioper_,icn,NC2,joper,jclass
   real(ark)  :: a,b,e,o,p2,p3,p4,p23,p43,phi,phi_n,factor,f_t,mat_t(2,2),repres_(2,2), m_one,mat_tt(4,4)
   character(len=4) :: Kchar
@@ -63,12 +66,15 @@ contains
   real(ark), dimension(6, 2, 2) :: E_rep_1, E_rep_2
   integer(ik), dimension(6) :: A2_char  
   integer(ik), dimension(6 , 6) :: pos_array
-  integer(ik) :: j,r,s
-  
-
-
-  
+  integer(ik) :: j,r,s,n_c2v
+  real :: log_n  
+  integer(ik), dimension(144) :: tempG36  
+  integer, dimension(2,2) :: z2_mat
+  character(len = 5) :: k_num 
+  character(len=3) :: sym_sub_label
+  character(len=10) :: sym_cur_label
   !   
+  !
   sym%group=sym_group
   !
   select case(trim(sym_group))
@@ -150,8 +156,75 @@ contains
     sym%euler( 4,:) = (/p2,pi,p3/)
     !
     call irr_allocation
+    !
+  case("C2VN","C2V(N)","C2VN(M)")
+    !
+    sym_group = "C2VN"
+    !
+    log_n = log(4.0_rk*( real(sym%N,rk)+1.0_rk ))/log(2.0_rk)
+    n_c2v = ceiling(log_n)
+
+    sym%Nrepresen = 2**n_c2v
+    sym%Noper = 2**n_c2v
+    sym%Nclasses = 2**n_c2v
+    sym%CII%Noper = 0
+
+    call simple_arrays_allocation
+
+    z2_mat = reshape( (/1, 1, &
+                      1,-1/),(/2,2/))
 
 
+    sym%characters(1:2,1:2) = z2_mat
+    do j = 2, n_c2v
+      sym%characters(1:2**(j-1), 2**(j-1)+1:2**j) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,1)
+      sym%characters(2**(j-1)+1:2**j, 1:2**(j-1)) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(1,2)
+      sym%characters(2**(j-1)+1:2**j, 2**(j-1)+1:2**j) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,2)
+    enddo
+
+    !do j=1, 2**n_c2v
+    !  do k=1, 2**n_c2v
+    !    !write(*,*) sym%characters(k,j)
+    !  enddo
+    !enddo
+    
+    do j=1, 2**n_c2v
+      sym%degen(j) = 1
+      sym%Nelements(j) = 1
+      if(mod(j,4) == 1) then
+        sym_sub_label = 'e'
+      elseif(mod(j,4) == 2) then
+        sym_sub_label = 'f' 
+      elseif(mod(j,4) == 3) then
+        sym_sub_label = 'g' 
+      elseif(mod(j,4) == 0) then
+        sym_sub_label = 'h'
+      endif
+      write(k_num,'(i5)') (j-1-mod(j-1,4))/4
+      sym_cur_label = trim(sym_sub_label)//trim(adjustl(k_num))
+      sym%label(j) =  sym_cur_label
+      !write(*,*) sym%label(j)
+    enddo
+    !
+    sym%label(1:4)=(/'A1','B2','A2','B1'/)
+    !
+    ! generators and the product table  
+    !
+    allocate(sym%product_table(sym%Noper,2),stat=alloc)
+    call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+    !
+    sym%product_table(1:4,1:2) = reshape((/0,0,0,0, &
+                                           0,0,0,0/), (/4,2/))
+    !
+    do j = 1,2**(n_c2v-2)-1
+      sym%product_table(4*j+1: 4*j+4,1:2) = reshape((/1,2,3,4, &
+                                                      1,1,1,1/), (/4,2/))
+    enddo
+    !
+    sym%product_table_set = .true.
+
+    call irr_allocation
+    !
   case("C2H(M)","C2H")
 
     sym%Nrepresen=4
@@ -421,7 +494,18 @@ contains
       sym%CII%Noper = 0
                                
       call simple_arrays_allocation
-    
+      !
+      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+      tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
+      tempG36(109:144)= (/0, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
+      !
+      allocate(sym%product_table(72,2),stat=alloc)
+      call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+      !
+      sym%product_table = reshape( tempG36, (/ 72, 2/))
+      sym%product_table_set = .true.
+      !
       !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
       sym%characters = reshape( & 
         ! EE  RE  SE  ER  RR  SR  ER  RS  SS EE' RE' SE' ER' RR' SR' ER' RS' SS' 
@@ -453,6 +537,17 @@ contains
       sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
       sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
                   'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
+
+      p2 = 0.5_ark*pi
+      p3 = 1.5_ark*pi
+      o  = 0.0_ark
+      !
+      sym%euler( 1,:) = 0
+      sym%euler( 2,:) = (/o,o,o/)
+      sym%euler( 4,:) = (/o,o,pi/)
+      sym%euler( 7,:) = (/o,o,2.0_ark/3.0_ark*pi/)
+      sym%euler( 19,:) = (/p2,pi,p3/)
+      !
       a = 0.5_ark
       b = 0.5_ark*sqrt(3.0_ark)
       e = 1.0_ark
@@ -483,12 +578,12 @@ contains
     E_rep_1(4,:,:) = sxy
     E_rep_1(5,:,:) = s2
     E_rep_1(6,:,:) = s3
-    
+    !
     A2_char(:3) = 1.0_ark
     A2_char(4:6) = -1.0_ark
-  
+    !
     call irr_allocation 
-  
+    !
     pos_array = transpose( reshape((/  1,  7,  8, 19, 20, 21, &
                                        2,  9, 11, 22, 24, 26, &
                                        3, 10, 12, 23, 25, 27, &
@@ -496,7 +591,7 @@ contains
                                        5, 14, 17, 29, 32, 35, &
                                        6, 15, 18, 30, 33, 36/), (/6,6/))) 
     ! E1s, E2s, E1d, and E2d 
- 
+    !
     do j = 1, 6
       do k = 1, 6 
         sym%irr(5, pos_array(k,j))%repres = E_rep_1(j,:,:)
@@ -512,9 +607,9 @@ contains
         sym%irr(6+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)*m_one
       end do
     end do
-
+    !
     !E3s and E4s
-    
+    !
     do j = 1, 6
       do k = 1, 6
         sym%irr(7,pos_array(k,j))%repres = E_rep_1(k,:,:)
@@ -767,6 +862,402 @@ contains
       enddo
     enddo
     !
+
+    !
+    case("G36(EM1)") 
+
+      sym%Nrepresen = 18
+      sym%Noper = 72
+      sym%Nclasses = 18
+      sym%CII%Noper = 0
+                               
+      call simple_arrays_allocation
+      !
+      tempG36(1:36)   = (/0,0,2,0,6,4,0,7,2,3,2,3,4,5,6,4,5,6,0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+      tempG36(73:108) = (/0,0,2,0,2,2,0,7,7,7,8,8,7,7,7,8,8,8,0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+      tempG36(37:72)  = (/0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
+      tempG36(109:144)= (/0, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
+      !
+      allocate(sym%product_table(72,2),stat=alloc)
+      call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+      !
+      sym%product_table = reshape( tempG36, (/ 72, 2/))
+      sym%product_table_set = .true.
+      !
+      !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
+      sym%characters = reshape( & 
+        ! EE  RE  SE  ER  RR  SR  ER  RS  SS EE' RE' SE' ER' RR' SR' ER' RS' SS' 
+        (/ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, & ! A1s
+           1,  1,  1,  1,  1,  1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, & ! A2s
+           1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1, & ! A3s
+           1,  1, -1,  1,  1, -1, -1, -1,  1,  1,  1, -1,  1,  1, -1, -1, -1,  1, & ! A4s
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0,  2,  2,  2, -1, -1, -1,  0,  0,  0, & ! E1s
+           2,  2, -2, -1, -1,  1,  0,  0,  0,  2,  2, -2, -1, -1,  1,  0,  0,  0, & ! E2s
+           2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0, & ! E3s
+           2, -1,  0,  2, -1,  0, -2,  1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, & ! E4s
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0,  4, -2,  0, -2,  1,  0,  0,  0,  0, & ! Gs
+           !
+           1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, & ! A1d
+           1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1, & ! A2d 
+           1,  1, -1,  1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1, & ! A3d
+           1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1,  1,  1, -1, & ! A4d
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0, -2, -2, -2,  1,  1,  1,  0,  0,  0, & ! E1d
+           2,  2, -2, -1, -1,  1,  0,  0,  0, -2, -2,  2,  1,  1, -1,  0,  0,  0, & ! E2d
+           2, -1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0, & ! E3d
+           2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0,  2, -1,  0, & ! E4d
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0, -4,  2,  0,  2, -1,  0,  0,  0,  0 /),(/18,18/)) ! Gd                                                                                                                                                     
+      sym%characters = transpose(sym%characters)
+      sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
+      sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
+
+      p2 = 0.5_ark*pi
+      p3 = 1.5_ark*pi
+      o  = 0.0_ark
+      !
+      sym%euler( 1,:) = 0
+      sym%euler( 2,:) = (/o,o,o/)
+      sym%euler( 4,:) = (/o,o,pi/)
+      sym%euler( 7,:) = (/o,o,2.0_ark/3.0_ark*pi/)
+      sym%euler( 19,:) = (/p2,pi,p3/)
+      !
+      a = 0.5_ark
+      b = 0.5_ark*sqrt(3.0_ark)
+      e = 1.0_ark
+      o = 0.0_ark
+      m_one = -1.0_ark       
+ 
+      i = transpose(reshape( (/ e, o, &
+                                o, e /), (/ 2, 2/)))
+  
+      c = transpose(reshape( (/ -a, -b, &
+                                 b, -a/), (/ 2, 2/)))
+  
+    c2 = matmul(c,c)
+  
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
+    !
+  	s3 = matmul(c, sxy)
+    !
+    s2 = matmul(c,s3)
+    ! 
+    E_rep_1(1,:,:) = i
+    E_rep_1(2,:,:) = c
+    E_rep_1(3,:,:) = c2
+    E_rep_1(4,:,:) = sxy
+    E_rep_1(5,:,:) = s2
+    E_rep_1(6,:,:) = s3
+    !
+    A2_char(:3) = 1.0_ark
+    A2_char(4:6) = -1.0_ark
+    !
+    call irr_allocation 
+    !
+    pos_array = transpose( reshape((/  1,  7,  8, 19, 20, 21, &
+                                       2,  9, 11, 22, 24, 26, &
+                                       3, 10, 12, 23, 25, 27, &
+                                       4, 13, 16, 28, 31, 34, &
+                                       5, 14, 17, 29, 32, 35, &
+                                       6, 15, 18, 30, 33, 36/), (/6,6/))) 
+    ! E1s, E2s, E1d, and E2d 
+    !
+    do j = 1, 6
+      do k = 1, 6 
+        sym%irr(5, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)
+        
+        sym%irr(6, pos_array(k,j))%repres = E_rep_1(j,:,:)*A2_char(k)
+        sym%irr(6, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)
+       
+        sym%irr(5+9, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*m_one
+        
+        sym%irr(6+9, pos_array(k,j))%repres = E_rep_1(j,:,:)*A2_char(k)
+        sym%irr(6+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*A2_char(k)*m_one
+      end do
+    end do
+    !
+    !E3s and E4s
+    !
+    do j = 1, 6
+      do k = 1, 6
+        sym%irr(7,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)
+
+        sym%irr(8,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)
+
+        sym%irr(7+9,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*m_one
+
+        sym%irr(8+9,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)*m_one
+
+      end do    
+    end do
+  
+    g1 = transpose(reshape( (/ e, o, o ,o, &
+                               o, e, o, o, &
+                               o, o, e, o, &
+                               o, o, o, e/), (/4,4/)))
+    !
+    ! q01 try this 
+    ! u07 
+    ! b08
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    ! y01
+    g7 = transpose(reshape( (/ -a, o, o,-b, &
+                                o,-a, b, o, &
+                                o,-b,-a, o, &
+                                b, o, o,-a  /), (/4,4/))) 
+
+
+
+
+    !c01
+    !
+    !g2 = transpose(reshape( (/ -a,-b, o, o, &
+    !                            b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    !!
+    !g2 = transpose(reshape( (/ -a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a, b, &
+    !                            o, o,-b,-a  /), (/4,4/))) 
+
+    !t02
+    !g4 = transpose(reshape( (/o, o,-e, o, &
+    !                           o, o, o, e, &
+    !                          -e, o, o, o, &
+    !                           o, e, o, o  /), (/4,4/)))
+    !!
+    g4 = transpose(reshape( (/ e, o, o, o, &
+                               o,-e, o, o, &
+                               o, o,-e, o, &
+                               o, o, o, e  /), (/4,4/)))
+    !
+    ! t03
+    !g4 = transpose(reshape( (/-e, o, o, o, &
+    !                           o, e, o, o, &
+    !                           o, o, e, o, &
+    !                           o, o, o,-e  /), (/4,4/)))
+
+    ! a10
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
+    !                            o,-a, b, o, &
+    !                            o,-b,-a, o, &
+    !                            b, o, o,-a  /), (/4,4/))) 
+
+    !y01
+    g7 = transpose(reshape( (/ -a,-b, o, o, &
+                                b,-a, o, o, &
+                                o, o,-a,-b, &
+                                o, o,-b,-a  /), (/4,4/))) 
+
+
+    ! c02
+    !g7 = transpose(reshape( (/ -a, o, o,-b, &
+    !                            o,-a,-b, o, &
+    !                            o, b,-a, o, &
+    !                            b, o, o,-a  /), (/4,4/))) 
+    !!
+    !g7 = transpose(reshape( (/ -a, o, o, b, &
+    !                            o,-a,-b, o, &
+    !                            o, b,-a, o, &
+    !                           -b, o, o,-a  /), (/4,4/))) 
+
+    ! sy5: try this instd of !! wrong character 
+    !g7 = transpose(reshape( (/-a, b, o, o, &
+    !                           -b,-a, o, o, &
+    !                            o, o,-a,-b, &
+    !                            o, o, b,-a  /), (/4,4/))) 
+    ! t06 
+    !g19= transpose(reshape( (/-e, o, o, o, &
+    !                           o, e, o, o, &
+    !                           o, o,-e, o, &
+    !                           o, o, o, e  /), (/4,4/)))
+
+    !!
+    g19= transpose(reshape( (/ e, o, o, o, &
+                               o, e, o, o, &
+                               o, o,-e, o, &
+                               o, o, o,-e  /), (/4,4/)))
+
+    ! sy7: try this for !! completely wrong 
+    !g19= transpose(reshape( (/o, o, e, o, &
+    !                           o, o, o, e, &
+    !                           e, o, o, o, &
+    !                           o, e, o, o  /), (/4,4/)))
+
+
+    i = transpose(reshape( (/ e, o, &
+                              o, e /), (/ 2, 2/)))
+    !!
+    c = transpose(reshape( (/ -a, -b, &
+                               b, -a/), (/ 2, 2/)))
+    !
+    !t08
+    !u09
+    ! b07
+    ! b16: still same problem 
+    !c = transpose(reshape( (/ -a,  b, &
+    !                          -b, -a/), (/ 2, 2/)))
+
+  
+    c2 = matmul(c,c)
+    !!
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    ! t07 
+    ! u10
+    ! b10
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
+    !
+  	s3 = matmul(c, sxy)
+    !
+    s2 = matmul(c,s3)
+    !
+    sym%irr( 5, 1)%repres = i
+    sym%irr( 6, 1)%repres = i
+    sym%irr( 7, 1)%repres = i
+    sym%irr( 8, 1)%repres = i
+    !
+    sym%irr( 5, 2)%repres = i
+    sym%irr( 6, 2)%repres = i
+    sym%irr( 7, 2)%repres = c
+    sym%irr( 8, 2)%repres = c
+    !!
+    sym%irr( 5, 4)%repres = i
+    sym%irr( 6, 4)%repres = i*m_one
+    sym%irr( 7, 4)%repres = sxy
+    sym%irr( 8, 4)%repres = sxy
+    !
+    !u11
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy
+    !
+    ! u12
+    !
+    !sym%irr( 5, 4)%repres = i
+    !sym%irr( 6, 4)%repres = i*m_one
+    !sym%irr( 7, 4)%repres = sxy
+    !sym%irr( 8, 4)%repres = sxy*m_one
+    !
+    !!
+    sym%irr( 5, 7)%repres = c2
+    sym%irr( 6, 7)%repres = c2
+    sym%irr( 7, 7)%repres = i
+    sym%irr( 8, 7)%repres = i
+    !
+    ! a09 
+    !
+    !sym%irr( 5, 7)%repres = c
+    !sym%irr( 6, 7)%repres = c
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
+    !
+    ! p06 try changing sign for oper 6  did not work 
+    !
+    !sym%irr( 5, 7)%repres = c2
+    !sym%irr( 6, 7)%repres = c2*m_one
+    !sym%irr( 7, 7)%repres = i
+    !sym%irr( 8, 7)%repres = i
+    !!
+    sym%irr( 5,19)%repres = sxy
+    sym%irr( 6,19)%repres = sxy
+    sym%irr( 7,19)%repres = i
+    sym%irr( 8,19)%repres = i*m_one
+    !
+    ! b15
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i
+    !
+    ! p07 change E2 sign according with character of A2, did not help
+    ! p08 the same but with sxy from alternative choice , did not work
+    !sym%irr( 5,19)%repres = sxy
+    !sym%irr( 6,19)%repres = sxy*m_one
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
+    ! p10 another test, did not work 
+    !sym%irr( 5,19)%repres = sxy*m_one
+    !sym%irr( 6,19)%repres = sxy
+    !sym%irr( 7,19)%repres = i
+    !sym%irr( 8,19)%repres = i*m_one
+    !
+    sym%irr( 5,37)%repres = i
+    sym%irr( 6,37)%repres = i
+    sym%irr( 7,37)%repres = i
+    sym%irr( 8,37)%repres = i
+    !
+    do irep = 5,8
+      sym%irr(irep+9, 1)%repres = sym%irr(irep, 1)%repres
+      sym%irr(irep+9, 2)%repres = sym%irr(irep, 2)%repres
+      sym%irr(irep+9, 4)%repres = sym%irr(irep, 4)%repres
+      sym%irr(irep+9, 7)%repres = sym%irr(irep, 7)%repres
+      sym%irr(irep+9,19)%repres = sym%irr(irep,19)%repres
+    enddo
+    !
+    sym%irr(5+9,37)%repres = i*m_one
+    sym%irr(6+9,37)%repres = i*m_one
+    sym%irr(7+9,37)%repres = i*m_one
+    sym%irr(8+9,37)%repres = i*m_one
+    !
+    sym%irr( 9, 1)%repres = g1
+    sym%irr( 9, 2)%repres = g2
+    sym%irr( 9, 4)%repres = g4
+    sym%irr( 9, 7)%repres = g7
+    sym%irr( 9,19)%repres = g19
+    !
+    sym%irr(18, 1)%repres = g1
+    sym%irr(18, 2)%repres = g2
+    sym%irr(18, 4)%repres = g4
+    sym%irr(18, 7)%repres = g7
+    sym%irr(18,19)%repres = g19
+    !
+    sym%irr( 9, 1+36)%repres = g1
+    sym%irr(18, 1+36)%repres = g1*m_one
+    !
+    do irep = 1,sym%Nrepresen
+      ioper = 0
+      do iclass = 1,sym%Nclasses
+        do ielem =1,sym%Nelements(iclass)
+          ioper = ioper + 1
+          !
+          call do_g36_transform(irep,ioper,sym%degen(irep),sym%irr(irep,ioper)%repres)
+          !
+          f_t = 0
+          do k = 1,sym%degen(irep)
+              f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+          enddo
+          !
+          !sym%characters(irep,iclass) = f_t
+          !
+        enddo
+      enddo
+    enddo
+    !
+
 
 
 
@@ -2952,6 +3443,211 @@ contains
        !
     endif
     !
+  case("CNV(M)","CNV") ! C_infinity_V(M)
+    !
+    if (mod(sym%N,2)==1) then
+       !
+       ! Number of rotations 
+       !
+       Nrot = sym%N ! must be >=1
+       !
+       ! Number of Cn classes 
+       N_Cn = sym%N/2
+       !
+       sym%Noper=1+2*N_Cn+Nrot
+       sym%Nclasses=2+N_Cn
+       sym%Nrepresen= 2+N_Cn
+       sym%CII%Noper = 0
+       !
+       phi = 2.0_ark*pi/real(Nrot,ark)
+       !
+       call simple_arrays_allocation
+       !
+       ! E nrotxCinf nrotxsigmav i  nrotxSinf nrotxC'2
+       !
+       allocate(iclass_of(sym%Noper),stat=alloc)
+       if (alloc/=0) stop 'symmetry: iclass_ alloc error'
+       iclass_of = 0
+       !
+       sym%label(1:2)=(/'A1','A2'/)
+       !
+       sym%characters(:,:) = 0
+       !
+       ! A1g,A1u,A2g,A2u:
+       ! E
+       sym%characters(1:2,1) = 1.0_ark
+       ! Cinf
+       sym%characters(1:2,1+N_Cn) = 1.0_ark
+       ! sigmav
+       sym%characters(1,1+N_Cn+1) = 1._ark
+       sym%characters(2,1+N_Cn+1) =-1._ark
+       !
+       ! E1' E1" E2' E2" E3' E3" ....
+       !
+       sym%lquant(1:2) = 0 
+       !
+       irep = 2
+       do k = 1,sym%Nrepresen-2
+         !
+         irep = k + 2
+         !
+         sym%lquant(irep  ) = k
+         !
+         write(Kchar, '(i4)') K
+         !
+         sym%label(irep  ) = 'E'//trim(adjustl(Kchar))
+         !
+         ! E 
+         !
+         sym%characters(irep  ,1) = 2.0_ark
+         !
+         ! Cn
+         !
+         do irot = 1,N_Cn
+           !
+           sym%characters(irep  ,1+irot)          = 2.0_ark*cos(phi*irot*k)
+           !
+         enddo
+         !
+         sym%characters(irep,1+N_Cn+1) = 0 
+         !
+       enddo
+       !
+       sym%degen(:)   = 2
+       sym%degen(1:2) = 1
+       !
+       sym%Nelements(1) = 1
+       sym%Nelements(1+1:1+ N_Cn) = 2
+       sym%Nelements(1+N_Cn+1) = Nrot
+       !
+       o  = 0.0_ark
+       p2 = 0.5_ark*pi
+       p3 = 1.5_ark*pi
+       !
+       sym%euler(:,:) = 0
+       !
+       ioper = 1
+       do irot = 1,N_Cn
+         !
+         sym%euler(1+ioper  ,:) = (/o, phi*irot,o/) ! Rz
+         sym%euler(1+ioper+1,:) = (/o,-phi*irot,o/) ! Rz
+         !
+         ioper = ioper + 2
+       enddo
+       !
+       call irr_allocation
+       !
+       ! Generate irr-representations
+       !
+       do ioper = 1,sym%Noper
+         !
+         factor = 1.0_ark
+         !
+         if (ioper==1) then ! E 
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn) then !  Cinf
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) = 1.0_ark
+           !
+         elseif (ioper<=1+2*N_Cn+Nrot+1+2*N_Cn+Nrot) then ! sigmav
+           !
+           sym%irr(1,ioper)%repres(1,1) = 1.0_ark
+           sym%irr(2,ioper)%repres(1,1) =-1.0_ark
+           !
+         else
+           !
+           stop  'symmetry: illegal ioper'
+           !
+         endif
+         !
+       enddo
+       !
+       irep = 2
+       do k = 1,sym%Nrepresen-2
+         !
+         irep = k+2
+         !
+         ioper = 1
+         do ioper = 1,sym%Noper
+           !
+           factor = 1.0_ark
+           !
+           if (ioper==1) then ! E 
+             !
+             sym%irr(irep,ioper)%repres(1,1) = 1.0_ark
+             sym%irr(irep,ioper)%repres(1,2) = 0.0_ark
+             !
+             sym%irr(irep,ioper)%repres(2,1) = 0.0_ark
+             sym%irr(irep,ioper)%repres(2,2) = 1.0_ark
+             !
+           elseif (ioper<=1+2*N_Cn) then !  Cinf
+             !
+             ioper_ =ioper-1 
+             irot = (ioper_+1)/2
+             !
+             phi_n = phi*irot*k
+             !
+             ! Second oper in a class is with negative phi
+             if ( mod(ioper_,2)==0 ) phi_n = -phi_n
+             !
+             sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
+             sym%irr(irep,ioper)%repres(1,2) =-sin(phi_n)
+             !
+             sym%irr(irep,ioper)%repres(2,1) = sin(phi_n)
+             sym%irr(irep,ioper)%repres(2,2) = cos(phi_n)
+             !
+           elseif (ioper<=1+2*N_Cn+Nrot) then ! sigmav
+             !
+             irot = ioper-(1+2*N_Cn)
+             !
+             phi_n  = phi*irot*k*2.0_ark
+             !
+             sym%irr(irep,ioper)%repres(1,1) = cos(phi_n)
+             sym%irr(irep,ioper)%repres(1,2) = sin(phi_n)
+             !
+             sym%irr(irep,ioper)%repres(2,1) = sin(phi_n)
+             sym%irr(irep,ioper)%repres(2,2) =-cos(phi_n)
+             !
+           else
+             !
+             stop  'symmetry: illegal ioper'
+             !
+           endif
+           !
+         enddo
+         !
+       enddo
+       ! characters as traces of the corresponding representations 
+       !
+       do irep = 1,sym%Nrepresen
+         ioper = 0
+         do iclass = 1,sym%Nclasses
+           do ielem =1,sym%Nelements(iclass)
+             ioper = ioper + 1
+             f_t = 0
+             do k = 1,sym%degen(irep)
+                 f_t = f_t + (sym%irr(irep,ioper)%repres(k,k))
+             enddo
+             sym%characters(irep,iclass) = f_t
+           enddo
+         enddo
+       enddo
+       !
+       deallocate(iclass_of)
+       !
+       ! do the even part in the same order of operations as the odd  part
+       !
+    elseif (mod(sym%N,2)==0) then
+       !
+       write(out,"('CNV for N-even has not been implemented yet, not working')")
+       stop 'CNV for N-even has not been implemented yet, not working'
+       !
+    endif
+    !
   case("DINFTYH(M)") ! D_infinity_H(M)
 
     ! Number of rotations to test for < infinity 
@@ -3051,7 +3747,8 @@ contains
       sym%euler(3+Nrot+2,:) = (/o,pi-phi,o/) ! Rz
     !enddo
     !
-    call irr_allocation        !
+    call irr_allocation
+    !
   case default
 
     write(out,"('symmetry: undefined symmetry group ',a)") trim(sym_group)
@@ -3059,12 +3756,12 @@ contains
 
   end select
   !
-  if (max_irreps<sym%Nrepresen) then 
-    !
-    write(out,"('symmetry: number of elements in _select_gamma_ is too small: ',i8)") 100 ! size(job%select_gamma)
-    stop 'symmetry: size of _select_gamma_ is too small'
-    !
-  endif 
+  !if (max_irreps<sym%Nrepresen) then 
+  !  !
+  !  write(out,"('symmetry: max_irreps is too small: ',i5,' increase to > ',i5)") max_irreps,sym%Nrepresen
+  !  stop 'symmetry: size of _select_gamma_ is too small'
+  !  !
+  !endif 
   !
   sym%maxdegen = maxval(sym%degen(:),dim=1)
 
@@ -3162,7 +3859,7 @@ contains
         !
         if (igamma==jgamma.and.abs(temp-sym%Noper)>sqrt(small_)) then 
           write (out,"(' check_charac_and_repres: dot product ',f16.2,' for isym = ',i4,' /= size of the group ',f16.0)") & 
-                igamma,temp,sym%Noper
+                temp,igamma,sym%Noper
           !stop 'check_characters_and_representation: not orhogonal'
         endif
         !
@@ -3212,7 +3909,7 @@ contains
     enddo
 
     do igamma = 1,sym%Nrepresen
-      do jgamma = 1,sym%Nrepresen
+      do jgamma = igamma,sym%Nrepresen
         do k1 = 1,sym%degen(igamma)
           do k2 = 1,sym%degen(igamma)
             do m1 = 1,sym%degen(jgamma)

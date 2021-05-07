@@ -1,11 +1,11 @@
 module refinement
 
- use accuracy,     only : ik, hik, rk, ark, cl, out, small_
  use fields,       only : manifold,job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,&
+ use accuracy,     only : ik, hik, rk, ark, cl, wl, out, small_
                           FLfinitediffs_2d,FLpoten_linearized,analysis,action
  use timer,        only : IOstart,Arraystart,Arraystop,Arrayminus,Timerstart,Timerstop,MemoryReport,TimerReport
  use molecules,    only : MLcoord_direct,MLinvmat,MLinvmatark,MLcoordinate_transform_func,MLpotentialfunc
- use moltype,      only : molec, extF,ML_check_steps,MLdiag_ulen,MLlinur,MLfromlocal2cartesian
+ use moltype,      only : manifold,molec, extF,ML_check_steps,MLdiag_ulen,MLlinur,MLfromlocal2cartesian
  use symmetry,     only : sym
  use lapack,       only : lapack_syevr,lapack_syev,lapack_syevd
 
@@ -341,6 +341,7 @@ contains
       real(rk),allocatable :: deriv0(:),rjacob(:,:),eps(:),energy_(:),enercalc(:)
       real(rk),allocatable :: local(:,:),pot_values(:),wspace(:),Tsing(:),chi_(:,:)
       real(rk),allocatable :: al(:,:),bl(:),dx(:),ai(:,:),sterr(:),sigma(:)
+      real(rk),allocatable :: am(:,:),bm(:)
       real(ark),allocatable :: al_ark(:,:),ai_ark(:,:)
       real(rk),allocatable :: mat(:,:),dmat(:,:),vector(:)
       character(len=cl),allocatable :: nampar(:)    ! parameter names 
@@ -349,13 +350,13 @@ contains
       integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:)
       !
       logical      :: still_run,do_deriv,deriv_recalc
-      real(rk)     :: stadev_old,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
+      real(rk)     :: stadev_old,stadev_before,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
       real(rk)     :: ssq,rms,ssq1,ssq2,rms1,rms2,fit_factor,Smallest,Largest
-      real(rk)     :: ezero_,a_wats = 1.0_rk
+      real(rk)     :: ezero_,a_wats = 1.0_rk, lambda = 0.01_rk,nu = 10.0_rk
       integer(ik)  :: iener1,iener2,i,numpar,itmax,j,jlistmax,rank,ncol,nroots
       integer(ik)  :: iJ,isym,jsym,iener,jener,irow,icolumn,l,ndigits,imu_t
       integer(ik)  :: potunit,enunit,abinitunit,i0,iter_th
-      integer(ik)  :: nlevels,ilevel,Nentries,ientry,jentry,k,imode,iunit,irange(2),quanta(1:FLNmodes)
+      integer(ik)  :: nlevels,ilevel,Nentries,ientry,jentry,k,imode,iunit,irange(2),quanta(0:FLNmodes)
       real(rk)     :: vrange(2),f_t,v_l,v_r
       real(ark)    :: ar_t(1:molec%ncoords)
       real(rk)     :: xi(1:FLNmodes)
@@ -370,7 +371,8 @@ contains
       character(len=1)   :: rng
       character(len=1),allocatable  :: mark(:)
       character(len=cl) :: my_fmt,my_fmt_pot1,my_fmt_pot2 !format for I/O specification
-      character(len=cl) :: my_fmt_en1,my_fmt_en2,my_fmt_par1,my_fmt_par2 !format for I/O specification
+      character(len=cl) :: my_fmt_en2,my_fmt_par1,my_fmt_par2 !format for I/O specification
+      character(len=wl) :: my_fmt_en1 !wider format for I/O specification
        !
        if (job%verbose>=2) write(out,"(/'The least-squares fitting ...')")
        !
@@ -462,6 +464,10 @@ contains
        call ArrayStart('a-b-mat',info,size(al),kind(al))
        call ArrayStart('a-b-mat',info,size(bl),kind(bl))
        call ArrayStart('pot_terms',info,size(pot_terms),kind(pot_terms))
+       !
+       allocate (am(parmax,parmax),bm(parmax),stat=info)
+       call ArrayStart('potparam-mat',info,size(am),kind(am))
+       call ArrayStart('potparam-mat',info,size(bm),kind(bm))
        !
        allocate (pot_values(pot_npts),stat=info)
        call ArrayStart('pot_values-mat',info,size(pot_values),kind(pot_values))
@@ -576,17 +582,17 @@ contains
        !
        !
        ! define printing formats
-       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(1x, i3),a1,a)"
-       write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a3,a1,i3,a2,1x,a2,",&
-                                              nclasses,"a3,a1,",nmodes,"(1x, i3),a2,1x,a1,",nmodes,"(1x, i3),a1,a)"
+       write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(i3),a1,a)"
+       write(my_fmt_en1,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
+                                              nclasses,"a3,a1,",nmodes,"(i3),a2,a1,",nmodes+1,"(i3),a1,a)"
                                               !
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
-                                               nclasses,"a3,a1,",nmodes,"(1x, i3),a2)"
+                                               nclasses,"a3,a1,",nmodes,"(i3),a2)"
 
        write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
 
-       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),3(x,g18.10),x,e12.4)"
-       write(my_fmt_par1,'(a1,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
+       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g12.5),1x,f12.5,1x,e12.4)"
+       write(my_fmt_par1,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
        !
        nlevels = Neigenlevels
        !
@@ -600,6 +606,7 @@ contains
           ! Initial values for the standard error and  stability.
           !
           stadev_old = 1e10
+          stadev_before = 1e10
           stability = 1e10
           stadev    = 1e10
           !
@@ -619,9 +626,53 @@ contains
             write (out,"('No varying paramters, check input!')") 
             stop 'sf_fitting: No varying paramters'
             !
-          endif 
+          endif
+          !
+          ! precompute drivatives of the potential energy funciton
           !
           rjacob = 0 
+          !
+          do_deriv = .false.
+          !
+          if (itmax.ge.1.and.fit_factor>1e-12.and.trim(deriv_type)=='hellman') do_deriv = .true.
+          !
+          if (do_deriv) then
+            !
+            do i = 1,parmax
+              !
+              if (ivar(i)<0) then 
+                pot_terms(i) = molec%force(i)
+              else
+                pot_terms(i) = 0
+              endif
+              !
+            enddo
+            !
+            dummy_xyz = 0 
+            !
+            do ncol=1,numpar 
+               !
+               i = ifitparam(ncol)
+               !
+               pot_terms(i) = 1.0_ark
+               !
+               !$omp parallel do private(ientry,ar_t,dummy_xyz) shared(rjacob) schedule(guided)
+               do ientry=1,pot_npts
+                 !
+                 ar_t = local(:,ientry)
+                 !
+                 call MLfromlocal2cartesian(1,ar_t,dummy_xyz)
+                 !
+                 rjacob(en_npts+ientry,ncol) =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
+                 !
+               enddo
+               !$omp end parallel do
+               !
+               pot_terms(i) = 0
+               !
+            enddo ! --- ncol
+            !
+          endif     
           !
           ! The loop starts here. 
           !
@@ -721,7 +772,7 @@ contains
                      !
                      ! we can sckip the parameter if it is zero and not used in refinement for the sliced-representation
                      ! 
-                     if (ivar(i)<=0.and.abs(pot_terms(i))<small_) cycle
+                     if ( ivar(i)==0.and.abs(pot_terms(i))<small_.or.ivar(i)<0 ) cycle
                      !
                      call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                      !
@@ -1017,9 +1068,10 @@ contains
                             enddo
                             !
                             quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
+                            quanta(0) = eigen(fit(isym,j)%ilevel(ilargest(i)))%krot
                             !
                             if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
-                                .and.all(quanta(1:nmodes)==fitting%obs(iener)%quanta(1:nmodes))) then 
+                                .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
                                 !
                                 fitting%obs(iener)%N = i
                                 mark(iener) = ' '
@@ -1088,7 +1140,7 @@ contains
                          !
                        enddo
                        !
-                       if (jener<en_npts) then 
+                       if (jener<=en_npts) then 
                          !
                          write(enunit,my_fmt_en1) &
                             i,fitting%obs(jener)%N,Jrot,&
@@ -1096,7 +1148,7 @@ contains
                             enercalc(jener),eps(jener),wtall(jener),&
                             '( ',eigen(ilevel)%cgamma(0),';',eigen(ilevel)%krot,' )',&
                             '( ',eigen(ilevel)%cgamma(1:nclasses),';',eigen(ilevel)%quanta(1:nmodes),' )',&
-                            '(',fitting%obs(jener)%quanta(1:nmodes),')',mark(jener)
+                            '(',fitting%obs(jener)%quanta(0:nmodes),')',mark(jener)
                          !
                        else
                          !
@@ -1149,7 +1201,7 @@ contains
             enddo 
             !
             ! Alternative way of calculating the derivatives  - with the finite 
-            ! differencies. It is essentially slower and we use it only for 
+            ! differences. It is essentially slower and we use it only for 
             ! the testing of the xpect3 derivativies.
             !
             if (trim(deriv_type)/='hellman'.and.itmax.ge.1.and.fit_factor>1e-12) then
@@ -1163,22 +1215,32 @@ contains
             !
             call TimerStart('Potential energy points')
             !
-            do_deriv = .false.
+            !do_deriv = .false.
             !
-            if (itmax.ge.1.and.fit_factor<1e12.and.trim(deriv_type)=='hellman'.and.mod(fititer+2,3)==0) do_deriv = .true.
+            !if (itmax.ge.1.and.fit_factor<1e12.and.trim(deriv_type)=='hellman') do_deriv = .true.
             !
             dummy_xyz = 0
             !
+            !pot_terms(1:parmax) = molec%force(1:parmax) + potparam(1:parmax)
+            !
+            do i = 1,parmax
+              !
+              if (ivar(i)<0) then 
+                pot_terms(i) = molec%force(i)
+              else
+                pot_terms(i) = molec%force(i) + potparam(i)
+              endif
+              !
+            enddo
+            !
+            !$omp parallel do private(ientry,ar_t,dummy_xyz,v) shared(eps) schedule(guided)
             do ientry=1,pot_npts
               !
               ar_t = local(:,ientry)
               !
-              pot_terms(1:parmax) = molec%force(1:parmax) + potparam(1:parmax)
-              !
               call MLfromlocal2cartesian(1,ar_t,dummy_xyz)
               !
               v =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
-              !
               !
               ! eps - epsilon = ab initio energies - calculated pot. energies,
               ! where we comntinue counting the fitting data points starting with en_npts - 
@@ -1191,46 +1253,8 @@ contains
               ! Calculate derivatives with respect to parameters 
               ! using the finite diff. method. 
               !
-              if (do_deriv) then
-                !
-                do i = 1,parmax
-                  !
-                  if (ivar(i)<0) then 
-                    pot_terms(i) = molec%force(i)
-                  else
-                    pot_terms(i) = 0
-                  endif
-                  !
-                enddo
-                !
-                !omp do private(ncol,i) schedule(guided)
-                do ncol=1,numpar 
-                   !
-                   i = ifitparam(ncol)
-                   !
-                   pot_terms(i) = 1.0_ark
-                   rjacob(en_npts+ientry,ncol) =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
-                   pot_terms(i) = 0
-                   !
-                   !tempx=pot_terms(i)
-                   !deltax=1e-3*abs(tempx)
-                   !if (deltax<small_) deltax=1e-3
-                   !
-                   !pot_terms(i)=tempx+deltax
-                   !v_r =  MLpotentialfunc(ar_t,pot_terms)
-                   !
-                   !pot_terms(i)=tempx-deltax
-                   !v_l =  MLpotentialfunc(ar_t,pot_terms)
-                   !
-                   !pot_terms(i)=tempx
-                   !rjacob(en_npts+ientry,ncol)=(v_r-v_l)/(2.0_rk*deltax)
-                   !
-                enddo ! --- ncol
-                !omp end do
-                !
-              endif     
-              !
             enddo  ! ---  ientry
+            !$omp end parallel do
             !
             call TimerStop('Potential energy points')
             !
@@ -1257,6 +1281,7 @@ contains
             ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
             rms=sqrt(sum(eps(1:npts)*eps(1:npts))/npts)
             !
+            !
             ! Prepare the linear system a x = b as in the Newton fitting approach.  
             !
             if (itmax>=1) then
@@ -1278,7 +1303,30 @@ contains
                  if (fit_debug > 2) then
                    write (out,"('bl (',i0,')= ',es14.7)") irow,bl(irow)
                  endif
-               enddo  
+               enddo
+               !
+               !
+               ! Using Marquardt's fitting method
+               !
+               ! solve the linear equatins for two values of lambda and lambda/10
+               !
+               ! Defining scalled (with covariance) A and b
+               ! 
+               ! form A matrix 
+               do irow=1,numpar       
+                 do icolumn=1,irow    
+                   Am(irow,icolumn)=al(irow,icolumn)/sqrt( al(irow,irow)*al(icolumn,icolumn) )
+                   Am(icolumn,irow)=Am(irow,icolumn)
+                 enddo
+                 bm(irow) = bl(irow)/sqrt(al(irow,irow))
+               enddo
+               !
+               ! define shifted A as A =  A+lambda I
+               ! lambda is Marquard's scaling factor
+               !
+               do irow=1,numpar       
+                   Am(irow,irow)=Am(irow,irow)*(1.0_rk+lambda)
+               enddo
                !
                ! Two types of the linear solver are availible: 
                ! 1. linur (integrated into the program, from Ulenikov Oleg)
@@ -1293,7 +1341,7 @@ contains
                  !
                case('LINUR') 
                  !
-                 call MLlinur(numpar,numpar,al(1:numpar,1:numpar),bl(1:numpar),dx(1:numpar),ierror)
+                 call MLlinur(numpar,numpar,am(1:numpar,1:numpar),bm(1:numpar),dx(1:numpar),ierror)
                  !
                  ! In case of dependent parameters  "linur" reports an error = ierror, 
                  ! which is a number of the dependent parameter. We can remove this paramter 
@@ -1327,17 +1375,23 @@ contains
                   !
                case ('DGELSS')
                  !
-                 ai = al 
-                 call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bl(1:numpar),numpar,Tsing,-1.D-12,rank,wspace,lwork,info)
+                 ai = am 
+                 call dgelss(numpar,numpar,1,ai(1:numpar,1:numpar),numpar,bm(1:numpar),numpar,Tsing,-1.D-12,rank,wspace,lwork,info)
                  !
                  if (info/=0) then
                    write(out,"('dgelss:error',i0)") info
                    stop 'dgelss'
                  endif
                  !
-                 dx = bl
+                 dx = bm
                  !
                end select 
+               !
+               ! convert back from Marquardt's representation
+               !
+               do ncol=1,numpar
+                  dx(ncol) =  dx(ncol)/sqrt(al(ncol,ncol))
+               enddo
                !
                !----- update the parameter values ------!
                !
@@ -1365,21 +1419,29 @@ contains
                else 
                  stadev=sqrt(ssq/nused)
                endif
+               !               
+               if (stadev<stadev_old) then
+                 lambda = lambda/nu
+               else 
+                 lambda = min(lambda*nu,10000.0)
+               endif
+               !
+               if (job%verbose>=5) write(out,"(/'Marquardts parameter lambda = ',g15.7)") lambda
                !
                ! Estimate the standard errors for each parameter using 
                ! the inverse matrix of a. 
                !
-               al_ark = al
+               al_ark = am
                call MLinvmatark(al_ark,ai_ark,numpar,info)
                ai = ai_ark
                !
-               sum_sterr=0.d0
+               sum_sterr=0.0_rk
                do ncol=1,numpar 
                   i = ifitparam(ncol)
                   if (nused.eq.numpar) then  
                      sterr(ncol)=0
                   else
-                     sterr(ncol)=sqrt(abs(ai(ncol,ncol)))*stadev
+                     sterr(ncol)=sqrt(abs(ai(ncol,ncol)))*stadev/sqrt(al(ncol,ncol))
                      sum_sterr=sum_sterr+abs(sterr(ncol)/potparam(i))
                   endif
                enddo    
@@ -1391,6 +1453,7 @@ contains
                !
                stability=abs( (stadev-stadev_old)/stadev )
                stadev_old=stadev
+               stadev_before  = stadev_old
                !
             else
                !
@@ -1454,7 +1517,7 @@ contains
                    !
                    if (conf_int>1e10) conf_int = 0
                    !
-                   write(my_fmt_par2,'(a1,i0,a)') "(a8,i4,2x,f22.,",ndigits,"a1,i14,a1)"
+                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,",a1,i14,a1)"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i),'(',nint(conf_int),')'
                    !
@@ -1465,7 +1528,7 @@ contains
                    ndigits =2
                    if (potparam(i).ne.0.0) ndigits = 8
                    !
-                   write(my_fmt_par2,'(a1,i0,a)') "(a8,i4,2x,f22.,",ndigits,")"
+                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,")"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i)
                    !
@@ -1505,6 +1568,7 @@ contains
        if (allocated(potparam)) deallocate(potparam)
        !
        deallocate (nampar,ivar,ifitparam,al,ai,bl,dx,sterr,Tsing,pot_terms,al_ark,ai_ark)
+       deallocate (am,bm)
        call ArrayStop('potparam-mat')
        call ArrayStop('potparam-dx')
        call ArrayStop('potparam-sterr')
@@ -1910,10 +1974,10 @@ contains
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                                nclasses,"a3,a1,",nmodes,"(1x, i3),a2)"
 
-       write(my_fmt_en3,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes,"(1x, i3),f8.2,1x,a1,",nmodes,&
-                         "(1x, i3),a1,2x,a1,",nmodes,"(1x, i3),a1,f12.4,2x,f12.4)"
+       write(my_fmt_en3,'(a,i0,a,i0,a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes+1,"(1x, i3),f8.2,1x,a1,",nmodes+1,&
+                         "(1x, i3),a1,2x,a1,",nmodes+1,"(1x, i3),a1,f12.4,2x,f12.4)"
 
-       write(my_fmt_en4,'(a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes,"(1x, i3),f8.2)"
+       write(my_fmt_en4,'(a,i0,a)') "(3i5,2x,f18.10,2x,",nmodes+1,"(1x, i3),f8.2)"
 
        !write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),3(x,g18.10),x,e12.4)"
        !write(my_fmt_par1,'(a1,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
@@ -2656,24 +2720,24 @@ contains
                 !
                 write(out,my_fmt_en3) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk), &
                    '(',eigen(jlevel)%quanta(1:nmodes),')',&
-                   '(',fitting%obs(iener)%quanta(1:nmodes),')',&
+                   '(',fitting%obs(iener)%quanta(0:nmodes),')',&
                    ener_j0(isym,ilevel),fitting%obs(iener)%energy
                    !
               else if (ilevel<=nroots_j0(isym)) then
                 !
                 write(out,my_fmt_en3) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk), &
-                   '(',eigen(jlevel)%quanta(1:nmodes),')',&
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk), &
+                   '(',eigen(jlevel)%quanta(0:nmodes),')',&
                    ener_j0(isym,ilevel)
                    !
               else 
                 !
                 write(out,my_fmt_en4) &
                    Jrot,j0fit%obs(i)%symmetry,j0fit%obs(i)%N,&
-                   xparam(i),j0fit%obs(i)%quanta(1:nmodes),real(ivar(i),rk)
+                   xparam(i),j0fit%obs(i)%quanta(0:nmodes),real(ivar(i),rk)
                
               endif
               !
@@ -3112,7 +3176,7 @@ contains
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Dipole moment checkpoint file ',a)") job%extFmat_file
-       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") bset_contr(1)%Maxcontracts,ncontr_t
+       write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',i0,1x,i0)") bset_contr(1)%Maxcontracts,ncontr_t
        stop 'calc_exp_values - in file - illegal ncontracts '
      end if
      !
@@ -3310,9 +3374,9 @@ contains
           !
           do i=1,parmax
             !
-            if (job%verbose>=5) write (out,"('iparam = ',i0)") i
+            if (job%verbose>=6) write (out,"('iparam = ',i0)") i
             !
-            write (out,"(' ')")
+            !write (out,"(' ')")
             !
             read(chkptIO) imu_t
             read(chkptIO) poten_
@@ -3343,7 +3407,7 @@ contains
             !
             call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
             !
-            write (out,"(' ')")
+            !write (out,"(' ')")
             !
             do ientry = 1, Nentries
               !
@@ -4198,8 +4262,9 @@ contains
      character(len=cl) :: unitfname,job_file
      !
      integer(ik)        :: chkptIO
-     character(len=cl)  :: job_is,filename,iostatus,symchar,jchar,parchar,pot_suffix
+     character(len=cl)  :: job_is,filename,symchar,jchar,parchar,pot_suffix
      !
+     character(len=cl)  :: iostatus = 'scratch'
      character(len=20)  :: buf20
      integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,nsize,irec,cdimen_,idimen,j,iterm1,iterm2,ktau,icontr,k,itau
@@ -4888,7 +4953,7 @@ contains
    !
    filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
    !
-   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=22)
    !
    ilen = LEN_TRIM(name)
    !
@@ -4907,6 +4972,13 @@ contains
    end if
    !
    close(chkptIO)
+   !
+   return
+   !
+   22 write(out,"(a,a)") 'divided_slice_read error: file does not exist = ',filename
+      write(out,"(a)") 'If it is not supposed to exist (not used in fitting), consider setting pot. parameters and ifit to zero'
+      write(out,"(a)") 'For structural parameters ifit must be set to -1 to retain their values in the fitting to ab initio'
+      stop 'divided_slice_read error: file potfit_mat does not exist'
    !
  end subroutine divided_slice_read
 

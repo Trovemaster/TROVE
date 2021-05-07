@@ -1,6 +1,5 @@
 module plasma
  
-!!! dec $ define plasma_ = 0
 #define plasma_ 0
 
 !
@@ -22,14 +21,12 @@ module plasma
 
   subroutine plasma_diag_dsytrdx(n,a,w,nroots,Ethres_)
     !
-    !!! dec $ if (plasma_ > 0) 
-#if plasma_ > 0
+#if (plasma_ > 0) 
       INCLUDE "plasmaf.h"
       integer(ik), parameter :: VEC = PlasmaVec
       integer(ik), parameter :: UPLO = PlasmaLower
       EXTERNAL PLASMA_DSYTRDX
       INTEGER PLASMA_DSYTRDX
-    !!! dec $ end if
 #endif
     !
     integer         , intent(in)    :: n
@@ -72,21 +69,15 @@ module plasma
     !
     if (present(Ethres_)) Ethres = Ethres_
     !
-    !!! dec $ if (plasma_ == 0) 
-#if plasma_ == 0
-      !INCLUDE "plasmaf.h"
+#if (plasma_ == 0) 
        write(out,"('Plasma is not activated, in plasma.f90 please set plasma_ to 1')")
 #endif
-    !!! dec $ end if
     !
-    !!! dec $ if (plasma_ > 0)
-#if plasma_ > 0
-      INCLUDE "plasmaf.h"
+#if (plasma_ > 0)
       !
       !call getsize(N,LDA,nprocs_)
       !
 #endif
-    !!! dec $ end if
     !  
     !$omp parallel private(tid)
       if (tid==0) then
@@ -193,9 +184,7 @@ module plasma
     ! 
     ! set up my PLASMA_DSYTRDX environmenta, then call the eigensolver
     !
-    !!! dec $ if (plasma_ > 0)
-#if plasma_ > 0
-      INCLUDE "plasmaf.h"
+#if (plasma_ > 0)
         !
         call resetcore(corea,corec)
         CALL PRINTARGS(VEC, UPLO, N, LDA, LDQ, COREA, COREB, COREC, NB, IB)
@@ -212,8 +201,6 @@ module plasma
           STOP
         END IF
         CALL USETPLASMAENV()
-#endif
-    !!! dec $ end if
     !
     real_end = get_real_time()
     cpu_end  = get_cpu_time ()

@@ -9,7 +9,7 @@ module pot_zxy2
 
   public MLpoten_sohf,MLpoten_zxy2_andrey_01,MLpoten_zxy2_mep_r_alpha_rho_powers
   public MLdms2xyz_zxy2_symadap_powers,ML_MEP_zxy2_R_rho,MLpoten_zxy2_andrey_coeff,ML_MEP_zxy2_rho_coeff,MLpoten_h2cs_tz_damp1
-  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt
+  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling,MLpoten_zxy2_morse_cos
   private
  
   integer(ik), parameter :: verbose     = 3                          ! Verbosity level
@@ -140,6 +140,151 @@ function MLpoten_h2cs_damp(ncoords,natoms,local,xyz,force) result(f)
  !
 end function MLpoten_h2cs_damp
 
+
+
+
+
+function MLpoten_h2cs_damp_scaling(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+ !
+ integer(ik)          :: iterm,k_ind(6)
+ real(ark)            :: y(6),xi(6),vshort,vlong,vdamp
+ real(ark)            :: re1,re2,ae,De1,De2,De3,beta1,beta2,beta3,damp1,damp2,s(6),sc1,sc2,sc3
+ !
+ !
+ re1   = force(1)
+ re2   = force(2)
+ ae    = force(3)*pi/180.0_ark
+ De1   = force(4)
+ beta1 = force(5)
+ De2   = force(6)
+ beta2 = force(7)
+ damp1 = force(8)
+ damp2 = force(9)
+ !
+ ! transformation to the standard form 
+ !
+ xi = from_local_to_r1r2r3a1a2tau(local,6)
+ !
+ s(1) = re1/molec%local_eq(1)
+ s(2) = re2/molec%local_eq(2)
+ s(3) = re2/molec%local_eq(3)
+ s(4) = ae/molec%local_eq(4)
+ s(5) = ae/molec%local_eq(5)
+ !
+ sc1 = force(10)
+ sc2 = force(11)
+ sc3 = force(12)
+ !
+ y(1) = xi(1)*sc1-re1
+ y(2) = xi(2)*sc2-re2
+ y(3) = xi(3)*sc2-re2
+ y(4) = xi(4)*sc3-ae
+ y(5) = xi(5)*sc3-ae
+ y(6) = 1.0_ark+cos(xi(6))
+ !
+ vlong = De1*(1.0_ark-exp(-beta1*y(1)))**2 + &
+        De2*(1.0_ark-exp(-beta2*y(2)))**2 + &
+        De2*(1.0_ark-exp(-beta2*y(3)))**2
+ !
+ !
+ vdamp = exp( -damp1*y(1)**4 -damp2*y(2)**4 -damp2*y(3)**4 )
+ !
+ !
+ vshort = 0.0_ark
+ !
+ do iterm = 13, molec%parmax
+  !
+  xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+  !
+  vshort = vshort + force(iterm)*product(xi(1:6))
+  !
+  if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then
+    !
+    k_ind(1) = molec%pot_ind(1,iterm)
+    k_ind(2) = molec%pot_ind(3,iterm)
+    k_ind(3) = molec%pot_ind(2,iterm)
+    k_ind(4) = molec%pot_ind(5,iterm)
+    k_ind(5) = molec%pot_ind(4,iterm)
+    k_ind(6) = molec%pot_ind(6,iterm)
+    !
+    xi(1:6) = y(1:6)**k_ind(1:6)
+    !
+    vshort = vshort + force(iterm)*product(xi(1:6))
+    !
+  endif
+  !
+ enddo
+ !
+ f = vlong + vshort*vdamp
+ !
+end function MLpoten_h2cs_damp_scaling
+
+
+
+function MLpoten_zxy2_morse_cos(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+ !
+ integer(ik)          :: iterm,k_ind(6)
+ real(ark)            :: y(6),xi(6),v
+ real(ark)            :: re1,re2,ae,De1,De2,De3,a1,a2
+ !
+ !
+ re1   = force(1)
+ re2   = force(2)
+ ae    = force(3)*pi/180.0_ark
+ a1 = force(4)
+ a2 = force(5)
+ !
+ ! transformation to the standard form 
+ !
+ y(1) = 1.0_ark-exp(-a1*(local(1)-re1)) 
+ y(2) = 1.0_ark-exp(-a2*(local(2)-re2))
+ y(3) = 1.0_ark-exp(-a2*(local(3)-re2))
+ y(4) = local(4)-ae
+ y(5) = local(5)-ae
+ y(6) = 1.0_ark+cos(local(6))
+ !
+ v = 0.0_ark
+ !
+ do iterm = 6, molec%parmax
+  !
+  if (abs(force(iterm))<small_) cycle
+  !
+  xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+  !
+  v = v + force(iterm)*product(xi(1:6))
+  !
+  if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then
+    !
+    k_ind(1) = molec%pot_ind(1,iterm)
+    k_ind(2) = molec%pot_ind(3,iterm)
+    k_ind(3) = molec%pot_ind(2,iterm)
+    k_ind(4) = molec%pot_ind(5,iterm)
+    k_ind(5) = molec%pot_ind(4,iterm)
+    k_ind(6) = molec%pot_ind(6,iterm)
+    !
+    xi(1:6) = y(1:6)**k_ind(1:6)
+    !
+    v = v + force(iterm)*product(xi(1:6))
+    !
+  endif
+  !
+ enddo
+ !
+ f = v
+ !
+end function MLpoten_zxy2_morse_cos
 
 
 
@@ -2444,21 +2589,33 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     !
     integer(ik)      :: i,imu,iterm,lwork,info,nsv
     real(ark)        :: x(molec%natoms,3),r_CO,r_CH1,r_CH2,a_H1CO,a_H2CO,tau,re_CO(3),re_CH(3),ae_HCO(3),&
-                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho,costheta,costau,tmat_ark(3,3),dip0(3)
+                        y(6,3),xi(6),dip(3),N1(3),N2(3),NA1(3),NB1(3),NB2(3),rho,costheta,costau,tmat_ark(3,3),&
+                        dip0(3),xyz0(natoms,3)
     double precision :: tmat(3,3),dipd(3,1),work(64*3),sv(3),svtol
     !
     real(ark)        :: x0(molec%natoms,3)
     !
-    ! C atom is in the origin
     !
-    !
-    forall(i=1:4) x(i,1:3)=xyz(i,1:3)-xyz(1,1:3) ! 1:C  2:O  3:H1  4:H2
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_zxy2(local)
+      !
+      forall(i=1:4) x(i,1:3)=xyz0(i,1:3)-xyz0(1,1:3) ! 1:C  2:O  3:H1  4:H2
+      !
+    else
+      !
+      ! C atom is in the origin
+      !
+      forall(i=1:4) x(i,1:3)=xyz(i,1:3)-xyz(1,1:3) ! 1:C  2:O  3:H1  4:H2
+      !
+    endif
     !
 !x0(1,1)=	1.09571974	;		x0(1,2)=	-0.00005285	;	x0(1,3)=	-0.10870311	;
 !x0(2,1)=	-1.09216296	;		x0(2,2)=	-0.010405	;	x0(2,3)=	0.0265336	;
 !x0(3,1)=	1.98402007	;		x0(3,2)=	1.76078934	;	x0(3,3)=	0.41631981	;
 !x0(4,1)=	2.30285151	;		x0(4,2)=	-1.59502514	;	x0(4,3)=	0.45688199	;
-
+!
 !
 !x0 = x0*bohr
 !
@@ -2771,5 +2928,53 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
     if (verbose>=6) write(out,"('MLpoten_SOHF/end')") 
  
  end function MLpoten_SOHF
+ !
+
+
+ function MLloc2pqr_zxy2(r) result(f)
+
+ !return cartesian coordinates of atoms in the user-defined frame for locals specified
+
+    real(ark), intent(in) :: r(molec%ncoords)
+    real(ark)             :: f(molec%natoms, 3)
+
+    integer(ik)           :: icart
+    real(ark)             :: a0(molec%natoms, 3), cm,alpha1,alpha2,tau_2
+
+    a0 = 0    !
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau_2 = r(6)*0.5_ark
+    !
+    select case(trim(molec%coords_transform))
+       !
+    case('R-THETA-TAU')
+       ! 
+       a0(2,3) = r(1)
+       !
+       a0(3,1) = r(2)*sin(alpha1)*cos(tau_2)
+       a0(3,2) =-r(2)*sin(alpha1)*sin(tau_2)
+       a0(3,3) = r(2)*cos(alpha1)
+       !
+       a0(4,1) = r(3)*sin(alpha2)*cos(tau_2)
+       a0(4,2) = r(3)*sin(alpha2)*sin(tau_2)
+       a0(4,3) = r(3)*cos(alpha2)
+       !
+    case default 
+       write(out,"('MLloc2pqr_xy2: illegal coordinate type',a)") trim(molec%coords_transform)
+       stop 'MLloc2pqr_xy2: illegal coordinate type'
+    end select
+    
+    do icart = 1, 3
+       cm = sum(a0(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
+       a0(1:molec%natoms, icart) = a0(1:molec%natoms, icart) - cm
+    end do
+    !
+    f(1:molec%natoms, 1:3) = a0(1:molec%natoms, 1:3)
+    !
+ end function MLloc2pqr_zxy2
+
+
+
   !
 end module pot_zxy2

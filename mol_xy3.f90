@@ -81,7 +81,7 @@ module mol_xy3
       !
       if (any(molec%AtomMasses(2:4)>molec%AtomMasses(1))) then
         write(out,"('ML_b0_XY3: masses-s are given in wrong order, must be M m m m: ',4f14.6)") molec%AtomMasses(:)
-        stop 'ML_b0_XY3: ,masses are in wrong order'
+        !stop 'ML_b0_XY3: ,masses are in wrong order'
       endif 
       !
       re14 = molec%req(1)
@@ -99,13 +99,13 @@ module mol_xy3
            !
            !rho = 0
            !
-      !case('MEP_LAF3')
-      !     !
-      !     rho_ark = rho
-      !     !
-      !     re14 = ML_mep_oh3p(rho_ark)
-      !     alpha = 2.0_ark/3.0_ark*pi
-      !     !
+      case('MEP_LAF3')
+           !
+           rho_ark = rho
+           !
+           re14 = ML_mep_oh3p(rho_ark)
+           alpha = 2.0_ark/3.0_ark*pi
+           !
       end select 
       !
       cosr = cos(rho)

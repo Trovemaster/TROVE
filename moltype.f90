@@ -10,8 +10,9 @@ module moltype
          MLZmatrixT,MLfromlocal2cartesian,MLdiag_ulen,ML_check_steps,three_j,&
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
-  public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF
-  public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark
+  public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
+  public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
+  public MLorienting_a0_across_dadrho,manifold
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -46,6 +47,15 @@ module moltype
       real(ark),intent(out)  ::  mu_xyz(rank)
       !
     end subroutine MLtemplate_extF
+    !
+    subroutine MLtemplate_kinetic(nmodes,nterms,rho,g_vib,g_rot,g_cor,pseudo)
+      use accuracy
+      !
+      integer(ik),intent(in) ::  nmodes,nterms
+      real(ark),intent(in)   ::  rho
+      real(ark),intent(out)  ::  g_vib(nmodes,nmodes,nterms),g_rot(3,3,nterms),g_cor(nmodes,3,nterms),pseudo(Nterms)
+      !
+    end subroutine MLtemplate_kinetic
     !
     subroutine MLtemplate_symmetry_transformation(ioper,natoms,src,dst)
       use accuracy
@@ -127,6 +137,7 @@ module moltype
      integer(ik)               :: parmax        ! number of pot. parameters 
      integer(ik)               :: N_meppars     ! number of MEP. parameters 
      character(len=cl)         :: potentype     ! type of potential function 
+     character(len=cl)         :: kinetic_type  ! type of the kinetic function 
      character(len=cl)         :: meptype       ! type of MEP function
      real(ark),pointer         :: force(:)      ! force field
      real(ark),pointer         :: mep_params(:) ! MEP parameters
@@ -135,6 +146,8 @@ module moltype
      integer(ik),pointer       :: pot_ind(:,:)  ! indexes with the powers for every expansion term
      integer(ik),pointer       :: ifit(:)       ! varying indexes to control fitting
      character(len=cl)         :: symmetry      ! molecular symmetry
+     character(len=cl)         :: IO_primitive  ! control writing/reading of primitive basis sets 
+     character(len=cl)         :: chk_primitive_fname  ! filename to store primitive functions on a grid
      !
      !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
      !
@@ -163,7 +176,8 @@ module moltype
      character(cl), pointer :: intcoords(:)
      real(ark), pointer     :: geom_ref(:)
      integer(ik)            :: irho_ref
-     character(cl)          :: ftype = 'GENERAL'        ! field type 
+     character(cl)          :: ftype = 'GENERAL'  ! field type 
+     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, required to reduce numerical noice in overtone intensities
   end type MLext_locexp
 
   !
@@ -197,6 +211,7 @@ module moltype
      real(rk) :: linestrength = -1e0    ! threshold defining the output linestrength
      real(rk) :: coeff        = -1e0    ! threshold defining the eigenfunction coefficients
                                         ! taken into account in the matrix elements evaluation.
+    real(rk) :: leading_coeff = 0.1
   end type MLthresholdsT
 
   type MLIntensityT
@@ -231,14 +246,28 @@ module moltype
      logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
+     logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
+     !
+     ! variables used in extfield module
+     integer(ik)   :: tens_rank = 1
+     integer(ik)   :: tens_ialpha = 3
+     integer(ik)   :: tens_ibeta = 3
+     character(cl) :: tens_oper = 'NA'
+     integer(ik)   :: tens_oper_ielem = 1
+     character(cl) :: tens_frame = 'NA'
+     integer(ik)   :: tens_ibatch = 1
+     real(rk)      :: tens_omega
+     !
+     integer(ik) :: nvib_quanta_upp = 0
+     integer(ik) :: nvib_quanta_low = 0
+     integer(ik) :: vib_quanta_upp(20,1000)
+     integer(ik) :: vib_quanta_low(20,1000)
      !
  end type MLIntensityT
 
  type(MLIntensityT),save :: intensity
  !
- !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
- !
-
+ integer(ik) :: manifold
 
   contains
 
@@ -252,8 +281,9 @@ module moltype
   subroutine MLinitialize_molec(Moltype,Coordinates,coords_transform,&
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
                                   AtomMasses,local_eq, &
-                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,symmetry_,rho_border,&
-                                  zmatrix_)
+                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
+                                  IO_primitive,chk_numerov_fname,&
+                                  symmetry_,rho_border,zmatrix_)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -270,8 +300,9 @@ module moltype
   character(len=16),intent(in) :: forcename_(:)
   real(ark),   intent(in)      :: specparam(:)
   !
-  character(len=cl),intent(in)  :: potentype
+  character(len=cl),intent(in)  :: potentype,kinetic_type
   character(len=cl),intent(in)  :: symmetry_
+  character(len=cl),intent(in)  :: IO_primitive,chk_numerov_fname
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
   !
@@ -329,10 +360,13 @@ module moltype
     !
     molec%local_eq = local_eq
     molec%potentype = potentype
+    molec%kinetic_type = kinetic_type
     molec%atomMasses = AtomMasses
     molec%specparam = specparam
     molec%dihedtype = dihedtype_
     molec%symmetry = symmetry_
+    molec%IO_primitive = IO_primitive
+    molec%chk_primitive_fname = chk_numerov_fname
     !
     !molec%potenfunc => MLpoten_xy2_morbid
     !
@@ -562,6 +596,170 @@ module moltype
 
   end subroutine MLorienting_a0
   !
+
+
+ subroutine MLorienting_a0_across_dadrho(Natoms,npoints,AtomMasses,arho_borders,a0,da0,periodic,lincoord,method,transform)
+
+     integer(ik),intent(in)   :: Natoms,npoints
+     real(ark),   intent(in)  :: AtomMasses(Natoms)
+     real(ark),   intent(in)  :: arho_borders(2)  ! rhomim, rhomax - borders
+     real(ark),   intent(inout) :: a0(Natoms,3,0:npoints),da0(Natoms,3,0:npoints)
+     logical     ,intent(in)  :: periodic
+     real(ark),   intent(out),optional :: transform(3,3)
+     character(cl),optional :: method
+     integer(ik),optional :: lincoord
+     !
+     real(ark) :: CM_shift,Eq(3),A(3,3),A1(3,3),A2(3,3),C1(3,3),C2(3,3),b1(3),b2(3),S(3,3),T(3,3)
+     real(ark) :: b0(Natoms,3,0:npoints),db0(Natoms,3,0:npoints)
+     real(rk)  :: a_rk(3,3),b_rk(3,1)
+     integer(ik)              :: ix,jx,jy,imx,ipoint,i,ieq,jatom,ilincoord=0
+      !
+      if (verbose>=5) write(out,"(/'MLorienting_a0_across_dadrho/start')") 
+      !
+      if (present(lincoord)) ilincoord = lincoord
+      !
+      ! Find center of mass
+      !
+      do ipoint = 0,npoints
+        !
+        do ix = 1,3 
+          CM_shift = sum(a0(:,ix,ipoint)*AtomMasses(:))/sum(AtomMasses(:))
+          a0(:,ix,ipoint) = a0(:,ix,ipoint) - CM_shift
+        enddo 
+        !
+      enddo
+      !
+      do ipoint = 0,npoints
+         !
+         ieq = 0
+         do ix = 1,3
+            ! 
+            if (ix/=ilincoord) then 
+               !
+               ieq = ieq+1
+               !
+               Eq(ieq) = 0
+               do jatom = 1,Natoms  
+                  do jx = 1,3
+                     do jy = 1,3
+                       !
+                       Eq(ieq) = Eq(ieq) + AtomMasses(jatom)*epsil(ix,jx,jy)*a0(jatom,jx,ipoint)*da0(jatom,jy,ipoint)
+                       !
+                     enddo
+                  enddo
+               enddo
+               !
+            endif
+            !
+         enddo
+         !
+         do jx = 1,3
+            do jy = 1,3
+              !
+              A(jx,jy) = sum(AtomMasses(:)*a0(:,jx,ipoint)*da0(:,jy,ipoint))
+              !
+            enddo
+         enddo
+         !
+         A1 = matmul(A,transpose(A))
+         A2 = matmul(transpose(A),A)
+         !
+         call MLdiag_ulen_ark(3,A1,b1,C1)
+         call MLdiag_ulen_ark(3,A2,b2,C2)
+         !
+         a_rk = A1
+         call lapack_syev(a_rk,b_rk(:,1))
+         C1 = a_rk
+         !
+         a_rk = A2
+         call lapack_syev(a_rk,b_rk(:,1))
+         C2 = a_rk
+         !
+         T = matmul(C2,transpose(C1))
+         !
+         A1 = matmul(S,transpose(S))
+         A2 = matmul(transpose(S),S)
+         !
+         do jatom = 1,Natoms  
+            !
+            b0 (jatom,:,ipoint) = matmul(T, a0(jatom,:,ipoint))
+            db0(jatom,:,ipoint) = matmul(T,da0(jatom,:,ipoint))
+            !
+         enddo
+         !
+         ieq = 0
+         Eq = 0 
+         do ix = 1,3
+            ! 
+            if (ix/=ilincoord) then 
+               !
+               ieq = ieq+1
+               !
+               Eq(ieq) = 0
+               do jatom = 1,Natoms  
+                  do jx = 1,3
+                     do jy = 1,3
+                       !
+                       Eq(ieq) = Eq(ieq) + AtomMasses(jatom)*epsil(ix,jx,jy)*b0(jatom,jx,ipoint)*db0(jatom,jy,ipoint)
+                       !
+                     enddo
+                  enddo
+               enddo
+               !
+            endif
+            !
+         enddo
+         !
+         do jatom = 1,Natoms  
+            !
+            b0 (jatom,:,ipoint) = matmul(a0 (jatom,:,ipoint),T)
+            db0(jatom,:,ipoint) = matmul(da0(jatom,:,ipoint),T)
+            !
+         enddo
+         !
+         ieq = 0
+         Eq = 0 
+         do ix = 1,3
+            ! 
+            if (ix/=ilincoord) then 
+               !
+               ieq = ieq+1
+               !
+               Eq(ieq) = 0
+               do jatom = 1,Natoms  
+                  do jx = 1,3
+                     do jy = 1,3
+                       !
+                       Eq(ieq) = Eq(ieq) + AtomMasses(jatom)*epsil(ix,jx,jy)*b0(jatom,jx,ipoint)*db0(jatom,jy,ipoint)
+                       !
+                     enddo
+                  enddo
+               enddo
+               !
+            endif
+            !
+         enddo
+         !
+         S = matmul(T,A)
+         !
+         T = matmul(C1,transpose(C2))
+         !
+         S = matmul(A,T)
+         !
+         continue
+         !
+      enddo
+      !
+      if (present(transform)) then 
+         !transform = c
+         transform = 0
+      endif 
+      !
+      if (verbose>=5) write(out,"('MLorienting_a0_across_dadrho/stop')") 
+
+
+  end subroutine MLorienting_a0_across_dadrho
+
 
 
    !
@@ -1106,7 +1304,7 @@ module moltype
                                       + sin(alpha)*cos(phi)*n1(:) &
                                       - sin(alpha)*sin(phi)*n3(:) )
            !
-        case(-2,2,-202,202,-302,302,-402,402)
+        case(-2,2,-202,202,-302,302,-402,402,-502,502,-602,602)
            !
            idihedral = idihedral + 1
            !
@@ -2256,9 +2454,13 @@ module moltype
     integer(ik),parameter :: itmax=100
     integer(ik) :: iter,k,irow,icolumn,ierror,alloc
     !
+    if (verbose>=5) then
+      write(out,"('ML_rjacobi_fit_ark start ')") 
+    endif
+    !
     rjacob = 0 
     iter = 0
-    stadev_old = 1.e10
+    stadev_old = 2.e10
     stability =  1.e10
     stadev    =  1.e10
     !
@@ -2286,7 +2488,9 @@ module moltype
     iter = 0 
     !
     outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
+    do while( iter<itmax .and. stadev>stadev_best .and. abs(stadev-stadev_old)>small_ )
+      !
+      stadev_old=stadev
       !
       iter = iter + 1
       ssq=0
@@ -2299,7 +2503,7 @@ module moltype
       !
       do k = 1,m
         !
-        h = 1.e-4*abs(x(k)) ; if (h<sqrt(small_)) h = sqrt(small_)
+        h = 1.e-5*abs(x(k)) ; if (h<sqrt(small_)) h = sqrt(small_)
         !
         x(k) = x(k) + h 
         !
@@ -2340,6 +2544,10 @@ module moltype
       !
       if (ierror>0) then
         !
+        if (verbose>=5) then
+          write(out,"('ML_rjacobi_fit_ark error: ',3i7,g12.4)") n,m,ierror,tolerance
+        endif
+        !
         ad = am ; bd(:,1) = bm(:) 
         !
         call lapack_gelss(ad(:,:),bd(:,:))
@@ -2351,8 +2559,6 @@ module moltype
       x(:)=x(:)+cm(:)
       !
       stadev=ssq/sqrt(real(n,ark))
-      !
-      stadev_old=stadev
       !
     enddo  outer_loop ! --- iter
     !
@@ -2373,7 +2579,147 @@ module moltype
     !
     call ArrayStop('ML_rjacobi_fit_ark')
     !
+    if (verbose>=5) then
+      write(out,"('ML_rjacobi_fit_ark end, rms = ',g18.4)") stadev  
+    endif
+    !
   end subroutine ML_rjacobi_fit_ark
+
+  subroutine ML_spline(x,y,n,yp1,ypn,y2)
+  ! Given arrays x(1:n) and y(1:n) containing a tabulated function, i.e., yi = f(xi), with
+  ! x1 < x2 < ... < xN, and given values yp1 and ypn for the 1st derivative of the
+  ! interpolating function at points 1 and n, respectively, this routine returns an array y2(1:n)
+  ! of length n which contains the second derivatives of the interpolating function at
+  ! the tabulated points xi. If yp1 and/or ypn are equal to 1e30 or larger, the routine is
+  ! signaled to set the corresponding boundary condition for a natural spline, with zero second
+  ! derivative on that boundary.
+  ! From Numerical Recipes in Fortran 77
+  !
+  integer(ik)         :: n,i,k
+  real(kind=ark)      :: yp1,ypn,x(n),y(n),y2(n)
+  real(kind=ark)      :: p,qn,sig,un,u(n)
+
+  ! if (yp1.gt.safe_max) then   ! Lorenzo Lodi, 13 February 2014; modified so that natural splines are always used
+    y2(1)=0._ark
+    u(1)=0._ark
+  ! else
+  !   y2(1)=-0.5_ark
+  !   u(1)=(3._ark/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
+  ! endif
+  
+  do i=2,n-1
+    sig=(x(i)-x(i-1))/(x(i+1)-x(i-1))
+    p=sig*y2(i-1)+2._ark
+    y2(i)=(sig-1._ark)/p
+    !
+    if (abs(x(i+1)-x(i))<sqrt(epsilon(1.0_ark))) then
+      write(out, "(A,2i5,' x(i),x(i+1) = ',2g16.8,' y(i),y(i+1) = ',2g16.8)") &
+                'Error in spline: identical grid points: i,i+1 = ', i,i+1, x(i),x(i+1),y(i),y(i+1)
+      stop 'Error in spline: identical grid points'
+    endif
+    !
+    u(i)=(6._ark*( ( y(i+1)-y(i) )/( x(i+1)-x(i) )-( y(i)-y(i-1) )/( x(i)-x(i-1)) )/( x(i+1)-x(i-1) )-sig*u(i-1) )/p
+  enddo
+  ! if (ypn.gt.safe_max) then   ! Lorenzo Lodi, 13 February 2014; modified so that natural splines are always used
+    qn=0._ark
+    un=0._ark
+  ! else
+  !   qn=0.5_ark
+  !   un=(3._ark/(x(n)-x(n-1)))*(ypn-(y(n)-y(n-1))/(x(n)-x(n-1)))
+  ! endif
+  !
+  y2(n)=(un-qn*u(n-1))/(qn*y2(n-1)+1._ark)
+  do k=n-1,1,-1
+    y2(k)=y2(k)*y2(k+1)+u(k)
+  enddo
+  return
+  end  subroutine ML_spline
+
+  subroutine ML_splint(xa,ya,y2a,n,x,y)
+  !Given the arrays xa(1:n) and ya(1:n) of length n, which tabulate a function (with the
+  ! xai's in order), and given the array y2a(1:n), which is the output from spline above,
+  ! and given a value of x, this routine returns a cubic-spline interpolated value y.
+  ! From Numerical Recipes in Fortran 77
+  
+  integer :: n,klo,khi,k
+  real(kind=ark) :: x,y,xa(n),y2a(n),ya(n)
+  real(kind=ark) :: a,b,h
+  klo=1
+  khi=n
+  
+  1 if (khi-klo.gt.1) then
+    k=(khi+klo)/2
+    if(xa(k).gt.x)then
+      khi=k
+    else
+      klo=k
+    endif
+  goto 1
+  endif
+  h=xa(khi)-xa(klo)
+  if (h.eq.0._ark) stop 'bad xa input in splint'
+  a=(xa(khi)-x)/h
+  b=(x-xa(klo))/h
+  y=a*ya(klo)+b*ya(khi)+((a**3-a)*y2a(klo)+(b**3-b)*y2a(khi))*(h**2)/6._ark
+  return
+  end subroutine ML_splint
+  
+  subroutine ML_splint_quint(xa,ya,n,x,y, b,c,d,e,f)
+  !Given the arrays xa(1:n) and ya(1:n) of length n, which tabulate a function (with the
+  ! xai's in order), and given the arrays B,C,D,E,F (1:n), which is the output from spline above,
+  ! and given a value of x, this routine returns a quintic-spline interpolated value y.
+  ! Adapted from Numerical Recipes in Fortran 77
+  
+  integer, intent(in) :: n
+  real(kind=ark) , intent(in) :: xa(n),ya(n)
+  real(kind=ark) , intent(in)  :: x
+  real(kind=ark) , intent(out) :: y
+  real(kind=ark) ::  b(n),c(n),d(n),e(n), f(n)
+  real(kind=ark) ::  p, q
+  integer :: klo,khi,k, i
+  real(kind=ark) :: h
+  klo=1
+  khi=n
+  
+  1 if (khi-klo > 1) then
+    k=(khi+klo)/2
+    if(xa(k) > x)then
+      khi=k
+    else
+      klo=k
+    endif
+    goto 1
+  endif
+  
+  h=xa(khi)-xa(klo)
+  if (h == 0._ark) stop 'bad xa input in splint'
+  
+  i = klo
+  p = x -xa(klo)
+  q = xa(khi) - x
+  y = ((((F(I)*P+E(I))*P+D(I))*P+C(I))*P+B(I))*P+ya(I)
+  
+  return
+  end subroutine ML_splint_quint
   !
 end module moltype
-
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

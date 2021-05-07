@@ -23,6 +23,7 @@ module timer
   private
   public TimerStart, TimerStop, TimerReport, TimerProbe, IOStart, IOStop , ArrayStart, ArrayStop, ArrayMinus, MemoryReport
   public memory_limit,maxmemory,memory_now
+  public to_upper, to_lower, tokenize
   !
   integer, parameter :: trk        = selected_real_kind(12)
   integer, parameter :: table_size = 10000 ! Max number of entries to track
@@ -548,8 +549,8 @@ module timer
       size_ = (ikind*real(hsize_))/real(1024**3) ! size in GByte
 
       if (alloc/=0) then
-          write(0,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
-          write(0,"( ' Array dimension = ',i8,' array size =  ',f20.2,' Gb')") hsize_,size_
+          write(out,"(/' Error ',i8,' trying to allocate array ',a)") alloc,name
+          write(out,"( ' Array dimension = ',i0,' array size =  ',f20.2,' Gb')") hsize_,size_
           call MemoryReport
           stop 'ArrayStart - allocation error'
       end if
@@ -809,6 +810,85 @@ module timer
       write (out,"()")
     end subroutine MemoryReport
 
+function to_upper(str) result (string)
+
+  character(*), intent(in) :: str
+  character(len(str)) :: string
+
+  integer :: ic, i
+
+  character(26), parameter :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  character(26), parameter :: low = 'abcdefghijklmnopqrstuvwxyz'
+
+  string = str
+  do i = 1, len_trim(str)
+    ic = index(low, str(i:i))
+    if (ic>0) string(i:i) = cap(ic:ic)
+  end do
+
+end function to_upper
+
+
+function to_lower(str) result (string)
+
+  character(*), intent(in) :: str
+  character(len(str)) :: string
+
+  integer :: ic, i
+
+  character(26), parameter :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  character(26), parameter :: low = 'abcdefghijklmnopqrstuvwxyz'
+
+  string = str
+  do i = 1, len_trim(str)
+    ic = index(cap, str(i:i))
+    if (ic>0) string(i:i) = low(ic:ic)
+  end do
+
+end function to_lower
+
+
+subroutine tokenize(str, n, w)
+
+  character(*), intent(in) :: str
+  integer(ik), intent(out) :: n
+  character(cl), intent(out) :: w(:)
+
+  integer(ik) :: pos2, pos1, maxn, ln
+  character(1000) :: s
+
+  maxn = size(w)
+  n = 0
+  pos1 = 1
+
+  DO
+    s = trim(adjustl(str))
+    ln = len(trim(adjustl(str)))
+    if (pos1>ln) exit
+    pos2 = INDEX(s(pos1:ln), ' ')
+    IF (pos2 == 0) THEN
+       n = n + 1
+       if (n>maxn) then
+         write(out, '(/a,1x,i4)') 'timer/tokenize error: number of words exceeds maximum =', maxn
+         stop 'STOP'
+       endif
+       w(n) = s(pos1:ln)
+       EXIT
+    END IF
+    if (s(pos1:pos1+pos2-1)=='') then
+      pos1 = pos2+pos1
+      cycle
+    endif
+    n = n + 1
+    if (n>maxn) then
+      write(out, '(/a,1x,i4)') 'timer/tokenize error: number of words exceeds maximum =', maxn
+      stop 'STOP'
+    endif
+    w(n) = s(pos1:pos1+pos2-1)
+    pos1 = pos2+pos1
+ END DO
+
+end subroutine tokenize
 
 
 end module timer

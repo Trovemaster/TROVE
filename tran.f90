@@ -6,12 +6,12 @@ module tran
 ! set tran_debug > 2 with small vibrational bases and small expansions only
 !#define tran_debug  1 
 
- use accuracy,     only : ik, rk, hik, ark, cl, out, small_
+ use accuracy,     only : ik, rk, hik, ark, cl, wl, out, small_
  use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
  use me_numer,     only : simpsonintegral_ark
  use molecules,    only : MLcoord_direct
- use fields,       only : manifold, FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
- use moltype,      only : intensity,extF
+ use fields,       only : FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
+ use moltype,      only : manifold,intensity,extF
  use symmetry,     only : sym
 
  use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT,PTstorempi_icontr_cnu
@@ -19,7 +19,7 @@ module tran
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
         bset_contr,eigen, index_correlation,Neigenlevels, &
-        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel
+        TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr,istate2ilevel,TReigenvec_unit_external
 
  type bset_contrT
     integer(ik)                 :: jval            ! rotational quantum number that correspond to the contr. basis set
@@ -473,13 +473,14 @@ contains
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
                                iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),&
                                normal(0:FLNmodes),Npolyad_t
-    integer(ik),allocatable :: ktau_rot(:,:),isym(:)
+    integer(ik),allocatable :: ktau_rot(:,:),isym(:),cnu(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
     !
     character(cl)           :: filename, ioname, buf
     character(4)            :: jchar,gchar
     character(500)          :: buf500
+    character(3)            :: grep   ! for a string to indicate specific type of output to be grepped from 
     !
     logical                 :: passed
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
@@ -487,7 +488,7 @@ contains
     real(rk)                :: energy_, state_intensity
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
-    character(len=cl) :: my_fmt !format for I/O specification
+    character(len=wl)       :: my_fmt !format for I/O specification
     ! 
     if (job%verbose>=2) write(out,"(/'Read and sort eigenvalues in increasing order...')")
     !
@@ -517,7 +518,7 @@ contains
     !
     ! create a temp. array needed for filtering out levels
     !
-    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2)) 
+    allocate(isym(0:nclasses),ktau_rot(0:2*maxval( jval(:),dim=1 ),2),cnu(nclasses),stat=info) 
     !
     allocate(istate2ilevel(njval,sym%Nrepresen,nroots_t),stat=info) 
     !
@@ -537,10 +538,10 @@ contains
        nsize_base = 0
        do gamma = 1,sym%Nrepresen
           !
-          if (.not.job%select_gamma(gamma)) cycle
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) cycle
           !
           write(jchar, '(i4)') jval(jind)
-          write(gchar, '(i2)') gamma
+          write(gchar, '(i3)') gamma
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
@@ -551,7 +552,7 @@ contains
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
-          write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
+          write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename, err=15)
@@ -562,7 +563,7 @@ contains
              !
              filename = trim(job%eigenfile%filebase)//'_intens'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
              !
-             write(ioname, '(a, i4,2x,i2)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
+             write(ioname, '(a, i4,2x,i4)') 'J=0 intensities for J,gamma = ', jval(jind),gamma
              !
              call IOstart(trim(ioname), jounit)
              open(unit = jounit, action = 'read',status='old' , file = filename)
@@ -589,11 +590,20 @@ contains
           !
           read(iounit,*) nroots_t,nsize
           !
+          ! The size of the basis for any Js is required for predicting the state ID as part of the ExoMol basis 
           bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
+          !
+          ! trove%lincoord is a special case of a linear molecules where the basis set does not increase with J
+          ! because a contraint on K=L and the total size increase with J linearaly 
+          if ((job%lincoord/=0).or.(job%triatom_sing_resolve)) then
+            if (jind>1) then 
+              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)
+            endif
+          endif 
           !
           nsize_base = nsize_base + nsize
           !
-          if (.not.job%select_gamma(gamma)) then
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) then
             close(iounit)
             cycle
           endif
@@ -675,6 +685,8 @@ contains
           !
           15 continue 
           !
+          call IOStop(trim(ioname))
+          !
           write(out,"('read_eigenval warninig: eigenfilefile ',a,'is missing')") filename
           if (present(error)) error = 1 
           !
@@ -701,11 +713,13 @@ contains
     do ilevel = 1,Neigenlevels
       !
       allocate(eigen(ilevel)%irec(maxdeg),eigen(ilevel)%iroot(maxdeg),eigen(ilevel)%quanta(0:nmodes),&
-               eigen(ilevel)%normal(0:nmodes),eigen(ilevel)%cgamma(0:nclasses), stat = info)
+               eigen(ilevel)%normal(0:nmodes),eigen(ilevel)%cgamma(0:nclasses), &
+               eigen(ilevel)%cnu(1:nclasses), stat = info)
       if (info /= 0) stop 'read_eigenval allocation error: eigen%irec, eigen%quanta - out of memory'
       eigen(ilevel)%ndeg   = 0
       eigen(ilevel)%iroot = 0
       eigen(ilevel)%quanta = 0
+      eigen(ilevel)%cnu = 0
       !
     enddo
     !
@@ -743,16 +757,16 @@ contains
           !
           bset_contr(jind)%nsize(gamma) = 0
           !
-          if (.not.job%select_gamma(gamma)) cycle
+          if (.not.job%select_gamma(gamma).and.(jval(jind)/=0.or.gamma/=1)) cycle
           !
           write(jchar, '(i4)') jval(jind)
-          write(gchar, '(i2)') gamma
+          write(gchar, '(i3)') gamma
           !
           filename = trim(job%eigenfile%filebase)//'_descr'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
           !
           if (jind > size(bset_contr)) stop 'read_eigenval error: jind > size(bset_contr)'
           !
-          write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),gamma
+          write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),gamma
           !
           call IOstart(trim(ioname), iounit)
           open(unit = iounit, action = 'read',status='old' , file = filename, err=16)
@@ -779,7 +793,7 @@ contains
              if (normalmode_input.and.largest_coeff_input) then
                !
                read(buf500, *) irec, igamma, ilevel, ideg, energy, quanta(0:nmodes), ilarge_coef,isym(0:nclasses),&
-                               normal(0:nmodes),largest_coeff
+                               normal(0:nmodes),largest_coeff,cnu(1:nclasses)
                !
              elseif (normalmode_input) then 
                !
@@ -805,7 +819,14 @@ contains
              !
              !if (job%ZPE<0.and.igamma==1.and.Jval(jind)==0) job%zpe = energy
              !
-             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0)) then
+             passed = .true.
+             if (job%triatom_sing_resolve) then
+                if (Jval(jind)==0.and.normal(0)/=0) then
+                  passed = .false.
+                endif
+             endif 
+             !
+             if (job%exomol_format.and.(jind/=1.or.intensity%J(1)==0).and.passed) then
                !
                !write(out,"(/a/)") 'States file in the Exomol format'
                !
@@ -813,20 +834,26 @@ contains
                !
                J_ = Jval(jind)
                !
+               ! using different string for the last J in order to prevent double counting 
+               !
+               grep = ' ::' ; if (jind ==njval) grep = ' :;'
+               !
                !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x,<nmodes>i3)") & 
                !
-               write(my_fmt,'(a,i0,a,i0,a,i0,a)') &
-                     "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",nclasses,"1x,2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3)"
+               write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') &
+                             "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",&
+                             nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3,",nclasses,"i9)"
                !
                write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
-               normal(1:nmodes),sym%label(isym(1:nclasses)),&
+               quanta(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
-               largest_coeff,' ::',ilevel,quanta(1:nmodes)
+               largest_coeff,grep,ilevel,normal(1:nmodes),cnu(1:Nclasses)
                !
              endif
              !
              passed = .true.
+             !
              if (istate2ilevel(jind,igamma,ilevel)==0) passed = .false.
              !
              !call filter(energy,igamma,passed)
@@ -871,6 +898,7 @@ contains
                   eigen(nlevels)%cgamma(:)  = sym%label(isym(:))
                   eigen(nlevels)%icoeff     = ilarge_coef
                   eigen(nlevels)%largest_coeff = largest_coeff
+                  eigen(nlevels)%cnu(:)     = cnu(:)
                   !
                 endif 
                 !
@@ -950,7 +978,7 @@ contains
       enddo
     enddo
     !
-    deallocate(ktau_rot,isym) 
+    deallocate(ktau_rot,isym,cnu) 
     !
     if (job%verbose>=2) write(out,"('...done!')")
     !
@@ -1007,12 +1035,12 @@ contains
     !
     if (present(igamma)) then
        !
-       if (.not.job%select_gamma(igamma)) then 
+       if (.not.job%select_gamma(igamma).and.(jval(jind)/=0.or.igamma/=1)) then 
          TReigenvec_unit = -1
          return
        endif
        !
-       write(ioname, '(a, i4,2x,i2)') 'eigenvalues for J,gamma = ', jval(jind),igamma
+       write(ioname, '(a, i4,2x,i4)') 'eigenvalues for J,gamma = ', jval(jind),igamma
        !
     else
        write(ioname, '(a, i4)') 'eigenvectors for J=', jval(jind)
@@ -1029,7 +1057,7 @@ contains
     TReigenvec_unit = iounit
     !
     write(jchar, '(i4)') jval(jind)
-    if (present(igamma)) write(gchar, '(i2)') igamma
+    if (present(igamma)) write(gchar, '(i3)') igamma
     !
     !filename = trim(job%eigenfile%filebase)//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
     !if (job%IOvector_symm) 
@@ -1139,6 +1167,65 @@ contains
     end if
     !
  end function TReigenvec_unit
+
+
+ function TReigenvec_unit_external(jind,jval,igamma)
+
+ !open a file with eigenfunctions produced externally
+
+    integer(ik), intent(in)          :: jind,jval(:)
+    integer(ik), intent(in) :: igamma
+    !
+    integer(ik)             :: TReigenvec_unit
+    !
+    integer(ik)             :: kind,ilevel,jlevel, ncontr, iounit, info, reclen, irec
+    !
+    real(rk), pointer       :: vec1(:),vec2(:)
+    real(rk)                :: f_t
+    !
+    character(4)            :: jchar,gchar = 'xxxx'
+    character(cl)           :: filename
+    character(cl)           :: ioname
+    logical                 :: exists,hasopened
+    !
+    call iostart(trim(ioname), iounit)
+    !
+    TReigenvec_unit_external = iounit
+    !
+    write(jchar, '(i4)') jval(jind)
+    write(gchar, '(i3)') igamma
+    !
+    !filename = trim(job%eigenfile%filebase)//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+    !if (job%IOvector_symm) 
+    !
+    filename = "external"//'_vectors'//trim(adjustl(jchar))//'_'//trim(adjustl(gchar))//'.chk'
+    !
+    inquire (file = filename, exist = exists)
+    if (.not.exists) then 
+      write (out,"('TReigenvec_unit: Cannot find file for j= ',i3,4x,a)") jval(jind),filename
+      stop 'TReigenvec_unit: file with eigenvectors does not exist' 
+    endif 
+    !
+    inquire (unit = iounit, opened = hasopened)
+    !
+    if (hasopened) return
+    ncontr = max(bset_contr(jind)%nsize(igamma),1)
+    !
+    inquire(iolength = reclen) f_t
+    reclen = ncontr*reclen
+    !
+    open(unit = iounit, access = 'direct', recl = reclen, action='read',status='old' , file = filename,err=22)
+    !
+    return
+    !
+    22 continue
+    !
+    write (out,"('TReigenvec_unit_external: Error opening  eigenvectors-file for j= ',i4,a)") jval(jind),filename
+    stop 'TReigenvec_unit_external: Error opening  eigenvectors-file' 
+    !
+    !
+ end function TReigenvec_unit_external
+
 
 
  subroutine TRconvert_repres_J0_to_contr(Jrot)
@@ -1257,6 +1344,9 @@ contains
                     ' at least one must be set to CONVERT or EIGENfunc SAVE CONVERT'
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
+      !
+      ! restore the status if IOmatelem_split if it was changed at previous stages:
+      if (job%IOmatelem_split_changed) job%IOmatelem_split = .not.job%IOmatelem_split
       !
       matsize  = int(Neigenroots*(Neigenroots+1)/2,hik)
       matsize2 = int(Neigenroots*Neigenroots,hik)
@@ -2118,6 +2208,21 @@ contains
           !enddo
           !!$omp end parallel do
           !
+          if (job%verbose>=6) then 
+            !
+            ! printout extF matrix elements
+            !
+            do iroot=1,Neigenroots
+              do jroot=1,iroot
+                !
+                if (abs(mat_s(iroot,jroot))>job%coeff_thresh) then
+                  write(out,"(i4,1x,2(i8,1x),g18.11,2x,a2)") imu,iroot,jroot,mat_s(iroot,jroot),"||"
+                endif
+                !
+              enddo
+            enddo
+            !
+          endif
           !
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !

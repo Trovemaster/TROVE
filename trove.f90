@@ -14,6 +14,7 @@
     use refinement, only : refinement_by_fit,external_expectation_values
     use tran, only : TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
     use mpi_aux, only: mpi_rank,co_init_comms,co_finalize_comms
+    use extfield
 
     implicit none
 
@@ -73,7 +74,11 @@
          !
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
          !
-         call dm_tranint
+         if (trim(intensity%action)=='FIELD_ME') then
+           call emf_matelem
+         else
+           call dm_tranint
+         endif
          !
          return
          !
@@ -194,6 +199,10 @@
         endif
         !
         call PTcontracted_matelem_class_fast(j) 
+        !
+        !call PTstore_contr_matelem_II(j)
+        !
+        !call PTcontracted_matelem_class_fast_II(j) 
         !
       else
         !

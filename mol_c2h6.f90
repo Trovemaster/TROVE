@@ -3,13 +3,14 @@
 module mol_c2h6
   use accuracy
   use moltype
+  use lapack
 
   implicit none
 
   public ML_coordinate_transform_C2H6, ML_b0_C2H6, ML_symmetry_transformation_C2H6, ML_rotsymmetry_C2H6
   private
 
-  integer(ik), parameter :: verbose = 3 ! Verbosity level
+  integer(ik), parameter :: verbose = 4 ! Verbosity level
 
   !--------------------------
   !      ZMAT_4BETA_1TAU
@@ -66,10 +67,8 @@ module mol_c2h6
     !
     real(ark) :: tau16,tau34,tau36,tau24,tau25,theta12,theta23,theta31,theta56,theta45,theta64,&
                  S1,S2,S3,S4,S5,S6,taubar,tau,S14,S15,S16,S17,S18
-
-    real(ark) :: tau14,tau35,theta13,theta46
-    
-    
+    real(ark) :: tau14,tau35,theta13,theta46,tau41,tau62,tau53,tau51,tau52,tau63
+    !
     if (verbose>=5) write(out, '(/a)') 'ML_coordinate_transform_C2H6/start'
     !
     nsrc = size(src)
@@ -87,9 +86,9 @@ module mol_c2h6
       !  TO BE 16TH COORDINATE IN Z-MAT
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
-
+        !
         dst(1:13) = src(1:13)-molec%local_eq(1:13)
-
+        !
         dst(14)  = (3.0_ark*src(14) - 2.0_ark*pi)/sqrt(6.0_ark)
         dst(15)  = ( 2.0_ark*src(15) - 2.0_ark*pi + src(14))/sqrt(2.0_ark)
         dst(16) = (3.0_ark*src(18) - 2.0_ark*pi)/sqrt(6.0_ark)
@@ -99,7 +98,7 @@ module mol_c2h6
       else !  transform from TROVE coords to Z-matrix coords
         !
         dst(1:13) = src(1:13)+molec%local_eq(1:13)
-
+        !
         dst(14) = ((sqrt(6.0_ark))*src(14) + 2.0_ark*pi)/3.0_ark
         dst(15) = ( (sqrt(2.0_ark))*src(15) - dst(14) + 2.0_ark*pi)/2.0_ark
         dst(18) = ((sqrt(6.0_ark))*src(16) + 2.0_ark*pi)/3.0_ark
@@ -113,7 +112,7 @@ module mol_c2h6
       !  TO BE 16TH COORDINATE IN Z-MAT
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
-
+        !
         dst(1:13) = src(1:13)-molec%local_eq(1:13)
         !
         tau14 = src(14)
@@ -142,33 +141,30 @@ module mol_c2h6
         !
         dst(1:13) = src(1:13)+molec%local_eq(1:13)
         !
-
         S14 = src(14)
         S15 = src(15)
         S16 = src(16)
         S17 = src(17)
         S18 = src(18)
-
+        !
         !tau14 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+S18+Pi 
         !tau35 = S18+1.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
         !tau36 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+S18+Pi-1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15 
         !tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*S17+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+S18+Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16 
         !tau24 = S18+1.0_ark/3.0_ark*Pi+1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
-
-
-tau14 = 1.0_ark/6.0_ark*sqrt(2._ark)*S17+4.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2._ark)*S15-1.0_ark/6*sqrt(2._ark)*&
-        sqrt(3.0_ark)*S16+1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+&
-        1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
-tau24 = 2.0_ark/3.0_ark*Pi+1.0_ark/3*sqrt(3.0_ark)*S18-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17-&
-        1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14-&
-        1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
-tau25 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+&
-         1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
-tau36 = 1.0_ark/3.0_ark*sqrt(3.0_ark)*S18-4.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17+&
-         1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
-tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15-1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
-
-
+        !
+        tau14 = 1.0_ark/6.0_ark*sqrt(2._ark)*S17+4.0_ark/3.0_ark*Pi-1.0_ark/6.0_ark*sqrt(2._ark)*S15-1.0_ark/6*sqrt(2._ark)*&
+            sqrt(3.0_ark)*S16+1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+&
+            1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
+        tau24 = 2.0_ark/3.0_ark*Pi+1.0_ark/3*sqrt(3.0_ark)*S18-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17-&
+            1.0_ark/6*sqrt(2.0_ark)*sqrt(3.0_ark)*S14-&
+            1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
+        tau25 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*S17-1.0_ark/6.0_ark*sqrt(2.0_ark)*S15-1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S14+&
+            1.0_ark/3.0_ark*sqrt(3.0_ark)*S18
+        tau36 = 1.0_ark/3.0_ark*sqrt(3.0_ark)*S18-4.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15+1.0_ark/6*sqrt(2.0_ark)*S17+&
+            1.0_ark/6.0_ark*sqrt(2.0_ark)*sqrt(3.0_ark)*S16
+        tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sqrt(2.0_ark)*S15-1.0_ark/3.0_ark*sqrt(2.0_ark)*S17
+        !
         !S1 = src(14)
         !S2 = src(15)
         !S3 = 2.0_ark*pi
@@ -205,7 +201,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
       !  TO BE 16TH COORDINATE IN Z-MAT
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
-
+        !
         dst(1) = src(1)-molec%local_eq(1)
         !
         dst(2) = src(2)-molec%local_eq(2)
@@ -280,7 +276,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
         !tau25 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi-sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
         !tau24 =  sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+pi/3.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18
-
+        !
         tau16 = Pi + S14/sqrt(6.0_ark) +S15/(3.0_ark*Sqrt(2.0_ark)) - S16/sqrt(6.0_ark) +S17/(3.0_ark*sqrt(2.0_ark)) +s18
         !
         tau36 = 1.0_ark/6.0_ark*(2.0_ark*Pi-sqrt(6.0_ark)*S14+sqrt(2.0_ark)*S15-sqrt(6.0_ark)*S16+sqrt(2.0_ark)*S17+6.0_ark*S18)
@@ -290,7 +286,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         tau24 = Pi/3.0_ark - sqrt(2.0_ark)/3.0_ark*S15 +S16/sqrt(6.0_ark) + S17/(sqrt(2.0_ark)*3.0_ark) + S18
         !
         tau25 = Pi -sqrt(2.0_ark)/3.0_ark*S15 -sqrt(2.0_ark)/3.0_ark*S17 + S18
-
+        !
         !
         !S1 = src(14)
         !S2 = src(15)
@@ -1378,6 +1374,12 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         S17 = src(17)
         S18 = src(18)
         !
+        !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
+        !tau24 = -1/3*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau25 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16+1/6*sqrt(6)*s14+tau0
+        !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
+        !
         tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
         tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
         tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
@@ -1385,13 +1387,1100 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
                 -2.0_ark/3.0_ark*pi
         tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
         !
-        dst(14) = mod(tau14+4.0_ark*pi,2.0_ark*pi)
+        !tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+tau0
+        !tau24 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau25 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16+1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+        !tau35 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau36 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+
+        !
+        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi) 
         dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
         dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
         dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
         dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
         !
       endif
+      !
+    case('R-R16-BETA16-THETA-TAU-12')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(6)-molec%local_eq(6)
+        dst(7) = src(4)-molec%local_eq(4)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(6+6)-molec%local_eq(6+6)
+        dst(13) = src(4+6)-molec%local_eq(4+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(3)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        !
+        tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
+        tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
+        tau25 = 1.0_ark/6.0_ark*(-Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau53 = 1.0_ark/6.0_ark*(Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18) 
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,2.0_ark*pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-13')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper, the same as 12 but with theta56 -> -theta56
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(6)-molec%local_eq(6)
+        dst(7) = src(4)-molec%local_eq(4)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(6+6)-molec%local_eq(6+6)
+        dst(13) = src(4+6)-molec%local_eq(4+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(-tau25+tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(-tau16+tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        tau41 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+s18
+        tau62 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18
+        tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18-2.0_ark/3.0_ark*pi
+        tau16 = -2.0_ark/3.0_ark*pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18
+        tau53 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,4.0_ark*pi)  ! <- made mod(4pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+      !
+    case('R-R16-BETA16-THETA-TAU-14')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(6)-molec%local_eq(6)
+        dst(7) = src(4)-molec%local_eq(4)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(6+6)-molec%local_eq(6+6)
+        dst(13) = src(4+6)-molec%local_eq(4+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
+        tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
+        tau25 = 1.0_ark/6.0_ark*(-Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau53 = 1.0_ark/6.0_ark*(Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18) 
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,4.0_ark*pi)  ! <- made mod(4pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-15')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper , based on tau-13, and all dihedals mod(4pi)
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(4)-molec%local_eq(4)
+        dst(7) = src(6)-molec%local_eq(6)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(4+6)-molec%local_eq(4+6)
+        dst(13) = src(6+6)-molec%local_eq(6+6)
+        !
+        tau41 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(-tau25+tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(-tau16+tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(4) = src(6)+molec%local_eq(6)
+        dst(6) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(4+6) = src(12)+molec%local_eq(12)
+        dst(6+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        tau41 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+S18
+        tau16 = -2.0_ark/3.0_ark*pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17&
+                +1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+S18
+        tau62 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14&
+                +1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+S18
+        tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17&
+                -1.0_ark/6.0_ark*sqrt(6.0_ark)*s14-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+S18-2.0_ark/3.0_ark*pi
+        tau53 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14&
+                -1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+S18
+        !
+        dst(14) = mod(tau41+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+      ! 
+    case('R-R16-BETA16-THETA-TAU-16-X')
+      ! tau-11 with tau24->2pi-tau24 and same for tau35
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(2)-molec%local_eq(2)
+        dst(3) = src(4)-molec%local_eq(4)
+        dst(4) = src(6)-molec%local_eq(6)
+        dst(5) = src(3)-molec%local_eq(3)
+        dst(6) = src(5)-molec%local_eq(5)
+        dst(7) = src(7)-molec%local_eq(7)
+        !
+        dst( 8) = src( 8)-molec%local_eq( 8)
+        dst( 9) = src(10)-molec%local_eq(10)
+        dst(10) = src(12)-molec%local_eq(12)
+        dst(11) = src( 9)-molec%local_eq( 9)
+        dst(12) = src(11)-molec%local_eq(11)
+        dst(13) = src(13)-molec%local_eq(13)
+        !
+        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau24 = mod(2.0_ark*pi-src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(2.0_ark*pi-src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau14>2.0_ark*pi) then 
+           tau25 = tau25 + 2.0_ark*pi
+           tau36 = tau36 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(2) = src(2)+molec%local_eq(2)
+        dst(4) = src(3)+molec%local_eq(3)
+        dst(6) = src(4)+molec%local_eq(4)
+        dst(3) = src(5)+molec%local_eq(5)
+        dst(5) = src(6)+molec%local_eq(6)
+        dst(7) = src(7)+molec%local_eq(7)
+        !
+        dst( 8) = src( 8)+molec%local_eq( 8)
+        dst(10) = src( 9)+molec%local_eq( 9)
+        dst(12) = src(10)+molec%local_eq(10)
+        dst( 9) = src(11)+molec%local_eq(11)
+        dst(11) = src(12)+molec%local_eq(12)
+        dst(13) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        taubar = S18
+        !
+        theta23 = 1.0_ark/3.0_ark*sqrt(6.0_ark)*S14+1.0_ark/3.0_ark*2.0_ark*pi
+        theta13 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14+1.0_ark/2.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*2.0_ark*pi
+        theta12 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S14-1.0_ark/2.0_ark*sqrt(2.0_ark)*S15+1.0_ark/3.0_ark*2.0_ark*pi
+        theta56 = 1.0_ark/3.0_ark*sqrt(6.0_ark)*S16+1.0_ark/3.0_ark*2.0_ark*pi
+        theta45 = -1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+1.0_ark/2.0_ark*sqrt(2.0_ark)*S17+1.0_ark/3.0_ark*2.0_ark*pi
+        theta46 = -1.0_ark/2.0_ark*sqrt(2.0_ark)*S17-1.0_ark/6.0_ark*sqrt(6.0_ark)*S16+1.0_ark/3.0_ark*2.0_ark*pi
+        !
+        tau14 = taubar+(2.0_ark*theta12-theta56+theta23-2.0_ark*theta45)/3.0_ark
+        tau35 = taubar+(-theta12-theta56-2.0_ark*theta23+theta45)/3.0_ark
+        tau36 = taubar+(-theta12+2.0_ark*theta56-2.0_ark*theta23+theta45)/3.0_ark
+        tau25 = taubar+(-theta12-theta56+theta23+theta45)/3.0_ark
+        tau24 = taubar+(-theta12-theta56+theta23-2.0_ark*theta45)/3.0_ark
+        !
+        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi) 
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+
+      !
+    case('R-R16-BETA16-THETA-TAU-16')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(4)-molec%local_eq(4)
+        dst(7) = src(6)-molec%local_eq(6)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(4+6)-molec%local_eq(4+6)
+        dst(13) = src(6+6)-molec%local_eq(6+6)
+        !
+        tau41 = mod( src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau51 = mod( src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau52 = mod( src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod( src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau63 = mod( src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau41>2.0_ark*pi) then 
+           tau63 = tau63 + 2.0_ark*pi
+           tau52 = tau52 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau52+tau63)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau51 = mod(tau51+2.0_ark*pi,2.0_ark*pi)
+        tau52 = mod(tau52+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau63 = mod(tau63+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(-tau51+tau52+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(-tau62+tau63+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(-tau62+tau52+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(-tau51+tau41+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(4) = src(6)+molec%local_eq(6)
+        dst(6) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(4+6) = src(12)+molec%local_eq(12)
+        dst(6+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        taubar = S18
+        !
+        ! -1/3*sqrt(2)*s15+1/3*sqrt(2)*s17+tau0
+        ! -1/3*sqrt(2)*s15-1/6*sqrt(2)*s17-1/6*sqrt(6)*s16+tau0+2/3*pi
+        ! 1/6*sqrt(2)*s15-1/6*sqrt(2)*s17+1/6*sqrt(6)*s14-1/6*sqrt(6)*s16+tau0
+        ! 1/6*sqrt(2)*s15-1/6*sqrt(2)*s17+1/6*sqrt(6)*s14+1/6*sqrt(6)*s16+tau0+2/3*pi
+        ! 1/6*sqrt(2)*s15-1/6*sqrt(2)*s17-1/6*sqrt(6)*s14+1/6*sqrt(6)*s16+tau0
+        !
+        ! tau51-tau52
+        !tau41 = -sqrt(2.0_ark)/3.0_ark*s15+sqrt(2.0_ark)/3.0_ark*s17+taubar
+        !tau51 = -sqrt(2.0_ark)/3.0_ark*s15-sqrt(2.0_ark)/6.0_ark*s17                          -sqrt(6.0_ark)/6.0_ark*s16+taubar+2.0_ark/3.0_ark*pi
+        !tau52 =  sqrt(2.0_ark)/6.0_ark*s15-sqrt(2.0_ark)/6.0_ark*s17+sqrt(6.0_ark)/6.0_ark*s14-sqrt(6.0_ark)/6.0_ark*s16+taubar
+        !tau62 =  sqrt(2.0_ark)/6.0_ark*s15-sqrt(2.0_ark)/6.0_ark*s17+sqrt(6.0_ark)/6.0_ark*s14+sqrt(6.0_ark)/6.0_ark*s16+taubar+2.0_ark/3.0_ark*pi
+        !tau63 =  sqrt(2.0_ark)/6.0_ark*s15-sqrt(2.0_ark)/6.0_ark*s17-sqrt(6.0_ark)/6.0_ark*s14+sqrt(6.0_ark)/6.0_ark*s16+taubar
+        !
+        ! -tau51+tau52
+        !
+        !tau41 = 1/3*sqrt(2)*s15-1/3*sqrt(2)*s17+tau0        
+        !tau51 = 1/3*sqrt(2)*s15+1/6*sqrt(2)*s17+1/6*sqrt(6)*s16+tau0-2/3*pi
+        !tau52 = -1/6*sqrt(6)*s14+1/6*sqrt(6)*s16-1/6*sqrt(2)*s15+1/6*sqrt(2)*s17+tau0
+        !tau62 = -1/6*sqrt(6)*s14-1/6*sqrt(6)*s16-1/6*sqrt(2)*s15+1/6*sqrt(2)*s17+tau0-2/3*pi
+        !tau63 = -1/6*sqrt(2)*s15+1/6*sqrt(2)*s17+1/6*sqrt(6)*s14-1/6*sqrt(6)*s16+tau0
+        !
+        tau41 =  sqrt(2.0_ark)/3.0_ark*s15-sqrt(2.0_ark)/3.0_ark*s17+taubar
+        tau51 =  sqrt(2.0_ark)/3.0_ark*s15+sqrt(2.0_ark)/6.0_ark*s17                          +sqrt(6.0_ark)/6.0_ark*s16+taubar-2.0_ark/3.0_ark*pi
+        tau52 = -sqrt(2.0_ark)/6.0_ark*s15+sqrt(2.0_ark)/6.0_ark*s17-sqrt(6.0_ark)/6.0_ark*s14+sqrt(6.0_ark)/6.0_ark*s16+taubar
+        tau62 = -sqrt(2.0_ark)/6.0_ark*s15+sqrt(2.0_ark)/6.0_ark*s17-sqrt(6.0_ark)/6.0_ark*s14-sqrt(6.0_ark)/6.0_ark*s16+taubar-2.0_ark/3.0_ark*pi
+        tau63 = -sqrt(2.0_ark)/6.0_ark*s15+sqrt(2.0_ark)/6.0_ark*s17+sqrt(6.0_ark)/6.0_ark*s14-sqrt(6.0_ark)/6.0_ark*s16+taubar
+        !
+        dst(14) = mod( tau41+4.0_ark*pi,4.0_ark*pi)  ! <- made mod(4pi)
+        dst(15) = mod( tau51+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod( tau52+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod( tau62+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod( tau63+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-17')
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(2)-molec%local_eq(2)
+        dst(3) = src(4)-molec%local_eq(4)
+        dst(4) = src(6)-molec%local_eq(6)
+        dst(5) = src(3)-molec%local_eq(3)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(5)-molec%local_eq(5)
+        !
+        dst( 8) = src( 8)-molec%local_eq( 8)
+        dst( 9) = src(10)-molec%local_eq(10)
+        dst(10) = src(12)-molec%local_eq(12)
+        dst(11) = src( 9)-molec%local_eq( 9)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(11)-molec%local_eq(11)
+        !
+        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau14>2.0_ark*pi) then 
+           tau25 = tau25 + 2.0_ark*pi
+           tau36 = tau36 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(2) = src(2)+molec%local_eq(2)
+        dst(4) = src(3)+molec%local_eq(3)
+        dst(6) = src(4)+molec%local_eq(4)
+        dst(3) = src(5)+molec%local_eq(5)
+        dst(7) = src(6)+molec%local_eq(6)
+        dst(5) = src(7)+molec%local_eq(7)
+        !
+        dst( 8) = src( 8)+molec%local_eq( 8)
+        dst(10) = src( 9)+molec%local_eq( 9)
+        dst(12) = src(10)+molec%local_eq(10)
+        dst( 9) = src(11)+molec%local_eq(11)
+        dst(13) = src(12)+molec%local_eq(12)
+        dst(11) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
+        !tau24 = -1/3*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau25 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16+1/6*sqrt(6)*s14+tau0
+        !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
+        !
+        !tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
+        !tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
+        !tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
+        !tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18&
+        !        -2.0_ark/3.0_ark*pi
+        !tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        !
+        tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+S18
+        tau24 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s14+S18-2.0_ark/3.0_ark*pi
+        tau25 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16+1.0_ark/6*sqrt(6.0_ark)*s14+S18
+        tau35 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+S18&
+                -2.0_ark/3.0_ark*pi
+        tau36 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+S18
+        !
+        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi) 
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+      ! 
+    case('R-R16-BETA16-THETA-TAU-18')
+      !
+      ! start from tau-11 and revert theta12 and theta56
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(2)-molec%local_eq(2)
+        dst(3) = src(4)-molec%local_eq(4)
+        dst(4) = src(6)-molec%local_eq(6)
+        dst(5) = src(3)-molec%local_eq(3)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(5)-molec%local_eq(5)
+        !
+        dst( 8) = src( 8)-molec%local_eq( 8)
+        dst( 9) = src(10)-molec%local_eq(10)
+        dst(10) = src(12)-molec%local_eq(12)
+        dst(11) = src( 9)-molec%local_eq( 9)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(11)-molec%local_eq(11)
+        !
+        tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
+        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+        if (tau14>2.0_ark*pi) then 
+           tau25 = tau25 + 2.0_ark*pi
+           tau36 = tau36 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(-tau14+tau24+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(-tau25+tau35+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(-tau36+tau35+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(-tau25+tau24+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(2) = src(2)+molec%local_eq(2)
+        dst(4) = src(3)+molec%local_eq(3)
+        dst(6) = src(4)+molec%local_eq(4)
+        dst(3) = src(5)+molec%local_eq(5)
+        dst(7) = src(6)+molec%local_eq(6)
+        dst(5) = src(7)+molec%local_eq(7)
+        !
+        dst( 8) = src( 8)+molec%local_eq( 8)
+        dst(10) = src( 9)+molec%local_eq( 9)
+        dst(12) = src(10)+molec%local_eq(10)
+        dst( 9) = src(11)+molec%local_eq(11)
+        dst(13) = src(12)+molec%local_eq(12)
+        dst(11) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
+        !tau24 = -1/3*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau25 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16+1/6*sqrt(6)*s14+tau0
+        !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
+        !
+        tau14 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+S18
+        tau24 = 1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15&
+                -1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18+2.0_ark/3.0_ark*pi
+        tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16&
+                -1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18
+        tau35 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+&
+                 1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18+2.0_ark/3.0_ark*pi
+        tau36 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16&
+                +1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18
+        !
+        !tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+tau0
+        !tau24 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau25 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16+1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+        !tau35 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau36 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+
+        !
+        dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi) 
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        !
+      endif
+      !
+    case('R-R16-BETA16-THETA-TAU-19')
+      !
+      ! This option is supposed to be exactly as in the C2H6 symmetry paper 
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(3)-molec%local_eq(3)
+        dst(3) = src(5)-molec%local_eq(5)
+        dst(4) = src(7)-molec%local_eq(7)
+        dst(5) = src(2)-molec%local_eq(2)
+        dst(6) = src(6)-molec%local_eq(6)
+        dst(7) = src(4)-molec%local_eq(4)
+        !
+        dst( 8) = src(3+6)-molec%local_eq(3+6)
+        dst( 9) = src(5+6)-molec%local_eq(5+6)
+        dst(10) = src(7+6)-molec%local_eq(7+6)
+        dst(11) = src(2+6)-molec%local_eq(2+6)
+        dst(12) = src(6+6)-molec%local_eq(6+6)
+        dst(13) = src(4+6)-molec%local_eq(4+6)
+        !
+        tau41 = mod(src(14)+6.0_ark*pi,6.0_ark*pi)
+        tau16 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 504-type (60..780) for tau14, tau25 and tau36 are extended to 60-780 as well
+        if (tau41>4.0_ark*pi) then 
+           tau53 = tau53 + 4.0_ark*pi
+           tau62 = tau62 + 4.0_ark*pi
+        elseif (tau41>2.0_ark*pi) then 
+           tau53 = tau53 + 2.0_ark*pi
+           tau62 = tau62 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau41+tau53+tau62)/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+        tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+        theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+        theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+        !
+        !
+      else !  transform from TROVE coords to Z-matrix coords; 13=12 with dst(4)<=>dst(6)
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(3) = src(2)+molec%local_eq(2)
+        dst(5) = src(3)+molec%local_eq(2)
+        dst(7) = src(4)+molec%local_eq(4)
+        dst(2) = src(5)+molec%local_eq(5)
+        dst(6) = src(6)+molec%local_eq(6)
+        dst(4) = src(7)+molec%local_eq(7)
+        !
+        dst(3+6) = src( 8)+molec%local_eq( 8)
+        dst(5+6) = src( 9)+molec%local_eq( 9)
+        dst(7+6) = src(10)+molec%local_eq(10)
+        dst(2+6) = src(11)+molec%local_eq(11)
+        dst(6+6) = src(12)+molec%local_eq(12)
+        dst(4+6) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        tau41 = 1.0_ark/3.0_ark*(Sqrt(2.0_ark)*S15 + Sqrt(2.0_ark)*S17 + 3.0_ark*S18)
+        tau16 = 1.0_ark/6.0_ark*(2.0_ark*Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau62 = 1.0_ark/6.0_ark*(-sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 + Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18)
+        tau25 = 1.0_ark/6.0_ark*(-Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18 - 4.0_ark*Pi)
+        tau53 = 1.0_ark/6.0_ark*(Sqrt(6.0_ark)*S14 - Sqrt(2.0_ark)*S15 - Sqrt(6.0_ark)*S16 - Sqrt(2.0_ark)*S17 + 6.0_ark*S18) 
+        !
+        !tau41 = 1.0_ark/3*sqrt(2.0_ark)*s15-1.0_ark/3*sqrt(2.0_ark)*s17+s18-4.0_ark/3*pi
+        !tau16 = -2.0_ark/3*pi+1.0_ark/3*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18
+        !tau62 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18
+        !tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18+2.0_ark/3*pi
+        !tau53 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+s18+4.0_ark/3*pi
+        !
+        dst(14) = mod(tau41+6.0_ark*pi,6.0_ark*pi)  ! <- made mod(6pi)
+        dst(15) = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau62+6.0_ark*pi,6.0_ark*pi)
+        dst(17) = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau53+6.0_ark*pi,6.0_ark*pi)
+        !
+      endif
+      ! 
+    case('R-R16-BETA16-THETA-TAU-20')
+      !
+      ! using case 11 in conjunction with tau = 60-780 case 
+      ! the difference that it should allow for values > 720 i.e.mod(6pi)
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords
+        !
+        dst(1) = src(1)-molec%local_eq(1)
+        !
+        dst(2) = src(2)-molec%local_eq(2)
+        dst(3) = src(4)-molec%local_eq(4)
+        dst(4) = src(6)-molec%local_eq(6)
+        dst(5) = src(3)-molec%local_eq(3)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(5)-molec%local_eq(5)
+        !
+        dst( 8) = src( 8)-molec%local_eq( 8)
+        dst( 9) = src(10)-molec%local_eq(10)
+        dst(10) = src(12)-molec%local_eq(12)
+        dst(11) = src( 9)-molec%local_eq( 9)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(11)-molec%local_eq(11)
+        !
+        tau14 = mod(src(14)+4.0_ark*pi,6.0_ark*pi)
+        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        !
+        ! assuming this is the 504-type (60..780) for tau14, tau25 and tau36 are extended to 60-780 as well
+        if (tau14>4.0_ark*pi) then 
+           tau25 = tau25 + 4.0_ark*pi
+           tau36 = tau36 + 4.0_ark*pi
+        else if (tau14>2.0_ark*pi) then 
+           tau25 = tau25 + 2.0_ark*pi
+           tau36 = tau36 + 2.0_ark*pi
+        endif
+        !
+        taubar  = ( tau14+tau25+tau36 )/(3.0_ark)
+        !
+        dst(18) = taubar
+        !
+        ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+        !
+        tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        !
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1) = src(1)+molec%local_eq(1)
+        !
+        dst(2) = src(2)+molec%local_eq(2)
+        dst(4) = src(3)+molec%local_eq(3)
+        dst(6) = src(4)+molec%local_eq(4)
+        dst(3) = src(5)+molec%local_eq(5)
+        dst(7) = src(6)+molec%local_eq(6)
+        dst(5) = src(7)+molec%local_eq(7)
+        !
+        dst( 8) = src( 8)+molec%local_eq( 8)
+        dst(10) = src( 9)+molec%local_eq( 9)
+        dst(12) = src(10)+molec%local_eq(10)
+        dst( 9) = src(11)+molec%local_eq(11)
+        dst(13) = src(12)+molec%local_eq(12)
+        dst(11) = src(13)+molec%local_eq(13)
+        !
+        S14 = src(14)
+        S15 = src(15)
+        S16 = src(16)
+        S17 = src(17)
+        S18 = src(18)
+        !
+        !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
+        !tau24 = -1/3*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau25 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16+1/6*sqrt(6)*s14+tau0
+        !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
+        !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
+        !
+        tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
+        tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
+        tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
+        tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18&
+                -2.0_ark/3.0_ark*pi
+        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        !
+        !tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+tau0
+        !tau24 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau25 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16+1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+        !tau35 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15-1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi
+        !tau36 = 1.0_ark/6*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s16-1.0_ark/6*sqrt(6.0_ark)*s14+tau0
+
+        !
+        dst(14) = mod(tau14+4.0_ark*pi,6.0_ark*pi) ! <- made mod(4pi) 
+        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau25+4.0_ark*pi,6.0_ark*pi)
+        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau36+4.0_ark*pi,6.0_ark*pi)
+        !
+      endif
+      !
+
+
+
       !
     end select
     !
@@ -1414,6 +2503,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     real(ark) :: a0(molec%Natoms,3),CM_shift,tau,alpha0,alpha,theta,r,r12,tau14,tau15,tau16
     real(ark) :: transform(3,3),phi
     integer(ik) :: i, n, iatom, ix
+    character(2) :: atoms(molec%Natoms)
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/start'
     !
@@ -1495,14 +2585,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         a0(n,:) = matmul(transform,a0(n,:))
       enddo
       !
-      if (verbose>=4) then
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
-        do iatom=3, Natoms
-          write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
-        enddo
-      endif
-      !
       b0(:,:,0) = a0(:,:)
       !
       if (Npoints/=0) then
@@ -1575,16 +2657,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             !
             !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
             !
-            if (verbose>=4) then
-              write(out, '(i5)') 8
-              write(out,'(a)') ""
-              write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-              write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-              do iatom=3, Natoms
-                write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-              enddo
-            endif
-            !
          enddo
          !
       endif
@@ -1646,14 +2718,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
       do n = 1,Natoms
         a0(n,:) = matmul(transform,a0(n,:))
       enddo
-      !
-      if (verbose>=3) then
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(1,1:3)
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'C', a0(2,1:3)
-        do iatom=3, Natoms
-          write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
-        enddo
-      endif
       !
       b0(:,:,0) = a0(:,:)
       !
@@ -1723,16 +2787,6 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
             do n = 1,Natoms
               b0(n,:,i) = matmul(transform,b0(n,:,i))
             enddo
-            !
-            if (verbose>=3) then
-              write(out, '(i5)') 8
-              write(out,'(a)') ""
-              write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-              write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-              do iatom=3, Natoms
-                write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-              enddo
-            endif
             !
          enddo         
          !
@@ -1808,20 +2862,11 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
          do n = 1,Natoms
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
-         !
-         if (verbose>=3) then
-           write(out, '(i5)') 8
-           write(out,'(a)') ""
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-           do iatom=3, Natoms
-             write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-           enddo
-         endif
          !  
       enddo
       !
-    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11',&
+         'R-R16-BETA16-THETA-TAU-18')
       !
       tau = pi
       !
@@ -1832,7 +2877,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
          endif
       endif
       !
-      if (present(rho_ref)) rho_ref = 0
+      if (present(rho_ref)) rho_ref = pi ! rho_i(0)
       !
       do i = 0,npoints
          !
@@ -1891,20 +2936,495 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
          do n = 1,Natoms
            b0(n,:,i) = matmul(transform,b0(n,:,i))
          enddo
-         !
-         if (verbose>=3) then
-           write(out, '(i5)') 8
-           write(out,'(a)') ""
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
-           write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
-           do iatom=3, Natoms
-             write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
-           enddo
+         !  
+      enddo
+      !
+    case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13',&
+         'R-R16-BETA16-THETA-TAU-16')
+      !
+      tau = pi
+      theta = 2.0_ark*pi/3.0_ark
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
          endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = 0
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)
+         !
+         tau14 = tau
+         tau16 = theta - tau
+         tau15 = theta + tau
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(4,1,i) = r*sin(alpha)
+         b0(4,2,i) = 0
+         b0(4,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(theta)
+         b0(6,2,i) = r*sin(alpha)*sin(theta)
+         b0(6,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(theta)
+         b0(8,2,i) =-r*sin(alpha)*sin(theta)
+         b0(8,3,i) =-r*cos(alpha)
+         !
+         b0(3,1,i) = r*sin(alpha)*cos(tau14)
+         b0(3,2,i) =-r*sin(alpha)*sin(tau14)
+         b0(3,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(tau16)
+         b0(5,2,i) = r*sin(alpha)*sin(tau16)
+         b0(5,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(tau15)
+         b0(7,2,i) =-r*sin(alpha)*sin(tau15)
+         b0(7,3,i) = r*cos(alpha)
+         !
+         b0(1,3,i) = b0(1,3,i) + r12*0.5_ark
+         b0(2,3,i) = b0(2,3,i) - r12*0.5_ark
+
+         b0(4:8:2,3,i) =b0(4:8:2,3,i)+r12*0.5_ark
+         b0(3:7:2,3,i) =b0(3:7:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !  
+      enddo
+      !
+    case('R-R16-BETA16-THETA-TAU-14')
+      !
+      ! y -> -y 
+      !
+      tau = pi
+      theta = 2.0_ark*pi/3.0_ark
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = rho_i(0)
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)
+         !
+         tau14 = tau
+         tau16 = theta - tau
+         tau15 = theta + tau
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(4,1,i) = r*sin(alpha)
+         b0(4,2,i) = 0
+         b0(4,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(theta)
+         b0(6,2,i) =-r*sin(alpha)*sin(theta)
+         b0(6,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(theta)
+         b0(8,2,i) = r*sin(alpha)*sin(theta)
+         b0(8,3,i) =-r*cos(alpha)
+         !
+         b0(3,1,i) = r*sin(alpha)*cos(tau14)
+         b0(3,2,i) = r*sin(alpha)*sin(tau14)
+         b0(3,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(tau16)
+         b0(5,2,i) =-r*sin(alpha)*sin(tau16)
+         b0(5,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(tau15)
+         b0(7,2,i) = r*sin(alpha)*sin(tau15)
+         b0(7,3,i) = r*cos(alpha)
+         !
+         b0(1,3,i) = b0(1,3,i) + r12*0.5_ark
+         b0(2,3,i) = b0(2,3,i) - r12*0.5_ark
+
+         b0(4:8:2,3,i) =b0(4:8:2,3,i)+r12*0.5_ark
+         b0(3:7:2,3,i) =b0(3:7:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi =-tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !
+         !if (verbose>=4) then
+         !  write(out, '(i5)') 8
+         !  write(out,'(a)') ""
+         !  write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(1,1:3,i)
+         !  write(out, '(1x,a,1x,3(1x,es16.8))') 'C', b0(2,1:3,i)
+         !  do iatom=3, Natoms
+         !    write(out, '(1x,a,1x,3(1x,es16.8))') 'H', b0(iatom,1:3,i)
+         !  enddo
+         !endif
+         !  
+      enddo
+      !
+    case('R-R16-BETA16-THETA-TAU-15')
+      !
+      tau = pi
+      theta = 2.0_ark*pi/3.0_ark
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = pi/3.0_ark
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)+pi/3.0_ark
+         !
+         tau14 = tau
+         tau16 = theta - tau
+         tau15 = theta + tau
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(4,1,i) = r*sin(alpha)
+         b0(4,2,i) = 0
+         b0(4,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(theta)
+         b0(6,2,i) = r*sin(alpha)*sin(theta)
+         b0(6,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(theta)
+         b0(8,2,i) =-r*sin(alpha)*sin(theta)
+         b0(8,3,i) =-r*cos(alpha)
+         !
+         b0(3,1,i) = r*sin(alpha)*cos(tau14)
+         b0(3,2,i) =-r*sin(alpha)*sin(tau14)
+         b0(3,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(tau16)
+         b0(5,2,i) = r*sin(alpha)*sin(tau16)
+         b0(5,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(tau15)
+         b0(7,2,i) =-r*sin(alpha)*sin(tau15)
+         b0(7,3,i) = r*cos(alpha)
+         !
+         b0(1,3,i) = b0(1,3,i) + r12*0.5_ark
+         b0(2,3,i) = b0(2,3,i) - r12*0.5_ark
+
+         b0(4:8:2,3,i) =b0(4:8:2,3,i)+r12*0.5_ark
+         b0(3:7:2,3,i) =b0(3:7:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !  
+      enddo
+      !
+    case('R-R16-BETA16-THETA-TAU-17')
+      !
+      tau = pi
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = pi/3.0_ark
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)+pi/3.0_ark
+         !
+         tau14 = -tau
+         tau15 = -tau+theta
+         tau16 = -tau-theta
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(3,1,i) = r*sin(alpha)
+         b0(3,2,i) = 0
+         b0(3,3,i) =-r*cos(alpha)
+         !
+         b0(4,1,i) = r*sin(alpha)*cos(tau14)
+         b0(4,2,i) = r*sin(alpha)*sin(tau14)
+         b0(4,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(theta)
+         b0(7,2,i) =-r*sin(alpha)*sin(theta)
+         b0(7,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(tau15)
+         b0(6,2,i) = r*sin(alpha)*sin(tau15)
+         b0(6,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(theta)
+         b0(5,2,i) = r*sin(alpha)*sin(theta)
+         b0(5,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(tau16)
+         b0(8,2,i) = r*sin(alpha)*sin(tau16)
+         b0(8,3,i) = r*cos(alpha)
+         !
+         b0(1:7:2,3,i) =b0(1:7:2,3,i)+r12*0.5_ark
+         b0(2:8:2,3,i) =b0(2:8:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !  
+      enddo
+      !
+      !call ML_non_rigid_reference_PAS(Natoms,npoints,rho_i,b0)
+      !
+      !
+    case('R-R16-BETA16-THETA-TAU-19')
+      !
+      tau = pi
+      theta = 2.0_ark*pi/3.0_ark
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = 0
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)+pi/3.0_ark
+         !
+         tau14 = tau
+         tau16 = theta - tau
+         tau15 = theta + tau
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(4,1,i) = r*sin(alpha)
+         b0(4,2,i) = 0
+         b0(4,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(theta)
+         b0(6,2,i) = r*sin(alpha)*sin(theta)
+         b0(6,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(theta)
+         b0(8,2,i) =-r*sin(alpha)*sin(theta)
+         b0(8,3,i) =-r*cos(alpha)
+         !
+         b0(3,1,i) = r*sin(alpha)*cos(tau14)
+         b0(3,2,i) =-r*sin(alpha)*sin(tau14)
+         b0(3,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(tau16)
+         b0(5,2,i) = r*sin(alpha)*sin(tau16)
+         b0(5,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(tau15)
+         b0(7,2,i) =-r*sin(alpha)*sin(tau15)
+         b0(7,3,i) = r*cos(alpha)
+         !
+         b0(1,3,i) = b0(1,3,i) + r12*0.5_ark
+         b0(2,3,i) = b0(2,3,i) - r12*0.5_ark
+
+         b0(4:8:2,3,i) =b0(4:8:2,3,i)+r12*0.5_ark
+         b0(3:7:2,3,i) =b0(3:7:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !  
+      enddo
+      !
+    case('R-R16-BETA16-THETA-TAU-20')
+      !
+      tau = pi
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = 0
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)+pi/3.0_ark
+         !
+         tau14 = -tau
+         tau15 = -tau+theta
+         tau16 = -tau-theta
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(3,1,i) = r*sin(alpha)
+         b0(3,2,i) = 0
+         b0(3,3,i) =-r*cos(alpha)
+         !
+         b0(4,1,i) = r*sin(alpha)*cos(tau14)
+         b0(4,2,i) = r*sin(alpha)*sin(tau14)
+         b0(4,3,i) = r*cos(alpha)
+         !
+         b0(7,1,i) = r*sin(alpha)*cos(theta)
+         b0(7,2,i) =-r*sin(alpha)*sin(theta)
+         b0(7,3,i) =-r*cos(alpha)
+         !
+         b0(6,1,i) = r*sin(alpha)*cos(tau15)
+         b0(6,2,i) = r*sin(alpha)*sin(tau15)
+         b0(6,3,i) = r*cos(alpha)
+         !
+         b0(5,1,i) = r*sin(alpha)*cos(theta)
+         b0(5,2,i) = r*sin(alpha)*sin(theta)
+         b0(5,3,i) =-r*cos(alpha)
+         !
+         b0(8,1,i) = r*sin(alpha)*cos(tau16)
+         b0(8,2,i) = r*sin(alpha)*sin(tau16)
+         b0(8,3,i) = r*cos(alpha)
+         !
+         b0(1:7:2,3,i) =b0(1:7:2,3,i)+r12*0.5_ark
+         b0(2:8:2,3,i) =b0(2:8:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
          !  
       enddo
       !
     end select 
+    !
+    if (verbose>=4) then
+      !
+      atoms(1:Natoms) = (/'C ','C ','H ','H ','H ','H ','H ','H '/)
+      !
+      do i = 0,npoints
+         write(out, '(i5)') 8
+         write(out,'(a)') ""
+         do iatom=1, Natoms
+           write(out, '(1x,a,1x,3(1x,es16.8))') atoms(iatom), b0(iatom,1:3,i)
+         enddo
+         !  
+      enddo
+      !
+    endif
     !
     if (verbose>=5) write(out, '(/a)') 'ML_b0_C2H6/end'
     !
@@ -1921,7 +3441,7 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
     real(ark), intent(in)    ::  src(1:nmodes)
     real(ark), intent(out)   ::  dst(1:nmodes)
     real(ark) :: a,b,e,o,g(1:4,1:4),c123(2,2),c132(2,2),a123(3,3),a132(3,3),sxy(2,2),i(3,3),i2(3,3)
- !
+    !
     real(ark),dimension(size(src)) :: tmp
     !
     integer(ik)  :: tn(72,2), temp(144)
@@ -5780,7 +7300,972 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-18')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-16')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07: this is how G1x and G1y actually transform 
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00 is a working version of tau-11
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+      !
+    case('R-R16-BETA16-THETA-TAU-13')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !
+          !! a07: this is how G1x and G1y actually transform 
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00 is a working version of tau-11
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !
+          ! a02
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !!
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !!
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !
+          !a02
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-14')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07: this is how G1x and G1y actually transform 
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00 is a working version of tau-11
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-15')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !
+          !! a07: this is how G1x and G1y actually transform 
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00 is a working version of tau-11
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-17')
+      ! tau-11
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-19')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !
+          !! a07: this is how G1x and G1y actually transform 
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !! a00 is a working version of tau-11
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !
+          ! a02
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !!
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !!
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !
+          !a02
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-20')
       !
       select case(trim(molec%symmetry))
         !
@@ -5970,7 +8455,119 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
       !
     case('R-R16-BETA16-THETA-TAU','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-4',&
          'R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8',&
-         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11')
+         'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12-X',&
+         'R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14','R-R16-BETA16-THETA-TAU-15','R-R16-BETA16-THETA-TAU-16',&
+         'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-19','R-R16-BETA16-THETA-TAU-20')
+      !
+      select case(trim(molec%symmetry))
+      !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('D3D(M)')
+        !
+        gamma = 0
+        ideg = 1
+        !
+       ! if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+       ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+       ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
+       ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      case('G36(EM)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        if(K==0.and.mod(J+2,2)==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.mod(J+2,2)==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+        end if 
+
+
+      case('G36(EM)-test')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        if(K==0.and.mod(J+2,2)==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.mod(J+2,2)==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 15; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 15; ideg = 2 ! E2d
+        end if 
+        !
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      end select
+
+
+      !
+    case('R-R16-BETA16-THETA-TAU-12')
       !
       select case(trim(molec%symmetry))
       !
@@ -6038,12 +8635,252 @@ tau35 = -2.0_ark/3.0_ark*Pi+1.0_ark/3.0_ark*sqrt(3.0_ark)*S18+1.0_ark/3.0_ark*sq
         stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
         !
       end select
+
+      !
+    case('R-R16-BETA16-THETA-TAU-14X')
+      !
+      select case(trim(molec%symmetry))
+      !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('D3D(M)')
+        !
+        gamma = 0
+        ideg = 1
+        !
+       ! if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+       ! if (mod(K+2,2)==0.and.tau==1) gamma = 3 ! B1g
+       ! if (mod(K+2,2)/=0.and.tau==1) gamma = 7 ! B3g
+       ! if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        if (mod(K+2,2)==0.and.tau==0) gamma = 1 ! Ag
+        if (mod(K+2,2)==0.and.tau==1) gamma = 7 ! B1g
+        if (mod(K+2,2)/=0.and.tau==1) gamma = 3 ! B3g
+        if (mod(K+2,2)/=0.and.tau==0) gamma = 5 ! B2g
+        !
+      case('G36(EM)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+        !if(K==0.and.mod(J+2,2)==0) then 
+        !  gamma = 1; ideg = 1 ! A1s
+        !else if(K==0.and.mod(J+2,2)==1) then 
+        !  gamma = 2; ideg = 1 ! A2s
+        !
+        if(K==0.and.tau==0) then 
+          gamma = 1; ideg = 1 ! A1s
+        else if(K==0.and.tau==1) then 
+          gamma = 2; ideg = 1 ! A2s
+          !
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 1; ideg = 1 ! A1s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 2; ideg = 1 ! A2s
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 13; ideg = 1 ! A4d
+        else if(mod(K+3,3)==0.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 12; ideg = 1  ! A3d
+          !
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 7; ideg = 1 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 7; ideg = 2 ! E1s
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 14; ideg = 1 ! E2d,15,_17_(J=1),15,(2)
+        else if(mod(K+3,3)==1.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 14; ideg = 2 ! E2d,15,_17_,     15,(1)
+          !
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==0) then
+          gamma = 5; ideg = 1  ! E1s 5,7,8,6,14,15,16,5,7,17
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==0.and.tau==1) then
+          gamma = 5; ideg = 2 ! E1s  5,7,8,6,14,15,16,5,7,17
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==0) then
+          gamma = 17; ideg = 1 ! E2d       
+        else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
+          gamma = 17; ideg = 2 ! E2d
+        end if 
+
+     case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        !
+      end select
+
       !
     end select
     !
     if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C2H6/end'
     !
   end subroutine ML_rotsymmetry_C2H6
+
+
+
+  ! 
+  ! this subroutine is to reorient the molecule to a non-rigid reference PAS 
+  !
+  subroutine ML_non_rigid_reference_PAS(Natoms,npoints,rho_i,b0)
+    !
+    implicit none 
+     !
+     integer(ik),intent(in)  :: Natoms,npoints
+     real(ark),   intent(inout) :: b0(Natoms,3,0:npoints)
+     real(ark),  intent(in) :: rho_i(0:Npoints)
+     !
+     real(ark)   :: AtomMasses(Natoms),a0(Natoms,3),Inert0(3),Inert(3),Inert1(3),a(3,3)
+     real(ark)   :: x(5),a0_tt,a0_t(molec%Natoms,3),transform(3,3)
+     integer(ik) :: i0,istep,ipar,ix,jx,j0,i,in,n
+           !
+           i0 = npoints/2
+           !
+           do ipar = 0,1
+             !
+             istep = (-1)**(ipar+2)
+             !
+             i = npoints/2
+
+             a0(:,:) = b0(:,:,i)
+             !
+             call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
+             !
+             Inert0(1) = sum(molec%AtomMasses(:)*( a0(:,2)**2+ a0(:,3)**2) )
+             Inert0(2) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
+             Inert0(3) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
+             !
+             do ix = 1,molec%Natoms
+                a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+             enddo
+             !
+             b0(:,:,i) = a0(:,:)
+             !
+             do j0 = 1,npoints/2
+                !
+                !write(out,'("j0 = ",i8)') j0
+                !
+                i = i + istep
+                !
+                do ix = 1,molec%Natoms
+                   a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+                enddo
+                !
+                Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,i)**2+ b0(:,3,i)**2) )
+                Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,3,i)**2) )
+                Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,2,i)**2) )
+                !
+                ! Second Eckart equation
+                ! 
+                do ix = 1,3 
+                   do jx = 1,3 
+                      a(ix,jx) =  sum(molec%AtomMasses(:)*a0(:,ix)*a0(:,jx) )
+                   enddo
+                   !
+                enddo
+                !
+                call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,a)
+                !
+                ! Found coordinate transformation "c"
+                !
+                transform = matmul(transform,real(a,kind=rk))
+                !
+                ! Transformation of a0 
+                !
+                do ix = 1,molec%Natoms
+                   a0(ix,:) = matmul(transpose(transform),b0(ix,:,i))
+                enddo
+                !
+                do ix = 1,3 
+                   do jx = 1,3 
+                      a(ix,jx) =  sum(molec%AtomMasses(:)*a0(:,ix)*a0(:,jx) )
+                   enddo
+                   !
+                enddo
+                !
+                Inert(1) = sum(molec%AtomMasses(:)*( a0(:,2)**2+ a0(:,3)**2) )
+                Inert(2) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
+                Inert(3) = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
+                !
+                Inert1 = 1
+                !
+                if (abs(i-i0)>2) then 
+                  !
+                  do in = 1,molec%Natoms
+                     !
+                     do ix = 1,3
+                       !
+                       N = min(4,abs(i-i0))
+                       !
+                       x(1:N+1) = rho_i(i-istep*N:i:istep)
+                       !
+                       call extrapolate(N,x,b0(in,ix,i-istep*N:i-istep:istep),a0_tt)
+                       a0_t(in,ix) = a0_tt
+                     enddo 
+                  enddo
+                  !
+                  !
+                  Inert1(1) = sum(molec%AtomMasses(:)*( a0_t(:,2)**2+ a0_t(:,3)**2) )
+                  Inert1(2) = sum(molec%AtomMasses(:)*( a0_t(:,1)**2+ a0_t(:,3)**2) )
+                  Inert1(3) = sum(molec%AtomMasses(:)*( a0_t(:,1)**2+ a0_t(:,2)**2) )
+                  !
+                endif 
+                !
+                if (all(abs(Inert(:)-Inert0(:))<5.0).or.all(abs(Inert(:)-Inert1(:))<5.0)) then 
+                  Inert0 = Inert
+                  b0(:,:,i) = a0(:,:)
+                  cycle 
+                endif 
+                !
+                if (verbose>=4) then 
+                  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+                endif
+                !
+             enddo
+             !    
+           enddo
+           
+     contains 
+       !      
+       subroutine extrapolate(N,x,src,dst)
+       !
+       integer(ik),intent(in)   :: N
+       real(ark),intent(inout)  :: src(1:N),x(1:N+1)
+       real(ark),intent(out)    :: dst
+       !
+       integer(ik)              :: i1,i2
+       real(rk)           :: a(N,N),b(N,1)
+          !
+          !
+          do i1 = 1,N
+             !
+             a(i1,1) = 1.0_ark
+             !
+             b(i1,1) = src(i1)
+             !
+             do i2 = 2,N
+               !
+               a(i1,i2) = x(i1)**(i2-1)
+               !
+             enddo
+          enddo
+          !
+          !  lapack_gelss 
+          ! 
+          call lapack_gelss(a(:,:),b(:,:))
+          !
+          dst = b(1,1)
+          !
+          do i1 = 2,N
+            !
+            dst = dst + real(b(i1,1),ark)*x(N+1)**(i1-1)
+            !
+          enddo
+          !
+       end subroutine extrapolate           
+
+   end subroutine ML_non_rigid_reference_PAS
 
 
 end module mol_c2h6
