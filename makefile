@@ -162,7 +162,7 @@ extfield.o: extfield.f90 accuracy.o timer.o rotme_cart_tens.o richmol_data.o fie
 fields.o: fields.f90 accuracy.o molecules.o lapack.o me_str.o me_bnd.o me_numer.o me_rot.o timer.o moltype.o symmetry.o input.o accuracy.o moltype.o accuracy.o moltype.o accuracy.o moltype.o
 fwigxjpf.o: fwigxjpf.f90 $(WIGXJPF_LIB)
 grid.o: grid.f90 accuracy.o fields.o splines.o iso_c_binding.o iso_c_binding.o
-input.o: input.f90 
+input.o: input.f90 accuracy.o
 kin_xy2.o: kin_xy2.f90 accuracy.o moltype.o
 lapack.o: lapack.f90 accuracy.o timer.o
 ltp2011_water_dipole_surface.o: ltp2011_water_dipole_surface.f90 
