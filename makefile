@@ -44,6 +44,8 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
+	else ifeq ($(strip $(MODE)),ci)
+		FFLAGS += -O0 -g
 	else
 		FFLAGS += -O3
 	endif
@@ -93,6 +95,8 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 ## TARGETS
 ################################################################################
 
+.PHONY: all, clean, cleanall, tarball, checkin, test
+
 all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
 
 %.o : %.f90
@@ -105,10 +109,14 @@ $(WIGXJPF_LIB):
 	$(MAKE) -C $(WIGXJPF_DIR)
 
 $(OBJDIR):
+ifneq ($(OBJDIR),.)
 	mkdir -p $(OBJDIR)
+endif
 
 $(BINDIR):
+ifneq ($(BINDIR),.)
 	mkdir -p $(BINDIR)
+endif
 
 clean:
 	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
@@ -121,6 +129,9 @@ tarball:
 
 checkin:
 	ci -l Makefile *.f90
+
+test: $(BINDIR)/$(EXE)
+	cd test; ./run_regression_tests.sh
 
 ################################################################################
 ## DEPENDENCIES
