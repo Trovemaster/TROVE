@@ -1292,7 +1292,7 @@ module mol_c2h6
         !
       endif
       ! 
-    case('R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-21')
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
         !
@@ -3409,6 +3409,79 @@ module mol_c2h6
          !  
       enddo
       !
+    case('R-R16-BETA16-THETA-TAU-21')
+      !
+      tau = pi
+      !
+      if (Npoints/=0) then
+         if (.not.present(rho_borders).or..not.present(rho_ref)) then  
+            write(out,"('ML_b0_C2H6: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
+            stop 'ML_b0_C2H6: rho_borders or rho_ref not specified '
+         endif
+      endif
+      !
+      if (present(rho_ref)) rho_ref = pi ! rho_i(0)
+      !
+      do i = 0,npoints
+         !
+         if (present(rho_i)) tau = rho_i(i)
+         !
+         tau14 = -tau
+         tau15 = -tau+theta
+         tau16 = -tau-theta
+         !
+         b0(1,:,i) = 0
+         b0(2,:,i) = 0
+         !
+         b0(3,2,i) = r*sin(alpha)
+         b0(3,1,i) = 0
+         b0(3,3,i) =-r*cos(alpha)
+         !
+         b0(4,2,i) = r*sin(alpha)*cos(tau14)
+         b0(4,1,i) = r*sin(alpha)*sin(tau14)
+         b0(4,3,i) = r*cos(alpha)
+         !
+         b0(7,2,i) = r*sin(alpha)*cos(theta)
+         b0(7,1,i) =-r*sin(alpha)*sin(theta)
+         b0(7,3,i) =-r*cos(alpha)
+         !
+         b0(6,2,i) = r*sin(alpha)*cos(tau15)
+         b0(6,1,i) = r*sin(alpha)*sin(tau15)
+         b0(6,3,i) = r*cos(alpha)
+         !
+         b0(5,2,i) = r*sin(alpha)*cos(theta)
+         b0(5,1,i) = r*sin(alpha)*sin(theta)
+         b0(5,3,i) =-r*cos(alpha)
+         !
+         b0(8,2,i) = r*sin(alpha)*cos(tau16)
+         b0(8,1,i) = r*sin(alpha)*sin(tau16)
+         b0(8,3,i) = r*cos(alpha)
+         !
+         b0(1:7:2,3,i) =b0(1:7:2,3,i)+r12*0.5_ark
+         b0(2:8:2,3,i) =b0(2:8:2,3,i)-r12*0.5_ark
+         !
+         ! Find center of mass
+         !
+         do n = 1,3 
+           CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,n,i) = b0(:,n,i) - CM_shift
+         enddo
+         !
+         phi = tau*0.5_ark
+         !
+         transform = 0 
+         transform(3,3) = 1.0_ark
+         transform(1,1) = cos(phi)
+         transform(1,2) =-sin(phi)
+         transform(2,1) = sin(phi)
+         transform(2,2) = cos(phi)
+         !
+         do n = 1,Natoms
+           b0(n,:,i) = matmul(transform,b0(n,:,i))
+         enddo
+         !  
+      enddo
+      !
     end select 
     !
     if (verbose>=4) then
@@ -3445,6 +3518,7 @@ module mol_c2h6
     real(ark),dimension(size(src)) :: tmp
     !
     integer(ik)  :: tn(72,2), temp(144)
+    integer(ik)  :: tn1(72,2), temp1(144)    
     integer(ik) :: nsrc
     !
     temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
@@ -3456,7 +3530,15 @@ module mol_c2h6
     temp(37:72)   = (/ 0,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37/)
     temp(109:144) = (/ 0, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36/)
     !
+    temp1(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+    temp1(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    temp1(37:72)  = (/0,0,38,0,42,40,0,43,38,39,38,39,40,41,42,40,41,42,0,57,55,38,39,38,39,38,39,40,41,42,40,41,42,40,41,42/)
+    temp1(109:144) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    !
+    !temp1(109:144)= (/0,0,38,0,38,38,0,43,43,43,44,44,43,43,43,44,44,44,0,43,43,55,55,56,56,57,57,55,55,55,56,56,56,57,57,57/)
+    !
     tn = reshape( temp, (/ 72, 2/))
+    tn1 = reshape( temp1, (/ 72, 2/))
     !
     a = 0.5_ark
     b = 0.5_ark*sqrt(3.0_ark)
@@ -7300,7 +7382,7 @@ module mol_c2h6
         !
       end select
       !
-    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-18')
+    case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-21')
       !
       select case(trim(molec%symmetry))
         !
@@ -8402,6 +8484,265 @@ module mol_c2h6
         !
       end select
       !
+    case('R-R16-BETA16-THETA-TAU-11a')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+          !
+        case (38) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          dst(18) = dst(18) + 2.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (40) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  2.0_ark*pi - src(18)
+          !
+          dst(18) = dst(18) + 2.0_ark*pi
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (43) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          dst(18) = dst(18) + 2.0_ark*pi
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+              dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (55) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+          dst(18) = dst(18) + 2.0_ark*pi
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+              dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !
+        end select
+        !
+        if (all(tn1(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn1(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn1(ioper,2),nmodes,tmp,dst)
+        endif
+          !
+      end select
+      !
     end select
     !
     if (verbose>=5) write(out, '(/a)') 'ML_symmetry_transformation_C2H6/end'
@@ -8457,7 +8798,8 @@ module mol_c2h6
          'R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6','R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8',&
          'R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12-X',&
          'R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14','R-R16-BETA16-THETA-TAU-15','R-R16-BETA16-THETA-TAU-16',&
-         'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-19','R-R16-BETA16-THETA-TAU-20')
+         'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-19','R-R16-BETA16-THETA-TAU-20',&
+         'R-R16-BETA16-THETA-TAU-21')
       !
       select case(trim(molec%symmetry))
       !

@@ -1786,6 +1786,163 @@ contains
        !enddo
 
 
+ case("G36(EM0p)") !! Tom's
+
+      sym%Nrepresen = 18
+      sym%Noper = 72
+      sym%Nclasses = 18
+      sym%CII%Noper = 0
+                               
+      call simple_arrays_allocation
+    
+      !RE = 2C2+E-   SE = 3C3+E-  ER = 2E+C2-  RR = 4C2+C2- SR = 6C3+C2- ER = 3E+C3- RS = 6C2+C3- SS = 9C3+C3-
+      sym%characters = reshape( & 
+        ! EE  RE  SE  ER  RR  SR  ER  RS  SS EE' RE' SE' ER' RR' SR' ER' RS' SS' 
+        (/ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, & ! A1s
+           1,  1,  1,  1,  1,  1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, & ! A2s
+           1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1,  1,  1, -1, & ! A3s
+           1,  1, -1,  1,  1, -1, -1, -1,  1,  1,  1, -1,  1,  1, -1, -1, -1,  1, & ! A4s
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0,  2,  2,  2, -1, -1, -1,  0,  0,  0, & ! E1s
+           2,  2, -2, -1, -1,  1,  0,  0,  0,  2,  2, -2, -1, -1,  1,  0,  0,  0, & ! E2s
+           2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0,  2, -1,  0, & ! E3s
+           2, -1,  0,  2, -1,  0, -2,  1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, & ! E4s
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0,  4, -2,  0, -2,  1,  0,  0,  0,  0, & ! Gs
+           !
+           1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, & ! A1d
+           1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1, & ! A2d 
+           1,  1, -1,  1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1, & ! A3d
+           1,  1, -1,  1,  1, -1, -1, -1,  1, -1, -1,  1, -1, -1,  1,  1,  1, -1, & ! A4d
+           !
+           2,  2,  2, -1, -1, -1,  0,  0,  0, -2, -2, -2,  1,  1,  1,  0,  0,  0, & ! E1d
+           2,  2, -2, -1, -1,  1,  0,  0,  0, -2, -2,  2,  1,  1, -1,  0,  0,  0, & ! E2d
+           2, -1,  0,  2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0, & ! E3d
+           2, -1,  0,  2, -1,  0, -2,  1,  0, -2,  1,  0, -2,  1,  0,  2, -1,  0, & ! E4d
+           !
+           4, -2,  0, -2,  1,  0,  0,  0,  0, -4,  2,  0,  2, -1,  0,  0,  0,  0 /),(/18,18/)) ! Gd                                                                                                                                                     
+      sym%characters = transpose(sym%characters)
+      sym%degen = (/1, 1, 1, 1, 2, 2, 2, 2, 4, 1, 1, 1, 1, 2, 2, 2, 2, 4/)
+      sym%Nelements = (/1, 2, 3, 2, 4, 6, 3, 6, 9, 1, 2, 3, 2, 4, 6, 3, 6, 9 /)
+      sym%label=(/'A1s', 'A2s', 'A3s', 'A4s', 'E1s', 'E2s', 'E3s', 'E4s', 'Gs ', &
+                  'A1d', 'A2d', 'A3d', 'A4d', 'E1d', 'E2d', 'E3d', 'E4d', 'Gd ' /)
+      a = 0.5_ark
+      b = 0.5_ark*sqrt(3.0_ark)
+      e = 1.0_ark
+      o = 0.0_ark
+      m_one = -1.0_ark       
+ 
+      !E rep of C_3v 
+
+      i = transpose(reshape( (/ e, o, &
+                                o, e /), (/ 2, 2/)))
+  
+      c = transpose(reshape( (/ -a, -b, &
+                                 b, -a/), (/ 2, 2/)))
+  
+    c2 = matmul(c,c)
+    !!
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    ! sy22 try this for !! made it worse
+    !sxy = transpose(reshape( (/ o, e, &
+    !                            e, o /), (/ 2, 2/)))
+    !
+  	s3 = matmul(c, sxy)
+    !
+    s2 = matmul(c,s3)
+    ! 
+    E_rep_1(1,:,:) = i
+    E_rep_1(2,:,:) = c
+    E_rep_1(3,:,:) = c2
+    E_rep_1(4,:,:) = sxy
+    E_rep_1(5,:,:) = s2
+    E_rep_1(6,:,:) = s3
+    
+    E_rep_2(1,:,:) = i
+    E_rep_2(2,:,:) = c
+    E_rep_2(3,:,:) = c2
+    E_rep_2(4,:,:) = -sxy
+    E_rep_2(5,:,:) = -s2
+    E_rep_2(6,:,:) = -s3
+   
+    A2_char(:3) = 1.0_ark
+    A2_char(4:6) = -1.0_ark
+  
+    call irr_allocation 
+  
+    pos_array = transpose( reshape((/  1,  7,  8, 19, 20, 21, &
+                                       2,  9, 11, 22, 24, 26, &
+                                       3, 10, 12, 23, 25, 27, &
+                                       4, 13, 16, 28, 31, 34, &
+                                       5, 14, 17, 29, 32, 35, &
+                                       6, 15, 18, 30, 33, 36/), (/6,6/))) 
+    ! E1s, E2s, E1d, and E2d 
+ 
+    do j = 1, 6
+      do k = 1, 6 
+        sym%irr(5, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)
+        
+        sym%irr(6, pos_array(k,j))%repres = E_rep_2(j,:,:)*A2_char(k)
+        sym%irr(6, pos_array(k,j)+36)%repres = E_rep_2(j,:,:)*A2_char(k)
+       
+        sym%irr(5+9, pos_array(k,j))%repres = E_rep_1(j,:,:)
+        sym%irr(5+9, pos_array(k,j)+36)%repres = E_rep_1(j,:,:)*m_one
+        
+        sym%irr(6+9, pos_array(k,j))%repres = E_rep_2(j,:,:)*A2_char(k)
+        sym%irr(6+9, pos_array(k,j)+36)%repres = E_rep_2(j,:,:)*A2_char(k)*m_one
+      end do
+    end do
+
+    !E3s and E4s
+    
+    do j = 1, 6
+      do k = 1, 6
+        sym%irr(7,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)
+
+        sym%irr(8,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)
+
+        sym%irr(7+9,pos_array(k,j))%repres = E_rep_1(k,:,:)
+        sym%irr(7+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*m_one
+
+        sym%irr(8+9,pos_array(k,j))%repres = E_rep_1(k,:,:)*A2_char(j)
+        sym%irr(8+9,pos_array(k,j)+36)%repres = E_rep_1(k,:,:)*A2_char(j)*m_one
+
+      end do    
+    end do
+    
+    ! Gs and Gd
+
+    ! Implements outer product,
+    ! consider two matrices
+    !   a b    and e f
+    !   c d        g h
+    ! then the outer product is 
+    !   ae af be bf 
+    !   ag ah bg bh
+    !   ce cf de df
+    !   cg ch dg dh
+
+    do j = 1, 6
+      do k = 1, 6
+        do r = 1, 2
+          do s = 1, 2
+            sym%irr(9,pos_array(k,j))%repres(2*r-1:2*r,2*s-1:2*s) = E_rep_1(k, r, s)*E_rep_1(j, :, :)
+            sym%irr(9,pos_array(k,j)+36)%repres(2*r-1:2*r,2*s-1:2*s) = E_rep_1(k, r, s)*E_rep_1(j, :, :)
+
+            sym%irr(9+9,pos_array(k,j))%repres(2*r-1:2*r,2*s-1:2*s) = E_rep_1(k, r, s)*E_rep_1(j, :, :)
+            sym%irr(9+9,pos_array(k,j)+36)%repres(2*r-1:2*r,2*s-1:2*s) = E_rep_1(k, r, s)*E_rep_1(j, :, :)*m_one
+          end do
+        end do
+      end do 
+    end do
+
+
+
   case("D2H(M)")
     !
     sym%Nrepresen=8
