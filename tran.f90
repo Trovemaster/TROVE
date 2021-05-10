@@ -328,7 +328,7 @@ contains
        end if
        !
       !$omp parallel default(shared) &
-      !$omp& private(cnu_i, cnu_j, nclasses, info, icase, jcase, ilambda, jlambda, found, my_fmt) &
+      !$omp& private(cnu_i, cnu_j, info, icase, jcase, ilambda, jlambda, found, my_fmt) &
       !$omp& private(iroot,jcontr,ilevel,ideg,k,tau)
        allocate(cnu_i(1:nclasses),cnu_j(1:nclasses),stat = info)
        if (info /= 0) stop 'index_correlation: cnu_i allocation error'
