@@ -7448,7 +7448,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -7586,7 +7586,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -7725,7 +7725,7 @@ module mol_c2h6
           !dst(14:15) = matmul(sxy,src(16:17))
           !dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -7863,7 +7863,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8001,7 +8001,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8138,7 +8138,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8276,7 +8276,7 @@ module mol_c2h6
           !dst(14:15) = matmul(sxy,src(16:17))
           !dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8413,7 +8413,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8550,7 +8550,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           ! a12
           !dst(18) = -2.0_ark*pi - src(18)
@@ -8668,7 +8668,7 @@ module mol_c2h6
           dst(14:15) = matmul(sxy,src(16:17))
           dst(16:17) = matmul(sxy,src(14:15))
           !!
-          dst(18) =  2.0_ark*pi - src(18)
+          dst(18) =  4.0_ark*pi - src(18)
           !
           dst(18) = dst(18) + 2.0_ark*pi
           !
@@ -8859,8 +8859,7 @@ module mol_c2h6
         else if(mod(K+3,3)==2.and.mod(K+2,2)==1.and.tau==1) then
           gamma = 15; ideg = 2 ! E2d
         end if 
-
-
+        !
       case('G36(EM)-test')
         !
         gamma = 1

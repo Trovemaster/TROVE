@@ -486,7 +486,7 @@ contains
     ! sy16: Per's matrices, did not improve 
     ! sy24: as part of sap 7 and 8 
     !
-    case("G36(EM)") 
+    case("G36(EMI)") 
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -635,7 +635,6 @@ contains
     ! q01 try this 
     ! u07 
     ! b08
-    ! (123)(456)
     g2 = transpose(reshape( (/ -a,-b, o, o, &
                                 b,-a, o, o, &
                                 o, o,-a,-b, &
@@ -659,7 +658,7 @@ contains
     !                           o, o, o, e, &
     !                          -e, o, o, o, &
     !                           o, e, o, o  /), (/4,4/)))
-    !!sxy(+)/(14)(26)(35)(ab)*
+    !!
     g4 = transpose(reshape( (/ e, o, o, o, &
                                o,-e, o, o, &
                                o, o,-e, o, &
@@ -671,7 +670,7 @@ contains
     !                           o, o, e, o, &
     !                           o, o, o,-e  /), (/4,4/)))
 
-    ! C(-)/(132)(456)
+    ! a10
     g7 = transpose(reshape( (/ -a, o, o,-b, &
                                 o,-a, b, o, &
                                 o,-b,-a, o, &
@@ -698,7 +697,7 @@ contains
     !                           o, o,-e, o, &
     !                           o, o, o, e  /), (/4,4/)))
 
-    !!sxy(-)/(14)(25)(36)(ab)
+    !!
     g19= transpose(reshape( (/ e, o, o, o, &
                                o, e, o, o, &
                                o, o,-e, o, &
@@ -745,13 +744,11 @@ contains
     sym%irr( 7, 1)%repres = i
     sym%irr( 8, 1)%repres = i
     !
-    !! (123)(456)
     sym%irr( 5, 2)%repres = i
     sym%irr( 6, 2)%repres = i
     sym%irr( 7, 2)%repres = c
     sym%irr( 8, 2)%repres = c
-    !
-    !! !!sxy(+)/(14)(26)(35)(ab)*
+    !!
     sym%irr( 5, 4)%repres = i
     sym%irr( 6, 4)%repres = i*m_one
     sym%irr( 7, 4)%repres = sxy
@@ -770,7 +767,7 @@ contains
     !sym%irr( 7, 4)%repres = sxy
     !sym%irr( 8, 4)%repres = sxy*m_one
     !
-    ! C(-)/(132)(456)
+    !!
     sym%irr( 5, 7)%repres = c2
     sym%irr( 6, 7)%repres = c2
     sym%irr( 7, 7)%repres = i
@@ -789,19 +786,11 @@ contains
     !sym%irr( 6, 7)%repres = c2*m_one
     !sym%irr( 7, 7)%repres = i
     !sym%irr( 8, 7)%repres = i
-    !
-    !!sxy(-)/(14)(25)(36)(ab)
+    !!
     sym%irr( 5,19)%repres = sxy
     sym%irr( 6,19)%repres = sxy
     sym%irr( 7,19)%repres = i
     sym%irr( 8,19)%repres = i*m_one
-    !
-    !!sxy(-)/(14)(25)(36)(ab)
-    ! alternaive with -O(19)
-    !sym%irr( 5,19)%repres = sxy
-    !sym%irr( 6,19)%repres = sxy*m_one
-    !sym%irr( 7,19)%repres = i
-    !sym%irr( 8,19)%repres = i*m_one
     !
     ! b15
     !sym%irr( 5,19)%repres = sxy
@@ -1669,8 +1658,8 @@ contains
   
     c2 = matmul(c,c)
     !!
-    sxy = transpose(reshape( (/ e,  o, &
-                                o, -e /), (/ 2, 2/)))
+    sxy = transpose(reshape( (/ -e,  o, &
+                                 o,  e /), (/ 2, 2/)))
     !
     ! sy22 try this for !! made it worse
     !sxy = transpose(reshape( (/ o, e, &
@@ -1797,7 +1786,7 @@ contains
        !enddo
 
 
- case("G36(EM0p)") !! Tom's
+ case("G36(EM)") !! Tom's
 
       sym%Nrepresen = 18
       sym%Noper = 72
@@ -1951,6 +1940,7 @@ contains
         end do
       end do 
     end do
+
 
 
 
