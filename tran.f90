@@ -2090,7 +2090,7 @@ contains
             !
             if(mpi_rank.eq.0) then
               call mpi_file_write_shared(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
-              call mpi_file_write_shared(fileh_w, 'start external field', 20, mpi_character, mpi_status_ignore, ierr)
+              call mpi_file_write_shared(fileh_w, 'Start external field', 20, mpi_character, mpi_status_ignore, ierr)
             endif
             !
             ! store the matrix elements 
@@ -2103,7 +2103,7 @@ contains
           else
             !
             open(chkptio,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
-            write(chkptio) 'start external field'
+            write(chkptio) 'Start external field'
             !
             ! store the matrix elements 
             !
