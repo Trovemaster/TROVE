@@ -8,7 +8,7 @@ from pytest import approx
 QUANTUM_ENERGY_IDX=4
 
 def find_start_end_block(lines, blockname):
-    """Identifies start and end of blocks"""
+    """Identify start and end of blocks"""
     for i, line in enumerate(lines):
         if "Start " + blockname in line:
             start_idx = i
@@ -17,29 +17,35 @@ def find_start_end_block(lines, blockname):
     return start_idx, end_idx
 
 def extract_quantum_block(lines):
-    """Extracts only the quantum block from a chk file"""
+    """Extract only the quantum block from a chk file"""
     idxs = find_start_end_block(lines, "Quantum")
     temp = lines[idxs[0]+4:idxs[-1]]
     return [line.split() for line in temp]
 
 def extract_quantum_energies(block):
+    """Extract quantum energies from entire block"""
     return [float(line[QUANTUM_ENERGY_IDX]) for line in block]
 
 def read_chk_file(fname):
+    """Read checkpoint file as a list of lines"""
     with open(fname, 'r') as fp:
+        # Strip newlines and lines with comments
         lines = [line for line in fp.readlines() if line != '\n' and '<-' not in line]
     return lines
 
 def read_energy_column(fname, column_no):
+    """Extract energies from a column in file fname"""
     lines = read_chk_file(fname)
     lines = lines[:-1] # remove last line (which is not part of the actual data)
     return [float(line.split()[column_no]) for line in lines]
 
 def read_quantum_block(fname):
+    """Extract quantum energies from fname"""
     lines = read_chk_file(fname)
     return extract_quantum_block(lines)
 
 def compare_columns(fname1, fname2, column_no, precision=1e-10):
+    """Compare two energy files"""
     energies1 = read_energy_column(fname1, column_no)
     energies2 = read_energy_column(fname2, column_no)
 
@@ -48,6 +54,7 @@ def compare_columns(fname1, fname2, column_no, precision=1e-10):
             f"{e1} and {e2} differ by {abs(e1-e2)}"
 
 def compare_quantum_files(fname1, fname2, precision=1e-10):
+    """Compare two files in quantum form"""
     energy_block1 = read_quantum_block(fname1)
     energy_block2 = read_quantum_block(fname2)
 
