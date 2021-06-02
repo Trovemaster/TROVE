@@ -11,6 +11,9 @@ INTENSITY_INDICES = {
     "nu": 3,
 }
 
+class BlockNotFound(Exception):
+    pass
+
 def find_start_end_block(lines, blockname):
     """Identify start and end of blocks in .chk files"""
     start_idx = end_idx = None
@@ -22,9 +25,9 @@ def find_start_end_block(lines, blockname):
             end_idx = i
 
     if start_idx is None:
-        raise Exception(f"{blockname} not found")
+        raise BlockNotFound(f"{blockname} not found")
     if end_idx is None:
-        raise Exception(f"Could not find end of {blockname}")
+        raise BlockNotFound(f"Could not find end of {blockname}")
 
     return start_idx, end_idx
 
@@ -38,7 +41,7 @@ def find_log_block(lines, blockname):
             break
 
     if start_idx is None:
-        raise Exception(f"{blockname} not found")
+        raise BlockNotFound(f"{blockname} not found")
 
      # find first "done" after we've found blockname
     for i, line in enumerate(lines[start_idx:]):
@@ -47,7 +50,7 @@ def find_log_block(lines, blockname):
             break
 
     if end_idx is None:
-        raise Exception(f"Could not find end of {blockname}")
+        raise BlockNotFound(f"Could not find end of {blockname}")
 
     return start_idx, end_idx
 
@@ -81,7 +84,10 @@ def read_quantum_energies(fname):
     """Extract quantum energies from fname"""
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
-    start, end = find_start_end_block(lines, "Quantum")
+    try:
+        start, end = find_start_end_block(lines, "Quantum")
+    except BlockNotFound as msg:
+        print(f"ERROR: Quantum block not found in file: {fname}")
     # take out first 4 lines and last line of block
     lines = lines[start+4:end]
     return extract_column(lines, QUANTUM_ENERGY_IDX)
@@ -92,7 +98,10 @@ def read_intensity_column(fname, column_name):
 
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
-    start, end = find_log_block(lines, "Linestrength")
+    try:
+        start, end = find_log_block(lines, "Linestrength")
+    except BlockNotFound as msg:
+        print(f"ERROR: Linestrength block not found in file: {fname}")
     # take out non-data lines
     lines = lines[start+2:end]
 
@@ -112,27 +121,33 @@ def compare_columns(col1, col2, abs_precision=0.0, rel_precision=1e-10):
             difference_exists = True
             print(f"{e1} and {e2} differ by {abs(e1-e2)} at index {i}")
 
-    assert not difference_exists
+    return difference_exists
 
 def compare_energy_files(fname1, fname2, column_no, precision=1e-10):
     """Compare two energy files"""
     energies1 = read_energy_column(fname1, column_no)
     energies2 = read_energy_column(fname2, column_no)
-    compare_columns(energies1, energies2, abs_precision=precision)
+    if compare_columns(energies1, energies2, abs_precision=precision):
+        print(f"ERROR: Differences exist between {fname1} and {fname2}")
+        exit(-1)
 
 def compare_quantum_files(fname1, fname2, precision=1e-10):
     """Compare two files in quantum form"""
     energies1 = read_quantum_energies(fname1)
     energies2 = read_quantum_energies(fname2)
     # Note, this uses the more accurate rel_precision
-    compare_columns(energies1, energies2, rel_precision=precision)
+    if compare_columns(energies1, energies2, rel_precision=precision):
+        print(f"ERROR: Differences exist between {fname1} and {fname2}")
+        exit(-1)
 
 def compare_intensity_files(fname1, fname2, precision=1e-10):
     """Compare two files in quantum form"""
     for col_name in INTENSITY_INDICES.keys():
         col1 = read_intensity_column(fname1, col_name)
         col2 = read_intensity_column(fname2, col_name)
-        compare_columns(col1, col2, abs_precision=precision)
+        if compare_columns(col1, col2, abs_precision=precision):
+            print(f"ERROR: Differences exist in column {col_name} between {fname1} and {fname2}")
+            exit(-1)
 
 def main():
     parser = argparse.ArgumentParser(description='Compare output files from TROVE')
