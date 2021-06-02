@@ -90,7 +90,7 @@ def read_intensity_column(fname, column_name):
     return extract_column(lines, INTENSITY_INDICES[column_name])
 
 def compare_columns(col1, col2, abs_precision=0.0, rel_precision=1e-10):
-    """Compare two columns of numbers to a give absolute or relative precision"""
+    """Compare two columns of numbers to a given absolute or relative precision"""
     difference_exists = False
     for i, (e1, e2) in enumerate(zip(col1, col2)):
         if not math.isclose(e1, e2, abs_tol=abs_precision, rel_tol=rel_precision):
@@ -109,6 +109,7 @@ def compare_quantum_files(fname1, fname2, precision=1e-10):
     """Compare two files in quantum form"""
     energies1 = read_quantum_energies(fname1)
     energies2 = read_quantum_energies(fname2)
+    # Note, this uses the more accurate rel_precision
     compare_columns(energies1, energies2, rel_precision=precision)
 
 def compare_intensity_files(fname1, fname2, precision=1e-10):
