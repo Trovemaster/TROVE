@@ -84,10 +84,16 @@ def read_intensity_column(fname, column_name):
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
     start, end = find_log_block(lines, "Linestrength")
-    # take out first and last line of block
-    lines = lines[start+1:end]
+    # take out non-data lines
+    lines = lines[start+2:end]
 
-    return extract_column(lines, INTENSITY_INDICES[column_name])
+    ids = [int(line.split()[0]) for line in lines]
+    data = extract_column(lines, INTENSITY_INDICES[column_name])
+
+    # Order of output can change so sort by element ID
+    sorted_data = [x for _, x in sorted(zip(ids, data))]
+
+    return sorted_data
 
 def compare_columns(col1, col2, abs_precision=0.0, rel_precision=1e-10):
     """Compare two columns of numbers to a given absolute or relative precision"""
