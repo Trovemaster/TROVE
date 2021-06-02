@@ -40,9 +40,6 @@ jobs:
       - name: Install Intel MKL
         run: sudo apt-get install -y intel-mkl
 
-      - name: Install pipenv environment
-        run: cd test && pip install pipenv && pipenv install
-
       - name: Build
         run: |
           gfortran --version
