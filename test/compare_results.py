@@ -79,7 +79,7 @@ def read_quantum_energies(fname):
 
 def read_intensity_column(fname, column_name):
     """Extract quantum energies from fname"""
-    assert column_name in INTENSITY_INDICES.keys(), f"Intensity column name must be one of {INTENSITY_INDICES.keys()}")
+    assert column_name in INTENSITY_INDICES.keys(), f"Intensity column name must be one of {INTENSITY_INDICES.keys()}"
 
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
@@ -117,7 +117,7 @@ def compare_intensity_files(fname1, fname2, precision=1e-10):
     for col_name in INTENSITY_INDICES.keys():
         col1 = read_intensity_column(fname1, col_name)
         col2 = read_intensity_column(fname2, col_name)
-        compare_columns(col1, col2, rel_precision=precision)
+        compare_columns(col1, col2, abs_precision=precision)
 
 def main():
     parser = argparse.ArgumentParser(description='Compare output files from TROVE')
@@ -152,7 +152,7 @@ def main():
                 print(folder1 + "/" + fname, "does not match regular quantum file format")
     elif args.kind == 'intensity':
         for fname in filelist:
-            compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
+            compare_intensity_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
 
     exit(0)
 
