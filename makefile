@@ -12,28 +12,13 @@ pot_user = pot_H2O_Conway
 
 COMPILER ?= intel
 MODE ?= release
-
-# === MPI
-
-#FOR = mpif90
-##FFLAGS =  -qopenmp -xHost -O3 -ip -g3 -traceback -DTROVE_USE_MPI_
-#FFLAGS = -fopenmp -ffree-line-length-512 -march=native -O0 -fcray-pointer -g -fallow-argument-mismatch -fbacktrace -DTROVE_USE_MPI_ 
-
-##LAPACK = -mkl=parallel -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
-#LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64 -lmkl_core -lgomp -lpthread -lm -ldl
-
-#ARPACK = -larpack
-
-#LIB = $(LAPACK) $(ARPACK)
-
-# === MPI
+USE_MPI ?= 
 
 # Intel
 #######
 ifeq ($(strip $(COMPILER)),intel)
 	FOR = ifort
-	FFLAGS = -cpp -qopenmp -module $(OBJDIR)
-	LAPACK = -mkl
+	FFLAGS = -cpp -ip -align -ansi-alias -traceback -mcmodel=medium -parallel -nostandard-realloc-lhs -qopenmp -module $(OBJDIR)
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g
@@ -41,9 +26,10 @@ ifeq ($(strip $(COMPILER)),intel)
 		FFLAGS += -O3
 	endif
 
-	# Alternative flags:
-	#FFLAGS = -ip -align -ansi-alias -traceback -qopenmp -mcmodel=medium -parallel -nostandard-realloc-lhs -module $(OBJDIR)
-	#LAPACK = -mkl=parallel
+	LAPACK = -mkl=parallel
+	ifdef USE_MPI
+		LAPACK += -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+	endif
 
 # gfortran
 ##########
@@ -53,7 +39,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 
 	GCC_VERSION_GT_10 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
 	ifeq "${GCC_VERSION_GT_10}" "1"
-		# gcc 10 complains about mismatched argument types
+		# gcc 10+ complains about mismatched argument types
 		FFLAGS += -fallow-argument-mismatch
 	endif
 
@@ -65,16 +51,21 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 		FFLAGS += -O3
 	endif
 
-	# Use non-MKL LAPACK:
-	#LAPACK = -llapack -lblas
-
-	# Use MKL LAPACK:
-	LAPACK += -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+	ifdef USE_MPI
+		LAPACK += -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
+	endif
 else
 $(error Compiler option "$(COMPILER)" not defined.)
 endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
+
+ifdef USE_MPI
+	FOR = mpif90
+	FFLAGS += -DTROVE_USE_MPI_
+	ARPACK = -larpack
+endif
 
 ################################################################################
 ## LIBRARIES
@@ -82,7 +73,7 @@ CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 WIGXJPF_DIR = wigxjpf-1.5
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
-LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB)
+LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB) $(ARPACK)
 
 ################################################################################
 ## SOURCES & DIRECTORIES
