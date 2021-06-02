@@ -126,7 +126,7 @@ def main():
                         help='first folder to compare')
     parser.add_argument('--folder2', required=True,
                         help='second folder to compare')
-    parser.add_argument('--kind', choices=['quantum', 'column'], required=True, help='type of file')
+    parser.add_argument('--kind', choices=['quantum', 'column', 'intensity'], required=True, help='type of file')
     parser.add_argument('--column', default=-1, type=int, help='column to compare when \'column\' is supplied to --kind (index starts at 0)')
     parser.add_argument('--precision', default=1e-10, type=float, help='relative precision of which two values must differ by to be considered nonequal')
 
@@ -149,6 +149,9 @@ def main():
                 compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
             except IndexError:
                 print(folder1 + "/" + fname, "does not match regular quantum file format")
+    elif args.kind == 'intensity':
+        for fname in filelist:
+            compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
 
     exit(0)
 
