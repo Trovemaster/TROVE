@@ -112,7 +112,7 @@ def compare_columns(col1, col2, abs_precision=0.0, rel_precision=1e-10):
             difference_exists = True
             print(f"{e1} and {e2} differ by {abs(e1-e2)} at index {i}")
 
-    assert difference_exists == False
+    assert not difference_exists
 
 def compare_energy_files(fname1, fname2, column_no, precision=1e-10):
     """Compare two energy files"""
