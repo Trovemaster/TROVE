@@ -79,8 +79,7 @@ def read_quantum_energies(fname):
 
 def read_intensity_column(fname, column_name):
     """Extract quantum energies from fname"""
-    if column_name not in INTENSITY_INDICES.keys():
-        raise Exception(f"Intensity column name must be one of {INTENSITY_INDICES.keys()}")
+    assert column_name in INTENSITY_INDICES.keys(), f"Intensity column name must be one of {INTENSITY_INDICES.keys()}")
 
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
