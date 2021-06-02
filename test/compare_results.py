@@ -13,16 +13,25 @@ INTENSITY_INDICES = {
 
 def find_start_end_block(lines, blockname):
     """Identify start and end of blocks in .chk files"""
+    start_idx = end_idx = None
+
     for i, line in enumerate(lines):
         if "Start " + blockname in line:
             start_idx = i
         elif "End " + blockname in line:
             end_idx = i
+
+    if start_idx is None:
+        raise Exception(f"{blockname} not found")
+    if end_idx is None:
+        raise Exception(f"Could not find end of {blockname}")
+
     return start_idx, end_idx
 
 def find_log_block(lines, blockname):
     """Identify start and end of block in log file"""
     start_idx = end_idx = None
+
     for i, line in enumerate(lines):
         if blockname in line:
             start_idx = i
