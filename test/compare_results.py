@@ -162,12 +162,12 @@ def main():
     elif args.kind == 'quantum':
         for fname in filelist:
             try:
-                compare_quantum_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
+                compare_quantum_files(os.path.join(folder1, fname), os.path.join(folder2, fname), precision=args.precision)
             except IndexError:
                 print(folder1 + "/" + fname, "does not match regular quantum file format")
     elif args.kind == 'intensity':
         for fname in filelist:
-            compare_intensity_files(folder1 + "/" + fname, folder2 + "/" + fname, precision=args.precision)
+            compare_intensity_files(os.path.join(folder1, fname), os.path.join(folder2, fname), precision=args.precision)
 
     exit(0)
 
