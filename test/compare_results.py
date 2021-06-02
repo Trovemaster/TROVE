@@ -45,7 +45,6 @@ def find_log_block(lines, blockname):
 def read_chk_file(fname):
     """Read checkpoint file as a list of lines"""
     with open(fname, 'r') as fp:
-        # Strip newlines and lines with comments
         lines = fp.readlines()
     return lines
 
