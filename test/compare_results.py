@@ -28,15 +28,16 @@ def find_log_block(lines, blockname):
             start_idx = i
             break
 
+    if start_idx is None:
+        raise Exception(f"{blockname} not found")
+
      # find first "done" after we've found blockname
     for i, line in enumerate(lines[start_idx:]):
         if "done" in line:
             end_idx = i + start_idx
             break
 
-    if start_idx is not None:
-        raise Exception(f"{blockname} not found")
-    elif end_idx is not None:
+    if end_idx is None:
         raise Exception(f"Could not find end of {blockname}")
 
     return start_idx, end_idx
