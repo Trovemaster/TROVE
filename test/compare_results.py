@@ -71,7 +71,7 @@ def read_energy_column(fname, column_no):
 def read_quantum_energies(fname):
     """Extract quantum energies from fname"""
     lines = read_chk_file(fname)
-    lines = strip_newlines(strip_comments(lines))
+    lines = strip_newlines(lines)
     start, end = find_start_end_block(lines, "Quantum")
     # take out first 4 lines and last line of block
     lines = lines[start+4:end]
