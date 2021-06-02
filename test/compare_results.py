@@ -85,7 +85,7 @@ def read_intensity_column(fname, column_name):
     lines = read_chk_file(fname)
     lines = strip_newlines(lines)
     start, end = find_log_block(lines, "Linestrength")
-    # take out first 4 lines and last line of block
+    # take out first and last line of block
     lines = lines[start+1:end]
 
     return extract_column(lines, INTENSITY_INDICES[column_name])
