@@ -177,7 +177,7 @@ mol_c3h6.o: mol_c3h6.f90 accuracy.o moltype.o
 mol_ch3oh.o: mol_ch3oh.f90 accuracy.o moltype.o lapack.o pot_ch3oh.o
 mol_ch4.o: mol_ch4.f90 accuracy.o moltype.o lapack.o symmetry.o
 molecules.o: molecules.f90 accuracy.o lapack.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o pot_xy2.o pot_xy3.o pot_abcd.o pot_zxy2.o pot_zxy3.o pot_xy4.o pot_ch3oh.o pot_c2h4.o pot_c2h6.o pot_c3h6.o prop_xy2.o prop_xy2_quad.o prop_xy2_spinrot.o prop_xy2_spinspin.o kin_xy2.o symmetry.o $(pot_user).o
-moltype.o: moltype.f90 accuracy.o lapack.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o
+moltype.o: moltype.f90 accuracy.o lapack.o
 mol_user.o: mol_user.f90 accuracy.o moltype.o lapack.o symmetry.o
 mol_xy2.o: mol_xy2.f90 accuracy.o moltype.o symmetry.o
 mol_xy3.o: mol_xy3.f90 accuracy.o moltype.o lapack.o
@@ -186,7 +186,7 @@ mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
 mpi_aux.o: mpi_aux.f90 accuracy.o timer.o
-perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o
+perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o
@@ -207,5 +207,5 @@ richmol_data.o: richmol_data.f90 accuracy.o timer.o
 rotme_cart_tens.o: rotme_cart_tens.f90 accuracy.o timer.o fwigxjpf.o moltype.o accuracy.o
 symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
-tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o
+tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
