@@ -92,10 +92,13 @@ def read_intensity_column(fname, column_name):
 
 def compare_columns(col1, col2, abs_precision=0.0, rel_precision=1e-10):
     """Compare two columns of numbers to a give absolute or relative precision"""
+    difference_exists = False
     for i, (e1, e2) in enumerate(zip(col1, col2)):
         if not math.isclose(e1, e2, abs_tol=abs_precision, rel_tol=rel_precision):
+            difference_exists = True
             print(f"{e1} and {e2} differ by {abs(e1-e2)} at index {i}")
 
+    assert difference_exists == False
 
 def compare_energy_files(fname1, fname2, column_no, precision=1e-10):
     """Compare two energy files"""
