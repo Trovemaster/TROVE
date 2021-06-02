@@ -6388,22 +6388,61 @@ end subroutine check_read_save_none
       a0(1:Natoms,1:3) = trove%b0(1:Natoms,1:3,irho)
       !
       ! Before we start we can check a0(N,a) if it was introduced correctly by the user 
-      ! and it sutisfies the Eckart conditions 
+      ! and it satisfies the Eckart conditions 
       !
-      ! First Eckart equation
+      ! C condition for a0
       ! 
       do ix = 1,3 
           !
           a_t = sum(trove%mass(:)*a0(:,ix))
           if (abs(a_t)>10.0_ark**(-rk)) then 
-               write(out,"('Lmat_generation1d: b0 is not a solution of Eckart 1 for  ix =',i4,d18.8)") ix,a_t
+               write(out,"('Lmat_generation1d: b0 is not a solution of CM for  ix =',i4,d18.8)") ix,a_t
                   stop 'Lmat_generation1d: b0 is not solution of Eckart1'
           endif
           !
       enddo
       !
-      ! Second Eckart equation
+      ! PAS condition for a0
       ! 
+      do ix = 1,3 
+         do jx = 1,3 
+            if (ix/=jx) then  
+               a_t =  sum(trove%mass(:)*a0(:,ix)*a0(:,jx) )
+
+               if (abs(a_t)>100.0_rk*small_) then 
+                   if (job%verbose>=5) write(out,"('b0 is not good at Eckart 2 (PAS) for ix,jx =',2i4,d18.8)") ix,jx,a_t
+                   !
+                   warning_b0 = .true.
+                   !
+                   !if (trove%internal_coords/='LOCAL') then
+                   !   stop 'Lmat_generation1d: b0 is not solution of Eckart2'
+                   !endif
+               endif
+            endif
+         enddo
+         !
+      enddo
+      !
+      ! HBJ equation
+      ! 
+      b_t = 0
+      do jatom = 1,Natoms 
+         !
+         b_t = b_t +  trove%mass(jatom)*MLvector_product(a0(jatom,:),trove%db0(jatom,:,irho,1))
+         !
+      enddo
+      !
+      do jx = 1,3
+         !
+         if (abs(b_t(jx))>100.0_rk*small_) then 
+             if (job%verbose>=5) write(out,"('b0 is not good for HBJ for ix =',i4,d18.8)") jx,b_t(jx)
+             !
+             warning_b0 = .true.
+             !
+         endif
+         !
+      enddo
+      !
       do ix = 1,3 
          do jx = 1,3 
             if (ix/=jx) then  
@@ -16329,6 +16368,8 @@ end subroutine check_read_save_none
     !type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
     !
     if (job%ZPE>0) return
+    !
+    if (job%verbose>=4) write(out,"('FLread_ZPE: extract ZPE fromn eigen0_1.chk or J0eigen0_1.chk')")
     ! 
     nmodes = FLNmodes
     !
