@@ -53,7 +53,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 	ifdef USE_MPI
-		LAPACK += -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
+		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
 else
 $(error Compiler option "$(COMPILER)" not defined.)
