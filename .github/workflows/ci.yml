@@ -32,8 +32,20 @@ jobs:
           #path: test/benchmarks
           #key: benchmark-data
 
+      - name: Restored cached Intel install
+        id: cache_intel
+        if: ${{ matrix.compiler == 'intel' }}
+        uses: actions/cache@v2
+        with:
+          key: oneapi-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            /opt/intel/oneapi
+            !/opt/intel/oneapi/conda_channel
+            !/opt/intel/oneapi/debugger
+            !/opt/intel/oneapi/licensing
+
       - name: Setup Intel compiler and MPI
-        if: ${{ matrix.compiler  == 'intel' }}
+        if: ${{ matrix.compiler  == 'intel' && steps.cache_intel.outputs.cache-hit != 'true'}}
         run: |
           wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
           sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
