@@ -70,6 +70,7 @@ endif
 ## LIBRARIES
 ################################################################################
 
+PFUNIT_DIR = lib/pFUnit
 WIGXJPF_DIR = wigxjpf-1.5
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB) $(ARPACK)
@@ -100,7 +101,7 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 ## TARGETS
 ################################################################################
 
-.PHONY: all, clean, cleanall, tarball, checkin, test
+.PHONY: all, clean, cleanall, tarball, checkin, test, install-pfunit
 
 all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
 
@@ -122,6 +123,13 @@ $(BINDIR):
 ifneq ($(BINDIR),.)
 	mkdir -p $(BINDIR)
 endif
+
+install-pfunit:
+	git submodule init # Make sure we have pfunit
+	mkdir $(PFUNIT_DIR)/build
+	cd $(PFUNIT_DIR)/build && cmake ..
+	$(MAKE) -C $(PFUNIT_DIR)/build
+	$(MAKE) -C $(PFUNIT_DIR)/build install
 
 clean:
 	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
