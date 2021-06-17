@@ -77,4 +77,9 @@ jobs:
           make COMPILER=intel MODE=ci
 
       - name: Test
-        run: make test
+        run: |
+          if [[ -d "/opt/intel/oneapi" ]]; then
+            source /opt/intel/oneapi/compiler/latest/env/vars.sh
+            source /opt/intel/oneapi/setvars.sh
+          fi
+          make test
