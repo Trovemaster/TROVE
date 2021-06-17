@@ -104,9 +104,9 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
 .PHONY: all, clean, cleanall, tarball, checkin, test, install-pfunit
 
-all: $(TARGET)
+all: $(OBJDIR) $(TARGET)
 
-%.o : $(OBJDIR) %.f90
+%.o : %.f90
 	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
 $(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
@@ -144,8 +144,13 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-test: $(TARGET)
-	cd test; ./run_regression_tests.sh
+test: regression-tests unit-tests
+
+regression-tests: $(TARGET)
+	cd test/regression; ./run_regression_tests.sh
+
+unit-tests: $(TARGET)
+	$(MAKE) -C test/unit
 
 ################################################################################
 ## DEPENDENCIES

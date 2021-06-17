@@ -3,7 +3,7 @@
 set -e
 
 exe_name=j-trove.x
-exe=../$exe_name
+exe=../../$exe_name
 nproc=1
 
 # Check exe is present
