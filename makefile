@@ -83,6 +83,7 @@ BINDIR=.
 SRCDIR=.
 OBJDIR=.
 user_pot_dir=.
+TARGET=$(BINDIR)/$(EXE)
 
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
@@ -103,12 +104,12 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
 .PHONY: all, clean, cleanall, tarball, checkin, test, install-pfunit
 
-all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
+all: $(TARGET)
 
-%.o : %.f90
+%.o : $(OBJDIR) %.f90
 	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
-$(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
+$(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
 	$(FOR) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
 
 $(WIGXJPF_LIB):
@@ -132,7 +133,7 @@ install-pfunit:
 	$(MAKE) -C $(PFUNIT_DIR)/build install
 
 clean:
-	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
+	rm -rf $(TARGET) $(OBJDIR)/*.mod $(OBJDIR)/*.o
 
 cleanall: clean
 	$(MAKE) -C $(WIGXJPF_DIR) clean
@@ -143,7 +144,7 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-test: $(BINDIR)/$(EXE)
+test: $(TARGET)
 	cd test; ./run_regression_tests.sh
 
 ################################################################################
