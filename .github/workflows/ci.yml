@@ -40,8 +40,6 @@ jobs:
           echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
           sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/oneAPI.list" -o APT::Get::List-Cleanup="0"
           sudo apt-get install -y intel-oneapi-compiler-fortran
-          source /opt/intel/oneapi/compiler/latest/env/vars.sh
-          source /opt/intel/oneapi/setvars.sh
 
       - name: Setup python
         uses: actions/setup-python@v1
@@ -52,12 +50,19 @@ jobs:
       - name: Install Intel MKL
         run: sudo apt-get install -y intel-mkl
 
-      - name: Build
-        env:
-          COMPILER: ${{ matrix.compiler == 'intel' && 'ifort' || 'gfortran' }}
+      - name: Build (gfortran)
+        if: ${{ matrix.compiler == 'gfortran' }}
         run: |
-          ${COMPILER} --version
-          make COMPILER=${{ matrix.compiler }} MODE=ci
+          gfortran --version
+          make COMPILER=gfortran MODE=ci
+
+      - name: Build (intel)
+        if: ${{ matrix.compiler == 'intel' }}
+        run: |
+          source /opt/intel/oneapi/compiler/latest/env/vars.sh
+          source /opt/intel/oneapi/setvars.sh
+          ifort --version
+          make COMPILER=intel MODE=ci
 
       - name: Test
         run: make test
