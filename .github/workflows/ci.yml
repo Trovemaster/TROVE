@@ -39,7 +39,7 @@ jobs:
         with:
           key: oneapi-${{ matrix.os }}-${{ matrix.arch }}
           path: |
-            /opt/intel/oneapi
+            /opt/intel/oneapi/*
             !/opt/intel/oneapi/conda_channel
             !/opt/intel/oneapi/debugger
             !/opt/intel/oneapi/licensing
