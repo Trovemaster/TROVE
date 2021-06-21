@@ -128,7 +128,7 @@ endif
 install-pfunit:
 	git submodule init # Make sure we have pfunit
 	mkdir $(PFUNIT_DIR)/build
-	cd $(PFUNIT_DIR)/build && cmake ..
+	cd $(PFUNIT_DIR)/build; cmake ..
 	$(MAKE) -C $(PFUNIT_DIR)/build
 	$(MAKE) -C $(PFUNIT_DIR)/build install
 
