@@ -9,9 +9,11 @@ module writer_ftn
     procedure :: writeScalar => writeScalar_FTN
     procedure :: write1DArray => write1DArray_FTN
     procedure :: write2DArray => write2DArray_FTN
+    procedure :: close_file
     final :: destroy_writerFTN
   end type writerFTN
 
+  ! Constructor
   interface writerFTN
     procedure :: new_writerFTN
   end interface writerFTN
@@ -33,7 +35,7 @@ module writer_ftn
       if (present(position)) then
         position_val = position
       else
-        position_val = 'append'
+        position_val = 'asis'
       end if
 
       if (present(status)) then
@@ -45,7 +47,7 @@ module writer_ftn
       if (present(form)) then
         form_val = form
       else
-        form_val = 'formatted'
+        form_val = 'unformatted'
       end if
 
       if (present(access)) then
@@ -61,6 +63,11 @@ module writer_ftn
 
     subroutine destroy_writerFTN(this)
       type(writerFTN) :: this
+      call this%close_file()
+    end subroutine
+
+    subroutine close_file(this)
+      class(writerFTN) :: this
       print *, "Closing file"
       close(this%iounit)
     end subroutine

@@ -1,6 +1,8 @@
-include ../../lib/pFUnit/build/PFUNIT.mk
+BASE_DIR := ../..
 
-all: test_simple
+include $(BASE_DIR)/lib/pFUnit/build/PFUNIT.mk
+
+all: test_io
 
 %.o : %.F90
 	$(FC) -c $(FFLAGS) $<
@@ -8,9 +10,10 @@ all: test_simple
 FFLAGS += $(PFUNIT_EXTRA_FFLAGS)
 FFLAGS += -I../..
 
-test_simple_TESTS := test_simple.pf test_simple_fixture.pf
-$(eval $(call make_pfunit_test,test_simple))
+test_io_TESTS := test_io.pf
+test_io_OTHER_SRCS := $(addprefix $(BASE_DIR)/, writer_ftn.f90 writer_type.f90)
+$(eval $(call make_pfunit_test,test_io))
 
 clean:
-	$(RM) *.o *.mod *.a  *.inc
-	$(RM) test_simple.F90
+	$(RM) *.o *.mod *.a *.inc
+	$(RM) test_io.F90 test_io test.dat
