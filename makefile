@@ -34,7 +34,7 @@ ifeq ($(strip $(COMPILER)),intel)
 # gfortran
 ##########
 else ifeq ($(strip $(COMPILER)),gfortran)
-	FOR = gfortran
+	FC = gfortran
 	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
 	GCC_VERSION_GT_10 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
@@ -65,6 +65,8 @@ ifdef USE_MPI
 	FOR = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
+
+export FC
 
 ################################################################################
 ## LIBRARIES
@@ -107,10 +109,10 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 all: $(OBJDIR) $(TARGET)
 
 %.o : %.f90
-	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
+	$(FC) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
 $(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
-	$(FOR) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
+	$(FC) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
 
 $(WIGXJPF_LIB):
 	$(MAKE) -C $(WIGXJPF_DIR)
@@ -134,6 +136,7 @@ install-pfunit:
 
 clean:
 	rm -rf $(TARGET) $(OBJDIR)/*.mod $(OBJDIR)/*.o
+	$(MAKE) -C test/unit clean
 
 cleanall: clean
 	$(MAKE) -C $(WIGXJPF_DIR) clean
@@ -147,10 +150,13 @@ checkin:
 test: regression-tests unit-tests
 
 regression-tests: $(TARGET)
+	echo "Running regression tests"
 	cd test/regression; ./run_regression_tests.sh
 
 unit-tests: $(TARGET)
 	$(MAKE) -C test/unit
+	echo "Running unit tests"
+	test/unit/test_simple
 
 ################################################################################
 ## DEPENDENCIES
