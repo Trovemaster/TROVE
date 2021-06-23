@@ -11,7 +11,7 @@ FFLAGS += $(PFUNIT_EXTRA_FFLAGS)
 FFLAGS += -I../..
 
 test_io_TESTS := test_io.pf
-test_io_OTHER_SRCS := $(addprefix $(BASE_DIR)/, writer_ftn.f90 writer_type.f90)
+test_io_OTHER_SRCS := $(addprefix $(BASE_DIR)/, writer_ftn.f90 writer_base.f90)
 $(eval $(call make_pfunit_test,test_io))
 
 clean:

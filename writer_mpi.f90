@@ -1,16 +1,16 @@
 module writer_mpi
   use mpi
-  use writer_type
+  use writer_base
 
   implicit none
 
-  type, extends(writerType) :: writerMPI
+  type, extends(writerBase) :: writerMPI
     integer (kind=MPI_Offset_kind) :: offset
     integer :: fileh, rank
   contains
-    procedure :: writeScalar => writeScalar_MPI
-    procedure :: write1DArray => write1DArray_MPI
-    procedure :: write2DArray => write2DArray_MPI
+    procedure :: writeScalar => writeScalarMPI
+    procedure :: write1DArray => write1DArrayMPI
+    procedure :: write2DArray => write2DArrayMPI
   end type writerMPI
 
   interface writerMPI
@@ -27,36 +27,36 @@ module writer_mpi
       ! writer MPI constructor
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
-      character (len = 20) :: position_val, status_val, form_val, access_val
+      character (len = 20) :: positionVal, statusVal, formVal, accessVal
       integer :: ierr
 
       print *, "Creating new writerMPI!"
 
       if (present(position)) then
-        position_val = position
+        positionVal = position
       else
-        position_val = 'append'
+        positionVal = 'append'
       end if
 
       if (present(status)) then
-        status_val = status
+        statusVal = status
       else
-        status_val = 'unknown'
+        statusVal = 'unknown'
       end if
 
       if (present(form)) then
-        form_val = form
+        formVal = form
       else
-        form_val = 'formatted'
+        formVal = 'formatted'
       end if
 
       if (present(access)) then
-        access_val = access
+        accessVal = access
       else
-        access_val = 'sequential'
+        accessVal = 'sequential'
       end if
 
-      print *, position_val, status_val, form_val, access_val
+      print *, positionVal, statusVal, formVal, accessVal
 
       ! FIXME use above flags to change open behaviour
 
@@ -66,7 +66,7 @@ module writer_mpi
       ! FIXME handle error
     end function new_writerMPI
 
-    subroutine destroy_writerMPI(this)
+    subroutine destroyWriterMPI(this)
       type(writerMPI) :: this
       integer :: ierr
       print *, "Closing file"
@@ -74,7 +74,7 @@ module writer_mpi
       ! FIXME handle error
     end subroutine
 
-    subroutine writeScalar_MPI(this, object)
+    subroutine writeScalarMPI(this, object)
       class(writerMPI) :: this
       class(*), intent(in) :: object
 
@@ -119,13 +119,13 @@ module writer_mpi
                           MPI_STATUS_IGNORE, ierr)
     end subroutine
 
-    subroutine write1DArray_MPI(this, object)
+    subroutine write1DArrayMPI(this, object)
       class(writerMPI) :: this
       class(*), dimension(:), intent(in) :: object
       print *, "writing 1D array to MPI IO"
     end subroutine
 
-    subroutine write2DArray_MPI(this, object)
+    subroutine write2DArrayMPI(this, object)
       class(writerMPI) :: this
       class(*), dimension(:,:), intent(in) :: object
       print *, "writing 2D array to MPI IO"

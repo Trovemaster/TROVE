@@ -1,12 +1,12 @@
 #include "errors.fpp"
 
 module writer_ftn
-  use writer_type
+  use writer_base
   use errors
 
   implicit none
 
-  type, extends(writerType) :: writerFTN
+  type, extends(writerBase) :: writerFTN
     integer :: iounit = 0
     integer :: stat = 0
     logical :: isOpen = .false.
@@ -30,17 +30,17 @@ module writer_ftn
 
   contains
 
-    type(writerFTN) function newWriterFTN(fname, err, position, status, form, access)
+    type(writerFTN) function newWriterFTN(fname, err, position, status, form, access) result(this)
       ! writer FTN constructor
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
 
-      newWriterFTN%isOpen = .false.
-      newWriterFTN%stat = 0
-      newWriterFTN%iounit = 0
+      this%isOpen = .false.
+      this%stat = 0
+      this%iounit = 0
 
-      call newWriterFTN%open(fname, err, position, status, form, access)
+      call this%open(fname, err, position, status, form, access)
     end function
 
     subroutine open(this, fname, err, position, status, form, access)
