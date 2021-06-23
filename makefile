@@ -228,5 +228,5 @@ timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
 writer_type.o: writer_type.f90
-writer_ftn.o: writer_ftn.f90 writer_type.o
+writer_ftn.o: writer_ftn.f90 writer_type.o errors.o
 writer_mpi.o: writer_mpi.f90 writer_type.o

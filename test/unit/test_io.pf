@@ -1,7 +1,10 @@
+#include "errors.fpp"
+
 module test_io
   use funit
   use writer_type
   use writer_ftn
+  use errors
 
   implicit none
 
@@ -27,9 +30,11 @@ module test_io
     character(len=*), parameter :: access = "sequential"
 
     integer i, j
+    type(ErrorType) :: err
 
-    call writer%open(fname, \
+    call writer%open(fname, err, \
       form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
 
     true_integer = 5
     call writer%write(true_integer) ! int

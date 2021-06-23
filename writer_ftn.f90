@@ -1,11 +1,15 @@
+#include "errors.fpp"
+
 module writer_ftn
   use writer_type
+  use errors
 
   implicit none
 
   type, extends(writerType) :: writerFTN
-    integer :: iounit, stat
-    logical :: isOpen
+    integer :: iounit = 0
+    integer :: stat = 0
+    logical :: isOpen = .false.
   contains
     procedure :: writeScalar => writeScalarFTN
     procedure :: write1DArray => write1DArrayFTN
@@ -15,17 +19,40 @@ module writer_ftn
     final :: destroyWriterFTN
   end type writerFTN
 
+  ! Constructor
+  interface writerFTN
+    procedure :: newWriterFTN
+  end interface writerFTN
+
   private
 
   public :: writerFTN
 
   contains
 
-    subroutine open(this, fname, position, status, form, access)
+    type(writerFTN) function newWriterFTN(fname, err, position, status, form, access)
+      ! writer FTN constructor
+      type(ErrorType), intent(inout) :: err
+      character (len = *), intent(in) :: fname
+      character (len = *), intent(in), optional :: position, status, form, access
+
+      newWriterFTN%isOpen = .false.
+      newWriterFTN%stat = 0
+      newWriterFTN%iounit = 0
+
+      call newWriterFTN%open(fname, err, position, status, form, access)
+    end function
+
+    subroutine open(this, fname, err, position, status, form, access)
       class(writerFTN) :: this
+      type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
       character (len = 20) :: positionVal, statusVal, formVal, accessVal
+
+      if (this%isOpen) then
+        RAISE_ERROR("ERROR: Tried to open second file", err)
+      endif
 
       if (present(position)) then
         positionVal = position
@@ -61,7 +88,7 @@ module writer_ftn
       if (this%stat == 0) then
         this%isOpen = .true.
       else
-        print *, "ERROR: Could not open file. iostat = ", this%stat
+        RAISE_ERROR("ERROR: Could not open file", err)
       endif
     end subroutine
 
@@ -72,8 +99,8 @@ module writer_ftn
 
     subroutine close(this)
       class(writerFTN) :: this
-      print *, "Closing file"
       if (this%isOpen) then
+        print *, "Closing file"
         close(this%iounit)
         this%isOpen = .false.
       endif
