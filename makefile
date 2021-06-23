@@ -161,7 +161,7 @@ regression-tests: $(TARGET)
 unit-tests: $(TARGET)
 	$(MAKE) -C test/unit
 	echo "Running unit tests"
-	test/unit/test_simple
+	test/unit/test_io
 
 ################################################################################
 ## DEPENDENCIES
