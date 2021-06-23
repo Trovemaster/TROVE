@@ -106,7 +106,7 @@ module writer_mpi
         byte_size = 16
         mpi_type = MPI_DOUBLE_COMPLEX
       class default
-        print *, "Unsupported type!"
+        print *, "ERROR: Tried to write unsupported type"
         return
       end select
 

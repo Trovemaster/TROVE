@@ -28,7 +28,7 @@ module test_io
 
     integer i, j
 
-    writer = writerFTN(fname, \
+    call writer%open(fname, \
       form=form, access=access, status=status, position=position)
 
     true_integer = 5
@@ -52,7 +52,7 @@ module test_io
     end do
     call writer%write(array2D)
 
-    call writer%close_file()
+    call writer%close()
 
     open(newunit=iounit, iostat=stat, action='read', file=fname, \
       form=form, access=access, status=status, position=position)

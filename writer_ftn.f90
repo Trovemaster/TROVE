@@ -4,19 +4,16 @@ module writer_ftn
   implicit none
 
   type, extends(writerType) :: writerFTN
-    integer :: iounit
+    integer :: iounit, stat
+    logical :: isOpen
   contains
-    procedure :: writeScalar => writeScalar_FTN
-    procedure :: write1DArray => write1DArray_FTN
-    procedure :: write2DArray => write2DArray_FTN
-    procedure :: close_file
-    final :: destroy_writerFTN
+    procedure :: writeScalar => writeScalarFTN
+    procedure :: write1DArray => write1DArrayFTN
+    procedure :: write2DArray => write2DArrayFTN
+    procedure :: open
+    procedure :: close
+    final :: destroyWriterFTN
   end type writerFTN
-
-  ! Constructor
-  interface writerFTN
-    procedure :: new_writerFTN
-  end interface writerFTN
 
   private
 
@@ -24,55 +21,65 @@ module writer_ftn
 
   contains
 
-    type(writerFTN) function new_writerFTN(fname, position, status, form, access)
-      ! writer FTN constructor
+    subroutine open(this, fname, position, status, form, access)
+      class(writerFTN) :: this
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
-      character (len = 20) :: position_val, status_val, form_val, access_val
-
-      print *, "Creating new writerFTN!"
+      character (len = 20) :: positionVal, statusVal, formVal, accessVal
 
       if (present(position)) then
-        position_val = position
+        positionVal = position
       else
-        position_val = 'asis'
+        positionVal = 'asis'
       end if
 
       if (present(status)) then
-        status_val = status
+        statusVal = status
       else
-        status_val = 'unknown'
+        statusVal = 'unknown'
       end if
 
       if (present(form)) then
-        form_val = form
+        formVal = form
       else
-        form_val = 'unformatted'
+        formVal = 'unformatted'
       end if
 
       if (present(access)) then
-        access_val = access
+        accessVal = access
       else
-        access_val = 'sequential'
+        accessVal = 'sequential'
       end if
 
-      print *, position_val, status_val, form_val, access_val
+      print *, "Opening ", fname, " with ", \
+        positionVal, statusVal, formVal, accessVal
 
-      open(newunit=new_writerFTN%iounit, action='write', form=form_val, position=position_val, status=status_val, file=fname)
-    end function new_writerFTN
+      open(newunit=this%iounit, action='write',\
+        form=formVal, position=positionVal, status=statusVal, file=fname,\
+        iostat=this%stat)
 
-    subroutine destroy_writerFTN(this)
-      type(writerFTN) :: this
-      call this%close_file()
+      if (this%stat == 0) then
+        this%isOpen = .true.
+      else
+        print *, "ERROR: Could not open file. iostat = ", this%stat
+      endif
     end subroutine
 
-    subroutine close_file(this)
+    subroutine destroyWriterFTN(this)
+      type(writerFTN) :: this
+      call this%close()
+    end subroutine
+
+    subroutine close(this)
       class(writerFTN) :: this
       print *, "Closing file"
-      close(this%iounit)
+      if (this%isOpen) then
+        close(this%iounit)
+        this%isOpen = .false.
+      endif
     end subroutine
 
-    subroutine writeScalar_FTN(this, object)
+    subroutine writeScalarFTN(this, object)
       class(writerFTN) :: this
       class(*), intent(in) :: object
       print *, "writing object with FTN IO"
@@ -84,11 +91,11 @@ module writer_ftn
       type is (complex)
         write(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        print *, "ERROR: Tried to write unsupported type"
       end select
     end subroutine
 
-    subroutine write1DArray_FTN(this, object)
+    subroutine write1DArrayFTN(this, object)
       class(writerFTN) :: this
       class(*), dimension(:), intent(in) :: object
       print *, "writing 1D array with FTN IO"
@@ -100,11 +107,11 @@ module writer_ftn
       type is (complex)
         write(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        print *, "ERROR: Tried to write unsupported type"
       end select
     end subroutine
 
-    subroutine write2DArray_FTN(this, object)
+    subroutine write2DArrayFTN(this, object)
       class(writerFTN) :: this
       class(*), dimension(:,:), intent(in) :: object
       print *, "writing 2D array with FTN IO"
@@ -116,7 +123,7 @@ module writer_ftn
       type is (complex)
         write(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        print *, "ERROR: Tried to write unsupported type"
       end select
     end subroutine
 end module
