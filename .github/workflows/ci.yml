@@ -44,7 +44,7 @@ jobs:
         if: ${{ matrix.compiler == 'intel' }}
         uses: actions/cache@v2
         with:
-          key: oneapi-${{ matrix.os }}-${{ matrix.arch }}
+          key: oneapi-${{ matrix.os }}-${{ matrix.arch }}-MPI:{{ matrix.mpi }}
           path: |
             /opt/intel/oneapi/*
             !/opt/intel/oneapi/conda_channel
@@ -53,12 +53,17 @@ jobs:
 
       - name: Setup Intel compiler and MPI
         if: ${{ matrix.compiler  == 'intel' && steps.cache_intel.outputs.cache-hit != 'true'}}
+        env:
+          USE_MPI: ${{ matrix.mpi && 1 || 0 }}
         run: |
           wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
           sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
           echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
           sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/oneAPI.list" -o APT::Get::List-Cleanup="0"
           sudo apt-get install -y intel-oneapi-compiler-fortran
+          if [ ${USE_MPI} = 1 ]; then
+            sudo apt-get install -y intel-oneapi-mpi-devel
+          fi
 
       - name: Setup python
         uses: actions/setup-python@v1
