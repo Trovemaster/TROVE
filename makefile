@@ -23,7 +23,7 @@ ifeq ($(strip $(COMPILER)),intel)
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -traceback
 	else ifeq ($(strip $(MODE)),ci)
-		FFLAGS += -O2 -g
+		FFLAGS += -O0 -g
 	else
 		FFLAGS += -O3
 	endif

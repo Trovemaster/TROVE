@@ -15,13 +15,16 @@ export OMP_NUM_THREADS=$nproc
 ulimit -d unlimited
 
 if [ ${USE_MPI} = 1 ]; then
-  LAUNCH="mpirun -ppn 1 -np $nproc"
+  LAUNCH="time mpirun -ppn 1 -np $nproc"
+  echo "Will run with MPI"
 else
   LAUNCH="time"
+  echo "Will run without MPI"
 fi
 
 echo "Time: `date`"
 echo "Current directory: `pwd`"
+echo "Using ${nproc} process(es)"
 
 for name in file{1..12} file_intensity; do
   $LAUNCH ./$exe < $name.inp > $name.out
