@@ -27,7 +27,7 @@ echo "Current directory: `pwd`"
 echo "Using ${nproc} process(es)"
 
 for name in file{1..12} file_intensity; do
-  $LAUNCH ./$exe < $name.inp > $name.out
+  $LAUNCH ./$exe $name.inp > $name.out
 done
 
 echo "DONE"

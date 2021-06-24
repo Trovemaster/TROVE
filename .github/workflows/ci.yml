@@ -99,7 +99,7 @@ jobs:
         env:
           USE_MPI: ${{ matrix.mpi && 1 || 0 }}
           # nproc is used in the test script for the number of processes
-          nproc: ${{ matrix.mpi && 1 || 1 }}
+          nproc: ${{ matrix.mpi && 2 || 1 }}
         run: |
           if [[ -d "/opt/intel/oneapi" ]]; then
             source /opt/intel/oneapi/compiler/latest/env/vars.sh
