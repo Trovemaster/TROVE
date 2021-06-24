@@ -78,7 +78,7 @@ jobs:
       - name: Build (intel)
         if: ${{ matrix.compiler == 'intel' }}
         env:
-          - MPI_PARAM: ${{ matrix.mpi && 'USE_MPI=1' || ''}}
+          MPI_PARAM: ${{ matrix.mpi && 'USE_MPI=1' || ''}}
         run: |
           source /opt/intel/oneapi/compiler/latest/env/vars.sh
           source /opt/intel/oneapi/setvars.sh
@@ -87,9 +87,9 @@ jobs:
 
       - name: Test
         env:
-          - USE_MPI: ${{ matrix.mpi && 1 || 0 }}
+          USE_MPI: ${{ matrix.mpi && 1 || 0 }}
           # nproc is used in the test script for the number of processes
-          - nproc: ${{ matrix.mpi && 2 || 1 }}
+          nproc: ${{ matrix.mpi && 2 || 1 }}
         run: |
           if [[ -d "/opt/intel/oneapi" ]]; then
             source /opt/intel/oneapi/compiler/latest/env/vars.sh
