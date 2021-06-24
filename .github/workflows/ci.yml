@@ -44,7 +44,7 @@ jobs:
         if: ${{ matrix.compiler == 'intel' }}
         uses: actions/cache@v2
         with:
-          key: oneapi-${{ matrix.os }}-${{ matrix.arch }}-MPI:{{ matrix.mpi }}
+          key: oneapi-${{ matrix.os }}-${{ matrix.arch }}-MPI:${{ matrix.mpi }}
           path: |
             /opt/intel/oneapi/*
             !/opt/intel/oneapi/conda_channel
