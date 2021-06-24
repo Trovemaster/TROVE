@@ -14,7 +14,11 @@ export OMP_NUM_THREADS=$nproc
 # Ensure stacksize unlimited (for fortran)
 ulimit -d unlimited
 
-LAUNCH="time"
+if [ ${USE_MPI} = 1 ]; then
+  LAUNCH="mpirun -ppn 1 -np $nproc"
+else
+  LAUNCH="time"
+fi
 
 echo "Time: `date`"
 echo "Current directory: `pwd`"
