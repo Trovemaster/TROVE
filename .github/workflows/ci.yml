@@ -87,6 +87,9 @@ jobs:
         run: |
           source /opt/intel/oneapi/compiler/latest/env/vars.sh
           source /opt/intel/oneapi/setvars.sh
+          # MKL doesn't have a "latest" link so we can't hardcode the path
+          source $(find /opt/intel/oneapi/mkl/ -name "vars.sh")
+          # mpif90 uses gfortran by default unless changed like this
           export I_MPI_F90=ifort
           ifort --version
           make COMPILER=intel MODE=ci ${MPI_PARAM}
@@ -100,5 +103,6 @@ jobs:
           if [[ -d "/opt/intel/oneapi" ]]; then
             source /opt/intel/oneapi/compiler/latest/env/vars.sh
             source /opt/intel/oneapi/setvars.sh
+            source $(find /opt/intel/oneapi/mkl/ -name "vars.sh")
           fi
           make test
