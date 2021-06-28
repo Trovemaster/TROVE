@@ -1,20 +1,27 @@
+#include "errors.fpp"
+
 module writer_mpi
   use mpi
   use writer_base
+  use errors
 
   implicit none
 
   type, extends(writerBase) :: writerMPI
     integer (kind=MPI_Offset_kind) :: offset
     integer :: fileh, rank
+    logical :: isOpen = .false.
   contains
     procedure :: writeScalar => writeScalarMPI
     procedure :: write1DArray => write1DArrayMPI
     procedure :: write2DArray => write2DArrayMPI
+    procedure :: open
+    procedure :: close
+    final :: destroyWriterMPI
   end type writerMPI
 
   interface writerMPI
-    procedure :: new_writerMPI
+    procedure :: newWriterMPI
   end interface writerMPI
 
   private
@@ -23,14 +30,37 @@ module writer_mpi
 
   contains
 
-    type(writerMPI) function new_writerMPI(fname, position, status, form, access)
+    type(writerMPI) function newWriterMPI(fname, err, position, status, form, access) result(this)
       ! writer MPI constructor
+      type(ErrorType), intent(inout) :: err
+      character (len = *), intent(in) :: fname
+      character (len = *), intent(in), optional :: position, status, form, access
+
+      this%isOpen = .false.
+      this%offset = 0
+      this%fileh = 0
+      this%rank = 0
+
+      call this%open(fname, err, position, status, form, access)
+    end function
+
+    subroutine destroyWriterMPI(this)
+      type(writerMPI) :: this
+      call this%close()
+    end subroutine
+
+    subroutine open(this, fname, err, position, status, form, access)
+      ! writer MPI constructor
+      class(writerMPI) :: this
+      type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
       character (len = 20) :: positionVal, statusVal, formVal, accessVal
       integer :: ierr
 
-      print *, "Creating new writerMPI!"
+      if (this%isOpen) then
+        RAISE_ERROR("ERROR: Tried to open second file", err)
+      endif
 
       if (present(position)) then
         positionVal = position
@@ -56,23 +86,26 @@ module writer_mpi
         accessVal = 'sequential'
       end if
 
-      print *, positionVal, statusVal, formVal, accessVal
+      print *, "MPI: Opening ", fname, " with ", \
+        positionVal, statusVal, formVal, accessVal
 
       ! FIXME use above flags to change open behaviour
 
-      call MPI_Comm_rank(MPI_COMM_WORLD, new_writerMPI%rank, ierr)
+      call MPI_Comm_rank(MPI_COMM_WORLD, this%rank, ierr)
 
-      call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, new_writerMPI%fileh, ierr)
+      call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, this%fileh, ierr)
       ! FIXME handle error
-    end function new_writerMPI
+    end subroutine open
 
-    subroutine destroyWriterMPI(this)
-      type(writerMPI) :: this
+    subroutine close(this)
+      class(writerMPI) :: this
       integer :: ierr
-      print *, "Closing file"
-      call MPI_File_close(this%fileh, ierr)
+      if (this%isOpen) then
+        call MPI_File_close(this%fileh, ierr)
+        this%isOpen = .false.
+      endif
       ! FIXME handle error
-    end subroutine
+    end subroutine close
 
     subroutine writeScalarMPI(this, object)
       class(writerMPI) :: this

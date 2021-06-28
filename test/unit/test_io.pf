@@ -13,7 +13,7 @@ module test_io
   contains
 
   @test
-  subroutine test_ftn_writer()
+  subroutine testFTNWriter()
     type(writerFTN) :: writer
 
     real, dimension(5) :: array1D
@@ -86,7 +86,7 @@ module test_io
   end subroutine
 
   @test
-  subroutine test_ftn_reader()
+  subroutine testFTNReader()
     type(readerFTN) :: reader
 
     real, dimension(5) :: array1D

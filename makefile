@@ -67,6 +67,7 @@ ifdef USE_MPI
 endif
 
 export FC
+export USE_MPI
 
 ################################################################################
 ## LIBRARIES
@@ -159,9 +160,10 @@ regression-tests: $(TARGET)
 	cd test/regression; ./run_regression_tests.sh
 
 unit-tests: $(TARGET)
-	$(MAKE) -C test/unit
+	$(MAKE) -C test/unit test_io test_mpi_io
 	echo "Running unit tests"
 	test/unit/test_io
+	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
 
 ################################################################################
 ## DEPENDENCIES

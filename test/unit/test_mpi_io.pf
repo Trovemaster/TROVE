@@ -1,0 +1,101 @@
+#include "errors.fpp"
+
+module test_mpi_io
+  use funit
+  use mpi
+  use writer_base
+  use writer_mpi
+  use reader_base
+  use reader_mpi
+  use errors
+
+  implicit none
+
+  contains
+
+  @test
+  subroutine testMPIWriter()
+
+    type(writerMPI) :: writer
+
+    real, dimension(5) :: array1D
+    real, dimension(5, 5) :: array2D
+    real, dimension(5) :: in_array1D
+    real, dimension(5, 5) :: in_array2D
+    real :: true_real, in_real
+    complex :: true_complex, in_complex
+    integer :: true_integer, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    type(ErrorType) :: err
+
+    integer :: ierr, comsize, rank
+
+    call MPI_Init(ierr)
+    call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+
+    call writer%open(fname, err, \
+      form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    true_integer = 5
+    call writer%write(true_integer) ! int
+
+    true_real = 4.0
+    call writer%write(true_real) ! double
+
+    true_complex = (5.0, 1.0)
+    call writer%write(true_complex) ! complex
+
+    ! Array
+    array1D = (/2, 3, 4, 5, 6/)
+    /*call writer%write(array1D)*/
+
+    ! 2D array
+    do i=1,5
+      do j=1,5
+        array2D(i,j) = i+j
+      end do
+    end do
+    /*call writer%write(array2D)*/
+
+    call writer%close()
+
+    open(newunit=iounit, iostat=stat, action='read', file=fname, \
+      form=form, access=access, status=status, position=position)
+
+    ! Only run test on main process
+    if(rank == 0) then
+      read(iounit) in_integer
+      read(iounit) in_real
+      read(iounit) in_complex
+      /*read(iounit) in_array1D*/
+      /*read(iounit) in_array2D*/
+
+      if (stat == 0) close(iounit, status='delete')
+
+      @assertTrue(in_integer == true_integer)
+      @assertTrue(in_real == true_real)
+      @assertTrue(in_complex == true_complex)
+      /*do i=1,5*/
+        /*@assertTrue(in_array1D(i) == array1D(i))*/
+      /*end do*/
+      /*do i=1,5*/
+        /*do j=1,5*/
+          /*@assertTrue(in_array2D(i,j) == array2D(i,j))*/
+        /*end do*/
+      /*end do*/
+    endif
+
+    call MPI_Finalize(ierr)
+
+  end subroutine testMPIWriter
+end module
