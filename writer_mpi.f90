@@ -107,48 +107,52 @@ module writer_mpi
       ! FIXME handle error
     end subroutine close
 
+    subroutine getMPIVarInfo(object, byteSize, mpiType)
+      class(*), intent(in) :: object
+      integer, intent(out) :: byteSize, mpiType
+
+      select type(object)
+      type is (integer(kind=4))
+        byteSize = 4
+        mpiType = MPI_INTEGER
+      type is (integer(kind=8))
+        byteSize = 8
+        mpiType = MPI_LONG
+      type is (real(kind=4))
+        byteSize = 4
+        mpiType = MPI_FLOAT
+      type is (real(kind=8))
+        byteSize = 8
+        mpiType = MPI_DOUBLE
+      type is (complex(kind=4))
+        byteSize = 8
+        mpiType = MPI_COMPLEX
+      type is (complex(kind=8))
+        byteSize = 16
+        mpiType = MPI_DOUBLE_COMPLEX
+      class default
+        print *, "ERROR: Unknown type"
+      end select
+    end subroutine
+
     subroutine writeScalarMPI(this, object)
       class(writerMPI) :: this
       class(*), intent(in) :: object
 
-      integer :: byte_size, mpi_type, ierr
+      integer :: byteSize, mpiType, ierr
 
       if (this%rank /= 0) then
         return
       end if
 
-      print *, "writing object to MPI IO"
+      call getMPIVarInfo(object, byteSize, mpiType)
 
-      select type(object)
-      type is (integer(kind=4))
-        byte_size = 4
-        mpi_type = MPI_INTEGER
-      type is (integer(kind=8))
-        byte_size = 8
-        mpi_type = MPI_LONG
-      type is (real(kind=4))
-        byte_size = 4
-        mpi_type = MPI_FLOAT
-      type is (real(kind=8))
-        byte_size = 8
-        mpi_type = MPI_DOUBLE
-      type is (complex(kind=4))
-        byte_size = 8
-        mpi_type = MPI_COMPLEX
-      type is (complex(kind=8))
-        byte_size = 16
-        mpi_type = MPI_DOUBLE_COMPLEX
-      class default
-        print *, "ERROR: Tried to write unsupported type"
-        return
-      end select
-
-      this%offset = this%offset + 4+byte_size+4
-      call MPI_File_write(this%fileh, byte_size, 1, MPI_INTEGER, &
+      this%offset = this%offset + 4+byteSize+4
+      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, object, 1, mpi_type, &
+      call MPI_File_write(this%fileh, object, 1, mpiType, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, byte_size, 1, MPI_INTEGER, &
+      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
     end subroutine
 
