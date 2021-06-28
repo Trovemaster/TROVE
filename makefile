@@ -17,7 +17,7 @@ USE_MPI ?=
 # Intel
 #######
 ifeq ($(strip $(COMPILER)),intel)
-	FOR = ifort
+	FC = ifort
 	FFLAGS = -cpp -ip -align -ansi-alias -mcmodel=medium -parallel -nostandard-realloc-lhs -qopenmp -module $(OBJDIR)
 
 	ifeq ($(strip $(MODE)),debug)
@@ -62,7 +62,7 @@ endif
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 ifdef USE_MPI
-	FOR = mpif90
+	FC = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
 
