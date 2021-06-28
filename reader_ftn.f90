@@ -1,18 +1,26 @@
+#include "errors.fpp"
+
 module reader_ftn
-  use reader_type
+  use reader_base
+  use errors
 
   implicit none
 
-  type, extends(readerType) :: readerFTN
+  type, extends(readerBase) :: readerFTN
+    integer :: iounit = 0
+    integer :: stat = 0
+    logical :: isOpen = .false.
   contains
-    procedure :: readScalar => readScalar_FTN
-    procedure :: read1DArray => read1DArray_FTN
-    procedure :: read2DArray => read2DArray_FTN
-    final :: destroy_readerFTN
+    procedure :: readScalar => readScalarFTN
+    procedure :: read1DArray => read1DArrayFTN
+    procedure :: read2DArray => read2DArrayFTN
+    procedure :: open
+    procedure :: close
+    final :: destroyReaderFTN
   end type readerFTN
 
   interface readerFTN
-    procedure :: new_readerFTN
+    procedure :: newReaderFTN
   end interface readerFTN
 
   private
@@ -21,38 +29,82 @@ module reader_ftn
 
   contains
 
-    type(readerFTN) function new_readerFTN(fname, form, access)
+    type(readerFTN) function newReaderFTN(fname, err, position, status, form, access) result(this)
       ! reader FTN constructor
+      type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
-      character (len = *), intent(in), optional :: form, access
-      character (len = 20) :: form_val, access_val
+      character (len = *), intent(in), optional :: position, status, form, access
 
-      print *, "Creating new readerFTN!"
+      this%isOpen = .false.
+      this%stat = 0
+      this%iounit = 0
+
+      call this%open(fname, err, position, status, form, access)
+    end function
+
+    subroutine destroyReaderFTN(this)
+      type(readerFTN) :: this
+      call this%close()
+    end subroutine
+
+    subroutine open(this, fname, err, position, status, form, access)
+      class(readerFTN) :: this
+      type(ErrorType), intent(inout) :: err
+      character (len = *), intent(in) :: fname
+      character (len = *), intent(in), optional :: position, status, form, access
+      character (len = 20) :: positionVal, statusVal, formVal, accessVal
+
+      if (this%isOpen) then
+        RAISE_ERROR("ERROR: Tried to open second file", err)
+      endif
+
+      if (present(position)) then
+        positionVal = position
+      else
+        positionVal = 'asis'
+      end if
+
+      if (present(status)) then
+        statusVal = status
+      else
+        statusVal = 'unknown'
+      end if
 
       if (present(form)) then
-        form_val = form
+        formVal = form
       else
-        form_val = 'formatted'
+        formVal = 'unformatted'
       end if
 
       if (present(access)) then
-        access_val = access
+        accessVal = access
       else
-        access_val = 'sequential'
+        accessVal = 'sequential'
       end if
 
-      print *, form_val, access_val
+      print *, "Opening ", fname, " with ", \
+        positionVal, statusVal, formVal, accessVal
 
-      open(newunit=new_readerFTN%iounit, action='read', access=access_val, form=form_val, file=fname)
-    end function new_readerFTN
+      open(newunit=this%iounit, action='read',\
+        form=formVal, position=positionVal, status=statusVal, file=fname,\
+        iostat=this%stat)
 
-    subroutine destroy_readerFTN(this)
-      type(readerFTN) :: this
-      print *, "Closing file"
-      close(this%iounit)
+      if (this%stat == 0) then
+        this%isOpen = .true.
+      else
+        RAISE_ERROR("ERROR: Could not open file", err)
+      endif
     end subroutine
 
-    subroutine readScalar_FTN(this, object)
+    subroutine close(this)
+      class(readerFTN) :: this
+      if (this%isOpen) then
+        close(this%iounit)
+        this%isOpen = .false.
+      endif
+    end subroutine
+
+    subroutine readScalarFTN(this, object)
       class(readerFTN) :: this
       class(*), intent(out) :: object
       print *, "reading object with FTN IO"
@@ -68,7 +120,7 @@ module reader_ftn
       end select
     end subroutine
 
-    subroutine read1DArray_FTN(this, object)
+    subroutine read1DArrayFTN(this, object)
       class(readerFTN) :: this
       class(*), dimension(:), intent(out) :: object
       print *, "reading 1D array with FTN IO"
@@ -84,7 +136,7 @@ module reader_ftn
       end select
     end subroutine
 
-    subroutine read2DArray_FTN(this, object)
+    subroutine read2DArrayFTN(this, object)
       class(readerFTN) :: this
       class(*), dimension(:,:), intent(out) :: object
       print *, "reading 2D array with FTN IO"

@@ -1,35 +1,34 @@
-module reader_type
+module reader_base
   implicit none
 
-  type, abstract :: readerType
-    integer :: iounit
+  type, abstract :: readerBase
   contains
     generic :: read => readScalar, read1DArray, read2DArray
     procedure(readScalar), deferred :: readScalar
     procedure(read1DArray), deferred :: read1DArray
     procedure(read2DArray), deferred :: read2DArray
-  end type readerType
+  end type readerBase
 
   abstract interface
     subroutine readScalar(this, object)
-      import readerType
-      class(readerType) :: this
+      import readerBase
+      class(readerBase) :: this
       class(*), intent(out) :: object
     end subroutine
     subroutine read1DArray(this, object)
-      import readerType
-      class(readerType) :: this
+      import readerBase
+      class(readerBase) :: this
       class(*), dimension(:), intent(out) :: object
     end subroutine
     subroutine read2DArray(this, object)
-      import readerType
-      class(readerType) :: this
+      import readerBase
+      class(readerBase) :: this
       class(*), dimension(:,:), intent(out) :: object
     end subroutine
   end interface
 
   private
 
-  public :: readerType
+  public :: readerBase
 
 end module

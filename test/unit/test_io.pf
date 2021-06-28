@@ -4,6 +4,8 @@ module test_io
   use funit
   use writer_base
   use writer_ftn
+  use reader_base
+  use reader_ftn
   use errors
 
   implicit none
@@ -11,7 +13,7 @@ module test_io
   contains
 
   @test
-  subroutine test_writing()
+  subroutine test_ftn_writer()
     type(writerFTN) :: writer
 
     real, dimension(5) :: array1D
@@ -81,6 +83,84 @@ module test_io
         @assertTrue(in_array2D(i,j) == array2D(i,j))
       end do
     end do
+  end subroutine
+
+  @test
+  subroutine test_ftn_reader()
+    type(readerFTN) :: reader
+
+    real, dimension(5) :: array1D
+    real, dimension(5, 5) :: array2D
+    real, dimension(5) :: in_array1D
+    real, dimension(5, 5) :: in_array2D
+    real :: true_real, in_real
+    complex :: true_complex, in_complex
+    integer :: true_integer, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    type(ErrorType) :: err
+
+    open(newunit=iounit, iostat=stat, action='write', file=fname, \
+      form=form, access=access, status=status, position=position)
+
+    true_integer = 5
+    write(iounit) true_integer ! int
+
+    true_real = 4.0
+    write(iounit) true_real ! double
+
+    true_complex = (5.0, 1.0)
+    write(iounit) true_complex ! complex
+
+    ! Array
+    array1D = (/2, 3, 4, 5, 6/)
+    write(iounit) array1D ! 1D array
+
+    ! 2D array
+    do i=1,5
+      do j=1,5
+        array2D(i,j) = i+j
+      end do
+    end do
+    write(iounit) array2D ! 2D array
+
+    if (stat == 0) close(iounit)
+
+    call reader%open(fname, err, \
+      form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    call reader%read(in_integer)
+    call reader%read(in_real)
+    call reader%read(in_complex)
+    call reader%read(in_array1D)
+    call reader%read(in_array2D)
+
+    call reader%close()
+
+    @assertTrue(in_integer == true_integer)
+    @assertTrue(in_real == true_real)
+    @assertTrue(in_complex == true_complex)
+    do i=1,5
+      @assertTrue(in_array1D(i) == array1D(i))
+    end do
+    do i=1,5
+      do j=1,5
+        @assertTrue(in_array2D(i,j) == array2D(i,j))
+      end do
+    end do
+
+  ! Cleanup test file
+  open(newunit=iounit, iostat=stat, action='read', file=fname)
+  if (stat == 0) close(iounit, status='delete')
+
   end subroutine
 
 end module test_io

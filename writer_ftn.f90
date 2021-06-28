@@ -43,6 +43,11 @@ module writer_ftn
       call this%open(fname, err, position, status, form, access)
     end function
 
+    subroutine destroyWriterFTN(this)
+      type(writerFTN) :: this
+      call this%close()
+    end subroutine
+
     subroutine open(this, fname, err, position, status, form, access)
       class(writerFTN) :: this
       type(ErrorType), intent(inout) :: err
@@ -92,15 +97,9 @@ module writer_ftn
       endif
     end subroutine
 
-    subroutine destroyWriterFTN(this)
-      type(writerFTN) :: this
-      call this%close()
-    end subroutine
-
     subroutine close(this)
       class(writerFTN) :: this
       if (this%isOpen) then
-        print *, "Closing file"
         close(this%iounit)
         this%isOpen = .false.
       endif
