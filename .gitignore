@@ -10,6 +10,15 @@ wigxjpf-1.5/lib/
 wigxjpf-1.5/bin/
 wigxjpf-1.5/mod/
 
+# test executables
+test/unit/test_io
+
+# regression test files
+test/regression/benchmarks
+test/regression/benchmarks.tar.gz
+test/regression/outputs
+
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
