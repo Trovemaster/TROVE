@@ -28,6 +28,7 @@ for benchmark in H2CO; do
   cp $exe $wd
   cp benchmarks/$benchmark/input/*.inp $wd
   cp scripts/$benchmark/run_benchmark.sh $wd
+  cp scripts/set_io_format.sh $wd
 
   # Run benchmark
   pushd $wd

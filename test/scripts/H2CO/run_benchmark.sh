@@ -16,6 +16,7 @@ ulimit -d unlimited
 
 if [ ${USE_MPI} = 1 ]; then
   LAUNCH="time mpirun -ppn 1 -np $nproc"
+  ./set_io_format.sh enable
   echo "Will run with MPI"
 else
   LAUNCH="time"
@@ -27,7 +28,7 @@ echo "Current directory: `pwd`"
 echo "Using ${nproc} process(es)"
 
 for name in file{1..12} file_intensity; do
-  $LAUNCH ./$exe $name.inp > $name.out
+  $LAUNCH ./$exe $name.inp -o $name > $name.out
 done
 
 echo "DONE"
