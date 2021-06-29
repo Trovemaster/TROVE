@@ -2,7 +2,8 @@
 
 module test_mpi_io
   use funit
-  use mpi
+  use mpi_f08
+  use mpi_aux
   use writer_base
   use writer_mpi
   use reader_base
@@ -36,10 +37,10 @@ module test_mpi_io
     integer i, j
     type(ErrorType) :: err
 
-    integer :: ierr, comsize, rank
+    integer :: ierr, rank, allocinfo
 
-    call MPI_Init(ierr)
-    call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
+    call co_init_comms()
+
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
 
     call writer%open(fname, err, \
@@ -95,7 +96,7 @@ module test_mpi_io
       /*end do*/
     endif
 
-    call MPI_Finalize(ierr)
+    call co_finalize_comms()
 
   end subroutine testMPIWriter
 end module
