@@ -11,7 +11,9 @@ quantum_files="eigen_descr0_1.chk eigen_descr0_2.chk eigen_descr0_3.chk eigen_de
 
 python compare_results.py --kind quantum --folder1 "$folder1" --folder2 "$folder2" $quantum_files
 
-python compare_results.py --kind intensity --precision 5e-6 --folder1 "$folder1" --folder2 "$folder2" file_intensity.out
+if [ ${USE_MPI} != 1 ]; then
+    python compare_results.py --kind intensity --precision 5e-6 --folder1 "$folder1" --folder2 "$folder2" file_intensity.out
+fi
 
 python compare_results.py --kind column --column 3 --precision 5e-3 --folder1 "$folder1" --folder2 "$folder2" external.chk
 
