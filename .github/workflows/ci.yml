@@ -10,6 +10,7 @@ jobs:
     name: TROVE ${{ matrix.os }} - ${{ matrix.arch }} - ${{ matrix.compiler }} - MPI:${{ matrix.mpi }}
     env:
       OMP_NUM_THREADS: 1
+      USE_MPI: ${{ matrix.mpi && 1 || 0 }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -53,8 +54,6 @@ jobs:
 
       - name: Setup Intel compiler and MPI
         if: ${{ matrix.compiler  == 'intel' && steps.cache_intel.outputs.cache-hit != 'true'}}
-        env:
-          USE_MPI: ${{ matrix.mpi && 1 || 0 }}
         run: |
           wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
           sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
@@ -82,8 +81,6 @@ jobs:
 
       - name: Build (intel)
         if: ${{ matrix.compiler == 'intel' }}
-        env:
-          MPI_PARAM: ${{ matrix.mpi && 'USE_MPI=1' || ''}}
         run: |
           source /opt/intel/oneapi/compiler/latest/env/vars.sh
           source /opt/intel/oneapi/setvars.sh
@@ -93,11 +90,10 @@ jobs:
           # mpif90 uses gfortran by default unless changed like this
           export I_MPI_F90=ifort
           ifort --version
-          make COMPILER=intel MODE=ci ${MPI_PARAM}
+          make COMPILER=intel MODE=ci USE_MPI=${USE_MPI}
 
       - name: Test
         env:
-          USE_MPI: ${{ matrix.mpi && 1 || 0 }}
           # nproc is used in the test script for the number of processes
           nproc: ${{ matrix.mpi && 2 || 1 }}
         run: |
