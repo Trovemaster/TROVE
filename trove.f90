@@ -13,10 +13,12 @@
     use dipole, only: dm_tranint,dm_analysis_density
     use refinement, only : refinement_by_fit,external_expectation_values
     use tran, only : TRconvert_matel_j0_eigen,TRconvert_repres_J0_to_contr
+    use mpi_aux, only: mpi_rank,co_init_comms,co_finalize_comms
     use extfield
 
     implicit none
 
+    public ptmain
 !
 ! Defining the calculations
 !
@@ -39,6 +41,7 @@
       ! Begin with constants intitialization
       !
       call TimerStart('TROVE')
+      call co_init_comms()
       !
       call accuracyInitialize
       !
@@ -185,12 +188,16 @@
       !
       if (action%convert_vibme) then 
          call TRconvert_matel_j0_eigen(j)
+         call co_finalize_comms()
          return 
       endif
       !
       if (job%contrci_me_fast) then 
         !
-        call PTstore_contr_matelem(j)
+        if (mpi_rank.eq.0) then
+          call PTstore_contr_matelem(j)
+        endif
+        !
         call PTcontracted_matelem_class_fast(j) 
         !
         !call PTstore_contr_matelem_II(j)
@@ -223,6 +230,7 @@
       if (job%verbose>=2) then 
         write(out,"(/'End of TROVE')") 
       endif 
+      call co_finalize_comms()
       !
     end subroutine ptmain 
 

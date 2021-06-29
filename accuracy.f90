@@ -15,8 +15,8 @@ module accuracy
   integer, parameter :: drk         = selected_real_kind(12,25)  ! "Double" reals and complex (complexi? :-)
   integer, parameter :: rk          = selected_real_kind(12,25)  ! "Normal" reals and complex (complexi? :-)
   integer, parameter :: ark         = selected_real_kind(25,32)  ! "Accurate" reals and complex (complexi? :-)
-  integer, parameter :: inp         = 5                          ! Output I/O channel
-  integer, parameter :: out         = 6                          ! Output I/O channel
+  integer, parameter :: inp         = 5                          ! Input I/O channel
+  integer            :: out         = 6                          ! Output I/O channel
   integer, parameter :: nfilelegendre = 101                      ! Dump-outout channel for eigenfunction 
 
   ! universal constants

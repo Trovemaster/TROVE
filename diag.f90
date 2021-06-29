@@ -6,7 +6,6 @@ module diag
 #define omparpack_  0
 #define propack_  0
 !
-!
 !  Simplistic type-agnostic LAPACK interface
 !
   use accuracy
@@ -15,7 +14,7 @@ module diag
   private verbose
   !
   !
-  public diag_tridiag,diag_tridiag_pack,diag_dsyev_i8,diag_dgelss,diag_syev_ilp,diag_syev_i8,diag_dseupd,diag_dseupd_p
+  public diag_tridiag,diag_tridiag_pack,diag_dsyev_i8,diag_dgelss,diag_syev_ilp,diag_syev_i8
   public dseupd_omp_arpack,diag_propack,daprod
   !
   integer,parameter:: verbose = 4
@@ -2094,7 +2093,7 @@ module diag
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                          ncv, v, ldv, iparam, ipntr, workd, workl, &
                          lworkl, info )
-#else 
+#else
             !
             write(out,"(/'Arpack was not activated yet. Please uncomment dsaupd and  dseupd bellow')")
             stop 'Arpack was not activated'
@@ -3272,9 +3271,6 @@ module diag
       if (verbose>=2) call TimerStop('dseupd_omp_arpack: diagonalization')
       !
   end subroutine dseupd_omp_arpack
-
-
-
 
 
   subroutine diag_propack(n,bterm,nroots,factor,maxiter,iverbose,tol,h,e)

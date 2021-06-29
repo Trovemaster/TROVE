@@ -28,7 +28,7 @@ module fields
    public FLread_coeff_matelem,FLinitilize_Potential_original
    public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
    public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
-   public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
+   public jobt, trove, manifold, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
    !
    public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
    public FLJGammaLevelT
@@ -2100,7 +2100,6 @@ module fields
                 (job%bset(i)%periodic.eqv.job%bset(i-1)%periodic)   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
                 !
                 job%bset(i)%species = ispecies
-                !
             else 
                 ispecies = ispecies + 1
                 job%bset(i)%species = ispecies
@@ -4673,8 +4672,8 @@ end subroutine check_read_save_none
     !
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
-    trove%dihedrals(:,:) = dihedrals(:Ndihedrals,:)
-    trove%dihedtype(:) = dihedtype(:Ndihedrals)
+    trove%dihedrals(0:Ndihedrals,:) = dihedrals(0:Ndihedrals,:)
+    trove%dihedtype(:) = dihedtype(:)
     !
     ! We define the coordinates 
     !
@@ -12028,7 +12027,7 @@ end subroutine check_read_save_none
     ! Only pseudopotential function (part 1) is obtained as a vector product  of two s_rot polynoms: 
     ! V_pseudi1(q1,q2) = 1/4*factor*sum_{n1} [s_rot x s_rot] /mass(n1)
     !
-    !$omp sections private(s_1t,s_2t,s_3t,s_4t,s_5t,r_t,kindex)
+    ! $omp sections private(s_1t,s_2t,s_3t,s_4t,s_5t,r_t,kindex)
     !
     ! Allocating two temporaly arrays s_1t, s2t and s_3t
     !
@@ -12039,7 +12038,7 @@ end subroutine check_read_save_none
        stop 'gmat_polynom: s_t - out of memory'
     endif 
     !
-    !$omp section
+    ! $omp section
     !
     ! Vibrational part 
     !
@@ -12060,7 +12059,7 @@ end subroutine check_read_save_none
        enddo
     enddo
     !
-    !$omp section
+    ! $omp section
     !
     if (job%verbose>=4) write(out,"('g_vib... Done!')") 
     !
@@ -12113,7 +12112,7 @@ end subroutine check_read_save_none
        !
     endif
     !
-    !$omp section
+    ! $omp section
     !
     ! Pseudopotential function: part 1  
     !
@@ -12142,7 +12141,7 @@ end subroutine check_read_save_none
     !
     if (job%verbose>=4) write(out,"('pseudo1... Done!')") 
     !
-    !$omp section
+    ! $omp section
     !
     !U2:=simplify(
     ! 1/4*sum(sum(add(add(add(
@@ -12191,7 +12190,7 @@ end subroutine check_read_save_none
     !
     if (job%verbose>=4) write(out,"('pseudo2... Done!')") 
     !
-    !$omp section
+    ! $omp section
     !
     !U3:=simplify(sum(sum(sum(add(
     !> 1/4*1/mm[N0]*( S[q01][N0,x0]*DDS[q02][N0,x0][q02,q01]+1/2*DS[q01][N0,x0][q01]*DS[q02][N0,x0][q02] )
@@ -12248,7 +12247,7 @@ end subroutine check_read_save_none
        enddo
     enddo
     !
-    !$omp section
+    ! $omp section
     !
     if (job%verbose>=4) write(out,"('pseudo3a... Done!')") 
     !
@@ -12351,7 +12350,7 @@ end subroutine check_read_save_none
     deallocate(r_t)
     !
     deallocate(s_1t,s_2t,s_3t,s_4t,s_5t)
-    !$omp end sections 
+    ! $omp end sections 
     !
     !
     if (trim(molec%coords_transform)=='R-RHO'.and..false.) then 

@@ -4,7 +4,8 @@ set -e
 
 exe_name=j-trove.x
 exe=../$exe_name
-nproc=1
+# Use 1 process unless we have specified differently (e.g. in CI)
+nproc=${nproc:-1}
 
 # Check exe is present
 if [ ! -f $exe ]; then
@@ -27,6 +28,7 @@ for benchmark in H2CO; do
   cp $exe $wd
   cp benchmarks/$benchmark/input/*.inp $wd
   cp scripts/$benchmark/run_benchmark.sh $wd
+  cp scripts/set_io_format.sh $wd
 
   # Run benchmark
   pushd $wd
