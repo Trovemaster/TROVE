@@ -219,9 +219,9 @@ prop_xy2.o: prop_xy2.f90 accuracy.o moltype.o timer.o pot_xy2.o
 prop_xy2_quad.o: prop_xy2_quad.f90 accuracy.o moltype.o timer.o pot_xy2.o
 prop_xy2_spinrot.o: prop_xy2_spinrot.f90 accuracy.o moltype.o pot_xy2.o timer.o
 prop_xy2_spinspin.o: prop_xy2_spinspin.f90 accuracy.o moltype.o pot_xy2.o timer.o
-reader_base.o: reader_base.f90
-reader_ftn.o: reader_ftn.f90 reader_base.o
-reader_mpi.o: reader_mpi.f90 reader_base.o
+reader_base.o: reader_base.f90 mpi_aux.o
+reader_ftn.o: reader_ftn.f90 reader_base.o mpi_aux.o
+reader_mpi.o: reader_mpi.f90 reader_base.o mpi_aux.o
 refinement.o: refinement.f90 accuracy.o fields.o timer.o molecules.o moltype.o symmetry.o lapack.o tran.o
 richmol_data.o: richmol_data.f90 accuracy.o timer.o
 rotme_cart_tens.o: rotme_cart_tens.f90 accuracy.o timer.o fwigxjpf.o moltype.o accuracy.o
@@ -229,6 +229,6 @@ symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
-writer_base.o: writer_base.f90
-writer_ftn.o: writer_ftn.f90 writer_base.o errors.o
-writer_mpi.o: writer_mpi.f90 writer_base.o
+writer_base.o: writer_base.f90 mpi_aux.o
+writer_ftn.o: writer_ftn.f90 writer_base.o errors.o mpi_aux.o
+writer_mpi.o: writer_mpi.f90 writer_base.o mpi_aux.o
