@@ -6,7 +6,7 @@ module Errors
                         ERR_FileNotFound = 2
 
   type:: ErrorType
-    integer :: code
-    character(len=256) :: message
+    integer :: code = ERR_None
+    character(len=256) :: message = ""
   end type
 end module Errors
