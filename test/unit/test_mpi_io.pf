@@ -92,13 +92,17 @@ module test_mpi_io
     ! Test writing another array
     call writer%write(array2D, array2D_descr, array2D_block_type)
 
+    ! Test writing something after 2nd array
+    true_integer = 5
+    call writer%write(true_integer) ! int
+
     call writer%close()
 
-    open(newunit=iounit, iostat=stat, action='read', file=fname, \
-      form=form, access=access, status=status, position=position)
-
-    ! Only run test on main process
+    ! Only test result on main process
     if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='read', file=fname, &
+        form=form, access=access, status=status, position=position)
+
       read(iounit) in_integer
       @assertTrue(in_integer == true_integer)
 
@@ -125,6 +129,10 @@ module test_mpi_io
         end do
       end do
 
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      ! Remove test file
       if (stat == 0) close(iounit, status='delete')
 
     endif
