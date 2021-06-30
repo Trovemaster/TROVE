@@ -28,3 +28,4 @@ endif
 clean:
 	$(RM) *.o *.mod *.a *.inc
 	$(RM) test_io.F90 test_io test.dat
+	$(RM) test_mpi_io.F90 test_mpi_io test.dat
