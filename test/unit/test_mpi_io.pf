@@ -9,8 +9,11 @@ module test_mpi_io
   use reader_base
   use reader_mpi
   use errors
+  use accuracy
 
   implicit none
+
+  integer,external :: INDXL2G
 
   contains
 
@@ -19,10 +22,13 @@ module test_mpi_io
 
     type(writerMPI) :: writer
 
-    real, dimension(5) :: array1D
-    real, dimension(5, 5) :: array2D
-    real, dimension(5) :: in_array1D
-    real, dimension(5, 5) :: in_array2D
+    integer, parameter :: array2DNRow = 4
+    integer, parameter :: array2DNCol = 3
+    real(rk), allocatable :: array2D(:,:)
+    real(rk) :: in_array2D(array2DNRow,array2DNCol)
+    integer :: array2D_descr(9) = 0
+    type(MPI_Datatype) :: array2D_block_type
+
     real :: true_real, in_real
     complex :: true_complex, in_complex
     integer :: true_integer, in_integer
@@ -35,18 +41,21 @@ module test_mpi_io
     character(len=*), parameter :: access = "sequential"
 
     integer i, j
+    integer :: gi = 0, gj = 0, MB, NB, RSRC, CSRC
     type(ErrorType) :: err
 
-    integer :: ierr, rank, allocinfo
+    integer :: ierr, rank, allocinfo = 0
 
     call co_init_comms()
 
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
 
     call writer%open(fname, err, \
       form=form, access=access, status=status, position=position)
     HANDLE_ERROR(err)
 
+    ! Test writing scalars
     true_integer = 5
     call writer%write(true_integer) ! int
 
@@ -56,17 +65,32 @@ module test_mpi_io
     true_complex = (5.0, 1.0)
     call writer%write(true_complex) ! complex
 
-    ! Array
-    array1D = (/2, 3, 4, 5, 6/)
-    /*call writer%write(array1D)*/
+    ! Test writing an array
+    call co_block_type_init(array2D, array2DNCol, array2DNRow, array2D_descr, allocinfo, array2D_block_type)
+    if(allocinfo.ne.0) print *, "ERROR: couldn't allocate array"
 
-    ! 2D array
-    do i=1,5
-      do j=1,5
-        array2D(i,j) = i+j
+    MB = array2D_descr(5)
+    NB = array2D_descr(6)
+
+    RSRC = array2D_descr(7)
+    CSRC = array2D_descr(8)
+
+    do i=1,size(array2D,1)
+      do j=1,size(array2D,2)
+        gi = INDXL2G (i, MB, myprow, RSRC, nprow)
+        gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
+        array2D(i,j) = array2DNCol*(gi-1) + (gj)
       end do
     end do
-    /*call writer%write(array2D)*/
+
+    call writer%write(array2D, array2D_descr, array2D_block_type)
+
+    ! Test writing something after array
+    true_integer = 5
+    call writer%write(true_integer) ! int
+
+    ! Test writing another array
+    call writer%write(array2D, array2D_descr, array2D_block_type)
 
     call writer%close()
 
@@ -76,24 +100,33 @@ module test_mpi_io
     ! Only run test on main process
     if(rank == 0) then
       read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
       read(iounit) in_real
+      @assertTrue(in_real == true_real)
+
       read(iounit) in_complex
-      /*read(iounit) in_array1D*/
-      /*read(iounit) in_array2D*/
+      @assertTrue(in_complex == true_complex)
+
+      read(iounit) in_array2D
+      do i=1,array2DNRow
+        do j=1,array2DNCol
+          @assertTrue(in_array2D(i,j) == array2DNCol*(i-1) + j)
+        end do
+      end do
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      read(iounit) in_array2D
+      do i=1,array2DNRow
+        do j=1,array2DNCol
+          @assertTrue(in_array2D(i,j) == array2DNCol*(i-1) + j)
+        end do
+      end do
 
       if (stat == 0) close(iounit, status='delete')
 
-      @assertTrue(in_integer == true_integer)
-      @assertTrue(in_real == true_real)
-      @assertTrue(in_complex == true_complex)
-      /*do i=1,5*/
-        /*@assertTrue(in_array1D(i) == array1D(i))*/
-      /*end do*/
-      /*do i=1,5*/
-        /*do j=1,5*/
-          /*@assertTrue(in_array2D(i,j) == array2D(i,j))*/
-        /*end do*/
-      /*end do*/
     endif
 
     call co_finalize_comms()

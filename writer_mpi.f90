@@ -1,20 +1,23 @@
 #include "errors.fpp"
 
 module writer_mpi
-  use mpi
+  use mpi_f08
+  use mpi_aux
   use writer_base
   use errors
 
   implicit none
 
   type, extends(writerBase) :: writerMPI
-    integer (kind=MPI_Offset_kind) :: offset
-    integer :: fileh, rank
+    integer (kind=MPI_Offset_kind) :: offset = 0
+    integer :: rank = 0
+    type(MPI_File) :: fileh
     logical :: isOpen = .false.
   contains
     procedure :: writeScalar => writeScalarMPI
     procedure :: write1DArray => write1DArrayMPI
     procedure :: write2DArray => write2DArrayMPI
+    procedure :: write2DArrayDist => write2DArrayMPIDist
     procedure :: open
     procedure :: close
     final :: destroyWriterMPI
@@ -35,11 +38,6 @@ module writer_mpi
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
-
-      this%isOpen = .false.
-      this%offset = 0
-      this%fileh = 0
-      this%rank = 0
 
       call this%open(fname, err, position, status, form, access)
     end function
@@ -109,7 +107,8 @@ module writer_mpi
 
     subroutine getMPIVarInfo(object, byteSize, mpiType)
       class(*), intent(in) :: object
-      integer, intent(out) :: byteSize, mpiType
+      integer, intent(out) :: byteSize
+      type(MPI_Datatype), intent(out) :: mpiType
 
       select type(object)
       type is (integer(kind=4))
@@ -139,15 +138,16 @@ module writer_mpi
       class(writerMPI) :: this
       class(*), intent(in) :: object
 
-      integer :: byteSize, mpiType, ierr
+      integer :: byteSize, ierr
+      type(MPI_Datatype) :: mpiType
+
+      call getMPIVarInfo(object, byteSize, mpiType)
+      this%offset = this%offset + 4+byteSize+4
 
       if (this%rank /= 0) then
         return
       end if
 
-      call getMPIVarInfo(object, byteSize, mpiType)
-
-      this%offset = this%offset + 4+byteSize+4
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, object, 1, mpiType, &
@@ -158,14 +158,56 @@ module writer_mpi
 
     subroutine write1DArrayMPI(this, object)
       class(writerMPI) :: this
-      class(*), dimension(:), intent(in) :: object
-      print *, "writing 1D array to MPI IO"
+      class(*), intent(in) :: object(:)
+      print *, "ERROR: 1D array saving not currently supported"
     end subroutine
 
     subroutine write2DArrayMPI(this, object)
       class(writerMPI) :: this
-      class(*), dimension(:,:), intent(in) :: object
-      print *, "writing 2D array to MPI IO"
+      class(*), intent(in) :: object(:,:)
+      print *, "ERROR: Writing non-distributed array using MPI writer not supported."
+    end subroutine
+
+    subroutine write2DArrayMPIDist(this, object, descr, block_type)
+      class(writerMPI) :: this
+      class(*), intent(in) :: object(:,:)
+      integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
+      type(MPI_Datatype), intent(in) :: block_type ! subarray type outputed from co_block_type_init
+
+      type(MPI_Datatype) :: mpiType
+      integer :: byteSize, globalSize, ierr
+      integer(kind = MPI_OFFSET_KIND) :: arrSizeBytes
+
+      integer :: dims(2)
+
+      dims(:) = descr(3:4)
+      globalSize = dims(1)*dims(2)
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      arrSizeBytes = globalSize*byteSize
+
+      !print *, globalSize, arrSizeBytes, byteSize, mpiType
+
+      if (this%rank == 0) then
+        ! write first and last bookends containing array byte size
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+        call MPI_File_seek(this%fileh, arrSizeBytes, MPI_SEEK_CUR, ierr)
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+      endif
+      ! offset first bookend
+      this%offset = this%offset + 4
+      ! Set file view including offset
+      call MPI_File_set_view(this%fileh, this%offset, mpiType, block_type, &
+                             'native', MPI_INFO_NULL, ierr)
+      ! Write array in parallel
+      call MPI_File_write_all(this%fileh, object, size(object), mpiType, &
+                              MPI_STATUS_IGNORE, ierr)
+      ! Set offset and reset file view
+      this%offset = this%offset + arrSizeBytes + 4
+      call MPI_File_set_view(this%fileh, this%offset, MPI_BYTE, MPI_BYTE, &
+                             'native', MPI_INFO_NULL, ierr)
     end subroutine
 
 end module

@@ -1,6 +1,7 @@
 #include "errors.fpp"
 
 module writer_ftn
+  use mpi_aux
   use writer_base
   use errors
 
@@ -14,6 +15,7 @@ module writer_ftn
     procedure :: writeScalar => writeScalarFTN
     procedure :: write1DArray => write1DArrayFTN
     procedure :: write2DArray => write2DArrayFTN
+    procedure :: write2DArrayDist => write2DArrayFTNDist
     procedure :: open
     procedure :: close
     final :: destroyWriterFTN
@@ -151,5 +153,13 @@ module writer_ftn
       class default
         print *, "ERROR: Tried to write unsupported type"
       end select
+    end subroutine
+
+    subroutine write2DArrayFTNDist(this, object, descr, block_type)
+      class(writerFTN) :: this
+      class(*), dimension(:,:), intent(in) :: object
+      integer, intent(in) :: descr(9)
+      type(MPI_Datatype), intent(in) :: block_type
+      print *, "ERROR: tried to write distributed array using fortran writer. Use MPI writer instead."
     end subroutine
 end module
