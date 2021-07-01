@@ -4,6 +4,7 @@ module io_handler_ftn
   use mpi_aux
   use io_handler_base
   use errors
+  use iso_fortran_env
 
   implicit none
 
@@ -35,17 +36,18 @@ module io_handler_ftn
 
   contains
 
-    type(ioHandlerFTN) function newIoHandlerFTN(fname, err, position, status, form, access) result(this)
+    type(ioHandlerFTN) function newIoHandlerFTN(fname, err, action, position, status, form, access) result(this)
       ! writer FTN constructor
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
+      character (len = *), intent(in) :: action
       character (len = *), intent(in), optional :: position, status, form, access
 
       this%isOpen = .false.
       this%stat = 0
       this%iounit = 0
 
-      call this%open(fname, err, position, status, form, access)
+      call this%open(fname, err, action, position, status, form, access)
     end function
 
     subroutine destroyIoHandlerFTN(this)
@@ -89,8 +91,8 @@ module io_handler_ftn
         accessVal = 'sequential'
       end if
 
-      print *, "Opening ", fname, " with ", \
-        positionVal, statusVal, formVal, accessVal
+      print *, "Opening ", trim(fname), " with ", \
+        trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
 
       open(newunit=this%iounit, action=action,\
         form=formVal, position=positionVal, status=statusVal, file=fname,\
@@ -114,13 +116,15 @@ module io_handler_ftn
     subroutine writeScalarFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), intent(in) :: object
-      print *, "writing object with FTN IO"
+      print *, "writing scalar object with FTN IO"
       select type(object)
       type is (integer)
         write(this%iounit) object
       type is (real)
         write(this%iounit) object
       type is (complex)
+        write(this%iounit) object
+      type is (character(len=*))
         write(this%iounit) object
       class default
         print *, "ERROR: Tried to write unsupported type"
@@ -148,11 +152,17 @@ module io_handler_ftn
       class(*), dimension(:,:), intent(in) :: object
       print *, "writing 2D array with FTN IO"
       select type(object)
-      type is (integer)
+      type is (integer(int32))
         write(this%iounit) object
-      type is (real)
+      type is (integer(int64))
         write(this%iounit) object
-      type is (complex)
+      type is (real(real32))
+        write(this%iounit) object
+      type is (real(real64))
+        write(this%iounit) object
+      type is (complex(kind=8))
+        write(this%iounit) object
+      type is (complex(kind=16))
         write(this%iounit) object
       class default
         print *, "ERROR: Tried to write unsupported type"
