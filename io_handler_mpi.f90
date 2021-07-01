@@ -36,13 +36,14 @@ module io_handler_mpi
 
   contains
 
-    type(ioHandlerMPI) function newIoHandlerMPI(fname, err, position, status, form, access) result(this)
+    type(ioHandlerMPI) function newIoHandlerMPI(fname, err, action, position, status, form, access) result(this)
       ! writer MPI constructor
-      type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
+      type(ErrorType), intent(inout) :: err
+      character (len = *), intent(in) :: action
       character (len = *), intent(in), optional :: position, status, form, access
 
-      call this%open(fname, err, position, status, form, access)
+      call this%open(fname, err, action, position, status, form, access)
     end function
 
     subroutine destroyIoHandlerMPI(this)
@@ -50,11 +51,12 @@ module io_handler_mpi
       call this%close()
     end subroutine
 
-    subroutine open(this, fname, err, position, status, form, access)
+    subroutine open(this, fname, err, action, position, status, form, access)
       ! writer MPI constructor
       class(ioHandlerMPI) :: this
-      type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
+      type(ErrorType), intent(inout) :: err
+      character (len = *), intent(in) :: action
       character (len = *), intent(in), optional :: position, status, form, access
       character (len = 20) :: positionVal, statusVal, formVal, accessVal
       integer :: ierr
@@ -87,14 +89,21 @@ module io_handler_mpi
         accessVal = 'sequential'
       end if
 
-      print *, "MPI: Opening ", fname, " with ", \
-        positionVal, statusVal, formVal, accessVal
+      print *, "MPI: Opening ", trim(fname), " with ", \
+        trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
 
       ! FIXME use above flags to change open behaviour
 
       call MPI_Comm_rank(MPI_COMM_WORLD, this%rank, ierr)
 
-      call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, this%fileh, ierr)
+      ! FIXME is there a better way to set MPI_MODE_* flags?
+      if(trim(action) == 'write') then
+        call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, this%fileh, ierr)
+      else
+        call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, this%fileh, ierr)
+      endif
+
+      call MPI_File_set_errhandler(this%fileh, MPI_ERRORS_ARE_FATAL)
       ! FIXME handle error
     end subroutine open
 
@@ -115,23 +124,26 @@ module io_handler_mpi
 
       select type(object)
       type is (integer(kind=4))
-        byteSize = 4
+        byteSize = sizeof(object)
         mpiType = MPI_INTEGER
       type is (integer(kind=8))
-        byteSize = 8
+        byteSize = sizeof(object)
         mpiType = MPI_LONG
       type is (real(kind=4))
-        byteSize = 4
+        byteSize = sizeof(object)
         mpiType = MPI_FLOAT
       type is (real(kind=8))
-        byteSize = 8
+        byteSize = sizeof(object)
         mpiType = MPI_DOUBLE
       type is (complex(kind=4))
-        byteSize = 8
+        byteSize = sizeof(object)
         mpiType = MPI_COMPLEX
       type is (complex(kind=8))
-        byteSize = 16
+        byteSize = sizeof(object)
         mpiType = MPI_DOUBLE_COMPLEX
+      type is (character(len=*))
+        byteSize = sizeof(object)
+        mpiType = MPI_CHARACTER
       class default
         print *, "ERROR: Unknown type"
       end select
@@ -141,11 +153,18 @@ module io_handler_mpi
       class(ioHandlerMPI) :: this
       class(*), intent(in) :: object
 
-      integer :: byteSize, ierr
+      integer :: byteSize, ierr, length
       type(MPI_Datatype) :: mpiType
 
       call getMPIVarInfo(object, byteSize, mpiType)
       this%offset = this%offset + 4+byteSize+4
+
+      select type(object)
+      type is (character(len=*))
+        length = len(object)
+      class default
+        length = 1
+      end select
 
       if (this%rank /= 0) then
         return
@@ -153,7 +172,7 @@ module io_handler_mpi
 
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, object, 1, mpiType, &
+      call MPI_File_write(this%fileh, object, length, mpiType, &
                           MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)

@@ -27,9 +27,10 @@ module test_mpi_io
     integer :: array2D_descr(9) = 0
     type(MPI_Datatype) :: array2D_block_type
 
-    real :: true_real, in_real
-    complex :: true_complex, in_complex
-    integer :: true_integer, in_integer
+    real :: true_real = 4.0, in_real
+    complex :: true_complex = (5.0, 1.0), in_complex
+    integer :: true_integer = 5, in_integer
+    character (len=11) :: true_str = "test string", in_str
 
     integer :: iounit, stat
     character(len=*), parameter :: fname = "test.dat"
@@ -49,19 +50,15 @@ module test_mpi_io
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
 
-    call ioHandler%open(fname, err, \
+    call ioHandler%open(fname, err, action='write', &
       form=form, access=access, status=status, position=position)
     HANDLE_ERROR(err)
 
     ! Test writing scalars
-    true_integer = 5
     call ioHandler%write(true_integer) ! int
-
-    true_real = 4.0
     call ioHandler%write(true_real) ! double
-
-    true_complex = (5.0, 1.0)
     call ioHandler%write(true_complex) ! complex
+    call ioHandler%write(true_str) ! string
 
     ! Test writing an array
     call co_block_type_init(array2D, array2DNCol, array2DNRow, array2D_descr, allocinfo, array2D_block_type)
@@ -109,6 +106,10 @@ module test_mpi_io
 
       read(iounit) in_complex
       @assertTrue(in_complex == true_complex)
+
+      read(iounit) in_str
+      print *, sizeof(in_str)
+      @assertTrue(in_str == true_str)
 
       read(iounit) in_array2D
       do i=1,array2DNRow
