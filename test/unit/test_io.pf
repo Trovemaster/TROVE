@@ -2,10 +2,8 @@
 
 module test_io
   use funit
-  use writer_base
-  use writer_ftn
-  use reader_base
-  use reader_ftn
+  use io_handler_base
+  use io_handler_ftn
   use errors
 
   implicit none
@@ -13,8 +11,8 @@ module test_io
   contains
 
   @test
-  subroutine testFTNWriter()
-    type(writerFTN) :: writer
+  subroutine testFTNWriting()
+    type(ioHandlerFTN) :: ioHandler
 
     real, dimension(5) :: array1D
     real, dimension(5, 5) :: array2D
@@ -34,22 +32,22 @@ module test_io
     integer i, j
     type(ErrorType) :: err
 
-    call writer%open(fname, err, \
-      form=form, access=access, status=status, position=position)
+    call ioHandler%open(fname, err, \
+      action='write', form=form, access=access, status=status, position=position)
     HANDLE_ERROR(err)
 
     true_integer = 5
-    call writer%write(true_integer) ! int
+    call ioHandler%write(true_integer) ! int
 
     true_real = 4.0
-    call writer%write(true_real) ! double
+    call ioHandler%write(true_real) ! double
 
     true_complex = (5.0, 1.0)
-    call writer%write(true_complex) ! complex
+    call ioHandler%write(true_complex) ! complex
 
     ! Array
     array1D = (/2, 3, 4, 5, 6/)
-    call writer%write(array1D)
+    call ioHandler%write(array1D)
 
     ! 2D array
     do i=1,5
@@ -57,9 +55,9 @@ module test_io
         array2D(i,j) = i+j
       end do
     end do
-    call writer%write(array2D)
+    call ioHandler%write(array2D)
 
-    call writer%close()
+    call ioHandler%close()
 
     open(newunit=iounit, iostat=stat, action='read', file=fname, \
       form=form, access=access, status=status, position=position)
@@ -86,8 +84,8 @@ module test_io
   end subroutine
 
   @test
-  subroutine testFTNReader()
-    type(readerFTN) :: reader
+  subroutine testFTNioHandler()
+    type(ioHandlerFTN) :: ioHandler
 
     real, dimension(5) :: array1D
     real, dimension(5, 5) :: array2D
@@ -133,17 +131,17 @@ module test_io
 
     if (stat == 0) close(iounit)
 
-    call reader%open(fname, err, \
-      form=form, access=access, status=status, position=position)
+    call ioHandler%open(fname, err, \
+      action='read', form=form, access=access, status=status, position=position)
     HANDLE_ERROR(err)
 
-    call reader%read(in_integer)
-    call reader%read(in_real)
-    call reader%read(in_complex)
-    call reader%read(in_array1D)
-    call reader%read(in_array2D)
+    call ioHandler%read(in_integer)
+    call ioHandler%read(in_real)
+    call ioHandler%read(in_complex)
+    call ioHandler%read(in_array1D)
+    call ioHandler%read(in_array2D)
 
-    call reader%close()
+    call ioHandler%close()
 
     @assertTrue(in_integer == true_integer)
     @assertTrue(in_real == true_real)

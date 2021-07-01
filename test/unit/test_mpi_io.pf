@@ -4,10 +4,8 @@ module test_mpi_io
   use funit
   use mpi_f08
   use mpi_aux
-  use writer_base
-  use writer_mpi
-  use reader_base
-  use reader_mpi
+  use io_handler_base
+  use io_handler_mpi
   use errors
   use accuracy
 
@@ -18,9 +16,9 @@ module test_mpi_io
   contains
 
   @test
-  subroutine testMPIWriter()
+  subroutine testMPIWriting()
 
-    type(writerMPI) :: writer
+    type(ioHandlerMPI) :: ioHandler
 
     integer, parameter :: array2DNRow = 4
     integer, parameter :: array2DNCol = 3
@@ -51,19 +49,19 @@ module test_mpi_io
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
 
-    call writer%open(fname, err, \
+    call ioHandler%open(fname, err, \
       form=form, access=access, status=status, position=position)
     HANDLE_ERROR(err)
 
     ! Test writing scalars
     true_integer = 5
-    call writer%write(true_integer) ! int
+    call ioHandler%write(true_integer) ! int
 
     true_real = 4.0
-    call writer%write(true_real) ! double
+    call ioHandler%write(true_real) ! double
 
     true_complex = (5.0, 1.0)
-    call writer%write(true_complex) ! complex
+    call ioHandler%write(true_complex) ! complex
 
     ! Test writing an array
     call co_block_type_init(array2D, array2DNCol, array2DNRow, array2D_descr, allocinfo, array2D_block_type)
@@ -83,20 +81,20 @@ module test_mpi_io
       end do
     end do
 
-    call writer%write(array2D, array2D_descr, array2D_block_type)
+    call ioHandler%write(array2D, array2D_descr, array2D_block_type)
 
     ! Test writing something after array
     true_integer = 5
-    call writer%write(true_integer) ! int
+    call ioHandler%write(true_integer) ! int
 
     ! Test writing another array
-    call writer%write(array2D, array2D_descr, array2D_block_type)
+    call ioHandler%write(array2D, array2D_descr, array2D_block_type)
 
     ! Test writing something after 2nd array
     true_integer = 5
-    call writer%write(true_integer) ! int
+    call ioHandler%write(true_integer) ! int
 
-    call writer%close()
+    call ioHandler%close()
 
     ! Only test result on main process
     if(rank == 0) then
@@ -139,5 +137,5 @@ module test_mpi_io
 
     call co_finalize_comms()
 
-  end subroutine testMPIWriter
+  end subroutine testMPIWriting
 end module

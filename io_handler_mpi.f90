@@ -1,14 +1,14 @@
 #include "errors.fpp"
 
-module writer_mpi
+module io_handler_mpi
   use mpi_f08
   use mpi_aux
-  use writer_base
+  use io_handler_base
   use errors
 
   implicit none
 
-  type, extends(writerBase) :: writerMPI
+  type, extends(ioHandlerBase) :: ioHandlerMPI
     integer (kind=MPI_Offset_kind) :: offset = 0
     integer :: rank = 0
     type(MPI_File) :: fileh
@@ -18,22 +18,25 @@ module writer_mpi
     procedure :: write1DArray => write1DArrayMPI
     procedure :: write2DArray => write2DArrayMPI
     procedure :: write2DArrayDist => write2DArrayMPIDist
+    procedure :: readScalar => readScalarMPI
+    procedure :: read1DArray => read1DArrayMPI
+    procedure :: read2DArray => read2DArrayMPI
     procedure :: open
     procedure :: close
-    final :: destroyWriterMPI
-  end type writerMPI
+    final :: destroyIoHandlerMPI
+  end type ioHandlerMPI
 
-  interface writerMPI
-    procedure :: newWriterMPI
-  end interface writerMPI
+  interface ioHandlerMPI
+    procedure :: newIoHandlerMPI
+  end interface ioHandlerMPI
 
   private
 
-  public :: writerMPI
+  public :: ioHandlerMPI
 
   contains
 
-    type(writerMPI) function newWriterMPI(fname, err, position, status, form, access) result(this)
+    type(ioHandlerMPI) function newIoHandlerMPI(fname, err, position, status, form, access) result(this)
       ! writer MPI constructor
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
@@ -42,14 +45,14 @@ module writer_mpi
       call this%open(fname, err, position, status, form, access)
     end function
 
-    subroutine destroyWriterMPI(this)
-      type(writerMPI) :: this
+    subroutine destroyIoHandlerMPI(this)
+      type(ioHandlerMPI) :: this
       call this%close()
     end subroutine
 
     subroutine open(this, fname, err, position, status, form, access)
       ! writer MPI constructor
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
       character (len = *), intent(in), optional :: position, status, form, access
@@ -96,7 +99,7 @@ module writer_mpi
     end subroutine open
 
     subroutine close(this)
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       integer :: ierr
       if (this%isOpen) then
         call MPI_File_close(this%fileh, ierr)
@@ -135,7 +138,7 @@ module writer_mpi
     end subroutine
 
     subroutine writeScalarMPI(this, object)
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       class(*), intent(in) :: object
 
       integer :: byteSize, ierr
@@ -157,19 +160,19 @@ module writer_mpi
     end subroutine
 
     subroutine write1DArrayMPI(this, object)
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:)
       print *, "ERROR: 1D array saving not currently supported"
     end subroutine
 
     subroutine write2DArrayMPI(this, object)
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:,:)
       print *, "ERROR: Writing non-distributed array using MPI writer not supported."
     end subroutine
 
     subroutine write2DArrayMPIDist(this, object, descr, block_type)
-      class(writerMPI) :: this
+      class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:,:)
       integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type ! subarray type outputed from co_block_type_init
@@ -186,17 +189,15 @@ module writer_mpi
       call getMPIVarInfo(object(1,1), byteSize, mpiType)
       arrSizeBytes = globalSize*byteSize
 
-      !print *, globalSize, arrSizeBytes, byteSize, mpiType
-
       if (this%rank == 0) then
-        ! write first and last bookends containing array byte size
+        ! write first and last bookends containing array size in bytes
         call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                             MPI_STATUS_IGNORE, ierr)
         call MPI_File_seek(this%fileh, arrSizeBytes, MPI_SEEK_CUR, ierr)
         call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                             MPI_STATUS_IGNORE, ierr)
       endif
-      ! offset first bookend
+      ! Offset first bookend
       this%offset = this%offset + 4
       ! Set file view including offset
       call MPI_File_set_view(this%fileh, this%offset, mpiType, block_type, &
@@ -204,10 +205,40 @@ module writer_mpi
       ! Write array in parallel
       call MPI_File_write_all(this%fileh, object, size(object), mpiType, &
                               MPI_STATUS_IGNORE, ierr)
-      ! Set offset and reset file view
+      ! Offset by size of array and end bookend integer
       this%offset = this%offset + arrSizeBytes + 4
+      ! Reset file view back to regular ol bytes
       call MPI_File_set_view(this%fileh, this%offset, MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
+    end subroutine
+
+    subroutine readScalarMPI(this, object)
+      class(ioHandlerMPI) :: this
+      class(*), intent(out) :: object
+      print *, "reading object to MPI IO"
+      ! Example object handling
+      select type(object)
+      type is (integer)
+        print *, object
+      type is (real)
+        print *, object
+      type is (complex)
+        print *, object
+      class default
+        print *, "Unsupported type!"
+      end select
+    end subroutine
+
+    subroutine read1DArrayMPI(this, object)
+      class(ioHandlerMPI) :: this
+      class(*), dimension(:), intent(out) :: object
+      print *, "reading 1D array to MPI IO"
+    end subroutine
+
+    subroutine read2DArrayMPI(this, object)
+      class(ioHandlerMPI) :: this
+      class(*), dimension(:,:), intent(out) :: object
+      print *, "reading 2D array to MPI IO"
     end subroutine
 
 end module

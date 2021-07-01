@@ -1,13 +1,13 @@
 #include "errors.fpp"
 
-module writer_ftn
+module io_handler_ftn
   use mpi_aux
-  use writer_base
+  use io_handler_base
   use errors
 
   implicit none
 
-  type, extends(writerBase) :: writerFTN
+  type, extends(ioHandlerBase) :: ioHandlerFTN
     integer :: iounit = 0
     integer :: stat = 0
     logical :: isOpen = .false.
@@ -16,23 +16,26 @@ module writer_ftn
     procedure :: write1DArray => write1DArrayFTN
     procedure :: write2DArray => write2DArrayFTN
     procedure :: write2DArrayDist => write2DArrayFTNDist
+    procedure :: readScalar => readScalarFTN
+    procedure :: read1DArray => read1DArrayFTN
+    procedure :: read2DArray => read2DArrayFTN
     procedure :: open
     procedure :: close
-    final :: destroyWriterFTN
-  end type writerFTN
+    final :: destroyIoHandlerFTN
+  end type ioHandlerFTN
 
   ! Constructor
-  interface writerFTN
-    procedure :: newWriterFTN
-  end interface writerFTN
+  interface ioHandlerFTN
+    procedure :: newIoHandlerFTN
+  end interface ioHandlerFTN
 
   private
 
-  public :: writerFTN
+  public :: ioHandlerFTN
 
   contains
 
-    type(writerFTN) function newWriterFTN(fname, err, position, status, form, access) result(this)
+    type(ioHandlerFTN) function newIoHandlerFTN(fname, err, position, status, form, access) result(this)
       ! writer FTN constructor
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
@@ -45,15 +48,16 @@ module writer_ftn
       call this%open(fname, err, position, status, form, access)
     end function
 
-    subroutine destroyWriterFTN(this)
-      type(writerFTN) :: this
+    subroutine destroyIoHandlerFTN(this)
+      type(ioHandlerFTN) :: this
       call this%close()
     end subroutine
 
-    subroutine open(this, fname, err, position, status, form, access)
-      class(writerFTN) :: this
+    subroutine open(this, fname, err, action, position, status, form, access)
+      class(ioHandlerFTN) :: this
       type(ErrorType), intent(inout) :: err
       character (len = *), intent(in) :: fname
+      character (len = *), intent(in) :: action
       character (len = *), intent(in), optional :: position, status, form, access
       character (len = 20) :: positionVal, statusVal, formVal, accessVal
 
@@ -88,7 +92,7 @@ module writer_ftn
       print *, "Opening ", fname, " with ", \
         positionVal, statusVal, formVal, accessVal
 
-      open(newunit=this%iounit, action='write',\
+      open(newunit=this%iounit, action=action,\
         form=formVal, position=positionVal, status=statusVal, file=fname,\
         iostat=this%stat)
 
@@ -100,7 +104,7 @@ module writer_ftn
     end subroutine
 
     subroutine close(this)
-      class(writerFTN) :: this
+      class(ioHandlerFTN) :: this
       if (this%isOpen) then
         close(this%iounit)
         this%isOpen = .false.
@@ -108,7 +112,7 @@ module writer_ftn
     end subroutine
 
     subroutine writeScalarFTN(this, object)
-      class(writerFTN) :: this
+      class(ioHandlerFTN) :: this
       class(*), intent(in) :: object
       print *, "writing object with FTN IO"
       select type(object)
@@ -124,7 +128,7 @@ module writer_ftn
     end subroutine
 
     subroutine write1DArrayFTN(this, object)
-      class(writerFTN) :: this
+      class(ioHandlerFTN) :: this
       class(*), dimension(:), intent(in) :: object
       print *, "writing 1D array with FTN IO"
       select type(object)
@@ -140,7 +144,7 @@ module writer_ftn
     end subroutine
 
     subroutine write2DArrayFTN(this, object)
-      class(writerFTN) :: this
+      class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(in) :: object
       print *, "writing 2D array with FTN IO"
       select type(object)
@@ -156,10 +160,58 @@ module writer_ftn
     end subroutine
 
     subroutine write2DArrayFTNDist(this, object, descr, block_type)
-      class(writerFTN) :: this
+      class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(in) :: object
       integer, intent(in) :: descr(9)
       type(MPI_Datatype), intent(in) :: block_type
       print *, "ERROR: tried to write distributed array using fortran writer. Use MPI writer instead."
+    end subroutine
+
+    subroutine readScalarFTN(this, object)
+      class(ioHandlerFTN) :: this
+      class(*), intent(out) :: object
+      print *, "reading object with FTN IO"
+      select type(object)
+      type is (integer)
+        read(this%iounit) object
+      type is (real)
+        read(this%iounit) object
+      type is (complex)
+        read(this%iounit) object
+      class default
+        print *, "Unsupported type!"
+      end select
+    end subroutine
+
+    subroutine read1DArrayFTN(this, object)
+      class(ioHandlerFTN) :: this
+      class(*), dimension(:), intent(out) :: object
+      print *, "reading 1D array with FTN IO"
+      select type(object)
+      type is (integer)
+        read(this%iounit) object
+      type is (real)
+        read(this%iounit) object
+      type is (complex)
+        read(this%iounit) object
+      class default
+        print *, "Unsupported type!"
+      end select
+    end subroutine
+
+    subroutine read2DArrayFTN(this, object)
+      class(ioHandlerFTN) :: this
+      class(*), dimension(:,:), intent(out) :: object
+      print *, "reading 2D array with FTN IO"
+      select type(object)
+      type is (integer)
+        read(this%iounit) object
+      type is (real)
+        read(this%iounit) object
+      type is (complex)
+        read(this%iounit) object
+      class default
+        print *, "Unsupported type!"
+      end select
     end subroutine
 end module
