@@ -1,8 +1,8 @@
 #include "errors.fpp"
 
 module test_mpi_io
-  use funit
   use mpi_f08
+  use funit
   use mpi_aux
   use io_handler_base
   use io_handler_mpi
@@ -11,12 +11,40 @@ module test_mpi_io
 
   implicit none
 
+  @TestCase
+  type, extends(TestCase) :: TestMPI
+  contains
+    procedure :: setUp     ! overides generic
+    procedure :: tearDown  ! overrides generic
+  end type TestMPI
+
   integer,external :: INDXL2G
+
+  logical :: is_mpi_initialised = .false.
+  integer, parameter :: totalTestCount = 2
+  integer :: currentTestCount = 0
 
   contains
 
+  subroutine setUp(this)
+    class(TestMPI), intent(inout) :: this
+    currentTestCount = currentTestCount + 1
+    if (is_mpi_initialised .eqv. .false.) then
+      call co_init_comms()
+      is_mpi_initialised = .true.
+    endif
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestMPI), intent(inout) :: this
+    if (is_mpi_initialised .eqv. .true. .and. currentTestCount == totalTestCount) then
+      call co_finalize_comms()
+    endif
+  end subroutine tearDown
+
   @test
-  subroutine testMPIWriting()
+  subroutine testMPIWriting(this)
+    class(TestMPI), intent(inout) :: this
 
     type(ioHandlerMPI) :: ioHandler
 
@@ -44,8 +72,6 @@ module test_mpi_io
     type(ErrorType) :: err
 
     integer :: ierr, rank, allocinfo = 0
-
-    call co_init_comms()
 
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
@@ -136,7 +162,79 @@ module test_mpi_io
 
     endif
 
-    call co_finalize_comms()
-
   end subroutine testMPIWriting
+
+  @test
+  subroutine testMPIWritingColumnDistArray(this)
+    class(TestMPI), intent(inout) :: this
+    type(ioHandlerMPI) :: ioHandler
+
+    integer :: dimen = 12
+    integer :: startdim, enddim, blocksize, mdimen_p, mdimen_b, mdimen
+    integer :: b, icoeff, jcoeff
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "stream" ! Use stream to directly test MPI output
+
+    real(rk), allocatable :: grot_t(:,:)
+    real(rk), allocatable :: grot_full(:,:)
+    real(rk),allocatable :: recvbuf(:,:,:)
+
+    integer :: i,j
+
+    type(MPI_File) :: chkptMPIIO
+    integer :: ierr, rank, allocinfo = 0
+
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    call co_init_distr(dimen, startdim, enddim, blocksize)
+
+    mdimen = dimen
+    mdimen_p = int(1+real(dimen/comm_size))
+    mdimen_b = comm_size*mdimen_p
+
+    allocate(recvbuf(mdimen_p,mdimen_p,comm_size))
+    allocate(grot_t(mdimen_b,startdim:startdim+mdimen_p-1))
+    allocate(grot_full(dimen, dimen))
+
+    grot_t = 0
+
+    ! Fill local chunk of symmetric matrix
+    do b=1,comm_size
+      if (send_or_recv(b).ge.0) then
+        do icoeff=startdim,enddim
+          do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+            grot_t(jcoeff,icoeff) = jcoeff*icoeff
+          enddo
+        enddo
+      endif
+    enddo
+
+    ! Distribute between processes and save
+    call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
+    call MPI_File_open(mpi_comm_world, fname, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
+    call co_write_matrix_distr(grot_t, mdimen, startdim, enddim, chkptMPIIO)
+    call MPI_File_close(chkptMPIIO, ierr)
+
+    ! Check output
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='read', file=fname, &
+        form=form, access=access, status=status)
+
+      read(iounit) grot_full
+
+      do i=1,dimen
+        do j=1,dimen
+          @assertTrue(grot_full(i,j) == i*j)
+        end do
+      end do
+
+      close(iounit, status='delete')
+    endif
+
+  end subroutine testMPIWritingColumnDistArray
 end module
