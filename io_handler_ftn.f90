@@ -91,7 +91,7 @@ module io_handler_ftn
         accessVal = 'sequential'
       end if
 
-      print *, "Opening ", trim(fname), " with ", \
+      print *, "FTN: Opening ", trim(fname), " with ", \
         trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
 
       open(newunit=this%iounit, action=action,\
@@ -160,9 +160,9 @@ module io_handler_ftn
         write(this%iounit) object
       type is (real(real64))
         write(this%iounit) object
-      type is (complex(kind=8))
+      type is (complex(kind=4))
         write(this%iounit) object
-      type is (complex(kind=16))
+      type is (complex(kind=8))
         write(this%iounit) object
       class default
         print *, "ERROR: Tried to write unsupported type"
