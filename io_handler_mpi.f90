@@ -17,7 +17,8 @@ module io_handler_mpi
     procedure :: writeScalar => writeScalarMPI
     procedure :: write1DArray => write1DArrayMPI
     procedure :: write2DArray => write2DArrayMPI
-    procedure :: write2DArrayDist => write2DArrayMPIDist
+    procedure :: write2DArrayDistBlacs => write2DArrayDistBlacsMPI
+    procedure :: write2DArrayDistColumn => write2DArrayDistColumnMPI
     procedure :: readScalar => readScalarMPI
     procedure :: read1DArray => read1DArrayMPI
     procedure :: read2DArray => read2DArrayMPI
@@ -190,7 +191,7 @@ module io_handler_mpi
       print *, "ERROR: Writing non-distributed array using MPI writer not supported."
     end subroutine
 
-    subroutine write2DArrayMPIDist(this, object, descr, block_type)
+    subroutine write2DArrayDistBlacsMPI(this, object, descr, block_type)
       class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:,:)
       integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
@@ -229,6 +230,41 @@ module io_handler_mpi
       ! Reset file view back to regular ol bytes
       call MPI_File_set_view(this%fileh, this%offset, MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
+    end subroutine
+
+    subroutine write2DArrayDistColumnMPI(this, object, mdimen)
+      class(ioHandlerMPI) :: this
+      class(*), intent(in) :: object(:,:)
+      integer, intent(in) :: mdimen ! Dimension of entire distributed array
+
+      type(MPI_Datatype) :: mpiType
+      integer :: byteSize, globalSize, ierr, writestat
+      integer(kind = MPI_OFFSET_KIND) :: arrSizeBytes
+
+      globalSize = mdimen**2
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      arrSizeBytes = globalSize*byteSize
+
+      ! TODO what if format isn't sequential??
+      if (this%rank == 0) then
+        ! write first and last bookends containing array size in bytes
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+        call MPI_File_seek(this%fileh, arrSizeBytes, MPI_SEEK_CUR, ierr)
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+      endif
+      ! Offset first bookend
+      this%offset = this%offset + 4
+      ! Seek to byte after bookend
+      call MPI_File_seek_shared(this%fileh, this%offset, MPI_SEEK_SET, ierr)
+      ! Write array in parallel
+      call MPI_File_write_ordered(this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
+      ! Offset by size of array and end bookend integer
+      this%offset = this%offset + arrSizeBytes + 4
+      ! Ensure all file pointers point to end of array
+      call MPI_File_seek(this%fileh, this%offset, MPI_SEEK_SET, ierr)
     end subroutine
 
     subroutine readScalarMPI(this, object)

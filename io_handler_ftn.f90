@@ -16,7 +16,8 @@ module io_handler_ftn
     procedure :: writeScalar => writeScalarFTN
     procedure :: write1DArray => write1DArrayFTN
     procedure :: write2DArray => write2DArrayFTN
-    procedure :: write2DArrayDist => write2DArrayFTNDist
+    procedure :: write2DArrayDistBlacs => write2DArrayDistBlacsFTN
+    procedure :: write2DArrayDistColumn => write2DArrayDistColumnFTN
     procedure :: readScalar => readScalarFTN
     procedure :: read1DArray => read1DArrayFTN
     procedure :: read2DArray => read2DArrayFTN
@@ -169,12 +170,27 @@ module io_handler_ftn
       end select
     end subroutine
 
-    subroutine write2DArrayFTNDist(this, object, descr, block_type)
+    subroutine write2DArrayDistBlacsFTN(this, object, descr, block_type)
+      ! Write arrays distributed using blacs
+
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(in) :: object
       integer, intent(in) :: descr(9)
       type(MPI_Datatype), intent(in) :: block_type
-      print *, "ERROR: tried to write distributed array using fortran writer. Use MPI writer instead."
+
+      ! Using the fortran io_handler means array isn't distributed, just write normally
+      call this%write2DArray(object)
+    end subroutine
+
+    subroutine write2DArrayDistColumnFTN(this, object, mdimen)
+      ! Write arrays distributed as columns using co_distr_data
+
+      class(ioHandlerFTN) :: this
+      class(*), intent(in) :: object(:,:)
+      integer, intent(in) :: mdimen ! Dimension of entire distributed array
+
+      ! Using the fortran io_handler means array isn't distributed, just write normally
+      call this%write2DArray(object)
     end subroutine
 
     subroutine readScalarFTN(this, object)
