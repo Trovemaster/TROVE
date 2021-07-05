@@ -16284,8 +16284,17 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-          allocate(ioHandler, source=ioHandlerFTN(job%kinetmat_file, err, action='write', position='rewind', status='replace', form='unformatted'))
-          !allocate(ioHandler, source=ioHandlerMPI(job%kinetmat_file, err, action='write', position='rewind', status='replace', form='unformatted'))
+#ifdef TROVE_USE_MPI_
+          allocate(ioHandler, &
+            source=ioHandlerMPI(&
+            job%kinetmat_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
+#else
+          allocate(ioHandler, &
+            source=ioHandlerFTN(&
+            job%kinetmat_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
+#endif
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')

@@ -205,11 +205,11 @@ module io_handler_mpi
         return
       end if
 
-      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+      call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, object, globalSize, mpiType, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+      call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
     end subroutine
 
