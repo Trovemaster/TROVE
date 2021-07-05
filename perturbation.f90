@@ -17,6 +17,9 @@ module perturbation
   use diag
   use io_handler_base
   use io_handler_ftn
+#ifdef TROVE_USE_MPI_
+  use io_handler_mpi
+#endif
   use errors
   ! use omp_lib
 
@@ -28,7 +31,7 @@ module perturbation
   public  PTcontracted_matelem_class,PTeigenfunction_orthogonality
   public  PThamiltonian_contract,PTget_primitive_matelements,PTDVR_initialize
   public  PTcheck_point_contracted_space,PT_conctracted_rotational_bset
-  public  PTTest_eigensolution,PTanalysis_density,PTstore_icontr_cnu,PTstorempi_icontr_cnu
+  public  PTTest_eigensolution,PTanalysis_density,PTstore_icontr_cnu
 
   public  PTintcoeffsT,PTrotquantaT,PTNclasses,PTdefine_contr_from_eigenvect,PTeigenT,PTrepresT
   public  PTstore_contr_matelem,PTcontracted_matelem_class_fast,PTstore_contr_matelem_II,PTcontracted_matelem_class_fast_II
@@ -16279,45 +16282,17 @@ module perturbation
           ! Prepare the checkpoint file
           !
           job_is ='Vib. matrix elements of the rot. kinetic part'
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_open(mpi_comm_world, job%kinetmat_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
+          call IOStart(trim(job_is),chkptIO)
+          !
+          allocate(ioHandler, source=ioHandlerFTN(job%kinetmat_file, err, action='write', position='rewind', status='replace', form='unformatted'))
+          !allocate(ioHandler, source=ioHandlerMPI(job%kinetmat_file, err, action='write', position='rewind', status='replace', form='unformatted'))
+          HANDLE_ERROR(err)
 
-            call MPI_File_set_errhandler(chkptMPIIO, MPI_ERRORS_ARE_FATAL)
-
-            mpioffset=0
-
-            call MPI_File_set_size(chkptMPIIO, mpioffset, ierr)
-
-            call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_CUR, ierr)
-
-
-            if (mpi_rank.eq.0) then !AT
-              call MPI_File_write(chkptMPIIO,'[MPIIO]',7,mpi_character,mpi_status_ignore,ierr)
-              call MPI_File_write(chkptMPIIO,'Start Kinetic part',18,mpi_character,mpi_status_ignore,ierr)
-              call TimerStart('mpiiosingle') !AT
-              !
-              ! store the bookkeeping information about the contr. basis set
-              !
-              call PTstoreMPI_icontr_cnu(PT%Maxcontracts,chkptMPIIO,job%IOkinet_action)
-
-              call TimerStop('mpiiosingle') !AT
-            endif
-            call MPI_Barrier(mpi_comm_world, ierr)
-            call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END, ierr)
-#endif
-          else
-            call IOStart(trim(job_is),chkptIO)
-            !
-            allocate(ioHandler, source=ioHandlerFTN(job%kinetmat_file, err, action='write', position='rewind', status='replace', form='unformatted'))
-            HANDLE_ERROR(err)
-            call ioHandler%write('Start Kinetic part')
-            !
-            ! store the bookkeeping information about the contr. basis set
-            !
-            call PTstore_icontr_cnu_new(PT%Maxcontracts,ioHandler,job%IOkinet_action)
-            !
-          endif
+          call ioHandler%write('Start Kinetic part')
+          !
+          ! store the bookkeeping information about the contr. basis set
+          !
+          call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
         endif 
         !
         ! maximal size of the primitive matrix in all classes
@@ -16494,18 +16469,7 @@ module perturbation
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              if(mpi_rank.eq.0) then
-                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write_shared(chkptMPIIO,'g_rot',5,mpi_character,mpi_status_ignore,ierr)
-              !else
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              endif
-#endif
-            else
-              call ioHandler%write('g_rot')
-            endif
+            call ioHandler%write('g_rot')
             !
           endif 
           !
@@ -16568,11 +16532,7 @@ module perturbation
                   !
                   ! store the matrix elements 
                   !
-                  if (trim(job%kinetmat_format).eq.'MPIIO') then
-                    call co_write_matrix_distr(grot_t,mdimen, startdim, enddim,chkptMPIIO)
-                  else
-                    call ioHandler%write(grot_t)
-                  endif
+                  call ioHandler%write(grot_t, mdimen)
                   !
                 endif
               endif
@@ -16692,11 +16652,7 @@ module perturbation
                 !
                 ! store the matrix elements 
                 !
-                if (trim(job%kinetmat_format).eq.'MPIIO') then
-                  call co_write_matrix_distr(gcor_t,mdimen, startdim, enddim,chkptMPIIO)
-                else
-                  call ioHandler%write(gcor_t)
-                endif
+                call ioHandler%write(gcor_t, mdimen)
                 !
               endif
             endif
@@ -16774,7 +16730,7 @@ module perturbation
                 do k1 = 1,3
                   do k2 = 1,3
                     !
-                    call ioHandler%write(grot_(k1,k2,:,:))
+                    call ioHandler%write(grot_(k1,k2,:,:), mdimen_)
                     ! 
                   enddo
                 enddo
@@ -16786,7 +16742,7 @@ module perturbation
                 do k1 = 1,PT%Nmodes
                   do k2 = 1,3
                     !
-                    call ioHandler%write(gcor_(k1,k2,:,:))
+                    call ioHandler%write(gcor_(k1,k2,:,:), mdimen_)
                     ! 
                   enddo
                 enddo
@@ -17098,20 +17054,8 @@ module perturbation
                   (.not.job%IOmatelem_divide.or.job%iswap(1)==0) .and. &
                   (.not.job%IOmatelem_split.or.job%iswap(1)==0)) then
             !
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              if(mpi_rank.eq.0) then
-                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write_shared(chkptMPIIO,'hvib',4,mpi_character,mpi_status_ignore,ierr)
-              !else
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              endif
-              call co_write_matrix_distr(hvib%me,mdimen, startdim, enddim,chkptMPIIO)
-#endif
-            else
-              call ioHandler%write('hvib')
-              call ioHandler%write(hvib%me)
-            endif
+            call ioHandler%write('hvib')
+            call ioHandler%write(hvib%me, mdimen)
              !
           endif
           !
@@ -17123,19 +17067,8 @@ module perturbation
            (.not.job%IOmatelem_divide.or.job%iswap(1)==0 ).and. &
            (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) ) then
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call mpi_barrier(mpi_comm_world, ierr)
-            call MPI_File_seek_shared(chkptMPIIO, mpioffset, MPI_SEEK_END)
-            if(mpi_rank.eq.0) then
-              call MPI_File_write_shared(chkptMPIIO,'End Kinetic part',16,mpi_character,mpi_status_ignore,ierr)
-            endif
-            call MPI_File_close(chkptMPIIO, ierr)
-#endif
-          else
-            call ioHandler%write('End Kinetic part')
-            deallocate(ioHandler)
-          endif
+          call ioHandler%write('End Kinetic part')
+          deallocate(ioHandler)
           !
         endif 
         !
@@ -17995,7 +17928,8 @@ module perturbation
           !
           ! store the bookkeeping information about the contr. basis set
           !
-          call PTstore_icontr_cnu(PT%Maxcontracts,chkptIO,job%IOkinet_action)
+          ! TODO change this to ioHandler
+          !call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
           !
           if (job%vib_rot_contr) then
             write(chkptIO) 'vib-rot'
@@ -34957,66 +34891,7 @@ end subroutine read_contr_matelem_expansion_classN
    return
   end subroutine matvec_sym
 
-
-    subroutine PTstore_icontr_cnu(Maxcontracts,iunit,dir)
-
-      integer(ik),intent(in) :: Maxcontracts,iunit
-      character(len=18),intent(in)  :: dir
-      integer(ik)   :: alloc
-      character(len=18)  :: buf18
-      integer(ik)        :: ncontr
-      integer(ik),allocatable :: imat_t(:,:)
-      !
-      selectcase (trim(dir))
-        !
-      case ('SAVE')
-        !
-        write(iunit) Maxcontracts
-        !
-        write(iunit) 'icontr_cnu'
-        !
-        write(iunit) PT%icontr_cnu(0:PT%Nclasses,1:Maxcontracts)
-        !
-        write(iunit) 'icontr_ideg'
-        !
-        write(iunit) PT%icontr_ideg(0:PT%Nclasses,1:Maxcontracts)
-        !
-      case ('APPEND')
-        !
-        read(iunit) ncontr
-        !
-        if (Maxcontracts/=ncontr) then
-          write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-          write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") PT%Maxcontracts,ncontr
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
-        end if
-        !
-        allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
-        call ArrayStart('mat_t',alloc,size(imat_t),kind(imat_t))
-        !
-        read(iunit) buf18(1:10)
-        if (buf18(1:10)/='icontr_cnu') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
-        end if
-        !
-        read(iunit) imat_t(0:PT%Nclasses,1:ncontr)
-        !
-        read(iunit) buf18(1:11)
-        if (buf18(1:11)/='icontr_ideg') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
-        end if
-        !
-        read(iunit) imat_t(0:PT%Nclasses,1:ncontr)
-        !
-        deallocate(imat_t)
-        !
-      end select
-      !
-    end subroutine PTstore_icontr_cnu
-
-    subroutine PTstore_icontr_cnu_new(Maxcontracts,ioHandler,dir)
+    subroutine PTstore_icontr_cnu(Maxcontracts,ioHandler,dir)
 
       integer(ik),intent(in) :: Maxcontracts
       class(ioHandlerBase), intent(in) :: ioHandler
@@ -35038,73 +34913,41 @@ end subroutine read_contr_matelem_expansion_classN
 
       case ('APPEND')
         !
-        stop "APPEND in PTstore_icontr_cnu currently unsupported"
-        !read(iunit) ncontr
-        !!
-        !if (Maxcontracts/=ncontr) then
-          !write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-          !write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") PT%Maxcontracts,ncontr
-          !stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
-        !end if
-        !!
-        !allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
-        !call ArrayStart('mat_t',alloc,size(imat_t),kind(imat_t))
-        !!
-        !read(iunit) buf18(1:10)
-        !if (buf18(1:10)/='icontr_cnu') then
-          !write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          !stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
-        !end if
-        !!
-        !read(iunit) imat_t(0:PT%Nclasses,1:ncontr)
-        !!
-        !read(iunit) buf18(1:11)
-        !if (buf18(1:11)/='icontr_ideg') then
-          !write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          !stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
-        !end if
-        !!
-        !read(iunit) imat_t(0:PT%Nclasses,1:ncontr)
-        !!
-        !deallocate(imat_t)
-        !
-      end select
-      !
-    end subroutine PTstore_icontr_cnu_new
-
-    subroutine PTstoreMPI_icontr_cnu(maxcontracts,iunit,dir)
-      use mpi_aux
-
-      integer(ik),intent(in) :: maxcontracts
-      type(mpi_file),intent(in) :: iunit
-      character(len=18),intent(in)  :: dir
-      integer(ik)   :: alloc
-      character(len=18)  :: buf18
-      integer(ik)        :: ncontr
-      integer(ik),allocatable :: imat_t(:,:)
-      integer::ierr
-      !
-      select case(trim(dir))
-        !
-      case ('SAVE')
-        !
 #ifdef TROVE_USE_MPI_
-        call mpi_file_write(iunit, maxcontracts, 1,mpi_integer,mpi_status_ignore,ierr)
-        !
-        call mpi_file_write(iunit, 'icontr_cnu', 10,mpi_character,mpi_status_ignore,ierr)
-        !
-        call mpi_file_write(iunit, pt%icontr_cnu(0:pt%nclasses,1:maxcontracts), (1+pt%nclasses)*maxcontracts, mpi_integer, &
-          mpi_status_ignore, ierr)
-        !
-        call mpi_file_write(iunit, 'icontr_ideg', 11,mpi_character,mpi_status_ignore,ierr)
-        !
-        call mpi_file_write(iunit, pt%icontr_ideg(0:pt%nclasses,1:maxcontracts), (1+pt%nclasses)*maxcontracts, mpi_integer, &
-          mpi_status_ignore, ierr)
-
+        stop "APPEND in PTstore_icontr_cnu currently unsupported using MPI"
 #endif
+        call ioHandler%read(ncontr)
+        !
+        if (Maxcontracts/=ncontr) then
+          write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
+          write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") PT%Maxcontracts,ncontr
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
+        end if
+        !
+        allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
+        call ArrayStart('mat_t',alloc,size(imat_t),kind(imat_t))
+        !
+        call ioHandler%read(buf18(1:10))
+        if (buf18(1:10)/='icontr_cnu') then
+          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+        end if
+        !
+        call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
+        !
+        call ioHandler%read(buf18(1:11))
+        if (buf18(1:11)/='icontr_ideg') then
+          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+        end if
+        !
+        call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
+        !
+        deallocate(imat_t)
+        !
       end select
-
-    end subroutine PTstorempi_icontr_cnu
+      !
+    end subroutine PTstore_icontr_cnu
 
 
     subroutine PTdefine_contr_from_eigenvect(nroots,Neigenlevels,eigen)
@@ -38501,7 +38344,8 @@ end subroutine combinations
           !
           ! store the bookkeeping information about the contr. basis set
           !
-          call PTstore_icontr_cnu(PT%Maxcontracts,chkptIO,job%IOkinet_action)
+          ! TODO change me to ioHandler
+          !call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
           !
           if (job%vib_rot_contr) then
             write(chkptIO) 'vib-rot'

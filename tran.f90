@@ -14,7 +14,9 @@ module tran
  use moltype,      only : manifold,intensity,extF
  use symmetry,     only : sym
 
- use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT,PTstorempi_icontr_cnu
+ use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT
+ use io_handler_base
+ use io_handler_ftn
 
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
@@ -1615,7 +1617,8 @@ contains
               !
               treat_vibration = .false.
               !
-              call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
+              ! TODO replace with ioHandler (maybe, probably just delete)
+              !call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
               !
               if (job%vib_rot_contr) then
                 call MPI_File_write(fileh_w, 'vib-rot', 7, mpi_character, mpi_status_ignore, ierr)
@@ -1634,7 +1637,8 @@ contains
             treat_vibration = .false.
             if(mpi_rank .eq. 0) then
               !
-              call PTstore_icontr_cnu(Neigenroots,chkptIO,job%IOj0matel_action)
+              ! TODO replace with ioHandler
+              !call PTstore_icontr_cnu(Neigenroots,ioHandler,job%IOj0matel_action)
               !
               if (job%vib_rot_contr) then
                 write(chkptIO) 'vib-rot'

@@ -188,7 +188,29 @@ module io_handler_mpi
     subroutine write2DArrayMPI(this, object)
       class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:,:)
-      print *, "ERROR: Writing non-distributed array using MPI writer not supported."
+
+      type(MPI_Datatype) :: mpiType
+      integer :: byteSize, globalSize, ierr, length
+
+      integer(kind = MPI_OFFSET_KIND) :: arrSizeBytes
+
+      globalSize = size(object)
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      arrSizeBytes = globalSize*byteSize
+
+      this%offset = this%offset + 4 + arrSizeBytes + 4
+
+      if (this%rank /= 0) then
+        return
+      end if
+
+      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+                          MPI_STATUS_IGNORE, ierr)
+      call MPI_File_write(this%fileh, object, globalSize, mpiType, &
+                          MPI_STATUS_IGNORE, ierr)
+      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+                          MPI_STATUS_IGNORE, ierr)
     end subroutine
 
     subroutine write2DArrayDistBlacsMPI(this, object, descr, block_type)
