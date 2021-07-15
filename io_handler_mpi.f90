@@ -1,6 +1,7 @@
 #include "errors.fpp"
 
 module io_handler_mpi
+#ifdef TROVE_USE_MPI_
   use mpi_f08
   use mpi_aux
   use io_handler_base
@@ -318,4 +319,5 @@ module io_handler_mpi
       print *, "reading 2D array to MPI IO"
     end subroutine
 
+#endif
 end module

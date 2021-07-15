@@ -202,7 +202,7 @@ mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
 mpi_aux.o: mpi_aux.f90 accuracy.o timer.o
-perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o
+perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o io_handler_base.o io_handler_ftn.o io_handler_mpi.o
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o
