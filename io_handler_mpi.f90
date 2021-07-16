@@ -144,7 +144,7 @@ module io_handler_mpi
         byteSize = sizeof(object)
         mpiType = MPI_DOUBLE_COMPLEX
       type is (character(len=*))
-        byteSize = sizeof(object)
+        byteSize = len(object) * sizeof('a')
         mpiType = MPI_CHARACTER
       class default
         print *, "ERROR: Unknown type"
