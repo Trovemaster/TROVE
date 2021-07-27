@@ -2,9 +2,17 @@
 
 #define MPI_WRAPPER(function, handle, obj, size, mytype, status, err) \
 select type(obj); \
-    type is (integer); \
+    type is (integer(ik)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (integer(hik)); \
       call function(handle, obj, size, mytype, status, err); \
     type is (real); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (real(rk)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (real(ark)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (complex); \
       call function(handle, obj, size, mytype, status, err); \
     type is (character(len=*)); \
       call function(handle, obj, size, mytype, status, err); \
@@ -19,6 +27,7 @@ module io_handler_mpi
   use mpi_aux
   use io_handler_base
   use errors
+  use accuracy, only : rk, ark, ik, hik
 
   implicit none
 
