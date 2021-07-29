@@ -16598,6 +16598,8 @@ module perturbation
               !
               !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
               !
+              !print*,icoeff,jcoeff,iclasses,iroot,jroot
+              !
               f_t = f_t*matclass(iclasses,iroot,jroot)
               !
             enddo

@@ -1365,7 +1365,7 @@ contains
     !
     f_t = f_t/real(nlevels,rk)
     !
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
+    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)*0.999_rk/f_t,hik)))
     !
     if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
                         'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),&
