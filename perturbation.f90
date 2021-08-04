@@ -16553,6 +16553,7 @@ module perturbation
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
+            ! FIXME take out MPIIO
             if (trim(job%kinetmat_format).eq.'MPIIO') then
 #ifdef TROVE_USE_MPI_
               !  call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END) 
