@@ -241,6 +241,7 @@ module moltype
      character(cl)       :: swap = "NONE"    ! whether save the compacted vectors or read
      character(cl)       :: swap_file  ="compress"   ! where swap the compacted eigenvectors to
      integer(ik)         :: int_increm = 1e9 ! used to print out the lower energies needed to select int_increm intensities
+     integer(ik)         :: Ncache = 10000 ! used to cache intensities before prinout  to speed up 
      real(rk)         :: factor = 1.0d0   ! factor <1 to be applied the maxsize of the vector adn thus to be shrunk 
      real(rk)         :: wallclock          ! wallclock limit, needed to estmate how many transitions can be processed within one job
      logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component

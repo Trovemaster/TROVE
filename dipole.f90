@@ -1060,6 +1060,7 @@ contains
     real(rk),    allocatable :: vecPack_kblock(:,:)
     integer(ik), allocatable :: icoeff_kblock(:,:),cdimen_kblock(:),itau_kblock(:,:)
     real(rk),allocatable     :: half_linestr(:,:,:,:),threej(:,:,:,:),max_intens_state(:)
+    real(rk),allocatable     :: A_einst_cache(:),nu_if_cache(:)
     integer(ik), pointer :: Jeigenvec_unit(:,:)
     type(DmatT),pointer  :: vec_ram(:,:)
     type(DkmatT),pointer :: ijterm(:)
@@ -1122,6 +1123,13 @@ contains
     call ArrayStart('ilevelsG',info,size(ilevelsG),kind(ilevelsG))
     call ArrayStart('ram_size',info,size(ram_size),kind(ram_size))
     call ArrayStart('iram',info,size(iram),kind(iram))
+    !
+    ! here we reset Ncache to Neigenlevels
+    intensity%Ncache = Neigenlevels
+    !
+    allocate(A_einst_cache(intensity%Ncache),nu_if_cache(intensity%Ncache),stat = info)
+    call ArrayStart('A_einst_cache',info,size(A_einst_cache),kind(A_einst_cache))
+    call ArrayStart('nu_if_cache',info,size(nu_if_cache),kind(nu_if_cache))
     !
     do jind=1,nJ
       do igamma = 1,sym%Nrepresen
@@ -1365,7 +1373,7 @@ contains
     !
     f_t = f_t/real(nlevels,rk)
     !
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now*1.2_rk)/f_t,hik)))
+    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now*1.3_rk)/f_t,hik)))
     !
     if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
                         'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),&
@@ -1762,8 +1770,6 @@ contains
     !
     Ilevels_loop: do ilevelI = 1,nlevels
       !
-      ! start measuring time per line
-      !
       indI = eigen(ilevelI)%jind
       !
       !dimension of the bases for the initial states
@@ -2008,18 +2014,21 @@ contains
       !
       call TimerStop('Half_linestrength')
       !
-      !loop over final states
+      ! Loop over final states
       !
-      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state)
+      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state) shared(A_einst_cache,nu_if_cache)
       allocate(vecF(dimenmax_),vec_(dimenmax),stat = alloc_p)
       if (alloc_p/=0) then
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
           stop 'dipole-vecF - out of memory'
       end if
       !
+      A_einst_cache = 0
+      nu_if_cache = 0
+      !
       !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,quantaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
       !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,&
-      !$omp& absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static) 
+      !$omp& absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static)
       Flevels_loop: do ilevelF = 1,nlevels
          !
          indF = eigen(ilevelF)%jind
@@ -2241,56 +2250,30 @@ contains
              !
              absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
-             !
              if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
-               !
-               iram_ = istored(ilevelF)
-               !
-               !
-               !$omp critical
-               if (job%exomol_format) then
-                 !
-                 write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
-                              iID(ilevelF),iID(ilevelI),A_einst,nu_if     
-                              !
-               elseif (intensity%output_short) then 
-                 !
-                 write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
-                              &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
-                              &2(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
-                              !
-                              jF,igammaF,jI,igammaI, & 
-                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                              A_einst,absorption_int,&
-                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
-               else
-
-                 !
-                !write(out, "( (i4, 1x, a4, 3x),'<-', (i4, 1x, a4, 3x),a1,&
-                !             &(2x, f11.4,1x),'<-',(1x, f11.4,1x),f11.4,2x,&
-                !             &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,'<- ',   &
-                !             &'(',1x,a3,x,i3,1x,')',1x,'(',1x,<nclasses>(x,a3),1x,<nmodes>(1x, i3),1x,')',1x,   &
-                !             & 3(1x, es16.8),2x,(1x,i6,1x),'<-',(1x,i6,1x),i8,1x,i8,&
-                !             1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,'<- ',1x,'(',1x,<nmodes>(1x, i3),1x,')',1x,& 
-                !             <nformat>(1x, es16.8))")  &
-                              !
-                 write(out,my_fmt) &
-                              jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
-                              energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                              eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
-                              eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
-                              eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
-                              eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
-                              linestr,A_einst,absorption_int,&
-                              eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
-                              itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
-                              linestr_deg(1:ndegI,1:ndegF)
-                              !            
-
-
-               endif
-               !$omp end critical
-               !             
+                !
+                A_einst_cache(ilevelF) = A_einst
+                nu_if_cache(ilevelF) = nu_if
+                !
+                if (.not.intensity%output_short) then 
+                  !$omp critical
+                  !
+                  write(out,my_fmt) &
+                               jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
+                               energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
+                               eigen(ilevelF)%cgamma(0),eigen(ilevelF)%krot,&
+                               eigen(ilevelF)%cgamma(1:nclasses),eigen(ilevelF)%quanta(1:nmodes), &
+                               eigen(ilevelI)%cgamma(0),eigen(ilevelI)%krot,&
+                               eigen(ilevelI)%cgamma(1:nclasses),eigen(ilevelI)%quanta(1:nmodes), &
+                               linestr,A_einst,absorption_int,&
+                               eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel,&
+                               itransit,istored(ilevelF),normalF(1:nmodes),normalI(1:nmodes),&
+                               linestr_deg(1:ndegI,1:ndegF)
+                               !            
+                  !$omp end critical
+                  !
+                endif
+              !
              endif
              !
            case('TM')
@@ -2362,24 +2345,15 @@ contains
              !
              if (linestr>=intensity%threshold%intensity) then 
                !
-               if (job%exomol_format) then
-                 !
-                 write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,1x,es16.8,' ||')")&
-                              iID(ilevelF),iID(ilevelI),A_einst,nu_if,absorption_int
-                              !
-               else
+               A_einst_cache(ilevelF) = A_einst
+               nu_if_cache(ilevelF) = nu_if
+               !
+               if (.not.intensity%output_short) then
                  !
                  !nformat = ndegI*ndegF
                  !
                  !$omp critical
-                 !write(out, "( (i4, 1x, a3, 3x),'<-', (i4, 1x, a3, 3x),a1,&
-                 !             &(2x, f13.6,1x),'<-',(1x, f13.6,1x),f12.6,2x,&
-                 !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',2x,'<- ',   &
-                 !             &'(',a3,';',i3,')',1x,'(',<nclasses>a3,';',<nmodes>(1x, i3),')',   &
-                 !             &2(1x,es15.8),i8,&
-                 !             &2x,'(',<nmodes>(1x, i3),')',2x,'<- ',   &
-                 !             &1x,'(',<nmodes>(1x, i3),')',   &
-                 !             &3(<nformat>( 1x,f16.8,1x,3i1) ) )") &
+                 !
                  write(out,my_fmt_tm) &
                               jF,sym%label(igammaF),jI,sym%label(igammaI),branch, &
                               energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if ,&
@@ -2394,7 +2368,6 @@ contains
                  !$omp end critical
                  !
                endif 
-               !'i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",2a3,";",3(1x,i3),")",2(1x,es15.8),i8,2x,"(",3(1x, i3),")",2x,"<- ",1x,"(",3(1x, i3),")",3(1(1x,f16.8,1x,3i1))'
                !
             endif 
             !
@@ -2414,6 +2387,56 @@ contains
       !
       deallocate(vecF,vec_)    
       !$omp end parallel
+      !
+      if (intensity%output_short) then 
+        !
+        do ilevelF = 1,nlevels
+          !
+          nu_if = nu_if_cache(ilevelF) 
+          A_einst = A_einst_cache(ilevelF)
+          !
+          if (A_einst_cache(ilevelF)>small_) then 
+            !
+            if (job%exomol_format) then
+              !
+              write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
+                           iID(ilevelF),iID(ilevelI),A_einst,nu_if 
+                           !
+            elseif (job%gain_format) then 
+              !
+              jF = eigen(ilevelF)%jval
+              energyF = eigen(ilevelF)%energy
+              igammaF  = eigen(ilevelF)%igamma
+              !
+              write(out, "( f12.6,1x,i8,1x,i4,1x,i4,' <- ',i8,1x,i4,1x,i4,&
+                           &1x,es16.9,2x,'||')") &
+                           !
+                           nu_if,eigen(ilevelF)%ilevel,jF,igammaF,&
+                                 eigen(ilevelI)%ilevel,jI,igammaI,A_einst
+                           !
+            else 
+              !
+              jF = eigen(ilevelF)%jval
+              energyF = eigen(ilevelF)%energy
+              igammaF  = eigen(ilevelF)%igamma
+              !
+              write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
+                           &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
+                           &1(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
+                           !
+                           jF,igammaF,jI,igammaI, & 
+                           energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
+                           A_einst,&
+                           eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
+                           !
+       
+            endif
+            !             
+          endif
+          !
+        enddo
+        !
+      endif
       !
       ! stop counting time per block and estimate seconds per line 
       !
@@ -2561,7 +2584,13 @@ contains
     !
     deallocate(vecI, vecPack, vec, icoeffI)
     call ArrayStop('intensity-vectors')
-
+    !
+    if (allocated(A_einst_cache)) then 
+       deallocate(A_einst_cache,nu_if_cache)
+       call ArrayStop('A_einst_cache')
+       call ArrayStop('nu_if_cache')
+    endif
+    !
     if (.not.job%rotsym_do) then
       deallocate(vecPack_kblock,icoeff_kblock,cdimen_kblock,itau_kblock)
       call ArrayStop('intensity-vectors-kblock')

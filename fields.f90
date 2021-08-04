@@ -379,6 +379,7 @@ module fields
       logical		      :: ignore_vectors = .false.
       logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
       logical             :: exomol_format  = .false.     ! exomol format of intensity output 
+      logical             :: gain_format  = .false.     ! GAIN format of intensity output 
       logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
                                             ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
       logical             :: triatom_sing_resolve = .false.
@@ -3623,6 +3624,12 @@ module fields
            case('EXOMOL')
              !
              job%exomol_format = .true.
+             intensity%output_short = .true.
+             !
+           case('GAIN')
+             !
+             job%gain_format = .true.
+             intensity%output_short = .true.
              !
            case('QSTAT','PARTITION','PART_FUNC')
              !
@@ -3732,6 +3739,11 @@ module fields
            case('INCREMENT')
              !
              call readi(intensity%int_increm)
+             !
+             ! how many line to cache before printing 
+           case('NCACHE')
+             !
+             call readi(intensity%Ncache)
              !
            case('WALLCLOCK','WALL')
              !
