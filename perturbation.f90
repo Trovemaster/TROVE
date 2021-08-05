@@ -8509,11 +8509,11 @@ module perturbation
     endif
     !
     ! free more memory 
-    do ielem =1,size(contr(0)%rot(:))
-      if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
-    enddo 
-    call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
-    call ArrayStop('contr(0)-rot-coeff3d')
+    !do ielem =1,size(contr(0)%rot(:))
+      !if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
+    !enddo 
+    !call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
+    !call ArrayStop('contr(0)-rot-coeff3d')
     !
     deallocate(ijterm,k_row)
     !
