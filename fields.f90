@@ -6527,7 +6527,7 @@ end subroutine check_read_save_none
          !
          kindex = 0 ; kindex(imode) = 1
          !
-         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Ncoords,kindex,q_eq,step,irho)
+         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Nmodes,kindex,q_eq,step,irho)
          !
          !chi2 = MLcoordinate_transform_func(q2,size(chi2),dir)
          !
@@ -15778,12 +15778,12 @@ end subroutine check_read_save_none
      ! Create a field in a sparse representaion
      !
      if (associated(fl%IndexQ)) then 
-       deallocate(fl%IndexQ)
        call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
+       deallocate(fl%IndexQ)
      endif
      !
-     deallocate(fl%ifromsparse)
      call ArrayMinus(name//'ifromsparse',isize=size(fl%ifromsparse),ikind=kind(fl%ifromsparse))
+     deallocate(fl%ifromsparse)
      !
      if (Nterms==0) then
        !
@@ -15959,9 +15959,9 @@ end subroutine check_read_save_none
      call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      !
-     deallocate(fl1%field,fl2%field,stat=alloc)
      call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
      call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     deallocate(fl1%field,fl2%field,stat=alloc)
      !
      allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
@@ -22626,7 +22626,7 @@ end subroutine check_read_save_none
      !
      call FLfromcartesian2local(r_na,r_)
      dir = .true.
-     chi_ = MLcoordinate_transform_func(r_,size(r_),dir)
+     chi_ = MLcoordinate_transform_func(r_,size(chi_),dir)
      !
      do i = 1,trove%Nmodes
        !
