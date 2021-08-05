@@ -6662,7 +6662,7 @@ end subroutine check_read_save_none
          !
          bm = 0.0_ark  ;  bm(Nequat-Nmodes+imode) = 1.0_ark
          !
-         a = Tmat
+         a(:,:) = Tmat(:,:)
          b(:,1) = bm(:)
          !
          call MLlinurark(Nequat,a,b(:,1),bm,ierror)
