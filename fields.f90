@@ -4391,9 +4391,11 @@ module fields
      !    
    endif
    !
-   if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
-      write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
-      stop 'FLinput - The C2VN number is undefined or too small'
+   if (trim(trove%symmetry)=='C2VN') then
+     if (sym%N<job%bset(0)%range(2)) then
+       write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
+       stop 'FLinput - The C2VN number is undefined or too small'
+     endif
    endif
     !
    if (.not.refer_defined) then 
@@ -4673,7 +4675,7 @@ end subroutine check_read_save_none
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
     trove%dihedrals(0:Ndihedrals,:) = dihedrals(0:Ndihedrals,:)
-    trove%dihedtype(:) = dihedtype(:)
+    trove%dihedtype(:Ndihedrals) = dihedtype(:Ndihedrals)
     !
     ! We define the coordinates 
     !
