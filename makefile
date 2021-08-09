@@ -46,7 +46,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	ifeq ($(strip $(MODE)),debug)
-		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
+		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace -finit-local-zero -ffpe-trap=invalid,zero,overflow -fbounds-check -fcheck=all
 	else ifeq ($(strip $(MODE)),ci)
 		FFLAGS += -O2 -g
 	else
@@ -55,7 +55,8 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 	ifneq ($(strip $(USE_MPI)),0)
-		LAPACK += -lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
+		# Assume we're using openmpi with gfortran
+		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
 else
 $(error Compiler option "$(COMPILER)" not defined.)
