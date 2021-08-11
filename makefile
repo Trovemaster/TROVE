@@ -46,7 +46,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	ifeq ($(strip $(MODE)),debug)
-		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace -finit-local-zero -ffpe-trap=invalid,zero,overflow -fbounds-check -fcheck=all
+		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace -finit-local-zero -ffpe-trap=invalid,zero,overflow # -fbounds-check -fcheck=all
 	else ifeq ($(strip $(MODE)),ci)
 		FFLAGS += -O2 -g
 	else

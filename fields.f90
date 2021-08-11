@@ -14555,7 +14555,9 @@ end subroutine check_read_save_none
             !
             fl => trove%g_cor(k1,k2) 
             !
-            call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (associated(fl)) then
+              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            endif
             !
           enddo
         enddo
