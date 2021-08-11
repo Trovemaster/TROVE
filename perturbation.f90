@@ -17824,6 +17824,9 @@ module perturbation
     integer(ik) :: Nsym,isym,Nsymi,Nsymj,jsymcoeff,Ntot
     integer(ik), allocatable :: isymcoeff_vs_isym(:,:)
     double precision,parameter :: a0 = -0.5d0
+
+    class(ioHandlerBase), allocatable :: ioHandler
+    type(ErrorType) :: err
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -17932,16 +17935,19 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
 
-          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kinetmat_file)
-          write(chkptIO) 'Start Kinetic part'
+          allocate(ioHandler, &
+            source=ioHandlerFTN(&
+            job%kinetmat_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
+          HANDLE_ERROR(err)
+          call ioHandler%write('Start Kinetic part')
           !
           ! store the bookkeeping information about the contr. basis set
           !
-          ! TODO change this to ioHandler
-          !call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
+          call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
           !
           if (job%vib_rot_contr) then
-            write(chkptIO) 'vib-rot'
+            call ioHandler%write('vib-rot')
           endif
           !
         endif 
@@ -18053,7 +18059,7 @@ module perturbation
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
-            write(chkptIO) 'g_rot'
+            call ioHandler%write('g_rot')
             !
           endif
           !
@@ -18133,7 +18139,7 @@ module perturbation
                   if (job%IOmatelem_split) then
                      write(chkptIO_) grot_t
                   else
-                     write(chkptIO) grot_t
+                     call ioHandler%write(grot_t, mdimen)
                   endif
                   !
                 endif
@@ -18157,7 +18163,7 @@ module perturbation
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
-            write(chkptIO) 'g_cor'
+            call ioHandler%write('g_cor')
             !
           endif
           !
@@ -18308,7 +18314,7 @@ module perturbation
                 if (job%IOmatelem_split) then
                    write(chkptIO_) grot_t
                 else
-                   write(chkptIO) grot_t
+                   call ioHandler%write(grot_t, mdimen)
                 endif
                 !
               endif
@@ -18353,7 +18359,7 @@ module perturbation
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
                   (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
              !
-             write(chkptIO) 'hvib'
+             call ioHandler%write('hvib')
              !
           endif
           !
@@ -18563,10 +18569,8 @@ module perturbation
               enddo
               !$omp end parallel do
               !
-              !write(chkptIO) hvib_t
-              !
               if (trim(job%IOkinet_action)=='SAVE') then
-                   write(chkptIO) hvib_t
+                  call ioHandler%write(hvib_t)
               endif
               !
             endif 
@@ -18603,8 +18607,8 @@ module perturbation
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
            (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
-          write(chkptIO) 'End Kinetic part'
-          close(chkptIO,status='keep')
+          call ioHandler%write('End Kinetic part')
+          deallocate(ioHandler)
           !
         endif 
         !
@@ -38246,6 +38250,9 @@ end subroutine combinations
     type(me_type), allocatable :: vpot_me(:)
     type(me_type), allocatable :: pseudo_me(:)
     type(me_type), allocatable :: extF_me(:)
+
+    class(ioHandlerBase), allocatable :: ioHandler
+    type(ErrorType) :: err
       !
       call TimerStart('Contracted matelements-class-fast')
       !
@@ -38348,16 +38355,20 @@ end subroutine combinations
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-          open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kinetmat_file)
-          write(chkptIO) 'Start Kinetic part'
+          allocate(ioHandler, &
+            source=ioHandlerFTN(&
+            job%kinetmat_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
+          HANDLE_ERROR(err)
+
+          call ioHandler%write('Start Kinetic part')
           !
           ! store the bookkeeping information about the contr. basis set
           !
-          ! TODO change me to ioHandler
-          !call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
+          call PTstore_icontr_cnu(PT%Maxcontracts,ioHandler,job%IOkinet_action)
           !
           if (job%vib_rot_contr) then
-            write(chkptIO) 'vib-rot'
+            call ioHandler%write('vib-rot')
           endif
           !
         endif 
@@ -38430,7 +38441,7 @@ end subroutine combinations
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
-            write(chkptIO) 'g_rot'
+            call ioHandler%write('g_rot')
             !
           endif 
           !
@@ -38504,7 +38515,7 @@ end subroutine combinations
                   if (job%IOmatelem_split) then
                      write(chkptIO_) grot_t
                   else
-                     write(chkptIO) grot_t
+                     call ioHandler%write(grot_t, mdimen)
                   endif
                   !
                 endif
@@ -38528,7 +38539,7 @@ end subroutine combinations
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
             !
-            write(chkptIO) 'g_cor'
+            call ioHandler%write('g_cor')
             !
           endif
           !
@@ -38645,7 +38656,7 @@ end subroutine combinations
                 if (job%IOmatelem_split) then
                    write(chkptIO_) grot_t
                 else
-                   write(chkptIO) grot_t
+                  call ioHandler%write(grot_t, mdimen)
                 endif
                 !
               endif
@@ -38690,7 +38701,7 @@ end subroutine combinations
           if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and. & 
                   (.not.job%IOmatelem_split.or.job%iswap(1)==0.or.job%iswap(1)==(PT%Nmodes+3)*3 ) ) then
              !
-             write(chkptIO) 'hvib'
+             call ioHandler%write('hivb')
              !
           endif
           !
@@ -38825,10 +38836,8 @@ end subroutine combinations
               enddo
               !$omp end parallel do
               !
-              !write(chkptIO) hvib_t
-              !
               if (trim(job%IOkinet_action)=='SAVE') then
-                   write(chkptIO) hvib_t
+                  call ioHandler%write(hvib_t, mdimen)
               endif
               !
             endif 
@@ -38865,8 +38874,8 @@ end subroutine combinations
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
            (.not.job%IOmatelem_split.or.job%iswap(1)==0 )) then
           !
-          write(chkptIO) 'End Kinetic part'
-          close(chkptIO,status='keep')
+          call ioHandler%write('End Kinetic part')
+          deallocate(ioHandler)
           !
         endif 
         !
