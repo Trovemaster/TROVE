@@ -8513,7 +8513,7 @@ module perturbation
 
     call MPI_File_open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
     if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file.", filename
+      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file. ", filename
       stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error opening MATELEM MPI-IO input file"
     endif
 
@@ -8600,10 +8600,7 @@ module perturbation
       !TODO - MPI-compatible IOStart
       !call IOStart(trim(job_id),fileh)
 
-      !TODO set filename dynamically
-      filename = trim(job%matelem_suffix)//'.chk'
-
-      call open_chkptfile_mpi(fileh, filename, 'read')
+      call open_chkptfile_mpi(fileh, job%kinetmat_file, 'read')
 
       !Collective read woo
       call MPI_File_read_all(fileh, readbuf, 7, mpi_character, mpi_status_ignore, ierr)
