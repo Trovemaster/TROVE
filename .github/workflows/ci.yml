@@ -40,10 +40,13 @@ jobs:
       - name: Install Intel MKL
         run: sudo apt-get install -y intel-mkl
 
+      - name: Build pFUnit
+        run: make COMPILER=gfortran install-pfunit
+
       - name: Build
         run: |
           gfortran --version
           make COMPILER=gfortran MODE=ci
 
       - name: Test
-        run: make COMPILER=gfortran install-pfunit test
+        run: make COMPILER=gfortran test
