@@ -105,10 +105,6 @@ OBJS := ${SRCS:.f90=.o}
 
 VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
-TESTS = test_io
-ifdef USE_MPI
-	TESTS += test_mpi_io
-endif
 ################################################################################
 ## TARGETS
 ################################################################################
@@ -156,18 +152,26 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-test: regression-tests unit-tests
+test: regression-tests unit-tests-nompi unit-tests-mpi
 
 regression-tests: $(TARGET)
 	echo "Running regression tests"
 	cd test/regression; ./run_regression_tests.sh
 
-unit-tests: $(TARGET)
-	$(MAKE) -C test/unit LAPACK="$(LAPACK)" $(TESTS)
-	echo "Running unit tests"
+unit-tests-nompi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io
+	echo "Running unit tests without MPI"
 	test/unit/test_io
-	# Not testing with MPI on CI yet, disable temporarily
-	# mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+
+ifdef USE_MPI
+unit-tests-mpi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
+	echo "Running unit tests with MPI"
+	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+else
+unit-tests-mpi: $(TARGET)
+	echo "Skipping unit tests with MPI (USE_MPI not set)"
+endif
 
 ################################################################################
 ## DEPENDENCIES
