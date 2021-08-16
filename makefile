@@ -105,6 +105,10 @@ OBJS := ${SRCS:.f90=.o}
 
 VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
+TESTS = test_io
+ifdef USE_MPI
+	TESTS += test_mpi_io
+endif
 ################################################################################
 ## TARGETS
 ################################################################################
@@ -159,10 +163,11 @@ regression-tests: $(TARGET)
 	cd test/regression; ./run_regression_tests.sh
 
 unit-tests: $(TARGET)
-	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io test_mpi_io
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" $(TESTS)
 	echo "Running unit tests"
 	test/unit/test_io
-	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+	# Not testing with MPI on CI yet, disable temporarily
+	# mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
 
 ################################################################################
 ## DEPENDENCIES
