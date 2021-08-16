@@ -22,6 +22,8 @@ jobs:
           - gfortran
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       #- name: Cache benchmark data
         #uses: actions/cache@v2
@@ -39,6 +41,11 @@ jobs:
 
       - name: Install Intel MKL
         run: sudo apt-get install -y intel-mkl
+
+      - name: Build pFUnit
+        run: |
+          mkdir -p lib/pFUnit/build
+          cd lib/pFUnit/build && cmake .. && make install
 
       - name: Build
         run: |
