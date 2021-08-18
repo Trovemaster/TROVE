@@ -2,6 +2,8 @@
 ! defines different transformations of the eigenvectors given 
 ! in terms of the contracted basis state representaion. 
 !
+#include "errors.fpp"
+
 module tran
 ! set tran_debug > 2 with small vibrational bases and small expansions only
 !#define tran_debug  1 
@@ -17,6 +19,10 @@ module tran
  use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT
  use io_handler_base
  use io_handler_ftn
+#ifdef TROVE_USE_MPI_
+ use io_handler_mpi
+#endif
+ use errors
 
  private
  public read_contrind,read_eigenval, TReigenvec_unit, bset_contrT, & 
@@ -1320,6 +1326,8 @@ contains
     type(MPI_File) :: fileh, fileh_w
     integer(kind=MPI_OFFSET_KIND) :: mpioffset,read_offset,write_offset
     integer :: ierr
+    class(ioHandlerBase), allocatable :: ioHandler
+    type(ErrorType) :: err
 
     type(MPI_Datatype)                      :: gmat_block_type, psi_block_type, mat_t_block_type, mat_s_block_type, extF_block_type
     integer,dimension(9)                    :: desc_gmat, desc_mat_t, desc_mat_s, desc_psi, desc_extF
@@ -1604,48 +1612,27 @@ contains
           !
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
+          call IOStart(trim(job_is),chkptIO)
 #ifdef TROVE_USE_MPI_
-            call MPI_File_open(mpi_comm_world, job%kineteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
-            call MPI_File_set_errhandler(fileh_w, MPI_ERRORS_ARE_FATAL)
-            mpioffset = 0
-            call MPI_File_set_size(fileh_w, mpioffset, ierr)
-            !
-            if(mpi_rank .eq. 0) then
-              call MPI_File_write(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
-              call MPI_File_write(fileh_w, 'Start Kinetic part', 18, mpi_character, mpi_status_ignore, ierr)
-              !
-              treat_vibration = .false.
-              !
-              ! TODO replace with ioHandler (maybe, probably just delete)
-              !call PTstorempi_icontr_cnu(Neigenroots,fileh_w,job%IOj0matel_action)
-              !
-              if (job%vib_rot_contr) then
-                call MPI_File_write(fileh_w, 'vib-rot', 7, mpi_character, mpi_status_ignore, ierr)
-              endif
-            else
-              mpioffset = 0
-              treat_vibration = .false.
-            endif
+          allocate(ioHandler, &
+            source=ioHandlerMPI(&
+            job%kineteigen_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
+#else
+          allocate(ioHandler, &
+            source=ioHandlerFTN(&
+            job%kineteigen_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted'))
 #endif
-          else
-            call IOStart(trim(job_is),chkptIO)
-            !
-            open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%kineteigen_file)
-            write(chkptIO) 'Start Kinetic part'
-            !
-            treat_vibration = .false.
-            if(mpi_rank .eq. 0) then
-              !
-              ! TODO replace with ioHandler
-              !call PTstore_icontr_cnu(Neigenroots,ioHandler,job%IOj0matel_action)
-              !
-              if (job%vib_rot_contr) then
-                write(chkptIO) 'vib-rot'
-              endif
-            endif
+          HANDLE_ERROR(err)
+          call ioHandler%write('Start Kinetic part')
+
+          treat_vibration = .false.
+          call PTstore_icontr_cnu(Neigenroots,ioHandler,job%IOj0matel_action)
+          if (job%vib_rot_contr) then
+            call ioHandler%write('vib-rot')
           endif
-          !
+        !
         endif
         !
         rootsize = int(bset_contr(1)%Maxcontracts*(bset_contr(1)%Maxcontracts+1)/2,hik)
@@ -1690,19 +1677,9 @@ contains
           !
           task = 'rot'
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
-            if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_rot', 5, mpi_character, mpi_status_ignore, ierr)
-            call mpi_barrier(MPI_COMM_WORLD, ierr)
+          call ioHandler%write('g_rot')
             !
-            call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
-#endif
-          else
-            write(chkptIO) 'g_rot'
-            !
-            call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
-          endif
+          call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
           !
         else
           !
@@ -1726,10 +1703,6 @@ contains
 #ifdef TROVE_USE_MPI_
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
-
-          !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND),MPI_SEEK_END)
-          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
-          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
 #endif
         endif
         !
@@ -1794,13 +1767,7 @@ contains
               !
             else
               !
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-                call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
-#endif
-              else
-                write (chkptIO) mat_s
-              endif
+              call ioHandler%write(mat_s, desc_mat_s, mat_s_block_type)
               !
             endif
             !
@@ -1814,13 +1781,6 @@ contains
           read_offset = read_offset + 9*int(dimen,MPI_OFFSET_KIND)*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
-
-          write_offset = write_offset + 9*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
-          !call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
-          !write_offset = 0
-          !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
 #endif
         endif
 
@@ -1838,15 +1798,12 @@ contains
 #ifdef TROVE_USE_MPI_
             call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
             !
-            if(mpi_rank.eq.0) call MPI_File_write_shared(fileh_w, 'g_cor', 5, mpi_character, mpi_status_ignore, ierr)
-            call MPI_Barrier(MPI_COMM_WORLD, ierr)
-            !call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
+            call MPI_Barrier(MPI_COMM_WORLD, ierr) ! May no longer be needed?
 #endif
           else
             call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
-            !
-            write(chkptIO) 'g_cor'
           endif
+          call ioHandler%write('g_cor')
           !
         endif
         !
@@ -1860,9 +1817,6 @@ contains
 #ifdef TROVE_USE_MPI_
           call MPI_File_get_position(fileh, read_offset, ierr)
           call MPI_File_set_view(fileh, read_offset, mpi_byte, gmat_block_type, "native", MPI_INFO_NULL, ierr)
-
-          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
-          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
 #endif
         endif
         !
@@ -1929,13 +1883,7 @@ contains
               !
             else
               !
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-                call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
-#endif
-              else
-                write (chkptIO) mat_s
-              endif
+              call ioHandler%write(mat_s, desc_mat_s, mat_s_block_type)
               !
             endif
             !
@@ -1949,35 +1897,17 @@ contains
           read_offset = read_offset + 3*int(dimen,MPI_OFFSET_KIND)*dimen*mpi_real_size
           call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
           call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
-
-          write_offset = write_offset + 3*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
-          !call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
-          !write_offset = 0
 #endif
         endif
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
         if ((.not.job%IOmatelem_split.or.job%iswap(1)==1).and.(mpi_rank.eq.0)) then
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_write_shared(fileh_w, 'End Kinetic part', 16, mpi_character, mpi_status_ignore, ierr)
-#endif
-          else
-            write(chkptIO) 'End Kinetic part'
-          endif
+          call ioHandler%write('End Kinetic part')
         endif
         !
-        if (.not.job%vib_rot_contr) then 
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_close(fileh_w, ierr)
-#endif
-          else
-            close(chkptIO,status='keep')
-          endif
+        if (.not.job%vib_rot_contr) then
+          deallocate(ioHandler)
         endif
         !
         task = 'end'
@@ -2000,7 +1930,10 @@ contains
         call MPI_File_close(fileh, ierr)
 #endif
       else
-        close(chkptIO,status='keep')
+        ! Should this be close(iunit) instead of close(chkptIO)?
+        ! In which case, we don't want to deallocate the ioHandler (formerly chkptIO)...
+        !close(chkptIO,status='keep')
+        if (allocated(ioHandler)) deallocate(ioHandler)
       endif
       !
       ! External field part 

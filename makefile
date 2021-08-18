@@ -88,6 +88,11 @@ OBJDIR=.
 user_pot_dir=.
 TARGET=$(BINDIR)/$(EXE)
 
+MPI_SRCS = 
+ifdef USE_MPI
+	MPI_SRCS += io_handler_mpi.f90
+endif
+
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
 	mol_abcd.f90 mol_c2h4.f90 mol_c2h6.f90 mol_c3h6.f90 mol_ch3oh.f90 mol_xy.f90 \
@@ -97,11 +102,10 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	pot_xy2.f90 pot_xy3.f90 pot_xy4.f90 pot_zxy2.f90 pot_zxy3.f90 \
 	prop_xy2.f90 prop_xy2_quad.f90 prop_xy2_spinrot.f90 prop_xy2_spinspin.f90 \
 	io_handler_base.f90 io_handler_ftn.f90 \
-	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
-ifdef USE_MPI
-	SRCS += io_handler_mpi.f90
-endif
+	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90 $(MPI_SRCS)
+
 OBJS := ${SRCS:.f90=.o}
+MPI_OBJS := ${MPI_SRCS:.f90=.o}
 
 VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
@@ -133,7 +137,7 @@ ifneq ($(BINDIR),.)
 endif
 
 install-pfunit:
-	git submodule init # Make sure we have pfunit
+	git submodule update --init # Make sure we have pfunit
 	mkdir $(PFUNIT_DIR)/build
 	cd $(PFUNIT_DIR)/build; cmake ..
 	$(MAKE) -C $(PFUNIT_DIR)/build
@@ -152,17 +156,26 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-test: regression-tests unit-tests
+test: regression-tests unit-tests-nompi unit-tests-mpi
 
 regression-tests: $(TARGET)
 	echo "Running regression tests"
 	cd test/regression; ./run_regression_tests.sh
 
-unit-tests: $(TARGET)
-	$(MAKE) -C test/unit test_io test_mpi_io
-	echo "Running unit tests"
+unit-tests-nompi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io
+	echo "Running unit tests without MPI"
 	test/unit/test_io
+
+ifdef USE_MPI
+unit-tests-mpi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
+	echo "Running unit tests with MPI"
 	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+else
+unit-tests-mpi: $(TARGET)
+	echo "Skipping unit tests with MPI (USE_MPI not set)"
+endif
 
 ################################################################################
 ## DEPENDENCIES
@@ -202,7 +215,7 @@ mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
 mpi_aux.o: mpi_aux.f90 accuracy.o timer.o
-perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o
+perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o io_handler_base.o io_handler_ftn.o $(MPI_OBJS)
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o

@@ -1,10 +1,32 @@
 #include "errors.fpp"
 
+#define MPI_WRAPPER(function, handle, obj, size, mytype, status, err) \
+select type(obj); \
+    type is (integer(ik)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (integer(hik)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (real); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (real(rk)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (real(ark)); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (complex); \
+      call function(handle, obj, size, mytype, status, err); \
+    type is (character(len=*)); \
+      call function(handle, obj, size, mytype, status, err); \
+    class default; \
+      write(*,*) 'Not covered'; \
+end select
+
+
 module io_handler_mpi
   use mpi_f08
   use mpi_aux
   use io_handler_base
   use errors
+  use accuracy, only : rk, ark, ik, hik
 
   implicit none
 
@@ -143,7 +165,7 @@ module io_handler_mpi
         byteSize = sizeof(object)
         mpiType = MPI_DOUBLE_COMPLEX
       type is (character(len=*))
-        byteSize = sizeof(object)
+        byteSize = len(object) * sizeof('a')
         mpiType = MPI_CHARACTER
       class default
         print *, "ERROR: Unknown type"
@@ -173,7 +195,7 @@ module io_handler_mpi
 
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, object, length, mpiType, &
+      MPI_WRAPPER(MPI_File_write, this%fileh, object, length, mpiType, &
                           MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
@@ -207,7 +229,7 @@ module io_handler_mpi
 
       call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, object, globalSize, mpiType, &
+      MPI_WRAPPER(MPI_File_write, this%fileh, object, globalSize, mpiType, &
                           MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
@@ -245,7 +267,7 @@ module io_handler_mpi
       call MPI_File_set_view(this%fileh, this%offset, mpiType, block_type, &
                              'native', MPI_INFO_NULL, ierr)
       ! Write array in parallel
-      call MPI_File_write_all(this%fileh, object, size(object), mpiType, &
+      MPI_WRAPPER(MPI_File_write_all, this%fileh, object, size(object), mpiType, &
                               MPI_STATUS_IGNORE, ierr)
       ! Offset by size of array and end bookend integer
       this%offset = this%offset + arrSizeBytes + 4
@@ -282,7 +304,7 @@ module io_handler_mpi
       ! Seek to byte after bookend
       call MPI_File_seek_shared(this%fileh, this%offset, MPI_SEEK_SET, ierr)
       ! Write array in parallel
-      call MPI_File_write_ordered(this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
+      MPI_WRAPPER(MPI_File_write_ordered,this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
       ! Offset by size of array and end bookend integer
       this%offset = this%offset + arrSizeBytes + 4
       ! Ensure all file pointers point to end of array
