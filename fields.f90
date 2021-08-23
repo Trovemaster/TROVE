@@ -6538,7 +6538,7 @@ end subroutine check_read_save_none
          !
          kindex = 0 ; kindex(imode) = 1
          !
-         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Ncoords,kindex,q_eq,step,irho)
+         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Nmodes,kindex,q_eq,step,irho)
          !
          !chi2 = MLcoordinate_transform_func(q2,size(chi2),dir)
          !

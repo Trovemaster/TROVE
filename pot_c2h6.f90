@@ -2116,18 +2116,11 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(c123,src(14:15))
       dst(16:17) = matmul(c123,src(16:17))
       !
-      !!!! changed to agree with mo_c2h6 tau-11
-      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
-      !!!! 
-      !dst(18) = src(18)
+      !!!! remember that 
+      !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      !!!! src(18) = 1 + cos(3 tau)
       !
-      do while(dst(18) < 0.0_ark) 
-            dst(18) = dst(18) + 4.0_ark*pi
-      enddo
-      !
-      do while(dst(18) > 4.0_ark*pi) 
-            dst(18) = dst(18) - 4.0_ark*pi
-      enddo
+      dst(18) = src(18)
       !    
     case (4) !sxy(+)/(14)(26)(35)(ab)* 
       !
@@ -2144,16 +2137,9 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(16:17) = matmul(sxy,src(14:15))
       !
       !!!!!
-      dst(18) =  4.0_ark*pi - src(18)
+      !dst(18) =  4.0_ark*pi - src(18)
       !!!!!
-      !dst(18) = src(18)
-      !
-      do while(dst(18) < 0.0_ark) 
-            dst(18) = dst(18) + 4.0_ark*pi
-      enddo
-      do while(dst(18) > 4.0_ark*pi) 
-            dst(18) = dst(18) - 4.0_ark*pi
-      enddo
+      dst(18) = src(18)
      !
     case (7) ! C(-)/(132)(456)
       !
@@ -2187,15 +2173,10 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(18) = src(18)
       !
     case(37) !E'
-       dst(1:17) = src(1:17)
-       dst(18) = src(18) + 2.0_ark*pi
-       do while(dst(18) < 0.0_ark) 
-            dst(18) = dst(18) + 4.0_ark*pi
-       enddo
-       do while(dst(18) > 4.0_ark*pi) 
-            dst(18) = dst(18) - 4.0_ark*pi
-       enddo
-       !
+      !
+      dst(1:18) = src(1:18)
+      !dst(18) = src(18) + 2.0_ark*pi
+      !
     end select
     !
     if (all(tn(ioper,:)/=0)) then
@@ -2284,7 +2265,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
        tau36 = tau36 + 2.0_ark*pi
     endif
     !
-    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
     !
     tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -2438,6 +2419,9 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   f = 0
   !
   do ioper = 1,36
+    !
+    ! for xi(18) = 1.0_ark + cos(3.0_ark*rhobar) 
+    ! all operations on xi18->xi18
     !
     call ML_symmetry_transformation_C2H6_G36(ioper,18,xi,chi(:,ioper))
     !
