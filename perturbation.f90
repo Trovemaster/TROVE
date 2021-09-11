@@ -16626,6 +16626,7 @@ module perturbation
           integer(ik),intent(out)     :: chkptIO
           character(len=4) :: jchar
           character(len=cl) :: filename,job_is
+          logical :: ifopened
             !
             write(job_is,"('dump matrix')")
             !
@@ -16634,6 +16635,10 @@ module perturbation
             write(jchar, '(i4)') islice
             !
             filename = trim(suffix)//trim(adjustl(jchar))//'_dump.chk'
+            !
+            inquire(chkptIO,opened=ifopened)
+            !
+            if (ifopened) return
             !
             if (append.and.dump) then 
               open(chkptIO,form='unformatted',action='readwrite',position='rewind',status='old',file=filename)
