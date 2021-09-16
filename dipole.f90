@@ -2014,6 +2014,9 @@ contains
       !
       call TimerStop('Half_linestrength')
       !
+      A_einst_cache = -1.0_rk
+      nu_if_cache = 0
+      !
       ! Loop over final states
       !
       !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state) shared(A_einst_cache,nu_if_cache)
@@ -2022,9 +2025,6 @@ contains
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
           stop 'dipole-vecF - out of memory'
       end if
-      !
-      A_einst_cache = 0
-      nu_if_cache = 0
       !
       !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,quantaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
       !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,&
