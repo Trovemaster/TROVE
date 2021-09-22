@@ -663,10 +663,10 @@ module fields
    logical :: kinetic_defined
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
    character(len=wl) :: w
-   real(rk)    :: lfact,f_t
-   integer(ik) :: i,iatom,imode,natoms,alloc,Nparam,iparam,i_t,i_tt
+   real(rk)    :: lfact,f_t, func_coef
+   integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
-   character(len=4) :: char_j
+   character(len=4) :: char_j, func_name
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
    character(len=cl) :: my_fmt !format for I/O specification
@@ -2111,7 +2111,60 @@ module fields
          !
          basis_defined = .true.
          !
-       case("EQUIL","EQUILIBRIUM")
+         !
+       case("BASIC-FUNCTION")
+         !
+          if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: BASIC-FUNCTION cannot appear before NMODES')") 
+            stop 'FLinput - BASIC-FUNCTION defined befor NMODES'
+            !
+         endif
+         !
+         imode = 0
+         ifunc = 0
+         allocate(molec%basic_function_list(Nmodes))
+         call read_line(eof) ; if (eof) exit 
+         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
+            call readu(w)
+            call readi(imode)
+            call readi(numfunc)     
+            allocate(molec%basic_function_list(imode)%mode_set(numfunc))
+            do i = 1, numfunc
+              call read_line(eof); if (eof) exit
+              call readi(ifunc)
+              call readi(numterms)
+              molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
+              allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
+              do j = 1, numterms
+                call readi(out_expo)
+                call readu(func_name)
+                call readf(func_coef)
+                call readi(in_expo)
+                select case(trim(func_name))
+                  case("I") 
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+                  case("SIN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
+                  case("COS")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                  case("TAN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
+                  case("CSC")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+                  case("COT")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+                  case default 
+                end select
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
+              enddo 
+            enddo
+            call read_line(eof); if (eof) exit
+         enddo 
+         !
+      case("EQUIL","EQUILIBRIUM")
          !
          if (Nmodes==0) then 
             !
@@ -19396,34 +19449,27 @@ end subroutine check_read_save_none
                   !
                   select case(job%bset(imode)%coord_kinet)
                     !
-                    case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+                    case('AUTOMATIC', 'BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
                       !
                       g2(imode) = 0
                       !
                       do j = 1, size(fl%ifromsparse)
                         !
                         g2_term = 0
-                        !write(*,*) fl%ifromsparse(j)
                         !
                         powers = powers_from_index(Nmodes, fl%ifromsparse(j))
-                        !
-                        !write(*,*) "powers ", powers, " end"
                         !
                         if (powers(nu_i)/= ipower) cycle
                         g2_term  =  fl%field(j,irho_eq)
                         !
                         do i = 1, size(powers)
                           if(i == nu_i) cycle
-                          !write(*,*) "eq ", trove%chi_eq(nu_i)   
-                          !write(*,*) "powers(I) ", powers(i)
-                          !write(*,*) "MLcoord", MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i))
                           !
                           g2_term = g2_term*MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i)) 
                           !
                         enddo
                         !
                         g2(imode) = g2(imode) + g2_term
-                        !write(*,*) "nu_i ", nu_i, " g2(imode) ", g2(imode) 
                         !
                      enddo
                      !    
@@ -26078,7 +26124,49 @@ end subroutine check_read_save_none
      powers(Nmodes) = remaining_order
      !
   end function powers_from_index 
+  !
+  subroutine  calc_func_I(x, y)
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function), intent(in) :: obj
+    y = x !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
+  end subroutine  calc_func_I  
+  !
+  subroutine calc_func_sin(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = sin(x) !(obj%coeff*(sin(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_sin
+  !
+  subroutine calc_func_cos(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = cos(x) !(obj%coeff*(cos(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_cos
+  !
+  subroutine calc_func_tan(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = tan(x) !(obj%coeff*(tan(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_tan
+  !
+  subroutine calc_func_cot(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y =1.0_ark/tan(x)! (obj%coeff*(1.0/tan(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_cot
+  !
+  subroutine  calc_func_csc(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
+  end subroutine calc_func_csc
+  !
 
-
-  end module fields
+end module fields
 

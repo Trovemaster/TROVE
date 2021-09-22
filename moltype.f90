@@ -114,7 +114,31 @@ module moltype
 !        real,         intent(in)  :: a
 !    END function interface1
 !END INTERFACE
-
+  !
+  type basic_function
+      procedure(calc_func), pointer, nopass  :: func_pointer
+      real(ark) :: coeff
+      real(ark) :: inner_expon
+      real(ark) :: outer_expon
+  end type 
+  !
+  type ragged_array_lvl_1
+      type(basic_function), allocatable :: func_set(:)
+      integer :: num_terms
+  end type ragged_array_lvl_1
+  !
+  type ragged_array_lvl_2
+      type(ragged_array_lvl_1), allocatable :: mode_set(:)
+  end type ragged_array_lvl_2
+  !
+  abstract interface
+      subroutine calc_func(x, y)
+        use accuracy
+        implicit none
+        real(ark) , intent(in) :: x 
+        real(ark) , intent(inout) :: y
+      end subroutine 
+  end interface
   !
   type MoleculeT
      !
@@ -151,6 +175,8 @@ module moltype
      !
      !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
      !
+     type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
+     logical  :: basic_function_set = .false.
   end type MoleculeT
   !
   type xyT

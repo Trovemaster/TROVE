@@ -3264,12 +3264,14 @@ end subroutine polintark
   ! Defining the rho-coordinate 
   !
   function MLcoord_direct(x,itype,imode,iorder)  result(v)
-
+   implicit none 
    real(ark),intent(in)   ::  x
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    integer(ik),optional   :: iorder
-   real(ark)              ::  rhoe,v,amorse
+   integer(ik)            :: i 
+   real(ark)              :: rhoe,v,amorse
+   real(ark)              :: y,z
      !
      if (verbose>=6) write(out,"(/'MLcoord_direct/start')") 
      !
@@ -3347,7 +3349,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC')
         !
         v = x
         !
@@ -3384,6 +3386,19 @@ end subroutine polintark
             v = x**(iorder-2)
             !
           end select 
+          !
+          case('AUTOMATIC')
+            if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+            v = 1.0_ark
+            if(iorder == 0)  return
+            if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+            y = 1.0_ark
+            do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+              !
+              z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*(molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+              call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+              v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+            end do      
           !
         case('BOND-LENGTH')
           !
