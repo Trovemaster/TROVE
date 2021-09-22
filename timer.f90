@@ -587,7 +587,7 @@ module timer
       !
       if (memory_now>memory_limit) then 
         !
-        write(out,"(\'Run out of memory: check your input memory')")
+        write(out,"(/'Run out of memory: check your input memory')")
         write(out,"('Trying to allocate array ',a)") name
         write(out,"('Array dimension = ',i0,' array size =  ',f20.2,' Gb')") hsize_,size_
         call MemoryReport
