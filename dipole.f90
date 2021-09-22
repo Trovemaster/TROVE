@@ -1048,7 +1048,7 @@ contains
                       normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
     real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_
-    real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time
+    real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time,memory_now_
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
     logical        :: passed,passed_
     logical        :: vector_diagonal = .false.
@@ -1373,11 +1373,25 @@ contains
     !
     f_t = f_t/real(nlevels,rk)
     !
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now*1.3_rk)/f_t,hik)))
+    ! memory now + expected 
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
+    memory_now_ = memory_now+real((2*dimenmax+dimenmax_+dimenmax*nJ*sym%Maxdegen*3+dimenmax*(jmax+1)+&
+                  dimenmax*nJ*sym%Maxdegen*3)*8+&                  
+                  nlevels*4+dimenmax+2*(dimenmax+1)*(jmax+1)*4)/1024.0_rk**3
+                  !
+    ! decrease by some factor just in case
+    !
+    memory_now_ = memory_now_*1.2_rk
+    !
+    ! How many vectors we can afford 
+    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now_)/f_t,hik)))
+    !
+    if (job%verbose>=5) call MemoryReport
+    !
+    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  spent = ',f12.5,&
+                        'Gb;  available = ',f12.5,&
                         'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),&
-                        memory_limit-memory_now,ram_size_max
+                        memory_now_,memory_limit-memory_now_,ram_size_max
     !
     do jind = 1, nJ
        !
