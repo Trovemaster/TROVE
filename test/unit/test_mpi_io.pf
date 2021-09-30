@@ -21,7 +21,7 @@ module test_mpi_io
   integer,external :: INDXL2G
 
   logical :: is_mpi_initialised = .false.
-  integer, parameter :: totalTestCount = 2
+  integer, parameter :: totalTestCount = 2 ! CHANGE ME TO NUMBER OF TESTS
   integer :: currentTestCount = 0
 
   contains
