@@ -35,7 +35,7 @@ ifeq ($(strip $(COMPILER)),intel)
 ##########
 else ifeq ($(strip $(COMPILER)),gfortran)
 	FC = gfortran
-	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-none -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
 	GCC_VERSION_GT_10 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
 	ifeq "${GCC_VERSION_GT_10}" "1"

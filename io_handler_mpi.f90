@@ -195,8 +195,7 @@ module io_handler_mpi
 
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      MPI_WRAPPER(MPI_File_write, this%fileh, object, length, mpiType, &
-                          MPI_STATUS_IGNORE, ierr)
+      MPI_WRAPPER(MPI_File_write, this%fileh, object, length, mpiType, MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
     end subroutine
@@ -229,8 +228,7 @@ module io_handler_mpi
 
       call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
-      MPI_WRAPPER(MPI_File_write, this%fileh, object, globalSize, mpiType, &
-                          MPI_STATUS_IGNORE, ierr)
+      MPI_WRAPPER(MPI_File_write, this%fileh, object, globalSize, mpiType, MPI_STATUS_IGNORE, ierr)
       call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                           MPI_STATUS_IGNORE, ierr)
     end subroutine
@@ -267,8 +265,7 @@ module io_handler_mpi
       call MPI_File_set_view(this%fileh, this%offset, mpiType, block_type, &
                              'native', MPI_INFO_NULL, ierr)
       ! Write array in parallel
-      MPI_WRAPPER(MPI_File_write_all, this%fileh, object, size(object), mpiType, &
-                              MPI_STATUS_IGNORE, ierr)
+      MPI_WRAPPER(MPI_File_write_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
       ! Offset by size of array and end bookend integer
       this%offset = this%offset + arrSizeBytes + 4
       ! Reset file view back to regular ol bytes
