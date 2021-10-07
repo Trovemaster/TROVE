@@ -12,7 +12,7 @@ pot_user = pot_H2O_Conway
 
 COMPILER ?= intel
 MODE ?= release
-USE_MPI ?= 
+USE_MPI ?= 0
 
 # Intel
 #######
@@ -22,12 +22,14 @@ ifeq ($(strip $(COMPILER)),intel)
 
 	ifeq ($(strip $(MODE)),debug)
 		FFLAGS += -O0 -g -traceback
+	else ifeq ($(strip $(MODE)),ci)
+		FFLAGS += -O0 -g
 	else
 		FFLAGS += -O3
 	endif
 
 	LAPACK = -mkl=parallel
-	ifdef USE_MPI
+	ifneq ($(strip $(USE_MPI)),0)
 		LAPACK += -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 	endif
 
@@ -44,7 +46,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	ifeq ($(strip $(MODE)),debug)
-		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace
+		FFLAGS += -O0 -g -Wall -Wextra -fbacktrace -finit-local-zero -ffpe-trap=invalid,zero,overflow # -fbounds-check -fcheck=all
 	else ifeq ($(strip $(MODE)),ci)
 		FFLAGS += -O2 -g
 	else
@@ -52,7 +54,8 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
-	ifdef USE_MPI
+	ifneq ($(strip $(USE_MPI)),0)
+		# Assume we're using openmpi with gfortran
 		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
 else
@@ -61,7 +64,7 @@ endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
-ifdef USE_MPI
+ifneq ($(strip $(USE_MPI)),0)
 	FC = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
