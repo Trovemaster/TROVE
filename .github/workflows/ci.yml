@@ -102,4 +102,4 @@ jobs:
                source /opt/intel/oneapi/mkl/latest/env/vars.sh
             fi
           fi
-          make COMPILER=${COMPILER} test
+          make COMPILER=${COMPILER} USE_MPI=${USE_MPI} test
