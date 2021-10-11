@@ -92,7 +92,7 @@ user_pot_dir=.
 TARGET=$(BINDIR)/$(EXE)
 
 MPI_SRCS = 
-ifdef USE_MPI
+ifneq ($(strip $(USE_MPI)),0)
 	MPI_SRCS += io_handler_mpi.f90
 endif
 
