@@ -1614,16 +1614,13 @@ contains
           !
           call IOStart(trim(job_is),chkptIO)
 #ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
-            source=ioHandlerMPI(&
-            job%kineteigen_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+          allocate(ioHandlerMPI::ioHandler)
 #else
-          allocate(ioHandler, &
-            source=ioHandlerFTN(&
-            job%kineteigen_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+          allocate(ioHandlerFTN::ioHandler)
 #endif
+          call ioHandler%open(&
+            job%kineteigen_file, err, &
+            action='write', position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
           call ioHandler%write('Start Kinetic part')
 
