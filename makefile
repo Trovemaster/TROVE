@@ -170,7 +170,7 @@ unit-tests-nompi: $(TARGET)
 	echo "Running unit tests without MPI"
 	test/unit/test_io
 
-ifdef USE_MPI
+ifneq ($(strip $(USE_MPI)),0)
 unit-tests-mpi: $(TARGET)
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
