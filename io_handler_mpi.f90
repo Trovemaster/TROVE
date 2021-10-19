@@ -327,13 +327,9 @@ module io_handler_mpi
         length = 1
       end select
 
-      call MPI_File_get_position(this%fileh, offset, ierr)
-      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
-                             'native', MPI_INFO_NULL, ierr)
+      call MPI_File_seek(this%fileh, int(4,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
       MPI_WRAPPER(MPI_File_read_all, this%fileh, object, length, mpiType, MPI_STATUS_IGNORE, ierr)
-      call MPI_File_get_position(this%fileh, offset, ierr)
-      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
-                             'native', MPI_INFO_NULL, ierr)
+      call MPI_File_seek(this%fileh, int(4,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
     end subroutine
 
     subroutine read1DArrayMPI(this, object)

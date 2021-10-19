@@ -333,8 +333,8 @@ module test_mpi_io
         form=form, access=access, status=status, position=position)
 
       write(iounit) true_integer ! int
-      !write(iounit) true_real ! double
-      !write(iounit) true_complex ! complex
+      write(iounit) true_real ! double
+      write(iounit) true_complex ! complex
       !write(iounit) true_str ! string
       !write(iounit) array2D ! 2D array
       !write(iounit) true_integer ! int
@@ -354,11 +354,11 @@ module test_mpi_io
     call ioHandler%read(in_integer)
     @assertTrue(in_integer == true_integer)
 
-    !call ioHandler%read(in_real)
-    !@assertTrue(in_real == true_real)
+    call ioHandler%read(in_real)
+    @assertTrue(in_real == true_real)
 
-    !call ioHandler%read(in_complex)
-    !@assertTrue(in_complex == true_complex)
+    call ioHandler%read(in_complex)
+    @assertTrue(in_complex == true_complex)
 
     !call ioHandler%read(in_str)
     !@assertTrue(in_str == true_str)
