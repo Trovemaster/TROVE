@@ -64,11 +64,12 @@ module io_handler_base
       class(ioHandlerBase) :: this
       class(*), dimension(:,:), intent(out) :: object
     end subroutine
-    subroutine read2DArrayDistBlacs(this, object, block_type)
+    subroutine read2DArrayDistBlacs(this, object, descr, block_type)
       import ioHandlerBase
       import MPI_Datatype
       class(ioHandlerBase) :: this
       class(*), dimension(:,:), intent(out) :: object
+      integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type
     end subroutine
   end interface

@@ -242,11 +242,12 @@ module io_handler_ftn
       end select
     end subroutine
 
-    subroutine read2DArrayDistBlacsFTN(this, object, block_type)
+    subroutine read2DArrayDistBlacsFTN(this, object, descr, block_type)
       ! Write arrays distributed as columns using co_distr_data
 
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(out) :: object
+      integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type
 
       ! Using the fortran io_handler means array isn't distributed, just write normally

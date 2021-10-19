@@ -21,7 +21,7 @@ module test_mpi_io
   integer,external :: INDXL2G
 
   logical :: is_mpi_initialised = .false.
-  integer, parameter :: totalTestCount = 3 ! CHANGE ME TO NUMBER OF TESTS
+  integer, parameter :: totalTestCount = 4 ! CHANGE ME TO NUMBER OF TESTS
   integer :: currentTestCount = 0
 
   contains
@@ -278,7 +278,73 @@ module test_mpi_io
   end subroutine testMPIWritingColumnDistArray
 
   @test
-  subroutine testMPIReading(this)
+  subroutine testMPIReadScalars(this)
+    class(TestMPI), intent(inout) :: this
+    type(ioHandlerMPI) :: ioHandler
+
+    real :: true_real = 4.0, in_real
+    complex :: true_complex = (5.0, 1.0), in_complex
+    integer :: true_integer = 5, in_integer
+    character (len=11) :: true_str = "test string", in_str
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer :: ierr, rank, allocinfo = 0
+    type(ErrorType) :: err
+
+    ! Set up MPI
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    ! Write test file
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='write', file=fname, &
+        form=form, access=access, status=status, position=position)
+
+      write(iounit) true_integer ! int
+      write(iounit) true_real ! double
+      write(iounit) true_complex ! complex
+      write(iounit) true_str ! string
+
+      if (stat == 0) close(iounit)
+    endif
+
+    call MPI_Barrier(MPI_COMM_WORLD)
+
+    ! Read test file
+    call ioHandler%open(fname, err, \
+      action='read', form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    call ioHandler%read(in_integer)
+    @assertTrue(in_integer == true_integer)
+
+    call ioHandler%read(in_real)
+    @assertTrue(in_real == true_real)
+
+    call ioHandler%read(in_complex)
+    @assertTrue(in_complex == true_complex)
+
+    call ioHandler%read(in_str)
+    @assertTrue(in_str == true_str)
+
+    call ioHandler%close()
+
+    if(rank == 0) then
+      ! Cleanup test file
+      open(newunit=iounit, iostat=stat, action='read', file=fname)
+      if (stat == 0) close(iounit, status='delete')
+    endif
+
+  end subroutine
+
+  @test
+  subroutine testMPIReadBlasDistArray(this)
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
@@ -289,10 +355,7 @@ module test_mpi_io
     integer :: array2D_descr(9) = 0
     type(MPI_Datatype) :: array2D_block_type
 
-    real :: true_real = 4.0, in_real
-    complex :: true_complex = (5.0, 1.0), in_complex
     integer :: true_integer = 5, in_integer
-    character (len=11) :: true_str = "test string", in_str
 
     integer :: iounit, stat
     character(len=*), parameter :: fname = "test.dat"
@@ -333,13 +396,10 @@ module test_mpi_io
         form=form, access=access, status=status, position=position)
 
       write(iounit) true_integer ! int
-      write(iounit) true_real ! double
-      write(iounit) true_complex ! complex
-      !write(iounit) true_str ! string
-      !write(iounit) array2D ! 2D array
-      !write(iounit) true_integer ! int
-      !write(iounit) array2D ! 2D array
-      !write(iounit) true_integer ! int
+      write(iounit) array2D ! 2D array
+      write(iounit) true_integer ! int
+      write(iounit) array2D ! 2D array
+      write(iounit) true_integer ! int
 
       if (stat == 0) close(iounit)
     endif
@@ -354,46 +414,37 @@ module test_mpi_io
     call ioHandler%read(in_integer)
     @assertTrue(in_integer == true_integer)
 
-    call ioHandler%read(in_real)
-    @assertTrue(in_real == true_real)
+    call ioHandler%read(in_array2D, array2D_descr, array2D_block_type)
+    do i=1,size(in_array2D,1)
+      do j=1,size(in_array2D,2)
+        gi = INDXL2G (i, MB, myprow, RSRC, nprow)
+        gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
+        @assertTrue(in_array2D(i,j) == array2DNCol*(gi-1) + (gj))
+      end do
+    end do
 
-    call ioHandler%read(in_complex)
-    @assertTrue(in_complex == true_complex)
+    call ioHandler%read(true_integer)
+    @assertTrue(in_integer == true_integer)
 
-    !call ioHandler%read(in_str)
-    !@assertTrue(in_str == true_str)
+    call ioHandler%read(in_array2D, array2D_descr, array2D_block_type)
+    do i=1,size(in_array2D,1)
+      do j=1,size(in_array2D,2)
+        gi = INDXL2G (i, MB, myprow, RSRC, nprow)
+        gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
+        @assertTrue(in_array2D(i,j) == array2DNCol*(gi-1) + (gj))
+      end do
+    end do
 
-    !!call ioHandler%read(in_array2D, array2D_block_type)
-    !!do i=1,size(in_array2D,1)
-      !!do j=1,size(in_array2D,2)
-        !!gi = INDXL2G (i, MB, myprow, RSRC, nprow)
-        !!gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
-        !!@assertTrue(in_array2D(i,j) == array2DNCol*(gi-1) + (gj))
-      !!end do
-    !!end do
-
-    !!call ioHandler%read(true_integer)
-    !!@assertTrue(in_integer == true_integer)
-
-    !!call ioHandler%read(in_array2D, array2D_block_type)
-    !!do i=1,size(in_array2D,1)
-      !!do j=1,size(in_array2D,2)
-        !!gi = INDXL2G (i, MB, myprow, RSRC, nprow)
-        !!gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
-        !!@assertTrue(in_array2D(i,j) == array2DNCol*(gi-1) + (gj))
-      !!end do
-    !!end do
-
-    !!call ioHandler%read(true_integer)
-    !!@assertTrue(in_integer == true_integer)
+    call ioHandler%read(true_integer)
+    @assertTrue(in_integer == true_integer)
 
     call ioHandler%close()
 
-    !if(rank == 0) then
-      !! Cleanup test file
-      !open(newunit=iounit, iostat=stat, action='read', file=fname)
-      !if (stat == 0) close(iounit, status='delete')
-    !endif
+    if(rank == 0) then
+      ! Cleanup test file
+      open(newunit=iounit, iostat=stat, action='read', file=fname)
+      if (stat == 0) close(iounit, status='delete')
+    endif
 
   end subroutine
 end module

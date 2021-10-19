@@ -1716,7 +1716,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
+              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,desc_gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1828,7 +1828,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
+              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,desc_gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -2072,7 +2072,7 @@ contains
           !
           if (job%IOextF_divide) then
             !
-            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,extF_block_type,ierror)
+            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,desc_extF,extF_block_type,ierror)
             !
             if (ierror==1) cycle
             !
@@ -2341,13 +2341,14 @@ contains
       end subroutine divided_slice_write_mpi
       !       
       !
-      subroutine divided_slice_read(islice,name,suffix,N,field,block_type,ierror)
+      subroutine divided_slice_read(islice,name,suffix,N,field,field_descr,block_type,ierror)
         !
         implicit none
         !
         integer(ik),intent(in)      :: islice
         character(len=*),intent(in) :: name,suffix
         integer(ik),intent(in)      :: N
+        integer, intent(in)         :: field_descr(9)
         type(MPI_Datatype),intent(in) :: block_type
         real(rk),intent(out)        :: field(N,N)
         integer(ik),intent(out)     :: ierror
@@ -2387,7 +2388,7 @@ contains
           stop 'divided_slice_read - in slice -  header missing or wrong'
         end if
         !
-        call ioHandler%read(field, extF_block_type)
+        call ioHandler%read(field, field_descr, block_type)
         !
         call ioHandler%read(buf(1:ilen))
         if ( trim(buf(1:ilen))/=trim(name) ) then

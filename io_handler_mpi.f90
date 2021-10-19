@@ -344,34 +344,35 @@ module io_handler_mpi
       stop "reading 2D array with MPI IO without specifying distribution not supported"
     end subroutine
 
-    subroutine read2DArrayDistBlacsMPI(this, object, block_type)
+    subroutine read2DArrayDistBlacsMPI(this, object, descr, block_type)
       class(ioHandlerMPI) :: this
       class(*), intent(out) :: object(:,:)
-      !integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
+      integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type ! subarray type outputed from co_block_type_init
-
       type(MPI_Datatype) :: mpiType
-      
-      integer :: byteSize, globalSize, ierr
-      integer(kind = MPI_OFFSET_KIND) :: offset
+      integer :: byteSize, arrSizeBytes, globalSize, ierr
+      integer(kind = MPI_OFFSET_KIND) :: offset, disp
 
-      !integer :: dims(2)
+      integer :: dims(2)
 
-      !dims(:) = descr(3:4)
-      !globalSize = dims(1)*dims(2)
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
 
-      !call getMPIVarInfo(object(1,1), byteSize, mpiType)
-      !arrSizeBytes = globalSize*byteSize
+      dims(:) = descr(3:4)
+      globalSize = dims(1)*dims(2)
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      arrSizeBytes = globalSize*byteSize
 
       call MPI_File_get_position(this%fileh, offset, ierr)
+      ! Get initial displacement in file
+      call MPI_File_get_byte_offset(this%fileh, offset, disp, ierr)
       ! Set file view including offsetting bookend
       call MPI_File_set_view(this%fileh, offset+4, mpiType, block_type, &
                              'native', MPI_INFO_NULL, ierr)
       ! Read array in parallel
       MPI_WRAPPER(MPI_File_read_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
-      call MPI_File_get_position(this%fileh, offset, ierr)
-      ! Reset file view back to regular ol bytes
-      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
+      ! Reset file view back to regular ol bytes, including bookends and array we've just written
+      call MPI_File_set_view(this%fileh, disp+4+arrSizeBytes+4, MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
     end subroutine
 
