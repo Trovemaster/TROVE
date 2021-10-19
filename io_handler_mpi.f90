@@ -271,8 +271,9 @@ module io_handler_mpi
       ! Write array in parallel
       MPI_WRAPPER(MPI_File_write_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
       ! Reset file view
-      call MPI_File_set_view(this%fileh, disp+4+arrSizeBytes+4, MPI_BYTE, MPI_BYTE, &
+      call MPI_File_set_view(this%fileh, int(0,MPI_OFFSET_KIND), MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
+      call MPI_File_seek(this%fileh, disp+4+arrSizeBytes+4, MPI_SEEK_SET)
     end subroutine
 
     subroutine write2DArrayDistColumnMPI(this, object, mdimen)
@@ -379,8 +380,9 @@ module io_handler_mpi
       ! Read array in parallel
       MPI_WRAPPER(MPI_File_read_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
       ! Reset file view back to regular ol bytes, including bookends and array we've just written
-      call MPI_File_set_view(this%fileh, disp+4+arrSizeBytes+4, MPI_BYTE, MPI_BYTE, &
+      call MPI_File_set_view(this%fileh, int(0,MPI_OFFSET_KIND), MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
+      call MPI_File_seek(this%fileh, disp+4+arrSizeBytes+4, MPI_SEEK_SET)
     end subroutine
 
 end module
