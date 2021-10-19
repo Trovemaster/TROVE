@@ -44,6 +44,7 @@ module io_handler_mpi
     procedure :: readScalar => readScalarMPI
     procedure :: read1DArray => read1DArrayMPI
     procedure :: read2DArray => read2DArrayMPI
+    procedure :: read2DArrayDistBlacs => read2DArrayDistBlacsMPI
     procedure :: open
     procedure :: close
     final :: destroyIoHandlerMPI
@@ -113,7 +114,7 @@ module io_handler_mpi
       end if
 
       print *, "MPI: Opening ", trim(fname), " with ", \
-        trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
+        trim(action), " ", trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
 
       ! FIXME use above flags to change open behaviour
 
@@ -122,7 +123,7 @@ module io_handler_mpi
       ! FIXME is there a better way to set MPI_MODE_* flags?
       if(trim(action) == 'write') then
         call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_WRONLY + MPI_MODE_CREATE, MPI_INFO_NULL, this%fileh, ierr)
-      else
+      else if(trim(action) == 'read') then
         call MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, this%fileh, ierr)
       endif
 
@@ -223,6 +224,7 @@ module io_handler_mpi
       this%offset = this%offset + 4 + arrSizeBytes + 4
 
       if (this%rank /= 0) then
+        call MPI_File_seek(this%fileh, this%offset, MPI_SEEK_SET, ierr)
         return
       end if
 
@@ -311,30 +313,70 @@ module io_handler_mpi
     subroutine readScalarMPI(this, object)
       class(ioHandlerMPI) :: this
       class(*), intent(out) :: object
-      print *, "reading object to MPI IO"
-      ! Example object handling
+
+      integer :: byteSize, ierr, length
+      integer(kind = MPI_OFFSET_KIND) :: offset
+      type(MPI_Datatype) :: mpiType
+
+      call getMPIVarInfo(object, byteSize, mpiType)
+
       select type(object)
-      type is (integer)
-        print *, object
-      type is (real)
-        print *, object
-      type is (complex)
-        print *, object
+      type is (character(len=*))
+        length = len(object)
       class default
-        print *, "Unsupported type!"
+        length = 1
       end select
+
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
+                             'native', MPI_INFO_NULL, ierr)
+      MPI_WRAPPER(MPI_File_read_all, this%fileh, object, length, mpiType, MPI_STATUS_IGNORE, ierr)
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
+                             'native', MPI_INFO_NULL, ierr)
     end subroutine
 
     subroutine read1DArrayMPI(this, object)
       class(ioHandlerMPI) :: this
       class(*), dimension(:), intent(out) :: object
-      print *, "reading 1D array to MPI IO"
+      stop "reading 1D array with MPI IO not supported"
     end subroutine
 
     subroutine read2DArrayMPI(this, object)
       class(ioHandlerMPI) :: this
       class(*), dimension(:,:), intent(out) :: object
-      print *, "reading 2D array to MPI IO"
+      stop "reading 2D array with MPI IO without specifying distribution not supported"
+    end subroutine
+
+    subroutine read2DArrayDistBlacsMPI(this, object, block_type)
+      class(ioHandlerMPI) :: this
+      class(*), intent(out) :: object(:,:)
+      !integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
+      type(MPI_Datatype), intent(in) :: block_type ! subarray type outputed from co_block_type_init
+
+      type(MPI_Datatype) :: mpiType
+      
+      integer :: byteSize, globalSize, ierr
+      integer(kind = MPI_OFFSET_KIND) :: offset
+
+      !integer :: dims(2)
+
+      !dims(:) = descr(3:4)
+      !globalSize = dims(1)*dims(2)
+
+      !call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      !arrSizeBytes = globalSize*byteSize
+
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      ! Set file view including offsetting bookend
+      call MPI_File_set_view(this%fileh, offset+4, mpiType, block_type, &
+                             'native', MPI_INFO_NULL, ierr)
+      ! Read array in parallel
+      MPI_WRAPPER(MPI_File_read_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      ! Reset file view back to regular ol bytes
+      call MPI_File_set_view(this%fileh, offset+4, MPI_BYTE, MPI_BYTE, &
+                             'native', MPI_INFO_NULL, ierr)
     end subroutine
 
 end module

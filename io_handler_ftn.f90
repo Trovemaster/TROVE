@@ -21,6 +21,7 @@ module io_handler_ftn
     procedure :: readScalar => readScalarFTN
     procedure :: read1DArray => read1DArrayFTN
     procedure :: read2DArray => read2DArrayFTN
+    procedure :: read2DArrayDistBlacs => read2DArrayDistBlacsFTN
     procedure :: open
     procedure :: close
     final :: destroyIoHandlerFTN
@@ -239,5 +240,16 @@ module io_handler_ftn
       class default
         print *, "Unsupported type!"
       end select
+    end subroutine
+
+    subroutine read2DArrayDistBlacsFTN(this, object, block_type)
+      ! Write arrays distributed as columns using co_distr_data
+
+      class(ioHandlerFTN) :: this
+      class(*), dimension(:,:), intent(out) :: object
+      type(MPI_Datatype), intent(in) :: block_type
+
+      ! Using the fortran io_handler means array isn't distributed, just write normally
+      call this%read2DArray(object)
     end subroutine
 end module

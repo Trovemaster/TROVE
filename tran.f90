@@ -1716,11 +1716,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-                call divided_slice_read_mpi(islice,'g_rot',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
-              else
-                call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,ierror)
-              endif
+              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1832,11 +1828,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-                call divided_slice_read_mpi(islice,'g_cor',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
-              else
-                call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,ierror)
-              endif
+              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -2080,11 +2072,7 @@ contains
           !
           if (job%IOextF_divide) then
             !
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-              call divided_slice_read_mpi(imu,'extF',job%extmat_suffix,dimen,extF_me,extF_block_type,ierror)
-            else
-              call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,ierror)
-            endif
+            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,extF_block_type,ierror)
             !
             if (ierror==1) cycle
             !
@@ -2353,17 +2341,18 @@ contains
       end subroutine divided_slice_write_mpi
       !       
       !
-      subroutine divided_slice_read(islice,name,suffix,N,field,ierror)
+      subroutine divided_slice_read(islice,name,suffix,N,field,block_type,ierror)
         !
         implicit none
         !
         integer(ik),intent(in)      :: islice
         character(len=*),intent(in) :: name,suffix
         integer(ik),intent(in)      :: N
+        type(MPI_Datatype),intent(in) :: block_type
         real(rk),intent(out)        :: field(N,N)
         integer(ik),intent(out)     :: ierror
         character(len=4)            :: jchar
-        integer(ik)                 :: chkptIO
+        class(ioHandlerBase), allocatable :: ioHandler
         character(len=cl)           :: buf,filename,job_is
         integer(ik)                 :: ilen
         logical                     :: ifopened
@@ -2378,25 +2367,35 @@ contains
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=15)
+#ifdef TROVE_USE_MPI_
+          allocate(ioHandler, &
+            source=ioHandlerMPI(&
+            job%kineteigen_file, err, &
+            action='read', position='rewind', status='old', form='unformatted'))
+#else
+          allocate(ioHandler, &
+            source=ioHandlerFTN(&
+            job%kineteigen_file, err, &
+            action='read', position='rewind', status='old', form='unformatted'))
+#endif
         !
         ilen = LEN_TRIM(name)
         !
-        read(chkptIO) buf(1:ilen)
+        call ioHandler%read(buf(1:ilen))
         if ( trim(buf(1:ilen))/=trim(name) ) then
           write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
           stop 'divided_slice_read - in slice -  header missing or wrong'
         end if
         !
-        read(chkptIO) field
+        call ioHandler%read(field, extF_block_type)
         !
-        read(chkptIO) buf(1:ilen)
+        call ioHandler%read(buf(1:ilen))
         if ( trim(buf(1:ilen))/=trim(name) ) then
           write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
           stop 'divided_slice_read - in slice -  header missing or wrong'
         end if
         !
-        close(chkptIO)
+        deallocate(ioHandler)
         !
         return
         !

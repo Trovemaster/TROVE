@@ -11,10 +11,11 @@ module io_handler_base
     procedure(write2DArray), deferred :: write2DArray
     procedure(write2DArrayDistBlacs), deferred :: write2DArrayDistBlacs
     procedure(write2DArrayDistColumn), deferred :: write2DArrayDistColumn
-    generic :: read => readScalar, read1DArray, read2DArray
+    generic :: read => readScalar, read1DArray, read2DArray, read2DArrayDistBlacs
     procedure(readScalar), deferred :: readScalar
     procedure(read1DArray), deferred :: read1DArray
     procedure(read2DArray), deferred :: read2DArray
+    procedure(read2DArrayDistBlacs), deferred :: read2DArrayDistBlacs
   end type ioHandlerBase
 
   abstract interface
@@ -62,6 +63,13 @@ module io_handler_base
       import ioHandlerBase
       class(ioHandlerBase) :: this
       class(*), dimension(:,:), intent(out) :: object
+    end subroutine
+    subroutine read2DArrayDistBlacs(this, object, block_type)
+      import ioHandlerBase
+      import MPI_Datatype
+      class(ioHandlerBase) :: this
+      class(*), dimension(:,:), intent(out) :: object
+      type(MPI_Datatype), intent(in) :: block_type
     end subroutine
   end interface
 
