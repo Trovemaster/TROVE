@@ -16286,14 +16286,12 @@ module perturbation
           !
 #ifdef TROVE_USE_MPI_
           allocate(ioHandler, &
-            source=ioHandlerMPI(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+            source=ioHandlerMPI(job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted'))
 #else
           allocate(ioHandler, &
-            source=ioHandlerFTN(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+            source=ioHandlerFTN(job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted'))
 #endif
           HANDLE_ERROR(err)
 
@@ -17936,10 +17934,10 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
 
+          ! TODO should this just be fortran writer?
           allocate(ioHandler, &
-            source=ioHandlerFTN(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+            source=ioHandlerFTN(job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted'))
           HANDLE_ERROR(err)
           call ioHandler%write('Start Kinetic part')
           !
@@ -38357,9 +38355,8 @@ end subroutine combinations
           call IOStart(trim(job_is),chkptIO)
           !
           allocate(ioHandler, &
-            source=ioHandlerFTN(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted'))
+            source=ioHandlerFTN(job%kinetmat_file, err, action='write',&
+            position='rewind', status='replace', form='unformatted'))
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')
