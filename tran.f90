@@ -1673,25 +1673,14 @@ contains
         !
         if (job%verbose>=3) write(out,"(/' Transform grot to J0-repres...')")
         !
-        if (.not.job%IOmatelem_split) then
-          !
-          task = 'rot'
-          !
-          call ioHandler%write('g_rot')
-            !
-          call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
-          !
-        else
-          !
+        if (job%IOmatelem_split) then
           task = 'top'
-          !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            call restore_rot_kinetic_matrix_elements_mpi(jrot,treat_vibration,task,fileh)
-          else
-            call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,iunit)
-          endif
-          !
+        else
+          task = 'rot'
+          call ioHandler%write('g_rot')
         endif
+
+        call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task)
         !
         if (job%verbose>=5) call TimerStart('J0-convertion for g_rot')
         !
