@@ -113,12 +113,14 @@ module io_handler_mpi
         accessVal = 'sequential'
       end if
 
-      print *, "MPI: Opening ", trim(fname), " with ", \
-        trim(action), " ", trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
-
       ! FIXME use above flags to change open behaviour
 
       call MPI_Comm_rank(MPI_COMM_WORLD, this%rank, ierr)
+
+      if(this%rank == 0) then
+        print *, "MPI: Opening ", trim(fname), " with ", \
+          trim(action), " ", trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
+      endif
 
       ! FIXME is there a better way to set MPI_MODE_* flags?
       if(trim(action) == 'write') then
@@ -181,7 +183,6 @@ module io_handler_mpi
       type(MPI_Datatype) :: mpiType
 
       call getMPIVarInfo(object, byteSize, mpiType)
-      this%offset = this%offset + 4+byteSize+4
 
       select type(object)
       type is (character(len=*))
@@ -190,15 +191,15 @@ module io_handler_mpi
         length = 1
       end select
 
-      if (this%rank /= 0) then
-        return
+      if (this%rank == 0) then
+        call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+        MPI_WRAPPER(MPI_File_write, this%fileh, object, length, mpiType, MPI_STATUS_IGNORE, ierr)
+        call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+      else
+        call MPI_File_seek(this%fileh, int(4+byteSize+4,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
       end if
-
-      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
-                          MPI_STATUS_IGNORE, ierr)
-      MPI_WRAPPER(MPI_File_write, this%fileh, object, length, mpiType, MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, byteSize, 1, MPI_INTEGER, &
-                          MPI_STATUS_IGNORE, ierr)
     end subroutine
 
     subroutine write1DArrayMPI(this, object)
@@ -221,18 +222,15 @@ module io_handler_mpi
       call getMPIVarInfo(object(1,1), byteSize, mpiType)
       arrSizeBytes = globalSize*byteSize
 
-      this%offset = this%offset + 4 + arrSizeBytes + 4
-
-      if (this%rank /= 0) then
-        call MPI_File_seek(this%fileh, this%offset, MPI_SEEK_SET, ierr)
-        return
+      if (this%rank == 0) then
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+        MPI_WRAPPER(MPI_File_write, this%fileh, object, globalSize, mpiType, MPI_STATUS_IGNORE, ierr)
+        call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
+                            MPI_STATUS_IGNORE, ierr)
+      else
+        call MPI_File_seek(this%fileh, int(4+arrSizeBytes+4,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
       end if
-
-      call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
-                          MPI_STATUS_IGNORE, ierr)
-      MPI_WRAPPER(MPI_File_write, this%fileh, object, globalSize, mpiType, MPI_STATUS_IGNORE, ierr)
-      call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
-                          MPI_STATUS_IGNORE, ierr)
     end subroutine
 
     subroutine write2DArrayDistBlacsMPI(this, object, descr, block_type)
@@ -244,6 +242,7 @@ module io_handler_mpi
       type(MPI_Datatype) :: mpiType
       integer :: byteSize, globalSize, ierr
       integer(kind = MPI_OFFSET_KIND) :: arrSizeBytes
+      integer(kind = MPI_OFFSET_KIND) :: offset, disp
 
       integer :: dims(2)
 
@@ -253,6 +252,10 @@ module io_handler_mpi
       call getMPIVarInfo(object(1,1), byteSize, mpiType)
       arrSizeBytes = globalSize*byteSize
 
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      ! Get initial displacement in file
+      call MPI_File_get_byte_offset(this%fileh, offset, disp, ierr)
+
       if (this%rank == 0) then
         ! write first and last bookends containing array size in bytes
         call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
@@ -261,17 +264,14 @@ module io_handler_mpi
         call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                             MPI_STATUS_IGNORE, ierr)
       endif
-      ! Offset first bookend
-      this%offset = this%offset + 4
-      ! Set file view including offset
-      call MPI_File_set_view(this%fileh, this%offset, mpiType, block_type, &
+
+      ! Set file view including offsetting bookend
+      call MPI_File_set_view(this%fileh, disp+4, mpiType, block_type, &
                              'native', MPI_INFO_NULL, ierr)
       ! Write array in parallel
       MPI_WRAPPER(MPI_File_write_all, this%fileh, object, size(object), mpiType, MPI_STATUS_IGNORE, ierr)
-      ! Offset by size of array and end bookend integer
-      this%offset = this%offset + arrSizeBytes + 4
-      ! Reset file view back to regular ol bytes
-      call MPI_File_set_view(this%fileh, this%offset, MPI_BYTE, MPI_BYTE, &
+      ! Reset file view
+      call MPI_File_set_view(this%fileh, disp+4+arrSizeBytes+4, MPI_BYTE, MPI_BYTE, &
                              'native', MPI_INFO_NULL, ierr)
     end subroutine
 
@@ -283,11 +283,17 @@ module io_handler_mpi
       type(MPI_Datatype) :: mpiType
       integer :: byteSize, globalSize, ierr, writestat
       integer(kind = MPI_OFFSET_KIND) :: arrSizeBytes
+      integer(kind = MPI_OFFSET_KIND) :: offset, disp
 
       globalSize = mdimen**2
 
       call getMPIVarInfo(object(1,1), byteSize, mpiType)
       arrSizeBytes = globalSize*byteSize
+
+      ! Get individual pointer offset
+      call MPI_File_get_position(this%fileh, offset, ierr)
+      ! Get initial displacement in file
+      call MPI_File_get_byte_offset(this%fileh, offset, disp, ierr)
 
       ! TODO what if format isn't sequential??
       if (this%rank == 0) then
@@ -298,16 +304,17 @@ module io_handler_mpi
         call MPI_File_write(this%fileh, arrSizeBytes, 1, MPI_INTEGER, &
                             MPI_STATUS_IGNORE, ierr)
       endif
-      ! Offset first bookend
-      this%offset = this%offset + 4
-      ! Seek to byte after bookend
-      call MPI_File_seek_shared(this%fileh, this%offset, MPI_SEEK_SET, ierr)
+
+      ! Set shared pointer to individual pointer + bookend
+      call MPI_File_seek_shared(this%fileh, offset+4, MPI_SEEK_SET, ierr)
       ! Write array in parallel
       MPI_WRAPPER(MPI_File_write_ordered,this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
-      ! Offset by size of array and end bookend integer
-      this%offset = this%offset + arrSizeBytes + 4
-      ! Ensure all file pointers point to end of array
-      call MPI_File_seek(this%fileh, this%offset, MPI_SEEK_SET, ierr)
+      ! Skip over last bookend
+      call MPI_File_seek_shared(this%fileh, int(4,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
+
+      ! Set individual pointer to match shared
+      call MPI_File_get_position_shared(this%fileh, offset, ierr)
+      call MPI_File_seek(this%fileh, offset, MPI_SEEK_SET, ierr)
     end subroutine
 
     subroutine readScalarMPI(this, object)
