@@ -9890,7 +9890,9 @@ module perturbation
     !
     do jrow = 1,irow
        !
-       if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
+       if (present(no_diagonalization)) then
+         if (no_diagonalization.and.jrow/=irow ) cycle
+       endif
        !
        cnu_j(:) = PT%contractive_space(:,jrow)
        !

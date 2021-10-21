@@ -93,12 +93,16 @@ module io_handler_ftn
         accessVal = 'sequential'
       end if
 
-      print *, "FTN: Opening ", trim(fname), " with ", \
-        trim(positionVal), " ", trim(statusVal), " ", trim(formVal), " ", trim(accessVal)
+      print *, "FTN: Opening ", trim(fname), " with ", &
+        trim(action), " ", &
+        trim(positionVal), " ", &
+        trim(statusVal), " ", &
+        trim(formVal), " ", &
+        trim(accessVal)
 
-      open(newunit=this%iounit, action=action,\
-        form=formVal, position=positionVal, status=statusVal, file=fname,\
-        iostat=this%stat)
+      open(newunit=this%iounit, action=action, &
+        form=formVal, position=positionVal, status=statusVal, & 
+        access=accessVal, file=fname, iostat=this%stat)
 
       if (this%stat == 0) then
         this%isOpen = .true.
@@ -118,7 +122,7 @@ module io_handler_ftn
     subroutine writeScalarFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), intent(in) :: object
-      print *, "writing scalar object with FTN IO"
+
       select type(object)
       type is (integer)
         write(this%iounit) object
@@ -127,16 +131,16 @@ module io_handler_ftn
       type is (complex)
         write(this%iounit) object
       type is (character(len=*))
-        write(this%iounit) object
+        write(this%iounit) trim(object)
       class default
-        print *, "ERROR: Tried to write unsupported type"
+        stop "ioHandlerFTN%writeScalarFTN: Tried to write unsupported type"
       end select
     end subroutine
 
     subroutine write1DArrayFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), dimension(:), intent(in) :: object
-      print *, "writing 1D array with FTN IO"
+
       select type(object)
       type is (integer)
         write(this%iounit) object
@@ -145,14 +149,14 @@ module io_handler_ftn
       type is (complex)
         write(this%iounit) object
       class default
-        print *, "ERROR: Tried to write unsupported type"
+        stop "ioHandlerFTN%write1DArrayFTN: Tried to write unsupported type"
       end select
     end subroutine
 
     subroutine write2DArrayFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(in) :: object
-      print *, "writing 2D array with FTN IO"
+
       select type(object)
       type is (integer(int32))
         write(this%iounit) object
@@ -167,7 +171,7 @@ module io_handler_ftn
       type is (complex(kind=8))
         write(this%iounit) object
       class default
-        print *, "ERROR: Tried to write unsupported type"
+        stop "ioHandlerFTN%write2DArrayFTN: Tried to write unsupported type"
       end select
     end subroutine
 
@@ -197,60 +201,82 @@ module io_handler_ftn
     subroutine readScalarFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), intent(out) :: object
-      print *, "reading object with FTN IO"
+
       select type(object)
-      type is (integer)
+      type is (integer(int32))
         read(this%iounit) object
-      type is (real)
+      type is (integer(int64))
         read(this%iounit) object
-      type is (complex)
+      type is (real(real32))
+        read(this%iounit) object
+      type is (real(real64))
+        read(this%iounit) object
+      type is (complex(kind=4))
+        read(this%iounit) object
+      type is (complex(kind=8))
+        read(this%iounit) object
+      type is (character(len=*))
+        !print *, object
+        !stop "DEBUG readScalarFTN"
         read(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        stop "ioHandlerFTN%readScalarFTN: Tried to read unsupported type"
       end select
     end subroutine
 
     subroutine read1DArrayFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), dimension(:), intent(out) :: object
-      print *, "reading 1D array with FTN IO"
+
       select type(object)
-      type is (integer)
+      type is (integer(int32))
         read(this%iounit) object
-      type is (real)
+      type is (integer(int64))
         read(this%iounit) object
-      type is (complex)
+      type is (real(real32))
+        read(this%iounit) object
+      type is (real(real64))
+        read(this%iounit) object
+      type is (complex(kind=4))
+        read(this%iounit) object
+      type is (complex(kind=8))
         read(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        stop "ioHandlerFTN%read1DArrayFTN: Tried to read unsupported type"
       end select
     end subroutine
 
     subroutine read2DArrayFTN(this, object)
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(out) :: object
-      print *, "reading 2D array with FTN IO"
+
       select type(object)
-      type is (integer)
+      type is (integer(int32))
         read(this%iounit) object
-      type is (real)
+      type is (integer(int64))
         read(this%iounit) object
-      type is (complex)
+      type is (real(real32))
+        read(this%iounit) object
+      type is (real(real64))
+        read(this%iounit) object
+      type is (complex(kind=4))
+        read(this%iounit) object
+      type is (complex(kind=8))
         read(this%iounit) object
       class default
-        print *, "Unsupported type!"
+        stop "ioHandlerFTN%read2DArrayFTN: Tried to read unsupported type"
       end select
     end subroutine
 
     subroutine read2DArrayDistBlacsFTN(this, object, descr, block_type)
-      ! Write arrays distributed as columns using co_distr_data
+      ! read arrays distributed as columns using co_distr_data
 
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(out) :: object
       integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type
 
-      ! Using the fortran io_handler means array isn't distributed, just write normally
+      ! Using the fortran io_handler means array isn't distributed, just read normally
       call this%read2DArray(object)
     end subroutine
 end module

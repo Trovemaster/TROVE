@@ -1326,7 +1326,8 @@ contains
     type(MPI_File) :: fileh, fileh_w
     integer(kind=MPI_OFFSET_KIND) :: mpioffset,read_offset,write_offset
     integer :: ierr
-    class(ioHandlerBase), allocatable :: ioHandler
+    class(ioHandlerBase), allocatable :: kineteigenHandler
+    class(ioHandlerBase), allocatable :: kinetmatHandler
     type(ErrorType) :: err
 
     type(MPI_Datatype)                      :: gmat_block_type, psi_block_type, mat_t_block_type, mat_s_block_type, extF_block_type
@@ -1614,21 +1615,21 @@ contains
           !
           call IOStart(trim(job_is),chkptIO)
 #ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
+          allocate(kineteigenHandler, &
             source=ioHandlerMPI(job%kineteigen_file, err, action='write', &
             position='rewind', status='replace', form='unformatted'))
 #else
-          allocate(ioHandler, &
+          allocate(kineteigenHandler, &
             source=ioHandlerFTN(job%kineteigen_file, err, action='write', &
             position='rewind', status='replace', form='unformatted'))
 #endif
           HANDLE_ERROR(err)
-          call ioHandler%write('Start Kinetic part')
+          call kineteigenHandler%write('Start Kinetic part')
 
           treat_vibration = .false.
-          call PTstore_icontr_cnu(Neigenroots,ioHandler,job%IOj0matel_action)
+          call PTstore_icontr_cnu(Neigenroots,kineteigenHandler,job%IOj0matel_action)
           if (job%vib_rot_contr) then
-            call ioHandler%write('vib-rot')
+            call kineteigenHandler%write('vib-rot')
           endif
         !
         endif
@@ -1671,10 +1672,20 @@ contains
           task = 'top'
         else
           task = 'rot'
-          call ioHandler%write('g_rot')
+          call kineteigenHandler%write('g_rot')
         endif
 
-        call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task)
+#ifdef TROVE_USE_MPI_
+        allocate(kinetmatHandler, &
+          source=ioHandlerMPI(job%kinetmat_file, err, action='read', &
+          position='rewind', status='old', form='unformatted'))
+#else
+        allocate(kinetmatHandler, &
+          source=ioHandlerFTN(job%kinetmat_file, err, action='read', &
+          position='rewind', status='old', form='unformatted'))
+#endif
+
+        call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,kinetmatHandler)
         !
         if (job%verbose>=5) call TimerStart('J0-convertion for g_rot')
         !
@@ -1700,7 +1711,7 @@ contains
               !
             else
               !
-              call ioHandler%read(gmat, desc_gmat, gmat_block_type)
+              call kineteigenHandler%read(gmat, desc_gmat, gmat_block_type)
               !
             endif
             !
@@ -1729,23 +1740,13 @@ contains
               !
             else
               !
-              call ioHandler%write(mat_s, desc_mat_s, mat_s_block_type)
+              call kineteigenHandler%write(mat_s, desc_mat_s, mat_s_block_type)
               !
             endif
             !
           enddo
           !
         enddo
-        !
-        ! Reset view to flat file
-        if ((.not.job%IOmatelem_split) .and. blacs_size.gt.1) then
-#ifdef TROVE_USE_MPI_
-          read_offset = read_offset + 9*int(dimen,MPI_OFFSET_KIND)*dimen*mpi_real_size
-          call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
-#endif
-        endif
-
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_rot')
         !
@@ -1755,8 +1756,8 @@ contains
         if (.not.job%IOmatelem_split) then
           !
           task = 'cor'
-          call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task)
-          call ioHandler%write('g_cor')
+          call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,kinetmatHandler)
+          call kineteigenHandler%write('g_cor')
           !
         endif
         !
@@ -1786,7 +1787,7 @@ contains
               !
             else
               !
-              call ioHandler%read(gmat,desc_gmat,gmat_block_type)
+              call kineteigenHandler%read(gmat,desc_gmat,gmat_block_type)
               !
             endif
             !
@@ -1812,7 +1813,7 @@ contains
                 call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s,desc_mat_s,mat_s_block_type)
               endif
             else
-              call ioHandler%write(mat_s, desc_mat_s, mat_s_block_type)
+              call kineteigenHandler%write(mat_s, desc_mat_s, mat_s_block_type)
             endif
             !
           enddo
@@ -1821,22 +1822,23 @@ contains
         !
         if (job%verbose>=5) call TimerStop('J0-convertion for g_cor')
         !
-        if ((.not.job%IOmatelem_split.or.job%iswap(1)==1).and.(mpi_rank.eq.0)) then
-          call ioHandler%write('End Kinetic part')
+        if ((.not.job%IOmatelem_split.or.job%iswap(1)==1)) then
+          call kineteigenHandler%write('End Kinetic part')
         endif
         !
         task = 'end'
         !
-        call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task)
+        call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,kinetmatHandler)
         !
         if (allocated(gmat)) deallocate(gmat)
+        if (allocated(kinetmatHandler)) deallocate(kinetmatHandler)
         call ArrayStop('gmat-fields')
         !
         if (job%verbose>=3) write(out,"(' ...done!')")
         !
       endif 
       !
-      if (allocated(ioHandler)) deallocate(ioHandler)
+      if (allocated(kineteigenHandler)) deallocate(kineteigenHandler)
       !
       ! External field part 
       !
@@ -2190,18 +2192,18 @@ contains
         !
 #ifdef TROVE_USE_MPI_
           allocate(ioHandler, &
-            source=ioHandlerMPI(job%kinetmat_file, err, action='write', &
+            source=ioHandlerMPI(filename, err, action='write', &
             position='rewind', status='replace', form='unformatted'))
 #else
           allocate(ioHandler, &
-            source=ioHandlerFTN(job%kinetmat_file, err, action='write', &
+            source=ioHandlerFTN(filename, err, action='write', &
             position='rewind', status='replace', form='unformatted'))
 #endif
-        call ioHandler%write(trim(name))
+        call ioHandler%write(name)
         !
         call ioHandler%write(field, field_desc, block_type)
         !
-        call ioHandler%write(trim(name))
+        call ioHandler%write(name)
         !
         close(chkptIO)
         !
@@ -2235,14 +2237,12 @@ contains
         !
 #ifdef TROVE_USE_MPI_
           allocate(ioHandler, &
-            source=ioHandlerMPI(&
-            job%kineteigen_file, err, &
-            action='read', position='rewind', status='old', form='unformatted'))
+            source=ioHandlerMPI(filename, err, action='read', &
+            position='rewind', status='old', form='unformatted'))
 #else
           allocate(ioHandler, &
-            source=ioHandlerFTN(&
-            job%kineteigen_file, err, &
-            action='read', position='rewind', status='old', form='unformatted'))
+            source=ioHandlerFTN(filename, err, action='read', &
+            position='rewind', status='old', form='unformatted'))
 #endif
         !
         ilen = LEN_TRIM(name)
@@ -2384,14 +2384,14 @@ contains
 
  ! Here we restore the vibrational (J=0) matrix elements of the rotational kinetic part G_rot and G_cor
  !
- subroutine restore_rot_kinetic_matrix_elements(jrot,treat_vibration,kinetic_part)
+ subroutine restore_rot_kinetic_matrix_elements(jrot,treat_vibration,kinetic_part,fileHandler)
   !
   implicit none
   !
   integer(ik),intent(in)       :: jrot
   logical,intent(in)           :: treat_vibration
   character(len=3),intent(in)  :: kinetic_part
-  class(ioHandlerBase), allocatable :: ioHandler
+  class(ioHandlerBase), intent(in) :: fileHandler
   type(ErrorType) :: err
   !
   integer(ik)        :: iclasses,alloc,ilevel,ib,max_deg_size,nclasses,islice
@@ -2402,6 +2402,7 @@ contains
   real(rk),allocatable :: mat_t(:)
   !
   nclasses = bset_contr(1)%nclasses
+
   !
   select case (kinetic_part)
   !
@@ -2409,23 +2410,13 @@ contains
      !
      job_is ='Vib. matrix elements of the rot. kinetic'
      !
-#ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
-            source=ioHandlerMPI(job%kinetmat_file, err, action='read', &
-            position='rewind', status='old', form='unformatted'))
-#else
-          allocate(ioHandler, &
-            source=ioHandlerFTN(job%kinetmat_file, err, action='read', &
-            position='rewind', status='old', form='unformatted'))
-#endif
-     !
-     call ioHandler%read(buf18)
+     call fileHandler%read(buf18)
      if (buf18/='Start Kinetic part') then
        write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus header: ',a)") job%kinetmat_file,buf18
        stop 'PTcontracted_matelem_class - bogus file format'
      end if
      !
-     call ioHandler%read(ncontr_t)
+     call fileHandler%read(ncontr_t)
      !
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
        write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
@@ -2442,13 +2433,13 @@ contains
      allocate (imat_t(0:nclasses,ncontr_t),stat=alloc)
      call ArrayStart('contractive_space',alloc,size(imat_t),kind(imat_t))
      !
-     call ioHandler%read(buf18(1:10))
+     call fileHandler%read(buf18(1:10))
      if (buf18(1:10)/='icontr_cnu') then
        write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
        stop 'restore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
      end if
      !
-     call ioHandler%read(imat_t(0:nclasses,1:ncontr_t))
+     call fileHandler%read(imat_t(0:nclasses,1:ncontr_t))
      !
      if (job%vib_rot_contr) then
         !
@@ -2458,13 +2449,13 @@ contains
         !
      endif
      !
-     call ioHandler%read(buf18(1:11))
+     call fileHandler%read(buf18(1:11))
      if (buf18(1:11)/='icontr_ideg') then
        write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
        stop 'restore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
      end if
      !
-     call ioHandler%read(imat_t(0:nclasses,1:ncontr_t))
+     call fileHandler%read(imat_t(0:nclasses,1:ncontr_t))
      !
      deallocate(imat_t)
      !
@@ -2474,7 +2465,7 @@ contains
      !
      if (trim(kinetic_part)=='rot') then
        !
-       call ioHandler%read(buf18(1:4))
+       call fileHandler%read(buf18(1:4))
        if (buf18(1:4)/='g_ro') then
          write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") trim(job%kinetmat_file),buf18(1:5)
          !
@@ -2495,7 +2486,7 @@ contains
      !
    case('cor')
      !
-     call ioHandler%read(buf18(1:5))
+     call fileHandler%read(buf18(1:5))
      if (buf18(1:5)/='g_cor') then
        write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,buf18(1:5)
        stop 'restore_rot_kinetic_matrix_elements_posix - in file -  g_cor missing'
@@ -2511,13 +2502,11 @@ contains
         !
      endif
      !
-     call ioHandler%read(buf18(1:4))
+     call fileHandler%read(buf18(1:4))
      if (buf18(1:4)/='hvib'.and.buf18(1:3)/='End'.and.buf18(1:4)/='vib-') then
        write (out,"(' Vib. kinetic checkpoint file ',a,': hvib, vib-rot, End is missing ',a)") job%kinetmat_file,buf18(1:4)
        stop 'restore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
      end if
-     !
-     deallocate (ioHandler)
      !
    end select
    !
