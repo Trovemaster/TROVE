@@ -22,6 +22,7 @@ module tran
 #ifdef TROVE_USE_MPI_
  use io_handler_mpi
 #endif
+ use io_factory
  use errors
 
  private
@@ -1614,16 +1615,11 @@ contains
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           !
           call IOStart(trim(job_is),chkptIO)
-#ifdef TROVE_USE_MPI_
-          allocate(kineteigenHandler, &
-            source=ioHandlerMPI(job%kineteigen_file, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#else
-          allocate(kineteigenHandler, &
-            source=ioHandlerFTN(job%kineteigen_file, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#endif
+
+          call openFile(kineteigenHandler, job%kineteigen_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
+
           call kineteigenHandler%write('Start Kinetic part')
 
           treat_vibration = .false.
@@ -1675,15 +1671,9 @@ contains
           call kineteigenHandler%write('g_rot')
         endif
 
-#ifdef TROVE_USE_MPI_
-        allocate(kinetmatHandler, &
-          source=ioHandlerMPI(job%kinetmat_file, err, action='read', &
-          position='rewind', status='old', form='unformatted'))
-#else
-        allocate(kinetmatHandler, &
-          source=ioHandlerFTN(job%kinetmat_file, err, action='read', &
-          position='rewind', status='old', form='unformatted'))
-#endif
+        call openFile(kinetmatHandler, job%kinetmat_file, err, action='read', &
+          position='rewind', status='old', form='unformatted')
+        HANDLE_ERROR(err)
 
         call restore_rot_kinetic_matrix_elements(jrot,treat_vibration,task,kinetmatHandler)
         !
@@ -2190,15 +2180,10 @@ contains
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-#ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
-            source=ioHandlerMPI(filename, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#else
-          allocate(ioHandler, &
-            source=ioHandlerFTN(filename, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#endif
+        call openFile(ioHandler, filename, err, action='write', &
+          position='rewind', status='replace', form='unformatted')
+        HANDLE_ERROR(err)
+
         call ioHandler%write(name)
         !
         call ioHandler%write(field, field_desc, block_type)
@@ -2235,15 +2220,9 @@ contains
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-#ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
-            source=ioHandlerMPI(filename, err, action='read', &
-            position='rewind', status='old', form='unformatted'))
-#else
-          allocate(ioHandler, &
-            source=ioHandlerFTN(filename, err, action='read', &
-            position='rewind', status='old', form='unformatted'))
-#endif
+        call openFile(ioHandler, filename, err, action='read', &
+          position='rewind', status='old', form='unformatted')
+        HANDLE_ERROR(err)
         !
         ilen = LEN_TRIM(name)
         !
@@ -2402,7 +2381,6 @@ contains
   real(rk),allocatable :: mat_t(:)
   !
   nclasses = bset_contr(1)%nclasses
-
   !
   select case (kinetic_part)
   !

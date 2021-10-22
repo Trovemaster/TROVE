@@ -17,7 +17,7 @@ select type(obj); \
     type is (character(len=*)); \
       call function(handle, obj, size, mytype, status, err); \
     class default; \
-      write(*,*) 'Not covered'; \
+      stop 'MPI: tried to handle unsupported type'; \
 end select
 
 
@@ -31,7 +31,7 @@ module io_handler_mpi
   implicit none
 
   type, extends(ioHandlerBase) :: ioHandlerMPI
-    integer (kind=MPI_Offset_kind) :: bookendBytes
+    integer (kind=MPI_Offset_kind) :: bookendBytes = 0
     integer :: rank = -1
     type(MPI_File) :: fileh
     logical :: isOpen = .false.
@@ -52,25 +52,11 @@ module io_handler_mpi
     final :: destroyIoHandlerMPI
   end type ioHandlerMPI
 
-  interface ioHandlerMPI
-    procedure :: newIoHandlerMPI
-  end interface ioHandlerMPI
-
   private
 
   public :: ioHandlerMPI
 
   contains
-
-    type(ioHandlerMPI) function newIoHandlerMPI(fname, err, action, position, status, form, access) result(this)
-      ! writer MPI constructor
-      character (len = *), intent(in) :: fname
-      type(ErrorType), intent(inout) :: err
-      character (len = *), intent(in) :: action
-      character (len = *), intent(in), optional :: position, status, form, access
-
-      call this%open(fname, err, action, position, status, form, access)
-    end function
 
     subroutine destroyIoHandlerMPI(this)
       type(ioHandlerMPI) :: this
@@ -360,8 +346,21 @@ module io_handler_mpi
 
     subroutine read2DArrayMPI(this, object)
       class(ioHandlerMPI) :: this
-      class(*), dimension(:,:), intent(out) :: object
-      stop "reading 2D array with MPI IO without specifying distribution not supported"
+      class(*), intent(out) :: object(:,:)
+
+      type(MPI_Datatype) :: mpiType
+      integer :: byteSize, globalSize, ierr, length, arrSizeBytes
+
+      integer(kind = MPI_OFFSET_KIND) :: offset
+
+      globalSize = size(object)
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType)
+      arrSizeBytes = globalSize*byteSize
+
+      call MPI_File_seek(this%fileh, this%bookendBytes, MPI_SEEK_CUR, ierr)
+      MPI_WRAPPER(MPI_File_read_all, this%fileh, object, globalSize, mpiType, MPI_STATUS_IGNORE, ierr)
+      call MPI_File_seek(this%fileh, this%bookendBytes, MPI_SEEK_CUR, ierr)
     end subroutine
 
     subroutine read2DArrayDistBlacsMPI(this, object, descr, block_type)

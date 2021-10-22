@@ -15,6 +15,7 @@ module perturbation
   use symmetry , only : SymmetryInitialize,sym
   use me_numer
   use diag
+  use io_factory
   use io_handler_base
   use io_handler_ftn
 #ifdef TROVE_USE_MPI_
@@ -16286,15 +16287,8 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-#ifdef TROVE_USE_MPI_
-          allocate(ioHandler, &
-            source=ioHandlerMPI(job%kinetmat_file, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#else
-          allocate(ioHandler, &
-            source=ioHandlerFTN(job%kinetmat_file, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
-#endif
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')
@@ -17936,11 +17930,10 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
 
-          ! TODO should this just be fortran writer?
-          allocate(ioHandler, &
-            source=ioHandlerFTN(job%kinetmat_file, err, action='write', &
-            position='rewind', status='replace', form='unformatted'))
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
+
           call ioHandler%write('Start Kinetic part')
           !
           ! store the bookkeeping information about the contr. basis set
@@ -38356,9 +38349,8 @@ end subroutine combinations
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-          allocate(ioHandler, &
-            source=ioHandlerFTN(job%kinetmat_file, err, action='write',&
-            position='rewind', status='replace', form='unformatted'))
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')

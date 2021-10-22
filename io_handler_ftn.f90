@@ -27,30 +27,11 @@ module io_handler_ftn
     final :: destroyIoHandlerFTN
   end type ioHandlerFTN
 
-  ! Constructor
-  interface ioHandlerFTN
-    procedure :: newIoHandlerFTN
-  end interface ioHandlerFTN
-
   private
 
   public :: ioHandlerFTN
 
   contains
-
-    type(ioHandlerFTN) function newIoHandlerFTN(fname, err, action, position, status, form, access) result(this)
-      ! writer FTN constructor
-      type(ErrorType), intent(inout) :: err
-      character (len = *), intent(in) :: fname
-      character (len = *), intent(in) :: action
-      character (len = *), intent(in), optional :: position, status, form, access
-
-      this%isOpen = .false.
-      this%stat = 0
-      this%iounit = 0
-
-      call this%open(fname, err, action, position, status, form, access)
-    end function
 
     subroutine destroyIoHandlerFTN(this)
       type(ioHandlerFTN) :: this
