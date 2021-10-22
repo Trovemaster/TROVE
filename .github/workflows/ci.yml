@@ -69,7 +69,15 @@ jobs:
         run: sudo apt-get install -y intel-mkl
 
       - name: Build pFUnit
-        run: make COMPILER=${COMPILER} install-pfunit
+        run: |
+          if [[ -d "/opt/intel/oneapi" ]]; then
+            source /opt/intel/oneapi/compiler/latest/env/vars.sh
+            source /opt/intel/oneapi/setvars.sh
+            if [ ${USE_MPI} = 1 ]; then
+               source /opt/intel/oneapi/mkl/latest/env/vars.sh
+            fi
+          fi
+          make COMPILER=${COMPILER} install-pfunit
 
       - name: Build (gfortran)
         if: ${{ matrix.compiler == 'gfortran' }}

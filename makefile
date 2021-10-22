@@ -170,7 +170,7 @@ unit-tests-nompi: $(TARGET)
 	echo "Running unit tests without MPI"
 	test/unit/test_io
 
-ifdef USE_MPI
+ifneq ($(strip $(USE_MPI)),0)
 unit-tests-mpi: $(TARGET)
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
@@ -241,6 +241,6 @@ symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
-io_handler_base.o: io_handler_base.f90 mpi_aux.o
+io_handler_base.o: io_handler_base.f90 errors.o mpi_aux.o
 io_handler_ftn.o: io_handler_ftn.f90 io_handler_base.o errors.o mpi_aux.o
-io_handler_mpi.o: io_handler_mpi.f90 io_handler_base.o mpi_aux.o
+io_handler_mpi.o: io_handler_mpi.f90 io_handler_base.o errors.o mpi_aux.o
