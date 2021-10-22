@@ -16490,21 +16490,7 @@ module perturbation
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
-            !
-            ! FIXME take out MPIIO
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              !  call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END) 
-              if(mpi_rank.eq.0) then
-                call MPI_File_write_shared(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
-              !else
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              endif
-#endif
-            else
-              call ioHandler%write('g_cor')
-            endif
-            !
+            call ioHandler%write('g_cor')
           endif
           !
           ! Run the loop over all term of the expansion of the Hamiltonian 
