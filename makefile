@@ -17,7 +17,7 @@ USE_MPI ?= 0
 # Intel
 #######
 ifeq ($(strip $(COMPILER)),intel)
-	FOR = ifort
+	FC = ifort
 	FFLAGS = -cpp -ip -align -ansi-alias -mcmodel=medium -parallel -nostandard-realloc-lhs -qopenmp -module $(OBJDIR)
 
 	ifeq ($(strip $(MODE)),debug)
@@ -36,7 +36,7 @@ ifeq ($(strip $(COMPILER)),intel)
 # gfortran
 ##########
 else ifeq ($(strip $(COMPILER)),gfortran)
-	FOR = gfortran
+	FC = gfortran
 	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
 	GCC_VERSION_GT_10 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
@@ -65,14 +65,18 @@ endif
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 ifneq ($(strip $(USE_MPI)),0)
-	FOR = mpif90
+	FC = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
+
+export FC
+export USE_MPI
 
 ################################################################################
 ## LIBRARIES
 ################################################################################
 
+PFUNIT_DIR = lib/pFUnit
 WIGXJPF_DIR = wigxjpf-1.5
 WIGXJPF_LIB = $(WIGXJPF_DIR)/lib/libwigxjpf.a
 LIB     =   $(LAPACK) $(LIBS) $(WIGXJPF_LIB) $(ARPACK)
@@ -85,6 +89,12 @@ BINDIR=.
 SRCDIR=.
 OBJDIR=.
 user_pot_dir=.
+TARGET=$(BINDIR)/$(EXE)
+
+MPI_SRCS = 
+ifneq ($(strip $(USE_MPI)),0)
+	MPI_SRCS += io_handler_mpi.f90
+endif
 
 SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
@@ -94,8 +104,11 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	pot_abcd.f90 pot_c2h4.f90 pot_c2h6.f90 pot_c3h6.f90 pot_ch3oh.f90 \
 	pot_xy2.f90 pot_xy3.f90 pot_xy4.f90 pot_zxy2.f90 pot_zxy3.f90 \
 	prop_xy2.f90 prop_xy2_quad.f90 prop_xy2_spinrot.f90 prop_xy2_spinspin.f90 \
-	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
+	io_handler_base.f90 io_handler_ftn.f90 \
+	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90 $(MPI_SRCS)
+
 OBJS := ${SRCS:.f90=.o}
+MPI_OBJS := ${MPI_SRCS:.f90=.o}
 
 VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 
@@ -103,15 +116,15 @@ VPATH = $(SRCDIR):$(user_pot_dir):$(OBJDIR)
 ## TARGETS
 ################################################################################
 
-.PHONY: all, clean, cleanall, tarball, checkin, test
+.PHONY: all, clean, cleanall, tarball, checkin, test, install-pfunit
 
-all: $(BINDIR) $(OBJDIR) $(BINDIR)/$(EXE)
+all: $(OBJDIR) $(TARGET)
 
 %.o : %.f90
-	$(FOR) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
+	$(FC) -c $(FFLAGS) $(CPPFLAGS) -o $(OBJDIR)/$@ $<
 
-$(BINDIR)/$(EXE): $(OBJS) $(WIGXJPF_LIB)
-	$(FOR) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
+$(BINDIR)/$(EXE): $(BINDIR) $(OBJS) $(WIGXJPF_LIB)
+	$(FC) $(FFLAGS) -o $@ $(addprefix $(OBJDIR)/,$(OBJS)) $(LIB)
 
 $(WIGXJPF_LIB):
 	$(MAKE) -C $(WIGXJPF_DIR)
@@ -126,8 +139,16 @@ ifneq ($(BINDIR),.)
 	mkdir -p $(BINDIR)
 endif
 
+install-pfunit:
+	git submodule update --init # Make sure we have pfunit
+	mkdir $(PFUNIT_DIR)/build
+	cd $(PFUNIT_DIR)/build; cmake ..
+	$(MAKE) -C $(PFUNIT_DIR)/build
+	$(MAKE) -C $(PFUNIT_DIR)/build install
+
 clean:
-	rm -rf $(BINDIR)/$(EXE) $(OBJDIR)/*.mod $(OBJDIR)/*.o
+	rm -rf $(TARGET) $(OBJDIR)/*.mod $(OBJDIR)/*.o
+	$(MAKE) -C test/unit clean
 
 cleanall: clean
 	$(MAKE) -C $(WIGXJPF_DIR) clean
@@ -138,8 +159,26 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-test: $(BINDIR)/$(EXE)
-	cd test; ./run_regression_tests.sh
+test: regression-tests unit-tests-nompi unit-tests-mpi
+
+regression-tests: $(TARGET)
+	echo "Running regression tests"
+	cd test/regression; ./run_regression_tests.sh
+
+unit-tests-nompi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io
+	echo "Running unit tests without MPI"
+	test/unit/test_io
+
+ifneq ($(strip $(USE_MPI)),0)
+unit-tests-mpi: $(TARGET)
+	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
+	echo "Running unit tests with MPI"
+	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+else
+unit-tests-mpi: $(TARGET)
+	echo "Skipping unit tests with MPI (USE_MPI not set)"
+endif
 
 ################################################################################
 ## DEPENDENCIES
@@ -179,7 +218,7 @@ mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
 mpi_aux.o: mpi_aux.f90 accuracy.o timer.o
-perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o
+perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o io_handler_base.o io_handler_ftn.o $(MPI_OBJS)
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o
@@ -202,3 +241,6 @@ symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
 tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
+io_handler_base.o: io_handler_base.f90 errors.o mpi_aux.o
+io_handler_ftn.o: io_handler_ftn.f90 io_handler_base.o errors.o mpi_aux.o
+io_handler_mpi.o: io_handler_mpi.f90 io_handler_base.o errors.o mpi_aux.o

@@ -1,0 +1,164 @@
+#include "errors.fpp"
+
+module test_io
+  use funit
+  use io_handler_base
+  use io_handler_ftn
+  use errors
+
+  implicit none
+
+  contains
+
+  @test
+  subroutine testFTNWriting()
+    type(ioHandlerFTN) :: ioHandler
+
+    real, dimension(5) :: array1D
+    real, dimension(5, 5) :: array2D
+    real, dimension(5) :: in_array1D
+    real, dimension(5, 5) :: in_array2D
+    real :: true_real, in_real
+    complex :: true_complex, in_complex
+    integer :: true_integer, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    type(ErrorType) :: err
+
+    call ioHandler%open(fname, err, \
+      action='write', form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    true_integer = 5
+    call ioHandler%write(true_integer) ! int
+
+    true_real = 4.0
+    call ioHandler%write(true_real) ! double
+
+    true_complex = (5.0, 1.0)
+    call ioHandler%write(true_complex) ! complex
+
+    ! Array
+    array1D = (/2, 3, 4, 5, 6/)
+    call ioHandler%write(array1D)
+
+    ! 2D array
+    do i=1,5
+      do j=1,5
+        array2D(i,j) = i+j
+      end do
+    end do
+    call ioHandler%write(array2D)
+
+    call ioHandler%close()
+
+    open(newunit=iounit, iostat=stat, action='read', file=fname, \
+      form=form, access=access, status=status, position=position)
+
+    read(iounit) in_integer
+    read(iounit) in_real
+    read(iounit) in_complex
+    read(iounit) in_array1D
+    read(iounit) in_array2D
+
+    if (stat == 0) close(iounit, status='delete')
+
+    @assertTrue(in_integer == true_integer)
+    @assertTrue(in_real == true_real)
+    @assertTrue(in_complex == true_complex)
+    do i=1,5
+      @assertTrue(in_array1D(i) == array1D(i))
+    end do
+    do i=1,5
+      do j=1,5
+        @assertTrue(in_array2D(i,j) == array2D(i,j))
+      end do
+    end do
+  end subroutine
+
+  @test
+  subroutine testFTNioHandler()
+    type(ioHandlerFTN) :: ioHandler
+
+    real, dimension(5) :: array1D
+    real, dimension(5, 5) :: array2D
+    real, dimension(5) :: in_array1D
+    real, dimension(5, 5) :: in_array2D
+    real :: true_real, in_real
+    complex :: true_complex, in_complex
+    integer :: true_integer, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    type(ErrorType) :: err
+
+    open(newunit=iounit, iostat=stat, action='write', file=fname, \
+      form=form, access=access, status=status, position=position)
+
+    true_integer = 5
+    write(iounit) true_integer ! int
+
+    true_real = 4.0
+    write(iounit) true_real ! double
+
+    true_complex = (5.0, 1.0)
+    write(iounit) true_complex ! complex
+
+    ! Array
+    array1D = (/2, 3, 4, 5, 6/)
+    write(iounit) array1D ! 1D array
+
+    ! 2D array
+    do i=1,5
+      do j=1,5
+        array2D(i,j) = i+j
+      end do
+    end do
+    write(iounit) array2D ! 2D array
+
+    if (stat == 0) close(iounit)
+
+    call ioHandler%open(fname, err, \
+      action='read', form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    call ioHandler%read(in_integer)
+    call ioHandler%read(in_real)
+    call ioHandler%read(in_complex)
+    call ioHandler%read(in_array1D)
+    call ioHandler%read(in_array2D)
+
+    call ioHandler%close()
+
+    @assertTrue(in_integer == true_integer)
+    @assertTrue(in_real == true_real)
+    @assertTrue(in_complex == true_complex)
+    do i=1,5
+      @assertTrue(in_array1D(i) == array1D(i))
+    end do
+    do i=1,5
+      do j=1,5
+        @assertTrue(in_array2D(i,j) == array2D(i,j))
+      end do
+    end do
+
+  ! Cleanup test file
+  open(newunit=iounit, iostat=stat, action='read', file=fname)
+  if (stat == 0) close(iounit, status='delete')
+
+  end subroutine
+
+end module test_io

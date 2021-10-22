@@ -1,0 +1,276 @@
+#include "errors.fpp"
+
+module test_mpi_io
+  use mpi_f08
+  use funit
+  use mpi_aux
+  use io_handler_base
+  use io_handler_mpi
+  use errors
+  use accuracy
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestMPI
+  contains
+    procedure :: setUp     ! overides generic
+    procedure :: tearDown  ! overrides generic
+  end type TestMPI
+
+  integer,external :: INDXL2G
+
+  logical :: is_mpi_initialised = .false.
+  integer, parameter :: totalTestCount = 2
+  integer :: currentTestCount = 0
+
+  contains
+
+  subroutine setUp(this)
+    class(TestMPI), intent(inout) :: this
+    currentTestCount = currentTestCount + 1
+    if (is_mpi_initialised .eqv. .false.) then
+      call co_init_comms()
+      is_mpi_initialised = .true.
+    endif
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestMPI), intent(inout) :: this
+    if (is_mpi_initialised .eqv. .true. .and. currentTestCount == totalTestCount) then
+      call co_finalize_comms()
+    endif
+  end subroutine tearDown
+
+  @test
+  subroutine testMPIWriting(this)
+    class(TestMPI), intent(inout) :: this
+
+    type(ioHandlerMPI) :: ioHandler
+
+    integer, parameter :: array2DNRow = 4
+    integer, parameter :: array2DNCol = 3
+    real(rk), allocatable :: array2D(:,:)
+    real(rk) :: in_array2D(array2DNRow,array2DNCol)
+    integer :: array2D_descr(9) = 0
+    type(MPI_Datatype) :: array2D_block_type
+
+    real :: true_real = 4.0, in_real
+    complex :: true_complex = (5.0, 1.0), in_complex
+    integer :: true_integer = 5, in_integer
+    character (len=11) :: true_str = "test string", in_str
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    integer :: gi = 0, gj = 0, MB, NB, RSRC, CSRC
+    type(ErrorType) :: err
+
+    integer :: ierr, rank, allocinfo = 0
+
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    call ioHandler%open(fname, err, action='write', &
+      form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    ! Test writing scalars
+    call ioHandler%write(true_integer) ! int
+    call ioHandler%write(true_real) ! double
+    call ioHandler%write(true_complex) ! complex
+    call ioHandler%write(true_str) ! string
+
+    ! Test writing an array
+    call co_block_type_init(array2D, array2DNCol, array2DNRow, array2D_descr, allocinfo, array2D_block_type)
+    if(allocinfo.ne.0) print *, "ERROR: couldn't allocate array"
+
+    MB = array2D_descr(5)
+    NB = array2D_descr(6)
+
+    RSRC = array2D_descr(7)
+    CSRC = array2D_descr(8)
+
+    do i=1,size(array2D,1)
+      do j=1,size(array2D,2)
+        gi = INDXL2G (i, MB, myprow, RSRC, nprow)
+        gj = INDXL2G (j, NB, mypcol, CSRC, npcol)
+        array2D(i,j) = array2DNCol*(gi-1) + (gj)
+      end do
+    end do
+
+    call ioHandler%write(array2D, array2D_descr, array2D_block_type)
+
+    ! Test writing something after array
+    call ioHandler%write(true_integer) ! int
+
+    ! Test writing another array
+    call ioHandler%write(array2D, array2D_descr, array2D_block_type)
+
+    ! Test writing something after 2nd array
+    call ioHandler%write(true_integer) ! int
+
+    call ioHandler%close()
+
+    ! Only test result on main process
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='read', file=fname, &
+        form=form, access=access, status=status, position=position)
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      read(iounit) in_real
+      @assertTrue(in_real == true_real)
+
+      read(iounit) in_complex
+      @assertTrue(in_complex == true_complex)
+
+      read(iounit) in_str
+      print *, sizeof(in_str)
+      @assertTrue(in_str == true_str)
+
+      read(iounit) in_array2D
+      do i=1,array2DNRow
+        do j=1,array2DNCol
+          @assertTrue(in_array2D(i,j) == array2DNCol*(i-1) + j)
+        end do
+      end do
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      read(iounit) in_array2D
+      do i=1,array2DNRow
+        do j=1,array2DNCol
+          @assertTrue(in_array2D(i,j) == array2DNCol*(i-1) + j)
+        end do
+      end do
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      ! Remove test file
+      if (stat == 0) close(iounit, status='delete')
+
+    endif
+
+  end subroutine testMPIWriting
+
+  @test
+  subroutine testMPIWritingColumnDistArray(this)
+    class(TestMPI), intent(inout) :: this
+    type(ioHandlerMPI) :: ioHandler
+
+    integer :: dimen = 12
+    integer :: startdim, enddim, blocksize, mdimen_p, mdimen_b, mdimen
+    integer :: b, icoeff, jcoeff
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    real(rk), allocatable :: grot_t(:,:)
+    real(rk), allocatable :: grot_full(:,:)
+    real(rk),allocatable :: recvbuf(:,:,:)
+
+    integer :: true_integer = 5, in_integer
+
+    integer :: i,j
+
+    type(MPI_File) :: chkptMPIIO
+    integer :: ierr, rank, allocinfo = 0
+
+    type(ErrorType) :: err
+
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    call co_init_distr(dimen, startdim, enddim, blocksize)
+
+    mdimen = dimen
+    mdimen_p = int(1+real(dimen/comm_size))
+    mdimen_b = comm_size*mdimen_p
+
+    allocate(recvbuf(mdimen_p,mdimen_p,comm_size))
+    allocate(grot_t(mdimen_b,startdim:startdim+mdimen_p-1))
+    allocate(grot_full(dimen, dimen))
+
+    grot_t = 0
+
+    ! Fill local chunk of symmetric matrix
+    do b=1,comm_size
+      if (send_or_recv(b).ge.0) then
+        do icoeff=startdim,enddim
+          do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+            grot_t(jcoeff,icoeff) = jcoeff*icoeff
+          enddo
+        enddo
+      endif
+    enddo
+
+    ! Distribute between processes and save
+    call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
+
+    call ioHandler%open(fname, err, action='write', &
+      form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    ! Test writing something before array
+    call ioHandler%write(true_integer)
+
+    ! Test writing an array
+    call ioHandler%write(grot_t, mdimen)
+
+    ! Test writing something after array
+    call ioHandler%write(true_integer)
+
+    ! Test writing another array
+    call ioHandler%write(grot_t, mdimen)
+
+    ! Test writing something after second array
+    call ioHandler%write(true_integer)
+
+    call ioHandler%close()
+
+    ! Check output
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='read', file=fname, &
+        form=form, access=access, status=status, position=position)
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      read(iounit) grot_full
+      do i=1,dimen
+        do j=1,dimen
+          @assertTrue(grot_full(i,j) == i*j)
+        end do
+      end do
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      read(iounit) grot_full
+      do i=1,dimen
+        do j=1,dimen
+          @assertTrue(grot_full(i,j) == i*j)
+        end do
+      end do
+
+      read(iounit) in_integer
+      @assertTrue(in_integer == true_integer)
+
+      close(iounit, status='delete')
+    endif
+
+  end subroutine testMPIWritingColumnDistArray
+end module

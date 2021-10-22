@@ -3,7 +3,7 @@
 set -e
 
 exe_name=j-trove.x
-exe=../$exe_name
+exe=../../$exe_name
 # Use 1 process unless we have specified differently (e.g. in CI)
 nproc=${nproc:-1}
 
