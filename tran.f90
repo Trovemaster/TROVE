@@ -1701,7 +1701,7 @@ contains
               !
             else
               !
-              call kineteigenHandler%read(gmat, desc_gmat, gmat_block_type)
+              call kinetmatHandler%read(gmat, desc_gmat, gmat_block_type)
               !
             endif
             !
@@ -1777,7 +1777,7 @@ contains
               !
             else
               !
-              call kineteigenHandler%read(gmat,desc_gmat,gmat_block_type)
+              call kinetmatHandler%read(gmat,desc_gmat,gmat_block_type)
               !
             endif
             !
