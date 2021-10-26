@@ -1614,8 +1614,6 @@ contains
           !
           job_is ='Eigen-vib. matrix elements of the rot. kinetic part'
           !
-          call IOStart(trim(job_is),chkptIO)
-
           call openFile(kineteigenHandler, job%kineteigen_file, err, action='write', &
             position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)

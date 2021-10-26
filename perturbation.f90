@@ -7746,15 +7746,7 @@ module perturbation
         !
         ! ithread = omp_get_thread_num()
         !
-        if (job%rotsym_do) then 
-          !
-          call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_contr_gamma,mat_t)
-          !
-        else
-          !
-          call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr,mat_t,no_diagonalization)
-          !
-        endif
+        call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_contr,mat_t,no_diagonalization)
         !
         do isym = 1,sym%Nrepresen
             !
@@ -7951,17 +7943,7 @@ module perturbation
           !
           ! ithread = omp_get_thread_num()
           !
-          !call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_grot,mat_t)
-          !
-          if (job%rotsym_do) then 
-            !
-            call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_symrot_contr_grot,mat_t)
-            !
-          else
-            !
-            call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_grot,mat_t,no_diagonalization)
-            !
-          endif
+          call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_contr_grot,mat_t,no_diagonalization)
           !
           do isym = 1,sym%Nrepresen
               !
@@ -8023,17 +8005,7 @@ module perturbation
           ! ithread = 1
           ! ithread = omp_get_thread_num()
           !
-          !call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_gcor,mat_t)
-          !
-          if (job%rotsym_do) then 
-            !
-            call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_symrot_contr_gcor,mat_t)
-            !
-          else
-            !
-            call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_gcor,mat_t)
-            !
-          endif
+          call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_contr_gcor,mat_t)
           !
           do isym = 1,sym%Nrepresen
               !
@@ -8100,17 +8072,7 @@ module perturbation
           ! ithread = 1
           ! ithread = omp_get_thread_num()
           !
-          !call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_hvib,mat_t)
-          !
-          if (job%rotsym_do) then 
-            !
-            call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_symrot_contr_hvib,mat_t)
-            !
-          else
-            !
-            call symm_mat_element_vector_k(jrot,irow,ijterm,PTmatrixelements_contr_hvib,mat_t)
-            !
-          endif
+          call symm_mat_element_vector(jrot,irow,ijterm,PTmatrixelements_contr_hvib,mat_t)
           !
           do isym = 1,sym%Nrepresen
               !
@@ -8518,11 +8480,11 @@ module perturbation
     endif
     !
     ! free more memory 
-    do ielem =1,size(contr(0)%rot(:))
-      if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
-    enddo 
-    call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
-    call ArrayStop('contr(0)-rot-coeff3d')
+    !do ielem =1,size(contr(0)%rot(:))
+      !if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
+    !enddo 
+    !call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
+    !call ArrayStop('contr(0)-rot-coeff3d')
     !
     deallocate(ijterm,k_row)
     !
@@ -8560,7 +8522,7 @@ module perturbation
 
     call MPI_File_open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
     if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file.", filename
+      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file. ", filename
       stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error opening MATELEM MPI-IO input file"
     endif
 
@@ -8647,10 +8609,7 @@ module perturbation
       !TODO - MPI-compatible IOStart
       !call IOStart(trim(job_id),fileh)
 
-      !TODO set filename dynamically
-      filename = trim(job%matelem_suffix)//'.chk'
-
-      call open_chkptfile_mpi(fileh, filename, 'read')
+      call open_chkptfile_mpi(fileh, job%kinetmat_file, 'read')
 
       !Collective read woo
       call MPI_File_read_all(fileh, readbuf, 7, mpi_character, mpi_status_ignore, ierr)
@@ -9859,7 +9818,7 @@ module perturbation
   ! We construct the Hamiltonian matrix in symm. adapted representaion 
   ! for the K-factorized rotational basis 
   !
-  recursive subroutine symm_mat_element_vector_k(jrot,irow,ijterm,func,mat_t,no_diagonalization)
+  subroutine symm_mat_element_vector(jrot,irow,ijterm,func,mat_t,no_diagonalization)
     use mpi_aux
     !
     integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
@@ -9870,13 +9829,11 @@ module perturbation
     integer(ik) :: cnu_i(0:PT%Nclasses),cnu_j(0:PT%Nclasses)
     integer(ik) :: deg_i(0:PT%Nclasses),deg_j(0:PT%Nclasses)
     real(rk)    :: mat_elem
-    integer(ik) :: isize,jsize,ielem,jelem,k_i,k_j,tau_i,tau_j
+    integer(ik) :: isize,jsize,ielem,jelem, k_i,k_j,tau_i,tau_j
     integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
     real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
     !
     real(rk), dimension(:,:,:), allocatable :: hcontr
-    !
-    !call TimerStart('Symmetrized Hamiltonian - one column')
     !
     mat_t = 0 
     !
@@ -9884,10 +9841,11 @@ module perturbation
     !
     isize = PT%Index_deg(irow)%size1
     !
-    ! AT: hcontr is now an array of irow * PT%max_deg_size^2. This way we can calculate all hcontr values in advance,
+    ! AT: hcontr is an array of irow * PT%max_deg_size^2. This way we can calculate all hcontr values in advance,
     ! collect them to root, then run the matelem calculation loop.
     ! The reduction to root is necessary as we are doing apparently random access over a distributed matrix.
     allocate(hcontr(PT%max_deg_size,PT%max_deg_size,irow))
+    hcontr = 0.0
     !
     do jrow = 1,irow
        !
@@ -9896,55 +9854,41 @@ module perturbation
        endif
        !
        cnu_j(:) = PT%contractive_space(:,jrow)
-       !
        jsize = PT%Index_deg(jrow)%size1 
-       !
+
        do ideg = 1,isize
-          !
           deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
-          !
           do jdeg = 1,jsize
-             !hcontr(ideg,jdeg) = 0.0_rk
-             !
              deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
-             !
-             !iroot = contr(iclass)%iroot(cnu_i(iclass),deg_i(iclass))
-             !jroot = contr(iclass)%iroot(cnu_j(iclass),deg_j(iclass))
-             !
+
              icontr = PT%icase2icontr(irow,ideg)
              jcontr = PT%icase2icontr(jrow,jdeg)
-             k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
-             k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
-             tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
-             tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
-             !
-             ! Matrix elements 
-             !
+
              if (jcontr .lt. co_startdim .or. jcontr .gt. co_enddim) then
                hcontr(ideg,jdeg,jrow) = 0.0_rk
              else
-               hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
+               if (job%rotsym_do) then
+                 hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,cnu_i(0),cnu_j(0),deg_i(0),deg_j(0))
+               else
+                 k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
+                 k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
+                 tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
+                 tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
+                 hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
+               endif
              endif
-
-             !
           enddo
-          !
        enddo
     end do
     !
     ! Collect all pre-calculated hcontr values to MPI root. Non-local values have been initialised to 0 so it's safe to just do
-    ! MPI_SUM.
     call co_sum(hcontr, 0)
-    !if (mpi_rank .eq. 0) then
-    !  call mpi_reduce(mpi_in_place, hcontr, size(hcontr), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
-    !else
-    !  call mpi_reduce(hcontr, hcontr, size(hcontr), mpi_double_precision, mpi_sum, 0, mpi_comm_world)
-    !end if
     !
     ! We could do an allreduce above then distribute this loop, but all subsequent calculation is serialised so far.
     ! TODO future work?
     if (mpi_rank .eq. 0) then
       do jrow=1,irow
+         jsize = PT%Index_deg(jrow)%size1 
          do isym = 1,sym%Nrepresen
            !
            iterm = ijterm(irow,isym) 
@@ -9986,7 +9930,7 @@ module perturbation
                              PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
                           write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
                              PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                          stop 'symm_mat_element_vector_k: something wrong with sym-counting'
+                          stop 'symm_mat_element_vector: something wrong with sym-counting'
                       endif 
                     endif
                     !
@@ -10017,7 +9961,7 @@ module perturbation
                         !
                         ! special case for linear molecules and E-symmetries. Not an ideal solution!
                         if (trove%lincoord==0.or.all( (/isym,jsym/)<=4 ) ) then 
-                           stop 'symm_mat_element_vector_k: non-zero element between two symmetries'
+                           stop 'symm_mat_element_vector: non-zero element between two symmetries'
                         endif 
                       endif
                    endif
@@ -10036,155 +9980,153 @@ module perturbation
     !
     !call TimerStop('Symmetrized Hamiltonian - one column')
     !
-  end subroutine symm_mat_element_vector_k
-
-
+  end subroutine symm_mat_element_vector
 
   !
   ! In this version of the routine we construct the Hamiltonian matrix in symm. adapted representaion 
   ! for rotational basis which is not factorized with "K". 
   !
-  recursive subroutine symm_mat_element_vector(jrot,irow,ijterm,func,mat_t)
+  !subroutine symm_mat_element_vector(jrot,irow,ijterm,func,mat_t,no_diagonalization)
 
-    integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
-    real(rk),external      :: func
-    real(rk),intent(out)   :: mat_t(:,:,:)
-    !
-    integer(ik) :: cnu_i(0:PT%Nclasses),cnu_j(0:PT%Nclasses)
-    integer(ik) :: deg_i(0:PT%Nclasses),deg_j(0:PT%Nclasses)
-    real(rk)    :: mat_elem
-    integer(ik) :: isize,jsize,ielem,jelem
-    integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
-    real(rk)    :: hcontr(PT%max_deg_size,PT%max_deg_size)
-    real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
-      !
-      !call TimerStart('Symmetrized Hamiltonian - one column')
-      !
-      mat_t = 0 
-      !
-      cnu_i(:) = PT%contractive_space(:,irow)
-      !
-      isize = PT%Index_deg(irow)%size1
-      !
-      do jrow = 1,irow
-         !
-         cnu_j(:) = PT%contractive_space(:,jrow)
-         !
-         jsize = PT%Index_deg(jrow)%size1 
-         !
-         do ideg = 1,isize
-            !
-            deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
-            !
-            do jdeg = 1,jsize
-               !
-               deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
-               !
-               !iroot = contr(iclass)%iroot(cnu_i(0),deg_i(0))
-               !jroot = contr(iclass)%iroot(cnu_j(0),deg_j(0))
-               !
-               icontr = PT%icase2icontr(irow,ideg)
-               jcontr = PT%icase2icontr(jrow,jdeg)
-               !k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
-               !k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
-               !tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
-               !tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
-               !
-               ! Matrix elements 
-               !
-               hcontr(ideg,jdeg) = func(icontr,jcontr,jrot,cnu_i(0),cnu_j(0),deg_i(0),deg_j(0))
-               !
-            enddo
-            !
-         enddo
-         !
-         do isym = 1,sym%Nrepresen
-           !
-           iterm = ijterm(irow,isym) 
-           !
-           do jsym = 1,isym
-             !
-             jterm = ijterm(jrow,jsym) 
-             !
-             do ielem = 1,PT%irr(isym)%N(irow) 
-               !
-               vec_i(1:isize) = PT%irr(isym)%repres(iterm+ielem,1,1:isize) 
-               !
-               do jelem = 1,PT%irr(jsym)%N(jrow) 
-                 !
-                 vec_j(1:jsize) = PT%irr(jsym)%repres(jterm+jelem,1,1:jsize)
-                 !
-                 vec_j(1:isize) = matmul(hcontr(1:isize,1:jsize),vec_j(1:jsize))  
-                 !
-                 mat_elem = dot_product(vec_i(1:isize),vec_j(1:isize))
-                 !
-                 if (isym==jsym) then
-                    !
-                    iL = ielem
-                    iR = jterm+jelem
-                    !
-                    if (iterm+ielem<jterm+jelem) then
-                      !
-                      iL = jelem
-                      iR = iterm+ielem
-                      !
-                    endif 
-                    !
-                    if (debug_check_symmetries) then
-                      if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
-                          PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
-                          write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
-                                      isym,ielem,iterm,jterm
-                          write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
-                             PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
-                          write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
-                             PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                          stop 'something wrong with sym-counting'
-                      endif 
-                    endif
-                    !
-                    if (job%select_gamma(isym)) then 
-                      !
-                      mat_t(isym,iL,iR)  = mat_elem
-                      !
-                    endif
-                    !
-                 elseif (debug_check_symmetries) then
-                   if (abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
-                      !
-                      ! We print out non-zero mat. elements between different symmetries, which have to be zero.
-                      !
-                      if (job%verbose>=6) &
-                        write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
-                                      sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
-                      !
-                      ! if this error is too big - we stop
-                      !
-                      if(abs(mat_elem)>1.0_rk) then 
-                        !write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
-                        write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,a)") & 
-                                      sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem,&
-                                      ' Non-diagonal element (euler) between different symmetries is too large!'
-                        stop 'non-zero element between two symmetries - symm_mat_element_vector'
-                      endif
-                      !
-                   endif
-                 endif
-                 ! 
-               enddo
-             enddo
-           enddo
-           !
-         enddo
-         !
-      enddo
-      !
-      !
-      !call TimerStop('Symmetrized Hamiltonian - one column')
-      !
-      !
-  end subroutine symm_mat_element_vector
+    !integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
+    !real(rk),external      :: func
+    !real(rk),intent(out)   :: mat_t(:,:,:)
+    !logical,optional,intent(in) :: no_diagonalization 
+    !!
+    !integer(ik) :: cnu_i(0:PT%Nclasses),cnu_j(0:PT%Nclasses)
+    !integer(ik) :: deg_i(0:PT%Nclasses),deg_j(0:PT%Nclasses)
+    !real(rk)    :: mat_elem
+    !integer(ik) :: isize,jsize,ielem,jelem
+    !integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
+    !real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
 
+    !real(rk), dimension(:,:,:), allocatable :: hcontr
+
+    !allocate(hcontr(PT%max_deg_size,PT%max_deg_size,irow))
+      !!
+      !mat_t = 0 
+      !!
+      !cnu_i(:) = PT%contractive_space(:,irow)
+      !!
+      !isize = PT%Index_deg(irow)%size1
+      !!
+      !do jrow = 1,irow
+         !!
+         !if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
+         !!
+         !cnu_j(:) = PT%contractive_space(:,jrow)
+         !!
+         !jsize = PT%Index_deg(jrow)%size1 
+         !!
+         !do ideg = 1,isize
+            !!
+            !deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
+            !!
+            !do jdeg = 1,jsize
+               !!
+               !deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
+               !!
+               !icontr = PT%icase2icontr(irow,ideg)
+               !jcontr = PT%icase2icontr(jrow,jdeg)
+               !!
+               !! Matrix elements 
+               !!
+               !hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,cnu_i(0),cnu_j(0),deg_i(0),deg_j(0))
+               !!
+            !enddo
+            !!
+         !enddo
+         !!
+      !end do
+
+      !do jrow=1,irow
+         !jsize = PT%Index_deg(jrow)%size1 
+         !do isym = 1,sym%Nrepresen
+           !!
+           !iterm = ijterm(irow,isym) 
+           !!
+           !do jsym = 1,isym
+             !!
+             !jterm = ijterm(jrow,jsym) 
+             !!
+             !do ielem = 1,PT%irr(isym)%N(irow) 
+               !!
+               !vec_i(1:isize) = PT%irr(isym)%repres(iterm+ielem,1,1:isize) 
+               !!
+               !do jelem = 1,PT%irr(jsym)%N(jrow) 
+                 !!
+                 !vec_j(1:jsize) = PT%irr(jsym)%repres(jterm+jelem,1,1:jsize)
+                 !!
+                 !vec_j(1:isize) = matmul(hcontr(1:isize,1:jsize, jrow),vec_j(1:jsize))  
+                 !!
+                 !mat_elem = dot_product(vec_i(1:isize),vec_j(1:isize))
+                 !!
+                 !if (isym==jsym) then
+                    !!
+                    !iL = ielem
+                    !iR = jterm+jelem
+                    !!
+                    !if (iterm+ielem<jterm+jelem) then
+                      !!
+                      !iL = jelem
+                      !iR = iterm+ielem
+                      !!
+                    !endif 
+                    !!
+                    !if (debug_check_symmetries) then
+                      !if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
+                          !PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
+                          !write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
+                                      !isym,ielem,iterm,jterm
+                          !write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
+                             !PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
+                          !write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
+                             !PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
+                          !stop 'something wrong with sym-counting'
+                      !endif 
+                    !endif
+                    !!
+                    !if (job%select_gamma(isym)) then 
+                      !!
+                      !mat_t(isym,iL,iR)  = mat_elem
+                      !!
+                    !endif
+                    !!
+                 !elseif (debug_check_symmetries) then
+                   !if (abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
+                      !!
+                      !! We print out non-zero mat. elements between different symmetries, which have to be zero.
+                      !!
+                      !if (job%verbose>=6) &
+                        !write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
+                                      !sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
+                      !!
+                      !! if this error is too big - we stop
+                      !!
+                      !if(abs(mat_elem)>1.0_rk) then 
+                        !!write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
+                        !write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,a)") & 
+                                      !sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem,&
+                                      !' Non-diagonal element (euler) between different symmetries is too large!'
+                        !stop 'non-zero element between two symmetries - symm_mat_element_vector'
+                      !endif
+                      !!
+                   !endif
+                 !endif
+                 !! 
+               !enddo
+             !enddo
+           !enddo
+           !!
+         !enddo
+         !!
+      !enddo
+      !!
+      !!
+      !!call TimerStop('Symmetrized Hamiltonian - one column')
+      !!
+      !!
+  !end subroutine symm_mat_element_vector
 
   !
   ! In this version of the routine we construct the Hamiltonian matrix in symm. adapted representaion 
@@ -16546,21 +16488,7 @@ module perturbation
           if (job%verbose>=2) write(out,"(/'Coriolis part of the Kinetic energy operator...')")
           !
           if (trim(job%IOkinet_action)=='SAVE'.and..not.job%IOmatelem_split) then
-            !
-            ! FIXME take out MPIIO
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              !  call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END) 
-              if(mpi_rank.eq.0) then
-                call MPI_File_write_shared(chkptMPIIO,'g_cor',5,mpi_character,mpi_status_ignore,ierr)
-              !else
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              endif
-#endif
-            else
-              call ioHandler%write('g_cor')
-            endif
-            !
+            call ioHandler%write('g_cor')
           endif
           !
           ! Run the loop over all term of the expansion of the Hamiltonian 

@@ -4391,9 +4391,11 @@ module fields
      !    
    endif
    !
-   if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
-      write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
-      stop 'FLinput - The C2VN number is undefined or too small'
+   if (trim(trove%symmetry)=='C2VN') then
+     if (sym%N<job%bset(0)%range(2)) then
+       write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
+       stop 'FLinput - The C2VN number is undefined or too small'
+     endif
    endif
     !
    if (.not.refer_defined) then 
@@ -4673,7 +4675,7 @@ end subroutine check_read_save_none
     trove%bonds(1:Nbonds,:) = bonds(1:Nbonds,:)
     trove%angles(1:Nangles,:) = angles(1:Nangles,:)
     trove%dihedrals(0:Ndihedrals,:) = dihedrals(0:Ndihedrals,:)
-    trove%dihedtype(:) = dihedtype(:)
+    trove%dihedtype(:Ndihedrals) = dihedtype(:Ndihedrals)
     !
     ! We define the coordinates 
     !
@@ -6525,7 +6527,7 @@ end subroutine check_read_save_none
          !
          kindex = 0 ; kindex(imode) = 1
          !
-         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Ncoords,kindex,q_eq,step,irho)
+         coordtransform(:,imode) = FLvect_finitediffs(job_is,trove%Nmodes,kindex,q_eq,step,irho)
          !
          !chi2 = MLcoordinate_transform_func(q2,size(chi2),dir)
          !
@@ -6662,7 +6664,7 @@ end subroutine check_read_save_none
          !
          bm = 0.0_ark  ;  bm(Nequat-Nmodes+imode) = 1.0_ark
          !
-         a = Tmat
+         a(:,:) = Tmat(:,:)
          b(:,1) = bm(:)
          !
          call MLlinurark(Nequat,a,b(:,1),bm,ierror)
@@ -14553,7 +14555,9 @@ end subroutine check_read_save_none
             !
             fl => trove%g_cor(k1,k2) 
             !
-            call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (associated(fl)) then
+              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            endif
             !
           enddo
         enddo
@@ -15776,12 +15780,12 @@ end subroutine check_read_save_none
      ! Create a field in a sparse representaion
      !
      if (associated(fl%IndexQ)) then 
-       deallocate(fl%IndexQ)
        call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
+       deallocate(fl%IndexQ)
      endif
      !
-     deallocate(fl%ifromsparse)
      call ArrayMinus(name//'ifromsparse',isize=size(fl%ifromsparse),ikind=kind(fl%ifromsparse))
+     deallocate(fl%ifromsparse)
      !
      if (Nterms==0) then
        !
@@ -15957,9 +15961,9 @@ end subroutine check_read_save_none
      call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      !
-     deallocate(fl1%field,fl2%field,stat=alloc)
      call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
      call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     deallocate(fl1%field,fl2%field,stat=alloc)
      !
      allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
@@ -22624,7 +22628,7 @@ end subroutine check_read_save_none
      !
      call FLfromcartesian2local(r_na,r_)
      dir = .true.
-     chi_ = MLcoordinate_transform_func(r_,size(r_),dir)
+     chi_ = MLcoordinate_transform_func(r_,size(chi_),dir)
      !
      do i = 1,trove%Nmodes
        !
