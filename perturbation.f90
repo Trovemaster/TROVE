@@ -7480,22 +7480,22 @@ module perturbation
         !
         !----------Only allocate if we are putting vectors into memory---------------!
         if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
-		matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
-		if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i8)") dimen_s,job%nroots(isym),matsize
-		allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
-		!
-		a = 0
-		!
-		call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
-		!
-		bterm = 1
-		!
-		if (job%verbose>=4) call MemoryReport
-		!
-		if (job%verbose>=1) then 
-		   write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
-		endif
-	endif
+          matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
+          if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i8)") dimen_s,job%nroots(isym),matsize
+          allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
+          !
+          a = 0
+          !
+          call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
+          !
+          bterm = 1
+          !
+          if (job%verbose>=4) call MemoryReport
+          !
+          if (job%verbose>=1) then 
+            write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
+          endif
+        endif
         !
         call diagonalization_contract(jrot,isym,dimen_s,a,zpe,rlevel,total_roots,bterm,k_row(isym,1:dimen_s)) 
         !
