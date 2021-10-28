@@ -216,8 +216,8 @@ module test_mpi_io
     character(len=*), parameter :: form = "unformatted"
     character(len=*), parameter :: access = "sequential"
 
+    real(rk) :: grot_full(dimen, dimen)
     real(rk), allocatable :: grot_t(:,:)
-    real(rk), allocatable :: grot_full(:,:)
     real(rk),allocatable :: recvbuf(:,:,:)
 
     integer :: true_integer = 5, in_integer
@@ -282,7 +282,6 @@ module test_mpi_io
       read(iounit) in_integer
       @assertTrue(in_integer == true_integer)
 
-      allocate(grot_full(dimen, dimen))
       read(iounit) grot_full
       do i=1,dimen
         do j=1,dimen
