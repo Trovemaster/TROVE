@@ -49,9 +49,10 @@ module mpi_aux
   integer, parameter :: MPI_OFFSET_KIND=8
 #endif
 
-  integer,dimension(:),allocatable              :: proc_sizes, proc_offsets, send_or_recv
+  integer,dimension(:),allocatable              :: send_or_recv
   integer                                       :: comm_size, mpi_rank
-  integer                                       :: co_startdim, co_enddim
+  integer                                       :: co_startdim, co_enddim, co_curr_dimen, &
+    co_blocksize, co_localsize
   logical                                       :: comms_inited = .false., distr_inited=.false.
   type(MPI_Datatype)                            :: mpitype_column
   type(MPI_Datatype),dimension(:), allocatable  :: mpi_blocktype
@@ -211,69 +212,41 @@ contains
     integer,intent(out) :: startdim, enddim, blocksize
     integer :: ierr
 
-#ifdef TROVE_USE_MPI_
-    integer,dimension(:),allocatable  :: starts, ends
-    integer :: localsize, proc_index, localsize_
+    integer :: proc_index, localsize
     integer :: i, to_calc, ioslice_width, ioslice_maxwidth
 
     if (.not. comms_inited) stop "COMMS NOT INITIALISED"
     !if (distr_inited) stop "DISTRIBUTION ALREADY INITIALISED"
 
-    proc_index = mpi_rank+1
-
-    if (.not. distr_inited) then
-      allocate(proc_sizes(comm_size),proc_offsets(comm_size),send_or_recv(comm_size),starts(comm_size),ends(comm_size),stat=ierr)
-      if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
-    else
-      allocate(starts(comm_size),ends(comm_size),stat=ierr)
+    if (dimen < comm_size) then
+      stop "co_init_distr: Cannot distribute matrix of dimension less than comm_size"
     endif
 
+    if (.not. distr_inited) then
+      allocate(send_or_recv(comm_size),stat=ierr)
+      if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
+    endif
+
+    co_curr_dimen = dimen ! set which dimension array we're currently distributing
+
     if (comm_size .eq. 1) then
-      startdim = 1
-      enddim = dimen
       co_startdim = 1
       co_enddim = dimen
-      blocksize = dimen*dimen
+      co_blocksize = dimen*dimen
       send_or_recv(1) = 0
     else
 
-      if (mpi_rank .eq. 0) then !root
-
-        localsize = dimen/comm_size
-        localsize_ = int(1+real(dimen/comm_size))
-
-        starts(1) = 1
-        ends(1) = localsize_
-        proc_sizes(1) = localsize_*(comm_size*localsize_)
-        proc_offsets(1) = 0
-
-        do i=2,comm_size-1
-          starts(i) = (i-1)*localsize_+1
-          ends(i) = i*localsize_
-          proc_sizes(i) = localsize_ * (comm_size*localsize_)!dimen
-          proc_offsets(i) = localsize_*(i-1)*(comm_size*localsize_)!dimen
-        end do
-
-        starts(comm_size) = (i-1) * localsize_ + 1
-        ends(comm_size) = dimen!comm_size*localsize_!dimen
-        proc_sizes(comm_size) = localsize_*comm_size*localsize_!dimen
-
-        proc_offsets(comm_size) = (comm_size-1)*localsize_*(comm_size*localsize_)!dimen
+      localsize = 1+dimen/comm_size
+      co_startdim = mpi_rank*localsize + 1
+      if (mpi_rank == comm_size-1) then
+        ! Last process gets full dimension
+        co_enddim = dimen
+      else
+        co_enddim = (mpi_rank+1)*localsize
       endif
+      co_blocksize = localsize*(comm_size*localsize)
 
-      call mpi_bcast(starts, comm_size, mpi_integer, 0, mpi_comm_world)
-      call mpi_bcast(ends, comm_size, mpi_integer, 0, mpi_comm_world)
-      call mpi_bcast(proc_sizes, comm_size, mpi_integer, 0, mpi_comm_world)
-      call mpi_bcast(proc_offsets, comm_size, mpi_integer, 0, mpi_comm_world)
-
-
-
-      blocksize = proc_sizes(proc_index)
-      startdim = starts(proc_index)
-      enddim = ends(proc_index)
-
-      co_startdim = startdim
-      co_enddim = enddim
+      co_localsize = localsize
 
       if(.not. distr_inited) then
         allocate(mpi_blocktype(comm_size))
@@ -292,46 +265,54 @@ contains
           endif
         endif
 
+        proc_index = mpi_rank+1
 
         if (i.eq.proc_index) then
           send_or_recv(i) = 0
         elseif ( ((i.gt.(proc_index - to_calc) .and. i.lt.proc_index)) .or. &
             ((proc_index-to_calc).lt.1 .and. (i-comm_size).gt.(proc_index-to_calc))) then
           send_or_recv(i) = 1 ! send
-          call co_create_type_subarray(int(1+real(dimen/comm_size)), blocksize, int(1+real(dimen/comm_size)), i, mpi_blocktype(i))
+#ifdef TROVE_USE_MPI_
+          call co_create_type_subarray(co_localsize, co_blocksize, co_localsize, i, mpi_blocktype(i))
+#endif
         else
           send_or_recv(i) = -1 ! recv
         endif
       end do
-
     endif
 
-    ioslice_width = enddim-startdim+1
-    ioslice_maxwidth = (int(1+real(dimen/comm_size)))
+    startdim = co_startdim
+    enddim = co_enddim
+    blocksize = co_blocksize
+
+    ioslice_width = co_enddim-co_startdim+1
+#ifdef TROVE_USE_MPI_
     if (comm_size .eq. 1) then
       call co_create_type_column(dimen,dimen,dimen)
     else
-      call co_create_type_column(dimen, comm_size*ioslice_maxwidth, ioslice_width)
+      call co_create_type_column(ioslice_width, dimen, comm_size*co_localsize)
     endif
-
-    deallocate(starts,ends)
-
-#else
-    if (.not. comms_inited) stop "COMMS NOT INITIALISED"
-    if (.not. distr_inited) then
-      allocate(send_or_recv(1),stat=ierr)
-      if (ierr .gt. 0) stop "CO_INIT_DISTR ALLOCATION FAILED"
-    endif
-    startdim = 1
-    enddim = dimen
-    co_startdim = 1
-    co_enddim = dimen
-    blocksize = dimen*dimen
-    send_or_recv(1) = 0
 #endif
 
     distr_inited = .true.
   end subroutine co_init_distr
+
+  subroutine co_validate_dimensions(dimen)
+    integer, intent(in) :: dimen
+
+    if (dimen .ne. co_curr_dimen) then
+      stop "Tried to use an array of different dimension to the current distributed setup"
+    endif
+  end subroutine
+
+  subroutine co_create_distr_array(arr, dimen)
+    real(rk), allocatable, intent(out) :: arr(:,:)
+    integer, intent(in) :: dimen
+
+    call co_validate_dimensions(dimen)
+
+    allocate(arr(comm_size*co_localsize, co_startdim:co_startdim+co_localsize-1))
+  end subroutine
 
   !
   ! Distribute the contents of an array among processes.
@@ -464,7 +445,7 @@ contains
   end subroutine co_write_matrix_distr
 
 #ifdef TROVE_USE_MPI_
-  subroutine co_create_type_column(extent, blocksize, ncols)
+  subroutine co_create_type_column(ncols, extent, blocksize)
     integer, intent(in) :: extent, blocksize, ncols
     integer :: ierr,writecount
 

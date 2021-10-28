@@ -205,9 +205,9 @@ module test_mpi_io
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
-    integer :: dimen = 12
-    integer :: startdim, enddim, blocksize, mdimen_p, mdimen_b, mdimen
+    integer :: dimen = 51
     integer :: b, icoeff, jcoeff
+    integer :: _startdim, _enddim, _blocksize
 
     integer :: iounit, stat
     character(len=*), parameter :: fname = "test.dat"
@@ -232,23 +232,17 @@ module test_mpi_io
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
 
-    call co_init_distr(dimen, startdim, enddim, blocksize)
+    call co_init_distr(dimen, _startdim, _enddim, _blocksize)
 
-    mdimen = dimen
-    mdimen_p = int(1+real(dimen/comm_size))
-    mdimen_b = comm_size*mdimen_p
-
-    allocate(recvbuf(mdimen_p,mdimen_p,comm_size))
-    allocate(grot_t(mdimen_b,startdim:startdim+mdimen_p-1))
-    allocate(grot_full(dimen, dimen))
+    call co_create_distr_array(grot_t, dimen)
 
     grot_t = 0
 
     ! Fill local chunk of symmetric matrix
     do b=1,comm_size
       if (send_or_recv(b).ge.0) then
-        do icoeff=startdim,enddim
-          do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+        do icoeff=co_startdim,co_enddim
+          do jcoeff=((b-1)*co_localsize)+1,b*co_localsize
             grot_t(jcoeff,icoeff) = jcoeff*icoeff
           enddo
         enddo
@@ -256,7 +250,8 @@ module test_mpi_io
     enddo
 
     ! Distribute between processes and save
-    call co_distr_data(grot_t, recvbuf, mdimen_p, startdim, enddim)
+    allocate(recvbuf(co_localsize,co_localsize,comm_size))
+    call co_distr_data(grot_t, recvbuf, co_localsize, co_startdim, co_enddim)
 
     call ioHandler%open(fname, err, action='write', &
       form=form, access=access, status=status, position=position)
@@ -266,13 +261,13 @@ module test_mpi_io
     call ioHandler%write(true_integer)
 
     ! Test writing an array
-    call ioHandler%write(grot_t, mdimen)
+    call ioHandler%write(grot_t, dimen)
 
     ! Test writing something after array
     call ioHandler%write(true_integer)
 
     ! Test writing another array
-    call ioHandler%write(grot_t, mdimen)
+    call ioHandler%write(grot_t, dimen)
 
     ! Test writing something after second array
     call ioHandler%write(true_integer)
@@ -287,6 +282,7 @@ module test_mpi_io
       read(iounit) in_integer
       @assertTrue(in_integer == true_integer)
 
+      allocate(grot_full(dimen, dimen))
       read(iounit) grot_full
       do i=1,dimen
         do j=1,dimen
