@@ -21,7 +21,7 @@ module test_mpi_io
   integer,external :: INDXL2G
 
   logical :: is_mpi_initialised = .false.
-  integer, parameter :: totalTestCount = 5 ! CHANGE ME TO NUMBER OF TESTS
+  integer, parameter :: totalTestCount = 6 ! CHANGE ME TO NUMBER OF TESTS
   integer :: currentTestCount = 0
 
   contains
@@ -205,9 +205,9 @@ module test_mpi_io
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
-    integer :: dimen = 51
+    integer, parameter :: dimen = 57
     integer :: b, icoeff, jcoeff
-    integer :: _startdim, _enddim, _blocksize
+    integer :: startdim_, enddim_, blocksize_
 
     integer :: iounit, stat
     character(len=*), parameter :: fname = "test.dat"
@@ -232,7 +232,7 @@ module test_mpi_io
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
 
-    call co_init_distr(dimen, _startdim, _enddim, _blocksize)
+    call co_init_distr(dimen, startdim_, enddim_, blocksize_)
 
     call co_create_distr_array(grot_t, dimen)
 
@@ -378,8 +378,110 @@ module test_mpi_io
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
-    integer, parameter :: array2DNRow = 4
-    integer, parameter :: array2DNCol = 3
+    integer, parameter :: dimen = 57
+    integer :: b, icoeff, jcoeff
+    integer :: startdim_, enddim_, blocksize_
+
+    real(rk) :: true_array(dimen,dimen)
+    real(rk), allocatable :: in_array(:,:)
+
+    integer :: true_integer = 5, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i, j
+    integer :: ierr, rank, allocinfo = 0
+    type(ErrorType) :: err
+
+    ! Set up array
+    do i=1,dimen
+      do j=1,dimen
+        true_array(i,j) = i*j
+      end do
+    end do
+
+    ! Set up MPI
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    ! Set up 2D array block type
+    call co_init_distr(dimen, startdim_, enddim_, blocksize_)
+    call co_create_distr_array(in_array, dimen)
+
+    ! Write test file
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='write', file=fname, &
+        form=form, access=access, status=status, position=position)
+
+      write(iounit) true_integer ! int
+      write(iounit) true_array ! 2D array
+      write(iounit) true_integer ! int
+      write(iounit) true_array ! 2D array
+      write(iounit) true_integer ! int
+
+      if (stat == 0) close(iounit)
+    endif
+
+    call MPI_Barrier(MPI_COMM_WORLD)
+
+    ! Read test file
+    call ioHandler%open(fname, err, \
+      action='read', form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    call ioHandler%read(in_integer)
+    @assertTrue(in_integer == true_integer)
+
+    call ioHandler%read(in_array, dimen)
+    do b=1,comm_size
+      if (send_or_recv(b).ge.0) then
+        do icoeff=co_startdim,co_enddim
+          do jcoeff=co_startdim,co_enddim
+            @assertTrue(in_array(jcoeff,icoeff) == true_array(jcoeff,icoeff))
+          enddo
+        enddo
+      endif
+    enddo
+
+    call ioHandler%read(true_integer)
+    @assertTrue(in_integer == true_integer)
+
+    call ioHandler%read(in_array, dimen)
+    do b=1,comm_size
+      if (send_or_recv(b).ge.0) then
+        do icoeff=co_startdim,co_enddim
+          do jcoeff=co_startdim,co_enddim
+            @assertTrue(in_array(jcoeff,icoeff) == true_array(jcoeff,icoeff))
+          enddo
+        enddo
+      endif
+    enddo
+
+    call ioHandler%read(true_integer)
+    @assertTrue(in_integer == true_integer)
+
+    call ioHandler%close()
+
+    if(rank == 0) then
+      ! Cleanup test file
+      open(newunit=iounit, iostat=stat, action='read', file=fname)
+      if (stat == 0) close(iounit, status='delete')
+    endif
+
+  end subroutine
+
+  @test
+  subroutine testMPIReadColumnDistArray(this)
+    class(TestMPI), intent(inout) :: this
+    type(ioHandlerMPI) :: ioHandler
+
+    integer, parameter :: array2DNRow = 13
+    integer, parameter :: array2DNCol = 13
     real(rk) :: array2D(array2DNRow,array2DNCol)
     real(rk), allocatable :: in_array2D(:,:)
     integer :: array2D_descr(9) = 0

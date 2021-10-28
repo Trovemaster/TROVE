@@ -394,21 +394,16 @@ module io_handler_mpi
       call MPI_File_seek(this%fileh, disp+this%bookendBytes+arrSizeBytes+this%bookendBytes, MPI_SEEK_SET)
     end subroutine
 
-    subroutine read2DArrayDistColumnMPI(this, object, mdimen)
+    subroutine read2DArrayDistColumnMPI(this, object, dimen)
       class(ioHandlerMPI) :: this
       class(*), intent(in) :: object(:,:)
-      integer, intent(in) :: mdimen ! Dimension of entire distributed array
+      integer, intent(in) :: dimen ! Dimension of entire distributed array
 
       type(MPI_Datatype) :: mpiType
-      integer :: byteSize, globalSize, ierr, writestat, arrSizeBytes
+      integer :: byteSize_, globalSize, ierr, writestat, arrSizeBytes
       integer(kind = MPI_OFFSET_KIND) :: offset, disp
 
-      globalSize = mdimen**2
-
-      call getMPIVarInfo(object(1,1), byteSize, mpiType)
-      arrSizeBytes = globalSize*byteSize
-
-      call writeBookendBytes(this, arrSizeBytes)
+      call getMPIVarInfo(object(1,1), byteSize_, mpiType)
 
       ! Get individual pointer offset
       call MPI_File_get_position(this%fileh, offset, ierr)

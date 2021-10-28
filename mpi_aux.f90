@@ -311,7 +311,7 @@ contains
 
     call co_validate_dimensions(dimen)
 
-    allocate(arr(comm_size*co_localsize, co_startdim:co_startdim+co_localsize-1))
+    allocate(arr(comm_size*co_localsize, co_startdim:co_enddim))
   end subroutine
 
   !
