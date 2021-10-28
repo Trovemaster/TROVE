@@ -165,18 +165,18 @@ regression-tests: $(TARGET)
 	echo "Running regression tests"
 	cd test/regression; ./run_regression_tests.sh
 
-unit-tests-nompi: $(TARGET)
+unit-tests-nompi: io_handler_ftn.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io
 	echo "Running unit tests without MPI"
 	test/unit/test_io
 
 ifneq ($(strip $(USE_MPI)),0)
-unit-tests-mpi: $(TARGET)
+unit-tests-mpi: io_handler_mpi.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
 	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
 else
-unit-tests-mpi: $(TARGET)
+unit-tests-mpi: io_handler_mpi.o
 	echo "Skipping unit tests with MPI (USE_MPI not set)"
 endif
 
