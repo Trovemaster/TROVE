@@ -7333,15 +7333,14 @@ module perturbation
     real(rk) :: zpe
     integer  :: slevel,dimen_s,max_dim,iterm,jterm,total_roots,icontr,ierr
     !
-    integer(ik) :: iunit,unitO,unitC,rec_len,irec_len,chkptIO
+    integer(ik) :: unitO,unitC,rec_len,irec_len,chkptIO
     integer(ik) :: ncontr,maxcontr,maxcontr0
     character(len=cl)   :: task
     character(len=4)   :: jchar
     character(len=cl)  :: unitfname,filename,statusf='old',symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
-    !AT
-    type(MPI_File) :: mpiiofile
+
     integer :: startdim,enddim,localrootsize
     !
     ! A special case when the diagonlization is to be skipped 
@@ -7662,10 +7661,10 @@ module perturbation
     !
     task = 'top'
     if (trim(job%kinetmat_format).eq.'MPIIO') then
-      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
         ncontr,maxcontr)
     else
-      call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+      call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
     endif
     !
     ! We have two calculation options: fast and cheap and slow but expensive.  
@@ -7684,18 +7683,18 @@ module perturbation
         !
         task = 'rot'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         !
         task = 'cor'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         !
         call TimerStop('Restoring KE matrix')
@@ -7712,10 +7711,10 @@ module perturbation
         !
         task = 'vib'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         
         call TimerStop('Restoring KE matrix')
@@ -7791,10 +7790,10 @@ module perturbation
       !
       task = 'top-icontr'
       if (trim(job%kinetmat_format).eq.'MPIIO') then
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
           ncontr,maxcontr)
       else
-        call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
       endif
       !
       if (job%verbose>=5) write(out,"(' N Arrays of ',f12.5,'Gb each will be allocated (N is the number of processors)')") &
@@ -7816,18 +7815,18 @@ module perturbation
            !
            task = 'rot-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
                ncontr,maxcontr)
            else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr,icontr)
            endif
            !
            task = 'cor-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
                ncontr,maxcontr)
            else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr,icontr)
            endif
            !
          endif
@@ -7836,10 +7835,10 @@ module perturbation
            !
            task = 'vib-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
                ncontr,maxcontr)
            else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr,icontr)
            endif
            !
          endif
@@ -7920,10 +7919,10 @@ module perturbation
         task = 'rot'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         !
         ! $omp parallel private(mat_t,alloc_p) 
@@ -7981,10 +7980,10 @@ module perturbation
         task = 'cor'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         !
         ! $omp parallel private(mat_t,alloc_p) 
@@ -8048,10 +8047,10 @@ module perturbation
         task = 'vib'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,dimen,&
             ncontr,maxcontr)
         else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr)
         endif
         !
         ! $omp parallel private(mat_t,alloc_p) 
@@ -8496,55 +8495,7 @@ module perturbation
   !!!!!!!!! MPIIO !!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine open_chkptfile_mpi(fileh, filename, mode)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-    use mpi_aux
-
-    type(MPI_File),intent(inout) :: fileh
-    character(len=*),intent(in) :: filename, mode
-
-#ifdef TROVE_USE_MPI_
-    integer :: amode, ierr
-
-    select case(mode)
-    case('read')
-      amode = mpi_mode_rdonly
-    case('write')
-      amode = mpi_mode_wronly+mpi_mode_create
-    end select
-
-    call MPI_File_open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
-    if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file. ", filename
-      stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error opening MATELEM MPI-IO input file"
-    endif
-
-    !File errors indicate big trouble, so we set errors to be fatal - not likely to be recoverable
-    call MPI_File_set_errhandler(fileh, MPI_ERRORS_ARE_FATAL)
-#endif
-  end subroutine open_chkptfile_mpi
-
-  subroutine close_chkptfile_mpi(fileh)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-    use mpi_aux
-
-    type(MPI_File), intent(inout) :: fileh
-#ifdef TROVE_USE_MPI_
-    integer :: ierr
-
-    call mpi_file_close(fileh, ierr)
-    if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error closing MPI-IO-formatted Vib. kinetic checkpoint file."
-      stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error closing MATELEM MPI-IO input file"
-    endif
-#endif
-  end subroutine close_chkptfile_mpi
-
-  subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, fileh, dimen, &
+  subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, dimen, &
       ncontr, maxcontr, icontr)
 #ifdef TROVE_USE_MPI_
     use mpi_f08
@@ -8552,7 +8503,7 @@ module perturbation
     use mpi_aux
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
-    type(MPI_File),intent(inout)    :: fileh
+    class(ioHandlerBase), allocatable :: ioHandler
     integer(ik),intent(in)       :: dimen
 
     integer(ik),intent(inout),optional :: ncontr
@@ -9186,16 +9137,16 @@ module perturbation
   !
   ! Here we restore the vibrational (J=0) matrix elements of the rotational kinetic part G_rot and G_cor
   !
-  subroutine PTrestore_rot_kinetic_matrix_elements(jrot,task,chkptIO,dimen,ncontr,maxcontr,icontr)
+  subroutine PTrestore_rot_kinetic_matrix_elements(jrot,task,dimen,ncontr,maxcontr,icontr)
     !
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
-    integer(ik),intent(inout)    :: chkptIO
     integer(ik),intent(in)       :: dimen
     integer(ik),intent(inout),optional :: ncontr
     integer(ik),intent(inout),optional  :: maxcontr
     integer(ik),intent(in),optional     :: icontr
     !
+    integer(ik) :: chkptIO
     integer(ik)   :: alloc
     character(len=cl)  :: job_is,filename
     character(len=18)  :: buf18
