@@ -12,7 +12,7 @@ exe=$2
 # Ensure stacksize unlimited (for fortran)
 ulimit -d unlimited
 
-if [ -n "${USE_MPI}" ]; then
+if [[ ${USE_MPI} == 1 ]]; then
   echo "MPI enabled"
   LAUNCH="time mpirun -np $nproc --mca opal_warn_on_missing_libcuda 0"
   ./set_io_format.sh enable
@@ -20,6 +20,7 @@ if [ -n "${USE_MPI}" ]; then
 else
   echo "MPI disabled"
   LAUNCH="time"
+  ./set_io_format.sh disable
   export OMP_NUM_THREADS=$nproc
 fi
 
@@ -28,7 +29,7 @@ echo "Current directory: `pwd`"
 echo "Using ${nproc} process(es)"
 
 files_to_check=(file{1..12})
-if [[ ${USE_MPI} -ne 1 ]]; then
+if [[ ${USE_MPI} == 0 ]]; then
   # The intensity file does not work with MPI at the moment
   files_to_check+=(file_intensity)
 fi
