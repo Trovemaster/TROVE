@@ -12,6 +12,7 @@ module io_handler_ftn
     integer :: iounit = 0
     integer :: stat = 0
     logical :: isOpen = .false.
+    character (len=20) :: accessVal
   contains
     procedure :: writeScalar => writeScalarFTN
     procedure :: write1DArray => write1DArrayFTN
@@ -71,21 +72,21 @@ module io_handler_ftn
       end if
 
       if (present(access)) then
-        accessVal = access
+        this%accessVal = access
       else
-        accessVal = 'sequential'
-      end if
+        this%accessVal = 'sequential'
+      endif
 
       print *, "FTN: Opening ", trim(fname), " with ", &
         trim(action), " ", &
         trim(positionVal), " ", &
         trim(statusVal), " ", &
         trim(formVal), " ", &
-        trim(accessVal)
+        trim(this%accessVal)
 
       open(newunit=this%iounit, action=action, &
         form=formVal, position=positionVal, status=statusVal, & 
-        access=accessVal, file=fname, iostat=this%stat)
+        access=this%accessVal, file=fname, iostat=this%stat)
 
       if (this%stat == 0) then
         this%isOpen = .true.
@@ -265,7 +266,7 @@ module io_handler_ftn
     end subroutine
 
     subroutine read2DArrayDistBlacsFTN(this, object, descr, block_type)
-      ! read arrays distributed as columns using co_distr_data
+      ! Read blacs-distributed arrays
 
       class(ioHandlerFTN) :: this
       class(*), dimension(:,:), intent(out) :: object
