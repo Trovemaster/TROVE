@@ -49,6 +49,7 @@ module io_handler_mpi
     procedure :: read2DArrayDistColumn => read2DArrayDistColumnMPI
     procedure :: open
     procedure :: close
+    procedure :: seek
     final :: destroyIoHandlerMPI
   end type ioHandlerMPI
 
@@ -137,6 +138,18 @@ module io_handler_mpi
       ! FIXME handle error
     end subroutine close
 
+    subroutine seek(this, offset)
+      class(ioHandlerMPI) :: this
+      integer, intent(in) :: offset
+      integer(kind=MPI_OFFSET_KIND) :: total_offset
+
+      if (trim(this%accessVal) == "sequential") then
+        ! Add bookend offset
+        total_offset = offset + 8
+      endif
+      call MPI_File_seek(this%fileh, total_offset, MPI_SEEK_CUR)
+    end subroutine
+
     subroutine getMPIVarInfo(object, byteSize, mpiType)
       class(*), intent(in) :: object
       integer, intent(out) :: byteSize
@@ -191,7 +204,6 @@ module io_handler_mpi
         call MPI_File_seek(this%fileh, offset, MPI_SEEK_SET, ierr)
       endif
     end subroutine
-
 
     subroutine writeScalarMPI(this, object)
       class(ioHandlerMPI) :: this
@@ -396,7 +408,7 @@ module io_handler_mpi
 
     subroutine read2DArrayDistColumnMPI(this, object, dimen)
       class(ioHandlerMPI) :: this
-      class(*), intent(in) :: object(:,:)
+      class(*), intent(out) :: object(:,:)
       integer, intent(in) :: dimen ! Dimension of entire distributed array
 
       type(MPI_Datatype) :: mpiType

@@ -22,8 +22,10 @@ module io_handler_ftn
     procedure :: read1DArray => read1DArrayFTN
     procedure :: read2DArray => read2DArrayFTN
     procedure :: read2DArrayDistBlacs => read2DArrayDistBlacsFTN
+    procedure :: read2DArrayDistColumn => read2DArrayDistColumnFTN
     procedure :: open
     procedure :: close
+    procedure :: seek
     final :: destroyIoHandlerFTN
   end type ioHandlerFTN
 
@@ -98,6 +100,19 @@ module io_handler_ftn
         close(this%iounit)
         this%isOpen = .false.
       endif
+    end subroutine
+
+    subroutine seek(this, offset)
+      class(ioHandlerFTN) :: this
+      INTEGER, PARAMETER :: SEEK_SET = 0, SEEK_CUR = 1, SEEK_END = 2
+      integer, intent(in) :: offset
+      integer :: total_offset
+
+      if (trim(this%accessVal) == "sequential") then
+        ! Add bookend offset
+        total_offset = offset + 8
+      endif
+      call fseek(this%iounit, total_offset, SEEK_CUR)
     end subroutine
 
     subroutine writeScalarFTN(this, object)
@@ -256,6 +271,17 @@ module io_handler_ftn
       class(*), dimension(:,:), intent(out) :: object
       integer, intent(in) :: descr(9) ! Description array outputted from co_block_type_init
       type(MPI_Datatype), intent(in) :: block_type
+
+      ! Using the fortran io_handler means array isn't distributed, just read normally
+      call this%read2DArray(object)
+    end subroutine
+
+    subroutine read2DArrayDistColumnFTN(this, object, dimen)
+      ! read arrays distributed as columns using co_distr_data
+
+      class(ioHandlerFTN) :: this
+      class(*), dimension(:,:), intent(out) :: object
+      integer, intent(in) :: dimen
 
       ! Using the fortran io_handler means array isn't distributed, just read normally
       call this%read2DArray(object)
