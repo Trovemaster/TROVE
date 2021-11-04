@@ -14,8 +14,8 @@ COMPILER ?= intel
 MODE ?= release
 USE_MPI ?= 0
 
-ifneq ($(strip $(USE_MPI)),1)
-ifneq ($(strip $(USE_MPI)),0)
+ifneq ($(USE_MPI),1)
+ifneq ($(USE_MPI),0)
 $(error USE_MPI "$(USE_MPI)" should be set to 1 to enable MPI or 0 (default) to disable MPI.)
 endif
 endif
@@ -35,7 +35,7 @@ ifeq ($(strip $(COMPILER)),intel)
 	endif
 
 	LAPACK = -mkl=parallel
-	ifneq ($(strip $(USE_MPI)),0)
+	ifeq ($(USE_MPI),1)
 		LAPACK += -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 	endif
 
@@ -60,7 +60,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
-	ifneq ($(strip $(USE_MPI)),0)
+	ifneq ($(USE_MPI),0)
 		# Assume we're using openmpi with gfortran
 		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
@@ -70,7 +70,7 @@ endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
-ifneq ($(strip $(USE_MPI)),0)
+ifeq ($(USE_MPI),1)
 	FC = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
@@ -98,7 +98,7 @@ user_pot_dir=.
 TARGET=$(BINDIR)/$(EXE)
 
 MPI_SRCS = 
-ifneq ($(strip $(USE_MPI)),0)
+ifeq ($(USE_MPI),1)
 	MPI_SRCS += io_handler_mpi.f90
 endif
 
@@ -176,7 +176,7 @@ unit-tests-nompi: io_handler_ftn.o
 	echo "Running unit tests without MPI"
 	test/unit/test_io
 
-ifneq ($(strip $(USE_MPI)),0)
+ifeq ($(USE_MPI),1)
 unit-tests-mpi: io_handler_mpi.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
