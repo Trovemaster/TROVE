@@ -14,6 +14,12 @@ COMPILER ?= intel
 MODE ?= release
 USE_MPI ?= 0
 
+ifneq ($(strip $(USE_MPI)),1)
+ifneq ($(strip $(USE_MPI)),0)
+$(error USE_MPI "$(USE_MPI)" should be set to 1 to enable MPI or 0 (default) to disable MPI.)
+endif
+endif
+
 # Intel
 #######
 ifeq ($(strip $(COMPILER)),intel)
