@@ -128,9 +128,7 @@ module perturbation
 !
    type PTcontrME
       integer(ik)          :: isize        ! Number of expansion coeffs.
-      !real(rk),pointer     :: icoeff(:,:)  ! Expansion powers 
       real(rk),pointer     :: me(:,:)      ! matrix elements 
-      !
    end type PTcontrME
 
    type PTcoeffT
@@ -140,7 +138,6 @@ module perturbation
       real(rk),pointer     :: coeff(:,:,:) 
       integer(ik),pointer  :: IndexQ(:,:) 
       integer(ik),pointer  :: ifromsparse(:)
-      !integer(ik),pointer  :: itosparse(:)
       type(PTintcoeffs1dT),pointer  :: icoeff(:)
       type(PTintcoeffs1dT),pointer  :: iuniq(:)
       integer(ik),pointer  :: ifield(:)
@@ -156,7 +153,6 @@ module perturbation
      logical                     :: initialized = .false.
      type(PTcoeffs1dT),pointer   :: abcissa(:) 
      type(PTcoeffs1dT),pointer   :: weight(:) 
-     !type(PTcoeffs3dT),pointer   :: deriv(:) 
      real(rk),pointer            :: poten(:) 
      real(rk),pointer            :: gvib(:,:,:) 
      real(rk),pointer            :: grot(:,:,:) 
@@ -171,7 +167,6 @@ module perturbation
      integer(ik),pointer         :: nsize(:)    ! number of points along each mode 
      integer(hik)                :: total_size  ! total size of the dvr basis set
      real(ark),pointer           :: drho(:)     ! dvr integration step
-
    end type PTdvrT
 
 
