@@ -144,8 +144,8 @@ module io_handler_mpi
       integer(kind=MPI_OFFSET_KIND) :: total_offset
 
       if (trim(this%accessVal) == "sequential") then
-        ! Add bookend offset
-        total_offset = offset + 8
+        ! Add two bookend offsets
+        total_offset = offset + 2*4
       endif
       call MPI_File_seek(this%fileh, total_offset, MPI_SEEK_CUR)
     end subroutine
