@@ -9639,34 +9639,6 @@ module perturbation
                       !
                       if(abs(mat_elem)>1.0_rk) then 
                         !write(out,"(/'Non-diagonal element between different symmetries:')")
-
-                           !! DEBUG STUFF DELETEME
-                           ideg = 1
-                           jdeg = 1
-                           deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
-                           deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
-
-                           icontr = PT%icase2icontr(irow,ideg)
-                           jcontr = PT%icase2icontr(jrow,jdeg)
-
-                           cnu_j(:) = PT%contractive_space(:,jrow)
-
-                           k_i = PT%rot_index(cnu_i(0),deg_i(0))%k
-                           k_j = PT%rot_index(cnu_j(0),deg_j(0))%k
-                           tau_i = PT%rot_index(cnu_i(0),deg_i(0))%tau
-                           tau_j = PT%rot_index(cnu_j(0),deg_j(0))%tau
-                           print *, icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j
-                           print *, func(icontr,jcontr,jrot,k_i,k_j,tau_i,tau_j)
-
-                           do k_j = 1,3
-                             do k_i = 1,k_j
-                                !
-                                print *,  grot(k_i,k_j)%me(icontr,jcontr) 
-                                !
-                             enddo
-                           enddo 
-                           !! DEBUG STUFF DELETEME
-
                            write(0,"(/'<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10,a)") & 
                                       sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem,&
                                       'Non-diagonal element between different symmetries is too large! (k)'

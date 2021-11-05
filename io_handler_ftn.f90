@@ -213,8 +213,6 @@ module io_handler_ftn
       type is (complex(kind=8))
         read(this%iounit) object
       type is (character(len=*))
-        !print *, object
-        !stop "DEBUG readScalarFTN"
         read(this%iounit) object
       class default
         stop "ioHandlerFTN%readScalarFTN: Tried to read unsupported type"
