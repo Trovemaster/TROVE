@@ -8496,9 +8496,6 @@ module perturbation
 
   subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, ioHandler, dimen, &
       ncontr, maxcontr, icontr)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
     use mpi_aux
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
