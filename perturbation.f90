@@ -34395,7 +34395,7 @@ end subroutine read_contr_matelem_expansion_classN
         if (Maxcontracts/=ncontr) then
           write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
           write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") PT%Maxcontracts,ncontr
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
+          stop 'PTstore_icontr_cnu - in file - illegal nroots '
         end if
         !
         allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
@@ -34404,7 +34404,7 @@ end subroutine read_contr_matelem_expansion_classN
         call ioHandler%read(buf18(1:10))
         if (buf18(1:10)/='icontr_cnu') then
           write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'PTstore_icontr_cnu - in file -  icontr_cnu missing'
         end if
         !
         call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
@@ -34412,7 +34412,7 @@ end subroutine read_contr_matelem_expansion_classN
         call ioHandler%read(buf18(1:11))
         if (buf18(1:11)/='icontr_ideg') then
           write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'PTstore_icontr_cnu - in file -  icontr_ideg missing'
         end if
         !
         call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
