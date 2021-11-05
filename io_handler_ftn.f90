@@ -109,9 +109,9 @@ module io_handler_ftn
       integer, intent(in) :: offset
       integer :: total_offset
 
-      if (trim(this%accessVal) == "sequential") then
-        ! Add bookend offset
-        total_offset = offset + 8
+      if (trim(this%accessVal) == "sequential" .and. offset .ne. 0) then
+        ! Add two bookend offsets
+        total_offset = offset + 2*4
       endif
       call fseek(this%iounit, total_offset, SEEK_CUR)
     end subroutine

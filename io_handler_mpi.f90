@@ -143,7 +143,7 @@ module io_handler_mpi
       integer, intent(in) :: offset
       integer(kind=MPI_OFFSET_KIND) :: total_offset
 
-      if (trim(this%accessVal) == "sequential") then
+      if (trim(this%accessVal) == "sequential" .and. offset .ne. 0) then
         ! Add two bookend offsets
         total_offset = offset + 2*4
       endif
