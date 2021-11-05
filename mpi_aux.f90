@@ -233,6 +233,7 @@ contains
       co_startdim = 1
       co_enddim = dimen
       co_blocksize = dimen*dimen
+      co_localsize = dimen
       send_or_recv(1) = 0
     else
 
@@ -306,7 +307,7 @@ contains
   end subroutine
 
   subroutine co_create_distr_array(arr, dimen)
-    real(rk), allocatable, intent(out) :: arr(:,:)
+    real(rk), pointer, intent(out) :: arr(:,:)
     integer, intent(in) :: dimen
 
     call co_validate_dimensions(dimen)
