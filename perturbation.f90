@@ -8563,7 +8563,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
-        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*MPI_INT_SIZE
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*sizeof(0)
         call ioHandler%seek(file_offset)
 
         call ioHandler%read(readbuf(1:11))
@@ -8572,7 +8572,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
-        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*MPI_INT_SIZE
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*sizeof(0)
         call ioHandler%seek(file_offset)
       else
 
@@ -8706,7 +8706,7 @@ module perturbation
         call ioHandler%read(readbuf(1:5))
         if (readbuf(1:5)/='g_cor') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,readbuf(1:5)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
         allocate(gcor(3),stat=ierr)
@@ -8755,7 +8755,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-        file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*MPI_REAL_SIZE
+        file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*sizeof(0.0_rk)
         call ioHandler%seek(file_offset)
         !
         call ioHandler%read(readbuf(1:5))
@@ -8764,7 +8764,7 @@ module perturbation
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
+        file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*sizeof(0.0_rk)
         call ioHandler%seek(file_offset)
         !
       endif
