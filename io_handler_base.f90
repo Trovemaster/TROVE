@@ -87,7 +87,6 @@ module io_handler_base
     end subroutine
     subroutine read2DArrayDistColumn(this, object, dimen)
       import ioHandlerBase
-      import MPI_Datatype
       class(ioHandlerBase) :: this
       class(*), intent(out) :: object(:,:)
       integer, intent(in) :: dimen ! Dimension of entire distributed array
