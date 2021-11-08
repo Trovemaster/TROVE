@@ -8435,10 +8435,6 @@ module perturbation
   end subroutine PThamiltonian_contract
   !
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!! MPIIO !!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
   subroutine PTrestore_rot_kinetic_matrix_elements(jrot, task, ioHandler, dimen, &
       ncontr, maxcontr, icontr)
     use mpi_aux
@@ -8473,7 +8469,7 @@ module perturbation
     select case (trim(task))
     case('top')
 
-      job_id = '[MPI-IO] Vib. matrix elements of the rot. kinetic' 
+      job_id = 'Vib. matrix elements of the rot. kinetic' 
       !TODO - MPI-compatible IOStart
       !call IOStart(trim(job_id),fileh)
 
@@ -8602,16 +8598,10 @@ module perturbation
         !
         allocate(grot(3,3),stat=ierr)
         !
-        islice = 0
-        !
         do k1 = 1,3
           do k2 = 1,3
-            !
-            islice = islice + 1
-            !
             call co_create_distr_array(grot(k1,k2)%me, ncontr)
             call ioHandler%read(grot(k1,k2)%me, ncontr)
-            !
           enddo
         enddo
         !
@@ -8622,7 +8612,6 @@ module perturbation
         islice = 0
         !
         do k1 = 1,3
-          !
           do k2 = 1,3
             !
             islice = islice + 1
@@ -8642,9 +8631,6 @@ module perturbation
     case('cor')
       !
       if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   Read and process Coriolis part...')")
-      !
-      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
       !
       if (.not.job%IOmatelem_split) then
         !
