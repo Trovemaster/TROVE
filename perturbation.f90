@@ -7662,7 +7662,7 @@ module perturbation
     !
     task = 'top'
     if (trim(job%kinetmat_format).eq.'MPIIO') then
-      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+      call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
         ncontr,maxcontr)
     else
       call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7684,7 +7684,7 @@ module perturbation
         !
         task = 'rot'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7692,7 +7692,7 @@ module perturbation
         !
         task = 'cor'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7712,7 +7712,7 @@ module perturbation
         !
         task = 'vib'
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7791,7 +7791,7 @@ module perturbation
       !
       task = 'top-icontr'
       if (trim(job%kinetmat_format).eq.'MPIIO') then
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
           ncontr,maxcontr)
       else
         call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7816,7 +7816,7 @@ module perturbation
            !
            task = 'rot-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
                ncontr,maxcontr)
            else
              call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
@@ -7824,7 +7824,7 @@ module perturbation
            !
            task = 'cor-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
                ncontr,maxcontr)
            else
              call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
@@ -7836,7 +7836,7 @@ module perturbation
            !
            task = 'vib-icontr'
            if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
                ncontr,maxcontr)
            else
              call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
@@ -7920,7 +7920,7 @@ module perturbation
         task = 'rot'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -7980,7 +7980,7 @@ module perturbation
         task = 'cor'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -8046,7 +8046,7 @@ module perturbation
         task = 'vib'
         !
         if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,kinetmatHandler,dimen,&
+          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
             ncontr,maxcontr)
         else
           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
@@ -8494,7 +8494,7 @@ module perturbation
   !!!!!!!!! MPIIO !!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, ioHandler, dimen, &
+  subroutine PTrestore_rot_kinetic_matrix_elements(jrot, task, ioHandler, dimen, &
       ncontr, maxcontr, icontr)
     use mpi_aux
     integer(ik),intent(in)  :: jrot
@@ -8872,7 +8872,7 @@ module perturbation
   !
   ! Here we restore the vibrational (J=0) matrix elements of the rotational kinetic part G_rot and G_cor
   !
-  subroutine PTrestore_rot_kinetic_matrix_elements(jrot,task,ioHandler,dimen,ncontr,maxcontr,icontr)
+  subroutine PTrestore_rot_kinetic_matrix_elements_old(jrot,task,ioHandler,dimen,ncontr,maxcontr,icontr)
     !
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
@@ -9493,7 +9493,7 @@ module perturbation
       !
     end subroutine divided_slice_close_vib_rot
 
-  end subroutine PTrestore_rot_kinetic_matrix_elements
+  end subroutine PTrestore_rot_kinetic_matrix_elements_old
   !
   !
   !
