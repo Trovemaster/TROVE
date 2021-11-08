@@ -7661,12 +7661,7 @@ module perturbation
     call TimerStart('Calculating the Hamiltonian matrix')
     !
     task = 'top'
-    if (trim(job%kinetmat_format).eq.'MPIIO') then
-      call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-        ncontr,maxcontr)
-    else
-      call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-    endif
+    call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
     !
     ! We have two calculation options: fast and cheap and slow but expensive.  
     !
@@ -7683,20 +7678,10 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'rot'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         task = 'cor'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         call TimerStop('Restoring KE matrix')
         !
@@ -7711,13 +7696,8 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'vib'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
-        
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
+
         call TimerStop('Restoring KE matrix')
         !
         if (job%verbose>=5) write(out,"(/' ...done!')")
@@ -7790,12 +7770,7 @@ module perturbation
       if (job%verbose>=4) write(out,"(/' Construct the Hamiltonian matrix...')") 
       !
       task = 'top-icontr'
-      if (trim(job%kinetmat_format).eq.'MPIIO') then
-        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-          ncontr,maxcontr)
-      else
-        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-      endif
+      call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
       !
       if (job%verbose>=5) write(out,"(' N Arrays of ',f12.5,'Gb each will be allocated (N is the number of processors)')") &
                           real(sym%Nrepresen,rk)*real(PT%max_deg_size,rk)*real(max_dim,rk)*real(rk,rk)/1024.0_rk**3
@@ -7815,32 +7790,17 @@ module perturbation
          if (FLrotation.and.jrot/=0) then
            !
            task = 'rot-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
            task = 'cor-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
          endif
          !
          if ( PTvibrational_me_calc ) then
            !
            task = 'vib-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
          endif
          !
@@ -7919,12 +7879,7 @@ module perturbation
         !
         task = 'rot'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -7979,12 +7934,7 @@ module perturbation
         !
         task = 'cor'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -8045,12 +7995,7 @@ module perturbation
         !
         task = 'vib'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
