@@ -411,17 +411,22 @@ module io_handler_mpi
       class(*), intent(out) :: object(:,:)
       integer, intent(in) :: dimen ! Dimension of entire distributed array
 
-      integer :: ierr
+      type(MPI_Datatype) :: mpiType_
+      integer :: byteSize, arrSizeBytes, globalSize, ierr
       integer(kind = MPI_OFFSET_KIND) :: offset, disp
+
+      call getMPIVarInfo(object(1,1), byteSize, mpiType_)
+      arrSizeBytes = dimen*dimen*byteSize
 
       ! Get individual pointer offset
       call MPI_File_get_position(this%fileh, offset, ierr)
+      call MPI_File_get_byte_offset(this%fileh, offset, disp, ierr)
       ! Set shared pointer to individual pointer + bookend
-      call MPI_File_seek_shared(this%fileh, offset+this%bookendBytes, MPI_SEEK_SET, ierr)
+      call MPI_File_seek_shared(this%fileh, disp+this%bookendBytes, MPI_SEEK_SET, ierr)
       ! Read array in parallel
       MPI_WRAPPER(MPI_File_read_ordered,this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
-      ! Skip over last bookend
-      call MPI_File_seek_shared(this%fileh, int(this%bookendBytes,MPI_OFFSET_KIND), MPI_SEEK_CUR, ierr)
+      ! Set shared pointer to point to byte after last bookend
+      call MPI_File_seek_shared(this%fileh, disp+this%bookendBytes+arrSizeBytes+this%bookendBytes, MPI_SEEK_SET)
 
       ! Set individual pointer to match shared
       call MPI_File_get_position_shared(this%fileh, offset, ierr)
