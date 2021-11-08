@@ -374,7 +374,7 @@ module test_mpi_io
   end subroutine
 
   @test
-  subroutine testMPIReadBlacsDistArray(this)
+  subroutine testMPIReadColumnDistArray(this)
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
@@ -476,7 +476,7 @@ module test_mpi_io
   end subroutine
 
   @test
-  subroutine testMPIReadColumnDistArray(this)
+  subroutine testMPIReadBlacsDistArray(this)
     class(TestMPI), intent(inout) :: this
     type(ioHandlerMPI) :: ioHandler
 
