@@ -564,8 +564,8 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
         do jdeg=1, ndeg2
           do ideg=1, ndeg1
             n = nelem_sparse(ithread)
-            me(irrep,ideg,jdeg,ithread) = ddoti(n, vec_sparse(1:n,jdeg,ithread), ind_sparse(1:n,ithread), &
-                half_me(1:dimen2,ideg,irrep))
+            me(irrep,ideg,jdeg,ithread) = dot_product(vec_sparse(1:n,jdeg,ithread), &
+                half_me(ind_sparse(1:n,ithread),ideg,irrep))
           enddo
         enddo
       enddo
