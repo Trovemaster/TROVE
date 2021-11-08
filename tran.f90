@@ -2441,8 +2441,8 @@ contains
      !
      if (trim(kinetic_part)=='rot') then
        !
-       call fileHandler%read(buf18(1:4))
-       if (buf18(1:4)/='g_ro') then
+       call fileHandler%read(buf18(1:5))
+       if (buf18(1:5)/='g_rot') then
          write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") trim(job%kinetmat_file),buf18(1:5)
          !
          if (buf18(1:4)=='hvib'.or.buf18(1:3)=='End') &
