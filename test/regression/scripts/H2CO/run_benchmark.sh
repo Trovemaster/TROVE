@@ -14,7 +14,7 @@ ulimit -d unlimited
 
 if [[ ${USE_MPI} == 1 ]]; then
   echo "MPI enabled"
-  LAUNCH="time mpirun -np $nproc --mca opal_warn_on_missing_libcuda 0"
+  LAUNCH="time mpirun -np $nproc"
   ./set_io_format.sh enable
   export OMP_NUM_THREADS=1
 else
