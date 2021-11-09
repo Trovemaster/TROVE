@@ -184,7 +184,7 @@ ifeq ($(USE_MPI),1)
 unit-tests-mpi: io_handler_mpi.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
-	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+	mpirun -n 4 test/unit/test_mpi_io
 else
 unit-tests-mpi:
 	$(error set USE_MPI=1 to compile & test with MPI)
