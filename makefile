@@ -165,7 +165,7 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
-ifeq ($(USE_MPI,1))
+ifeq ($(USE_MPI),1)
 test: regression-tests unit-tests-nompi unit-tests-mpi
 else
 test: regression-tests unit-tests-nompi
