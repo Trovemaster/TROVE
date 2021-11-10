@@ -36,6 +36,7 @@ ifeq ($(strip $(COMPILER)),intel)
 
 	LAPACK = -mkl=parallel
 	ifeq ($(USE_MPI),1)
+		FC=mpiifort
 		LAPACK += -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 	endif
 
@@ -62,6 +63,7 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 	ifneq ($(USE_MPI),0)
 		# Assume we're using openmpi with gfortran
+		FC = mpif90
 		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
 else
@@ -71,7 +73,6 @@ endif
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
 ifeq ($(USE_MPI),1)
-	FC = mpif90
 	FFLAGS += -DTROVE_USE_MPI_
 endif
 
