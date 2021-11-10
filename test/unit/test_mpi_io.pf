@@ -21,7 +21,7 @@ module test_mpi_io
   integer,external :: INDXL2G
 
   logical :: is_mpi_initialised = .false.
-  integer, parameter :: totalTestCount = 6 ! CHANGE ME TO NUMBER OF TESTS
+  integer, parameter :: totalTestCount = 7 ! CHANGE ME TO NUMBER OF TESTS
   integer :: currentTestCount = 0
 
   contains
@@ -217,8 +217,8 @@ module test_mpi_io
     character(len=*), parameter :: access = "sequential"
 
     real(rk) :: grot_full(dimen, dimen)
-    real(rk), allocatable :: grot_t(:,:)
-    real(rk),allocatable :: recvbuf(:,:,:)
+    real(rk), pointer :: grot_t(:,:)
+    real(rk), allocatable :: recvbuf(:,:,:)
 
     integer :: true_integer = 5, in_integer
 
@@ -383,7 +383,7 @@ module test_mpi_io
     integer :: startdim_, enddim_, blocksize_
 
     real(rk) :: true_array(dimen,dimen)
-    real(rk), allocatable :: in_array(:,:)
+    real(rk), pointer :: in_array(:,:)
 
     integer :: true_integer = 5, in_integer
 
@@ -579,4 +579,71 @@ module test_mpi_io
     endif
 
   end subroutine
+
+  @test
+  subroutine testSeekWhileReading(this)
+    class(TestMPI), intent(inout) :: this
+    type(ioHandlerMPI) :: ioHandler
+
+    real :: true_real = 4.0, in_real
+    integer :: dummy_arr(1:5)
+    integer :: true_integer = 5, in_integer
+
+    integer :: iounit, stat
+    character(len=*), parameter :: fname = "test.dat"
+    character(len=*), parameter :: position = "asis"
+    character(len=*), parameter :: status = "unknown"
+    character(len=*), parameter :: form = "unformatted"
+    character(len=*), parameter :: access = "sequential"
+
+    integer i
+
+    integer :: ierr, rank, allocinfo = 0
+    type(ErrorType) :: err
+
+    ! Set up MPI
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if(ierr.ne.0) print *, "Error: could not get rank"
+
+    ! Setup dummy array
+    do i=1,5
+      dummy_arr(i) = 10
+    enddo
+
+    ! Write test file
+    if(rank == 0) then
+      open(newunit=iounit, iostat=stat, action='write', file=fname, &
+        form=form, access=access, status=status, position=position)
+
+      write(iounit) true_real ! double
+      write(iounit) dummy_arr
+      write(iounit) true_integer ! int
+
+      if (stat == 0) close(iounit)
+    endif
+
+    call MPI_Barrier(MPI_COMM_WORLD)
+
+    ! Read test file
+    call ioHandler%open(fname, err, \
+      action='read', form=form, access=access, status=status, position=position)
+    HANDLE_ERROR(err)
+
+    call ioHandler%read(in_real)
+    @assertTrue(in_real == true_real)
+
+    call ioHandler%seek(size(dummy_arr)*sizeof(0))
+
+    call ioHandler%read(in_integer)
+    @assertTrue(in_integer == true_integer)
+
+    call ioHandler%close()
+
+    if(rank == 0) then
+      ! Cleanup test file
+      open(newunit=iounit, iostat=stat, action='read', file=fname)
+      if (stat == 0) close(iounit, status='delete')
+    endif
+  end subroutine
+
 end module
