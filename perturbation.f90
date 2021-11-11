@@ -15160,7 +15160,8 @@ module perturbation
     integer            :: startdim, enddim, blocksize_, ierr, b, req_count, offset
     type(MPI_Request),allocatable :: reqs(:)
     type(MPI_Status)   :: reqstat
-    type(MPI_File)     :: chkptMPIIO, chkptMPIIO_
+    type(MPI_File)     :: chkptMPIIO
+    class(ioHandlerBase), allocatable :: sliceHandler
     integer(kind=MPI_Offset_kind) :: mpioffset
     integer           :: mpisz
     !
@@ -15526,9 +15527,7 @@ module perturbation
               if (trim(job%IOkinet_action)=='SAVE') then
                 if (job%IOmatelem_split) then 
                   !
-                  ! TODO fix MPIIO matelem split
                   if (trim(job%kinetmat_format).eq.'MPIIO') then
-                    stop "Split not implemented yet - TODO"
                     call write_divided_slice_mpi(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
                   else
                     call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
@@ -15960,9 +15959,9 @@ module perturbation
                    !
                    !! TODO !!
                    write(*,*) "TODO: NEEDS VERIFICATION"
-                   call divided_slice_open_mpi(islice,chkptMPIIO_,'g_vib',job%matelem_suffix)
+                   call divided_slice_open_mpi(islice,sliceHandler,'g_vib',job%matelem_suffix)
                    !
-                   call co_read_matrix_distr_ordered(gvib_t, mdimen, startdim, enddim, chkptMPIIO_)
+                   call sliceHandler%read(gvib_t, mdimen)
                    !
                    do b=1,comm_size
                      if (send_or_recv(b).ge.0) then
@@ -15976,7 +15975,7 @@ module perturbation
                        endif
                    enddo
                    !
-                   call divided_slice_close_mpi(islice,chkptMPIIO_,'g_vib')
+                   call divided_slice_close_mpi(islice,sliceHandler,'g_vib')
                    !
                  enddo
                else
@@ -16380,37 +16379,29 @@ module perturbation
         integer(ik),intent(in)              :: N
         real(rk),dimension(:,:),intent(in)  :: field
 
-#ifdef TROVE_USE_MPI_
         character(len=4)                    :: jchar
         character(len=cl)                   :: filename
-        character(len=cl)                   :: job_is
-        type(MPI_File)                      :: chkptMPIIO
-        integer(kind=MPI_OFFSET_KIND)       :: offset
+        character(len=cl)                   :: job_id
+        class(ioHandlerBase), allocatable    :: ioHandler
         integer                             :: ierr
         !
-        write(job_is,"('single swap_matrix')")
+        write(job_id,"('single swap_matrix')")
         !
-        !!call IOStart(trim(job_is),chkptIO)
+        !!call IOStart(trim(job_id),chkptIO)
         !
         write(jchar, '(i4)') islice
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-        offset = 0
-        call MPI_File_open(mpi_comm_world, filename, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
-        call MPI_File_set_size(chkptMPIIO, offset, ierr)
-        call mpi_barrier(mpi_comm_world, ierr)
-        !
-        if(mpi_rank .eq. 0) call MPI_File_write_shared(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
-        call mpi_barrier(mpi_comm_world, ierr)
-        !
-        call co_write_matrix_distr(field, N, co_startdim, co_enddim,chkptMPIIO)
-        !
-        if(mpi_rank .eq. 0) call MPI_File_write_shared(chkptMPIIO,name,len(trim(name)),mpi_character,mpi_status_ignore,ierr)
-        !
-        call MPI_File_close(chkptMPIIO, ierr)
-        !
-#endif
+        call openFile(ioHandler, filename, err, action='write', &
+          form='unformatted',position='rewind',status='replace')
+        HANDLE_ERROR(err)
+
+        call ioHandler%write(name)
+        call ioHandler%write(field, N)
+        call ioHandler%write(name)
+
+        deallocate(ioHandler)
       end subroutine write_divided_slice_mpi
 
 
@@ -16452,46 +16443,42 @@ module perturbation
       !
     end subroutine divided_slice_open
 
-    subroutine divided_slice_open_mpi(islice,chkptIO,name,suffix)
+    subroutine divided_slice_open_mpi(islice,ioHandler,name,suffix)
       !
       implicit none
       integer(ik),intent(in)      :: islice
-      type(MPI_File),intent(inout)   :: chkptIO
+      class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
       character(len=*),intent(in) :: name,suffix
 
-#ifdef TROVE_USE_MPI_
       character(len=4)            :: jchar
-      character(len=cl)           :: buf,filename,job_is
+      character(len=cl)           :: buf,filename,job_id
       integer(ik)                 :: ilen
       integer :: ierr
       !
       if (.not.job%IOmatelem_split) return
       !
-      write(job_is,"('single swap_matrix')")
+      write(job_id,"('single swap_matrix')")
       !
       !!call IOStart(trim(job_is),chkptIO)
       !
       write(jchar, '(i4)') islice
       !
       filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-      !
-      call MPI_File_open(mpi_comm_world, filename, mpi_mode_rdonly, mpi_info_null, chkptMPIIO, ierr)
-      if (ierr.ne.0) then
-        if(mpi_rank.eq.0) write(out,"('divided_slice_open-error: The split-file ',a,' does not exist')") trim(filename)
-        stop 'divided_slice_open-error: The split-file does not exist'
-      endif
+
+      call openFile(ioHandler, filename, err, action='read', &
+        form='unformatted',position='rewind',status='old')
+      HANDLE_ERROR(err)
       !
       ilen = LEN_TRIM(name)
-      !
-      if (mpi_rank.eq.0) then
-        call MPI_File_read_shared(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
-        if ( trim(buf(1:ilen))/=trim(name) ) then
-          write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-          call MPI_Abort(mpi_comm_world, 1)
-        !stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
-        endif
-      endif
+
+      call ioHandler%read(buf(1:ilen))
+      if ( trim(buf(1:ilen))/=trim(name) ) then
+        write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+#ifdef TROVE_USE_MPI_
+        call MPI_Abort(mpi_comm_world, 1)
 #endif
+        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
+      endif
     end subroutine divided_slice_open_mpi
     !
     subroutine divided_slice_close(islice,chkptIO,name)
@@ -16518,10 +16505,10 @@ module perturbation
       !
     end subroutine divided_slice_close
 
-    subroutine divided_slice_close_mpi(islice,chkptIO,name)
-      !
+    subroutine divided_slice_close_mpi(islice,ioHandler,name)
+
       integer(ik),intent(in) :: islice
-      type(MPI_File),intent(inout) :: chkptIO
+      class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
       character(len=*),intent(in) :: name
       character(len=cl) :: buf
       integer(ik)      :: ilen
@@ -16531,21 +16518,16 @@ module perturbation
       !
       ilen = LEN_TRIM(name)
       !
-      if(mpi_rank .eq. 0) then
-#ifdef TROVE_USE_MPI_
-        call MPI_File_read_shared(chkptIO, buf, ilen, mpi_character, mpi_status_ignore, ierr)
-        if ( trim(buf(1:ilen))/=trim(name) ) then
+      call ioHandler%read(buf(1:ilen))
+      if ( trim(buf(1:ilen))/=trim(name) ) then
           write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
-          call MPI_Abort(mpi_comm_world, 1)
-          !stop 'divided_slice_close - in slice -  footer missing or wrong'
-        endif
-#endif
-      endif
-      !
 #ifdef TROVE_USE_MPI_
-      call MPI_File_close(chkptIO, ierr)
+        call MPI_Abort(mpi_comm_world, 1)
 #endif
-      !
+        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  footer missing or wrong'
+      endif
+
+      deallocate(ioHandler)
     end subroutine divided_slice_close_mpi
 
       !
