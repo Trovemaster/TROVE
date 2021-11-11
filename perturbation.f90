@@ -8622,9 +8622,9 @@ module perturbation
             !
             call co_create_distr_array(grot(k1,k2)%me, ncontr)
             !
-            call divided_slice_open_mpi(islice,sliceHandler,'g_rot',job%matelem_suffix)
+            call divided_slice_open(islice,sliceHandler,'g_rot',job%matelem_suffix)
             call sliceHandler%read(grot(k1,k2)%me, ncontr)
-            call divided_slice_close_mpi(islice,sliceHandler,'g_rot')
+            call divided_slice_close(islice,sliceHandler,'g_rot')
             !
           enddo
         enddo
@@ -8669,9 +8669,9 @@ module perturbation
           !
           call co_create_distr_array(gcor(k1)%me, ncontr)
           !
-          call divided_slice_open_mpi(islice,sliceHandler,'g_cor',job%matelem_suffix)
+          call divided_slice_open(islice,sliceHandler,'g_cor',job%matelem_suffix)
           call sliceHandler%read(gcor(k1)%me, ncontr)
-          call divided_slice_close_mpi(islice,sliceHandler,'g_cor')
+          call divided_slice_close(islice,sliceHandler,'g_cor')
         enddo
         !
       endif
@@ -8961,7 +8961,7 @@ module perturbation
       !
     end subroutine divided_slice_close_vib_rot
 
-    subroutine divided_slice_open_mpi(islice,sliceHandler,chkpt_type,suffix)
+    subroutine divided_slice_open(islice,sliceHandler,chkpt_type,suffix)
       use mpi_aux
       implicit none
       integer(ik),intent(in) :: islice
@@ -8994,9 +8994,9 @@ module perturbation
         if (mpi_rank .eq. 0) write (out,"('divided_slice_open, kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
         stop 'PTrestore_rot_kinetic_matrix_elements- in slice -  header missing or wrong'
       end if
-    end subroutine divided_slice_open_mpi
+    end subroutine divided_slice_open
 
-    subroutine divided_slice_close_mpi(islice,sliceHandler,chkpt_type)
+    subroutine divided_slice_close(islice,sliceHandler,chkpt_type)
       use mpi_aux
       integer(ik),intent(in) :: islice
       class(ioHandlerBase), allocatable, intent(inout) :: sliceHandler
@@ -9017,7 +9017,7 @@ module perturbation
         stop 'divided_slice_close - in slice -  footer missing or wrong'
       end if
       deallocate(sliceHandler)
-    end subroutine divided_slice_close_mpi
+    end subroutine divided_slice_close
 
   end subroutine
   !
@@ -15527,11 +15527,7 @@ module perturbation
               if (trim(job%IOkinet_action)=='SAVE') then
                 if (job%IOmatelem_split) then 
                   !
-                  if (trim(job%kinetmat_format).eq.'MPIIO') then
-                    call write_divided_slice_mpi(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
-                  else
-                    call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
-                  endif
+                  call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
                   !
                 else
                   !
@@ -15612,11 +15608,7 @@ module perturbation
               !
               if (job%IOmatelem_divide) then
                 !
-                if (trim(job%kinetmat_format).eq.'MPIIO') then
-                  call write_divided_slice_mpi(islice,'g_cor',job%matelem_suffix,mdimen,grot_t)
-                else
-                  call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,grot_t)
-                endif
+                call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,grot_t)
                 !
               else
                 !
@@ -15634,11 +15626,7 @@ module perturbation
               !
               if (job%IOmatelem_split) then 
                 !
-                if (trim(job%kinetmat_format).eq.'MPIIO') then
-                  call write_divided_slice_mpi(islice,'g_cor',job%matelem_suffix,mdimen,gcor_t)
-                else
-                  call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,gcor_t)
-                endif
+                call write_divided_slice(islice,'g_cor',job%matelem_suffix,mdimen,gcor_t)
                 !
               else
                 !
@@ -15843,11 +15831,7 @@ module perturbation
                   enddo
                   !$omp end parallel do
                   !
-                  if (trim(job%kinetmat_format).eq.'MPIIO') then
-                    call write_divided_slice_mpi(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
-                  else
-                    call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
-                  endif
+                  call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
                   !
                 else
                   !
@@ -15930,11 +15914,7 @@ module perturbation
               !
               islice = (PT%Nmodes+3)*3+PT%Nmodes**2+1
               !
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-                call write_divided_slice_mpi(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
-              else
-                call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
-              endif
+              call write_divided_slice(islice,'g_vib',job%matelem_suffix,mdimen,gvib_t)
               !
               if (job%IOmatelem_split.and.job%iswap(1)==1) job%iswap(1)=0
               !
@@ -15952,53 +15932,32 @@ module perturbation
                !
                f_t = -0.5_rk
                !
-               if (trim(job%kinetmat_format).eq.'MPIIO') then
-                 do  islice = iterm1,iterm2
-                   !
-                   if (islice==(PT%Nmodes+3)*3+PT%Nmodes**2+1) f_t = 1.0_rk
-                   !
-                   !! TODO !!
-                   write(*,*) "TODO: NEEDS VERIFICATION"
-                   call divided_slice_open_mpi(islice,sliceHandler,'g_vib',job%matelem_suffix)
-                   !
-                   call sliceHandler%read(gvib_t, mdimen)
-                   !
-                   do b=1,comm_size
-                     if (send_or_recv(b).ge.0) then
-                       !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
-                       do icoeff=startdim,enddim
-                         do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
-                             if (jcoeff .gt. PT%Maxcontracts) cycle
-                             hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)+f_t*gvib_t(jcoeff,icoeff)
-                           enddo
+               do  islice = iterm1,iterm2
+                 !
+                 if (islice==(PT%Nmodes+3)*3+PT%Nmodes**2+1) f_t = 1.0_rk
+                 !
+#ifdef TROVE_USE_MPI_
+                 write(out,*) "WARNING: slice handling of g_vib using MPI is unverified"
+#endif
+                 call divided_slice_open(islice,sliceHandler,'g_vib',job%matelem_suffix)
+                 !
+                 call sliceHandler%read(gvib_t, mdimen)
+                 !
+                 do b=1,comm_size
+                   if (send_or_recv(b).ge.0) then
+                     !$omp parallel do private(icoeff,jcoeff) shared(b,grot_t) schedule(static)
+                     do icoeff=startdim,enddim
+                       do jcoeff=((b-1)*mdimen_p)+1,b*mdimen_p
+                           if (jcoeff .gt. PT%Maxcontracts) cycle
+                           hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)+f_t*gvib_t(jcoeff,icoeff)
                          enddo
-                       endif
-                   enddo
-                   !
-                   call divided_slice_close_mpi(islice,sliceHandler,'g_vib')
-                   !
+                       enddo
+                     endif
                  enddo
-               else
-                 do  islice = iterm1,iterm2
-                   !
-                   if (islice==(PT%Nmodes+3)*3+PT%Nmodes**2+1) f_t = 1.0_rk
-                   !
-                   call divided_slice_open(islice,chkptIO_,'g_vib',job%matelem_suffix)
-                   !
-                   read(chkptIO_) gvib_t
-                   !
-                   !$omp parallel do private(icoeff,jcoeff) shared(hvib_t) schedule(dynamic)
-                   do icoeff=1,mdimen
-                     do jcoeff=1,icoeff
-                       hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)+f_t*gvib_t(jcoeff,icoeff)
-                     enddo
-                   enddo
-                   !$omp end parallel do
-                   !
-                   call divided_slice_close(islice,chkptIO_,'g_vib')
-                   !
-                 enddo
-               endif
+                 !
+                 call divided_slice_close(islice,sliceHandler,'g_vib')
+                 !
+               enddo
                !
                gvib_t = 0
                !
@@ -16168,11 +16127,7 @@ module perturbation
               !
               if (job%IOextF_divide) then 
                 !
-                if (trim(job%kinetmat_format).eq.'MPIIO') then
-                  call write_divided_slice_mpi(imu,'extF',job%extmat_suffix,mdimen,extF_t)
-                else
-                  call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,extF_t)
-                endif
+                call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,extF_t)
                 !
               else
                 !
@@ -16339,40 +16294,10 @@ module perturbation
       !   stop 'cannot proceede for extF = divide-join with matelem /= read'
       !endif 
       !
+
       contains
 
       subroutine write_divided_slice(islice,name,suffix,N,field)
-        !
-        integer(ik),intent(in) :: islice
-        character(len=*),intent(in) :: name,suffix
-        integer(ik),intent(in)      :: N
-        real(rk),intent(in)         :: field(N,N)
-        character(len=4) :: jchar
-        integer(ik)            :: chkptIO
-        character(len=cl)      :: filename
-        character(len=cl)      :: job_is
-        !
-        write(job_is,"('single swap_matrix')")
-        !
-        call IOStart(trim(job_is),chkptIO)
-        !
-        write(jchar, '(i4)') islice
-        !
-        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-        !
-        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
-        !
-        write(chkptIO) trim(name)
-        !
-        write(chkptIO) field
-        !
-        write(chkptIO) trim(name)
-        !
-        close(chkptIO)
-        !
-      end subroutine write_divided_slice
-
-      subroutine write_divided_slice_mpi(islice,name,suffix,N,field)
         !
         integer(ik),intent(in)              :: islice
         character(len=*),intent(in)         :: name,suffix
@@ -16402,133 +16327,70 @@ module perturbation
         call ioHandler%write(name)
 
         deallocate(ioHandler)
-      end subroutine write_divided_slice_mpi
+      end subroutine write_divided_slice
 
+      subroutine divided_slice_open(islice,ioHandler,name,suffix)
+        !
+        implicit none
+        integer(ik),intent(in)      :: islice
+        class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
+        character(len=*),intent(in) :: name,suffix
 
-    subroutine divided_slice_open(islice,chkptIO,name,suffix)
-      !
-      implicit none
-      integer(ik),intent(in)      :: islice
-      integer(ik),intent(inout)   :: chkptIO
-      character(len=*),intent(in) :: name,suffix
-      character(len=4)            :: jchar
-      character(len=cl)           :: buf,filename,job_is
-      integer(ik)                 :: ilen
-      logical                     :: ifopened
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      write(job_is,"('single swap_matrix')")
-      !
-      call IOStart(trim(job_is),chkptIO)
-      !
-      write(jchar, '(i4)') islice
-      !
-      filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-      !
-      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=10)
-      !
-      ilen = LEN_TRIM(name)
-      !
-      read(chkptIO) buf(1:ilen)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
-      end if
-      !
-      return
-      !
-      10 write(out,"('divided_slice_open-error: The split-file ',a,' does not exist')") trim(filename)
-      stop 'divided_slice_open-error: The split-file does not exist'
-      !
-    end subroutine divided_slice_open
+        character(len=4)            :: jchar
+        character(len=cl)           :: buf,filename,job_id
+        integer(ik)                 :: ilen
+        integer :: ierr
+        !
+        if (.not.job%IOmatelem_split) return
+        !
+        write(job_id,"('single swap_matrix')")
+        !
+        !!call IOStart(trim(job_is),chkptIO)
+        !
+        write(jchar, '(i4)') islice
+        !
+        filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
 
-    subroutine divided_slice_open_mpi(islice,ioHandler,name,suffix)
-      !
-      implicit none
-      integer(ik),intent(in)      :: islice
-      class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
-      character(len=*),intent(in) :: name,suffix
+        call openFile(ioHandler, filename, err, action='read', &
+          form='unformatted',position='rewind',status='old')
+        HANDLE_ERROR(err)
+        !
+        ilen = LEN_TRIM(name)
 
-      character(len=4)            :: jchar
-      character(len=cl)           :: buf,filename,job_id
-      integer(ik)                 :: ilen
-      integer :: ierr
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      write(job_id,"('single swap_matrix')")
-      !
-      !!call IOStart(trim(job_is),chkptIO)
-      !
-      write(jchar, '(i4)') islice
-      !
-      filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-
-      call openFile(ioHandler, filename, err, action='read', &
-        form='unformatted',position='rewind',status='old')
-      HANDLE_ERROR(err)
-      !
-      ilen = LEN_TRIM(name)
-
-      call ioHandler%read(buf(1:ilen))
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
+        call ioHandler%read(buf(1:ilen))
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+          write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
 #ifdef TROVE_USE_MPI_
-        call MPI_Abort(mpi_comm_world, 1)
+          call MPI_Abort(mpi_comm_world, 1)
 #endif
-        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
-      endif
-    end subroutine divided_slice_open_mpi
-    !
-    subroutine divided_slice_close(islice,chkptIO,name)
-      !
-      integer(ik),intent(in) :: islice
-      integer(ik),intent(inout) :: chkptIO
-      character(len=*),intent(in) :: name
-      character(len=4) :: jchar
-      character(len=cl) :: buf,filename
-      integer(ik)      :: ilen
-      logical          :: ifopened
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      ilen = LEN_TRIM(name)
-      !
-      read(chkptIO) buf(1:ilen)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") filename,buf(1:ilen)
-        stop 'divided_slice_close - in slice -  footer missing or wrong'
-      end if
-      !
-      close(chkptIO)
-      !
-    end subroutine divided_slice_close
+          stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
+        endif
+      end subroutine divided_slice_open
 
-    subroutine divided_slice_close_mpi(islice,ioHandler,name)
+      subroutine divided_slice_close(islice,ioHandler,name)
 
-      integer(ik),intent(in) :: islice
-      class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
-      character(len=*),intent(in) :: name
-      character(len=cl) :: buf
-      integer(ik)      :: ilen
-      integer :: ierr
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      ilen = LEN_TRIM(name)
-      !
-      call ioHandler%read(buf(1:ilen))
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-          write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
+        integer(ik),intent(in) :: islice
+        class(ioHandlerBase),intent(inout), allocatable   :: ioHandler
+        character(len=*),intent(in) :: name
+        character(len=cl) :: buf
+        integer(ik)      :: ilen
+        integer :: ierr
+        !
+        if (.not.job%IOmatelem_split) return
+        !
+        ilen = LEN_TRIM(name)
+        !
+        call ioHandler%read(buf(1:ilen))
+        if ( trim(buf(1:ilen))/=trim(name) ) then
+            write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") trim(name),buf(1:ilen)
 #ifdef TROVE_USE_MPI_
-        call MPI_Abort(mpi_comm_world, 1)
+          call MPI_Abort(mpi_comm_world, 1)
 #endif
-        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  footer missing or wrong'
-      endif
+          stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  footer missing or wrong'
+        endif
 
-      deallocate(ioHandler)
-    end subroutine divided_slice_close_mpi
+        deallocate(ioHandler)
+      end subroutine divided_slice_close
 
       !
       ! This procedure is thought to make the calculations of the contracted mat. elements 
