@@ -417,15 +417,20 @@ module io_handler_mpi
       ! Get individual pointer offset
       call MPI_File_get_position(this%fileh, offset, ierr)
       call MPI_File_get_byte_offset(this%fileh, offset, disp, ierr)
+
       ! Set shared pointer to individual pointer + bookend
       call MPI_File_seek_shared(this%fileh, disp+this%bookendBytes, MPI_SEEK_SET, ierr)
+
       ! Read array in parallel
       MPI_WRAPPER(MPI_File_read_ordered,this%fileh,object,1,mpitype_column,MPI_STATUS_IGNORE,ierr)
+
       ! Set shared pointer to point to byte after last bookend
       call MPI_File_seek_shared(this%fileh, disp+this%bookendBytes+arrSizeBytes+this%bookendBytes, MPI_SEEK_SET)
 
       ! Set individual pointer to match shared
       call MPI_File_get_position_shared(this%fileh, offset, ierr)
+      ! Ensure every process syncs the correct shared offset
+      call MPI_Barrier(MPI_COMM_WORLD)
       call MPI_File_seek(this%fileh, offset, MPI_SEEK_SET, ierr)
     end subroutine
 
