@@ -16041,23 +16041,12 @@ module perturbation
             ! Prepare the checkpoint file
             !
             job_is ='external field contracted matrix elements for J=0'
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-              call openFile(extFmatHandler, job%extFmat_file, err, action='write', &
-                form='unformatted',position='rewind',status='replace')
-              HANDLE_ERROR(err)
+            call openFile(extFmatHandler, job%extFmat_file, err, action='write', &
+              form='unformatted',position='rewind',status='replace')
+            HANDLE_ERROR(err)
 
-              call extFmatHandler%write('Start external field')
-              call extFmatHandler%write(PT%Maxcontracts)
-            else
-              call IOStart(trim(job_is),chkptIO)
-              !
-              open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%extFmat_file)
-              write(chkptIO) 'Start external field'
-              !
-              ! store the matrix elements 
-              !
-              write(chkptIO) PT%Maxcontracts
-            endif
+            call extFmatHandler%write('Start external field')
+            call extFmatHandler%write(PT%Maxcontracts)
             !
           endif 
           !
@@ -16109,14 +16098,8 @@ module perturbation
                 !
                 ! always store the matrix elements of the extF moment 
                 !
-                if (trim(job%kinetmat_format).eq.'MPIIO') then
-                  call extFmatHandler%write(imu)
-                  call extFmatHandler%write(extF_t, mdimen)
-                else
-                  write(chkptIO) imu
-                  !
-                  write(chkptIO) extF_t
-                endif
+                call extFmatHandler%write(imu)
+                call extFmatHandler%write(extF_t, mdimen)
                 !
               endif
               !
@@ -16159,11 +16142,7 @@ module perturbation
             !
           endif 
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            if (.not.job%IOextF_divide) call extFmatHandler%write('End external field')
-          else
-            if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
-          endif
+          if (.not.job%IOextF_divide) call extFmatHandler%write('End external field')
           !
         endif
         !

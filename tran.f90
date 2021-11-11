@@ -1858,41 +1858,22 @@ contains
           !
           filename = job%extFmat_file
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            !
-            call openFile(extFmatHandler, filename, err, action='read', &
-              form='unformatted',position='rewind',status='old')
-            HANDLE_ERROR(err)
+          call openFile(extFmatHandler, filename, err, action='read', &
+            form='unformatted',position='rewind',status='old')
+          HANDLE_ERROR(err)
 
-            call extFmatHandler%read(buf20(1:20))
-            if (buf20/='Start external field') then
-              write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf20
-              stop 'restore_vib_matrix_elements - bogus file format'
-            end if
+          call extFmatHandler%read(buf20(1:20))
+          if (buf20/='Start external field') then
+            write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf20
+            stop 'restore_vib_matrix_elements - bogus file format'
+          end if
 
-            call extFmatHandler%read(ncontr_t)
-            if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-              write (out,"(' Dipole moment checkpoint file ',a)") filename
-              write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
-              stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
-            end if
-          else
-            open(iunit,form='unformatted',action='read',position='rewind',status='old',file=filename)
-            !
-            read(iunit) buf20
-            if (buf20/='Start external field') then
-              write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf20
-              stop 'restore_vib_matrix_elements - bogus file format'
-            end if
-            !
-            read(iunit) ncontr_t
-            if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-              write (out,"(' Dipole moment checkpoint file ',a)") filename
-              write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
-              stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
-            end if
-            !
-          endif
+          call extFmatHandler%read(ncontr_t)
+          if (bset_contr(1)%Maxcontracts/=ncontr_t) then
+            write (out,"(' Dipole moment checkpoint file ',a)") filename
+            write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
+            stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
+          end if
           !
         endif
         !
@@ -1903,25 +1884,15 @@ contains
           job_is ='external field contracted matrix elements for J=0'
           call IOStart(trim(job_is),chkptIO)
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            call openFile(exteigenHandler, job%exteigen_file, err, action='write', &
-              form='unformatted',position='rewind',status='replace')
-            HANDLE_ERROR(err)
-            call exteigenHandler%write('Start external field')
-            call exteigenHandler%write(neigenroots)
-          else
-            !
-            open(chkptio,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
-            write(chkptio) 'Start external field'
-            !
-            ! store the matrix elements 
-            !
-            write(chkptio) neigenroots
-          endif
+          call openFile(exteigenHandler, job%exteigen_file, err, action='write', &
+            form='unformatted',position='rewind',status='replace')
+          HANDLE_ERROR(err)
+          call exteigenHandler%write('Start external field')
+          call exteigenHandler%write(neigenroots)
           !
         endif
         !
-        if (trim(job%kinetmat_format).ne.'MPIIO'.and.job%IOextF_divide) close(iunit)
+        if (job%IOextF_divide) deallocate(exteigenHandler)
         !
         rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
         rootsize2= int(ncontr_t*ncontr_t,hik)
@@ -1960,14 +1931,8 @@ contains
             !
           else
             !
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-              call extFmatHandler%read(imu_t)
-              call extFmatHandler%read(extF_me)
-            else
-              read(iunit) imu_t
-              !
-              read(iunit) extF_me
-            endif
+            call extFmatHandler%read(imu_t)
+            call extFmatHandler%read(extF_me)
             !
           endif
           !
@@ -2028,12 +1993,8 @@ contains
           !
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
-            if (trim(job%kinetmat_format).eq.'MPIIO') then
-              call exteigenHandler%write(mat_s)
-            else
-              write(chkptIO) imu
-              write(chkptIO) mat_s
-            endif
+            call exteigenHandler%write(imu)
+            call exteigenHandler%write(mat_s)
             !
           else
             !
@@ -2063,37 +2024,21 @@ contains
         !
         if (.not.job%IOextF_divide) then
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            call extFmatHandler%read(buf20(1:18))
-          else
-            read(iunit) buf20(1:18)
-          endif
+          call extFmatHandler%read(buf20(1:18))
           !
           if (buf20(1:18)/='End external field') then
             write (out,"(' restore_Extvib_matrix_elements ',a,' has bogus footer: ',a)") filename,buf20(1:18)
             stop 'restore_Extvib_matrix_elements - bogus file format'
           end if
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            deallocate(extFmatHandler)
-          else
-            close(iunit,status='keep')
-          endif
-          !
-          !job_is ='external field contracted matrix elements for J=0'
-          !call IOStart(trim(job_is),iunit)
+          deallocate(extFmatHandler)
           !
         endif
         !
         if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
           !
-          if (trim(job%kinetmat_format).eq.'MPIIO') then
-            call exteigenHandler%write('End external field')
-            deallocate(exteigenHandler)
-          else
-            write(chkptIO) 'End external field'
-            close(chkptIO,status='keep')
-          endif
+          call exteigenHandler%write('End external field')
+          deallocate(exteigenHandler)
           !
         endif
         !
