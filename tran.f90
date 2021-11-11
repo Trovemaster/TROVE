@@ -1329,6 +1329,8 @@ contains
     integer :: ierr
     class(ioHandlerBase), allocatable :: kineteigenHandler
     class(ioHandlerBase), allocatable :: kinetmatHandler
+    class(ioHandlerBase), allocatable :: extFmatHandler
+    class(ioHandlerBase), allocatable :: exteigenHandler
     type(ErrorType) :: err
 
     type(MPI_Datatype)                      :: gmat_block_type, psi_block_type, mat_t_block_type, mat_s_block_type, extF_block_type
@@ -1858,30 +1860,22 @@ contains
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
             !
-#ifdef TROVE_USE_MPI_
-            call MPI_File_open(mpi_comm_world, filename, mpi_mode_rdonly, mpi_info_null, fileh, ierr)
-            !
-            call MPI_File_read_all(fileh, buf20, 7, mpi_character, mpi_status_ignore, ierr)
-            if (buf20(1:7)/='[MPIIO]') then
-              write (out,"(' Vib. kinetic checkpoint file ',a,' is not an MPIIO file: ',a)") filename, buf20
-              stop 'restore_vib_matric_elements - Not an MPIIO file'
-            end if
-            !
-            call MPI_File_read_all(fileh, buf20, 20, mpi_character, mpi_status_ignore, ierr)
+            call openFile(extFmatHandler, filename, err, action='read', &
+              form='unformatted',position='rewind',status='old')
+            HANDLE_ERROR(err)
+
+            call extFmatHandler%read(buf20(1:20))
             if (buf20/='Start external field') then
               write (out,"(' restore_vib_matrix_elements ',a,' has bogus header: ',a)") filename,buf20
               stop 'restore_vib_matrix_elements - bogus file format'
             end if
-            !
-            call MPI_File_read_all(fileh, ncontr_t, 1, mpi_integer, mpi_status_ignore, ierr)
-            !
+
+            call extFmatHandler%read(ncontr_t)
             if (bset_contr(1)%Maxcontracts/=ncontr_t) then
               write (out,"(' Dipole moment checkpoint file ',a)") filename
               write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") bset_contr(1)%Maxcontracts,ncontr_t
               stop 'restore_Extvib_matrix_elements - in file - illegal ncontracts '
             end if
-            !
-#endif
           else
             open(iunit,form='unformatted',action='read',position='rewind',status='old',file=filename)
             !
@@ -1910,26 +1904,11 @@ contains
           call IOStart(trim(job_is),chkptIO)
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            !
-            call mpi_file_open(mpi_comm_world, job%exteigen_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, fileh_w, ierr)
-            call mpi_file_set_errhandler(fileh_w, mpi_errors_are_fatal)
-            !
-            mpioffset = 0
-            call mpi_file_set_size(fileh_w, mpioffset, ierr)
-            !
-            if(mpi_rank.eq.0) then
-              call mpi_file_write_shared(fileh_w, '[MPIIO]', 7, mpi_character, mpi_status_ignore, ierr)
-              call mpi_file_write_shared(fileh_w, 'Start external field', 20, mpi_character, mpi_status_ignore, ierr)
-            endif
-            !
-            ! store the matrix elements 
-            !
-            if(mpi_rank.eq.0) call mpi_file_write(fileh_w, neigenroots, 1, mpi_integer, mpi_status_ignore, ierr)
-            call mpi_barrier(mpi_comm_world, ierr)
-            call mpi_file_seek(fileh_w, int(0,mpi_offset_kind), mpi_seek_end)
-            !
-#endif
+            call openFile(exteigenHandler, job%exteigen_file, err, action='write', &
+              form='unformatted',position='rewind',status='replace')
+            HANDLE_ERROR(err)
+            call exteigenHandler%write('Start external field')
+            call exteigenHandler%write(neigenroots)
           else
             !
             open(chkptio,form='unformatted',action='write',position='rewind',status='replace',file=job%exteigen_file)
@@ -1982,11 +1961,8 @@ contains
           else
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              call MPI_File_read_all(fileh, imu_t, 1, mpi_integer, mpi_status_ignore, ierr)
-              !
-              call MPI_File_read_all(fileh, extF_me, size(extF_me), mpi_double_precision, mpi_status_ignore, ierr)
-#endif
+              call extFmatHandler%read(imu_t)
+              call extFmatHandler%read(extF_me)
             else
               read(iunit) imu_t
               !
@@ -2053,12 +2029,7 @@ contains
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
             if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              if(mpi_rank.eq.0) call MPI_File_write(fileh_w, imu, 1, mpi_integer, mpi_status_ignore, ierr)
-              call MPI_Barrier(mpi_comm_world, ierr)
-              call MPI_File_seek_shared(fileh_w, int(0,MPI_OFFSET_KIND), MPI_SEEK_END)
-              call MPI_File_write_all(fileh_w, mat_s, size(mat_s), mpi_double_precision, mpi_status_ignore, ierr)
-#endif
+              call exteigenHandler%write(mat_s)
             else
               write(chkptIO) imu
               write(chkptIO) mat_s
@@ -2093,9 +2064,7 @@ contains
         if (.not.job%IOextF_divide) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_read_all(fileh, buf20, 18, mpi_character, mpi_status_ignore, ierr)
-#endif
+            call extFmatHandler%read(buf20(1:18))
           else
             read(iunit) buf20(1:18)
           endif
@@ -2106,9 +2075,7 @@ contains
           end if
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            call MPI_File_close(fileh, ierr)
-#endif
+            deallocate(extFmatHandler)
           else
             close(iunit,status='keep')
           endif
@@ -2121,10 +2088,8 @@ contains
         if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
           !
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            if(mpi_rank.eq.0) call MPI_File_write(fileh_w, 'End external field', 18, mpi_character, mpi_status_ignore, ierr)
-            call MPI_File_close(fileh_w, ierr)
-#endif
+            call exteigenHandler%write('End external field')
+            deallocate(exteigenHandler)
           else
             write(chkptIO) 'End external field'
             close(chkptIO,status='keep')

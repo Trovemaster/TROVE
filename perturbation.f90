@@ -8059,7 +8059,7 @@ module perturbation
     call TimerStop('Calculating the Hamiltonian matrix')
     !
     if (job%verbose>=4) write(out,"('...done!')")
-    if (mpi_rank.eq.0) then!mpiio
+    if (mpi_rank.eq.0) then
       do isym = 1,sym%Nrepresen
         if (.not.job%select_gamma(isym)) cycle
       enddo
@@ -8399,7 +8399,7 @@ module perturbation
         endif
         !
       enddo
-    endif!mpiio
+    endif
     !
     if ( trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND' ) then
       !
@@ -15160,8 +15160,9 @@ module perturbation
     integer            :: startdim, enddim, blocksize_, ierr, b, req_count, offset
     type(MPI_Request),allocatable :: reqs(:)
     type(MPI_Status)   :: reqstat
-    type(MPI_File)     :: chkptMPIIO
+    class(ioHandlerBase), allocatable :: ioHandler
     class(ioHandlerBase), allocatable :: sliceHandler
+    class(ioHandlerBase), allocatable :: extFmatHandler
     integer(kind=MPI_Offset_kind) :: mpioffset
     integer           :: mpisz
     !
@@ -15181,7 +15182,6 @@ module perturbation
     type(PTcoeffsT)    :: tmat(PT%Nclasses),mat_tt(PT%Nclasses)
     type(PTcoeffT),pointer        :: fl
 
-    class(ioHandlerBase), allocatable :: ioHandler
     type(ErrorType) :: err
       !
       !
@@ -15698,39 +15698,35 @@ module perturbation
             if (job%verbose>=2) write(out,"('...end!')")
             !
             if (treat_rotation.and.trim(job%IOkinet_action)=='SAVE') then
-              if (trim(job%kinetmat_format).eq.'MPIIO') then
-                write(out,*) "TODO implement MPI-IO version !POSIXIO!"
-                stop "Not yet implemented"
-              else
-                !
-                ! store the rotational matrix elements 
-                !
-                call ioHandler%write('g_rot')
-                !
-                do k1 = 1,3
-                  do k2 = 1,3
-                    !
-                    call ioHandler%write(grot_(k1,k2,:,:), mdimen_)
-                    ! 
-                  enddo
+              write(out,*) "WARNING: MPI verion of treat_rotation is not verified"
+              !
+              ! store the rotational matrix elements 
+              !
+              call ioHandler%write('g_rot')
+              !
+              do k1 = 1,3
+                do k2 = 1,3
+                  !
+                  call ioHandler%write(grot_(k1,k2,:,:), mdimen_)
+                  ! 
                 enddo
-                !
-                call ioHandler%write('g_cor')
-                !
-                ! store the Coriolis matrix elements 
-                !
-                do k1 = 1,PT%Nmodes
-                  do k2 = 1,3
-                    !
-                    call ioHandler%write(gcor_(k1,k2,:,:), mdimen_)
-                    ! 
-                  enddo
+              enddo
+              !
+              call ioHandler%write('g_cor')
+              !
+              ! store the Coriolis matrix elements 
+              !
+              do k1 = 1,PT%Nmodes
+                do k2 = 1,3
+                  !
+                  call ioHandler%write(gcor_(k1,k2,:,:), mdimen_)
+                  ! 
                 enddo
-                !
-                deallocate(grot_,gcor_)
-                call ArrayStop('grot-gcor-fields')
-                !
-              endif
+              enddo
+              !
+              deallocate(grot_,gcor_)
+              call ArrayStop('grot-gcor-fields')
+              !
             endif
             !
           else ! if (.not.job%IOmatelem_split.or.job%iswap(1)==0 ) then
@@ -16046,32 +16042,12 @@ module perturbation
             !
             job_is ='external field contracted matrix elements for J=0'
             if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-              call MPI_File_open(mpi_comm_world, job%extFmat_file, mpi_mode_wronly+mpi_mode_create, mpi_info_null, chkptMPIIO, ierr)
-              mpioffset=0
-              call MPI_File_set_size(chkptMPIIO, mpioffset, ierr)
-              if (mpi_rank.eq.0) then !AT
-                call TimerStart('mpiiosingle') !AT
+              call openFile(extFmatHandler, job%extFmat_file, err, action='write', &
+                form='unformatted',position='rewind',status='replace')
+              HANDLE_ERROR(err)
 
-                call MPI_File_write_shared(chkptMPIIO,'[MPIIO]Start external field',27,mpi_character,mpi_status_ignore,ierr)
-                !call MPI_File_write_shared(chkptMPIIO,'Start external field',20,mpi_character,mpi_status_ignore,ierr)
-                call MPI_File_write_shared(chkptMPIIO, PT%Maxcontracts, 1, mpi_integer, mpi_status_ignore, ierr)
-                !
-                ! store the bookkeeping information about the contr. basis set
-                !
-                !call PTstoreMPI_icontr_cnu(PT%Maxcontracts,chkptMPIIO,job%IOkinet_action)
-
-                call TimerStop('mpiiosingle') !AT
-                !
-              !else
-              !  call TimerStart('mpiiosingle') !AT
-              !  !
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              !  !
-              !  call TimerStop('mpiiosingle') !AT
-              endif 
-#endif
+              call extFmatHandler%write('Start external field')
+              call extFmatHandler%write(PT%Maxcontracts)
             else
               call IOStart(trim(job_is),chkptIO)
               !
@@ -16134,14 +16110,8 @@ module perturbation
                 ! always store the matrix elements of the extF moment 
                 !
                 if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-                  if(mpi_rank.eq.0) then
-                    call MPI_File_write_shared(chkptMPIIO,imu,1,mpi_integer,mpi_status_ignore,ierr)
-                  endif
-                  !call mpi_barrier(mpi_comm_world,ierr)
-                  !
-                  call co_write_matrix_distr(extF_t,mdimen, startdim, enddim,chkptMPIIO)
-#endif
+                  call extFmatHandler%write(imu)
+                  call extFmatHandler%write(extF_t, mdimen)
                 else
                   write(chkptIO) imu
                   !
@@ -16189,21 +16159,8 @@ module perturbation
             !
           endif 
           !
-#ifdef TROVE_USE_MPI_
-          call mpi_barrier(mpi_comm_world,ierr)
-#endif
           if (trim(job%kinetmat_format).eq.'MPIIO') then
-#ifdef TROVE_USE_MPI_
-            if (mpi_rank.eq.0) then !AT
-              if(.not.job%IOextF_divide) then 
-                !call MPI_File_seek(chkptMPIIO, mpioffset, MPI_SEEK_END)
-                call MPI_File_write_shared(chkptMPIIO,'End external field',18,mpi_character,mpi_status_ignore,ierr)
-              !else
-              !  call MPI_File_write_shared(chkptMPIIO,'',0,mpi_character,mpi_status_ignore,ierr)
-              endif
-            endif
-            call MPI_File_close(chkptMPIIO, ierr)
-#endif
+            if (.not.job%IOextF_divide) call extFmatHandler%write('End external field')
           else
             if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
           endif
