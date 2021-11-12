@@ -1393,10 +1393,10 @@ contains
       else
         call co_block_type_init(psi, Neigenroots, dimen, desc_psi, info)
         call ArrayStart('psi',info,1,kind(psi),int(size(psi),hik))
-        
+
         !shape(psi_t) == shape(psi^T) == shape(mat_t)
         call co_block_type_init(psi_t, dimen, Neigenroots, desc_mat_t, info)
-        call ArrayStart('psi_t',info,1,kind(mat_t),int(size(mat_t),hik))
+        call ArrayStart('psi_t',info,1,kind(psi_t),int(size(psi_t),hik))
         call co_block_type_init(mat_t, dimen, Neigenroots, desc_mat_t, info)
         call ArrayStart('mat_t',info,1,kind(mat_t),int(size(mat_t),hik))
       endif
