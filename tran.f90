@@ -1691,7 +1691,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_rot',job%matelem_suffix,dimen,gmat,desc_gmat,gmat_block_type,ierror)
+              call divided_slice_read(islice,'g_rot',job%matelem_suffix,gmat,desc_gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1720,7 +1720,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,Neigenroots,mat_s, desc_mat_s,mat_s_block_type)
+              call divided_slice_write(islice,'g_rot',job%j0matelem_suffix,mat_s, desc_mat_s,mat_s_block_type)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1767,7 +1767,7 @@ contains
             !
             if (job%IOmatelem_split.and..not.job%vib_rot_contr) then 
               !
-              call divided_slice_read(islice,'g_cor',job%matelem_suffix,dimen,gmat,desc_gmat,gmat_block_type,ierror)
+              call divided_slice_read(islice,'g_cor',job%matelem_suffix,gmat,desc_gmat,gmat_block_type,ierror)
               !
             elseif (job%IOmatelem_split.and.job%vib_rot_contr) then 
               !
@@ -1798,7 +1798,7 @@ contains
               if(job%vib_rot_contr) then 
                 call divided_slice_write_vibrot(islice,job%j0matelem_suffix,Neigenroots,mat_s,desc_mat_s,mat_s_block_type)
               else
-                call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,Neigenroots,mat_s,desc_mat_s,mat_s_block_type)
+                call divided_slice_write(islice,'g_cor',job%j0matelem_suffix,mat_s,desc_mat_s,mat_s_block_type)
               endif
             else
               call kineteigenHandler%write(mat_s, desc_mat_s, mat_s_block_type)
@@ -1973,7 +1973,7 @@ contains
           !
           if (job%IOextF_divide) then
             !
-            call divided_slice_read(imu,'extF',job%extmat_suffix,dimen,extF_me,desc_extF,extF_block_type,ierror)
+            call divided_slice_read(imu,'extF',job%extmat_suffix,extF_me,desc_extF,extF_block_type,ierror)
             !
             if (ierror==1) cycle
             !
@@ -2066,7 +2066,7 @@ contains
             !
           else
             !
-            call divided_slice_write(imu,'extF',job%j0extmat_suffix,Neigenroots,mat_s,desc_mat_s,mat_s_block_type)
+            call divided_slice_write(imu,'extF',job%j0extmat_suffix,mat_s,desc_mat_s,mat_s_block_type)
             !
           endif
           !
@@ -2158,14 +2158,13 @@ contains
       !
     contains
       !
-      subroutine divided_slice_write(islice,name,suffix,N,field, field_desc, block_type)
+      subroutine divided_slice_write(islice,name,suffix,field, field_desc, block_type)
         !
         implicit none
         !
         integer(ik),intent(in)      :: islice
         character(len=*),intent(in) :: name,suffix
-        integer(ik),intent(in)      :: N
-        real(rk),intent(in)         :: field(N,N)
+        real(rk),intent(in)         :: field(:,:)
         integer, intent(in)         :: field_desc(9)
         type(MPI_Datatype),intent(in) :: block_type
         character(len=4)            :: jchar
@@ -2188,19 +2187,18 @@ contains
         !
         call ioHandler%write(name)
         !
-        close(chkptIO)
+        deallocate(ioHandler)
         !
       end subroutine divided_slice_write
       !
       !
-      subroutine divided_slice_read(islice,name,suffix,N,field,field_desc,block_type,ierror)
+      subroutine divided_slice_read(islice,name,suffix,field,field_desc,block_type,ierror)
         !
         implicit none
         !
         integer(ik),intent(in)      :: islice
         character(len=*),intent(in) :: name,suffix
-        integer(ik),intent(in)      :: N
-        real(rk),intent(out)        :: field(N,N)
+        real(rk),intent(out)        :: field(:,:)
         integer, intent(in)         :: field_desc(9)
         type(MPI_Datatype),intent(in) :: block_type
         integer(ik),intent(out)     :: ierror
@@ -2234,27 +2232,11 @@ contains
         !
         call ioHandler%read(buf(1:ilen))
         if ( trim(buf(1:ilen))/=trim(name) ) then
-          write (out,"(' kinetic divided_slice_read in slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-          stop 'divided_slice_read - in slice -  header missing or wrong'
+          write (out,"(' kinetic divided_slice_read in slice ',a20,': footer is missing or wrong',a)") filename,buf(1:ilen)
+          stop 'divided_slice_read - in slice -  footer missing or wrong'
         end if
         !
         deallocate(ioHandler)
-        !
-        return
-        !
-        ! This error code will allow simply skipping the corresponding record/file without crashing the program 
-        !
-   15   ierror = 1
-        !
-        ! we allow to skip opening the file only for the external matrix elements
-        !
-        if (trim(name)/="extF") then 
-          write (out,"(' kinetic divided_slice_read in slice ',a20,': file does not exist')") filename
-          stop 'divided_slice_read - in slice -  file does not exist'
-        endif
-        !
-        if (job%verbose>=4) write (out,"(' (skipped).')",advance='YES') 
-        !
       end subroutine divided_slice_read
       !
       !
@@ -2274,6 +2256,12 @@ contains
         integer(ik)                 :: rec_len,icontr,icontr1,icontr2
         logical                     :: ifopened
         real(rk)                    :: f_t
+
+#ifdef TROVE_USE_MPI_
+        if(blacs_size > 1) then
+          stop "MPI output not implemented in tran.f90:divided_slice_read_vibrot"
+        endif
+#endif
         !
         if (.not.job%IOmatelem_split) return
         !
