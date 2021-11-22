@@ -1324,8 +1324,6 @@ contains
     integer(ik),allocatable :: ijterm(:,:)
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
     character(len=cl)  :: jchar,filename
-    type(MPI_File) :: fileh, fileh_w
-    integer(kind=MPI_OFFSET_KIND) :: mpioffset,read_offset,write_offset
     integer :: ierr
     class(ioHandlerBase), allocatable :: kineteigenHandler
     class(ioHandlerBase), allocatable :: kinetmatHandler
@@ -1832,7 +1830,6 @@ contains
       !
       ! External field part 
       !
-      ! TODO fix MPI here
       if (FLextF_matelem) then
         !
         if (job%verbose>=3) write(out,"(/' Transform extF to J0-representation...')")
@@ -1905,16 +1902,6 @@ contains
         else
           call co_block_type_init(extF_me, ncontr_t, ncontr_t, desc_extF, info, extF_block_type)
           call ArrayStart('extF_me',info,1,kind(extF_me),int(size(extF_me),hik))
-        endif
-        !
-        if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
-#ifdef TROVE_USE_MPI_
-          call MPI_File_get_position(fileh, read_offset, ierr)
-          call MPI_File_set_view(fileh, read_offset, mpi_byte, extF_block_type, "native", MPI_INFO_NULL, ierr)
-
-          call MPI_File_get_position_shared(fileh_w, write_offset, ierr)
-          call MPI_File_set_view(fileh_w, write_offset, mpi_byte, mat_s_block_type, "native", MPI_INFO_NULL, ierr)
-#endif
         endif
         !
         do imu = fitting%iparam(1),fitting%iparam(2)
@@ -2003,21 +1990,6 @@ contains
           endif
           !
         enddo
-        ! Reset view to flat file
-        if ((.not.job%IOextF_divide) .and. blacs_size.gt.1) then
-#ifdef TROVE_USE_MPI_
-          read_offset = read_offset + (fitting%iparam(2)-fitting%iparam(1)+1)*int(ncontr_t,MPI_OFFSET_KIND)*ncontr_t*mpi_real_size &
-            + (fitting%iparam(2)-fitting%iparam(1)+1)*mpi_int_size
-          call MPI_File_set_view(fileh, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek(fileh, read_offset, MPI_SEEK_SET)
-
-          write_offset = write_offset + 3*int(Neigenroots,MPI_OFFSET_KIND)*Neigenroots*mpi_real_size
-          call MPI_File_set_view(fileh_w, int(0,MPI_OFFSET_KIND), mpi_byte, mpi_byte, "native", MPI_INFO_NULL, ierr)
-          call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_SET)
-          !write_offset = 0
-          !call MPI_File_seek_shared(fileh_w, write_offset, MPI_SEEK_END)
-#endif
-        endif
         !
         if (allocated(extF_me)) deallocate(extF_me)
         call ArrayStop('extF_me')
