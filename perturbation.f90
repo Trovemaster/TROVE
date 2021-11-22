@@ -15527,8 +15527,8 @@ module perturbation
                 if (job%IOmatelem_split) then 
                   !
                   ! TODO fix MPIIO matelem split
-                  stop "Split not implemented yet - TODO"
                   if (trim(job%kinetmat_format).eq.'MPIIO') then
+                    stop "Split not implemented yet - TODO"
                     call write_divided_slice_mpi(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
                   else
                     call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
