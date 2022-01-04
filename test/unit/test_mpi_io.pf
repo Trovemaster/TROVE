@@ -601,6 +601,8 @@ module test_mpi_io
     integer :: ierr, rank, allocinfo = 0
     type(ErrorType) :: err
 
+    integer(kind=4) :: offset
+
     ! Set up MPI
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if(ierr.ne.0) print *, "Error: could not get rank"
@@ -632,7 +634,8 @@ module test_mpi_io
     call ioHandler%read(in_real)
     @assertTrue(in_real == true_real)
 
-    call ioHandler%seek(size(dummy_arr)*sizeof(0))
+    offset = size(dummy_arr)*sizeof(0)
+    call ioHandler%seek(offset)
 
     call ioHandler%read(in_integer)
     @assertTrue(in_integer == true_integer)
