@@ -15,6 +15,7 @@ module perturbation
   use symmetry , only : SymmetryInitialize,sym
   use me_numer
   use diag
+  use io_factory
   use io_handler_base
   use io_handler_ftn
 #ifdef TROVE_USE_MPI_
@@ -127,9 +128,7 @@ module perturbation
 !
    type PTcontrME
       integer(ik)          :: isize        ! Number of expansion coeffs.
-      !real(rk),pointer     :: icoeff(:,:)  ! Expansion powers 
       real(rk),pointer     :: me(:,:)      ! matrix elements 
-      !
    end type PTcontrME
 
    type PTcoeffT
@@ -139,7 +138,6 @@ module perturbation
       real(rk),pointer     :: coeff(:,:,:) 
       integer(ik),pointer  :: IndexQ(:,:) 
       integer(ik),pointer  :: ifromsparse(:)
-      !integer(ik),pointer  :: itosparse(:)
       type(PTintcoeffs1dT),pointer  :: icoeff(:)
       type(PTintcoeffs1dT),pointer  :: iuniq(:)
       integer(ik),pointer  :: ifield(:)
@@ -155,7 +153,6 @@ module perturbation
      logical                     :: initialized = .false.
      type(PTcoeffs1dT),pointer   :: abcissa(:) 
      type(PTcoeffs1dT),pointer   :: weight(:) 
-     !type(PTcoeffs3dT),pointer   :: deriv(:) 
      real(rk),pointer            :: poten(:) 
      real(rk),pointer            :: gvib(:,:,:) 
      real(rk),pointer            :: grot(:,:,:) 
@@ -170,7 +167,6 @@ module perturbation
      integer(ik),pointer         :: nsize(:)    ! number of points along each mode 
      integer(hik)                :: total_size  ! total size of the dvr basis set
      real(ark),pointer           :: drho(:)     ! dvr integration step
-
    end type PTdvrT
 
 
@@ -7337,15 +7333,15 @@ module perturbation
     real(rk) :: zpe
     integer  :: slevel,dimen_s,max_dim,iterm,jterm,total_roots,icontr,ierr
     !
-    integer(ik) :: iunit,unitO,unitC,rec_len,irec_len,chkptIO
+    class(ioHandlerBase), allocatable :: kinetmatHandler
+    integer(ik) :: unitO,unitC,rec_len,irec_len,chkptIO
     integer(ik) :: ncontr,maxcontr,maxcontr0
     character(len=cl)   :: task
     character(len=4)   :: jchar
     character(len=cl)  :: unitfname,filename,statusf='old',symchar
     logical :: only_store = .false.
     logical :: no_diagonalization = .false.
-    !AT
-    type(MPI_File) :: mpiiofile
+
     integer :: startdim,enddim,localrootsize
     !
     ! A special case when the diagonlization is to be skipped 
@@ -7479,22 +7475,22 @@ module perturbation
         !
         !----------Only allocate if we are putting vectors into memory---------------!
         if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
-		matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
-		if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i8)") dimen_s,job%nroots(isym),matsize
-		allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
-		!
-		a = 0
-		!
-		call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
-		!
-		bterm = 1
-		!
-		if (job%verbose>=4) call MemoryReport
-		!
-		if (job%verbose>=1) then 
-		   write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
-		endif
-	endif
+          matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
+          if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i8)") dimen_s,job%nroots(isym),matsize
+          allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
+          !
+          a = 0
+          !
+          call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
+          !
+          bterm = 1
+          !
+          if (job%verbose>=4) call MemoryReport
+          !
+          if (job%verbose>=1) then 
+            write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)
+          endif
+        endif
         !
         call diagonalization_contract(jrot,isym,dimen_s,a,zpe,rlevel,total_roots,bterm,k_row(isym,1:dimen_s)) 
         !
@@ -7665,12 +7661,7 @@ module perturbation
     call TimerStart('Calculating the Hamiltonian matrix')
     !
     task = 'top'
-    if (trim(job%kinetmat_format).eq.'MPIIO') then
-      call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-        ncontr,maxcontr)
-    else
-      call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-    endif
+    call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
     !
     ! We have two calculation options: fast and cheap and slow but expensive.  
     !
@@ -7687,20 +7678,10 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'rot'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         task = 'cor'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         call TimerStop('Restoring KE matrix')
         !
@@ -7715,13 +7696,8 @@ module perturbation
         call TimerStart('Restoring KE matrix')
         !
         task = 'vib'
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
-        
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
+
         call TimerStop('Restoring KE matrix')
         !
         if (job%verbose>=5) write(out,"(/' ...done!')")
@@ -7794,12 +7770,7 @@ module perturbation
       if (job%verbose>=4) write(out,"(/' Construct the Hamiltonian matrix...')") 
       !
       task = 'top-icontr'
-      if (trim(job%kinetmat_format).eq.'MPIIO') then
-        call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-          ncontr,maxcontr)
-      else
-        call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-      endif
+      call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
       !
       if (job%verbose>=5) write(out,"(' N Arrays of ',f12.5,'Gb each will be allocated (N is the number of processors)')") &
                           real(sym%Nrepresen,rk)*real(PT%max_deg_size,rk)*real(max_dim,rk)*real(rk,rk)/1024.0_rk**3
@@ -7819,32 +7790,17 @@ module perturbation
          if (FLrotation.and.jrot/=0) then
            !
            task = 'rot-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
            task = 'cor-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
          endif
          !
          if ( PTvibrational_me_calc ) then
            !
            task = 'vib-icontr'
-           if (trim(job%kinetmat_format).eq.'MPIIO') then
-             call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-               ncontr,maxcontr)
-           else
-             call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr,icontr)
-           endif
+           call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr,icontr)
            !
          endif
          !
@@ -7915,7 +7871,6 @@ module perturbation
       if (FLrotation.and.jrot/=0.and..not.job%vib_rot_contr) then 
         !
         if (job%verbose>=4) write(out,"('   Rotational part...')")
-    !
         ! AT - Initialise parallel distribution (if not done yet)
         ! TODO - find correct spot to place this w/ appropriate guard clauses
         ! NOTE don't know `ncontr` until after calling PTrestore.. with `task=='top'`
@@ -7923,12 +7878,7 @@ module perturbation
         !
         task = 'rot'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -7978,18 +7928,12 @@ module perturbation
         enddo
         !
         deallocate(grot)
-        call Arraystop('grot-matrix')
         !
         if (job%verbose>=4) write(out,"('   Coriolis part...')")
         !
         task = 'cor'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -8039,7 +7983,6 @@ module perturbation
         enddo
         !
         deallocate(gcor)
-        call Arraystop('gcor-matrix')
         !
       endif
       ! 
@@ -8051,12 +7994,7 @@ module perturbation
         !
         task = 'vib'
         !
-        if (trim(job%kinetmat_format).eq.'MPIIO') then
-          call PTrestore_rot_kinetic_matrix_elements_mpi(jrot,task,mpiiofile,dimen,&
-            ncontr,maxcontr)
-        else
-          call PTrestore_rot_kinetic_matrix_elements(jrot,task,iunit,dimen,ncontr,maxcontr)
-        endif
+        call PTrestore_rot_kinetic_matrix_elements(jrot,task,kinetmatHandler,dimen,ncontr,maxcontr)
         !
         ! $omp parallel private(mat_t,alloc_p) 
         allocate (mat_t(sym%Nrepresen,PT%max_deg_size,max_dim),stat=alloc_p)
@@ -8496,182 +8434,91 @@ module perturbation
   end subroutine PThamiltonian_contract
   !
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!! MPIIO !!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine open_chkptfile_mpi(fileh, filename, mode)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-    use mpi_aux
-
-    type(MPI_File),intent(inout) :: fileh
-    character(len=*),intent(in) :: filename, mode
-
-#ifdef TROVE_USE_MPI_
-    integer :: amode, ierr
-
-    select case(mode)
-    case('read')
-      amode = mpi_mode_rdonly
-    case('write')
-      amode = mpi_mode_wronly+mpi_mode_create
-    end select
-
-    call MPI_File_open(mpi_comm_world, filename, amode, mpi_info_null, fileh, ierr)
-    if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error opening MPI-IO-formatted Vib. kinetic checkpoint file. ", filename
-      stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error opening MATELEM MPI-IO input file"
-    endif
-
-    !File errors indicate big trouble, so we set errors to be fatal - not likely to be recoverable
-    call MPI_File_set_errhandler(fileh, MPI_ERRORS_ARE_FATAL)
-#endif
-  end subroutine open_chkptfile_mpi
-
-  subroutine close_chkptfile_mpi(fileh)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-    use mpi_aux
-
-    type(MPI_File), intent(inout) :: fileh
-#ifdef TROVE_USE_MPI_
-    integer :: ierr
-
-    call mpi_file_close(fileh, ierr)
-    if (ierr.gt.0) then
-      if (mpi_rank .eq. 0) write(*,*) "Error closing MPI-IO-formatted Vib. kinetic checkpoint file."
-      stop "MPI_PTrestore_rot_kinetic_matrix_elements - Error closing MATELEM MPI-IO input file"
-    endif
-#endif
-  end subroutine close_chkptfile_mpi
-
-  subroutine PTrestore_rot_kinetic_matrix_elements_mpi(jrot, task, fileh, dimen, &
+  subroutine PTrestore_rot_kinetic_matrix_elements(jrot, task, ioHandler, dimen, &
       ncontr, maxcontr, icontr)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
     use mpi_aux
     integer(ik),intent(in)  :: jrot
     character(len=cl),intent(in)  :: task
-    type(MPI_File),intent(inout)    :: fileh
+    class(ioHandlerBase), allocatable, intent(inout) :: ioHandler
     integer(ik),intent(in)       :: dimen
 
     integer(ik),intent(inout),optional :: ncontr
     integer(ik),intent(inout),optional  :: maxcontr
     integer(ik),intent(in),optional     :: icontr
 
-#ifdef TROVE_USE_MPI_
-    type(MPI_File)    :: fileh_slice
+    type(ErrorType) :: err
+
+    class(ioHandlerBase), allocatable :: sliceHandler
     character(len=cl) :: job_id,filename,readbuf
-    integer(kind=MPI_Offset_kind) :: file_offset
+    integer :: file_offset
     integer :: ierr
-    integer(hik)         :: rootsize,rootsize_,rootsize2,rootsize2_,nprocs,tid,icontr1,icontr2
+    integer(hik)         :: nprocs,tid,icontr1,icontr2
+    integer              :: OMP_GET_NUM_THREADS,omp_get_thread_num
     integer(ik),allocatable :: imat_t(:,:)
     real(rk),allocatable :: mat_t(:,:),mat_(:,:)
     real(rk) :: f_t
 
+    integer(ik) :: chkptIO, chkptIO_
+    integer(ik) :: maxcontr0
+    integer(hik) :: rootsize2_
+
     integer :: k1,k2,islice
-    !AT
-    integer      :: localmatrix_x,localmatrix_y
-    integer(hik) :: localrootsize
 
     if ( trim(job%IOkinet_action)/='VIB_READ'.and.trim(job%IOkinet_action)/='READ'.and..not.job%contrci_me_fast) return
 
     if ( trim(job%IOswap_matelem)/='NONE') return
 
-    rootsize = int(ncontr*(ncontr+1)/2,hik)
-    rootsize_ = int(maxcontr*(maxcontr+1)/2,hik)
-    !
-    rootsize2  = int(ncontr*ncontr,hik)
-    rootsize2_ = int(maxcontr*maxcontr,hik)
-    !
-    !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
-
     if (mpi_rank .eq. 0 .and. (job%verbose>=6.and.present(icontr)) ) write(out,"('icontr = ',i9)") icontr
-
-    !AT - determine task-local matrix dimensions
-    if (comm_size.eq.1) then
-      localmatrix_y = ncontr
-    else
-      localmatrix_y = int(1+real(ncontr/comm_size))*comm_size
-    endif
-    localmatrix_x = co_enddim-co_startdim+1
-    localrootsize = int(localmatrix_x*localmatrix_y,hik)
 
     select case (trim(task))
     case('top')
 
-      job_id = '[MPI-IO] Vib. matrix elements of the rot. kinetic' 
+      job_id = 'Vib. matrix elements of the rot. kinetic' 
       !TODO - MPI-compatible IOStart
       !call IOStart(trim(job_id),fileh)
 
-      call open_chkptfile_mpi(fileh, job%kinetmat_file, 'read')
+      call openFile(ioHandler, job%kinetmat_file, err, action='read', &
+        position='rewind', status='old', form='unformatted')
+      HANDLE_ERROR(err)
 
-      !Collective read woo
-      call MPI_File_read_all(fileh, readbuf, 7, mpi_character, mpi_status_ignore, ierr)
-
-      if (readbuf(1:7) /= '[MPIIO]') then
-        if (mpi_rank .eq. 0) write(*,*) "Invalid MPIIO identifier to MPI-IO-formatted Vib. kinetic checkpoint file."
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop "MPI_PTrestore_rot_kinetic_matrix_elements - bogus file format header"
-      endif
-
-      call MPI_File_read_all(fileh, readbuf, 18, mpi_character, mpi_status_ignore, ierr)
+      call ioHandler%read(readbuf(1:18))
 
       if (readbuf(1:18) /= 'Start Kinetic part') then
-        if (mpi_rank .eq. 0) write(*,*) "Invalid header to MPI-IO-formatted Vib. kinetic checkpoint file."
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop "MPI_PTrestore_rot_kinetic_matrix_elements - bogus file format"
+        if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus header: ',a)") &
+        job%kinetmat_file,readbuf(1:18)
+        stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
       endif
 
-      call MPI_File_read_all(fileh, ncontr, 1, mpi_integer, mpi_status_ignore, ierr)
+      call ioHandler%read(ncontr)
 
       if (jrot==0.and.PT%Maxcontracts/=ncontr) then
         if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         if (mpi_rank .eq. 0) write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i9)") PT%Maxcontracts,ncontr
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
+        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
       end if
-
-      rootsize = int(ncontr*(ncontr+1)/2,hik)
-      rootsize2 = int(ncontr*ncontr,hik)
 
       if (mpi_rank .eq. 0.and.job%verbose>=6) write(out,"(/'Restore_rot_kin...: Number of elements: ',i8)") PT%Maxcontracts
 
       ! Read the indexes of the J=0 contracted basis set. 
 
       if (.not.FLrotation.or.jrot==0) then
-
-        !allocate (imat_t(0:PT%Nclasses,ncontr),stat=ierr)
-        !call ArrayStart('mat_t',ierr,size(imat_t),kind(imat_t))
-
-        call MPI_File_read_all(fileh, readbuf, 10, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:10))
         if (readbuf(1:10)/='icontr_cnu') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,readbuf(1:10)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
-        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
-        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*sizeof(0)
+        call ioHandler%seek(file_offset)
 
-        call MPI_File_read_all(fileh, readbuf, 11, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:11))
         if (readbuf(1:11)/='icontr_ideg') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,readbuf(1:11)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
-        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*mpi_int_size
-        call MPI_File_seek(fileh, file_offset,  MPI_SEEK_CUR)
-        file_offset = file_offset+file_offset+mpi_int_size+46
-        call MPI_File_seek_shared(fileh, file_offset,  MPI_SEEK_SET)
-
-        !deallocate(imat_t)
-
+        file_offset = (PT%Nclasses+1)*int(ncontr,MPI_OFFSET_KIND)*sizeof(0)
+        call ioHandler%seek(file_offset)
       else
 
         allocate (PT%icontr_cnu(0:PT%Nclasses,ncontr),PT%icontr_ideg(0:PT%Nclasses,ncontr),stat=ierr)
@@ -8684,36 +8531,33 @@ module perturbation
         allocate (PT%icontr2icase(ncontr,2),stat=ierr)
         call ArrayStart('PT%contractive_space',ierr,size(PT%icontr2icase),kind(PT%icontr2icase))
 
-        call MPI_File_read_all(fileh, readbuf, 10, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:10))
         if (readbuf(1:10)/='icontr_cnu') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,readbuf(1:10)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
         end if
 
-        call MPI_File_read_all(fileh, PT%icontr_cnu, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
+        call ioHandler%read(PT%icontr_cnu)
 
-        call MPI_File_read_all(fileh, readbuf, 11, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:11))
         if (readbuf(1:11)/='icontr_ideg') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,readbuf(1:11)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
         end if
 
-        call MPI_File_read_all(fileh, PT%icontr_ideg, (PT%Nclasses+1)*ncontr, mpi_integer, mpi_status_ignore, ierr)
+        call ioHandler%read(PT%icontr_ideg)
 
       endif
 
       if (job%vib_rot_contr.and.PTvibrational_me_calc) then
 
-        call MPI_File_read_all(fileh, readbuf, 7, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:7))
         if (readbuf(1:7)/='vib-rot') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': label vib-rot is missing ',a)") job%kinetmat_file,readbuf(1:7)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  vib-rot missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  vib-rot missing'
         end if
 
-        call close_chkptfile_mpi(fileh)
+        deallocate(ioHandler)
 
         write(job_id,"('single swap_matrix')")
 
@@ -8722,7 +8566,9 @@ module perturbation
 
         filename = trim(job%matelem_suffix)//"0"//'.chk'
 
-        call open_chkptfile_mpi(fileh, filename, 'read')
+        call openFile(ioHandler, filename, err, action='read', &
+          status='old', form='unformatted')
+        HANDLE_ERROR(err)
 
       endif
 
@@ -8738,8 +8584,7 @@ module perturbation
 
       if (maxcontr>ncontr) then
         if (mpi_rank .eq. 0) write (out,"(' Actual and stored basis sizes at J=0 do not agree (maxcontr,ncontr)  ',2i8)") maxcontr,ncontr
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file - illegal ncontr '
+        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal ncontr '
       end if
     case('rot')
       !
@@ -8747,33 +8592,20 @@ module perturbation
       !
       ! Read the rotational part only 
       !
-      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
-      !
       if (.not.job%IOmatelem_split) then
         !
-        call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:5))
         if (readbuf(1:5)/='g_rot') then
           if(mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,readbuf(1:5)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
-        end if
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
+        endif
         !
         allocate(grot(3,3),stat=ierr)
         !
-        islice = 0
-        !
         do k1 = 1,3
-          !
           do k2 = 1,3
-            !
-            islice = islice + 1
-            !
-            allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-            call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
-            !
-            call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh)
-            !
+            call co_create_distr_array(grot(k1,k2)%me, ncontr)
+            call ioHandler%read(grot(k1,k2)%me, ncontr)
           enddo
         enddo
         !
@@ -8784,25 +8616,19 @@ module perturbation
         islice = 0
         !
         do k1 = 1,3
-          !
           do k2 = 1,3
             !
             islice = islice + 1
             !
-            call divided_slice_open_mpi(islice,fileh_slice,'g_rot',job%matelem_suffix)
+            call co_create_distr_array(grot(k1,k2)%me, ncontr)
             !
-            allocate(grot(k1,k2)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-            call ArrayStart('grot-matrix',ierr,1,kind(f_t),localrootsize)
-            !
-            call co_read_matrix_distr(grot(k1,k2)%me, ncontr, co_startdim, co_enddim, fileh_slice)
-            !
-            call divided_slice_close_mpi(islice,fileh_slice,'g_rot')
+            call divided_slice_open_mpi(islice,sliceHandler,'g_rot',job%matelem_suffix)
+            call sliceHandler%read(grot(k1,k2)%me, ncontr)
+            call divided_slice_close_mpi(islice,sliceHandler,'g_rot')
             !
           enddo
         enddo
       endif
-      !deallocate(mat_)
-      !call ArrayStop('PThamiltonian_contract: mat_')
       !
       if (job%verbose>=4) write(out,"('   ...done!')")
       !
@@ -8810,16 +8636,12 @@ module perturbation
       !
       if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   Read and process Coriolis part...')")
       !
-      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
-      !
       if (.not.job%IOmatelem_split) then
         !
-        call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:5))
         if (readbuf(1:5)/='g_cor') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,readbuf(1:5)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
         allocate(gcor(3),stat=ierr)
@@ -8829,11 +8651,9 @@ module perturbation
         do k1 = 1,3
           !
           islice = islice + 1
-          !
-          allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-          call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
-          !
-          call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh)
+
+          call co_create_distr_array(gcor(k1)%me, ncontr)
+          call ioHandler%read(gcor(k1)%me, ncontr)
           !
         enddo
         !
@@ -8847,21 +8667,14 @@ module perturbation
           !
           islice = islice + 1
           !
-          allocate(gcor(k1)%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-          call ArrayStart('gcor-matrix',ierr,1,kind(f_t),localrootsize)
+          call co_create_distr_array(gcor(k1)%me, ncontr)
           !
-          call divided_slice_open_mpi(islice,fileh_slice,'g_cor',job%matelem_suffix)
-          !
-          call co_read_matrix_distr(gcor(k1)%me, ncontr, co_startdim, co_enddim, fileh_slice)
-          !
-          call divided_slice_close_mpi(islice,fileh_slice,'g_cor')
-          !
+          call divided_slice_open_mpi(islice,sliceHandler,'g_cor',job%matelem_suffix)
+          call sliceHandler%read(gcor(k1)%me, ncontr)
+          call divided_slice_close_mpi(islice,sliceHandler,'g_cor')
         enddo
         !
       endif
-      !
-      !deallocate(mat_)
-      !call ArrayStop('PThamiltonian_contract: mat_')
       !
       if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   ...done!')")
       !
@@ -8871,652 +8684,56 @@ module perturbation
       !
       if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
         !
-        !allocate(mat_t(maxcontr,maxcontr),stat=ierr)
-        !call ArrayStart('PThamiltonian_contract: mat_t',ierr,1,kind(mat_t),rootsize2_)
-        !
-        call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:5))
         if (readbuf(1:5)/='g_rot') then
           if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,readbuf(1:5)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
         end if
         !
-        file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
-        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
+        file_offset = 9*int(ncontr,MPI_OFFSET_KIND)*ncontr*sizeof(0.0_rk)
+        call ioHandler%seek(file_offset)
         !
-        call MPI_File_read_all(fileh, readbuf, 5, mpi_character, mpi_status_ignore, ierr)
+        call ioHandler%read(readbuf(1:5))
         if (readbuf(1:5)/='g_cor') then
           if (mpi_rank .eq. 0)  write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,readbuf(1:5)
-          call mpi_barrier(mpi_comm_world, ierr)
-          stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
+          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
         end if
         !
-        file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
-        call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
-        !
-        !deallocate(mat_t)
-        !call ArrayStop('mat_t')
+        file_offset = 3*int(ncontr,MPI_OFFSET_KIND)*ncontr*sizeof(0.0_rk)
+        call ioHandler%seek(file_offset)
         !
       endif
       !
-      if (mpi_rank .eq. 0 .and. job%verbose>=6) write(out,"('   rootsize_,rootsize = ',2i9)") rootsize_,rootsize
-      !
-      call MPI_File_read_all(fileh, readbuf, 4, mpi_character, mpi_status_ignore, ierr)
+      call ioHandler%read(readbuf(1:4))
       if (readbuf(1:4)/='hvib') then
         if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,': hvib is missing ',a)") job%kinetmat_file,readbuf(1:4)
         if (mpi_rank .eq. 0 .and. readbuf(1:4)=='g_ro') then 
           write (out,"(' Most likely non-divided chk-points used with MATELEM READ SPLIT')") 
           write (out,"(' Re-do MATELEM SAVE SPLIT or use MATELEM SPLIT READ')") 
         endif
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
-      end if
-      !
-      !allocate(mat_(maxcontr,maxcontr),stat=ierr)
-      !call ArrayStart('PThamiltonian_contract: mat_',ierr,1,kind(mat_),rootsize2_)
-      !
-      allocate(hvib%me(localmatrix_y,co_startdim:co_enddim),stat=ierr)
-      call ArrayStart('hvib-matrix',ierr,1,kind(f_t),localrootsize)
-      !
-      call co_read_matrix_distr(hvib%me, ncontr, co_startdim, co_enddim, fileh)
-      !file_offset = int(ncontr,MPI_OFFSET_KIND)*ncontr*mpi_real_size
-      !call MPI_File_seek(fileh, file_offset, MPI_SEEK_CUR)
-      !call MPI_File_read_all(fileh, mat_(1:ncontr,1:ncontr), ncontr*ncontr, mpi_double_precision, mpi_status_ignore, ierr)
-      !
-      !hvib%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-      !
-      !deallocate(mat_)
-      !call ArrayStop('PThamiltonian_contract: mat_')
-      !
-      call MPI_File_read_all(fileh, readbuf, 16, mpi_character, mpi_status_ignore, ierr)
-      if (readbuf(1:16)/='End Kinetic part') then
-        if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,readbuf(1:16)
-        call mpi_barrier(mpi_comm_world, ierr)
-        stop 'MPI_PTrestore_rot_kinetic_matrix_elements - bogus file format'
-      end if
-      !
-      call close_chkptfile_mpi(fileh)
-      !
-      if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   ...done!')")
-      !
-    case('top-icontr')
-      write(*,*) "CASE TOP-ICONTR"
-    !!  !  
-    !!  nprocs = 1
-    !!  tid = 0
-    !!  !$omp parallel private(tid)
-    !!    tid = omp_get_thread_num()
-    !!    if (tid==0) then
-    !!       nprocs = omp_get_num_threads()
-    !!    endif
-    !!  !$omp end parallel
-    !!  !
-    !!  if (FLrotation.and.jrot/=0) then
-    !!    !
-    !!    allocate(grot(3,3),stat=ierr)
-    !!    !
-    !!    rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*9_hik*int(nprocs,hik)
-    !!    call ArrayStart('PThamiltonian_contract: grot',ierr,1,rk,rootsize2_)
-    !!    !
-    !!    allocate(gcor(3),stat=ierr)
-    !!    rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*int(PT%Nmodes,hik)*3_hik*int(nprocs,hik)
-    !!    call ArrayStart('PThamiltonian_contract: grot',ierr,1,rk,rootsize2_)
-    !!    !
-    !!    if (job%vib_rot_contr) then
-    !!      !
-    !!      do islice = 1,9+3*PT%Nmodes
-    !!          call divided_slice_open_vib_rot(islice,job%matelem_suffix)
-    !!      enddo
-    !!      !
-    !!    endif
-    !!    !
-    !!  endif
-    !!  !
-    case('rot-icontr') ! rotational part for the vib-rot contraction scheme
-      write(*,*) "CASE ROT-ICONTR"
-    !!  !
-    !!  ! Read the rotational part only
-    !!  !
-    !!  if (.not.job%IOmatelem_split ) then
-    !!    !
-    !!    write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
-    !!    stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with SPLIT only'
-    !!    !
-    !!  endif
-    !!  !
-    !!  if (.not.job%vib_rot_contr) return
-    !!  !
-    !!  icontr1 = PT%Ncontr02icase0(icontr,1)
-    !!  icontr2 = PT%Ncontr02icase0(icontr,2)
-    !!  !
-    !!  islice = 0
-    !!  !
-    !!  do k1 = 1,3
-    !!    do k2 = 1,3
-    !!      !
-    !!      islice = islice + 1
-    !!      !
-    !!      nullify(grot(k1,k2)%me)
-    !!      !
-    !!      if (associated(grot(k1,k2)%me)) deallocate(grot(k1,k2)%me)
-    !!      !
-    !!      allocate(grot(k1,k2)%me(maxcontr,icontr1:icontr2),stat=ierr)
-    !!      !
-    !!      write(job_is,"('single swap_matrix #',i8)") islice
-    !!      call IOStart(trim(job_is),chkptIO_)
-    !!      !
-    !!      read(chkptIO_) grot(k1,k2)%me
-    !!      !
-    !!    enddo
-    !!  enddo
-    !!  !
-    case('cor-icontr') ! corriolis part for the vib-rot contraction scheme
-      write(*,*) "CASE COR-ICONTR"
-    !!  !
-    !!  ! Read the Corriolis part only
-    !!  !
-    !!  !
-    !!  if (.not.job%IOmatelem_split ) then
-    !!    !
-    !!    write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
-    !!    stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with SPLIT only'
-    !!    !
-    !!  endif
-    !!  !
-    !!  if (.not.job%vib_rot_contr) then
-    !!    !
-    !!    write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with cor-icontr only ')")
-    !!    stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with cor-icontr only'
-    !!    !
-    !!  endif
-    !!  !
-    !!  icontr1 = PT%Ncontr02icase0(icontr,1)
-    !!  icontr2 = PT%Ncontr02icase0(icontr,2)
-    !!  !
-    !!  islice  = 9
-    !!  !
-    !!  do k1 = 1,3
-    !!    !
-    !!    islice = islice + 1
-    !!    !
-    !!    nullify(gcor(k1)%me)
-    !!    !
-    !!    if (associated(gcor(k1)%me)) deallocate(gcor(k1)%me)
-    !!    !
-    !!    allocate(gcor(k1)%me(maxcontr,icontr1:icontr2),stat=ierr)
-    !!    !
-    !!    write(job_is,"('single swap_matrix #',i8)") islice
-    !!    call IOStart(trim(job_is),chkptIO_)
-    !!    !
-    !!    read(chkptIO_) gcor(k1)%me
-    !!    !
-    !!  enddo
-    !!  !
-    case('vib-icontr') ! vibrational part for the vib-rot contraction scheme
-      write(*,*) "CASE VIB-ICONTR"
-    !!  !
-    !!  !
-    !!  !if (job%verbose>=4.and.irow==0) write(out,"('   Read and process vibrational part...')")
-    !!  !
-    !!  if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
-    !!    !
-    !!    if (job%vib_rot_contr) then
-    !!      write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
-    !!      stop 'PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with SPLIT  only'
-    !!    endif
-    !!    !
-    !!  endif
-    !!  !
-    !!  if (icontr==1) then 
-    !!    !
-    !!    read(chkptIO) readbuf(1:4)
-    !!    if (readbuf(1:4)/='hvib') then
-    !!      write (out,"(' Vib. kinetic checkpoint file ',a,': hvib is missing ',a)") job%kinetmat_file,readbuf(1:4)
-    !!      if (readbuf(1:4)=='g_ro') write (out,"(' Most likely non-divided chk-points used with MATELEM READ DIVIDED')") 
-    !!      write (out,"(' Re-do MATELEM SAVE DIVIDE or use MATELEM READ!')") 
-    !!      stop 'PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
-    !!    end if
-    !!    !
-    !!  endif
-    !!  !
-    !!  if (associated(hvib%me)) deallocate(hvib%me)
-    !!  !
-    !!  call ArrayStart('hvib-matrix',0,1,4)
-    !!  call ArrayStart('grot-matrix',0,1,4)
-    !!  call ArrayStart('gcor-matrix',0,1,4)
-    !!  call ArrayStop('hvib-matrix')
-    !!  call ArrayStop('grot-matrix')
-    !!  call ArrayStop('gcor-matrix')
-    !!  !
-    !!  icontr1 = PT%Ncontr02icase0(icontr,1)
-    !!  icontr2 = PT%Ncontr02icase0(icontr,2)
-    !!  !
-    !!  if (job%verbose>=6) write(out,"('allocate hvib for ',i9,' x ',i8,' -> ',i8)") maxcontr,icontr1,icontr2
-    !!  !
-    !!  allocate(hvib%me(maxcontr,icontr1:icontr2),stat=ierr)
-    !!  call ArrayStart('hvib-matrix',ierr,1,kind(f_t),rootsize2_)
-    !!  !
-    !!  read(chkptIO) hvib%me
-    !!  !
-    !!  maxcontr0 = size(PT%Ncontr02icase0,dim=1)
-    !!  !
-    !!  if (icontr==maxcontr0) then 
-    !!    !
-    !!    read(chkptIO) readbuf(1:4)
-    !!    if (readbuf(1:4)/='hvib') then
-    !!      write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,readbuf(1:16)
-    !!      stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
-    !!    end if
-    !!    !
-    !!    close(chkptIO,status='keep')
-    !!    !
-    !!    if (job%verbose>=4) write(out,"('   ...done!')")
-    !!    !
-    !!  endif
-    !!  !
-    end select
-#endif
-  end subroutine
-
-  subroutine divided_slice_open_mpi(islice,fileh,chkpt_type,suffix)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-    use mpi_aux
-    implicit none
-    integer(ik),intent(in) :: islice
-    type(MPI_File),intent(inout) :: fileh
-    character(len=*),intent(in) :: chkpt_type,suffix
-
-#ifdef TROVE_USE_MPI_
-    integer(ik) :: ilen
-    character(len=cl) :: readbuf,filename,jchar
-    integer :: ierr
-
-    if (.not.job%IOmatelem_split) return
-    !
-    !write(job_is,"('single swap_matrix')")
-    !
-    !call IOStart(trim(job_is),chkptIO)
-    !
-    write(jchar, '(i4)') islice
-    !
-    filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-    !
-    call open_chkptfile_mpi(fileh, filename, 'read')
-    !
-    ilen = LEN_TRIM(chkpt_type)
-    !
-    call MPI_File_read_all(fileh, readbuf, ilen, mpi_character, mpi_status_ignore, ierr)
-    if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
-      if (mpi_rank .eq. 0) write (out,"(' [MPI] kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
-      stop 'PTrestore_rot_kinetic_matrix_elements_mpi - in slice -  header missing or wrong'
-    end if
-#endif
-  end subroutine divided_slice_open_mpi
-
-  subroutine divided_slice_close_mpi(islice,fileh,chkpt_type)
-#ifdef TROVE_USE_MPI_
-    use mpi_f08
-#endif
-
-    use mpi_aux
-    integer(ik),intent(in) :: islice
-    type(MPI_File),intent(inout) :: fileh
-    character(len=*),intent(in) :: chkpt_type
-
-#ifdef TROVE_USE_MPI_
-    integer(ik) :: ilen
-    character(len=cl) :: readbuf
-    integer :: ierr
-
-    if (.not.job%IOmatelem_split) return
-    !
-    ilen = LEN_TRIM(chkpt_type)
-    !
-    call MPI_File_read_all(fileh, readbuf, ilen, mpi_character, mpi_status_ignore, ierr)
-    if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
-      if(mpi_rank .eq. 0) write (out,"(' divided_slice_close_mpi, kinetic checkpoint slice: footer is missing or wrong',a)") readbuf(1:ilen)
-      stop 'divided_slice_close_mpi - in slice -  footer missing or wrong'
-    end if
-    !
-    call close_chkptfile_mpi(fileh)
-#endif
-  end subroutine divided_slice_close_mpi
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!! POSIX IO !!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! Here we restore the vibrational (J=0) matrix elements of the rotational kinetic part G_rot and G_cor
-  !
-  subroutine PTrestore_rot_kinetic_matrix_elements(jrot,task,chkptIO,dimen,ncontr,maxcontr,icontr)
-    !
-    integer(ik),intent(in)  :: jrot
-    character(len=cl),intent(in)  :: task
-    integer(ik),intent(inout)    :: chkptIO
-    integer(ik),intent(in)       :: dimen
-    integer(ik),intent(inout),optional :: ncontr
-    integer(ik),intent(inout),optional  :: maxcontr
-    integer(ik),intent(in),optional     :: icontr
-    !
-    integer(ik)   :: alloc
-    character(len=cl)  :: job_is,filename
-    character(len=18)  :: buf18
-    integer(ik)        :: k1,k2,j,ib0,islice,chkptIO_,ideg,icontr0,istart,iend,maxcontr0
-    integer(ik),allocatable :: imat_t(:,:)
-    integer(hik)         :: rootsize,rootsize_,rootsize2,rootsize2_,nprocs,tid,icontr1,icontr2
-    integer              :: OMP_GET_NUM_THREADS,omp_get_thread_num
-    real(rk),allocatable :: mat_t(:,:),mat_(:,:)
-    real(rk)             :: f_t
-    !
-    ! Return if there is nothing to read
-    !
-    if ( trim(job%IOkinet_action)/='VIB_READ'.and.trim(job%IOkinet_action)/='READ'.and..not.job%contrci_me_fast) return
-    !
-    if ( trim(job%IOswap_matelem)/='NONE') return
-    !
-    rootsize = int(ncontr*(ncontr+1)/2,hik)
-    rootsize_ = int(maxcontr*(maxcontr+1)/2,hik)
-    !
-    rootsize2  = int(ncontr*ncontr,hik)
-    rootsize2_ = int(maxcontr*maxcontr,hik)
-    !
-    !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
-    if (job%verbose>=6.and.present(icontr)) write(out,"('icontr = ',i9)") icontr
-    !
-    select case (trim(task))
-    !
-    case('top')
-      !
-      job_is ='Vib. matrix elements of the rot. kinetic'
-      call IOStart(trim(job_is),chkptIO)
-      !
-      !open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file,recordtype='variable')
-      !
-      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=job%kinetmat_file)
-      !
-      read(chkptIO) buf18
-      if (buf18/='Start Kinetic part') then
-        write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus header: ',a)") job%kinetmat_file,buf18
-        stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
-      end if
-      !
-      read(chkptIO) ncontr
-      !
-      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(.not.trove%triatom_sing_resolve ) ) then
-        write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
-        write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") PT%Maxcontracts,ncontr
-        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
-      end if
-      !
-      rootsize = int(ncontr*(ncontr+1)/2,hik)
-      rootsize2 = int(ncontr*ncontr,hik)
-      !
-      if (job%verbose>=6) write(out,"(/'Restore_rot_kin...: Number of elements: ',i8)") PT%Maxcontracts
-      !
-      ! Read the indexes of the J=0 contracted basis set. 
-      !
-      if (.not.FLrotation.or.jrot==0) then
-        !
-        allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
-        call ArrayStart('mat_t',alloc,size(imat_t),kind(imat_t))
-        !
-        read(chkptIO) buf18(1:10)
-        if (buf18(1:10)/='icontr_cnu') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
-        end if
-        !
-        read(chkptIO) imat_t(0:PT%Nclasses,1:ncontr)
-        !
-        read(chkptIO) buf18(1:11)
-        if (buf18(1:11)/='icontr_ideg') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
-        end if
-        !
-        read(chkptIO) imat_t(0:PT%Nclasses,1:ncontr)
-        !
-        deallocate(imat_t)
-        !
-      else
-        !
-        allocate (PT%icontr_cnu(0:PT%Nclasses,ncontr),PT%icontr_ideg(0:PT%Nclasses,ncontr),stat=alloc)
-        call ArrayStart('PT%contractive_space',alloc,size(PT%icontr_cnu),kind(PT%icontr_cnu))
-        call ArrayStart('PT%contractive_space',alloc,size(PT%icontr_ideg),kind(PT%icontr_ideg))
-        !
-        deallocate(PT%icontr2icase)
-        call Arraystop('PT%contractive_space')
-        !
-        allocate (PT%icontr2icase(ncontr,2),stat=alloc)
-        call ArrayStart('PT%contractive_space',alloc,size(PT%icontr2icase),kind(PT%icontr2icase))
-        !
-        read(chkptIO) buf18(1:10)
-        if (buf18(1:10)/='icontr_cnu') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
-        end if
-        !
-        read(chkptIO) PT%icontr_cnu(0:PT%Nclasses,1:ncontr)
-        !
-        read(chkptIO) buf18(1:11)
-        if (buf18(1:11)/='icontr_ideg') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
-        end if
-        !
-        read(chkptIO) PT%icontr_ideg(0:PT%Nclasses,1:ncontr)
-        !
-      endif
-      !
-      if (job%vib_rot_contr.and.PTvibrational_me_calc) then
-        !
-        read(chkptIO) buf18(1:7)
-        if (buf18(1:7)/='vib-rot') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': label vib-rot is missing ',a)") job%kinetmat_file,buf18(1:7)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  vib-rot missing'
-        end if
-        !
-        close(chkptIO)
-        !
-        write(job_is,"('single swap_matrix')")
-        !
-        call IOStart(trim(job_is),chkptIO)
-        !
-        filename = trim(job%matelem_suffix)//"0"//'.chk'
-        !
-        open(chkptIO,form='unformatted',action='read',status='old',file=filename)
-        !
-      endif
-      !
-      ! reconstruct the correlation between the vib. indices for J=0 and current J
-      !
-      call Find_groundstate_icontr(maxcontr)
-      !
-      if (job%verbose>=4) write(out,"('   ...done!')")
-      !
-      if (job%verbose>=4.and.maxcontr/=ncontr) then
-        write (out,"('   The contracted basis set is reduced: ',i8,' -> ',i8)") ncontr,maxcontr
-      end if
-      !
-      if (maxcontr>ncontr) then
-        write (out,"(' Actual and stored basis sizes at J=0 do not agree (maxcontr,ncontr)  ',2i8)") maxcontr,ncontr
-        stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal ncontr '
-      end if
-      !
-    case('rot')
-      !
-      if (job%verbose>=4) write(out,"('   Read and process rotational part...')")
-      !
-      ! Read the rotational part only 
-      !
-      allocate(mat_(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
-      !
-      if (.not.job%IOmatelem_split) then
-        !
-        read(chkptIO) buf18(1:5)
-        if (buf18(1:5)/='g_rot') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,buf18(1:5)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
-        end if
-        !
-      endif
-      !
-      allocate(grot(3,3),stat=alloc)
-      !
-      islice = 0
-      chkptIO_ = chkptIO
-      !
-      do k1 = 1,3
-        !
-        do k2 = 1,3
-          !
-          islice = islice + 1
-          !
-          call divided_slice_open(islice,chkptIO_,'g_rot',job%matelem_suffix)
-          !
-          allocate(grot(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
-          call ArrayStart('grot-matrix',alloc,1,kind(f_t),rootsize2_)
-          !
-          read(chkptIO_) mat_
-          !
-          grot(k1,k2)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-          !
-          call divided_slice_close(islice,chkptIO_,'g_rot')
-          !
-        enddo
-      enddo
-      !
-      deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
-      !
-      if (job%verbose>=4) write(out,"('   ...done!')")
-      !
-    case('cor')
-      !
-      if (job%verbose>=4) write(out,"('   Read and process Coriolis part...')")
-      !
-      allocate(mat_(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
-      !
-      if (.not.job%IOmatelem_split) then
-        !
-        read(chkptIO) buf18(1:5)
-        if (buf18(1:5)/='g_cor') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,buf18(1:5)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
-        end if
-        !
-      endif
-      !
-      allocate(gcor(3),stat=alloc)
-      !
-      islice  = 9
-      chkptIO_ = chkptIO
-      !
-      do k1 = 1,3
-        !
-        islice = islice + 1
-        !
-        allocate(gcor(k1)%me(maxcontr,maxcontr),stat=alloc)
-        call ArrayStart('gcor-matrix',alloc,1,kind(f_t),rootsize2_)
-        !
-        call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
-        !
-        read(chkptIO_) mat_
-        !
-        gcor(k1)%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-        !
-        call divided_slice_close(islice,chkptIO_,'g_cor')
-        !
-      enddo
-      !
-      deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
-      !
-      if (job%verbose>=4) write(out,"('   ...done!')")
-      !
-    case('vib')
-      !
-      if (job%verbose>=4) write(out,"('   Read and process vibrational part...')")
-      !
-      if (.not.job%IOmatelem_split.and.( (.not.FLrotation.or.jrot==0).and.trim(job%IOkinet_action)/='VIB_READ' ) ) then
-        !
-        allocate(mat_t(maxcontr,maxcontr),stat=alloc)
-        call ArrayStart('PThamiltonian_contract: mat_t',alloc,1,kind(mat_t),rootsize2_)
-        !
-        read(chkptIO) buf18(1:5)
-        if (buf18(1:5)/='g_rot') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': g_rot is missing ',a)") job%kinetmat_file,buf18(1:5)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_rot missing'
-        end if
-        !
-        do k1 = 1,3
-          do k2 = 1,3
-            !
-            read(chkptIO) mat_t
-            !
-          enddo
-        enddo
-        !
-        read(chkptIO) buf18(1:5)
-        if (buf18(1:5)/='g_cor') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': g_cor is missing ',a)") job%kinetmat_file,buf18(1:5)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  g_cor missing'
-        end if
-        !
-        !do k1 = 1,PT%Nmodes
-        do k2 = 1,3
-          !
-          read(chkptIO) mat_t
-          !
-        enddo
-        !enddo
-        !
-        deallocate(mat_t)
-        call ArrayStop('mat_t')
-        !
-      endif
-      !
-      if (job%verbose>=6) write(out,"('   rootsize_,rootsize = ',2i0)") rootsize_,rootsize
-      !
-      read(chkptIO) buf18(1:4)
-      if (buf18(1:4)/='hvib') then
-        write (out,"(' Vib. kinetic checkpoint file ',a,': hvib is missing ',a)") job%kinetmat_file,buf18(1:4)
-        if (buf18(1:4)=='g_ro') then 
-          write (out,"(' Most likely non-divided chk-points used with MATELEM READ SPLIT')") 
-          write (out,"(' Re-do MATELEM SAVE SPLIT or use MATELEM SPLIT READ')") 
-        endif
         stop 'PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
       end if
+
+      call co_create_distr_array(hvib%me, ncontr)
       !
-      allocate(mat_(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
-      !
-      allocate(hvib%me(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
-      !
-      read(chkptIO) mat_
-      !
-      hvib%me(1:ncontr,1:ncontr) = mat_(1:ncontr,1:ncontr)
-      !
-      deallocate(mat_)
-      call ArrayStop('PThamiltonian_contract: mat_')
-      !
-      read(chkptIO) buf18(1:16)
-      if (buf18(1:16)/='End Kinetic part') then
-        write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,buf18(1:16)
+      call ioHandler%read(hvib%me, ncontr)
+
+      call ioHandler%read(readbuf(1:16))
+      if (readbuf(1:16)/='End Kinetic part') then
+        if (mpi_rank .eq. 0) write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,readbuf(1:16)
         stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
       end if
       !
-      close(chkptIO,status='keep')
+      deallocate(ioHandler)
       !
-      if (job%verbose>=4) write(out,"('   ...done!')")
-      !
+      if (mpi_rank .eq. 0 .and. job%verbose>=4) write(out,"('   ...done!')")
+
     case('top-icontr')
-      !  
+      if (blacs_size .gt. 1) then
+        if (mpi_rank .eq. 0) write (out,*) "task=top-icontr is not implemented for MPI."
+        stop 'PTrestore_rot_kinetic_matrix_elements - unimplemented MPI'
+      endif
+
       nprocs = 1
       tid = 0
       !$omp parallel private(tid)
@@ -9528,14 +8745,14 @@ module perturbation
       !
       if (FLrotation.and.jrot/=0) then
         !
-        allocate(grot(3,3),stat=alloc)
+        allocate(grot(3,3),stat=ierr)
         !
         rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*9_hik*int(nprocs,hik)
-        call ArrayStart('PThamiltonian_contract: grot',alloc,1,rk,rootsize2_)
+        call ArrayStart('PThamiltonian_contract: grot',ierr,1,rk,rootsize2_)
         !
-        allocate(gcor(3),stat=alloc)
+        allocate(gcor(3),stat=ierr)
         rootsize2_ = int(maxcontr,hik)*int(PT%max_deg_size,hik)*int(PT%Nmodes,hik)*3_hik*int(nprocs,hik)
-        call ArrayStart('PThamiltonian_contract: grot',alloc,1,rk,rootsize2_)
+        call ArrayStart('PThamiltonian_contract: grot',ierr,1,rk,rootsize2_)
         !
         if (job%vib_rot_contr) then
           !
@@ -9546,11 +8763,8 @@ module perturbation
         endif
         !
       endif
-      !
+
     case('rot-icontr') ! rotational part for the vib-rot contraction scheme
-      !
-      ! Read the rotational part only
-      !
       if (.not.job%IOmatelem_split ) then
         !
         write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
@@ -9574,21 +8788,18 @@ module perturbation
           !
           if (associated(grot(k1,k2)%me)) deallocate(grot(k1,k2)%me)
           !
-          allocate(grot(k1,k2)%me(maxcontr,icontr1:icontr2),stat=alloc)
+          allocate(grot(k1,k2)%me(maxcontr,icontr1:icontr2),stat=ierr)
           !
-          write(job_is,"('single swap_matrix #',i8)") islice
-          call IOStart(trim(job_is),chkptIO_)
+          write(job_id,"('single swap_matrix #',i8)") islice
+          call IOStart(trim(job_id),chkptIO_)
           !
           read(chkptIO_) grot(k1,k2)%me
           !
         enddo
       enddo
-      !
+
     case('cor-icontr') ! corriolis part for the vib-rot contraction scheme
-      !
-      ! Read the Corriolis part only
-      !
-      !
+      ! Read the Coriolis part only
       if (.not.job%IOmatelem_split ) then
         !
         write (out,"('PTrestore_rot_kinetic_matrix_elements: vib-rot can be used with MATELEM SAVE SPLIT only ')")
@@ -9616,17 +8827,16 @@ module perturbation
         !
         if (associated(gcor(k1)%me)) deallocate(gcor(k1)%me)
         !
-        allocate(gcor(k1)%me(maxcontr,icontr1:icontr2),stat=alloc)
+        allocate(gcor(k1)%me(maxcontr,icontr1:icontr2),stat=ierr)
         !
-        write(job_is,"('single swap_matrix #',i8)") islice
-        call IOStart(trim(job_is),chkptIO_)
+        write(job_id,"('single swap_matrix #',i8)") islice
+        call IOStart(trim(job_id),chkptIO_)
         !
         read(chkptIO_) gcor(k1)%me
         !
       enddo
-      !
+
     case('vib-icontr') ! vibrational part for the vib-rot contraction scheme
-      !
       !
       !if (job%verbose>=4.and.irow==0) write(out,"('   Read and process vibrational part...')")
       !
@@ -9641,10 +8851,10 @@ module perturbation
       !
       if (icontr==1) then 
         !
-        read(chkptIO) buf18(1:4)
-        if (buf18(1:4)/='hvib') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,': hvib is missing ',a)") job%kinetmat_file,buf18(1:4)
-          if (buf18(1:4)=='g_ro') write (out,"(' Most likely non-divided chk-points used with MATELEM READ DIVIDED')") 
+        read(chkptIO) readbuf(1:4)
+        if (readbuf(1:4)/='hvib') then
+          write (out,"(' Vib. kinetic checkpoint file ',a,': hvib is missing ',a)") job%kinetmat_file,readbuf(1:4)
+          if (readbuf(1:4)=='g_ro') write (out,"(' Most likely non-divided chk-points used with MATELEM READ DIVIDED')") 
           write (out,"(' Re-do MATELEM SAVE DIVIDE or use MATELEM READ!')") 
           stop 'PTrestore_rot_kinetic_matrix_elements - in file -  hvib or End missing'
         end if
@@ -9665,8 +8875,8 @@ module perturbation
       !
       if (job%verbose>=6) write(out,"('allocate hvib for ',i9,' x ',i8,' -> ',i8)") maxcontr,icontr1,icontr2
       !
-      allocate(hvib%me(maxcontr,icontr1:icontr2),stat=alloc)
-      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
+      allocate(hvib%me(maxcontr,icontr1:icontr2),stat=ierr)
+      call ArrayStart('hvib-matrix',ierr,1,kind(f_t),rootsize2_)
       !
       read(chkptIO) hvib%me
       !
@@ -9674,9 +8884,9 @@ module perturbation
       !
       if (icontr==maxcontr0) then 
         !
-        read(chkptIO) buf18(1:4)
-        if (buf18(1:4)/='hvib') then
-          write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,buf18(1:4)
+        read(chkptIO) readbuf(1:4)
+        if (readbuf(1:4)/='hvib') then
+          write (out,"(' Vib. kinetic checkpoint file ',a,' has bogus footer: ',a)") job%kinetmat_file,readbuf(1:4)
           stop 'PTrestore_rot_kinetic_matrix_elements - bogus file format'
         end if
         !
@@ -9687,68 +8897,9 @@ module perturbation
       endif
       !
     end select
-    !
-  contains 
 
-    !
-    subroutine divided_slice_open(islice,chkptIO,name,suffix)
-      !
-      implicit none
-      integer(ik),intent(in)      :: islice
-      integer(ik),intent(inout)   :: chkptIO
-      character(len=*),intent(in) :: name,suffix
-      character(len=4)            :: jchar
-      character(len=cl)           :: buf,filename,job_is
-      integer(ik)                 :: ilen
-      logical                     :: ifopened
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      write(job_is,"('single swap_matrix')")
-      !
-      call IOStart(trim(job_is),chkptIO)
-      !
-      write(jchar, '(i4)') islice
-      !
-      filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
-      !
-      open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
-      !
-      ilen = LEN_TRIM(name)
-      !
-      read(chkptIO) buf(1:ilen)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        write (out,"(' kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,buf(1:ilen)
-        stop 'PTrestore_rot_kinetic_matrix_elements - in slice -  header missing or wrong'
-      end if
-      !
-    end subroutine divided_slice_open
-    !
-    subroutine divided_slice_close(islice,chkptIO,name)
-      !
-      integer(ik),intent(in) :: islice
-      integer(ik),intent(inout) :: chkptIO
-      character(len=*),intent(in) :: name
-      character(len=4) :: jchar
-      character(len=cl) :: buf,filename
-      integer(ik)      :: ilen
-      logical          :: ifopened
-      !
-      if (.not.job%IOmatelem_split) return
-      !
-      ilen = LEN_TRIM(name)
-      !
-      read(chkptIO) buf(1:ilen)
-      if ( trim(buf(1:ilen))/=trim(name) ) then
-        write (out,"(' divided_slice_close, kinetic checkpoint slice ',a,': footer is missing or wrong',a)") &
-              filename,buf(1:ilen)
-        stop 'divided_slice_close - in slice -  footer missing or wrong'
-      end if
-      !
-      close(chkptIO)
-      !
-    end subroutine divided_slice_close
-    !
+    contains
+
     subroutine divided_slice_open_vib_rot(islice,suffix)
       !
       implicit none
@@ -9810,9 +8961,65 @@ module perturbation
       !
     end subroutine divided_slice_close_vib_rot
 
-  end subroutine PTrestore_rot_kinetic_matrix_elements
-  !
-  !
+    subroutine divided_slice_open_mpi(islice,sliceHandler,chkpt_type,suffix)
+      use mpi_aux
+      implicit none
+      integer(ik),intent(in) :: islice
+      class(ioHandlerBase), allocatable, intent(out) :: sliceHandler
+      character(len=*),intent(in) :: chkpt_type,suffix
+
+      integer(ik) :: ilen
+      character(len=cl) :: readbuf,filename,jchar
+      type(ErrorType) :: err
+      integer :: ierr
+
+      if (.not.job%IOmatelem_split) return
+      !
+      !write(job_is,"('single swap_matrix')")
+      !
+      !call IOStart(trim(job_is),chkptIO)
+      !
+      write(jchar, '(i4)') islice
+      !
+      filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
+      !
+      call openFile(sliceHandler, filename, err, action='read', &
+        position='rewind', status='old', form='unformatted')
+      HANDLE_ERROR(err)
+      !
+      ilen = LEN_TRIM(chkpt_type)
+      !
+      call sliceHandler%read(readbuf(1:ilen))
+      if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
+        if (mpi_rank .eq. 0) write (out,"('divided_slice_open, kinetic checkpoint slice ',a20,': header is missing or wrong',a)") filename,readbuf(1:ilen)
+        stop 'PTrestore_rot_kinetic_matrix_elements- in slice -  header missing or wrong'
+      end if
+    end subroutine divided_slice_open_mpi
+
+    subroutine divided_slice_close_mpi(islice,sliceHandler,chkpt_type)
+      use mpi_aux
+      integer(ik),intent(in) :: islice
+      class(ioHandlerBase), allocatable, intent(inout) :: sliceHandler
+      character(len=*),intent(in) :: chkpt_type
+
+      integer(ik) :: ilen
+      character(len=cl) :: readbuf
+      type(ErrorType) :: err
+      integer :: ierr
+
+      if (.not.job%IOmatelem_split) return
+      !
+      ilen = LEN_TRIM(chkpt_type)
+      !
+      call sliceHandler%read(readbuf(1:ilen))
+      if ( trim(readbuf(1:ilen))/=trim(chkpt_type) ) then
+        if(mpi_rank .eq. 0) write (out,"('divided_slice_close, kinetic checkpoint slice: footer is missing or wrong',a)") readbuf(1:ilen)
+        stop 'divided_slice_close - in slice -  footer missing or wrong'
+      end if
+      deallocate(sliceHandler)
+    end subroutine divided_slice_close_mpi
+
+  end subroutine
   !
   ! We construct the Hamiltonian matrix in symm. adapted representaion 
   ! for the K-factorized rotational basis 
@@ -9847,8 +9054,11 @@ module perturbation
     hcontr = 0.0
     !
     do jrow = 1,irow
-       if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
-
+       !
+       if (present(no_diagonalization)) then
+         if (no_diagonalization.and.jrow/=irow ) cycle
+       endif
+       !
        cnu_j(:) = PT%contractive_space(:,jrow)
        jsize = PT%Index_deg(jrow)%size1 
 
@@ -9977,153 +9187,6 @@ module perturbation
     !call TimerStop('Symmetrized Hamiltonian - one column')
     !
   end subroutine symm_mat_element_vector
-
-  !
-  ! In this version of the routine we construct the Hamiltonian matrix in symm. adapted representaion 
-  ! for rotational basis which is not factorized with "K". 
-  !
-  !subroutine symm_mat_element_vector(jrot,irow,ijterm,func,mat_t,no_diagonalization)
-
-    !integer(ik),intent(in)   :: jrot,irow,ijterm(:,:)
-    !real(rk),external      :: func
-    !real(rk),intent(out)   :: mat_t(:,:,:)
-    !logical,optional,intent(in) :: no_diagonalization 
-    !!
-    !integer(ik) :: cnu_i(0:PT%Nclasses),cnu_j(0:PT%Nclasses)
-    !integer(ik) :: deg_i(0:PT%Nclasses),deg_j(0:PT%Nclasses)
-    !real(rk)    :: mat_elem
-    !integer(ik) :: isize,jsize,ielem,jelem
-    !integer(ik) :: jrow,ideg,jdeg,isym,jsym,iL,iR,iterm,jterm,icontr,jcontr
-    !real(rk)    :: vec_i(PT%max_deg_size),vec_j(PT%max_deg_size)
-
-    !real(rk), dimension(:,:,:), allocatable :: hcontr
-
-    !allocate(hcontr(PT%max_deg_size,PT%max_deg_size,irow))
-      !!
-      !mat_t = 0 
-      !!
-      !cnu_i(:) = PT%contractive_space(:,irow)
-      !!
-      !isize = PT%Index_deg(irow)%size1
-      !!
-      !do jrow = 1,irow
-         !!
-         !if ( present(no_diagonalization).and.no_diagonalization.and.jrow/=irow ) cycle
-         !!
-         !cnu_j(:) = PT%contractive_space(:,jrow)
-         !!
-         !jsize = PT%Index_deg(jrow)%size1 
-         !!
-         !do ideg = 1,isize
-            !!
-            !deg_i(:) = PT%Index_deg(irow)%icoeffs(:,ideg)
-            !!
-            !do jdeg = 1,jsize
-               !!
-               !deg_j(:) = PT%Index_deg(jrow)%icoeffs(:,jdeg)
-               !!
-               !icontr = PT%icase2icontr(irow,ideg)
-               !jcontr = PT%icase2icontr(jrow,jdeg)
-               !!
-               !! Matrix elements 
-               !!
-               !hcontr(ideg,jdeg,jrow) = func(icontr,jcontr,jrot,cnu_i(0),cnu_j(0),deg_i(0),deg_j(0))
-               !!
-            !enddo
-            !!
-         !enddo
-         !!
-      !end do
-
-      !do jrow=1,irow
-         !jsize = PT%Index_deg(jrow)%size1 
-         !do isym = 1,sym%Nrepresen
-           !!
-           !iterm = ijterm(irow,isym) 
-           !!
-           !do jsym = 1,isym
-             !!
-             !jterm = ijterm(jrow,jsym) 
-             !!
-             !do ielem = 1,PT%irr(isym)%N(irow) 
-               !!
-               !vec_i(1:isize) = PT%irr(isym)%repres(iterm+ielem,1,1:isize) 
-               !!
-               !do jelem = 1,PT%irr(jsym)%N(jrow) 
-                 !!
-                 !vec_j(1:jsize) = PT%irr(jsym)%repres(jterm+jelem,1,1:jsize)
-                 !!
-                 !vec_j(1:isize) = matmul(hcontr(1:isize,1:jsize, jrow),vec_j(1:jsize))  
-                 !!
-                 !mat_elem = dot_product(vec_i(1:isize),vec_j(1:isize))
-                 !!
-                 !if (isym==jsym) then
-                    !!
-                    !iL = ielem
-                    !iR = jterm+jelem
-                    !!
-                    !if (iterm+ielem<jterm+jelem) then
-                      !!
-                      !iL = jelem
-                      !iR = iterm+ielem
-                      !!
-                    !endif 
-                    !!
-                    !if (debug_check_symmetries) then
-                      !if (PT%symactive_space(isym)%sym_N(iterm+ielem,1)/=irow.or.&
-                          !PT%symactive_space(isym)%sym_N(iterm+ielem,2)/=ielem) then 
-                          !write(out,"('PThamiltonian_contract: something wrong with counting for isym,ielem,iterm,jterm = ',4i8)") &
-                                      !isym,ielem,iterm,jterm
-                          !write(out,"(' either PT%symactive_space(isym)%sym_N(1)/=irow  ',2i8)") & 
-                             !PT%symactive_space(isym)%sym_N(iterm+ielem,1),irow
-                          !write(out,"('     or PT%symactive_space(isym)%sym_N(2)/=ielem ',2i8)") & 
-                             !PT%symactive_space(isym)%sym_N(iterm+ielem,2),ielem
-                          !stop 'something wrong with sym-counting'
-                      !endif 
-                    !endif
-                    !!
-                    !if (job%select_gamma(isym)) then 
-                      !!
-                      !mat_t(isym,iL,iR)  = mat_elem
-                      !!
-                    !endif
-                    !!
-                 !elseif (debug_check_symmetries) then
-                   !if (abs(mat_elem)>(10.0_rk)**(-(rk-3))) then 
-                      !!
-                      !! We print out non-zero mat. elements between different symmetries, which have to be zero.
-                      !!
-                      !if (job%verbose>=6) &
-                        !write(out,"('<',a4,2i6,'|H|',a4,2i6,'> = ',g18.10)") & 
-                                      !sym%label(isym),irow,iterm+ielem,sym%label(jsym),jrow,jterm+jelem,mat_elem
-                      !!
-                      !! if this error is too big - we stop
-                      !!
-                      !if(abs(mat_elem)>1.0_rk) then 
-                        !!write(out,"(/'A non-diagonal mat. element between different symmetries:')")  
-                        !write(out,"(/'<',a4,3i6,'|H|',a4,3i6,'> = ',g18.10,a)") & 
-                                      !sym%label(isym),irow,ielem,iterm+ielem,sym%label(jsym),jrow,jelem,jterm+jelem,mat_elem,&
-                                      !' Non-diagonal element (euler) between different symmetries is too large!'
-                        !stop 'non-zero element between two symmetries - symm_mat_element_vector'
-                      !endif
-                      !!
-                   !endif
-                 !endif
-                 !! 
-               !enddo
-             !enddo
-           !enddo
-           !!
-         !enddo
-         !!
-      !enddo
-      !!
-      !!
-      !!call TimerStop('Symmetrized Hamiltonian - one column')
-      !!
-      !!
-  !end subroutine symm_mat_element_vector
-
   !
   ! In this version of the routine we construct the Hamiltonian matrix in symm. adapted representaion 
   ! for rotational basis which is not factorized with "K" and using the icontr-based sorting 
@@ -11350,7 +10413,7 @@ module perturbation
        !
        spur = spur*exp(-beta*mat0)
        !
-       write(out, '(/1x, a, 1x, es16.8)'), 'qpart = ', spur
+       write(out, '(/1x, a, 1x, es16.8)') 'qpart = ', spur
        !
        !mat = mat / (-planck * vellgt) * (boltz * intensity%temperature)
        !do ielem = 1, dimen_s
@@ -11363,7 +10426,7 @@ module perturbation
        !
        if (gamma==sym%Nrepresen) then
           !
-          write(out, '(/1x, a, 1x, es16.8)'), 'partition function value is', job%partfunc%value
+          write(out, '(/1x, a, 1x, es16.8)') 'partition function value is', job%partfunc%value
           !
        endif 
        !
@@ -16222,17 +15285,11 @@ module perturbation
           !
           ! Prepare the checkpoint file
           !
-          job_is ='Vib. matrix elements of the rot. kinetic part'
-          call IOStart(trim(job_is),chkptIO)
+          !job_is ='Vib. matrix elements of the rot. kinetic part'
+          !call IOStart(trim(job_is),chkptIO)
           !
-#ifdef TROVE_USE_MPI_
-          allocate(ioHandlerMPI::ioHandler)
-#else
-          allocate(ioHandlerFTN::ioHandler)
-#endif
-          call ioHandler%open(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted')
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')
@@ -16469,7 +15526,9 @@ module perturbation
               if (trim(job%IOkinet_action)=='SAVE') then
                 if (job%IOmatelem_split) then 
                   !
+                  ! TODO fix MPIIO matelem split
                   if (trim(job%kinetmat_format).eq.'MPIIO') then
+                    stop "Split not implemented yet - TODO"
                     call write_divided_slice_mpi(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
                   else
                     call write_divided_slice(islice,'g_rot',job%matelem_suffix,mdimen,grot_t)
@@ -17860,11 +16919,10 @@ module perturbation
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
 
-          allocate(ioHandlerFTN::ioHandler)
-          call ioHandler%open( &
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted')
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
+
           call ioHandler%write('Start Kinetic part')
           !
           ! store the bookkeeping information about the contr. basis set
@@ -29434,6 +28492,8 @@ end subroutine read_contr_matelem_expansion_classN
     integer(ik) :: iunit
     integer(ik) :: ncontr,maxcontr
     character(len=cl)   :: task
+    !
+    class(ioHandlerBase), allocatable :: ioHandler
 
 
       if (job%verbose>=2) write (out,"(//'Test the read/write procedure of the eigenvectors and all auxiliary information.')")
@@ -29812,7 +28872,7 @@ end subroutine read_contr_matelem_expansion_classN
      !call restore_vib_matrix_elements
      !
      task = 'top'
-     call PTrestore_rot_kinetic_matrix_elements(j,task,iunit,ncontr,maxcontr)
+     call PTrestore_rot_kinetic_matrix_elements(j,task,ioHandler,ncontr,maxcontr)
      !
      ! obtain the rotational matrix elements
      !
@@ -34428,7 +33488,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           ! perform squaring
           !
-          write(out, '(/1x, a/1x, a, 1x, a)'), 'perform squaring', 'deg of 2', 'norm'
+          write(out, '(/1x, a/1x, a, 1x, a)') 'perform squaring', 'deg of 2', 'norm'
           !
           if (job%verbose>=2) call TimerStart('Partition function my mat-exp')
           !
@@ -34443,13 +33503,13 @@ end subroutine read_contr_matelem_expansion_classN
           !
           do
                 if (deg > max_deg) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max degree of 2', max_deg, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max degree of 2', max_deg, 'is reached'
                       exit
                 end if
                 !
                 norm = norm / real(2**deg, kind = rk)
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), deg, norm
+                write(out, '(1x, i3, 1x, es16.8)') deg, norm
                 !
                 if (abs(norm) <= norm_thresh) exit
                 deg = deg + 1
@@ -34507,14 +33567,14 @@ end subroutine read_contr_matelem_expansion_classN
           spur   = real(dimen, kind = rk)
           spur0  = spur
           !
-          write(out, '(/1x, a/1x, a, 13x, a)'), 'compute exponential', 'ord', 'spur'
+          write(out, '(/1x, a/1x, a, 13x, a)') 'compute exponential', 'ord', 'spur'
           !
           ! loop over Taylor series
           !
           do
                 iorder = iorder + 1
                 if (iorder > max_order) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max exp degree', max_order, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max exp degree', max_order, 'is reached'
                       exit
                 end if
                 !
@@ -34751,7 +33811,7 @@ end subroutine read_contr_matelem_expansion_classN
                 end do
                 !$omp end parallel do
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), iorder, spur
+                write(out, '(1x, i3, 1x, es16.8)') iorder, spur
                 !
                 if (abs(spur - spur0) <= spur_thresh) exit
                 spur0 = spur
@@ -34859,7 +33919,7 @@ end subroutine read_contr_matelem_expansion_classN
         if (Maxcontracts/=ncontr) then
           write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
           write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i8)") PT%Maxcontracts,ncontr
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
+          stop 'PTstore_icontr_cnu - in file - illegal nroots '
         end if
         !
         allocate (imat_t(0:PT%Nclasses,ncontr),stat=alloc)
@@ -34868,7 +33928,7 @@ end subroutine read_contr_matelem_expansion_classN
         call ioHandler%read(buf18(1:10))
         if (buf18(1:10)/='icontr_cnu') then
           write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_cnu is missing ',a)") job%kinetmat_file,buf18(1:10)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_cnu missing'
+          stop 'PTstore_icontr_cnu - in file -  icontr_cnu missing'
         end if
         !
         call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
@@ -34876,7 +33936,7 @@ end subroutine read_contr_matelem_expansion_classN
         call ioHandler%read(buf18(1:11))
         if (buf18(1:11)/='icontr_ideg') then
           write (out,"(' Vib. kinetic checkpoint file ',a,': icontr_ideg is missing ',a)") job%kinetmat_file,buf18(1:11)
-          stop 'PTrestore_rot_kinetic_matrix_elements - in file -  icontr_ideg missing'
+          stop 'PTstore_icontr_cnu - in file -  icontr_ideg missing'
         end if
         !
         call ioHandler%read(imat_t(0:PT%Nclasses,1:ncontr))
@@ -38280,10 +37340,8 @@ end subroutine combinations
           job_is ='Vib. matrix elements of the rot. kinetic part'
           call IOStart(trim(job_is),chkptIO)
           !
-          allocate(ioHandlerFTN::ioHandler)
-          call ioHandler%open(&
-            job%kinetmat_file, err, &
-            action='write', position='rewind', status='replace', form='unformatted')
+          call openFile(ioHandler, job%kinetmat_file, err, action='write', &
+            position='rewind', status='replace', form='unformatted')
           HANDLE_ERROR(err)
 
           call ioHandler%write('Start Kinetic part')
