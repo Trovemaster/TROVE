@@ -14,6 +14,12 @@ COMPILER ?= intel
 MODE ?= release
 USE_MPI ?= 0
 
+ifneq ($(USE_MPI),1)
+ifneq ($(USE_MPI),0)
+$(error USE_MPI "$(USE_MPI)" should be set to 1 to enable MPI or 0 (default) to disable MPI.)
+endif
+endif
+
 # Intel
 #######
 ifeq ($(strip $(COMPILER)),intel)
@@ -29,7 +35,8 @@ ifeq ($(strip $(COMPILER)),intel)
 	endif
 
 	LAPACK = -mkl=parallel
-	ifneq ($(strip $(USE_MPI)),0)
+	ifeq ($(USE_MPI),1)
+		FC=mpiifort
 		LAPACK += -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
 	endif
 
@@ -37,7 +44,7 @@ ifeq ($(strip $(COMPILER)),intel)
 ##########
 else ifeq ($(strip $(COMPILER)),gfortran)
 	FC = gfortran
-	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-512 -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
+	FFLAGS = -cpp -std=gnu -fopenmp -march=native -ffree-line-length-none -fcray-pointer -I$(OBJDIR) -J$(OBJDIR)
 
 	GCC_VERSION_GT_10 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 10)
 	ifeq "${GCC_VERSION_GT_10}" "1"
@@ -54,8 +61,9 @@ else ifeq ($(strip $(COMPILER)),gfortran)
 	endif
 
 	LAPACK = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
-	ifneq ($(strip $(USE_MPI)),0)
+	ifneq ($(USE_MPI),0)
 		# Assume we're using openmpi with gfortran
+		FC = mpif90
 		LAPACK += -lmkl_blacs_openmpi_lp64 -lmkl_scalapack_lp64
 	endif
 else
@@ -64,8 +72,7 @@ endif
 
 CPPFLAGS = -D_EXTFIELD_DEBUG_
 
-ifneq ($(strip $(USE_MPI)),0)
-	FC = mpif90
+ifeq ($(USE_MPI),1)
 	FFLAGS += -DTROVE_USE_MPI_
 endif
 
@@ -92,7 +99,7 @@ user_pot_dir=.
 TARGET=$(BINDIR)/$(EXE)
 
 MPI_SRCS = 
-ifneq ($(strip $(USE_MPI)),0)
+ifeq ($(USE_MPI),1)
 	MPI_SRCS += io_handler_mpi.f90
 endif
 
@@ -104,7 +111,7 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	pot_abcd.f90 pot_c2h4.f90 pot_c2h6.f90 pot_c3h6.f90 pot_ch3oh.f90 \
 	pot_xy2.f90 pot_xy3.f90 pot_xy4.f90 pot_zxy2.f90 pot_zxy3.f90 \
 	prop_xy2.f90 prop_xy2_quad.f90 prop_xy2_spinrot.f90 prop_xy2_spinspin.f90 \
-	io_handler_base.f90 io_handler_ftn.f90 \
+	io_handler_base.f90 io_handler_ftn.f90 io_factory.f90 \
 	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90 $(MPI_SRCS)
 
 OBJS := ${SRCS:.f90=.o}
@@ -159,25 +166,29 @@ tarball:
 checkin:
 	ci -l Makefile *.f90
 
+ifeq ($(USE_MPI),1)
 test: regression-tests unit-tests-nompi unit-tests-mpi
+else
+test: regression-tests unit-tests-nompi
+endif
 
 regression-tests: $(TARGET)
 	echo "Running regression tests"
 	cd test/regression; ./run_regression_tests.sh
 
-unit-tests-nompi: $(TARGET)
+unit-tests-nompi: io_handler_ftn.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_io
 	echo "Running unit tests without MPI"
 	test/unit/test_io
 
-ifneq ($(strip $(USE_MPI)),0)
-unit-tests-mpi: $(TARGET)
+ifeq ($(USE_MPI),1)
+unit-tests-mpi: io_handler_mpi.o
 	$(MAKE) -C test/unit LAPACK="$(LAPACK)" test_mpi_io
 	echo "Running unit tests with MPI"
-	mpirun -n 4 --mca opal_warn_on_missing_libcuda 0 test/unit/test_mpi_io
+	mpirun -n 4 test/unit/test_mpi_io
 else
-unit-tests-mpi: $(TARGET)
-	echo "Skipping unit tests with MPI (USE_MPI not set)"
+unit-tests-mpi:
+	$(error set USE_MPI=1 to compile & test with MPI)
 endif
 
 ################################################################################
@@ -218,7 +229,7 @@ mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
 mpi_aux.o: mpi_aux.f90 accuracy.o timer.o
-perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o io_handler_base.o io_handler_ftn.o $(MPI_OBJS)
+perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o mpi_aux.o io_factory.o io_handler_base.o io_handler_ftn.o $(MPI_OBJS)
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o
@@ -239,8 +250,9 @@ richmol_data.o: richmol_data.f90 accuracy.o timer.o
 rotme_cart_tens.o: rotme_cart_tens.f90 accuracy.o timer.o fwigxjpf.o moltype.o accuracy.o
 symmetry.o: symmetry.f90 accuracy.o timer.o
 timer.o: timer.f90 accuracy.o
-tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o
+tran.o: tran.f90 accuracy.o timer.o me_numer.o molecules.o fields.o moltype.o symmetry.o perturbation.o mpi_aux.o io_factory.o io_handler_base.o io_handler_ftn.o
 trove.o: trove.f90 accuracy.o fields.o perturbation.o symmetry.o timer.o moltype.o dipole.o refinement.o tran.o extfield.o
 io_handler_base.o: io_handler_base.f90 errors.o mpi_aux.o
 io_handler_ftn.o: io_handler_ftn.f90 io_handler_base.o errors.o mpi_aux.o
 io_handler_mpi.o: io_handler_mpi.f90 io_handler_base.o errors.o mpi_aux.o
+io_factory.o: io_factory.f90 io_handler_base.o io_handler_ftn.o mpi_aux.o $(MPI_OBJS)

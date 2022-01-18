@@ -11,12 +11,13 @@ quantum_files="eigen_descr0_1.chk eigen_descr0_2.chk eigen_descr0_3.chk eigen_de
 
 python compare_results.py --kind quantum --folder1 "$folder1" --folder2 "$folder2" $quantum_files
 
-if [[ ${USE_MPI} -ne 1 ]]; then
-    python compare_results.py --kind intensity --precision 5e-6 --folder1 "$folder1" --folder2 "$folder2" file_intensity.out
-fi
-
 python compare_results.py --kind column --column 3 --precision 5e-3 --folder1 "$folder1" --folder2 "$folder2" external.chk
 
 python compare_results.py --kind column --column 2 --precision 1e-8 --folder1 "$folder1" --folder2 "$folder2" potential.chk
 
 python compare_results.py --kind column --column 4 --precision 1e-8 --folder1 "$folder1" --folder2 "$folder2" kinetic.chk
+
+if [[ ${USE_MPI} -ne 1 ]]; then
+    python compare_results.py --kind intensity --precision 5e-6 --folder1 "$folder1" --folder2 "$folder2" file_intensity.out
+fi
+
