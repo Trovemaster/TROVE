@@ -1919,7 +1919,7 @@ contains
           else
             !
             call extFmatHandler%read(imu_t)
-            call extFmatHandler%read(extF_me)
+            call extFmatHandler%read(extF_me, desc_extF, extF_block_type)
             !
           endif
           !
@@ -1981,7 +1981,7 @@ contains
           if (.not.job%IOextF_divide.or.job%IOextF_stitch) then
             !
             call exteigenHandler%write(imu)
-            call exteigenHandler%write(mat_s)
+            call exteigenHandler%write(mat_s, desc_mat_s, mat_s_block_type)
             !
           else
             !
