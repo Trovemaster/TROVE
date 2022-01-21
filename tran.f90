@@ -583,11 +583,11 @@ contains
           bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
           !
           ! trove%lincoord is a special case of a linear molecules where the basis set does not increase with J
-          ! because a contraint on K=L and the total size increase with J linearaly 
+          ! because a contraint on K=L and the total size increases with J linearaly 
           if ((job%lincoord/=0).or.(job%triatom_sing_resolve)) then
-            if (jind>1) then 
-              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)
-            endif
+            !if (jind>1) then 
+              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)*sym%Nrepresen
+            !endif
           endif 
           !
           nsize_base = nsize_base + nsize
