@@ -1136,6 +1136,33 @@ module mol_zxy2
             !
           end select 
           !
+       case('CS','CS(M)')
+          !
+          select case(ioper)
+
+          case (1) ! E 
+
+            dst = src
+
+
+          case (2) ! (E*)
+
+            dst(1) = src(1)
+            dst(2) = src(2)
+            dst(3) = src(3)
+            dst(4) = src(4)
+            dst(5) = src(5)
+            dst(6) = -src(6)
+
+
+          case default
+
+            write (out,"('ML_symmetry_transformation_ZXY2: operation ',i8,' unknown')") ioper
+            stop 'ML_symmetry_transformation_ZXY2 - bad operation. type'
+            !
+          end select 
+        
+  
        end select
         !
     end select
@@ -1162,12 +1189,21 @@ module mol_zxy2
        !
     case('C2V','C2V(M)')
        !
-       gamma = 0 
+       gamma = 1 
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
        if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
        if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
        if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+      !
+    case('CS(M)','CS')
+       !
+       gamma = 0 
+       ideg = 1
+       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+       if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma = 2 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma = 1 !; return
       !
     end select
 

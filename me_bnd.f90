@@ -863,6 +863,8 @@ module me_bnd
          write (out,"('periodicity = ',i8)") p
      endif 
      !
+     
+       
      potmin = huge(1.0_ark)
      !
      do i=0,npoints
@@ -887,6 +889,16 @@ module me_bnd
      !
      inquire(iolength=rec_len) rho_kinet(:),rho_poten(:)
      !
+     ! Print out
+     !
+     if (verbose>=3) then 
+        write(out,"('grid values (i,rho,rho_kinet,rho_poten,poten, mu_rr): ')") 
+        do i_=0,npoints_,2
+          i = int( real(i_,ark)/step_scale )
+          rho = rho_b(1)+real(i_,kind=ark)*rhostep_
+          write(out,"(i8,3f14.6,2g14.6)") i_,rho,rho_kinet(i_),rho_poten(i_),poten(i),mu_rr(i)
+        enddo 
+     endif     
      write(unitfname,"('Numerov basis set # ',i6)") icoord
      call IOStart(trim(unitfname),io_slot)
      !

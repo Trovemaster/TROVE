@@ -1,4 +1,4 @@
-!
+
 !  This unit makes a bridge between different molecular types and the main program
 !
 module molecules
@@ -3303,6 +3303,10 @@ end subroutine polintark
         !
         v = 1.0_ark-cos(x)
         !
+     case('1-COS6X')
+        !   
+        v = 1.0_ark - cos(6.0_ark*x)
+        !
      case('SINX') 
         !
         v = sin(x)
@@ -3349,7 +3353,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC', 'AUTO-HARMON')
         !
         v = x
         !
@@ -3361,7 +3365,7 @@ end subroutine polintark
           !
        case default
           !
-          v = v**iorder 
+          v = v**iorder
           !
        case('RATIONAL') 
           !
@@ -3387,19 +3391,23 @@ end subroutine polintark
             !
           end select 
           !
-          case('AUTOMATIC')
-            if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
-            v = 1.0_ark
-            if(iorder == 0)  return
-            if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
-            y = 1.0_ark
-            do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
-              !
-              z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*(molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
-              call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
-              v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
-            end do      
-          !
+       case('AUTOMATIC', 'AUTO-HARMON')
+         if(itype == 2) then
+           v = v**iorder 
+           return
+         endif 
+         if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+         v = 1.0_ark
+         if(iorder == 0)  return
+         if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+         y = 1.0_ark
+         do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+           !
+           z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*(molec%local_eq_transformed(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+           call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+           v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+       end do      
+       !
         case('BOND-LENGTH')
           !
           if (iorder < 0) then
@@ -3676,6 +3684,18 @@ end subroutine polintark
         endif 
         !
         chi =acos( 1.0_ark-xi(imode) )
+        !
+     case('1-COS6X') 
+        !
+        if (xi(imode)<-0.1_ark) then 
+            !
+            write (out,"('MLcoord_invert: 1-cos x <0: ',f18.8)") xi(imode)
+            write (out,"('Consider change difftype ')")
+            stop 'MLcoord_invert - bad 1- cos x'
+            !
+        endif 
+        !
+        chi =acos( 1.0_ark-xi(imode) )/6.0_ark
         !
      case('COSTAU2') 
         !

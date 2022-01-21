@@ -110,12 +110,35 @@ module me_numer
      rho_switch = molec%specparam(icoord)
      !
      periodic = .false.
+     write(*,*) "max order ", maxorder_
+     write(*,*) "npoins ", npoints
+     write(*,*) "maxslots ", maxslots
+     write(*,*) "numerpoints", npoints_
      if (iperiod>0) periodic = .true.
      !
-     allocate(phil(0:npoints_),phir(0:npoints_),dphil(0:npoints_),dphir(0:npoints_), &
-              phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),enerslot(0:maxslots), &
-              f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),&
-              xton(0:npoints,0:maxorder_),stat=alloc)
+     !allocate(phil(0:npoints_),phir(0:npoints_),dphil(0:npoints_),dphir(0:npoints_), &
+     !         phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),enerslot(0:maxslots), &
+     !         f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),&
+     !         xton(0:npoints,0:maxorder_),stat=alloc)
+     allocate(phil(0:npoints_),stat=alloc)
+     allocate(phir(0:npoints_),stat=alloc)
+     allocate(dphil(0:npoints_),stat=alloc)
+     allocate(dphir(0:npoints_),stat=alloc)
+     allocate(phivphi(0:npoints_),stat=alloc)
+     allocate(rho_kinet(0:npoints_),stat=alloc)
+     allocate(rho_poten(0:npoints_),stat=alloc)
+     allocate(rho_extF(0:npoints_),stat=alloc)
+     allocate(enerslot(0:maxslots),stat=alloc)
+     allocate(f(0:npoints),stat=alloc)
+     allocate(dfdr(0:npoints),stat=alloc)
+     allocate(d2fdr2(0:npoints),stat=alloc)
+     allocate(poten(0:npoints),stat=alloc)
+     allocate(mu_rr(0:npoints),stat=alloc)
+     allocate(xton(0:npoints,0:maxorder_),stat=alloc)
+       
+
+
+
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
