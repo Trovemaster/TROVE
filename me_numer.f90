@@ -73,7 +73,7 @@ module me_numer
   ! Matrix elements with Numerov-eigenfunctions 
   !
   subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,iperiod_,&
-                        verbose_,g_numerov,energy)
+                        verbose_,g_numerov,energy, KinOrder,PotOrder, ExtOrder)
    !
    integer(ik),intent(in)   :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder_,0:vmax_,0:vmax_)
@@ -83,6 +83,7 @@ module me_numer
    real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder_)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose_   ! Verbosity level
+   integer(ik),intent(in) :: KinOrder, PotOrder, ExtOrder
    !
    real(ark)            :: rho,cross_prod,factor
    real(ark)            :: h_t,sigma,sigma_t,rms,psipsi_t,characvalue,rhostep_,step_scale,fval,df_t
@@ -376,109 +377,135 @@ module me_numer
             psipsi_t = 0 
             !
             do lambda = 0,maxorder
-               !
-               ! momenta-free part in potential part
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
-               endif
-               !
-               g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               !
-               ! external field expansion
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
-               endif
-               !
-               g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
-               !
-               ! momenta-free in kinetic part 
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
-               endif
-               !
-               phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
-               !
-               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               !
-               ! We also control the orthogonality of the basis set 
-               !
-               if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
-               !
-               if (vl/=vr) g_numerov(-1:0,lambda,vr,vl) = g_numerov(-1:0,lambda,vl,vr)
-               !
-               ! momenta-quadratic part 
-               !
-               if (lambda==0) then 
-                  phivphi(:) =-dphil(:)*dphir(:)
-               else
-                  phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
-               !
-               phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
-               !
-               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               !
-               if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
-               !
-               ! momenta-linear part:
-               ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
-               !
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*dphir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
-               !
-               phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
-               !
-               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-               !
-               if (vl/=vr) then
-                  !
-                  if (lambda==0) then 
-                     phivphi(:) = dphil(:)*phir(:)
-                  else
-                     phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
-                  endif
-                  !
-                  phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
-                  !
-                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
-                  !
-               endif 
-               !
-               if(trim(extF%ftype)=='XY2_G-COR-ELEC'.or.trim(extF%ftype)=='XY2_G-TENS-RANK3') then
-                  !
-                  g_numerov(3,lambda,vl,vr) = g_numerov(1,lambda,vl,vr)
-                  g_numerov(3,lambda,vr,vl) = g_numerov(1,lambda,vr,vl)
-                  !
-               endif               
-               !
-               !
-               if (verbose>=7) then 
-                   write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
-                   write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(1,lambda,vl,vr)
-                   write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(2,lambda,vl,vr)
-                   write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(3,lambda,vl,vr)
-                   if (vl/=vr) then 
-                     write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(0,lambda,vr,vl)
-                     write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(1,lambda,vr,vl)
-                     write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(2,lambda,vr,vl)
-                     write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(3,lambda,vr,vl)
-                   endif 
-               endif 
-               !
+              !
+              ! momenta-free part in potential part
+              !
+              if (lambda==0) then 
+                phivphi(:) = phil(:)*phir(:)
+              else
+                phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
+              endif
+              !
+              if(lambda > PotOrder) then 
+                g_numerov(0,lambda,vl,vr) = 0.0_ark
+              else 
+                g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+              endif              
+              !
+              ! external field expansion
+              !
+              if (lambda==0) then 
+                 phivphi(:) = phil(:)*phir(:)
+              else
+                 phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
+              endif
+              !
+              if(lambda > ExtOrder) then 
+                g_numerov(3,lambda,vl,vr) = 0.0_ark
+              else
+                g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+              endif
+              if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
+              !
+              ! momenta-free in kinetic part 
+              !
+              if (lambda==0) then 
+                 phivphi(:) = phil(:)*phir(:)
+              else
+                 phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
+              endif
+              !
+              phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
+              !
+              if(lambda > KinOrder) then
+                g_numerov(-1,lambda,vl,vr) = 0.0_ark
+              else 
+                g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+              endif
+              !
+              ! We also control the orthogonality of the basis set 
+              !
+              if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
+              !
+              if (vl/=vr) g_numerov(-1:0,lambda,vr,vl) = g_numerov(-1:0,lambda,vl,vr)
+              !
+              ! momenta-quadratic part 
+              !
+              if (lambda==0) then 
+                 phivphi(:) =-dphil(:)*dphir(:)
+              else
+                 phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
+              endif
+              !
+              phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
+              !
+              if(lambda > KinOrder) then
+                g_numerov(2,lambda,vl,vr) = 0.0_ark
+              else
+                g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+              endif
+              !
+              if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
+              !
+              ! momenta-linear part:
+              ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
+              !
+              !
+              if (lambda==0) then 
+                 phivphi(:) = phil(:)*dphir(:)
+              else
+                 phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
+              endif
+              !
+              phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
+              !
+              if(lambda > KinOrder) then
+                g_numerov(1,lambda,vl,vr) = 0.0_ark 
+              else 
+                g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+              endif
+              !
+              if (vl/=vr) then
+                 !
+                 if (lambda==0) then 
+                    phivphi(:) = dphil(:)*phir(:)
+                 else
+                    phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
+                 endif
+                 !
+                 phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
+                 !
+                 if(lambda > kinOrder) then
+                    g_numerov(1,lambda,vr,vl) = 0.0_ark 
+                 else
+                    g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+                 endif
+                 !
+              endif 
+              !
+              if(trim(extF%ftype)=='XY2_G-COR-ELEC'.or.trim(extF%ftype)=='XY2_G-TENS-RANK3') then
+                 !
+                 g_numerov(3,lambda,vl,vr) = g_numerov(1,lambda,vl,vr)
+                 g_numerov(3,lambda,vr,vl) = g_numerov(1,lambda,vr,vl)
+                 !
+              endif               
+              !
+              !
+              if (verbose>=5) then 
+                  write(out,"('g_numerov(-1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(-1,lambda,vl,vr)
+                  write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
+                  write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(1,lambda,vl,vr)
+                  write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(2,lambda,vl,vr)
+                  write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(3,lambda,vl,vr)
+                  if (vl/=vr) then 
+                    write(out,"('g_numerov(-1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(-1,lambda,vr,vl)
+                    write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(0,lambda,vr,vl)
+                    write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(1,lambda,vr,vl)
+                    write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(2,lambda,vr,vl)
+                    write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(3,lambda,vr,vl)
+                  endif 
+              endif 
+              !
             enddo 
             !
             ! Count the error, as a maximal deviation sigma =  | <i|H|j>-E delta_ij |
@@ -884,7 +911,7 @@ module me_numer
        if ( ierr==0.and.numnod+1<maxslots.and.numnod>=v ) then 
           enerslot(numnod)=eguess
           icslots(numnod) = ic 
-          if (verbose>=6) then 
+          if (verbose>=5) then 
              write (out,"('v,numnod,ener = ',2i8,f20.10)") v,numnod,enerslot(numnod)
              !
              do i=0,npoints 
@@ -1051,7 +1078,7 @@ module me_numer
         write (out,"('v,ener = ',i8,f20.10)") v,enerslot(numnod)
      endif 
      !
-     if (verbose>=6) then 
+     if (verbose>=5) then 
         write(out,"(f18.8)") phi_f
      endif 
      !

@@ -136,6 +136,7 @@
       !       
       ! Here we initialize the PT elements, such as Nclasses, Nspecies, etc
       !
+      write(*,*) "test line 139" 
       call PTinit(NPTorder,Nmodes,Npolyads)
       !
       ! Analysis of the density 
@@ -153,6 +154,7 @@
       !
       ! Copy matrix elements from the FIELD to PT modules  
       !
+      write(*,*) "test line 157"
       call PTget_primitive_matelements(j) 
       !
       ! Restoring  the contracted basis set vectors from the check point: 
@@ -161,20 +163,25 @@
         !
         call PTcheck_point_contracted_space('READ') 
         !
+        write(*,*) "test line 166" 
       elseif (action%convert_vibme) then
         !
         call TRconvert_repres_J0_to_contr(j)
         !
+        write(*,*) "test line 171" 
       else
         !
         call PTcontracted_prediagonalization(j)
         !
+        write(*,*) "test line 176"
       endif 
       !
       ! The rotational part of the contracted basis set to finish its construction:
       !
+      write(*,*) "test line 181"
       call PT_conctracted_rotational_bset(j)
       !
+      write(*,*) "test line 183"   
       call PTsymmetrization(j)
       !
       !if (trove%DVR) call PTDVR_contracted_bases(j)
@@ -183,6 +190,7 @@
       ! 
       ! Convert the J=0 basis set and mat.elements to the contracted represent. 
       !
+      write(*,*) "test line 192" 
       if (action%convert_vibme) then 
          call TRconvert_matel_j0_eigen(j)
          return 

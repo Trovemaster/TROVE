@@ -726,7 +726,7 @@ module me_bnd
   ! Matrix elements with Fourier-eigenfunctions
   !
   subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,&
-                        iperiod,verbose,g_numerov,energy)
+                        iperiod,verbose,g_numerov,energy,KinOrder,PotOrder,ExtOrder)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
@@ -737,13 +737,14 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    integer(ik),intent(in) :: iperiod
+   integer(ik),intent(in) :: KinOrder, PotOrder, ExtOrder 
    !
-   integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
+   integer(ik),parameter  :: Factor_FF=30 ! factor to increase the Fourier basis set size 
    !
    real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p, KineticOrder
    !
    real(ark),allocatable :: poten(:),mu_rr(:),rho_(:),xton(:,:)
    !
@@ -753,6 +754,7 @@ module me_bnd
    real(ark),allocatable :: psi(:,:),dpsi(:,:),psi_(:,:),dpsi_(:,:)
    real(rk),allocatable ::  h(:,:),ener(:)
    !
+   
    character(len=cl)    :: unitfname 
     !
     if (verbose>=2) write (out,"(/20('*'),' Fourier real functions primitive matrix elements calculations')")
@@ -1122,6 +1124,7 @@ module me_bnd
        stop 'phi_ - out of memory'
      endif
      !
+     ! 
      !$omp do private(vl,i,rho,vr,psipsi_t,lambda) schedule(dynamic)
      do vl = 0,vmax
         !
@@ -1162,81 +1165,108 @@ module me_bnd
             psipsi_t = 0 
             !
             do lambda = 0,maxorder
-               !
-               ! momenta-free part in potential part
-               !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*phir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_poten(:)**lambda*phir_(:)
-               endif
-               !
-               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
-               !
-               ! external field expansion
-               !
-               if (lambda==0) then 
-                  phivphi_(:) = phil_(:)*phir_(:)
-               else
-                  phivphi_(:) = phil_(:)*rho_extF(:)**lambda*phir_(:)
-               endif
-               !
-               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
-               if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
-               !
-               ! momenta-free in kinetic part 
-               !
-               phivphi_(:) = phil_(:)*xton(:,lambda)*phir_(:)
-               !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
-               !
-               ! We also control the orthogonality of the basis set 
-               !
-               if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
-               !
-               if (vl/=vr) g_numerov(-1:0,lambda,vr,vl) = g_numerov(-1:0,lambda,vl,vr)
-               !
-               ! momenta-quadratic part 
-               !
-               phivphi_(:) =-dphil_(:)*xton(:,lambda)*dphir_(:)
-               !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
-               !
-               if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
-               !
-               ! momenta-linear part:
-               ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
-               !
-               phivphi_(:) = phil_(:)*xton(:,lambda)*dphir_(:)
-               !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
-               !
-               if (vl/=vr) then
-                  !
-                  phivphi_(:) = dphil_(:)*xton(:,lambda)*phir_(:)
-                  !
+              !
+              ! momenta-free part in potential part
+              !
+              if (lambda==0) then 
+                 phivphi_(:) = phil_(:)*phir_(:)
+              else
+                 phivphi_(:) = phil_(:)*rho_poten(:)**lambda*phir_(:)
+              endif
+              !
+              if(lambda > PotOrder) then 
+                 g_numerov(0,lambda,vl,vr) = 0.0_ark
+              else 
+                 g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+              endif
+              !
+              ! external field expansion
+              !
+              if (lambda==0) then 
+                 phivphi_(:) = phil_(:)*phir_(:)
+              else
+                 phivphi_(:) = phil_(:)*rho_extF(:)**lambda*phir_(:)
+              endif
+              !
+              if(lambda > ExtOrder) then
+                g_numerov(3,lambda,vl,vr) = 0.0_ark
+              else
+                g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints,rho_b(2)-rho_b(1),phivphi_)
+              endif
+              !  
+              if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
+              !
+              ! momenta-free in kinetic part 
+              !
+              phivphi_(:) = phil_(:)*xton(:,lambda)*phir_(:)
+              !
+              if(lambda > KinOrder) then
+                g_numerov(-1,lambda,vl,vr) = 0.0_ark  
+              else
+                g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
+              endif
+              !
+              ! We also control the orthogonality of the basis set 
+              !
+              if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
+              !
+              if (vl/=vr) g_numerov(-1:0,lambda,vr,vl) = g_numerov(-1:0,lambda,vl,vr)
+              !
+              ! momenta-quadratic part 
+              !
+              phivphi_(:) =-dphil_(:)*xton(:,lambda)*dphir_(:)
+              !
+              if(lambda > KinOrder) then
+                g_numerov(2,lambda,vl,vr) = 0.0_ark
+              else
+                g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
+              endif
+              !
+              if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
+              !
+              ! momenta-linear part:
+              ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
+              !
+              phivphi_(:) = phil_(:)*xton(:,lambda)*dphir_(:)
+              !
+              if(lambda > KinOrder) then 
+                g_numerov(1,lambda,vl,vr) = 0.0_ark
+              else
+                g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
+              endif 
+              !
+              if (vl/=vr) then
+                !
+                phivphi_(:) = dphil_(:)*xton(:,lambda)*phir_(:)
+                !
+                if(lambda > KinOrder) then
+                  g_numerov(1,lambda,vr,vl) = 0.0_ark
+                else 
                   g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi_)
-                  !
-               endif 
-               !
-               if (verbose>=7) then 
-                   write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
-                   write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(1,lambda,vl,vr)
-                   write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(2,lambda,vl,vr)
-                   write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(3,lambda,vl,vr)
-                   if (vl/=vr) then 
-                     write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(0,lambda,vr,vl)
-                     write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(1,lambda,vr,vl)
-                     write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(2,lambda,vr,vl)
-                     write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(3,lambda,vr,vl)
-                   endif 
-               endif 
-               !
+                endif
+                !
+              endif 
+              !
+              if (verbose>=5) then 
+                  write(out,"('g_numerov(-1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(-1,lambda,vl,vr)
+                  write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
+                  write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(1,lambda,vl,vr)
+                  write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(2,lambda,vl,vr)
+                  write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(3,lambda,vl,vr)
+                  if (vl/=vr) then 
+                    write(out,"('g_numerov(-1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(-1,lambda,vr,vl)
+                    write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(0,lambda,vr,vl)
+                    write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(1,lambda,vr,vl)
+                    write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(2,lambda,vr,vl)
+                    write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(3,lambda,vr,vl)
+                  endif 
+              endif 
+              !
             enddo 
             !
         enddo
         !
-        if (verbose>=6) then 
+        if (verbose>=5) then 
            !
            !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
            !$omp critical
@@ -1788,7 +1818,7 @@ module me_bnd
             !
         enddo
         !
-        if (verbose>=6) then 
+        if (verbose>=5) then 
            !
            !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
            !$omp critical
