@@ -13,8 +13,9 @@ module pot_xy2
   public MLpoten_h2o_tennyson,MLpoten_xy2_schwenke,MLpoten_c3_mladenovic
   public MLpoten_SO2_pes_8d,MLpoten_so2_damp,MLpoten_co2_ames1,MLpoten_so2_ames1,MLpoten_c3_R_theta
   public MLpoten_xy2_tyuterev_damp,MLdms2pqr_xy2_coeff,MLpoten_xy2_mlt_co2,MLpoten_h2s_dvr3d,MLdipole_so2_ames1,MLdipole_ames1,&
-         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,MLpoten_xy2_tyuterev_alpha
-  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz
+         MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,&
+         MLpoten_xy2_tyuterev_alpha
+  public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -5269,6 +5270,296 @@ endif
     !
  end subroutine MLdipole_bisect_s1s2theta_xy2
  !
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xy2_sym_morse(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r12,r32,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
+
+   real(ark)            :: aa1,re12,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh
+   character(len=cl)    :: txt
+   !
+   !if (verbose>=6) write(out,"('MLpoten_xy2_sym_morse/start')")
+   !
+   r12  = local(1) ;  r32    = local(2) ;  alpha = local(3)
+   !
+   re12    = force(1)
+   alphae  = force(2)*pi/180.0_ark
+   aa1     = force(3)
+   !
+   b1   = force(4)
+   b2   = force(5)
+   g1   = force(6)
+   g2   = force(7)
+   !
+   rhh=sqrt(r12**2+r32**2-2._ark*r12*r32*cos(alpha))
+   vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+   !
+   ! calculate potential energy function values
+   !
+   y1=1.0_ark-exp(-aa1*(r12-re12))
+   y2=1.0_ark-exp(-aa1*(r32-re12))
+
+   xst=alpha-alphae
+   !
+   xs1 = (y1+y2)*0.5_ark
+   xs2 = (y1-y2)*0.5_ark
+      !
+  v0= force(  8)*xs1**0*xs2**0*xst**0
+ vp1= force(  9)*xs1**0*xs2**0*xst**1&
+     +force( 10)*xs1**1*xs2**0*xst**0&
+     +force( 11)*xs1**0*xs2**0*xst**2&
+     +force( 12)*xs1**0*xs2**2*xst**0&
+     +force( 13)*xs1**1*xs2**0*xst**1&
+     +force( 14)*xs1**2*xs2**0*xst**0&
+     +force( 15)*xs1**0*xs2**0*xst**3&
+     +force( 16)*xs1**0*xs2**2*xst**1&
+     +force( 17)*xs1**1*xs2**0*xst**2&
+     +force( 18)*xs1**1*xs2**2*xst**0&
+     +force( 19)*xs1**2*xs2**0*xst**1&
+     +force( 20)*xs1**3*xs2**0*xst**0&
+     +force( 21)*xs1**0*xs2**0*xst**4&
+     +force( 22)*xs1**0*xs2**2*xst**2&
+     +force( 23)*xs1**0*xs2**4*xst**0&
+     +force( 24)*xs1**1*xs2**0*xst**3&
+     +force( 25)*xs1**1*xs2**2*xst**1&
+     +force( 26)*xs1**2*xs2**0*xst**2&
+     +force( 27)*xs1**2*xs2**2*xst**0&
+     +force( 28)*xs1**3*xs2**0*xst**1&
+     +force( 29)*xs1**4*xs2**0*xst**0&
+     +force( 30)*xs1**0*xs2**0*xst**5&
+     +force( 31)*xs1**0*xs2**2*xst**3&
+     +force( 32)*xs1**0*xs2**4*xst**1&
+     +force( 33)*xs1**1*xs2**0*xst**4&
+     +force( 34)*xs1**1*xs2**2*xst**2&
+     +force( 35)*xs1**1*xs2**4*xst**0&
+     +force( 36)*xs1**2*xs2**0*xst**3&
+     +force( 37)*xs1**2*xs2**2*xst**1&
+     +force( 38)*xs1**3*xs2**0*xst**2&
+     +force( 39)*xs1**3*xs2**2*xst**0&
+     +force( 40)*xs1**4*xs2**0*xst**1&
+     +force( 41)*xs1**5*xs2**0*xst**0&
+     +force( 42)*xs1**0*xs2**0*xst**6&
+     +force( 43)*xs1**0*xs2**2*xst**4&
+     +force( 44)*xs1**0*xs2**4*xst**2&
+     +force( 45)*xs1**0*xs2**6*xst**0&
+     +force( 46)*xs1**1*xs2**0*xst**5&
+     +force( 47)*xs1**1*xs2**2*xst**3&
+     +force( 48)*xs1**1*xs2**4*xst**1&
+     +force( 49)*xs1**2*xs2**0*xst**4&
+     +force( 50)*xs1**2*xs2**2*xst**2&
+     +force( 51)*xs1**2*xs2**4*xst**0&
+     +force( 52)*xs1**3*xs2**0*xst**3&
+     +force( 53)*xs1**3*xs2**2*xst**1&
+     +force( 54)*xs1**4*xs2**0*xst**2&
+     +force( 55)*xs1**4*xs2**2*xst**0&
+     +force( 56)*xs1**5*xs2**0*xst**1&
+     +force( 57)*xs1**6*xs2**0*xst**0&
+     +force( 58)*xs1**0*xs2**0*xst**7&
+     +force( 59)*xs1**0*xs2**2*xst**5&
+     +force( 60)*xs1**0*xs2**4*xst**3&
+     +force( 61)*xs1**0*xs2**6*xst**1&
+     +force( 62)*xs1**1*xs2**0*xst**6&
+     +force( 63)*xs1**1*xs2**2*xst**4&
+     +force( 64)*xs1**1*xs2**4*xst**2&
+     +force( 65)*xs1**1*xs2**6*xst**0&
+     +force( 66)*xs1**2*xs2**0*xst**5&
+     +force( 67)*xs1**2*xs2**2*xst**3&
+     +force( 68)*xs1**2*xs2**4*xst**1&
+     +force( 69)*xs1**3*xs2**0*xst**4&
+     +force( 70)*xs1**3*xs2**2*xst**2&
+     +force( 71)*xs1**3*xs2**4*xst**0&
+     +force( 72)*xs1**4*xs2**0*xst**3&
+     +force( 73)*xs1**4*xs2**2*xst**1&
+     +force( 74)*xs1**5*xs2**0*xst**2&
+     +force( 75)*xs1**5*xs2**2*xst**0&
+     +force( 76)*xs1**6*xs2**0*xst**1&
+     +force( 77)*xs1**7*xs2**0*xst**0&
+     +force( 78)*xs1**0*xs2**0*xst**8&
+     +force( 79)*xs1**0*xs2**2*xst**6&
+     +force( 80)*xs1**0*xs2**4*xst**4&
+     +force( 81)*xs1**0*xs2**6*xst**2&
+     +force( 82)*xs1**0*xs2**8*xst**0&
+     +force( 83)*xs1**1*xs2**0*xst**7&
+     +force( 84)*xs1**1*xs2**2*xst**5&
+     +force( 85)*xs1**1*xs2**4*xst**3&
+     +force( 86)*xs1**1*xs2**6*xst**1&
+     +force( 87)*xs1**2*xs2**0*xst**6&
+     +force( 88)*xs1**2*xs2**2*xst**4&
+     +force( 89)*xs1**2*xs2**4*xst**2&
+     +force( 90)*xs1**2*xs2**6*xst**0&
+     +force( 91)*xs1**3*xs2**0*xst**5&
+     +force( 92)*xs1**3*xs2**2*xst**3&
+     +force( 93)*xs1**3*xs2**4*xst**1&
+     +force( 94)*xs1**4*xs2**0*xst**4&
+     +force( 95)*xs1**4*xs2**2*xst**2&
+     +force( 96)*xs1**4*xs2**4*xst**0&
+     +force( 97)*xs1**5*xs2**0*xst**3&
+     +force( 98)*xs1**5*xs2**2*xst**1&
+     +force( 99)*xs1**6*xs2**0*xst**2
+ vp2= force(100)*xs1**6*xs2**2*xst**0&
+     +force(101)*xs1**7*xs2**0*xst**1&
+     +force(102)*xs1**8*xs2**0*xst**0&
+     +force(103)*xs1**0*xs2**0*xst**9&
+     +force(104)*xs1**0*xs2**2*xst**7&
+     +force(105)*xs1**0*xs2**4*xst**5&
+     +force(106)*xs1**0*xs2**6*xst**3&
+     +force(107)*xs1**0*xs2**8*xst**1&
+     +force(108)*xs1**1*xs2**0*xst**8&
+     +force(109)*xs1**1*xs2**2*xst**6&
+     +force(110)*xs1**1*xs2**4*xst**4&
+     +force(111)*xs1**1*xs2**6*xst**2&
+     +force(112)*xs1**1*xs2**8*xst**0&
+     +force(113)*xs1**2*xs2**0*xst**7&
+     +force(114)*xs1**2*xs2**2*xst**5&
+     +force(115)*xs1**2*xs2**4*xst**3&
+     +force(116)*xs1**2*xs2**6*xst**1&
+     +force(117)*xs1**3*xs2**0*xst**6&
+     +force(118)*xs1**3*xs2**2*xst**4&
+     +force(119)*xs1**3*xs2**4*xst**2&
+     +force(120)*xs1**3*xs2**6*xst**0&
+     +force(121)*xs1**4*xs2**0*xst**5&
+     +force(122)*xs1**4*xs2**2*xst**3&
+     +force(123)*xs1**4*xs2**4*xst**1&
+     +force(124)*xs1**5*xs2**0*xst**4&
+     +force(125)*xs1**5*xs2**2*xst**2&
+     +force(126)*xs1**5*xs2**4*xst**0&
+     +force(127)*xs1**6*xs2**0*xst**3&
+     +force(128)*xs1**6*xs2**2*xst**1&
+     +force(129)*xs1**7*xs2**0*xst**2&
+     +force(130)*xs1**7*xs2**2*xst**0&
+     +force(131)*xs1**8*xs2**0*xst**1&
+     +force(132)*xs1**9*xs2**0*xst**0&
+     +force(133)*xs1**0*xs2**0*xst**10&
+     +force(134)*xs1**0*xs2**2*xst**8&
+     +force(135)*xs1**0*xs2**4*xst**6&
+     +force(136)*xs1**0*xs2**6*xst**4&
+     +force(137)*xs1**0*xs2**8*xst**2&
+     +force(138)*xs1**0*xs2**10*xst**0&
+     +force(139)*xs1**1*xs2**0*xst**9&
+     +force(140)*xs1**1*xs2**2*xst**7&
+     +force(141)*xs1**1*xs2**4*xst**5&
+     +force(142)*xs1**1*xs2**6*xst**3&
+     +force(143)*xs1**1*xs2**8*xst**1&
+     +force(144)*xs1**2*xs2**0*xst**8&
+     +force(145)*xs1**2*xs2**2*xst**6&
+     +force(146)*xs1**2*xs2**4*xst**4&
+     +force(147)*xs1**2*xs2**6*xst**2&
+     +force(148)*xs1**2*xs2**8*xst**0&
+     +force(149)*xs1**3*xs2**0*xst**7&
+     +force(150)*xs1**3*xs2**2*xst**5&
+     +force(151)*xs1**3*xs2**4*xst**3&
+     +force(152)*xs1**3*xs2**6*xst**1&
+     +force(153)*xs1**4*xs2**0*xst**6&
+     +force(154)*xs1**4*xs2**2*xst**4&
+     +force(155)*xs1**4*xs2**4*xst**2&
+     +force(156)*xs1**4*xs2**6*xst**0&
+     +force(157)*xs1**5*xs2**0*xst**5&
+     +force(158)*xs1**5*xs2**2*xst**3&
+     +force(159)*xs1**5*xs2**4*xst**1&
+     +force(160)*xs1**6*xs2**0*xst**4&
+     +force(161)*xs1**6*xs2**2*xst**2&
+     +force(162)*xs1**6*xs2**4*xst**0&
+     +force(163)*xs1**7*xs2**0*xst**3&
+     +force(164)*xs1**7*xs2**2*xst**1&
+     +force(165)*xs1**8*xs2**0*xst**2&
+     +force(166)*xs1**8*xs2**2*xst**0&
+     +force(167)*xs1**9*xs2**0*xst**1&
+     +force(168)*xs1**10*xs2**0*xst**0&
+     +force(169)*xs1**0*xs2**0*xst**11&
+     +force(170)*xs1**0*xs2**2*xst**9&
+     +force(171)*xs1**0*xs2**4*xst**7&
+     +force(172)*xs1**0*xs2**6*xst**5&
+     +force(173)*xs1**0*xs2**8*xst**3&
+     +force(174)*xs1**0*xs2**10*xst**1&
+     +force(175)*xs1**1*xs2**0*xst**10&
+     +force(176)*xs1**1*xs2**2*xst**8&
+     +force(177)*xs1**1*xs2**4*xst**6&
+     +force(178)*xs1**1*xs2**6*xst**4&
+     +force(179)*xs1**1*xs2**8*xst**2&
+     +force(180)*xs1**1*xs2**10*xst**0&
+     +force(181)*xs1**2*xs2**0*xst**9
+ vp3= force(182)*xs1**2*xs2**2*xst**7&
+     +force(183)*xs1**2*xs2**4*xst**5&
+     +force(184)*xs1**2*xs2**6*xst**3&
+     +force(185)*xs1**2*xs2**8*xst**1&
+     +force(186)*xs1**3*xs2**0*xst**8&
+     +force(187)*xs1**3*xs2**2*xst**6&
+     +force(188)*xs1**3*xs2**4*xst**4&
+     +force(189)*xs1**3*xs2**6*xst**2&
+     +force(190)*xs1**3*xs2**8*xst**0&
+     +force(191)*xs1**4*xs2**0*xst**7&
+     +force(192)*xs1**4*xs2**2*xst**5&
+     +force(193)*xs1**4*xs2**4*xst**3&
+     +force(194)*xs1**4*xs2**6*xst**1&
+     +force(195)*xs1**5*xs2**0*xst**6&
+     +force(196)*xs1**5*xs2**2*xst**4&
+     +force(197)*xs1**5*xs2**4*xst**2&
+     +force(198)*xs1**5*xs2**6*xst**0&
+     +force(199)*xs1**6*xs2**0*xst**5&
+     +force(200)*xs1**6*xs2**2*xst**3&
+     +force(201)*xs1**6*xs2**4*xst**1&
+     +force(202)*xs1**7*xs2**0*xst**4&
+     +force(203)*xs1**7*xs2**2*xst**2&
+     +force(204)*xs1**7*xs2**4*xst**0&
+     +force(205)*xs1**8*xs2**0*xst**3&
+     +force(206)*xs1**8*xs2**2*xst**1&
+     +force(207)*xs1**9*xs2**0*xst**2&
+     +force(208)*xs1**9*xs2**2*xst**0&
+     +force(209)*xs1**0*xs2**0*xst**12&
+     +force(210)*xs1**0*xs2**2*xst**10&
+     +force(211)*xs1**0*xs2**4*xst**8&
+     +force(212)*xs1**0*xs2**6*xst**6&
+     +force(213)*xs1**0*xs2**8*xst**4&
+     +force(214)*xs1**0*xs2**10*xst**2&
+     +force(215)*xs1**0*xs2**12*xst**0&
+     +force(216)*xs1**1*xs2**0*xst**11&    
+     +force(217)*xs1**1*xs2**2*xst**9&
+     +force(218)*xs1**1*xs2**4*xst**7&
+     +force(219)*xs1**1*xs2**6*xst**5&
+     +force(220)*xs1**1*xs2**8*xst**3&
+     +force(221)*xs1**1*xs2**10*xst**1&
+     +force(222)*xs1**2*xs2**0*xst**10&
+     +force(223)*xs1**2*xs2**2*xst**8&
+     +force(224)*xs1**2*xs2**4*xst**6&
+     +force(225)*xs1**2*xs2**6*xst**4&
+     +force(226)*xs1**2*xs2**8*xst**2&
+     +force(227)*xs1**2*xs2**10*xst**0&
+     +force(228)*xs1**3*xs2**0*xst**9&
+     +force(229)*xs1**3*xs2**2*xst**7&
+     +force(230)*xs1**3*xs2**4*xst**5&
+     +force(231)*xs1**3*xs2**6*xst**3&
+     +force(232)*xs1**3*xs2**8*xst**1&
+     +force(233)*xs1**4*xs2**0*xst**8&
+     +force(234)*xs1**4*xs2**2*xst**6&
+     +force(235)*xs1**4*xs2**4*xst**4&
+     +force(236)*xs1**4*xs2**6*xst**2&
+     +force(237)*xs1**4*xs2**8*xst**0&
+     +force(238)*xs1**5*xs2**0*xst**7&
+     +force(239)*xs1**5*xs2**2*xst**5&
+     +force(240)*xs1**5*xs2**4*xst**3&
+     +force(241)*xs1**5*xs2**6*xst**1&
+     +force(242)*xs1**6*xs2**0*xst**6&
+     +force(243)*xs1**6*xs2**2*xst**4&
+     +force(244)*xs1**6*xs2**4*xst**2&
+     +force(245)*xs1**6*xs2**6*xst**0&
+     +force(246)*xs1**7*xs2**0*xst**5&
+     +force(247)*xs1**7*xs2**2*xst**3
+
+    f=v0+vp1+vp2+vp3+vhh
+    !
+    !if (verbose>=6) write(out,"('MLpoten_xy2_sym_morse/end')")
+
+ end function MLpoten_xy2_sym_morse
 
 
 end module pot_xy2

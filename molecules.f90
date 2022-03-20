@@ -28,7 +28,7 @@ module molecules
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
-                       MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order
+                       MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
@@ -307,6 +307,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev_damp
          !
+    case('POTEN_XY2_SYM_MORSE') 
+         !
+         MLpotentialfunc => MLpoten_xy2_sym_morse
+         !
     case('POTEN_SO2_DAMP') 
          !
          MLpotentialfunc => MLpoten_so2_damp
@@ -403,6 +407,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h6_88_cos3tau_G36
          !
+    case('POTEN_C2H6_88_COS3TAU-SIN3TAU_G36') 
+         !
+         MLpotentialfunc => MLpoten_c2h6_88_cos3tau_sin3tau_G36
+         !
     case('POTEN_C2H6_DUNCAN') 
          !
          MLpotentialfunc => MLpoten_c2h6_Duncan
@@ -481,7 +489,7 @@ end subroutine MLdefine_potenfunc
    real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
      !
      write(out,"('MLkinetic_MLkinetic_dummy: If you are here you use LOCAL but KINETIC is undefined')")
-     stop 'MLkinetic_MLkinetic_dummy: KINETIC is undefined but it should be to be used with LOCAL'
+     stop 'MLkinetic_MLkinetic_dummy: KINETIC is undefined but it should be used with LOCAL'
      !
      g_vib=0
      g_rot=0

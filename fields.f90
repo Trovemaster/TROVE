@@ -19435,7 +19435,7 @@ end subroutine check_read_save_none
                 !
              enddo 
              !
-             ! for the kinetic part it is simpler - we just take the corresoinding diagonal member of the g_vib%coeffs
+             ! for the kinetic part it is simpler - we just take the correspoinding diagonal member of the g_vib%coeffs
              !
              g1d = 0 
              !
@@ -19447,7 +19447,7 @@ end subroutine check_read_save_none
                   nu_i = bs%mode(imode)
                   fl => trove%g_vib(nu_i,nu_i) 
                   !
-                  select case(job%bset(imode)%coord_kinet)
+                  select case(job%bset(nu_i)%coord_kinet)
                     !
                     case('AUTOMATIC', 'BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
                       !

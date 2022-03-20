@@ -146,7 +146,7 @@ module pot_user
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -161,7 +161,7 @@ module pot_user
                alpha1 = acos(cosalpha)
             endif
             !
-         case('R-A2-A3-TAU')
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             !
             alpha2 = local(4)

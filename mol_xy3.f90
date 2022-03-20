@@ -2863,7 +2863,7 @@ module mol_xy3
            write (out,"('ML_symmetry_transformation_XY3: coord_transf ',a,' unknown')") trim(molec%coords_transform)
            stop 'ML_symmetry_transformation_XY3 - bad coord. type'
            !
-       case('R-ALPHA','R-S-DELTA','R-PHI-DELTA','R-A2-A3-TAU','R-S-DELTA-MEP','R-PHI-DELTA-MEP')
+       case('R-ALPHA')
            !
            select case(ioper)
            !
@@ -2886,6 +2886,30 @@ module mol_xy3
              stop 'ML_symmetry_transformation_XY3 - bad operation. type'
  
            end select 
+           !
+       case('R-S-DELTA','R-PHI-DELTA','R-A2-A3-TAU','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-A2A3-DELTA')
+           !
+           select case(ioper)
+           !
+           case (1) ! identity 
+
+             dst = src
+
+           case (2) ! (sigma)
+
+             dst(1) = src(1)
+             dst(2) = src(2)
+             dst(3) = src(3)
+             dst(4) = src(4)
+             dst(5) = src(5)
+             dst(6) =-src(6)
+
+           case default
+
+             write (out,"('ML_symmetry_transformation_XY3: operation ',i8,' unknown')") ioper
+             stop 'ML_symmetry_transformation_XY3 - bad operation. type'
+ 
+           end select            
            !
        case('XXXXXX')
            !
@@ -3096,7 +3120,12 @@ module mol_xy3
        if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
        if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
        if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
-      !
+       !
+    case('C','C(M)')
+       !
+       gamma = 1
+       ideg = 1 
+       !
     end select
     !
     !

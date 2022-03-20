@@ -1953,36 +1953,42 @@ contains
               icoeff_kblock  = 0  
               itau_kblock    = 0
               vecPack_kblock = 0 
-              do idimen = 1, dimenI
-                 if (abs(vec(idimen)) > intensity%threshold%coeff) then
-                    cdimenI = cdimenI + 1
-                    icoeffI(cdimenI) = idimen
-                    vecPack(cdimenI) = vec(idimen)
-                    !
-                    kI = bset_contr(indI)%k(idimen)
-                    cdimen_kblock(kI) = cdimen_kblock(kI) + 1
-                    icoeff_kblock(cdimen_kblock(kI),kI) = idimen
-                    vecPack_kblock(cdimen_kblock(kI),kI) = vec(idimen)
-                    !
-                    ktauI = bset_contr(indI)%ktau(idimen)
-                    itau_kblock(cdimen_kblock(kI),kI) = mod(ktauI,2_ik)
-                    !
-                 end if
-              end do
               !
               call TimerStop('Pre-screening')
               !
               if (job%rotsym_do) then 
+                !
+                do idimen = 1, dimenI
+                   if (abs(vec(idimen)) > intensity%threshold%coeff) then
+                      cdimenI = cdimenI + 1
+                      icoeffI(cdimenI) = idimen
+                      vecPack(cdimenI) = vec(idimen)
+                      !
+                   end if
+                end do
                 !
                 call do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vecPack,&
                                               half_linestr(:,indF,idegI,1))
                                               !
               else
                 !
+                do idimen = 1, dimenI
+                   if (abs(vec(idimen)) > intensity%threshold%coeff) then
+                      !
+                      kI = bset_contr(indI)%k(idimen)
+                      cdimen_kblock(kI) = cdimen_kblock(kI) + 1
+                      icoeff_kblock(cdimen_kblock(kI),kI) = idimen
+                      vecPack_kblock(cdimen_kblock(kI),kI) = vec(idimen)
+                      !
+                      ktauI = bset_contr(indI)%ktau(idimen)
+                      itau_kblock(cdimen_kblock(kI),kI) = mod(ktauI,2_ik)
+                      !
+                   end if
+                end do
+                !
                 call do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,&
                 cdimen_kblock,icoeff_kblock,vecPack_kblock,itau_kblock,threej,half_linestr(:,indF,idegI,1))
-                !call do_1st_half_linestrength_II_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vecPack,&
-                !                              jmax,threej,half_linestr(:,indF,idegI,1))
+                !
               endif 
               !
             enddo

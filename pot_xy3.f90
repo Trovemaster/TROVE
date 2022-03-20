@@ -808,7 +808,7 @@ module pot_xy3
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -823,8 +823,7 @@ module pot_xy3
                alpha1 = acos(cosalpha)
             endif
             !
-         case('R-A2-A3-TAU')
-            !
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             alpha2 = local(4)
             alpha3 = local(5)
@@ -946,7 +945,7 @@ module pot_xy3
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -8259,7 +8258,7 @@ end function MLdms2loc_E_xy3
             !cosphi3 = ( cos(alpha3)-cos(delta)**2 )/( sin(delta)**2 ) 
             !phi2 = acos(cosphi2)
             !phi3 = acos(cosphi3)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !
             !tau_2 = tau**2
             !     
@@ -8276,7 +8275,7 @@ end function MLdms2loc_E_xy3
                alpha1 = acos(cosalpha)
             endif
                !
-         case('R-A2-A3-TAU')
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             !
             alpha2 = local(4)
@@ -8758,7 +8757,7 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
