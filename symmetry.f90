@@ -1861,18 +1861,18 @@ contains
       s2 = matmul(c,s3)
       ! 
       E_rep_1(1,:,:) = i
-      E_rep_1(2,:,:) = c2
-      E_rep_1(3,:,:) = c
+      E_rep_1(2,:,:) = c
+      E_rep_1(3,:,:) = c2
       E_rep_1(4,:,:) = sxy
-      E_rep_1(5,:,:) = s3
-      E_rep_1(6,:,:) = s2
+      E_rep_1(5,:,:) = s2
+      E_rep_1(6,:,:) = s3
       
       E_rep_2(1,:,:) = i
-      E_rep_2(2,:,:) = c2
-      E_rep_2(3,:,:) = c
+      E_rep_2(2,:,:) = c
+      E_rep_2(3,:,:) = c2
       E_rep_2(4,:,:) = -sxy
-      E_rep_2(5,:,:) = -s3
-     E_rep_2(6,:,:) = -s2
+      E_rep_2(5,:,:) = -s2
+     E_rep_2(6,:,:) = -s3
     
       A2_char(:3) = 1.0_ark
      A2_char(4:6) = -1.0_ark

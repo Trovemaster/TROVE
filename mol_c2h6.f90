@@ -1380,12 +1380,12 @@ module mol_c2h6
         !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
         !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
         !
-        tau14 = -sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
-        tau24 = -sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
-        tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
-        tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18&
+        tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
+        tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
+        tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
+        tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18&
                 -2.0_ark/3.0_ark*pi
-        tau36 = sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
         !
         !tau14 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+tau0
         !tau24 = -1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/6*sqrt(2.0_ark)*s15+1.0_ark/6*sqrt(6.0_ark)*s14+tau0-2.0_ark/3.0_ark*pi

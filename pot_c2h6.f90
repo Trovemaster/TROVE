@@ -1255,12 +1255,12 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
       tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
       !
-      theta12 = mod(-tau14+tau24+2.0_ark*pi,2.0_ark*pi)
-      theta23 = mod(-tau25+tau35+2.0_ark*pi,2.0_ark*pi)
+      theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+      theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
       theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
       !
-      theta56 = mod(-tau36+tau35+2.0_ark*pi,2.0_ark*pi)
-      theta45 = mod(-tau25+tau24+2.0_ark*pi,2.0_ark*pi)
+      theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+      theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
       theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
       !
       xi_A  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)

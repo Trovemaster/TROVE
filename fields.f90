@@ -1,4811 +1,4721 @@
-        !
-        !  Various  fields: kinetic, potential, pseudopotential 
-        !
-        module fields
-           use accuracy
-           use molecules
-           use lapack
-           use me_str
-           use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
-                              ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
-                              ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
-                              ME_Fourier_pure
-           use me_numer
-           use me_rot
-           use timer
-           use moltype
-           use symmetry , only : SymmetryInitialize,sym
+!
+!  Various  fields: kinetic, potential, pseudopotential 
+!
+module fields
+   use accuracy
+   use molecules
+   use lapack
+   use me_str
+   use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_polynomial_k,&
+                      ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
+                      ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
+                      ME_Fourier_pure
+   use me_numer
+   use me_rot
+   use timer
+   use moltype
+   use symmetry , only : SymmetryInitialize,sym
 
-           ! use perturbation
+   ! use perturbation
 
-           implicit none
-           private
-           public FLHarmonicEnergy,FLQindex,FLsetMolecule,FLinitilize_Kinetic,FLinitilize_Potential_II,FLpolynomT
-           public FLbsetInit,FLbasissetT,FLmatrixelements
-           public FLpt_orders_distribution,FLReadInput,FLrotation,FLenergy_zero,FLfingerprint
-           public FLmatrixelements_single_iterm,FLread_fields_dimensions,FLread_rot_matelem
-           public FLIndexQ,FLfree_primitive_objects,FL_exclude_specific_modes
-           public FLread_coeff_matelem,FLinitilize_Potential_original
-           public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
-           public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
-           public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
+   implicit none
+   private
+   public FLHarmonicEnergy,FLQindex,FLsetMolecule,FLinitilize_Kinetic,FLinitilize_Potential_II,FLpolynomT
+   public FLbsetInit,FLbasissetT,FLmatrixelements
+   public FLpt_orders_distribution,FLReadInput,FLrotation,FLenergy_zero,FLfingerprint
+   public FLmatrixelements_single_iterm,FLread_fields_dimensions,FLread_rot_matelem
+   public FLIndexQ,FLfree_primitive_objects,FL_exclude_specific_modes
+   public FLread_coeff_matelem,FLinitilize_Potential_original
+   public FLcalc_poten_kinet_dvr,job,FLcalcsT,FLenercutT,FLeigenfile,FLinitilize_Potential,FLinit_External_field_andrey
+   public FLextF_coeffs,FL_rotation_energy_surface,FLextF_matelem,FLread_iorder_send
+   public jobt, trove, bset, analysis, action, FLL2_coeffs, FLread_fields_dimension_field,FLread_IndexQ_field
+   !
+   public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
+   public FLJGammaLevelT
+   !
+   public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
+   public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
+          FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
+   
+   public choose, sum_choose, powers_from_index
+   !
+   !FLfrom_local2chi_by_fit
+   !
+!
+!   Type to define Z-matrix
+!
+
+
+   !type  FLZmatrixT
+   !   character(len=cl)    :: name         ! Identifying name of atom (no effect on anything)
+   !   integer(ik)          :: connect(4)   ! z-matrix connections
+   !end type FLZmatrixT
+
+
+
+!
+!   Type that will define all fields: kinetic, potential etc.
+!
+   type FLpolynomT
+      character(len=cl)    :: name         ! Identifying name of the polynom
+      integer(ik),pointer  :: iorder(:)    ! distribution of poten-coeffs over different PT-orders, 
+                                           ! size(iorder)=size(field)
+      integer(ik)          :: Orders       ! Max. expansion order 
+      integer(ik)          :: Ncoeff       ! Number of expansion coeffs.
+      integer(ik)          :: Npoints      ! Number of expansion centers.
+      real(ark),pointer    :: field(:,:)   ! Expansion parameters
+      real(ark),pointer    :: me(:,:,:)    ! 1D-numerof type matrix elements 
+      !
+      !integer(ik)          :: SNterms      ! Number of expansion coeffs in the sparse representation
+      integer(ik),pointer  :: ifromsparse(:) ! a accounting-index from isparse to icoeff 
+      !integer(ik),pointer  :: itosparse(:) ! a accounting-index from isparse to icoeff 
+      integer(ik),pointer  :: IndexQ(:,:)    ! This is to store FLIndexQ for each object individually 
+      logical :: sparse = .false.            ! indicates if the field in the sparse representation 
+      !
+   end type FLpolynomT
+
+!
+
+   type  FLenercutT 
+     !
+     real(rk)  :: general        ! Energy cutoff for everything
+     real(rk)  :: primt          ! Energy cutoff for primitives
+     real(rk)  :: contr         ! Energy cutoff for contratced basis functions 
+     real(rk)  :: matelem         !  Energy cutoff for contratced matrix elements in the matelem section
+     real(rk)  ::  DeltaE=0      ! Energgy cutoff based on teh difference between the row-Energy and column-Energy
+     integer(ik) :: polyad     ! Polyad cutoff for primit. functs. in contratced basis functions 
+     !
+   end type  FLenercutT  
+   !
+   type FLcoeffs2dT                      
+      integer(ik),pointer :: icoeff(:,:)
+      real(rk),pointer    :: fcoeff(:)
+   end type FLcoeffs2dT
+   !
+   ! files with the eigenvectors 
+   !
+   type  FLeigenfile
+     !
+     character(len=cl)  :: filebase
+     character(len=cl)  :: dscr       ! file with fingeprints and descriptions of each levels + energy values
+     character(len=cl)  :: primitives ! file with the primitive quantum numbres   
+     character(len=cl)  :: vectors    ! eigenvectors stored here 
+     character(len=cl)  :: dvr        ! eigenvectors in dvr representation stored here 
+     !
+   end type  FLeigenfile 
+
+
+   type  FLbasissetT 
+     character(len=cl)          :: type         ! Identifying type    of the basis functions 
+     character(len=cl)          :: coord_kinet  ! Identifying type    of the basis functions 
+     character(len=cl)          :: coord_poten  ! Identifying type    of the basis functions 
+     integer                    :: model        ! Applied for contraction of basis sets, reduce or mormal model will be used
+     character(len=2 )          :: dim          ! Identifying dimensionality of the basis 
+     integer(ik)                :: species      ! Identifying the spicies 
+     integer(ik)                :: class        ! Identifying the class  
+     integer(ik)                :: range(2)     ! Index range for the given mode 
+     real(ark)                  :: res_coeffs   ! contribution of each quanta into a polyd 
+     integer(ik)                :: npoints      ! optional integer, e.g. npoints for numerov
+     real(ark)                  :: borders(2)   ! optional real, integration borders for numerov 
+     logical                    :: periodic     ! change to the periodic boundary condition
+     integer(ik)                :: iperiod      ! the period for the periodic tretament 
+     character(len=cl)          :: dvr          ! Identifying type    of the dvr representation
+     integer(ik)                :: dvrpoints    ! number of dvr-integration points for each mode 
+     logical                    :: postprocess  ! Post-diagonalization of the contracted basis set
+     logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
+     logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
+   end type  FLbasissetT 
+
+   type FLcoeffprunT
+    !
+    real(rk)           :: contribution_threshold = 1e-4_rk
+    !
+   end type FLcoeffprunT
+
+
+
+
+!
+! We collect all relevant data of the molecule under MoleculeT - type structure 
+!
+   type JobT
+      character(len=cl)   :: Moltype        ! Identifying type of the Molecule (e.g. XY3)
+      character(len=cl),pointer :: Coordinates(:,:) ! Identifying the coordinate system, e.g. 'normal'; kinetic and potential part can be different
+      character(len=cl)         :: internal_coords  ! type of the internal coordinates: linear,harmonic,local
+      character(len=cl)         :: coords_transform ! type of the coordinate transformation: linear,morse-xi-s-rho,...
+      character(len=cl)         :: symmetry         ! molecular symmetry
+      integer(ik)::  Natoms               ! Number of atoms
+      integer(ik)::  Nmodes               ! Number of modes = 3*Natoms-6
+      integer(ik)::  Nmodes_e             ! Effective number of modes: when rank = 1 Nmodes_e = Nmodes-1
+      integer(ik)::  Nmodes_n             ! non-rigid motion mode, given numerically
+      integer(ik),pointer ::  manifold_rank(:) ! The size of the expansion center manifold: 0 for 0d, "1" for 1d
+      integer(ik)::  Nbonds               ! Number of bonds
+      integer(ik)::  NAngles              ! Number of angles
+      integer(ik)::  NDihedrals           ! Number of dihedral angles type 1 and 2
+      integer(ik)::  Ncoords              ! Total number of gdc (Nbonds+Nangles+Ndihedrals)
+      integer(ik)::  Npoints              ! Number of points of the 1d numerical representation in case of rank=1
+      integer(ik),pointer ::  bonds(:,:)  ! Bond connections
+      integer(ik),pointer ::  angles(:,:) ! Angles connections
+      integer(ik),pointer ::  dihedrals(:,:)  ! Dihedral Angles connections type 1
+      integer(ik),pointer ::  dihedtype(:)  ! Dihedral Angles connections type 1
+      type(MLZmatrixT),pointer  :: zmatrix(:) ! 
+      integer(ik)::  jmax                 ! Angular momentum quantum number - maximal value 
+      !
+      real(ark),pointer   ::  a0(:,:)      ! Cartesian coordinates at the equilibrium  x_Na = a0(N,a),
+                                          ! a = x,y,z (1,2,3)
+      real(ark),pointer   ::  b0(:,:,:)    ! General Cartesian coordinates at the equilibrium  x_Na = b0(N,a,i),
+                                          ! a = x,y,z (1,2,3), i = 0..Npoints -> in case of manifoldrank=1
+      real(ark),pointer   ::  db0(:,:,:,:) ! derivative of b0 wrt rho 
+      !
+      real(ark),pointer   ::  rho_i(:)     ! Integration points for the Gaussian/Simson integration rules
+      real(ark)           ::  rho_ref
+      integer(ik)        ::  iPotmin      ! Point of the minimum in the Numerov-integration representation
+      !real(rk),pointer   ::  weight_i(:) ! Integration weightd
+      !
+      real(ark),pointer ::  Amatrho(:,:,:,:) ! A-matrix: x_Na = a0_Na + \sum_l A_Nal xi_l,  for the rank=1 case
+      real(ark),pointer ::  dAmatrho(:,:,:,:,:)! dA-matrix: derivatives of Amat wrt rho
+      real(ark),pointer ::  Bmatrho(:,:,:,:) ! B-matrix: xi_l  = a0_Na + \sum_{Na} B_lNa (x_Na-a_Na)
+      real(ark),pointer ::  dBmatrho(:,:,:,:,:) ! dB-matrix
+      real(ark),pointer ::  mass(:)        ! Mass of a nuclear
+      real(ark),pointer ::  req(:)         ! Equilibrium bond lengths
+      real(ark),pointer ::  alphaeq(:)     ! Equilibrium angles
+      real(ark),pointer ::  taueq(:)       ! Equilibrium dihedral angles
+      real(ark),pointer ::  chi_ref(:,:)   ! Reference values for the internal coordinates chi 
+      real(ark),pointer ::  chi_eq(:)      ! Equilibrium values for the internal coordinates chi 
+      real(ark),pointer ::  chi0_ref(:)    ! reference-equilibrium values for the internal coordinates chi 
+      real(ark),pointer ::  local_eq(:)    ! Equilibrium values for the internal coordinates
+      real(ark),pointer ::  local_ref(:)   ! reference values for the internal coordinates
+      real(ark),pointer ::  specparam(:)   ! Special parameters for special cases. For example, for amorse
+      real(ark),pointer ::  fdstep(:)      ! finite difference element for the numerical differentiation for every mode 
+      !real(rk),pointer ::  coordtransform(:,:) ! Linear transformation of the linearized local coordinates 
+      integer(ik):: NKinOrder     ! Max order in the kinetic   energy expansion
+      integer(ik):: NPotOrder     ! Max order in the potential energy expansion
+      integer(ik):: NExtOrder     ! Max order in the external function expansion
+
+      real(rk),pointer:: PotPolyad(:)  ! polyad coefficients for the the potential energy expansion
+
+      logical :: DVR = .false.    ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
+      logical :: FBR = .true.     ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
+
+      logical :: smolyak = .false.  ! Smolyak Gaussian Quadtratures
+      character(len=cl) :: smolyak_rule = 'LG'
+
+      integer(ik) ::  Ncoeff             ! Number of parameters in fields-arrays (determined from MaxOrder)
+      integer(ik) ::  MaxOrder           ! Max(NKinOrder,NPotOrder)
+      integer(ik),pointer ::  RangeOrder(:)      ! polynomials ranges at different orders: fields(RangeOrder(N-1)..RangeOrder(N))
+      type(FLpolynomT),pointer ::  poten         ! Potential parameters
+      type(FLpolynomT),pointer ::  g_vib(:,:)    ! Vibrational part of Kinetic factor G
+      type(FLpolynomT),pointer ::  g_rot(:,:)    ! Rotational  part of Kinetic factor G
+      type(FLpolynomT),pointer ::  g_cor(:,:)    ! Coriolis part of Kinetic factor G
+      type(FLpolynomT),pointer ::  pseudo        ! pseudo-potential part
+      type(FLpolynomT),pointer ::  L2_vib(:,:)   ! Vibrational angular momentum L2
+      real(ark),pointer        ::  imat_s(:)        ! singular compnent of moments of inertia
+      !
+      type(FLpolynomT),pointer ::  extF(:)       ! External field
+      !
+      character(len=cl)        ::  potentype    ='GENERAL'  ! Type of the potential energy function representaion
+      character(len=cl)        ::  kinetic_type ='GENERAL'  ! Type of the kinetic energy representaion
+      real(ark),pointer        ::  qwforce(:,:,:)  ! qwadratic force constants f(l,m) in case of rank=1
+      real(ark),pointer        ::  omega(:)      ! Harmonic frequencies 
+      real(ark),pointer        ::  coord_f(:)      ! conversion factor to the standard coordinate (normal, morse ...)
+      !
+      integer(ik)              ::  lincoord = 0  ! degenerated cartesian coord. x,y, or z (1,2,3) or none (0)
+                                                 !  in case of linear molecules 
+      real(ark)                :: rho_border(2)  ! rhomim, rhomax - borders
+      real(ark)                :: rhostep        ! step size
+      integer(ik)              :: numerpoints = -1   ! step size
+      integer(ik)              :: iothreads = 1          ! Number of threads used for IO
+      logical                  :: periodic       ! periodic boundary condition
+      !
+      logical                  :: sing_at_rho_0  !  we use this parameter to check whether 
+                                                   ! if some functions are infinity at rho=0  and the basis function has to have a singularity at rho=0
+      character(len=cl)   :: IO_hamiltonian = 'NONE'  ! we can either SAVE or READ the Hamiltonian objects
+      character(len=cl)   :: IO_potential   = 'NONE'  ! we can either SAVE or READ the potential objects
+      character(len=cl)   :: IO_kinetic     = 'NONE'  ! we can either SAVE or READ the kinetic objects
+      character(len=cl)   :: IO_basisset    = 'NONE'  ! we can either SAVE or READ the primitive basis set
+      character(len=cl)   :: IO_ext_coeff   = 'NONE'  ! we can either SAVE or READ the potential objects
+      character(len=cl)   :: IO_contrCI   = 'NONE'  ! we can either SAVE or READ the CI contracted matrix elemenents by classes
+      character(len=cl)   :: IO_primitive  = 'NONE'  ! we can either SAVE or READ the primitive numerov functions 
+      character(len=cl)   :: IO_primitive_hamiltonian = 'NONE' ! we can either SAVE or READ the primive matrix elements
+      character(len=cl)   :: chk_fname = 'prim_bset.chk'   ! file name to store the primitive basis set data 
+      character(len=cl)   :: chk_numerov_fname = 'numerov_bset.chk'   ! file name to store the numerov basis set data 
+      character(len=cl)   :: chk_hamil_fname   = 'hamiltonian.chk'   ! file name to store the primitive basis set data 
+      character(len=cl)   :: chk_poten_fname   = 'potential.chk'     ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_kinet_fname   = 'kinetic.chk'       ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_external_fname   = 'external.chk'       ! file name to store the expansion parameters 
+      character(len=cl)   :: chk_contrib_fname = 'contribution.chk'  ! file name to store the highest contribution to eigenfunctions of contracted basis set 
+      !
+      logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
+      logical             :: separate_convert  = .false.          ! convert hamiltonian.chk to potential.chk and kinetic.chk
+      logical             :: checkpoint_iorder  = .false.
+      logical             :: sparse  = .false.                    ! A sparse representation of fields 
+      logical             :: triatom_sing_resolve = .false.
+      integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
+      integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
+      !
+   end type JobT
+   !
+   type FLpartfunc
+     !
+     real(rk)   :: value      ! The value of the partition function
+     real(rk)   :: temperature = 300._rk ! The temperature for the partition function in the matexp mode
+     real(rk)   :: zpe         = 0       ! The ZPE for the partition function in the matexp mode
+     real(rk),pointer   :: gns(:)        ! The stat. weights for the partition function in the matexp mode
+     !
+   end type FLpartfunc
+   !
+   type FLcalcsT
+      !
+      real(rk)            :: PTthreshold    ! with PT threshold we control if PT is valid, i.e. F/Delta_ener << 1
+      real(rk)            :: enercut        ! energy cut for the basis set 
+      real(rk)            :: potencut=1e6   ! potential energy cut for the dvr-grid points
+      real(ark)           :: ZPE = -epsilon(1.0_rk)  ! Zero point energy 
+      logical,pointer     :: isym_do(:)  => null()    ! process or not the symmetry in question
+      !
+      logical             :: sym_C  = .false.   ! if symmetry = C 
+      !
+      real(rk)            :: erange(2) =(/-0.1,huge(1.0)/) !  energy range 
+      type(FLenercutT)    :: enercutoff     ! energy cut for the basis set 
+      integer(ik)         :: pot_pt_shift    
+      integer(ik)         :: Npolyads_prim  ! maximal polyad number for the contraction
+      integer(ik)         :: stored_size = 0  ! dimension of the vector to be stored to RAM
+      integer(ik)         :: swap_size = 1e4  ! dimension of the vector to be swaped to disk 
+      real(rk)            :: compress = 1.0_rk ! the commression factor for the contracted basis functions in the mat. elem. calc.
+      integer(ik)         :: Npolyads_contr ! maximal polyad number for the contraction
+      real(rk)            :: coeff_thresh   ! primitve bs-function threshold to exclude quantum with small coeffs
+      real(rk)            :: exp_coeff_thresh = 1e-24 ! threshold to remove vanishing expansion coefficients of the Hamiltonian
+      real(rk)            :: zeroerror      ! allowed error in the zero order solution 
+      integer(ik)         :: iwork          ! maximal allowed size for the matrix to be diagonalaized
+      real(rk)            :: factor = 1     ! factor for nroots defining the vector space in seudv diagonalization
+      real(rk)            :: pt_ener_thresh = -1  ! energy threshold for the PT corrections, in 1/(Ei-Ej), where |Ei-Ej|<pt_ener_thresh
+      real(rk)            :: ener_thresh = -1  ! energy threshold for the basis set reduction using contributions to the primitive energies estimated from the matrix elements by PT
+      integer(ik)         :: maxiter = 1000 ! maximal number of iterations in arpack 
+      real(rk)            :: tolerance = 0  ! tolerance for arpack diagonalization, 0 means the machine accuracy
+      logical             :: restart=.false. ! restart the eigensolutions using the stored eigenvectors of a lower dimension
+      integer(ik)         :: PTDeltaQuanta  ! Every new Perturb. order brings increment of the the MaxPolyad(iorder)
+      character(len=cl)   :: PTtype         ! Defines type of the perturbationa theory - standard or diagonal
+      character(len=cl)   :: diagonalizer
+      character(len=cl)   :: mat_readwrite
+      character(len=cl)   :: orthogonalizer  = 'GRAM-SCHMIDT'
+      real(rk)            :: cluster = -1     ! the factor to porepare clustering of the basis set
+      integer(ik)         :: swap_after       ! The Hamiltonian will be stoted, read, and transformed vector by vector
+      real(rk)            :: upper_ener       ! upper energy limit for the eigenvalues to be found in variational diagonalization with syevr
+      real(rk)            :: thresh           ! thresh of general use
+      real(rk)            :: max_swap_size              ! maximal allowed disk space 
+      character(len=cl)   :: IOeigen_action = 'NONE'   ! we can either SAVE or READ the eigenfunctions from an external file
+      character(len=cl)   :: IOcontr_action = 'NONE'   ! we can either SAVE or READ the contracted eigenfunctions from an external file
+      character(len=cl)   :: IOcontr_ = 'NONE'         ! we can either SAVE or READ the incoplete contracted eigenfunctions in DVR representaion from an external file
+      character(len=cl)   :: IOkinet_action = 'NONE'   ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
+      character(len=cl)   :: IOextF_action = 'NONE'    ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
+      character(len=cl)   :: IOfitpot_action = 'NONE'  ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
+      character(len=cl)   :: IOj0matel_action = 'NONE' ! we can either SAVE or READ the j=0 eigen.vib. matrix elem. of the kinetik rot. part from an external file
+      character(len=cl)   :: IOj0ext_action = 'NONE'   ! we can either SAVE or READ the j=0 eigen.vib. matrix elem. of the kinetik rot. part from an external file
+      character(len=cl)   :: IOj0contr_action = 'NONE' ! convert the contracted basis set into the j0-representaion
+      character(len=cl)   :: IOswap_matelem = 'NONE'   ! we can swap (using divide) or join the contracted mat. elements from an external file
+      character(len=cl)   :: IOdvr_prim = 'NONE'       ! we store and read the DVR primitive objects 
+      logical             :: IOvector_symm = .true.    ! store eigen-vectors in the symmetrized iired. representation 
+      logical             :: IOeigen_compress = .false.   ! compress the computed eigenvectors using the threshold factor coeff_thresh
+      logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
+      logical             :: IOmatelem_stitch = .false.   ! stitch the matelem checkpoints from split pieces 
+      logical             :: IOmatelem_split  = .false.   ! split the matelem checkpoint into pieces (can be different from divide)
+      logical             :: IOmatelem_split_changed = .false.  ! in case we need to change the status of IOmatelem_split and do this again later 
+      logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
+      logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
+      logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
+      character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
+      logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
+      logical             :: IOmatelem_dump               ! dump into a temperal file an for append later 
+      integer(ik)         :: iappend                      ! Record in the matelem matrix to append after
+      logical             :: extmatelem_append               ! append the matrix elements after the record (basis function) 
+      logical             :: IOextmatelem_dump               ! dump into a temperal file an for append later 
+      integer(ik)         :: iextappend                      ! Record in the matelem matrix to append after
+      !
+      type(FLeigenfile)   :: eigenfile
+      type(FLeigenfile)   :: contrfile
+      character(len=cl)   :: kinetmat_file  = 'contr_matelem.chk'  ! file where we store the contracted mat. elemens of the Hamiltonian
+      character(len=cl)   :: kinetmat_format = 'NEW'               ! in case an old format of checkpointing is used
+      character(len=cl)   :: dvr_chkfile  = 'dvr_prim.chk'  ! file where we store the dvr-objects
+      character(len=cl)   :: extFmat_file   = 'contr_extfield.chk'  ! file where we store the external field contr. mat. elemens
+      character(len=cl)   :: fitpot_file    = 'fitpot_mat'  ! file where we store the external field contr. mat. elemens
+      character(len=cl)   :: kineteigen_file = 'j0_matelem.chk'  ! file where we store the eigenvec. mat. elemens of the kinet. part
+      character(len=cl)   :: exteigen_file   = 'j0_extfield.chk'  ! file where we store the eigenvec. mat. elemens of the external function
+      character(len=cl)   :: matrix_file     = 'matrix'  ! file where we store the contracted mat. elemens of the Hamiltonian
+      character(len=cl)   :: extmat_suffix   = 'extmatelem'  ! filename suffix  for storing extF matrix elements of the Hamiltonian
+      character(len=cl)   :: j0extmat_suffix  = 'j0_extmatelem'  ! filename suffix  for storing j=0 extF matrix elements of the Hamiltonian
+      character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
+      character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
+      character(len=cl)   :: tdm_file          = 'j0_tdm'      ! filename name for vibrational j=0 transition dipole moments for replacement 
+
+       
+      real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
+      real(rk)            :: TMenermin  = 0     ! Minimal energy to apply the TMcutoff for 
+      logical             :: TMpruning = .false. ! TM-prune if TMcutoff > 0
+      character(len=cl)   :: solution_file     = 'solution_'  ! file where we store the contracted mat. elemens of the Hamiltonian
+      real(rk)            :: degen_threshold         ! a threshold to find degenerate values
+      logical             :: test_diag        ! switch on the test (memory demanding) diagonalization of the hamiltonian 
+      character(len=cl)   :: sym_group        ! symmetry 
+      integer(ik)         :: verbose          ! soft verbose level (from input, not precompiled)
+      logical             :: vib_contract     ! whether the vibrational contraction is used 
+                                              ! Vibrational contraction  - we use the computed J=0 basis functions for rovibr. problem)
+      logical             :: eigen_contract = .false.   ! whether we contract based on the contracted basis coefficients of the eigenfunctions
+      logical             :: fast = .true.    ! fast and exensive calculation of the contracted matrix elements 
+      logical             :: vib_rot_contr = .false.    ! the contracted basis is computed using vibration-rotation scheme where 
+                                              !  the vibrational indeces run first and K runs last in contrast to the default rot-vib scheme 
+                                              !  where K is the first index and the matrix is build as K-blocks. 
+      logical             :: sparse = .false. ! to switch on sparse matrix processing
+      !
+      type(FLbasissetT),pointer  :: bset(:)  => null()  ! Basis set specifications: range and type
+      real(rk),pointer    :: symm_toler(:)  => null()! tolerance that decides whether the symmetry transformation matrix 
+                                              ! has been properly recostracted at the sample point, i.e. the transformed function
+                                              ! coincides with the sampe function at the transformed sample point. 
+      integer(ik)         :: msample_points = 40  ! number of sample points for determination of the symmetry transformational properties of the contr. solution
+      integer(ik)         :: msample_attempts = 100 ! maximal number of attempts of samplings in the symmetry determinations
+      type(FLpartfunc)    :: partfunc         ! The parameters for the partition function calcs.
+      integer(ik)         :: iswap(2)  = (/1,1000/)    ! compute and checkpoint to the disk the matrix elements for iswap(1) ... iswap(2)
+      logical             :: rotsym_do = .false. ! for 'K-BASED' or 'NONE' the rotational symmetry is defined based on the K and tau quanta (default) 
+                                                 ! for 'EULER-BASED' the rotational symmetry is defined based on the euler angles transformations
+      logical             :: contrci_me_fast = .false.
+      integer(ik)         :: MaxVibMomentum_contr    ! maximal L (vibang) for the contraction
+      logical		      :: ignore_vectors = .false.
+      logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
+      logical             :: exomol_format  = .false.     ! exomol format of intensity output 
+      logical             :: gain_format  = .false.     ! GAIN format of intensity output 
+      logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
+                                            ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
+      logical             :: triatom_sing_resolve = .false.
+      logical,pointer     :: select_gamma(:) => null() ! the diagonalization will be done only for selected gamma's
+      integer(ik),pointer :: nroots(:) => null() ! number of the roots to be found in variational diagonalization with syevr
+      integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
+      integer(ik)         :: Nassignments = 1 ! Number of assignments based the largest (=1), second largest (=2) coefficients  
+      !
+   end type FLcalcsT
+
+
+
+   type FLobsT
+     !
+     integer(ik) :: Jrot
+     integer(ik) :: symmetry
+     integer(ik) :: N
+     real(rk)    :: energy
+     real(rk)    :: weight
+     integer(ik),pointer :: quanta(:) => null()
+     !
+   end type FLobsT
+
+
+   type FLfittingT
+     !
+     logical              :: run
+     integer(ik)          :: j_list(1:100) = -1
+     integer(ik)          :: iparam(1:2) = (/1,1000000/)
+     integer(ik)          :: itermax = 500
+     integer(ik)          :: Nenergies = 1
+     real(rk)             :: factor = 1.0_rk
+     real(rk)             :: target_rms = 1e-8
+     real(rk)             :: robust = 0
+     real(rk)             :: watson = 1.0d0
+     character(len=cl)    :: method = 'FAST'
+     character(len=cl)    :: geom_file = 'pot.fit'
+     character(len=cl)    :: output_file = 'fitting'
+     character(len=cl)    :: fit_type = 'DGELSS'      ! to switch between fitting methods. 
+     real(rk)             :: threshold_coeff = -1e-18
+     real(rk)             :: threshold_lock  = -1e-18
+     real(rk)             :: threshold_obs_calc  = -1e-16
+     real(rk)             :: fit_scale  = 0.4
+     type(FLobsT),pointer :: obs(:)
+     !
+   end type FLfittingT
+
+
+
+   type FLresT
+     !
+     integer(ik) :: Ntheta = 0
+     integer(ik) :: Nphi =0 
+     integer(ik) :: Ntau = 0
+     real(rk)    :: theta = 0
+     real(rk)    :: phi = 0
+     real(rk)    :: tau = 0
+     real(rk)    :: theta1 = 0
+     integer(ik) :: Itermax = 200
+     character(len=cl) :: type = 'GLOBAL_SEARCH'      ! to switch between fitting methods. 
+     !
+   end type FLresT
+   !
+   type FLJGammaLevelT
+     integer(ik) :: J = -1
+     integer(ik) :: iGamma = -1
+     integer(ik) :: iLevel = -1
+   end type FLJGammaLevelT
+   !
+   type FLanalysisT
+      !
+      logical             :: density = .false.
+      logical             :: classical = .false.
+      logical             :: rotation_energy_surface = .false.
+      logical             :: rotation_density = .false.
+      type(FLresT)        :: res
+      logical             :: reduced_density = .false.
+      logical             :: print_vector = .false.
+      logical             :: rotation_matrix = .false.
+      logical             :: extF = .false.
+      logical             :: check_Hamiltonian = .false.
+      integer(ik)         :: dens_list(1:100) = -1      ! List of eigenvalues for the reduced density analysis 
+      integer(ik)         :: j_list(1:100) = -1
+      integer(ik)         :: sym_list(1:100) = -1
+      real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
+      logical             :: reducible_eigen_contribution = .false. 
+      logical             :: population
+      type(FLJGammaLevelT) :: ref  ! reference state (J,Gamma,Level)
+      !
+   end type FLanalysisT
+   !
+   type FLactionT
+     !
+     logical :: fitting       = .false.
+     logical :: band_fitting  = .false.
+     logical :: convert_vibme = .false.
+     logical :: intensity     = .false.
+     !
+   end type FLactionT
+
+
+
+!
+!--------------------------------------------------------------
+! Bsis set section 
+!--------------------------------------------------------------
+!
+
+
+!
+!  1D basis set Type
+!
+   type Basis1DT
+      integer(ik)         :: imodes     ! How many modes under this type
+      integer(ik),pointer :: mode(:)    ! Which modes under the current type (1..trove%Nmodes)
+      integer(ik)         :: Size       ! Size of the 1D basis set 
+      integer(ik)         :: Order      ! X**order : max order of magnitude 
+      character(len=cl)   :: name       ! Identifying name of the basis functions 
+      character(len=cl)   :: type       ! Identifying type of the basis functions 
+      real(ark)           :: params(3)  ! few useful parameters, e.g. coef_norm (harmonic), or De/a (morse)
+      real(ark), pointer  :: ener0(:)   ! Zero-order energy 
+      real(ark), pointer  :: matelements   (:,:,:,:)  ! Matrix elemens <a|x**k*p**l|b>; or (l,k,a,b)
+                                                      ! l - 0:2 
+                                                      ! k - 0:Order
+                                                      ! a,b - 0:Size
+   end type Basis1DT
+
+
+
+
+
+!
+!  general basis type definition
+!
+   type BaisSetT
+      integer(ik)                :: n_bset1D_max   ! Number of 1D basis types requested at initialization 
+      integer(ik)                :: n_bset_max     ! Total number of basis types:  n_bset1D_max
+      integer(ik)                :: Nbset1D        ! Number of 1D bset
+      type(FLbasissetT), pointer :: dscr(:)        ! Initial description of the basis set for every mode
+      type(Basis1DT), pointer    :: bs1D(:)        ! Simple 1D bset 
+      type(Basis1DT), pointer    :: rot            ! Rotational bset 
+      !
+   end type BaisSetT
+!
+!  The Basis set itself
+!
+   type(BaisSetT) , save    :: bset
+   type(JobT), save         :: trove
+
+   integer(ik),allocatable,save :: FLIndexQ(:,:)    ! Forward  Relations between 1D arraz and Modes-Dimension array 
+   !integer(ik),allocatable,save :: FLIndexQ_legatee(:,:)    ! Addresses to the previous FLIndexQ(:,:) 
+   !                                                         !and helps to calculate matrix elements faster
+
+   !real(rk),allocatable,save    :: mat_legatee(:,:)    ! Stored values of already computed mat. elements 
+
+
+   integer, parameter       :: verbose     = 2    ! Verbosity level
+   integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differences
+   !
+   integer(ik), save        :: FLNelements        ! number of all real elements we use to count used memory 
+   !
+   ! This parameter is for switching on and off the numerical representation for the last chi(xi)=rho variable:
+   ! if it is "1", this special variable will be given as a 1D table, as well all functions will be represented 
+   ! as expansions around each point rho. Thus the manifold has the rank "1"
+   ! If it is "0" - all functions are given by the expansions around the 0d manifold, i.e. one point
+   !
+   character(len=cl),parameter :: axis_system = 'Eckart'
+   !
+   !
+   ! If we solve only vibrational problem, there is no point to keep around the rotational and Coriolis 
+   ! kinetic parts. We turn them off by the following logical parameter
+   !
+   logical :: FLrotation = .false.
+   !
+   ! External field matrix elements calculations: default values
+   !
+   logical :: FLextF_matelem = .false.
+   logical :: FLextF_coeffs = .false.
+   logical :: FLL2_coeffs = .false.
+   !
+   ! check and fix the discontiunity of non-rigid fields
+   logical :: FL_iron_field_out = .false.
+   !
+   ! current  rho-point 
+   integer(ik),save              :: FLirho
+   !
+   ! potential function is speciafied and stored here 
+   !
+   real(ark),allocatable :: force(:)
+   character(len=16),allocatable :: forcename(:)
+   integer(ik),allocatable :: pot_ind(:,:)
+   integer(ik),allocatable :: ifit(:)
+   logical :: bset_initialized = .false.    !  defaul value is false - to make sure that we do not use the basis set before it has been initialized
+   !
+   type(FLcalcsT),save           :: job
+   type(FLanalysisT),save        :: analysis
+   type(FLfittingT),save         :: fitting     ! objects defining the fitting to the observed energies
+   type(FLfittingT),save         :: j0fit       ! objects defining the refinement of the band centers
+   type(FLcoeffprunT)            :: coeffprun   ! object for pruning basis funcitons 
+   !
+   ! Andrey's temporale measure: it is not adviceble to use an enviroment variable for that. 
+   ! it can bbe very bad for the parallelization. 
+   ! 
+   integer(ik)              :: FLcurr_imu
+   integer(ik)              :: FLNmodes    ! Number of modes
+ 
+   type(FLactionT),save               :: action   ! defines dfifferent actions to perform
+
+   real(ark) :: fd_step_Bmat=1e-4  ! finite difference parameter used for Bmat differentiation numerically 
+   real(rk)  :: symm_toler_defaul = 1e-8  ! defaul value for symm_toler 
+
+  contains
+
+!
+! Routine to read an input file
+!
+  subroutine FLReadInput(NPTorder,Npolyads,Natoms,Nmodes,Jrot)
+   !
+   use input
+   !
+   integer(ik),intent(out) :: NPTorder,Npolyads,Nmodes,Jrot
+   !
+   ! parameters used with the "syevr" diagonalizer  
+   !
+   ! Here we define default values of input parameters 
+   !
+   integer(ik), parameter :: NPTorder_ =  0     ! Max Perturbation order 
+   integer(ik), parameter :: NKinOrder_ = 2     ! Max order in the kinetic   energy expansion
+   integer(ik), parameter :: NPotOrder_ = 4     ! Max order in the potential energy expansion
+   integer(ik), parameter :: NExtOrder_ = 4     ! Max order in the external function expansion
+   !
+   ! define the molecule 
+   !
+   integer(ik), parameter :: Natoms_= 0       ! Number of atoms
+   integer(ik), parameter :: Nmodes_= 0       ! Number of modes = 3*Natoms-6
+   !
+    character(len=cl),parameter  :: Moltype_ ='ABCDEFG'   ! Identifying type of the Molecule (e.g. XY3)
+   !
+   real(rk), parameter :: fdstep_ = 0.005   ! finite difference element for the numerical differentiation
+   !
+   ! Perturbation theory parameters 
+   !
+   integer(ik), parameter :: PTDeltaQuanta_ = 3 ! Every new Perturb. order brings increment of the the MaxPolyad(iorder)
+                                                ! The increasment for harmonic bs-case is 3 quanta vs PTorder. 
+                                                ! Taking into account res_coeffs - different quanta have  different 
+                                                ! contributions into the polyds number "P" - 
+                                                ! we obtain: PTDeltaQuanta = 3*max(res_coeffs(:))
+                                                ! standard value for harmonic basis set and PH3-type of polyads (nu_s = nu_b):
+                                                ! PTDeltaQuanta = 6 
+                                                !
+   real(rk), parameter    :: PTthreshold_  = 0.9 ! with PT threshold we control if PT is valid, i.e. F/Delta_ener << 1 
+   real(rk), parameter    :: PTzeroerror_  = 1.e-2 ! allowed error in the zero order solution 
+   integer(ik), parameter :: pot_pt_shift_ = 2  ! Zero order for the potential function starts from the harmonic approximation (=2) 
+   !
+   ! Basis set parameters 
+   !
+   !
+   integer(ik),parameter  :: Npolyads_  =   80   ! maximal polyad number, i.e. how many polyads we calculate  
+   integer(ik), parameter :: iwork_     = 1      ! maximal size of the matrix for the variational diagonalization
+                                                 ! used as parameter NCV required by ARPACK. default value 1 means ncv = 21/10*nroots
+   !
+   integer(ik),parameter  :: manifold_ = 1       !
+   real(rk),parameter :: res_coeffs_ = 1.0 ! This defines the polyads or resonanses: P = sum( res%coeffs(:)*nu(:) )
+   character(len=cl),parameter :: coords_ = 'LINEAR' ! default internal coordinates 
+   !
+   type(FLbasissetT),parameter :: vibbasisset_= FLbasissetT('HARMONIC','HARMONIC','HARMONIC',1000,'1D',100,1,(/0,20/),&
+                                                             1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.,.true.)
+   type(FLbasissetT),parameter :: rotbasisset_= FLbasissetT('JKTAU', 'xxxxxx','xxxxxx',1000,'1D',0,0,(/0,0 /),0.0,0,(/0.0,0.0/),&
+                                                            .false.,0,'xxxxxx',0,.false.,.false.,.true.)
+
+   integer(ik),parameter :: nroots_=1e6
+   real(rk),parameter    :: uv_syevr_=1e9
+   integer(ik),parameter :: swap_after_=20000 ! The Hamiltonian will be stoted, read, and transformed vector by vector
+                                              ! if the size exceeds this limit, default value 
+   real(rk),parameter    :: max_swap_size_=1e6 ! Maximal limit for the swap file (primitive matrix)
+                                              ! if the size exceeds this limit, default value 
+   real(rk),parameter    :: enermax_=1e6      ! default value for the energy cut of the variational matrix
+   real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
+   !
+   logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
+   logical :: kinetic_defined
+   character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
+   character(len=wl) :: w
+   real(rk)    :: lfact,f_t, func_coef
+   integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
+   integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
+   character(len=4) :: char_j, func_name
+   integer :: arg_status, arg_length, arg_unit
+   character(:), allocatable :: arg
+   character(len=cl) :: my_fmt !format for I/O specification
+   !
+   !
+   ! default values: 
+   !
+   Natoms = Natoms_
+   Nmodes = Nmodes_
+   trove%Ncoords = 0 
+   Ncoords = 0 
+   !
+   trove%moltype = Moltype_
+   manifold = manifold_
+   job%IOeigen_action = 'NONE'
+   job%IOcontr_action = 'NONE'
+   job%IOkinet_action = 'NONE'
+   !
+   job%iwork      = iwork_
+   !
+   NPTorder = NPTorder_
+   trove%NKinOrder = NKinOrder_
+   trove%NPotOrder = NPotOrder_
+   trove%NExtOrder = NExtOrder_
+   !
+   job%PTDeltaQuanta = PTDeltaQuanta_
+   job%PTthreshold   = PTthreshold_
+   job%zeroerror   = PTzeroerror_
+   job%pot_pt_shift  = pot_pt_shift_
+   Npolyads      = Npolyads_
+
+   job%enercut =  enermax_
+   job%enercutoff%general = enermax_
+   job%enercutoff%contr   = enermax_
+   job%enercutoff%primt   = enermax_
+   job%enercutoff%matelem = enermax_
+
+
+   job%coeff_thresh = coeff_thresh_
+   job%Npolyads_contr = Npolyads_
+   job%Npolyads_prim  = Npolyads_
+   job%vib_contract = .false.
+   !
+   trove%internal_coords  = 'LINEARIZED'
+   trove%coords_transform = 'LINEAR'
+   job%PTtype = 'POWERS'
+   if (manifold==1) job%PTtype = 'DIAGONAL'
+   !
+   zmat_defined  = .false.
+   basis_defined = .false.
+   equil_defined = .false.
+   refer_defined = .false.
+   chk_defined = .false.
+   pot_defined   = .false.
+   kinetic_defined = .false.
+   extF_defined  = .false.
+   symmetry_defined = .false.
+   Nparam = 1 
+   !
+   job%diagonalizer = 'SYEV'
+   !
+   job%swap_after = swap_after_
+   job%max_swap_size = max_swap_size_
+   job%upper_ener = uv_syevr_
+   job%thresh = small_
+   trove%symmetry = 'C(M)'
+   job%sym_group = trove%symmetry
+   job%degen_threshold = 10.0**(-4-(ark/8))
+   job%test_diag = .false.
+   job%verbose = 2
+   !
+   job%eigenfile%filebase   = 'eigen'
+   job%eigenfile%dscr       = 'eigen_descr'
+   job%eigenfile%primitives = 'eigen_quanta'
+   job%eigenfile%vectors    = 'eigen_vectors'
+   !
+   job%contrfile%dscr       = 'contr_descr.chk'
+   job%contrfile%primitives = 'contr_quanta.chk'
+   job%contrfile%vectors    = 'contr_vectors.chk'
+   job%contrfile%dvr        = 'contr_dvr.chk'
+   !
+   job%dvr_chkfile          = 'dvr_prim.chk'
+   !
+   j0fit%method = 'SLOW'
+   !
+   ! Intensity block of initial values 
+   !
+   intensity%action = 'NONE'
+   intensity%temperature = 300.0_rk
+   intensity%part_func = 1
+   intensity%ZPE = -small_
+   intensity%freq_window = (/-0.1,1e6/)
+   intensity%erange_low = (/-0.1,1e6/)
+   intensity%erange_upp = (/-0.1,1e6/)
+   !
+   !
+   ! MEP
+   !
+   molec%meptype = ''
+   !
+   ! default value of the rank of the external field is 3, which stands for the dipole moment function.  
+   !
+   extF%rank = 3
+
+   !
+   ! Rotational quantum -  default values
+   !
+   Jrot = 0
+   !
+   arg_unit = 5
+   call get_command_argument(1, status=arg_status, length=arg_length)
+   if (arg_status == 0) then
+     allocate( character(arg_length) :: arg )
+     call get_command_argument(1, status=arg_status, value=arg)
+     if (arg_status == 0) then
+       open(newunit=arg_unit, file=arg, status='old')
+     end if
+   end if
+   !
+   call input_options(echo_lines=.true.,error_flag=1, default_unit=arg_unit)
+   !
+   ! read the general input 
+   !
+   do
+       call read_line(eof) ; if (eof) exit
+       call readu(w)
+       select case(w)
+       case("STOP","FINISH","END")
+         exit
+       case("")
+         !
+         !print "(1x)"    !  Echo blank lines
+         !
+       case ("PTORDER")
+         !
+         call readi(NPTorder)
+         !
+       case ("KINORDER")
+         !
+         call readi(trove%NKinOrder)
+         !
+       case ("POTORDER")
+         !
+         call readi(trove%NPotOrder)
+         !
+       case ("POTPOLYAD","POTPOLYADS")
+         !
+         if (Nmodes == 0) call report("POTPOLYAD cannot appear before NMODES",.true.)
+         !
+         call readf(trove%PotPolyad(1))
+         !
+         trove%PotPolyad(2:Nmodes) = trove%PotPolyad(1)
+         !
+         do i=2,min(Nitems-1,Nmodes)
+            call readf(trove%PotPolyad(i))
+         enddo
+         !
+       case ("POTENTIAL_SIMPLE")
+         ! This is simple finite differences type of the potential expansion
+         ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
+         !
+         job%Potential_Simple = .true.
+         !
+       case("PRINT")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
            !
-           public BaisSetT,Basis1DT,FL_fdf,FLNmodes,FLanalysisT,FLresT,FLpartfunc,FLactionT,FLfinitediffs,FLpoten_linearized,FLread_ZPE
-           public FLJGammaLevelT
-           !
-           public j0fit,fitting,FLfittingT,FLobsT,FLread_extF_rank,FLcoeffs2dT,FLpoten4xi,FLfinitediffs_2d
-           public FLcheck_point_Hamiltonian,FLinitilize_Potential_Andrey,FLinit_External_field,FLpoten_linearized_dchi,&
-                  FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
-           
-           public choose, sum_choose, powers_from_index
-           !
-           !FLfrom_local2chi_by_fit
-           !
-        !
-        !   Type to define Z-matrix
-        !
-
-
-           !type  FLZmatrixT
-           !   character(len=cl)    :: name         ! Identifying name of atom (no effect on anything)
-           !   integer(ik)          :: connect(4)   ! z-matrix connections
-           !end type FLZmatrixT
-
-
-
-        !
-        !   Type that will define all fields: kinetic, potential etc.
-        !
-           type FLpolynomT
-              character(len=cl)    :: name         ! Identifying name of the polynom
-              integer(ik),pointer  :: iorder(:)    ! distribution of poten-coeffs over different PT-orders, 
-                                                   ! size(iorder)=size(field)
-              integer(ik)          :: Orders       ! Max. expansion order 
-              integer(ik)          :: Ncoeff       ! Number of expansion coeffs.
-              integer(ik)          :: Npoints      ! Number of expansion centers.
-              real(ark),pointer    :: field(:,:)   ! Expansion parameters
-              real(ark),pointer    :: me(:,:,:)    ! 1D-numerof type matrix elements 
-              !
-              !integer(ik)          :: SNterms      ! Number of expansion coeffs in the sparse representation
-              integer(ik),pointer  :: ifromsparse(:) ! a accounting-index from isparse to icoeff 
-              !integer(ik),pointer  :: itosparse(:) ! a accounting-index from isparse to icoeff 
-              integer(ik),pointer  :: IndexQ(:,:)    ! This is to store FLIndexQ for each object individually 
-              logical :: sparse = .false.            ! indicates if the field in the sparse representation 
-              !
-           end type FLpolynomT
-
-        !
-
-           type  FLenercutT 
+           select case(w)
              !
-             real(rk)  :: general        ! Energy cutoff for everything
-             real(rk)  :: primt          ! Energy cutoff for primitives
-             real(rk)  :: contr         ! Energy cutoff for contratced basis functions 
-             real(rk)  :: matelem         !  Energy cutoff for contratced matrix elements in the matelem section
-             real(rk)  ::  DeltaE=0      ! Energgy cutoff based on teh difference between the row-Energy and column-Energy
-             integer(ik) :: polyad     ! Polyad cutoff for primit. functs. in contratced basis functions 
+           case("NASSIGNMENTS","N_EIGEN-CONTRIBUTIONS")
              !
-           end type  FLenercutT  
-           !
-           type FLcoeffs2dT                      
-              integer(ik),pointer :: icoeff(:,:)
-              real(rk),pointer    :: fcoeff(:)
-           end type FLcoeffs2dT
-           !
-           ! files with the eigenvectors 
-           !
-           type  FLeigenfile
+             ! Number of eigen-contributions to print 
              !
-             character(len=cl)  :: filebase
-             character(len=cl)  :: dscr       ! file with fingeprints and descriptions of each levels + energy values
-             character(len=cl)  :: primitives ! file with the primitive quantum numbres   
-             character(len=cl)  :: vectors    ! eigenvectors stored here 
-             character(len=cl)  :: dvr        ! eigenvectors in dvr representation stored here 
+             call readi(job%Nassignments)
              !
-           end type  FLeigenfile 
-
-
-           type  FLbasissetT 
-             character(len=cl)          :: type         ! Identifying type    of the basis functions 
-             character(len=cl)          :: coord_kinet  ! Identifying type    of the basis functions 
-             character(len=cl)          :: coord_poten  ! Identifying type    of the basis functions 
-             integer                    :: model        ! Applied for contraction of basis sets, reduce or mormal model will be used
-             character(len=2 )          :: dim          ! Identifying dimensionality of the basis 
-             integer(ik)                :: species      ! Identifying the spicies 
-             integer(ik)                :: class        ! Identifying the class  
-             integer(ik)                :: range(2)     ! Index range for the given mode 
-             real(ark)                  :: res_coeffs   ! contribution of each quanta into a polyd 
-             integer(ik)                :: npoints      ! optional integer, e.g. npoints for numerov
-             real(ark)                  :: borders(2)   ! optional real, integration borders for numerov 
-             logical                    :: periodic     ! change to the periodic boundary condition
-             integer(ik)                :: iperiod      ! the period for the periodic tretament 
-             character(len=cl)          :: dvr          ! Identifying type    of the dvr representation
-             integer(ik)                :: dvrpoints    ! number of dvr-integration points for each mode 
-             logical                    :: postprocess  ! Post-diagonalization of the contracted basis set
-             logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
-             logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
-           end type  FLbasissetT 
-
-           type FLcoeffprunT
-            !
-            real(rk)           :: contribution_threshold = 1e-4_rk
-            !
-           end type FLcoeffprunT
-
-
-
-
-        !
-        ! We collect all relevant data of the molecule under MoleculeT - type structure 
-        !
-           type JobT
-              character(len=cl)   :: Moltype        ! Identifying type of the Molecule (e.g. XY3)
-              character(len=cl),pointer :: Coordinates(:,:) ! Identifying the coordinate system, e.g. 'normal'; kinetic and potential part can be different
-              character(len=cl)         :: internal_coords  ! type of the internal coordinates: linear,harmonic,local
-              character(len=cl)         :: coords_transform ! type of the coordinate transformation: linear,morse-xi-s-rho,...
-              character(len=cl)         :: symmetry         ! molecular symmetry
-              integer(ik)::  Natoms               ! Number of atoms
-              integer(ik)::  Nmodes               ! Number of modes = 3*Natoms-6
-              integer(ik)::  Nmodes_e             ! Effective number of modes: when rank = 1 Nmodes_e = Nmodes-1
-              integer(ik)::  Nmodes_n             ! non-rigid motion mode, given numerically
-              integer(ik),pointer ::  manifold_rank(:) ! The size of the expansion center manifold: 0 for 0d, "1" for 1d
-              integer(ik)::  Nbonds               ! Number of bonds
-              integer(ik)::  NAngles              ! Number of angles
-              integer(ik)::  NDihedrals           ! Number of dihedral angles type 1 and 2
-              integer(ik)::  Ncoords              ! Total number of gdc (Nbonds+Nangles+Ndihedrals)
-              integer(ik)::  Npoints              ! Number of points of the 1d numerical representation in case of rank=1
-              integer(ik),pointer ::  bonds(:,:)  ! Bond connections
-              integer(ik),pointer ::  angles(:,:) ! Angles connections
-              integer(ik),pointer ::  dihedrals(:,:)  ! Dihedral Angles connections type 1
-              integer(ik),pointer ::  dihedtype(:)  ! Dihedral Angles connections type 1
-              type(MLZmatrixT),pointer  :: zmatrix(:) ! 
-              integer(ik)::  jmax                 ! Angular momentum quantum number - maximal value 
-              !
-              real(ark),pointer   ::  a0(:,:)      ! Cartesian coordinates at the equilibrium  x_Na = a0(N,a),
-                                                  ! a = x,y,z (1,2,3)
-              real(ark),pointer   ::  b0(:,:,:)    ! General Cartesian coordinates at the equilibrium  x_Na = b0(N,a,i),
-                                                  ! a = x,y,z (1,2,3), i = 0..Npoints -> in case of manifoldrank=1
-              real(ark),pointer   ::  db0(:,:,:,:) ! derivative of b0 wrt rho 
-              !
-              real(ark),pointer   ::  rho_i(:)     ! Integration points for the Gaussian/Simson integration rules
-              real(ark)           ::  rho_ref
-              integer(ik)        ::  iPotmin      ! Point of the minimum in the Numerov-integration representation
-              !real(rk),pointer   ::  weight_i(:) ! Integration weightd
-              !
-              real(ark),pointer ::  Amatrho(:,:,:,:) ! A-matrix: x_Na = a0_Na + \sum_l A_Nal xi_l,  for the rank=1 case
-              real(ark),pointer ::  dAmatrho(:,:,:,:,:)! dA-matrix: derivatives of Amat wrt rho
-              real(ark),pointer ::  Bmatrho(:,:,:,:) ! B-matrix: xi_l  = a0_Na + \sum_{Na} B_lNa (x_Na-a_Na)
-              real(ark),pointer ::  dBmatrho(:,:,:,:,:) ! dB-matrix
-              real(ark),pointer ::  mass(:)        ! Mass of a nuclear
-              real(ark),pointer ::  req(:)         ! Equilibrium bond lengths
-              real(ark),pointer ::  alphaeq(:)     ! Equilibrium angles
-              real(ark),pointer ::  taueq(:)       ! Equilibrium dihedral angles
-              real(ark),pointer ::  chi_ref(:,:)   ! Reference values for the internal coordinates chi 
-              real(ark),pointer ::  chi_eq(:)      ! Equilibrium values for the internal coordinates chi 
-              real(ark),pointer ::  chi0_ref(:)    ! reference-equilibrium values for the internal coordinates chi 
-              real(ark),pointer ::  local_eq(:)    ! Equilibrium values for the internal coordinates
-              real(ark),pointer ::  local_eq_transformed(:) 
-              real(ark),pointer ::  local_ref(:)   ! reference values for the internal coordinates
-              real(ark),pointer ::  specparam(:)   ! Special parameters for special cases. For example, for amorse
-              real(ark),pointer ::  fdstep(:)      ! finite difference element for the numerical differentiation for every mode 
-              !real(rk),pointer ::  coordtransform(:,:) ! Linear transformation of the linearized local coordinates 
-              integer(ik):: NKinOrder     ! Max order in the kinetic   energy expansion
-              integer(ik):: NPotOrder     ! Max order in the potential energy expansion
-              integer(ik):: NExtOrder     ! Max order in the external function expansion
-
-              real(rk),pointer:: PotPolyad(:)  ! polyad coefficients for the the potential energy expansion
-
-              logical :: DVR = .false.    ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
-              logical :: FBR = .true.     ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
-
-              logical :: smolyak = .false.  ! Smolyak Gaussian Quadtratures
-              character(len=cl) :: smolyak_rule = 'LG'
-
-              integer(ik) ::  Ncoeff             ! Number of parameters in fields-arrays (determined from MaxOrder)
-              integer(ik) ::  MaxOrder           ! Max(NKinOrder,NPotOrder)
-              integer(ik),pointer ::  RangeOrder(:)      ! polynomials ranges at different orders: fields(RangeOrder(N-1)..RangeOrder(N))
-              type(FLpolynomT),pointer ::  poten         ! Potential parameters
-              type(FLpolynomT),pointer ::  g_vib(:,:)    ! Vibrational part of Kinetic factor G
-              type(FLpolynomT),pointer ::  g_rot(:,:)    ! Rotational  part of Kinetic factor G
-              type(FLpolynomT),pointer ::  g_cor(:,:)    ! Coriolis part of Kinetic factor G
-              type(FLpolynomT),pointer ::  pseudo        ! pseudo-potential part
-              type(FLpolynomT),pointer ::  L2_vib(:,:)   ! Vibrational angular momentum L2
-              real(ark),pointer        ::  imat_s(:)        ! singular compnent of moments of inertia
-              integer(ik), allocatable ::  modes(:,:)    ! List of modes for each term 
-              !
-              type(FLpolynomT),pointer ::  extF(:)       ! External field
-              !
-              character(len=cl)        ::  potentype    ='GENERAL'  ! Type of the potential energy function representaion
-              character(len=cl)        ::  kinetic_type ='GENERAL'  ! Type of the kinetic energy representaion
-              real(ark),pointer        ::  qwforce(:,:,:)  ! qwadratic force constants f(l,m) in case of rank=1
-              real(ark),pointer        ::  omega(:)      ! Harmonic frequencies 
-              real(ark),pointer        ::  coord_f(:)      ! conversion factor to the standard coordinate (normal, morse ...)
-              !
-              integer(ik)              ::  lincoord = 0  ! degenerated cartesian coord. x,y, or z (1,2,3) or none (0)
-                                                         !  in case of linear molecules 
-              real(ark)                :: rho_border(2)  ! rhomim, rhomax - borders
-              real(ark)                :: rhostep        ! step size
-              integer(ik)              :: numerpoints = -1   ! step size
-              integer(ik)              :: iothreads = 1          ! Number of threads used for IO
-              logical                  :: periodic       ! periodic boundary condition
-              !
-              logical                  :: sing_at_rho_0  !  we use this parameter to check whether 
-                                                           ! if some functions are infinity at rho=0  and the basis function has to have a singularity at rho=0
-              character(len=cl)   :: IO_hamiltonian = 'NONE'  ! we can either SAVE or READ the Hamiltonian objects
-              character(len=cl)   :: IO_potential   = 'NONE'  ! we can either SAVE or READ the potential objects
-              character(len=cl)   :: IO_kinetic     = 'NONE'  ! we can either SAVE or READ the kinetic objects
-              character(len=cl)   :: IO_basisset    = 'NONE'  ! we can either SAVE or READ the primitive basis set
-              character(len=cl)   :: IO_ext_coeff   = 'NONE'  ! we can either SAVE or READ the potential objects
-              character(len=cl)   :: IO_contrCI   = 'NONE'  ! we can either SAVE or READ the CI contracted matrix elemenents by classes
-              character(len=cl)   :: IO_primitive  = 'NONE'  ! we can either SAVE or READ the primitive numerov functions 
-              character(len=cl)   :: IO_primitive_hamiltonian = 'NONE' ! we can either SAVE or READ the primive matrix elements
-              character(len=cl)   :: chk_fname = 'prim_bset.chk'   ! file name to store the primitive basis set data 
-              character(len=cl)   :: chk_numerov_fname = 'numerov_bset.chk'   ! file name to store the numerov basis set data 
-              character(len=cl)   :: chk_hamil_fname   = 'hamiltonian.chk'   ! file name to store the primitive basis set data 
-              character(len=cl)   :: chk_poten_fname   = 'potential.chk'     ! file name to store the expansion parameters 
-              character(len=cl)   :: chk_kinet_fname   = 'kinetic.chk'       ! file name to store the expansion parameters 
-              character(len=cl)   :: chk_external_fname   = 'external.chk'       ! file name to store the expansion parameters 
-              character(len=cl)   :: chk_contrib_fname = 'contribution.chk'  ! file name to store the highest contribution to eigenfunctions of contracted basis set 
-              !
-              logical             :: separate_store = .false.             ! if want to store the Hamiltonian chk also into separate files
-              logical             :: separate_convert  = .false.          ! convert hamiltonian.chk to potential.chk and kinetic.chk
-              logical             :: checkpoint_iorder  = .false.
-              logical             :: sparse  = .false.                    ! A sparse representation of fields 
-              logical             :: triatom_sing_resolve = .false.
-              logical             :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
-              integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
-              integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
-              !
-           end type JobT
-           !
-           type FLpartfunc
+             job%Nassignments = max(min(job%Nassignments,2),1)
              !
-             real(rk)   :: value      ! The value of the partition function
-             real(rk)   :: temperature = 300._rk ! The temperature for the partition function in the matexp mode
-             real(rk)   :: zpe         = 0       ! The ZPE for the partition function in the matexp mode
-             real(rk),pointer   :: gns(:)        ! The stat. weights for the partition function in the matexp mode
+           case default
              !
-           end type FLpartfunc
-           !
-           type FLcalcsT
-              !
-              real(rk)            :: PTthreshold    ! with PT threshold we control if PT is valid, i.e. F/Delta_ener << 1
-              real(rk)            :: enercut        ! energy cut for the basis set 
-              real(rk)            :: potencut=1e6   ! potential energy cut for the dvr-grid points
-              real(ark)           :: ZPE = -epsilon(1.0_rk)  ! Zero point energy 
-              logical,pointer     :: isym_do(:)  => null()    ! process or not the symmetry in question
-              !
-              logical             :: sym_C  = .false.   ! if symmetry = C 
-              !
-              real(rk)            :: erange(2) =(/-0.1,huge(1.0)/) !  energy range 
-              type(FLenercutT)    :: enercutoff     ! energy cut for the basis set 
-              integer(ik)         :: pot_pt_shift    
-              integer(ik)         :: Npolyads_prim  ! maximal polyad number for the contraction
-              integer(ik)         :: stored_size = 0  ! dimension of the vector to be stored to RAM
-              integer(ik)         :: swap_size = 1e4  ! dimension of the vector to be swaped to disk 
-              real(rk)            :: compress = 1.0_rk ! the commression factor for the contracted basis functions in the mat. elem. calc.
-              integer(ik)         :: Npolyads_contr ! maximal polyad number for the contraction
-              real(rk)            :: coeff_thresh   ! primitve bs-function threshold to exclude quantum with small coeffs
-              real(rk)            :: exp_coeff_thresh = 1e-24 ! threshold to remove vanishing expansion coefficients of the Hamiltonian
-              real(rk)            :: zeroerror      ! allowed error in the zero order solution 
-              integer(ik)         :: iwork          ! maximal allowed size for the matrix to be diagonalaized
-              real(rk)            :: factor = 1     ! factor for nroots defining the vector space in seudv diagonalization
-              real(rk)            :: pt_ener_thresh = -1  ! energy threshold for the PT corrections, in 1/(Ei-Ej), where |Ei-Ej|<pt_ener_thresh
-              real(rk)            :: ener_thresh = -1  ! energy threshold for the basis set reduction using contributions to the primitive energies estimated from the matrix elements by PT
-              integer(ik)         :: maxiter = 1000 ! maximal number of iterations in arpack 
-              real(rk)            :: tolerance = 0  ! tolerance for arpack diagonalization, 0 means the machine accuracy
-              logical             :: restart=.false. ! restart the eigensolutions using the stored eigenvectors of a lower dimension
-              integer(ik)         :: PTDeltaQuanta  ! Every new Perturb. order brings increment of the the MaxPolyad(iorder)
-              character(len=cl)   :: PTtype         ! Defines type of the perturbationa theory - standard or diagonal
-              character(len=cl)   :: diagonalizer
-              character(len=cl)   :: mat_readwrite
-              character(len=cl)   :: orthogonalizer  = 'GRAM-SCHMIDT'
-              real(rk)            :: cluster = -1     ! the factor to porepare clustering of the basis set
-              integer(ik)         :: swap_after       ! The Hamiltonian will be stoted, read, and transformed vector by vector
-              real(rk)            :: upper_ener       ! upper energy limit for the eigenvalues to be found in variational diagonalization with syevr
-              real(rk)            :: thresh           ! thresh of general use
-              real(rk)            :: max_swap_size              ! maximal allowed disk space 
-              character(len=cl)   :: IOeigen_action = 'NONE'   ! we can either SAVE or READ the eigenfunctions from an external file
-              character(len=cl)   :: IOcontr_action = 'NONE'   ! we can either SAVE or READ the contracted eigenfunctions from an external file
-              character(len=cl)   :: IOcontr_ = 'NONE'         ! we can either SAVE or READ the incoplete contracted eigenfunctions in DVR representaion from an external file
-              character(len=cl)   :: IOkinet_action = 'NONE'   ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
-              character(len=cl)   :: IOextF_action = 'NONE'    ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
-              character(len=cl)   :: IOfitpot_action = 'NONE'  ! we can either SAVE or READ the vib. matrix elem. of the kinetik rot. part from an external file
-              character(len=cl)   :: IOj0matel_action = 'NONE' ! we can either SAVE or READ the j=0 eigen.vib. matrix elem. of the kinetik rot. part from an external file
-              character(len=cl)   :: IOj0ext_action = 'NONE'   ! we can either SAVE or READ the j=0 eigen.vib. matrix elem. of the kinetik rot. part from an external file
-              character(len=cl)   :: IOj0contr_action = 'NONE' ! convert the contracted basis set into the j0-representaion
-              character(len=cl)   :: IOswap_matelem = 'NONE'   ! we can swap (using divide) or join the contracted mat. elements from an external file
-              character(len=cl)   :: IOdvr_prim = 'NONE'       ! we store and read the DVR primitive objects 
-              logical             :: IOvector_symm = .true.    ! store eigen-vectors in the symmetrized iired. representation 
-              logical             :: IOeigen_compress = .false.   ! compress the computed eigenvectors using the threshold factor coeff_thresh
-              logical             :: IOmatelem_divide = .false.   ! divide the matelem checkpoint into pieces 
-              logical             :: IOmatelem_stitch = .false.   ! stitch the matelem checkpoints from split pieces 
-              logical             :: IOmatelem_split  = .false.   ! split the matelem checkpoint into pieces (can be different from divide)
-              logical             :: IOmatelem_split_changed = .false.  ! in case we need to change the status of IOmatelem_split and do this again later 
-              logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
-              logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
-              logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
-              character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
-              logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
-              logical             :: IOmatelem_dump               ! dump into a temperal file an for append later 
-              integer(ik)         :: iappend                      ! Record in the matelem matrix to append after
-              logical             :: extmatelem_append               ! append the matrix elements after the record (basis function) 
-              logical             :: IOextmatelem_dump               ! dump into a temperal file an for append later 
-              integer(ik)         :: iextappend                      ! Record in the matelem matrix to append after
-              !
-              type(FLeigenfile)   :: eigenfile
-              type(FLeigenfile)   :: contrfile
-              character(len=cl)   :: kinetmat_file  = 'contr_matelem.chk'  ! file where we store the contracted mat. elemens of the Hamiltonian
-              character(len=cl)   :: kinetmat_format = 'NEW'               ! in case an old format of checkpointing is used
-              character(len=cl)   :: dvr_chkfile  = 'dvr_prim.chk'  ! file where we store the dvr-objects
-              character(len=cl)   :: extFmat_file   = 'contr_extfield.chk'  ! file where we store the external field contr. mat. elemens
-              character(len=cl)   :: fitpot_file    = 'fitpot_mat'  ! file where we store the external field contr. mat. elemens
-              character(len=cl)   :: kineteigen_file = 'j0_matelem.chk'  ! file where we store the eigenvec. mat. elemens of the kinet. part
-              character(len=cl)   :: exteigen_file   = 'j0_extfield.chk'  ! file where we store the eigenvec. mat. elemens of the external function
-              character(len=cl)   :: matrix_file     = 'matrix'  ! file where we store the contracted mat. elemens of the Hamiltonian
-              character(len=cl)   :: extmat_suffix   = 'extmatelem'  ! filename suffix  for storing extF matrix elements of the Hamiltonian
-              character(len=cl)   :: j0extmat_suffix  = 'j0_extmatelem'  ! filename suffix  for storing j=0 extF matrix elements of the Hamiltonian
-              character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
-              character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
-              character(len=cl)   :: tdm_file          = 'j0_tdm'      ! filename name for vibrational j=0 transition dipole moments for replacement 
-
-               
-              real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
-              real(rk)            :: TMenermin  = 0     ! Minimal energy to apply the TMcutoff for 
-              logical             :: TMpruning = .false. ! TM-prune if TMcutoff > 0
-              character(len=cl)   :: solution_file     = 'solution_'  ! file where we store the contracted mat. elemens of the Hamiltonian
-              real(rk)            :: degen_threshold         ! a threshold to find degenerate values
-              logical             :: test_diag        ! switch on the test (memory demanding) diagonalization of the hamiltonian 
-              character(len=cl)   :: sym_group        ! symmetry 
-              integer(ik)         :: verbose          ! soft verbose level (from input, not precompiled)
-              logical             :: vib_contract     ! whether the vibrational contraction is used 
-                                                      ! Vibrational contraction  - we use the computed J=0 basis functions for rovibr. problem)
-              logical             :: eigen_contract = .false.   ! whether we contract based on the contracted basis coefficients of the eigenfunctions
-              logical             :: fast = .true.    ! fast and exensive calculation of the contracted matrix elements 
-              logical             :: vib_rot_contr = .false.    ! the contracted basis is computed using vibration-rotation scheme where 
-                                                      !  the vibrational indeces run first and K runs last in contrast to the default rot-vib scheme 
-                                                      !  where K is the first index and the matrix is build as K-blocks. 
-              logical             :: sparse = .false. ! to switch on sparse matrix processing
-              logical             :: mode_list_present = .false.
-              !
-              type(FLbasissetT),pointer  :: bset(:)  => null()  ! Basis set specifications: range and type
-              real(rk),pointer    :: symm_toler(:)  => null()! tolerance that decides whether the symmetry transformation matrix 
-                                                      ! has been properly recostracted at the sample point, i.e. the transformed function
-                                                      ! coincides with the sampe function at the transformed sample point. 
-              integer(ik)         :: msample_points = 40  ! number of sample points for determination of the symmetry transformational properties of the contr. solution
-              integer(ik)         :: msample_attempts = 100 ! maximal number of attempts of samplings in the symmetry determinations
-              type(FLpartfunc)    :: partfunc         ! The parameters for the partition function calcs.
-              integer(ik)         :: iswap(2)  = (/1,1000/)    ! compute and checkpoint to the disk the matrix elements for iswap(1) ... iswap(2)
-              logical             :: rotsym_do = .false. ! for 'K-BASED' or 'NONE' the rotational symmetry is defined based on the K and tau quanta (default) 
-                                                         ! for 'EULER-BASED' the rotational symmetry is defined based on the euler angles transformations
-              logical             :: contrci_me_fast = .false.
-              integer(ik)         :: MaxVibMomentum_contr    ! maximal L (vibang) for the contraction
-              logical		      :: ignore_vectors = .false.
-              logical             :: convert_model_j0   = .false. ! convert to J=0 representation as part of the 1st step J=0 calculation
-              logical             :: exomol_format  = .false.     ! exomol format of intensity output 
-              logical             :: gain_format  = .false.     ! GAIN format of intensity output 
-              logical :: Potential_Simple = .false. ! This is simple finite differences type of the potential expansion
-                                                    ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
-              logical             :: triatom_sing_resolve = .false.
-              logical,pointer     :: select_gamma(:) => null() ! the diagonalization will be done only for selected gamma's
-              integer(ik),pointer :: nroots(:) => null() ! number of the roots to be found in variational diagonalization with syevr
-              integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
-              integer(ik)         :: Nassignments = 1 ! Number of assignments based the largest (=1), second largest (=2) coefficients  
-              !
-           end type FLcalcsT
-
-
-
-           type FLobsT
+             call report ("Unrecognized unit name "//trim(w),.true.)
              !
-             integer(ik) :: Jrot
-             integer(ik) :: symmetry
-             integer(ik) :: N
-             real(rk)    :: energy
-             real(rk)    :: weight
-             integer(ik),pointer :: quanta(:) => null()
-             !
-           end type FLobsT
-
-
-           type FLfittingT
-             !
-             logical              :: run
-             integer(ik)          :: j_list(1:100) = -1
-             integer(ik)          :: iparam(1:2) = (/1,1000000/)
-             integer(ik)          :: itermax = 500
-             integer(ik)          :: Nenergies = 1
-             real(rk)             :: factor = 1.0_rk
-             real(rk)             :: target_rms = 1e-8
-             real(rk)             :: robust = 0
-             real(rk)             :: watson = 1.0d0
-             character(len=cl)    :: method = 'FAST'
-             character(len=cl)    :: geom_file = 'pot.fit'
-             character(len=cl)    :: output_file = 'fitting'
-             character(len=cl)    :: fit_type = 'DGELSS'      ! to switch between fitting methods. 
-             real(rk)             :: threshold_coeff = -1e-18
-             real(rk)             :: threshold_lock  = -1e-18
-             real(rk)             :: threshold_obs_calc  = -1e-16
-             real(rk)             :: fit_scale  = 0.4
-             type(FLobsT),pointer :: obs(:)
-             !
-           end type FLfittingT
-
-
-
-           type FLresT
-             !
-             integer(ik) :: Ntheta = 0
-             integer(ik) :: Nphi =0 
-             integer(ik) :: Ntau = 0
-             real(rk)    :: theta = 0
-             real(rk)    :: phi = 0
-             real(rk)    :: tau = 0
-             real(rk)    :: theta1 = 0
-             integer(ik) :: Itermax = 200
-             character(len=cl) :: type = 'GLOBAL_SEARCH'      ! to switch between fitting methods. 
-             !
-           end type FLresT
-           !
-           type FLJGammaLevelT
-             integer(ik) :: J = -1
-             integer(ik) :: iGamma = -1
-             integer(ik) :: iLevel = -1
-           end type FLJGammaLevelT
-           !
-           type FLanalysisT
-              !
-              logical             :: density = .false.
-              logical             :: classical = .false.
-              logical             :: rotation_energy_surface = .false.
-              logical             :: rotation_density = .false.
-              type(FLresT)        :: res
-              logical             :: reduced_density = .false.
-              logical             :: print_vector = .false.
-              logical             :: rotation_matrix = .false.
-              logical             :: extF = .false.
-              logical             :: check_Hamiltonian = .false.
-              integer(ik)         :: dens_list(1:100) = -1      ! List of eigenvalues for the reduced density analysis 
-              integer(ik)         :: j_list(1:100) = -1
-              integer(ik)         :: sym_list(1:100) = -1
-              real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
-              logical             :: reducible_eigen_contribution = .false. 
-              logical             :: population
-              type(FLJGammaLevelT) :: ref  ! reference state (J,Gamma,Level)
-              !
-           end type FLanalysisT
-           !
-           type FLactionT
-             !
-             logical :: fitting       = .false.
-             logical :: band_fitting  = .false.
-             logical :: convert_vibme = .false.
-             logical :: intensity     = .false.
-             !
-           end type FLactionT
-
-
-
-        !
-        !--------------------------------------------------------------
-        ! Bsis set section 
-        !--------------------------------------------------------------
-        !
-
-
-        !
-        !  1D basis set Type
-        !
-           type Basis1DT
-              integer(ik)         :: imodes     ! How many modes under this type
-              integer(ik),pointer :: mode(:)    ! Which modes under the current type (1..trove%Nmodes)
-              integer(ik)         :: Size       ! Size of the 1D basis set 
-              integer(ik)         :: Order      ! X**order : max order of magnitude 
-              character(len=cl)   :: name       ! Identifying name of the basis functions 
-              character(len=cl)   :: type       ! Identifying type of the basis functions 
-              real(ark)           :: params(3)  ! few useful parameters, e.g. coef_norm (harmonic), or De/a (morse)
-              real(ark), pointer  :: ener0(:)   ! Zero-order energy 
-              real(ark), pointer  :: matelements   (:,:,:,:)  ! Matrix elemens <a|x**k*p**l|b>; or (l,k,a,b)
-                                                              ! l - 0:2 
-                                                              ! k - 0:Order
-                                                              ! a,b - 0:Size
-           end type Basis1DT
-
-
-
-
-
-        !
-        !  general basis type definition
-        !
-           type BaisSetT
-              integer(ik)                :: n_bset1D_max   ! Number of 1D basis types requested at initialization 
-              integer(ik)                :: n_bset_max     ! Total number of basis types:  n_bset1D_max
-              integer(ik)                :: Nbset1D        ! Number of 1D bset
-              type(FLbasissetT), pointer :: dscr(:)        ! Initial description of the basis set for every mode
-              type(Basis1DT), pointer    :: bs1D(:)        ! Simple 1D bset 
-              type(Basis1DT), pointer    :: rot            ! Rotational bset 
-              !
-           end type BaisSetT
-        !
-        !  The Basis set itself
-        !
-           type(BaisSetT) , save    :: bset
-           type(JobT), save         :: trove
-
-           integer(ik),allocatable,save :: FLIndexQ(:,:)    ! Forward  Relations between 1D arraz and Modes-Dimension array 
-           !integer(ik),allocatable,save :: FLIndexQ_legatee(:,:)    ! Addresses to the previous FLIndexQ(:,:) 
-           !                                                         !and helps to calculate matrix elements faster
-
-           !real(rk),allocatable,save    :: mat_legatee(:,:)    ! Stored values of already computed mat. elements 
-
-
-           integer, parameter       :: verbose     = 2    ! Verbosity level
-           integer, parameter       :: difftype    = 2    ! differential type: two points or four points finite differences
-           !
-           integer(ik), save        :: FLNelements        ! number of all real elements we use to count used memory 
-           !
-           ! This parameter is for switching on and off the numerical representation for the last chi(xi)=rho variable:
-           ! if it is "1", this special variable will be given as a 1D table, as well all functions will be represented 
-           ! as expansions around each point rho. Thus the manifold has the rank "1"
-           ! If it is "0" - all functions are given by the expansions around the 0d manifold, i.e. one point
-           !
-           character(len=cl),parameter :: axis_system = 'Eckart'
-           !
-           !
-           ! If we solve only vibrational problem, there is no point to keep around the rotational and Coriolis 
-           ! kinetic parts. We turn them off by the following logical parameter
-           !
-           logical :: FLrotation = .false.
-           !
-           ! External field matrix elements calculations: default values
-           !
-           logical :: FLextF_matelem = .false.
-           logical :: FLextF_coeffs = .false.
-           logical :: FLL2_coeffs = .false.
-           !
-           ! check and fix the discontiunity of non-rigid fields
-           logical :: FL_iron_field_out = .false.
-           !
-           ! current  rho-point 
-           integer(ik),save              :: FLirho
-           !
-           ! potential function is speciafied and stored here 
-           !
-           real(ark),allocatable :: force(:)
-           character(len=16),allocatable :: forcename(:)
-           integer(ik),allocatable :: pot_ind(:,:)
-           integer(ik),allocatable :: ifit(:)
-           logical :: bset_initialized = .false.    !  defaul value is false - to make sure that we do not use the basis set before it has been initialized
-           !
-           type(FLcalcsT),save           :: job
-           type(FLanalysisT),save        :: analysis
-           type(FLfittingT),save         :: fitting     ! objects defining the fitting to the observed energies
-           type(FLfittingT),save         :: j0fit       ! objects defining the refinement of the band centers
-           type(FLcoeffprunT)            :: coeffprun   ! object for pruning basis funcitons 
-           !
-           ! Andrey's temporale measure: it is not adviceble to use an enviroment variable for that. 
-           ! it can bbe very bad for the parallelization. 
-           ! 
-           integer(ik)              :: FLcurr_imu
-           integer(ik)              :: FLNmodes    ! Number of modes
-         
-           type(FLactionT),save               :: action   ! defines dfifferent actions to perform
-
-           real(ark) :: fd_step_Bmat=1e-4  ! finite difference parameter used for Bmat differentiation numerically 
-           real(rk)  :: symm_toler_defaul = 1e-8  ! defaul value for symm_toler 
-
-          contains
-
-        !
-        ! Routine to read an input file
-        !
-          subroutine FLReadInput(NPTorder,Npolyads,Natoms,Nmodes,Jrot)
-           !
-           use input
-           !
-           integer(ik),intent(out) :: NPTorder,Npolyads,Nmodes,Jrot
-           !
-           ! parameters used with the "syevr" diagonalizer  
-           !
-           ! Here we define default values of input parameters 
-           !
-           integer(ik), parameter :: NPTorder_ =  0     ! Max Perturbation order 
-           integer(ik), parameter :: NKinOrder_ = 2     ! Max order in the kinetic   energy expansion
-           integer(ik), parameter :: NPotOrder_ = 4     ! Max order in the potential energy expansion
-           integer(ik), parameter :: NExtOrder_ = 4     ! Max order in the external function expansion
-           !
-           ! define the molecule 
-           !
-           integer(ik), parameter :: Natoms_= 0       ! Number of atoms
-           integer(ik), parameter :: Nmodes_= 0       ! Number of modes = 3*Natoms-6
-           !
-            character(len=cl),parameter  :: Moltype_ ='ABCDEFG'   ! Identifying type of the Molecule (e.g. XY3)
-           !
-           real(rk), parameter :: fdstep_ = 0.005   ! finite difference element for the numerical differentiation
-           !
-           ! Perturbation theory parameters 
-           !
-           integer(ik), parameter :: PTDeltaQuanta_ = 3 ! Every new Perturb. order brings increment of the the MaxPolyad(iorder)
-                                                        ! The increasment for harmonic bs-case is 3 quanta vs PTorder. 
-                                                        ! Taking into account res_coeffs - different quanta have  different 
-                                                        ! contributions into the polyds number "P" - 
-                                                        ! we obtain: PTDeltaQuanta = 3*max(res_coeffs(:))
-                                                        ! standard value for harmonic basis set and PH3-type of polyads (nu_s = nu_b):
-                                                        ! PTDeltaQuanta = 6 
-                                                        !
-           real(rk), parameter    :: PTthreshold_  = 0.9 ! with PT threshold we control if PT is valid, i.e. F/Delta_ener << 1 
-           real(rk), parameter    :: PTzeroerror_  = 1.e-2 ! allowed error in the zero order solution 
-           integer(ik), parameter :: pot_pt_shift_ = 2  ! Zero order for the potential function starts from the harmonic approximation (=2) 
-           !
-           ! Basis set parameters 
-           !
-           !
-           integer(ik),parameter  :: Npolyads_  =   80   ! maximal polyad number, i.e. how many polyads we calculate  
-           integer(ik), parameter :: iwork_     = 1      ! maximal size of the matrix for the variational diagonalization
-                                                         ! used as parameter NCV required by ARPACK. default value 1 means ncv = 21/10*nroots
-           !
-           integer(ik),parameter  :: manifold_ = 1       !
-           real(rk),parameter :: res_coeffs_ = 1.0 ! This defines the polyads or resonanses: P = sum( res%coeffs(:)*nu(:) )
-           character(len=cl),parameter :: coords_ = 'LINEAR' ! default internal coordinates 
-           !
-           type(FLbasissetT),parameter :: vibbasisset_= FLbasissetT('HARMONIC','HARMONIC','HARMONIC',1000,'1D',100,1,(/0,20/),&
-                                                                     1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.,.true.)
-           type(FLbasissetT),parameter :: rotbasisset_= FLbasissetT('JKTAU', 'xxxxxx','xxxxxx',1000,'1D',0,0,(/0,0 /),0.0,0,(/0.0,0.0/),&
-                                                                    .false.,0,'xxxxxx',0,.false.,.false.,.true.)
-
-           integer(ik),parameter :: nroots_=1e6
-           real(rk),parameter    :: uv_syevr_=1e9
-           integer(ik),parameter :: swap_after_=20000 ! The Hamiltonian will be stoted, read, and transformed vector by vector
-                                                      ! if the size exceeds this limit, default value 
-           real(rk),parameter    :: max_swap_size_=1e6 ! Maximal limit for the swap file (primitive matrix)
-                                                      ! if the size exceeds this limit, default value 
-           real(rk),parameter    :: enermax_=1e6      ! default value for the energy cut of the variational matrix
-           real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
-           !
-           logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined, local_eq_transformed_defined
-           logical :: kinetic_defined
-           character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
-           character(len=wl) :: w
-           real(rk)    :: lfact,f_t, func_coef
-           integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
-           integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
-           character(len=4) :: char_j, func_name
-           integer :: arg_status, arg_length, arg_unit
-           character(:), allocatable :: arg
-           character(len=cl) :: my_fmt !format for I/O specification
-           !
-           !
-           ! default values: 
-           !
-           Natoms = Natoms_
-           Nmodes = Nmodes_
-           trove%Ncoords = 0 
-           Ncoords = 0 
-           !
-           trove%moltype = Moltype_
-           manifold = manifold_
-           job%IOeigen_action = 'NONE'
-           job%IOcontr_action = 'NONE'
-           job%IOkinet_action = 'NONE'
-           !
-           job%iwork      = iwork_
-           !
-           NPTorder = NPTorder_
-           trove%NKinOrder = NKinOrder_
-           trove%NPotOrder = NPotOrder_
-           trove%NExtOrder = NExtOrder_
-           !
-           job%PTDeltaQuanta = PTDeltaQuanta_
-           job%PTthreshold   = PTthreshold_
-           job%zeroerror   = PTzeroerror_
-           job%pot_pt_shift  = pot_pt_shift_
-           Npolyads      = Npolyads_
-
-           job%enercut =  enermax_
-           job%enercutoff%general = enermax_
-           job%enercutoff%contr   = enermax_
-           job%enercutoff%primt   = enermax_
-           job%enercutoff%matelem = enermax_
-
-
-           job%coeff_thresh = coeff_thresh_
-           job%Npolyads_contr = Npolyads_
-           job%Npolyads_prim  = Npolyads_
-           job%vib_contract = .false.
-           !
-           trove%internal_coords  = 'LINEARIZED'
-           trove%coords_transform = 'LINEAR'
-           job%PTtype = 'POWERS'
-           if (manifold==1) job%PTtype = 'DIAGONAL'
-           !
-           zmat_defined  = .false.
-           basis_defined = .false.
-           equil_defined = .false.
-           refer_defined = .false.
-           local_eq_transformed_defined = .false.
-           chk_defined = .false.
-           pot_defined   = .false.
-           kinetic_defined = .false.
-           extF_defined  = .false.
-           symmetry_defined = .false.
-           Nparam = 1 
-           !
-           job%diagonalizer = 'SYEV'
-           !
-           job%swap_after = swap_after_
-           job%max_swap_size = max_swap_size_
-           job%upper_ener = uv_syevr_
-           job%thresh = small_
-           trove%symmetry = 'C(M)'
-           job%sym_group = trove%symmetry
-           job%degen_threshold = 10.0**(-4-(ark/8))
-           job%test_diag = .false.
-           job%verbose = 2
-           !
-           job%eigenfile%filebase   = 'eigen'
-           job%eigenfile%dscr       = 'eigen_descr'
-           job%eigenfile%primitives = 'eigen_quanta'
-           job%eigenfile%vectors    = 'eigen_vectors'
-           !
-           job%contrfile%dscr       = 'contr_descr.chk'
-           job%contrfile%primitives = 'contr_quanta.chk'
-           job%contrfile%vectors    = 'contr_vectors.chk'
-           job%contrfile%dvr        = 'contr_dvr.chk'
-           !
-           job%dvr_chkfile          = 'dvr_prim.chk'
-           !
-           j0fit%method = 'SLOW'
-           !
-           ! Intensity block of initial values 
-           !
-           intensity%action = 'NONE'
-           intensity%temperature = 300.0_rk
-           intensity%part_func = 1
-           intensity%ZPE = -small_
-           intensity%freq_window = (/-0.1,1e6/)
-           intensity%erange_low = (/-0.1,1e6/)
-           intensity%erange_upp = (/-0.1,1e6/)
-           !
-           !
-           ! MEP
-           !
-           molec%meptype = ''
-           !
-           ! default value of the rank of the external field is 3, which stands for the dipole moment function.  
-           !
-           extF%rank = 3
-
-           !
-           ! Rotational quantum -  default values
-           !
-           Jrot = 0
-           !
-           arg_unit = 5
-           call get_command_argument(1, status=arg_status, length=arg_length)
-           if (arg_status == 0) then
-             allocate( character(arg_length) :: arg )
-             call get_command_argument(1, status=arg_status, value=arg)
-             if (arg_status == 0) then
-               open(newunit=arg_unit, file=arg, status='old')
-             end if
-           end if
-           !
-           call input_options(echo_lines=.true.,error_flag=1, default_unit=arg_unit)
-           !
-           ! read the general input 
-           !
-           do
-               call read_line(eof) ; if (eof) exit
-               call readu(w)
-               select case(w)
-               case("STOP","FINISH","END")
-                 exit
-               case("")
-                 !
-                 !print "(1x)"    !  Echo blank lines
-                 !
-               case ("PTORDER")
-                 !
-                 call readi(NPTorder)
-                 !
-               case ("KINORDER")
-                 !
-                 call readi(trove%NKinOrder)
-                 !
-               case ("POTORDER")
-                 !
-                 call readi(trove%NPotOrder)
-                 !
-               case ("POTPOLYAD","POTPOLYADS")
-                 !
-                 if (Nmodes == 0) call report("POTPOLYAD cannot appear before NMODES",.true.)
-                 !
-                 call readf(trove%PotPolyad(1))
-                 !
-                 trove%PotPolyad(2:Nmodes) = trove%PotPolyad(1)
-                 !
-                 do i=2,min(Nitems-1,Nmodes)
-                    call readf(trove%PotPolyad(i))
-                 enddo
-                 !
-               case ("POTENTIAL_SIMPLE")
-                 ! This is simple finite differences type of the potential expansion
-                 ! the default is to exand to N+1 and set the N+1 terms to zero, which is more accurate
-                 !
-                 job%Potential_Simple = .true.
-                 !
-               case("PRINT")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                     !
-                   case("NASSIGNMENTS","N_EIGEN-CONTRIBUTIONS")
-                     !
-                     ! Number of eigen-contributions to print 
-                     !
-                     call readi(job%Nassignments)
-                     !
-                     job%Nassignments = max(min(job%Nassignments,2),1)
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in PRINT =',a)") trim(w)
-                    stop 'FLinput - illegal last line in PRINT'
-                    !
-                 endif 
-                 !
-                 !
-               case ("DVR")
-                 !
-                 trove%dvr = .true.
-                 trove%fbr = .false.
-                 !
-                 if (Nitems>1) then 
-                    call readu(w)
-                    !
-                    if (trim(w)=="SMOLYAK") trove%smolyak = .true.
-                    !
-                    if (Nitems>2) then 
-                      call readu(trove%smolyak_rule)
-                    endif
-                    !
-                 endif
-                 !
-               case ("FBR")
-                 !
-                 trove%dvr = .false.
-                 trove%fbr = .true.
-                 !
-               case ("NATOMS")
-                 !
-                 call readi(trove%Natoms) 
-                 !
-                 Natoms = trove%Natoms
-                 !
-               case ("MEM","MEMORY")
-                 !
-                 call readf(memory_limit)
-                 !
-                 call readu(w)
-                 !
-                 select case(w)
-                     !
-                   case default 
-                     !
-                     call report("Unexpected argument in MEMORY",.true.)
-                     !
-                   case("TB","T")
-                     !
-                     memory_limit = memory_limit*1024_rk
-                     !
-                   case("GB","G")
-                     !
-                     memory_limit = memory_limit
-                     !
-                   case("MB","M")
-                     !
-                     memory_limit = memory_limit/1024_rk
-                     !
-                   case("KB","K")
-                     !
-                     memory_limit = memory_limit/1024_rk**2
-                     !
-                   case("B")
-                     !
-                     memory_limit = memory_limit/1024_rk**3
-                     !
-                 end select
-                 !
-               case ("NMODES")
-                 !
-                 call readi(trove%Nmodes) 
-                 Nmodes = trove%Nmodes
-                 ! 
-                 ! Enviroment variable to be seen outside the module
-                 !
-                 FLNmodes = trove%Nmodes
-                 !
-                 ! Allocation of bset
-                 !
-                 allocate (job%bset(0:Nmodes),trove%fdstep(Nmodes),stat=alloc)
-                 if (alloc/=0) then
-                     write (out,"(' Error ',i9,' trying to allocate bs and fdstep')") alloc
-                     stop 'FLinput, bs and fdstep - out of memory'
-                 end if
-                 !
-                 allocate (extF%intcoords(1:Nmodes),extF%fdstep(Nmodes),stat=alloc)
-                 if (alloc/=0) then
-                    write (out,"(' Error ',i9,' allocating matix extF%intcoords ')") alloc
-                    stop 'FLinput - cannot allocate extF%intcoords'
-                 end if
-                 !
-                 allocate (job%symm_toler(Nmodes),stat=alloc)
-                 if (alloc/=0) then
-                     write (out,"(' Error ',i9,' trying to allocate symm_toler')") alloc
-                     stop 'FLinput, symm_toler - out of memory'
-                 end if
-                 !
-                 ! defafault values for job%symm_toler
-                 !
-                 job%symm_toler = symm_toler_defaul
-                 !
-                 ! default values for bset and fdstep 
-                 !
-                 job%bset(1:trove%Nmodes) = vibbasisset_
-                 job%bset(0)              = rotbasisset_
-                 job%bset(0)%range(1) = 0
-                 job%bset(0)%range(2) = 0
-                 !
-                 trove%fdstep = fdstep_
-                 extF%fdstep = fdstep_
-                 !
-                 ! Default values 
-                 !
-                 do i=0,Nmodes
-                    job%bset(i)%species = i
-                 enddo
-                 !
-                 job%iswap(1) = 1 ; job%iswap(2) =  (3+Nmodes)*3
-                 !
-                 allocate (trove%PotPolyad(1:Nmodes),stat=alloc)
-                 !
-                 trove%PotPolyad = 1.0_rk
-                 !
-               case ("ENERCUT")
-                 !
-                 call readf(job%enercut)
-                 job%enercutoff%general = job%enercut
-                 job%enercutoff%contr   = job%enercut
-                 job%enercutoff%primt   = job%enercut
-                 job%enercutoff%matelem = job%enercut
-                 !
-               case("PRIMITIVES")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                   !
-                   case ("NUMERPOINTS")
-                     !
-                     call readi(trove%numerpoints)
-                     !
-                   case ("NPOLYADS")
-                     !
-                     call readi(Npolyads)
-                     !
-                     job%Npolyads_prim  = Npolyads
-                     job%Npolyads_contr = Npolyads
-                     job%MaxVibMomentum_contr = Npolyads
-                     !
-                   case ("ENERCUT")
-                     !
-                     call readf(job%enercut)
-                     job%enercutoff%general = job%enercut
-                     job%enercutoff%contr   = job%enercut
-                     job%enercutoff%primt   = job%enercut
-                     job%enercutoff%matelem = job%enercut
-                     !
-                   case ("POTENCUT")
-                     !
-                     call readf(job%potencut)
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in PRIMITIVES =',a)") trim(w)
-                    stop 'FLinput - illegal last line in PRIMITIVES'
-                    !
-                 endif 
-                 !
-               case("CONTRACTION")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                     !
-                   case ("ENERCUT")
-                     !
-                     call readf(job%enercutoff%contr)
-                     !
-                     job%erange(2) = job%enercutoff%contr
-                     !
-                   case ("ENERCUT_PRIMITIVE","ENERCUT_PRIMIT","ENERCUT_PRIM")
-                     !
-                     call readf(job%enercutoff%primt)
-                     !
-                   case ("ENERCUT_MATELEM","ENERMAX_MATELEM")
-                     !
-                     call readf(job%enercutoff%matelem)
-                     !
-                   case ("ENERCUT_DELTA","ENERMAX_DELTA")
-                     !
-                     call readf(job%enercutoff%DeltaE)
-                     !
-                   case ("SYMM_TOLER")
-                     !
-                     !call readf(job%symm_toler)
-                     !
-                     if (nitems-1==1) then 
-                        call readf(f_t)
-                        job%symm_toler(:) = f_t
-                        call read_line(eof) ; if (eof) exit
-                        call readu(w)
-                        cycle 
-                     endif 
-                     !
-                     if (nitems-1/=Nmodes) then 
-                        write (out,"('FLinput: wrong number elements in job%symm_toler : ',i8)") nitems-1
-                        stop 'FLinput - illigal number of job%symm_toler'
-                     endif 
-                     !
-                     do i =1,Nmodes
-                        !
-                        call readf(job%symm_toler(i))
-                        !
-                     end do
-                     !
-                   case ("SAMPLE_POINTS")
-                     !
-                     call readi(job%msample_points)
-                     !
-                   case ("SAMPLE_ATTEMPTS")
-                     !
-                     call readi(job%msample_attempts)
-                     !
-                   case ("COEFF_THRESH","COEFF-THRESH")
-                     !
-                     call readf(job%coeff_thresh)
-                     !
-                   case ("EXP_COEFF_THRESH")
-                     !
-                     call readf(job%exp_coeff_thresh)
-                     !
-                   case ("ENERGY-THRESHOLD","ENERGY_THRESH","ENERGY-THRESH")
-                     !
-                     call readf(job%ener_thresh)
-                     !
-                   case ("DEGEN_THRESH","DEGENERACY")
-                     !
-                     call readf(job%degen_threshold)
-                     !
-                   case ("NPOLYADS")
-                     !
-                     call readi(job%Npolyads_contr)
-                     !
-                   case ("N_VIBMOMENT","NVIBMOMENT")
-                     !
-                     call readi(job%MaxVibMomentum_contr)
-                     !
-                   case ("NPOLYADS_PRIM","NPOLYADS_PRIMITIVE")
-                     !
-                     call readi(job%Npolyads_prim)
-                     !
-                   case ("VIBRATIONAL")
-                     !
-                     job%vib_contract = .true.
-                     !
-                   case ("EIGEN_COEFF","EIGEN_PRUNING")
-                     ! 
-                     job%eigen_contract = .true.
-                     !
-                   case("EIGEN_PRUNING_THRES")
-                     !
-                     call readf(coeffprun%contribution_threshold)
-                     !
-                   case ("FAST_CI","FAST","FAST-CI")
-                     !
-                     job%contrci_me_fast = .true.
-                     trove%IO_contrCI = "NONE"
-                     !
-                   case ("VIBINTENSITY","TM","TM_CUTOFF")
-                     !
-                     call readf(job%TMcutoff)
-                     if (job%TMcutoff>0.0_ark) job%TMpruning = .true.
-                     !
-                   case ("TM_ENERMIN")
-                     !
-                     call readf(job%TMenermin)
-                     !
-                   case ("TM_PRINUNG","TMPRINUNG")
-                     !
-                     job%TMpruning = .true.
-                     !
-                   case ("CLUSTER")
-                     !
-                     call readf(job%cluster)
-                     !
-                   case ("VIB-ROT")
-                     !
-                     job%vib_rot_contr = .true.
-                     !
-                     job%IOmatelem_split = .true.
-                     job%IOextF_divide  = .true.
-                     !
-                     job%iswap(1) = 0
-                     job%iswap(2) = 1e6
-                     !
-                   case('SWAP_SIZE')
-                     !
-                     call readi(job%swap_size)
-                     !
-                   case('STORED_SIZE','STORED')
-                     !
-                     call readi(job%stored_size)
-                     !
-                   case('COMPRESSION','COMPRESS')
-                     !
-                     call readf(job%compress)
-                     !
-                   case ("MODEL")
-                     !
-                     call readu(w)
-                     !
-                     select case(w)
-                       !
-                     case ("NONE")
-                       !
-                       job%vib_contract = .false.
-                       !
-                     case ("VIBRATIONAL","J=0")
-                       !
-                       job%vib_contract = .true.
-                       job%fast = .false.
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                   case('ERANGE')
-                     !
-                     call readf(job%erange(2))
-                     !
-                   case ("ROTSYM")
-                     !
-                     call readu(w)
-                     !
-                     select case(w)
-                       !
-                     case ("NONE","K-BASED")
-                       !
-                       job%rotsym_do = .false.
-                       !
-                     case ("EULER","EULER-BASED")
-                       !
-                       job%rotsym_do = .true.
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in CONTRACTION =',a)") trim(w)
-                    stop 'FLinput - illegal last line in CONTRACTION'
-                    !
-                 endif 
-                 !
-               case ("VERBOSE")
-                 !
-                 call readi(job%verbose)
-                 !
-               case ("PTDELTANU")
-                 !
-                 call readi(job%PTDeltaQuanta)
-                 !
-               case ("PTTHRESH")
-                 !
-                 call readf(job%PTthreshold)
-                 !
-               case ("PTZERO")
-                 !
-                 call readf(job%zeroerror)
-                 !
-               case ("MATRIXTYPE")
-                 !
-                 ! obsolete! 
-                 !
-                 call readu(w)
-                 !
-               case ("PTPOTSHIFT")
-                 !
-                 call readi(job%pot_pt_shift)
-                 !
-               case ("NO-SPARSE")
-                 !
-                 trove%sparse = .false.
-                 !
-               case ("SPARSE")
-                 !
-                 trove%sparse = .true.
-                 !
-               case ("AUTOMATIC_KINETIC")
-                 !
-                 job%mode_list_present = .true.
-                 !
-               case ("IRON-OUT","IRONOUT","IRON-FIELD-OUT")
-                 !
-                 FL_iron_field_out = .true.
-                 !
-               case ("DIAGONALIZER")
-                 !
-                 call readu(w)
-                 !
-                 select case (trim(w))
-                 !
-                 case('SYEV','SYEVR','SYEVX')
-                   !
-                   job%diagonalizer = trim(w)
-                   !
-                 case default
-                   !
-                   if (trim(w)/="") &
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                   !
-                 end select
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                   !
-                   case('SYEV','SYEVR','SYEVD','SYEVX','SEUPD','PSEUPD','SYEV4','SYEVR4','SYEVR-4TO8','SYEV-4TO8','SYEV-KROT',&
-                        'SYEVR-KROT','SYEV-E-PT','SYEVR-E-PT','SYEV-BS-PT','SYEVR-BS-PT','SYEV-KROT-BS-PT','SYEVR-KROT-BS-PT',&
-                        'SYEV-KROT-EN-PT','SYEV-KROT-EN','SYEVR-KROT-EN-PT','ULEN','DSTEVX','DSTEVR','DSTEVD','DSTEV','DSTEVX-P',&
-                        'DSTEVR-P','DSTEVD-P','DSTEV-P','DSYEV-ILP','DSYEVR-ILP','DSYEVD-ILP','DSYEVX-ILP','READ-EIGEN',&
-                        'SYEV0','PROPACK','READ-EIGEN-GRID','PLASMA_DSYTRDX','ENERGY=DIAGONAL','NO-DIAGONALIZATION','READ-EIGEN-GRID4',&
-                        'READ-ENERGIES')
-                     !
-                     job%diagonalizer = trim(w)
-                     !
-                     if (trim(w)=='SEUPD'.or.trim(w)=='PSEUPD'.or.trim(w)=='PROPACK') then 
-                        job%sparse = .true.
-                     endif
-                     !
-                     if ( w(1:10)=='READ-EIGEN'.and.nitems==2) then 
-                        !
-                        call readu(w)
-                        job%solution_file = trim(w)
-                        !
-                     endif
-                     !
-                     if (trim(w)=='READ-ENERGIES') then 
-                        !
-                        job%ignore_vectors = .true.
-                        !
-                     endif
-                     !
-                   case('MATEXP','MATEXP_SPARSE','MATEXP-SPARSE')
-                     !
-                     job%diagonalizer = w
-                     !
-                     if (trim(w)=='MATEXP_SPARSE'.or.trim(w)=='MATEXP-SPARSE') then 
-                        job%diagonalizer ='MATEXP-SPARSE' 
-                        job%sparse = .true.
-                     endif
-                     !
-                     if (.not.symmetry_defined) then 
-                        !
-                        write (out,"('FLinput: MATEXP cannot appear before symmetry is defined')") 
-                        stop 'FLinput - MATEXP defined before symmetry'
-                        !
-                     endif 
-                     !
-                     allocate(job%partfunc%gns(sym%Nrepresen),stat=alloc)
-                     if (alloc/=0) stop 'FLinput, job*partfunc%gns - out of memory'
-                     !
-                     job%partfunc%gns = 1.0_rk
-                     !
-                   case('READ','SAVE','STORE','SAVE-LOWER','STORE-LOWER','STORE_CHEAP','READ-LOWER')
-                     !
-                     job%mat_readwrite = w
-                     !
-                     if ( nitems==2) then 
-                        call readu(w)
-                        job%matrix_file = trim(w)
-                     endif
-                     !
-                   case ("GAMMA")
-                     !
-                     if (.not.symmetry_defined) then 
-                        !
-                        write (out,"('FLinput: keyword GAMMA in CONTRACT cannot appear before symmetry is defined')") 
-                        stop 'FLinput - symmetry should be defined before GAMMA '
-                        !
-                     endif
-                     !
-                     if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
-                       write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i7)") Nitems-1
-                       stop 'FLinput - illegal number of gammas in DIAGONALIZER'
-                     endif
-                     !
-                     i = 0
-                     job%select_gamma = .false.
-                     !
-                     do while (item<Nitems.and.i<size(job%select_gamma))
-                        !
-                        i = i + 1
-                        !
-                        call readu(w)
-                        !
-                        if (trim(w)/="-") then
-                          !
-                          read(w,*) i_t
-                          job%select_gamma(i_t) = .true.
-                          !
-                        else
-                          !
-                          call readi(i_tt)
-                          !
-                          do while (i_t<i_tt.and.i<size(job%select_gamma))
-                            !
-                            i_t = i_t + 1
-                            job%select_gamma(i_t) = .true.
-                            i = i + 1
-                            !
-                          enddo
-                          i = i - 1
-                          !
-                        endif
-                        !
-                     enddo
-                     !
-                     !call readi(i_t)
-                     !
-                     !do while (i_t/=0.and.i<=size(job%select_gamma))
-                     !   !
-                     !   i = i+1
-                     !   !
-                     !   job%select_gamma(i_t) = .true.
-                     !   !
-                     !   call readi(i_t)
-                     !   !
-                     !enddo 
-                     !
-                   case ("GRAM-SCHMIDT","SVD","SCHMIDT")
-                     !
-                     job%orthogonalizer =trim(w)
-                     !
-                   case ("SLOW")
-                     !
-                     job%fast = .false.
-                     !
-                   case ("FAST")
-                     !
-                     job%fast = .true.
-                     !
-                   case ("SPARSE")
-                     !
-                     job%sparse = .true.
-                     !
-                   case ("NCV","IWORK","IFACTOR")
-                     !
-                     call readf(job%factor)
-                     !
-                   case ("PT-THRESHOLD","PT-THRESH")
-                     !
-                     call readf(job%pt_ener_thresh)
-                     !
-                   case ("RESTART")
-                     !
-                     call readu(w)
-                     !
-                     if (trim(w)=='YES') then
-                       job%restart = .true.
-                     elseif(trim(w)/='NO') then
-                       write (out,"('FLinput: wrong RESTART key, can be only YES or NO, NOT ',a)") trim(w)
-                       stop 'FLinput - wrong RESTART key'
-                     endif
-                     !
-                   case("SWAP_AFTER")
-                     !
-                     call readi(job%swap_after)
-                     !
-                   case("MAX_SWAP_SIZE")
-                     !
-                     call readf(job%max_swap_size)
-                     !
-                   case("NROOTS")
-                     !
-                     !call readi(job%nroots)
-                     !
-                     if (.not.symmetry_defined) then 
-                        !
-                        write (out,"('FLinput: keyword nroots cannot appear before symmetry is defined')") 
-                        stop 'FLinput - symmetry should be defined before NROOTS '
-                        !
-                     endif
-                     !
-                     if (nitems-1==1) then 
-                        !
-                        call readi(i)
-                        job%nroots(:) = i
-                        !
-                     else
-                       !
-                       if (nitems-1>sym%Nrepresen) then 
-                          !
-                          write (out,"('FLinput: too many entries in roots (>sym%Nrepresen): ',i8)") nitems-1
-                          stop 'FLinput - illigal number of entries in nroots'
-                          !
-                       endif 
-                       !
-                       do i =1,nitems-1
-                          !
-                          call readi(job%nroots(i))
-                          !
-                       end do
-                       !
-                     endif
-                     !
-                   case("MAXITER")
-                     !
-                     call readi(job%maxiter)
-                     !
-                   case("TOLERANCE","TOL")
-                     !
-                     call readf(job%tolerance)
-                     !
-                   case("UPLIMIT","ENERMAX","ENERCUT")
-                     !
-                     call readf(job%upper_ener)
-                     !
-                   case("THRESHOLD","THRESH")
-                     !
-                     call readf(job%thresh)
-                     !
-                   case("TEST")
-                     !
-                     job%test_diag = .true.
-                     !
-                   case("TEMPERATURE")
-                     !
-                     call readf(job%partfunc%temperature)
-                     !
-                   case("ZPE")
-                     !
-                     call readf(job%partfunc%zpe)
-                     job%zpe = job%partfunc%zpe
-                     !
-                   case("GNS")
-                     !
-                     i = 0
-                     !
-                     job%isym_do = .false.
-                     !
-                     do while (item<Nitems.and.i<sym%Nrepresen)
-                       !
-                       i = i + 1
-                       call readf(job%partfunc%gns(i))
-                       if (job%partfunc%gns(i)>small_) job%isym_do(i) = .true.
-                       !
-                     enddo
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in DIAGONALIZER =',a)") trim(w)
-                    stop 'FLinput - illigal last line in DIAGONALIZER'
-                    !
-                 endif 
-                 !
-                 if (.not. symmetry_defined) then
-                      write (out,"('FLinput: DIAGONALIZER cannot appear before symmetry is defined')") 
-                      stop 'FLinput - DIAGONALIZER defined before symmetry'
-                 endif
-                 !
-                 if (job%upper_ener/=uv_syevr_.and.any(job%nroots/=nroots_)) then 
-                     !
-                     write (out,"('FLinput: contradicted definition in SYEVR:')")
-                     write (out,"('         both nroots and uplimit defined. ')")
-                     write (out,"('         the program will disregard uplimit and be based on nroots')")
-                     job%upper_ener = uv_syevr_
-                     !
-                 endif
-                 !
-               case ("DSTEP")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: DSTEP cannot appear before NMODES')") 
-                    stop 'FLinput - DSTEP defined befor NMODES'
-                    !
-                 endif
-                 !
-                 ! If all dsteps are the same - only one number in the input can be given. 
-                 !
-                 if (nitems-1==1) then 
-                    !
-                    call readf(f_t)
-                    trove%fdstep(:) = f_t
-                    cycle 
-                    !
-                 endif 
-                 !
-                 if (nitems-1/=Nmodes) then 
-                    !
-                    write (out,"('FLinput: wrong number elements in dstep : ',i8)") nitems-1
-                    stop 'FLinput - illigal number of dsteps'
-                    !
-                 endif 
-                 !
-                 do i =1,Nmodes
-                    !
-                    call readf(trove%fdstep(i))
-                    !
-                 end do
-                 !
-                 extF%fdstep = trove%fdstep
-                 !
-               case("COORDS")
-                 !
-                 call readu(w)
-                 !
-                 trove%internal_coords = trim(w)
-                 !
-               case("TRANSFORM","XI")
-                 !
-                 call readu(w)
-                 !
-                 trove%coords_transform =    trim(w)
-                 !
-               case("MOLTYPE")
-                 !
-                 call readu(w)
-                 !
-                 trove%moltype = trim(w)
-                 !
-               case("IOTHREADS")
-                 !
-                 call readi(trove%iothreads)
-                 !
-               case("MOLECULE") ! optional, makes no effect 
-                 !
-                 call readu(w)
-                 !
-                 Molecule = trim(w)
-                 !
-               case("PTTYPE") 
-                 !
-                 call readu(w)
-                 !
-                 job%PTtype = trim(w)
-                 !
-               case("SINGULAR-AXIS") 
-                 !
-                 call readi(trove%lincoord)
-                 job%lincoord = trove%lincoord
-                 !
-               case("SYMGROUP","SYMMETRY","SYMM","SYM","SYM_GROUP") 
-                 !
-                 call readu(w)
-                 !
-                 if (nitems>2) call readi(sym%N)
-                 !
-                 trove%symmetry = trim(w)
-                 job%sym_group = trove%symmetry
-                 !
-                 if (trim(job%sym_group)=="C".or.trim(job%sym_group)=="C(M)") job%sym_C = .true.
-                 !
-                 ! Initialize the group symmetry 
-                 !
-                 call SymmetryInitialize(job%sym_group)
-                 !
-                 symmetry_defined = .true.
-                 !
-                 allocate(job%isym_do(sym%Nrepresen),stat=alloc)
-                 if (alloc/=0)  stop 'FLinput, isym_do - out of memory'
-
-                 allocate(job%select_gamma(sym%Nrepresen),stat=alloc)
-                 if (alloc/=0)  stop 'FLinput, select_gamma - out of memory'
-                 !
-                 job%select_gamma = .true.
-                 !
-                 allocate(job%nroots(sym%Nrepresen),stat=alloc)
-                 call ArrayStart('nroots:sym',alloc,size(job%nroots),kind(job%nroots))
-                 !
-                 job%nroots = nroots_
-                 !
-                 job%isym_do = .true.
-                 !
-               case("REFER-CONF","REFER-CONFIGURATION")
-                 !
-                 call readu(w)
-                 !
-                 select case(w)
-                 !
-                 case("NON-RIGID")
-                   !
-                   manifold = 1
-                   !
-                 case("RIGID")
-                   !
-                   manifold = 0
-                   !
-                 case default
-                   !
-                   call report ("Unrecognized unit name "//trim(w),.true.)
-                   !
-                 end select
-                 !
-               case("ZMAT")
-                 !
-                 iatom = 0
-                 !
-                 if (Natoms==0) then 
-                    !
-                    write (out,"('FLinput: ZMAT cannot appear before NATOMS')") 
-                    stop 'FLinput - ZMAT defined befor NATOMS'
-                    !
-                 endif 
-                 !
-                 allocate (trove%zmatrix(Natoms),trove%mass(Natoms),stat=alloc)
-                 if (alloc/=0) then
-                     write (out,"(' Error ',i9,' trying to allocate zmat')") alloc
-                     stop 'FLinput, zmat - out of memory'
-                 end if
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 !
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.iatom<Natoms.and.trim(w)/="END")
-                   !
-                   iatom = iatom+1
-                   !
-                   trove%zmatrix(iatom)%connect(1:4) = 0 
-                   !
-                   trove%zmatrix(iatom)%name = trim(w)
-                   !
-                   if (nitems-1>5) then 
-                      !
-                      write (out,"('FLinput: too many  columns in Z-matrix for atom',i8,': ',i8)") iatom,nitems-1
-                      stop 'FLinput - too many columns in Z-mat'
-                      !
-                   endif 
-                   !
-                   i=0
-                   !
-                   do while (item < nitems-1)
-                      !
-                      i=i+1
-                      !
-                      call readi( trove%zmatrix(iatom)%connect(i) )
-                      !
-                   end do
-                   !
-                   call readf(trove%mass(iatom))
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   !
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (iatom/=Natoms.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in Zmat for Natoms =',i8,': ',i8)") Natoms,iatom
-                    stop 'FLinput - illigal number of rows in Zmat'
-                    !
-                 endif
-                 !
-                 ! Compute number of coordinates 
-                 !
-                 Nbonds  = Natoms-1
-                 !
-                 nangles = 0 
-                 Ndihedrals = 0
-                 !
-                 do iatom = 3,Natoms
-                    !
-                    nangles = nangles + 1
-                    !
-                    if (iatom>=4.or.trove%zmatrix(iatom)%connect(3)/=0) then
-                       !
-                       J = trove%zmatrix(iatom)%connect(4)
-                       !
-                       select case (J) 
-                          !
-                       case(-1,0)
-                          !
-                          NAngles = NAngles + 1 
-                          !
-                       case(1)
-                          !
-                          NAngles = NAngles + 1 
-                          Ndihedrals = Ndihedrals + 1
-                          !
-                       case(2,202,302,402,502,602) 
-                          !
-                          Ndihedrals = Ndihedrals + 1
-                          !
-                       case(-2,-202,-302,-402,-502,-602) 
-                          !
-                          Ndihedrals = Ndihedrals + 1
-                          !
-                       case(3:100)
-                          !
-                          NAngles = NAngles + 2
-                          !
-                       case(101,103,105) 
-                          !
-                          ! special case of angles for a linear molecule
-                          !
-                          NAngles = NAngles - 1
-                          Ndihedrals = Ndihedrals + 2
-                          !
-                       case(102,104,106,107,108) 
-                          !
-                          ! special case of an angle for a linear molecule
-                          !
-                          NAngles = NAngles - 1
-                          Ndihedrals = Ndihedrals + 2
-                          !
-                       end select 
-                    endif
-                    !
-                 enddo
-                 !
-                 trove%Ncoords = Nbonds+Nangles+Ndihedrals
-                 Ncoords = trove%Ncoords
-                 !
-                 allocate (trove%local_eq(trove%Ncoords),trove%specparam(trove%Ncoords),extF%geom_ref(trove%Ncoords),&
-                           trove%local_ref(trove%Ncoords), trove%local_eq_transformed(trove%Ncoords),stat=alloc)
-                 if (alloc/=0) then
-                     write (out,"(' Error ',i9,' trying to allocate local_eq')") alloc
-                     stop 'FLinput, local_eq - out of memory'
-                 end if
-                 !
-                 extF%geom_ref = 0
-                 trove%local_eq = 0
-                 trove%specparam = 0
-                 !
-                 zmat_defined = .true.
-                 !
-                 ! Basis set section 
-                 !
-               case("BASIS")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: BASIS cannot appear before NMODES')") 
-                    stop 'FLinput - BASIS defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 imode = 0
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 !call readu(w)
-                 !
-                 do while (trim(w)/="".and.imode<Nmodes.and.trim(w)/="END")
-                   !
-                   call readi(i)
-                   !
-                   ! this is for the rotational basis set
-                   !
-                   if (i==0) then 
-                      !
-                      call readu(w)
-                      !
-                      select case(w)
-                      !
-                      case("JKTAU")
-                        !
-                        job%bset(0)%type = trim(w)
-                        !
-                        ! objects from the same classes are pre-diagonalized together
-                        !
-                        job%bset(0)%class = 0 
-                        !
-                        FLrotation = .true.
-                        !
-                      case default
-                        !
-                        call report ("Unrecognized unit name "//trim(w),.true.)
-                        !
-                      end select
-                      !
-                   else
-                      !
-                      imode = imode+1
-                      !
-                      job%bset(imode)%class = i
-                      !
-                      if (job%bset(imode-1)%class-i>1) then 
-                        write(out,"('FLinput: illegal identification of the mode  :',i8)") i
-                        write(out,"('         the increament > 1')")
-                        stop 'llegal identification of the mode'
-                      endif 
-                      !
-                      call readu(w)
-                      !
-                      job%bset(imode)%type = trim(w)
-                      !
-                      !if (trim(job%bset(imode)%dvr)=='xxxxxx') job%bset(imode)%dvr) = 'NUMEROV-POL'
-                      !
-                      call readu(w)
-                      job%bset(imode)%coord_kinet = trim(w)
-                      !
-                      ! default value for the extF-expansion
-                      !
-                      extF%intcoords(imode)= job%bset(imode)%coord_kinet
-                      !
-                      call readu(w)
-                      job%bset(imode)%coord_poten = trim(w)
-                      !
-                      select case (trim(job%bset(imode)%type)) 
-                         !
-                      case ('HARMONIC','NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
-                            'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
-                         !
-                         ! do nothing
-                         continue
-                         !
-                      case default 
-                         !
-                         job%bset(imode)%coord_kinet = job%bset(imode)%type
-                         job%bset(imode)%coord_poten = job%bset(imode)%type
-                         !
-                      end select 
-                      !
-                      if (trim(job%bset(imode)%type)=='HARMONIC'.and.trove%dvr) then 
-                         !
-                         if (trim(job%bset(imode)%dvr)=='NUMEROV-POL') job%bset(imode)%dvr = 'HERMITE'
-                         !
-                      endif
-                      !
-                      if ( any( trim(job%bset(imode)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
-                                                              'SINRHO-2XLAGUERRE-K'] ) ) then 
-                         trove%triatom_sing_resolve = .true.
-                         job%triatom_sing_resolve = .true.
-                      endif
-                      !
-                   endif
-                   !
-                   do while (trim(w)/="".and.item<Nitems)
-                      !
-                      call readu(w)
-                      !
-                      select case(w)
-                      !
-                      case("RANGE")
-                        !
-                        call readi(job%bset(imode)%range(1))
-                        call readi(job%bset(imode)%range(2))
-                        !
-                        ! in case the range(2) is given for imode=0 we use Jrot as range(2) in order 
-                        !
-                        if (imode==0.and.Jrot/=0) then 
-                          !
-                          job%bset(imode)%range(1) = Jrot
-                          job%bset(imode)%range(2) = 2*jrot
-                          !
-                        endif 
-                        !
-                        if (job%bset(imode)%dvrpoints==0) job%bset(imode)%dvrpoints = job%bset(imode)%range(2)+1
-                        !
-                      case("JROT")
-                        call readi(Jrot)
-                        !
-                        ! we use range(1) to store the Jrot value 
-                        !
-                        job%bset(imode)%range(1) = Jrot
-                        !job%bset(imode)%range(2) = 2*Jrot
-                        !
-                      case("KROT","K")
-                        !
-                        call readi(i_t)
-                        !
-                        ! we use range(1) to store the Jrot value 
-                        !
-                        job%bset(imode)%range(2) = i_t
-                        trove%krot = i_t
-                        if (trove%kmax==0) trove%kmax = i_t
-                        !
-                      case("KMAX")
-                        !
-                        call readi(i_t)
-                        !
-                        ! we use range(1) to store the Jrot value 
-                        !
-                        trove%kmax = i_t
-                        !
-                      case("OVRLP","DVRPOINTS","DPOINTS")
-                        !
-                        call readi(job%bset(imode)%dvrpoints)
-                        !
-                        if (job%bset(imode)%dvrpoints==0) then 
-                          write(out,"('illegal number of dvrpoins:',i7)") job%bset(imode)%dvrpoints
-                          stop 'input: illegal number of dvrpoins'
-                        endif 
-                        !
-                      case("REDUCED","RED","R","J")
-                        !
-                        call readi(job%bset(imode)%model)
-                        !
-                      case("DVR")
-                        !
-                        call readu(job%bset(imode)%dvr)
-                        !
-                      case("RESC","RESCOEF","COEFF")
-                        !
-                        call readf(job%bset(imode)%res_coeffs)
-                        !
-                      case("POINTS")
-                        !
-                        call readi(job%bset(imode)%npoints) 
-                        !
-                      case("PERIODIC","PERIOD","P")
-                        !
-                        call readi(job%bset(imode)%iperiod)
-                        !
-                        if (job%bset(imode)%iperiod>0) job%bset(imode)%periodic =.true.
-                        !
-                      case("POST","POSTPROCESS")
-                        !
-                        job%bset(imode)%postprocess =.true.
-                        !
-                      case("LVIB","VIB_MOMENTUM")
-                        !
-                        job%bset(imode)%lvib =.true.
-                        !
-                        FLl2_coeffs = .true.
-                        !
-                      case("NOCHECK")
-                        !
-                        job%bset(imode)%check_sym =.false.
-                        !
-                      case("BORDERS")
-                        !
-                        call readf(job%bset(imode)%borders(1)) 
-                        call readf(job%bset(imode)%borders(2))
-                        !
-                      case("ANGSTROM")
-                        !
-                        lfact= 1.0_rk
-                        job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
-                        !
-                      case("BOHR")
-                        !
-                        lfact=bohr
-                        job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
-                        !
-                      case("DEG","DEGREE","DEGREES")
-                        !
-                        lfact=1.0_rk/rad
-                        job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
-                        !
-                      case default
-                        !
-                        call report ("Unrecognized unit name "//trim(w),.true.)
-                        !
-                      end select
-                      !
-                   enddo 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   !
-                 end do
-                 !
-                 ! special case of Assoc Legendre or SINRHO-polynomials 
-                 !
-                 if (any(trim(job%bset(Nmodes)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
-                                                        'SINRHO-2XLAGUERRE-K'] ) ) then 
-                    !
-                    if (.not.trove%triatom_sing_resolve ) then
-                     write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
-                    endif
-                    !
-                    job%bset(Nmodes)%range(2) = (job%bset(Nmodes)%range(2)+1)*(job%bset(0)%range(2)+1)-1
-                    job%bset(Nmodes)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
-                 endif 
-                 !
-                 call readu(w)
-                 !
-                 if (imode/=Nmodes.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in Basis for Nmodes =',i8,': ',i8)") Nmodes,imode
-                    stop 'FLinput - illigal number of rows in BASIS'
-                    !
-                 endif 
-                 !
-                 ! Introducing equivalent species that will share the same basis set 
-                 ! 
-                 ispecies = 0
-                 job%bset(0)%species = 0
-                 ! 
-                 do i=1,Nmodes
-                    !
-                    if (job%bset(i)%type       ==job%bset(i-1)%type       .and.job%bset(i)%dim        ==job%bset(i-1)%dim.and.&
-                        job%bset(i)%coord_kinet==job%bset(i-1)%coord_kinet.and.job%bset(i)%coord_poten==job%bset(i-1)%coord_poten.and.&
-                        job%bset(i)%class      ==job%bset(i-1)%class      .and.job%bset(i)%dvrpoints  ==job%bset(i-1)%dvrpoints.and.&
-                        job%bset(i)%range(1)   ==job%bset(i-1)%range(1)   .and.job%bset(i)%range(2)   ==job%bset(i-1)%range(2).and.&
-                        job%bset(i)%borders(1) ==job%bset(i-1)%borders(1) .and.job%bset(i)%borders(2) ==job%bset(i-1)%borders(2).and.&
-                        job%bset(i)%res_coeffs ==job%bset(i-1)%res_coeffs .and.job%bset(i)%npoints    ==job%bset(i-1)%npoints .and.&
-                        (job%bset(i)%periodic.eqv.job%bset(i-1)%periodic)   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
-                        !
-                        job%bset(i)%species = ispecies
-                        !
-                    else 
-                        ispecies = ispecies + 1
-                        job%bset(i)%species = ispecies
-                    endif 
-                    !
-                 enddo
-                 !
-                 basis_defined = .true.
-                 !
-                 !
-               case("BASIC-FUNCTION")
-                 !
-                  if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: BASIC-FUNCTION cannot appear before NMODES')") 
-                    stop 'FLinput - BASIC-FUNCTION defined befor NMODES'
-                    !
-                 endif
-                 !
-                 imode = 0
-                 ifunc = 0
-                 allocate(molec%basic_function_list(Nmodes))
-                 call read_line(eof) ; if (eof) exit 
-                 do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-                    call readu(w)
-                    call readi(imode)
-                    call readi(numfunc)     
-                    allocate(molec%basic_function_list(imode)%mode_set(numfunc))
-                    do i = 1, numfunc
-                      call read_line(eof); if (eof) exit
-                      call readi(ifunc)
-                      call readi(numterms)
-                      molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
-                      allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
-                      do j = 1, numterms
-                        call readi(out_expo)
-                        call readu(func_name)
-                        call readf(func_coef)
-                        call readi(in_expo)
-                        select case(trim(func_name))
-                          case("I") 
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
-                          case("SIN")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
-                          case("COS")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
-                          case("TAN")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
-                          case("CSC")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                          case("COT")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-                          case("SEC")
-                            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
-                          case default 
-                        end select
-                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
-                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
-                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
-                      enddo 
-                    enddo
-                    call read_line(eof); if (eof) exit
-                 enddo 
-                 !
-               case("EQUILIBRIUM_TRANSFORMED")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: EQUIL cannot appear before NMODES')") 
-                    stop 'FLinput - EQUIL defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 imode = 0
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-                   !
-                   imode = imode+1
-                   !
-                   call readi( i_t  )  ! reading an integer weight, not used so far 
-                   !
-                   call readf( trove%local_eq_transformed(imode)  )
-                   !
-                   if (nitems==4) then
-                     !
-                     call readu(w)
-                     !
-                     lfact = 1.0_rk
-                     !
-                     select case(w)
-                     !
-                     case("ANGSTROM")
-                       !
-                       lfact= 1.0_rk
-                       !
-                     case("BOHR")
-                       !
-                       lfact=bohr
-                       !
-                     case("DEG","DEGREE","DEGREES")
-                       !
-                       lfact=1.0_rk/rad
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                     trove%local_eq_transformed(imode) = trove%local_eq_transformed(imode)*lfact
-                     !
-                   endif 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in EQUIL_TRANSFROMED for trove%Ncoords =',i8,': ',i8)")   trove%Ncoords,imode
-                    stop 'FLinput - illigal number of rows in EQUIL_TRANSFORMED' 
-                    !  
-                 endif 
-                 !
-                 local_eq_transformed_defined = .true.
-                 !
-               
-
-               case("EQUIL","EQUILIBRIUM")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: EQUIL cannot appear before NMODES')") 
-                    stop 'FLinput - EQUIL defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 imode = 0
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-                   !
-                   imode = imode+1
-                   !
-                   call readi( i_t  )  ! reading an integer weight, not used so far 
-                   !
-                   call readf( trove%local_eq(imode)  )
-                   !
-                   if (nitems==4) then
-                     !
-                     call readu(w)
-                     !
-                     lfact = 1.0_rk
-                     !
-                     select case(w)
-                     !
-                     case("ANGSTROM")
-                       !
-                       lfact= 1.0_rk
-                       !
-                     case("BOHR")
-                       !
-                       lfact=bohr
-                       !
-                     case("DEG","DEGREE","DEGREES")
-                       !
-                       lfact=1.0_rk/rad
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                     trove%local_eq(imode) = trove%local_eq(imode)*lfact
-                     !
-                   endif 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
-                    stop 'FLinput - illigal number of rows in EQUIL'
-                    !
-                 endif 
-                 !
-                 equil_defined = .true.
-                 !
-               
-
-               case("REFER","REFERENCE")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: REFER cannot appear before NMODES')") 
-                    stop 'FLinput - REFER defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 imode = 0
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-                   !
-                   imode = imode+1
-                   !
-                   call readi( i_t  )  ! reading an integer weight, not used so far 
-                   !
-                   call readf( trove%local_ref(imode)  )
-                   !
-                   if (nitems==4) then
-                     !
-                     call readu(w)
-                     !
-                     lfact = 1.0_rk
-                     !
-                     select case(w)
-                     !
-                     case("ANGSTROM")
-                       !
-                       lfact= 1.0_rk
-                       !
-                     case("BOHR")
-                       !
-                       lfact=bohr
-                       !
-                     case("DEG","DEGREE","DEGREES")
-                       !
-                       lfact=1.0_rk/rad
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                     trove%local_ref(imode) = trove%local_ref(imode)*lfact
-                     !
-                   endif 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
-                    stop 'FLinput - illigal number of rows in EQUIL'
-                    !
-                 endif 
-                 !
-                 refer_defined = .true.
-                 !
-               case("ZPE")
-                 !
-                 call readf(job%zpe)
-                 !
-               case("CHECK_POINT","CHECKPOINT")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 chk_defined = .true.
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                   !
-                   ! writing hamiltonian as ASCII into separate files for kinetic, potential and external
-                   !
-                   case('ASCII')
-                     !
-                     trove%separate_store = .true.
-                     !
-                   case('HAMILTONIAN')
-                     !
-                     call readu(trove%IO_hamiltonian)
-                     !
-                     call check_read_save_none(trove%IO_hamiltonian,w)
-                     if (trim(trove%IO_hamiltonian)=='SEPARATE'.or.trim(trove%IO_hamiltonian)=='ASCII') then
-                        trove%separate_store = .true.
-                     endif 
-                     !
-                     if (nitems>=3) then
-                       !
-                       call readu(w)
-                       !
-                       if (trim(w)=='SEPARATE'.or.trim(w)=='ASCII') then
-                          trove%separate_store = .true.
-                       elseif (trim(w)=='CONVERT') then
-                          trove%separate_convert = .true.
-                          trove%separate_store = .false.
-                          if (trove%separate_store)  trove%IO_hamiltonian = 'SAVE'
-                       elseif (trim(w)=='CONVERT-BACK') then
-                          trove%separate_convert = .true.
-                          trove%separate_store = .true.
-                          trove%IO_hamiltonian = 'SAVE'
-                       else
-                           call report (" Illegal record after hamilton",.true.)
-                       endif
-                       !
-                     endif 
-                     !
-                   case('PRIMITIVE_HAMILTONIAN','PRIM_HAMILTONIAN','PRIM_MATELEM')
-                     !
-                     call readu(trove%IO_primitive_hamiltonian)
-                     !
-                     call check_read_save_none(trove%IO_primitive_hamiltonian,w)
-                     !
-                   case('POTENTIAL','POTEN')
-                     !
-                     call readu(trove%IO_potential)
-                     !
-                     call check_read_save_none(trove%IO_potential,w)
-                     !
-                     if (trim(w)=='SEPARATE') then
-                        trove%separate_store = .true.
-                     endif 
-                     !
-                     if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
-                     !
-                   case('KINET','KINETIC')
-                     !
-                     call readu(trove%IO_kinetic)
-                     !
-                     call check_read_save_none(trove%IO_potential,w)
-                     !
-                     if (trim(w)=='SEPARATE') then
-                        trove%separate_store = .true.
-                     endif 
-                     !
-                     if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
-                     !
-                     if (trim(trove%IO_kinetic)=='SAVE'.and.trove%separate_store) then
-                        trove%IO_hamiltonian = 'SAVE'
-                     endif 
-                     !
-                   case('BASIS_SET')
-                     !
-                     call readu(trove%IO_basisset)
-                     !
-                   case('PRIMITIVE')
-                     !
-                     call readu(trove%IO_primitive)
-                     !
-                   case('CONTR_CI','CONTR-CI','CONTRCI','CI')
-                     !
-                     call readu(trove%IO_contrCI)
-                     !
-                     call check_read_save_none(trove%IO_basisset,w)
-                     !
-                     !if (trim(trove%IO_contrCI) == "NONE") trove%IO_contrCI = "SAVE"
-                     !
-                   case('EIGENFUNC','VECTORS')
-                     !
-                     call readu(w)
-                     !
-                     job%IOeigen_action = trim(w)
-                     !
-                     if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='APPEND'.and.trim(w)/='NONE') then 
-                       !
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                       !
-                     endif
-                     !
-                     ! additional argument 
-                     !
-                     if (nitems>=3) then
-                       !
-                       call readu(w)
-                       !
-                       select case (trim(w))
-                       !
-                       case('COMPRESS')
-                         !
-                         select case (trim(job%IOeigen_action))
-                         case ('APPEND', 'SAVE')
-                           continue
-                         case default
-                          call report("Unexpected 3d argument in eigenfuc",.true.)
-                         end select
-                         !
-                         job%IOeigen_compress = .true.
-                         !
-                         if (nitems>=4) call readf(job%compress)
-                         !
-                       case ('CONVERT')
-                         !
-                         if (all(trim(job%IOeigen_action)/=(/'SAVE','READ'/))) then
-                          call report("Unexpected 3d argument in eigenfuc",.true.)
-                         endif
-                         !
-                         job%convert_model_j0 = .true.
-                         !
-                         if (all(trim(job%IOeigen_action)==(/'SAVE'/))) then
-                           job%IOj0contr_action = 'SAVE'
-                         endif
-                         !
-                         if (job%vib_contract) then
-                           !
-                           write(out,"('EIGENFUNC SAVE CONVERT cannot be used with MODEL J=0')")
-                           call report("illegal usage of  eigenfuc",.true.)
-                           !
-                         endif
-                         !
-                       case default
-                         !
-                         write(out,"('illegal keyword after EIGENFUNC XXXX ')")
-                         call report("illegal keyword in eigenfuc xxxx",.true.)
-                         !
-                       end select
-                       ! 
-                     endif
-                     !
-                   case('CONTRACT','CONTR','CONTRACTED')
-                     !
-                     call readu(w)
-                     !
-                     if (all(trim(w)/=(/'READ','SAVE','NONE'/))) then 
-                       !
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                       !
-                     endif 
-                     !
-                     job%IOcontr_action = trim(w)
-                     !
-                     if (trim(w)=='SAVE'.and.job%vib_contract) then
-                       job%IOj0contr_action = 'SAVE'
-                     endif
-                     !
-                     if (nitems>=3) then
-                       !
-                       call readu(w)
-                       !
-                       if (trim(w)=='CONVERT') then
-                          trove%separate_convert = .true.
-                       else
-                           call report (" Illegal record after CONTRACT",.true.)
-                       endif
-                       !
-                     endif 
-                     !
-                   case('MATELEM')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','NONE','VIB','CONVERT','APPEND')
-                       continue
-                     case default
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                     end select
-                     !
-                     if (job%contrci_me_fast.and.trim(w)=='NONE') then 
-                       !
-                       !w = 'SAVE'
-                       !
-                     endif
-                     !
-                     job%IOkinet_action = trim(w)
-                     !
-                     if (trim(w)=='CONVERT') then 
-                        !
-                        job%vib_contract = .true.
-                        action%convert_vibme = .true.
-                        !
-                        !job%IOj0matel_action = trim('SAVE')
-                        !
-                     endif 
-                     !
-                     if (trim(w)=='APPEND') then 
-                        !
-                        job%matelem_append = .true.
-                        !
-                        if (Nitems>3) then
-                           call readi(job%iappend)
-                        else
-                           call report (" The reccord to append after is missing",.true.)
-                        endif
-                        !
-                        job%IOkinet_action = trim('SAVE')
-                        !
-                     endif 
-                     !
-                     if (trim(w)=='VIB') then
-                       !
-                       call readu(chk_type)
-                       !
-                       job%IOkinet_action = trim(w)//'_'//trim(chk_type) 
-                       !
-                     endif 
-                     !
-                     if (job%vib_contract) then 
-                       !
-                       job%IOj0matel_action = trim(w)
-                       !
-                       if (trim(w)=='CONVERT') job%IOj0matel_action = trim('SAVE')
-                       !
-                       !if ( any( trim(w)==(/'SAVE','APPEND'/) ) ) action%convert_vibme = .true.
-                       !
-                     endif 
-                     !
-                     ! an addional key to specify SAVE/READ 
-                     !
-                     if (Nitems>2.or.(job%matelem_append.and.Nitems>3)) then
-                       call readu(w)
-                       !
-                       select case (trim(w))
-                       case ('DIVIDE','SPLIT','STITCH','COLLECT','NON-SPLIT')
-                         continue
-                       case default
-                         call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
-                       end select
-                       !
-                       if (trim(w)=='NON-SPLIT') cycle
-                       !
-                       job%iswap(1) = 0
-                       job%iswap(2) = 12
-                       !
-                       if (trim(w)=='DIVIDE') then 
-                         job%IOmatelem_divide = .true.
-                         job%iswap(1) = 1
-                         job%iswap(2) = (trove%Nmodes+3)*3+trove%Nmodes**2+1
-                       endif
-                       !
-                       job%IOmatelem_split  = .true.
-                       !
-                       if (job%contrci_me_fast) then 
-                         job%iswap(1) = 0
-                         job%iswap(2) = 1e6
-                       endif
-                       !
-                       if (Nitems>3) then
-                          call readi(job%iswap(1))
-                          call readi(job%iswap(2))
-                       endif
-                       !
-                       if (trim(w)=='STITCH'.or.trim(w)=='COLLECT') job%iswap(:)=0
-                       !
-                       if (trim(w)=='DIVIDE') job%iswap(:)=0
-                       !
-                     endif
-                     !
-                     if (job%contrci_me_fast.and..not.job%IOmatelem_split) then
-                       write(out,"('Read-input: for fast-ci use MATELEM XXXX split (XXXX=read,save,none)')")
-                       call report ("For fast-ci MATELEM must be split",.true.)
-                     endif 
-                     !
-                     if (item<Nitems) then 
-                       call readu(w)
-                       if (trim(w)=='DUMP') job%IOmatelem_dump = .true.
-                       !
-                     endif
-                     !
-                     if (item<Nitems) then
-                        call readi(job%iappend)
-                     endif
-                     !
-                   case('DVR')
-                     !
-                     call readu(w)
-                     !
-                     if (all(trim(w)/=(/'READ','SAVE','NONE'/))) then
-                       !
-                       write (out,"('FLinput: illegal key in CHECK_POINT_DVR :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT_DVR'
-                       !
-                     endif 
-                     !
-                     job%IOdvr_prim = trim(w)
-                     !
-                   case('J0_MATELEM')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','APPEND','NONE')
-                       continue
-                     case default
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                     end select
-                     !
-                     job%IOj0matel_action = trim(w)
-                     !
-                     select case (trim(w))
-                     case ('SAVE', 'APPEND')
-                       action%convert_vibme = .true.
-                     end select
-                     !
-                     !if (trim(job%IOj0matel_action)=='SAVE') action%convert_vibme = .true.
-                     !
-                     ! an addional key to specify SAVE/READ 
-                     !
-                     if (Nitems>2) then
-                       call readu(w)
-                       !
-                       select case (trim(w))
-                       case ('DIVIDE', 'SPLIT')
-                         continue
-                       case default
-                         call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-                       end select
-                       !
-                       job%IOmatelem_split = .true.
-                       !
-                       job%iswap(1) = 0
-                       job%iswap(2) = 1e6
-                       !
-                       if (Nitems>3) then
-                          call readi(job%iswap(1))
-                          call readi(job%iswap(2))
-                       endif
-                     endif
-                     !
-                   case('VECTORS_SYMM','VEC_SYMM','VECTOR_SYMM')
-                     !
-                     job%IOvector_symm = .true.
-                     !
-                     !job%IOvector_symm = trim(w)
-                     !
-                     !if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='NONE') then 
-                     !  !
-                     !  write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                     !  stop 'FLinput -illegal key in CHECK_POINT'
-                     !  !
-                     !endif 
-                     !
-                   case('J0_EXTERNAL','J0_EXTMATELEM')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','APPEND','NONE','DIVIDE','SPLIT')
-                       continue
-                     case default
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                     end select
-                     !
-                     job%IOj0ext_action = trim(w)
-                     !
-                     select case (trim(job%IOj0ext_action))
-                     case ('SAVE','APPEND','DIVIDE')
-                        action%convert_vibme = .true.
-                        FLextF_matelem = .true.
-                     end select
-                     !
-                     ! an addional key to specify SAVE/READ 
-                     !
-                     if (Nitems>2) then
-                       call readu(w)
-                       !
-                       select case (trim(w))
-                       case ('DIVIDE', 'SPLIT')
-                         continue
-                       case default
-                         call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-                       end select
-                       !
-                       job%IOextF_divide = .true.
-                       !
-                       if (Nitems>3) then
-                          call readi(fitting%iparam(1))
-                          call readi(fitting%iparam(2))
-                       endif
-                       !
-                     endif
-                     !
-                   case('J0_CONTR','J0_CONTRACT','J0_CONTRACTED')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','APPEND','NONE')
-                       continue
-                     case default
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                     end select
-                     !
-                     job%IOj0contr_action = trim(w)
-                     !
-                     if (any(trim(job%IOj0contr_action)==(/'SAVE'/))) action%convert_vibme = .true.
-                     !
-                   case('EXTERNAL')
-                     !
-                     call readu(w)
-                     !
-                     if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='NONE') then 
-                       !
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT-EXTERNAL'
-                       !
-                     endif 
-                     trove%IO_ext_coeff = trim(w)
-                     !
-                     if (trim(trove%IO_hamiltonian)=='READ'.and.trim(w)=='SAVE') then 
-                       trove%IO_hamiltonian = 'NONE'
-                       trove%IO_potential   = 'READ'
-                       trove%IO_kinetic     = 'READ'
-                       trove%IO_basisset    = 'SAVE'
-                     endif 
-                     !
-                     if (trim(trove%IO_basisset)== 'SAVE'.and.trim(trove%IO_primitive)=='NONE') then 
-                        trove%IO_primitive = 'SAVE'
-                     endif
-                     !
-                     if (trim(trove%IO_hamiltonian)=='SAVE'.and.trim(w)/='NONE') then 
-                       trove%IO_ext_coeff   = 'SAVE'
-                     endif
-                     !
-                     if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
-                     !
-                     if (any(trim(trove%IO_ext_coeff)==(/'SAVE','READ'/))) FLextF_coeffs = .true.
-                     !
-                     if (trove%separate_convert.and.trove%separate_store ) then
-                          trove%IO_ext_coeff   = 'READ'
-                     endif 
-                     !
-                   case('EXTMATELEM')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','MATELEM','NONE','CONVERT','APPEND','STITCH')
-                       continue
-                     case default
-                       write (out,"('FLinput: illegal key in EXTMATELEM :',a)") trim(w)
-                       stop 'FLinput -illegal key in EXTMATELEM'
-                     end select
-                     !
-                     job%IOextF_action = trim(w)
-                     !
-                     if (trim(w)=='CONVERT') then 
-                        !
-                        job%vib_contract = .true.
-                        action%convert_vibme = .true.
-                        !
-                        !job%IOj0matel_action = trim('SAVE')
-                        !
-                     endif 
-                     !
-                     if (job%vib_contract) then 
-                       !
-                       job%IOj0ext_action = trim(w)
-                       !
-                       if (trim(w)=='CONVERT') job%IOj0ext_action = 'SAVE'
-                       !
-                       if (job%IOj0ext_action=='SAVE') FLextF_matelem = .true.
-                       !
-                     endif 
-                     !
-                     if (trim(w)=='APPEND') then 
-                        !
-                        job%extmatelem_append = .true.
-                        !
-                        if (Nitems>3) then
-                           call readi(job%iextappend)
-                        else
-                           call report (" The reccord to append after is missing",.true.)
-                        endif
-                        !
-                        job%IOextF_action = trim('SAVE')
-                        !
-                     endif 
-                     !
-                     if (trim(job%IOextF_action)=='SAVE') FLextF_matelem = .true.
-                     !
-                     ! an addional key to specify SAVE/READ 
-                     !
-                     if (Nitems>2.or.(job%extmatelem_append.and.Nitems>3)) then
-                       !
-                       call readu(w)
-                       !
-                       select case (trim(w))
-                         !
-                       case ('DIVIDE', 'SPLIT')
-                         !
-                         job%IOextF_divide = .true.
-                         !
-                       case ('STITCH')
-                         !
-                         job%IOextF_divide = .true.
-                         job%IOextF_stitch = .true.
-                         !
-                       case ( 'DUMP' )
-                         !
-                         if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
-                         !
-                       case default
-                         !
-                         call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-                         !
-                       end select
-                       !
-                       if (job%IOextF_divide.and.Nitems>3) then
-                          call readi(fitting%iparam(1))
-                          call readi(fitting%iparam(2))
-                       endif
-                       !
-                     endif
-                     !
-                     if (item<Nitems) then 
-                       call readu(w)
-                       if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
-                       !
-                     endif
-                     !
-                   case('FORMAT')
-                     !
-                     call readu(job%kinetmat_format)
-                     !
-                   case('FIT_POTEN','FIT_POT','FITPOTEN')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('READ','SAVE','NONE','VIB','DIVIDE','REWRITE','JOIN','SPLIT')
-                       continue
-                     case default
-                       !
-                       write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
-                       stop 'FLinput -illegal key in CHECK_POINT'
-                       !
-                     end select
-                     !
-                     if (trim(w)=='DIVIDE') w = 'SPLIT'
-                     !
-                     job%IOfitpot_action = trim(w)
-                     !
-                     if (trim(job%IOfitpot_action)/='NONE') then 
-                        job%IOextF_action = 'READ'
-                        !
-                        if (job%vib_contract) then 
-                          job%IOj0ext_action = 'READ'
-                        endif
-                        !
-                     endif
-                     !
-                     ! an addional key to specify SAVE/READ 
-                     !
-                     if (Nitems>2) then
-                       call readu(w)
-                       select case (trim(w))
-                       case ('DIVIDE', 'SPLIT')
-                         continue
-                       case default
-                         call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
-                       end select
-                       !
-                       job%IOextF_divide = .true.
-                       job%IOfitpot_divide = .true.
-                       !
-                       if (Nitems>3) then
-                          call readi(fitting%iparam(1))
-                          call readi(fitting%iparam(2))
-                       endif
-                       !
-                     endif
-                     !
-                   case('CHK_FILE')
-                     !
-                     call readu(w)
-                     call locase(w)
-                     !
-                     trove%chk_fname = trim(w)
-                     !
-                   case('NUMEROV_FILE')
-                     !
-                     call readu(w)
-                     call locase(w)
-                     !
-                     trove%chk_numerov_fname = trim(w)
-                     !
-                   case('HAMILTONIAN_FILE')
-                     !
-                     call readu(w)
-                     call locase(w)
-                     !
-                     trove%chk_hamil_fname = trim(w)
-                     !
-                   case('SWAP','SWAPMATELEM','MATELEMSWAP')
-                     !
-                     call readu(w)
-                     !
-                     select case (trim(w))
-                     case ('NONE','DIVIDE','JOIN','SAVE','READ','SPLIT')
-                       continue
-                     case default
-                       !
-                       write (out,"('FLinput: illegal key in CONTRSWAP :',a)") trim(w)
-                       stop 'FLinput -illegal key in CONTRSWAP'
-                       !
-                     end select
-                     !
-                     job%IOswap_matelem = trim(w)
-                     !
-                   case('ISWAP')
-                     !
-                     call readi(job%iswap(1))
-                     call readi(job%iswap(2))
-                     !
-                   case('CONTR_FILE')
-                     !
-                     call readu(w)
-                     call locase(w)
-                     !
-                     job%contrfile%dscr       = trim(w)//'_descr.chk'
-                     job%contrfile%primitives = trim(w)//'_quanta.chk'
-                     job%contrfile%vectors    = trim(w)//'_vectors.chk'
-                     job%contrfile%dvr        = trim(w)//'_dvr.chk'
-                     !
-                   case('EIGEN_FILE')
-                     !
-                     call readu(w)
-                     call locase(w)
-                     !
-                     job%eigenfile%filebase   = trim(w)
-                     !
-                     job%eigenfile%dscr       = trim(w)//'_descr'
-                     job%eigenfile%primitives = trim(w)//'_quanta'
-                     job%eigenfile%vectors    = trim(w)//'_vectors'
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
-                    stop 'FLinput - illegal last line in CHECK_POINTS'
-                    !
-                 endif 
-                 !
-               case("CONTROL")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 chk_defined = .true.
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                   !
-                   case('HAMILTONIAN')
-                     !
-                     call readu(w)
-                     !
-                   case('EXTERNAL','DIPOLE')
-                     !
-                     call readu(w)
-                     !
-                   case('JROT','J')
-                     !
-                     call readi(Jrot)
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in CONTROL =',a)") trim(w)
-                    stop 'FLinput - illegal last line in CONTROL'
-                    !
-                 endif          
-                 !
-               case("ANALYSIS")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                     !
-                   case('NONE')
-                     !
-                     analysis%density = .false.
-                     analysis%classical = .false.
-                     !
-                   case('DENSITY')
-                     !
-                     analysis%reduced_density = .true.
-                     analysis%density = .true.
-                     !
-                   case("PRINT_CONTRIBUTION")
-                     !
-                     analysis%reducible_eigen_contribution = .true.   
-                     i = 0
-                     do while(trim(w)/="".and.item<Nitems.and.i<100)
-                        i = i + 1
-                        call readi(analysis%j_list(i)) 
-                     enddo 
-                     analysis%density = .true.
-                     !
-                   case("POPULATION")
-                     !
-                     analysis%population = .true.   
-                     analysis%density = .true.
-                     !
-                     i = 0
-                     call readu(w)
-                     do while( ( trim(w)/="".and.trim(w)/="REF" ).and.item<Nitems.and.i<100)
-                        !
-                        i = i + 1
-                        read(w,*) analysis%j_list(i)
-                        call readu(w)
-                        !
-                     enddo
-                     !
-                     if ( trim(w)=="REF" ) then
-                        !
-                        call readi(analysis%ref%J)
-                        call readi(analysis%ref%iGamma)
-                        call readi(analysis%ref%iLevel)
-                        !
-                     endif
-                     !
-                   case('PRINT_VECTOR')
-                     !
-                     analysis%print_vector = .true.
-                     !
-                     if (nitems>1) call readf(analysis%threshold)
-                     !
-                   case('ROT_MATRIX')
-                     !
-                     analysis%rotation_matrix = .true.
-                     analysis%density = .true.
-                     !
-                   case('EXTERNAL')
-                     !
-                     analysis%extF = .true.
-                     analysis%density = .true.
-                     !
-                   case('TEST_HAMILTONIAN')
-                     !
-                     analysis%rotation_matrix = .true.
-                     analysis%density = .true.
-                     !
-                   case('RES_TYPE')
-                     !
-                     call readu(analysis%res%type)
-                     analysis%classical = .true.
-                     !
-                   case('RES')
-                     !
-                     analysis%rotation_energy_surface = .true.
-                     analysis%classical = .true.
-                     !
-                     do while (trim(w)/="".and.item<Nitems)
-                        !
-                        call readu(w)
-                        !
-                        select case(w)
-                            !
-                          case('NTHETA')
-                            !
-                            call readi(analysis%res%ntheta)
-                            !
-                          case('NPHI')
-                            !
-                            call readi(analysis%res%nphi)
-                            !
-                          case('NTAU')
-                            !
-                            call readi(analysis%res%ntau)
-                            !
-                          case('THETA')
-                            !
-                            call readf(analysis%res%theta)
-                            !
-                          case('PHI')
-                            !
-                            call readf(analysis%res%phi)
-                            !
-                          case('TAU')
-                            !
-                            call readf(analysis%res%tau)
-                            !
-                          case('THETA_RESTART')
-                            !
-                            call readf(analysis%res%theta1)
-                            !
-                        end select
-                        !
-                     enddo
-                     !
-                   case('ROT-DENSITY','ROT_DENSITY')
-                     !
-                     analysis%rotation_density = .true.
-                     !
-                     do while (trim(w)/="".and.item<Nitems)
-                        !
-                        call readu(w)
-                        !
-                        select case(w)
-                            !
-                          case('THETA')
-                            !
-                            call readf(analysis%res%theta) ; analysis%res%theta = analysis%res%theta/rad
-                            !
-                          case('PHI')
-                            !
-                            call readf(analysis%res%phi)  ; analysis%res%phi = analysis%res%phi/rad
-                            !
-                          case('NTHETA')
-                            !
-                            call readi(analysis%res%ntheta)
-                            !
-                          case('NPHI')
-                            !
-                            call readi(analysis%res%nphi)
-                            !
-                        end select
-                        !
-                     enddo
-                     !
-                   case('DENSITY_LIST','LIST')
-                     !
-                     do while (trim(w)/="".and.item<Nitems)
-                        !
-                        call readu(w)
-                        !
-                        i = 0
-                        do while (trim(w)/="MODES".and.item<Nitems.and.i<100)
-                          !
-                          i = i + 1 
-                          !
-                          read(w,*) analysis%j_list(i)
-                          call readi(analysis%sym_list(i))
-                          call readi(analysis%dens_list(i))
-                          !
-                          call readu(w)
-                          !
-                        enddo
-                        !
-                        if (trim(w)/='MODES') then 
-                          call report ("Illegal use of DENSITY_LIST"//trim(w),.true.)
-                        endif
-                        !
-                        i_t = i
-                        !
-                        do i = i_t+1,i_t+3
-                          !
-                          if (item<Nitems) then 
-                            !
-                            call readi(analysis%dens_list(i))
-                            !
-                          else
-                            !
-                            analysis%dens_list(i) = analysis%dens_list(i-1)
-                            !
-                          endif 
-                          !
-                        enddo
-                        !
-                     enddo
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
-                    stop 'FLinput - illegal last line in CHECK_POINTS'
-                    !
-                 endif 
-                 !
-               case("KIN","KINET","KINETIC")
-                 !
-                 if (kinetic_defined) then 
-                    write (out,"(' Error: trying to read KINETIC  second time!')") 
-                    stop 'FLinput - reading KINETIC  second time'
-                 endif 
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                      !
-                   case("KIN_TYPE","KINETIC_TYPE")
-                      !
-                      call readu(w)
-                      !
-                      trove%kinetic_type = trim(w)
-                      !
-                      case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                   end select 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo
-                 !
-                 kinetic_defined = .true.
-                 !
-               case("POT","POTEN","POTENTIAL","PES")
-                 !
-                 if (pot_defined) then 
-                    write (out,"(' Error: trying to read POTEN  second time!')") 
-                    stop 'FLinput - reading POTEN  second time'
-                 endif 
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: POTEN cannot appear before NMODES')") 
-                    stop 'FLinput - POTEN defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 pot_coeff_type = 'LIST'
-                 !
-                 ! read Nparam and Type of PES
-                 !
-                 do i = 1,3
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                    select case(w)
-                    !
-                    case("POT_TYPE")
-                      !
-                      call readu(w)
-                      !
-                      trove%potentype = trim(w)
-                      !
-                    case("NPARAM")
-                      !
-                      call readi(Nparam)
-                      !
-                    case("COEFF")
-                      !
-                      call readu(w)
-                      !
-                      pot_coeff_type = trim(w)
-                      !
-                    case default
-                      !
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                      !
-                    end select
-                    !
-                 enddo
-                 !
-                 ! Allocation of the pot. parameters 
-                 !
-                 allocate (force(Nparam),forcename(Nparam),pot_ind(1:trove%Ncoords,Nparam),ifit(Nparam),stat=alloc)
-                 if (alloc/=0) then
-                    write (out,"(' Error ',i9,' allocating matix force,forcename ')") alloc
-                    stop 'FLinput - cannot allocate force,forcename'
-                 end if
-                 !
-                 iparam = 0 
-                 pot_ind = 0
-                 ifit = 0  
-                 force = 0 
-                 !
-                 forcename = 'dummy'
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
-                    !
-                    iparam = iparam+1 
-                    !
-                    select case(trim(pot_coeff_type))
-                    !
-                    case("LIST")
-                      !
-                      forcename(iparam)=trim(w)
-                      call readi(ifit(iparam))
-                      call readf(force(iparam))
-                      !
-                    case("POWERS")
-                      !
-                      if (nitems<trove%Ncoords+3) then 
-                         !
-                         write (out,"('FLinput: wrong number of records in POTEN on row=',i6,'()')") iparam
-                         stop 'FLinput - illigal number of records in POTEN'
-                         !
-                      endif
-                      !
-                      forcename(iparam)=trim(w)
-                      !
-                      do i=1,trove%Ncoords
-                         call readi(pot_ind(i,iparam))
-                      enddo
-                      !
-                      call readi(ifit(iparam))
-                      call readf(force(iparam))
-                      !
-                      ! trick to prevent writing error
-                      !
-                      !if (all(pot_ind(1:Ncoords,iparam)<10)) then
-                      !  write(forcename(iparam),"('f',<Ncoords>i1)") pot_ind(1:Ncoords,iparam)
-                      !else
-                      !  write(forcename(iparam),"('f',<Ncoords>i1)") 0,pot_ind(2:Ncoords,iparam)
-                      !endif
-                      !
-                      if (any(pot_ind(:,iparam)<0)) then 
-                          write(out,"('FLinput: negative POTEN powers on row',i8)") iparam
-                            stop 'FLinput: wrong indexes '
-                      endif 
-                      !
-                    case default
-                      !
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                      !
-                    end select
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                 enddo 
-                 !
-                 if ((iparam/=Nparam.and.trim(forcename(1))=='dummy').or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in POTEN ',i6,'()')") iparam,Nparam
-                    stop 'FLinput - illigal number of rows in POTEN'
-                    !
-                 endif 
-                 !
-                 pot_defined = .true.
-                 !
-               case("MEP","RPH")
-                 !
-                 ! read Nparam and Type of PES
-                 !
-                 pot_coeff_type = 'LIST'
-                 !
-                 do i = 1,3
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                    select case(w)
-                    !
-                    case("MEP_TYPE")
-                      !
-                      call readu(w)
-                      !
-                      molec%meptype = trim(w)
-                      !
-                    case("NPARAM")
-                      !
-                      call readi(Nparam)
-                      !
-                      molec%N_meppars = Nparam 
-                      !
-                    case("COEFF")
-                      !
-                      call readu(w)
-                      !
-                      pot_coeff_type = trim(w)
-                      !
-                    case default
-                      !
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                      !
-                    end select
-                    !
-                 enddo
-                 !
-                 ! Allocation of the pot. parameters 
-                 !
-                 allocate (molec%mep_params(Nparam),stat=alloc)
-                 if (alloc/=0) then
-                    write (out,"(' Error ',i9,' allocating matix mep_params ')") alloc
-                    stop 'FLinput - cannot allocate mep_params'
-                 end if
-                 !
-                 if (trim(pot_coeff_type)=="POWERS") then 
-                   allocate (molec%mep_ind(1:trove%Ncoords,Nparam))
-                 else
-                   allocate (molec%mep_ind(1,Nparam))
-                 endif
-                 !
-                 iparam = 0 
-                 molec%mep_ind = 0
-                 molec%mep_params = 0 
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
-                    !
-                    iparam = iparam+1 
-                    !
-                    !call readf(molec%mep_params(iparam))
-                    !
-                    select case(trim(pot_coeff_type))
-                    !
-                    case("LIST")
-                      !
-                      call readi(molec%mep_ind(1,iparam))
-                      call readf(molec%mep_params(iparam))
-                      !
-                    case("POWERS")
-                      !
-                      if (nitems<trove%Ncoords+2) then 
-                         !
-                         write (out,"('FLinput: wrong number of records in POTEN on row=',i6,'()')") iparam
-                         stop 'FLinput - illigal number of records in POTEN'
-                         !
-                      endif 
-                      !
-                      do i=1,trove%Ncoords
-                         !
-                         call readi(molec%mep_ind(i,iparam))
-                         !
-                      enddo
-                      !
-                      call readf(molec%mep_params(iparam))
-                      !
-                      if (any(molec%mep_ind(:,iparam)<0)) then 
-                          write(out,"('FLinput: negative MEP powers on row',i8)") iparam
-                            stop 'FLinput: wrong MEP-indexes '
-                      endif 
-                      !
-                    case default
-                      !
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                      !
-                    end select
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                 enddo 
-                 !
-                 if ((iparam/=Nparam.and.trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in MEP ',i6,'()')") iparam,Nparam
-                    stop 'FLinput - illigal number of rows in MEP'
-                    !
-                 endif 
-                 !
-               case("SPECPARAM","SPECPARAMETERS","SPEC","PARAMETERS")
-                 !
-                 if (trove%Ncoords==0) then 
-                    !
-                    write (out,"('FLinput: SPECPARAM cannot appear before Zmat')") 
-                    stop 'FLinput - SPECPARAM defined befor Zmat'
-                    !
-                 endif 
-                 !
-                 iparam = 0 
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 trove%specparam = 0
-                 !         !
-                 do while (trim(w)/="".and.iparam<trove%Ncoords.and.trim(w)/="END")
-                    !
-                    iparam = iparam+1
-                    !
-                    call readi( i_t  )  ! reading an integer weight, not used so far 
-                    !
-                    call readf( trove%specparam(iparam)  )
-                    !
-                    if (nitems==4) then
-                      !
-                      call readu(w)
-                      !
-                      lfact = 1.0_rk
-                      !
-                      select case(w)
-                      !
-                      case("ANGSTROM")
-                        !
-                        lfact= 1.0_rk
-                        !
-                      case("BOHR")
-                        !
-                        lfact=bohr
-                        !
-                      case("DEG","DEGREE","DEGREES")
-                        !
-                        lfact=1.0_rk/rad
-                        !
-                      case default
-                        !
-                        call report ("Unrecognized unit name "//trim(w),.true.)
-                        !
-                      end select
-                      !
-                      trove%specparam(iparam) = trove%specparam(iparam)*lfact
-                      !
-                    endif
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                 enddo 
-                 !
-                 if (iparam>trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
-                    !
-                    write (out,"('FLinput: wrong number of rows in SPECPARAM ',2i6,'()')") iparam,trove%Ncoords
-                    stop 'FLinput - illigal number of rows in SPECPARAM'
-                    !
-                 endif 
-                 !
-                 ! Intensity section 
-                 !
-               case("INTENSITY")
-                 !
-                 if (Nmodes==0) then 
-                    !
-                    write (out,"('FLinput: INTENSITY cannot appear before NMODES')") 
-                    stop 'FLinput - INTENSITY defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 if (.not.symmetry_defined) then 
-                    !
-                    write (out,"('FLinput: INTENSITY cannot appear before symmetry is defined')") 
-                    stop 'FLinput - INTENSITY defined before symmetry'
-                    !
-                 endif 
-                 !
-                 allocate(intensity%gns(sym%Nrepresen),intensity%isym_pairs(sym%Nrepresen),intensity%v_low(trove%nmodes,2),&
-                          intensity%v_upp(trove%nmodes,2),stat=alloc)
-                 if (alloc/=0) then
-                     write (out,"(' Error ',i9,' trying to allocate qwrange')") alloc
-                     stop 'FLinput, qwrange - out of memory'
-                 end if
-                 !
-                 ! defauls values
-                 !
-                 intensity%gns = 1
-                 forall(i=1:sym%Nrepresen) intensity%isym_pairs(i) = 1
-                 intensity%v_low(:,1) = 0 ; intensity%v_low(:,2) = job%bset(1:)%range(2)
-                 intensity%v_upp(:,1) = 0 ; intensity%v_upp(:,2) = job%bset(1:)%range(2)
-                 !
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                   !
-                   case('NONE','ABSORPTION','EMISSION','TM','DIPOLE-TM','RAMAN','POLARIZABILITY-TM','PARTFUNC','FIELD_ME')
-                     !
-                     intensity%action = trim(w)
-                     !
-                     if (trim(intensity%action)=='DIPOLE-TM') intensity%action = 'TM'
-                     !
-                     if (trim(intensity%action)=='TM'      .or.trim(intensity%action)=='ABSORPTION'.or.&
-                         trim(intensity%action)=='EMISSION'.or.trim(intensity%action)=='PARTFUNC' .or. &
-                         trim(intensity%action)=='FIELD_ME') then 
-                       !
-                       action%intensity = .true.
-                       intensity%do = .true.
-                         !
-                       job%IOextF_action = 'READ'
-                       !
-                       if (job%vib_contract) then 
-                         !
-                         job%IOj0ext_action = 'READ'
-                         !
-                       endif 
-                       !
-                     endif
-                     !
-                   case('OPER')
-                     !
-                     call readu(intensity%tens_oper)
-                     !
-                   case('THRESH_INTES','THRESH_TM','THRESH_INTENS')
-                     !
-                     call readf(intensity%threshold%intensity)
-                     !
-                   case('THRESH_LINE','THRESH_LINESTRENGHT','THRESH_LINESTRENGTH')
-                     !
-                     call readf(intensity%threshold%linestrength)
-                     !
-                   case('THRESH_COEFF','THRESH_COEFFICIENTS')
-                     !
-                     call readf(intensity%threshold%coeff)
-                     !
-                   case('THRESH_LEADING_COEFF')
-                     !
-                     call readf(intensity%threshold%leading_coeff)
-                     !
-                   case('TEMPERATURE')
-                     !
-                     call readf(intensity%temperature)
-                     !
-                   case('EXOMOL')
-                     !
-                     job%exomol_format = .true.
-                     intensity%output_short = .true.
-                     !
-                   case('GAIN')
-                     !
-                     job%gain_format = .true.
-                     intensity%output_short = .true.
-                     !
-                   case('QSTAT','PARTITION','PART_FUNC')
-                     !
-                     call readf(intensity%part_func)
-                     !
-                   case('PRUNING')
-                     !              
-                     intensity%pruning = .true.
-                     !
-                   case('TDM_REPLACE','DIPOLE_REPLACE','DIPOLE_SCALE')
-                     !              
-                     intensity%tdm_replace = .true.
-                     !
-                   case('OUTPUT')
-                     !
-                     call readu(w)
-                     !              
-                     if (trim(w)=='SHORT') then 
-                       intensity%output_short = .true.
-                     elseif(trim(w)=='LONG') then
-                       intensity%output_short = .false.
-                     else
-                       call report ("Illegal OUTPUT value (expected SHORT or LONG) "//trim(w),.true.)
-                     endif
-                     !
-                   case('GNS')
-                     !
-                     i = 0
-                     !
-                     intensity%gns = 0
-                     if( trim(intensity%action)=='TM') intensity%gns = 1 
-                     job%select_gamma = .false.
-                     job%isym_do = .false.
-                     !
-                     do while (item<Nitems.and.i<sym%Nrepresen)
-                       !
-                       i = i + 1
-                       call readf(intensity%gns(i))
-                       if (intensity%gns(i)>small_) then 
-                         !
-                         job%isym_do(i) = .true.
-                         job%select_gamma(i) = .true.
-                         !
-                       endif
-                       !
-                     enddo
-                     !
-                     !if (i/=sym%Nrepresen) then 
-                     !  !
-                     !  write (out,"('FLinput: illegal number entries in gns: ',i8,' /= ',i8)") i,sym%Nrepresen
-                     !  stop 'FLinput - illegal number entries in gns'
-                     !  !
-                     !endif 
-                     !
-                   case('SELECTION','SELECTION_RULES','SELECT','PAIRS')
-                     !
-                     ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
-                     do i=1,sym%Nrepresen,2
-                       intensity%isym_pairs(i  ) = (i+1)/2
-                       if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
-                     enddo
-                     !
-                     if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
-                     !
-                     i = 0
-                     !
-                     do while (item<Nitems.and.i<sym%Nrepresen)
-                       !
-                       i = i + 1
-                       !
-                       call readi(intensity%isym_pairs(i))
-                       !
-                     enddo
-                     !
-                     if (sym%Nrepresen<=8.and.i/=sym%Nrepresen) then 
-                       write (out,"('FLinput: illegal number entries in SELECTION for Nrepresen<=8',i8,' /= ',i8)") i,sym%Nrepresen
-                       stop 'FLinput - illegal number entries in SELECTION, Nentries<>Nrepresen'
-                     endif 
-                     !
-                   case('ZPE')
-                     !
-                     call readf(intensity%zpe)
-                     job%zpe = intensity%zpe
-                     !
-                   case('SWAP_SIZE')
-                     !
-                     call readi(intensity%swap_size)
-                     !
-                   case('SWAP')
-                     !
-                     call readu(intensity%swap)
-                     !
-                   case('SYMMETRY')
-                     !
-                     call readu(w)
-                     !
-                     if (trim(w)=='REDUCED') then
-                       intensity%reduced = .true.
-                     else
-                       call report ("Unrecognized SYMMETRY value "//trim(w),.true.)
-                     endif
-                     !
-                   case('FACTOR')
-                     !
-                     call readf(intensity%factor)
-                     !
-                   case('INCREMENT')
-                     !
-                     call readi(intensity%int_increm)
-                     !
-                     ! how many line to cache before printing 
-                   case('NCACHE')
-                     !
-                     call readi(intensity%Ncache)
-                     !
-                   case('WALLCLOCK','WALL')
-                     !
-                     call readf(intensity%wallclock)
-                     !
-                   case('J')
-                     !
-                     call readi(intensity%j(1))
-                     call readi(intensity%j(2))
-                     !
-                   case('FREQ-WINDOW','FREQ','NU','FREQUENCY')
-                     !
-                     call readf(intensity%freq_window(1))
-                     call readf(intensity%freq_window(2))
-                     !
-                   case('ENERGY')
-                     !
-                     call readu(w)
-                     !
-                     do while (trim(w)/="")
-                        !
-                        select case(w)
-                        !
-                        case("LOWER","LOW","L")
-                          !
-                          call readf(intensity%erange_low(1))
-                          call readf(intensity%erange_low(2))
-                          !
-                        case("UPPER","UPP","UP","U")
-                          !
-                          call readf(intensity%erange_upp(1))
-                          call readf(intensity%erange_upp(2))
-                          !
-                        end select 
-                        !
-                        call readu(w)
-                        !
-                     enddo 
-                     !
-                   case('QUANTA','V')
-                     !
-                     call readi(imode)
-                     !
-                     call readu(w)
-                     !
-                     do while (trim(w)/="")
-                        !
-                        select case(w)
-                        !
-                        case("LOWER","LOW","L")
-                          !
-                          call readi(intensity%v_low(imode,1))
-                          call readi(intensity%v_low(imode,2))
-                          !
-                        case("UPPER","UPP","UP","U")
-                          !
-                          call readi(intensity%v_upp(imode,1))
-                          call readi(intensity%v_upp(imode,2))
-                          !
-                        end select 
-                        !
-                        call readu(w)
-                        !
-                     enddo 
-                     !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select 
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo
-                 !
-                 if (trim(intensity%action) == 'ABSORPTION'.or.trim(intensity%action) == 'EMISSION') then 
-                   !
-                   ! define the selection pairs by gns if not yet defined
-                   !
-                   i_t = 0
-                   !
-                   do i = 1,sym%Nrepresen
-                     !
-                     if (intensity%isym_pairs(i)/=0) cycle
-                     !
-                     do j = 1,sym%Nrepresen
-                       !
-                       if (i/=j.and.intensity%isym_pairs(j)==0.and.intensity%gns(i)==intensity%gns(j)) then 
-                         !
-                         i_t = i_t + 1
-                         !
-                         intensity%isym_pairs(i) = i_t
-                         intensity%isym_pairs(j) = i_t
-                         !
-                       endif 
-                       !
-                     enddo
-                     !
-                   enddo
-                   !
-                 endif 
-                 !
-                 job%erange(1) = min(intensity%erange_low(1),intensity%erange_upp(1))
-                 job%erange(2) = max(intensity%erange_low(2),intensity%erange_upp(2))
-                 !
-               case("FITTING")
-                 !
-                 call readu(w)
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 action%fitting = .true.
-                 !
-                 do while (trim(w)/="".and.trim(w)/="END")
-                   !
-                   select case(w)
-                     !
-                   case('NONE')
-                     !
-                     action%fitting = .false.
-                     !
-                   case('J_LIST','JROTLIST','J-LIST','JLIST')
-                     !
-                     i = 0
-                     do while (item<Nitems.and.i<100)
-                        !
-                        i = i + 1 
-                        !
-                        call readi(fitting%j_list(i))
-                        !
-                     enddo
-                     !
-                   case('ITMAX','ITERMAX','ITER')
-                     !
-                     call readi(fitting%itermax)
-                     !
-                   case('ROBUST')
-                     !
-                     call readf(fitting%robust)
-                     !
-                   case('WATSON')
-                     !
-                     call readf(fitting%watson)
-                     !
-                   case('TARGET_RMS')
-                     !
-                     call readf(fitting%target_rms)
-                     !
-                   case('METHOD')
-                     !
-                     call readu(fitting%method)
-                     !
-                   case('FIT_TYPE')
-                     !
-                     call readu(fitting%fit_type)
-                     !
-                   case('THRESH_ASSIGN','THRESH_REASSIGN','LOCK')
-                     !
-                     call readf(fitting%threshold_lock)
-                     !
-                   case('THRESH_OBS-CALC') 
-                     ! switch off weights for residuals larger than THRESH_OBS-CALC
-                     !
-                     call readf(fitting%threshold_obs_calc)
-                     !
-                   case('FIT_SCALE') 
-                     ! parameter to scale the correction dx for fitting x = x + scale*dx, default = 0.4
-                     !
-                     call readf(fitting%fit_scale)
-                     !
-                   case("IPARAM")
-                     !
-                     call readi(fitting%iparam(1))
-                     call readi(fitting%iparam(2))
-                     !
-                   case("SYM","SYMM","SYMMETRY","SYMMETRIES","GNS")
-                     !
-                     job%isym_do = .false.
-                     job%select_gamma = .false.
-                     !
-                     do while (item<Nitems.and.item-1<sym%Nrepresen)
-                       !
-                       call readi(i)
-                       if (i>0) job%isym_do(i) = .true.
-                       if (i>0) job%select_gamma(i) = .true.
-                       !
-                     enddo
-                     !
-                   case('ENERCUT')
-                     !
-                     call readf(job%erange(2))
-                     !
-                   case('GEOMETRIES')
-                     !
-                     call readl(fitting%geom_file)
-                     !
-                   case('OUTPUT')
-                     !
-                     call readl(fitting%output_file)
-                     !
-                   case('FIT_FACTOR')
-                     !
-                     call readf(fitting%factor)
-                     !
-                   case('THRESH_COEFF','THRESH_COEFFICIENTS')
-                     !
-                     call readf(fitting%threshold_coeff)
-                     !
-                   case('OBS','OBS_ENERGIES')
-                     !
-                     call readi(fitting%Nenergies)
-                     !
-                     allocate (fitting%obs(1:fitting%Nenergies),stat=alloc)
-                     if (alloc/=0) then
-                       write (out,"(' Error ',i8,' initializing obs. energy related arrays')") alloc
-                       stop 'obs. energy arrays - alloc'
-                     end if
-                     !
-                     do i = 1,fitting%Nenergies
-                       allocate(fitting%obs(i)%quanta(0:trove%nmodes),stat=alloc)
-                       if (alloc/=0) then
-                         write (out,"(' Error ',i8,' initializing obs%quanta')") alloc
-                         stop 'initializing obs%quanta - alloc'
-                        end if
-                     enddo
-                     !
-                     i = 0
-                     !
-                     call read_line(eof) ; if (eof) exit
-                     call readu(w) 
-                     !
-                     do while (trim(w)/="END".and.i<fitting%Nenergies)
-                        !
-                        i = i + 1
-                        !
-                        if (nitems<trove%Nmodes+5) then 
-                           !
-                           write (out,"('FLinput: wrong number of records in obs_fitting_energies on row=',i6,'()')") i
-                           stop 'FLinput - illigal number of records in obs_fitting_energies'
-                           !
-                        elseif(nitems==trove%Nmodes+5) then
-                           !
-                           write (out,"('FLinput: old format in number of records in obs_fitting_energies on row=',i6)") i
-                           write (out,"('Please include K-quantum number as the column after energies')")
-                           stop 'FLinput - illigal number of records in obs_fitting_energies, missing K?'
-                           !
-                        endif 
-                        !
-                        read(w,*) fitting%obs(i)%Jrot
-                        !
-                        call readi(fitting%obs(i)%symmetry) 
-                        call readi(fitting%obs(i)%N)
-                        call readf(fitting%obs(i)%energy)
-                        !
-                        do j=0,trove%nmodes
-                          call readi( fitting%obs(i)%quanta(j) )
-                        enddo
-                        !
-                        call readf(fitting%obs(i)%weight)
-                        !
-                        call read_line(eof) ; if (eof) exit
-                        call readu(w)
-                        !
-                     enddo
-                     !
-                   case('J0FIT','J0FITTING')
-                     !
-                     action%band_fitting = .true.
-                     !
-                     call readi(j0fit%Nenergies)
-                     !
-                     allocate (j0fit%obs(1:j0fit%Nenergies),stat=alloc)
-                     if (alloc/=0) then
-                       write (out,"(' Error ',i8,' initializing obs. energy related arrays')") alloc
-                       stop 'obs. energy arrays - alloc'
-                     end if
-                     !
-                     do i = 1,j0fit%Nenergies
-                       allocate(j0fit%obs(i)%quanta(0:trove%nmodes),stat=alloc)
-                       if (alloc/=0) then
-                         write (out,"(' Error ',i8,' initializing obs%quanta')") alloc
-                         stop 'initializing obs%quanta - alloc'
-                        end if
-                     enddo
-                     !
-                     i = 0
-                     !
-                     call read_line(eof) ; if (eof) exit
-                     call readu(w) 
-                     !
-                     do while (trim(w)/="END".and.i<j0fit%Nenergies)
-                        !
-                        i = i + 1
-                        !
-                        if (nitems<trove%Nmodes+4) then 
-                           !
-                           write (out,"('FLinput: wrong number of records in j0fit_energies on row=',i6,'()')") i
-                           stop 'FLinput - illigal number of records in j0fit_energies'
-                           !
-                        endif 
-                        !
-                        !read(w,"(i)") j0fit%obs(i)%Jrot
-                        !
-                        read(w,*) j0fit%obs(i)%symmetry
-                        !
-                        call readi(j0fit%obs(i)%N)
-                        call readf(j0fit%obs(i)%energy)
-                        !
-                        do j=1,trove%nmodes
-                          call readi( j0fit%obs(i)%quanta(j) )
-                        enddo
-                        !
-                        call readf(j0fit%obs(i)%weight)
-                        !
-                        call read_line(eof) ; if (eof) exit
-                        call readu(w)
-                        !
-                     enddo
-                     !
-                   case default
-                     !
-                     call report ("Unrecognized unit name "//trim(w),.true.)
-                     !
-                   end select
-                   !
-                   call read_line(eof) ; if (eof) exit
-                   call readu(w)
-                   !
-                 enddo 
-                 !
-                 if (trim(w)/="".and.trim(w)/="END") then 
-                    !
-                    write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
-                    stop 'FLinput - illegal last line in CHECK_POINTS'
-                    !
-                 endif 
-                 !
-               case("DMS","DIPOLE","EXTERNAL")
-                 !
-                 extF_defined = .true.
-                 !
-                 if (Nmodes==0.or.Ncoords==0) then 
-                    !
-                    write (out,"('FLinput: EXTERNAL cannot appear before NMODES and Ncoords defined')") 
-                    stop 'FLinput - EXTERNAL defined befor NMODES'
-                    !
-                 endif 
-                 !
-                 ! read Nparam and Type of PES
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-                 do while(w(1:5)/='PARAM')
-                    !
-                    select case(w)
-                      !
-                    case("RANK")
-                      !
-                      call readi(extF%rank)
-                      !
-                      if (all(fitting%iparam(:)==(/1,1000000/))) fitting%iparam = (/1,extF%rank/)
-                      !
-                    case("DMS_TYPE","TYPE")
-                      !
-                      call readu(w)
-                      !
-                      extF%ftype = trim(w)
-                      !
-                   case("IPARAM")
-                     !
-                     if (fitting%iparam(2)==1000000) then 
-                       write(out,"('it is illegal to define iparam before rank in external field')")
-                       stop 'iparam is being defined before rank in external field'
-                     endif
-                     !
-                     if (fitting%iparam(1)==1)   call readi(fitting%iparam(1))
-                     if (fitting%iparam(1)==1e6) call readi(fitting%iparam(2))
-                      !
-                    case("NPARAM")
-                      !
-                      if (nitems/=extF%rank+1.and.nitems/=2) then
-                         write (out,"('wrong number of records in  EXTF-NPARAM, neither  ',i5,', nor  1')") extF%rank
-                         stop 'FLinput - wrong number of records in  EXTF-NPARAM'
-                      end if
-                      !
-                      allocate(extF%nterms(1:extF%rank),extF%maxord(1:extF%rank),stat=alloc)
-                      if (alloc/=0) stop 'FLinput - cannot allocate extF%nterms'
-                      !
-                      do i=1,min(extF%rank,nitems-1)
-                        call readi(extF%nterms(i))
-                      enddo
-                      !
-                      extF%nterms(nitems:extF%rank) = extF%nterms(1)
-                      !
-                      Nparam = maxval(extF%nterms(:),dim=1)
-                      !
-                      if (Nparam<1) then
-                         write (out,"('wrong value of EXTF-NPARAM = ',i5,', must be >0')") Nparam
-                         stop 'FLinput - wrong value of EXTF-NPARAM'
-                      end if
-                      !
-                    case("COEFF")
-                      !
-                      call readu(w)
-                      !
-                      exfF_coeff_type = trim(w)
-                      !
-                    case("THRESHOLD")
-                      !
-                      call readf(extF%matelem_threshold)
-                      !
-                    case("COORDS")
-                      !
-                      if (nitems-1==1) then 
-                         !
-                         call readu(w)
-                         extF%intcoords(:) = trim(w)
-                         !
-                         call read_line(eof) ; if (eof) exit
-                         call readu(w)
-                         cycle 
-                         !
-                      endif 
-                      !
-                      if (nitems/=trove%Nmodes+1) then
-                         write (out,"('wrong number of records in  EXTF-COORDS for trove%nmodes = ',i5)") trove%nmodes
-                         stop 'FLinput - wrong number of records in  EXTF-COORDS'
-                      end if
-                      !
-                      do imode=1,trove%nmodes
-                         call readu(extF%intcoords(imode))
-                      enddo
-                      !
-                    case("REF_GEOM","GEOM_REF")
-                      !
-                      if (nitems<Ncoords+1) then
-                         write (out,"('wrong number of records in  GEOM_REF for trove%Ncoords = ',i5)") trove%Ncoords
-                         stop 'FLinput - wrong number of records in  GEOM_REF'
-                      end if
-                      !
-                      imode = 0
-                      !
-                      !do while (imode<Ncoords.and.i<nitems)
-                      !
-                      do i=2,nitems
-                        !
-                        call readu(w)
-                        !
-                        lfact = 1.0_rk
-                        !
-                        select case(w)
-                        !
-                        case("ANGSTROM")
-                          !
-                          lfact= 1.0_rk
-                          !
-                        case("BOHR")
-                          !
-                          lfact=bohr
-                          !
-                        case("DEG","DEGREE","DEGREES")
-                          !
-                          lfact=1.0_rk/rad
-                          !
-                        case default
-                          !
-                          imode = imode + 1
-                          !
-                          if (imode>Ncoords) then
-                             write (out,"('too many records in  GEOM_REF for trove%Ncoords = ',i5)") trove%Ncoords
-                             stop 'FLinput - wrong number of records in  GEOM_REF'
-                          end if
-                          !
-                          read(w,*) extF%geom_ref(imode)
-                          !
-                        end select
-                        !
-                        extF%geom_ref(imode) = extF%geom_ref(imode)*lfact
-                        !
-                      enddo
-                      !
-                    case ("DSTEP_BMAT")
-                      !
-                      call readf(fd_step_Bmat)
-                      !
-                    case ("DSTEP")
-                      !
-                      ! If all dsteps are the same - only one number in the input can be given. 
-                      !
-                      if (nitems-1==1) then 
-                         !
-                         call readf(f_t)
-                         extF%fdstep(:) = f_t
-                         call read_line(eof) ; if (eof) exit
-                         call readu(w)
-                         cycle 
-                         !
-                      endif 
-                      !
-                      if (nitems-1/=Nmodes) then 
-                         !
-                         write (out,"('FLinput: wrong number elements in extF%dstep : ',i8)") nitems-1
-                         stop 'FLinput - illigal number of extF%dstep'
-                         !
-                      endif 
-                      !
-                      do i =1,Nmodes
-                         !
-                         call readf(f_t)
-                         extF%fdstep(i) = f_t
-                         !
-                      end do
-                      !
-                    case("DIPORDER","ORDER","ORDERS")
-                      !
-                      if (nitems/=extF%rank+1.and.nitems/=2) then
-                         write (out,"('wrong number of records in  EXTF-ORDER for rank = ',i5)") extF%rank
-                         stop 'FLinput - wrong number of records in  EXTF-ORDER'
-                      end if
-                      !
-                      do i=1,min(extF%rank,nitems-1)
-                        call readi(extF%maxord(i))
-                      enddo
-                      !
-                      extF%maxord(nitems:extF%rank) = extF%maxord(1)
-                      !
-                      trove%NExtOrder = maxval(extF%maxord(:),dim=1)
-                      !
-                    case default
-                      !
-                      call report ("Unrecognized unit name "//trim(w),.true.)
-                      !
-                    end select
-                    !
-                    call read_line(eof) ; if (eof) exit
-                    call readu(w)
-                    !
-                 enddo
-                 !
-                 ! Allocation of the pot. parameters 
-                 !
-                 allocate (extF%coef(Nparam,extF%rank),extF%name(Nparam,extF%rank),& 
-                           extF%term(1:trove%Ncoords,Nparam,extF%rank),&
-                           extF%ifit(Nparam,extF%rank),stat=alloc)
-                 if (alloc/=0) then
-                    write (out,"(' Error ',i9,' allocating matix extF%coef ')") alloc
-                    stop 'FLinput - cannot allocate extF%coef'
-                 end if
-                 !
-                 iparam = 0
-                 extF%coef = 0
-                 extF%name = 'xxxx'
-                 extF%term = -1
-                 extF%ifit = 1
-                 !
-                 Nparam = sum(extF%nterms(:))
-                 !
-                 do imu = 1,extF%rank
-                   !
-                   do iterm = 1, extF%nterms(imu)
-                     !
-                     iparam = iparam+1 
-                     !
-                     call read_line(eof) ; if (eof) exit
-                     call readu(w)
-                     !
-                     if (trim(w)=="".or.trim(w)=="END") then
-                         write (out,"('FLinput: wrong number of rows in DMS, imu = ',i6,' i = ',i8)") imu,iterm
-                         stop 'FLinput - illigal number of rows in DMS'
-                     endif
-                     !
-                     select case(trim(exfF_coeff_type))
-                     !
-                     case("LIST")
-                       !
-                       extF%name(iterm,imu)=trim(w)
-                       !
-                       call readi(i_t) ; extF%ifit(iterm,imu) = i_t
-                       call readf(f_t) ; extF%coef(iterm,imu) = f_t
-                       !
-                     case("POWERS")
-                       !
-                       if (nitems<trove%Ncoords+3) then 
-                          !
-                          write (out,"('FLinput: wrong number of records in extF on row=',i6,'()')") iparam
-                          stop 'FLinput - illigal number of records in extF'
-                          !
-                       endif 
-                       !
-                       do i=1,trove%Ncoords
-                          !
-                          call readi(extF%term(i,iterm,imu))
-                          !
-                       enddo
-                       !
-                       call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
-                       call readf(f_t); extF%coef(iterm,imu) = f_t
-                       !
-                       write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
-                       !
-                       write(extF%name(iterm,imu),my_fmt) 'f',(mod(extF%term(i,iterm,imu),10),i=1,trove%Ncoords)
-                       !
-                       if (any(extF%term(:,iterm,imu)<0)) then 
-                           write(out,"('FLinput: negative extF powers on row',i8)") iparam
-                           stop 'FLinput: wrong extF indexes '
-                       endif 
-                       !
-                     case default
-                       !
-                       call report ("Unrecognized unit name "//trim(w),.true.)
-                       !
-                     end select
-                     !
-                   enddo
-                   !
-                 enddo
-                 !
-                 call read_line(eof) ; if (eof) exit
-                 call readu(w)
-                 !
-               case default
-                 call report ("Principal keyword "//trim(w)//" not recognized",.true.)
-               end select
-               !
-           end do
-           !
-           select case (trim(job%IOextF_action))
-             !
-           case ('SAVE', 'DIVIDE', 'SPLIT')
-             if (trim(trove%IO_ext_coeff) == 'NONE') then
-              FLextF_coeffs = .true.
-              !
-              !write(out,"('FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed')")
-              !stop 'FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed'
-              !
-            end if
            end select
            !
-           if (trim(job%IOextF_action)=='SAVE') then 
-               if (trim(job%IOcontr_action)  =='NONE') job%IOcontr_action   = 'READ'
-               if (trim(job%IOj0matel_action)=='NONE'.and.job%vib_contract) job%IOj0matel_action = 'READ'
-           end if 
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
            !
-           if (.not.symmetry_defined) then 
-              !
-              call SymmetryInitialize(job%sym_group)
-              !
-              symmetry_defined = .true.
-              !
-           endif
-           !
-           if (job%verbose>=6) then
-             !
-             call print_symmetries
-             !    
-           endif
-           !
-           if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
-              write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
-              stop 'FLinput - The C2VN number is undefined or too small'
-           endif
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
             !
-           if (.not.refer_defined) then 
-              !
-              trove%local_ref = trove%local_eq
-              !
-           endif
-           if (.not.local_eq_transformed_defined) then
-              !
-              trove%local_eq_transformed = trove%local_eq
-           endif
-              !
-           if (.not.basis_defined) then 
-              !
-              write (out,"('FLinput: The basis set is not defined')") 
-              stop 'FLinput - basis set is not defined'
-              !
-           endif 
-           !
-           if (.not.chk_defined) then 
-              !
-              write (out,"('FLinput: The check_point section has not been defined')") 
-              stop 'FLinput - The check_point section has not been defined'
-              !
-           endif 
-           !
-           if (.not.zmat_defined) then 
-              !
-              write (out,"('FLinput: ZMAT is not defined')") 
-              stop 'FLinput - ZMAT is not defined'
-              !
-           endif 
-           !
-           if (.not.pot_defined) then 
-              !
-              write (out,"('FLinput: POTEN is not defined')") 
-              stop 'FLinput - POTEN is not defined'
-              !
-           endif 
-           !
-           if (FLextF_matelem.and..not.extF_defined) then 
-              !
-              write (out,"('FLinput: External function has to be defined for external mat-elem calcs. ')") 
-              stop 'FLinput - EXTF is not defined'
-              !
-           endif 
-           !
-           if (action%fitting.and..not.extF_defined.and..not.action%band_fitting) then 
-              !
-              write (out,"('FLinput: External function has to be defined for performing fitting ')") 
-              stop 'FLinput - EXTF is not defined'
-              !
-           endif 
-           !
-           !
-           if (.not.equil_defined) then 
-              !
-              write (out,"('FLinput: EQUIL is not defined')") 
-              stop 'FLinput - EQUIL is not defined'
-              !
-           endif 
-           !
-           if (trim(job%PTtype)/='DIAGONAL'.and.manifold==1.and.NPTorder>0) then 
-              !
-              write (out,"('FLinput: PTtype  not compatible with non-rigid bender:',a)") trim(job%PTtype)
-              stop 'FLinput - wrong PTtype'
-              !
-           endif
-           !
-           if (FLextF_coeffs.and..not.extF_defined) then 
-              write (out,"('FLinput: External/Dipole field has to be specified when EXTERNAL checkpoint is used',a)")
-              stop 'FLinput - External/Dipole field has to be specified for the EXTERNAL checkpoint'
-           endif 
-           !
-           ! For the transformation to the j=0 basis set representation we require 
-           ! to work only with all modes as one class in the contr. vibrational representaion, i.e.
-           ! the vibr. Hamiltonian is assumed to be diagonal in this representaion:
-           !
-           if ( any( (/character(len=wl) :: trim(job%IOj0ext_action),trim(job%IOj0matel_action)/) /='NONE' ) ) then 
-              !
-              job%vib_contract = .true.
-              !
-              do i=1,Nmodes
-                 job%bset(i)%class = 1
-              enddo
-              !
-              if (any(trim(job%IOj0ext_action) == (/'READ'/) ) ) then 
-                job%extFmat_file  = job%exteigen_file
-                job%extmat_suffix = job%j0extmat_suffix
-              endif 
-              !
-              if (trim(job%IOj0matel_action) == 'READ') then 
-                job%kinetmat_file = job%kineteigen_file
-                job%matelem_suffix = job%j0matelem_suffix
-              endif 
-              !
-              if (trim(job%IOeigen_action)=='SAVE'.and.action%convert_vibme) then 
-                job%IOeigen_action = 'NONE'
-                write(out,"('FLReadInput: It is illegal to save eigenvectors during the J=0 convertion; EIGENFUNC changed to NONE')")
-              endif
-              !
-              if (trim(job%IOcontr_action)=='READ'.and.action%convert_vibme) then 
-                job%IOcontr_action = 'NONE'
-                write(out,"('FLReadInput: It is illegal to <CONTRACT READ> during the J=0 convertion; CONTRACT changed to NONE')")
-              endif
-              !
-              if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND'.or.trim(job%IOj0matel_action)=='READ'.or.&
-                       trim(job%IOj0ext_action)=='READ') then 
-                !
-                !if (trim(job%eigenfile%filebase)/='eigen') then 
-                  !
-                  job%eigenfile%filebase   = 'j0eigen'
-                  job%eigenfile%dscr       = 'j0eigen_descr'
-                  job%eigenfile%primitives = 'j0eigen_quanta'
-                  job%eigenfile%vectors    = 'j0eigen_vectors'
-                  !if (job%IOvector_symm) job%eigenfile%vectors    = 'j0eigen_vectors'
-                  !
-                !endif 
-                !
-                job%contrfile%dscr       = 'j0'//trim(job%contrfile%dscr)
-                job%contrfile%primitives = 'j0'//trim(job%contrfile%primitives)
-                job%contrfile%vectors    = 'j0'//trim(job%contrfile%vectors)
-                job%contrfile%dvr        = 'j0'//trim(job%contrfile%dvr)
-                !
-              endif 
-              !
-           endif
-           !
-           if ( job%convert_model_j0.and.job%bset(0)%range(1)>0 ) then
-             write (out,"('EIGENFUNC SAVE CONVERT cannot be used with jrot>0')") jrot
-             stop 'EIGENFUNC SAVE CONVERT cannot be used with jrot>0'
-           endif
-           !
-           if ( trove%triatom_sing_resolve .and. (trove%Natoms/=3 .or. trove%Nmodes/=3 ) ) then
-             write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Nmodes=Natoms=3')") 
-             stop 'Illegal usage of LEGENDRE or SINRHO'
-           endif
-           !
-           trove%jmax = jrot 
-           !
-           write(char_j,"(i4)") jrot
-           !
-           job%eigenfile%dscr       = trim(job%eigenfile%dscr)//trim(adjustl(char_j))       !//'.chk'
-           job%eigenfile%primitives = trim(job%eigenfile%primitives)//trim(adjustl(char_j)) !//'.chk'
-           job%eigenfile%vectors    = trim(job%eigenfile%vectors)//trim(adjustl(char_j))    !//'.chk'
-           !
-           ! Check if everything defined 
-           !
-           if (job%verbose>=4) write(out,"('FLReadInput/end')")  
-           !
-           contains
-           !
-           subroutine print_symmetries
-             integer(ik) :: igamma,iclass,ioper,ielem
+            write (out,"('FLinput: wrong last line in PRINT =',a)") trim(w)
+            stop 'FLinput - illegal last line in PRINT'
+            !
+         endif 
+         !
+         !
+       case ("DVR")
+         !
+         trove%dvr = .true.
+         trove%fbr = .false.
+         !
+         if (Nitems>1) then 
+            call readu(w)
+            !
+            if (trim(w)=="SMOLYAK") trove%smolyak = .true.
+            !
+            if (Nitems>2) then 
+              call readu(trove%smolyak_rule)
+            endif
+            !
+         endif
+         !
+       case ("FBR")
+         !
+         trove%dvr = .false.
+         trove%fbr = .true.
+         !
+       case ("NATOMS")
+         !
+         call readi(trove%Natoms) 
+         !
+         Natoms = trove%Natoms
+         !
+       case ("MEM","MEMORY")
+         !
+         call readf(memory_limit)
+         !
+         call readu(w)
+         !
+         select case(w)
              !
-             write(out,"(/'Symmetry:',a)") trim(sym%group)
-             !    
-             write(out,"(/'Characters')")
+           case default 
              !
-             do igamma = 1,sym%Nrepresen
-               do iclass = 1,sym%Nclasses
-                  write(out,"(i4,1x,i4,1x,f16.8)") igamma,iclass,sym%characters(igamma,iclass)
-              enddo 
+             call report("Unexpected argument in MEMORY",.true.)
+             !
+           case("TB","T")
+             !
+             memory_limit = memory_limit*1024_rk
+             !
+           case("GB","G")
+             !
+             memory_limit = memory_limit
+             !
+           case("MB","M")
+             !
+             memory_limit = memory_limit/1024_rk
+             !
+           case("KB","K")
+             !
+             memory_limit = memory_limit/1024_rk**2
+             !
+           case("B")
+             !
+             memory_limit = memory_limit/1024_rk**3
+             !
+         end select
+         !
+       case ("NMODES")
+         !
+         call readi(trove%Nmodes) 
+         Nmodes = trove%Nmodes
+         ! 
+         ! Enviroment variable to be seen outside the module
+         !
+         FLNmodes = trove%Nmodes
+         !
+         ! Allocation of bset
+         !
+         allocate (job%bset(0:Nmodes),trove%fdstep(Nmodes),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate bs and fdstep')") alloc
+             stop 'FLinput, bs and fdstep - out of memory'
+         end if
+         !
+         allocate (extF%intcoords(1:Nmodes),extF%fdstep(Nmodes),stat=alloc)
+         if (alloc/=0) then
+            write (out,"(' Error ',i9,' allocating matix extF%intcoords ')") alloc
+            stop 'FLinput - cannot allocate extF%intcoords'
+         end if
+         !
+         allocate (job%symm_toler(Nmodes),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate symm_toler')") alloc
+             stop 'FLinput, symm_toler - out of memory'
+         end if
+         !
+         ! defafault values for job%symm_toler
+         !
+         job%symm_toler = symm_toler_defaul
+         !
+         ! default values for bset and fdstep 
+         !
+         job%bset(1:trove%Nmodes) = vibbasisset_
+         job%bset(0)              = rotbasisset_
+         job%bset(0)%range(1) = 0
+         job%bset(0)%range(2) = 0
+         !
+         trove%fdstep = fdstep_
+         extF%fdstep = fdstep_
+         !
+         ! Default values 
+         !
+         do i=0,Nmodes
+            job%bset(i)%species = i
+         enddo
+         !
+         job%iswap(1) = 1 ; job%iswap(2) =  (3+Nmodes)*3
+         !
+         allocate (trove%PotPolyad(1:Nmodes),stat=alloc)
+         !
+         trove%PotPolyad = 1.0_rk
+         !
+       case ("ENERCUT")
+         !
+         call readf(job%enercut)
+         job%enercutoff%general = job%enercut
+         job%enercutoff%contr   = job%enercut
+         job%enercutoff%primt   = job%enercut
+         job%enercutoff%matelem = job%enercut
+         !
+       case("PRIMITIVES")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           case ("NUMERPOINTS")
+             !
+             call readi(trove%numerpoints)
+             !
+           case ("NPOLYADS")
+             !
+             call readi(Npolyads)
+             !
+             job%Npolyads_prim  = Npolyads
+             job%Npolyads_contr = Npolyads
+             job%MaxVibMomentum_contr = Npolyads
+             !
+           case ("ENERCUT")
+             !
+             call readf(job%enercut)
+             job%enercutoff%general = job%enercut
+             job%enercutoff%contr   = job%enercut
+             job%enercutoff%primt   = job%enercut
+             job%enercutoff%matelem = job%enercut
+             !
+           case ("POTENCUT")
+             !
+             call readf(job%potencut)
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in PRIMITIVES =',a)") trim(w)
+            stop 'FLinput - illegal last line in PRIMITIVES'
+            !
+         endif 
+         !
+       case("CONTRACTION")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+             !
+           case ("ENERCUT")
+             !
+             call readf(job%enercutoff%contr)
+             !
+             job%erange(2) = job%enercutoff%contr
+             !
+           case ("ENERCUT_PRIMITIVE","ENERCUT_PRIMIT","ENERCUT_PRIM")
+             !
+             call readf(job%enercutoff%primt)
+             !
+           case ("ENERCUT_MATELEM","ENERMAX_MATELEM")
+             !
+             call readf(job%enercutoff%matelem)
+             !
+           case ("ENERCUT_DELTA","ENERMAX_DELTA")
+             !
+             call readf(job%enercutoff%DeltaE)
+             !
+           case ("SYMM_TOLER")
+             !
+             !call readf(job%symm_toler)
+             !
+             if (nitems-1==1) then 
+                call readf(f_t)
+                job%symm_toler(:) = f_t
+                call read_line(eof) ; if (eof) exit
+                call readu(w)
+                cycle 
+             endif 
+             !
+             if (nitems-1/=Nmodes) then 
+                write (out,"('FLinput: wrong number elements in job%symm_toler : ',i8)") nitems-1
+                stop 'FLinput - illigal number of job%symm_toler'
+             endif 
+             !
+             do i =1,Nmodes
+                !
+                call readf(job%symm_toler(i))
+                !
+             end do
+             !
+           case ("SAMPLE_POINTS")
+             !
+             call readi(job%msample_points)
+             !
+           case ("SAMPLE_ATTEMPTS")
+             !
+             call readi(job%msample_attempts)
+             !
+           case ("COEFF_THRESH","COEFF-THRESH")
+             !
+             call readf(job%coeff_thresh)
+             !
+           case ("EXP_COEFF_THRESH")
+             !
+             call readf(job%exp_coeff_thresh)
+             !
+           case ("ENERGY-THRESHOLD","ENERGY_THRESH","ENERGY-THRESH")
+             !
+             call readf(job%ener_thresh)
+             !
+           case ("DEGEN_THRESH","DEGENERACY")
+             !
+             call readf(job%degen_threshold)
+             !
+           case ("NPOLYADS")
+             !
+             call readi(job%Npolyads_contr)
+             !
+           case ("N_VIBMOMENT","NVIBMOMENT")
+             !
+             call readi(job%MaxVibMomentum_contr)
+             !
+           case ("NPOLYADS_PRIM","NPOLYADS_PRIMITIVE")
+             !
+             call readi(job%Npolyads_prim)
+             !
+           case ("VIBRATIONAL")
+             !
+             job%vib_contract = .true.
+             !
+           case ("EIGEN_COEFF","EIGEN_PRUNING")
+             ! 
+             job%eigen_contract = .true.
+             !
+           case("EIGEN_PRUNING_THRES")
+             !
+             call readf(coeffprun%contribution_threshold)
+             !
+           case ("FAST_CI","FAST","FAST-CI")
+             !
+             job%contrci_me_fast = .true.
+             trove%IO_contrCI = "NONE"
+             !
+           case ("VIBINTENSITY","TM","TM_CUTOFF")
+             !
+             call readf(job%TMcutoff)
+             if (job%TMcutoff>0.0_ark) job%TMpruning = .true.
+             !
+           case ("TM_ENERMIN")
+             !
+             call readf(job%TMenermin)
+             !
+           case ("TM_PRINUNG","TMPRINUNG")
+             !
+             job%TMpruning = .true.
+             !
+           case ("CLUSTER")
+             !
+             call readf(job%cluster)
+             !
+           case ("VIB-ROT")
+             !
+             job%vib_rot_contr = .true.
+             !
+             job%IOmatelem_split = .true.
+             job%IOextF_divide  = .true.
+             !
+             job%iswap(1) = 0
+             job%iswap(2) = 1e6
+             !
+           case('SWAP_SIZE')
+             !
+             call readi(job%swap_size)
+             !
+           case('STORED_SIZE','STORED')
+             !
+             call readi(job%stored_size)
+             !
+           case('COMPRESSION','COMPRESS')
+             !
+             call readf(job%compress)
+             !
+           case ("MODEL")
+             !
+             call readu(w)
+             !
+             select case(w)
+               !
+             case ("NONE")
+               !
+               job%vib_contract = .false.
+               !
+             case ("VIBRATIONAL","J=0")
+               !
+               job%vib_contract = .true.
+               job%fast = .false.
+               !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+             end select
+             !
+           case('ERANGE')
+             !
+             call readf(job%erange(2))
+             !
+           case ("ROTSYM")
+             !
+             call readu(w)
+             !
+             select case(w)
+               !
+             case ("NONE","K-BASED")
+               !
+               job%rotsym_do = .false.
+               !
+             case ("EULER","EULER-BASED")
+               !
+               job%rotsym_do = .true.
+               !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+             end select
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CONTRACTION =',a)") trim(w)
+            stop 'FLinput - illegal last line in CONTRACTION'
+            !
+         endif 
+         !
+       case ("VERBOSE")
+         !
+         call readi(job%verbose)
+         !
+       case ("PTDELTANU")
+         !
+         call readi(job%PTDeltaQuanta)
+         !
+       case ("PTTHRESH")
+         !
+         call readf(job%PTthreshold)
+         !
+       case ("PTZERO")
+         !
+         call readf(job%zeroerror)
+         !
+       case ("MATRIXTYPE")
+         !
+         ! obsolete! 
+         !
+         call readu(w)
+         !
+       case ("PTPOTSHIFT")
+         !
+         call readi(job%pot_pt_shift)
+         !
+       case ("NO-SPARSE")
+         !
+         trove%sparse = .false.
+         !
+       case ("SPARSE")
+         !
+         trove%sparse = .true.
+         !
+       case ("IRON-OUT","IRONOUT","IRON-FIELD-OUT")
+         !
+         FL_iron_field_out = .true.
+         !
+       case ("DIAGONALIZER")
+         !
+         call readu(w)
+         !
+         select case (trim(w))
+         !
+         case('SYEV','SYEVR','SYEVX')
+           !
+           job%diagonalizer = trim(w)
+           !
+         case default
+           !
+           if (trim(w)/="") &
+              call report ("Unrecognized unit name "//trim(w),.true.)
+           !
+         end select
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           case('SYEV','SYEVR','SYEVD','SYEVX','SEUPD','PSEUPD','SYEV4','SYEVR4','SYEVR-4TO8','SYEV-4TO8','SYEV-KROT',&
+                'SYEVR-KROT','SYEV-E-PT','SYEVR-E-PT','SYEV-BS-PT','SYEVR-BS-PT','SYEV-KROT-BS-PT','SYEVR-KROT-BS-PT',&
+                'SYEV-KROT-EN-PT','SYEV-KROT-EN','SYEVR-KROT-EN-PT','ULEN','DSTEVX','DSTEVR','DSTEVD','DSTEV','DSTEVX-P',&
+                'DSTEVR-P','DSTEVD-P','DSTEV-P','DSYEV-ILP','DSYEVR-ILP','DSYEVD-ILP','DSYEVX-ILP','READ-EIGEN',&
+                'SYEV0','PROPACK','READ-EIGEN-GRID','PLASMA_DSYTRDX','ENERGY=DIAGONAL','NO-DIAGONALIZATION','READ-EIGEN-GRID4',&
+                'READ-ENERGIES')
+             !
+             job%diagonalizer = trim(w)
+             !
+             if (trim(w)=='SEUPD'.or.trim(w)=='PSEUPD'.or.trim(w)=='PROPACK') then 
+                job%sparse = .true.
+             endif
+             !
+             if ( w(1:10)=='READ-EIGEN'.and.nitems==2) then 
+                !
+                call readu(w)
+                job%solution_file = trim(w)
+                !
+             endif
+             !
+             if (trim(w)=='READ-ENERGIES') then 
+                !
+                job%ignore_vectors = .true.
+                !
+             endif
+             !
+           case('MATEXP','MATEXP_SPARSE','MATEXP-SPARSE')
+             !
+             job%diagonalizer = w
+             !
+             if (trim(w)=='MATEXP_SPARSE'.or.trim(w)=='MATEXP-SPARSE') then 
+                job%diagonalizer ='MATEXP-SPARSE' 
+                job%sparse = .true.
+             endif
+             !
+             if (.not.symmetry_defined) then 
+                !
+                write (out,"('FLinput: MATEXP cannot appear before symmetry is defined')") 
+                stop 'FLinput - MATEXP defined before symmetry'
+                !
+             endif 
+             !
+             allocate(job%partfunc%gns(sym%Nrepresen),stat=alloc)
+             if (alloc/=0) stop 'FLinput, job*partfunc%gns - out of memory'
+             !
+             job%partfunc%gns = 1.0_rk
+             !
+           case('READ','SAVE','STORE','SAVE-LOWER','STORE-LOWER','STORE_CHEAP','READ-LOWER')
+             !
+             job%mat_readwrite = w
+             !
+             if ( nitems==2) then 
+                call readu(w)
+                job%matrix_file = trim(w)
+             endif
+             !
+           case ("GAMMA")
+             !
+             if (.not.symmetry_defined) then 
+                !
+                write (out,"('FLinput: keyword GAMMA in CONTRACT cannot appear before symmetry is defined')") 
+                stop 'FLinput - symmetry should be defined before GAMMA '
+                !
+             endif
+             !
+             if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
+               write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i7)") Nitems-1
+               stop 'FLinput - illegal number of gammas in DIAGONALIZER'
+             endif
+             !
+             i = 0
+             job%select_gamma = .false.
+             !
+             do while (item<Nitems.and.i<size(job%select_gamma))
+                !
+                i = i + 1
+                !
+                call readu(w)
+                !
+                if (trim(w)/="-") then
+                  !
+                  read(w,*) i_t
+                  job%select_gamma(i_t) = .true.
+                  !
+                else
+                  !
+                  call readi(i_tt)
+                  !
+                  do while (i_t<i_tt.and.i<size(job%select_gamma))
+                    !
+                    i_t = i_t + 1
+                    job%select_gamma(i_t) = .true.
+                    i = i + 1
+                    !
+                  enddo
+                  i = i - 1
+                  !
+                endif
+                !
              enddo
              !
-             write(out,"(/'Irreps:')")
+             !call readi(i_t)
              !
-             do igamma = 1,sym%Nrepresen
-               !
-               do ioper = 1,sym%Noper
-                  do ielem = 1,sym%degen(igamma)
-                    write(out,"(i4,1x,i4,1x,i4,1x,10f16.8)") igamma,ioper,ielem,sym%irr(igamma,ioper)%repres(ielem,:)
-                  enddo
-               enddo 
-               !
-             enddo 
+             !do while (i_t/=0.and.i<=size(job%select_gamma))
+             !   !
+             !   i = i+1
+             !   !
+             !   job%select_gamma(i_t) = .true.
+             !   !
+             !   call readi(i_t)
+             !   !
+             !enddo 
              !
-           end subroutine print_symmetries
+           case ("GRAM-SCHMIDT","SVD","SCHMIDT")
+             !
+             job%orthogonalizer =trim(w)
+             !
+           case ("SLOW")
+             !
+             job%fast = .false.
+             !
+           case ("FAST")
+             !
+             job%fast = .true.
+             !
+           case ("SPARSE")
+             !
+             job%sparse = .true.
+             !
+           case ("NCV","IWORK","IFACTOR")
+             !
+             call readf(job%factor)
+             !
+           case ("PT-THRESHOLD","PT-THRESH")
+             !
+             call readf(job%pt_ener_thresh)
+             !
+           case ("RESTART")
+             !
+             call readu(w)
+             !
+             if (trim(w)=='YES') then
+               job%restart = .true.
+             elseif(trim(w)/='NO') then
+               write (out,"('FLinput: wrong RESTART key, can be only YES or NO, NOT ',a)") trim(w)
+               stop 'FLinput - wrong RESTART key'
+             endif
+             !
+           case("SWAP_AFTER")
+             !
+             call readi(job%swap_after)
+             !
+           case("MAX_SWAP_SIZE")
+             !
+             call readf(job%max_swap_size)
+             !
+           case("NROOTS")
+             !
+             !call readi(job%nroots)
+             !
+             if (.not.symmetry_defined) then 
+                !
+                write (out,"('FLinput: keyword nroots cannot appear before symmetry is defined')") 
+                stop 'FLinput - symmetry should be defined before NROOTS '
+                !
+             endif
+             !
+             if (nitems-1==1) then 
+                !
+                call readi(i)
+                job%nroots(:) = i
+                !
+             else
+               !
+               if (nitems-1>sym%Nrepresen) then 
+                  !
+                  write (out,"('FLinput: too many entries in roots (>sym%Nrepresen): ',i8)") nitems-1
+                  stop 'FLinput - illigal number of entries in nroots'
+                  !
+               endif 
+               !
+               do i =1,nitems-1
+                  !
+                  call readi(job%nroots(i))
+                  !
+               end do
+               !
+             endif
+             !
+           case("MAXITER")
+             !
+             call readi(job%maxiter)
+             !
+           case("TOLERANCE","TOL")
+             !
+             call readf(job%tolerance)
+             !
+           case("UPLIMIT","ENERMAX","ENERCUT")
+             !
+             call readf(job%upper_ener)
+             !
+           case("THRESHOLD","THRESH")
+             !
+             call readf(job%thresh)
+             !
+           case("TEST")
+             !
+             job%test_diag = .true.
+             !
+           case("TEMPERATURE")
+             !
+             call readf(job%partfunc%temperature)
+             !
+           case("ZPE")
+             !
+             call readf(job%partfunc%zpe)
+             job%zpe = job%partfunc%zpe
+             !
+           case("GNS")
+             !
+             i = 0
+             !
+             job%isym_do = .false.
+             !
+             do while (item<Nitems.and.i<sym%Nrepresen)
+               !
+               i = i + 1
+               call readf(job%partfunc%gns(i))
+               if (job%partfunc%gns(i)>small_) job%isym_do(i) = .true.
+               !
+             enddo
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
            !
-        end subroutine FLReadInput
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in DIAGONALIZER =',a)") trim(w)
+            stop 'FLinput - illigal last line in DIAGONALIZER'
+            !
+         endif 
+         !
+         if (.not. symmetry_defined) then
+              write (out,"('FLinput: DIAGONALIZER cannot appear before symmetry is defined')") 
+              stop 'FLinput - DIAGONALIZER defined before symmetry'
+         endif
+         !
+         if (job%upper_ener/=uv_syevr_.and.any(job%nroots/=nroots_)) then 
+             !
+             write (out,"('FLinput: contradicted definition in SYEVR:')")
+             write (out,"('         both nroots and uplimit defined. ')")
+             write (out,"('         the program will disregard uplimit and be based on nroots')")
+             job%upper_ener = uv_syevr_
+             !
+         endif
+         !
+       case ("DSTEP")
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: DSTEP cannot appear before NMODES')") 
+            stop 'FLinput - DSTEP defined befor NMODES'
+            !
+         endif
+         !
+         ! If all dsteps are the same - only one number in the input can be given. 
+         !
+         if (nitems-1==1) then 
+            !
+            call readf(f_t)
+            trove%fdstep(:) = f_t
+            cycle 
+            !
+         endif 
+         !
+         if (nitems-1/=Nmodes) then 
+            !
+            write (out,"('FLinput: wrong number elements in dstep : ',i8)") nitems-1
+            stop 'FLinput - illigal number of dsteps'
+            !
+         endif 
+         !
+         do i =1,Nmodes
+            !
+            call readf(trove%fdstep(i))
+            !
+         end do
+         !
+         extF%fdstep = trove%fdstep
+         !
+       case("COORDS")
+         !
+         call readu(w)
+         !
+         trove%internal_coords = trim(w)
+         !
+       case("TRANSFORM","XI")
+         !
+         call readu(w)
+         !
+         trove%coords_transform =    trim(w)
+         !
+       case("MOLTYPE")
+         !
+         call readu(w)
+         !
+         trove%moltype = trim(w)
+         !
+       case("IOTHREADS")
+         !
+         call readi(trove%iothreads)
+         !
+       case("MOLECULE") ! optional, makes no effect 
+         !
+         call readu(w)
+         !
+         Molecule = trim(w)
+         !
+       case("PTTYPE") 
+         !
+         call readu(w)
+         !
+         job%PTtype = trim(w)
+         !
+       case("SINGULAR-AXIS") 
+         !
+         call readi(trove%lincoord)
+         job%lincoord = trove%lincoord
+         !
+       case("SYMGROUP","SYMMETRY","SYMM","SYM","SYM_GROUP") 
+         !
+         call readu(w)
+         !
+         if (nitems>2) call readi(sym%N)
+         !
+         trove%symmetry = trim(w)
+         job%sym_group = trove%symmetry
+         !
+         if (trim(job%sym_group)=="C".or.trim(job%sym_group)=="C(M)") job%sym_C = .true.
+         !
+         ! Initialize the group symmetry 
+         !
+         call SymmetryInitialize(job%sym_group)
+         !
+         symmetry_defined = .true.
+         !
+         allocate(job%isym_do(sym%Nrepresen),stat=alloc)
+         if (alloc/=0)  stop 'FLinput, isym_do - out of memory'
 
-        subroutine check_read_save_none(w,place)
-          !
-          character(len=cl),intent(in) :: w,place
-          !
-          select case(trim(w))
-          !
-          case('NONE','SAVE','READ','SEPARATE','ASCII')
+         allocate(job%select_gamma(sym%Nrepresen),stat=alloc)
+         if (alloc/=0)  stop 'FLinput, select_gamma - out of memory'
+         !
+         job%select_gamma = .true.
+         !
+         allocate(job%nroots(sym%Nrepresen),stat=alloc)
+         call ArrayStart('nroots:sym',alloc,size(job%nroots),kind(job%nroots))
+         !
+         job%nroots = nroots_
+         !
+         job%isym_do = .true.
+         !
+       case("REFER-CONF","REFER-CONFIGURATION")
+         !
+         call readu(w)
+         !
+         select case(w)
+         !
+         case("NON-RIGID")
+           !
+           manifold = 1
+           !
+         case("RIGID")
+           !
+           manifold = 0
+           !
+         case default
+           !
+           call report ("Unrecognized unit name "//trim(w),.true.)
+           !
+         end select
+         !
+       case("ZMAT")
+         !
+         iatom = 0
+         !
+         if (Natoms==0) then 
             !
-            continue
+            write (out,"('FLinput: ZMAT cannot appear before NATOMS')") 
+            stop 'FLinput - ZMAT defined befor NATOMS'
             !
-          case default 
+         endif 
+         !
+         allocate (trove%zmatrix(Natoms),trove%mass(Natoms),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate zmat')") alloc
+             stop 'FLinput, zmat - out of memory'
+         end if
+         !
+         call read_line(eof) ; if (eof) exit
+         !
+         call readu(w)
+         !
+         do while (trim(w)/="".and.iatom<Natoms.and.trim(w)/="END")
+           !
+           iatom = iatom+1
+           !
+           trove%zmatrix(iatom)%connect(1:4) = 0 
+           !
+           trove%zmatrix(iatom)%name = trim(w)
+           !
+           if (nitems-1>5) then 
+              !
+              write (out,"('FLinput: too many  columns in Z-matrix for atom',i8,': ',i8)") iatom,nitems-1
+              stop 'FLinput - too many columns in Z-mat'
+              !
+           endif 
+           !
+           i=0
+           !
+           do while (item < nitems-1)
+              !
+              i=i+1
+              !
+              call readi( trove%zmatrix(iatom)%connect(i) )
+              !
+           end do
+           !
+           call readf(trove%mass(iatom))
+           !
+           call read_line(eof) ; if (eof) exit
+           !
+           call readu(w)
+           !
+         enddo 
+         !
+         if (iatom/=Natoms.or.(trim(w)/="".and.trim(w)/="END")) then 
             !
-            write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),trim(place)
-            stop 'FLinput - illegal key '
+            write (out,"('FLinput: wrong number of rows in Zmat for Natoms =',i8,': ',i8)") Natoms,iatom
+            stop 'FLinput - illigal number of rows in Zmat'
             !
-          end select 
-
-        end subroutine check_read_save_none
-
-
-        !
-        ! Initilizing the molecule 
-        !
-          subroutine FLsetMolecule
-
+         endif
+         !
+         ! Compute number of coordinates 
+         !
+         Nbonds  = Natoms-1
+         !
+         nangles = 0 
+         Ndihedrals = 0
+         !
+         do iatom = 3,Natoms
             !
-            integer(ik) :: NPotOrder,NKinOrder,PotOrderShift,Natoms,Nmodes
-            integer(ik) :: bonds(trove%Natoms-1,2)
-            integer(ik) :: angles((trove%Natoms-3)*2+2,3)
-            integer(ik) :: dihedrals(0:max(trove%Natoms,0),4) ! Dihedral Angles connections type 
-            integer(ik) :: dihedtype(0:max(trove%Natoms,0))
-            integer(ik) :: Ndihedrals ! number of dihedral angles of type 1 and type 2
+            nangles = nangles + 1
             !
-            integer(ik) :: alloc,io,ibond,n_t
-            integer(ik) :: Nbonds,Nangles,i1
-            integer(ik) :: maxpower
-            !
-            integer(ik) :: Kindex(trove%Nmodes),Nmodes_e,k1,k2,imode,iterm,jterm,dm2,irho,x1
-            real(ark)   :: amorse,masses(trove%Natoms)
-            real(ark)   :: ar_t(trove%Ncoords),a0_ark(trove%Natoms,3),chi(trove%Nmodes)
-            real(ark)   :: b0_(trove%Natoms,3,0:0)
-            real(ark)   :: rho_(0:0)
-            real(ark)   :: rho_ref_
-            real(ark)   :: rho_b_(2)
-            !
-            real(ark)   :: f(trove%Nmodes,trove%Nmodes)
-            logical     :: dir
-            real(ark)   :: step(2,trove%Nmodes),factor,df,rho_eq,Inertm(3)
-            character(len=cl) :: my_fmt !format for I/O specification
-            !
-            if (job%verbose>=4) write(out,"(/'FLsetMolecule/start')")   
-            !
-            NKinOrder    = trove%NKinOrder
-            NPotOrder    = trove%NPotOrder
-            PotOrderShift= job%pot_pt_shift
-            Nmodes       = trove%Nmodes
-            Natoms       = trove%Natoms
-            !
-            ! convert z-matrix into the rbond,balpha,dalpha - connections
-            !
-            call zmat_to_bonds(bonds,angles,dihedrals,dihedtype,Nbonds,Nangles,Ndihedrals)
-            !
-            trove%Nbonds  = Nbonds
-            trove%NAngles = NAngles
-            trove%NDihedrals = Ndihedrals   
-            !
-            trove%Ncoords = Nbonds+Nangles+Ndihedrals
-            !
-            if (job%verbose>=2 .and. max(trove%Natoms-1,0)/=Ndihedrals ) then 
-               write(out,"('Warning: number of dihedrals is not (Natoms-3): ',2i8)") Ndihedrals,max(trove%Natoms-1,0)
-               !stop 'FLsetMolecule: Wrong number of dihedrals'
+            if (iatom>=4.or.trove%zmatrix(iatom)%connect(3)/=0) then
+               !
+               J = trove%zmatrix(iatom)%connect(4)
+               !
+               select case (J) 
+                  !
+               case(-1,0)
+                  !
+                  NAngles = NAngles + 1 
+                  !
+               case(1)
+                  !
+                  NAngles = NAngles + 1 
+                  Ndihedrals = Ndihedrals + 1
+                  !
+               case(2,202,302,402,502,602) 
+                  !
+                  Ndihedrals = Ndihedrals + 1
+                  !
+               case(-2,-202,-302,-402,-502,-602) 
+                  !
+                  Ndihedrals = Ndihedrals + 1
+                  !
+               case(3:100)
+                  !
+                  NAngles = NAngles + 2
+                  !
+               case(101,103,105) 
+                  !
+                  ! special case of angles for a linear molecule
+                  !
+                  NAngles = NAngles - 1
+                  Ndihedrals = Ndihedrals + 2
+                  !
+               case(102,104,106,107,108) 
+                  !
+                  ! special case of an angle for a linear molecule
+                  !
+                  NAngles = NAngles - 1
+                  Ndihedrals = Ndihedrals + 2
+                  !
+               end select 
             endif
-            ! 
-            if (trove%Nmodes/=3*trove%Natoms-6.and.trove%Nmodes/=3*trove%Natoms-5) then 
-               write(out,"('Warning: Number of modes, neither 3n-5, nor 3n-6, but ',i8)") trove%Nmodes
-               stop 'FLsetMolecule: Wrong number of modes'
+            !
+         enddo
+         !
+         trove%Ncoords = Nbonds+Nangles+Ndihedrals
+         Ncoords = trove%Ncoords
+         !
+         allocate (trove%local_eq(trove%Ncoords),trove%specparam(trove%Ncoords),extF%geom_ref(trove%Ncoords),&
+                   trove%local_ref(trove%Ncoords),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate local_eq')") alloc
+             stop 'FLinput, local_eq - out of memory'
+         end if
+         !
+         extF%geom_ref = 0
+         trove%local_eq = 0
+         trove%specparam = 0
+         !
+         zmat_defined = .true.
+         !
+         ! Basis set section 
+         !
+       case("BASIS")
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: BASIS cannot appear before NMODES')") 
+            stop 'FLinput - BASIS defined befor NMODES'
+            !
+         endif 
+         !
+         imode = 0
+         !
+         call read_line(eof) ; if (eof) exit
+         !call readu(w)
+         !
+         do while (trim(w)/="".and.imode<Nmodes.and.trim(w)/="END")
+           !
+           call readi(i)
+           !
+           ! this is for the rotational basis set
+           !
+           if (i==0) then 
+              !
+              call readu(w)
+              !
+              select case(w)
+              !
+              case("JKTAU")
+                !
+                job%bset(0)%type = trim(w)
+                !
+                ! objects from the same classes are pre-diagonalized together
+                !
+                job%bset(0)%class = 0 
+                !
+                FLrotation = .true.
+                !
+              case default
+                !
+                call report ("Unrecognized unit name "//trim(w),.true.)
+                !
+              end select
+              !
+           else
+              !
+              imode = imode+1
+              !
+              job%bset(imode)%class = i
+              !
+              if (job%bset(imode-1)%class-i>1) then 
+                write(out,"('FLinput: illegal identification of the mode  :',i8)") i
+                write(out,"('         the increament > 1')")
+                stop 'llegal identification of the mode'
+              endif 
+              !
+              call readu(w)
+              !
+              job%bset(imode)%type = trim(w)
+              !
+              !if (trim(job%bset(imode)%dvr)=='xxxxxx') job%bset(imode)%dvr) = 'NUMEROV-POL'
+              !
+              call readu(w)
+              job%bset(imode)%coord_kinet = trim(w)
+              !
+              ! default value for the extF-expansion
+              !
+              extF%intcoords(imode)= job%bset(imode)%coord_kinet
+              !
+              call readu(w)
+              job%bset(imode)%coord_poten = trim(w)
+              !
+              select case (trim(job%bset(imode)%type)) 
+                 !
+              case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
+                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
+                 !
+                 ! do nothing
+                 continue
+                 !
+              case default 
+                 !
+                 job%bset(imode)%coord_kinet = job%bset(imode)%type
+                 job%bset(imode)%coord_poten = job%bset(imode)%type
+                 !
+              end select 
+              !
+              if (trim(job%bset(imode)%type)=='HARMONIC'.and.trove%dvr) then 
+                 !
+                 if (trim(job%bset(imode)%dvr)=='NUMEROV-POL') job%bset(imode)%dvr = 'HERMITE'
+                 !
+              endif
+              !
+              if ( any( trim(job%bset(imode)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                      'SINRHO-2XLAGUERRE-K'] ) ) then 
+                 trove%triatom_sing_resolve = .true.
+                 job%triatom_sing_resolve = .true.
+              endif
+              !
+           endif
+           !
+           do while (trim(w)/="".and.item<Nitems)
+              !
+              call readu(w)
+              !
+              select case(w)
+              !
+              case("RANGE")
+                !
+                call readi(job%bset(imode)%range(1))
+                call readi(job%bset(imode)%range(2))
+                !
+                ! in case the range(2) is given for imode=0 we use Jrot as range(2) in order 
+                !
+                if (imode==0.and.Jrot/=0) then 
+                  !
+                  job%bset(imode)%range(1) = Jrot
+                  job%bset(imode)%range(2) = 2*jrot
+                  !
+                endif 
+                !
+                if (job%bset(imode)%dvrpoints==0) job%bset(imode)%dvrpoints = job%bset(imode)%range(2)+1
+                !
+              case("JROT")
+                call readi(Jrot)
+                !
+                ! we use range(1) to store the Jrot value 
+                !
+                job%bset(imode)%range(1) = Jrot
+                !job%bset(imode)%range(2) = 2*Jrot
+                !
+              case("KROT","K")
+                !
+                call readi(i_t)
+                !
+                ! we use range(1) to store the Jrot value 
+                !
+                job%bset(imode)%range(2) = i_t
+                trove%krot = i_t
+                if (trove%kmax==0) trove%kmax = i_t
+                !
+              case("KMAX")
+                !
+                call readi(i_t)
+                !
+                ! we use range(1) to store the Jrot value 
+                !
+                trove%kmax = i_t
+                !
+              case("OVRLP","DVRPOINTS","DPOINTS")
+                !
+                call readi(job%bset(imode)%dvrpoints)
+                !
+                if (job%bset(imode)%dvrpoints==0) then 
+                  write(out,"('illegal number of dvrpoins:',i7)") job%bset(imode)%dvrpoints
+                  stop 'input: illegal number of dvrpoins'
+                endif 
+                !
+              case("REDUCED","RED","R","J")
+                !
+                call readi(job%bset(imode)%model)
+                !
+              case("DVR")
+                !
+                call readu(job%bset(imode)%dvr)
+                !
+              case("RESC","RESCOEF","COEFF")
+                !
+                call readf(job%bset(imode)%res_coeffs)
+                !
+              case("POINTS")
+                !
+                call readi(job%bset(imode)%npoints) 
+                !
+              case("PERIODIC","PERIOD","P")
+                !
+                call readi(job%bset(imode)%iperiod)
+                !
+                if (job%bset(imode)%iperiod>0) job%bset(imode)%periodic =.true.
+                !
+              case("POST","POSTPROCESS")
+                !
+                job%bset(imode)%postprocess =.true.
+                !
+              case("LVIB","VIB_MOMENTUM")
+                !
+                job%bset(imode)%lvib =.true.
+                !
+                FLl2_coeffs = .true.
+                !
+              case("NOCHECK")
+                !
+                job%bset(imode)%check_sym =.false.
+                !
+              case("BORDERS")
+                !
+                call readf(job%bset(imode)%borders(1)) 
+                call readf(job%bset(imode)%borders(2))
+                !
+              case("ANGSTROM")
+                !
+                lfact= 1.0_rk
+                job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
+                !
+              case("BOHR")
+                !
+                lfact=bohr
+                job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
+                !
+              case("DEG","DEGREE","DEGREES")
+                !
+                lfact=1.0_rk/rad
+                job%bset(imode)%borders(:) = job%bset(imode)%borders(:)*lfact
+                !
+              case default
+                !
+                call report ("Unrecognized unit name "//trim(w),.true.)
+                !
+              end select
+              !
+           enddo 
+           !
+           call read_line(eof) ; if (eof) exit
+           !
+         end do
+         !
+         ! special case of Assoc Legendre or SINRHO-polynomials 
+         !
+         if (any(trim(job%bset(Nmodes)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                'SINRHO-2XLAGUERRE-K'] ) ) then 
+            !
+            if (.not.trove%triatom_sing_resolve ) then
+             write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
+            endif
+            !
+            job%bset(Nmodes)%range(2) = (job%bset(Nmodes)%range(2)+1)*(job%bset(0)%range(2)+1)-1
+            job%bset(Nmodes)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
+         endif 
+         !
+         call readu(w)
+         !
+         if (imode/=Nmodes.or.(trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in Basis for Nmodes =',i8,': ',i8)") Nmodes,imode
+            stop 'FLinput - illigal number of rows in BASIS'
+            !
+         endif 
+         !
+         ! Introducing equivalent species that will share the same basis set 
+         ! 
+         ispecies = 0
+         job%bset(0)%species = 0
+         ! 
+         do i=1,Nmodes
+            !
+            if (job%bset(i)%type       ==job%bset(i-1)%type       .and.job%bset(i)%dim        ==job%bset(i-1)%dim.and.&
+                job%bset(i)%coord_kinet==job%bset(i-1)%coord_kinet.and.job%bset(i)%coord_poten==job%bset(i-1)%coord_poten.and.&
+                job%bset(i)%class      ==job%bset(i-1)%class      .and.job%bset(i)%dvrpoints  ==job%bset(i-1)%dvrpoints.and.&
+                job%bset(i)%range(1)   ==job%bset(i-1)%range(1)   .and.job%bset(i)%range(2)   ==job%bset(i-1)%range(2).and.&
+                job%bset(i)%borders(1) ==job%bset(i-1)%borders(1) .and.job%bset(i)%borders(2) ==job%bset(i-1)%borders(2).and.&
+                job%bset(i)%res_coeffs ==job%bset(i-1)%res_coeffs .and.job%bset(i)%npoints    ==job%bset(i-1)%npoints .and.&
+                (job%bset(i)%periodic.eqv.job%bset(i-1)%periodic)   .and.job%bset(i)%iperiod    ==job%bset(i-1)%iperiod ) then
+                !
+                job%bset(i)%species = ispecies
+                !
+            else 
+                ispecies = ispecies + 1
+                job%bset(i)%species = ispecies
             endif 
             !
-            ! define maximal value of NPotOrder and NKinOrder
-            if(job%mode_list_present) then
-              trove%MaxOrder = max(NPotOrder,NKinOrder,trove%NExtOrder)
-    else 
-      trove%MaxOrder = max(NPotOrder,NKinOrder,trove%NExtOrder)
+         enddo
+         !
+         basis_defined = .true.
+         !
+         !
+       case("BASIC-FUNCTION")
+         !
+          if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: BASIC-FUNCTION cannot appear before NMODES')") 
+            stop 'FLinput - BASIC-FUNCTION defined befor NMODES'
+            !
+         endif
+         !
+         imode = 0
+         ifunc = 0
+         allocate(molec%basic_function_list(Nmodes))
+         call read_line(eof) ; if (eof) exit 
+         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
+            call readu(w)
+            call readi(imode)
+            call readi(numfunc)     
+            allocate(molec%basic_function_list(imode)%mode_set(numfunc))
+            do i = 1, numfunc
+              call read_line(eof); if (eof) exit
+              call readi(ifunc)
+              call readi(numterms)
+              molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
+              allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
+              do j = 1, numterms
+                call readi(out_expo)
+                call readu(func_name)
+                call readf(func_coef)
+                call readi(in_expo)
+                select case(trim(func_name))
+                  case("I") 
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+                  case("SIN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
+                  case("COS")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                  case("TAN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
+                  case("CSC")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+                  case("COT")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+                  case default 
+                end select
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
+              enddo 
+            enddo
+            call read_line(eof); if (eof) exit
+         enddo 
+         !
+      case("EQUIL","EQUILIBRIUM")
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: EQUIL cannot appear before NMODES')") 
+            stop 'FLinput - EQUIL defined befor NMODES'
+            !
+         endif 
+         !
+         imode = 0
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
+           !
+           imode = imode+1
+           !
+           call readi( i_t  )  ! reading an integer weight, not used so far 
+           !
+           call readf( trove%local_eq(imode)  )
+           !
+           if (nitems==4) then
+             !
+             call readu(w)
+             !
+             lfact = 1.0_rk
+             !
+             select case(w)
+             !
+             case("ANGSTROM")
+               !
+               lfact= 1.0_rk
+               !
+             case("BOHR")
+               !
+               lfact=bohr
+               !
+             case("DEG","DEGREE","DEGREES")
+               !
+               lfact=1.0_rk/rad
+               !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+             end select
+             !
+             trove%local_eq(imode) = trove%local_eq(imode)*lfact
+             !
+           endif 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
+            stop 'FLinput - illigal number of rows in EQUIL'
+            !
+         endif 
+         !
+         equil_defined = .true.
+         !
+       case("REFER","REFERENCE")
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: REFER cannot appear before NMODES')") 
+            stop 'FLinput - REFER defined befor NMODES'
+            !
+         endif 
+         !
+         imode = 0
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
+           !
+           imode = imode+1
+           !
+           call readi( i_t  )  ! reading an integer weight, not used so far 
+           !
+           call readf( trove%local_ref(imode)  )
+           !
+           if (nitems==4) then
+             !
+             call readu(w)
+             !
+             lfact = 1.0_rk
+             !
+             select case(w)
+             !
+             case("ANGSTROM")
+               !
+               lfact= 1.0_rk
+               !
+             case("BOHR")
+               !
+               lfact=bohr
+               !
+             case("DEG","DEGREE","DEGREES")
+               !
+               lfact=1.0_rk/rad
+               !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+             end select
+             !
+             trove%local_ref(imode) = trove%local_ref(imode)*lfact
+             !
+           endif 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
+            stop 'FLinput - illigal number of rows in EQUIL'
+            !
+         endif 
+         !
+         refer_defined = .true.
+         !
+       case("ZPE")
+         !
+         call readf(job%zpe)
+         !
+       case("CHECK_POINT","CHECKPOINT")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         chk_defined = .true.
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           ! writing hamiltonian as ASCII into separate files for kinetic, potential and external
+           !
+           case('ASCII')
+             !
+             trove%separate_store = .true.
+             !
+           case('HAMILTONIAN')
+             !
+             call readu(trove%IO_hamiltonian)
+             !
+             call check_read_save_none(trove%IO_hamiltonian,w)
+             if (trim(trove%IO_hamiltonian)=='SEPARATE'.or.trim(trove%IO_hamiltonian)=='ASCII') then
+                trove%separate_store = .true.
+             endif 
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               if (trim(w)=='SEPARATE'.or.trim(w)=='ASCII') then
+                  trove%separate_store = .true.
+               elseif (trim(w)=='CONVERT') then
+                  trove%separate_convert = .true.
+                  trove%separate_store = .false.
+                  if (trove%separate_store)  trove%IO_hamiltonian = 'SAVE'
+               elseif (trim(w)=='CONVERT-BACK') then
+                  trove%separate_convert = .true.
+                  trove%separate_store = .true.
+                  trove%IO_hamiltonian = 'SAVE'
+               else
+                   call report (" Illegal record after hamilton",.true.)
+               endif
+               !
+             endif 
+             !
+           case('PRIMITIVE_HAMILTONIAN','PRIM_HAMILTONIAN','PRIM_MATELEM')
+             !
+             call readu(trove%IO_primitive_hamiltonian)
+             !
+             call check_read_save_none(trove%IO_primitive_hamiltonian,w)
+             !
+           case('POTENTIAL','POTEN')
+             !
+             call readu(trove%IO_potential)
+             !
+             call check_read_save_none(trove%IO_potential,w)
+             !
+             if (trim(w)=='SEPARATE') then
+                trove%separate_store = .true.
+             endif 
+             !
+             if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !
+           case('KINET','KINETIC')
+             !
+             call readu(trove%IO_kinetic)
+             !
+             call check_read_save_none(trove%IO_potential,w)
+             !
+             if (trim(w)=='SEPARATE') then
+                trove%separate_store = .true.
+             endif 
+             !
+             if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !
+             if (trim(trove%IO_kinetic)=='SAVE'.and.trove%separate_store) then
+                trove%IO_hamiltonian = 'SAVE'
+             endif 
+             !
+           case('BASIS_SET')
+             !
+             call readu(trove%IO_basisset)
+             !
+           case('PRIMITIVE')
+             !
+             call readu(trove%IO_primitive)
+             !
+           case('CONTR_CI','CONTR-CI','CONTRCI','CI')
+             !
+             call readu(trove%IO_contrCI)
+             !
+             call check_read_save_none(trove%IO_basisset,w)
+             !
+             !if (trim(trove%IO_contrCI) == "NONE") trove%IO_contrCI = "SAVE"
+             !
+           case('EIGENFUNC','VECTORS')
+             !
+             call readu(w)
+             !
+             job%IOeigen_action = trim(w)
+             !
+             if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='APPEND'.and.trim(w)/='NONE') then 
+               !
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+               !
+             endif
+             !
+             ! additional argument 
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               select case (trim(w))
+               !
+               case('COMPRESS')
+                 !
+                 select case (trim(job%IOeigen_action))
+                 case ('APPEND', 'SAVE')
+                   continue
+                 case default
+                  call report("Unexpected 3d argument in eigenfuc",.true.)
+                 end select
+                 !
+                 job%IOeigen_compress = .true.
+                 !
+                 if (nitems>=4) call readf(job%compress)
+                 !
+               case ('CONVERT')
+                 !
+                 if (all(trim(job%IOeigen_action)/=(/'SAVE','READ'/))) then
+                  call report("Unexpected 3d argument in eigenfuc",.true.)
+                 endif
+                 !
+                 job%convert_model_j0 = .true.
+                 !
+                 if (all(trim(job%IOeigen_action)==(/'SAVE'/))) then
+                   job%IOj0contr_action = 'SAVE'
+                 endif
+                 !
+                 if (job%vib_contract) then
+                   !
+                   write(out,"('EIGENFUNC SAVE CONVERT cannot be used with MODEL J=0')")
+                   call report("illegal usage of  eigenfuc",.true.)
+                   !
+                 endif
+                 !
+               case default
+                 !
+                 write(out,"('illegal keyword after EIGENFUNC XXXX ')")
+                 call report("illegal keyword in eigenfuc xxxx",.true.)
+                 !
+               end select
+               ! 
+             endif
+             !
+           case('CONTRACT','CONTR','CONTRACTED')
+             !
+             call readu(w)
+             !
+             if (all(trim(w)/=(/'READ','SAVE','NONE'/))) then 
+               !
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+               !
+             endif 
+             !
+             job%IOcontr_action = trim(w)
+             !
+             if (trim(w)=='SAVE'.and.job%vib_contract) then
+               job%IOj0contr_action = 'SAVE'
+             endif
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               if (trim(w)=='CONVERT') then
+                  trove%separate_convert = .true.
+               else
+                   call report (" Illegal record after CONTRACT",.true.)
+               endif
+               !
+             endif 
+             !
+           case('MATELEM')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','NONE','VIB','CONVERT','APPEND')
+               continue
+             case default
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+             end select
+             !
+             if (job%contrci_me_fast.and.trim(w)=='NONE') then 
+               !
+               !w = 'SAVE'
+               !
+             endif
+             !
+             job%IOkinet_action = trim(w)
+             !
+             if (trim(w)=='CONVERT') then 
+                !
+                job%vib_contract = .true.
+                action%convert_vibme = .true.
+                !
+                !job%IOj0matel_action = trim('SAVE')
+                !
+             endif 
+             !
+             if (trim(w)=='APPEND') then 
+                !
+                job%matelem_append = .true.
+                !
+                if (Nitems>3) then
+                   call readi(job%iappend)
+                else
+                   call report (" The reccord to append after is missing",.true.)
+                endif
+                !
+                job%IOkinet_action = trim('SAVE')
+                !
+             endif 
+             !
+             if (trim(w)=='VIB') then
+               !
+               call readu(chk_type)
+               !
+               job%IOkinet_action = trim(w)//'_'//trim(chk_type) 
+               !
+             endif 
+             !
+             if (job%vib_contract) then 
+               !
+               job%IOj0matel_action = trim(w)
+               !
+               if (trim(w)=='CONVERT') job%IOj0matel_action = trim('SAVE')
+               !
+               !if ( any( trim(w)==(/'SAVE','APPEND'/) ) ) action%convert_vibme = .true.
+               !
+             endif 
+             !
+             ! an addional key to specify SAVE/READ 
+             !
+             if (Nitems>2.or.(job%matelem_append.and.Nitems>3)) then
+               call readu(w)
+               !
+               select case (trim(w))
+               case ('DIVIDE','SPLIT','STITCH','COLLECT','NON-SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (CAN BE SPLIT OR STITCH) "//trim(w),.true.)
+               end select
+               !
+               if (trim(w)=='NON-SPLIT') cycle
+               !
+               job%iswap(1) = 0
+               job%iswap(2) = 12
+               !
+               if (trim(w)=='DIVIDE') then 
+                 job%IOmatelem_divide = .true.
+                 job%iswap(1) = 1
+                 job%iswap(2) = (trove%Nmodes+3)*3+trove%Nmodes**2+1
+               endif
+               !
+               job%IOmatelem_split  = .true.
+               !
+               if (job%contrci_me_fast) then 
+                 job%iswap(1) = 0
+                 job%iswap(2) = 1e6
+               endif
+               !
+               if (Nitems>3) then
+                  call readi(job%iswap(1))
+                  call readi(job%iswap(2))
+               endif
+               !
+               if (trim(w)=='STITCH'.or.trim(w)=='COLLECT') job%iswap(:)=0
+               !
+               if (trim(w)=='DIVIDE') job%iswap(:)=0
+               !
+             endif
+             !
+             if (job%contrci_me_fast.and..not.job%IOmatelem_split) then
+               write(out,"('Read-input: for fast-ci use MATELEM XXXX split (XXXX=read,save,none)')")
+               call report ("For fast-ci MATELEM must be split",.true.)
+             endif 
+             !
+             if (item<Nitems) then 
+               call readu(w)
+               if (trim(w)=='DUMP') job%IOmatelem_dump = .true.
+               !
+             endif
+             !
+             if (item<Nitems) then
+                call readi(job%iappend)
+             endif
+             !
+           case('DVR')
+             !
+             call readu(w)
+             !
+             if (all(trim(w)/=(/'READ','SAVE','NONE'/))) then
+               !
+               write (out,"('FLinput: illegal key in CHECK_POINT_DVR :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT_DVR'
+               !
+             endif 
+             !
+             job%IOdvr_prim = trim(w)
+             !
+           case('J0_MATELEM')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','APPEND','NONE')
+               continue
+             case default
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+             end select
+             !
+             job%IOj0matel_action = trim(w)
+             !
+             select case (trim(w))
+             case ('SAVE', 'APPEND')
+               action%convert_vibme = .true.
+             end select
+             !
+             !if (trim(job%IOj0matel_action)=='SAVE') action%convert_vibme = .true.
+             !
+             ! an addional key to specify SAVE/READ 
+             !
+             if (Nitems>2) then
+               call readu(w)
+               !
+               select case (trim(w))
+               case ('DIVIDE', 'SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+               end select
+               !
+               job%IOmatelem_split = .true.
+               !
+               job%iswap(1) = 0
+               job%iswap(2) = 1e6
+               !
+               if (Nitems>3) then
+                  call readi(job%iswap(1))
+                  call readi(job%iswap(2))
+               endif
+             endif
+             !
+           case('VECTORS_SYMM','VEC_SYMM','VECTOR_SYMM')
+             !
+             job%IOvector_symm = .true.
+             !
+             !job%IOvector_symm = trim(w)
+             !
+             !if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='NONE') then 
+             !  !
+             !  write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+             !  stop 'FLinput -illegal key in CHECK_POINT'
+             !  !
+             !endif 
+             !
+           case('J0_EXTERNAL','J0_EXTMATELEM')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','APPEND','NONE','DIVIDE','SPLIT')
+               continue
+             case default
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+             end select
+             !
+             job%IOj0ext_action = trim(w)
+             !
+             select case (trim(job%IOj0ext_action))
+             case ('SAVE','APPEND','DIVIDE')
+                action%convert_vibme = .true.
+                FLextF_matelem = .true.
+             end select
+             !
+             ! an addional key to specify SAVE/READ 
+             !
+             if (Nitems>2) then
+               call readu(w)
+               !
+               select case (trim(w))
+               case ('DIVIDE', 'SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+               end select
+               !
+               job%IOextF_divide = .true.
+               !
+               if (Nitems>3) then
+                  call readi(fitting%iparam(1))
+                  call readi(fitting%iparam(2))
+               endif
+               !
+             endif
+             !
+           case('J0_CONTR','J0_CONTRACT','J0_CONTRACTED')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','APPEND','NONE')
+               continue
+             case default
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+             end select
+             !
+             job%IOj0contr_action = trim(w)
+             !
+             if (any(trim(job%IOj0contr_action)==(/'SAVE'/))) action%convert_vibme = .true.
+             !
+           case('EXTERNAL')
+             !
+             call readu(w)
+             !
+             if (trim(w)/='READ'.and.trim(w)/='SAVE'.and.trim(w)/='NONE') then 
+               !
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT-EXTERNAL'
+               !
+             endif 
+             trove%IO_ext_coeff = trim(w)
+             !
+             if (trim(trove%IO_hamiltonian)=='READ'.and.trim(w)=='SAVE') then 
+               trove%IO_hamiltonian = 'NONE'
+               trove%IO_potential   = 'READ'
+               trove%IO_kinetic     = 'READ'
+               trove%IO_basisset    = 'SAVE'
+             endif 
+             !
+             if (trim(trove%IO_basisset)== 'SAVE'.and.trim(trove%IO_primitive)=='NONE') then 
+                trove%IO_primitive = 'SAVE'
+             endif
+             !
+             if (trim(trove%IO_hamiltonian)=='SAVE'.and.trim(w)/='NONE') then 
+               trove%IO_ext_coeff   = 'SAVE'
+             endif
+             !
+             if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !
+             if (any(trim(trove%IO_ext_coeff)==(/'SAVE','READ'/))) FLextF_coeffs = .true.
+             !
+             if (trove%separate_convert.and.trove%separate_store ) then
+                  trove%IO_ext_coeff   = 'READ'
+             endif 
+             !
+           case('EXTMATELEM')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','MATELEM','NONE','CONVERT','APPEND','STITCH')
+               continue
+             case default
+               write (out,"('FLinput: illegal key in EXTMATELEM :',a)") trim(w)
+               stop 'FLinput -illegal key in EXTMATELEM'
+             end select
+             !
+             job%IOextF_action = trim(w)
+             !
+             if (trim(w)=='CONVERT') then 
+                !
+                job%vib_contract = .true.
+                action%convert_vibme = .true.
+                !
+                !job%IOj0matel_action = trim('SAVE')
+                !
+             endif 
+             !
+             if (job%vib_contract) then 
+               !
+               job%IOj0ext_action = trim(w)
+               !
+               if (trim(w)=='CONVERT') job%IOj0ext_action = 'SAVE'
+               !
+               if (job%IOj0ext_action=='SAVE') FLextF_matelem = .true.
+               !
+             endif 
+             !
+             if (trim(w)=='APPEND') then 
+                !
+                job%extmatelem_append = .true.
+                !
+                if (Nitems>3) then
+                   call readi(job%iextappend)
+                else
+                   call report (" The reccord to append after is missing",.true.)
+                endif
+                !
+                job%IOextF_action = trim('SAVE')
+                !
+             endif 
+             !
+             if (trim(job%IOextF_action)=='SAVE') FLextF_matelem = .true.
+             !
+             ! an addional key to specify SAVE/READ 
+             !
+             if (Nitems>2.or.(job%extmatelem_append.and.Nitems>3)) then
+               !
+               call readu(w)
+               !
+               select case (trim(w))
+                 !
+               case ('DIVIDE', 'SPLIT')
+                 !
+                 job%IOextF_divide = .true.
+                 !
+               case ('STITCH')
+                 !
+                 job%IOextF_divide = .true.
+                 job%IOextF_stitch = .true.
+                 !
+               case ( 'DUMP' )
+                 !
+                 if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
+                 !
+               case default
+                 !
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+                 !
+               end select
+               !
+               if (job%IOextF_divide.and.Nitems>3) then
+                  call readi(fitting%iparam(1))
+                  call readi(fitting%iparam(2))
+               endif
+               !
+             endif
+             !
+             if (item<Nitems) then 
+               call readu(w)
+               if (trim(w)=='DUMP') job%IOextmatelem_dump = .true.
+               !
+             endif
+             !
+           case('FORMAT')
+             !
+             call readu(job%kinetmat_format)
+             !
+           case('FIT_POTEN','FIT_POT','FITPOTEN')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('READ','SAVE','NONE','VIB','DIVIDE','REWRITE','JOIN','SPLIT')
+               continue
+             case default
+               !
+               write (out,"('FLinput: illegal key in CHECK_POINT :',a)") trim(w)
+               stop 'FLinput -illegal key in CHECK_POINT'
+               !
+             end select
+             !
+             if (trim(w)=='DIVIDE') w = 'SPLIT'
+             !
+             job%IOfitpot_action = trim(w)
+             !
+             if (trim(job%IOfitpot_action)/='NONE') then 
+                job%IOextF_action = 'READ'
+                !
+                if (job%vib_contract) then 
+                  job%IOj0ext_action = 'READ'
+                endif
+                !
+             endif
+             !
+             ! an addional key to specify SAVE/READ 
+             !
+             if (Nitems>2) then
+               call readu(w)
+               select case (trim(w))
+               case ('DIVIDE', 'SPLIT')
+                 continue
+               case default
+                 call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
+               end select
+               !
+               job%IOextF_divide = .true.
+               job%IOfitpot_divide = .true.
+               !
+               if (Nitems>3) then
+                  call readi(fitting%iparam(1))
+                  call readi(fitting%iparam(2))
+               endif
+               !
+             endif
+             !
+           case('CHK_FILE')
+             !
+             call readu(w)
+             call locase(w)
+             !
+             trove%chk_fname = trim(w)
+             !
+           case('NUMEROV_FILE')
+             !
+             call readu(w)
+             call locase(w)
+             !
+             trove%chk_numerov_fname = trim(w)
+             !
+           case('HAMILTONIAN_FILE')
+             !
+             call readu(w)
+             call locase(w)
+             !
+             trove%chk_hamil_fname = trim(w)
+             !
+           case('SWAP','SWAPMATELEM','MATELEMSWAP')
+             !
+             call readu(w)
+             !
+             select case (trim(w))
+             case ('NONE','DIVIDE','JOIN','SAVE','READ','SPLIT')
+               continue
+             case default
+               !
+               write (out,"('FLinput: illegal key in CONTRSWAP :',a)") trim(w)
+               stop 'FLinput -illegal key in CONTRSWAP'
+               !
+             end select
+             !
+             job%IOswap_matelem = trim(w)
+             !
+           case('ISWAP')
+             !
+             call readi(job%iswap(1))
+             call readi(job%iswap(2))
+             !
+           case('CONTR_FILE')
+             !
+             call readu(w)
+             call locase(w)
+             !
+             job%contrfile%dscr       = trim(w)//'_descr.chk'
+             job%contrfile%primitives = trim(w)//'_quanta.chk'
+             job%contrfile%vectors    = trim(w)//'_vectors.chk'
+             job%contrfile%dvr        = trim(w)//'_dvr.chk'
+             !
+           case('EIGEN_FILE')
+             !
+             call readu(w)
+             call locase(w)
+             !
+             job%eigenfile%filebase   = trim(w)
+             !
+             job%eigenfile%dscr       = trim(w)//'_descr'
+             job%eigenfile%primitives = trim(w)//'_quanta'
+             job%eigenfile%vectors    = trim(w)//'_vectors'
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
+            stop 'FLinput - illegal last line in CHECK_POINTS'
+            !
+         endif 
+         !
+       case("CONTROL")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         chk_defined = .true.
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           case('HAMILTONIAN')
+             !
+             call readu(w)
+             !
+           case('EXTERNAL','DIPOLE')
+             !
+             call readu(w)
+             !
+           case('JROT','J')
+             !
+             call readi(Jrot)
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CONTROL =',a)") trim(w)
+            stop 'FLinput - illegal last line in CONTROL'
+            !
+         endif          
+         !
+       case("ANALYSIS")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+             !
+           case('NONE')
+             !
+             analysis%density = .false.
+             analysis%classical = .false.
+             !
+           case('DENSITY')
+             !
+             analysis%reduced_density = .true.
+             analysis%density = .true.
+             !
+           case("PRINT_CONTRIBUTION")
+             !
+             analysis%reducible_eigen_contribution = .true.   
+             i = 0
+             do while(trim(w)/="".and.item<Nitems.and.i<100)
+                i = i + 1
+                call readi(analysis%j_list(i)) 
+             enddo 
+             analysis%density = .true.
+             !
+           case("POPULATION")
+             !
+             analysis%population = .true.   
+             analysis%density = .true.
+             !
+             i = 0
+             call readu(w)
+             do while( ( trim(w)/="".and.trim(w)/="REF" ).and.item<Nitems.and.i<100)
+                !
+                i = i + 1
+                read(w,*) analysis%j_list(i)
+                call readu(w)
+                !
+             enddo
+             !
+             if ( trim(w)=="REF" ) then
+                !
+                call readi(analysis%ref%J)
+                call readi(analysis%ref%iGamma)
+                call readi(analysis%ref%iLevel)
+                !
+             endif
+             !
+           case('PRINT_VECTOR')
+             !
+             analysis%print_vector = .true.
+             !
+             if (nitems>1) call readf(analysis%threshold)
+             !
+           case('ROT_MATRIX')
+             !
+             analysis%rotation_matrix = .true.
+             analysis%density = .true.
+             !
+           case('EXTERNAL')
+             !
+             analysis%extF = .true.
+             analysis%density = .true.
+             !
+           case('TEST_HAMILTONIAN')
+             !
+             analysis%rotation_matrix = .true.
+             analysis%density = .true.
+             !
+           case('RES_TYPE')
+             !
+             call readu(analysis%res%type)
+             analysis%classical = .true.
+             !
+           case('RES')
+             !
+             analysis%rotation_energy_surface = .true.
+             analysis%classical = .true.
+             !
+             do while (trim(w)/="".and.item<Nitems)
+                !
+                call readu(w)
+                !
+                select case(w)
+                    !
+                  case('NTHETA')
+                    !
+                    call readi(analysis%res%ntheta)
+                    !
+                  case('NPHI')
+                    !
+                    call readi(analysis%res%nphi)
+                    !
+                  case('NTAU')
+                    !
+                    call readi(analysis%res%ntau)
+                    !
+                  case('THETA')
+                    !
+                    call readf(analysis%res%theta)
+                    !
+                  case('PHI')
+                    !
+                    call readf(analysis%res%phi)
+                    !
+                  case('TAU')
+                    !
+                    call readf(analysis%res%tau)
+                    !
+                  case('THETA_RESTART')
+                    !
+                    call readf(analysis%res%theta1)
+                    !
+                end select
+                !
+             enddo
+             !
+           case('ROT-DENSITY','ROT_DENSITY')
+             !
+             analysis%rotation_density = .true.
+             !
+             do while (trim(w)/="".and.item<Nitems)
+                !
+                call readu(w)
+                !
+                select case(w)
+                    !
+                  case('THETA')
+                    !
+                    call readf(analysis%res%theta) ; analysis%res%theta = analysis%res%theta/rad
+                    !
+                  case('PHI')
+                    !
+                    call readf(analysis%res%phi)  ; analysis%res%phi = analysis%res%phi/rad
+                    !
+                  case('NTHETA')
+                    !
+                    call readi(analysis%res%ntheta)
+                    !
+                  case('NPHI')
+                    !
+                    call readi(analysis%res%nphi)
+                    !
+                end select
+                !
+             enddo
+             !
+           case('DENSITY_LIST','LIST')
+             !
+             do while (trim(w)/="".and.item<Nitems)
+                !
+                call readu(w)
+                !
+                i = 0
+                do while (trim(w)/="MODES".and.item<Nitems.and.i<100)
+                  !
+                  i = i + 1 
+                  !
+                  read(w,*) analysis%j_list(i)
+                  call readi(analysis%sym_list(i))
+                  call readi(analysis%dens_list(i))
+                  !
+                  call readu(w)
+                  !
+                enddo
+                !
+                if (trim(w)/='MODES') then 
+                  call report ("Illegal use of DENSITY_LIST"//trim(w),.true.)
+                endif
+                !
+                i_t = i
+                !
+                do i = i_t+1,i_t+3
+                  !
+                  if (item<Nitems) then 
+                    !
+                    call readi(analysis%dens_list(i))
+                    !
+                  else
+                    !
+                    analysis%dens_list(i) = analysis%dens_list(i-1)
+                    !
+                  endif 
+                  !
+                enddo
+                !
+             enddo
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
+            stop 'FLinput - illegal last line in CHECK_POINTS'
+            !
+         endif 
+         !
+       case("KIN","KINET","KINETIC")
+         !
+         if (kinetic_defined) then 
+            write (out,"(' Error: trying to read KINETIC  second time!')") 
+            stop 'FLinput - reading KINETIC  second time'
+         endif 
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+              !
+           case("KIN_TYPE","KINETIC_TYPE")
+              !
+              call readu(w)
+              !
+              trove%kinetic_type = trim(w)
+              !
+              case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+           end select 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo
+         !
+         kinetic_defined = .true.
+         !
+       case("POT","POTEN","POTENTIAL","PES")
+         !
+         if (pot_defined) then 
+            write (out,"(' Error: trying to read POTEN  second time!')") 
+            stop 'FLinput - reading POTEN  second time'
+         endif 
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: POTEN cannot appear before NMODES')") 
+            stop 'FLinput - POTEN defined befor NMODES'
+            !
+         endif 
+         !
+         pot_coeff_type = 'LIST'
+         !
+         ! read Nparam and Type of PES
+         !
+         do i = 1,3
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+            select case(w)
+            !
+            case("POT_TYPE")
+              !
+              call readu(w)
+              !
+              trove%potentype = trim(w)
+              !
+            case("NPARAM")
+              !
+              call readi(Nparam)
+              !
+            case("COEFF")
+              !
+              call readu(w)
+              !
+              pot_coeff_type = trim(w)
+              !
+            case default
+              !
+              call report ("Unrecognized unit name "//trim(w),.true.)
+              !
+            end select
+            !
+         enddo
+         !
+         ! Allocation of the pot. parameters 
+         !
+         allocate (force(Nparam),forcename(Nparam),pot_ind(1:trove%Ncoords,Nparam),ifit(Nparam),stat=alloc)
+         if (alloc/=0) then
+            write (out,"(' Error ',i9,' allocating matix force,forcename ')") alloc
+            stop 'FLinput - cannot allocate force,forcename'
+         end if
+         !
+         iparam = 0 
+         pot_ind = 0
+         ifit = 0  
+         force = 0 
+         !
+         forcename = 'dummy'
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
+            !
+            iparam = iparam+1 
+            !
+            select case(trim(pot_coeff_type))
+            !
+            case("LIST")
+              !
+              forcename(iparam)=trim(w)
+              call readi(ifit(iparam))
+              call readf(force(iparam))
+              !
+            case("POWERS")
+              !
+              if (nitems<trove%Ncoords+3) then 
+                 !
+                 write (out,"('FLinput: wrong number of records in POTEN on row=',i6,'()')") iparam
+                 stop 'FLinput - illigal number of records in POTEN'
+                 !
+              endif
+              !
+              forcename(iparam)=trim(w)
+              !
+              do i=1,trove%Ncoords
+                 call readi(pot_ind(i,iparam))
+              enddo
+              !
+              call readi(ifit(iparam))
+              call readf(force(iparam))
+              !
+              ! trick to prevent writing error
+              !
+              !if (all(pot_ind(1:Ncoords,iparam)<10)) then
+              !  write(forcename(iparam),"('f',<Ncoords>i1)") pot_ind(1:Ncoords,iparam)
+              !else
+              !  write(forcename(iparam),"('f',<Ncoords>i1)") 0,pot_ind(2:Ncoords,iparam)
+              !endif
+              !
+              if (any(pot_ind(:,iparam)<0)) then 
+                  write(out,"('FLinput: negative POTEN powers on row',i8)") iparam
+                    stop 'FLinput: wrong indexes '
+              endif 
+              !
+            case default
+              !
+              call report ("Unrecognized unit name "//trim(w),.true.)
+              !
+            end select
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+         enddo 
+         !
+         if ((iparam/=Nparam.and.trim(forcename(1))=='dummy').or.(trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in POTEN ',i6,'()')") iparam,Nparam
+            stop 'FLinput - illigal number of rows in POTEN'
+            !
+         endif 
+         !
+         pot_defined = .true.
+         !
+       case("MEP","RPH")
+         !
+         ! read Nparam and Type of PES
+         !
+         pot_coeff_type = 'LIST'
+         !
+         do i = 1,3
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+            select case(w)
+            !
+            case("MEP_TYPE")
+              !
+              call readu(w)
+              !
+              molec%meptype = trim(w)
+              !
+            case("NPARAM")
+              !
+              call readi(Nparam)
+              !
+              molec%N_meppars = Nparam 
+              !
+            case("COEFF")
+              !
+              call readu(w)
+              !
+              pot_coeff_type = trim(w)
+              !
+            case default
+              !
+              call report ("Unrecognized unit name "//trim(w),.true.)
+              !
+            end select
+            !
+         enddo
+         !
+         ! Allocation of the pot. parameters 
+         !
+         allocate (molec%mep_params(Nparam),stat=alloc)
+         if (alloc/=0) then
+            write (out,"(' Error ',i9,' allocating matix mep_params ')") alloc
+            stop 'FLinput - cannot allocate mep_params'
+         end if
+         !
+         if (trim(pot_coeff_type)=="POWERS") then 
+           allocate (molec%mep_ind(1:trove%Ncoords,Nparam))
+         else
+           allocate (molec%mep_ind(1,Nparam))
+         endif
+         !
+         iparam = 0 
+         molec%mep_ind = 0
+         molec%mep_params = 0 
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
+            !
+            iparam = iparam+1 
+            !
+            !call readf(molec%mep_params(iparam))
+            !
+            select case(trim(pot_coeff_type))
+            !
+            case("LIST")
+              !
+              call readi(molec%mep_ind(1,iparam))
+              call readf(molec%mep_params(iparam))
+              !
+            case("POWERS")
+              !
+              if (nitems<trove%Ncoords+2) then 
+                 !
+                 write (out,"('FLinput: wrong number of records in POTEN on row=',i6,'()')") iparam
+                 stop 'FLinput - illigal number of records in POTEN'
+                 !
+              endif 
+              !
+              do i=1,trove%Ncoords
+                 !
+                 call readi(molec%mep_ind(i,iparam))
+                 !
+              enddo
+              !
+              call readf(molec%mep_params(iparam))
+              !
+              if (any(molec%mep_ind(:,iparam)<0)) then 
+                  write(out,"('FLinput: negative MEP powers on row',i8)") iparam
+                    stop 'FLinput: wrong MEP-indexes '
+              endif 
+              !
+            case default
+              !
+              call report ("Unrecognized unit name "//trim(w),.true.)
+              !
+            end select
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+         enddo 
+         !
+         if ((iparam/=Nparam.and.trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in MEP ',i6,'()')") iparam,Nparam
+            stop 'FLinput - illigal number of rows in MEP'
+            !
+         endif 
+         !
+       case("SPECPARAM","SPECPARAMETERS","SPEC","PARAMETERS")
+         !
+         if (trove%Ncoords==0) then 
+            !
+            write (out,"('FLinput: SPECPARAM cannot appear before Zmat')") 
+            stop 'FLinput - SPECPARAM defined befor Zmat'
+            !
+         endif 
+         !
+         iparam = 0 
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         trove%specparam = 0
+         !         !
+         do while (trim(w)/="".and.iparam<trove%Ncoords.and.trim(w)/="END")
+            !
+            iparam = iparam+1
+            !
+            call readi( i_t  )  ! reading an integer weight, not used so far 
+            !
+            call readf( trove%specparam(iparam)  )
+            !
+            if (nitems==4) then
+              !
+              call readu(w)
+              !
+              lfact = 1.0_rk
+              !
+              select case(w)
+              !
+              case("ANGSTROM")
+                !
+                lfact= 1.0_rk
+                !
+              case("BOHR")
+                !
+                lfact=bohr
+                !
+              case("DEG","DEGREE","DEGREES")
+                !
+                lfact=1.0_rk/rad
+                !
+              case default
+                !
+                call report ("Unrecognized unit name "//trim(w),.true.)
+                !
+              end select
+              !
+              trove%specparam(iparam) = trove%specparam(iparam)*lfact
+              !
+            endif
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+         enddo 
+         !
+         if (iparam>trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
+            !
+            write (out,"('FLinput: wrong number of rows in SPECPARAM ',2i6,'()')") iparam,trove%Ncoords
+            stop 'FLinput - illigal number of rows in SPECPARAM'
+            !
+         endif 
+         !
+         ! Intensity section 
+         !
+       case("INTENSITY")
+         !
+         if (Nmodes==0) then 
+            !
+            write (out,"('FLinput: INTENSITY cannot appear before NMODES')") 
+            stop 'FLinput - INTENSITY defined befor NMODES'
+            !
+         endif 
+         !
+         if (.not.symmetry_defined) then 
+            !
+            write (out,"('FLinput: INTENSITY cannot appear before symmetry is defined')") 
+            stop 'FLinput - INTENSITY defined before symmetry'
+            !
+         endif 
+         !
+         allocate(intensity%gns(sym%Nrepresen),intensity%isym_pairs(sym%Nrepresen),intensity%v_low(trove%nmodes,2),&
+                  intensity%v_upp(trove%nmodes,2),stat=alloc)
+         if (alloc/=0) then
+             write (out,"(' Error ',i9,' trying to allocate qwrange')") alloc
+             stop 'FLinput, qwrange - out of memory'
+         end if
+         !
+         ! defauls values
+         !
+         intensity%gns = 1
+         forall(i=1:sym%Nrepresen) intensity%isym_pairs(i) = 1
+         intensity%v_low(:,1) = 0 ; intensity%v_low(:,2) = job%bset(1:)%range(2)
+         intensity%v_upp(:,1) = 0 ; intensity%v_upp(:,2) = job%bset(1:)%range(2)
+         !
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+           !
+           case('NONE','ABSORPTION','EMISSION','TM','DIPOLE-TM','RAMAN','POLARIZABILITY-TM','PARTFUNC','FIELD_ME')
+             !
+             intensity%action = trim(w)
+             !
+             if (trim(intensity%action)=='DIPOLE-TM') intensity%action = 'TM'
+             !
+             if (trim(intensity%action)=='TM'      .or.trim(intensity%action)=='ABSORPTION'.or.&
+                 trim(intensity%action)=='EMISSION'.or.trim(intensity%action)=='PARTFUNC' .or. &
+                 trim(intensity%action)=='FIELD_ME') then 
+               !
+               action%intensity = .true.
+               intensity%do = .true.
+                 !
+               job%IOextF_action = 'READ'
+               !
+               if (job%vib_contract) then 
+                 !
+                 job%IOj0ext_action = 'READ'
+                 !
+               endif 
+               !
+             endif
+             !
+           case('OPER')
+             !
+             call readu(intensity%tens_oper)
+             !
+           case('THRESH_INTES','THRESH_TM','THRESH_INTENS')
+             !
+             call readf(intensity%threshold%intensity)
+             !
+           case('THRESH_LINE','THRESH_LINESTRENGHT','THRESH_LINESTRENGTH')
+             !
+             call readf(intensity%threshold%linestrength)
+             !
+           case('THRESH_COEFF','THRESH_COEFFICIENTS')
+             !
+             call readf(intensity%threshold%coeff)
+             !
+           case('THRESH_LEADING_COEFF')
+             !
+             call readf(intensity%threshold%leading_coeff)
+             !
+           case('TEMPERATURE')
+             !
+             call readf(intensity%temperature)
+             !
+           case('EXOMOL')
+             !
+             job%exomol_format = .true.
+             intensity%output_short = .true.
+             !
+           case('GAIN')
+             !
+             job%gain_format = .true.
+             intensity%output_short = .true.
+             !
+           case('QSTAT','PARTITION','PART_FUNC')
+             !
+             call readf(intensity%part_func)
+             !
+           case('PRUNING')
+             !              
+             intensity%pruning = .true.
+             !
+           case('TDM_REPLACE','DIPOLE_REPLACE','DIPOLE_SCALE')
+             !              
+             intensity%tdm_replace = .true.
+             !
+           case('OUTPUT')
+             !
+             call readu(w)
+             !              
+             if (trim(w)=='SHORT') then 
+               intensity%output_short = .true.
+             elseif(trim(w)=='LONG') then
+               intensity%output_short = .false.
+             else
+               call report ("Illegal OUTPUT value (expected SHORT or LONG) "//trim(w),.true.)
+             endif
+             !
+           case('GNS')
+             !
+             i = 0
+             !
+             intensity%gns = 0
+             if( trim(intensity%action)=='TM') intensity%gns = 1 
+             job%select_gamma = .false.
+             job%isym_do = .false.
+             !
+             do while (item<Nitems.and.i<sym%Nrepresen)
+               !
+               i = i + 1
+               call readf(intensity%gns(i))
+               if (intensity%gns(i)>small_) then 
+                 !
+                 job%isym_do(i) = .true.
+                 job%select_gamma(i) = .true.
+                 !
+               endif
+               !
+             enddo
+             !
+             !if (i/=sym%Nrepresen) then 
+             !  !
+             !  write (out,"('FLinput: illegal number entries in gns: ',i8,' /= ',i8)") i,sym%Nrepresen
+             !  stop 'FLinput - illegal number entries in gns'
+             !  !
+             !endif 
+             !
+           case('SELECTION','SELECTION_RULES','SELECT','PAIRS')
+             !
+             ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
+             do i=1,sym%Nrepresen,2
+               intensity%isym_pairs(i  ) = (i+1)/2
+               if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
+             enddo
+             !
+             if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
+             !
+             i = 0
+             !
+             do while (item<Nitems.and.i<sym%Nrepresen)
+               !
+               i = i + 1
+               !
+               call readi(intensity%isym_pairs(i))
+               !
+             enddo
+             !
+             if (sym%Nrepresen<=8.and.i/=sym%Nrepresen) then 
+               write (out,"('FLinput: illegal number entries in SELECTION for Nrepresen<=8',i8,' /= ',i8)") i,sym%Nrepresen
+               stop 'FLinput - illegal number entries in SELECTION, Nentries<>Nrepresen'
+             endif 
+             !
+           case('ZPE')
+             !
+             call readf(intensity%zpe)
+             job%zpe = intensity%zpe
+             !
+           case('SWAP_SIZE')
+             !
+             call readi(intensity%swap_size)
+             !
+           case('SWAP')
+             !
+             call readu(intensity%swap)
+             !
+           case('SYMMETRY')
+             !
+             call readu(w)
+             !
+             if (trim(w)=='REDUCED') then
+               intensity%reduced = .true.
+             else
+               call report ("Unrecognized SYMMETRY value "//trim(w),.true.)
+             endif
+             !
+           case('FACTOR')
+             !
+             call readf(intensity%factor)
+             !
+           case('INCREMENT')
+             !
+             call readi(intensity%int_increm)
+             !
+             ! how many line to cache before printing 
+           case('NCACHE')
+             !
+             call readi(intensity%Ncache)
+             !
+           case('WALLCLOCK','WALL')
+             !
+             call readf(intensity%wallclock)
+             !
+           case('J')
+             !
+             call readi(intensity%j(1))
+             call readi(intensity%j(2))
+             !
+           case('FREQ-WINDOW','FREQ','NU','FREQUENCY')
+             !
+             call readf(intensity%freq_window(1))
+             call readf(intensity%freq_window(2))
+             !
+           case('ENERGY')
+             !
+             call readu(w)
+             !
+             do while (trim(w)/="")
+                !
+                select case(w)
+                !
+                case("LOWER","LOW","L")
+                  !
+                  call readf(intensity%erange_low(1))
+                  call readf(intensity%erange_low(2))
+                  !
+                case("UPPER","UPP","UP","U")
+                  !
+                  call readf(intensity%erange_upp(1))
+                  call readf(intensity%erange_upp(2))
+                  !
+                end select 
+                !
+                call readu(w)
+                !
+             enddo 
+             !
+           case('QUANTA','V')
+             !
+             call readi(imode)
+             !
+             call readu(w)
+             !
+             do while (trim(w)/="")
+                !
+                select case(w)
+                !
+                case("LOWER","LOW","L")
+                  !
+                  call readi(intensity%v_low(imode,1))
+                  call readi(intensity%v_low(imode,2))
+                  !
+                case("UPPER","UPP","UP","U")
+                  !
+                  call readi(intensity%v_upp(imode,1))
+                  call readi(intensity%v_upp(imode,2))
+                  !
+                end select 
+                !
+                call readu(w)
+                !
+             enddo 
+             !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select 
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo
+         !
+         if (trim(intensity%action) == 'ABSORPTION'.or.trim(intensity%action) == 'EMISSION') then 
+           !
+           ! define the selection pairs by gns if not yet defined
+           !
+           i_t = 0
+           !
+           do i = 1,sym%Nrepresen
+             !
+             if (intensity%isym_pairs(i)/=0) cycle
+             !
+             do j = 1,sym%Nrepresen
+               !
+               if (i/=j.and.intensity%isym_pairs(j)==0.and.intensity%gns(i)==intensity%gns(j)) then 
+                 !
+                 i_t = i_t + 1
+                 !
+                 intensity%isym_pairs(i) = i_t
+                 intensity%isym_pairs(j) = i_t
+                 !
+               endif 
+               !
+             enddo
+             !
+           enddo
+           !
+         endif 
+         !
+         job%erange(1) = min(intensity%erange_low(1),intensity%erange_upp(1))
+         job%erange(2) = max(intensity%erange_low(2),intensity%erange_upp(2))
+         !
+       case("FITTING")
+         !
+         call readu(w)
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         action%fitting = .true.
+         !
+         do while (trim(w)/="".and.trim(w)/="END")
+           !
+           select case(w)
+             !
+           case('NONE')
+             !
+             action%fitting = .false.
+             !
+           case('J_LIST','JROTLIST','J-LIST','JLIST')
+             !
+             i = 0
+             do while (item<Nitems.and.i<100)
+                !
+                i = i + 1 
+                !
+                call readi(fitting%j_list(i))
+                !
+             enddo
+             !
+           case('ITMAX','ITERMAX','ITER')
+             !
+             call readi(fitting%itermax)
+             !
+           case('ROBUST')
+             !
+             call readf(fitting%robust)
+             !
+           case('WATSON')
+             !
+             call readf(fitting%watson)
+             !
+           case('TARGET_RMS')
+             !
+             call readf(fitting%target_rms)
+             !
+           case('METHOD')
+             !
+             call readu(fitting%method)
+             !
+           case('FIT_TYPE')
+             !
+             call readu(fitting%fit_type)
+             !
+           case('THRESH_ASSIGN','THRESH_REASSIGN','LOCK')
+             !
+             call readf(fitting%threshold_lock)
+             !
+           case('THRESH_OBS-CALC') 
+             ! switch off weights for residuals larger than THRESH_OBS-CALC
+             !
+             call readf(fitting%threshold_obs_calc)
+             !
+           case('FIT_SCALE') 
+             ! parameter to scale the correction dx for fitting x = x + scale*dx, default = 0.4
+             !
+             call readf(fitting%fit_scale)
+             !
+           case("IPARAM")
+             !
+             call readi(fitting%iparam(1))
+             call readi(fitting%iparam(2))
+             !
+           case("SYM","SYMM","SYMMETRY","SYMMETRIES","GNS")
+             !
+             job%isym_do = .false.
+             job%select_gamma = .false.
+             !
+             do while (item<Nitems.and.item-1<sym%Nrepresen)
+               !
+               call readi(i)
+               if (i>0) job%isym_do(i) = .true.
+               if (i>0) job%select_gamma(i) = .true.
+               !
+             enddo
+             !
+           case('ENERCUT')
+             !
+             call readf(job%erange(2))
+             !
+           case('GEOMETRIES')
+             !
+             call readl(fitting%geom_file)
+             !
+           case('OUTPUT')
+             !
+             call readl(fitting%output_file)
+             !
+           case('FIT_FACTOR')
+             !
+             call readf(fitting%factor)
+             !
+           case('THRESH_COEFF','THRESH_COEFFICIENTS')
+             !
+             call readf(fitting%threshold_coeff)
+             !
+           case('OBS','OBS_ENERGIES')
+             !
+             call readi(fitting%Nenergies)
+             !
+             allocate (fitting%obs(1:fitting%Nenergies),stat=alloc)
+             if (alloc/=0) then
+               write (out,"(' Error ',i8,' initializing obs. energy related arrays')") alloc
+               stop 'obs. energy arrays - alloc'
+             end if
+             !
+             do i = 1,fitting%Nenergies
+               allocate(fitting%obs(i)%quanta(0:trove%nmodes),stat=alloc)
+               if (alloc/=0) then
+                 write (out,"(' Error ',i8,' initializing obs%quanta')") alloc
+                 stop 'initializing obs%quanta - alloc'
+                end if
+             enddo
+             !
+             i = 0
+             !
+             call read_line(eof) ; if (eof) exit
+             call readu(w) 
+             !
+             do while (trim(w)/="END".and.i<fitting%Nenergies)
+                !
+                i = i + 1
+                !
+                if (nitems<trove%Nmodes+5) then 
+                   !
+                   write (out,"('FLinput: wrong number of records in obs_fitting_energies on row=',i6,'()')") i
+                   stop 'FLinput - illigal number of records in obs_fitting_energies'
+                   !
+                elseif(nitems==trove%Nmodes+5) then
+                   !
+                   write (out,"('FLinput: old format in number of records in obs_fitting_energies on row=',i6)") i
+                   write (out,"('Please include K-quantum number as the column after energies')")
+                   stop 'FLinput - illigal number of records in obs_fitting_energies, missing K?'
+                   !
+                endif 
+                !
+                read(w,*) fitting%obs(i)%Jrot
+                !
+                call readi(fitting%obs(i)%symmetry) 
+                call readi(fitting%obs(i)%N)
+                call readf(fitting%obs(i)%energy)
+                !
+                do j=0,trove%nmodes
+                  call readi( fitting%obs(i)%quanta(j) )
+                enddo
+                !
+                call readf(fitting%obs(i)%weight)
+                !
+                call read_line(eof) ; if (eof) exit
+                call readu(w)
+                !
+             enddo
+             !
+           case('J0FIT','J0FITTING')
+             !
+             action%band_fitting = .true.
+             !
+             call readi(j0fit%Nenergies)
+             !
+             allocate (j0fit%obs(1:j0fit%Nenergies),stat=alloc)
+             if (alloc/=0) then
+               write (out,"(' Error ',i8,' initializing obs. energy related arrays')") alloc
+               stop 'obs. energy arrays - alloc'
+             end if
+             !
+             do i = 1,j0fit%Nenergies
+               allocate(j0fit%obs(i)%quanta(0:trove%nmodes),stat=alloc)
+               if (alloc/=0) then
+                 write (out,"(' Error ',i8,' initializing obs%quanta')") alloc
+                 stop 'initializing obs%quanta - alloc'
+                end if
+             enddo
+             !
+             i = 0
+             !
+             call read_line(eof) ; if (eof) exit
+             call readu(w) 
+             !
+             do while (trim(w)/="END".and.i<j0fit%Nenergies)
+                !
+                i = i + 1
+                !
+                if (nitems<trove%Nmodes+4) then 
+                   !
+                   write (out,"('FLinput: wrong number of records in j0fit_energies on row=',i6,'()')") i
+                   stop 'FLinput - illigal number of records in j0fit_energies'
+                   !
+                endif 
+                !
+                !read(w,"(i)") j0fit%obs(i)%Jrot
+                !
+                read(w,*) j0fit%obs(i)%symmetry
+                !
+                call readi(j0fit%obs(i)%N)
+                call readf(j0fit%obs(i)%energy)
+                !
+                do j=1,trove%nmodes
+                  call readi( j0fit%obs(i)%quanta(j) )
+                enddo
+                !
+                call readf(j0fit%obs(i)%weight)
+                !
+                call read_line(eof) ; if (eof) exit
+                call readu(w)
+                !
+             enddo
+             !
+           case default
+             !
+             call report ("Unrecognized unit name "//trim(w),.true.)
+             !
+           end select
+           !
+           call read_line(eof) ; if (eof) exit
+           call readu(w)
+           !
+         enddo 
+         !
+         if (trim(w)/="".and.trim(w)/="END") then 
+            !
+            write (out,"('FLinput: wrong last line in CHECK_POINTS =',a)") trim(w)
+            stop 'FLinput - illegal last line in CHECK_POINTS'
+            !
+         endif 
+         !
+       case("DMS","DIPOLE","EXTERNAL")
+         !
+         extF_defined = .true.
+         !
+         if (Nmodes==0.or.Ncoords==0) then 
+            !
+            write (out,"('FLinput: EXTERNAL cannot appear before NMODES and Ncoords defined')") 
+            stop 'FLinput - EXTERNAL defined befor NMODES'
+            !
+         endif 
+         !
+         ! read Nparam and Type of PES
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while(w(1:5)/='PARAM')
+            !
+            select case(w)
+              !
+            case("RANK")
+              !
+              call readi(extF%rank)
+              !
+              if (all(fitting%iparam(:)==(/1,1000000/))) fitting%iparam = (/1,extF%rank/)
+              !
+            case("DMS_TYPE","TYPE")
+              !
+              call readu(w)
+              !
+              extF%ftype = trim(w)
+              !
+           case("IPARAM")
+             !
+             if (fitting%iparam(2)==1000000) then 
+               write(out,"('it is illegal to define iparam before rank in external field')")
+               stop 'iparam is being defined before rank in external field'
+             endif
+             !
+             if (fitting%iparam(1)==1)   call readi(fitting%iparam(1))
+             if (fitting%iparam(1)==1e6) call readi(fitting%iparam(2))
+              !
+            case("NPARAM")
+              !
+              if (nitems/=extF%rank+1.and.nitems/=2) then
+                 write (out,"('wrong number of records in  EXTF-NPARAM, neither  ',i5,', nor  1')") extF%rank
+                 stop 'FLinput - wrong number of records in  EXTF-NPARAM'
+              end if
+              !
+              allocate(extF%nterms(1:extF%rank),extF%maxord(1:extF%rank),stat=alloc)
+              if (alloc/=0) stop 'FLinput - cannot allocate extF%nterms'
+              !
+              do i=1,min(extF%rank,nitems-1)
+                call readi(extF%nterms(i))
+              enddo
+              !
+              extF%nterms(nitems:extF%rank) = extF%nterms(1)
+              !
+              Nparam = maxval(extF%nterms(:),dim=1)
+              !
+              if (Nparam<1) then
+                 write (out,"('wrong value of EXTF-NPARAM = ',i5,', must be >0')") Nparam
+                 stop 'FLinput - wrong value of EXTF-NPARAM'
+              end if
+              !
+            case("COEFF")
+              !
+              call readu(w)
+              !
+              exfF_coeff_type = trim(w)
+              !
+            case("THRESHOLD")
+              !
+              call readf(extF%matelem_threshold)
+              !
+            case("COORDS")
+              !
+              if (nitems-1==1) then 
+                 !
+                 call readu(w)
+                 extF%intcoords(:) = trim(w)
+                 !
+                 call read_line(eof) ; if (eof) exit
+                 call readu(w)
+                 cycle 
+                 !
+              endif 
+              !
+              if (nitems/=trove%Nmodes+1) then
+                 write (out,"('wrong number of records in  EXTF-COORDS for trove%nmodes = ',i5)") trove%nmodes
+                 stop 'FLinput - wrong number of records in  EXTF-COORDS'
+              end if
+              !
+              do imode=1,trove%nmodes
+                 call readu(extF%intcoords(imode))
+              enddo
+              !
+            case("REF_GEOM","GEOM_REF")
+              !
+              if (nitems<Ncoords+1) then
+                 write (out,"('wrong number of records in  GEOM_REF for trove%Ncoords = ',i5)") trove%Ncoords
+                 stop 'FLinput - wrong number of records in  GEOM_REF'
+              end if
+              !
+              imode = 0
+              !
+              !do while (imode<Ncoords.and.i<nitems)
+              !
+              do i=2,nitems
+                !
+                call readu(w)
+                !
+                lfact = 1.0_rk
+                !
+                select case(w)
+                !
+                case("ANGSTROM")
+                  !
+                  lfact= 1.0_rk
+                  !
+                case("BOHR")
+                  !
+                  lfact=bohr
+                  !
+                case("DEG","DEGREE","DEGREES")
+                  !
+                  lfact=1.0_rk/rad
+                  !
+                case default
+                  !
+                  imode = imode + 1
+                  !
+                  if (imode>Ncoords) then
+                     write (out,"('too many records in  GEOM_REF for trove%Ncoords = ',i5)") trove%Ncoords
+                     stop 'FLinput - wrong number of records in  GEOM_REF'
+                  end if
+                  !
+                  read(w,*) extF%geom_ref(imode)
+                  !
+                end select
+                !
+                extF%geom_ref(imode) = extF%geom_ref(imode)*lfact
+                !
+              enddo
+              !
+            case ("DSTEP_BMAT")
+              !
+              call readf(fd_step_Bmat)
+              !
+            case ("DSTEP")
+              !
+              ! If all dsteps are the same - only one number in the input can be given. 
+              !
+              if (nitems-1==1) then 
+                 !
+                 call readf(f_t)
+                 extF%fdstep(:) = f_t
+                 call read_line(eof) ; if (eof) exit
+                 call readu(w)
+                 cycle 
+                 !
+              endif 
+              !
+              if (nitems-1/=Nmodes) then 
+                 !
+                 write (out,"('FLinput: wrong number elements in extF%dstep : ',i8)") nitems-1
+                 stop 'FLinput - illigal number of extF%dstep'
+                 !
+              endif 
+              !
+              do i =1,Nmodes
+                 !
+                 call readf(f_t)
+                 extF%fdstep(i) = f_t
+                 !
+              end do
+              !
+            case("DIPORDER","ORDER","ORDERS")
+              !
+              if (nitems/=extF%rank+1.and.nitems/=2) then
+                 write (out,"('wrong number of records in  EXTF-ORDER for rank = ',i5)") extF%rank
+                 stop 'FLinput - wrong number of records in  EXTF-ORDER'
+              end if
+              !
+              do i=1,min(extF%rank,nitems-1)
+                call readi(extF%maxord(i))
+              enddo
+              !
+              extF%maxord(nitems:extF%rank) = extF%maxord(1)
+              !
+              trove%NExtOrder = maxval(extF%maxord(:),dim=1)
+              !
+            case default
+              !
+              call report ("Unrecognized unit name "//trim(w),.true.)
+              !
+            end select
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
+            !
+         enddo
+         !
+         ! Allocation of the pot. parameters 
+         !
+         allocate (extF%coef(Nparam,extF%rank),extF%name(Nparam,extF%rank),& 
+                   extF%term(1:trove%Ncoords,Nparam,extF%rank),&
+                   extF%ifit(Nparam,extF%rank),stat=alloc)
+         if (alloc/=0) then
+            write (out,"(' Error ',i9,' allocating matix extF%coef ')") alloc
+            stop 'FLinput - cannot allocate extF%coef'
+         end if
+         !
+         iparam = 0
+         extF%coef = 0
+         extF%name = 'xxxx'
+         extF%term = -1
+         extF%ifit = 1
+         !
+         Nparam = sum(extF%nterms(:))
+         !
+         do imu = 1,extF%rank
+           !
+           do iterm = 1, extF%nterms(imu)
+             !
+             iparam = iparam+1 
+             !
+             call read_line(eof) ; if (eof) exit
+             call readu(w)
+             !
+             if (trim(w)=="".or.trim(w)=="END") then
+                 write (out,"('FLinput: wrong number of rows in DMS, imu = ',i6,' i = ',i8)") imu,iterm
+                 stop 'FLinput - illigal number of rows in DMS'
+             endif
+             !
+             select case(trim(exfF_coeff_type))
+             !
+             case("LIST")
+               !
+               extF%name(iterm,imu)=trim(w)
+               !
+               call readi(i_t) ; extF%ifit(iterm,imu) = i_t
+               call readf(f_t) ; extF%coef(iterm,imu) = f_t
+               !
+             case("POWERS")
+               !
+               if (nitems<trove%Ncoords+3) then 
+                  !
+                  write (out,"('FLinput: wrong number of records in extF on row=',i6,'()')") iparam
+                  stop 'FLinput - illigal number of records in extF'
+                  !
+               endif 
+               !
+               do i=1,trove%Ncoords
+                  !
+                  call readi(extF%term(i,iterm,imu))
+                  !
+               enddo
+               !
+               call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
+               call readf(f_t); extF%coef(iterm,imu) = f_t
+               !
+               write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
+               !
+               write(extF%name(iterm,imu),my_fmt) 'f',(mod(extF%term(i,iterm,imu),10),i=1,trove%Ncoords)
+               !
+               if (any(extF%term(:,iterm,imu)<0)) then 
+                   write(out,"('FLinput: negative extF powers on row',i8)") iparam
+                   stop 'FLinput: wrong extF indexes '
+               endif 
+               !
+             case default
+               !
+               call report ("Unrecognized unit name "//trim(w),.true.)
+               !
+             end select
+             !
+           enddo
+           !
+         enddo
+         !
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+       case default
+         call report ("Principal keyword "//trim(w)//" not recognized",.true.)
+       end select
+       !
+   end do
+   !
+   select case (trim(job%IOextF_action))
+     !
+   case ('SAVE', 'DIVIDE', 'SPLIT')
+     if (trim(trove%IO_ext_coeff) == 'NONE') then
+      FLextF_coeffs = .true.
+      !
+      !write(out,"('FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed')")
+      !stop 'FLinput - EXTF-coeffs are not defined but the extmatelem are to be computed'
+      !
+    end if
+   end select
+   !
+   if (trim(job%IOextF_action)=='SAVE') then 
+       if (trim(job%IOcontr_action)  =='NONE') job%IOcontr_action   = 'READ'
+       if (trim(job%IOj0matel_action)=='NONE'.and.job%vib_contract) job%IOj0matel_action = 'READ'
+   end if 
+   !
+   if (.not.symmetry_defined) then 
+      !
+      call SymmetryInitialize(job%sym_group)
+      !
+      symmetry_defined = .true.
+      !
+   endif
+   !
+   if (job%verbose>=6) then
+     !
+     call print_symmetries
+     !    
+   endif
+   !
+   if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
+      write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
+      stop 'FLinput - The C2VN number is undefined or too small'
+   endif
+    !
+   if (.not.refer_defined) then 
+      !
+      trove%local_ref = trove%local_eq
+      !
+   endif
+   !
+   if (.not.basis_defined) then 
+      !
+      write (out,"('FLinput: The basis set is not defined')") 
+      stop 'FLinput - basis set is not defined'
+      !
+   endif 
+   !
+   if (.not.chk_defined) then 
+      !
+      write (out,"('FLinput: The check_point section has not been defined')") 
+      stop 'FLinput - The check_point section has not been defined'
+      !
+   endif 
+   !
+   if (.not.zmat_defined) then 
+      !
+      write (out,"('FLinput: ZMAT is not defined')") 
+      stop 'FLinput - ZMAT is not defined'
+      !
+   endif 
+   !
+   if (.not.pot_defined) then 
+      !
+      write (out,"('FLinput: POTEN is not defined')") 
+      stop 'FLinput - POTEN is not defined'
+      !
+   endif 
+   !
+   if (FLextF_matelem.and..not.extF_defined) then 
+      !
+      write (out,"('FLinput: External function has to be defined for external mat-elem calcs. ')") 
+      stop 'FLinput - EXTF is not defined'
+      !
+   endif 
+   !
+   if (action%fitting.and..not.extF_defined.and..not.action%band_fitting) then 
+      !
+      write (out,"('FLinput: External function has to be defined for performing fitting ')") 
+      stop 'FLinput - EXTF is not defined'
+      !
+   endif 
+   !
+   !
+   if (.not.equil_defined) then 
+      !
+      write (out,"('FLinput: EQUIL is not defined')") 
+      stop 'FLinput - EQUIL is not defined'
+      !
+   endif 
+   !
+   if (trim(job%PTtype)/='DIAGONAL'.and.manifold==1.and.NPTorder>0) then 
+      !
+      write (out,"('FLinput: PTtype  not compatible with non-rigid bender:',a)") trim(job%PTtype)
+      stop 'FLinput - wrong PTtype'
+      !
+   endif
+   !
+   if (FLextF_coeffs.and..not.extF_defined) then 
+      write (out,"('FLinput: External/Dipole field has to be specified when EXTERNAL checkpoint is used',a)")
+      stop 'FLinput - External/Dipole field has to be specified for the EXTERNAL checkpoint'
+   endif 
+   !
+   ! For the transformation to the j=0 basis set representation we require 
+   ! to work only with all modes as one class in the contr. vibrational representaion, i.e.
+   ! the vibr. Hamiltonian is assumed to be diagonal in this representaion:
+   !
+   if ( any( (/character(len=wl) :: trim(job%IOj0ext_action),trim(job%IOj0matel_action)/) /='NONE' ) ) then 
+      !
+      job%vib_contract = .true.
+      !
+      do i=1,Nmodes
+         job%bset(i)%class = 1
+      enddo
+      !
+      if (any(trim(job%IOj0ext_action) == (/'READ'/) ) ) then 
+        job%extFmat_file  = job%exteigen_file
+        job%extmat_suffix = job%j0extmat_suffix
+      endif 
+      !
+      if (trim(job%IOj0matel_action) == 'READ') then 
+        job%kinetmat_file = job%kineteigen_file
+        job%matelem_suffix = job%j0matelem_suffix
+      endif 
+      !
+      if (trim(job%IOeigen_action)=='SAVE'.and.action%convert_vibme) then 
+        job%IOeigen_action = 'NONE'
+        write(out,"('FLReadInput: It is illegal to save eigenvectors during the J=0 convertion; EIGENFUNC changed to NONE')")
+      endif
+      !
+      if (trim(job%IOcontr_action)=='READ'.and.action%convert_vibme) then 
+        job%IOcontr_action = 'NONE'
+        write(out,"('FLReadInput: It is illegal to <CONTRACT READ> during the J=0 convertion; CONTRACT changed to NONE')")
+      endif
+      !
+      if (trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND'.or.trim(job%IOj0matel_action)=='READ'.or.&
+               trim(job%IOj0ext_action)=='READ') then 
+        !
+        !if (trim(job%eigenfile%filebase)/='eigen') then 
+          !
+          job%eigenfile%filebase   = 'j0eigen'
+          job%eigenfile%dscr       = 'j0eigen_descr'
+          job%eigenfile%primitives = 'j0eigen_quanta'
+          job%eigenfile%vectors    = 'j0eigen_vectors'
+          !if (job%IOvector_symm) job%eigenfile%vectors    = 'j0eigen_vectors'
+          !
+        !endif 
+        !
+        job%contrfile%dscr       = 'j0'//trim(job%contrfile%dscr)
+        job%contrfile%primitives = 'j0'//trim(job%contrfile%primitives)
+        job%contrfile%vectors    = 'j0'//trim(job%contrfile%vectors)
+        job%contrfile%dvr        = 'j0'//trim(job%contrfile%dvr)
+        !
+      endif 
+      !
+   endif
+   !
+   if ( job%convert_model_j0.and.job%bset(0)%range(1)>0 ) then
+     write (out,"('EIGENFUNC SAVE CONVERT cannot be used with jrot>0')") jrot
+     stop 'EIGENFUNC SAVE CONVERT cannot be used with jrot>0'
+   endif
+   !
+   if ( trove%triatom_sing_resolve .and. (trove%Natoms/=3 .or. trove%Nmodes/=3 ) ) then
+     write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Nmodes=Natoms=3')") 
+     stop 'Illegal usage of LEGENDRE or SINRHO'
+   endif
+   !
+   trove%jmax = jrot 
+   !
+   write(char_j,"(i4)") jrot
+   !
+   job%eigenfile%dscr       = trim(job%eigenfile%dscr)//trim(adjustl(char_j))       !//'.chk'
+   job%eigenfile%primitives = trim(job%eigenfile%primitives)//trim(adjustl(char_j)) !//'.chk'
+   job%eigenfile%vectors    = trim(job%eigenfile%vectors)//trim(adjustl(char_j))    !//'.chk'
+   !
+   ! Check if everything defined 
+   !
+   if (job%verbose>=4) write(out,"('FLReadInput/end')")  
+   !
+   contains
+   !
+   subroutine print_symmetries
+     integer(ik) :: igamma,iclass,ioper,ielem
+     !
+     write(out,"(/'Symmetry:',a)") trim(sym%group)
+     !    
+     write(out,"(/'Characters')")
+     !
+     do igamma = 1,sym%Nrepresen
+       do iclass = 1,sym%Nclasses
+          write(out,"(i4,1x,i4,1x,f16.8)") igamma,iclass,sym%characters(igamma,iclass)
+      enddo 
+     enddo
+     !
+     write(out,"(/'Irreps:')")
+     !
+     do igamma = 1,sym%Nrepresen
+       !
+       do ioper = 1,sym%Noper
+          do ielem = 1,sym%degen(igamma)
+            write(out,"(i4,1x,i4,1x,i4,1x,10f16.8)") igamma,ioper,ielem,sym%irr(igamma,ioper)%repres(ielem,:)
+          enddo
+       enddo 
+       !
+     enddo 
+     !
+   end subroutine print_symmetries
+   !
+end subroutine FLReadInput
+
+subroutine check_read_save_none(w,place)
+  !
+  character(len=cl),intent(in) :: w,place
+  !
+  select case(trim(w))
+  !
+  case('NONE','SAVE','READ','SEPARATE','ASCII')
+    !
+    continue
+    !
+  case default 
+    !
+    write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),trim(place)
+    stop 'FLinput - illegal key '
+    !
+  end select 
+
+end subroutine check_read_save_none
+
+
+!
+! Initilizing the molecule 
+!
+  subroutine FLsetMolecule
+
+    !
+    integer(ik) :: NPotOrder,NKinOrder,PotOrderShift,Natoms,Nmodes
+    integer(ik) :: bonds(trove%Natoms-1,2)
+    integer(ik) :: angles((trove%Natoms-3)*2+2,3)
+    integer(ik) :: dihedrals(0:max(trove%Natoms,0),4) ! Dihedral Angles connections type 
+    integer(ik) :: dihedtype(0:max(trove%Natoms,0))
+    integer(ik) :: Ndihedrals ! number of dihedral angles of type 1 and type 2
+    !
+    integer(ik) :: alloc,io,ibond,n_t
+    integer(ik) :: Nbonds,Nangles,i1
+    !
+    integer(ik) :: Kindex(trove%Nmodes),Nmodes_e,k1,k2,imode,iterm,jterm,dm2,irho,x1
+    real(ark)   :: amorse,masses(trove%Natoms)
+    real(ark)   :: ar_t(trove%Ncoords),a0_ark(trove%Natoms,3),chi(trove%Nmodes)
+    real(ark)   :: b0_(trove%Natoms,3,0:0)
+    real(ark)   :: rho_(0:0)
+    real(ark)   :: rho_ref_
+    real(ark)   :: rho_b_(2)
+    !
+    real(ark)   :: f(trove%Nmodes,trove%Nmodes)
+    logical     :: dir
+    real(ark)   :: step(2,trove%Nmodes),factor,df,rho_eq,Inertm(3)
+    character(len=cl) :: my_fmt !format for I/O specification
+    !
+    if (job%verbose>=4) write(out,"(/'FLsetMolecule/start')")   
+    !
+    NKinOrder    = trove%NKinOrder
+    NPotOrder    = trove%NPotOrder
+    PotOrderShift= job%pot_pt_shift
+    Nmodes       = trove%Nmodes
+    Natoms       = trove%Natoms
+    !
+    ! convert z-matrix into the rbond,balpha,dalpha - connections
+    !
+    call zmat_to_bonds(bonds,angles,dihedrals,dihedtype,Nbonds,Nangles,Ndihedrals)
+    !
+    trove%Nbonds  = Nbonds
+    trove%NAngles = NAngles
+    trove%NDihedrals = Ndihedrals   
+    !
+    trove%Ncoords = Nbonds+Nangles+Ndihedrals
+    !
+    if (job%verbose>=2 .and. max(trove%Natoms-1,0)/=Ndihedrals ) then 
+       write(out,"('Warning: number of dihedrals is not (Natoms-3): ',2i8)") Ndihedrals,max(trove%Natoms-1,0)
+       !stop 'FLsetMolecule: Wrong number of dihedrals'
     endif
+    ! 
+    if (trove%Nmodes/=3*trove%Natoms-6.and.trove%Nmodes/=3*trove%Natoms-5) then 
+       write(out,"('Warning: Number of modes, neither 3n-5, nor 3n-6, but ',i8)") trove%Nmodes
+       stop 'FLsetMolecule: Wrong number of modes'
+    endif 
+    !
+    ! define maximal value of NPotOrder and NKinOrder
+    trove%MaxOrder = max(NPotOrder,NKinOrder,trove%NExtOrder)
     !trove%NPotOrder = trove%MaxOrder
     ! 
     ! Allocation of the molecular structure parameters matrixes:
@@ -5033,12 +4943,7 @@
     !
     call TimerStart('FLQindex-1')
     !
-    if(job%mode_list_present) then  
-      maxpower = max(trove%NpotOrder,trove%NExtOrder)
-    else
-      maxpower = trove%maxorder
-    endif
-    do io = 0, maxpower + 2
+    do io = 0,trove%MaxOrder+2
       !
       Kindex = 0 
       Kindex(1) = io 
@@ -5047,14 +4952,13 @@
     enddo
     call TimerStop('FLQindex-1')
     !
-    trove%Ncoeff = trove%RangeOrder(maxpower)
-    io = trove%RangeOrder(maxpower+2)
+    trove%Ncoeff = trove%RangeOrder(trove%MaxOrder)
+    io = trove%RangeOrder(trove%MaxOrder+2)
     !
     ! Definition of the indexing: relations between the Nmode-D and 1D arrays 
     ! are stored in FLIndexQ (forward) and deifned by Qindex routine (backward)
     !
     allocate (FLIndexQ(trove%Nmodes,io),stat=alloc)
-    !
     call ArrayStart('FLIndexQ',alloc,size(FLIndexQ),kind(FLIndexQ))
     !
     !allocate (FLIndexQ_legatee(trove%Nmodes,io),stat=alloc)
@@ -5065,7 +4969,7 @@
     !
     ! Final call: defining the matrix FLIndexQ
     !
-    Kindex = 0 ; Kindex(1) = Maxpower+2
+    Kindex = 0 ; Kindex(1) = trove%MaxOrder+2
     !
     call TimerStart('FLQindex-2')
     !
@@ -5183,7 +5087,7 @@
     call MLinitialize_molec(  trove%Moltype,trove%Coordinates,trove%coords_transform,&
                               trove%Nbonds,trove%Nangles,trove%Ndihedrals,&
                               trove%dihedtype,&
-                              trove%mass,trove%local_eq, trove%local_eq_transformed,&
+                              trove%mass,trove%local_eq,&
                               force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
                               trove%IO_primitive,trove%chk_numerov_fname,&
                               trove%symmetry,trove%rho_border,trove%zmatrix)
@@ -5678,7 +5582,7 @@
         !
         call print_kinetic
         !
-        if (trove%sparse.and..not.job%mode_list_present) call compact_sparse_kinetic
+        if (trove%sparse) call compact_sparse_kinetic
         !
         return 
         !
@@ -6007,59 +5911,21 @@
            !
            do k1 = 1,Nmodes
               do k2 = 1,Nmodes
-                 do i = 1,trove%g_vib(k1,k2)%Ncoeff 
-                   do irho = 0,Npoints
-                      !if (k2<=3.and.k1<=3) then 
-                      write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                        !write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
-                                                     ! trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
-                      !elseif (k2<=3) then
-                        !write(out,"(20x,3i5,1x,i7,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),&
-                                   !trove%g_cor(k1,k2)%field(i,irho)
-                      !else 
-                       ! write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                      !endif
+                 do i = 1,trove%g_vib(k1,k2)%Ncoeff
+                    do irho = 0,Npoints
+                      if (k2<=3.and.k1<=3) then 
+                        write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
+                                                      trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
+                      elseif (k2<=3) then
+                        write(out,"(20x,3i5,1x,i7,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),&
+                                   trove%g_cor(k1,k2)%field(i,irho)
+                      else 
+                        write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
+                      endif
                     enddo
                  enddo
               enddo
            enddo
-           do k1 = 1,3
-              do k2 = 1,3
-                 do i = 1,trove%g_rot(k1,k2)%Ncoeff 
-                   do irho = 0,Npoints
-                      write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i, 0, 0,trove%g_rot(k1,k2)%field(i,irho)
-                      !elseif (k2<=3) then
-                        !write(out,"(20x,3i5,1x,i7,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),&
-                                   !trove%g_cor(k1,k2)%field(i,irho)
-                      !else 
-                       ! write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                      !endif
-                    enddo
-                 enddo
-              enddo
-           enddo
-           do k1 = 1,Nmodes
-              do k2 = 1,3
-                 do i = 1,trove%g_cor(k1,k2)%Ncoeff 
-                   do irho = 0,Npoints
-                      write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,0,trove%g_cor(k1,k2)%field(i,irho), 0
-                      !else 
-                       ! write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                      !endif
-                    enddo
-                 enddo
-              enddo
-           enddo
-           do i = 1,trove%pseudo%Ncoeff 
-              do irho = 0,Npoints
-                write(out,"(20x,3i5,1x,i7,3e18.8)") irho,0,0,i,0,0,&
-                                trove%pseudo%field(i,irho)
-                   !else 
-                    ! write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                   !endif
-              enddo
-           enddo
-           !
            !
            if (job%verbose>6) then 
              !
@@ -6195,11 +6061,9 @@
        !
        fl => trove%g_vib(Nmodes,Nmodes)
        !
-       if (.not.trove%triatom_sing_resolve.and.job%mode_list_present) then 
-         call FLCompact_and_combine_fields_sparse_with_modes(fl,"g_vib",trove%pseudo,"pseudo")
-       else if (.not.trove%triatom_sing_resolve) then 
+       if (.not.trove%triatom_sing_resolve) then 
          call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
-        !
+         !
        else
          !
          gl => trove%g_rot(3,3)
@@ -8164,7 +8028,6 @@
           !
           do iterm = 1,N_potpoint
              !
-
              xi_t(:) = xi_et(:) + trove%fdstep(:)*real(ipoint_address(iterm,:),ark)
              !
              if (trove%internal_coords=='LOCAL') then 
@@ -13360,7 +13223,7 @@
     enddo 
     !
     do imode = 1,trove%Nmodes
-       if (job%bset(imode)%type/='NUMEROV'.and.job%bset(imode)%type/='SINC'.and.job%bset(imode)%type/='FOURIER') then 
+       if (job%bset(imode)%type/='NUMEROV'.and.job%bset(imode)%type/='SINC') then 
          if ( job%bset(imode)%coord_kinet/=job%bset(imode)%coord_poten  ) then 
             write(out,"('FLbsetInit: Wrong definition of coordinates:')")
             write(out,"('the kinetic and potential parts must be the same for the non-numerical basis sets, while')")
@@ -13581,13 +13444,7 @@
         !
         if (trove%separate_convert.and..not.trove%separate_store) call KineticSave_ASCII
         !
-        if (trove%separate_store) then
-          if (job%mode_list_present) then
-            call checkpointRestore_kinetic_ascii_with_modes
-          else 
-            call checkpointRestore_kinetic_ascii
-          endif
-        endif
+        if (trove%separate_store) call checkpointRestore_kinetic_ascii
         !
       case ('KINETIC_SAVE_SPARSE')
         call AmatBmatSave
@@ -15225,8 +15082,9 @@
         real(rk)             :: factor
         real(ark)            :: field_
         real(rk)             :: exp_coeff_thresh
+
         !
-        integer(ik) :: i,  iterm, k(trove%Nmodes)
+        integer(ik) :: i, iterm, k(trove%Nmodes)
         !
         unitfname ='Check point of the kinetic'
         call IOStart(trim(unitfname),chkptIO)
@@ -15260,7 +15118,6 @@
            end if
            !
         endif
-     
         !
         ! start reading 
         !
@@ -15302,7 +15159,6 @@
            if (k1==987654321) exit do_gvib
            !
            trove%g_vib(k1,k2)%field(iterm,i) = field_
-           !
            !
         enddo do_gvib
         !
@@ -15466,438 +15322,7 @@
         !
       end subroutine checkpointRestore_kinetic_ascii
 
-      subroutine checkpointRestore_kinetic_ascii_with_modes
 
-        character(len=14) :: buf
-        character(len=25) :: buf25
-        character(len=cl)  :: unitfname
-        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
-        type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder
-        integer(ik), allocatable :: mode_list(:) 
-        real(rk)             :: factor
-        real(ark)            :: field_, rho
-        real(rk)             :: exp_coeff_thresh
-        !
-        integer(ik) :: i, j,  iterm, total_terms, cur_term , k(trove%Nmodes)
-        !
-        unitfname ='Check point of the kinetic'
-        ! 
-        call IOStart(trim(unitfname),chkptIO_preread)
-        open(chkptIO_preread,action='read',status='old',file=trove%chk_kinet_fname) 
-        !
-        Natoms = trove%Natoms
-        Nmodes = trove%Nmodes
-        Npoints = trove%Npoints
-        KinOrder = trove%NKinOrder
-        !
-        allocate(mode_list(Nmodes))
-        if (.not.associated(trove%g_vib).or..not.associated(trove%g_rot).or. &
-            .not.associated(trove%g_cor)) then 
-           !
-           !write (out,"('basisRestore:  g-fields have to be allocated by now; maybe _checkpointRestore_kinetic_ascii_ was no run yet')") 
-           !stop 'basisRestore, g-fields has to be alllocated before'
-           !
-           allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
-           if (alloc/=0) then
-               write (out,"('chk_Restore_kin-Error ',i9,' trying to allocate g-fields')") alloc
-               stop 'chk_Restore_kin, g-fields - out of memory'
-           end if
-           !
-        endif 
-        !
-        if (FLl2_coeffs.and..not.associated(trove%L2_vib)) then 
-           !
-           allocate (trove%L2_vib(Nmodes,Nmodes),stat=alloc)
-           if (alloc/=0) then
-               write (out,"('chk_Restore_kin-Error ',i9,' trying to allocate L2_vib-field')") alloc
-               stop 'chk_Restore_kin, L2_vib-field - out of memory'
-           end if
-           !
-        endif
-        
-        !
-        ! start reading 
-        !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
-        !
-        ! 
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; 
-        do_gvib_pre : do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-           !
-           if (k1==987654321) then 
-             fl => trove%g_vib(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_vib')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_gvib_pre
-           endif
-           !    
-           if(k1_ == 0 .and. k2_ == 0) then
-             k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_vib(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_vib')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             !
-             k1_ = k1 ; k2_ = k2
-             n = 0
-             total_terms = 0 
-           endif
-           total_terms = total_terms + 1
-           !
-           !trove%g_vib(k1,k2)%field(iterm,i) = field_
-           !trove%g_vib(k1,k2)%IndexQ(1:Nmodes, iterm) = mode_list(1:Nmodes)
-           !
-        enddo do_gvib_pre
-        !
-        !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then 
-           print*,"grot-ASCII-chk npoints is wrong"
-           stop "grot-ASCII-chk npoints is wrong"
-        endif
-        !
-        if (Torder/=KinOrder) then
-          print*,"grot-ASCII-chk Order is wrong"
-          stop "grot-ASCII-chk Order is wrong"
-        endif
-        !
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
-        do_grot_pre : do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-           !
-           if (k1==987654321) then 
-             fl => trove%g_rot(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_rot')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_grot_pre
-           endif
-           !
-           if(k1_ == 0 .and. k2_ == 0) then
-             k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_rot(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_rot')                        
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             !
-             k1_ = k1 ; k2_ = k2
-             n = 0
-             total_terms = 0 
-           endif
-           total_terms = total_terms + 1
-          !
-        enddo do_grot_pre
-        !   
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then 
-           print*,"grot-ASCII-chk npoints is wrong"
-           stop "grot-ASCII-chk npoints is wrong"
-        endif
-        !
-        if (Torder/=KinOrder) then
-          print*,"grot-ASCII-chk Order is wrong"
-          stop "grot-ASCII-chk Order is wrong"
-        endif
-        !
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
-        do_gcor_pre : do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-           !
-           if (k1==987654321) then 
-             fl => trove%g_cor(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_cor')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_gcor_pre
-           endif
-           !
-           if(k1_ == 0 .and. k2_ == 0) then
-             k1_ = k1; k2_ = k2; 
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_cor(k1_,k2_) 
-             fl%Ncoeff = total_terms
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_cor')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             !
-             k1_ = k1 ; k2_ = k2
-             n = 0
-             total_terms = 0 
-           endif
-           total_terms = total_terms + 1
-          !
-        enddo do_gcor_pre
-        !
-        !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
-        !
-        n = 0
-        total_terms = 0 
-        do_pseudo_pre: do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-           !
-           if (k1==987654321) then
-             fl => trove%pseudo 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'pseudo')
-             !fl%ifromsparse = 0
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_pseudo_pre
-           endif
-           total_terms = total_terms + 1
-          !
-        enddo do_pseudo_pre 
-        !
-        close(chkptIO_preread,status='keep')
-        ! 
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
-         
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
-        k1_= 0 ; k2_= 0 ; n = 0; cur_term=0; 
-        do_gvib : do 
-          !
-          read(chkptIO,*) k1,k2,iterm,i,field_,mode_list(1:Nmodes)
-          !
-          if (k1_/=k1.or.k2_/=k2) then
-            k1_= k1 ; k2_= k2
-            n = 0
-            !cur_term = iterm
-          endif
-          !
-          if (k1==987654321) exit do_gvib
-          !
-          cur_term = iterm
-          if(Npoints > 0) then 
-            do j = 0, Npoints 
-              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              trove%g_vib(k1,k2)%field(cur_term,j) = field_*MLcoord_direct(rho, 1, Nmodes, mode_list(Nmodes))
-            enddo
-          else 
-            trove%g_vib(k1,k2)%field(cur_term,i) = field_
-          endif
-          trove%g_vib(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
-          !cur_term = cur_term + 1
-          !  
-        enddo do_gvib 
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
-        !
-        !
-        k1_= 0 ; k2_= 0 ; n = 0 ; cur_term = 0;
-        do_grot : do 
-          !
-          read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes)
-          !
-          if (k1_/=k1.or.k2_/=k2) then
-            k1_= k1 ; k2_= k2
-            n = 0
-            cur_term = 1
-          endif
-          !
-          if (k1==987654321) exit do_grot
-          !
-          cur_term = iterm
-          if(Npoints > 0) then
-            do j = 0, Npoints 
-              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              trove%g_rot(k1,k2)%field(cur_term,j) = field_*MLcoord_direct(rho, 1, Nmodes, mode_list(Nmodes))
-            enddo
-          else   
-            trove%g_rot(k1,k2)%field(cur_term,i) = field_
-          endif
-          trove%g_rot(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
-          !cur_term = cur_term + 1
-          !
-          !
-        enddo do_grot
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
-        !
-        k1_ =0; k2_ = 0; n = 0; cur_term = 0;
-        do_gcor : do 
-          !
-          read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes)
-          !
-          if (k1==987654321) exit do_gcor
-          !
-          if (k1_/=k1.or.k2_/=k2) then
-            k1_= k1 ; k2_= k2
-            n = 0
-            cur_term = 1
-          endif
-          !
-          cur_term = iterm
-          if(Npoints > 0) then
-            do j = 0, Npoints 
-              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              trove%g_cor(k1,k2)%field(cur_term,j) = field_*MLcoord_direct(rho, 1, Nmodes, mode_list(Nmodes))
-            enddo
-          else
-            trove%g_cor(k1,k2)%field(cur_term,i) = field_
-          endif
-          trove%g_cor(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
-          !cur_term = cur_term + 1 
-          !
-          !
-        enddo do_gcor
-        !
-        !
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
-        !
-        n = 0; cur_term = 1;
-        do_pseu : do 
-          !
-          read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-          !
-          if (k1==987654321) exit do_pseu
-          !
-          cur_term = iterm
-          if(Npoints > 0) then
-            do j = 0, Npoints 
-              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              trove%pseudo%field(cur_term,j) = field_*MLcoord_direct(rho, 1, Nmodes, mode_list(Nmodes))
-            enddo
-          else
-            trove%pseudo%field(cur_term,i) = field_
-          endif
-          trove%pseudo%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
-          !cur_term = cur_term + 1
-          !
-        enddo do_pseu
-        !
-        if (FLl2_coeffs) then 
-          !
-          read(chkptIO,*) Tpoints,Torder,Tcoeff
-          !
-          if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
-          if (Torder/=2) then 
-            write (out,"('L2vib-ASCII-chk Order is not 2',i8)") Torder
-            stop "L2vib-ASCII-chk Order is wrong"
-          endif
-          !
-          do k1 = 1,Nmodes
-            do k2 = 1,Nmodes
-              !
-              fl => trove%L2_vib(k1,k2)
-              fl%Ncoeff = Tcoeff
-              !
-              call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
-              forall(n=1:Tcoeff) fl%ifromsparse(1:n) = (/(n,n=1, Tcoeff)/)            
-              fl%sparse = .true.
-              !
-            enddo
-          enddo
-          !
-          k1_= 0 ; k2_= 0 ; n = 0
-          do_L2vib : do 
-             !
-             read(chkptIO,*) k1,k2,iterm,i,field_
-             !
-             if (k1_/=k1.or.k2_/=k2) then
-               k1_= k1 ; k2_= k2
-               n = 0
-             endif
-             !
-             if (k1==987654321) exit do_L2vib
-             !
-             trove%L2_vib(k1,k2)%field(iterm,i) = field_
-             !
-          enddo do_L2vib
-          !
-        endif
-        !
-        read(chkptIO,*) exp_coeff_thresh
-        !
-        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
-           !
-           write(out,"('WARNING: in kinetic.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") &
-                     job%exp_coeff_thresh,exp_coeff_thresh
-           !
-        endif
-        !
-        read(chkptIO,"(a14)") buf
-        !
-        if (buf/='End of kinetic') then
-          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
-          stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
-        end if
-        !
-        call MemoryReport
-        !
-      end subroutine checkpointRestore_kinetic_ascii_with_modes
 
       subroutine checkpointSkip_kinetic
 
@@ -16619,136 +16044,6 @@
      call ArrayStop("Sfield")
      !
    end subroutine FLCompact_and_combine_fields_sparse
-  
-   subroutine FLCompact_and_combine_fields_sparse_with_modes(fl1,name1,fl2,name2)
-
-     type(FLpolynomT),pointer  :: fl1,fl2
-     character(len=*),intent(in) :: name1,name2
-     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
-     real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
-     integer(ik),allocatable  :: siorder1(:),siorder2(:)      ! iorder in sparse
-     integer(ik)   :: target_index(trove%Nmodes)
-     logical :: check = .true.
-     !
-     Ncoeff1 = fl1%Ncoeff
-     Ncoeff2 = fl2%Ncoeff
-     !
-     Npoints = fl1%Npoints
-     !
-     if (Npoints/=fl2%Npoints) then
-       write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") & 
-             fl1%Npoints,fl2%Npoints
-       stop 'FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields'
-     endif
-     !    
-     target_index = 0
-     target_index(1) = trove%NKinOrder 
-     Ncoeffmax= Ncoeff1
-     !
-     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
-     !
-     iterm = 0
-     !
-     do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-          iterm = iterm + 1
-       endif
-     enddo
-     !
-     nterms = iterm
-     !
-     if (Nterms==0) then
-       !
-       stop 'FLCompact_and_combine_fields_sparse is not implemented for Nterms=0' 
-       !
-       deallocate(fl1%IndexQ,fl2%IndexQ)
-       call ArrayStop(name1//'IndexQ')
-       call ArrayStop(name2//'IndexQ')
-       !
-       deallocate(fl1%ifromsparse,fl2%ifromsparse)
-       call ArrayStop(name1//"ifromsparse")
-       call ArrayStop(name2//"ifromsparse")
-       !
-       return
-       !
-     endif 
-     !
-     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),stat=alloc)
-     call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
-     call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
-     !
-     allocate(Siorder1(nterms),Siorder2(nterms),stat=alloc)
-     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
-     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
-     !
-     deallocate(fl1%IndexQ,fl2%IndexQ)
-     call ArrayStop(name1//'IndexQ')
-     call ArrayStop(name2//'IndexQ')
-     !
-     deallocate(fl1%ifromsparse,fl2%ifromsparse)
-     call ArrayStop(name1//"ifromsparse")
-     call ArrayStop(name2//"ifromsparse")
-     !
-     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
-     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
-     call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
-     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
-     !
-     iterm = 0
-     !
-     do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-          !
-          iterm = iterm + 1
-          !
-          Sfield1(iterm,:) = fl1%field(icoeff,:)
-          Sfield2(iterm,:) = fl2%field(icoeff,:)
-          siorder1(iterm) = fl1%iorder(icoeff)
-          siorder2(iterm) = fl2%iorder(icoeff)
-          !
-          fl1%ifromsparse(iterm) = icoeff
-          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
-          fl2%ifromsparse(iterm) = icoeff
-          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
-       endif
-     enddo
-     !
-     deallocate(fl1%iorder,fl2%iorder)
-     call ArrayStop(name1)
-     call ArrayStop(name2)
-     !
-     ! Create a field in a sparse representaion
-     !
-     allocate(fl1%iorder(nterms),fl2%iorder(nterms),stat=alloc)
-     call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
-     call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
-     !
-     deallocate(fl1%field,fl2%field,stat=alloc)
-     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
-     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
-     !
-     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
-     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
-     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
-     !
-     fl1%field = Sfield1
-     fl1%Ncoeff = Nterms
-     fl1%iorder = Siorder1
-     !
-     fl2%field = Sfield2
-     fl2%Ncoeff = Nterms
-     fl2%iorder = Siorder2
-     !
-     deallocate(Sfield1,Sfield2,siorder1,siorder2)
-     !
-     call ArrayStop("Sfield")
-     !
-   end subroutine FLCompact_and_combine_fields_sparse_with_modes 
-
    !
    !
    subroutine FLCompact_and_combine_three_fields_sparse(fl1,name1,fl2,name2,fl3,name3)
@@ -17402,7 +16697,7 @@
     integer(ik),intent(in)      :: ibs         ! Index for the new 1D basis   
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
-    integer(ik)                 :: MatrixSize,imode,k,ipower, npower, maxpower, iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
+    integer(ik)                 :: MatrixSize,imode,k,ipower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
                                    kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
@@ -17435,13 +16730,12 @@
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
-    real(ark)   :: g2_term, f2_term
-    real(ark)   :: dummy_zero, test_var
+    real(ark)   :: g2_term
     !
     ! substitute for easier reference 
     !
     bs => bset%bs1D(ibs)
-    dummy_zero = 0.0_ark
+
     if (job%verbose>=4) write(out,"(/'FLbset1DNew/start')") 
     !
     !  Initialize the basis set 
@@ -17717,9 +17011,6 @@
             !
             g2(imode) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
             !
-
-
-            !
             if (abs(g2(1))<sqrt(small_).or.trove%g_vib(nu_i,nu_i)%ifromsparse(1)/=1) then 
               write(out,"('FLbset1DNew: g(2)=0 in the sparse-field or inconsistent sparse-recored/=1',i8)") &
                     trove%g_vib(nu_i,nu_i)%ifromsparse(1)
@@ -17739,8 +17030,8 @@
              write(out,"(30f18.8)") g2(1:bs%imodes)
              write(out,"('difference somewhat greater than ',f18.8)") 10000.0_rk*sqrt(small_)*abs(f_t)
            endif 
-           if (job%bset(nu_i)%check_sym.and..not.job%mode_list_present) then
-              stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+           if ( job%bset(nu_i)%check_sym ) then 
+             stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
            endif
         endif
         !
@@ -17758,6 +17049,7 @@
            f2(1) = trove%specparam(bs%mode(1))**2*0.5_ark/g2(1)
            !stop 'FLbset1DNew: f2 or g2 are not positive'
         endif
+
 
         ! Here we define the difference between harmonic, normal, and morse bsets
         if (trim(bs%type)=='HARMONIC'.or.trim(bs%type)=='NORMAL') then 
@@ -17924,342 +17216,314 @@
            reduced_model = .false.
            !
            if (bset%dscr(nu_i)%model<trove%NPotOrder) then 
-                     !
-                     reduced_model = .true.
-                     !
-                   endif 
-                   !
-                   if (.not.trove%DVR.or.reduced_model) then
-                     !
-                     ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
-                     ! g_rot(z,z)%field(1,:)*Krot**2
-                     !
-                     krot = 0 
-                     !
-                     if ( job%bset(0)%range(2)/=0 ) then 
-                       !
-                       krot = job%bset(0)%range(2)
-                       !
-                       fl => trove%g_rot(3,3)
-                       !
-                       f1drho(0:npoints) = f1drho(0:npoints)+0.5_ark*fl%field(1,0:npoints)*real(krot,ark)**2
-                       !
-                     endif 
-                     !
-                     if ( job%bset(0)%range(1)/=0 ) then 
-                       !
-                       jrot = job%bset(0)%range(1) ! job%bset(0)%model
-                       !
-                       f1drho(0:npoints) = f1drho(0:npoints)+0.25_ark*(trove%g_rot(1,1)%field(1,0:npoints)+&
-                                           trove%g_rot(2,2)%field(1,0:npoints))* &
-                       real(jrot*(jrot+1)-krot**2,ark)
-                       !
-                     endif
-                     !
-                   endif
-                   !
-                   bs%params    = 0
-                   !
-                   ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
-                   ! now we need them:
-                   !
-                   ! This NUMEROV for the last (could be also non-rigid) coordinate
-                   !
-                   allocate (drho(0:Npoints,3),stat=alloc)
-                   if (alloc/=0) then
-                      write (out,"(' Error ',i9,' trying to allocate drho')") alloc
-                      stop 'FLbset1DNew, drho - out of memory'
-                   end if
-                   !
-                   do i = 0,npoints
-                      !
-                      rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-                      !
-                      drho(i,1) = MLcoord_direct(rho,1,nu_i)
-                      drho(i,2) = MLcoord_direct(rho,2,nu_i)
-                      drho(i,3) = MLcoord_direct(rho,3,nu_i)
-                      !
-                   enddo
-                   !
-                   weight = 1.0_ark
-                   !
-                   numerpoints = trove%numerpoints
-                   !
-                   if (trove%numerpoints<0) numerpoints = npoints
-                   !
-                   call ME_laguerre(npoints+1,bs%Size,bs%order,rho_b,drho(0:npoints,1:3),nu_i,isingular,f1drho,g1drho,job%verbose,&
-                                    bs%matelements,bs%ener0)
-                   !
-                else
-                   !
-                   stop 'RIGID LAGUERRE NOT IMPLEMENTED'
-                   !
-                endif
-                !
-             case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
-                  'FOURIER_PURE') 
-                !
+             !
+             reduced_model = .true.
+             !
+           endif 
+           !
+           if (.not.trove%DVR.or.reduced_model) then
+             !
+             ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
+             ! g_rot(z,z)%field(1,:)*Krot**2
+             !
+             krot = 0 
+             !
+             if ( job%bset(0)%range(2)/=0 ) then 
+               !
+               krot = job%bset(0)%range(2)
+               !
+               fl => trove%g_rot(3,3)
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.5_ark*fl%field(1,0:npoints)*real(krot,ark)**2
+               !
+             endif 
+             !
+             if ( job%bset(0)%range(1)/=0 ) then 
+               !
+               jrot = job%bset(0)%range(1) ! job%bset(0)%model
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.25_ark*(trove%g_rot(1,1)%field(1,0:npoints)+&
+                                   trove%g_rot(2,2)%field(1,0:npoints))* &
+               real(jrot*(jrot+1)-krot**2,ark)
+               !
+             endif
+             !
+           endif
+           !
+           bs%params    = 0
+           !
+           ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
+           ! now we need them:
+           !
+           ! This NUMEROV for the last (could be also non-rigid) coordinate
+           !
+           allocate (drho(0:Npoints,3),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
+              stop 'FLbset1DNew, drho - out of memory'
+           end if
+           !
+           do i = 0,npoints
+              !
+              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+              !
+              drho(i,1) = MLcoord_direct(rho,1,nu_i)
+              drho(i,2) = MLcoord_direct(rho,2,nu_i)
+              drho(i,3) = MLcoord_direct(rho,3,nu_i)
+              !
+           enddo
+           !
+           weight = 1.0_ark
+           !
+           numerpoints = trove%numerpoints
+           !
+           if (trove%numerpoints<0) numerpoints = npoints
+           !
+           call ME_laguerre(npoints+1,bs%Size,bs%order,rho_b,drho(0:npoints,1:3),nu_i,isingular,f1drho,g1drho,job%verbose,&
+                            bs%matelements,bs%ener0)
+           !
+        else
+           !
+           stop 'RIGID LAGUERRE NOT IMPLEMENTED'
+           !
+        endif
+        !
+     case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
+          'FOURIER_PURE') 
+        ! 
         ! numerov bset
         if (trove%manifold_rank(bs%mode(1))/=0) then
-          !
-          !if (trove%sparse) then 
-          !  !
-          !  write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
-          !  !stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
-          !  !
-          !endif
-          !
-          !
-          ! Allocation of the potential and kinetic 1d matrixes
-          !
-          if (job%bset(nu_i)%iperiod>0.and.trim(bs%type)=='NUMEROV') then
-            iperiod = job%bset(nu_i)%iperiod
-            rho_b(2) = rho_b(2)/real(iperiod,ark)
-            npoints = npoints/iperiod
-          endif
-          !
-          if (job%bset(nu_i)%iperiod==-2.and.trim(bs%type)=='NUMEROV') then
-            iperiod = abs(job%bset(nu_i)%iperiod)
-            rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
-            npoints = npoints/iperiod
-          endif
-          !
-          allocate (f1drho(0:Npoints),g1drho(0:Npoints),weight(0:Npoints),stat=alloc)
-          if (alloc/=0) then
-             write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
-             stop 'FLbset1DNew, f1drho and g1drho - out of memory'
-          end if
-          !    
-          ! Double check:
-          !
-          if (bs%imodes/=1.or.bs%mode(bs%imodes)/=trove%Nmodes) then
-             write (out,"(' FLbset1DNew-Numerov: it has to be 1d and the last bs,')") 
-             write (out,"('                      you have bs%imodes, bs%mode: ',30i8)") bs%imodes,bs%mode(:)
-             stop 'FLbset1DNew, f1drho and g1drho - out of memory'
-          end if
-          !
-          ! for basis sets we will need 1d potential and kinetic enrgy part 
-          ! in terms of the corresponding coordinate 
-          !
-          ! Potential and kinetic energy parts
-          !
-          if (trove%lincoord/=0) then
-            !
-            ! Well, if pseudo -> infinity, we better switch it off. Here it is done by removing it
-            ! when we have a naught at rho=0. 
-            isingular = 0 
-            !
-          endif 
-          !
-          !if (trim(molec%coords_transform)=='R-RHO'.and..true.) then 
-          !  !
-          !  do i = 0,Npoints
-          !   !
-          !   rho_t = ((rho_b(1)+trove%rhostep*real(i,ark)))
-          !   !
-          !   rho_t = sum( trove%mass(:)*( trove%b0(:,2,i)**2+ trove%b0(:,3,i)**2 ) )/(planck*avogno*real(1.0d+16,kind=rk)/(4.0_ark*pi*pi*vellgt))
-          !   !
-          !   trove%poten%field(:,i) = trove%poten%field(:,i)*rho_t
-          !   !
-          ! enddo
-          !  !
-          !endif
-          !
-          !
-          ! standard case of a non-singular pseudo-function
-          !
-          if(job%mode_list_present) then
-            f1drho(0:npoints) = 0
-            !
-            do icoeff = 1, trove%pseudo%Ncoeff 
-               f_t = 1.0_ark
-               do imode  = 1,trove%Nmodes_e
-                 rho =  trove%chi_eq(imode)
-                 ipower = trove%pseudo%IndexQ(imode,icoeff)
-                 rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                 f_t = f_t*rho_kin0
-              enddo
-              f1drho(0:npoints) = f1drho(0:npoints) + f_t*trove%pseudo%field(icoeff,0:npoints)
-              !
-            enddo 
-          else
-            f1drho(0:npoints) = trove%pseudo%field(1,0:npoints) 
-          endif
-          !
-          f1drho(0:npoints) = trove%poten%field(1,0:npoints)+f1drho(0:npoints)
-          !
-          if (isingular>=0.and.(trim(bs%type)=='SINRHO'.or.trim(bs%type)=='LAGUERRE-K')) then 
-              f1drho(0:npoints) = trove%poten%field(1,0:npoints)
-          endif
-          ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
-          if (isingular>=0.and.(.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and.&
-                                .not.trim(bs%type)=='LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and.&
-                                .not.trim(bs%type)=='SINRHO-2XLAGUERRE-K') ) then 
-            !        
-            rho_switch = trove%specparam(nu_i)
-            iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-            !
-            do i = iswitch+1,npoints
-               !
-               rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-               f1drho(i) = trove%poten%field(1,i) +trove%pseudo%field(1,i)/rho**2
-               !
-            enddo
-            !
-          endif 
-          !
-          ! These are grid-based corfinates 
-          !
-          if(job%mode_list_present) then
-             maxpower = size(molec%basic_function_list(nu_i)%mode_set)
-          else 
-             maxpower = trove%NKinorder
-          endif
-          allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),stat=alloc)
-          if (alloc/=0) then
-             write (out,"(' Error ',i9,' trying to allocate drho')") alloc
-             stop 'FLbset1DNew, drho - out of memory'
-          end if
-          !
-          do i = 0,npoints
+           !
+           !if (trove%sparse) then 
+           !  !
+           !  write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
+           !  !stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
+           !  !
+           !endif
+           !
+           !
+           ! Allocation of the potential and kinetic 1d matrixes
+           !
+           if (job%bset(nu_i)%iperiod>0.and.trim(bs%type)=='NUMEROV') then
+             iperiod = job%bset(nu_i)%iperiod
+             rho_b(2) = rho_b(2)/real(iperiod,ark)
+             npoints = npoints/iperiod
+           endif
+           !
+           if (job%bset(nu_i)%iperiod==-2.and.trim(bs%type)=='NUMEROV') then
+             iperiod = abs(job%bset(nu_i)%iperiod)
+             rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
+             npoints = npoints/iperiod
+           endif
+           !
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),weight(0:Npoints),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
+              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
+           end if
+           !    
+           ! Double check:
+           !
+           if (bs%imodes/=1.or.bs%mode(bs%imodes)/=trove%Nmodes) then
+              write (out,"(' FLbset1DNew-Numerov: it has to be 1d and the last bs,')") 
+              write (out,"('                      you have bs%imodes, bs%mode: ',30i8)") bs%imodes,bs%mode(:)
+              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
+           end if
+           !
+           ! for basis sets we will need 1d potential and kinetic enrgy part 
+           ! in terms of the corresponding coordinate 
+           !
+           ! Potential and kinetic energy parts
+           !
+           if (trove%lincoord/=0) then
              !
-             rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+             ! Well, if pseudo -> infinity, we better switch it off. Here it is done by removing it
+             ! when we have a naught at rho=0. 
+             isingular = 0 
              !
-             drho(i,1) = MLcoord_direct(rho,1,nu_i)
-             drho(i,2) = MLcoord_direct(rho,2,nu_i)
-             drho(i,3) = MLcoord_direct(rho,3,nu_i)
+           endif 
+           !
+           !if (trim(molec%coords_transform)=='R-RHO'.and..true.) then 
+           !  !
+           !  do i = 0,Npoints
+           !   !
+           !   rho_t = ((rho_b(1)+trove%rhostep*real(i,ark)))
+           !   !
+           !   rho_t = sum( trove%mass(:)*( trove%b0(:,2,i)**2+ trove%b0(:,3,i)**2 ) )/(planck*avogno*real(1.0d+16,kind=rk)/(4.0_ark*pi*pi*vellgt))
+           !   !
+           !   trove%poten%field(:,i) = trove%poten%field(:,i)*rho_t
+           !   !
+           ! enddo
+           !  !
+           !endif
+           !
+           !
+           ! standard case of a non-singular pseudo-function
+           !
+           f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
+           !
+           if (isingular>=0.and.(trim(bs%type)=='SINRHO'.or.trim(bs%type)=='LAGUERRE-K')) then 
+               f1drho(0:npoints) = trove%poten%field(1,0:npoints)
+           endif
+           ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
+           if (isingular>=0.and.(.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and.&
+                                 .not.trim(bs%type)=='LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and.&
+                                 .not.trim(bs%type)=='SINRHO-2XLAGUERRE-K') ) then 
+             !        
+             rho_switch = trove%specparam(nu_i)
+             iswitch = mod(nint( ( rho_switch-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
              !
-             do ipower = 0, maxpower
-                xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+             do i = iswitch+1,npoints
+                !
+                rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+                f1drho(i) = trove%poten%field(1,i) +trove%pseudo%field(1,i)/rho**2
+                !
              enddo
              !
-          enddo
-          !
-          ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
-          !
-          nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
-          !
-          g1drho(0:npoints) = fl%field(1,0:npoints)
-          !
-          if (trove%sparse) then
-            !
-            call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
-            !
-           !if (i==0) then 
-               !
-               g1drho = 0 
-               !
-               do icoeff = 1, fl%Ncoeff 
-                  f_t = 1.0_ark
-                  do imode  = 1,trove%Nmodes_e
-                    rho =  trove%chi_eq(imode)
-                    ipower = fl%IndexQ(imode,icoeff)
-                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                    f_t = f_t*rho_kin0
-                 enddo
-                 g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
-                 !
-               enddo
-               !
-            !endif
-            !
-          elseif (abs(g1drho(trove%ipotmin))<small_) then 
-            !
-            g1drho = 0 
-            !
-            do icoeff = 1, fl%Ncoeff 
-               f_t = 1.0_ark
-               do imode  = 1,Nmodes
-                 rho =  trove%chi_eq(imode)
-                 ipower = fl%IndexQ(imode,icoeff)
-                 rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                 f_t = f_t*rho_kin0
+           endif 
+           !
+           ! These are grid-based corfinates 
+           !
+           allocate (drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
+           if (alloc/=0) then
+              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
+              stop 'FLbset1DNew, drho - out of memory'
+           end if
+           !
+           do i = 0,npoints
+              !
+              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
+              !
+              drho(i,1) = MLcoord_direct(rho,1,nu_i)
+              drho(i,2) = MLcoord_direct(rho,2,nu_i)
+              drho(i,3) = MLcoord_direct(rho,3,nu_i)
+              !
+              do ipower = 0, trove%NKinorder
+                 xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
               enddo
-              g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
               !
-            enddo
-            !
-          endif
-          !
-          reduced_model = .false.
-          !
-          if (bset%dscr(nu_i)%model<trove%NPotOrder) then 
-            !
-            reduced_model = .true.
-            !
-          endif 
-          !
-          if (trove%DVR.and..not.reduced_model) then
-            !
-            chi = 0
-            !
-            do i = 0,Npoints
-              !
-              chi(nu_i) = rho_b(1)+trove%rhostep*real(i,ark)-trove%chi0_ref(nu_i)
-              !
-              call FLcalc_poten_kinet_dvr(chi,i,poten_t,gvib_t,grot_t,gcor_t,extF_t,reduced_model)
-              !
-              if (job%verbose>=7) write(out,"(i8,f12.6,3g18.8)") i,chi(nu_i),poten_t,gvib_t(nu_i,nu_i)
-              !
-              g1drho(i) = gvib_t(nu_i,nu_i)
-              f1drho(i) = poten_t
-              !
-            enddo
-            !
-          endif
-          !
-          if ( (.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and..not.trim(bs%type)=='LAGUERRE-K'.and.&
-                .not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-2XLAGUERRE-K').and.&
-                .not.trove%DVR.or.reduced_model) then
-            !
-            ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
-            ! g_rot(z,z)%field(1,:)*Krot**2
-            !
-            krot = 0 
-            !
-            if ( job%bset(0)%range(2)/=0 ) then 
-              !
-              krot = job%bset(0)%range(2)
-              !
-              fl => trove%g_rot(3,3)
-              !
-              f1drho(0:npoints) = f1drho(0:npoints)+0.5_ark*fl%field(1,0:npoints)*real(krot,ark)**2
-              !
-            endif 
-            !
-            if ( job%bset(0)%range(1)/=0 ) then 
-              !
-              jrot = job%bset(0)%range(1) ! job%bset(0)%model
-              !
-              f1drho(0:npoints) = f1drho(0:npoints)+0.25_ark*(trove%g_rot(1,1)%field(1,0:npoints)+&
-                                  trove%g_rot(2,2)%field(1,0:npoints))*real(jrot*(jrot+1)-krot**2,ark)
-              !
-            endif
-            !
-          endif
-          !
-          bs%params    = 0
-          !
-          ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
-          ! now we need them:
-          !
-          weight = 1.0_ark
-          !
-          numerpoints = trove%numerpoints
-          !
+           enddo
+           !
+           ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
+           !
+           nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
+           !
+           g1drho(0:npoints) = fl%field(1,0:npoints)
+           !
+           if (trove%sparse) then
+             !
+             call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
+             !
+             if (i==0) then 
+                !
+                g1drho = 0 
+                !
+                do icoeff = 1, fl%Ncoeff 
+                   f_t = 1.0_ark
+                   do imode  = 1,Nmodes
+                     rho =  trove%chi_eq(imode)
+                     ipower = fl%IndexQ(imode,icoeff)
+                     rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                     f_t = f_t*rho_kin0
+                  enddo
+                  g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                  !
+                enddo
+                !
+             endif
+             !
+           elseif (abs(g1drho(trove%ipotmin))<small_) then 
+             !
+             g1drho = 0 
+             !
+             do icoeff = 1, fl%Ncoeff 
+                f_t = 1.0_ark
+                do imode  = 1,Nmodes
+                  rho =  trove%chi_eq(imode)
+                  ipower = fl%IndexQ(imode,icoeff)
+                  rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                  f_t = f_t*rho_kin0
+               enddo
+               g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+               !
+             enddo
+             !
+           endif
+           !
+           reduced_model = .false.
+           !
+           if (bset%dscr(nu_i)%model<trove%NPotOrder) then 
+             !
+             reduced_model = .true.
+             !
+           endif 
+           !
+           if (trove%DVR.and..not.reduced_model) then
+             !
+             chi = 0
+             !
+             do i = 0,Npoints
+               !
+               chi(nu_i) = rho_b(1)+trove%rhostep*real(i,ark)-trove%chi0_ref(nu_i)
+               !
+               call FLcalc_poten_kinet_dvr(chi,i,poten_t,gvib_t,grot_t,gcor_t,extF_t,reduced_model)
+               !
+               if (job%verbose>=7) write(out,"(i8,f12.6,3g18.8)") i,chi(nu_i),poten_t,gvib_t(nu_i,nu_i)
+               !
+               g1drho(i) = gvib_t(nu_i,nu_i)
+               f1drho(i) = poten_t
+               !
+             enddo
+             !
+           endif
+           !
+           if ( (.not.trim(bs%type)=='LEGENDRE'.and..not.trim(bs%type)=='SINRHO'.and..not.trim(bs%type)=='LAGUERRE-K'.and.&
+                 .not.trim(bs%type)=='SINRHO-LAGUERRE-K'.and..not.trim(bs%type)=='SINRHO-2XLAGUERRE-K').and.&
+                 .not.trove%DVR.or.reduced_model) then
+             !
+             ! for Krot /=0 in the BASIS input we add the corresponding diaginal rotational angular momentum term 
+             ! g_rot(z,z)%field(1,:)*Krot**2
+             !
+             krot = 0 
+             !
+             if ( job%bset(0)%range(2)/=0 ) then 
+               !
+               krot = job%bset(0)%range(2)
+               !
+               fl => trove%g_rot(3,3)
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.5_ark*fl%field(1,0:npoints)*real(krot,ark)**2
+               !
+             endif 
+             !
+             if ( job%bset(0)%range(1)/=0 ) then 
+               !
+               jrot = job%bset(0)%range(1) ! job%bset(0)%model
+               !
+               f1drho(0:npoints) = f1drho(0:npoints)+0.25_ark*(trove%g_rot(1,1)%field(1,0:npoints)+&
+                                   trove%g_rot(2,2)%field(1,0:npoints))*real(jrot*(jrot+1)-krot**2,ark)
+               !
+             endif
+             !
+           endif
+           !
+           bs%params    = 0
+           !
+           ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
+           ! now we need them:
+           !
+           weight = 1.0_ark
+           !
+           numerpoints = trove%numerpoints
+           !
            if (trove%numerpoints<0) numerpoints = npoints
            !
            select case(trim(bs%type))
            
            case ('NUMEROV')
              !
-             if(job%mode_list_present) then
-                maxpower = size(molec%basic_function_list(nu_i)%mode_set) 
-             else
-                maxpower = trove%NKinOrder
-             endif 
              call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0, maxpower, trove%NpotOrder,trove%NextOrder)
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('BOX')
              !
@@ -18555,13 +17819,8 @@
              !
            case ('FOURIER')
              !
-             if(job%mode_list_present) then
-                maxpower = size(molec%basic_function_list(nu_i)%mode_set) 
-             else
-                maxpower = trove%NKinOrder
-             endif 
              call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0, maxpower, trove%NPotOrder, trove%NExtOrder)
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
              !call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
              !                job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
@@ -18742,7 +18001,7 @@
              deallocate(func,dfunc)
              call ArrayStop('numerov-bs_funct')
              !
-           endif
+           endif 
            !
            if (job%verbose>=3) write(out,"(/'Primitive matrix elements...')")
            !
@@ -19847,7 +19106,6 @@
                        !
                        mat_t = simpsonintegral_ark(npoints,rho_range,phivphi_t)
                        !
-                       !
                        trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr) = trove%g_vib(Nmodes,Nmodes)%me(iterm,vl,vr)+mat_t
                        !
                     enddo
@@ -19985,50 +19243,50 @@
         else
            !
            ! numerov bset
-                   !
-                   ! for basis sets we will need 1d potential and kinetic enrgy part 
-                   ! in terms of the corresponding coordinate 
-                   !
-                   select case(manifold)
-                     !
-                   case (0) ! rigid case, expansion around the rank=0 manifold
-                     !
-                     irho_eq = 0 
-                     !
-                   case (1) ! non-rigid case, expansion around a rank=1 manifold
-                     !
-                     irho_eq = mod(nint( ( molec%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                     !
-                     ! altenatively try to put equilibrimum at the minimum of the potential
-                     !
-                     irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
-                     !
-                     ! for periodic case we need to choose the equilibrium at the 
-                     ! reference geometry; we apply this rule only if the periodicity is the same 
-                     ! as the size of the class 
-                     ! 
-                     if (trove%periodic) then 
-                       !.and.bs%imodes   ==job%bset(Nmodes)%iperiod) then
-                       period = (job%bset(Nmodes)%borders(2)-job%bset(Nmodes)%borders(1))/real(job%bset(Nmodes)%iperiod,ark)
-                       periodic_model = .true.
-                     endif
-                     !
-                   end select
-                   !
-                   if (irho_eq<0.or.irho_eq>trove%Npoints) then
-                      write(out,"('FLbset1DNew-numerov: equilibrium is ill defined:')")
-                      write(out,"('irho_eq is ',i6)") irho_eq
-                      stop 'FLbset1DNew:  equilibrium is ill defined'
-                   endif
-                   !
-                   nu_i = bs%mode(1)
-                   !
-                   npoints = bset%dscr(nu_i)%npoints
-                   rho_b(1:2)=bset%dscr(nu_i)%borders(1:2)
-                   step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
-                   !rho_ref = molec%chi_eq(nu_i)
-                   !
-                   allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
+           !
+           ! for basis sets we will need 1d potential and kinetic enrgy part 
+           ! in terms of the corresponding coordinate 
+           !
+           select case(manifold)
+             !
+           case (0) ! rigid case, expansion around the rank=0 manifold
+             !
+             irho_eq = 0 
+             !
+           case (1) ! non-rigid case, expansion around a rank=1 manifold
+             !
+             irho_eq = mod(nint( ( molec%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+             !
+             ! altenatively try to put equilibrimum at the minimum of the potential
+             !
+             irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
+             !
+             ! for periodic case we need to choose the equilibrium at the 
+             ! reference geometry; we apply this rule only if the periodicity is the same 
+             ! as the size of the class 
+             ! 
+             if (trove%periodic) then 
+               !.and.bs%imodes   ==job%bset(Nmodes)%iperiod) then
+               period = (job%bset(Nmodes)%borders(2)-job%bset(Nmodes)%borders(1))/real(job%bset(Nmodes)%iperiod,ark)
+               periodic_model = .true.
+             endif
+             !
+           end select
+           !
+           if (irho_eq<0.or.irho_eq>trove%Npoints) then
+              write(out,"('FLbset1DNew-numerov: equilibrium is ill defined:')")
+              write(out,"('irho_eq is ',i6)") irho_eq
+              stop 'FLbset1DNew:  equilibrium is ill defined'
+           endif
+           !
+           nu_i = bs%mode(1)
+           !
+           npoints = bset%dscr(nu_i)%npoints
+           rho_b(1:2)=bset%dscr(nu_i)%borders(1:2)
+           step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+           !rho_ref = molec%chi_eq(nu_i)
+           !
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
@@ -20090,159 +19348,85 @@
                         !
                         f_period(imode,jmode) = 0 
                         if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq)
-                                !
-                              enddo
-                              !
-                            endif
-                            !
-                          else
-                            !
-                            f2(imode) = trove%poten%field(k,irho_eq)
-                            !
-                          endif
-                          !
-                        enddo
                         !
-                        ! Check if all potential parameters are equal for every considered mode
-                        !
-                        f_t= f2(1) 
-                        if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
-                            any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
-                           write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
-                           write(out,"('pot-ipower=',i6)") ipower
-                           write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                           stop 'FLbset1DNew: not all numerov parameters are equal'
-                        endif
-                        !
-                        f1d(ipower) = f2(1)
-                        !
-                     enddo 
-                     !
-                     p1d = 0 
-                     !
-                     if(job%mode_list_present) then
-                        maxpower = 0 
-                        do imode = 1, trove%Nmodes
-                           maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
-                        enddo
-                     else
-                       maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-                     endif
-                     !   
-                     do ipower = 0, maxpower 
-                        !
-                        f2 = 0 
-                        !
-                        do imode = 1,bs%imodes
-                          !
-                          nu_i = bs%mode(imode)
-                          
-                          select case(job%bset(nu_i)%coord_kinet)
-                            !
-                            case( 'AUTOMATIC', 'BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
+                      enddo
                       !
-                      f2(imode) = 0
-                      !
-                      do j = 1, size(trove%pseudo%ifromsparse)
-                        !
-                        f2_term = 0
-                        !
-                        powers(1:Nmodes) = trove%pseudo%IndexQ(1:Nmodes,trove%pseudo%ifromsparse(j))
-                        !
-                        if (periodic_model) then 
-                          !
-                          rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                          irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                          !
-                        endif
-                        if (powers(nu_i)/= ipower) cycle
-                        f2_term  =  trove%pseudo%field(trove%pseudo%ifromsparse(j),irho_eq)
-                        !
-                        do i = 1, trove%Nmodes_e 
-                          if(i == nu_i) cycle
-                          !
-                          f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                          !
-                        enddo
-                        !
-                        f2(imode) = f2(imode) + f2_term
-                        !
-                     enddo
-                     !
-                    case( 'AUTO-HARMON')
-                      !
-                      f2(imode) = 0
-                      if(ipower > 0) cycle
-                      !
-                      do j = 1, size(trove%pseudo%ifromsparse)
-                        !
-                        f2_term = 0
-                        !
-                        powers(1:Nmodes) = trove%pseudo%IndexQ(1:Nmodes,trove%pseudo%ifromsparse(j))
-                        !
-                        if (periodic_model) then 
-                          !
-                          rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                          irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                          !
-                        endif
-                        f2_term  =  trove%pseudo%field(trove%pseudo%ifromsparse(j),irho_eq)
-                        !
-                        do i = 1, trove%Nmodes_e 
-                          !
-                          f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                          !
-                        enddo
-                        !
-                        f2(imode) = f2(imode) + f2_term
-                        !
-                     enddo
-                     !
-
-                     case default    
-                        ! 
-                        powers = 0 ; powers(nu_i) = ipower
-                        k = FLQindex(trove%Nmodes_e,powers)
-                        !
-                        ! shift the minimum by the period of the last mode if present
-                        if (periodic_model) then 
-                          !
-                          rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                          irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                          !
-                        endif
-                        !
-                        if (trove%sparse) then
-                          !
-                          call find_isparse_from_ifull(trove%pseudo%Ncoeff,trove%pseudo%ifromsparse,k,i)
-                          !
-                          f2(imode) = 0
-                          if (i/=0) f2(imode) = trove%pseudo%field(i,irho_eq)
-                          !
-                          !if (ipower==0.and.abs(f2(imode))<sqrt(small_)) then
-                          !  write(out,"('FLbset1DNew: f2=0 in the pseudo sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                          !  stop 'FLbset1DNew: f2=0 in the pseudo sparse-field'
-                          !endif
-                          !
-                        else
-                          !
-                          f2(imode) = trove%pseudo%field(k,irho_eq)
-                          !
-                        endif
-                        !
-                     end select
-                  enddo 
+                    endif
+                    !
+                  else
+                    !
+                    f2(imode) = trove%poten%field(k,irho_eq)
+                    !
+                  endif
+                  !
+                enddo
                 !
                 ! Check if all potential parameters are equal for every considered mode
                 !
-                
+                f_t= f2(1) 
+                if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
+                    any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+                   write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
+                   write(out,"('pot-ipower=',i6)") ipower
+                   write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+                   if ( job%bset(nu_i)%check_sym ) then 
+                     stop 'FLbset1DNew: not all numerov parameters are equal'
+                   endif
+                endif
+                !
+                f1d(ipower) = f2(1)
+                !
+             enddo 
+             !
+             p1d = 0 
+             !
+             do ipower = 0,min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+                !
+                f2 = 0 
+                !
+                do imode = 1,bs%imodes
+                  !
+                  nu_i = bs%mode(imode)
+                  powers = 0 ; powers(nu_i) = ipower
+                  k = FLQindex(trove%Nmodes_e,powers)
+                  !
+                  ! shift the minimum by the period of the last mode if present
+                  if (periodic_model) then 
+                    !
+                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                    !
+                  endif
+                  !
+                  if (trove%sparse) then
+                    !
+                    call find_isparse_from_ifull(trove%pseudo%Ncoeff,trove%pseudo%ifromsparse,k,i)
+                    !
+                    f2(imode) = 0
+                    if (i/=0) f2(imode) = trove%pseudo%field(i,irho_eq)
+                    !
+                    !if (ipower==0.and.abs(f2(imode))<sqrt(small_)) then
+                    !  write(out,"('FLbset1DNew: f2=0 in the pseudo sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                    !  stop 'FLbset1DNew: f2=0 in the pseudo sparse-field'
+                    !endif
+                    !
+                  else
+                    !
+                    f2(imode) = trove%pseudo%field(k,irho_eq)
+                    !
+                  endif
+                  !
+                enddo
+                !
+                ! Check if all potential parameters are equal for every considered mode
+                !
                 f_t= f2(1) 
                 if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
                     any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
                    write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
                    write(out,"('pseudo-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   if (job%bset(nu_i)%check_sym.and..not.job%mode_list_present) then 
+                   if ( job%bset(nu_i)%check_sym ) then 
                      stop 'FLbset1DNew: not all numerov parameters are equal'
                    endif
                 endif
@@ -20255,18 +19439,8 @@
              !
              g1d = 0 
              !
-             if(job%mode_list_present) then
-               maxpower = 0 
-               do imode = 1, trove%Nmodes
-                  if( size(molec%basic_function_list(imode)%mode_set) > maxpower) then
-                    maxpower = size(molec%basic_function_list(imode)%mode_set) 
-                  endif
-               enddo
-             else
-               maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-             endif
-             !
-              do ipower = 0, maxpower
+             do ipower = 0,min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+                !
                 !
                 do imode = 1,bs%imodes
                   !             
@@ -20283,56 +19457,22 @@
                         !
                         g2_term = 0
                         !
-                        powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                        powers = powers_from_index(Nmodes, fl%ifromsparse(j))
                         !
-                        if (periodic_model) then 
-                          !
-                          rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                          irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                          !
-                        endif
                         if (powers(nu_i)/= ipower) cycle
-                        g2_term  =  fl%field(fl%ifromsparse(j),irho_eq)
+                        g2_term  =  fl%field(j,irho_eq)
                         !
-                        do i = 1, trove%Nmodes_e 
+                        do i = 1, size(powers)
                           if(i == nu_i) cycle
                           !
-                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(nu_i), 1, i, powers(i)) 
                           !
                         enddo
                         !
                         g2(imode) = g2(imode) + g2_term
                         !
                      enddo
-                     !
-                    case('AUTO-HARMON')
-                      !
-                      g2(imode) = 0
-                      if(ipower > 0) cycle  
-                      !
-                       do j = 1, size(fl%ifromsparse)
-                         !
-                         g2_term = 0
-                         !
-                         powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
-                         !
-                         if (periodic_model) then 
-                           !
-                           rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                           irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                           !
-                         endif
-                         g2_term  =  fl%field(fl%ifromsparse(j),irho_eq)
-                         !
-                         do i = 1, trove%Nmodes_e 
-                           !
-                           g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
-                           !
-                         enddo
-                         !
-                         g2(imode) = g2(imode) + g2_term
-                         !
-                       enddo 
+                     !    
                   case default 
                      !
                      powers = 0 ; powers(nu_i) = ipower
@@ -20367,7 +19507,7 @@
                      !
                   end select 
                   !
-                enddo 
+                enddo
                 ! 
                 !
                 ! The same check for all g2 kinetic parameters to be equal for every considered mode
@@ -20377,7 +19517,7 @@
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym.and..not.job%mode_list_present) then 
+                   if ( job%bset(nu_i)%check_sym ) then 
                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                    endif
                 endif
@@ -20439,30 +19579,22 @@
                 !
                 do ipower = 0,trove%NPotorder 
                    !
-                   !write(*,*) "ipower ", ipower, " f1d ", f1d(ipower)
                    f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
                    !
                 enddo 
                 !
-                if(job%mode_list_present) then
-                  maxpower = size(molec%basic_function_list(nu_i)%mode_set)
-                else 
-                  maxpower = trove%NKinorder
-                !
-                endif 
-                do ipower = 0, maxpower 
-                   !write(*,*) "i ", i, " ipower ", ipower, " mlcoord ", MLcoord_direct(rho,1, nu_i, ipower)  
+                do ipower = 0, trove%NKinorder 
                    xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
                 enddo
                 !
-                do ipower = 0, maxpower
+                do ipower = 0,trove%NKinorder
                    !
                    !f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
                    !g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
                    !
-                   !write(*,*) " ipower ", ipower, " p1d ", p1d(ipower)
                    f1drho(i) = f1drho(i) + p1d(ipower)*xton(i,ipower)
                    g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
+                   !
                 enddo 
                 !
              enddo
@@ -20536,13 +19668,8 @@
              !
            case ('NUMEROV')
              !
-             if(job%mode_list_present) then
-                maxpower = size(molec%basic_function_list(nu_i)%mode_set) 
-             else
-                maxpower = trove%NKinOrder
-             endif 
-             call ME_numerov(bs%Size,bs%order, rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0, maxpower, trove%NpotOrder,trove%NextOrder)
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('BOX')
              !
@@ -20551,14 +19678,8 @@
              !
            case ('FOURIER')
              !
-             if(job%mode_list_present) then
-                maxpower = size(molec%basic_function_list(nu_i)%mode_set) 
-             else
-                maxpower = trove%NKinOrder
-             endif
- 
-             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0,maxpower, trove%Npotorder, trove%NextOrder)
+             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINC')
              !
@@ -21006,7 +20127,7 @@
     
     write (out,"(' params  = ',3f18.8)") bs%params
 
-    if (verbose>=5) then 
+    if (verbose>=6) then 
        !
        write (out,"(' mat.elements:')")
        !
@@ -21232,7 +20353,7 @@
                   !
                   do iterm = 1,fl%Ncoeff
                      !
-                     k(:) = fl%IndexQ(:,iterm)
+                     k(:) = FLIndexQ(:,iterm)
                      !
                      ! Check if the current iterm belongs to the current perturb. order
                      !
@@ -21340,7 +20461,7 @@
                !
                do iterm = 1,trove%g_rot(1,1)%Ncoeff
                   !
-                  k(:) = fl%IndexQ(:,iterm)
+                  k(:) = FLIndexQ(:,iterm)
                   !
                   ! Check if the current iterm belongs to the current perturb. order
                   !
@@ -21429,7 +20550,7 @@
                   !
                   do iterm = 1,trove%g_cor(k1,1)%Ncoeff
                      !
-                     k(:) = fl%indexQ(:,iterm)
+                     k(:) = FLIndexQ(:,iterm)
                      !
                      ! Check if the current iterm belongs to the current perturb. order
                      !
@@ -21571,25 +20692,12 @@
    subroutine FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
      !
      integer(ik),intent(out)  :: poten_N,gvib_N,grot_N,gcor_N,L2vib_N,potorder,kinorder,extForder,jmax,extF_N(:)
-     integer(ik)              :: i, k1, k2
-       ! 
+     integer(ik)              :: i
+       !
        poten_N = trove%poten%Ncoeff
-       gvib_N = 0
-       grot_N = 0
-       gcor_N = 0
-       do k1 = 1, trove%Nmodes
-          do k2 = 1, trove%Nmodes
-            gvib_N = max(trove%g_vib(k1,k2)%Ncoeff, gvib_N) 
-          enddo
-          do k2 = 1, 3
-            gcor_N = max(trove%g_cor(k1,k2)%Ncoeff,gcor_N)
-          enddo
-       enddo
-       do k1 = 1, 3
-          do k2 = 1, 3
-            grot_N = max(trove%g_rot(k1,k2)%Ncoeff, grot_N)
-          enddo
-       enddo
+       gvib_N = trove%g_vib (1,1)%Ncoeff
+       grot_N = trove%g_rot (1,1)%Ncoeff
+       gcor_N = trove%g_cor(1,1)%Ncoeff
        potorder = trove%Npotorder
        kinorder = trove%Nkinorder
        extForder = trove%NExtOrder
@@ -27059,12 +26167,6 @@
     y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_csc
   !
- subroutine  calc_func_sec(x, y) 
-    real(ark), intent(in) :: x 
-    real(ark), intent(inout) :: y
-    !type(basic_function) :: obj
-    y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
-  end subroutine calc_func_sec
-  !
+
 end module fields
 

@@ -148,7 +148,6 @@ module moltype
      real(ark),pointer  :: alphaeq(:)
      real(ark),pointer  :: taueq(:)
      real(ark),pointer  :: local_eq(:)
-     real(ark),pointer  :: local_eq_transformed(:)
      real(ark),pointer  :: chi_eq(:)
      real(ark),pointer  :: specparam(:)
      real(ark)          :: rho_ref  
@@ -308,7 +307,7 @@ module moltype
 !
   subroutine MLinitialize_molec(Moltype,Coordinates,coords_transform,&
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
-                                  AtomMasses,local_eq, local_eq_transformed, &
+                                  AtomMasses,local_eq, &
                                   force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
                                   IO_primitive,chk_numerov_fname,&
                                   symmetry_,rho_border,zmatrix_)
@@ -321,7 +320,6 @@ module moltype
   integer(ik),   intent(in)  :: dihedtype_(0:Ndihedrals)
   real(ark),   intent(in)  :: AtomMasses(:)
   real(ark),   intent(in)  :: local_eq(:)
-  real(ark),   intent(in)  :: local_eq_transformed(:)  
   !
   real(ark),intent(in)         :: force_(:)
   integer(ik),intent(in)       :: ifit_(:)        ! indexes contrilloing fit
@@ -361,7 +359,7 @@ module moltype
     end if
     !
     allocate (molec%coordinates(3,molec%Nmodes),molec%specparam(Ncoords),molec%AtomMasses(molec%Natoms),molec%req(Nbonds),&
-              molec%alphaeq(Nangles),molec%taueq(Ndihedrals),molec%local_eq(Ncoords), molec%local_eq_transformed(Ncoords),&
+              molec%alphaeq(Nangles),molec%taueq(Ndihedrals),molec%local_eq(Ncoords),&
               molec%dihedtype(0:Ndihedrals),stat=alloc)
     if (alloc/=0) then
        write (out,"(' Error ',i8,' allocating matixes for masses, reqs, or alphaeq-s ')") alloc
@@ -388,7 +386,6 @@ module moltype
     molec%taueq(1:Ndihedrals) = local_eq(Nbonds+Nangles+1:Ncoords)
     !
     molec%local_eq = local_eq
-    molec%local_eq_transformed = local_eq_transformed
     molec%potentype = potentype
     molec%kinetic_type = kinetic_type
     molec%atomMasses = AtomMasses
