@@ -1561,7 +1561,9 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       energy = eigen(ilevel)%energy
       isym   = eigen(ilevel)%igamma
       ndeg   = eigen(ilevel)%ndeg
-      write(my_fmt, '("(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,", I0, "(1x,i4),3x,i8,2x,", I0, "(1x,a5),2x,", I0, "(1x,i4),3x,es16.8,2x,", I0, "(1x,i4))")') nmodes, nclasses_, nmodes_, nclasses_
+
+      write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a)') "(i4,1x,i8,1x,a5,1x,i4,1x,f20.12,1x,i4,",nmodes,"(1x,i4),3x,i8,2x,",nclasses_,&
+                                              "(1x,a5),2x,",nmodes_,"(1x,i4),3x,es16.8,2x,",nclasses_,"(1x,i4))"
       write(iounit, my_fmt) &
           Jrot, ilevel_, sym%label(isym), ndeg, energy-intensity%ZPE, eigen(ilevel)%krot, &
           eigen(ilevel)%quanta(1:nmodes), eigen(ilevel)%icoeff, eigen(ilevel)%cgamma(0:nclasses), &
