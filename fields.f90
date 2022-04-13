@@ -2364,19 +2364,19 @@ module fields
                 trove%separate_store = .true.
              endif 
              !
-             if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
            case('KINET','KINETIC')
              !
              call readu(trove%IO_kinetic)
              !
-             call check_read_save_none(trove%IO_potential,w)
+             call check_read_save_none(trove%IO_kinetic,w)
              !
-             if (trim(w)=='SEPARATE') then
+             if (trim(trove%IO_kinetic)=='SEPARATE') then
                 trove%separate_store = .true.
              endif 
              !
-             if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !if (trim(trove%IO_kinetic)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
              if (trim(trove%IO_kinetic)=='SAVE'.and.trove%separate_store) then
                 trove%IO_hamiltonian = 'SAVE'

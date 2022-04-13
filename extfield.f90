@@ -1527,7 +1527,7 @@ subroutine store_energies(nJ, Jval, nlevels, level_ind)
       nmodes_
   real(rk) :: energy
   character(cl) :: sj1, sj2, fname
-  character(cl) :: my_fmt
+  character(wl) :: my_fmt
 
   nmodes = molec%nmodes
   nclasses = size(eigen(1)%cgamma)-1

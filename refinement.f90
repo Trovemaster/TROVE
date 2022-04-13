@@ -4266,8 +4266,9 @@ contains
      !
      character(len=cl)  :: iostatus = 'scratch'
      character(len=20)  :: buf20
-     integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib
+     integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib,ideg_rot
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,nsize,irec,cdimen_,idimen,j,iterm1,iterm2,ktau,icontr,k,itau
+     integer(ik)        :: num_rlevels,rot_size
      integer(hik)       :: rootsize,rootsize2,matsize,matsize2
      real(rk),allocatable  :: pot_matrix(:,:)
      real(rk),allocatable  :: poten_(:,:)
@@ -4498,7 +4499,16 @@ contains
             if (trim(fitting%method)=='FAST') then
               !
               matsize2= int(ncontr_t*Nentries,hik)
-              allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),stat=alloc)
+              !
+              if (job%rotsym_do) then
+                 num_rlevels = maxval(bset_contr(jind)%ktau(:),dim=1)
+                 rot_size = num_rlevels*sym%maxdegen
+                 allocate(psi(ncontr_t,Nentries,rot_size),stat=alloc)
+              else 
+                 allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),stat=alloc)
+              endif
+              !
+              allocate(mat_t(Nentries,ncontr_t),stat=alloc)
               call ArrayStart('psi',alloc,1,kind(psi),matsize2)
               call ArrayStart('mat_t',alloc,1,kind(mat_t),matsize2)
               !
@@ -4522,6 +4532,11 @@ contains
                    !
                    ktau = bset_contr(jind)%ktau(idimen)
                    icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+                   !
+                   if (job%rotsym_do) then 
+                      ideg_rot = bset_contr(jind)%k(idimen)
+                      ktau = sym%maxdegen*(ktau-1)+ideg_rot
+                   endif
                    !
                    iterm = ijterm(jind)%kmat(irow,isym)
                    !
@@ -4666,22 +4681,43 @@ contains
                 !
                 pot_matrix = 0
                 !
-                do k = 0,Jrot
-                  !
-                  do itau = 0,1
+                if (job%rotsym_do) then 
+                   !
+                   do k = 1,num_rlevels
                      !
-                     !if (k==0.and.mod(jrot,2)/=itau) cycle
+                     do itau = 1,sym%maxdegen
+                        !
+                        ktau = sym%maxdegen*(k-1)+itau
+                        !
+                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
+                                    poten_,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
+                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        !
+                        !
+                     enddo
+                   enddo
+                   !
+                else
+                   !
+                   do k = 0,Jrot
                      !
-                     ktau = 2*k+itau
-                     !
-                     call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-                                 poten_,ncontr_t,beta0,mat_t,Nentries)
-                     call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-                                 psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
-                     !
-                     !
-                  enddo
-                enddo
+                     do itau = 0,1
+                        !
+                        !if (k==0.and.mod(jrot,2)/=itau) cycle
+                        !
+                        ktau = 2*k+itau
+                        !
+                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
+                                    poten_,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
+                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        !
+                        !
+                     enddo
+                   enddo
+                   !
+                endif
                 !
               else 
                 !
