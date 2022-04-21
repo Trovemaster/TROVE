@@ -10453,7 +10453,7 @@ end subroutine check_read_save_none
                   !
                   call lapack_gelss(da(:,:),db(:,:))
                   !
-                  ! gelss - solves a linera equation by least squares method 
+                  ! gelss - solves a linear equation by least squares method 
                   ! 
                   call dgelss(dimen,dimen,1,da(:,:),dimen,db(:,1),dimen,s_t,-1.0d-12, rank, work, iwork, info)
                   !

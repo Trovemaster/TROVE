@@ -199,6 +199,8 @@
         !
       else
         !
+        !call PTcontracted_matelem_class_basis_loops_outside(j)
+        !
         call PTcontracted_matelem_class(j)
         !
       endif
