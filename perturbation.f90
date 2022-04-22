@@ -16757,10 +16757,10 @@ module perturbation
         !
         !
         if (trove%FBR) then
-           allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
-           call ArrayStart('PTcontracted_matelem_cl: me_t',alloc,dimen_p_max**2,kind(me_t))
-           allocate(mat_t(nroots_max,dimen_p_max),stat=alloc)
-           call ArrayStart('PTcontracted_matelem_cl: mat_t',alloc,nroots_max*dimen_p_max,kind(mat_t))
+           !allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
+           !call ArrayStart('PTcontracted_matelem_cl: me_t',alloc,dimen_p_max**2,kind(me_t))
+           !allocate(mat_t(nroots_max,dimen_p_max),stat=alloc)
+           !call ArrayStart('PTcontracted_matelem_cl: mat_t',alloc,nroots_max*dimen_p_max,kind(mat_t))
            !
            matsize = int(PT%Nclasses*nroots_max*nroots_max,hik)
            !
@@ -16910,13 +16910,13 @@ module perturbation
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,grot_N,k1,k2,fl,grot_t,&
                                                      grot_contr_matelem_single_term)
               !
-              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
+              !omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
               !do icoeff=1,mdimen
               !  do jcoeff=1,icoeff
               !    grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
               !  enddo
               !enddo
-              !$omp end parallel do
+              !omp end parallel do
               !
               !enddo
               !
@@ -16980,24 +16980,10 @@ module perturbation
               !
               fl => me%gcor(k1,k2)
               !
-              !do iterm = 1,gcor_N
-              !
-              !hrot_t = 0
-              !
               !call calc_contract_matrix_elements_II(iterm,k1,k2,fl,hrot_t,gcor_contr_matelem_single_term)
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,gcor_N,k1,k2,fl,grot_t,&
                                                      gcor_contr_matelem_single_term)
-              !
-              !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
-              !do icoeff=1,mdimen
-              !  do jcoeff=1,icoeff
-              !    grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
-              !  enddo
-              !enddo
-              !$omp end parallel do
-              !
-              !enddo
               !
               !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
               do icoeff=1,mdimen
@@ -17195,25 +17181,10 @@ module perturbation
                 !
                 gvib_t = 0
                 !
-                !do iterm = 1,gvib_N
-                !
-                !fvib_t = 0
-                !
                 !call calc_contract_matrix_elements_II(iterm,k1,k2,fl,fvib_t,gvib_contr_matelem_single_term)
                 !
                 call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,gvib_N,k1,k2,fl,gvib_t,&
                                                        gvib_contr_matelem_single_term)
-                !
-                !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
-                !do icoeff=1,mdimen
-                !  do jcoeff=1,icoeff
-                !    gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
-                !    !
-                !  enddo
-                !enddo
-                !$omp end parallel do
-                !
-                !enddo
                 !
                 if (job%IOmatelem_divide) then
                   !
@@ -17267,24 +17238,10 @@ module perturbation
               !
               fl => me%poten
               !
-              !do iterm = 1,poten_N
-              !
-              !if (job%verbose>=4) write(out,"('iterm = ',i8)") iterm
-              !
               !call calc_contract_matrix_elements_II(iterm,1,1,fl,fvib_t,poten_contr_matelem_single_term)
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,poten_N,1,1,fl,gvib_t,&
                                                      poten_contr_matelem_single_term)
-              !
-              !$omp parallel do private(icoeff,jcoeff) shared(gvib_t) schedule(dynamic)
-              !do icoeff=1,mdimen
-              !  do jcoeff=1,icoeff
-              !    gvib_t(jcoeff,icoeff) = gvib_t(jcoeff,icoeff) + fvib_t(jcoeff,icoeff)
-              !  enddo
-              !enddo
-              !$omp end parallel do
-              !
-              !enddo
               !
             endif
             !
@@ -17450,22 +17407,10 @@ module perturbation
               !
               fl => me%extF(imu)
               !
-              !do iterm = 1,extF_N_
-              !
               !call calc_contract_matrix_elements_II(iterm,imu,1,fl,extF_r,extF_contr_matelem_single_term)
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,extF_N_,imu,1,fl,extF_t,&
                                                      extF_contr_matelem_single_term)
-              !
-              !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
-              !do icoeff=1,mdimen
-              !  do jcoeff=1,icoeff
-              !    extF_t(jcoeff,icoeff) = extF_t(jcoeff,icoeff) + extF_r(jcoeff,icoeff)
-              !  enddo
-              !enddo
-              !$omp end parallel do
-              !
-              !enddo
               !
               !$omp parallel do private(icoeff,jcoeff) shared(extF_t) schedule(dynamic)
               do icoeff=1,mdimen
@@ -17534,9 +17479,9 @@ module perturbation
         !
         if (trove%FBR) then
           !
-          deallocate(me_t,mat_t)
-          call ArrayStop('PTcontracted_matelem_cl: me_t') 
-          call ArrayStop('PTcontracted_matelem_cl: mat_t') 
+          !deallocate(me_t,mat_t)
+          !call ArrayStop('PTcontracted_matelem_cl: me_t') 
+          !call ArrayStop('PTcontracted_matelem_cl: mat_t') 
 
           deallocate(matclass)
           call ArrayStop('PTcontracted_matelem_cl: matclass') 
@@ -17732,7 +17677,7 @@ module perturbation
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
         real(rk),allocatable :: me_t(:,:)    
-        real(rk),allocatable :: mat_t(:,:)
+        real(rk),allocatable :: mat_t(:,:),f_terms(:)
         type(PTcoeffs3dT)    :: mat_tt(PT%Nclasses)   
         !
         !real(rk)               :: matclass(1:,1:,1:)
@@ -17745,6 +17690,7 @@ module perturbation
         integer(hik):: ib,ib0
         real(rk)    :: f_t,f_prod(PT%Nclasses)
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
+        integer :: info_p
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
@@ -17849,7 +17795,14 @@ module perturbation
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
-        !$omp parallel do private(icoeff,jcoeff,f_prod,iclasses,iroot,jroot,f_t) shared(field) schedule(dynamic)
+        !$omp parallel do private(info_p,icoeff,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
+        allocate(f_terms(Nterms),stat=info_p)
+        if (info_p/=0) then
+           write (out,"(' Error ',i9,' calc_contract_matrix_elements_III:f_terms')") info_p
+           stop 'calc_contract_matrix_elements_III:f_terms'
+        end if
+        !
+        !$omp schedule(dynamic)
         do icoeff=1,Maxcontracts
           !
           do jcoeff=1,icoeff
@@ -17859,40 +17812,68 @@ module perturbation
             !
             !f_t = matclass(1,iroot,jroot)
             !
-            do iterm = 1,Nterms
+            f_terms = 1
+            !
+            do iclasses = 1,Nclasses
               !
-              !f_prod(1) = mat_tt(1)%coeff3d(iterm,iroot,jroot)
+              iroot = icoeff2iroot(iclasses,icoeff)
+              jroot = icoeff2iroot(iclasses,jcoeff)
               !
-              !f_t = 1.0_rk
+              !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
               !
-              do iclasses = 1,Nclasses
-                !
-                iroot = icoeff2iroot(iclasses,icoeff)
-                jroot = icoeff2iroot(iclasses,jcoeff)
-                !
-                !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
-                !
-                !print*,icoeff,jcoeff,iclasses,iroot,jroot
-                !
-                !f_t = f_t*matclass(iclasses,iroot,jroot)
-                !
-                f_prod(iclasses) = mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
-                !
-              enddo
+              !print*,icoeff,jcoeff,iclasses,iroot,jroot
               !
-              !f_t = product(matclass(1:Nclasses,icoeff2iroot(1:Nclasses,icoeff),icoeff2iroot(1:Nclasses,jcoeff)))
+              !f_t = f_t*matclass(iclasses,iroot,jroot)
               !
-              !field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
+              f_terms(:) = mat_tt(iclasses)%coeff3d(:,iroot,jroot)*f_terms(:)
               !
-              f_t = product(f_prod)
-              !
-              field(jcoeff,icoeff) = field(jcoeff,icoeff) + f_t
+              !f_t = f_t*mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
               !
             enddo
             !
+            !do iterm = 1,Nterms
+            !  !
+            !  !f_prod(1) = mat_tt(1)%coeff3d(iterm,iroot,jroot)
+            !  !
+            !  !f_t = 1.0_rk
+            !  !
+            !  do iclasses = 1,Nclasses
+            !    !
+            !    iroot = icoeff2iroot(iclasses,icoeff)
+            !    jroot = icoeff2iroot(iclasses,jcoeff)
+            !    !
+            !    !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
+            !    !
+            !    !print*,icoeff,jcoeff,iclasses,iroot,jroot
+            !    !
+            !    !f_t = f_t*matclass(iclasses,iroot,jroot)
+            !    !
+            !    f_prod(iclasses) = mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
+            !    !
+            !    !f_t = f_t*mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
+            !    !
+            !  enddo
+            !  !
+            !  !f_t = product(matclass(1:Nclasses,icoeff2iroot(1:Nclasses,icoeff),icoeff2iroot(1:Nclasses,jcoeff)))
+            !  !
+            !  !field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
+            !  !
+            !  f_t = product(f_prod)
+            !  !
+            !  field(jcoeff,icoeff) = field(jcoeff,icoeff) + f_t
+            !  !
+            !enddo
+            !
+            field(jcoeff,icoeff) = field(jcoeff,icoeff) + sum(f_terms)
+            !
           enddo
         enddo
-        !$omp end parallel do 
+        !$omp end do
+        !
+        deallocate(f_terms)
+        !call ArrayStop('calc_contract_matrix_elements_III:f_terms')
+        !
+        !$omp end parallel 
         !
         deallocate(me_t)
         call ArrayStop('calc_contract_matrix_elements_III:me_t')
