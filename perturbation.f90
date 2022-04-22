@@ -17707,18 +17707,18 @@ module perturbation
           call ArrayStart('calc_contract_matrix_elements_III:mat_tt',alloc,size(mat_tt(iclasses)%coeff3d),kind(f_t))
         enddo
         !
-        do iterm = 1,Nterms
-           !
-           k(:) = fl%IndexQ(:,iterm)
-           !
-           do iclasses = 1,PT%Nclasses
+        do iclasses = 1,PT%Nclasses
+          !
+          nroots  = contr(iclasses)%nroots
+          dimen_p = contr(iclasses)%dimen
+          im1 = PT%mode_class(iclasses,1)
+          im2 = PT%mode_class(iclasses,PT%mode_iclass(iclasses))
+          !
+          im2 = min(PT%Nmodes-1,im2)
+          !
+          do iterm = 1,Nterms
              !
-             nroots  = contr(iclasses)%nroots
-             dimen_p = contr(iclasses)%dimen
-             im1 = PT%mode_class(iclasses,1)
-             im2 = PT%mode_class(iclasses,PT%mode_iclass(iclasses))
-             !
-             im2 = min(PT%Nmodes-1,im2)
+             k(:) = fl%IndexQ(:,iterm)
              !
              if (job%verbose>=4) call TimerStart('contract_matrix')
              !
@@ -17789,8 +17789,8 @@ module perturbation
              !
              if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
              !
-           enddo 
-           !
+          enddo 
+          !
         enddo
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
