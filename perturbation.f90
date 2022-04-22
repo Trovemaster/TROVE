@@ -17677,7 +17677,7 @@ module perturbation
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
         real(rk),allocatable :: me_t(:,:)    
-        real(rk),allocatable :: mat_t(:,:),f_terms(:)
+        real(rk),allocatable :: mat_t(:,:),f_terms(:),mat_(:,:)
         type(PTcoeffs3dT)    :: mat_tt(PT%Nclasses)   
         !
         !real(rk)               :: matclass(1:,1:,1:)
@@ -17715,6 +17715,11 @@ module perturbation
           im2 = PT%mode_class(iclasses,PT%mode_iclass(iclasses))
           !
           im2 = min(PT%Nmodes-1,im2)
+          !
+          nroots  = contr(iclasses)%nroots
+          !
+          allocate(mat_(nroots,nroots),stat=alloc)
+          call ArrayStart('calc_contract_matrix_elements_III:mat_',alloc,size(mat_),kind(f_t))
           !
           do iterm = 1,Nterms
              !
@@ -17778,7 +17783,11 @@ module perturbation
              call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
                          me_t,dimen_p_max,beta,mat_t,nroots_max)
              call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
-                         tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeff3d(iterm,:,:),nroots)
+                         tmat(iclasses)%coeffs,dimen_p,beta,mat_,nroots)
+                         !
+                         !tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeff3d(iterm,:,:),nroots)
+             !
+             mat_tt(iclasses)%coeff3d(iterm,:,:) = mat_
              !
              !matclass(iclasses,1:nroots,1:nroots) = mat_tt(iclasses)%coeffs
              !
@@ -17790,6 +17799,9 @@ module perturbation
              if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
              !
           enddo 
+          !
+          deallocate(mat_)
+          call ArrayStop('calc_contract_matrix_elements_III:mat_')
           !
         enddo
         !
