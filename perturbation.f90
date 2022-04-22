@@ -17795,14 +17795,14 @@ module perturbation
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
-        !$omp parallel do private(info_p,icoeff,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
+        !$omp parallel private(info_p,icoeff,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
         allocate(f_terms(Nterms),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' calc_contract_matrix_elements_III:f_terms')") info_p
            stop 'calc_contract_matrix_elements_III:f_terms'
         end if
         !
-        !$omp schedule(dynamic)
+        !$omp do schedule(dynamic)
         do icoeff=1,Maxcontracts
           !
           do jcoeff=1,icoeff
@@ -17812,7 +17812,7 @@ module perturbation
             !
             !f_t = matclass(1,iroot,jroot)
             !
-            f_terms = 1
+            f_terms = 1.0_rk
             !
             do iclasses = 1,Nclasses
               !
@@ -17871,9 +17871,9 @@ module perturbation
         !$omp end do
         !
         deallocate(f_terms)
+        !$omp end parallel 
         !call ArrayStop('calc_contract_matrix_elements_III:f_terms')
         !
-        !$omp end parallel 
         !
         deallocate(me_t)
         call ArrayStop('calc_contract_matrix_elements_III:me_t')
