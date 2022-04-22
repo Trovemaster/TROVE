@@ -415,7 +415,7 @@ module perturbation
    ! some parameters that can be used for bechmarking at compilation level
    !
    integer, parameter :: verbose     = 3       ! Verbosity level
-   logical, parameter :: debug_check_symmetries  = .true.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
+   logical, parameter :: debug_check_symmetries  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
    logical, parameter :: debug_cut_matelem_with_enermax  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
 
 
@@ -16559,11 +16559,6 @@ module perturbation
 
 
 
-
-
-
-
-
   !
   !
   ! Contracted matrix elements: this version of PTcontracted_matelem_class where we attempt to swap the loops:
@@ -16577,9 +16572,9 @@ module perturbation
     integer(ik)        :: PotOrder,KinOrder,extForder
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice,k1_,k2_
-    real(rk),allocatable :: me_t(:,:)
-    real(rk),allocatable :: mat_t(:,:), grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
-                            matclass(:,:,:),hrot_t(:,:),gcor_t(:,:)
+    !real(rk),allocatable :: me_t(:,:)
+    real(rk),allocatable :: grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
+                            hrot_t(:,:),gcor_t(:,:)
     real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:),extF_r(:,:)
     !
     real(rk)           :: f_t
@@ -16594,14 +16589,15 @@ module perturbation
     double precision,parameter :: alpha = 1.0d0,beta=0.0d0
     character(len=cl)  :: job_is,buf
     !
-    integer(ik)        :: dimen_p_max,nroots_max,imu,mdimen,mdimen_
+    integer(ik)        :: dimen_p_max,nroots_max,imu,mdimen,mdimen_,icontr,Nsymi,isym
     integer(ik)        :: iterm1=0,iterm2=12
     integer(ik)        :: icoeff,icase,ilambda,jcoeff,idvr
     integer(ik),allocatable  :: extF_N(:),icoeff2iroot(:,:)
     integer(hik),allocatable :: icoefficoeff1(:)
     !
-    type(PTcoeffsT)    :: tmat(PT%Nclasses),mat_tt(PT%Nclasses)
+    type(PTcoeffsT)    :: tmat(PT%Nclasses)
     type(PTcoeffT),pointer        :: fl
+    integer(ik), allocatable      :: icontr_vs_isym(:,:)
       !
       !
       call TimerStart('Contracted matelements-class')
@@ -16736,8 +16732,9 @@ module perturbation
              !
              allocate(tmat(iclasses)%coeffs(dimen_p,nroots),stat=alloc)
              call ArrayStart('PTcontracted_matelem_cl: group of temp arrays',alloc,size(tmat(iclasses)%coeffs),kind(f_t))
-             allocate(mat_tt(iclasses)%coeffs(nroots,nroots),stat=alloc)
-             call ArrayStart('PTcontracted_matelem_cl: group of temp arrays',alloc,size(mat_tt(iclasses)%coeffs),kind(f_t))
+             !
+             !allocate(mat_tt(iclasses)%coeffs(nroots,nroots),stat=alloc)
+             !call ArrayStart('PTcontracted_matelem_cl: group of temp arrays',alloc,size(mat_tt(iclasses)%coeffs),kind(f_t))
              !
              ! Construct the unitary transformation matrix
              !
@@ -16753,8 +16750,7 @@ module perturbation
           !
         enddo 
         !
-        ! Temporar arrays allocation (for non-DVR, FBR integration)
-        !
+        ! Temporary arrays allocation (for non-DVR, FBR integration)
         !
         if (trove%FBR) then
            !allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
@@ -16764,10 +16760,10 @@ module perturbation
            !
            matsize = int(PT%Nclasses*nroots_max*nroots_max,hik)
            !
-           allocate(matclass(PT%Nclasses,nroots_max,nroots_max),stat=alloc)
-           call ArrayStart('PTcontracted_matelem_cl: matclass',alloc,1,kind(matclass),matsize)
+           !allocate(matclass(PT%Nclasses,nroots_max,nroots_max),stat=alloc)
+           !call ArrayStart('PTcontracted_matelem_cl: matclass',alloc,1,kind(matclass),matsize)
            !
-           matclass = 0
+           !matclass = 0
            !
            matsize = PT%Nclasses*PT%Maxcontracts
            !
@@ -16796,9 +16792,35 @@ module perturbation
                !
              enddo
            enddo
-           !$omp end parallel do 
+           !$omp end parallel do
+           !
+           ! check if there are no contributions to the diagonal symmetry blocks 
+           !
+           if (.not.debug_check_symmetries) then
+             !
+             allocate(icontr_vs_isym(sym%Nrepresen,PT%Maxcontracts),stat=alloc)
+             call ArrayStart('icontr_vs_isym',alloc,1,kind(icontr_vs_isym),size(icontr_vs_isym,kind=hik))
+             icontr_vs_isym = 0
+             !
+             !$omp parallel do private(icontr,ilevel,isym,Nsymi) shared(icontr_vs_isym) schedule(dynamic)
+             do icontr=1,PT%Maxcontracts
+                !
+                ilevel = PT%icontr2icase(icontr,1)
+                !
+                do isym = 1,sym%Nrepresen
+                  !
+                  Nsymi = PT%irr(isym)%N(ilevel) 
+                  !
+                  icontr_vs_isym(isym,icontr) = min(Nsymi,1)
+                  !
+                enddo
+             enddo
+             !$omp end parallel do 
+             !
+           endif
            !
            if (job%verbose>=4) call MemoryReport
+           !
         endif
         !
         ! Initialize the Hamiltonian fields and basis functions in the DVR representation
@@ -17184,7 +17206,7 @@ module perturbation
                 !call calc_contract_matrix_elements_II(iterm,k1,k2,fl,fvib_t,gvib_contr_matelem_single_term)
                 !
                 call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,gvib_N,k1,k2,fl,gvib_t,&
-                                                       gvib_contr_matelem_single_term)
+                                                       gvib_contr_matelem_single_term,icontr_vs_isym)
                 !
                 if (job%IOmatelem_divide) then
                   !
@@ -17241,7 +17263,7 @@ module perturbation
               !call calc_contract_matrix_elements_II(iterm,1,1,fl,fvib_t,poten_contr_matelem_single_term)
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,poten_N,1,1,fl,gvib_t,&
-                                                     poten_contr_matelem_single_term)
+                                                     poten_contr_matelem_single_term,icontr_vs_isym)
               !
             endif
             !
@@ -17483,17 +17505,22 @@ module perturbation
           !call ArrayStop('PTcontracted_matelem_cl: me_t') 
           !call ArrayStop('PTcontracted_matelem_cl: mat_t') 
 
-          deallocate(matclass)
-          call ArrayStop('PTcontracted_matelem_cl: matclass') 
+          !deallocate(matclass)
+          !call ArrayStop('PTcontracted_matelem_cl: matclass') 
           !
           do iclasses = 1,PT%Nclasses
-             deallocate(tmat(iclasses)%coeffs,mat_tt(iclasses)%coeffs)
+             deallocate(tmat(iclasses)%coeffs)
           enddo
           !
           call ArrayStop('PTcontracted_matelem_cl: group of temp arrays') 
           !
           deallocate(icoeff2iroot,icoefficoeff1)
           call ArrayStop('PTcontracted_matelem_cl: icoeff2iroot')
+          !
+          if (allocated(icontr_vs_isym)) then 
+              deallocate(icontr_vs_isym)
+              call ArrayStop('icontr_vs_isym')
+          endif
           !
         endif 
         ! 
@@ -17668,14 +17695,16 @@ module perturbation
       ! of an arbitrary field (e.g. poten, g_vib, g_rot, g_cor, and extF), 
       ! a general way.
       !
-      subroutine calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,Nterms,k1,k2,fl,field,func)
+      subroutine calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,Nterms,k1,k2,fl,field,func,&
+                                                   icontr_vs_isym)
 
         integer(ik),intent(in) :: dimen_p_max,nroots_max,k1,k2,Nterms
         type(PTcoeffsT),intent(in)  :: tmat(PT%Nclasses)
-        integer(ik),intent(in)  :: icoeff2iroot(PT%Nclasses,PT%Maxcontracts)
+        integer(ik),intent(in)  :: icoeff2iroot(:,:)
         type(PTcoeffT),pointer,intent(in)  :: fl
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
+        integer(ik),intent(in),optional :: icontr_vs_isym(sym%Nrepresen,PT%Maxcontracts)
         real(rk),allocatable :: me_t(:,:)    
         real(rk),allocatable :: mat_t(:,:),f_terms(:),mat_(:,:)
         type(PTcoeffs3dT)    :: mat_tt(PT%Nclasses)   
@@ -17686,8 +17715,8 @@ module perturbation
         integer(ik) :: k(PT%Nmodes)  
         integer(ik) :: iclasses,nroots,dimen_p,im1,im2,iprim,jprim,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
         integer(ik) :: icoeff,icase,ilambda,jcoeff,jcase,jlambda,ideg,jdeg,ilevel,jlevel
-        integer(ik) :: iroot,jroot,Maxcontracts,Nclasses,alloc,iterm
-        integer(hik):: ib,ib0
+        integer(ik) :: iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
+        integer(hik):: ib,ib0,i
         real(rk)    :: f_t,f_prod(PT%Nclasses)
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
         integer :: info_p
@@ -17807,7 +17836,7 @@ module perturbation
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
-        !$omp parallel private(info_p,icoeff,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
+        !$omp parallel private(info_p,icoeff,isym,i,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
         allocate(f_terms(Nterms),stat=info_p)
         if (info_p/=0) then
            write (out,"(' Error ',i9,' calc_contract_matrix_elements_III:f_terms')") info_p
@@ -17817,7 +17846,29 @@ module perturbation
         !$omp do schedule(dynamic)
         do icoeff=1,Maxcontracts
           !
+          if (.not.debug_check_symmetries) then
+            !
+            if (present(icontr_vs_isym)) then 
+              !
+              isym = icontr_vs_isym(:,icoeff)
+              !
+              where(isym==0) isym = -1
+              !
+            endif
+            !
+          endif
+          !
           do jcoeff=1,icoeff
+            !
+            if (.not.debug_check_symmetries) then 
+              !
+              if (present(icontr_vs_isym)) then
+                !
+                if ( all( isym(:)/=icontr_vs_isym(:,jcoeff) ) ) cycle
+                !
+              endif
+              !
+            endif
             !
             !iroot = icoeff2iroot(1,icoeff)
             !jroot = icoeff2iroot(1,jcoeff)
