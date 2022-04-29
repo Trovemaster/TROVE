@@ -2745,7 +2745,7 @@ module fields
              endif 
              trove%IO_ext_coeff = trim(w)
              !
-             if (trim(trove%IO_hamiltonian)=='READ'.and.trim(w)=='SAVE') then 
+             if (trim(trove%IO_hamiltonian)=='READ'.and.trim(w)=='SAVE'.and..not.trove%separate_convert) then 
                trove%IO_hamiltonian = 'NONE'
                trove%IO_potential   = 'READ'
                trove%IO_kinetic     = 'READ'
@@ -2760,7 +2760,7 @@ module fields
                trove%IO_ext_coeff   = 'SAVE'
              endif
              !
-             if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
              if (any(trim(trove%IO_ext_coeff)==(/'SAVE','READ'/))) FLextF_coeffs = .true.
              !
@@ -8260,7 +8260,7 @@ end subroutine check_read_save_none
     !
     ! If the potentil function has been stored we can just read it from the hard disk and leave...
     !
-    if (trim(trove%IO_ext_coeff)=='READ') then 
+    if (trim(trove%IO_ext_coeff)=='READ'.or.trim(trove%IO_hamiltonian)=='READ') then 
       !
       call FLcheck_point_Hamiltonian('EXTERNAL_READ') 
       !
@@ -15561,7 +15561,9 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format poten'
         end if
         !
-        if (trim(trove%IO_ext_coeff)/='READ') close(chkptIO,status='keep')
+        if (trim(trove%IO_ext_coeff)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') then 
+          close(chkptIO,status='keep')
+        endif
         !
       end subroutine checkpointRestore_potential
       !
