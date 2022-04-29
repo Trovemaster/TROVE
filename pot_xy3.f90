@@ -8817,9 +8817,9 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
       !
       aaM    = force(4)
       !
-      y1=(r14-re14) *exp(-aaM*(r14-re14)**2)
-      y2=(r24-re14) *exp(-aaM*(r24-re14)**2)
-      y3=(r34-re14) *exp(-aaM*(r34-re14)**2)
+      y1=(r14-re14M) *exp(-aaM*(r14-re14M)**2)
+      y2=(r24-re14M) *exp(-aaM*(r24-re14M)**2)
+      y3=(r34-re14M) *exp(-aaM*(r34-re14M)**2)
       !
       y4=(2.0_ark*alpha1-alpha2-alpha3)/sqrt(6.0_ark)
       y5=(alpha2-alpha3)/sqrt(2.0_ark)

@@ -11695,6 +11695,8 @@ end subroutine check_read_save_none
       !
       !call s_vib_s_rot_dvr(chi,irho,s_vib,s_rot)
       !
+      stop 'Bug: Variable s_rot is used before it is defined'
+      !
       i = 0
       !
       do q1 = 1,3
@@ -11708,6 +11710,8 @@ end subroutine check_read_save_none
              enddo
          enddo
       enddo
+      !
+      stop 'Bug: Variable s_vib is used before it is defined'
       !
       do q1 = 1,trove%Nmodes
          do n1 = 1,trove%Natoms
@@ -11764,6 +11768,8 @@ end subroutine check_read_save_none
        allocate (x_1t(iNcoeff,0:0),stat=alloc)
        allocate (x_2t(iNcoeff,0:0),stat=alloc)
        allocate (x_3t(iNcoeff,0:0),stat=alloc)
+       !
+       numeq = 0 
        !
        do x1 = 1,3
           if (x1/=trove%lincoord) then 

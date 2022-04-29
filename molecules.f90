@@ -1772,6 +1772,7 @@ end function ML_MEPfunc
     !
     ! sort eigenvectros according with symmetry
     !
+    Nirr = 0
     !
     do iroot = 1,nroots
       !

@@ -4535,7 +4535,7 @@ module me_bnd
          stop 'ML_box: pot_eff has no minimum'
      endif 
      !
-     ! define the x = cos(phi) coordinate 
+     ! define x = rho^2
      !
      do i=0,npoints
         !

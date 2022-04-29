@@ -545,7 +545,7 @@ function MLpoten_c3h6_sym_II(ncoords, natoms, local, xyz, force) result(f)
   !
   f = 0
   !
-  call ML_symmetry_transformation_XY3_II(6,xi,chi,21)
+  call ML_symmetry_transformation_XY3_II(6_ik,xi,chi,21)
   ! 
   do i = nparam_eq+1, molec%parmax
     !

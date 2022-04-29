@@ -1963,7 +1963,7 @@ module lapack
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-#elseif (arpack_>0)
+#elif (arpack_>0)
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &

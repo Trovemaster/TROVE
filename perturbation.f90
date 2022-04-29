@@ -7325,8 +7325,8 @@ module perturbation
     integer(ik) :: ielem,icase,Nterms(sym%Nrepresen),i_irr(sym%Nrepresen),nroots
     integer(ik),allocatable :: ijterm(:,:),k_row(:,:),bterm(:,:)
     !
-    real(rk) :: zpe
-    integer  :: slevel,dimen_s,max_dim,iterm,jterm,total_roots,icontr
+    real(rk) :: zpe = 0
+    integer  :: slevel,dimen_s,max_dim,iterm=1,jterm,total_roots,icontr
     !
     integer(ik) :: iunit,unitO,unitC,rec_len,irec_len,chkptIO
     integer(ik) :: ncontr,maxcontr,maxcontr0
@@ -8993,7 +8993,7 @@ module perturbation
       integer(ik),intent(inout) :: chkptIO
       character(len=*),intent(in) :: name
       character(len=4) :: jchar
-      character(len=cl) :: buf,filename
+      character(len=cl) :: buf,filename = 'divided_slice'
       integer(ik)      :: ilen
       logical          :: ifopened
       !
@@ -9051,7 +9051,7 @@ module perturbation
       character(len=*),intent(in) :: name
       integer(ik),intent(in)  :: chkptIO
       character(len=4) :: jchar
-      character(len=cl) :: buf,filename,job_is
+      character(len=cl) :: buf,filename='divided_slice',job_is
       integer(ik)      :: ilen
       logical          :: ifopened
       !
@@ -10603,7 +10603,7 @@ module perturbation
        !
        spur = spur*exp(-beta*mat0)
        !
-       write(out, '(/1x, a, 1x, es16.8)'), 'qpart = ', spur
+       write(out, '(/1x, a, 1x, es16.8)') 'qpart = ', spur
        !
        !mat = mat / (-planck * vellgt) * (boltz * intensity%temperature)
        !do ielem = 1, dimen_s
@@ -10616,7 +10616,7 @@ module perturbation
        !
        if (gamma==sym%Nrepresen) then
           !
-          write(out, '(/1x, a, 1x, es16.8)'), 'partition function value is', job%partfunc%value
+          write(out, '(/1x, a, 1x, es16.8)') 'partition function value is', job%partfunc%value
           !
        endif 
        !
@@ -11726,7 +11726,7 @@ module perturbation
      if (job%verbose>=4) write (out,"('     real4->real8-diagonalization...')")
      if (job%verbose>=4) call TimerStart('prediag: real4->real8')
      !
-     dimen4 = nroots
+     dimen4 = dimen_s !nroots
      !
      jobz_ ='V'
      rng_ = rng
@@ -12034,6 +12034,8 @@ module perturbation
        kaddress = 0
        iaddress = 1
        naddress = 1
+       !
+       kelem = 0 ; nelem = 0 
        !
        do ielem=1,dimen_s
           !
@@ -17671,7 +17673,7 @@ module perturbation
       integer(ik),intent(inout) :: chkptIO
       character(len=*),intent(in) :: name
       character(len=4) :: jchar
-      character(len=cl) :: buf,filename
+      character(len=cl) :: buf,filename = 'divided_slice'
       integer(ik)      :: ilen
       logical          :: ifopened
       !
@@ -17733,7 +17735,7 @@ module perturbation
         do iclasses = 1,PT%Nclasses
           nroots  = contr(iclasses)%nroots
           allocate(mat_tt(iclasses)%coeff3d(Nterms,nroots,nroots),stat=alloc)
-          call ArrayStart('calc_contract_matrix_elements_III:mat_tt',alloc,size(mat_tt(iclasses)%coeff3d),kind(f_t))
+          call ArrayStart('calc_contract_matrix_elements_III:mat_tt',alloc,1,kind(f_t),size(mat_tt(iclasses)%coeff3d,kind=hik))
         enddo
         !
         do iclasses = 1,PT%Nclasses
@@ -23408,7 +23410,7 @@ end subroutine read_contr_matelem_expansion_classN
              !
              do jcoeff = mp1,icoeff,5
                 !
-                ib = ib0 + jcoeff
+                !ib = ib0 + jcoeff
                 !
                 hvib(icoeff,jcoeff  ) = hvib(icoeff,jcoeff  ) + gvib_t(k2)*vector(k2,jcoeff  )
                 hvib(icoeff,jcoeff+1) = hvib(icoeff,jcoeff+1) + gvib_t(k2)*vector(k2,jcoeff+1)
@@ -23770,9 +23772,9 @@ end subroutine read_contr_matelem_expansion_classN
     !
     integer(ik) :: icontr,jcontr,alloc,k,dimen,Nmodes,maxcontr,ideriv,k1,k2,iterm
     integer(ik) :: ib,ib0
-    real(rk)    :: temp,cdimen_aver_f,idvr
+    real(rk)    :: temp=0,cdimen_aver_f,idvr
     !
-    integer(ik) :: stored_size,unitO,unitC,idimenmax,rec_len,irec_len,cdimen,istore,jstore,idimen,irec,&
+    integer(ik) :: stored_size,unitO,unitC,idimenmax,rec_len,irec_len,cdimen=1,istore,jstore,idimen,irec,&
                    cdimenI(0:PT%Nmodes),cdimenmax,cdimen_distr(10)
     integer(hik):: matsize
     character(len=cl):: unitfname,filename
@@ -24016,6 +24018,8 @@ end subroutine read_contr_matelem_expansion_classN
        enddo
        !
        ! Store some number of vectors into the memory 
+       !
+       stop 'istore" is used before it is defined'
        !
        do icontr=1,maxcontr
          !
@@ -28703,7 +28707,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          ! and the corresponding power 
          !
-         iterm = k(PT%Nmodes)
+         !iterm = k(PT%Nmodes)
          !
          ! Vibrational part 
          !
@@ -34733,7 +34737,7 @@ end subroutine read_contr_matelem_expansion_classN
           !
           ! perform squaring
           !
-          write(out, '(/1x, a/1x, a, 1x, a)'), 'perform squaring', 'deg of 2', 'norm'
+          write(out, '(/1x, a/1x, a, 1x, a)') 'perform squaring', 'deg of 2', 'norm'
           !
           if (job%verbose>=2) call TimerStart('Partition function my mat-exp')
           !
@@ -34748,13 +34752,13 @@ end subroutine read_contr_matelem_expansion_classN
           !
           do
                 if (deg > max_deg) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max degree of 2', max_deg, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max degree of 2', max_deg, 'is reached'
                       exit
                 end if
                 !
                 norm = norm / real(2**deg, kind = rk)
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), deg, norm
+                write(out, '(1x, i3, 1x, es16.8)') deg, norm
                 !
                 if (abs(norm) <= norm_thresh) exit
                 deg = deg + 1
@@ -34812,14 +34816,14 @@ end subroutine read_contr_matelem_expansion_classN
           spur   = real(dimen, kind = rk)
           spur0  = spur
           !
-          write(out, '(/1x, a/1x, a, 13x, a)'), 'compute exponential', 'ord', 'spur'
+          write(out, '(/1x, a/1x, a, 13x, a)') 'compute exponential', 'ord', 'spur'
           !
           ! loop over Taylor series
           !
           do
                 iorder = iorder + 1
                 if (iorder > max_order) then
-                      write(out, '(/1x, a, 1x, i3, 1x, a)'), 'max exp degree', max_order, 'is reached'
+                      write(out, '(/1x, a, 1x, i3, 1x, a)') 'max exp degree', max_order, 'is reached'
                       exit
                 end if
                 !
@@ -35056,7 +35060,7 @@ end subroutine read_contr_matelem_expansion_classN
                 end do
                 !$omp end parallel do
                 !
-                write(out, '(1x, i3, 1x, es16.8)'), iorder, spur
+                write(out, '(1x, i3, 1x, es16.8)') iorder, spur
                 !
                 if (abs(spur - spur0) <= spur_thresh) exit
                 spur0 = spur
@@ -37200,6 +37204,8 @@ subroutine create_field_expansion_by_classes(maxnterms,nterms,terms_uniq,itospar
       !
       imode1 = PT%mode_class(iclass,1)
       imode2 = PT%mode_class(iclass,PT%mode_iclass(iclass))
+      !
+      itotal = 0
       !
       if (iclass == PT%Nclasses) then
         !
@@ -42157,7 +42163,12 @@ subroutine read_contr_ind(ncontr, nclasses, dimen_classes, nu_classes)
 
   read(IOunit) dimen_classes(1:nclasses)
   do icontr=1, ncontr
+    !
     read(IOunit) jcontr, nu_classes(1:nclasses,jcontr)
+    !
+    !read(IOunit) jcontr
+    !read(IOunit) nu_classes(1:nclasses,jcontr)
+    !
   enddo
 
   read(IOunit) buf(1:3)

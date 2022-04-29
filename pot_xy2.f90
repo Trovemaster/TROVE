@@ -3090,7 +3090,7 @@ endif
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
     real(ark),intent(out)  ::  f(rank)
     !
-    integer(ik)           :: i,ik(1:3)
+    integer(ik)           :: i,ikx(1:3)
     real(ark)             :: b(molec%ncoords), mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,dipp,dipq
     !
     x(1,:) = xyz(2,:) - xyz(1,:)
@@ -3125,13 +3125,13 @@ endif
     !
     do i=1,extF%nterms(1)
        !
-       ik(:) = extF%term(:,i,1)
+       ikx(:) = extF%term(:,i,1)
        !
-       dipp = dipp + b(1)**ik(1)*b(2)**ik(2)*b(3)**ik(3)*extF%coef(i,1)
+       dipp = dipp + b(1)**ikx(1)*b(2)**ikx(2)*b(3)**ikx(3)*extF%coef(i,1)
        !
-       if (ik(1)/=ik(2)) then
+       if (ikx(1)/=ikx(2)) then
          !
-         dipp = dipp - b(1)**ik(2)*b(2)**ik(1)*b(3)**ik(3)*extF%coef(i,1)
+         dipp = dipp - b(1)**ikx(2)*b(2)**ikx(1)*b(3)**ikx(3)*extF%coef(i,1)
          !
        endif
        !
@@ -3143,13 +3143,13 @@ endif
     !
     do i=1,extF%nterms(2)
        !
-       ik(:) = extF%term(:,i,2)
+       ikx(:) = extF%term(:,i,2)
        !
-       dipq = dipq + b(1)**ik(1)*b(2)**ik(2)*b(3)**ik(3)*extF%coef(i,2)
+       dipq = dipq + b(1)**ikx(1)*b(2)**ikx(2)*b(3)**ikx(3)*extF%coef(i,2)
        !
-       if (ik(1)/=ik(2)) then
+       if (ikx(1)/=ikx(2)) then
          !
-         dipq = dipq + b(1)**ik(2)*b(2)**ik(1)*b(3)**ik(3)*extF%coef(i,2)
+         dipq = dipq + b(1)**ikx(2)*b(2)**ikx(1)*b(3)**ikx(3)*extF%coef(i,2)
          !
        endif
        !
@@ -5186,7 +5186,7 @@ endif
     real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
     real(ark),intent(out)  ::  f(rank)
     !
-    integer(ik)           :: i,ik(1:3)
+    integer(ik)           :: i,ikx(1:3)
     real(ark)             :: mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,dipp,dipq,xyz0(3,3),s(3)
     real(ark)             :: r_e,alpha_e
     !
@@ -5237,9 +5237,9 @@ endif
     !
     do i=3,extF%nterms(1)
        !
-       ik(:) = extF%term(:,i,1)
+       ikx(:) = extF%term(:,i,1)
        !
-       dipp = dipp + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,1)
+       dipp = dipp + s(1)**ikx(1)*s(2)**ikx(2)*s(3)**ikx(3)*extF%coef(i,1)
        !
     enddo
     !
@@ -5256,9 +5256,9 @@ endif
     !
     do i=3,extF%nterms(2)
        !
-       ik(:) = extF%term(:,i,2)
+       ikx(:) = extF%term(:,i,2)
        !
-       dipq = dipq + s(1)**ik(1)*s(2)**ik(2)*s(3)**ik(3)*extF%coef(i,2)
+       dipq = dipq + s(1)**ikx(1)*s(2)**ikx(2)*s(3)**ikx(3)*extF%coef(i,2)
        !
     enddo
     !
