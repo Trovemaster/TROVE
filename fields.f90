@@ -15561,9 +15561,7 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format poten'
         end if
         !
-        if (trim(trove%IO_ext_coeff)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') then 
-          close(chkptIO,status='keep')
-        endif
+        if (trim(trove%IO_ext_coeff)/='READ'.and.trim(trove%IO_hamiltonian)/='READ') close(chkptIO,status='keep')
         !
       end subroutine checkpointRestore_potential
       !
