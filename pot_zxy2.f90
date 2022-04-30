@@ -1922,7 +1922,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     xi5 = alpha1-alphae
     xi6 = alpha2-alphae
 
-	t0 = F0
+    t0 = F0
     !
     t1=0 ; t2=0 ; t3=0 ; t4=0 ; t5=0 ; t6=0
     if (N>=1) then 

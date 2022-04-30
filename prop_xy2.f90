@@ -87,7 +87,8 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
   ! compute spin-rotation tensor in molecular-bond frame
 
   c_mb = 0
-  c_mb(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  ! first parameter defines centre on Y1 or Y2, see above
+  c_mb(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) 
   c_mb(2,2) = fit_xy2_nosym(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
   c_mb(3,3) = fit_xy2_nosym(extF%nterms(3), extF%coef(1:extF%nterms(3),3), coords)
   c_mb(1,2) = fit_xy2_nosym(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)
@@ -275,7 +276,8 @@ recursive subroutine xy2_dipole_sym(rank, ncoords, natoms, local, xyz, f)
   real(ark),intent(out)  ::  f(rank)
 
   integer(ik) :: iatom,ierr
-  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), n1(3), n2(3), n3(3), tmat(3,3), coords(3), mu_mb(3), tmat_inv(3,3)
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), n1(3), n2(3), n3(3), tmat(3,3), coords(3)
+  real(ark) :: mu_mb(3), tmat_inv(3,3)
 
   if (rank/=3) then
     write(out, '(/a,1x,i3,1x,a)') 'xy2_dipole_sym error: rank of the dipole moment vector =', rank, ', expected 3'
@@ -521,8 +523,8 @@ recursive subroutine xy2_efg_y(rank, ncoords, natoms, local, xyz, f)
 
   efg_mb1 = 0
   efg_mb2 = 0
-
-  efg_A1 = fit_xy2_dipole_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  ! first parameter defines centre on Y1 or Y2, see above
+  efg_A1 = fit_xy2_dipole_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords)
   efg_B2 = fit_xy2_dipole_B2(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
 
   efg_mb1(1,1) = (efg_A1 + efg_B2)*0.5_ark

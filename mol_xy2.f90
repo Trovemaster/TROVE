@@ -206,8 +206,8 @@ module mol_xy2
           !endif
           !
           r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
+          !
+          !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
           dst(1) = r12 -r12e
           dst(2) = (r1-r2)*0.5_ark
@@ -218,8 +218,6 @@ module mol_xy2
           R = src(3)
           !
           r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
           !theta = src(2) + pi*0.5_ark
           !
@@ -342,17 +340,9 @@ module mol_xy2
           r12 = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
           !
           R = 0.5_ark*sqrt(r1**2+r2**2+2.0_ark*r1*r2*cos(alpha))
-		  !
-		  !r1x = 0.5_ark*r1*r2*sin(alpha)/R
-		  !r1y = 0.5_ark*r1*(r1+r2*cos(alpha))/R
-		  !r2x =-0.5_ark*r1*r2*sin(alpha)/R
-		  !r2y = 0.5_ark*r2*(r2+r1*cos(alpha))/R
-		  !
-          r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
-          !dst(1) = r1x-0.5_ark*r12e-(r2x+0.5_ark*r12e)
+          r12e = ML_MEP_xy2_R12_R(R)
+          !
           dst(2) = (r1-r2)*0.5_ark
           dst(3) = R
           !
@@ -399,7 +389,7 @@ module mol_xy2
 	      !
           dst(1:2) = dsrc(1:2)
 		  !
-		  rho = max(pi-src(3),small_)
+		  rho = max(pi-src(3),small_a)
 		  !
           dst(3) = log(rho)
 		  !

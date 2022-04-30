@@ -2505,8 +2505,6 @@ contains
          !
          mat(irootF) = mat(irootF) + dtemp
          !
-         ! mat(irootF) = mat(irootF) + sum( half_matelem(tmat(irootF)%icoeff(1:cdimen(irootF)) )*tmat(irootF)%coeff(1:cdimen(irootF)))
-         !
        end do
        !
     end do Flevels_loop

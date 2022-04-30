@@ -1176,12 +1176,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     mu(1) = mu(1)*sin(tau)
     !
-    !if (tau > pi) then
-    !   mu(1) = -mu(1)
-    !end if
-	!
-	!write(out,"('mu = ',3f18.8)") mu(1:3)
-    !
     f(1:3) = matmul((tmat),mu)
     !
     !f(1:3) = mu(1:3)
@@ -1740,20 +1734,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     !
     txt = 'Error: MLdms_HCCH_MB'
-    !
-    !xyz_(1,1)=-0.017734242
-    !xyz_(1,2)=-0.0183397
-    !xyz_(1,3)=-1.134903609
-    !xyz_(2,1)=0.041027921
-    !xyz_(2,2)=0.006163171
-    !xyz_(2,3)=1.13187384
-    !xyz_(3,1)=-0.013711712
-    !xyz_(3,2)=0.125514884
-    !xyz_(3,3)=-3.132837078
-    !xyz_(4,1)=-0.263864708
-    !xyz_(4,2)=0.019585304
-    !xyz_(4,3)=3.168940968
-    !-0.06208661    0.03255714    0.00256929     -77.209450006   334.7231997638  0.9999997247    14576   1.2     1.06    1.09    175     170     110
     !
     x1(:) = xyz(1,:)-xyz(2,:)
     x2(:) = xyz(3,:)-xyz(1,:)
@@ -2747,19 +2727,12 @@ function MLpoten_v_c2h2_katy(ncoords,natoms,local,xyz,force) result(f)
 
 !c2h2
           v_c2h2 = 0
-    !     v_c2h2 = (1.0_ark-tanh(gamma1*s1*0.25_ark) )*(1.0_ark-tanh(gamma2*s2*0.5_ark))*(1.0_ark-tanh(gamma3*s3*0.5_ark))* &
-    !      vi*(1+(a1*s1)+(a2*s2)+(a3*s3)+(a11*s1*s1)+(a22*s2*s2)+(a33*s3*s3)+(a44*s4*s4)+(a55*s5*s5)+(a66*s6*s6)+ &
-    !      (a12*s1*s2)+(a13*s1*s3)+(a23*s2*s3)+(a166*s1*s6*s6)+(a266*s2*s6*s6)+(a344*s3*s4*s4)+(a355*s3*s5*s5)+(a366*s3*s6*s6)+(a6666*s6**6))
 
 !ch2
           v_ch2 = 0
-    !     v_ch2 = (1.0_ark-tanh(gamma1_ch2*s1_ch2*0.5_ark))*(1.0_ark-tanh(gamma2_ch2*s2_ch2*0.5_ark))*(1.0_ark-tanh(gamma3_ch2*s3_ch2*0.5_ark))* &
-    !      vi_ch2*(1+(a1_ch2*s1_ch2)+(a2_ch2*s2_ch2)+(a3_ch2*s3_ch2)+(a11_ch2*s1_ch2*s1_ch2)+(a22_ch2*s2_ch2*s2_ch2)+(a33_ch2*s3_ch2*s3_ch2)+(a12_ch2*s1_ch2*s2_ch2)+(a13_ch2*s1_ch2*s3_ch2)+(a23_ch2*a2_ch2*a3_ch2))
-
 !c2h
           v_c2h= 0
-    !     v_c2h = vi_c2h*(1.0_ark+(a1_c2h*s1_c2h)+(a2_c2h*s2_c2h)+(a3_c2h*s3_c2h)+(a11_c2h*s1_c2h*s1_c2h)+(a22_c2h*s2_c2h*s2_c2h)+(a33_c2h*s3_c2h*s3_c2h)+(a12_c2h*s1_c2h*s2_c2h)+(a13_c2h*s1_c2h*s3_c2h)+(a23_c2h*s2_c2h*s3_c2h))*(1.0_ark-tanh(gamma1_c2h*(s1_c2h+s2_c2h+s3_c2h)*0.5_ark/sqrt3))
-
+!
 !h2
          v_h2 = (-de_h2*(1.0_ark+(a1_h2*s1_h2)+(a2_h2*s1_h2**2)+(a3_h2*s1_h2**3)*exp(-a1_h2*s1_h2)))
 
@@ -7394,8 +7367,6 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     !xyz0(4,1) =       -0.5046923676      
     !xyz0(4,2) =       0.8741528230      
     !xyz0(4,3) =       1.4910257717    
-    !   
-    !-12.417804814646    -14.143922118848     -18.564111151420      0.628758089150      0.426967879719      0.158786980009   0.99997000     3574.645636    -151.357983308233          1.455780        0.962530        1.010000      101.081950       92.000000       30.000000  
     !
     e1(:) = xyz(1,:)-xyz(2,:)
     e2(:) = xyz(3,:)-xyz(1,:)

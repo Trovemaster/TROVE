@@ -329,16 +329,8 @@ subroutine prop_xy2_gcor_electronic_bisector(rank, ncoords, natoms, local, xyz, 
   !
   ! gcor-nuclear
   !
-  !zX = 6.0_ark 
-  !zY = 8.0_ark
-  !
-  !g(1) = 0.5_ark*sin(rho)*r2*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
-  !g(2) =-0.5_ark*sin(rho)*r1*(-zX*mY+zY*mX)/(mX*(mX+2.0_ark*mY))
-  !g(3) = -(zX*mY-2*zX*mY*cos(0.5_ark*rho)**2+2*zY*mX*cos(0.5_ark*rho)**2-zY*mX)*r1/(mX*r2)-(-2.0_ark*zY*mX*cos(0.5_ark*rho)**2+2.0_ark*zX*mY*cos(0.5_ark*rho)**2-zX*mY+zY*mX)*r2/(mX*r1)
-  !
   f = (/g(1), g(2), g(3)/)* muN
   !
-  ! output f is g_el, to compute the contribution to magnetic dipole moment
   ! use: mu_el = (-i) * g_el * (d/dxi + d/dxi^{<--}), where xi = (r1, r2, rho)
 
 end subroutine prop_xy2_gcor_electronic_bisector
@@ -1086,7 +1078,8 @@ subroutine prop_xy2_gtensor_bisector(rank, ncoords, natoms, local, xyz, f)
   c = (2.0_ark*mY + mX)/(mY*((mY + mX)*(r1**2 + r2**2) + 2.0_ark*mY*r1*r2*cos(rho)))
   d = ((mY*(r1 + r2)**2 + mX*(r1**2 + r2**2)))/(4.0_ark*mY*mX*r1**2*r2**2)
   !
-  gxz = 4.0_ark*(R1-R2)*(R1+R2)*(4*mX**2+8.0_ark*mX*mY+11.0_ark*mY**2)*mY*(mX*R1**2+mX*R2**2+mY*R1**2-2*mY*R1*R2+mY*R2**2)/(mX+2.0_ark*mY)
+  gxz = 4.0_ark*(R1-R2)*(R1+R2)*(4*mX**2+8.0_ark*mX*mY+11.0_ark*mY**2)*mY*(mX*R1**2+mX*R2**2+&
+        mY*R1**2-2*mY*R1*R2+mY*R2**2)/(mX+2.0_ark*mY)
   gxz = 2.0_ark*sin(alpha*0.5_ark)*rho_over_sinrho*gxz
   !
   t1 = (4.0_ark*mX**2+8.0_ark*mX*mY+11*mY**2)/((mX+2.0_ark*mY)**2)
@@ -1859,8 +1852,7 @@ recursive subroutine prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natom
   alpha1 = aacos(sum(e1*e2))
 
   if (abs(alpha1-pi)<0.0001) &
-      stop 'prop_xy2_spin_rotation_bisector_nonlin error: valence bond angle is 180 degrees &
-           (does not work for linear molecule)'
+      stop 'prop_xy2_spin_rotation_bisector_nonlin error: valence bond angle is 180 degrees (does not work for linear molecule)'
 
   if (icentre==1) then
     coords = (/r1,r2,alpha1/)
@@ -1871,7 +1863,8 @@ recursive subroutine prop_xy2_spin_rotation_bisector_nonlin(rank, ncoords, natom
   endif
 
   sr = 0
-  sr(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  ! first parameter defines centre on Y1 or Y2, see above
+  sr(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) 
   sr(2,2) = fit_xy2_nosym(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
   sr(3,3) = fit_xy2_nosym(extF%nterms(3), extF%coef(1:extF%nterms(3),3), coords)
   sr(1,3) = fit_xy2_nosym(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)

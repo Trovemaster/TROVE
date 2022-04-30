@@ -1793,7 +1793,7 @@ module mol_xy3
        if (direct) then
           ! 
           dst(1:3) = dsrc(1:3)
-		  !
+          !
           if (size(src)==7) then
               !
               alpha3 = src(4)

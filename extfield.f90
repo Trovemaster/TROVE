@@ -217,8 +217,8 @@ subroutine rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
       nlevels(jind) = nlevels(jind) + 1
       if (.not.enr_filter_intens( eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), &
                                   eigen(ilevel)%energy, 2 )) then
-        write(out, '(/a)') 'extfield/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END" &
-            block are different for lower and upper states (must be the same)'
+        write(out, '(/a,a)') 'extfield/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END" ',&
+            'block are different for lower and upper states (must be the same)'
         stop 'STOP, error in extfield/rovib_me_storeall'
       endif
     endif
@@ -227,8 +227,8 @@ subroutine rovib_me_storeall(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   maxnlevels = maxval(nlevels)
   allocate(level_ind(maxnlevels,nJ), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/rovib_me_storeall error: failed to allocate &
-        level_ind(maxnlevels)', 'maxnlevels =', maxnlevels
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/rovib_me_storeall error: failed to allocate', &
+        'level_ind(maxnlevels)', 'maxnlevels =', maxnlevels
     stop 'STOP, error in extfield/rovib_me_storeall'
   endif
 
@@ -292,8 +292,8 @@ subroutine store_richmol_enr(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
       nlevels(jind) = nlevels(jind) + 1
       if (.not.enr_filter_intens( eigen(ilevel)%jval, eigen(ilevel)%quanta(1:), eigen(ilevel)%normal(0:), &
                                   eigen(ilevel)%energy, 2 )) then
-        write(out, '(/a)') 'extfield/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END" &
-            block are different for lower and upper states (must be the same)'
+        write(out, '(/a,a)') 'extfield/rovib_me_storeall error: rovibrational state filters in "INTENSITY..END"',&
+            'block are different for lower and upper states (must be the same)'
         stop 'STOP, error in extfield/rovib_me_storeall'
       endif
     endif
@@ -302,8 +302,8 @@ subroutine store_richmol_enr(tens, nJ, Jval, coef_tol, print_tol, leading_coef_t
   maxnlevels = maxval(nlevels)
   allocate(level_ind(maxnlevels,nJ), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/rovib_me_storeall error: failed to allocate &
-        level_ind(maxnlevels)', 'maxnlevels =', maxnlevels
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/rovib_me_storeall error: failed to allocate ',&
+        'level_ind(maxnlevels)', 'maxnlevels =', maxnlevels
     stop 'STOP, error in extfield/rovib_me_storeall'
   endif
 
@@ -410,10 +410,10 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
       ind_sparse(maxdimen,0:num_threads-1), half_me(dimen2,maxdeg,nirrep), &
       me(nirrep,maxdeg,maxdeg,0:num_threads-1), nelem_sparse(0:num_threads-1), stat=info )
   if (info/=0) then
-    write(out, '(/a/a/a,10(1x,i8))') 'extfield/rovib_me_jpair error: failed to allocate vec_sym1(nsize,nlevels1), &
-        vec_sym2(nsize,nlevels2),', 'vec_sparse(maxdimen,maxdeg,0:num_threads-1), ind_sparse(maxdimen,0:num_threads-1), &
-        half_me(dimen2,maxdeg,nirrep), me(nirrep,maxdeg,maxdeg,0:num_threads-1)', 'nsize, nlevels1, &
-        nlevels2, maxdimen, maxdeg, dimen2, nirrep, num_threads =', nsize, nlevels1, nlevels2, maxdimen, &
+    write(out, '(/a,a/a,a/a,a,10(1x,i8))') 'extfield/rovib_me_jpair error: failed to allocate vec_sym1(nsize,nlevels1)', &
+        'vec_sym2(nsize,nlevels2),', 'vec_sparse(maxdimen,maxdeg,0:num_threads-1), ind_sparse(maxdimen,0:num_threads-1)', &
+        'half_me(dimen2,maxdeg,nirrep), me(nirrep,maxdeg,maxdeg,0:num_threads-1)', 'nsize, nlevels1', &
+        'nlevels2, maxdimen, maxdeg, dimen2, nirrep, num_threads =', nsize, nlevels1, nlevels2, maxdimen, &
         maxdeg, dimen2, nirrep, num_threads
     stop 'STOP, error in extfield/rovib_me_jpair'
   endif
@@ -488,8 +488,8 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
       icmplx = 0
       isign = 1
     else
-      write(out, '(/a,1x,i2,1x,a,1x,i2,1x,a,1x,i3)') 'extfield/rovib_me_jpair error: invalid combination &
-          of tens%mmat_cmplx(ielem) =', tens%mmat_cmplx(ielem), 'and tens%kmat_cmplx(ielem) =', &
+      write(out, '(/a,a,1x,i2,1x,a,1x,i2,1x,a,1x,i3)') 'extfield/rovib_me_jpair error: invalid combination ',&
+          'of tens%mmat_cmplx(ielem) =', tens%mmat_cmplx(ielem), 'and tens%kmat_cmplx(ielem) =', &
           tens%kmat_cmplx, 'ielem =', ielem
       stop 'STOP, error in extfield/rovib_me_jpair'
     endif
@@ -533,7 +533,8 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
     call half1_rovib_me(tens, jind1, ndeg1, dimen1, n, ind_sparse(1:n,ithread), vec_sparse(1:n,1:ndeg1,ithread), &
                         jind2, dimen2, half_me(1:dimen2,1:ndeg1,1:nirrep))
 
-    !$omp parallel do private(jlevel_,ithread,jlevel,jval2,energy2,isym2,ndeg2,nsize2,nu,tran_filter,irrep,jdeg,ideg,n) schedule(dynamic)
+    !$omp  parallel do private(jlevel_,ithread,jlevel,jval2,energy2,isym2,ndeg2,nsize2,nu,tran_filter,irrep,jdeg,ideg,n) 
+    !$omp& schedule(dynamic)
     do jlevel_=1, nlevels2
 
       ithread = omp_get_thread_num()
@@ -820,11 +821,11 @@ subroutine read_vibme_rank1()
 
 
   if (.not.job%IOextF_divide) then
-  write(out, '(/a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 &
-      Cartesian tensor from file', trim(job%extFmat_file)
+  write(out, '(/a,a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 ',&
+      'Cartesian tensor from file', trim(job%extFmat_file)
   else
-  write(out, '(/a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1 &
-      Cartesian tensor from files', trim(job%extFmat_file)
+  write(out, '(/a,a,a)') 'read_vibme_rank1: read vibrational matrix elements of symmetric rank-1', &
+      'Cartesian tensor from files', trim(job%extFmat_file)
   endif
 
 
@@ -844,8 +845,8 @@ subroutine read_vibme_rank1()
     read(chkptIO) ncontr_t
  
     if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1 error: actual size of basis &
-          set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank1 error: actual size of basis set =',&
+                    bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
       stop 'STOP, error in extfield/read_vibme_rnak1'
     endif
   endif
@@ -855,8 +856,8 @@ subroutine read_vibme_rank1()
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_rank1 error: failed to allocate &
-        extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_vibme_rank1 error: failed to allocate ',&
+        'extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
     stop 'STOP, error in extfield/read_vibme_rank1'
   endif
   extf_vib_me = 0.0
@@ -938,8 +939,8 @@ subroutine read_vibme_rank2_sym()
   character(len=cl) :: job_is
   character(len=20) :: buf20
 
-  write(out, '(/a,a)') 'read_vibme_rank2_sym: read vibrational matrix elements of symmetric rank-2 &
-      Cartesian tensor from file', trim(job%extFmat_file)
+  write(out, '(/a,a,a)') 'read_vibme_rank2_sym: read vibrational matrix elements of symmetric rank-2 ',&
+     ' Cartesian tensor from file', trim(job%extFmat_file)
 
   job_is ='extf contracted matrix elements'
   call IOStart(trim(job_is),chkptIO)
@@ -955,16 +956,16 @@ subroutine read_vibme_rank2_sym()
   read(chkptIO) ncontr_t
 
   if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2_sym error: actual size of basis &
-        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+    write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2_sym error: actual size of basis set =', &
+                   bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
     stop 'STOP, error in extfield/read_vibme_rnak2_sym'
   endif
 
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_rank2_sym error: failed to allocate &
-        extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_vibme_rank2_sym error: failed to allocate ',&
+        'extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
     stop 'STOP, error in extfield/read_vibme_rank2_sym'
   endif
   extf_vib_me = 0.0
@@ -1021,11 +1022,11 @@ subroutine read_vibme_rank2()
 
 
   if (.not.job%IOextF_divide) then
-    write(out, '(/a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 &
-       Cartesian tensor from file', trim(job%extFmat_file)
+    write(out, '(/a,a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 ',&
+       'Cartesian tensor from file', trim(job%extFmat_file)
   else
-    write(out, '(/a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2 &
-      Cartesian tensor from files', trim(job%extFmat_file)
+    write(out, '(/a,a,a)') 'read_vibme_rank2: read vibrational matrix elements of non-symmetric rank-2', &
+      'Cartesian tensor from files', trim(job%extFmat_file)
   endif
 
   job_is ='extf contracted matrix elements'
@@ -1045,8 +1046,8 @@ subroutine read_vibme_rank2()
     read(chkptIO) ncontr_t
 
     if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2 error: actual size of basis &
-        set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+      write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_rank2 error: actual size of basis set =',&
+                   bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
       stop 'STOP, error in extfield/read_vibme_rnak2_sym'
     endif
   endif
@@ -1056,8 +1057,8 @@ subroutine read_vibme_rank2()
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_rank2 error: failed to allocate &
-      extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_vibme_rank2 error: failed to allocate', &
+      'extf_vib_me(nelem,ncontr_t,ncontr_t)', 'ncontr_t, nelem =', ncontr_t, nelem
     stop 'STOP, error in extfield/read_vibme_rank2'
   endif
   extf_vib_me = 0.0
@@ -1177,8 +1178,8 @@ subroutine read_vibme_spinrot_xy2()
      read(chkptIO) ncontr_t
  
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_spinrot_xy2 error: actual size of basis &
-           set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_vibme_spinrot_xy2 error: actual size of basis set =',&
+                    bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
        stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
      endif
      
@@ -1188,8 +1189,8 @@ subroutine read_vibme_spinrot_xy2()
   !
   allocate(me(nelem_s,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_spinrot_xy2 error: failed to allocate &
-        me(nelem_s,ncontr_t,ncontr_t)', 'ncontr_t, nelem_s =', ncontr_t, nelem_s
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_vibme_spinrot_xy2 error: failed to allocate ',&
+       ' me(nelem_s,ncontr_t,ncontr_t)', 'ncontr_t, nelem_s =', ncontr_t, nelem_s
     stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
   endif
   extf_vib_me = 0
@@ -1258,8 +1259,8 @@ subroutine read_vibme_spinrot_xy2()
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(nelem,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_vibme_spinrot_xy2 error: failed to allocate &
-        extf_vib_me(nelem,ncontr_t,ncontr_t)', 'nelem, ncontr_t =', nelem, ncontr_t
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_vibme_spinrot_xy2 error: failed to allocate ',&
+        'extf_vib_me(nelem,ncontr_t,ncontr_t)', 'nelem, ncontr_t =', nelem, ncontr_t
     stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
   endif
   extf_vib_me = 0
@@ -1356,8 +1357,8 @@ subroutine init_extf_vib_me_overlap(rank)
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(rank,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/init_extf_vib_me_overlap error: failed to allocate &
-        extf_vib_me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/init_extf_vib_me_overlap error: failed to allocate',&
+       ' extf_vib_me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
     stop 'STOP, error in extfield/init_extf_vib_me_overlap'
   endif
 
@@ -1391,21 +1392,21 @@ subroutine read_extf_vib_me_ielem(ielem)
   if (job%verbose>=4) then 
     if (.not.job%IOextF_divide) then
       !
-      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from &
-            file "', trim(job%extFmat_file), '"'
+      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from file "', &
+                             trim(job%extFmat_file), '"'
       !
     else
       !
-      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from &
-            files "', trim(job%extmat_suffix), '"'
+      write(out, '(/a,a,a)') 'read_extf_vib_me_ielem: read vibrational contracted matrix elements from  files "',&
+                    trim(job%extmat_suffix), '"'
       !
     endif
     !
   endif 
 
   if (ielem>extF%rank) then
-    write(out, '(/a,1x,i4,1x,a,1x,i4)') 'extfield/read_extf_vib_me_ielem error: index of Cartesian &
-        tensor =', ielem, 'is larger than rank of TROVE extF tensor =', extF%rank
+    write(out, '(/a,a,1x,i4,1x,a,1x,i4)') 'extfield/read_extf_vib_me_ielem error: index of Cartesian', &
+       ' tensor =', ielem, 'is larger than rank of TROVE extF tensor =', extF%rank
     stop 'STOP, error in extfield/read_extf_vib_me_ielem'
   endif
 
@@ -1430,8 +1431,8 @@ subroutine read_extf_vib_me_ielem(ielem)
      read(chkptIO) ncontr_t
  
      if (bset_contr(1)%Maxcontracts/=ncontr_t) then
-       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_extf_vib_me_ielem error: actual size of &
-           basis set =',  bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
+       write (out, '(/a,1x,i6,1x,a,1x,i6,1x,a)') 'extfield/read_extf_vib_me_ielem error: actual size of basis set =',&
+                     bset_contr(1)%Maxcontracts, 'and stored one =', ncontr_t, 'do not agree'
        stop 'STOP, error in extfield/read_extf_vib_me_ielem'
      endif
   endif
@@ -1441,8 +1442,8 @@ subroutine read_extf_vib_me_ielem(ielem)
   if (allocated(extf_vib_me)) deallocate(extf_vib_me)
   allocate(extf_vib_me(rank,ncontr_t,ncontr_t), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'extfield/read_extf_vib_me_ielem error: failed to allocate &
-        extf_vib_me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
+    write(out, '(/a,a/a,10(1x,i6))') 'extfield/read_extf_vib_me_ielem error: failed to allocate ',&
+        ' extf_vib_me(rank,ncontr_t,ncontr_t)', 'ncontr_t, rank =', ncontr_t, rank
     stop 'STOP, error in extfield/read_extf_vib_me_ielem'
   endif
   
@@ -1653,9 +1654,9 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
   allocate(vec_sym(maxnsize), vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), &
       v0(maxnelem), img(maxnelem), k0(maxnelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i8))') 'extfield/store_wf_leading error: failed to allocate vec_sym(maxnsize), &
-        vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), v0(maxnelem), img(maxnelem), &
-        k0(maxnelem)', 'maxnsize, maxdeg, maxdimen, nJ, maxnelem =', maxnsize, maxdeg, maxdimen, nJ, &
+    write(out, '(/a,a,a/a,10(1x,i8))') 'extfield/store_wf_leading error: failed to allocate vec_sym(maxnsize)', &
+        'vec(maxdeg,maxdimen), coef0(maxdeg), ijterm(nJ), vec0(maxnelem), v0(maxnelem), img(maxnelem)', &
+        'k0(maxnelem)', 'maxnsize, maxdeg, maxdimen, nJ, maxnelem =', maxnsize, maxdeg, maxdimen, nJ, &
         maxnelem
     stop 'STOP, error in extfield/store_wf_leading'
   endif
@@ -1665,8 +1666,8 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
     dimen = bset_contr(jind)%Maxcontracts
     allocate (ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen), stat=info)
     if (info/=0) then
-      write(out, '(/a/a,10(1x,i6))') 'extfield/store_wf_leading error: failed to allocate &
-          ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen)', &
+      write(out, '(/a,a/a,10(1x,i6))') 'extfield/store_wf_leading error: failed to allocate ',&
+          'ijterm(jind)%kmat(bset_contr(jind)%Maxsymcoeffs,sym%Nrepresen)', &
           'jind, bset_contr(jind)%Maxsymcoeffs, sym%Nrepresen = ', jind, bset_contr(jind)%Maxsymcoeffs, &
           sym%Nrepresen
       stop 'STOP, error in extfield/store_wf_leading'
@@ -1744,9 +1745,9 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
               nelem = nelem + 1
 
               if (nelem>maxnelem) then
-                write(out, '(/a,1x,i6,1x,a,1x,es16.8)') 'extfield/store_wf_leading error: number &
-                    of leading contributions to the wave function exceeds maximum =', maxnelem, ', &
-                    coefficient thresh =', leading_coef_tol
+                write(out, '(/a,a,1x,i6,1x,a,1x,es16.8)') 'extfield/store_wf_leading error: number ',&
+                    'of leading contributions to the wave function exceeds maximum =', maxnelem, &
+                    ', coefficient thresh =', leading_coef_tol
                 stop 'STOP, error in extfield/store_wf_leading'
               endif
 
@@ -1761,9 +1762,9 @@ subroutine store_wf_leading(nJ, Jval, nlevels, level_ind, leading_coef_tol)
                 img(nelem) = 1
                 vec0(nelem) = aimag(vec0_)
               else
-                write(out, '(/a,2(1x,f20.12))') 'extfield/store_wf_leading error: coefficient of the wave &
-                    function, re-expressed in terms of symmetric-top functions, is neither pure real &
-                        or pure imaginary:', vec0_
+                write(out, '(/a,a,a,2(1x,f20.12))') 'extfield/store_wf_leading error: coefficient of the wave ',&
+                   ' function, re-expressed in terms of symmetric-top functions, is neither pure real ',&
+                       ' or pure imaginary:', vec0_
                 stop 'STOP, error in extfield/store_wf_leading'
               endif
 

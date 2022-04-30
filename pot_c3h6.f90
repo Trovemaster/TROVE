@@ -593,7 +593,7 @@ subroutine ML_symmetry_transformation_XY3_II(nsym,src,dst,ndeg)
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))    !
     !
-	s3 = matmul(c123, sxy)
+    s3 = matmul(c123, sxy)
     !
     s2 = matmul(c123,s3)
     !

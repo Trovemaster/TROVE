@@ -294,16 +294,9 @@ module me_bnd
 
     a(1,2,2) = 0
     a(2,2,2) = 2
-
-
-    ! concor=planck*avogno*1.0d+16/(4.0d+00*pi*pi*vellgt)
-
-    ! cosr = cos(rhoe)
-    ! g044 = 3.0_rk/2.0_rk*(3.0_rk*m1-6.0_rk*m1*cosr**2+3.0_rk*m1*cosr**4+2.0_rk*m4+2.0_rk*m4*cosr**2)/m4/m1/re14**2/(1.0_rk+3.0_rk*cosr**2)*concor
-    ! coeff_norm = sqrt(sqrt(g044*0.5_rk/f44))
-
+    !
     g_ben = 0
-
+    !
     do n = 0,maxorder
        do n1= 0,n
           n2 = n - n1
@@ -2586,7 +2579,8 @@ module me_bnd
               endif 
               !
               if (nl==nr.and.abs(h_t-ener(nl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_Associate_Legendre: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") nl,nr,h_t,ener(vl)
+                 write(out,"('ME_Associate_Legendre: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                           nl,nr,h_t,ener(vl)
                  stop 'ME_Associate_Legendre: bad solution'
               endif 
               !
@@ -3172,7 +3166,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_polynomial: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                           vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_polynomial: bad solution'
               endif 
               !
@@ -3734,7 +3729,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')")&
+                           vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_polynomial_k: bad solution'
               endif 
               !
@@ -4307,7 +4303,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_legendre_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_legendre_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')")&
+                        vl,vr,h_t,ener(vl+1)
                  stop 'ME_legendre_polynomial_k: bad solution'
               endif 
               !
@@ -4862,7 +4859,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_laguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_laguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                           vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_laguerre_k: bad solution'
               endif 
               !
@@ -5420,7 +5418,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_2xlaguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_2xlaguerre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                           vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_2xlaguerre_k: bad solution'
               endif 
               !
@@ -7092,7 +7091,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial_muzz: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_polynomial_muzz: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                            vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_polynomial_muzz: bad solution'
               endif 
               !
@@ -7703,7 +7703,8 @@ module me_bnd
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial_k_switch: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 write(out,"('ME_sinrho_polynomial_k_switch: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") &
+                              vl,vr,h_t,ener(vl+1)
                  stop 'ME_sinrho_polynomial_k_switch: bad solution'
               endif 
               !

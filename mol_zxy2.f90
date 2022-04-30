@@ -489,7 +489,8 @@ module mol_zxy2
       if (trim(molec%coords_transform)=='R-THETA-TAU-MEP') then 
          !
          !if (trim(molec%potentype)/='POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS') then
-         ! write (out,"('ML_b0_ZXY2: potential function',a,' cannot be used with coord type ',a)") trim(molec%potentype),trim(molec%coords_transform)
+         ! write (out,"('ML_b0_ZXY2: potential function',a,' cannot be used with coord type ',a)") trim(molec%potentype),&
+         ! trim(molec%coords_transform)
          ! stop 'ML_b0_ZXY2 - bad PES type'
          !endif 
          !

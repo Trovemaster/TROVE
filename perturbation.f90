@@ -294,12 +294,7 @@ module perturbation
                                                  ! 2) <bra| polyad number P=0..PolMax
                                                  ! 3) |ket> polyad number P=0..PolMax
       type(PTrotquantaT),pointer :: rot_index(:,:)  ! Array to store j,k,tau vs {level,deg} for rotational eigenfunctions
-
       type(PTrotquantaT),pointer :: rot_primindex(:)  ! Array to store j,k,tau vs {level,deg} for rotational eigenfunctions
-
-
-      !type(PTglobalindex),pointer :: global_index(:) ! the field to sore all bookkeeping information relative to the same global indexing
-
       !
       integer(ik)                 :: max_threads=16
       !
@@ -1170,7 +1165,7 @@ module perturbation
     !
     dimen = sum(PT%MaxIndex_nu(0:PT%Polyad_max))
     !
-    dimen = min(dimen,PT%Maxcoeffs)
+    dimen = min(dimen,int(PT%Maxcoeffs,ik))
     !
     if (job%verbose>=6) then 
         write (out,"('Size of the variational matrix  = ',i7,' out of ',i7,' elements.')") dimen,PT%Maxcoeffs
@@ -1725,14 +1720,6 @@ module perturbation
              switch = switch.and.( lquant==krot.or.jrot==0 )
           endif
           !
-          !if ( ( ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
-          !    ! LINEAR MOLECULE -> requires optimization !!!
-          !    .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) )           ) then
-             ! .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0.or.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE'.or..not.job%vib_contract ) ) ) ) then
-             ! .and.( trove%lincoord==0.or.( lquant==krot.or.( jrot==0.and.( trim(job%bset(PT%Nmodes)%type)/='LEGENDRE' ) ) ) ) ) then
-             ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
-             ! .and.(trove%lincoord==0.or.( v_search(0)==contr(0)%nlevels.or.v_search(0)==contr(0)%nlevels-1 ) ) ) then
-          !
           if (switch) then 
             !
             isum = isum +1
@@ -1816,7 +1803,7 @@ module perturbation
             !
           endif
           !
-          if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & ! ) then
+          if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & 
               ! LINEAR MOLECULE -> requires optimization !!!
               .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
@@ -3114,13 +3101,6 @@ module perturbation
          endif
          !
          ! check the vibrational angular momentum values threshold 
-         !if ( ( bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs).and.( PT%lquant%icoeffs(iroot,1)>job%MaxVibMomentum_contr) ) then
-         !   !
-         !   cycle 
-         !   !
-         !endif
-         !
-         ! check the vibrational angular momentum values threshold 
          if ( (FLl2_coeffs).and.( PT%lquant%icoeffs(iroot,1)>job%MaxVibMomentum_contr) ) then
             !
             cycle 
@@ -3474,7 +3454,8 @@ module perturbation
              !
              write(out,"('PTcontracted_prediag: sampling error = ',g15.7)") error
              !
-             write(out,"('PTcontracted_prediag: optimal sampling could not be found after ',i8,' attempts, error= ',g16.7)") iattempts,error
+             write(out,"('PTcontracted_prediag: optimal sampling could not be found after ',i8,' attempts, error= ',g16.7)") &
+                         iattempts,error
              !
              kroot = count_index(icount,1) 
              write(my_fmt,'(a,i0,a)') "(a,i8,a,",sym%Nrepresen,"g12.4)"
@@ -4751,13 +4732,9 @@ module perturbation
               !
               call random_number(f_t)
               !
-              ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
-              !
-              !ipoint_t = mod(jpoint*(bs(imode)%npoints/mpoints)+i*(bs(imode)%npoints/50+i)+pshift,bs(imode)%npoints) !  mod(i_eq(imode)+pshift,bs(imode)%npoints)
+              ipoint_t = mod(nint(job%bset(imode)%npoints*f_t)+Nr_t,job%bset(imode)%npoints) 
               !
               if (ipoint_t<Nr_t.or.ipoint_t>job%bset(imode)%npoints-Nr_t) ipoint_t = mod(ipoint_t+10,job%bset(imode)%npoints)
-              !
-              !ipoint_t = 2*jpoint + Nr_t
               !
               chi(imode) = job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t,ark)
               !
@@ -6636,10 +6613,6 @@ module perturbation
        !
        if (j==0) then
          !
-         !if (job%verbose>=5) then 
-         !   write(out,"('icoeff,ib,ilevel,contr_spase,index_ideg ',40i8)") icoeff,ib,ilevel,PT%contractive_space(:,ilevel),PT%Index_deg(ilevel)%icoeffs(:,ib)
-         !endif 
-         !
          PT%icontr_cnu(0:Nclasses,ilevel)  = PT%contractive_space(0:Nclasses,icoeff)
          PT%icontr_ideg(0:Nclasses,ilevel) = PT%Index_deg(icoeff)%icoeffs(0:Nclasses,ib)
          !
@@ -6719,11 +6692,7 @@ module perturbation
      ! PT%contractive_space(:,icoeff)
      !
      cnu(:) =  PT%contractive_space(:,icoeff)
-
-     !if (job%verbose>=5) then 
-     !   write(out,"(i7,'' : ' ',<Nclasses1>i3,' isym= (',<Nclasses1>i3,')')") icoeff,cnu(:),(contr(iclasses)%eigen(cnu(iclasses))%isym,iclasses=0,PT%Nclasses)
-     !endif 
-
+     !
      !PT%contractive_space(:,icoeff) = cnu(:)
      !
      do ioper = 1,sym%Noper
@@ -6970,7 +6939,7 @@ module perturbation
    max_global = 1
    !
    do icoeff =1,Maxsymcoeffs
-     max_global = max(max_global,PT%Index_deg(icoeff)%size1 )
+     max_global = max(max_global,int(PT%Index_deg(icoeff)%size1,hik) )
    enddo
    !
    do iclasses = 0,Nclasses
@@ -7488,10 +7457,9 @@ module perturbation
         !
         !Only deallocate if we arent Reading the energy checkpoint files.
         if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then !Only deallocate if we allocated
-        	deallocate (bterm)
-        !
-        	deallocate (a)
-        	call ArrayStop('PThamiltonian_contract:b')
+           deallocate (bterm)
+           deallocate (a)
+           call ArrayStop('PThamiltonian_contract:b')
         endif
         !
       enddo
@@ -9403,8 +9371,8 @@ module perturbation
       !
       isize = PT%Index_deg(irow)%size1
       !
-      !$omp  parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,jcontr,hcontr) shared(hsym) &
-      !$omp& schedule(dynamic)
+      !$omp  parallel do private(jrow,cnu_j,jsize,ideg,deg_i,jdeg,deg_j,icontr,&
+      !$omp& jcontr,hcontr) shared(hsym) schedule(dynamic)
       do jrow = 1,irow
          !
          cnu_j(:) = PT%contractive_space(:,jrow)
@@ -9998,7 +9966,7 @@ module perturbation
        open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=trim(filename),iostat=info)
        read(chkptIO) buff(1:14)
        if(buff(1:14)/='Start energies') then
-       	stop 'Invalid energies checkpoint file-energy'
+       stop 'Invalid energies checkpoint file-energy'
        endif
        !
        read(chkptIO) dimen, nroots
@@ -10015,7 +9983,7 @@ module perturbation
        read(chkptIO) energy(1:nroots)
        read(chkptIO) buff(1:13)
        if(buff(1:13)/='Start contrib') then
-       	stop 'Invalid energies checkpoint file-contrib'
+         stop 'Invalid energies checkpoint file-contrib'
        endif
        !
        !---read contribs
@@ -10620,7 +10588,7 @@ module perturbation
           !
        endif 
        !
-       write(out, '(/1(4hdone))')
+       write(out, '(/"done!")')
        !
        if (job%verbose>=4) call TimerStop('Full diagonalization') 
        !
@@ -10861,10 +10829,6 @@ module perturbation
                      "3x,a1,a4,a1,i1,a2,1x,a1,",Nclasses,"(1x,a3),a1,",&
                      Nmodes,"i4,a2,1x,f10.3,1x,a1,",Nmodes+1,"i4,a2,1x,a1,",Nclasses,"i5,a2)"
      
-     !write(out,'(2x,a,i7,f14.6,3x,a1,a4,a1,3i3,a2,1x,a1'//fmt%Aclasses//',a1,'//fmt%Nmodes0//',a2,1x,f9.2,1x,a1,'//fmt%Nmodes//'," )",1x,"(",'//fmt%Nclasses0//',a2)') & 
-     !                  sym%label(gamma),iroot,termvalue,&
-     !                  "(",cgamma(0),";",jrot,k,tau," )", &
-     !                  "(",cgamma(1:PT%Nclasses),";",nu(1:PT%Nmodes)," )",maxcontrib(iroot)**2,"(",normal(1:PT%Nmodes),normal(0),cnu(1:PT%Nclasses)," )"
      !
      do iroot=1,nroots
        !
@@ -17808,9 +17772,6 @@ module perturbation
              !
              if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
              !
-             !mat_t(1:nroots,1:dimen_p) = matmul(transpose(tmat(iclasses)%coeffs(1:dimen_p,1:nroots)),me_t(1:dimen_p,1:dimen_p))
-             !mat_tt(iclasses)%coeffs(1:nroots,1:nroots) = matmul(mat_t(1:nroots,1:dimen_p),tmat(iclasses)%coeffs(1:dimen_p,1:nroots))
-             !
              call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
                          me_t,dimen_p_max,beta,mat_t,nroots_max)
              call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
@@ -18067,13 +18028,6 @@ module perturbation
       !
       call TimerStart('Contracted matelements-class-fast')
       !
-      !if (PT%Nclasses/=1) then 
-      !  !
-      !  write(out,"('PTcontracted_matelem_class_fast_II/end: This procedure has not been tested for Nclasses = ',i8,' yet')") PT%Nclasses
-      !  stop 'PTcontracted_matelem_class_fast: illegal number of classes' 
-      !  !
-      !endif
-      !
       if (verbose>=4) write(out,"('PTcontracted_matelem_class_fast_II/start: contracted matrix elements for the hamiltonian ')") 
       !
       Nclasses = PT%Nclasses
@@ -18226,7 +18180,6 @@ module perturbation
           enddo
           !$omp end parallel do 
           !
-          !if (job%verbose>=4) write(out,"(' Due to symmetry selection rules, ',i12,' mat-elements (',i16,') are not zero')") Ntot,PT%Maxsymcoeffs*PT%Maxsymcoeffs
         endif
         !
         if (job%verbose>=4) call MemoryReport
@@ -24648,7 +24601,7 @@ end subroutine read_contr_matelem_expansion_classN
          !
          poten = 0
          !
-         m = mod(dvr%total_size,5)
+         m = mod(dvr%total_size,5_hik)
          !
          if (m/=0) then 
            do k = 1,m
@@ -30639,7 +30592,7 @@ end subroutine read_contr_matelem_expansion_classN
                !
                if (dens(i1,i2,i3)>small_) then 
                  !
-                 write(out,"(4i8,x,f20.14)") iroot,i1,i2,i3,dens(i1,i2,i3)
+                 write(out,"(4i8,1x,f20.14)") iroot,i1,i2,i3,dens(i1,i2,i3)
                  !
                endif
                !
@@ -40159,8 +40112,8 @@ end subroutine combinations
         !
         icontr = PT%icase2icontr(isymcoeff,ideg)
         !
-        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,nu_i,nu_j,&
-        !$omp&         ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
+        !$omp parallel do private(jcontr,energy_j,jsymcoeff,matelem,iclass,jclass,imode,imode_,jmode,jmode_,icomb,iterm,kclass,&
+        !$omp& nu_i,nu_j,ilambda,imu,iterm_uniq,me_class0,nterms,n0,iclass_n,prod0,matelem0,n) shared(hvib) schedule(dynamic)
         do jcontr=1,icontr
            !
            jsymcoeff = PT%icontr2icase(jcontr,1)
@@ -41200,7 +41153,6 @@ subroutine PTstore_contr_matelem(jrot)
                  if (match) exit
                enddo
                if (.not.match) then
-                 !write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the Grot expansion term = (', terms(:,iterm), ')'
                  write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
                                    terms(:,iterm), ')'
                  stop
@@ -41375,7 +41327,6 @@ subroutine PTstore_contr_matelem(jrot)
          if (match) exit
        enddo
        if (.not.match) then
-         !write(out, '(/a,1x,<nmodes>(1x,i3),1x,a)') 'PTstore_contr_matelem error: failed while checking the PES expansion term = (', terms(:,iterm), ')'
          write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
                             terms(:,iterm), ')'
          stop

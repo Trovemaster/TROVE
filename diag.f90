@@ -5,6 +5,7 @@ module diag
 #define mpi_     0
 #define omparpack_  0
 #define propack_  0
+#define ilp_  0
 !
 !
 !  Simplistic type-agnostic LAPACK interface
@@ -22,6 +23,12 @@ module diag
   integer(hik),allocatable,save   :: hikparm(:)
   real(rk),allocatable,save       :: hmat_(:,:)
   !
+#if (ilp_ > 0)
+  integer,parameter :: hik_ = hik
+#else 
+  integer,parameter :: hik_ = ik
+#endif
+
   
   contains
 
@@ -594,9 +601,9 @@ module diag
     character(len=1) :: jobz_
 
     double precision,allocatable    :: work(:)
-    integer(hik)      :: info
-    integer(hik)      :: nh1, nh2
-    integer(hik)      :: lwork
+    integer(hik_)      :: info
+    integer(hik_)      :: nh1, nh2
+    integer(hik_)      :: lwork
     !
     !if (verbose>=2) call TimerStart('lapack_dsyev: diagonalization')
     !
@@ -653,9 +660,9 @@ module diag
     character(len=1) :: jobz_
 
     real(4),allocatable    :: work(:)
-    integer(hik)      :: info
-    integer(hik)      :: nh1, nh2
-    integer(hik)      :: lwork
+    integer(hik_)      :: info
+    integer(hik_)      :: nh1, nh2
+    integer(hik_)      :: lwork
     !
     !if (verbose>=2) call TimerStart('lapack_dsyev: diagonalization')
     !
@@ -716,8 +723,8 @@ module diag
     double precision,allocatable  :: work_t (:),h(:,:)
 
     integer(ik)           :: info1,iw,info2
-    integer(hik)          :: rank,info
-    integer(hik)          :: na1, na2, nb1, nb2
+    integer(ik)          :: rank,info
+    integer(ik)          :: na1, na2, nb1, nb2
     !   
     na1 = size(a,dim=1) ; na2 = size(a,dim=2)
     nb1 = size(b,dim=1) ; nb2 = size(b,dim=2)
@@ -728,14 +735,12 @@ module diag
     !
     tol = -1.0d-12
     !
-    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s, tol, rank, work, -1, info)
+    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s, tol, rank, work, -1, info)
     !
     iw = int(work(1))
     allocate(work_t(iw),stat=info2)
     !
-    call dgelss(na1,na2,nb2,h(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s, tol, rank, work_t, iw, info)
+    call dgelss(na1,na2,nb2,h(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s, tol, rank, work_t, iw, info)
     !
     a = h 
     !
@@ -770,7 +775,7 @@ module diag
     integer,allocatable :: iwork(:),ifail(:)
     integer,allocatable :: isuppz(:)
     !
-    integer(hik)      :: info,n,lwork,il,ir,m,niwork
+    integer(hik_)      :: info,n,lwork,il,ir,m,niwork
     integer(ik)       :: iksize,alloc,k,msize
     !
     double precision :: vl,vu,abstol
@@ -850,9 +855,9 @@ module diag
       !
       call dsyev(jobz_,'U',n,h,n,e,work,-1,info)
       !
-      if (int(work(1),hik)>lwork) then 
+      if (int(work(1),hik_)>lwork) then 
         !
-        lwork = int(work(1),hik)
+        lwork = int(work(1),hik_)
         deallocate(work)
         allocate(work(lwork),stat=alloc)
         !
@@ -1646,7 +1651,7 @@ module diag
                !
                ! compute  w := y - 1/2 * tau * (y'*v) * v
                !
-               alpha = -half*taui*ddot( i, tau, 1, ap( i1 ), 1 )
+               alpha = -half*taui*ddot( i, tau, 1, ap( i1: ), 1 )
                !
                !call daxpy( i, alpha, ap( i1 ), 1, tau, 1 )
                !
@@ -1825,13 +1830,13 @@ module diag
                  !
                  ! compute  y := tau * a * v  storing y in tau(1:i)
                  !
-                 call dspmv(uplo,j,taui,ap,ap(i1),1,zero,tau_(:,ip),1 )
+                 call dspmv(uplo,j,taui,ap,ap(i1:),1,zero,tau_(:,ip),1 )
                  !
                  ! compute  w := y - 1/2 * tau * (y'*v) * v
                  !
-                 alpha = -half*taui*ddot( j, tau_(:,ip), 1, ap( i1 ), 1 )
+                 alpha = -half*taui*ddot( j, tau_(:,ip), 1, ap( i1: ), 1 )
                  !
-                 call daxpy( j, alpha, ap( i1 ), 1, tau_(:,ip), 1 )
+                 call daxpy( j, alpha, ap( i1: ), 1, tau_(:,ip), 1 )
                  !
               end if
               !
@@ -1909,13 +1914,13 @@ module diag
                !
                if (verbose>=3) write(out,"('  daxpy...')") 
                !
-               call dspmv(uplo,i,taui,ap,ap(i1),1,zero,tau,1 )
+               call dspmv(uplo,i,taui,ap,ap(i1:),1,zero,tau,1 )
                !
                ! compute  w := y - 1/2 * tau * (y'*v) * v
                !
-               alpha = -half*taui*ddot( i, tau, 1, ap( i1 ), 1 )
+               alpha = -half*taui*ddot( i, tau, 1, ap( i1: ), 1 )
                !
-               call daxpy( i, alpha, ap( i1 ), 1, tau, 1 )
+               call daxpy( i, alpha, ap( i1: ), 1, tau, 1 )
                !
                if (verbose>=3) write(out,"('  ...done!')") 
                !
@@ -2436,9 +2441,9 @@ module diag
       integer               :: k,istart,iend,dimen,m,kend,iprev,inext,nx
       double precision,external    :: ddot
       integer,parameter  :: MPI_DOUBLE_PRECISION = 17
-	  !
-	  myid = 1
-	  nprow = 1
+      !
+      myid = 1
+      nprow = 1
       !
 #if (blacs_ > 0)
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
@@ -2714,9 +2719,9 @@ module diag
 #if (blacs_ > 0)
            call BLACS_SETUP( iam, nprocs )
 #endif
-	 !
-	 print *,nprocs
-	 !
+         !
+         print *,nprocs
+         !
       endif
       if (nprocs >maxnprocs) stop 'nprocs > maxnprocs'
       !

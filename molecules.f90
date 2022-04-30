@@ -2295,33 +2295,33 @@ end function ML_MEPfunc
        end if
    end function plgndr_s   
    
-	function arth_ark(first,increment,n)
-	real(ark), intent(in) :: first,increment
-	integer(ik), intent(in) :: n
-	real(ark), dimension(n) :: arth_ark
-	integer(ik) :: k,k2
-	integer(ik), parameter :: NPAR_ARTH=16,NPAR2_ARTH=8
-	real(ark) :: temp
-	if (n > 0) arth_ark(1)=first
-	if (n <= NPAR_ARTH) then
-		do k=2,n
-			arth_ark(k)=arth_ark(k-1)+increment
-		end do
-	else
-		do k=2,NPAR2_ARTH
-			arth_ark(k)=arth_ark(k-1)+increment
-		end do
-		temp=increment*NPAR2_ARTH
-		k=NPAR2_ARTH
-		do
-			if (k >= n) exit
-			k2=k+k
-			arth_ark(k+1:min(k2,n))=temp+arth_ark(1:min(k,n-k))
-			temp=temp+temp
-			k=k2
-		end do
-	end if
-	END function arth_ark
+    function arth_ark(first,increment,n)
+    real(ark), intent(in) :: first,increment
+    integer(ik), intent(in) :: n
+    real(ark), dimension(n) :: arth_ark
+    integer(ik) :: k,k2
+    integer(ik), parameter :: NPAR_ARTH=16,NPAR2_ARTH=8
+    real(ark) :: temp
+    if (n > 0) arth_ark(1)=first
+    if (n <= NPAR_ARTH) then
+        do k=2,n
+            arth_ark(k)=arth_ark(k-1)+increment
+        end do
+    else
+        do k=2,NPAR2_ARTH
+            arth_ark(k)=arth_ark(k-1)+increment
+        end do
+        temp=increment*NPAR2_ARTH
+        k=NPAR2_ARTH
+        do
+            if (k >= n) exit
+            k2=k+k
+            arth_ark(k+1:min(k2,n))=temp+arth_ark(1:min(k,n-k))
+            temp=temp+temp
+            k=k2
+        end do
+    end if
+    END function arth_ark
    
    
     function calc_phirot(j,m,k,theta,phi) result (phirot)
@@ -3404,7 +3404,8 @@ end subroutine polintark
             y = 1.0_ark
             do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
               !
-              z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*(molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+              z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
+                  (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
               call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
               v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
             end do      

@@ -243,9 +243,11 @@ module kin_xy2
         !
         ! expansion around rho=0
         !
-        rho_over_sinrho = 1.0_ark+1.0_ark/6.0_ark*rho**2+7.0_ark/360.0_ark*rho**4+31.0_ark/15120.0_ark*rho**6+127.0_ark/604800.0_ark*rho**8
+        rho_over_sinrho = 1.0_ark+1.0_ark/6.0_ark*rho**2+7.0_ark/360.0_ark*rho**4+31.0_ark/15120.0_ark*rho**6+&
+                         127.0_ark/604800.0_ark*rho**8
         rho2_over_sinrho2 = 1.0_ark+1.0_ark/3.0_ark*rho**2+1.0_ark/15.0_ark*rho**4+2.0_ark/189.0_ark*rho**6+1.0_ark/675.0_ark*rho**8
-        pseudo_fac = -4.0_ark/3.0_ark*rho-1.0_ark/15.0_ark*rho**3-2.0_ark/189.0_ark*rho**5-1.0_ark/675.0_ark*rho**7-2.0_ark/10395.0_ark*rho**9
+        pseudo_fac = -4.0_ark/3.0_ark*rho-1.0_ark/15.0_ark*rho**3-2.0_ark/189.0_ark*rho**5-1.0_ark/675.0_ark*rho**7-&
+                      2.0_ark/10395.0_ark*rho**9
         !
      endif
      !

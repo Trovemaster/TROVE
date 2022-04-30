@@ -60,7 +60,8 @@ contains
 ! Reads rovibrational transition matrix elements from the RichMol database file.
 ! j2, j1 - bra and ket quantum numbers of the rotational angular momentum;
 ! tens_name - name of the transition (Cartesian tensor) operator;
-! states - array of states_type objects containing the information about the rovibrational states, i.e. state ID numbers, energies, quantum numbers, etc.,
+! states - array of states_type objects containing the information about the rovibrational states, 
+!          i.e. state ID numbers, energies, quantum numbers, etc.,
 !          initialized by read_states subroutine;
 ! me_thresh - threshold for neglecting transition matrix elements;
 ! trans - trans_type object containing the rovibrational matrix elements;
@@ -75,8 +76,9 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
   logical, optional, intent(in) :: verbose_
 
   integer(ik), parameter :: nmpairs0=10, nmpairs_incr=10, nkpairs0=1000, nkpairs_incr=1000, nirrep_max=100
-  integer(ik) :: m1min, m1max, m2min, m2max, iline, iounit, info, nirrep, ncart, nmpairs_max, ielem, ielem_, impair, m1, m2, m1_, m2_, &!
-                 nkpairs_max, ikpair, istate1, istate2, istate, id1, id2, ideg1, ideg2, id1_, id2_, ideg1_, ideg2_, icmplx
+  integer(ik) :: m1min, m1max, m2min, m2max, iline, iounit, info, nirrep, ncart, nmpairs_max, ielem, ielem_, &
+                 impair, m1, m2, m1_, m2_,nkpairs_max, ikpair, istate1, istate2, istate, id1, id2, ideg1, ideg2, &
+                 id1_, id2_, ideg1_, ideg2_, icmplx
   real(rk) :: me(nirrep_max)
   character(cl) :: sj1, sj2, fname, fname_transp, tens_name_, sbuf, cart_label, ioname
   character(1000) :: sbuf1000
@@ -104,10 +106,11 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
   if (verbose) write(out, '(1x,a,1x,a)') 'read file:', trim(fname)
   open(iounit, form='formatted', action='read', position='rewind', status='old', file=fname, iostat=info)
   if (info/=0) then
-  	if (verbose) write(out, '(1x,a,1x,a,1x,a)') '..file not found, try reding file:', trim(fname_transp), '(Hermitian transpose)'
+    if (verbose) write(out, '(1x,a,1x,a,1x,a)') '..file not found, try reding file:', trim(fname_transp), '(Hermitian transpose)'
     open(iounit, form='formatted', action='read', position='rewind', status='old', file=fname_transp, iostat=info)
     if (info/=0) then
-      if (verbose) write(out, '(6x,a)') 'both files are not found, perhaps all transitions are zero or forbidden by Delta J or Delta M selection rules'
+      if (verbose) write(out, '(6x,a,a)') 'both files are not found, perhaps all transitions are zero ',&
+                                          'or forbidden by Delta J or Delta M selection rules'
       !write(out, '(/a,1x,a,1x,a,1x,a)') 'richmol_data/read_tran error while opening file', trim(fname), 'or', trim(fname_transp)
       !stop 'STOP, error in richmol_data/read_tran'
       trans%null = .true.
@@ -168,7 +171,8 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
   call check_iostat
   if (trim(adjustl(sbuf))/='M-tensor') then
     write(out, '(/a,1x,a,1x,a,1x,a,1x,a,1x,i8)') &!
-    'richmol_data/read_tran error: file', trim(fname), 'has bogus M-block header = "', trim(sbuf), '" (expected "M-tensor"), line =', iline
+    'richmol_data/read_tran error: file', trim(fname), 'has bogus M-block header = "', trim(sbuf), &
+    '" (expected "M-tensor"), line =', iline
     stop 'STOP, error in richmol_data/read_tran'
   endif
 
@@ -186,8 +190,8 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
 
     if (ielem_>ncart) then
       write(out, '(/a,1x,i3,1x,a,1x,i3/a,1x,a,1x,a,1x,i8)') &!
-      'richmol_data/read_tran error: Cartesian component "ielem" = ', ielem_, '> total number of Cartesian components "ncart" =', ncart, &!
-      'file =', trim(fname), 'line =', iline
+      'richmol_data/read_tran error: Cartesian component "ielem" = ', ielem_, '> total number of Cartesian components "ncart" =',&
+       ncart,'file =', trim(fname), 'line =', iline
       stop 'STOP, error in richmol_data/read_tran'
     endif
 
@@ -197,16 +201,18 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
     elseif(icmplx==0) then
       trans%cmplx_fac = cmplx(1.0_rk,0.0_rk)
     else
-      write(out,'(/a,1x,i3/a,1x,a,1x,a,1x,i8)') 'richmol_data/read_tran error: illegal imaginary/real number index "icmplx" =', icmplx, &!
-      'file =', trim(fname), 'line =', iline
+      write(out,'(/a,1x,i3/a,1x,a,1x,a,1x,i8)') 'richmol_data/read_tran error: illegal imaginary/real number index "icmplx" =',&
+           icmplx,'file =', trim(fname), 'line =', iline
       stop 'STOP, error in richmol_data/read_tran'
     endif
 
     nmpairs_max = nmpairs0
-    allocate( trans%mmat(ielem_)%mpair(2,nmpairs_max), trans%mmat(ielem_)%mpair_ind(-j1:j1,-j2:j2), trans%mmat(ielem_)%me(nirrep,nmpairs_max), stat=info)
+    allocate( trans%mmat(ielem_)%mpair(2,nmpairs_max), trans%mmat(ielem_)%mpair_ind(-j1:j1,-j2:j2),&
+              trans%mmat(ielem_)%me(nirrep,nmpairs_max), stat=info)
     if (info/=0) then
-      write(out, '(/a/a,10(1x,i6))') &!
-      'richmol_data/read_tran error: failed to allocate trans%mmat(ielem_)%mpair(2,nmpairs_max), trans%mmat(ielem_)%mpair_ind(-j1:j1,-j2:j2), trans%mmat(ielem_)%me(nirrep,nmpairs_max)', &!
+      write(out, '(/a,a/a,10(1x,i6))') &!
+      'richmol_data/read_tran error: failed to allocate trans%mmat(ielem_)%mpair(2,nmpairs_max),',&
+      ' trans%mmat(ielem_)%mpair_ind(-j1:j1,-j2:j2), trans%mmat(ielem_)%me(nirrep,nmpairs_max)', &!
       'ielem_, nmpairs_max, nirrep, j1, j2 =', ielem_, nmpairs_max, nirrep, j1, j2
       stop 'STOP, error in richmol_data/read_tran'
     endif
@@ -274,7 +280,8 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
   call check_iostat
   if (trim(adjustl(sbuf))/='K-tensor') then
     write(out, '(/a,1x,a,1x,a,1x,a,1x,a,1x,i8)') &!
-    'richmol_data/read_tran error: file', trim(fname), 'has bogus K-block header = "', trim(sbuf), '" (expected "K-tensor"), line =', iline
+    'richmol_data/read_tran error: file', trim(fname), 'has bogus K-block header = "', trim(sbuf), &
+    '" (expected "K-tensor"), line =', iline
     stop 'STOP, error in richmol_data/read_tran'
   endif
 
@@ -362,8 +369,8 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
     nmpairs_max = nmpairs_max +  nmpairs_incr
     allocate( trans%mmat(ielem_)%mpair(2,nmpairs_max), trans%mmat(ielem_)%me(nirrep,nmpairs_max), stat=info)
     if (info/=0) then
-      write(out, '(/a/a,10(1x,i6))') 'richmol_data/read_tran error: failed to allocate trans%mmat(ielem_)%mpair(2,nmpairs_max), trans%mmat(ielem_)%me(nirrep,nmpairs_max)', &!
-      'ielem_, nmpairs_max, nirrep =', ielem_, nmpairs_max, nirrep
+      write(out, '(/a/a,10(1x,i6))') 'richmol_data/read_tran error: failed to allocate trans%mmat(ielem_)%mpair(2,nmpairs_max), &
+                 trans%mmat(ielem_)%me(nirrep,nmpairs_max)','ielem_, nmpairs_max, nirrep =', ielem_, nmpairs_max, nirrep
       stop 'STOP, error in richmol_data/read_tran'
     endif
     trans%mmat(ielem_)%mpair = 0
@@ -383,8 +390,9 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
     nkpairs_max = nkpairs_max +  nkpairs_incr
     allocate( trans%kpair(2,nkpairs_max), trans%kme(nirrep,nkpairs_max), stat=info)
     if (info/=0) then
-      write(out, '(/a/a,10(1x,i6))') 'richmol_data/read_tran error: failed to allocate trans%kpair(2,nkpairs_max), trans%kme(nirrep,nkpairs_max)', &!
-      'nkpairs_max, nirrep =', nkpairs_max, nirrep
+      write(out, '(/a,a/a,10(1x,i6))') 'richmol_data/read_tran error: failed to allocate trans%kpair(2,nkpairs_max),',&
+                 ' trans%kme(nirrep,nkpairs_max)', &!
+                 'nkpairs_max, nirrep =', nkpairs_max, nirrep
       stop 'STOP, error in richmol_data/read_tran'
     endif
     trans%kpair = 0
@@ -404,7 +412,8 @@ end subroutine read_tran
 ! Reads rovibrational states from the RichMol database
 ! fname - database file name
 ! filter - state_filter_type object describing the rovibrational state filters
-! states - states_type object containing the information about the rovibrational states, i.e. state ID numbers, energies, quantum numbers, etc.
+! states - states_type object containing the information about the rovibrational states, i.e. state ID numbers, energies, 
+!          quantum numbers, etc.
 
 subroutine read_states(fname, filter, states)
 
@@ -434,7 +443,7 @@ subroutine read_states(fname, filter, states)
   if (allocated(states)) deallocate(states)
   allocate(states(jmin:jmax), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'richmol_data/read_states error: failed to allocate states(jmin:jmax)', 'jmin, jmax =', jmin, jmax
+    write(out, '(/a/a,10(1x,i6))') 'richmol_data/read_states error: failed to allocate states(jmin:jmax)','jmin, jmax =',jmin,jmax
     stop 'STOP, error in richmol_data/read_states'
   endif
 
@@ -460,7 +469,8 @@ subroutine read_states(fname, filter, states)
     read(iounit,*,iostat=info) j, id, sym, isym, ndeg, energy
     iline = iline + 1
     if (info>0) then ! reading error
-      write(out, '(/a,1x,a,1x,a,1x,i4)') 'richmol_data/read_states error while reading first five columns in file', trim(fname), ', line =', iline
+      write(out, '(/a,1x,a,1x,a,1x,i4)') 'richmol_data/read_states error while reading first five columns in file', trim(fname),&
+                   ', line =', iline
       stop 'STOP, error in richmol_data/read_states'
     elseif (info<0) then ! EOF
       exit
@@ -485,7 +495,8 @@ subroutine read_states(fname, filter, states)
 
   do j=jmin, jmax
     nlevels = states(j)%nlevels
-    allocate( states(j)%id(nlevels), states(j)%ndeg(nlevels), states(j)%sym(nlevels), states(j)%isym(nlevels), states(j)%energy(nlevels), &!
+    allocate( states(j)%id(nlevels), states(j)%ndeg(nlevels), states(j)%sym(nlevels), states(j)%isym(nlevels), &
+              states(j)%energy(nlevels), &!
               states(j)%k_quanta(nlevels), states(j)%v_quanta(nmodes,nlevels), states(j)%sym_rot(nlevels), &!
               states(j)%sym_vib(nlevels), states(j)%istate(nlevels,maxndeg), stat=info )
     if (info/=0) then

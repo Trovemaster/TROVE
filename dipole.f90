@@ -417,7 +417,7 @@ contains
     real(rk)     :: dtemp0 
     !
     double precision,allocatable  :: rw(:)
-    double complex,allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
+    complex(rk),allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
     character(len=1)        :: jobvl,jobvr
     integer(ik)             :: cnu_i(0:molec%nmodes),ktau,tauI
     character(len=cl)       :: my_fmt !format for I/O specification
@@ -567,14 +567,14 @@ contains
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5,'Gb')") &
         'All vectors will require approx ',f_t,' Gb; number of vectors = ',nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
     f_t = f_t/real(nlevels,rk)
     !
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
+    ram_size_max = max(0_hik,min( int(nlevels,hik),int((memory_limit-memory_now)/f_t,hik)))
     !
     if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") &
                                'Memory needed = ',f_t*real(nlevels,rk),'Gb;  memory  available = ',&
@@ -605,8 +605,8 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',&
-                                f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix  ',i8,' x',i8,' = ',i0,', ',f14.4,'Gb')") &
+                                jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
                                 real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
@@ -1173,7 +1173,8 @@ contains
             !dp = three_j(jI, 1, jF, kI, kF - kI, -kF)
             !
             !if (abs(dp-threej(jI, kI, jF - jI, kF - kI))>sqrt(small_)) then 
-            !  write(out,"('a problem with threej for jI,jF,kI,kF = ',4i4,3es16.8)") jI,jF,kI,kF,dp,threej(jI, kI, jF - jI, kF - kI),dp-threej(jI, kI, jF - jI, kF - kI)
+            !  write(out,"('a problem with threej for jI,jF,kI,kF = ',4i4,3es16.8)") jI,jF,kI,kF,dp,&
+            !  threej(jI, kI, jF - jI, kF - kI),dp-threej(jI, kI, jF - jI, kF - kI)
             !  stop 'a problem with threej'
             !endif
             !
@@ -1365,7 +1366,7 @@ contains
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5,'Gb')") &
                              'All vectors will require approx ',f_t,' Gb; number of vectors = ',&
                              nlevels,f_t/real(nlevels,rk)
     !
@@ -1384,14 +1385,13 @@ contains
     memory_now_ = memory_now_*1.2_rk
     !
     ! How many vectors we can afford 
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now_)/f_t,hik)))
+    ram_size_max = max(0_hik,min( int(nlevels,hik),int((memory_limit-memory_now_)/f_t,hik)))
     !
     if (job%verbose>=5) call MemoryReport
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  spent = ',f12.5,&
-                        'Gb;  available = ',f12.5,&
-                        'Gb; number of vectors to be kept in RAM =  ',i0/)") f_t*real(nlevels,rk),&
-                        memory_now_,memory_limit-memory_now_,ram_size_max
+    if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb;  available = ',f12.5,a,i0/)") &
+    'Memory needed = ',f_t*real(nlevels,rk),'Gb;  spent = ',memory_now_,memory_limit-memory_now_,&
+    'Gb; number of vectors to be kept in RAM =  ',ram_size_max
     !
     do jind = 1, nJ
        !
@@ -1717,8 +1717,8 @@ contains
     !
     nformat = sym%Maxdegen**2
     !
-    write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') '(i4,1x,a4,3x,"<-",i4,1x,a4,3x,a1,2x,f11.4,1x,"<-",1x,f11.4,1x,&
-                   f11.4,2x,"(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
+    write(my_fmt,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') &
+                  '(i4,1x,a4,3x,"<-",i4,1x,a4,3x,a1,2x,f11.4,1x,"<-",1x,f11.4,1x,f11.4,2x,"(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
                    nclasses,'(x,a3),1x,',nmodes,'(1x, i3),1x,")",1x,"<- ","(",1x,a3,x,i3,1x,")",1x,"(",1x,',&
                    nclasses,'(x,a3),1x,',nmodes,'(1x, i3),1x,")",1x,3(1x, es16.8),2x,1x,i6,1x,"<-",&
                    &1x,i6,1x,i8,1x,i8,1x,"(",1x,',&
@@ -2465,10 +2465,6 @@ contains
       time_per_line = real_time/real(min(itransit,1),rk)
       total_time_predict = time_per_line*real(Ntransit,rk)/3600.0
       !
-      !if (job%verbose>=5) then
-      !   write(out,"(/t2,i,' lines ',f12.2,' s,  ',g12.2,'s per line; total estimate for ',i,' lines:',f12.2,'h')") itransit,real_time,time_per_line,Ntransit,total_time_predict
-      !endif
-      !
       if (job%verbose>=6) then
           write(out,"('--- ',t4,f18.6,2x,i0,' l ',f12.2,' s, (',g12.2,' l/s ); Ttot= ',f12.2,'hrs.')") &
                     energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
@@ -2565,7 +2561,7 @@ contains
       !
       if (job%verbose>=5) call TimerReport
       !
-      call flush(out) 
+      !call flush(out) 
       !
     end do Ilevels_loop
     !
@@ -2974,7 +2970,7 @@ contains
     real(rk)     :: dtemp0 
     !
     double precision,allocatable  :: rw(:)
-    double complex,allocatable  :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
+    complex(rk),allocatable :: wd(:),rotmat(:,:),vl(:,:),vr(:,:),w(:),angular_m(:,:),crot_density(:,:,:,:)
     character(len=1)        :: jobvl,jobvr
     integer(ik)             :: cnu_i(0:molec%nmodes),ktau,tauI
     character(len=cl)       :: my_fmt !format for I/O specification
@@ -3122,14 +3118,14 @@ contains
     !
     ! estimate the memory requirements 
     !
-    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5'Gb')") &
+    if (job%verbose>=4) write(out,"(a,f12.5,a,i0,' per each vector = ',f12.5,'Gb')") &
         'All vectors will require approx ',f_t,' Gb; number of vectors = ',nlevels,f_t/real(nlevels,rk)
     !
     ! memory per vector
     !
     f_t = f_t/real(nlevels,rk)
     !
-    ram_size_max = max(0,min( nlevels,int((memory_limit-memory_now)/f_t,hik)))
+    ram_size_max = max(0_hik,min( int(nlevels,hik),int((memory_limit-memory_now)/f_t,hik)))
     !
     if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb; number of vectors to be kept in RAM =  ',i0/)") &
                                'Memory needed = ',f_t*real(nlevels,rk),'Gb;  memory  available = ',&
@@ -3160,9 +3156,9 @@ contains
             !
             matsize = int(ram_size_,hik)*int(dimenmax_ram_,hik)
             !
-            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',&
-                                f14.4,'Gb')") jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
-                                real(matsize*8,rk)/1024.0_rk**3
+            if (job%verbose>=4) write(out,"('Allocate (J=',i3,',irep=',i2,') matrix   ',i8,' x',i8,' = ',i0,', ',f14.4,'Gb')")&
+                                             jval(jind),irep,ram_size_,dimenmax_ram_,matsize,&
+                                             real(matsize*8,rk)/1024.0_rk**3
             !
             allocate(vec_ram(jind,irep)%mat(dimenmax_ram_,ram_size_),stat=info)
             !
@@ -3435,7 +3431,7 @@ contains
                  !
                  if (density(i1,i2,i3)>small_) then
                    !
-                   write(out,"(4i8,x,f20.14)") & 
+                   write(out,"(4i8,1x,f20.14)") & 
                             i,i1,i2,i3,density(i1,i2,i3)
                  endif
                  !
@@ -3854,7 +3850,8 @@ contains
             !dp = three_j(jI, 1, jF, kI, kF - kI, -kF)
             !
             !if (abs(dp-threej(jI, kI, jF - jI, kF - kI))>sqrt(small_)) then 
-            !  write(out,"('a problem with threej for jI,jF,kI,kF = ',4i4,3es16.8)") jI,jF,kI,kF,dp,threej(jI, kI, jF - jI, kF - kI),dp-threej(jI, kI, jF - jI, kF - kI)
+            !  write(out,"('a problem with threej for jI,jF,kI,kF = ',4i4,3es16.8)") jI,jF,kI,kF,dp,threej(jI, kI, jF - jI, kF - kI),&
+            !  dp-threej(jI, kI, jF - jI, kF - kI)
             !  stop 'a problem with threej'
             !endif
             !
@@ -4005,19 +4002,19 @@ contains
     !
     matsize = int(sum( nlevelsG(:) ),hik)
     !
-    if (job%verbose>=4) write(out,"('All vectors will require approx ',f12.5,' Gb; number of vectors = ',i0,&
-                                  ' per each vector = ',f12.5'Gb')") f_t,matsize,f_t/real(matsize,rk)
+    if (job%verbose>=4) write(out,"(a,f12.5,' Gb; number of vectors = ',i0,' per each vector = ',f12.5,'Gb')") &
+                                   'All vectors will require approx ',f_t,matsize,f_t/real(matsize,rk)
     !
     ! memory per vector
     !
     f_t = f_t/real(matsize,rk)
     !
     !
-    swap_size_max = max(0,min( matsize,int((memory_limit-memory_now)/f_t,hik)))
+    swap_size_max = max(0_hik,min( matsize,int((memory_limit-memory_now)/f_t,hik)))
     !
-    if (job%verbose>=4) write(out,"('Memory needed = ',f12.5,'Gb;  memory  available = ',f12.5,&
-                                  'Gb number of vectors will be shared in RAM =  ',i0)") f_t*real(matsize,rk),&
-                                  memory_limit-memory_now,swap_size_max
+    if (job%verbose>=4) write(out,"(a,f12.5,'Gb;  memory  available = ',f12.5,a,i0)") &
+                                  'Memory needed = ',f_t*real(matsize,rk),&
+                                  memory_limit-memory_now,'Gb number of vectors will be shared in RAM =  ',swap_size_max
     !
     do irep = 1,Nrepresen
        !
@@ -4165,8 +4162,8 @@ contains
     iswap = 0
     isave = 0
     ilevelsG = 0
-	cdimenmax = 0
-	cfactor = 0
+    cdimenmax = 0
+    cfactor = 0
     !
     allocate(vecI(sym%Maxdegen,dimenmax_swap),vecF(sym%Maxdegen,dimenmax), stat = info)
     if (info/=0)  stop 'vecI,vecF,icoeffF - out of memory'
@@ -4226,9 +4223,9 @@ contains
                  vecI(idegF,cdimen) = vecF(idegF,idimen)
               end if
            end do
-		   !
-		   cdimenmax = max(cdimen,cdimenmax)
-		   cfactor = max(real(cdimen)/real(idimenmax(indF)),cfactor)
+           ! 
+           cdimenmax = max(cdimen,cdimenmax)
+           cfactor = max(real(cdimen,rk)/real(idimenmax(indF),rk),cfactor)
            !
            cdimens(ilevelF,idegF) = cdimen
            !
@@ -4237,7 +4234,7 @@ contains
               write(out,"(a,i0,' vs ',i0,a,f12.4)") 'intens: dimenmax_swap is too small (',&
                          idimenmax(indF),cdimen,') reduce the coeff value or increase swap_factor to minimum',&
                          real(cdimen,rk)/real(bset_contr(jind)%Maxcontracts,rk)
-			  write(out,"('dimenmax_ = ',i0,' intensity%factor = ',i0)")  dimenmax_,intensity%factor
+              write(out,"('dimenmax_ = ',i0,' intensity%factor = ',i0)")  dimenmax_,intensity%factor
               stop 'intens: increase swap_factor!'
               !
            endif
@@ -4336,13 +4333,6 @@ contains
           !
           read(unitO,rec=irec) vec_swap(igammaF)%mat(iswap(igammaF),idegF,1:cdimen) ! vecI(idegF,1:cdimen)
           read(unitC,rec=irec) cdimen,icoeff_swap(igammaF)%imat(iswap(igammaF),idegF,1:cdimen) ! icoeffF(idegF,1:cdimen)
-          !
-          !if (cdimen>dimenmax_swap) then 
-          !   !
-          !   write(out,"('intens: dimenmax_swap is too smal (',i,' vs ',i,') increase swap_factor minimun to ',f12.4)") dimenmax_swap,cdimen,real(cdimen,rk)/real(dimenmax,rk)
-          !   stop 'intens: increase swap_factor!'
-          !   !
-          !endif
           !
           !icoeff_swap(igammaF)%imat(iswap(igammaF),idegF,1:cdimen) = icoeffF(idegF,1:cdimen)
           !
@@ -4896,8 +4886,6 @@ contains
                    !
                    linestr_deg(idegI,idegF) = dtemp
                    !
-                   !linestr_deg(idegI,idegF) = ddot(cdimen,half_linestr( indF,idegI,1,icoeff_swap(igammaF)%imat(iswap_,idegF,1:cdimen)),1,vecF(idegF,1:cdimen),1)
-                   !
                  endif
                  !
                end do Fdegs_loop
@@ -5423,7 +5411,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,ktau,kF,tauF,cirootI,irootI,icontrI,tauI,sigmaI,sigmaF,kI,f3j,ls) shared(half_ls) schedule(guided)
+          !$omp   parallel do private(irootF,icontrF,ktau,kF,tauF,cirootI,irootI,icontrI,tauI,sigmaI,sigmaF,&
+          !$omp&  kI,f3j,ls) shared(half_ls) schedule(guided)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -5526,7 +5515,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,ktau,tauF,kF,sigmaF,cirootI,irootI,kI,icontrI,tauI,sigmaI,f3j,ls) shared(half_ls) schedule(static)
+          !$omp  parallel do private(irootF,icontrF,ktau,tauF,kF,sigmaF,cirootI,irootI,kI,icontrI,&
+          !$omp& tauI,sigmaI,f3j,ls) shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -5931,7 +5921,8 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,ktau,kF,tauF,cirootI,irootI,icontrI,tauI,sigmaI,sigmaF,kI,f3j,ls) shared(half_ls) schedule(guided)
+          !$omp  parallel do private(irootF,icontrF,ktau,kF,tauF,cirootI,irootI,icontrI,tauI,sigmaI,&
+          !$omp& sigmaF,kI,f3j,ls) shared(half_ls) schedule(guided)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -6565,12 +6556,12 @@ contains
         integer(ik),intent(in)  :: jI
         complex(rk),intent(out) :: density(0:,0:,:,:)
         integer(ik)             :: k1,k2,i1,i2,iphi,itheta,n1,n2,sigma,nphi,ntheta,tau1,tau2,info,alloc_p,jsize,mI
-        double complex          :: R(2*jI+1,2*jI+1)
-        double complex,parameter:: alpha = (1.0d0,0.0d0),beta=(0.0d0,0.0d0)
-        real(ark)                :: phi,theta,chi,dtheta,dphi,normfactor
+        complex(rk)             :: R(2*jI+1,2*jI+1)
+        complex(rk),parameter   :: alpha = (1.0d0,0.0d0),beta=(0.0d0,0.0d0)
+        real(ark)               :: phi,theta,chi,dtheta,dphi,normfactor
         complex(rk),allocatable :: Dfunc(:,:,:)
-        !complex(rk)             :: f_t,g_t
-        double complex,allocatable :: T(:,:),RT(:,:),F(:,:)
+        !complex(rk)            :: f_t,g_t
+        complex(rk),allocatable :: T(:,:),RT(:,:),F(:,:)
 
           !
           !dms_tmp = dipole_me

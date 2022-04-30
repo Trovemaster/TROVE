@@ -2511,12 +2511,6 @@ endif
         rrso1 = local(1)
         rrso2 = local(2)
         !
-        !rso1 = rrso1/a2b
-        !rso2 = rrso2/a2b
-        !
-		!rrso1=rso1*a2b
-		!rrso2=rso2*a2b
-        !
         ang = local(3)
         !
         if  (molec%Ndihedrals>1) then
@@ -2526,7 +2520,7 @@ endif
         endif 
         !
         r1=rrso1-rref
-	    r2=rrso2-rref
+        r2=rrso2-rref
         a3=cos(ang)-cos(aref)
         !
         Ncoe = molec%parmax
@@ -2550,7 +2544,7 @@ endif
         !
         angref=160.d0*acos(-1.d0)/180.d0-aref
         !
-        angx=min(-abs(ang-aref)+angref,0.d0)
+        angx=min(-abs(ang-aref)+angref,0.0_ark)
         !
         bdamp2=angx**2;bdamp4=angx**4
         !
@@ -4014,10 +4008,14 @@ endif
        !
        a0(1,1) =  mY*(cos(v)*cos(alpha_2)*R1+cos(v)*cos(alpha_2)*R2+sin(v)*sin(alpha_2)*R1-sin(v)*sin(alpha_2)*R2)/(mX+2.0_ark*mY)
        a0(1,3) =  mY*(sin(v)*cos(alpha_2)*R1+sin(v)*cos(alpha_2)*R2-cos(v)*sin(alpha_2)*R1+cos(v)*sin(alpha_2)*R2)/(mX+2.0_ark*mY)
-       a0(2,1) =  -(cos(v)*cos(alpha_2)*R1*mX+cos(v)*cos(alpha_2)*R1*mY-cos(v)*cos(alpha_2)*mY*R2+sin(v)*sin(alpha_2)*R1*mX+sin(v)*sin(alpha_2)*R1*mY+sin(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
-       a0(2,3) =  -(sin(v)*cos(alpha_2)*R1*mX+sin(v)*cos(alpha_2)*R1*mY-sin(v)*cos(alpha_2)*mY*R2-cos(v)*sin(alpha_2)*R1*mX-cos(v)*sin(alpha_2)*R1*mY-cos(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
-       a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
-       a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
+       a0(2,1) =  -(cos(v)*cos(alpha_2)*R1*mX+cos(v)*cos(alpha_2)*R1*mY-cos(v)*cos(alpha_2)*mY*R2+sin(v)*sin(alpha_2)*R1*mX+&
+                    sin(v)*sin(alpha_2)*R1*mY+sin(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
+       a0(2,3) =  -(sin(v)*cos(alpha_2)*R1*mX+sin(v)*cos(alpha_2)*R1*mY-sin(v)*cos(alpha_2)*mY*R2-cos(v)*sin(alpha_2)*R1*mX-&
+                    cos(v)*sin(alpha_2)*R1*mY-cos(v)*sin(alpha_2)*mY*R2)/(mX+2.0_ark*mY)
+       a0(3,1) =  -(cos(v)*cos(alpha_2)*R2*mX+cos(v)*cos(alpha_2)*mY*R2-cos(v)*cos(alpha_2)*R1*mY-sin(v)*sin(alpha_2)*R2*mX-&
+                    sin(v)*sin(alpha_2)*mY*R2-sin(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
+       a0(3,3) =  -(sin(v)*cos(alpha_2)*R2*mX+sin(v)*cos(alpha_2)*mY*R2-sin(v)*cos(alpha_2)*R1*mY+cos(v)*sin(alpha_2)*R2*mX+&
+                    cos(v)*sin(alpha_2)*mY*R2+cos(v)*sin(alpha_2)*R1*mY)/(mX+2.0_ark*mY)
        !
     case('RADAU-R-ALPHA-Z')
        !
@@ -4097,8 +4095,10 @@ endif
        a0(1,3) = (sin(v)*mZ*R2*sin(alpha)-cos(v)*mY*R1-cos(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
        a0(2,1) = (cos(v)*mZ*R2*sin(alpha)-sin(v)*R1*mX-sin(v)*R1*mZ+sin(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
        a0(2,3) = (sin(v)*mZ*R2*sin(alpha)+cos(v)*R1*mX+cos(v)*R1*mZ-cos(v)*mZ*R2*cos(alpha))/(mX+mY+mZ)
-       a0(3,1) = -(cos(v)*R2*sin(alpha)*mX+cos(v)*R2*sin(alpha)*mY+sin(v)*R2*cos(alpha)*mX+sin(v)*R2*cos(alpha)*mY-sin(v)*mY*R1)/(mX+mY+mZ)
-       a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+cos(v)*mY*R1)/(mX+mY+mZ)
+       a0(3,1) = -(cos(v)*R2*sin(alpha)*mX+cos(v)*R2*sin(alpha)*mY+sin(v)*R2*cos(alpha)*mX+sin(v)*R2*cos(alpha)*mY-&
+                   sin(v)*mY*R1)/(mX+mY+mZ)
+       a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+&
+                   cos(v)*mY*R1)/(mX+mY+mZ)
        !
     case default 
        stop 'MLloc2pqr_xyz: illegla coordinate type'

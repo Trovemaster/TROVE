@@ -147,7 +147,8 @@ module mol_user
             !
             alpha1 = acos(cosalpha)
             !
-         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP','R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
+         case('R-S-DELTA','R-2D-DELTA','R-S-RHO','SYM-DELTA','R-SYMPHI-DELTA','R-PHI-DELTA','R-S-DELTA-MEP','R-PHI-DELTA-MEP',&
+              'R-SYMPHI-DELTA-MEP','R-A2A3-DELTA')
             !
             alpha3 = local(4)
             alpha2 = local(5)
@@ -2616,7 +2617,7 @@ module mol_user
 
      select case ( ix )
      case default
-       write (6,"(' dip. order component',i)") ix
+       write (6,"(' dip. order component',i8)") ix
        stop 'dip. order component'
      case (1)
        xi1=(r14-re14) *exp(-beta*(r14-re14)**2)

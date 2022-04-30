@@ -1407,8 +1407,6 @@ contains
                  call robust_fit(numpar,fitting%robust,sigma(1:npts),eps(1:npts),wtall(1:npts))
                  !
                  ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
-				 !
-				 !fitting%robust = -1.0_rk
                  !
                endif 
                !
@@ -1423,7 +1421,7 @@ contains
                if (stadev<stadev_old) then
                  lambda = lambda/nu
                else 
-                 lambda = min(lambda*nu,10000.0)
+                 lambda = min(lambda*nu,10000.0_rk)
                endif
                !
                if (job%verbose>=5) write(out,"(/'Marquardts parameter lambda = ',g15.7)") lambda
@@ -2640,8 +2638,6 @@ contains
                  call robust_fit(numpar,a_wats,sigma(1:npts),eps(1:npts),wtall(1:npts))
                  !
                  ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
-				 !
-				 !fitting%robust = -1.0_rk
                  !
                endif 
                !
@@ -3054,10 +3050,6 @@ contains
           !
           !compute me
           !
-          !#if (fit_debug >= 3)
-          !  write (out,"('irootF,icontrF,cirootI,icontrI,irow,icol,cindtmat(ientry)%icoef = ',8i,' poten,tmat =  ',2(2x,es18.9))") irootF,icontrF,cirootI,icontrI,irow,icol,cind,tmat(ientry)%icoeff(cirootI),&
-          !                            poten(cind),tmat(ientry)%coeff(cirootI)
-          !#endif
           !
           half_matelem(irootF) = half_matelem(irootF) + poten(icontrI,icontrF)*tmat(ientry)%coeff(cirootI)
           !
@@ -4050,49 +4042,46 @@ contains
                 ilevel = fit(isym,jind)%ilevel(ientry)
                 !
                 do jentry = 1,ientry
-                   !
-                   jlevel = fit(isym,jind)%ilevel(jentry)
-                   !
-                   !ij = ientry*(ientry-1)/2+jentry
-                   !
-                   !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,kroot,cjroot) shared(deriv_matrix) schedule(guided) 
-                   do ciroot = 1, cdimen(ientry)
-                     !
-                     iroot = tmat(ientry)%icoeff(ciroot)
-                     !
-                     icontr = bset_contr(jind)%iroot_correlat_j0(iroot)
-                     !
-                     icase_j0  = bset_contr(1)%icontr2icase(icontr, 1)
-                     !
-                     if (icontr>j0ener_fit_plus.or.icontr>bset_contr(1)%Maxcontracts.or.icase_j0>j0fit%Nenergies) cycle
-                     !
-                     ktau_i = bset_contr(jind)%ktau(iroot)
-                     !
-                     do kroot = 1, kdimen(jentry,icontr,ktau_i)
-                       !
-                       cjroot = kmat(jentry,icontr,ktau_i)%icoeff(kroot)
-                       !
-                       deriv_matrix(ientry,jentry,icontr) = deriv_matrix(ientry,jentry,icontr) + &
-                                                            tmat(ientry)%coeff(ciroot)*tmat(jentry)%coeff(cjroot)
-                       !
-                     enddo
-                     !
-                   enddo
-                   !$omp end parallel do
-                   !
+                  !
+                  jlevel = fit(isym,jind)%ilevel(jentry)
+                  !
+                  !ij = ientry*(ientry-1)/2+jentry
+                  !
+                  !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,kroot,cjroot) shared(deriv_matrix) schedule(guided)
+                  do ciroot = 1, cdimen(ientry)
+                    !
+                    iroot = tmat(ientry)%icoeff(ciroot)
+                    !
+                    icontr = bset_contr(jind)%iroot_correlat_j0(iroot)
+                    !
+                    icase_j0  = bset_contr(1)%icontr2icase(icontr, 1)
+                    !
+                    if (icontr>j0ener_fit_plus.or.icontr>bset_contr(1)%Maxcontracts.or.icase_j0>j0fit%Nenergies) cycle
+                    !
+                    ktau_i = bset_contr(jind)%ktau(iroot)
+                    !
+                    do kroot = 1, kdimen(jentry,icontr,ktau_i)
+                      !
+                      cjroot = kmat(jentry,icontr,ktau_i)%icoeff(kroot)
+                      !
+                      deriv_matrix(ientry,jentry,icontr) = deriv_matrix(ientry,jentry,icontr) + &
+                                                           tmat(ientry)%coeff(ciroot)*tmat(jentry)%coeff(cjroot)
+                      !
+                    enddo
+                    !
+                  enddo
+                  !$omp end parallel do
+                  !
                 enddo
                 !
               enddo
-		      !
+              !
               iunit = fit(isym,jind)%IOunit
-              !write (iunit) 'start fitener'
               !
               do i=1,j0ener_fit_plus
                 !
                 write (iunit) i
                 write (iunit) deriv_matrix(:,:,i)
-                !
-                !write (iunit,rec=i) deriv_matrix(1:matsize,i)
                 !
               enddo
               !
@@ -4675,7 +4664,7 @@ contains
                 !
               endif
               !
-              if (job%verbose>=5) write (out,"('  iparam = 'i4)") i
+              if (job%verbose>=5) write (out,"('  iparam = ',i4)") i
               !
               if (trim(fitting%method)=='FAST') then
                 !
@@ -4877,7 +4866,7 @@ contains
             do 
               !
               i = i + 1
-              if (job%verbose>=5) write (out,"('f-'30i4)") molec%pot_ind(:,i)
+              if (job%verbose>=5) write (out,"('f-',30i4)") molec%pot_ind(:,i)
               !
               j = j + 1
               !
@@ -4888,7 +4877,7 @@ contains
               if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
                 !
                 i = i + 1
-                if (job%verbose>=5) write (out,"('g-'30i4)") molec%pot_ind(:,i)
+                if (job%verbose>=5) write (out,"('g-',30i4)") molec%pot_ind(:,i)
                 !
                 read (iunit,rec=i) poten_
                 !
