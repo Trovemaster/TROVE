@@ -14590,7 +14590,7 @@ end subroutine check_read_save_none
             !
             fl => trove%g_vib(k1,k2) 
             !
-            call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
             !
           enddo
         enddo
@@ -14604,7 +14604,7 @@ end subroutine check_read_save_none
             !
             fl => trove%g_rot(k1,k2) 
             !
-            call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
             !
           enddo
         enddo
@@ -14618,7 +14618,7 @@ end subroutine check_read_save_none
             !
             fl => trove%g_cor(k1,k2) 
             !
-            call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
             !
           enddo
         enddo
@@ -14645,7 +14645,7 @@ end subroutine check_read_save_none
               !
               fl => trove%L2_vib(k1,k2) 
               !
-              call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+              if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
               !
             enddo
           enddo
@@ -15822,12 +15822,12 @@ end subroutine check_read_save_none
      ! Create a field in a sparse representaion
      !
      if (associated(fl%IndexQ)) then 
-       deallocate(fl%IndexQ)
        call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
+       deallocate(fl%IndexQ)
      endif
      !
-     deallocate(fl%ifromsparse)
      call ArrayMinus(name//'ifromsparse',isize=size(fl%ifromsparse),ikind=kind(fl%ifromsparse))
+     deallocate(fl%ifromsparse)
      !
      if (Nterms==0) then
        !
@@ -16003,9 +16003,9 @@ end subroutine check_read_save_none
      call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      !
-     deallocate(fl1%field,fl2%field,stat=alloc)
      call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
      call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     deallocate(fl1%field,fl2%field,stat=alloc)
      !
      allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
@@ -16155,10 +16155,10 @@ end subroutine check_read_save_none
      call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
      call ArrayStart(name3,alloc,size(fl3%iorder),kind(fl3%iorder))
      !
-     deallocate(fl1%field,fl2%field,fl3%field,stat=alloc)
      call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
      call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
      call ArrayMinus(name3,isize=size(fl3%field),ikind=kind(fl3%field))
+     deallocate(fl1%field,fl2%field,fl3%field,stat=alloc)
      !
      allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),fl3%field(nterms,0:Npoints),stat=alloc)
      call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))

@@ -533,8 +533,8 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
     call half1_rovib_me(tens, jind1, ndeg1, dimen1, n, ind_sparse(1:n,ithread), vec_sparse(1:n,1:ndeg1,ithread), &
                         jind2, dimen2, half_me(1:dimen2,1:ndeg1,1:nirrep))
 
-    !$omp  parallel do private(jlevel_,ithread,jlevel,jval2,energy2,isym2,ndeg2,nsize2,nu,tran_filter,irrep,jdeg,ideg,n) 
-    !$omp& schedule(dynamic)
+    !$omp  parallel do private(jlevel_,ithread,jlevel,jval2,energy2,isym2,ndeg2,nsize2,nu,tran_filter,irrep,&
+    !$omp& jdeg,ideg,n) schedule(dynamic)
     do jlevel_=1, nlevels2
 
       ithread = omp_get_thread_num()
