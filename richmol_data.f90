@@ -116,11 +116,11 @@ subroutine read_tran(j1, j2, jmin, jmax, tens_name, states, me_thresh, trans, ve
       trans%null = .true.
       return
     endif
-  	if (verbose) write(out, '(1x,a)') '....OK'
+    if (verbose) write(out, '(1x,a)') '....OK'
     transp = .true.
     fname = fname_transp
   else
-  	if (verbose) write(out, '(1x,a)') '..OK'
+    if (verbose) write(out, '(1x,a)') '..OK'
     transp = .false.
   endif
 

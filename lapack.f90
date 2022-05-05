@@ -1885,7 +1885,7 @@ module lapack
 !     Get default system context, and define grid
 !
       !
-	  myprow = 1 ; mypcol = 1 ; myid = 1
+      myprow = 1 ; mypcol = 1 ; myid = 1
 #if (blacs_ > 0)
         call BLACS_GET( 0, 0, comm )
         call BLACS_GRIDINIT( comm, 'Row', nprow, npcol )

@@ -9988,10 +9988,10 @@ module perturbation
        !
        !---read contribs
        do ielem=1,nroots
-       		read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
-       		if(info<0) exit
-       		 if (job%verbose>=6) write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=',&
-       		                      maxcontrib(ielem)
+          read(chkptIO,iostat=info) maxTerm(ielem),maxcontrib(ielem)
+          if(info<0) exit
+          if (job%verbose>=6) write(out, '(/a,1x,i8,1x,a,1x,es11.4)') 'maxterm=', maxTerm(ielem), 'and maxcontrib=',&
+                              maxcontrib(ielem)
     
        enddo
        !
@@ -10756,13 +10756,13 @@ module perturbation
      ! Find the largest coefficients only if not provided from external diagonalization.
      if(trim(job%diagonalizer)/='READ-ENERGIES') then
         !
-     	allocate (maxTerm(nroots),maxcontrib(nroots))
-     	allocate (maxTerm2(nroots),maxcontrib2(nroots))
-     	call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
-     	call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
-     	call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
-     	call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
-    	maxTerm  = 1
+        allocate (maxTerm(nroots),maxcontrib(nroots))
+        allocate (maxTerm2(nroots),maxcontrib2(nroots))
+        call ArrayStart('maxcontrib',alloc,size(maxTerm),kind(maxTerm))
+        call ArrayStart('maxcontrib',alloc,size(maxcontrib),kind(maxcontrib))
+        call ArrayStart('maxcontrib',alloc,size(maxTerm2),kind(maxTerm2))
+        call ArrayStart('maxcontrib',alloc,size(maxcontrib2),kind(maxcontrib2))
+        maxTerm  = 1
         !     
         !$omp parallel do private(iroot,MaxEigenvects,MaxEigenvects2,jroot) shared(maxTerm,maxcontrib) schedule(dynamic)
         do iroot=1,nroots
@@ -19942,7 +19942,7 @@ module perturbation
       integer(ik) :: Maxcontracts,jsymcoeff
       integer(ik),allocatable :: uniqu_trans(:,:)
       integer :: info_p,info,Ncoeff
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       !
       Maxcontracts = PT%Maxcontracts
       nmodes = PT%Nmodes
@@ -20001,9 +20001,9 @@ module perturbation
           !
         enddo
         !$omp end do
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -20027,7 +20027,7 @@ module perturbation
       type(PTcoeffT),pointer   :: fl
       integer(ik),allocatable :: uniqu_trans(:,:)
       integer :: info_p,info,Ncoeff
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -20087,9 +20087,9 @@ module perturbation
           !
         enddo
         !$omp end do
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -20140,7 +20140,7 @@ module perturbation
           !
         enddo
         !$omp end parallel do
-	    !
+        !
       enddo
       !
     end subroutine calc_rot_contr_matrix
@@ -20203,7 +20203,7 @@ module perturbation
            !
         enddo
         !$omp end parallel do
-	    !
+        !
       enddo
       !
     end subroutine calc_vib_contr_matrix
@@ -20344,7 +20344,7 @@ module perturbation
         !
         deallocate(mat1,mat2)
         !$omp end parallel
-	    !
+        !
       enddo
       !
       deallocate(mat_coeff)
@@ -20488,7 +20488,7 @@ module perturbation
         !
         deallocate(mat1,mat2)
         !$omp end parallel
-	    !
+        !
       enddo
       !
       deallocate(mat_coeff)
@@ -20586,7 +20586,7 @@ module perturbation
       integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen)
       integer(ik),allocatable :: uniqu_trans(:,:)
       integer :: info_p,info
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -20659,10 +20659,10 @@ module perturbation
            hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
            !
         enddo
-       !$omp end do
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !$omp end do
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -20686,7 +20686,7 @@ module perturbation
       integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen)
       integer(ik),allocatable :: uniqu_trans(:,:)
       integer :: info_p,info
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       !
       nmodes = PT%Nmodes
       nclasses = PT%Nclasses
@@ -20766,9 +20766,9 @@ module perturbation
            hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
            !
         enddo
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -20791,7 +20791,7 @@ module perturbation
       integer(ik) :: iterm,nclasses,icontr,jcontr,nterms,iclass,nmodes,nu_i,nu_j,info,info_p
       integer(ik) :: Maxcontracts,jsymcoeff,jdeg,Ncoeff,isym(sym%Nrepresen),jsym(sym%Nrepresen),i
       integer(ik),allocatable :: uniqu_trans(:,:)
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       type(PTcoeffT),pointer   :: pl
       !
       nmodes = PT%Nmodes
@@ -20870,10 +20870,10 @@ module perturbation
            hvib(jcontr,icontr) = hvib(jcontr,icontr) + matelem
            !
         enddo
-       !$omp end do
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !$omp end do
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -20894,7 +20894,7 @@ module perturbation
       integer(ik) :: Maxcontracts,jsymcoeff
       type(PTcoeffT),pointer   :: fl
       integer(ik),allocatable :: uniqu_trans(:,:)
-      real(rk),allocatable	:: me_class0_vec(:,:)
+      real(rk),allocatable :: me_class0_vec(:,:)
       integer :: info_p,info,Ncoeff
       !
       Maxcontracts = PT%Maxcontracts
@@ -20955,9 +20955,9 @@ module perturbation
            !
         enddo
         !$omp end do
-	    !
-	    deallocate(me_class0_vec)
-	    !
+        !
+        deallocate(me_class0_vec)
+        !
         !$omp end parallel 
       enddo
       !
@@ -31116,22 +31116,22 @@ end subroutine read_contr_matelem_expansion_classN
        if (.not.job%select_gamma(igamma)) cycle
        !
        if(.not.job%ignore_vectors) then
-	       write(unitfname,"('Eigenvectors for ',i4)") igamma
-	       call IOStart(trim(unitfname),chkptIO)
-	       inquire(iolength=rec_len) f_t
-	       !
-	       if (job%IOvector_symm) then 
-		     rec_len = rec_len*max(Ntotal(igamma),1)
-	       else
-		     rec_len = rec_len*PT%Maxcontracts
-	       endif 
-	       !
-	       write(char_j,"(i3)") igamma
-	       !
-	       filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
-	       !
-		   open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
-		   !
+           write(unitfname,"('Eigenvectors for ',i4)") igamma
+           call IOStart(trim(unitfname),chkptIO)
+           inquire(iolength=rec_len) f_t
+           !
+           if (job%IOvector_symm) then 
+             rec_len = rec_len*max(Ntotal(igamma),1)
+           else
+             rec_len = rec_len*PT%Maxcontracts
+           endif 
+           !
+           write(char_j,"(i3)") igamma
+           !
+           filename = trim(job%eigenfile%vectors)//'_'//trim(adjustl(char_j))//'.chk'
+           !
+           open(chkptIO,access='direct',recl=rec_len,action='write',status='replace',file=filename) 
+           !
        endif
        !
        !if (.not.job%select_gamma(igamma)) cycle

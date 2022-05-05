@@ -416,7 +416,7 @@ contains
     sxy = transpose(reshape( (/ e,  o, &
                                 o, -e /), (/ 2, 2/)))
   
-	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
 
     s2 = matmul(c,s3)
   
@@ -570,7 +570,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     ! 
@@ -737,7 +737,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     !
@@ -950,7 +950,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     ! 
@@ -1134,7 +1134,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     !
@@ -1325,7 +1325,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     ! 
@@ -1486,7 +1486,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     !
@@ -1669,7 +1669,7 @@ contains
     !sxy = transpose(reshape( (/ o, e, &
     !                            e, o /), (/ 2, 2/)))
     !
-  	s3 = matmul(c, sxy)
+    s3 = matmul(c, sxy)
     !
     s2 = matmul(c,s3)
     ! 
