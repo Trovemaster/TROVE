@@ -2729,8 +2729,8 @@ contains
    !
    if (job%verbose>=5) write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
    !
-   rootsize  = int(ncontr_t*(ncontr_t+1)/2,hik)
-   rootsize2 = int(ncontr_t*ncontr_t,hik)
+   rootsize  = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
+   rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
    !
    matsize = rootsize2*3
    !

@@ -8447,11 +8447,11 @@ module perturbation
     !
     if ( trim(job%IOswap_matelem)/='NONE') return
     !
-    rootsize = int(ncontr*(ncontr+1)/2,hik)
-    rootsize_ = int(maxcontr*(maxcontr+1)/2,hik)
+    rootsize = int(ncontr,hik)*int((ncontr+1),hik)/2
+    rootsize_ = int(maxcontr,hik)*int((maxcontr+1)/2,hik)
     !
-    rootsize2  = int(ncontr*ncontr,hik)
-    rootsize2_ = int(maxcontr*maxcontr,hik)
+    rootsize2  = int(ncontr,hik)*int(ncontr,hik)
+    rootsize2_ = int(maxcontr,hik)*int(maxcontr,hik)
     !
     !dimen = max(min(int(PT%Maxcontracts*job%compress),PT%Maxcontracts),1)
     if (job%verbose>=6.and.present(icontr)) write(out,"('icontr = ',i9)") icontr
@@ -8481,8 +8481,8 @@ module perturbation
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
       end if
       !
-      rootsize = int(ncontr*(ncontr+1)/2,hik)
-      rootsize2 = int(ncontr*ncontr,hik)
+      rootsize = int(ncontr,hik)*int((ncontr+1),hik)/2
+      rootsize2 = int(ncontr,hik)*int(ncontr,hik)
       !
       if (job%verbose>=6) write(out,"(/'Restore_rot_kin...: Number of elements: ',i8)") PT%Maxcontracts
       !
@@ -10235,7 +10235,7 @@ module perturbation
              if (job%verbose>=4) write(out,"('Reading ',i8,' real4 vectors...')") nroots
              !
              allocate (mat4(dimen_s,nroots),energy4(nroots),stat=alloc)
-             matsize = int(dimen_s*nroots,hik)
+             matsize = int(dimen_s,hik)*int(nroots,hik)
              call ArrayStart('mat_4',alloc,1_ik,kind(mat4),matsize)
              call ArrayStart('mat_4',alloc,size(energy4),kind(energy4))
              mat4 = 0
@@ -10286,7 +10286,7 @@ module perturbation
        deallocate (energy4)
        !
        allocate (mat_t(dimen_s,nroots),stat=alloc)
-       matsize = int(dimen_s*nroots,hik)
+       matsize = int(dimen_s,hik)*int(nroots,hik)
        call ArrayStart('mat_t',alloc,1_ik,kind(mat_t),matsize)
        !
        mat_t = mat4
@@ -15393,7 +15393,7 @@ module perturbation
       !
       mdimen = PT%Maxcontracts
       !
-      rootsize = int(mdimen*mdimen,hik)
+      rootsize = int(mdimen,hik)*int(mdimen,hik)
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 
       ! kinetic parts are retrieved now from the storage place (check_point). 
@@ -15490,7 +15490,7 @@ module perturbation
            allocate(mat_t(nroots_max,dimen_p_max),stat=alloc)
            call ArrayStart('PTcontracted_matelem_cl: mat_t',alloc,nroots_max*dimen_p_max,kind(mat_t))
            !
-           matsize = int(PT%Nclasses*nroots_max*nroots_max,hik)
+           matsize = int(PT%Nclasses*nroots_max,hik)*int(nroots_max,hik)
            !
            allocate(matclass(PT%Nclasses,nroots_max,nroots_max),stat=alloc)
            call ArrayStart('PTcontracted_matelem_cl: matclass',alloc,1,kind(matclass),matsize)
@@ -15507,7 +15507,7 @@ module perturbation
            !$omp& schedule(dynamic)
            do icoeff=1,PT%Maxcontracts
              !
-             icoefficoeff1(icoeff) = int(icoeff*(icoeff-1),hik)/2
+             icoefficoeff1(icoeff) = int(icoeff,hik)*int((icoeff-1),hik)/2
              !
              icase   = PT%icontr2icase(icoeff,1)
              ilambda = PT%icontr2icase(icoeff,2)
@@ -16627,7 +16627,7 @@ module perturbation
       !
       mdimen = PT%Maxcontracts
       !
-      rootsize = int(mdimen*mdimen,hik)
+      rootsize = int(mdimen,hik)*int(mdimen,hik)
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 
       ! kinetic parts are retrieved now from the storage place (check_point). 
@@ -16724,7 +16724,7 @@ module perturbation
            !allocate(mat_t(nroots_max,dimen_p_max),stat=alloc)
            !call ArrayStart('PTcontracted_matelem_cl: mat_t',alloc,nroots_max*dimen_p_max,kind(mat_t))
            !
-           matsize = int(PT%Nclasses*nroots_max*nroots_max,hik)
+           matsize = int(PT%Nclasses,hik)*int(nroots_max,hik)*int(nroots_max,hik)
            !
            !allocate(matclass(PT%Nclasses,nroots_max,nroots_max),stat=alloc)
            !call ArrayStart('PTcontracted_matelem_cl: matclass',alloc,1,kind(matclass),matsize)
@@ -16741,7 +16741,7 @@ module perturbation
            !$omp& schedule(dynamic)
            do icoeff=1,PT%Maxcontracts
              !
-             icoefficoeff1(icoeff) = int(icoeff*(icoeff-1),hik)/2
+             icoefficoeff1(icoeff) = int(icoeff,hik)*int((icoeff-1),hik)/2
              !
              icase   = PT%icontr2icase(icoeff,1)
              ilambda = PT%icontr2icase(icoeff,2)
@@ -18084,9 +18084,9 @@ module perturbation
       dimen_p = PT%max_deg_size
       !
       if (job%vib_rot_contr) then 
-        rootsize = int(dimen_p*mdimen,hik)
+        rootsize = int(dimen_p,hik)*int(mdimen,hik)
       else 
-        rootsize = int(mdimen*mdimen,hik)
+        rootsize = int(mdimen,hik)*int(mdimen,hik)
       endif
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 
@@ -21670,7 +21670,7 @@ module perturbation
       if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',&
                                        fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
       !
-      matsize = int(nterms_field*dimen*dimen,hik)
+      matsize = int(nterms_field,hik)*int(dimen,hik)*int(dimen,hik)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
@@ -22203,7 +22203,7 @@ module perturbation
       if (job%verbose>=7) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ',&
                                      fl%Ncoeff*max(dimen,nprim)**2*8.0/1024.0**3,'gb'
       !
-      matsize = int(nterms_field*dimen*dimen,hik)
+      matsize = int(nterms_field,hik)*int(dimen,hik)*int(dimen,hik)
       !
       allocate(me_contr(fl%Ncoeff,max(dimen,nprim),max(dimen,nprim)), stat=info)
       call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
@@ -23082,7 +23082,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       do jcoeff=1,icoeff
         !
-        ib = int(icoeff*(icoeff-1),hik)/2
+        ib = int(icoeff,hik)*int((icoeff-1),hik)/2
         ib = ib + jcoeff
         !
         field(ib) = field(ib) + func(icoeff,jcoeff,k1,k2)
@@ -23155,7 +23155,7 @@ end subroutine read_contr_matelem_expansion_classN
             !
             !vectorj = contr(jclass)%eigen(jlevel)%dvr_func(jderiv,jdeg,k)
             !
-            ib = int(icoeff*(icoeff-1),hik)/2
+            ib = int(icoeff,hik)*int((icoeff-1),hik)/2
             ib = ib + jcoeff
             !
             f_t = 0
@@ -27997,7 +27997,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       dvr%kindex2c = 0
       !
-      matsize = int(PT%Nclasses,hik)*dvr%total_size
+      matsize = int(PT%Nclasses,hik)*int(dvr%total_size,hik)
       !
       call ArrayStart('dvr%cindex',alloc,1,kind(dvr%kindex2c),matsize)
       !
@@ -28045,7 +28045,7 @@ end subroutine read_contr_matelem_expansion_classN
            !
            allocate (contr(iclass)%eigen(ilevel)%dvr_func(0:PT%Nmodes,level_degen,contr(iclass)%Ndvrpoints),stat=alloc)
            !
-           matsize = int(PT%Nmodes+1,hik)*int(level_degen,hik)*contr(iclass)%Ndvrpoints
+           matsize = int(PT%Nmodes+1,hik)*int(level_degen,hik)*int(contr(iclass)%Ndvrpoints,hik)
            !
            call ArrayStart('contr%eigen%vect-dvr',alloc,1,kind(contr(iclass)%eigen(ilevel)%dvr_func),matsize)
            !
@@ -36343,7 +36343,7 @@ subroutine PTstore_contr_matelem_II(jrot)
        allocate(me_contr(nterms_uniq(iclass),max(dimen,nprim),max(dimen,nprim)), stat=info)
        call ArrayStart('PTstore_contr_matelem:me_contr',info,1_ik,kind(me_contr),size(me_contr,kind=hik))
        !
-       matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
+       matsize = int(nterms_uniq(iclass),hik)*int(dimen,hik)*int(dimen,hik)
        !
        if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,' = ',i12,' gcor matrix of ',f15.4,' gb')") & 
                            nterms_uniq(iclass),dimen,dimen,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
@@ -36659,7 +36659,7 @@ subroutine PTstore_contr_matelem_II(jrot)
         if (job%verbose>=5) write(out, '(1x,a,1x,f10.3,1x,a)') 'allocate array "me_contr", size = ', &
                             real(nterms_uniq(iclass)*max(dimen,nprim)**2)*8.0/1024.0**3, 'gb'
         !
-        matsize = int(nterms_uniq(iclass)*dimen*dimen,hik)
+        matsize = int(nterms_uniq(iclass),hik)*int(dimen,hik)*int(dimen,hik)
         !
         !if (job%verbose>=5) write(out,"('  Allocating ',i7,'x',i8,'x',i8,'x',i2,'x',i2,' = ',i12,' vpot matrix of ',f15.4,' gb')") & 
         !                    nterms_uniq(iclass),dimen,dimen,1,1,matsize,real(matsize,rk)*8.0_rk/1024.0_rk**3
@@ -38503,7 +38503,7 @@ end subroutine combinations
       mdimen = PT%Maxcontracts
       dimen_p = PT%max_deg_size
       !
-      rootsize = int(dimen_p*mdimen,hik)
+      rootsize = int(dimen_p,hik)*int(mdimen,hik)
       !
       ! The vibrational (J=0) matrix elements of the rotational and coriolis 
       ! kinetic parts are retrieved now from the storage place (check_point). 

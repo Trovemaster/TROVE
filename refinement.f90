@@ -737,8 +737,8 @@ contains
                     write (out,"(/'Matrix size = ',i8)") Nentries
                  endif
                  !
-                 matsize = int(Nentries*(Nentries+1)/2,hik)
-                 matsize2= int(Nentries*Nentries,hik)
+                 matsize = int(Nentries,hik)*int((Nentries+1)/2_hik),hik)
+                 matsize2= int(Nentries,hik)*int(Nentries,hik)
                  !
                  allocate(pot_matrix(Nentries,Nentries),stat=alloc)
                  call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -2121,8 +2121,8 @@ contains
                     write (out,"(/'Matrix size = ',i8)") Nentries
                  endif
                  !
-                 matsize = int(Nentries*(Nentries+1)/2,hik)
-                 matsize2= int(Nentries*Nentries,hik)
+                 matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+                 matsize2= int(Nentries,hik)*int(Nentries,hik)
                  !
                  allocate(pot_matrix(Nentries,Nentries),stat=alloc)
                  call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -2957,7 +2957,7 @@ contains
    end if
    !
    rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
-   rootsize2= int(ncontr_t*ncontr_t,hik)
+   rootsize2= int(ncontr_t,hik)*int(ncontr_t,hik)
    !
    if (fit_debug > 2) then
       write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
@@ -3172,8 +3172,8 @@ contains
        stop 'calc_exp_values - in file - illegal ncontracts '
      end if
      !
-     rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
-     rootsize2 = int(ncontr_t*ncontr_t,hik)
+     rootsize = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
+     rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
      !
      if (job%verbose>=4) then 
         write(out,"(/'calc_exp_values...: Number of elements: ',i8)") ncontr_t
@@ -3297,7 +3297,7 @@ contains
           !
           !omp parallel private(vec,alloc)  shared(cdimen,tmat)
           !
-          matsize2= int(ncontr_t*Nentries,hik)
+          matsize2= int(ncontr_t,hik)*int(Nentries,hik)
           allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),stat=alloc)
           call ArrayStart('psi',alloc,1,kind(psi),matsize2)
           call ArrayStart('mat_t',alloc,1,kind(mat_t),matsize2)
@@ -3631,8 +3631,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*(Nentries+1)/2,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1),hik)/2_hik
+            matsize2= int(Nentries,hik)*int((Nentries+1),hik)/2_hik
             !
             if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i0)") matsize,j0ener_fit_plus
             !
@@ -3640,7 +3640,7 @@ contains
             !
             if (trim(fitting%method)=='SLOW') idimen = 1
             !
-            hmatsize = int(matsize*idimen,hik)
+            hmatsize = int(matsize,hik)*int(idimen,hik)
             !
             allocate(deriv_matrix(Nentries,Nentries,idimen),stat=alloc)
             call ArrayStart('deriv_matrix',alloc,1,kind(deriv_matrix),hmatsize)
@@ -4142,8 +4142,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i0)") matsize,j0ener_fit_plus
             !
@@ -4358,8 +4358,8 @@ contains
          !
        endif
        !
-       rootsize  = int(ncontr_t*(ncontr_t+1)/2,hik)
-       rootsize2 = int(ncontr_t*ncontr_t,hik)
+       rootsize  = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
+       rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
        !
        if (job%verbose>=4) then 
           write(out,"(/'prepare_pot_matrix...: Number of elements: ',i8)") ncontr_t
@@ -4470,8 +4470,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             allocate(pot_matrix(Nentries,Nentries),stat=alloc)
             call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -4487,7 +4487,7 @@ contains
             !
             if (trim(fitting%method)=='FAST') then
               !
-              matsize2= int(ncontr_t*Nentries,hik)
+              matsize2= int(ncontr_t,hik)*int(Nentries,hik)
               !
               if (job%rotsym_do) then
                  num_rlevels = maxval(bset_contr(jind)%ktau(:),dim=1)
@@ -4851,8 +4851,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2_hik,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             dimen = bset_contr(jind)%Maxcontracts
             !
