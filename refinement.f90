@@ -737,7 +737,7 @@ contains
                     write (out,"(/'Matrix size = ',i8)") Nentries
                  endif
                  !
-                 matsize = int(Nentries,hik)*int((Nentries+1)/2_hik),hik)
+                 matsize = int(Nentries,hik)*int((Nentries+1)/2_hik,hik)
                  matsize2= int(Nentries,hik)*int(Nentries,hik)
                  !
                  allocate(pot_matrix(Nentries,Nentries),stat=alloc)
