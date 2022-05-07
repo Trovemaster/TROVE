@@ -2865,7 +2865,7 @@ subroutine ratint(xa, ya, x, y, dy)
      t(1:n-m) = (xa(1:n-m)-x) * d(1:n-m)/h(1+m:n)   ! h will never be 0
      dd(1:n-m) = t(1:n-m) - c(2:n-m+1)
      !
-     if (any(dd(1:n-m) == 0.0)) then                   ! interpolating function
+     if (any(abs(dd(1:n-m)) < small_)) then                   ! interpolating function
           write(out,"('failure in ratint, has a pole here')")
           stop 'failure in ratint'
           !call nrerror('failure in ratint')         ! has a pole here
@@ -2920,7 +2920,7 @@ subroutine MLratintark(xa, ya, x, y, dy)
      t(1:n-m) = (xa(1:n-m)-x) * d(1:n-m)/h(1+m:n)   ! h will never be 0
      dd(1:n-m) = t(1:n-m) - c(2:n-m+1)
      !
-     if (any(dd(1:n-m) == 0.0)) then                   ! interpolating function
+     if (any(abs(dd(1:n-m)) < small_)) then                   ! interpolating function
           write(out,"('failure in ratint, has a pole here')")
           stop 'failure in MLratintark'
      endif 
@@ -2974,7 +2974,7 @@ subroutine polint(xa, ya, x, y, dy)
      !if (any(den(1:n-m) == 0.0)) &       ! update them
      !     call nrerror('polint: calculation failure')
 
-     if (any(den(1:n-m) == 0.0)) then                   ! interpolating function
+     if (any(abs(den(1:n-m)) < small_)) then                   ! interpolating function
           write(out,"('failure in polint, has a pole here')")
           stop 'failure in polint'
           !call nrerror('failure in polint')         ! has a pole here
@@ -3034,7 +3034,7 @@ recursive subroutine polintark(xa, ya, x, y, dy)
      !if (any(den(1:n-m) == 0.0)) &       ! update them
      !     call nrerror('polint: calculation failure')
 
-     if (any(den(1:n-m) == 0.0)) then                   ! interpolating function
+     if (any(abs(den(1:n-m)) < small_)) then                   ! interpolating function
           write(out,"('failure in polint, has a pole here')")
           stop 'failure in polint'
           !call nrerror('failure in polint')         ! has a pole here
@@ -3873,7 +3873,7 @@ end subroutine polintark
         !
     end select 
     !
-    if (fstep(1)+fstep(2)==0.0_ark) then 
+    if (fstep(1)+fstep(2)<small_) then 
        write (out,"('ML_check_steps4coordinvert: no numerical derivatives allowed around point ',f18.8)") xi(imode)
        write (out,"('imode -  ',i8)") imode
        stop 'ML_check_steps4coordinvert - bad point for derivatives'

@@ -2119,6 +2119,9 @@ module mol_abcd
           !
           dst = src
           !
+          N_Cn = sym%N/2
+          Nrot = sym%N
+          !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !
             dst(1) = src(1)

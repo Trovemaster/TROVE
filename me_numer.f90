@@ -655,9 +655,10 @@ module me_numer
    !
    do v=0,vmax+1
      !
-     if (v/=0) enerlow = enerslot(v-1)
+     if (v/=0) then 
+       enerlow = enerslot(v-1)
+     endif
      !
-
      ! Determine the highest undefined energy slot 
      i = v
      do while (enerslot(i)<poten(imin).and.i<maxslots)
@@ -942,7 +943,7 @@ module me_numer
              ! 
              ! Are we still at the begining?
              !
-             if (v.eq.0) then
+             if (v==0) then
                 enerlow=poten(imin)
              else
                 enerlow=enerslot(v-1) 

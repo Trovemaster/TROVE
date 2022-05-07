@@ -16541,7 +16541,7 @@ module perturbation
     !real(rk),allocatable :: me_t(:,:)
     real(rk),allocatable :: grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
                             hrot_t(:,:),gcor_t(:,:)
-    real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:),extF_r(:,:)
+    real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:)
     !
     real(rk)           :: f_t
     integer(ik)        :: isize,iroot
@@ -17378,8 +17378,7 @@ module perturbation
           !
           if (trove%FBR) then 
             !
-            allocate(extF_t(mdimen,mdimen),extF_r(mdimen,mdimen),stat=alloc)
-            call ArrayStart('extF-fields',alloc,1,kind(f_t),rootsize)
+            allocate(extF_t(mdimen,mdimen),stat=alloc)
             call ArrayStart('extF-fields',alloc,1,kind(f_t),rootsize)
             !
             job_is = 'externalF'
@@ -17389,7 +17388,6 @@ module perturbation
               if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
               !
               extF_t = 0 
-              extF_r = 0 
               !
               extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
               !
@@ -17426,7 +17424,7 @@ module perturbation
               !
             enddo
             !
-            deallocate(extF_t,extF_r)
+            deallocate(extF_t)
             call ArrayStop('extF-fields')
             !
           else

@@ -1461,13 +1461,10 @@ module mol_xy2
               stop 'ML_symmetry_transformation_XY2: DNH odd for R1-R2-Y+X is not implemented' 
           endif
           !
-          !qx= 1
-          !qy= 1
-          !q2x= 2
-          !q2y= -2
-          !
           NC2 = sym%N/2
           N_Cn = sym%N/2-1
+          !
+          phi = 2.0_ark*pi/real(Nrot,ark)
           !
           if (ioper==1) then ! E 
             !
@@ -1703,11 +1700,6 @@ module mol_xy2
           if (mod(sym%N,2)==1) then
               stop 'ML_symmetry_transformation_XY2: DNH odd for R1-R2-Y+X is not implemented' 
           endif
-          !
-          !qx= 1
-          !qy= 1
-          !q2x= 2
-          !q2y= -2
           !
           NC2 = sym%N/2
           N_Cn = sym%N/2-1

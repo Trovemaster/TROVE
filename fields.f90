@@ -25983,6 +25983,22 @@ end subroutine check_read_save_none
     y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_csc
   !
+  ! sanity check and deallocation of all existing arrays from this module 
+  !
+  subroutine deallocate_all_fields_arrays
+    !
+    integer(ik) :: i
+    !
+    if (associated(job%nroots)) deallocate(job%nroots)
+    if (allocated(FLIndexQ)) deallocate(FLIndexQ)
+    !
+    if (associated(bset%bs1D)) deallocate(bset%bs1D)
+    if (associated(bset%rot)) deallocate(bset%rot)
+    !
+  end subroutine deallocate_all_fields_arrays
+  
+  
+  !
 
 end module fields
 

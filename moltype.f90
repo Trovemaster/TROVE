@@ -96,7 +96,7 @@ module moltype
       real(ark),intent(in)   :: src(:)
       logical,intent(in)     :: direct
       !
-      real(ark),dimension(ndst) :: dst
+      real(ark) :: dst(ndst)
       !
     end function MLtemplate_coord_transform
   end interface 
@@ -1710,7 +1710,7 @@ module moltype
      !
      if (abs(coeff(1,1))<small_) then
         !write(out,"(i,'-th parameter is wrong, small a0(i,i) =  ',g18.8)") i,coeff(i,i)
-        error=i
+        error=1
         return
      endif
      !
@@ -2487,8 +2487,6 @@ module moltype
     if (verbose>=5) then
       write(out,"('ML_rjacobi_fit_ark start ')") 
     endif
-    !
-    rjacob = 0 
     iter = 0
     stadev_old = 2.e10
     stability =  1.e10
@@ -2500,6 +2498,8 @@ module moltype
     !
     allocate(rjacob(n,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(rjacob,kind=hik))
+    rjacob = 0 
+    !
     allocate(am(m,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(am,kind=hik))
     allocate(bm(m),stat=alloc)

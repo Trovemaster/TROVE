@@ -352,12 +352,9 @@ end subroutine xy2_dipole_sym
       do i=2,dimen
         q=ai(i,1)
         !
-        if (abs(p)<small_a) then 
-          !
+        if (abs(p)<small_) then 
           ierr = i
-          !
           return
-          !
         endif 
         !
         h(i)=q/p
