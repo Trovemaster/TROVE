@@ -5754,22 +5754,24 @@ contains
           dimenI = bset_contr(indI)%Maxcontracts
           dimenF = bset_contr(indF)%Maxcontracts
           !
-          !$omp parallel do private(cirootI,irootI,icontrI,irlevelI,irdegI,irootF,icontrF,irlevelF,irdegF,f_w,dip) &
+          !loop over final state basis components
+          !
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
           !$omp& shared(half_ls) schedule(static)
-          loop_I : do cirootI = 1, cdimenI
-             ! loop over initial state basis components
-             !
-             irootI = icoeffI(cirootI)
-             icontrI = bset_contr(indI)%iroot_correlat_j0(irootI)
-             irlevelI = bset_contr(indI)%ktau(irootI)
-             irdegI   = bset_contr(indI)%k(irootI)
-             !
-             ! loop over the final state basis components
-             loop_F : do irootF = 1, dimenF
+          loop_F : do irootF = 1, dimenF
+               !
+               icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
+               irlevelF = bset_contr(indF)%ktau(irootF)
+               irdegF   = bset_contr(indF)%k(irootF)
+               !
+               !loop over initial state basis components
+               !
+               loop_I : do cirootI = 1, cdimenI
                   !
-                  icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
-                  irlevelF = bset_contr(indF)%ktau(irootF)
-                  irdegF   = bset_contr(indF)%k(irootF)
+                  irootI = icoeffI(cirootI)
+                  icontrI = bset_contr(indI)%iroot_correlat_j0(irootI)
+                  irlevelI = bset_contr(indI)%ktau(irootI)
+                  irdegI   = bset_contr(indI)%k(irootI)
                   !
                   f_w(:) = wigner(indI,dJ)%rot(:,irlevelI,irlevelF,irdegI,irdegF)
                   !
@@ -5777,9 +5779,9 @@ contains
                   !
                   half_ls(irootF) = half_ls(irootF) + vector(cirootI)*dip
                   !
-               end do  loop_F
+               end do  loop_I
                !
-            end do   loop_I
+            end do   loop_F
             !$omp end parallel do
             !
             call TimerStop('do_1st_half_linestr')
