@@ -410,7 +410,7 @@ module perturbation
    ! some parameters that can be used for bechmarking at compilation level
    !
    integer, parameter :: verbose     = 3       ! Verbosity level
-   logical, parameter :: debug_check_symmetries  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
+   logical, parameter :: debug_check_symmetries  = .true.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
    logical, parameter :: debug_cut_matelem_with_enermax  = .false.   ! For debug purposes to check if the non-diagonal symmetries do not vanish in Hamiltonian matrix
 
 
@@ -7719,7 +7719,10 @@ module perturbation
       !
       if (associated(grot)) deallocate(grot)
       if (associated(gcor)) deallocate(gcor)
-      if (associated(hvib%me)) deallocate(hvib%me)
+      if (associated(hvib%me)) then 
+         deallocate(hvib%me)
+         call Arraystop('hvib%me')
+      endif
       !
       call ArrayStart('hvib-matrix',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
@@ -7813,7 +7816,10 @@ module perturbation
       !
       if (associated(grot)) deallocate(grot)
       if (associated(gcor)) deallocate(gcor)
-      if (associated(hvib%me)) deallocate(hvib%me)
+      if (associated(hvib%me)) then 
+         deallocate(hvib%me)
+         call Arraystop('hvib%me')
+      endif
       !
       call ArrayStart('hvib-matrix',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
@@ -8033,7 +8039,10 @@ module perturbation
         deallocate (mat_t)
         !$omp end parallel
         !
-        deallocate(hvib%me)
+        if (associated(hvib%me)) then 
+           deallocate(hvib%me)
+           call Arraystop('hvib%me')
+        endif
         !
         call ArrayStart('hvib-matrix',0,1,4)
         call ArrayStart('grot-matrix',0,1,4)
@@ -8882,7 +8891,10 @@ module perturbation
         !
       endif
       !
-      if (associated(hvib%me)) deallocate(hvib%me)
+      if (associated(hvib%me)) then 
+         deallocate(hvib%me)
+         call Arraystop('hvib%me')
+      endif
       !
       call ArrayStart('hvib-matrix',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
@@ -15544,7 +15556,7 @@ module perturbation
           if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
-          call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
+          call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
           hvib%me = 0
           !
           if (job%verbose>=5) call MemoryReport
@@ -16539,8 +16551,8 @@ module perturbation
     integer(ik)        :: poten_N,gvib_N,grot_N,gcor_N,Ncoeffs,jmax,L2vib_N,extF_N_
     integer(ik)        :: iclasses,ilevel,ideg,alloc,dimen,iterm,k1,k2,islice,k1_,k2_
     !real(rk),allocatable :: me_t(:,:)
-    real(rk),allocatable :: grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),fvib_t(:,:),&
-                            hrot_t(:,:),gcor_t(:,:)
+    real(rk),allocatable :: grot_t(:,:),extF_t(:,:),gvib_t(:,:),hvib_t(:,:),&
+                            gcor_t(:,:)
     real(rk),allocatable :: gcor_(:,:,:,:),grot_(:,:,:,:),extF_dvr(:,:,:)
     !
     real(rk)           :: f_t
@@ -16719,23 +16731,14 @@ module perturbation
         ! Temporary arrays allocation (for non-DVR, FBR integration)
         !
         if (trove%FBR) then
-           !allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
-           !call ArrayStart('PTcontracted_matelem_cl: me_t',alloc,dimen_p_max**2,kind(me_t))
-           !allocate(mat_t(nroots_max,dimen_p_max),stat=alloc)
-           !call ArrayStart('PTcontracted_matelem_cl: mat_t',alloc,nroots_max*dimen_p_max,kind(mat_t))
            !
            matsize = int(PT%Nclasses,hik)*int(nroots_max,hik)*int(nroots_max,hik)
-           !
-           !allocate(matclass(PT%Nclasses,nroots_max,nroots_max),stat=alloc)
-           !call ArrayStart('PTcontracted_matelem_cl: matclass',alloc,1,kind(matclass),matsize)
-           !
-           !matclass = 0
            !
            matsize = PT%Nclasses*PT%Maxcontracts
            !
            allocate(icoeff2iroot(PT%Nclasses,PT%Maxcontracts),icoefficoeff1(PT%Maxcontracts),stat=alloc)
            call ArrayStart('PTcontracted_matelem_cl: icoeff2iroot',alloc,1,ik,matsize)
-           call ArrayStart('PTcontracted_matelem_cl: icoeff2iroot',alloc,size(icoefficoeff1),ik)
+           call ArrayStart('PTcontracted_matelem_cl: icoefficoeff1',alloc,size(icoefficoeff1),ik)
            !
            !$omp  parallel do private(icoeff,icase,ilambda,iclasses,ideg,ilevel,iroot) shared(icoeff2iroot,icoefficoeff1) &
            !$omp& schedule(dynamic)
@@ -16797,20 +16800,6 @@ module perturbation
           !
         endif
         !
-        if (treat_vibration.or.(trove%DVR.and.treat_rotation)) then 
-          !
-          ! The vibrational part of the Hamiltonian
-          !
-          if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
-          !
-          allocate(hvib%me(mdimen,mdimen),stat=alloc)
-          call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
-          hvib%me = 0
-          !
-          if (job%verbose>=5) call MemoryReport
-          !
-        endif
-        !
         !---------------------------!
         ! Only when rotation is ON  !
         !---------------------------!
@@ -16855,11 +16844,8 @@ module perturbation
             !
           endif
           !
-          !
-          allocate(grot_t(mdimen,mdimen),hrot_t(mdimen,mdimen),gcor_t(mdimen,mdimen),stat=alloc)
-          call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
-          call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
-          call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),rootsize)
+          allocate(grot_t(mdimen,mdimen),stat=alloc)
+          call ArrayStart('PTcontracted_matelem:grot',alloc,1,kind(f_t),rootsize)
           !
           if (job%verbose>=5) call MemoryReport
           !
@@ -16885,7 +16871,6 @@ module perturbation
               if (job%IOmatelem_split.and.(islice<iterm1.or.iterm2<islice)) cycle
               !
               grot_t = 0
-              !hrot_t = 0
               !
               if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
               !
@@ -16897,16 +16882,6 @@ module perturbation
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,grot_N,k1,k2,fl,grot_t,&
                                                      grot_contr_matelem_single_term)
-              !
-              !omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
-              !do icoeff=1,mdimen
-              !  do jcoeff=1,icoeff
-              !    grot_t(jcoeff,icoeff) = grot_t(jcoeff,icoeff) + hrot_t(jcoeff,icoeff)
-              !  enddo
-              !enddo
-              !omp end parallel do
-              !
-              !enddo
               !
               !$omp parallel do private(icoeff,jcoeff) shared(grot_t) schedule(dynamic)
               do icoeff=1,mdimen
@@ -16941,17 +16916,24 @@ module perturbation
             !
           endif
           !
+          if (iterm2>=9) then 
+             !
+             allocate(gcor_t(mdimen,mdimen),stat=alloc)
+             call ArrayStart('PTcontracted_matelem:gcor',alloc,1,kind(f_t),rootsize)
+             !
+          endif
+          !
           ! Run the loop over all term of the expansion of the Hamiltonian 
           !
           job_is = 'gcor'
           do k2 = 1,3
             !
-            gcor_t = 0
-            !
             if (job%IOmatelem_split.and..not.job%IOmatelem_divide) then
               islice = islice + 1
               if (islice<iterm1.or.iterm2<islice) cycle
             endif
+            !
+            gcor_t = 0
             !
             do k1 = 1,PT%Nmodes
               !
@@ -16967,8 +16949,6 @@ module perturbation
               gcor_N = FLread_fields_dimension_field(job_is,k1,k2)
               !
               fl => me%gcor(k1,k2)
-              !
-              !call calc_contract_matrix_elements_II(iterm,k1,k2,fl,hrot_t,gcor_contr_matelem_single_term)
               !
               call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,gcor_N,k1,k2,fl,grot_t,&
                                                      gcor_contr_matelem_single_term)
@@ -16988,11 +16968,13 @@ module perturbation
                 !
               else
                 !
-                !$omp parallel do private(icoeff) shared(gcor_t) schedule(dynamic)
-                do icoeff=1,mdimen
-                    gcor_t(icoeff,:) = gcor_t(icoeff,:)+grot_t(icoeff,:)
-                enddo
-                !$omp end parallel do
+                gcor_t(:,:) = gcor_t(:,:)+grot_t(:,:)
+                !
+                !omp parallel do private(icoeff) shared(gcor_t) schedule(dynamic)
+                !do icoeff=1,mdimen
+                !    gcor_t(icoeff,:) = gcor_t(icoeff,:)+grot_t(icoeff,:)
+                !enddo
+                !omp end parallel do
                 !
               endif 
               !
@@ -17015,10 +16997,15 @@ module perturbation
             !
           enddo
           !
-          !islice = gcor_N+grot_N
+          if (allocated(grot_t)) then 
+            deallocate(grot_t)
+            call Arraystop('PTcontracted_matelem:grot')
+          endif
           !
-          deallocate(grot_t,hrot_t,gcor_t)
-          call ArrayStop('grot-gcor-fields')
+          if (allocated(gcor_t)) then 
+            deallocate(gcor_t)
+            call Arraystop('PTcontracted_matelem:gcor')
+          endif
           !
         endif
         !
@@ -17057,6 +17044,18 @@ module perturbation
             matsize = rootsize_*9_hik+rootsize_*3_hik*int(PT%Nmodes,hik)
             !
             call ArrayStart('grot-gcor-fields',alloc,1,kind(f_t),matsize)
+            !
+            if (treat_rotation) then 
+              !
+              ! The vibrational part of the Hamiltonian
+              !
+              if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
+              !
+              allocate(hvib%me(mdimen,mdimen),stat=alloc)
+              call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
+              hvib%me = 0
+              !
+            endif
             !
             if (job%verbose>=5) call MemoryReport
             !
@@ -17111,10 +17110,9 @@ module perturbation
             if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
             if (job%verbose>=3) write(out,"(/'Number of gvib terms  = ',i8)") gvib_N
             !
-            allocate(hvib_t(mdimen,mdimen),gvib_t(mdimen,mdimen),fvib_t(mdimen,mdimen),stat=alloc)
-            call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
-            call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
-            call ArrayStart('hvib-fields',alloc,1,kind(f_t),rootsize)
+            allocate(hvib_t(mdimen,mdimen),gvib_t(mdimen,mdimen),stat=alloc)
+            call ArrayStart('PTcontracted_matelem:gvib',alloc,1,kind(f_t),rootsize)
+            call ArrayStart('PTcontracted_matelem:hvib',alloc,1,kind(f_t),rootsize)
             !
             islice = 0
             !
@@ -17188,13 +17186,15 @@ module perturbation
                   !
                 else
                   !
-                  !$omp parallel do private(icoeff,jcoeff) shared(hvib_t) schedule(dynamic)
-                  do icoeff=1,mdimen
-                    do jcoeff=1,icoeff
-                      hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)-0.5_rk*gvib_t(jcoeff,icoeff)
-                    enddo
-                  enddo
-                  !$omp end parallel do
+                  hvib_t = hvib_t-0.5_rk*gvib_t
+                  !
+                  !omp parallel do private(icoeff,jcoeff) shared(hvib_t) schedule(dynamic)
+                  !do icoeff=1,mdimen
+                  !  do jcoeff=1,icoeff
+                  !    hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)-0.5_rk*gvib_t(jcoeff,icoeff)
+                  !  enddo
+                  !enddo
+                  !omp end parallel do
                   !
                 endif
                 !
@@ -17301,19 +17301,42 @@ module perturbation
             !
             if ( .not.job%IOmatelem_divide.and..not.job%IOmatelem_split ) then
               !
-              !$omp parallel do private(icoeff,jcoeff) schedule(dynamic)
+              !$omp parallel do private(icoeff) schedule(dynamic)
               do icoeff=1,mdimen
-                do jcoeff=1,icoeff
-                  hvib%me(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)+gvib_t(jcoeff,icoeff)
-                  hvib%me(icoeff,jcoeff) = hvib%me(jcoeff,icoeff)
-                enddo
+                !
+                hvib_t(1:icoeff,icoeff) = hvib_t(1:icoeff,icoeff)+gvib_t(1:icoeff,icoeff)
+                hvib_t(icoeff,1:icoeff) = hvib_t(1:icoeff,icoeff)
+                !
+                !do jcoeff=1,icoeff
+                !  hvib_t(jcoeff,icoeff) = hvib_t(jcoeff,icoeff)+gvib_t(jcoeff,icoeff)
+                !  hvib_t(icoeff,jcoeff) = hvib_t(jcoeff,icoeff)
+                !enddo
+                !
               enddo
               !$omp end parallel do
               !
             endif
             !
-            deallocate(hvib_t,gvib_t,fvib_t)
-            call ArrayStop('hvib-fields')
+            deallocate(gvib_t)
+            call ArrayStop('PTcontracted_matelem:gvib')
+            !
+            if (treat_vibration) then 
+              !
+              ! The vibrational part of the Hamiltonian
+              !
+              if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
+              !
+              allocate(hvib%me(mdimen,mdimen),stat=alloc)
+              call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
+              !
+              hvib%me = hvib_t
+              !
+              if (job%verbose>=5) call MemoryReport
+              !
+            endif
+            !
+            deallocate(hvib_t)
+            call ArrayStop('PTcontracted_matelem:hvib')
             !
           endif 
           !
@@ -17480,6 +17503,7 @@ module perturbation
           !
           deallocate(icoeff2iroot,icoefficoeff1)
           call ArrayStop('PTcontracted_matelem_cl: icoeff2iroot')
+          call ArrayStop('PTcontracted_matelem_cl: icoefficoeff1')
           !
           if (allocated(icontr_vs_isym)) then 
               deallocate(icontr_vs_isym)
@@ -18199,7 +18223,7 @@ module perturbation
           if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
-          call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
+          call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
           hvib%me = 0
           !
           if (job%verbose>=5) call MemoryReport
@@ -38578,7 +38602,7 @@ end subroutine combinations
           if (job%verbose>=4) write(out,"('  allocating hvib, ',i9,' elements...')") rootsize
           !
           allocate(hvib%me(mdimen,mdimen),stat=alloc)
-          call ArrayStart('gvib-grot-gcor-fields',alloc,1,kind(f_t),rootsize)
+          call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
           hvib%me = 0
           !
           if (job%verbose>=5) call MemoryReport

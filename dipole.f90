@@ -5757,7 +5757,7 @@ contains
           !loop over final state basis components
           !
           !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
-          !$omp& shared(half_ls) schedule(static)
+          !$omp& shared(half_ls) schedule(dynamic)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
