@@ -5740,14 +5740,14 @@ contains
         real(rk),intent(out)    :: half_ls(:)
         integer(ik)             :: irootF, cirootI, icontrF, icontrI, & 
                                    irlevelI, irlevelF, irdegI, irdegF, irootI,dJ, dimenI, dimenF
-        real(rk)                :: f_w(3),dip
+        real(rk)                :: f_w(3),dip,f_t
 
           !
           !dms_tmp = dipole_me
           !
-          call TimerStart('do_1st_half_linestr')
+          !call TimerStart('do_1st_half_linestr')
           !
-          half_ls    = 0
+          !half_ls    = 0
           !
           dJ = jF-jI
           !
@@ -5756,7 +5756,7 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
           !$omp& shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
@@ -5765,6 +5765,8 @@ contains
                irdegF   = bset_contr(indF)%k(irootF)
                !
                !loop over initial state basis components
+               !
+               f_t = 0
                !
                loop_I : do cirootI = 1, cdimenI
                   !
@@ -5777,14 +5779,16 @@ contains
                   !
                   dip = sum(dipole_me(icontrI,icontrF,:)*f_w(:))
                   !
-                  half_ls(irootF) = half_ls(irootF) + vector(cirootI)*dip
+                  f_t = f_t + vector(cirootI)*dip
                   !
                end do  loop_I
+               !
+               half_ls(irootF) = f_t
                !
             end do   loop_F
             !$omp end parallel do
             !
-            call TimerStop('do_1st_half_linestr')
+            !call TimerStop('do_1st_half_linestr')
             !
       end subroutine do_1st_half_linestrength_rotsym_symmvec
 
