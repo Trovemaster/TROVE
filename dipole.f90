@@ -1555,7 +1555,6 @@ contains
     !
     allocate(icoeffI(dimenmax), stat = info)
     call ArrayStart('intensity-vectors',info,size(icoeffI),kind(icoeffI))
-
     !
     if (.not.job%rotsym_do) then 
       allocate(icoeff_kblock(dimenmax,0:jmax),cdimen_kblock(0:jmax),itau_kblock(dimenmax,0:jmax),stat = info)
@@ -1565,7 +1564,6 @@ contains
       allocate(vecPack_kblock(dimenmax,0:jmax), stat = info)
       call ArrayStart('intensity-vectors-kblock',info,size(vecPack_kblock),kind(vecPack_kblock))
     endif
-
     !
     ! loop over final states -> count states for each symmetry
     !
@@ -1949,10 +1947,6 @@ contains
               !
               cdimenI    = 0 
               icoeffI(:) = 0
-              cdimen_kblock  = 0
-              icoeff_kblock  = 0  
-              itau_kblock    = 0
-              vecPack_kblock = 0 
               !
               call TimerStop('Pre-screening')
               !
@@ -1971,6 +1965,11 @@ contains
                                               half_linestr(:,indF,idegI,1))
                                               !
               else
+                !
+                cdimen_kblock  = 0
+                icoeff_kblock  = 0  
+                itau_kblock    = 0
+                vecPack_kblock = 0 
                 !
                 do idimen = 1, dimenI
                    if (abs(vec(idimen)) > intensity%threshold%coeff) then

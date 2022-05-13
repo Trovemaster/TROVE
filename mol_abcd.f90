@@ -2538,6 +2538,8 @@ module mol_abcd
        case('CS','CS(M)')
           !
           dst = src
+          N_Cn = sym%N/2
+          Nrot = sym%N
           !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !
@@ -3195,6 +3197,9 @@ module mol_abcd
        case('CS','CS(M)')
           !
           dst = src
+          !
+          N_Cn = sym%N/2
+          Nrot = sym%N
           !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !

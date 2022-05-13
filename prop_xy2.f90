@@ -1206,8 +1206,8 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
   real(ark), intent(out) :: invmat(n,m)
   integer(ik), intent(out), optional :: info
 
-  integer(ik) lwork, info_, i, j
-  double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
+  integer(ik) :: lwork, info_, i, j
+  double precision :: work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
   double precision, allocatable :: work(:)
   character(len=cl) :: my_fmt
 

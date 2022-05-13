@@ -408,8 +408,6 @@ module moltype
     !
     molec%rho_border(:) = rho_border(:)
     !
-    !call xy2_initialize(xy2)
-    !
     if (verbose>=4) write(out,"('MLinitialize_molec/end')") 
 
   end subroutine MLinitialize_molec
