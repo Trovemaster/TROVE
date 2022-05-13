@@ -7724,10 +7724,10 @@ module perturbation
          call Arraystop('hvib%me')
       endif
       !
-      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('hvib%me',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
       call ArrayStart('gcor-matrix',0,1,4)
-      call ArrayStop('hvib-matrix')
+      call ArrayStop('hvib%me')
       call ArrayStop('grot-matrix')
       call ArrayStop('gcor-matrix')
       !
@@ -7821,10 +7821,10 @@ module perturbation
          call Arraystop('hvib%me')
       endif
       !
-      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('hvib%me',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
       call ArrayStart('gcor-matrix',0,1,4)
-      call ArrayStop('hvib-matrix')
+      call ArrayStop('hvib%me')
       call ArrayStop('grot-matrix')
       call ArrayStop('gcor-matrix')
       !
@@ -8044,10 +8044,10 @@ module perturbation
            call Arraystop('hvib%me')
         endif
         !
-        call ArrayStart('hvib-matrix',0,1,4)
+        call ArrayStart('hvib%me',0,1,4)
         call ArrayStart('grot-matrix',0,1,4)
         call ArrayStart('gcor-matrix',0,1,4)
-        call ArrayStop('hvib-matrix')
+        call ArrayStop('hvib%me')
         call ArrayStop('grot-matrix')
         call ArrayStop('gcor-matrix')
         !
@@ -8736,7 +8736,7 @@ module perturbation
       call ArrayStart('PThamiltonian_contract: mat_',alloc,1,kind(mat_),rootsize2_)
       !
       allocate(hvib%me(maxcontr,maxcontr),stat=alloc)
-      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
+      call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize2_)
       !
       read(chkptIO) mat_
       !
@@ -8896,10 +8896,10 @@ module perturbation
          call Arraystop('hvib%me')
       endif
       !
-      call ArrayStart('hvib-matrix',0,1,4)
+      call ArrayStart('hvib%me',0,1,4)
       call ArrayStart('grot-matrix',0,1,4)
       call ArrayStart('gcor-matrix',0,1,4)
-      call ArrayStop('hvib-matrix')
+      call ArrayStop('hvib%me')
       call ArrayStop('grot-matrix')
       call ArrayStop('gcor-matrix')
       !
@@ -8909,7 +8909,7 @@ module perturbation
       if (job%verbose>=6) write(out,"('allocate hvib for ',i9,' x ',i8,' -> ',i8)") maxcontr,icontr1,icontr2
       !
       allocate(hvib%me(maxcontr,icontr1:icontr2),stat=alloc)
-      call ArrayStart('hvib-matrix',alloc,1,kind(f_t),rootsize2_)
+      call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize2_)
       !
       read(chkptIO) hvib%me
       !
