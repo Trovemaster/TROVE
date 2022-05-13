@@ -6825,7 +6825,7 @@ module perturbation
    PT%Max_sym_levels(:) = Ntotal(:)
    !
    if (job%verbose>=3) then 
-      write(my_fmt,'(a,i0,a)') "(/'Total number of irr. representations: ',",sym%Nrepresen,"i6/)"
+      write(my_fmt,'(a,i0,a)') "(/'Total number of irr. representations: ',",sym%Nrepresen,"i8/)"
       write(out,my_fmt) Ntotal(:)
    endif 
    if (job%verbose>=5)  write(out,"('icoef  isym  ideg  irr. repres. ')")
@@ -6977,7 +6977,7 @@ module perturbation
    !
    !
    write(out,"(/'Size of the primitive basis set : ',i12)") dimen
-   write(my_fmt,'(a,i0,a)') "('Total number of irr. representations: ',",sym%Nrepresen,"i6)"
+   write(my_fmt,'(a,i0,a)') "('Total number of irr. representations: ',",sym%Nrepresen,"i8)"
    write(out,my_fmt) PT%Max_sym_levels
    !
    do ioper =1,sym%Noper
