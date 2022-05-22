@@ -2731,14 +2731,20 @@ contains
    rootsize  = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
    rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
    !
-   matsize = rootsize2*3
+   matsize = rootsize2*3_hik
    !
-   if (job%verbose>=5) write(out,"(/'allocate 4 dipole_me matrices with ',i22,' elements each...')") rootsize2
+   if (job%verbose>=4) write(out,"(/'allocate dipole_me matrices with 3x',i22,' elements, ',f15.4,' Gb ...')") &
+                       matsize,real(matsize)*8_rk/1025.0_rk**3
+   !
    allocate(dipole_me(ncontr_t,ncontr_t,3),stat=alloc)
    call ArrayStart('dipole_me',alloc,1,kind(dipole_me),matsize)
    !
+   if (job%verbose>=5) write(out,"(/'allocate dipole_ matrix with ',i22,' elements ... ')") rootsize2
+   !
    allocate(dipole_(ncontr_t,ncontr_t),stat=alloc)
    call ArrayStart('dipole_',alloc,1,kind(dipole_),rootsize2)
+   !
+   if (job%verbose>=5) call MemoryReport
    !
    do imu = 1,3
      !

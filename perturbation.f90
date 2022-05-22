@@ -7486,7 +7486,7 @@ module perturbation
     endif 
     !
     allocate (ijterm(dimen,sym%Nrepresen),stat=alloc)
-    call ArrayStart('PThamiltonian_contract:a',alloc,size(ijterm),kind(ijterm))
+    call ArrayStart('PThamiltonian_contract:ijterm',alloc,size(ijterm),kind(ijterm))
     !
     ! Count and distribute the rows in the symmetrized representaion: 
     !
@@ -8418,6 +8418,7 @@ module perturbation
     call ArrayStop('contr(0)-rot-coeff3d')
     !
     deallocate(ijterm,k_row)
+    call ArrayStop('PThamiltonian_contract:ijterm')
     !
     !if (job%verbose>=1) write (out,"('Constraction of the contracted matrix ..... done!  ')") 
     !
