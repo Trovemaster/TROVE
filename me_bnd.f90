@@ -1221,7 +1221,7 @@ module me_bnd
            !
            !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
            !$omp critical
-           do i=0,npoints 
+           do i=0,npoints_
               write(out,"(i8,2f18.8,' || ',1x,i8)") i,phil_(i),dphil_(i),vl
            enddo
            !$omp end critical
