@@ -259,7 +259,10 @@ contains
          !
          read(iounit, '(30a)') buf(1:30)
          !
-         if (buf(1:30) /= 'End irreducible transformation') stop 'read_contrind error: wrong irrep-footer'
+         if (buf(1:30) /= 'End irreducible transformation') then 
+             write (out,"('read_contrind error: wrong irrep-footer in ',a)") filename
+             stop 'read_contrind error: wrong irrep-footer'
+         endif
          !
        endif 
        !

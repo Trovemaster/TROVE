@@ -4037,8 +4037,16 @@ endif
        a0(3,1) =  -r(2)*cos(alpha_2)
        a0(3,3) =  -r(2)*sin(alpha_2)
        !
+    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+       !
+       a0(2, 1) =  0
+       a0(2, 3) =  r(1)
+       !
+       a0(3, 1) =  r(2) * sin(r(3))
+       a0(3, 3) =  r(2) * cos(r(3))
+       !
     case default 
-       write(out,"('MLloc2pqr_xy2: illegal coordinate type',a)") trim(molec%coords_transform)
+       write(out,"('MLloc2pqr_xy2: illegal coordinate type ',a)") trim(molec%coords_transform)
        stop 'MLloc2pqr_xy2: illegal coordinate type'
     end select
     
@@ -5192,7 +5200,6 @@ endif
     !
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
-      !
       !
       xyz0 = MLloc2pqr_xy2(local)
       !

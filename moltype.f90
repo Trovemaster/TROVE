@@ -264,6 +264,8 @@ module moltype
                                              ! in intensity calculations; (imode,1:2), 
                                              ! where 1 stands for the beginning and 2 for the end. 
      !
+     integer(ik)         :: istate_count(2) = (/1,2147483647/)     ! filter based on the lower state count 
+     !
      integer(ik)         :: swap_size    = 0 ! the number of vectors to keep in memory
      character(cl)       :: swap = "NONE"    ! whether save the compacted vectors or read
      character(cl)       :: swap_file  ="compress"   ! where swap the compacted eigenvectors to

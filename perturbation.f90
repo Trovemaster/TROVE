@@ -8393,13 +8393,31 @@ module perturbation
         deallocate (a)
       endif
       !
+      ! close eigen-vectors and description files 
+      !
+      if ( trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND' ) then
+        !
+        if (.not.job%ignore_vectors) then 
+           write(unitfname,"('Eigenvectors for ',i4)") isym
+           call IOStart(trim(unitfname),chkptIO)
+           close(chkptIO,status='keep') 
+        endif
+        !
+        write(unitfname,"('Quantum numbers of solution gamma = ',i4)") isym
+        call IOStart(trim(unitfname),chkptIO)
+        !
+        write(chkptIO,"('End Quantum numbers and energies')") 
+        close(chkptIO,status='keep') 
+        !
+      endif
+      !
     enddo
     !
-    if ( trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND' ) then
-      !
-      call check_point_active_space('CLOSE')
-      !
-    endif 
+    !if ( trim(job%IOeigen_action)=='SAVE'.or.trim(job%IOeigen_action)=='APPEND' ) then
+    !  !
+    !  call check_point_active_space('CLOSE')
+    !  !
+    !endif 
     !
     ! close and keep files with the compacted vectors
     !
@@ -31404,11 +31422,11 @@ end subroutine read_contr_matelem_expansion_classN
        !
        if (.not.job%select_gamma(igamma)) cycle
        !
-       if(.not.job%ignore_vectors) write(unitfname,"('Eigenvectors for ',i4)") igamma
-       !
-       if(.not.job%ignore_vectors) call IOStart(trim(unitfname),chkptIO)
-       !
-       if(.not.job%ignore_vectors)close(chkptIO,status='keep') 
+       if (.not.job%ignore_vectors) then 
+          write(unitfname,"('Eigenvectors for ',i4)") igamma
+          call IOStart(trim(unitfname),chkptIO)
+          close(chkptIO,status='keep') 
+       endif
        !
        write(unitfname,"('Quantum numbers of solution gamma = ',i4)") igamma
        call IOStart(trim(unitfname),chkptIO)

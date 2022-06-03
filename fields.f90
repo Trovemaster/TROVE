@@ -3618,6 +3618,7 @@ module fields
          forall(i=1:sym%Nrepresen) intensity%isym_pairs(i) = 1
          intensity%v_low(:,1) = 0 ; intensity%v_low(:,2) = job%bset(1:)%range(2)
          intensity%v_upp(:,1) = 0 ; intensity%v_upp(:,2) = job%bset(1:)%range(2)
+         intensity%istate_count(1) = 1 ; intensity%istate_count(2) = huge(1)
          !
          !
          call read_line(eof) ; if (eof) exit
@@ -3862,10 +3863,15 @@ module fields
                 !
              enddo 
              !
-             case default
+           case('STATE-COUNT','COUNT')
+             !
+             call readi(intensity%istate_count(1))
+             call readi(intensity%istate_count(2))
+             !
+           case default
                !
                call report ("Unrecognized unit name "//trim(w),.true.)
-             !
+               !
            end select 
            !
            call read_line(eof) ; if (eof) exit
