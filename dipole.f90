@@ -1258,7 +1258,7 @@ contains
       igammaI  = eigen(ilevelI)%igamma
       quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes) 
       !
-      call energy_filter_lower(jI,energyI,quantaI,eigen(ilevelI)%normal(0),ilevelI,passed)
+      call energy_filter_lower(jI,energyI,quantaI,eigen(ilevelI)%normal(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -1332,7 +1332,7 @@ contains
        !
        call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
        !
-       call energy_filter_lower(jF,energyF,quantaF,normalF(0),ilevelF,passed_)
+       call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
        !
        if (.not.passed.and..not.passed_) cycle
        !
@@ -1485,7 +1485,7 @@ contains
       !
       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
       !
-      call energy_filter_lower(jF,energyF,quantaF,normalF(0),ilevelF,passed_)
+      call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
       !
       if (.not.passed.and..not.passed_) cycle
       !
@@ -1781,6 +1781,9 @@ contains
     ! loop over initial states
     !
     Ilevels_loop: do ilevelI = 1,nlevels
+      ! 
+      ! filter based on lower state count 
+      if (ilevelI<intensity%istate_count(1).or.ilevelI>intensity%istate_count(2)) cycle Ilevels_loop
       !
       indI = eigen(ilevelI)%jind
       !
@@ -1798,7 +1801,7 @@ contains
       ndegI   = eigen(ilevelI)%ndeg
       nsizeI = bset_contr(indI)%nsize(igammaI)
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),ilevelI,passed)
+      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -2488,7 +2491,7 @@ contains
            quantaI(0:nmodes) = eigen(ilevelI_)%quanta(0:nmodes)
            normalI(0:nmodes) = eigen(ilevelI_)%normal(0:nmodes)
            !
-           call energy_filter_lower(jI,energyI,quantaI,normalI(0),ilevelI_,passed)
+           call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
            !
            if (.not.passed) cycle
            !
@@ -2563,13 +2566,17 @@ contains
       time_per_ilevel = real_time/real(min(ilevelI,1),rk)
       !
       if (real_time+time_per_ilevel*1.1>=intensity%wallclock*3600.0 ) then 
-          write(out,"(/'Wall-clock stop: last lower-state ',i8,' energy = ',f16.6)") ilevelI,energyI-intensity%ZPE
+          if (job%verbose>=3) write(out,"(/a,i8,' energy = ',f16.6)") '   ... [wall-clock stop]: last lower-state ',&
+                                    ilevelI,energyI-intensity%ZPE
           exit Ilevels_loop
       endif
       !
       !call flush(out) 
       !
     end do Ilevels_loop
+    !
+    if (job%verbose>=3) write(out,"(/' ...Intensities finished: From ',i8,' to ',i8,' of ',i8,' lower states.')") & 
+                        max(1,intensity%istate_count(1)),min(ilevelI,intensity%istate_count(2)),nlevelI
     !
     call TimerStop('Intensity loop')
     !
@@ -3924,7 +3931,7 @@ contains
       quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes) 
       normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),ilevelI,passed)
+      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -3981,7 +3988,7 @@ contains
        !
        call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
        !
-       call energy_filter_lower(jF,energyF,quantaF,normalF(0),ilevelF,passed_)
+       call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
        !
        if (.not.passed.and..not.passed_) cycle
        !
@@ -4292,7 +4299,7 @@ contains
       !
       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
       !
-      call energy_filter_lower(jF,energyF,quantaF,normalF(0),ilevelF,passed_)
+      call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
       !
       if (.not.passed.and..not.passed_) cycle
       !
@@ -4496,7 +4503,7 @@ contains
       normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
       ndegI   = eigen(ilevelI)%ndeg
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),ilevelI,passed)
+      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -5183,12 +5190,12 @@ contains
      end subroutine find_igamma_pair
 
 
-     subroutine energy_filter_lower(J,energy,quanta,normal_0,ilevel,passed)
+     subroutine energy_filter_lower(J,energy,quanta,normal_0,passed)
        !
        implicit none 
        integer(ik),intent(in) :: J
        real(rk),intent(in)    :: energy
-       integer(ik),intent(in) :: quanta(0:molec%nmodes),normal_0,ilevel
+       integer(ik),intent(in) :: quanta(0:molec%nmodes),normal_0
        logical,intent(out)    :: passed
          !
          ! passed = .true.
@@ -5212,8 +5219,6 @@ contains
              passed = .true.
              !
          endif
-         !
-         passed = passed.and.(ilevel>=intensity%istate_count(1).and.ilevel<=intensity%istate_count(2))
          !
          if (job%triatom_sing_resolve) then
             if (J==0.and.normal_0/=0) then
