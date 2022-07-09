@@ -1043,7 +1043,7 @@ contains
     integer(ik)    :: nJ,dimenmax
     integer(ik)    :: ilevelI, ilevelF, ndegI, ndegF, idegI, idegF, irec, idimen, nsizeF,nsizeI,ilevelI_
     integer(ik)    :: cdimenI,irep
-    integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen,Ntransit_
+    integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen,Ntransit_,ilevels_lower
     integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),&
                       normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
@@ -1775,6 +1775,7 @@ contains
     ! --------------------------------- 
     !
     itransit = 0
+    ilevels_lower = 0
     !
     call TimerStart('Intensity loop')
     !
@@ -1784,6 +1785,8 @@ contains
       ! 
       ! filter based on lower state count 
       if (ilevelI<intensity%istate_count(1).or.ilevelI>intensity%istate_count(2)) cycle Ilevels_loop
+      !
+      ilevels_lower = ilevels_lower + 1
       !
       indI = eigen(ilevelI)%jind
       !
@@ -2563,11 +2566,12 @@ contains
       !
       if (job%verbose>=5) call TimerReport
       !
-      time_per_ilevel = real_time/real(min(ilevelI,1),rk)
+      time_per_ilevel = real_time/real(min(ilevels_lower,1),rk)
       !
       if (real_time+time_per_ilevel*1.1>=intensity%wallclock*3600.0 ) then 
-          if (job%verbose>=3) write(out,"(/a,i8,' energy = ',f16.6)") '   ... [wall-clock stop]: last lower-state ',&
-                                    ilevelI,energyI-intensity%ZPE
+          if (job%verbose>=3) write(out,"(/a,i8,a,i8,' states, last energy = ',f16.6)") &
+                                    '   ... [wall-clock stop]: last lower-state ',&
+                                    ilevelI,', processed = ',ilevels_lower,energyI-intensity%ZPE
           exit Ilevels_loop
       endif
       !
