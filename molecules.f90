@@ -644,6 +644,10 @@ end function ML_MEPfunc
        !
        MLextF_func => MLdms_HCCH_7D_LOCAL
        !
+    case('HCCH_ALPHA_ISO_7D_LINEAR')
+       !
+       MLextF_func => MLalpha_iso_c2h2_7_q2q1q4q3
+       !
     case('COORDINATES')
        !
        MLextF_func => MLextF_coordinates

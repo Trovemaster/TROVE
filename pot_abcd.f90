@@ -16,6 +16,7 @@ module pot_abcd
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
          MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB
+  public MLalpha_iso_c2h2_7_q2q1q4q3
 
   private
 
@@ -2481,6 +2482,91 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     end subroutine MLdms_HCCH_7D_7ORDER_linear
 
+ ! isotropic part of the polarisability of C2H2 (same symmetry as PES)
+
+
+ recursive subroutine MLalpha_iso_c2h2_7_q2q1q4q3(rank,ncoords,natoms,local,xyz,f)
+   !
+   integer(ik),intent(in) ::  rank,ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik),parameter :: n = 410
+    integer(ik) :: i,k,nmax
+    real(ark) :: dF(n),Fvalue
+      !
+      integer(ik)  ::  i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,b1(3),b0(3),b2(3),t1,t0,t2,w1(3),w2(3),cosalpha2,sindelta1x,&
+                      sindelta1y,sindelta2x,sindelta2y,y1,y2,y3,y4,y5,y6,y7,c1(3),c0(3),c2(3)
+      real(ark)    :: r_na(4,3)
+      integer(ik)  :: Nangles
+      !
+      character(len=cl)  :: txt = 'MLalpha_iso_c2h2_7_q2q1q4q3'
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=molec%force(1)
+      e2=molec%force(2)
+      e4=pi
+      e6=pi
+      !
+      a1 = molec%force(3)
+      a2 = molec%force(4)
+      !
+      x1    = local(1)
+      x2    = local(2)
+      x3    = local(3)
+      !
+      call MLfromlocal2cartesian(1_ik,local,r_na)
+      !
+      b1(:) = r_na(3,:)-r_na(1,:)
+      b0(:) = r_na(2,:)-r_na(1,:)
+      b2(:) = r_na(4,:)-r_na(2,:)
+      !
+      x2 =  sqrt(sum(b1(:)**2))
+      x1 =  sqrt(sum(b0(:)**2))
+      x3 =  sqrt(sum(b2(:)**2))
+      !
+      b1 =  b1(:)/x2
+      b0 =  b0(:)/x1
+      b2 =  b2(:)/x3
+      !
+      w1(:) = MLvector_product(b1,b0)
+      w2(:) = MLvector_product(b0,b2)
+      !
+      y4 =-w1(2)
+      y5 = w1(1)
+      y6 = w2(2)
+      y7 =-w2(1)
+      !
+      y1=x1-e1
+      y2=x2-e2
+      y3=x3-e2
+      !
+      call potC2H2_D8h_diff_V(n,y1,y2,y3,y4,y5,y6,y7,dF)
+      !
+      Fvalue = 0
+      !
+      !nmax = min(size(extF%coef),molec%parmax)
+      !
+      do i = 5,extF%nterms(1)
+        !
+        !k = molec%pot_ind(1,i)
+        !
+        Fvalue = Fvalue + extF%coef(i,1)*dF(i)
+        !
+      enddo
+      !
+      f(1) = Fvalue
+      !
+ end subroutine MLalpha_iso_c2h2_7_q2q1q4q3
+
+
+
 
 
  recursive subroutine MLdms_HCCH_7D_local(rank,ncoords,natoms,r,xyz,f)
@@ -2548,7 +2634,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     f(1:3) = mu(1:3)
     !
-    end subroutine MLdms_HCCH_7D_local
+ end subroutine MLdms_HCCH_7D_local
 
 
 

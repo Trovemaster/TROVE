@@ -3111,7 +3111,7 @@ contains
 
      character(len=20)  :: buf20
      integer(hik)       :: matsize2
-     integer(ik)        :: rootsize_t,imu,imu_t,dimen,irec,cdimen_,idimen,nsize,ncontr_t
+     integer(ik)        :: rootsize_t,imu,imu_t,dimen,irec,idimen,nsize,ncontr_t
      integer(hik)       :: rootsize2,rootsize
      integer(ik)        :: ilist,nlist,ideg,iroot,num
      real(rk),allocatable       :: pot_matrix(:,:)
@@ -3119,7 +3119,6 @@ contains
      logical            :: do_calc = .true.
      real(rk),allocatable     :: vec(:)
      type(coeffT),allocatable :: tmat(:)
-     integer(ik),allocatable  :: cdimen(:)
      real(rk),allocatable     :: psi(:,:,:),mat_t(:,:)
      !double precision :: alpha,beta0,beta
      double precision,parameter :: alpha = 1.0d0,beta0=0.0d0,beta=1.0d0
@@ -3183,7 +3182,7 @@ contains
        ilist = ilist + 1 
        !
      enddo
-     nlist = max(ilist-4,0)
+     nlist = max(ilist-1,0)
      !
      do jind = 1,nJ
        !
@@ -3201,9 +3200,6 @@ contains
              !
              if (jrot/=eigen(ilevel)%jval.or.isym/=eigen(ilevel)%igamma) cycle
              !
-             !jrot = eigen(ilevel)%igamma  
-             !isym = eigen(ilevel)%jval 
-             !
              if (eigen(ilevel)%jval==jrot) then 
                 do ilist = 1,nlist 
                    if (analysis%J_list(ilist)==Jrot.and.isym==analysis%sym_list(ilist).and.analysis%dens_list(ilist)==irec)  then 
@@ -3212,8 +3208,6 @@ contains
                 enddo
              endif
              !
-           !enddo 
-           !
          enddo
          !
          fit(isym,jind)%Nentries=Nentries 
@@ -3259,7 +3253,7 @@ contains
         !
         do isym=1,sym%Nrepresen
           !
-          if (job%verbose>=2) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
+          if (job%verbose>=5) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
           !write (out,"(/'iparam#      ilist     matrix   ')")
           !
           Nentries = fit(isym,jind)%Nentries
@@ -3276,18 +3270,9 @@ contains
           dimen = bset_contr(jind)%Maxcontracts
           nsize = bset_contr(jind)%nsize(isym)
           !
-          allocate(cdimen(Nentries),stat=alloc)
-          call ArrayStart('cdimen',alloc,size(cdimen),kind(cdimen))
-          !
           iunit = Jeigenvec_unit(jind,isym)
           !
-          ! Prepare the transformational matrix
-          !
-          cdimen = 0
-          !
           if (job%verbose>=5) call TimerStart('Prepare tmat for J0-convertion')
-          !
-          !omp parallel private(vec,alloc)  shared(cdimen,tmat)
           !
           matsize2= int(ncontr_t*Nentries,hik)
           allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),stat=alloc)
@@ -3386,10 +3371,10 @@ contains
               enddo
             enddo
             !
-            allocate (eigenval(Nentries),eigenvec(Nentries,Nentries),stat=alloc)
-            call ArrayStart('eigenval',alloc,size(eigenval),kind(eigenval))
+            !allocate (eigenval(Nentries),eigenvec(Nentries,Nentries),stat=alloc)
+            !call ArrayStart('eigenval',alloc,size(eigenval),kind(eigenval))
             !
-            call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
+            !call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
             !
             !write (out,"(' ')")
             !
@@ -3397,13 +3382,12 @@ contains
               !
               ilevel = fit(isym,jind)%ilevel(ientry)
               !
-              write (out,"(2i7,f18.6,(2x,es18.9))") i,ientry,eigen(ilevel)%energy,eigenval(ientry)
+              write (out,"('||',2i7,f18.6,(2x,es18.9))") i,ientry,eigen(ilevel)%energy-eigen(1)%energy,pot_matrix(ientry,ientry)
               !
             enddo
             !
-            deallocate(eigenval,eigenvec)
-            !
-            call ArrayStop('eigenval')
+            !deallocate(eigenval,eigenvec)
+            !call ArrayStop('eigenval')
             !
          enddo
          !
