@@ -461,9 +461,10 @@ module fields
       logical             :: rotation_matrix = .false.
       logical             :: extF = .false.
       logical             :: check_Hamiltonian = .false.
-      integer(ik)         :: dens_list(1:100) = -1      ! List of eigenvalues for the reduced density analysis 
-      integer(ik)         :: j_list(1:100) = -1
-      integer(ik)         :: sym_list(1:100) = -1
+      integer(ik)         :: NStates_max = 1000
+      integer(ik)         :: dens_list(1:1000) = -1      ! List of eigenvalues for the reduced density analysis 
+      integer(ik)         :: j_list(1:1000) = -1
+      integer(ik)         :: sym_list(1:1000) = -1      
       real(ark)           :: threshold = 1e-8     ! threshold to print out eige-coefficients 
       logical             :: reducible_eigen_contribution = .false. 
       logical             :: population
@@ -3193,7 +3194,7 @@ module fields
                 call readu(w)
                 !
                 i = 0
-                do while (trim(w)/="MODES".and.item<Nitems.and.i<100)
+                do while (trim(w)/="MODES".and.item<Nitems.and.i<analysis%NStates_max)
                   !
                   i = i + 1 
                   !
@@ -3226,6 +3227,28 @@ module fields
                 enddo
                 !
              enddo
+             !
+           case('STATE_LIST')
+             !
+             call read_line(eof) ; if (eof) exit
+             !
+             i = 0
+             !
+             call readu(w)
+             !
+             do while (trim(w)/="".and.trim(w)/="STATE_END".and.nitems>=3.and.i<analysis%NStates_max)
+                !
+                i = i + 1 
+                !
+                read(w,*) analysis%j_list(i)
+                call readi(analysis%sym_list(i))
+                call readi(analysis%dens_list(i))
+                !
+                call read_line(eof) ; if (eof) exit
+                call readu(w)
+                !
+             enddo
+             !
              !
            case default
              !
