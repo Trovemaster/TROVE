@@ -3728,7 +3728,8 @@ module perturbation
              if (job%verbose>=2) then 
                !
                write(my_fmt,'(a,i0,a)') "(i7,f18.8,2i4,2x,a4,",nmodes,"i4,1x,i4)"
-               write(out,my_fmt) ilevel,cf%value-zpe,cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:),contr(iclasses)%eigen(ilevel)%lquant 
+               write(out,my_fmt) ilevel,cf%value-zpe,cf%degeneracy,cf%isym,cf%gamma,cf%nu(1:nmodes),&
+                                 contr(iclasses)%eigen(ilevel)%lquant 
                !
              end if 
              !

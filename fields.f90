@@ -3228,7 +3228,7 @@ module fields
                 !
              enddo
              !
-           case('STATE_LIST')
+           case('STATE_LIST','STATE-LIST')
              !
              call read_line(eof) ; if (eof) exit
              !
