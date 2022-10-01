@@ -14,6 +14,7 @@ module molecules
   use mol_zxy3, only : ML_coordinate_transform_ZXY3, ML_symmetry_transformation_ZXY3, ML_b0_ZXY3, ML_rotsymmetry_ZXY3
   use mol_ch3oh
   use mol_abcd
+  use mol_x2y2, only : ML_coordinate_transform_X2Y2, ML_symmetry_transformation_X2Y2, ML_b0_X2Y2, ML_rotsymmetry_X2Y2
   use mol_c2h4
   use mol_c2h6
   use mol_c3h6
@@ -41,6 +42,9 @@ module molecules
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_bisect_EKE_sinrho
+
+  use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho
+
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP
   !
@@ -884,6 +888,13 @@ end function ML_MEPfunc
          MLsymmetry_transform_func => ML_symmetry_transformation_ABCD
          MLrotsymmetry_func => ML_rotsymmetry_ABCD
          !
+    case('X2Y2') 
+         !
+         MLcoordinate_transform_func =>  ML_coordinate_transform_X2Y2
+         MLequilibrium_xyz => ML_b0_X2Y2
+         MLsymmetry_transform_func => ML_symmetry_transformation_X2Y2
+         MLrotsymmetry_func => ML_rotsymmetry_X2Y2
+         !
     case('C2H4') 
          !
          MLcoordinate_transform_func =>  ML_coordinate_transform_C2H4
@@ -1082,6 +1093,10 @@ end function ML_MEPfunc
     case('ABCD') 
          !
          call  ML_rotsymmetry_abcd(J,K,tau,gamma,ideg)
+         !
+    case('X2Y2') 
+         !
+         call  ML_rotsymmetry_X2Y2(J,K,tau,gamma,ideg)
          !
     end select 
     !
@@ -3481,6 +3496,41 @@ end subroutine polintark
             case(7)
               !
               v = 1.0_ark/(Sin(molec%local_eq(imode) + x))**2
+              !
+            case default
+              !
+              v = 1.0_ark
+              !
+           end select
+           !
+        case('ANGLE-X2Y2')
+           !
+           if(iorder < 0) then 
+              print*, 'MLcoord_direct error: negative iorder'
+              stop 'MLcoord_direct error: negative iorder'
+           endif
+           !
+          select case(iorder)
+            !
+            case(0)          
+              !
+              v = 1.0_ark
+              !
+            case(1)
+              !
+              v = sin(molec%local_eq(imode) + x) 
+              !
+            case(2)
+              !
+              v = cos(molec%local_eq(imode) + x) 
+              !
+            case(3)
+              !
+              v = cos(molec%local_eq(imode) + x)**2
+              !
+            case(4)
+              !
+              v = sin(molec%local_eq(imode) + x)*cos(molec%local_eq(imode) + x)
               !
             case default
               !

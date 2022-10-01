@@ -1776,17 +1776,13 @@ contains
     !
     itransit = 0
     ilevels_lower = 0
+    nlevelI = 0
     !
     call TimerStart('Intensity loop')
     !
     ! loop over initial states
     !
     Ilevels_loop: do ilevelI = 1,nlevels
-      ! 
-      ! filter based on lower state count 
-      if (ilevelI<intensity%istate_count(1).or.ilevelI>intensity%istate_count(2)) cycle Ilevels_loop
-      !
-      ilevels_lower = ilevels_lower + 1
       !
       indI = eigen(ilevelI)%jind
       !
@@ -1807,6 +1803,17 @@ contains
       call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
       !
       if (.not.passed) cycle
+      !
+      ! nlevelI counts all lower state energies before the istate_count filter 
+      !
+      nlevelI = nlevelI + 1
+      ! 
+      ! filter based on lower state count 
+      if (nlevelI<intensity%istate_count(1).or.nlevelI>intensity%istate_count(2)) cycle Ilevels_loop
+      !
+      ! ilevels_lower counts actual lower state energies after all filters 
+      !
+      ilevels_lower = ilevels_lower + 1
       !
       ! where the eigenvector is stored 
       !
