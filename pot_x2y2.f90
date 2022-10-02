@@ -1,5 +1,5 @@
 !
-!  This unit defines all specific routines for a fouratomic molecule of ABCD type
+!  This unit defines all specific routines for a fouratomic molecule of X2Y2 type
 !
 module pot_x2y2
   use accuracy

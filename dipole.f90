@@ -1065,7 +1065,7 @@ contains
     type(DmatT),pointer  :: vec_ram(:,:)
     type(DkmatT),pointer :: ijterm(:)
     !
-    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,dimenmax_,nsizemax
+    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax
     !
     integer(ik)  :: ram_size_,alloc_p
     !
@@ -1776,7 +1776,7 @@ contains
     !
     itransit = 0
     ilevels_lower = 0
-    nlevelI = 0
+    nlevelI_ = 0
     !
     call TimerStart('Intensity loop')
     !
@@ -1804,12 +1804,12 @@ contains
       !
       if (.not.passed) cycle
       !
-      ! nlevelI counts all lower state energies before the istate_count filter 
+      ! nlevelI_ counts all lower state energies before the istate_count filter 
       !
-      nlevelI = nlevelI + 1
+      nlevelI_ = nlevelI_ + 1
       ! 
       ! filter based on lower state count 
-      if (nlevelI<intensity%istate_count(1).or.nlevelI>intensity%istate_count(2)) cycle Ilevels_loop
+      if (nlevelI_<intensity%istate_count(1).or.nlevelI_>intensity%istate_count(2)) cycle Ilevels_loop
       !
       ! ilevels_lower counts actual lower state energies after all filters 
       !
@@ -2482,7 +2482,7 @@ contains
                     energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
-      if (mod(ilevelI,min(100000,nlevelI))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
+      if (mod(nlevelI_,min(100000,nlevelI_))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
          !
          write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !
@@ -2576,9 +2576,9 @@ contains
       time_per_ilevel = real_time/real(min(ilevels_lower,1),rk)
       !
       if (real_time+time_per_ilevel*1.1>=intensity%wallclock*3600.0 ) then 
-          if (job%verbose>=3) write(out,"(/a,i8,a,i8,' states, last energy = ',f16.6)") &
+          if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i8,' states, last energy = ',f16.6)") &
                                     '   ... [wall-clock stop]: last lower-state ',&
-                                    ilevelI,', processed = ',ilevels_lower,energyI-intensity%ZPE
+                                    nlevelI_,' out of ',nlevelI,', processed = ',ilevels_lower,energyI-intensity%ZPE
           exit Ilevels_loop
       endif
       !
@@ -2587,7 +2587,7 @@ contains
     end do Ilevels_loop
     !
     if (job%verbose>=3) write(out,"(/' ...Intensities finished: From ',i8,' to ',i8,' of ',i8,' lower states.')") & 
-                        max(1,intensity%istate_count(1)),min(ilevelI,intensity%istate_count(2)),nlevelI
+                        max(1,intensity%istate_count(1)),min(nlevelI_,intensity%istate_count(2)),nlevelI
     !
     call TimerStop('Intensity loop')
     !
