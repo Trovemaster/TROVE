@@ -2743,11 +2743,13 @@ function MLpoten_c2h6_explct_M2_P6(ncoords, natoms, local, xyz, force) result(f)
   !
   f = 0 
   ! 
-  do i = 9,molec%parmax
-    !
-    f = f + g(i)*force(i)
-    !
-  enddo
+  !do i = 9,molec%parmax
+  !  !
+  !  f = f + g(i)*force(i)
+  !  !
+  !enddo
+  !
+  f = sum(g(9:)*force(9:))
   !  
 end function MLpoten_c2h6_explct_M2_P6
 
