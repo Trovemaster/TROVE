@@ -2239,7 +2239,7 @@ do jdeg=1, ndeg2
 do ideg=1, ndeg1
 if (any(abs(me(1:nirrep,ideg,jdeg,ithread))>print_tol)) then
 !$omp critical
-write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f))') ilevel_, jlevel_, ideg, jdeg, &
+write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f20.22))') ilevel_, jlevel_, ideg, jdeg, &
 me(1:nirrep,ideg,jdeg,ithread)
 !$omp end critical
 endif
