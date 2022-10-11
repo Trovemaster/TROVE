@@ -2474,7 +2474,7 @@ contains
       !
       call TimerProbe('Intensity loop',real_time,cpu_time)
       !
-      time_per_line = real_time/real(min(itransit,1),rk)
+      time_per_line = real_time/real(max(itransit,1),rk)
       total_time_predict = time_per_line*real(Ntransit,rk)/3600.0
       !
       if (job%verbose>=6) then
@@ -2573,7 +2573,7 @@ contains
       !
       if (job%verbose>=5) call TimerReport
       !
-      time_per_ilevel = real_time/real(min(ilevels_lower,1),rk)
+      time_per_ilevel = real_time/real(max(ilevels_lower,1),rk)
       !
       if (real_time+time_per_ilevel*1.1>=intensity%wallclock*3600.0 ) then 
           if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i8,' states, last energy = ',f16.6)") &

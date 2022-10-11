@@ -2679,7 +2679,7 @@ module perturbation
     type(PTcoeffs_arkT)    :: overlap(PT%Nspecies,sym%Noper)
     real(rk)               :: zpe,largest_coeff,error
     integer(ik)            :: ilargest_coeff
-    character(len=cl)      :: my_fmt !format for I/O specification
+    character(len=cl)      :: my_fmt,my_fmt_ !format for I/O specification
 
     if (job%verbose>=2) call TimerStart('Contraction & symmetrization')
     !
@@ -3287,7 +3287,7 @@ module perturbation
                fv = 0
                !
                !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
-               !$omp& shared(fv) schedule(dynamic) reduction(max:info)
+               !$omp& shared(fv) schedule(dynamic) reduction(max:info) reduction(.and.:PTuse_gauss_quadrature)
                loop_sampling: do k = 1,dimen
                  !
                  nu(:) = PT%active_space%icoeffs(:,k)
@@ -3345,8 +3345,9 @@ module perturbation
                          ! 
                          write(out,"('PTcontr..: Error in polint is too large: ',g18.8,'; id,iop,jpoint,k,i= ',5i8)") & 
                                       df_t,ideg,ioper,jpoint,k,i
-                         write(out,"('xval = ',g18.8,' func = ',30g18.8)") xval,& 
-                                      bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
+
+                         write(my_fmt_,'(a,i0,a)') "(g18.8,2x,",2*Nr_t+1,"g18.8)"
+                         write(out,my_fmt_) xval,bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
                          !
                          PTuse_gauss_quadrature = .false.
                          !
@@ -4529,117 +4530,6 @@ module perturbation
          fval = p1
          !
     end function Harmonic_oscillator
-
-   !
-    subroutine print_wavefuncitons_on_sampled_points
-        !
-        real(ark) :: xval_(2)
-        integer(ik) :: j1,j2
-
-         if (iclasses/=1) return
-         do j1 =0,job%bset(1)%npoints,10
-           xval_(1) = job%bset(1)%borders(1) + j1*rhostep(1)
-           do j2=0,job%bset(2)%npoints,10
-              xval_(2) = job%bset(2)%borders(1) + j2*rhostep(2)
-              !
-              fv = 0
-              !
-              !$omp parallel do private(k,nu,f_prim,i,imode,ispecies,xval,ipoint_t,v,r_t,func_t,fval,df_t,kroot) &
-              !$omp& shared(fv) schedule(dynamic) reduction(max:info)
-              loop_sampling1: do k = 1,dimen
-                !
-                nu(:) = PT%active_space%icoeffs(:,k)
-                !
-                ! primitive basis contribution
-                !
-                f_prim = 1.0_ark
-                !
-                do i = 1,PT%mode_iclass(iclasses)
-                   !
-                   imode = PT%mode_class(iclasses,i)
-                   ispecies = PT%Mspecies(imode)
-                   !
-                   xval = xval_(imode)
-                   !
-                   if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
-                       trim(bs_t(imode)%type)=='BOX'.or.&
-                       trim(bs_t(imode)%type)=='MORSE'.or.&
-                       trim(bs_t(imode)%type)=='FOURIER'.or.&
-                       trim(bs_t(imode)%type)=='SINRHO'.or.&
-                       trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
-                       trim(bs_t(imode)%type)=='LEGENDRE') then
-                       !
-                     ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
-                     !
-                     if (ipoint_t>npoints.or.ipoint_t<0) then 
-                        !
-                        info = max(info,1)
-                        !
-                        fval = 0
-                        ! 
-                        if (job%verbose>=5) write(out,"('PTcontr..: sampling geometry is out of range ',i0)") ipoint_t
-                        PTuse_gauss_quadrature = .false.
-                        !
-                        cycle loop_sampling1
-                        !
-                     endif 
-                     !
-                     !do v = -Nr_t,Nr_t
-                     !  !
-                     !  r_t(v)=job%bset(imode)%borders(1) + rhostep(imode)*real(ipoint_t+v,ark)
-                     !  !
-                     !enddo
-                     !
-                     !func_t(-Nr_t:Nr_t) = bs_funct(ispecies)%coeffs(nu(imode),max(0,ipoint_t-Nr_t):min(ipoint_t+Nr_t,npoints))
-                     !
-                     !call polintark(r_t,func_t,xval,fval,df_t)
-                     !
-                     fval = bs_funct(ispecies)%coeffs(nu(imode),ipoint_t)
-                     !
-                     if (df_t>100.0*sqrt(small_)) then
-                        !
-                        info = max(info,1)
-                        ! 
-                        write(out,"('PTcontr..: Error in polint is too large: ',g18.8,'; id,iop,jpoint,k,i= ',5i8)") & 
-                                     df_t,ideg,ioper,jpoint,k,i
-                        write(out,"('xval = ',g18.8,' func = ',30g18.8)") xval,& 
-                                     bs_funct(ispecies)%coeffs(nu(imode),ipoint_t-Nr_t:ipoint_t+Nr_t)
-                        !
-                        PTuse_gauss_quadrature = .false.
-                        !
-                     endif 
-                     !
-                   elseif (trim(bs_t(imode)%type)=='HARMONIC'.or.trim(bs_t(imode)%type)=='NORMAL') then 
-                     !
-                     fval = Harmonic_oscillator(xval,nu(imode))
-                     !
-                   else
-                     !
-                     write(out,"('PTcontracted_prediag: this basis set is not defined ',a)") trim(bs_t(imode)%type)
-                     stop 'PTcontracted_prediag: not implemented coord. type for the symmetry block'
-                     !
-                   endif 
-                   !
-                   f_prim = f_prim*fval
-                   !
-                enddo
-                !
-                kroot = count_index(icount,ideg)
-                !
-                fv(k) = PT%Htotal%coeffs(k,kroot)*f_prim
-                !
-              enddo loop_sampling1
-              !$omp end parallel do
-              !
-              f_t = sum(fv(1:dimen))
-              !
-              write(out,"(i8,2f12.8,2x,e18.10)") iroot,xval_(1:2),f_t
-              !
-           enddo
-         enddo
-         !
-    end subroutine print_wavefuncitons_on_sampled_points  
-
     !
   end subroutine PTcontracted_prediagonalization
 
