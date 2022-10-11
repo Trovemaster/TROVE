@@ -722,6 +722,92 @@ end subroutine rotme_j
 
 !###################################################################################################
 
+subroutine rotme_Wigner(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+
+    ! would be better to work with spherical stuff in MFF, but probably too many changes to make
+  
+    integer(ik), intent(in) :: q1(:), q2(:)
+    character(cl), intent(out) :: name
+    integer(ik), intent(inout) :: nelem, nirrep
+    complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
+    character(cl), intent(out), optional :: sirrep(:), selem(:)
+    logical :: first_lf=.true.
+  
+    integer(ik) :: sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s, i, l, lmin, lmax, index
+    integer(ik), allocatable :: rank(:), component(:)
+  
+    j1 = q1(1)
+    k1 = q1(2)
+    m1 = q1(3)
+    j2 = q2(1)
+    k2 = q2(2)
+    m2 = q2(3)
+  
+    ! [[-l,l] for l in lmin:lmax] ISTs, each with 1 component
+    name = 'Wigner'
+    lmin = 0
+    lmax = 2
+
+    nirrep = 0
+    do l=lmin,lmax !but do I need 0? -- for perturbers prob yes
+        nirrep = nirrep + 2*l+1
+    enddo
+
+    ! 0 -1  0  1 -2 -1  0  1  2 -3 -2 -1  0  1  2  3 ...
+    allocate(rank(nirrep), component(nirrep))
+    do l=lmin,lmax
+      index = l*l - lmin*lmin
+      rank     (index+1 : index + 2*l+1) = l
+      component(index+1 : index + 2*l+1) = [(i,i=-l,l)]
+    enddo
+    !
+    nelem = 1  
+    nelem_s = 1
+    !                                               (/'D^0_{*0}',&
+                                        ! 'D^1_{*-1}','D^1_{*0}','D^1_{*1}',&
+                            ! 'D^2_{*-2}','D^2_{*-1}','D^2_{*0}','D^2_{*1}','D^2_{*2}',&
+                ! 'D^3_{*-3}','D^3_{*-2}','D^3_{*-1}','D^3_{*0}','D^3_{*1}','D^3_{*2}','D^3_{*3}',&
+    ! 'D^4_{*-4}','D^4_{*-3}','D^4_{*-2}','D^4_{*-1}','D^4_{*0}','D^4_{*1}','D^4_{*2}','D^4_{*3}','D^4_{*4}'/)
+
+    ! tens%sirrep(tens%nirrep)
+    if (present(sirrep)) then
+      do i=1, size(sirrep)
+        write(sirrep(i), "(A,I1,A,I0,A)") "D^", rank(i), "_{*",component(i),"}"
+      enddo
+    endif
+  
+    ! tens%selem(tens%nelem)
+    if (present(selem)) then
+      do i=1, size(selem)
+        write(selem(i), "(A)") "D^l_{*m}"
+      enddo
+    endif
+
+    if (present(mf)) then
+      mf(:,:) = 0.0
+      ! now with only 1 component, and my components are "irreps" now
+      do irrep=1, nirrep
+        mf(1,irrep) = threej_symbol(j1,rank(irrep),j2,k1,component(irrep),-k2) * (-1)**(k2) 
+      enddo
+    endif
+  
+    if (present(lf)) then
+      if (first_lf) then
+        write(out,"(/A/)") 'M-tensor is not required in MCRB.'
+        first_lf = .false.
+      endif
+      lf(:,:) = 0.0
+    endif
+
+    deallocate(rank, component)
+
+  end subroutine rotme_Wigner
+
+!###################################################################################################
+
+
+!###################################################################################################
+
 
 subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
 
@@ -1297,6 +1383,5 @@ function threej_symbol(j1,j2,j3, m1,m2,m3) result(f)
 #endif
 
 end function threej_symbol
-
 
 end module rotme_cart_tens
