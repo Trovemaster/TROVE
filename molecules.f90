@@ -30,7 +30,7 @@ module molecules
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
                        MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36,&
-                       MLpoten_c2h6_explct_M2_P6
+                       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
@@ -171,6 +171,10 @@ module molecules
     case('POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS')
          !
          MLpotentialfunc => MLpoten_zxy2_mep_r_alpha_rho_powers
+         !
+    case('POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS_ISO')
+         !
+         MLpotentialfunc => MLpoten_zxy2_mep_r_alpha_rho_powers_iso
          !
     case('POTEN_ZXY2_MEP_R_ALPHA_RHO_COEFF')
          !
@@ -419,6 +423,10 @@ module molecules
     case('POTEN_C2H6_EXPLCT_M2_P6') 
          !
          MLpotentialfunc => MLpoten_c2h6_explct_M2_P6
+         !
+    case('POTEN_C2H6_MORSE_DISPLACE_FOURIER_G36') 
+         !
+         MLpotentialfunc => MLpoten_c2h6_Morse_displace_fourier_G36
          !
     case('POTEN_C2H6_DUNCAN') 
          !

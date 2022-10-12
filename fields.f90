@@ -3398,18 +3398,10 @@ module fields
               call readi(ifit(iparam))
               call readf(force(iparam))
               !
-              ! trick to prevent writing error
-              !
-              !if (all(pot_ind(1:Ncoords,iparam)<10)) then
-              !  write(forcename(iparam),"('f',<Ncoords>i1)") pot_ind(1:Ncoords,iparam)
-              !else
-              !  write(forcename(iparam),"('f',<Ncoords>i1)") 0,pot_ind(2:Ncoords,iparam)
-              !endif
-              !
-              if (any(pot_ind(:,iparam)<0)) then 
-                  write(out,"('FLinput: negative POTEN powers on row',i8)") iparam
-                    stop 'FLinput: wrong indexes '
-              endif 
+              !if (any(pot_ind(:,iparam)<0)) then 
+              !    write(out,"('FLinput: negative POTEN powers on row',i8)") iparam
+              !    stop 'FLinput: wrong indexes '
+              !endif 
               !
             case default
               !

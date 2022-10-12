@@ -9,7 +9,8 @@ module pot_zxy2
 
   public MLpoten_sohf,MLpoten_zxy2_andrey_01,MLpoten_zxy2_mep_r_alpha_rho_powers
   public MLdms2xyz_zxy2_symadap_powers,ML_MEP_zxy2_R_rho,MLpoten_zxy2_andrey_coeff,ML_MEP_zxy2_rho_coeff,MLpoten_h2cs_tz_damp1
-  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling,MLpoten_zxy2_morse_cos
+  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling,MLpoten_zxy2_morse_cos,&
+         MLpoten_zxy2_mep_r_alpha_rho_powers_iso
   private
  
   integer(ik), parameter :: verbose     = 3                          ! Verbosity level
@@ -1295,6 +1296,32 @@ end function MLpoten_zxy2_morse_cos
  enddo
  !
 end function MLpoten_zxy2_mep_r_alpha_rho_powers
+
+
+ function MLpoten_zxy2_mep_r_alpha_rho_powers_iso(ncoords,natoms,x,xyz,force) result(f) 
+  !
+  integer(ik),intent(in) ::  ncoords,natoms
+  real(ark),intent(in)   ::  x(ncoords)
+  real(ark),intent(in)   ::  xyz(natoms,3)
+  real(ark),intent(in)   ::  force(:)
+  real(ark)              ::  f
+  !
+  integer(ik)          :: N,N0,N_iso
+  real(ark)            :: M0,M_main,V_iso,V,M_iso
+  !
+  N0 = force(1)
+  V = MLpoten_zxy2_mep_r_alpha_rho_powers(ncoords,natoms,x,xyz,force(1+1:1+N0))
+  !
+  N = N0+1
+  N_iso  = force(N+1)
+  M_main = force(N+2)
+  M_iso  = force(N+3)
+  V_iso = MLpoten_zxy2_mep_r_alpha_rho_powers(ncoords,natoms,x,xyz,force(N+4:N+3+N_iso))
+  !
+  f = V + V_iso*(M_main-M_iso)/M_main
+  !
+end function MLpoten_zxy2_mep_r_alpha_rho_powers_iso
+
 
   !
   ! Defining potential energy function 

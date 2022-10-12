@@ -10,7 +10,7 @@ implicit none
 public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,&
        MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
 public MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36,&
-       MLpoten_c2h6_explct_M2_P6
+       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36
 
 private
 
@@ -2202,6 +2202,155 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
   end subroutine ML_symmetry_transformation_C2H6_G36
 
 
+   recursive subroutine ML_symmetry_transformation_C2H6_G36_full(ioper, nmodes, src, dst)
+    !
+    ! Symmetry transformation rules of coordinates
+    !
+    integer(ik), intent(in)  ::  ioper
+    integer(ik), intent(in)  ::  nmodes
+    real(ark), intent(in)    ::  src(1:nmodes)
+    real(ark), intent(out)   ::  dst(1:nmodes)
+    !
+    real(ark) :: a,b,e,o,g(1:4,1:4),c123(2,2),c132(2,2),a123(3,3),a132(3,3),sxy(2,2),i(3,3),i2(3,3)
+    !
+    real(ark),dimension(size(src)) :: tmp
+    !
+    integer(ik)  :: tn(72,2), temp(144)
+    integer(ik) :: nsrc
+    !
+    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    !
+    tn = reshape( temp, (/ 72, 2/))
+    !
+    a = 0.5_ark
+    b = 0.5_ark*sqrt(3.0_ark)
+    !
+    e = 1.0_ark
+    o = 0.0_ark
+    !!
+    c123 = transpose(reshape( (/ -a, -b, &
+                                  b, -a/), (/ 2, 2/)))
+    c132  = matmul(c123,c123)
+    !
+    a123 = transpose(reshape( (/ o, o, e,&
+                                 e, o, o,&
+                                 o, e, o/), (/ 3, 3/)))
+    a132  = matmul(a123,a123)
+    !
+    i = transpose(reshape( (/ e, o, o,&
+                              o, e, o,&
+                              o, o, e/), (/ 3, 3/)))
+    !
+    i2= transpose(reshape( (/ e, o, o,&
+                              o, o, e,&
+                              o, e, o/), (/ 3, 3/)))
+    !
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    select case(ioper)
+      !
+    case (1) ! E
+      !
+      dst(1:18) = src(1:18)
+      !
+    case (2) !C(+)/(123)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a123,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a123,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c123,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      !
+      do while(dst(18) < 0.0_ark) 
+            dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      !
+      do while(dst(18) > 4.0_ark*pi) 
+            dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+      !    
+    case (4) !sxy(+)/(14)(26)(35)(ab)* 
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i2,src(5:7))
+      dst(5:7) = matmul(i2,src(2:4))
+      !
+      dst(8:10) = matmul(i2,src(11:13))
+      dst(11:13) = matmul(i2,src(8:10))
+      !
+      !!
+      dst(14:15) = matmul(sxy,src(16:17))
+      dst(16:17) = matmul(sxy,src(14:15))
+      !
+      dst(18) =  4.0_ark*pi - src(18)
+      !
+      do while(dst(18) < 0.0_ark) 
+            dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      do while(dst(18) > 4.0_ark*pi) 
+            dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+      !
+    case (7) ! C(-)/(132)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a132,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a132,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c132,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      dst(18) = src(18)
+      !
+    case (19) !sxy(-)/(14)(25)(36)(ab)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i,src(5:7))
+      dst(5:7) = matmul(i,src(2:4))
+      !
+      dst(8:10) = matmul(i,src(11:13))
+      dst(11:13) = matmul(i,src(8:10))
+      !!
+      dst(14:15) = src(16:17)
+      dst(16:17) = src(14:15)
+      !!
+      dst(18) = src(18)
+      !
+   case(37) !E'
+      !
+      dst(1:17) = src(1:17)
+      dst(18) = src(18) + 2.0_ark*pi
+      do while(dst(18) < 0.0_ark) 
+           dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      do while(dst(18) > 4.0_ark*pi) 
+           dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+      !
+    end select
+    !
+    if (all(tn(ioper,:)/=0)) then
+        call ML_symmetry_transformation_C2H6_G36_full(tn(ioper,1),nmodes,src,tmp)
+        call ML_symmetry_transformation_C2H6_G36_full(tn(ioper,2),nmodes,tmp,dst)
+    endif 
+    !
+  end subroutine ML_symmetry_transformation_C2H6_G36_full
+
 
 function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(f)
   !
@@ -2460,6 +2609,70 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   enddo
   !  
 end function MLpoten_c2h6_88_cos3tau_G36
+
+
+function MLpoten_c2h6_Morse_displace_fourier_G36(ncoords, natoms, local, xyz, force) result(f)
+  !
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+  !
+  real(ark) :: xi(18),x(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
+  real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
+  real(ark) :: chi(18),term,rad,rhobar
+  integer(ik) :: ioper,ipower(18),i,nmodes
+  !
+  real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53
+  !
+  rad = pi/180.0_ark
+  !
+  r1e = force(1)
+  r2e = force(2)
+  betae = force(3)*rad
+  a = force(4)
+  b = force(5)
+  !
+  nmodes = 18
+  !
+  call coordinate_transformation(ncoords,nmodes,local,xi)
+  !
+  f = 0
+  ! 
+  do i = 6, molec%parmax
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    !
+    do ioper = 1,36
+      !
+      call ML_symmetry_transformation_C2H6_G36_full(ioper,18,xi,chi(:))
+      !
+      x( 1   )= 1.0_ark   - exp(-a*(chi(1)-r1e))
+      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7)-r2e))
+      x( 8:13)= chi( 8:13) - betae
+      x(14:18)= chi(14:18)
+      !
+      if (ipower(18)>=0) then 
+        x(18) = cos(ipower(18)*chi(18) )
+      else
+        x(18) = sin(abs(ipower(18))*chi(18) )
+      endif
+      !
+      term = term + product(x(1:17)**ipower(1:17))*x(18)
+      !
+    end do
+    !
+    term = term/36.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  !  
+end function MLpoten_c2h6_Morse_displace_fourier_G36
 
 
 

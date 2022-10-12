@@ -2482,7 +2482,7 @@ contains
                     energyI-intensity%ZPE,itransit,real_time,1.0_rk/time_per_line,total_time_predict
       endif
       !
-      if (mod(nlevelI_,min(100000,nlevelI_))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=5) then
+      if (mod(nlevelI_,min(100000,nlevelI_))==0.and.(int(total_time_predict/intensity%wallclock)/=0).and.job%verbose>=6) then
          !
          write(out,"(/'Recommended energy distribution for ',f12.2,' h limit:')") intensity%wallclock
          !
@@ -2573,9 +2573,11 @@ contains
       !
       if (job%verbose>=5) call TimerReport
       !
+      call TimerProbe('TROVE',real_time,cpu_time)
+      !
       time_per_ilevel = real_time/real(max(ilevels_lower,1),rk)
       !
-      if (real_time+time_per_ilevel*1.1>=intensity%wallclock*3600.0 ) then 
+      if (real_time+time_per_ilevel*1.2>=intensity%wallclock*3600.0 ) then 
           if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i8,' states, last energy = ',f16.6)") &
                                     '   ... [wall-clock stop]: last lower-state ',&
                                     nlevelI_,' out of ',nlevelI,', processed = ',ilevels_lower,energyI-intensity%ZPE
