@@ -2621,8 +2621,8 @@ function MLpoten_c2h6_Morse_displace_fourier_G36(ncoords, natoms, local, xyz, fo
   !
   real(ark) :: xi(18),x(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
   real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
-  real(ark) :: chi(18),term,rad,rhobar
-  integer(ik) :: ioper,ipower(18),i,nmodes
+  real(ark) :: chi(18,36),term,rad,rhobar
+  integer(ik) :: ioper,ipower(18),i,nmodes,Nsin,Ncos
   !
   real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46
   real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53
@@ -2634,35 +2634,52 @@ function MLpoten_c2h6_Morse_displace_fourier_G36(ncoords, natoms, local, xyz, fo
   betae = force(3)*rad
   a = force(4)
   b = force(5)
+  Ncos = force(6)
+  Nsin = force(6+Ncos+1)
   !
   nmodes = 18
   !
   call coordinate_transformation(ncoords,nmodes,local,xi)
   !
+  do ioper = 1,36
+    !
+    call ML_symmetry_transformation_C2H6_G36_full(ioper,18,xi,chi(:,ioper))
+    !
+  enddo
+  !
   f = 0
   ! 
-  do i = 6, molec%parmax
+  do i = 7, 7+Ncos
     !
     ipower(1:18) = molec%pot_ind(1:18,i)
     !
     term = 0 
-    !
     do ioper = 1,36
+      x( 1   )= 1.0_ark   - exp(-a*(chi(1,ioper)-r1e))
+      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7,ioper)-r2e))
+      x( 8:13)= chi( 8:13,ioper) - betae
+      x(14:18)= chi(14:18,ioper)
+      term = term + product(x(1:17)**ipower(1:17))*cos(ipower(18)*x(18))
       !
-      call ML_symmetry_transformation_C2H6_G36_full(ioper,18,xi,chi(:))
-      !
-      x( 1   )= 1.0_ark   - exp(-a*(chi(1)-r1e))
-      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7)-r2e))
-      x( 8:13)= chi( 8:13) - betae
-      x(14:18)= chi(14:18)
-      !
-      if (ipower(18)>=0) then 
-        x(18) = cos(ipower(18)*chi(18) )
-      else
-        x(18) = sin(abs(ipower(18))*chi(18) )
-      endif
-      !
-      term = term + product(x(1:17)**ipower(1:17))*x(18)
+    end do
+    !
+    term = term/36.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  ! 
+  do i =7+Ncos+1,7+Ncos+Nsin
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    do ioper = 1,36
+      x( 1   )= 1.0_ark   - exp(-a*(chi(1,ioper)-r1e))
+      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7,ioper)-r2e))
+      x( 8:13)= chi( 8:13,ioper) - betae
+      x(14:18)= chi(14:18,ioper)
+      term = term + product(x(1:17)**ipower(1:17))*sin(ipower(18)*x(18))
       !
     end do
     !
