@@ -17640,7 +17640,7 @@ end subroutine check_read_save_none
              !
              if (trove%sparse) then
                call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
-               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
+               call find_isparse_from_ifull(gl%Ncoeff,gl%ifromsparse,1,i2)
                !
                if (i1==0.or.i2==0) then 
                   !

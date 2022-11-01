@@ -1602,7 +1602,7 @@ contains
     !
 #if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
-       write(out,"(' Total number of transitions  = ',i10)") Ntransit
+       write(out,"(' Total number of transitions  = ',i12)") Ntransit
 #endif
     !
     !
@@ -4440,7 +4440,7 @@ contains
     !
 #if (dipole_debug >= 0)
        write(out,"(' Total number of lower states = ',i8)") nlevelI
-       write(out,"(' Total number of transitions  = ',i8)") Ntransit
+       write(out,"(' Total number of transitions  = ',i12)") Ntransit
 #endif
     !
     !
