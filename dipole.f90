@@ -1258,7 +1258,7 @@ contains
       igammaI  = eigen(ilevelI)%igamma
       quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes) 
       !
-      call energy_filter_lower(jI,energyI,quantaI,eigen(ilevelI)%normal(0),passed)
+      call energy_filter_lower(jI,energyI,eigen(ilevelI)%normal(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -1276,7 +1276,7 @@ contains
          igammaF = eigen(ilevelF)%igamma        
          quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
          !
-         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
          !
          if (passed) then 
            !
@@ -1330,9 +1330,9 @@ contains
        quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes)
        normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
        !
-       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+       call energy_filter_upper(jF,energyF,normalF(0),passed)
        !
-       call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
+       call energy_filter_lower(jF,energyF,normalF(0),passed_)
        !
        if (.not.passed.and..not.passed_) cycle
        !
@@ -1483,9 +1483,9 @@ contains
       quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
       normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
       !
-      call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+      call energy_filter_upper(jF,energyF,normalF(0),passed)
       !
-      call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
+      call energy_filter_lower(jF,energyF,normalF(0),passed_)
       !
       if (.not.passed.and..not.passed_) cycle
       !
@@ -1582,7 +1582,7 @@ contains
        !
        indF = eigen(ilevelF)%jind
        !
-       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+       call energy_filter_upper(jF,energyF,normalF(0),passed)
        !
        if (.not.passed) cycle
        !
@@ -1800,7 +1800,7 @@ contains
       ndegI   = eigen(ilevelI)%ndeg
       nsizeI = bset_contr(indI)%nsize(igammaI)
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
+      call energy_filter_lower(jI,energyI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -1879,7 +1879,7 @@ contains
           igammaF = eigen(ilevelF)%igamma        
           quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
           !
-          call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+          call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
           !
           if (passed) exit
           !
@@ -2085,11 +2085,11 @@ contains
          !
          if (unitF==-1) stop 'This file is not supposed to be accessed'
          !
-         call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+         call energy_filter_upper(jF,energyF,normalF(0),passed)
          !
          if (.not.passed) cycle Flevels_loop
          !
-         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
          !
          if (.not.passed) cycle Flevels_loop
          !
@@ -2501,7 +2501,7 @@ contains
            quantaI(0:nmodes) = eigen(ilevelI_)%quanta(0:nmodes)
            normalI(0:nmodes) = eigen(ilevelI_)%normal(0:nmodes)
            !
-           call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
+           call energy_filter_lower(jI,energyI,normalI(0),passed)
            !
            if (.not.passed) cycle
            !
@@ -2512,7 +2512,7 @@ contains
               igammaF = eigen(ilevelF)%igamma        
               quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
               !
-              call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+              call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
               !
               if (passed) then 
                 !
@@ -3944,7 +3944,7 @@ contains
       quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes) 
       normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
+      call energy_filter_lower(jI,energyI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -3962,7 +3962,7 @@ contains
          igammaF = eigen(ilevelF)%igamma        
          quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
          !
-         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
          !
          if (passed) then 
            !
@@ -3999,9 +3999,9 @@ contains
        quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
        normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
        !
-       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+       call energy_filter_upper(jF,energyF,normalF(0),passed)
        !
-       call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
+       call energy_filter_lower(jF,energyF,normalF(0),passed_)
        !
        if (.not.passed.and..not.passed_) cycle
        !
@@ -4310,9 +4310,9 @@ contains
       quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
       normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes) 
       !
-      call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+      call energy_filter_upper(jF,energyF,normalF(0),passed)
       !
-      call energy_filter_lower(jF,energyF,quantaF,normalF(0),passed_)
+      call energy_filter_lower(jF,energyF,normalF(0),passed_)
       !
       if (.not.passed.and..not.passed_) cycle
       !
@@ -4426,7 +4426,7 @@ contains
        quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
        normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes) 
        !
-       call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+       call energy_filter_upper(jF,energyF,normalF(0),passed)
        !
        if (.not.passed) cycle
        !
@@ -4516,7 +4516,7 @@ contains
       normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
       ndegI   = eigen(ilevelI)%ndeg
       !
-      call energy_filter_lower(jI,energyI,quantaI,normalI(0),passed)
+      call energy_filter_lower(jI,energyI,normalI(0),passed)
       !
       if (.not.passed) cycle
       !
@@ -4596,7 +4596,7 @@ contains
           igammaF = eigen(ilevelF)%igamma        
           quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
           !
-          call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+          call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
           !
           if (passed) exit
           !
@@ -4704,13 +4704,13 @@ contains
          unitO = Jfuncs_unit(indF)
          unitC = Jindex_unit(indF)
          !
-         call energy_filter_upper(jF,energyF,quantaF,normalF(0),passed)
+         call energy_filter_upper(jF,energyF,normalF(0),passed)
          !
          if (.not.passed) cycle Flevels_loop
          !
          call TimerStart('Intens_Filter-3')
          !
-         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+         call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
          !
          call TimerStop('Intens_Filter-3')
          !
@@ -5203,35 +5203,35 @@ contains
      end subroutine find_igamma_pair
 
 
-     subroutine energy_filter_lower(J,energy,quanta,normal_0,passed)
+     subroutine energy_filter_lower(J,energy,normal_0,passed)
        !
        implicit none 
        integer(ik),intent(in) :: J
        real(rk),intent(in)    :: energy
-       integer(ik),intent(in) :: quanta(0:molec%nmodes),normal_0
+       integer(ik),intent(in) :: normal_0
        logical,intent(out)    :: passed
          !
-         ! passed = .true.
+         passed = .true.
          !
-         ! if (.not.intensity%do) return
+         if (energy-intensity%ZPE<intensity%erange_low(1)) then 
+            passed = .false.
+            return 
+         endif 
          !
-         passed = .false.
+         if (energy-intensity%ZPE>intensity%erange_low(2)) then 
+            passed = .false.
+            return 
+         endif 
          !
-         if (                                                             &
-             ! nuclear stat.weight: 
-             !
-             J>=intensity%J(1).and.                                       &
-             J<=intensity%J(2).and.                                       &
-             !
-             energy-intensity%ZPE>=intensity%erange_low(1).and.           &
-             energy-intensity%ZPE<=intensity%erange_low(2).and.           &
-             !
-             all(quanta(1:molec%nmodes) >= intensity%v_low(1:molec%nmodes, 1)).and.   &
-             all(quanta(1:molec%nmodes) <= intensity%v_low(1:molec%nmodes, 2)) ) then 
-             !
-             passed = .true.
-             !
-         endif
+         !if (J<intensity%J(1)) then 
+         !   passed = .false.
+         !   return 
+         !endif 
+         !
+         !if (J>intensity%J(2)) then 
+         !   passed = .false.
+         !   return 
+         !endif 
          !
          if (job%triatom_sing_resolve) then
             if (J==0.and.normal_0/=0) then
@@ -5243,35 +5243,35 @@ contains
 
 
 
-     subroutine energy_filter_upper(J,energy,quanta,normal_0,passed)
+     subroutine energy_filter_upper(J,energy,normal_0,passed)
        !
        implicit none 
        integer(ik),intent(in) :: J
        real(rk),intent(in)    :: energy
-       integer(ik),intent(in) :: quanta(0:molec%nmodes),normal_0
+       integer(ik),intent(in) :: normal_0
        logical,intent(out)    :: passed
          !
-         ! passed = .true.
+         passed = .true.
          !
-         ! if (.not.intensity%do) return
-         !
-         passed = .false.
-         !
-         if (                                                             &
-             ! nuclear stat.weight: 
-             !
-             J>=intensity%J(1).and.                                       &
-             J<=intensity%J(2).and.                                       &
-             !
-             energy-intensity%ZPE>=intensity%erange_upp(1).and.           &
-             energy-intensity%ZPE<=intensity%erange_upp(2).and.           &
-             !
-             all(quanta(1:molec%nmodes) >= intensity%v_upp(1:molec%nmodes, 1)).and.   &
-             all(quanta(1:molec%nmodes) <= intensity%v_upp(1:molec%nmodes, 2)) ) then 
-             !
-             passed = .true.
-             !
+         if (energy-intensity%ZPE<intensity%erange_upp(1)) then 
+            passed = .false.
+            return 
          endif 
+         !
+         if (energy-intensity%ZPE>intensity%erange_upp(2)) then 
+            passed = .false.
+            return 
+         endif 
+         !
+         !if (J<intensity%J(1)) then 
+         !   passed = .false.
+         !   return 
+         !endif 
+         !
+         !if (J>intensity%J(2)) then 
+         !   passed = .false.
+         !   return 
+         !endif 
          !
          if (job%triatom_sing_resolve) then
             if (J==0.and.normal_0/=0) then
@@ -5323,86 +5323,128 @@ contains
      end subroutine degeneracy_filter
 
 
-
-
-
-     subroutine intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,quantaI,quantaF,igamma_pair,passed)
+     subroutine intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
         implicit none 
         !
-        integer(ik),intent(in) :: jI,jF,igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes)
+        integer(ik),intent(in) :: jI,jF,igammaI,igammaF
         real(rk),intent(in)    :: energyI,energyF
         integer(ik),intent(in) :: igamma_pair(sym%Nrepresen)
         real(rk)               :: nu_if
         logical,intent(out)    :: passed
-        integer(ik)            :: nmodes
-
-          passed = .false.
           !
-          nmodes = molec%nmodes
+          passed = .true.
           !
           nu_if = energyF - energyI 
-          if (trim(intensity%action)=='EMISSION') nu_if = -nu_if 
           !
+          ! absorption/emission go only in one direction
           !
-          if (                                                             &
-              ! nuclear stat.weight: 
-              !
-              intensity%gns(igammaI)>small_.and.                           &
-              !
-              ! absorption/emission go only in one direction
-              !
-              nu_if>-small_.and.                                           &
-              !
-              ! spectroscopic window
-              !
-              nu_if>=intensity%freq_window(1).and.                         &
-              nu_if<=intensity%freq_window(2).and.                         &
-              !
-              jI>=intensity%J(1).and.                                      &
-              jI<=intensity%J(2).and.                                      &
-              !
-              jF>=intensity%J(1).and.                                      &
-              jF<=intensity%J(2).and.                                      &
-              !
-              energyI-intensity%ZPE>=intensity%erange_low(1).and.          &
-              energyI-intensity%ZPE<=intensity%erange_low(2).and.          &
-              !
-              energyF-intensity%ZPE>=intensity%erange_upp(1).and.          &
-              energyF-intensity%ZPE<=intensity%erange_upp(2).and.          &
-              !
-              all(quantaI(1:nmodes) >= intensity%v_low(1:nmodes, 1)).and.  &
-              all(quantaI(1:nmodes) <= intensity%v_low(1:nmodes, 2)).and.  &
-              !
-              all(quantaF(1:nmodes) >= intensity%v_upp(1:nmodes, 1)).and.  &
-              all(quantaF(1:nmodes) <= intensity%v_upp(1:nmodes, 2))) then 
-              !
-              passed = .true.
-              !
-          endif 
+          select case (trim(intensity%action))
+           case ('EMISSION') 
+              nu_if = -nu_if 
+          end select 
           !
-          !
-          if (trim(intensity%action)=='ABSORPTION'.or.trim(intensity%action)=='EMISSION') then 
+          if (trim(intensity%action)=='ABSORPTION'.or.trim(intensity%action)=='EMISSION') then
              !
-             ! In order to avoid double counting of transitions
-             ! we exclude jI=jF==intensity%J(1), i.e. Q branch for the highest J is never considered:
+             if (jI==intensity%J(1).and.jF==intensity%J(1)) then
+               passed = .false.
+               return 
+             endif
              !
-             passed = passed.and.                                              &
+             if ( intensity%isym_pairs(igammaI)/=intensity%isym_pairs(igammaF) ) then 
+               passed = .false.
+               return 
+             endif
              !
-             !(jF/=intensity%J(2).or.jF/=jI).and.                               &
-             !
-             (jF/=intensity%J(1).or.jI/=intensity%J(1)).and.                    &
-             !
-             ! selection rules: 
-             !
-             intensity%isym_pairs(igammaI)==intensity%isym_pairs(igammaF).and.  &
-             !
-             igamma_pair(igammaI)==igammaF.and.                                 &
+             if ( igamma_pair(igammaI)/=igammaF ) then 
+               passed = .false.
+               return 
+             endif
              !
              ! selection rules from the 3j-symbols
              !
-             abs(jI-jF)<=1.and.jI+jF>=1
+             if ( abs(jI-jF)>1 ) then 
+               passed = .false.
+               return 
+             endif
+             !
+             if ( jI+jF==0 ) then 
+               passed = .false.
+               return 
+             endif
              !
           endif
+          !
+          if (energyF-intensity%ZPE<intensity%erange_upp(1)) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          if (energyF-intensity%ZPE>intensity%erange_upp(2)) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          ! spectroscopic window
+          !
+          if (nu_if<intensity%freq_window(1)) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          if (nu_if>intensity%freq_window(2)) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          if (nu_if<-small_) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          ! nuclear stat.weight: 
+          !
+          if (intensity%gns(igammaI)<small_) then 
+             passed = .false.
+             return 
+          endif 
+          !
+          !if (jI<intensity%J(1)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (jI>intensity%J(2)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (jF<intensity%J(1)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (jF>intensity%J(2)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (energyI-intensity%ZPE<intensity%erange_low(1)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (energyI-intensity%ZPE>intensity%erange_low(2)) then 
+          !   passed = .false.
+          !   return 
+          !endif 
+          !
+          !if (                                                             &
+          !    any(quantaI(1:nmodes) < intensity%v_low(1:nmodes, 1)).and.  &
+          !    any(quantaI(1:nmodes) > intensity%v_low(1:nmodes, 2)).and.  &
+          !    any(quantaF(1:nmodes) < intensity%v_upp(1:nmodes, 1)).and.  &
+          !    any(quantaF(1:nmodes) > intensity%v_upp(1:nmodes, 2))) then 
+          !    passed = .false.
+          !endif 
           !
      end subroutine intens_filter
 

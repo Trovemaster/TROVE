@@ -272,7 +272,7 @@ module moltype
      integer(ik)         :: int_increm = 1e9 ! used to print out the lower energies needed to select int_increm intensities
      integer(ik)         :: Ncache = 10000 ! used to cache intensities before prinout  to speed up 
      real(rk)         :: factor = 1.0d0   ! factor <1 to be applied the maxsize of the vector adn thus to be shrunk 
-     real(rk)         :: wallclock    ! wallclock limit, needed to estmate how many transitions can be processed within one job
+     real(rk)         :: wallclock=10000000.0d0    ! wallclock limit in h, needed to estmate how many transitions can be processed within one job
      logical          :: reduced      ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only

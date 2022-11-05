@@ -984,19 +984,23 @@ contains
         integer(ik),intent(in) :: igamma
         logical,intent(out)    :: passed
           !
-          ! passed = .true.
+          passed = .true.
           !
-          ! if (.not.intensity%do) return
-          !
-          passed = .false.
-          !
-          if (job%isym_do(igamma).and.energy-job%ZPE>=job%erange(1)  &
-                                 .and.energy-job%ZPE<=job%erange(2)) then 
-              !
-              passed = .true.
-              !
+          if (.not.job%isym_do(igamma)) then 
+              passed = .false.
+              return
           endif 
-
+          !
+          if (energy-job%ZPE<job%erange(1)) then 
+              passed = .false.
+              return
+          endif 
+          !
+          if (energy-job%ZPE>job%erange(2)) then 
+              passed = .false.
+              return
+          endif 
+          !
       end subroutine filter
       !
  end subroutine read_eigenval
