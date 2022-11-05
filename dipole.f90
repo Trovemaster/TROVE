@@ -2577,10 +2577,10 @@ contains
       !
       time_per_ilevel = real_time/real(max(ilevels_lower,1),rk)
       !
-      if (real_time+time_per_ilevel*1.2>=intensity%wallclock*3600.0 ) then 
-          if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i8,' states, last energy = ',f16.6)") &
+      if (real_time+time_per_ilevel*4.0>=intensity%wallclock*3600.0 ) then 
+          if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i18,a,i8,' states, last energy = ',f16.6)") &
                                     '   ... [wall-clock stop]: last lower-state ',&
-                                    nlevelI_,' out of ',nlevelI,', processed = ',ilevels_lower,energyI-intensity%ZPE
+                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower,energyI-intensity%ZPE
           exit Ilevels_loop
       endif
       !
