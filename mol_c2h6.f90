@@ -65,7 +65,7 @@ module mol_c2h6
     real(ark) :: tau4213,tau5124,tau6213,tau5126
     real(ark) :: tau1, tau2, b1_zmat, b2_zmat, tau1_zmat, dtau, db1, db2
     !
-    real(ark) :: tau16,tau34,tau36,tau24,tau25,theta12,theta23,theta31,theta56,theta45,theta64,&
+    real(ark) :: tau16,tau34,tau36,tau24,tau25,tau26,theta12,theta23,theta31,theta56,theta45,theta64,&
                  S1,S2,S3,S4,S5,S6,taubar,tau,S14,S15,S16,S17,S18
     real(ark) :: tau14,tau35,theta13,theta46,tau41,tau62,tau53,tau51,tau52,tau63
     !
@@ -421,31 +421,31 @@ module mol_c2h6
         !
       endif
       ! 
-    case('R-R16-BETA16-THETA-TAU-1')
+    case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-3')
       !
       if (direct) then ! transform from Z-matrix coords to TROVE coords
         !
         dst(1) = src(1)-molec%local_eq(1)
         !
         dst(2) = src(2)-molec%local_eq(2)
-        dst(3) = src(4)-molec%local_eq(4)
-        dst(4) = src(6)-molec%local_eq(6)
+        dst(3) = src(6)-molec%local_eq(6)
+        dst(4) = src(4)-molec%local_eq(4)
         dst(5) = src(3)-molec%local_eq(3)
-        dst(6) = src(7)-molec%local_eq(5)
-        dst(7) = src(5)-molec%local_eq(6)
+        dst(6) = src(7)-molec%local_eq(7)
+        dst(7) = src(5)-molec%local_eq(5)
         !
         dst( 8) = src( 8)-molec%local_eq( 8)
-        dst( 9) = src(10)-molec%local_eq(10)
-        dst(10) = src(12)-molec%local_eq(12)
+        dst( 9) = src(12)-molec%local_eq(12)
+        dst(10) = src(10)-molec%local_eq(10)
         dst(11) = src( 9)-molec%local_eq( 9)
-        dst(12) = src(11)-molec%local_eq(11)
-        dst(13) = src(13)-molec%local_eq(13)
+        dst(12) = src(13)-molec%local_eq(13)
+        dst(13) = src(11)-molec%local_eq(11)
         !
         tau14 = mod(src(14)+4.0_ark*pi,4.0_ark*pi)
-        tau24 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
-        tau25 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
-        tau35 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
-        tau36 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
+        tau34 = mod(src(15)+2.0_ark*pi,2.0_ark*pi)
+        tau36 = mod(src(16)+2.0_ark*pi,2.0_ark*pi)
+        tau26 = mod(src(17)+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(src(18)+2.0_ark*pi,2.0_ark*pi)
         !
         ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
         if (tau14>2.0_ark*pi) then 
@@ -460,24 +460,24 @@ module mol_c2h6
         ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
         !
         tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
-        tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
-        tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+        tau34 = mod(tau34+2.0_ark*pi,2.0_ark*pi)
         tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+        tau26 = mod(tau26+2.0_ark*pi,2.0_ark*pi)
+        tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
         !
-        theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
-        theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
-        theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+        theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
         !
-        theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
-        theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
-        theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+        theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+        theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+        theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
         !
-        dst(14)  = ( 2.0_ark*theta23 - theta12 - theta13 )/sqrt(6.0_ark)
-        dst(15)  = (                   theta12 - theta13 )/sqrt(2.0_ark)
+        dst(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
         !
-        dst(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
-        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+        dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
@@ -487,40 +487,33 @@ module mol_c2h6
         dst(4) = src(3)+molec%local_eq(3)
         dst(6) = src(4)+molec%local_eq(4)
         dst(3) = src(5)+molec%local_eq(5)
-        dst(5) = src(6)+molec%local_eq(6)
-        dst(7) = src(7)+molec%local_eq(7)
+        dst(7) = src(6)+molec%local_eq(6)
+        dst(5) = src(7)+molec%local_eq(7)
         !
         dst( 8) = src( 8)+molec%local_eq( 8)
         dst(10) = src( 9)+molec%local_eq( 9)
         dst(12) = src(10)+molec%local_eq(10)
         dst( 9) = src(11)+molec%local_eq(11)
-        dst(11) = src(12)+molec%local_eq(12)
-        dst(13) = src(13)+molec%local_eq(13)
+        dst(13) = src(12)+molec%local_eq(12)
+        dst(11) = src(13)+molec%local_eq(13)
         !
         S14 = src(14)
-        S15 =-src(15)
+        S15 = src(15)
         S16 = src(16)
-        S17 =-src(17)
+        S17 = src(17)
         S18 = src(18)
-        !
-        !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
-        !tau24 = -1/3*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s14+tau0-2/3*pi
-        !tau25 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16+1/6*sqrt(6)*s14+tau0
-        !tau35 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15-1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0-2/3*pi
-        !tau36 = 1/6*sqrt(2)*s17+1/6*sqrt(2)*s15+1/6*sqrt(6)*s16-1/6*sqrt(6)*s14+tau0
-        !
-        tau14 = sqrt(2.0_ark)*S17/3.0_ark-sqrt(2.0_ark)*S15/3.0_ark+S18
-        tau24 = sqrt(2.0_ark)*S17/3.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark+S18-2.0_ark/3.0_ark*pi
-        tau25 = -sqrt(6.0_ark)*S16/6.0_ark+sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18
-        tau35 = -sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark-sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+S18&
-                -2.0_ark/3.0_ark*pi
-        tau36 = -sqrt(2.0_ark)*S17/6.0_ark+sqrt(2.0_ark)*S15/6.0_ark+sqrt(6.0_ark)*S16/6.0_ark-sqrt(6.0_ark)*S14/6.0_ark+S18
+        !        
+        tau14 =  1.0_ark/3.0_ark*sqrt(2.0_ark)*s17+1.0_ark/3.0_ark*sqrt(2.0_ark)*s15+S18        
+        tau34 = -2.0_ark/3.0_ark*pi+1.0_ark/3.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18
+        tau36 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16+1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18
+        tau26 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15-1.0_ark/6.0_ark*sqrt(6.0_ark)*s16-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18-2.0_ark/3*pi
+        tau25 = -1.0_ark/6.0_ark*sqrt(2.0_ark)*s17-1.0_ark/6.0_ark*sqrt(2.0_ark)*s15+1.0_ark/6.0_ark*sqrt(6.0_ark)*s16-1.0_ark/6.0_ark*sqrt(6.0_ark)*s14+S18
         !
         dst(14) = mod(tau14+4.0_ark*pi,4.0_ark*pi) ! <- made mod(4pi) 
-        dst(15) = mod(tau24+2.0_ark*pi,2.0_ark*pi)
-        dst(16) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
-        dst(17) = mod(tau35+2.0_ark*pi,2.0_ark*pi)
-        dst(18) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        dst(15) = mod(tau34+2.0_ark*pi,2.0_ark*pi)
+        dst(16) = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+        dst(17) = mod(tau26+2.0_ark*pi,2.0_ark*pi)
+        dst(18) = mod(tau25+4.0_ark*pi,4.0_ark*pi)
         !
       endif 
       ! 
@@ -534,8 +527,8 @@ module mol_c2h6
         dst(3) = src(4)-molec%local_eq(4)
         dst(4) = src(6)-molec%local_eq(6)
         dst(5) = src(3)-molec%local_eq(3)
-        dst(6) = src(7)-molec%local_eq(5)
-        dst(7) = src(5)-molec%local_eq(6)
+        dst(6) = src(5)-molec%local_eq(5)
+        dst(7) = src(7)-molec%local_eq(7)
         !
         dst( 8) = src( 8)-molec%local_eq( 8)
         dst( 9) = src(10)-molec%local_eq(10)
@@ -601,9 +594,9 @@ module mol_c2h6
         dst(13) = src(13)+molec%local_eq(13)
         !
         S14 = src(14)
-        S15 =-src(15)
+        S15 = src(15)
         S16 = src(16)
-        S17 =-src(17)
+        S17 = src(17)
         S18 = src(18)
         !
         !tau14 = -1/3*sqrt(2)*s17-1/3*sqrt(2)*s15+tau0
@@ -805,7 +798,7 @@ module mol_c2h6
          !
       endif
       !
-    case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2')
+    case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3')
       !
       tau = pi
       !
@@ -1050,7 +1043,7 @@ module mol_c2h6
       stop 'ML_symmetry_transformation_C2H6 error: bad coordinate type'
       !
       !
-    case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-11',&
+    case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-11',&
          'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
       !
       select case(trim(molec%symmetry))
@@ -1141,6 +1134,280 @@ module mol_c2h6
           !!
           dst(14:15) = matmul(c132,src(14:15))
           dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-1')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  4.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a123,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a123,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c123,src(16:17))
+          !
+          !a07,a08
+          !dst(14:15) = matmul(c123,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(18) = src(18)
+          ! a04
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+        case (19) !sxy(-)/(14)(25)(36)(ab)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i,src(5:7))
+          dst(5:7) = matmul(i,src(2:4))
+          !
+          dst(8:10) = matmul(i,src(11:13))
+          dst(11:13) = matmul(i,src(8:10))
+          !!
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
+          !
+          !a02
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) = src(18)
+          !
+        case(37) !E'
+           dst(1:17) = src(1:17)
+           dst(18) = src(18) + 2.0_ark*pi
+           do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+           enddo
+           do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+           enddo
+           !
+        end select
+        !
+        if (all(tn(ioper,:)/=0)) then
+            call ML_symmetry_transformation_C2H6(tn(ioper,1),nmodes,src,tmp)
+            call ML_symmetry_transformation_C2H6(tn(ioper,2),nmodes,tmp,dst)
+        endif 
+        !
+      end select
+      !
+    case('R-R16-BETA16-THETA-TAU-3')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case('G36(EM)')
+        !
+        select case(ioper)
+          !
+        case (1) ! E
+          !
+          dst(1:18) = src(1:18)
+          !
+        case (2) !C(+)/(123)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a123,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a123,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !
+          !! a07
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          dst(14:15) = matmul(c123,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
+          !
+          ! a02
+          !dst(14:15) = matmul(c132,src(14:15))
+          !dst(16:17) = matmul(c132,src(16:17))
+          !!
+          !dst(18) = src(18)  + 4.0_ark/3.0_ark*pi
+          !
+          ! a05
+          dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+          !
+          ! a04
+          !dst(18) = src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          !
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+          !    
+        case (4) !sxy(+)/(14)(26)(35)(ab)* 
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(i2,src(5:7))
+          dst(5:7) = matmul(i2,src(2:4))
+          !
+          dst(8:10) = matmul(i2,src(11:13))
+          dst(11:13) = matmul(i2,src(8:10))
+          !
+          ! a02
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
+          !!
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
+          !!
+          dst(18) =  4.0_ark*pi - src(18)
+          !
+          ! a12
+          !dst(18) = -2.0_ark*pi - src(18)
+          !
+          do while(dst(18) < 0.0_ark) 
+                dst(18) = dst(18) + 4.0_ark*pi
+          enddo
+          do while(dst(18) > 4.0_ark*pi) 
+                dst(18) = dst(18) - 4.0_ark*pi
+          enddo
+         !
+        case (7) ! C(-)/(132)(456)
+          !
+          dst(1) = src(1)
+          !
+          dst(2:4) = matmul(a132,src(2:4))
+          dst(5:7) = matmul(a132,src(5:7))
+          !
+          dst(8:10) = matmul(a132,src(8:10))
+          dst(11:13) = matmul(a132,src(11:13))
+          !!
+          dst(14:15) = matmul(c132,src(14:15))
+          dst(16:17) = matmul(c132,src(16:17))
           !
           !a07,a08
           !dst(14:15) = matmul(c123,src(14:15))
@@ -2738,7 +3005,7 @@ module mol_c2h6
       end select
       !
     case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-11',&
-         'R-R16-BETA16-THETA-TAU-18')
+         'R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-3')
       !
       select case(trim(molec%symmetry))
       !

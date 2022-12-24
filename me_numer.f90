@@ -1098,7 +1098,7 @@ module me_numer
         !
         do i=0,npoints 
            !
-           write(out,"(i8,2f18.8)") i,phi_f(i),phi_t(i)
+           write(out,"(i8,2f18.8,' || ',1x,i8)") i,phi_f(i),phi_t(i),v
            !
         enddo
         !
