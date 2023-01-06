@@ -486,6 +486,10 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_bisect_EKE_sinrho
          !
+    case('KINETIC_X2Y2_EKE_BISECT_SINRHO') 
+         !
+         MLkineticfunc => MLkinetic_x2y2_bisect_EKE_sinrho
+         !
     case('GENERAL') 
          !
          MLkineticfunc => MLkinetic_dummy

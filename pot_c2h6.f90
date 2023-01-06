@@ -2367,7 +2367,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   integer(ik) :: ioper,ipower(18),i
 
   real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,xi_A,xi_B,xi_C,xi_D
-  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53,tau34,tau26
   !
   rad = pi/180.0_ark
   !
@@ -2393,8 +2393,71 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3',&
-       'R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
+  case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(6)
+    r4 = local(4)
+    r5 = local(3)
+    r6 = local(5)
+    r7 = local(7)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(12) - betae
+    xi(10) = local(10) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
+
+
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau34 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+    !
+    tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+    tau34 = mod(tau34+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(tau26+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+  case('R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
     !
     r1 = local(1)
     r2 = local(2)
@@ -2453,9 +2516,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     !
     rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !
-    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
-    !
-    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)    !
   case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14',&
        'R-R16-BETA16-THETA-TAU-16','R-R16-BETA16-THETA-TAU-19')
     !
@@ -3270,10 +3331,10 @@ subroutine coordinate_transformation(ncoords,nmodes,local,xi)
     theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
     theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
     !
-    xi(14)  = ( 2.0_ark*theta23 - theta12 - theta13 )/sqrt(6.0_ark)
-    xi(15)  = (                   theta12 - theta13 )/sqrt(2.0_ark)
-    xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
-    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
     !
     rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !

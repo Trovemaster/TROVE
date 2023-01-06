@@ -250,6 +250,7 @@ module fields
       logical             :: checkpoint_iorder  = .false.
       logical             :: sparse  = .false.                    ! A sparse representation of fields 
       logical             :: triatom_sing_resolve = .false.
+      logical             :: tetraatom_sing_resolve = .false.
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       !
@@ -1933,8 +1934,16 @@ module fields
               !
               if ( any( trim(job%bset(imode)%type)==[character(19) :: 'LEGENDRE','SINRHO','LAGUERRE-K','SINRHO-LAGUERRE-K',&
                                                       'SINRHO-2XLAGUERRE-K'] ) ) then 
-                 trove%triatom_sing_resolve = .true.
-                 job%triatom_sing_resolve = .true.
+                 select case(trove%Natoms)
+                 case(3)
+                   trove%triatom_sing_resolve = .true.
+                   job%triatom_sing_resolve = .true.
+                 case(4)
+                   trove%tetraatom_sing_resolve = .true.
+                 case default 
+                  write(out,"('Only natoms=3 and 4 can be used with a signular basis ',a)") job%bset(imode)%type
+                  stop 'input: illegal singular basis type'
+                 end select
               endif
               !
            endif
@@ -2070,7 +2079,7 @@ module fields
                                                 'SINRHO-2XLAGUERRE-K'] ) ) then 
             !
             if (.not.trove%triatom_sing_resolve ) then
-             write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
+              write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
             endif
             !
             job%bset(Nmodes)%range(2) = (job%bset(Nmodes)%range(2)+1)*(job%bset(0)%range(2)+1)-1
@@ -2224,7 +2233,7 @@ module fields
          !
          if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
             !
-            write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
+            write (out,"('FLinput: wrong number of rows in EQUIL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
             stop 'FLinput - illigal number of rows in EQUIL'
             !
          endif 
@@ -2290,7 +2299,7 @@ module fields
          !
          if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
             !
-            write (out,"('FLinput: wrong number of rows in EQUL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
+            write (out,"('FLinput: wrong number of rows in EQUIL for trove%Ncoords =',i8,': ',i8)") trove%Ncoords,imode
             stop 'FLinput - illigal number of rows in EQUIL'
             !
          endif 
@@ -4612,6 +4621,11 @@ module fields
    !
    if ( trove%triatom_sing_resolve .and. (trove%Natoms/=3 .or. trove%Nmodes/=3 ) ) then
      write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Nmodes=Natoms=3')") 
+     stop 'Illegal usage of LEGENDRE or SINRHO'
+   endif
+   !
+   if ( trove%tetraatom_sing_resolve .and. (trove%Natoms/=4 .or. trove%Nmodes/=6 ) ) then
+     write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Natoms=3 or 4')") 
      stop 'Illegal usage of LEGENDRE or SINRHO'
    endif
    !
