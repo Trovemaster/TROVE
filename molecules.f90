@@ -584,9 +584,13 @@ end function ML_MEPfunc
        !
        write(out, '(/2(1x, a))') 'MLextF_func error: unknown type of extF:', trim(extF%ftype)
        stop 'MLextF_func error: unknown type of extF'
-       !
-    ! pq space-fixed frame of P.Jensen for xy2-type molecule (J.Mol.Spectr.132 (1988) 429)
-    !
+        !
+    case('DIPOLE_PQR_XYZ_Z-FRAME')
+        !
+        MLextF_func => MLdms2pqr_xyz_z_frame
+        !
+        ! pq space-fixed frame of P.Jensen for xy2-type molecule (J.Mol.Spectr.132 (1988) 429)
+        !
     case('XY2_PQ')
         !
         MLextF_func => MLdms2pqr_xy2
