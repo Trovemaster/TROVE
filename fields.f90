@@ -253,9 +253,6 @@ module fields
       logical             :: tetraatom_sing_resolve = .false.
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
-      real(ark),pointer ::  local_eq_transformed(:) 
-      integer(ik), allocatable ::  modes(:,:)    ! List of modes for each term 
-      logical             :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
       !
    end type JobT
    !
@@ -391,7 +388,6 @@ module fields
       integer(ik),pointer :: nroots(:) => null() ! number of the roots to be found in variational diagonalization with syevr
       integer(ik)         :: lincoord=0 ! a singularity axis 1,2,3 if present, otherwise 0 
       integer(ik)         :: Nassignments = 1 ! Number of assignments based the largest (=1), second largest (=2) coefficients  
-      logical             :: mode_list_present = .false.
       !
    end type FLcalcsT
 
@@ -667,7 +663,6 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
-   logical :: local_eq_transformed_defined = .false.
    logical :: kinetic_defined
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
    character(len=wl) :: w
@@ -1297,10 +1292,6 @@ module fields
          !
          FL_iron_field_out = .true.
          !
-       case ("AUTOMATIC_KINETIC")
-         !
-         job%mode_list_present = .true.
-         !
        case ("DIAGONALIZER")
          !
          call readu(w)
@@ -1922,7 +1913,7 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('HARMONIC','NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
+              case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO','LAGUERRE-K','SINC',&
                     'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
                  !
                  ! do nothing
@@ -2130,126 +2121,59 @@ module fields
          !
          basis_defined = .true.
          !
-      case("BASIC-FUNCTION")
-        !
-         if (Nmodes==0) then 
-           !
-           write (out,"('FLinput: BASIC-FUNCTION cannot appear before NMODES')") 
-           stop 'FLinput - BASIC-FUNCTION defined befor NMODES'
-           !
-        endif
-        !
-        imode = 0
-        ifunc = 0
-        allocate(molec%basic_function_list(Nmodes))
-        call read_line(eof) ; if (eof) exit 
-        do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-           call readu(w)
-           call readi(imode)
-           call readi(numfunc)     
-           allocate(molec%basic_function_list(imode)%mode_set(numfunc))
-           do i = 1, numfunc
-             call read_line(eof); if (eof) exit
-             call readi(ifunc)
-             call readi(numterms)
-             molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
-             allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
-             do j = 1, numterms
-               call readi(out_expo)
-               call readu(func_name)
-               call readf(func_coef)
-               call readi(in_expo)
-               select case(trim(func_name))
-                 case("I") 
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
-                 case("SIN")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
-                 case("COS")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
-                 case("TAN")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
-                 case("CSC")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                 case("COT")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-                 case("SEC")
-                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
-                 case default 
-               end select
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
-             enddo 
-           enddo
-           call read_line(eof); if (eof) exit
-        enddo 
-        !
-      case("EQUILIBRIUM_TRANSFORMED")
-        !
-        if (Nmodes==0) then 
-           !
-           write (out,"('FLinput: EQUIL cannot appear before NMODES')") 
-           stop 'FLinput - EQUIL defined befor NMODES'
-           !
-        endif 
-        !
-        imode = 0
-        !
-        call read_line(eof) ; if (eof) exit
-        call readu(w)
-        !
-        do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
-          !
-          imode = imode+1
-          !
-          call readi( i_t  )  ! reading an integer weight, not used so far 
-          !
-          call readf( trove%local_eq_transformed(imode)  )
-          !
-          if (nitems==4) then
+         !
+       case("BASIC-FUNCTION")
+         !
+          if (Nmodes==0) then 
             !
+            write (out,"('FLinput: BASIC-FUNCTION cannot appear before NMODES')") 
+            stop 'FLinput - BASIC-FUNCTION defined befor NMODES'
+            !
+         endif
+         !
+         imode = 0
+         ifunc = 0
+         allocate(molec%basic_function_list(Nmodes))
+         call read_line(eof) ; if (eof) exit 
+         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
             call readu(w)
-            !
-            lfact = 1.0_rk
-            !
-            select case(w)
-            !
-            case("ANGSTROM")
-              !
-              lfact= 1.0_rk
-              !
-            case("BOHR")
-              !
-              lfact=bohr
-              !
-            case("DEG","DEGREE","DEGREES")
-              !
-              lfact=1.0_rk/rad
-              !
-            case default
-              !
-              call report ("Unrecognized unit name "//trim(w),.true.)
-              !
-            end select
-            !
-            trove%local_eq_transformed(imode) = trove%local_eq_transformed(imode)*lfact
-            !
-          endif 
-          !
-          call read_line(eof) ; if (eof) exit
-          call readu(w)
-          !
-        enddo 
-        !
-        if (imode/=trove%Ncoords.or.(trim(w)/="".and.trim(w)/="END")) then 
-           !
-           write (out,"('FLinput: wrong number of rows in EQUIL_TRANSFROMED for trove%Ncoords =',i8,': ',i8)")   trove%Ncoords,imode
-           stop 'FLinput - illigal number of rows in EQUIL_TRANSFORMED' 
-           !  
-        endif 
-        !
-        local_eq_transformed_defined = .true.
-        !
+            call readi(imode)
+            call readi(numfunc)     
+            allocate(molec%basic_function_list(imode)%mode_set(numfunc))
+            do i = 1, numfunc
+              call read_line(eof); if (eof) exit
+              call readi(ifunc)
+              call readi(numterms)
+              molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
+              allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
+              do j = 1, numterms
+                call readi(out_expo)
+                call readu(func_name)
+                call readf(func_coef)
+                call readi(in_expo)
+                select case(trim(func_name))
+                  case("I") 
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+                  case("SIN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
+                  case("COS")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                  case("TAN")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
+                  case("CSC")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+                  case("COT")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+                  case default 
+                end select
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
+              enddo 
+            enddo
+            call read_line(eof); if (eof) exit
+         enddo 
+         !
       case("EQUIL","EQUILIBRIUM")
          !
          if (Nmodes==0) then 
@@ -4574,12 +4498,6 @@ module fields
       !
    endif
    !
-   if (.not.local_eq_transformed_defined) then
-      !
-      trove%local_eq_transformed = trove%local_eq
-      !
-   endif
-   !
    if (.not.basis_defined) then 
       !
       write (out,"('FLinput: The basis set is not defined')") 
@@ -4802,8 +4720,6 @@ end subroutine check_read_save_none
     logical     :: dir
     real(ark)   :: step(2,trove%Nmodes),factor,df,rho_eq,Inertm(3)
     character(len=cl) :: my_fmt !format for I/O specification
-    !
-    integer(ik) :: maxpower
     !
     if (job%verbose>=4) write(out,"(/'FLsetMolecule/start')")   
     !
@@ -5062,13 +4978,7 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    if(job%mode_list_present) then  
-      maxpower = max(trove%NpotOrder,trove%NExtOrder)
-    else
-      maxpower = trove%maxorder
-    endif
-    !
-    do io = 0,maxpower+2
+    do io = 0,trove%MaxOrder+2
       !
       Kindex = 0 
       Kindex(1) = io 
@@ -5077,8 +4987,8 @@ end subroutine check_read_save_none
     enddo
     call TimerStop('FLQindex-1')
     !
-    trove%Ncoeff = trove%RangeOrder(maxpower)
-    io = trove%RangeOrder(maxpower+2)
+    trove%Ncoeff = trove%RangeOrder(trove%MaxOrder)
+    io = trove%RangeOrder(trove%MaxOrder+2)
     !
     ! Definition of the indexing: relations between the Nmode-D and 1D arrays 
     ! are stored in FLIndexQ (forward) and deifned by Qindex routine (backward)
@@ -5094,7 +5004,7 @@ end subroutine check_read_save_none
     !
     ! Final call: defining the matrix FLIndexQ
     !
-    Kindex = 0 ; Kindex(1) = maxpower+2
+    Kindex = 0 ; Kindex(1) = trove%MaxOrder+2
     !
     call TimerStart('FLQindex-2')
     !
@@ -5212,7 +5122,7 @@ end subroutine check_read_save_none
     call MLinitialize_molec(  trove%Moltype,trove%Coordinates,trove%coords_transform,&
                               trove%Nbonds,trove%Nangles,trove%Ndihedrals,&
                               trove%dihedtype,&
-                              trove%mass,trove%local_eq,trove%local_eq_transformed,&
+                              trove%mass,trove%local_eq,&
                               force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
                               trove%IO_primitive,trove%chk_numerov_fname,&
                               trove%symmetry,trove%rho_border,trove%zmatrix)
@@ -5707,7 +5617,7 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
-        if (trove%sparse.and..not.job%mode_list_present) call compact_sparse_kinetic
+        if (trove%sparse) call compact_sparse_kinetic
         !
         return 
         !
@@ -6186,11 +6096,9 @@ end subroutine check_read_save_none
        !
        fl => trove%g_vib(Nmodes,Nmodes)
        !
-       if (.not.trove%triatom_sing_resolve.and.job%mode_list_present) then 
-         call FLCompact_and_combine_fields_sparse_with_modes(fl,"g_vib",trove%pseudo,"pseudo")
-       else if (.not.trove%triatom_sing_resolve) then 
+       if (.not.trove%triatom_sing_resolve) then 
          call FLCompact_and_combine_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
-        !
+         !
        else
          !
          gl => trove%g_rot(3,3)
@@ -13802,11 +13710,7 @@ end subroutine check_read_save_none
           write (out,"(' Checkpoint file ',a,' has bogus header: ',a)") trove%chk_fname, buf
           stop 'check_point_Hamiltonian - bogus file format (3)'
         end if
-        !
-        if (job%mode_list_present) then 
-          write(out,"('basisRestore error: is currently not working for mode_list_present, MaxOrder -> maxpower')") 
-          stop 'basisRestore error: is currently not working for mode_list_present, MaxOrder -> maxpower'
-        endif
+
         !
         read(chkptIO) ntypes_stored
         !
@@ -16156,138 +16060,6 @@ end subroutine check_read_save_none
      !
    end subroutine FLCompact_and_combine_fields_sparse
    !
-
-
-   subroutine FLCompact_and_combine_fields_sparse_with_modes(fl1,name1,fl2,name2)
-
-     type(FLpolynomT),pointer  :: fl1,fl2
-     character(len=*),intent(in) :: name1,name2
-     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
-     real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
-     integer(ik),allocatable  :: siorder1(:),siorder2(:)      ! iorder in sparse
-     integer(ik)   :: target_index(trove%Nmodes)
-     logical :: check = .true.
-     !
-     Ncoeff1 = fl1%Ncoeff
-     Ncoeff2 = fl2%Ncoeff
-     !
-     Npoints = fl1%Npoints
-     !
-     if (Npoints/=fl2%Npoints) then
-       write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") & 
-             fl1%Npoints,fl2%Npoints
-       stop 'FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields'
-     endif
-     !    
-     target_index = 0
-     target_index(1) = trove%NKinOrder 
-     Ncoeffmax= Ncoeff1
-     !
-     ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
-     !
-     iterm = 0
-     !
-     do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-          iterm = iterm + 1
-       endif
-     enddo
-     !
-     nterms = iterm
-     !
-     if (Nterms==0) then
-       !
-       stop 'FLCompact_and_combine_fields_sparse is not implemented for Nterms=0' 
-       !
-       deallocate(fl1%IndexQ,fl2%IndexQ)
-       call ArrayStop(name1//'IndexQ')
-       call ArrayStop(name2//'IndexQ')
-       !
-       deallocate(fl1%ifromsparse,fl2%ifromsparse)
-       call ArrayStop(name1//"ifromsparse")
-       call ArrayStop(name2//"ifromsparse")
-       !
-       return
-       !
-     endif 
-     !
-     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),stat=alloc)
-     call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
-     call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
-     !
-     allocate(Siorder1(nterms),Siorder2(nterms),stat=alloc)
-     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
-     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
-     !
-     deallocate(fl1%IndexQ,fl2%IndexQ)
-     call ArrayStop(name1//'IndexQ')
-     call ArrayStop(name2//'IndexQ')
-     !
-     deallocate(fl1%ifromsparse,fl2%ifromsparse)
-     call ArrayStop(name1//"ifromsparse")
-     call ArrayStop(name2//"ifromsparse")
-     !
-     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
-     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
-     call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
-     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
-     !
-     iterm = 0
-     !
-     do icoeff = 1,Ncoeffmax
-       if (any(abs(fl1%field(icoeff,:))>job%exp_coeff_thresh).or.any(abs(fl2%field(icoeff,:))>job%exp_coeff_thresh)) then
-          !
-          iterm = iterm + 1
-          !
-          Sfield1(iterm,:) = fl1%field(icoeff,:)
-          Sfield2(iterm,:) = fl2%field(icoeff,:)
-          siorder1(iterm) = fl1%iorder(icoeff)
-          siorder2(iterm) = fl2%iorder(icoeff)
-          !
-          fl1%ifromsparse(iterm) = icoeff
-          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
-          fl2%ifromsparse(iterm) = icoeff
-          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
-       endif
-     enddo
-     !
-     deallocate(fl1%iorder,fl2%iorder)
-     call ArrayStop(name1)
-     call ArrayStop(name2)
-     !
-     ! Create a field in a sparse representaion
-     !
-     allocate(fl1%iorder(nterms),fl2%iorder(nterms),stat=alloc)
-     call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
-     call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
-     !
-     deallocate(fl1%field,fl2%field,stat=alloc)
-     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
-     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
-     !
-     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
-     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
-     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
-     !
-     fl1%field = Sfield1
-     fl1%Ncoeff = Nterms
-     fl1%iorder = Siorder1
-     !
-     fl2%field = Sfield2
-     fl2%Ncoeff = Nterms
-     fl2%iorder = Siorder2
-     !
-     deallocate(Sfield1,Sfield2,siorder1,siorder2)
-     !
-     call ArrayStop("Sfield")
-     !
-   end subroutine FLCompact_and_combine_fields_sparse_with_modes 
-
-
    !
    subroutine FLCompact_and_combine_three_fields_sparse(fl1,name1,fl2,name2,fl3,name3)
 
@@ -26245,13 +26017,6 @@ end subroutine check_read_save_none
     !type(basic_function) :: obj
     y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_csc
-  !
-  subroutine  calc_func_sec(x, y) 
-    real(ark), intent(in) :: x 
-    real(ark), intent(inout) :: y
-    !type(basic_function) :: obj
-    y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
-  end subroutine calc_func_sec
   !
   ! sanity check and deallocation of all existing arrays from this module 
   !
