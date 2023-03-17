@@ -7886,7 +7886,7 @@ end subroutine check_read_save_none
     character(len=cl)            :: my_fmt  !format for I/O specification
 
     if (job%verbose>=2) write(out,"(/'FLinitilize_Potential/start')")   
-    if (job%verbose>=4) write(out,"('  Default expansion with finite diff, extended to N+1 with (N+1)s terms is set to zero')")
+    if (job%verbose>=4) write(out,"('  Default expansion with finite diff, extended to N+1 with (N+1)s terms set to zero')")
     !
     ! If the potentil function has been stored we can just read it from the hard disk and leave...
     !
