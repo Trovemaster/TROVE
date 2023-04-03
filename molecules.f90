@@ -31,7 +31,7 @@ module molecules
                        MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
-  use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011
+  use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011, prop_xy2_alpha_sym
   use prop_xy2_quad, only : prop_xy2_qmom_bisect_frame,TEST_xy2_qmom_bisect_frame
   use prop_xy2_spinrot, only : prop_xy2_spin_rotation_bisector, prop_xy2_spin_rotation_bisector_nonlin, &
                                TEST_prop_xy2_spin_rotation_bisector_nonlin, prop_xy2_gtensor_bisector,&
@@ -593,6 +593,10 @@ end function ML_MEPfunc
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym
+        !
+    case('XY2_ALPHA_SYM')
+        !
+        MLextF_func => prop_xy2_alpha_sym
         !
     case('XY2_QMOM_BISECT_FRAME')
         !
