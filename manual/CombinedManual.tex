@@ -1,0 +1,115 @@
+\documentclass[oneside,chapterprefix=on,12pt,parskip=full,bibliography=totoc]{scrbook}  %chapter prefix is to make chapter appear in titles. parskip is to have lines between paragraphs with no indentation, bibliography=totoc lists bibliography in contents.
+\usepackage[top=2.5cm, bottom=3.2cm, left=2cm, right=2.0cm]{geometry} 
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+%\usepackage[retainorgcmds]{IEEEtrantools}
+\numberwithin{equation}{section}
+\usepackage{cite}
+\usepackage[onehalfspacing]{setspace}
+\usepackage[titletoc]{appendix}
+\usepackage{braket}
+
+
+\setlength{\headheight}{1.1\baselineskip} %To do with space for header at chapter titles.
+
+
+
+\renewcommand{\autodot}{}% Remove all end-of-counter dots
+
+
+%\usepackage{caption} 
+%\captionsetup[table]{skip=8pt}
+
+% set up page. "headmark" is to have chapter titles at top of page. "pagemark" is page numbers i/c/o are right,centre,left
+% square brackets for title pages. curly brackets for normal pages
+\usepackage{scrpage2}
+\pagestyle{scrheadings}
+\ihead[]{\headmark}
+\chead{}
+\ohead[]{}
+\ifoot[]{}
+\cfoot[\pagemark]{\pagemark}
+\ofoot[]{}
+
+
+\renewcommand{\bibname}{References} %By default this class calls it Biliography. Change it to References here.
+
+
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{1in}
+\begin{Large}\bfseries
+TROVE Manual\par
+\end{Large}
+Version 1 \par
+\vspace{1.5in}
+\begin{large}\bfseries
+Barry Mant\par
+\end{large}
+\vfill
+\vspace{0.5in}
+Department of Physics and Astronomy
+\par
+University College London
+\par
+\vspace{0.5in}
+June 2018
+\par
+\end{titlepage}
+
+%\maketitle
+
+\frontmatter
+
+
+
+\chapter{Abstract}
+A guide to TROVE.
+
+
+% A glossary and list of acronyms may go here
+% or may go in the back matter.
+
+
+\doublespacing        %Double spacing contents and lists as looks cramped otherwise
+\tableofcontents
+%\listoffigures
+%\listoftables
+
+\mainmatter
+\onehalfspacing      %One halfspacing from here again
+
+\include{Intro}
+\include{Quickstart}
+\include{Outputs}
+\include{Theory}
+\include{refinement}
+\include{Linelists}
+\include{Molecules}
+\include{Newmol}
+\include{Newfeat}
+
+
+%\begin{appendices}
+
+%\include{appendix}
+
+%\end{appendices}
+
+\backmatter
+% A glossary and list of acronyms may go here
+% or may go in the front matter after the abstract.
+% The bibliography will go here
+
+
+\newpage
+\bibliographystyle{science}
+\bibliography{journals_astro,journals_phys,abinitio,atmos,PF3,C2H4,CH4,exoplanets,jtj,lorenzo,methods,planets,programs,programs_,Books,book,PH3,linelists,H2O,NH3_,SO3,cluster,SF6,SbH3}
+
+\end{document}

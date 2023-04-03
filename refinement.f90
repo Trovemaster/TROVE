@@ -591,7 +591,7 @@ contains
 
        write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
 
-       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),3(x,g18.10),x,e12.4)"
+       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g12.5),1x,f12.5,1x,e12.4)"
        write(my_fmt_par1,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
        !
        nlevels = Neigenlevels
@@ -626,9 +626,53 @@ contains
             write (out,"('No varying paramters, check input!')") 
             stop 'sf_fitting: No varying paramters'
             !
-          endif 
+          endif
+          !
+          ! precompute drivatives of the potential energy funciton
           !
           rjacob = 0 
+          !
+          do_deriv = .false.
+          !
+          if (itmax.ge.1.and.fit_factor>1e-12.and.trim(deriv_type)=='hellman') do_deriv = .true.
+          !
+          if (do_deriv) then
+            !
+            do i = 1,parmax
+              !
+              if (ivar(i)<0) then 
+                pot_terms(i) = molec%force(i)
+              else
+                pot_terms(i) = 0
+              endif
+              !
+            enddo
+            !
+            dummy_xyz = 0 
+            !
+            do ncol=1,numpar 
+               !
+               i = ifitparam(ncol)
+               !
+               pot_terms(i) = 1.0_ark
+               !
+               !$omp parallel do private(ientry,ar_t,dummy_xyz) shared(rjacob) schedule(guided)
+               do ientry=1,pot_npts
+                 !
+                 ar_t = local(:,ientry)
+                 !
+                 call MLfromlocal2cartesian(1,ar_t,dummy_xyz)
+                 !
+                 rjacob(en_npts+ientry,ncol) =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
+                 !
+               enddo
+               !$omp end parallel do
+               !
+               pot_terms(i) = 0
+               !
+            enddo ! --- ncol
+            !
+          endif     
           !
           ! The loop starts here. 
           !
@@ -693,8 +737,8 @@ contains
                     write (out,"(/'Matrix size = ',i8)") Nentries
                  endif
                  !
-                 matsize = int(Nentries*(Nentries+1)/2,hik)
-                 matsize2= int(Nentries*Nentries,hik)
+                 matsize = int(Nentries,hik)*int((Nentries+1)/2_hik,hik)
+                 matsize2= int(Nentries,hik)*int(Nentries,hik)
                  !
                  allocate(pot_matrix(Nentries,Nentries),stat=alloc)
                  call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -1171,22 +1215,32 @@ contains
             !
             call TimerStart('Potential energy points')
             !
-            do_deriv = .false.
+            !do_deriv = .false.
             !
-            if (itmax.ge.1.and.fit_factor<1e12.and.trim(deriv_type)=='hellman'.and.mod(fititer+2,3)==0) do_deriv = .true.
+            !if (itmax.ge.1.and.fit_factor<1e12.and.trim(deriv_type)=='hellman') do_deriv = .true.
             !
             dummy_xyz = 0
             !
+            !pot_terms(1:parmax) = molec%force(1:parmax) + potparam(1:parmax)
+            !
+            do i = 1,parmax
+              !
+              if (ivar(i)<0) then 
+                pot_terms(i) = molec%force(i)
+              else
+                pot_terms(i) = molec%force(i) + potparam(i)
+              endif
+              !
+            enddo
+            !
+            !$omp parallel do private(ientry,ar_t,dummy_xyz,v) shared(eps) schedule(guided)
             do ientry=1,pot_npts
               !
               ar_t = local(:,ientry)
               !
-              pot_terms(1:parmax) = molec%force(1:parmax) + potparam(1:parmax)
-              !
               call MLfromlocal2cartesian(1,ar_t,dummy_xyz)
               !
               v =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
-              !
               !
               ! eps - epsilon = ab initio energies - calculated pot. energies,
               ! where we comntinue counting the fitting data points starting with en_npts - 
@@ -1199,46 +1253,8 @@ contains
               ! Calculate derivatives with respect to parameters 
               ! using the finite diff. method. 
               !
-              if (do_deriv) then
-                !
-                do i = 1,parmax
-                  !
-                  if (ivar(i)<0) then 
-                    pot_terms(i) = molec%force(i)
-                  else
-                    pot_terms(i) = 0
-                  endif
-                  !
-                enddo
-                !
-                !omp do private(ncol,i) schedule(guided)
-                do ncol=1,numpar 
-                   !
-                   i = ifitparam(ncol)
-                   !
-                   pot_terms(i) = 1.0_ark
-                   rjacob(en_npts+ientry,ncol) =  MLpotentialfunc(ncoords,molec%natoms,ar_t,dummy_xyz,pot_terms)
-                   pot_terms(i) = 0
-                   !
-                   !tempx=pot_terms(i)
-                   !deltax=1e-3*abs(tempx)
-                   !if (deltax<small_) deltax=1e-3
-                   !
-                   !pot_terms(i)=tempx+deltax
-                   !v_r =  MLpotentialfunc(ar_t,pot_terms)
-                   !
-                   !pot_terms(i)=tempx-deltax
-                   !v_l =  MLpotentialfunc(ar_t,pot_terms)
-                   !
-                   !pot_terms(i)=tempx
-                   !rjacob(en_npts+ientry,ncol)=(v_r-v_l)/(2.0_rk*deltax)
-                   !
-                enddo ! --- ncol
-                !omp end do
-                !
-              endif     
-              !
             enddo  ! ---  ientry
+            !$omp end parallel do
             !
             call TimerStop('Potential energy points')
             !
@@ -1252,7 +1268,7 @@ contains
                !
                v = pot_values(i)-eps(i+en_npts)
                !
-               write (abinitunit,my_fmt_pot2),& 
+               write (abinitunit,my_fmt_pot2)& 
                       local(:,i), &
                       pot_values(i),v, &
                       eps(i+en_npts),wtall(i+en_npts) 
@@ -1391,8 +1407,6 @@ contains
                  call robust_fit(numpar,fitting%robust,sigma(1:npts),eps(1:npts),wtall(1:npts))
                  !
                  ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
-				 !
-				 !fitting%robust = -1.0_rk
                  !
                endif 
                !
@@ -1407,7 +1421,7 @@ contains
                if (stadev<stadev_old) then
                  lambda = lambda/nu
                else 
-                 lambda = min(lambda*nu,10000.0)
+                 lambda = min(lambda*nu,10000.0_rk)
                endif
                !
                if (job%verbose>=5) write(out,"(/'Marquardts parameter lambda = ',g15.7)") lambda
@@ -2107,8 +2121,8 @@ contains
                     write (out,"(/'Matrix size = ',i8)") Nentries
                  endif
                  !
-                 matsize = int(Nentries*(Nentries+1)/2,hik)
-                 matsize2= int(Nentries*Nentries,hik)
+                 matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+                 matsize2= int(Nentries,hik)*int(Nentries,hik)
                  !
                  allocate(pot_matrix(Nentries,Nentries),stat=alloc)
                  call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -2624,8 +2638,6 @@ contains
                  call robust_fit(numpar,a_wats,sigma(1:npts),eps(1:npts),wtall(1:npts))
                  !
                  ssq=sum(eps(1:npts)*eps(1:npts)*wtall(1:npts))
-				 !
-				 !fitting%robust = -1.0_rk
                  !
                endif 
                !
@@ -2945,7 +2957,7 @@ contains
    end if
    !
    rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
-   rootsize2= int(ncontr_t*ncontr_t,hik)
+   rootsize2= int(ncontr_t,hik)*int(ncontr_t,hik)
    !
    if (fit_debug > 2) then
       write(out,"(/'restore_vib_matrix_elements...: Number of elements: ',i8)") ncontr_t
@@ -3038,10 +3050,6 @@ contains
           !
           !compute me
           !
-          !#if (fit_debug >= 3)
-          !  write (out,"('irootF,icontrF,cirootI,icontrI,irow,icol,cindtmat(ientry)%icoef = ',8i,' poten,tmat =  ',2(2x,es18.9))") irootF,icontrF,cirootI,icontrI,irow,icol,cind,tmat(ientry)%icoeff(cirootI),&
-          !                            poten(cind),tmat(ientry)%coeff(cirootI)
-          !#endif
           !
           half_matelem(irootF) = half_matelem(irootF) + poten(icontrI,icontrF)*tmat(ientry)%coeff(cirootI)
           !
@@ -3101,9 +3109,9 @@ contains
 
      implicit none
      integer(ik),intent(in)  :: nJ,Jval(:)
-
-     integer(ik)  :: jind,Jrot,isym,Nentries,ientry,ilevel,alloc,rec_len,i,parmax,iunit,i1,i2,matsize,irow,ib,ktau,icontr,iterm
-     real(rk)     :: f_t,dtemp0
+     integer(ik)       :: jind,Jrot,isym,Nentries,ientry,ilevel,alloc,rec_len,i,parmax,iunit,i1,i2,matsize,& 
+                          irow,ib,ktau,icontr,iterm
+     real(rk)          :: f_t,dtemp0,mat_
      character(len=cl) :: unitfname,job_file
 
      integer(ik)        :: chkptIO,nelem,ielem,isrooti,k,itau
@@ -3111,7 +3119,7 @@ contains
 
      character(len=20)  :: buf20
      integer(hik)       :: matsize2
-     integer(ik)        :: rootsize_t,imu,imu_t,dimen,irec,cdimen_,idimen,nsize,ncontr_t
+     integer(ik)        :: rootsize_t,imu,imu_t,dimen,irec,idimen,nsize,ncontr_t
      integer(hik)       :: rootsize2,rootsize
      integer(ik)        :: ilist,nlist,ideg,iroot,num
      real(rk),allocatable       :: pot_matrix(:,:)
@@ -3120,9 +3128,10 @@ contains
      real(rk),allocatable     :: vec(:)
      type(coeffT),allocatable :: tmat(:)
      integer(ik),allocatable  :: cdimen(:)
-     real(rk),allocatable     :: psi(:,:,:),mat_t(:,:)
+     real(rk),allocatable     :: psi(:,:,:),mat_t(:,:),vector(:)
      !double precision :: alpha,beta0,beta
      double precision,parameter :: alpha = 1.0d0,beta0=0.0d0,beta=1.0d0
+     double precision,external :: ddot
      !
      if (job%verbose>=2) write(out,"(/'Prepare the matrix elements for the potential energy function')")   
      !
@@ -3164,8 +3173,8 @@ contains
        stop 'calc_exp_values - in file - illegal ncontracts '
      end if
      !
-     rootsize = int(ncontr_t*(ncontr_t+1)/2,hik)
-     rootsize2 = int(ncontr_t*ncontr_t,hik)
+     rootsize = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
+     rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
      !
      if (job%verbose>=4) then 
         write(out,"(/'calc_exp_values...: Number of elements: ',i8)") ncontr_t
@@ -3183,7 +3192,7 @@ contains
        ilist = ilist + 1 
        !
      enddo
-     nlist = max(ilist-4,0)
+     nlist = max(ilist-1,0)
      !
      do jind = 1,nJ
        !
@@ -3201,9 +3210,6 @@ contains
              !
              if (jrot/=eigen(ilevel)%jval.or.isym/=eigen(ilevel)%igamma) cycle
              !
-             !jrot = eigen(ilevel)%igamma  
-             !isym = eigen(ilevel)%jval 
-             !
              if (eigen(ilevel)%jval==jrot) then 
                 do ilist = 1,nlist 
                    if (analysis%J_list(ilist)==Jrot.and.isym==analysis%sym_list(ilist).and.analysis%dens_list(ilist)==irec)  then 
@@ -3211,9 +3217,7 @@ contains
                    endif
                 enddo
              endif
-             !
-           !enddo 
-           !
+            !
          enddo
          !
          fit(isym,jind)%Nentries=Nentries 
@@ -3251,188 +3255,202 @@ contains
        !
      end do
      !
-     if (job%verbose>=4) write (out,"(/'Transformation to eigensolution presentaion...'/)")
+     if (job%verbose>=5)  call MemoryReport
      !
-     do jind = 1,nJ
-        !
-        jrot = Jval(jind)
-        !
-        do isym=1,sym%Nrepresen
+     read(chkptIO) buf20
+     read(chkptIO) ncontr_t
+     !
+     do i=1,parmax
+       !
+       if (job%verbose>=6) write (out,"('iparam = ',i0)") i
+       !
+       !write (out,"(' ')")
+       !
+       read(chkptIO) imu_t
+       read(chkptIO) poten_
+       !
+       if (job%verbose>=4) write (out,"(/'Transformation to eigensolution presentaion...'/)")
+       !
+       do jind = 1,nJ
           !
-          if (job%verbose>=2) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
-          !write (out,"(/'iparam#      ilist     matrix   ')")
+          jrot = Jval(jind)
           !
-          Nentries = fit(isym,jind)%Nentries
-          !
-          if (Nentries<1) cycle
-          !
-          matsize = Nentries*(Nentries+1)/2
-          !
-          allocate(pot_matrix(Nentries,Nentries),stat=alloc)
-          call ArrayStart('pot_matrix',alloc,size(pot_matrix),kind(pot_matrix))
-          !
-          allocate(tmat(Nentries),stat=alloc)
-          !
-          dimen = bset_contr(jind)%Maxcontracts
-          nsize = bset_contr(jind)%nsize(isym)
-          !
-          allocate(cdimen(Nentries),stat=alloc)
-          call ArrayStart('cdimen',alloc,size(cdimen),kind(cdimen))
-          !
-          iunit = Jeigenvec_unit(jind,isym)
-          !
-          ! Prepare the transformational matrix
-          !
-          cdimen = 0
-          !
-          if (job%verbose>=5) call TimerStart('Prepare tmat for J0-convertion')
-          !
-          !omp parallel private(vec,alloc)  shared(cdimen,tmat)
-          !
-          matsize2= int(ncontr_t*Nentries,hik)
-          allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),stat=alloc)
-          call ArrayStart('psi',alloc,1,kind(psi),matsize2)
-          call ArrayStart('mat_t',alloc,1,kind(mat_t),matsize2)
-          !
-          psi = 0
-          !
-          allocate(vec(nsize),stat = alloc)
-          if (alloc /= 0) stop 'fitting-vec allocation error: vec - out of memory'
-          !
-          do ientry = 1,Nentries
-             !
-             ilevel = fit(isym,jind)%ilevel(ientry)
-             !
-             irec = eigen(ilevel)%irec(1)
-             read(iunit, rec = irec) vec(1:nsize)
-             !
-             !omp parallel do private(idimen,ktau,icontr) shared(psi) schedule(guided)
-             !do idimen = 1, dimen
-             !   !
-             !   ktau = bset_contr(jind)%ktau(idimen)
-             !   icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
-             !   !
-             !   psi(icontr,ientry,ktau) = vec(idimen)
-             !   !
-             !end do
-             !omp end parallel do
-             !
-             !$omp parallel do private(idimen,irow,ib,ktau,icontr,iterm,dtemp0,nelem,ielem,isrootI) shared(psi) schedule(guided)
-             do idimen = 1, dimen
+          do isym=1,sym%Nrepresen
+            !
+            if (job%verbose>=5) write (out,"('jrot = ',i0,'; sym = ',i0)") Jrot,isym
+            !write (out,"(/'iparam#      ilist     matrix   ')")
+            !
+            Nentries = fit(isym,jind)%Nentries
+            !
+            if (Nentries<1) cycle
+            !
+            matsize = Nentries*(Nentries+1)/2
+            !
+            allocate(pot_matrix(Nentries,Nentries),stat=alloc)
+            call ArrayStart('pot_matrix',alloc,size(pot_matrix),kind(pot_matrix))
+            !
+            allocate(tmat(Nentries),stat=alloc)
+            !
+            dimen = bset_contr(jind)%Maxcontracts
+            nsize = bset_contr(jind)%nsize(isym)
+            !
+            iunit = Jeigenvec_unit(jind,isym)
+            !
+            if (job%verbose>=5) call TimerStart('Prepare tmat for J0-convertion')
+            !
+            matsize2= int(ncontr_t,hik)*int(Nentries,hik)
+            allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),vector(ncontr_t),stat=alloc)
+            call ArrayStart('psi',alloc,1,kind(psi),matsize2)
+            call ArrayStart('mat_t',alloc,1,kind(mat_t),matsize2)
+            !
+            psi = 0
+            !
+            allocate(vec(nsize),stat = alloc)
+            if (alloc /= 0) stop 'fitting-vec allocation error: vec - out of memory'
+            !
+            do ientry = 1,Nentries
                !
-               irow = bset_contr(jind)%icontr2icase(idimen,1)
-               ib   = bset_contr(jind)%icontr2icase(idimen,2)
+               ilevel = fit(isym,jind)%ilevel(ientry)
                !
-               ktau = bset_contr(jind)%ktau(idimen)
-               icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+               irec = eigen(ilevel)%irec(1)
+               read(iunit, rec = irec) vec(1:nsize)
                !
-               iterm = ijterm(jind)%kmat(irow,isym)
+               !omp parallel do private(idimen,ktau,icontr) shared(psi) schedule(guided)
+               !do idimen = 1, dimen
+               !   !
+               !   ktau = bset_contr(jind)%ktau(idimen)
+               !   icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+               !   !
+               !   psi(icontr,ientry,ktau) = vec(idimen)
+               !   !
+               !end do
+               !omp end parallel do
                !
-               dtemp0 = 0
-               !
-               nelem = bset_contr(jind)%irr(isym)%N(irow)
-               !
-               do ielem = 1,nelem
-                  !
-                  isrootI = iterm+ielem 
-                  !
-                  dtemp0 = dtemp0 + vec(isrootI)*bset_contr(jind)%irr(isym)%repres(isrootI,1,ib)
-                  !
+               !$omp parallel do private(idimen,irow,ib,ktau,icontr,iterm,dtemp0,nelem,ielem,isrootI) shared(psi) schedule(guided)
+               do idimen = 1, dimen
+                 !
+                 irow = bset_contr(jind)%icontr2icase(idimen,1)
+                 ib   = bset_contr(jind)%icontr2icase(idimen,2)
+                 !
+                 ktau = bset_contr(jind)%ktau(idimen)
+                 icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+                 !
+                 iterm = ijterm(jind)%kmat(irow,isym)
+                 !
+                 dtemp0 = 0
+                 !
+                 nelem = bset_contr(jind)%irr(isym)%N(irow)
+                 !
+                 do ielem = 1,nelem
+                    !
+                    isrootI = iterm+ielem 
+                    !
+                    dtemp0 = dtemp0 + vec(isrootI)*bset_contr(jind)%irr(isym)%repres(isrootI,1,ib)
+                    !
+                 enddo
+                 !
+                 psi(icontr,ientry,ktau) = dtemp0
+                 !
                enddo
+               !$omp end parallel do
                !
-               psi(icontr,ientry,ktau) = dtemp0
-               !
-             enddo
-             !$omp end parallel do
-             !
-          end do
-          !
-          deallocate(vec)
-          !
-          if (job%verbose>=5) call TimerStop('Prepare tmat for J0-convertion')
-          !
-          if (job%verbose>=5)  call MemoryReport
-          !
-          read(chkptIO) buf20
-          read(chkptIO) ncontr_t
-          !
-          do i=1,parmax
+            end do
             !
-            if (job%verbose>=6) write (out,"('iparam = ',i0)") i
+            deallocate(vec)
             !
-            !write (out,"(' ')")
+            if (job%verbose>=5) call TimerStop('Prepare tmat for J0-convertion')
             !
-            read(chkptIO) imu_t
-            read(chkptIO) poten_
+            !pot_matrix = 0
             !
-            pot_matrix = 0
+            !do k = 0,Jrot
+            !  !
+            !  do itau = 0,1
+            !     !
+            !     !if (k==0.and.mod(jrot,2)/=itau) cycle
+            !     !
+            !     ktau = 2*k+itau
+            !     !
+            !     mat_t = 0
+            !     !
+            !     call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
+            !                 poten_,ncontr_t,beta0,mat_t,Nentries)
+            !     call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
+            !                 psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+            !     !
+            !     !
+            !  enddo
+            !enddo
             !
-            do k = 0,Jrot
-              !
-              do itau = 0,1
-                 !
-                 !if (k==0.and.mod(jrot,2)/=itau) cycle
-                 !
-                 ktau = 2*k+itau
-                 !
-                 mat_t = 0
-                 !
-                 call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-                             poten_,ncontr_t,beta0,mat_t,Nentries)
-                 call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-                             psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
-                 !
-                 !
-              enddo
-            enddo
+            !allocate (eigenval(Nentries),eigenvec(Nentries,Nentries),stat=alloc)
+            !call ArrayStart('eigenval',alloc,size(eigenval),kind(eigenval))
             !
-            allocate (eigenval(Nentries),eigenvec(Nentries,Nentries),stat=alloc)
-            call ArrayStart('eigenval',alloc,size(eigenval),kind(eigenval))
-            !
-            call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
+            !call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
             !
             !write (out,"(' ')")
             !
             do ientry = 1, Nentries
               !
-              ilevel = fit(isym,jind)%ilevel(ientry)
+              !call dgemv('N',Nentries,Nentries,1.0d0,dmat,Nentries,mat(:,ientry),1,0.0d0,vector,1)
               !
-              write (out,"(2i7,f18.6,(2x,es18.9))") i,ientry,eigen(ilevel)%energy,eigenval(ientry)
+              mat_ = 0 
+              !
+              do k = 0,Jrot
+                !
+                do itau = 0,1
+                   !
+                   !if (k==0.and.mod(jrot,2)/=itau) cycle
+                   !
+                   ktau = 2*k+itau
+                   !
+                   !mat_t = 0
+                   !
+                   call dgemv('T',ncontr_t,ncontr_t,alpha,poten_,ncontr_t,psi(:,ientry,ktau),1,beta0,vector,1)
+                   f_t = ddot(ncontr_t,vector,1,psi(:,ientry,ktau),1)
+                   !
+                   mat_ = mat_ + f_t
+                   !
+                enddo
+              enddo
+              !
+              ilevel = fit(isym,jind)%ilevel(ientry)
+              irec = eigen(ilevel)%irec(1)
+              !
+              write (out,"('||',i3,1x,a3,1x,i7,f18.6,2x,2es18.9)") Jrot,sym%label(isym),irec,&
+                                                          eigen(ilevel)%energy-eigen(1)%energy,mat_
               !
             enddo
             !
-            deallocate(eigenval,eigenvec)
+            !deallocate(eigenval,eigenvec)
+            !call ArrayStop('eigenval')
             !
-            call ArrayStop('eigenval')
+            if (jind==1.and.isym==1) then 
+              !
+              read(chkptIO) buf20(1:18)
+              if (buf20(1:18)/='End external field') then
+                write (out,"(' calc_exp_values ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
+                stop 'calc_exp_values - bogus file format'
+              end if
+              !
+            endif
+            !
+            deallocate(mat_t,vector)
+            call ArrayStop('mat_t')
+            !
+            deallocate(psi)
+            call ArrayStop('psi')
+            !
+            deallocate(pot_matrix,stat=alloc)
+            call ArrayStop('pot_matrix')
+            !
+            if (job%verbose>=5) call TimerReport
             !
          enddo
          !
-         if (jind==1.and.isym==1) then 
-           !
-           read(chkptIO) buf20(1:18)
-           if (buf20(1:18)/='End external field') then
-             write (out,"(' calc_exp_values ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
-             stop 'calc_exp_values - bogus file format'
-           end if
-           !
-         endif
-         !
-         rewind(chkptIO)
-         ! 
-         deallocate(pot_matrix,stat=alloc)
-         call ArrayStop('pot_matrix')
-         !
-         deallocate(mat_t)
-         call ArrayStop('mat_t')
-         !
-         deallocate(psi)
-         call ArrayStop('psi')
-         !
-         if (job%verbose>=5) call TimerReport
-         !
-       enddo
+       end do
        !
-     end do
+     enddo
+     !
+     rewind(chkptIO)
      !
      deallocate(poten_)
      !
@@ -3623,8 +3641,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*(Nentries+1)/2,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1),hik)/2_hik
+            matsize2= int(Nentries,hik)*int((Nentries+1),hik)/2_hik
             !
             if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i0)") matsize,j0ener_fit_plus
             !
@@ -3632,7 +3650,7 @@ contains
             !
             if (trim(fitting%method)=='SLOW') idimen = 1
             !
-            hmatsize = int(matsize*idimen,hik)
+            hmatsize = int(matsize,hik)*int(idimen,hik)
             !
             allocate(deriv_matrix(Nentries,Nentries,idimen),stat=alloc)
             call ArrayStart('deriv_matrix',alloc,1,kind(deriv_matrix),hmatsize)
@@ -4034,49 +4052,46 @@ contains
                 ilevel = fit(isym,jind)%ilevel(ientry)
                 !
                 do jentry = 1,ientry
-                   !
-                   jlevel = fit(isym,jind)%ilevel(jentry)
-                   !
-                   !ij = ientry*(ientry-1)/2+jentry
-                   !
-                   !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,kroot,cjroot) shared(deriv_matrix) schedule(guided) 
-                   do ciroot = 1, cdimen(ientry)
-                     !
-                     iroot = tmat(ientry)%icoeff(ciroot)
-                     !
-                     icontr = bset_contr(jind)%iroot_correlat_j0(iroot)
-                     !
-                     icase_j0  = bset_contr(1)%icontr2icase(icontr, 1)
-                     !
-                     if (icontr>j0ener_fit_plus.or.icontr>bset_contr(1)%Maxcontracts.or.icase_j0>j0fit%Nenergies) cycle
-                     !
-                     ktau_i = bset_contr(jind)%ktau(iroot)
-                     !
-                     do kroot = 1, kdimen(jentry,icontr,ktau_i)
-                       !
-                       cjroot = kmat(jentry,icontr,ktau_i)%icoeff(kroot)
-                       !
-                       deriv_matrix(ientry,jentry,icontr) = deriv_matrix(ientry,jentry,icontr) + &
-                                                            tmat(ientry)%coeff(ciroot)*tmat(jentry)%coeff(cjroot)
-                       !
-                     enddo
-                     !
-                   enddo
-                   !$omp end parallel do
-                   !
+                  !
+                  jlevel = fit(isym,jind)%ilevel(jentry)
+                  !
+                  !ij = ientry*(ientry-1)/2+jentry
+                  !
+                  !$omp parallel do private(ciroot,iroot,icontr,icase_j0,ktau_i,kroot,cjroot) shared(deriv_matrix) schedule(guided)
+                  do ciroot = 1, cdimen(ientry)
+                    !
+                    iroot = tmat(ientry)%icoeff(ciroot)
+                    !
+                    icontr = bset_contr(jind)%iroot_correlat_j0(iroot)
+                    !
+                    icase_j0  = bset_contr(1)%icontr2icase(icontr, 1)
+                    !
+                    if (icontr>j0ener_fit_plus.or.icontr>bset_contr(1)%Maxcontracts.or.icase_j0>j0fit%Nenergies) cycle
+                    !
+                    ktau_i = bset_contr(jind)%ktau(iroot)
+                    !
+                    do kroot = 1, kdimen(jentry,icontr,ktau_i)
+                      !
+                      cjroot = kmat(jentry,icontr,ktau_i)%icoeff(kroot)
+                      !
+                      deriv_matrix(ientry,jentry,icontr) = deriv_matrix(ientry,jentry,icontr) + &
+                                                           tmat(ientry)%coeff(ciroot)*tmat(jentry)%coeff(cjroot)
+                      !
+                    enddo
+                    !
+                  enddo
+                  !$omp end parallel do
+                  !
                 enddo
                 !
               enddo
-		      !
+              !
               iunit = fit(isym,jind)%IOunit
-              !write (iunit) 'start fitener'
               !
               do i=1,j0ener_fit_plus
                 !
                 write (iunit) i
                 write (iunit) deriv_matrix(:,:,i)
-                !
-                !write (iunit,rec=i) deriv_matrix(1:matsize,i)
                 !
               enddo
               !
@@ -4137,8 +4152,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             if (job%verbose>=5) write (out,"('matsize,j0ener_fit_plus = ',2i0)") matsize,j0ener_fit_plus
             !
@@ -4246,11 +4261,13 @@ contains
      character(len=cl) :: unitfname,job_file
      !
      integer(ik)        :: chkptIO
-     character(len=cl)  :: job_is,filename,iostatus,symchar,jchar,parchar,pot_suffix
+     character(len=cl)  :: job_is,filename,symchar,jchar,parchar,pot_suffix
      !
+     character(len=cl)  :: iostatus = 'scratch'
      character(len=20)  :: buf20
-     integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib
+     integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib,ideg_rot
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,nsize,irec,cdimen_,idimen,j,iterm1,iterm2,ktau,icontr,k,itau
+     integer(ik)        :: num_rlevels,rot_size
      integer(hik)       :: rootsize,rootsize2,matsize,matsize2
      real(rk),allocatable  :: pot_matrix(:,:)
      real(rk),allocatable  :: poten_(:,:)
@@ -4351,8 +4368,8 @@ contains
          !
        endif
        !
-       rootsize  = int(ncontr_t*(ncontr_t+1)/2,hik)
-       rootsize2 = int(ncontr_t*ncontr_t,hik)
+       rootsize  = int(ncontr_t,hik)*int((ncontr_t+1)/2,hik)
+       rootsize2 = int(ncontr_t,hik)*int(ncontr_t,hik)
        !
        if (job%verbose>=4) then 
           write(out,"(/'prepare_pot_matrix...: Number of elements: ',i8)") ncontr_t
@@ -4463,8 +4480,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             allocate(pot_matrix(Nentries,Nentries),stat=alloc)
             call ArrayStart('pot_matrix',alloc,1,kind(pot_matrix),matsize2)
@@ -4480,8 +4497,17 @@ contains
             !
             if (trim(fitting%method)=='FAST') then
               !
-              matsize2= int(ncontr_t*Nentries,hik)
-              allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),mat_t(Nentries,ncontr_t),stat=alloc)
+              matsize2= int(ncontr_t,hik)*int(Nentries,hik)
+              !
+              if (job%rotsym_do) then
+                 num_rlevels = maxval(bset_contr(jind)%ktau(:),dim=1)
+                 rot_size = num_rlevels*sym%maxdegen
+                 allocate(psi(ncontr_t,Nentries,rot_size),stat=alloc)
+              else 
+                 allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),stat=alloc)
+              endif
+              !
+              allocate(mat_t(Nentries,ncontr_t),stat=alloc)
               call ArrayStart('psi',alloc,1,kind(psi),matsize2)
               call ArrayStart('mat_t',alloc,1,kind(mat_t),matsize2)
               !
@@ -4505,6 +4531,11 @@ contains
                    !
                    ktau = bset_contr(jind)%ktau(idimen)
                    icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+                   !
+                   if (job%rotsym_do) then 
+                      ideg_rot = bset_contr(jind)%k(idimen)
+                      ktau = sym%maxdegen*(ktau-1)+ideg_rot
+                   endif
                    !
                    iterm = ijterm(jind)%kmat(irow,isym)
                    !
@@ -4643,28 +4674,49 @@ contains
                 !
               endif
               !
-              if (job%verbose>=5) write (out,"('  iparam = 'i4)") i
+              if (job%verbose>=5) write (out,"('  iparam = ',i4)") i
               !
               if (trim(fitting%method)=='FAST') then
                 !
                 pot_matrix = 0
                 !
-                do k = 0,Jrot
-                  !
-                  do itau = 0,1
+                if (job%rotsym_do) then 
+                   !
+                   do k = 1,num_rlevels
                      !
-                     !if (k==0.and.mod(jrot,2)/=itau) cycle
+                     do itau = 1,sym%maxdegen
+                        !
+                        ktau = sym%maxdegen*(k-1)+itau
+                        !
+                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
+                                    poten_,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
+                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        !
+                        !
+                     enddo
+                   enddo
+                   !
+                else
+                   !
+                   do k = 0,Jrot
                      !
-                     ktau = 2*k+itau
-                     !
-                     call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-                                 poten_,ncontr_t,beta0,mat_t,Nentries)
-                     call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-                                 psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
-                     !
-                     !
-                  enddo
-                enddo
+                     do itau = 0,1
+                        !
+                        !if (k==0.and.mod(jrot,2)/=itau) cycle
+                        !
+                        ktau = 2*k+itau
+                        !
+                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
+                                    poten_,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
+                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        !
+                        !
+                     enddo
+                   enddo
+                   !
+                endif
                 !
               else 
                 !
@@ -4809,8 +4861,8 @@ contains
             !
             if (Nentries<1) cycle
             !
-            matsize = int(Nentries*(Nentries+1)/2,hik)
-            matsize2= int(Nentries*Nentries,hik)
+            matsize = int(Nentries,hik)*int((Nentries+1)/2_hik,hik)
+            matsize2= int(Nentries,hik)*int(Nentries,hik)
             !
             dimen = bset_contr(jind)%Maxcontracts
             !
@@ -4824,7 +4876,7 @@ contains
             do 
               !
               i = i + 1
-              if (job%verbose>=5) write (out,"('f-'30i4)") molec%pot_ind(:,i)
+              if (job%verbose>=5) write (out,"('f-',30i4)") molec%pot_ind(:,i)
               !
               j = j + 1
               !
@@ -4835,7 +4887,7 @@ contains
               if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
                 !
                 i = i + 1
-                if (job%verbose>=5) write (out,"('g-'30i4)") molec%pot_ind(:,i)
+                if (job%verbose>=5) write (out,"('g-',30i4)") molec%pot_ind(:,i)
                 !
                 read (iunit,rec=i) poten_
                 !
@@ -4936,7 +4988,7 @@ contains
    !
    filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
    !
-   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename)
+   open(chkptIO,form='unformatted',action='read',position='rewind',status='old',file=filename,err=22)
    !
    ilen = LEN_TRIM(name)
    !
@@ -4955,6 +5007,13 @@ contains
    end if
    !
    close(chkptIO)
+   !
+   return
+   !
+   22 write(out,"(a,a)") 'divided_slice_read error: file does not exist = ',filename
+      write(out,"(a)") 'If it is not supposed to exist (not used in fitting), consider setting pot. parameters and ifit to zero'
+      write(out,"(a)") 'For structural parameters ifit must be set to -1 to retain their values in the fitting to ab initio'
+      stop 'divided_slice_read error: file potfit_mat does not exist'
    !
  end subroutine divided_slice_read
 

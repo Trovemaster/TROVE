@@ -259,7 +259,10 @@ contains
          !
          read(iounit, '(30a)') buf(1:30)
          !
-         if (buf(1:30) /= 'End irreducible transformation') stop 'read_contrind error: wrong irrep-footer'
+         if (buf(1:30) /= 'End irreducible transformation') then 
+             write (out,"('read_contrind error: wrong irrep-footer in ',a)") filename
+             stop 'read_contrind error: wrong irrep-footer'
+         endif
          !
        endif 
        !
@@ -583,11 +586,11 @@ contains
           bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)**2
           !
           ! trove%lincoord is a special case of a linear molecules where the basis set does not increase with J
-          ! because a contraint on K=L and the total size increase with J linearaly 
-          if (job%lincoord.or.job%triatom_sing_resolve) then
-            if (jind>1) then 
-              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)
-            endif
+          ! because a contraint on K=L and the total size increases with J linearaly 
+          if ((job%lincoord/=0).or.(job%triatom_sing_resolve)) then
+            !if (jind>1) then 
+              bset_contr(jind)%nsize_base(gamma) = nsize_base + bset_contr(1)%Maxcontracts*jval(jind)*sym%Nrepresen
+            !endif
           endif 
           !
           nsize_base = nsize_base + nsize
@@ -981,19 +984,23 @@ contains
         integer(ik),intent(in) :: igamma
         logical,intent(out)    :: passed
           !
-          ! passed = .true.
+          passed = .true.
           !
-          ! if (.not.intensity%do) return
-          !
-          passed = .false.
-          !
-          if (job%isym_do(igamma).and.energy-job%ZPE>=job%erange(1)  &
-                                 .and.energy-job%ZPE<=job%erange(2)) then 
-              !
-              passed = .true.
-              !
+          if (.not.job%isym_do(igamma)) then 
+              passed = .false.
+              return
           endif 
-
+          !
+          if (energy-job%ZPE<job%erange(1)) then 
+              passed = .false.
+              return
+          endif 
+          !
+          if (energy-job%ZPE>job%erange(2)) then 
+              passed = .false.
+              return
+          endif 
+          !
       end subroutine filter
       !
  end subroutine read_eigenval
@@ -1322,6 +1329,9 @@ contains
                     ' at least one must be set to CONVERT or EIGENfunc SAVE CONVERT'
           stop 'TRconvert_matel_j0_eigen: illegal MATELEM or EXTMATELEM <> CONVERT'
       end if
+      !
+      ! restore the status if IOmatelem_split if it was changed at previous stages:
+      if (job%IOmatelem_split_changed) job%IOmatelem_split = .not.job%IOmatelem_split
       !
       matsize  = int(Neigenroots*(Neigenroots+1)/2,hik)
       matsize2 = int(Neigenroots*Neigenroots,hik)
@@ -2501,8 +2511,6 @@ contains
          !
          !
          mat(irootF) = mat(irootF) + dtemp
-         !
-         ! mat(irootF) = mat(irootF) + sum( half_matelem(tmat(irootF)%icoeff(1:cdimen(irootF)) )*tmat(irootF)%coeff(1:cdimen(irootF)))
          !
        end do
        !

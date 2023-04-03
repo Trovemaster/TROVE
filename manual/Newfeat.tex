@@ -1,0 +1,184 @@
+
+\chapter{New Features}
+\label{chap:newfeat}
+
+This chapter discusses the latest additions to TROVE and their implementation. Many of these new features are still being 
+tested and developed and so this chapter, even more than others, should be treated as subject to change. These features
+have already proven important however and so will likely remain a part of TROVE but perhaps with a different implementation.
+
+Most of these new features are for dealing with larger molecules in TROVE.
+
+
+
+
+\section{Splitting and Stitching}
+
+As discussed in Chapter \ref{chap:Quickstart}, matrix elements between contracted basis functions are saved to a file,
+\verb|contr_matelem.chk|. This step is time consuming and for large molecules/basis sets it may not be possible to carry out
+this step within a computer's allocated time limit. The \verb|split| command solves this problem by splitting the matrix 
+into 12 `slices'. Each slice contains matrix elements of a component of the full Hamiltonian operator.
+
+To use splitting, in the \verb|CHECK_POINT| block the \verb|matelem| should be set to
+\begin{verse}
+matelem  save  split i j 
+\end{verse}
+where \verb|i| and \verb|j| are integers between 0 and 12 (and \verb|j| $\geq$ \verb|i|). The most parallel way of saving 
+the matelem files is to calculate each separately by setting \verb|i| and \verb|j| to 0 0, 1 1, ...12 12. Splitting can
+also be used for the dipole using
+\begin{verse}
+extmatelem  save  split i j 
+\end{verse}
+where \verb|i| and \verb|j| are now 1,2 or 3 and should be run with 1 1, 2 2, 3 3.
+
+Using splitting will produce files \verb|matelemI.chk| where \verb|i| is 1-12 and \verb|extmatelemJ.chk| where \verb|J| 
+is 1-3. 
+
+To convert these files to the `J=0' representation, use
+\begin{verse}
+matelem  convert  split 
+\end{verse}
+This will produce \verb|j0_matelemI.chk| files. This can be used in subsequent calculations using \verb|read| as usual,
+as long as \verb|split| is specified also so that the keyword should be set to
+\begin{verse}
+matelem  read  split 
+\end{verse}
+
+Matrix elements of the dipole are converted in the same way. For the dipole it may be necessary to combine the split 
+extmatelem files however using the \verb|stitch| option as currently the GAIN program does not accept split files.
+To carry this out, after the three extmatelem files have been calculated, re-run TROVE with
+\begin{verse}
+extmatelem convert stitch
+\end{verse}
+This will combine the split matelem files into a \verb|j0_extfield.chk| files (which are produced if not splitting is 
+carried out as specified in Chapter \ref{chap:Quickstart}). This can then be used with GAIN.
+
+
+
+\section{Restarting}
+
+For large molecules and basis sets it may be that the vibrational part of the calculation does not finish within a 
+large computer's time limit. In this case it is usually the calculation of matrix elements which is the time consuming part.
+Since these are independent calculations however, the elements can be saved and read back in to form the full Hamiltonian 
+matrix.
+
+To use this restart feature, in the \verb|CHECK_POINT| block the \verb|matelem| keyword should be set to
+\begin{verbatim}
+matelem  save  split  0 0 dump
+\end{verbatim}
+In this case the \verb|dump| keyword gets TROVE to sequentially save the matrix at intervals. This will produce an output 
+file which after giving the dimensions of the contracted matrix will print out to which matrix element TROVE has saved.
+If the calculation then runs out of time, the user can read back in these pre-computed elements up to that point by 
+specifying
+\begin{verbatim}
+matelem  append n split  0 0 dump
+\end{verbatim}
+In this case TROVE restarts at \verb|n| and continue to calculate matrix elements. This can be repeated until the matrix 
+is filled and be diagonalized. 
+
+Again, this is only for the $J=0$ vibrational step and is useful when used in conjunction with the `J=0' step and 
+especially with pruning methods, as described below.
+
+
+\section{Fast-CI}
+
+The Fast-CI method was implemented in TROVE by Andrey Yachmenev as a way of speeding up calculations. The method does this by
+essentially re-ordering loops and indices in a more efficient manner. Another aspect of the method is the ability to 
+choose a cut-off where expansion coefficients of the Hamiltonian are discarded if too small. The method is optimally designed
+when using curvilinear coordinates.
+
+To use the Fast-CI method, in the \verb|CONTRACTION| block put \verb|fast_ci|. To make use of the cut-off option put
+\verb|exp_coeff_thresh| in the same block of input followed by what value is required. Typically very small values such as
+$1\times10^{-7}$ or so should be used. This should result in essentially the same results as not using any cut-off
+but with significant speed up. If even faster calculations are required the value should be increased but values
+larger than $1\times10^{-2}$ are not recommended. Ideally this parameter should be benchmarked using smaller basis sets
+to get an idea of the particular systems sensitivity to its value. 
+
+The Fast-CI method generates different checkpoint files for the vibrational matrix elements compared to what is produced
+using standard TROVE options. Many files starting with \verb|contrME_| are produced which have to do with the ordering
+procedure. 
+
+When using Fast-CI, TROVE can be used as normal for other steps in the calculation and the \verb|fast_ci| and 
+\verb|exp_coeff_thresh| keywords can remain the the \verb|CONTRACTION| block.
+ 
+
+
+
+
+\section{Storing Hamiltonian and External Diagonalization} 
+
+For larger production calculations involving high values of $J$ it is likely that the construction and diagonalization of
+the Hamiltonian matrix will exceed the time limit of the computer which is used. In this case the Hamiltonian matrix can be
+saved and then diagonalized separately for each symmetry.
+
+To save the Hamiltonian for a given symmetry, in the \verb|DIAGONALIZER| block put
+\begin{verbatim}
+save
+gamma i
+\end{verbatim}
+where \verb|i| is the symmetry. This should be done for each symmetry at a given $J$. TROVE will produce the files 
+\verb|matrixJ_I.chk| where \verb|J| is the value of $J$ and \verb|I| is the symmetry. TROVE will also produce 
+eigenvector and descriptor files but these will be empty.
+
+These matrices can then be diagonalized using an external program. An example of such a program is PDSYEVD, a ScaLapack
+program which is MPI parallel and so can be run on multiple CPU nodes. A TROVE compatible driver program for this is 
+available from Sergey Yurchenko. An example input for this program is 
+\begin{verbatim}
+(title)
+J 32
+gamma 8
+DIAGONALIZER pdsyevd
+ENERGY_THRESH 16000.0
+COEFF_THRESH  1e-18
+ZPE 11022.4701
+MEM 64 gb
+\end{verbatim}
+where the keywords are the same as those used in TROVE input.
+
+This program will produce the eigenvectors for the specified $J$ and $\Gamma$ as TROVE would but not the descriptor files
+(since only the Hamiltonian matrix was specified without details of the basis set, etc). The program also produces a
+\verb|energiesJ_I.chk| file which contains the eigenvalues.
+
+To produce the relevant descriptor files and usual TROVE output files, TROVE should be re-run with the \verb|energiesJ_I.chk|
+file in the same directory with the keywords in the \verb|DIAGONALIZER| block changed to
+\begin{verbatim}
+read-energies
+gamma i
+\end{verbatim}
+This will cause TROVE to read the energies file and produce the usual descriptor files and output block containing the 
+energies, quantum numbers, etc. This is essentially a `bookkeeping' step and does not require much computing time or memory.
+
+
+\section{Transition Moment Intensity Pruning}
+
+Another new method which has been developed to reduce calculation time of line lists for large molecules is transition 
+moment intensity pruning. This procedure reduces how many vibrational levels are included based on their intensity. Levels 
+which have very weak intensities for both transitions to and from them are discarded. This results in a large reduction of the 
+basis set but should only remove transitions of very low intensity. 
+
+As the method prunes the basis using the vibrational intensities, it assumes that rotational levels with the same vibrational
+quantum numbers will also be weak. 
+
+To use this method, the usual steps for calculating the transition moment should be followed but the keyword
+\verb|pruning| should be added into the intensity block. TROVE will then calculate the transition moments and intensities 
+as usual but
+also work out and store the most intense transitions to and from each state. This calculations produces the checkpoint files
+\verb|eigen_intens0_n.chk| for each symmetry \verb|n|. In applications the temperature for this step has been set to 
+around the maximum for which the line list being calculated to try and make sure no important states are left out.
+
+The basis set can then be pruned using the `J=0' method. In the \verb|CONTRACTION| the following should be included
+\begin{verbatim}
+tm_cutoff  1e-24
+tm_enermin 8000.0
+\end{verbatim}
+\verb|tm_cutoff| sets the minimum intensity for removing states. This should ideally by set to as low a value as possible and
+will depend on practical considerations such as computing time and memory. \verb|tm_enermin| is the minimum energy in 
+wavenumbers for which pruning will occur. In this example, all states below 8000 cm$^{-1}$ will be included in the 
+basis set regardless of intensity. This value should be set as large as possible but will again be determined by practical
+considerations.
+
+An example of using this procedure is for the ethylene (C$_2$H$_6$) molecule \cite{jt729}. 
+For this relatively large molecule a basis set
+with a polyad number of 10 produced split \verb|matelem| files which were 158 Gb each. Using these basis sets would not
+have been practical at high $J$s. Using the pruning method with the parameters as given in the example above reduced the 
+matelems to 1.4 Gb. This then allowed refinement and a full line list calculation to be carried out.
+

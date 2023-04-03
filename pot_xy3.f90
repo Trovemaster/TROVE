@@ -808,7 +808,7 @@ module pot_xy3
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -823,8 +823,7 @@ module pot_xy3
                alpha1 = acos(cosalpha)
             endif
             !
-         case('R-A2-A3-TAU')
-            !
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             alpha2 = local(4)
             alpha3 = local(5)
@@ -946,7 +945,7 @@ module pot_xy3
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -3170,128 +3169,264 @@ module pot_xy3
     F4      =  param(    9)
     F5      =  param(   10)
 
-   if (parmax>=11) then
-      F11     =  param(   11)
-      F13     =  param(   12)
-      F14     =  param(   13)
-      F16     =  param(   14)
-      F23     =  param(   15)
-      F33     =  param(   16)
-      F34     =  param(   17)
-      F35     =  param(   18)
-      F36     =  param(   19)
-      F44     =  param(   20)
-      F46     =  param(   21)
-      F55     =  param(   22)
-      F56     =  param(   23)
-   endif
-   if (parmax>=24) then
-      F111    =  param(   24)
-      F112    =  param(   25)
-      F114    =  param(   26)
-      F115    =  param(   27)
-      F123    =  param(   28)
-      F124    =  param(   29)
-      F133    =  param(   30)
-      F135    =  param(   31)
-      F136    =  param(   32)
-      F144    =  param(   33)
-      F146    =  param(   34)
-      F155    =  param(   35)
-      F156    =  param(   36)
-      F223    =  param(   37)
-      F225    =  param(   38)
-      F226    =  param(   39)
-      F234    =  param(   40)
-      F235    =  param(   41)
-      F245    =  param(   42)
-      F246    =  param(   43)
-      F255    =  param(   44)
-      F256    =  param(   45)
-      F266    =  param(   46)
-      F333    =  param(   47)
-      F334    =  param(   48)
-      F344    =  param(   49)
-      F444    =  param(   50)
-      F445    =  param(   51)
-      F456    =  param(   52)
-      F466    =  param(   53)
-      F555    =  param(   54)
-      F556    =  param(   55)
-   endif
-   if (parmax>=56) then
-      F1111   =  param(   56)
-      F1112   =  param(   57)
-      F1114   =  param(   58)
-      F1115   =  param(   59)
-      F1122   =  param(   60)
-      F1123   =  param(   61)
-      F1124   =  param(   62)
-      F1126   =  param(   63)
-      F1136   =  param(   64)
-      F1144   =  param(   65)
-      F1146   =  param(   66)
-      F1155   =  param(   67)
-      F1156   =  param(   68)
-      F1222   =  param(   69)
-      F1225   =  param(   70)
-      F1233   =  param(   71)
-      F1234   =  param(   72)
-      F1235   =  param(   73)
-      F1244   =  param(   74)
-      F1245   =  param(   75)
-      F1246   =  param(   76)
-      F1256   =  param(   77)
-      F1334   =  param(   78)
-      F1335   =  param(   79)
-      F1355   =  param(   80)
-      F1366   =  param(   81)
-      F1444   =  param(   82)
-      F1445   =  param(   83)
-      F1456   =  param(   84)
-      F1466   =  param(   85)
-      F1566   =  param(   86)
-      F1666   =  param(   87)
-      F2222   =  param(   88)
-      F2224   =  param(   89)
-      F2225   =  param(   90)
-      F2233   =  param(   91)
-      F2244   =  param(   92)
-      F2245   =  param(   93)
-      F2246   =  param(   94)
-      F2255   =  param(   95)
-      F2256   =  param(   96)
-      F2266   =  param(   97)
-      F2333   =  param(   98)
-      F2334   =  param(   99)
-      F2335   =  param(  100)
-      F2336   =  param(  101)
-      F2344   =  param(  102)
-      F2345   =  param(  103)
-      F2356   =  param(  104)
-      F2366   =  param(  105)
-      F2444   =  param(  106)
-      F2445   =  param(  107)
-      F2455   =  param(  108)
-      F2456   =  param(  109)
-      F2466   =  param(  110)
-      F3335   =  param(  111)
-      F3445   =  param(  112)
-      F3555   =  param(  113)
-      F3556   =  param(  114)
-      F3566   =  param(  115)
-      F3666   =  param(  116)
-      F4444   =  param(  117)
-      F4445   =  param(  118)
-      F4456   =  param(  119)
-      F4466   =  param(  120)
-      F4555   =  param(  121)
-      F4556   =  param(  122)
-      F5566   =  param(  123)
-      F5666   =  param(  124)
-      F6666   =  param(  125)
-   endif
+    F11     =  param(   11)
+    F13     =  param(   12)
+    F14     =  param(   13)
+    F16     =  param(   14)
+    F23     =  param(   15)
+    F33     =  param(   16)
+    F34     =  param(   17)
+    F35     =  param(   18)
+    F36     =  param(   19)
+    F44     =  param(   20)
+    F46     =  param(   21)
+    F55     =  param(   22)
+    F56     =  param(   23)
+
+!  define local coordinates
+
+   r14 = local(1)
+   r24 = local(2)
+   r34 = local(3)
+   !
+   alpha1 = local(4)
+   alpha2 = local(5)
+   alpha3 = local(6)
+
+!  define coordinates xi
+
+   ta1 = alpha1-alphae
+   ta2 = alpha2-alphae
+   ta3 = alpha3-alphae
+
+     select case ( ix )
+     case default
+       write (6,"(' dip. order component',i8)") ix
+       stop 'dip. order component'
+     case (1,4,7)
+       xi1=(r14-re14)
+       xi2=(r24-re14)
+       xi3=(r34-re14)
+       !
+       xi4=ta1
+       xi5=ta2
+       xi6=ta3
+       !
+     case (2,5,8)
+       xi1=(r24-re14)
+       xi2=(r34-re14)
+       xi3=(r14-re14)
+       !
+       xi4=ta2
+       xi5=ta3
+       xi6=ta1
+       !
+     case (3,6,9)
+       xi1=(r34-re14)
+       xi2=(r14-re14)
+       xi3=(r24-re14)
+       !
+       xi4=ta3
+       xi5=ta1
+       xi6=ta2
+       !
+     end select
+
+     t1=0 ; t2=0 ; t3=0 ; t4=0 ; t5=0 ; t6=0
+     if (parmax>=1) then
+      t1 = F1*xi1+(xi2+xi3)*F3+(xi6+xi5)*F5+F4*xi4
+     endif
+
+     t2 = F11*xi1**2+F14*xi1*xi4+F23*xi2*xi3+(xi1*xi3+xi1*xi2)*F13+(xi1*xi5+xi1*xi6)*F16+&
+        (xi2*xi4+xi3*xi4)*F34+(xi3**2+xi2**2)*F33+(xi3*xi6+xi2*xi5)*F36+(xi2*xi6+xi3*xi5)*F35+&
+        F44*xi4**2+(xi4*xi6+xi4*xi5)*F46+(xi6**2+xi5**2)*F55+F56*xi5*xi6
+
+     if (parmax>=24) then
+
+        F111    =  param(   24)
+        F112    =  param(   25)
+        F114    =  param(   26)
+        F115    =  param(   27)
+        F123    =  param(   28)
+        F124    =  param(   29)
+        F133    =  param(   30)
+        F135    =  param(   31)
+        F136    =  param(   32)
+        F144    =  param(   33)
+        F146    =  param(   34)
+        F155    =  param(   35)
+        F156    =  param(   36)
+        F223    =  param(   37)
+        F225    =  param(   38)
+        F226    =  param(   39)
+        F234    =  param(   40)
+        F235    =  param(   41)
+        F245    =  param(   42)
+        F246    =  param(   43)
+        F255    =  param(   44)
+        F256    =  param(   45)
+        F266    =  param(   46)
+        F333    =  param(   47)
+        F334    =  param(   48)
+        F344    =  param(   49)
+        F444    =  param(   50)
+        F445    =  param(   51)
+        F456    =  param(   52)
+        F466    =  param(   53)
+        F555    =  param(   54)
+        F556    =  param(   55)
+
+
+
+        s1 = (xi1**2*xi3+xi1**2*xi2)*F112+(xi3*xi4*xi6+xi2*xi4*xi5)*F245+&
+        (xi2*xi5*xi6+xi3*xi6*xi5)*F256+(xi1**2*xi5+xi1**2*xi6)*F115+&
+        (xi3*xi5**2+xi2*xi6**2)*F266+(xi2**2*xi6+xi3**2*xi5)*F226+&
+        (xi1*xi4*xi6+xi1*xi4*xi5)*F146+(xi1*xi6**2+xi1*xi5**2)*F155+&
+        (xi2*xi5**2+xi3*xi6**2)*F255+(xi1*xi2*xi5+xi1*xi3*xi6)*F136+&
+        (xi1*xi3**2+xi1*xi2**2)*F133+F144*xi1*xi4**2+F114*xi1**2*xi4+&
+        F234*xi2*xi3*xi4+F123*xi1*xi2*xi3+F456*xi4*xi5*xi6
+        t3 = s1+(xi1*xi3*xi4+xi1*xi2*xi4)*F124+(xi6**3+xi5**3)*F555+&
+        (xi1*xi3*xi5+xi1*xi2*xi6)*F135+(xi3*xi4*xi5+xi2*xi4*xi6)*F246+&
+        (xi2**2*xi4+xi3**2*xi4)*F334+(xi3**2*xi6+xi2**2*xi5)*F225+&
+        (xi3*xi4**2+xi2*xi4**2)*F344+F156*xi1*xi5*xi6+(xi3*xi2*xi6+xi2*xi3*xi5)*F235+&
+        (xi3**3+xi2**3)*F333+F444*xi4**3+(xi4*xi5**2+xi4*xi6**2)*F466+&
+        (xi3**2*xi2+xi2**2*xi3)*F223+F111*xi1**3+(xi5**2*xi6+xi6**2*xi5)*F556+&
+        (xi4**2*xi6+xi4**2*xi5)*F445
+     endif
+
+     if (parmax>=56) then
+        F1111   =  param(   56)
+        F1112   =  param(   57)
+        F1114   =  param(   58)
+        F1115   =  param(   59)
+        F1122   =  param(   60)
+        F1123   =  param(   61)
+        F1124   =  param(   62)
+        F1126   =  param(   63)
+        F1136   =  param(   64)
+        F1144   =  param(   65)
+        F1146   =  param(   66)
+        F1155   =  param(   67)
+        F1156   =  param(   68)
+        F1222   =  param(   69)
+        F1225   =  param(   70)
+        F1233   =  param(   71)
+        F1234   =  param(   72)
+        F1235   =  param(   73)
+        F1244   =  param(   74)
+        F1245   =  param(   75)
+        F1246   =  param(   76)
+        F1256   =  param(   77)
+        F1334   =  param(   78)
+        F1335   =  param(   79)
+        F1355   =  param(   80)
+        F1366   =  param(   81)
+        F1444   =  param(   82)
+        F1445   =  param(   83)
+        F1456   =  param(   84)
+        F1466   =  param(   85)
+        F1566   =  param(   86)
+        F1666   =  param(   87)
+        F2222   =  param(   88)
+        F2224   =  param(   89)
+        F2225   =  param(   90)
+        F2233   =  param(   91)
+        F2244   =  param(   92)
+        F2245   =  param(   93)
+        F2246   =  param(   94)
+        F2255   =  param(   95)
+        F2256   =  param(   96)
+        F2266   =  param(   97)
+        F2333   =  param(   98)
+        F2334   =  param(   99)
+        F2335   =  param(  100)
+        F2336   =  param(  101)
+        F2344   =  param(  102)
+        F2345   =  param(  103)
+        F2356   =  param(  104)
+        F2366   =  param(  105)
+        F2444   =  param(  106)
+        F2445   =  param(  107)
+        F2455   =  param(  108)
+        F2456   =  param(  109)
+        F2466   =  param(  110)
+        F3335   =  param(  111)
+        F3445   =  param(  112)
+        F3555   =  param(  113)
+        F3556   =  param(  114)
+        F3566   =  param(  115)
+        F3666   =  param(  116)
+        F4444   =  param(  117)
+        F4445   =  param(  118)
+        F4456   =  param(  119)
+        F4466   =  param(  120)
+        F4555   =  param(  121)
+        F4556   =  param(  122)
+        F5566   =  param(  123)
+        F5666   =  param(  124)
+        F6666   =  param(  125)
+        
+        
+        s2 = (xi1*xi2**3+xi1*xi3**3)*F1222+ (xi3*xi2**3+xi2*xi3**3)*F2333+ &
+        (xi3*xi5**3+xi2*xi6**3)*F3555+                                     &
+        (xi1*xi2*xi6**2+xi1*xi3*xi5**2)*F1355+                             &
+        (xi3*xi6**3+xi2*xi5**3)*F3666+                                     &
+        (xi2*xi4*xi5*xi6+xi3*xi4*xi6*xi5)*F2456+                           &
+        (xi2**3*xi6+xi3**3*xi5)*F3335+                                     &
+        (xi3*xi4**2*xi6+xi2*xi4**2*xi5)*F2445+                             &
+        (xi1*xi6*xi5**2+xi1*xi5*xi6**2)*F1566+                             &
+        (xi4**2*xi5**2+xi4**2*xi6**2)*F4466+                               &
+        (xi3*xi4*xi6**2+xi2*xi4*xi5**2)*F2455+ (xi5**4+xi6**4)*F6666+      &
+        (xi1*xi3*xi6*xi5+xi1*xi2*xi5*xi6)*F1256+                           &
+        (xi1*xi3*xi2*xi6+xi1*xi2*xi3*xi5)*F1235+                           &
+        (xi1**2*xi3*xi6+xi1**2*xi2*xi5)*F1136+                             &
+        (xi3**3*xi4+xi2**3*xi4)*F2224+ (xi4*xi5**3+xi4*xi6**3)*F4555
+
+        s1 = s2+ (xi2*xi3*xi4*xi5+xi3*xi2*xi4*xi6)*F2345+                  &
+        (xi2*xi3**2*xi4+xi3*xi2**2*xi4)*F2334+                             &
+        (xi1*xi3*xi2**2+xi1*xi2*xi3**2)*F1233+                             &
+        (xi1*xi3*xi4*xi5+xi1*xi2*xi4*xi6)*F1246+                           &
+        (xi1*xi2*xi4*xi5+xi1*xi3*xi4*xi6)*F1245+                           &
+        (xi2**2*xi6**2+xi3**2*xi5**2)*F2266+                               &
+        (xi1*xi3**2*xi6+xi1*xi2**2*xi5)*F1225+                             &
+        (xi2**2*xi4*xi6+xi3**2*xi4*xi5)*F2246 +F1444*xi1*xi4**3            &
+        +F5566*xi5**2*xi6**2 +F2233*xi2**2*xi3**2 +F1114*xi1**3*xi4+       &
+        (xi3*xi4**2*xi5+xi2*xi4**2*xi6)*F3445+                             &
+        (xi1**2*xi3*xi4+xi1**2*xi2*xi4)*F1124+                             &
+        (xi1**3*xi6+xi1**3*xi5)*F1115+ (xi3**4+xi2**4)*F2222+              &
+        (xi2**2*xi4**2+xi3**2*xi4**2)*F2244 +F4444*xi4**4
+
+        s2 = s1          &
+        +F1144*xi1**2*xi4**2+ (xi2*xi6*xi5**2+xi3*xi5*xi6**2)*F3566+       &
+        (xi1*xi3**2*xi5+xi1*xi2**2*xi6)*F1335+                             &
+        (xi6*xi5**3+xi5*xi6**3)*F5666+                                     &
+        (xi1*xi4*xi6**2+xi1*xi4*xi5**2)*F1466 +F2356*xi2*xi3*xi5*xi6       &
+        +F1234*xi1*xi2*xi3*xi4+ (xi1*xi2*xi5**2+xi1*xi3*xi6**2)*F1366+     &
+        (xi1**2*xi4*xi6+xi1**2*xi4*xi5)*F1146+                             &
+        (xi1*xi4**2*xi5+xi1*xi4**2*xi6)*F1445+                             &
+        (xi3*xi2*xi5**2+xi2*xi3*xi6**2)*F2366+                             &
+        (xi3*xi5**2*xi6+xi2*xi6**2*xi5)*F3556 +F1456*xi1*xi4*xi5*xi6+      &
+        (xi2*xi3**2*xi6+xi3*xi2**2*xi5)*F2336 +F1111*xi1**4+               &
+        (xi4*xi5**2*xi6+xi4*xi6**2*xi5)*F4556+                             &
+        (xi3*xi2**2*xi6+xi2*xi3**2*xi5)*F2335
+
+        t4 = s2+         &
+        (xi2*xi4**3+xi3*xi4**3)*F2444+ (xi1*xi5**3+xi1*xi6**3)*F1666+      &
+        (xi1*xi2**2*xi4+xi1*xi3**2*xi4)*F1334+                             &
+        (xi2**2*xi4*xi5+xi3**2*xi4*xi6)*F2245+                             &
+        (xi1**2*xi3**2+xi1**2*xi2**2)*F1122 +F4456*xi4**2*xi5*xi6+         &
+        (xi1**2*xi5**2+xi1**2*xi6**2)*F1155+                               &
+        (xi2*xi4*xi6**2+xi3*xi4*xi5**2)*F2466+                             &
+        (xi1*xi2*xi4**2+xi1*xi3*xi4**2)*F1244+                             &
+        (xi2**3*xi5+xi3**3*xi6)*F2225+ (xi4**3*xi5+xi4**3*xi6)*F4445       &
+        +F1156*xi1**2*xi5*xi6+ (xi1**2*xi2*xi6+xi1**2*xi3*xi5)*F1126+      &
+        (xi1**3*xi3+xi1**3*xi2)*F1112+                                     &
+        (xi2**2*xi5*xi6+xi3**2*xi6*xi5)*F2256 +F2344*xi2*xi3*xi4**2+       &
+        (xi2**2*xi5**2+xi3**2*xi6**2)*F2255 +F1123*xi1**2*xi2*xi3
+     endif
+
    if (parmax>=126) then
+
       F11111  =  param(  126)
       F11112  =  param(  127)
       F11114  =  param(  128)
@@ -3428,8 +3563,121 @@ module pot_xy3
       F55555  =  param(  259)
       F55666  =  param(  260)
       F56666  =  param(  261)
+
+     s3 = (xi3*xi4**2*xi5*xi6+ xi2*xi4**2*xi6*xi5)*F34456+                 &
+     (xi3**2*xi5*xi6**2+ xi2**2*xi6*xi5**2)*F33566+ (xi2*xi4**3*xi5+       &
+     xi3*xi4**3*xi6)*F34446+ (xi1**3*xi3*xi4+ xi1**3*xi2*xi4)*F11124+      &
+     (xi2**3*xi6*xi5+ xi3**3*xi5*xi6)*F33356+ (xi3**2*xi6**3+              &
+     xi2**2*xi5**3)*F33666+ (xi3**2*xi2**2*xi5+                            &
+     xi2**2*xi3**2*xi6)*F22336+ (xi4**2*xi6*xi5**2+                        &
+     xi4**2*xi5*xi6**2)*F44566+ (xi3**4*xi5+ xi2**4*xi6)*F33335+           &
+     (xi3*xi2**2*xi5**2+ xi2*xi3**2*xi6**2)*F23366+                        &
+     (xi1*xi2*xi6**2*xi5+ xi1*xi3*xi5**2*xi6)*F13556+                      &
+     (xi3**2*xi5**2*xi6+ xi2**2*xi6**2*xi5)*F33556+                        &
+     (xi3*xi2*xi4**2*xi5+ xi2*xi3*xi4**2*xi6)*F23446+                      &
+     (xi3*xi4*xi5*xi6**2+ xi2*xi4*xi6*xi5**2)*F34566+                      &
+     F11123*xi1**3*xi2*xi3+ F15566*xi1*xi5**2*xi6**2+                      &
+     F12233*xi1*xi2**2*xi3**2
+     s2 = s3+ F22334*xi2**2*xi3**2*xi4+ (xi3**2*xi5**3+                    &
+     xi2**2*xi6**3)*F33555+ (xi2**2*xi4*xi5**2+                            &
+     xi3**2*xi4*xi6**2)*F33466+ F44456*xi4**3*xi5*xi6+                     &
+     F11444*xi1**2*xi4**3+ (xi3*xi2*xi4*xi5**2+                            &
+     xi2*xi3*xi4*xi6**2)*F23466+ F23444*xi2*xi3*xi4**3+                    &
+     F45566*xi4*xi5**2*xi6**2+ F11156*xi1**3*xi5*xi6+ (xi6*xi5**4+         &
+     xi5*xi6**4)*F56666+ (xi3*xi5**4+ xi2*xi6**4)*F35555+                  &
+     (xi3**3*xi6**2+ xi2**3*xi5**2)*F33366+ F11144*xi1**3*xi4**2+          &
+     (xi2*xi4*xi6**3+ xi3*xi4*xi5**3)*F34555+ F11114*xi1**4*xi4+           &
+     F14444*xi1*xi4**4+ (xi2*xi5**4+ xi3*xi6**4)*F36666
+     s3 = (xi3*xi4**2*xi6**2+ xi2*xi4**2*xi5**2)*F34466+                   &
+     (xi2**2*xi4*xi6**2+ xi3**2*xi4*xi5**2)*F33455+                        &
+     (xi3*xi2**2*xi4**2+ xi2*xi3**2*xi4**2)*F23344+ (xi2*xi4*xi5**3+       &
+     xi3*xi4*xi6**3)*F34666+ (xi1*xi2**2*xi5**2+                           &
+     xi1*xi3**2*xi6**2)*F12255+ (xi3*xi2**3*xi5+                           &
+     xi2*xi3**3*xi6)*F23336+ (xi2**5+ xi3**5)*F33333+                      &
+     (xi1*xi3*xi5*xi6**2+ xi1*xi2*xi6*xi5**2)*F13566+                      &
+     (xi2**3*xi4*xi6+ xi3**3*xi4*xi5)*F33345+ (xi1*xi2**3*xi6+             &
+     xi1*xi3**3*xi5)*F13335+ (xi2*xi6**3*xi5+ xi3*xi5**3*xi6)*F35556+      &
+     (xi3*xi2**2*xi6*xi5+ xi2*xi3**2*xi5*xi6)*F23356+                      &
+     (xi3*xi2*xi6**2*xi5+ xi2*xi3*xi5**2*xi6)*F23556+                      &
+     (xi1*xi3**2*xi5**2+ xi1*xi2**2*xi6**2)*F12266+ (xi2*xi4**4+           &
+     xi3*xi4**4)*F34444+ (xi6**5+ xi5**5)*F55555+ s2
+     s4 = s3+ (xi3**2*xi4**2*xi6+ xi2**2*xi4**2*xi5)*F33446+               &
+     (xi2**2*xi4*xi5*xi6+ xi3**2*xi4*xi6*xi5)*F22456+                      &
+     (xi2*xi6*xi5**3+ xi3*xi5*xi6**3)*F35666+ (xi3*xi5**2*xi6**2+          &
+     xi2*xi6**2*xi5**2)*F35566+ (xi3*xi2**3*xi6+                           &
+     xi2*xi3**3*xi5)*F23335+ (xi1**4*xi3+ xi1**4*xi2)*F11112+              &
+     (xi2**3*xi4*xi5+ xi3**3*xi4*xi6)*F33346+ (xi3*xi4*xi5**2*xi6+         &
+     xi2*xi4*xi6**2*xi5)*F34556
+     s1 = s4+ (xi2*xi3**2*xi4*xi6+ xi3*xi2**2*xi4*xi5)*F23346+             &
+     (xi1**3*xi2*xi5+ xi1**3*xi3*xi6)*F11136+ (xi1**3*xi6**2+              &
+     xi1**3*xi5**2)*F11166+ (xi1*xi2**2*xi4*xi6+                           &
+     xi1*xi3**2*xi4*xi5)*F13345+ (xi1*xi3**4+ xi1*xi2**4)*F13333+          &
+     (xi3*xi4**2*xi5**2+ xi2*xi4**2*xi6**2)*F34455+                        &
+     (xi1*xi2*xi3**2*xi6+ xi1*xi3*xi2**2*xi5)*F12336+                      &
+     (xi1**2*xi2**2*xi3+ xi1**2*xi3**2*xi2)*F11223+                        &
+     (xi1**2*xi4*xi5**2+ xi1**2*xi4*xi6**2)*F11455+                        &
+     (xi1*xi3*xi4*xi5*xi6+ xi1*xi2*xi4*xi6*xi5)*F13456
+      s3 = s1+ (xi1*xi3**2*xi4**2+ xi1*xi2**2*xi4**2)*F13344+              &
+     (xi1**2*xi2*xi4*xi5+ xi1**2*xi3*xi4*xi6)*F11245+ F11111*xi1**5+       &
+     (xi1**2*xi2**2*xi6+ xi1**2*xi3**2*xi5)*F11335+                        &
+     (xi1*xi3*xi2*xi4*xi6+ xi1*xi2*xi3*xi4*xi5)*F12345+                    &
+     (xi1**2*xi3**2*xi6+ xi1**2*xi2**2*xi5)*F11336+ (xi1*xi2*xi4**3+       &
+     xi1*xi3*xi4**3)*F12444+ (xi1*xi4*xi6**2*xi5+                          &
+     xi1*xi4*xi5**2*xi6)*F14556+ F44444*xi4**5+ (xi1*xi2*xi4**2*xi5+       &
+     xi1*xi3*xi4**2*xi6)*F13446+ (xi1*xi3*xi2**3+                          &
+     xi1*xi2*xi3**3)*F12333+ (xi4**3*xi5**2+ xi4**3*xi6**2)*F44466+        &
+     (xi3**2*xi4**2*xi5+ xi2**2*xi4**2*xi6)*F22446+                        &
+     F12356*xi1*xi2*xi3*xi5*xi6+ (xi4**4*xi5+ xi4**4*xi6)*F44445+          &
+     (xi1**4*xi6+ xi1**4*xi5)*F11116
+     s4 = s3+ (xi1**2*xi3*xi2*xi5+ xi1**2*xi2*xi3*xi6)*F11236+             &
+     (xi2**4*xi4+ xi3**4*xi4)*F22224+ (xi1*xi3*xi2*xi6**2+                 &
+     xi1*xi2*xi3*xi5**2)*F12355+ (xi1**2*xi2*xi6**2+                       &
+     xi1**2*xi3*xi5**2)*F11266+ (xi1**2*xi4**2*xi6+                        &
+     xi1**2*xi4**2*xi5)*F11446+ F23456*xi2*xi3*xi4*xi5*xi6+                &
+     (xi1**2*xi2*xi5**2+ xi1**2*xi3*xi6**2)*F11255+                        &
+     (xi1**2*xi3*xi4*xi5+ xi1**2*xi2*xi4*xi6)*F11345
+     s2 = s4+ (xi1*xi3*xi4*xi6**2+ xi1*xi2*xi4*xi5**2)*F12455+             &
+     F12344*xi1*xi2*xi3*xi4**2+ (xi4*xi5*xi6**3+                           &
+     xi4*xi6*xi5**3)*F45666+ (xi1*xi4*xi6**3+ xi1*xi4*xi5**3)*F14666+      &
+     (xi1*xi5**4+ xi1*xi6**4)*F15555+ (xi1*xi2**2*xi3*xi6+                 &
+     xi1*xi3**2*xi2*xi5)*F12236+ (xi1**2*xi6**2*xi5+                       &
+     xi1**2*xi5**2*xi6)*F11556+ (xi2*xi3**2*xi5**2+                        &
+     xi3*xi2**2*xi6**2)*F23355+ (xi1*xi2*xi5**3+                           &
+     xi1*xi3*xi6**3)*F13666
+     s4 = s2+ (xi1*xi3*xi4**2*xi5+ xi1*xi2*xi4**2*xi6)*F13445+             &
+     (xi1*xi4**2*xi6**2+ xi1*xi4**2*xi5**2)*F14466+                        &
+     F14456*xi1*xi4**2*xi5*xi6+ F11456*xi1**2*xi4*xi5*xi6+                 &
+     (xi1**2*xi3*xi4**2+ xi1**2*xi2*xi4**2)*F11244+                        &
+     F11234*xi1**2*xi2*xi3*xi4+ (xi1*xi2**2*xi6*xi5+                       &
+     xi1*xi3**2*xi5*xi6)*F13356+ (xi1**2*xi5**3+                           &
+     xi1**2*xi6**3)*F11555
+     s3 = s4+ (xi1*xi2**3*xi5+ xi1*xi3**3*xi6)*F12225+                     &
+     (xi1*xi3**3*xi4+ xi1*xi2**3*xi4)*F13334+ (xi1*xi5**3*xi6+             &
+     xi1*xi6**3*xi5)*F15556+ (xi1*xi2*xi4*xi6**2+                          &
+     xi1*xi3*xi4*xi5**2)*F12466+ (xi1**2*xi2**2*xi4+                       &
+     xi1**2*xi3**2*xi4)*F11224+ (xi1**3*xi2*xi6+                           &
+     xi1**3*xi3*xi5)*F11135+ (xi1**2*xi3*xi5*xi6+                          &
+     xi1**2*xi2*xi6*xi5)*F11356+ (xi1*xi4**3*xi6+                          &
+     xi1*xi4**3*xi5)*F14445+ (xi1**2*xi3**3+ xi1**2*xi2**3)*F11333
+     s4 = s3+ (xi1*xi2*xi6**3+ xi1*xi3*xi5**3)*F12666+                     &
+     (xi1*xi2**2*xi4*xi5+ xi1*xi3**2*xi4*xi6)*F13346+ (xi3**3*xi5**2+      &
+     xi2**3*xi6**2)*F33355+ (xi1*xi3*xi2**2*xi4+                           &
+     xi1*xi2*xi3**2*xi4)*F12334+ (xi1**3*xi3**2+                           &
+     xi1**3*xi2**2)*F11133+ (xi2**2*xi4**3+ xi3**2*xi4**3)*F33444+         &
+     (xi3**2*xi2*xi4*xi5+ xi2**2*xi3*xi4*xi6)*F22346+ (xi5**2*xi6**3+      &
+     xi6**2*xi5**3)*F55666
+     t5 = s4+ (xi2**3*xi4**2+ xi3**3*xi4**2)*F33344+                       &
+     (xi4**2*xi6**3+ xi4**2*xi5**3)*F44666+ (xi1**3*xi4*xi6+               &
+     xi1**3*xi4*xi5)*F11145+ (xi3*xi2**3*xi4+ xi2*xi3**3*xi4)*F23334+      &
+     (xi3*xi2**4+ xi2*xi3**4)*F23333+ (xi4*xi6**4+                         &
+     xi4*xi5**4)*F46666+ (xi3**2*xi2**3+ xi2**2*xi3**3)*F22333+            &
+     (xi3**4*xi6+ xi2**4*xi5)*F33336+ (xi3*xi4**3*xi5+                     &
+     xi2*xi4**3*xi6)*F34445+ (xi2*xi3*xi5**3+ xi3*xi2*xi6**3)*F23555
    endif
-   if (parmax>=262) then
+
+   if(parmax>=262) then
+
+
       F111111 =  param(  262)
       F111112 =  param(  263)
       F111114 =  param(  264)
@@ -3676,257 +3924,7 @@ module pot_xy3
       F555566 =  param(  505)
       F555666 =  param(  506)
       F666666 =  param(  507)
-   endif
 
-!  define local coordinates
-
-   r14 = local(1)
-   r24 = local(2)
-   r34 = local(3)
-   !
-   alpha1 = local(4)
-   alpha2 = local(5)
-   alpha3 = local(6)
-
-!  define coordinates xi
-
-   ta1 = alpha1-alphae
-   ta2 = alpha2-alphae
-   ta3 = alpha3-alphae
-
-     select case ( ix )
-     case default
-       write (6,"(' dip. order component',i8)") ix
-       stop 'dip. order component'
-     case (1,4,7)
-       xi1=(r14-re14)
-       xi2=(r24-re14)
-       xi3=(r34-re14)
-       !
-       xi4=ta1
-       xi5=ta2
-       xi6=ta3
-       !
-     case (2,5,8)
-       xi1=(r24-re14)
-       xi2=(r34-re14)
-       xi3=(r14-re14)
-       !
-       xi4=ta2
-       xi5=ta3
-       xi6=ta1
-       !
-     case (3,6,9)
-       xi1=(r34-re14)
-       xi2=(r14-re14)
-       xi3=(r24-re14)
-       !
-       xi4=ta3
-       xi5=ta1
-       xi6=ta2
-       !
-     end select
-
-     t1=0 ; t2=0 ; t3=0 ; t4=0 ; t5=0 ; t6=0
-     if (parmax>=1) then
-      t1 = F1*xi1+(xi2+xi3)*F3+(xi6+xi5)*F5+F4*xi4
-     endif
-
-     if (parmax>=11) then
-      t2 = F11*xi1**2+F14*xi1*xi4+F23*xi2*xi3+(xi1*xi3+xi1*xi2)*F13+(xi1*xi5+xi1*xi6)*F16+&
-        (xi2*xi4+xi3*xi4)*F34+(xi3**2+xi2**2)*F33+(xi3*xi6+xi2*xi5)*F36+(xi2*xi6+xi3*xi5)*F35+&
-        F44*xi4**2+(xi4*xi6+xi4*xi5)*F46+(xi6**2+xi5**2)*F55+F56*xi5*xi6
-     endif
-
-     if (parmax>=24) then
-        s1 = (xi1**2*xi3+xi1**2*xi2)*F112+(xi3*xi4*xi6+xi2*xi4*xi5)*F245+&
-        (xi2*xi5*xi6+xi3*xi6*xi5)*F256+(xi1**2*xi5+xi1**2*xi6)*F115+&
-        (xi3*xi5**2+xi2*xi6**2)*F266+(xi2**2*xi6+xi3**2*xi5)*F226+&
-        (xi1*xi4*xi6+xi1*xi4*xi5)*F146+(xi1*xi6**2+xi1*xi5**2)*F155+&
-        (xi2*xi5**2+xi3*xi6**2)*F255+(xi1*xi2*xi5+xi1*xi3*xi6)*F136+&
-        (xi1*xi3**2+xi1*xi2**2)*F133+F144*xi1*xi4**2+F114*xi1**2*xi4+&
-        F234*xi2*xi3*xi4+F123*xi1*xi2*xi3+F456*xi4*xi5*xi6
-        t3 = s1+(xi1*xi3*xi4+xi1*xi2*xi4)*F124+(xi6**3+xi5**3)*F555+&
-        (xi1*xi3*xi5+xi1*xi2*xi6)*F135+(xi3*xi4*xi5+xi2*xi4*xi6)*F246+&
-        (xi2**2*xi4+xi3**2*xi4)*F334+(xi3**2*xi6+xi2**2*xi5)*F225+&
-        (xi3*xi4**2+xi2*xi4**2)*F344+F156*xi1*xi5*xi6+(xi3*xi2*xi6+xi2*xi3*xi5)*F235+&
-        (xi3**3+xi2**3)*F333+F444*xi4**3+(xi4*xi5**2+xi4*xi6**2)*F466+&
-        (xi3**2*xi2+xi2**2*xi3)*F223+F111*xi1**3+(xi5**2*xi6+xi6**2*xi5)*F556+&
-        (xi4**2*xi6+xi4**2*xi5)*F445
-     endif
-
-     if (parmax>=56) then
-        s2 = (xi1*xi2**3+xi1*xi3**3)*F1222+ (xi3*xi2**3+xi2*xi3**3)*F2333+ &
-        (xi3*xi5**3+xi2*xi6**3)*F3555+                                     &
-        (xi1*xi2*xi6**2+xi1*xi3*xi5**2)*F1355+                             &
-        (xi3*xi6**3+xi2*xi5**3)*F3666+                                     &
-        (xi2*xi4*xi5*xi6+xi3*xi4*xi6*xi5)*F2456+                           &
-        (xi2**3*xi6+xi3**3*xi5)*F3335+                                     &
-        (xi3*xi4**2*xi6+xi2*xi4**2*xi5)*F2445+                             &
-        (xi1*xi6*xi5**2+xi1*xi5*xi6**2)*F1566+                             &
-        (xi4**2*xi5**2+xi4**2*xi6**2)*F4466+                               &
-        (xi3*xi4*xi6**2+xi2*xi4*xi5**2)*F2455+ (xi5**4+xi6**4)*F6666+      &
-        (xi1*xi3*xi6*xi5+xi1*xi2*xi5*xi6)*F1256+                           &
-        (xi1*xi3*xi2*xi6+xi1*xi2*xi3*xi5)*F1235+                           &
-        (xi1**2*xi3*xi6+xi1**2*xi2*xi5)*F1136+                             &
-        (xi3**3*xi4+xi2**3*xi4)*F2224+ (xi4*xi5**3+xi4*xi6**3)*F4555
-
-        s1 = s2+ (xi2*xi3*xi4*xi5+xi3*xi2*xi4*xi6)*F2345+                  &
-        (xi2*xi3**2*xi4+xi3*xi2**2*xi4)*F2334+                             &
-        (xi1*xi3*xi2**2+xi1*xi2*xi3**2)*F1233+                             &
-        (xi1*xi3*xi4*xi5+xi1*xi2*xi4*xi6)*F1246+                           &
-        (xi1*xi2*xi4*xi5+xi1*xi3*xi4*xi6)*F1245+                           &
-        (xi2**2*xi6**2+xi3**2*xi5**2)*F2266+                               &
-        (xi1*xi3**2*xi6+xi1*xi2**2*xi5)*F1225+                             &
-        (xi2**2*xi4*xi6+xi3**2*xi4*xi5)*F2246 +F1444*xi1*xi4**3            &
-        +F5566*xi5**2*xi6**2 +F2233*xi2**2*xi3**2 +F1114*xi1**3*xi4+       &
-        (xi3*xi4**2*xi5+xi2*xi4**2*xi6)*F3445+                             &
-        (xi1**2*xi3*xi4+xi1**2*xi2*xi4)*F1124+                             &
-        (xi1**3*xi6+xi1**3*xi5)*F1115+ (xi3**4+xi2**4)*F2222+              &
-        (xi2**2*xi4**2+xi3**2*xi4**2)*F2244 +F4444*xi4**4
-
-        s2 = s1          &
-        +F1144*xi1**2*xi4**2+ (xi2*xi6*xi5**2+xi3*xi5*xi6**2)*F3566+       &
-        (xi1*xi3**2*xi5+xi1*xi2**2*xi6)*F1335+                             &
-        (xi6*xi5**3+xi5*xi6**3)*F5666+                                     &
-        (xi1*xi4*xi6**2+xi1*xi4*xi5**2)*F1466 +F2356*xi2*xi3*xi5*xi6       &
-        +F1234*xi1*xi2*xi3*xi4+ (xi1*xi2*xi5**2+xi1*xi3*xi6**2)*F1366+     &
-        (xi1**2*xi4*xi6+xi1**2*xi4*xi5)*F1146+                             &
-        (xi1*xi4**2*xi5+xi1*xi4**2*xi6)*F1445+                             &
-        (xi3*xi2*xi5**2+xi2*xi3*xi6**2)*F2366+                             &
-        (xi3*xi5**2*xi6+xi2*xi6**2*xi5)*F3556 +F1456*xi1*xi4*xi5*xi6+      &
-        (xi2*xi3**2*xi6+xi3*xi2**2*xi5)*F2336 +F1111*xi1**4+               &
-        (xi4*xi5**2*xi6+xi4*xi6**2*xi5)*F4556+                             &
-        (xi3*xi2**2*xi6+xi2*xi3**2*xi5)*F2335
-
-        t4 = s2+         &
-        (xi2*xi4**3+xi3*xi4**3)*F2444+ (xi1*xi5**3+xi1*xi6**3)*F1666+      &
-        (xi1*xi2**2*xi4+xi1*xi3**2*xi4)*F1334+                             &
-        (xi2**2*xi4*xi5+xi3**2*xi4*xi6)*F2245+                             &
-        (xi1**2*xi3**2+xi1**2*xi2**2)*F1122 +F4456*xi4**2*xi5*xi6+         &
-        (xi1**2*xi5**2+xi1**2*xi6**2)*F1155+                               &
-        (xi2*xi4*xi6**2+xi3*xi4*xi5**2)*F2466+                             &
-        (xi1*xi2*xi4**2+xi1*xi3*xi4**2)*F1244+                             &
-        (xi2**3*xi5+xi3**3*xi6)*F2225+ (xi4**3*xi5+xi4**3*xi6)*F4445       &
-        +F1156*xi1**2*xi5*xi6+ (xi1**2*xi2*xi6+xi1**2*xi3*xi5)*F1126+      &
-        (xi1**3*xi3+xi1**3*xi2)*F1112+                                     &
-        (xi2**2*xi5*xi6+xi3**2*xi6*xi5)*F2256 +F2344*xi2*xi3*xi4**2+       &
-        (xi2**2*xi5**2+xi3**2*xi6**2)*F2255 +F1123*xi1**2*xi2*xi3
-     endif
-
-   if (parmax>=126) then
-     s3 = (xi3*xi4**2*xi5*xi6+ xi2*xi4**2*xi6*xi5)*F34456+                 &
-     (xi3**2*xi5*xi6**2+ xi2**2*xi6*xi5**2)*F33566+ (xi2*xi4**3*xi5+       &
-     xi3*xi4**3*xi6)*F34446+ (xi1**3*xi3*xi4+ xi1**3*xi2*xi4)*F11124+      &
-     (xi2**3*xi6*xi5+ xi3**3*xi5*xi6)*F33356+ (xi3**2*xi6**3+              &
-     xi2**2*xi5**3)*F33666+ (xi3**2*xi2**2*xi5+                            &
-     xi2**2*xi3**2*xi6)*F22336+ (xi4**2*xi6*xi5**2+                        &
-     xi4**2*xi5*xi6**2)*F44566+ (xi3**4*xi5+ xi2**4*xi6)*F33335+           &
-     (xi3*xi2**2*xi5**2+ xi2*xi3**2*xi6**2)*F23366+                        &
-     (xi1*xi2*xi6**2*xi5+ xi1*xi3*xi5**2*xi6)*F13556+                      &
-     (xi3**2*xi5**2*xi6+ xi2**2*xi6**2*xi5)*F33556+                        &
-     (xi3*xi2*xi4**2*xi5+ xi2*xi3*xi4**2*xi6)*F23446+                      &
-     (xi3*xi4*xi5*xi6**2+ xi2*xi4*xi6*xi5**2)*F34566+                      &
-     F11123*xi1**3*xi2*xi3+ F15566*xi1*xi5**2*xi6**2+                      &
-     F12233*xi1*xi2**2*xi3**2
-     s2 = s3+ F22334*xi2**2*xi3**2*xi4+ (xi3**2*xi5**3+                    &
-     xi2**2*xi6**3)*F33555+ (xi2**2*xi4*xi5**2+                            &
-     xi3**2*xi4*xi6**2)*F33466+ F44456*xi4**3*xi5*xi6+                     &
-     F11444*xi1**2*xi4**3+ (xi3*xi2*xi4*xi5**2+                            &
-     xi2*xi3*xi4*xi6**2)*F23466+ F23444*xi2*xi3*xi4**3+                    &
-     F45566*xi4*xi5**2*xi6**2+ F11156*xi1**3*xi5*xi6+ (xi6*xi5**4+         &
-     xi5*xi6**4)*F56666+ (xi3*xi5**4+ xi2*xi6**4)*F35555+                  &
-     (xi3**3*xi6**2+ xi2**3*xi5**2)*F33366+ F11144*xi1**3*xi4**2+          &
-     (xi2*xi4*xi6**3+ xi3*xi4*xi5**3)*F34555+ F11114*xi1**4*xi4+           &
-     F14444*xi1*xi4**4+ (xi2*xi5**4+ xi3*xi6**4)*F36666
-     s3 = (xi3*xi4**2*xi6**2+ xi2*xi4**2*xi5**2)*F34466+                   &
-     (xi2**2*xi4*xi6**2+ xi3**2*xi4*xi5**2)*F33455+                        &
-     (xi3*xi2**2*xi4**2+ xi2*xi3**2*xi4**2)*F23344+ (xi2*xi4*xi5**3+       &
-     xi3*xi4*xi6**3)*F34666+ (xi1*xi2**2*xi5**2+                           &
-     xi1*xi3**2*xi6**2)*F12255+ (xi3*xi2**3*xi5+                           &
-     xi2*xi3**3*xi6)*F23336+ (xi2**5+ xi3**5)*F33333+                      &
-     (xi1*xi3*xi5*xi6**2+ xi1*xi2*xi6*xi5**2)*F13566+                      &
-     (xi2**3*xi4*xi6+ xi3**3*xi4*xi5)*F33345+ (xi1*xi2**3*xi6+             &
-     xi1*xi3**3*xi5)*F13335+ (xi2*xi6**3*xi5+ xi3*xi5**3*xi6)*F35556+      &
-     (xi3*xi2**2*xi6*xi5+ xi2*xi3**2*xi5*xi6)*F23356+                      &
-     (xi3*xi2*xi6**2*xi5+ xi2*xi3*xi5**2*xi6)*F23556+                      &
-     (xi1*xi3**2*xi5**2+ xi1*xi2**2*xi6**2)*F12266+ (xi2*xi4**4+           &
-     xi3*xi4**4)*F34444+ (xi6**5+ xi5**5)*F55555+ s2
-     s4 = s3+ (xi3**2*xi4**2*xi6+ xi2**2*xi4**2*xi5)*F33446+               &
-     (xi2**2*xi4*xi5*xi6+ xi3**2*xi4*xi6*xi5)*F22456+                      &
-     (xi2*xi6*xi5**3+ xi3*xi5*xi6**3)*F35666+ (xi3*xi5**2*xi6**2+          &
-     xi2*xi6**2*xi5**2)*F35566+ (xi3*xi2**3*xi6+                           &
-     xi2*xi3**3*xi5)*F23335+ (xi1**4*xi3+ xi1**4*xi2)*F11112+              &
-     (xi2**3*xi4*xi5+ xi3**3*xi4*xi6)*F33346+ (xi3*xi4*xi5**2*xi6+         &
-     xi2*xi4*xi6**2*xi5)*F34556
-     s1 = s4+ (xi2*xi3**2*xi4*xi6+ xi3*xi2**2*xi4*xi5)*F23346+             &
-     (xi1**3*xi2*xi5+ xi1**3*xi3*xi6)*F11136+ (xi1**3*xi6**2+              &
-     xi1**3*xi5**2)*F11166+ (xi1*xi2**2*xi4*xi6+                           &
-     xi1*xi3**2*xi4*xi5)*F13345+ (xi1*xi3**4+ xi1*xi2**4)*F13333+          &
-     (xi3*xi4**2*xi5**2+ xi2*xi4**2*xi6**2)*F34455+                        &
-     (xi1*xi2*xi3**2*xi6+ xi1*xi3*xi2**2*xi5)*F12336+                      &
-     (xi1**2*xi2**2*xi3+ xi1**2*xi3**2*xi2)*F11223+                        &
-     (xi1**2*xi4*xi5**2+ xi1**2*xi4*xi6**2)*F11455+                        &
-     (xi1*xi3*xi4*xi5*xi6+ xi1*xi2*xi4*xi6*xi5)*F13456
-      s3 = s1+ (xi1*xi3**2*xi4**2+ xi1*xi2**2*xi4**2)*F13344+              &
-     (xi1**2*xi2*xi4*xi5+ xi1**2*xi3*xi4*xi6)*F11245+ F11111*xi1**5+       &
-     (xi1**2*xi2**2*xi6+ xi1**2*xi3**2*xi5)*F11335+                        &
-     (xi1*xi3*xi2*xi4*xi6+ xi1*xi2*xi3*xi4*xi5)*F12345+                    &
-     (xi1**2*xi3**2*xi6+ xi1**2*xi2**2*xi5)*F11336+ (xi1*xi2*xi4**3+       &
-     xi1*xi3*xi4**3)*F12444+ (xi1*xi4*xi6**2*xi5+                          &
-     xi1*xi4*xi5**2*xi6)*F14556+ F44444*xi4**5+ (xi1*xi2*xi4**2*xi5+       &
-     xi1*xi3*xi4**2*xi6)*F13446+ (xi1*xi3*xi2**3+                          &
-     xi1*xi2*xi3**3)*F12333+ (xi4**3*xi5**2+ xi4**3*xi6**2)*F44466+        &
-     (xi3**2*xi4**2*xi5+ xi2**2*xi4**2*xi6)*F22446+                        &
-     F12356*xi1*xi2*xi3*xi5*xi6+ (xi4**4*xi5+ xi4**4*xi6)*F44445+          &
-     (xi1**4*xi6+ xi1**4*xi5)*F11116
-     s4 = s3+ (xi1**2*xi3*xi2*xi5+ xi1**2*xi2*xi3*xi6)*F11236+             &
-     (xi2**4*xi4+ xi3**4*xi4)*F22224+ (xi1*xi3*xi2*xi6**2+                 &
-     xi1*xi2*xi3*xi5**2)*F12355+ (xi1**2*xi2*xi6**2+                       &
-     xi1**2*xi3*xi5**2)*F11266+ (xi1**2*xi4**2*xi6+                        &
-     xi1**2*xi4**2*xi5)*F11446+ F23456*xi2*xi3*xi4*xi5*xi6+                &
-     (xi1**2*xi2*xi5**2+ xi1**2*xi3*xi6**2)*F11255+                        &
-     (xi1**2*xi3*xi4*xi5+ xi1**2*xi2*xi4*xi6)*F11345
-     s2 = s4+ (xi1*xi3*xi4*xi6**2+ xi1*xi2*xi4*xi5**2)*F12455+             &
-     F12344*xi1*xi2*xi3*xi4**2+ (xi4*xi5*xi6**3+                           &
-     xi4*xi6*xi5**3)*F45666+ (xi1*xi4*xi6**3+ xi1*xi4*xi5**3)*F14666+      &
-     (xi1*xi5**4+ xi1*xi6**4)*F15555+ (xi1*xi2**2*xi3*xi6+                 &
-     xi1*xi3**2*xi2*xi5)*F12236+ (xi1**2*xi6**2*xi5+                       &
-     xi1**2*xi5**2*xi6)*F11556+ (xi2*xi3**2*xi5**2+                        &
-     xi3*xi2**2*xi6**2)*F23355+ (xi1*xi2*xi5**3+                           &
-     xi1*xi3*xi6**3)*F13666
-     s4 = s2+ (xi1*xi3*xi4**2*xi5+ xi1*xi2*xi4**2*xi6)*F13445+             &
-     (xi1*xi4**2*xi6**2+ xi1*xi4**2*xi5**2)*F14466+                        &
-     F14456*xi1*xi4**2*xi5*xi6+ F11456*xi1**2*xi4*xi5*xi6+                 &
-     (xi1**2*xi3*xi4**2+ xi1**2*xi2*xi4**2)*F11244+                        &
-     F11234*xi1**2*xi2*xi3*xi4+ (xi1*xi2**2*xi6*xi5+                       &
-     xi1*xi3**2*xi5*xi6)*F13356+ (xi1**2*xi5**3+                           &
-     xi1**2*xi6**3)*F11555
-     s3 = s4+ (xi1*xi2**3*xi5+ xi1*xi3**3*xi6)*F12225+                     &
-     (xi1*xi3**3*xi4+ xi1*xi2**3*xi4)*F13334+ (xi1*xi5**3*xi6+             &
-     xi1*xi6**3*xi5)*F15556+ (xi1*xi2*xi4*xi6**2+                          &
-     xi1*xi3*xi4*xi5**2)*F12466+ (xi1**2*xi2**2*xi4+                       &
-     xi1**2*xi3**2*xi4)*F11224+ (xi1**3*xi2*xi6+                           &
-     xi1**3*xi3*xi5)*F11135+ (xi1**2*xi3*xi5*xi6+                          &
-     xi1**2*xi2*xi6*xi5)*F11356+ (xi1*xi4**3*xi6+                          &
-     xi1*xi4**3*xi5)*F14445+ (xi1**2*xi3**3+ xi1**2*xi2**3)*F11333
-     s4 = s3+ (xi1*xi2*xi6**3+ xi1*xi3*xi5**3)*F12666+                     &
-     (xi1*xi2**2*xi4*xi5+ xi1*xi3**2*xi4*xi6)*F13346+ (xi3**3*xi5**2+      &
-     xi2**3*xi6**2)*F33355+ (xi1*xi3*xi2**2*xi4+                           &
-     xi1*xi2*xi3**2*xi4)*F12334+ (xi1**3*xi3**2+                           &
-     xi1**3*xi2**2)*F11133+ (xi2**2*xi4**3+ xi3**2*xi4**3)*F33444+         &
-     (xi3**2*xi2*xi4*xi5+ xi2**2*xi3*xi4*xi6)*F22346+ (xi5**2*xi6**3+      &
-     xi6**2*xi5**3)*F55666
-     t5 = s4+ (xi2**3*xi4**2+ xi3**3*xi4**2)*F33344+                       &
-     (xi4**2*xi6**3+ xi4**2*xi5**3)*F44666+ (xi1**3*xi4*xi6+               &
-     xi1**3*xi4*xi5)*F11145+ (xi3*xi2**3*xi4+ xi2*xi3**3*xi4)*F23334+      &
-     (xi3*xi2**4+ xi2*xi3**4)*F23333+ (xi4*xi6**4+                         &
-     xi4*xi5**4)*F46666+ (xi3**2*xi2**3+ xi2**2*xi3**3)*F22333+            &
-     (xi3**4*xi6+ xi2**4*xi5)*F33336+ (xi3*xi4**3*xi5+                     &
-     xi2*xi4**3*xi6)*F34445+ (xi2*xi3*xi5**3+ xi3*xi2*xi6**3)*F23555
-   endif
-
-   if(parmax>=262) then
      s4 = (xi1*xi2**2*xi4**3+ xi1*xi3**2*xi4**3)*F122444+                  &
      (xi2**2*xi3*xi4**2*xi5+ xi3**2*xi2*xi4**2*xi6)*F223445+               &
      (xi3**2*xi2**2*xi4*xi5+ xi2**2*xi3**2*xi4*xi6)*F223346+               &
@@ -8259,7 +8257,7 @@ end function MLdms2loc_E_xy3
             !cosphi3 = ( cos(alpha3)-cos(delta)**2 )/( sin(delta)**2 ) 
             !phi2 = acos(cosphi2)
             !phi3 = acos(cosphi3)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !
             !tau_2 = tau**2
             !     
@@ -8276,7 +8274,7 @@ end function MLdms2loc_E_xy3
                alpha1 = acos(cosalpha)
             endif
                !
-         case('R-A2-A3-TAU')
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             !
             alpha2 = local(4)
@@ -8758,7 +8756,7 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -8818,9 +8816,9 @@ fea124455*y1*y3*s4a**2*s4b**2+(2.0_ark*fea124455*sqrt(3.0_ark)-4.0_ark*fea134444
       !
       aaM    = force(4)
       !
-      y1=(r14-re14) *exp(-aaM*(r14-re14)**2)
-      y2=(r24-re14) *exp(-aaM*(r24-re14)**2)
-      y3=(r34-re14) *exp(-aaM*(r34-re14)**2)
+      y1=(r14-re14M) *exp(-aaM*(r14-re14M)**2)
+      y2=(r24-re14M) *exp(-aaM*(r24-re14M)**2)
+      y3=(r34-re14M) *exp(-aaM*(r34-re14M)**2)
       !
       y4=(2.0_ark*alpha1-alpha2-alpha3)/sqrt(6.0_ark)
       y5=(alpha2-alpha3)/sqrt(2.0_ark)

@@ -103,7 +103,8 @@ end subroutine cart_to_spher_rank1
 ! Non-symmetric rank-2 tensor
 !  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
 !  1 {0: sqrt(2)*I*xy/2 - sqrt(2)*I*yx/2, 1: -xz/2 - I*yz/2 + zx/2 + I*zy/2, -1: -xz/2 + I*yz/2 + zx/2 - I*zy/2}
-!  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz/2 - I*yz/2 - zx/2 - I*zy/2, 2: xx/2 + I*xy/2 + I*yx/2 - yy/2, -1: xz/2 - I*yz/2 + zx/2 - I*zy/2, -2: xx/2 - I*xy/2 - I*yx/2 - yy/2}
+!  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz/2 - I*yz/2 - zx/2 - I*zy/2, 
+! 2: xx/2 + I*xy/2 + I*yx/2 - yy/2, -1: xz/2 - I*yz/2 + zx/2 - I*zy/2, -2: xx/2 - I*xy/2 - I*yx/2 - yy/2}
 ! number of elements: 9
 ! order of Cartesian components: [xx, xy, xz, yx, yy, yz, zx, zy, zz]
 ! order of spherical components: [[0, 0], [1, -1], [1, 0], [1, 1], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
@@ -374,7 +375,8 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     mf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
-      if (irrep==2) isigma = isigma + 3 !!! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      ! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      if (irrep==2) isigma = isigma + 3 
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
@@ -388,7 +390,8 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     lf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
-      if (irrep==2) isigma = isigma + 3 !!! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      ! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      if (irrep==2) isigma = isigma + 3 
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
@@ -719,6 +722,92 @@ end subroutine rotme_j
 
 !###################################################################################################
 
+subroutine rotme_Wigner(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+
+    ! would be better to work with spherical stuff in MFF, but probably too many changes to make
+  
+    integer(ik), intent(in) :: q1(:), q2(:)
+    character(cl), intent(out) :: name
+    integer(ik), intent(inout) :: nelem, nirrep
+    complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
+    character(cl), intent(out), optional :: sirrep(:), selem(:)
+    logical :: first_lf=.true.
+  
+    integer(ik) :: sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s, i, l, lmin, lmax, index
+    integer(ik), allocatable :: rank(:), component(:)
+  
+    j1 = q1(1)
+    k1 = q1(2)
+    m1 = q1(3)
+    j2 = q2(1)
+    k2 = q2(2)
+    m2 = q2(3)
+  
+    ! [[-l,l] for l in lmin:lmax] ISTs, each with 1 component
+    name = 'Wigner'
+    lmin = 0
+    lmax = 2
+
+    nirrep = 0
+    do l=lmin,lmax !but do I need 0? -- for perturbers prob yes
+        nirrep = nirrep + 2*l+1
+    enddo
+
+    ! 0 -1  0  1 -2 -1  0  1  2 -3 -2 -1  0  1  2  3 ...
+    allocate(rank(nirrep), component(nirrep))
+    do l=lmin,lmax
+      index = l*l - lmin*lmin
+      rank     (index+1 : index + 2*l+1) = l
+      component(index+1 : index + 2*l+1) = [(i,i=-l,l)]
+    enddo
+    !
+    nelem = 1  
+    nelem_s = 1
+    !                                               (/'D^0_{*0}',&
+                                        ! 'D^1_{*-1}','D^1_{*0}','D^1_{*1}',&
+                            ! 'D^2_{*-2}','D^2_{*-1}','D^2_{*0}','D^2_{*1}','D^2_{*2}',&
+                ! 'D^3_{*-3}','D^3_{*-2}','D^3_{*-1}','D^3_{*0}','D^3_{*1}','D^3_{*2}','D^3_{*3}',&
+    ! 'D^4_{*-4}','D^4_{*-3}','D^4_{*-2}','D^4_{*-1}','D^4_{*0}','D^4_{*1}','D^4_{*2}','D^4_{*3}','D^4_{*4}'/)
+
+    ! tens%sirrep(tens%nirrep)
+    if (present(sirrep)) then
+      do i=1, size(sirrep)
+        write(sirrep(i), "(A,I1,A,I0,A)") "D^", rank(i), "_{*",component(i),"}"
+      enddo
+    endif
+  
+    ! tens%selem(tens%nelem)
+    if (present(selem)) then
+      do i=1, size(selem)
+        write(selem(i), "(A)") "D^l_{*m}"
+      enddo
+    endif
+
+    if (present(mf)) then
+      mf(:,:) = 0.0
+      ! now with only 1 component, and my components are "irreps" now
+      do irrep=1, nirrep
+        mf(1,irrep) = threej_symbol(j1,rank(irrep),j2,k1,component(irrep),-k2) * (-1)**(k2) 
+      enddo
+    endif
+  
+    if (present(lf)) then
+      if (first_lf) then
+        write(out,"(/A/)") 'M-tensor is not required in MCRB.'
+        first_lf = .false.
+      endif
+      lf(:,:) = 0.0
+    endif
+
+    deallocate(rank, component)
+
+  end subroutine rotme_Wigner
+
+!###################################################################################################
+
+
+!###################################################################################################
+
 
 subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
 
@@ -726,8 +815,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   integer(ik), intent(in) :: jmin, jmax, dj
   logical, optional, intent(in) :: verbose
 
-  integer(ik) :: info, j, ktau, tau_range(2), tau, nimg_j, j1, j2, nktau1, nktau2, nimg_k, ktau1, ktau2, ncoefs1, ncoefs2, icoef, jcoef, nimg_elem, &!
-                 irrep, ielem, dk_max, dj_max, k, k1, k2, tau1, tau2, nelem, nirrep, dm_max, m1, m2, m1min, m1max, m2min, m2max, mmin, mmax, &!
+  integer(ik) :: info, j, ktau, tau_range(2), tau, nimg_j, j1, j2, nktau1, nktau2, nimg_k, ktau1, ktau2, ncoefs1,&
+                 ncoefs2, icoef, jcoef, nimg_elem, irrep, ielem, dk_max, dj_max, k, k1, k2, tau1, tau2, nelem, &
+                 nirrep, dm_max, m1, m2, m1min, m1max, m2min, m2max, mmin, mmax, &!
                  nimg_elem_lf(maxnelem), nimg_k_lf(maxnelem), nimg_j_lf(maxnelem)
   real(rk) :: zero_tol
   complex(rk) :: coefs1(2), coefs2(2), me(maxnelem,maxnelem), dens, res(maxnelem,maxnelem)
@@ -735,7 +825,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
              img_k_lf((2*jmax+1)**2,maxnelem), img_j_lf((jmax+1)**2,maxnelem)
   character(cl) :: name
 
-  write(out, '(///a)') 'Compute rotational matrix elements of Cartesian tensor operator (rotme_cart_tens/init_rotme_cart_tens_type)'
+  write(out, '(///a,a)') 'Compute rotational matrix elements of Cartesian tensor operator',&
+                       ' (rotme_cart_tens/init_rotme_cart_tens_type)'
 
   verbose_ = .false.
   if (present(verbose)) verbose_ = verbose
@@ -751,13 +842,15 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   tens%nelem = nelem
   tens%nirrep = nirrep
 
-  write(out, '(/1x,a,1x,a/1x,a,1x,i4/1x,a,1x,i4)') 'tensor:', tens%name, 'no. Cartesian components:', tens%nelem, 'no. irreps:', tens%nirrep
+  write(out, '(/1x,a,1x,a/1x,a,1x,i4/1x,a,1x,i4)') 'tensor:', tens%name, 'no. Cartesian components:', tens%nelem, &
+             'no. irreps:', tens%nirrep
 
   if (allocated(tens%sirrep)) deallocate(tens%sirrep)
   if (allocated(tens%selem)) deallocate(tens%selem)
   allocate(tens%sirrep(tens%nirrep),tens%selem(tens%nelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%sirrep(tens%nirrep),tens%selem(tens%nelem)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate',&
+               ' tens%sirrep(tens%nirrep),tens%selem(tens%nelem)', &!
     'tens%nelem, tens%nirrep =', tens%nelem, tens%nirrep
     stop 'STOP'
   endif
@@ -775,7 +868,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%ktau_ind)) deallocate(tens%ktau_ind)
   allocate( tens%nktau(jmin:jmax), tens%ktau(2,2*jmax+1,jmin:jmax), tens%ktau_ind(0:jmax,0:1), stat=info )
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%nktau(jmin:jmax), tens%ktau(2,2*jmax+1,jmin:jmax), , tens%ktau_ind(0:jmax,0:1)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%nktau(jmin:jmax),',&
+    ' tens%ktau(2,2*jmax+1,jmin:jmax), , tens%ktau_ind(0:jmax,0:1)', &!
     'jmin, jmax =', jmin, jmax
     stop 'STOP'
   endif
@@ -816,7 +910,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%kmat)) deallocate(tens%kmat)
   allocate(tens%kmat(jmin:jmax,jmin:jmax), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%kmat(jmin:jmax,jmin:jmax)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate',&
+    ' tens%kmat(jmin:jmax,jmin:jmax)', &!
     'jmin, jmax =', jmin, jmax
     stop 'STOP'
   endif
@@ -840,7 +935,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
       if (allocated(tens%kmat(j1,j2)%me)) deallocate(tens%kmat(j1,j2)%me)
       allocate(tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2), stat=info)
       if (info/=0) then
-        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2)', &!
+        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+                   'tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2)', &!
         'j1, j2, tens%nelem, tens%nirrep, nktau1, nktau2 =', j1, j2, tens%nelem, tens%nirrep, nktau1, nktau2
         stop 'STOP'
       endif
@@ -888,8 +984,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif ( abs(real(me(ielem,irrep),rk))<=zero_tol .and. abs(aimag(me(ielem,irrep)))<=zero_tol ) then
                 cycle
               else
-                write(out, '(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of K-tensor is a complex-valued number'
-                write(out, '(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
+                write(out,'(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of K-tensor is a complex-valued number'
+                write(out,'(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
                 stop 'STOP'
               endif
 
@@ -915,7 +1011,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
             elseif (all(.not.img_elem(1:nimg_elem))) then
               img_k(nimg_k) = .false.
             else
-              write(out, '(/a/a,6(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements', &!
+              write(out, '(/a/a,6(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has ',&
+                         'mixed real- and imaginary-valued elements', &!
               'j1,k1,tau1/j2,k2,tau2 =', j1,k1,tau1, j2,k2,tau2
               stop 'STOP'
             endif
@@ -936,8 +1033,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
         elseif (all(.not.img_k(1:nimg_k))) then
           img_j(nimg_j) = .false.
         else
-          write(out, '(/a/a,2(1x,i3))') &!
-          'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements for different pairs of k,tau-quanta', &!
+          write(out, '(/a,a/a,2(1x,i3))') &!
+          'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&
+          ' for different pairs of k,tau-quanta', &!
           ' j1/j2 =', j1, j2
           stop 'STOP'
         endif
@@ -951,8 +1049,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   elseif (all(.not.img_j(1:nimg_j))) then
     tens%kmat_cmplx = 0 ! real numbers
   else
-    write(out, '(/a)') &!
-    'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements for different pairs of J-quanta'
+    write(out, '(/a,a)') &!
+    'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&
+    ' for different pairs of J-quanta'
     stop 'STOP'
   endif
 
@@ -966,8 +1065,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%mmat_cmplx)) deallocate(tens%mmat_cmplx)
   allocate(tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem)', &!
-    'jmin, jmax, tens%nelem =', jmin, jmax, tens%nelem
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+               'tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem)', &!
+               'jmin, jmax, tens%nelem =', jmin, jmax, tens%nelem
     stop 'STOP'
   endif
 
@@ -992,7 +1092,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
       if (allocated(tens%mmat(j1,j2)%me)) deallocate(tens%mmat(j1,j2)%me)
       allocate(tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max), stat=info)
       if (info/=0) then
-        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max)', &!
+        write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+                   'tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max)', &!
         'j1, j2, tens%nirrep, tens%nelem, m1min, m1max, m2min, m2max =', j1, j2, tens%nirrep, tens%nelem, m1min, m1max, m2min, m2max
         stop 'STOP'
       endif
@@ -1026,7 +1127,7 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif ( abs(real(me(ielem,irrep),rk))<=zero_tol .and. abs(aimag(me(ielem,irrep)))<=zero_tol ) then
                 cycle
               else
-                write(out, '(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of M-tensor is a complex-valued number'
+                write(out,'(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of M-tensor is a complex-valued number'
                 write(out, '(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
                 stop 'STOP'
               endif
@@ -1052,8 +1153,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif (all(.not.img_elem_lf(1:nimg_elem_lf(ielem),ielem))) then
                 img_k_lf(nimg_k_lf(ielem),ielem) = .false.
               else
-                write(out, '(/a/a,4(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements', &!
-                'j1,m1/j2,m2 =', j1,m1, j2,m2
+                write(out, '(/a,a/a,4(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- ',&
+                      'and imaginary-valued elements', &!
+                      'j1,m1/j2,m2 =', j1,m1, j2,m2
                 stop 'STOP'
               endif
             endif
@@ -1076,8 +1178,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
           elseif (all(.not.img_k_lf(1:nimg_k_lf(ielem),ielem))) then
             img_j_lf(nimg_j_lf(ielem),ielem) = .false.
           else
-            write(out, '(/a/a,2(1x,i3))') &!
-            'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements for different pairs of m-quanta', &!
+            write(out, '(/a,a/a,2(1x,i3))') &!
+            'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements ',&
+            'for different pairs of m-quanta', &!
             'j1/j2 =', j1, j2
             stop 'STOP'
           endif
@@ -1093,8 +1196,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
     elseif (all(.not.img_j_lf(1:nimg_j_lf(ielem),ielem))) then
       tens%mmat_cmplx(ielem) = 0
     else
-      write(out, '(/a)') &!
-      'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements for different pairs of J-quanta'
+      write(out, '(/a,a)') &!
+      'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued ',&
+      'elements for different pairs of J-quanta'
       stop 'STOP'
     endif
   enddo
@@ -1139,7 +1243,8 @@ subroutine wang_jktau_coefs(tens, j, k, tau, ncoefs, coefs)
       ncoefs = 2
       if (present(coefs)) coefs = (/ cmplx(fac1,0.0_rk,kind=rk), cmplx(fac2,0.0_rk,kind=rk) /)
     else
-      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, 'is less than zero (expected >=0)'
+      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k,&
+                 'is less than zero (expected >=0)'
       stop 'STOP'
     endif
 
@@ -1152,13 +1257,15 @@ subroutine wang_jktau_coefs(tens, j, k, tau, ncoefs, coefs)
       ncoefs = 2
       if (present(coefs)) coefs = (/ cmplx(0.0_rk,fac1,kind=rk), cmplx(0.0_rk,-fac2,kind=rk) /)
     else
-      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, 'is less than zero (expected >=0)'
+      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, &
+                 'is less than zero (expected >=0)'
       stop 'STOP'
     endif
 
   else
 
-    write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "tau" =', tau, '(expected 0 or 1)'
+    write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "tau" =', tau,&
+               '(expected 0 or 1)'
     stop 'STOP'
 
   endif
@@ -1190,8 +1297,9 @@ subroutine pseudoinverse(nrows, ncols, mat, invmat, tol_)
 
   allocate(matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows), matvt(ncols,ncols), mat_d(ncols,nrows), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &!
-    'rotbas/pseudoinverse error: failed to allocate matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows), matvt(ncols,ncols), mat_d(ncols,nrows)', &!
+    write(out, '(/a,a/a,10(1x,i6))') &!
+    'rotbas/pseudoinverse error: failed to allocate matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows),',&
+    ' matvt(ncols,ncols), mat_d(ncols,nrows)', &!
     'ncols, nrows =', ncols, nrows
     stop 'STOP'
   endif
@@ -1275,6 +1383,5 @@ function threej_symbol(j1,j2,j3, m1,m2,m3) result(f)
 #endif
 
 end function threej_symbol
-
 
 end module rotme_cart_tens

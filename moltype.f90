@@ -96,7 +96,7 @@ module moltype
       real(ark),intent(in)   :: src(:)
       logical,intent(in)     :: direct
       !
-      real(ark),dimension(ndst) :: dst
+      real(ark) :: dst(ndst)
       !
     end function MLtemplate_coord_transform
   end interface 
@@ -114,7 +114,31 @@ module moltype
 !        real,         intent(in)  :: a
 !    END function interface1
 !END INTERFACE
-
+  !
+  type basic_function
+      procedure(calc_func), pointer, nopass  :: func_pointer
+      real(ark) :: coeff
+      real(ark) :: inner_expon
+      real(ark) :: outer_expon
+  end type 
+  !
+  type ragged_array_lvl_1
+      type(basic_function), allocatable :: func_set(:)
+      integer :: num_terms
+  end type ragged_array_lvl_1
+  !
+  type ragged_array_lvl_2
+      type(ragged_array_lvl_1), allocatable :: mode_set(:)
+  end type ragged_array_lvl_2
+  !
+  abstract interface
+      subroutine calc_func(x, y)
+        use accuracy
+        implicit none
+        real(ark) , intent(in) :: x 
+        real(ark) , intent(inout) :: y
+      end subroutine 
+  end interface
   !
   type MoleculeT
      !
@@ -151,6 +175,8 @@ module moltype
      !
      !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
      !
+     type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
+     logical  :: basic_function_set = .false.
   end type MoleculeT
   !
   type xyT
@@ -177,7 +203,8 @@ module moltype
      real(ark), pointer     :: geom_ref(:)
      integer(ik)            :: irho_ref
      character(cl)          :: ftype = 'GENERAL'  ! field type 
-     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, required to reduce numerical noice in overtone intensities
+     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, 
+                                                          !required to reduce numerical noice in overtone intensities
   end type MLext_locexp
 
   !
@@ -237,13 +264,16 @@ module moltype
                                              ! in intensity calculations; (imode,1:2), 
                                              ! where 1 stands for the beginning and 2 for the end. 
      !
+     integer(ik)         :: istate_count(2) = (/1,2147483647/)     ! filter based on the lower state count 
+     !
      integer(ik)         :: swap_size    = 0 ! the number of vectors to keep in memory
      character(cl)       :: swap = "NONE"    ! whether save the compacted vectors or read
      character(cl)       :: swap_file  ="compress"   ! where swap the compacted eigenvectors to
      integer(ik)         :: int_increm = 1e9 ! used to print out the lower energies needed to select int_increm intensities
+     integer(ik)         :: Ncache = 10000 ! used to cache intensities before prinout  to speed up 
      real(rk)         :: factor = 1.0d0   ! factor <1 to be applied the maxsize of the vector adn thus to be shrunk 
-     real(rk)         :: wallclock          ! wallclock limit, needed to estmate how many transitions can be processed within one job
-     logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
+     real(rk)         :: wallclock=10000000.0d0    ! wallclock limit in h, needed to estmate how many transitions can be processed within one job
+     logical          :: reduced      ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
      logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
@@ -379,8 +409,6 @@ module moltype
     ! define the integration borders for each mode
     !
     molec%rho_border(:) = rho_border(:)
-    !
-    !call xy2_initialize(xy2)
     !
     if (verbose>=4) write(out,"('MLinitialize_molec/end')") 
 
@@ -1304,7 +1332,7 @@ module moltype
                                       + sin(alpha)*cos(phi)*n1(:) &
                                       - sin(alpha)*sin(phi)*n3(:) )
            !
-        case(-2,2,-202,202,-302,302,-402,402)
+        case(-2,2,-202,202,-302,302,-402,402,-502,502,-602,602)
            !
            idihedral = idihedral + 1
            !
@@ -1682,7 +1710,7 @@ module moltype
      !
      if (abs(coeff(1,1))<small_) then
         !write(out,"(i,'-th parameter is wrong, small a0(i,i) =  ',g18.8)") i,coeff(i,i)
-        error=i
+        error=1
         return
      endif
      !
@@ -1916,25 +1944,27 @@ module moltype
 
 
  101  format(5e14.5)
-      do 10 p=1,n
-      do 10 q=1,n
-      ve(p,q)=0.0_rk
-      if(p.eq.q) ve(p,q)=1.0_rk
-  10  continue
-      do 99 p=1,n
-      z(p)=0.0_rk
-      d(p)=a(p,p)
-      b(p)=d(p)
- 99   continue
+      do p=1,n
+        do q=1,n
+          ve(p,q)=0.0_rk
+          if(p.eq.q) ve(p,q)=1.0_rk
+        enddo
+      enddo
+      do p=1,n
+        z(p)=0.0_rk
+        d(p)=a(p,p)
+        b(p)=d(p)
+      enddo
       irot=0
       do 50 i=1,50
       sm=0.0_rk
       n2=n-1
-      do 30 p=1,n2
-      kp=p+1
-      do 30 q=kp,n
-      sm=sm+dabs(a(p,q))
-  30  continue
+      do p=1,n2
+        kp=p+1
+        do q=kp,n
+          sm=sm+dabs(a(p,q))
+        enddo
+      enddo
       if(sm.le.err) goto 50
       tresh=0.0_rk
       if(i-4) 3,4,4
@@ -1970,12 +2000,12 @@ module moltype
       d(q1)=d(q1)+h
       a(p1,q1)=0.0_rk
       ip1=p1-1
-        do 20 j=1,ip1
-        g=a(j,p1)
-        h=a(j,q1)
-        a(j,p1)=g-s*(h+g*tau)
-        a(j,q1)=h+s*(g-h*tau)
-  20      continue
+        do j=1,ip1
+          g=a(j,p1)
+          h=a(j,q1)
+          a(j,p1)=g-s*(h+g*tau)
+          a(j,q1)=h+s*(g-h*tau)
+        enddo
         iq1=q1-1
         do 21 j=kp1,iq1
         g=a(p1,j)
@@ -2130,7 +2160,7 @@ module moltype
 
   function three_j0(j1,j2,j3,k1,k2,k3)
 
-	  real(rk) :: three_j0
+      real(rk) :: three_j0
       !
       integer(ik) :: j1,j2,j3,k1,k2,k3,newmin,newmax,new,iphase
       real(rk)   :: a,b,c,al,be,ga,delta,clebsh,minus
@@ -2317,7 +2347,7 @@ module moltype
       if(abs(ax)<1.d-24) return
       f=.1d0
       if(ax.lt.0.d0) then 
-         write (*,"(1h0,' fkt.err  negative argument for functi on fakt. argument = ',e12.5)") ax
+         write (*,"(' fkt.err  negative argument for functi on fakt. argument = ',e12.5)") ax
          stop 'fkt.err  negative argument'
       endif 
       !
@@ -2457,8 +2487,6 @@ module moltype
     if (verbose>=5) then
       write(out,"('ML_rjacobi_fit_ark start ')") 
     endif
-    !
-    rjacob = 0 
     iter = 0
     stadev_old = 2.e10
     stability =  1.e10
@@ -2470,6 +2498,8 @@ module moltype
     !
     allocate(rjacob(n,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(rjacob,kind=hik))
+    rjacob = 0 
+    !
     allocate(am(m,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(am,kind=hik))
     allocate(bm(m),stat=alloc)

@@ -875,6 +875,10 @@ module me_str
     !
     m = 0
     !
+    write(out,"('Bugin me_laguerre, x(:) is used before fefined')")
+    !
+    stop 'x(:) is undefined'
+    !
     x_(:) = sqrt(x(:))/sqrt(f_m)
     !
     alpha = real(2*m+1,ark)/2.0_ark

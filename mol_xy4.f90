@@ -14,6 +14,7 @@ module mol_xy4
   !public MLpoten_xy4_Bowman2000,MLpoten_xy4_ZZZ
 
   private
+
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -208,6 +209,7 @@ module mol_xy4
   end subroutine ML_b0_XY4
 
 
+
   !
   ! Here we define the coordinate transformation from the local coordinates (r,alpha) to 
   ! the internal coordinates chi used in the jacobian transformation and thereafter in the 
@@ -220,7 +222,7 @@ module mol_xy4
     logical,intent(in):: direct
 
     !
-    real(ark),dimension(ndst) :: dst
+    real(ark)                 :: dst(ndst)
     real(ark)                 :: dsrc(size(src))
     real(ark)                 :: alpha,alpha12,alpha13,alpha14,alpha23,alpha24,alpha34,s2a,s2b
     real(ark)                 :: cosa23,cosa24,cosa34,cosbeta,s(5),beta312,beta412
@@ -733,141 +735,6 @@ module mol_xy4
     !
     !
     if (verbose>=5) write(out,"('ML_coordinate_transform_XY4/end')") 
-    !
-    contains 
-
-! Roman
-    !
-
-
-    function calc_delta_XY4(r1,r2,r3,r4,s5,s6,s7,s8,s9,s10,dsrt) result (delta_2)
-
-      real(ark),intent(in)  :: s10
-      real(ark) delta_2
-      real(ark),intent(out) :: s5,s6,s7,s8,s9
-      real(ark),intent(in)  :: dsrt(:),r1,r2,r3,r4
-      
-    
-
-
-
-        s5=s10-dsrt(9)
-        s6=(2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)-2.0_ark*sqrt(2.0_ark)*dsrc(7)+2.0_ark*(s5+s10))*0.25_ark
-        s7=(-2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)-2.0_ark*sqrt(2.0_ark)*dsrc(8)+2.0_ark*(s5+s10))*0.25_ark
-        s8=(-2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)+2.0_ark*sqrt(2.0_ark)*dsrc(8)+2.0_ark*(s5+s10))*0.25_ark
-        s9=(2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)+2.0_ark*sqrt(2.0_ark)*dsrc(7)+2.0_ark*(s5+s10))*0.25_ark
-        
-        delta_2=find_alpha34(s5,s6,s7,s8,s9)-s10
-       !
-       !
-    end function calc_delta_XY4
-    !
-    !
-    !
-    subroutine find_alpha_for_XY4(dst,dsrc,r1,r2,r3,r4)
-    ! obtaining 6 angles from 5 internal coordinates+4 lenghts
-                !5 alpha12
-                !6 alpha13
-                !7 alpha14
-                !8 alpha23
-                !9 alpha24
-                !10 alpha34
-                !dst(4)=(dsrt(1)-dsrt(4)+dsrt(5)-dsrt(6))*0.5_ark
-        real(ark),intent(in)  :: dsrc(:),r1,r2,r3,r4
-        real(ark),intent(out) :: dst(:)
-        real(ark) :: eps,s10_old,f
-        real(ark) :: rjacob,dx,s10
-
-        real(ark) :: stadev_old,stability,stadev,ssq,stadev_best,fac_sign
-    !
-        integer(ik) :: iter,itmax
-             
-    !
-    rjacob = 0 
-    iter = 0
-    stadev_old = 1.e10
-    stability =  1.e10
-    stadev    =  1.e10
-    !
-    dst(5:9) = 0
-    !
-    !
-    dst(1)=r1
-    dst(2)=r2
-    dst(3)=r3
-    dst(4)=r4
-    !
-    stadev_best = sqrt(small_)*10.0_ark
-    itmax = 500
-    !
-    ! Initial value for alpha10
-    !
-! Roman CH4
-    s10 = 1.9106332362490185563277142050315_ark
-! Roman end
-    !
-    !s6 = alpha1*sqrt(3.0_ark)
-    !
-    !fac_sign = sign(1._ark,sindelta)
-    !
-!    write(out,*) dsrc
-    outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
-       !
-       iter = iter + 1
-       ssq=0
-       !
-       ! Caclulate the function 
-       !
-       f = calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10,dsrc)
-       !
-       eps = f
-       !
-       ssq=abs(eps)
-       !
-       ! calculate derivatives with respect to parameters (RJACOB)
-       !
-       rjacob  = ( calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10+1e-7,dsrc)    &
-                  -calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10-1e-7,dsrc) )/1e-7*0.5_ark
-       !
-       !
-       if (itmax>=0) then
-         !
-         dx = eps/rjacob
-         !
-         stadev=sqrt(ssq)
-         !
-         s10_old=s10
-!         write(out,*) s10
-         !   
-         ! Update the pot. parameters to the new values 
-         !
-         s10 = s10 - dx 
-         !      
-         stability=abs( (stadev-stadev_old)/stadev )
-         stadev_old=stadev
-             
-      else   ! Itmax = 0, so there is no fit
-             ! only straightforward calculations 
-             !
-         stadev_old=stadev
-         stadev=sqrt(ssq)
-         !
-      endif 
-
-      !
-    enddo  outer_loop ! --- iter
-    !
-    if (iter==itmax) then
-       write(out,"('find_alpha_from_tau: could not find solution after ',i8,' iterations')") iter
-       stop 'find_alpha_from_tau: could not find solution'
-    endif 
-
-    end subroutine find_alpha_for_XY4
-    !
-
-
-    !
     !
   end function ML_coordinate_transform_XY4
   !
@@ -1696,5 +1563,128 @@ module mol_xy4
     !
     !
   end subroutine ML_rotsymmetry_XY4
+  !
+  !
+  !
+  subroutine find_alpha_for_XY4(dst,dsrc,r1,r2,r3,r4)
+  ! obtaining 6 angles from 5 internal coordinates+4 lenghts
+              !5 alpha12
+              !6 alpha13
+              !7 alpha14
+              !8 alpha23
+              !9 alpha24
+              !10 alpha34
+              !dst(4)=(dsrt(1)-dsrt(4)+dsrt(5)-dsrt(6))*0.5_ark
+      real(ark),intent(in)  :: dsrc(:),r1,r2,r3,r4
+      real(ark),intent(out) :: dst(:)
+      real(ark) :: eps,s10_old,f
+      real(ark) :: rjacob,dx,s10
 
+      real(ark) :: stadev_old,stability,stadev,ssq,stadev_best,fac_sign
+      !
+      integer(ik) :: iter,itmax
+      !
+      rjacob = 0 
+      iter = 0
+      stadev_old = 1.e10
+      stability =  1.e10
+      stadev    =  1.e10
+      !
+      dst(5:9) = 0
+      !
+      !
+      dst(1)=r1
+      dst(2)=r2
+      dst(3)=r3
+      dst(4)=r4
+      !
+      stadev_best = sqrt(small_)*10.0_ark
+      itmax = 500
+      !
+      ! Initial value for alpha10
+      !
+      ! Roman CH4
+      s10 = 1.9106332362490185563277142050315_ark
+      ! Roman end
+      !
+      !s6 = alpha1*sqrt(3.0_ark)
+      !
+      !fac_sign = sign(1._ark,sindelta)
+      !
+      outer_loop: & 
+      do while( iter<itmax .and. stadev>stadev_best )   
+         !
+         iter = iter + 1
+         ssq=0
+         !
+         ! Caclulate the function 
+         !
+         f = calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10,dsrc)
+         !
+         eps = f
+         !
+         ssq=abs(eps)
+         !
+         ! calculate derivatives with respect to parameters (RJACOB)
+         !
+         rjacob  = ( calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10+1e-7,dsrc)    &
+                    -calc_delta_XY4(dst(1),dst(2),dst(3),dst(4),dst(5),dst(6),dst(7),dst(8),dst(9),s10-1e-7,dsrc) )/1e-7*0.5_ark
+         !
+         !
+         if (itmax>=0) then
+           !
+           dx = eps/rjacob
+           !
+           stadev=sqrt(ssq)
+           !
+           s10_old=s10
+           !   
+           ! Update the pot. parameters to the new values 
+           !
+           s10 = s10 - dx 
+           !      
+           stability=abs( (stadev-stadev_old)/stadev )
+           stadev_old=stadev
+               
+        else   ! Itmax = 0, so there is no fit
+               ! only straightforward calculations 
+               !
+           stadev_old=stadev
+           stadev=sqrt(ssq)
+           !
+        endif 
+
+    !
+  enddo  outer_loop ! --- iter
+  !
+  if (iter==itmax) then
+     write(out,"('find_alpha_from_tau: could not find solution after ',i8,' iterations')") iter
+     stop 'find_alpha_from_tau: could not find solution'
+  endif 
+  !
+  contains
+    !
+    !
+    function calc_delta_XY4(r1,r2,r3,r4,s5,s6,s7,s8,s9,s10,dsrt) result (delta_2)
+
+      real(ark),intent(in)  :: s10
+      real(ark) delta_2
+      real(ark),intent(out) :: s5,s6,s7,s8,s9
+      real(ark),intent(in)  :: dsrt(:),r1,r2,r3,r4
+        !
+        s5=s10-dsrt(9)
+        s6=(2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)-2.0_ark*sqrt(2.0_ark)*dsrc(7)+2.0_ark*(s5+s10))*0.25_ark
+        s7=(-2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)-2.0_ark*sqrt(2.0_ark)*dsrc(8)+2.0_ark*(s5+s10))*0.25_ark
+        s8=(-2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)+2.0_ark*sqrt(2.0_ark)*dsrc(8)+2.0_ark*(s5+s10))*0.25_ark
+        s9=(2.0_ark*dsrc(3)-sqrt(12.0_ark)*dsrc(2)+2.0_ark*sqrt(2.0_ark)*dsrc(7)+2.0_ark*(s5+s10))*0.25_ark
+        
+        delta_2=find_alpha34(s5,s6,s7,s8,s9)-s10
+        !
+        !
+    end function calc_delta_XY4
+    !
+ end subroutine find_alpha_for_XY4
+ !
+ !
+ !
 end module mol_xy4

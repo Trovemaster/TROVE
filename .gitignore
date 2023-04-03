@@ -1,6 +1,14 @@
-# Fortran files and objects
+# output files
 *.mod
 *.o
+j-trove*.x
+
+# wigxjpf output files
+wigxjpf-1.5/obj/
+wigxjpf-1.5/gen/
+wigxjpf-1.5/lib/
+wigxjpf-1.5/bin/
+wigxjpf-1.5/mod/
 
 # Windows image file caches
 Thumbs.db

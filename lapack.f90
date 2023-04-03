@@ -87,12 +87,12 @@ module lapack
   end subroutine lapack_cgelss
 
   subroutine lapack_zgelss(a,b)
-    double complex, intent(inout) :: a(:,:)
-    double complex, intent(inout) :: b(:,:)
+    complex(rk), intent(inout) :: a(:,:)
+    complex(rk), intent(inout) :: b(:,:)
 
     external zgelss
     double precision       :: s    (   min(size(a,dim=1),size(a,dim=2)))
-    double complex         :: work (50*max(size(a,dim=1),size(a,dim=2)))
+    complex(rk)            :: work (50*max(size(a,dim=1),size(a,dim=2)))
     double precision       :: rwork( 5*min(size(a,dim=1),size(a,dim=2)))
     integer                :: rank, info
     integer                :: na1, na2, nb1, nb2
@@ -168,8 +168,7 @@ module lapack
     !
     tol = singtol
     !
-    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s,singtol, rank, work, -1, info)
+    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s,singtol, rank, work, -1, info)
     !
     iw = int(work(1))
     !
@@ -280,11 +279,11 @@ module lapack
   end subroutine lapack_cheev
 
   subroutine lapack_zheev(h,e)
-    double complex, intent(inout) :: h(:,:)  ! In:  Hermitian matrix to be diagonalized
+    complex(rk), intent(inout) :: h(:,:)  ! In:  Hermitian matrix to be diagonalized
                                              ! Out: Eigenvectors
     double precision, intent(out)   :: e(:)  ! Out: Eigenvalues
 
-    double complex   :: work(50*size(h,dim=1))
+    complex(rk)      :: work(50*size(h,dim=1))
     double precision :: rwork(3*size(h,dim=1))
     integer          :: info
     integer          :: nh1, nh2
@@ -1535,9 +1534,9 @@ module lapack
       integer               :: k,istart,iend,dimen,m,kend,iprev,inext,nx
       double precision,external    :: ddot
       integer,parameter  :: MPI_DOUBLE_PRECISION = 17
-	  !
-	  myid = 1
-	  nprow = 1
+      !
+      myid = 1
+      nprow = 1
       !
 #if (blacs_ > 0)
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
@@ -1769,7 +1768,8 @@ module lapack
 !     | Executable Statements |
 !     %-----------------------%
 !
-
+       nprocs = 1
+       !
 #if (blacs_ > 0)
         call BLACS_PINFO( iam, nprocs )
         blacs_or_mpi = 'BLACS'
@@ -1885,7 +1885,7 @@ module lapack
 !     Get default system context, and define grid
 !
       !
-	  myprow = 1 ; mypcol = 1 ; myid = 1
+      myprow = 1 ; mypcol = 1 ; myid = 1
 #if (blacs_ > 0)
         call BLACS_GET( 0, 0, comm )
         call BLACS_GRIDINIT( comm, 'Row', nprow, npcol )
@@ -1963,7 +1963,7 @@ module lapack
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-#elseif (arpack_>0)
+#elif (arpack_>0)
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &

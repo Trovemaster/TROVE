@@ -9,7 +9,8 @@ module pot_zxy2
 
   public MLpoten_sohf,MLpoten_zxy2_andrey_01,MLpoten_zxy2_mep_r_alpha_rho_powers
   public MLdms2xyz_zxy2_symadap_powers,ML_MEP_zxy2_R_rho,MLpoten_zxy2_andrey_coeff,ML_MEP_zxy2_rho_coeff,MLpoten_h2cs_tz_damp1
-  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling
+  public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling,MLpoten_zxy2_morse_cos,&
+         MLpoten_zxy2_mep_r_alpha_rho_powers_iso
   private
  
   integer(ik), parameter :: verbose     = 3                          ! Verbosity level
@@ -224,6 +225,67 @@ function MLpoten_h2cs_damp_scaling(ncoords,natoms,local,xyz,force) result(f)
  f = vlong + vshort*vdamp
  !
 end function MLpoten_h2cs_damp_scaling
+
+
+
+function MLpoten_zxy2_morse_cos(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+ !
+ integer(ik)          :: iterm,k_ind(6)
+ real(ark)            :: y(6),xi(6),v
+ real(ark)            :: re1,re2,ae,De1,De2,De3,a1,a2
+ !
+ !
+ re1   = force(1)
+ re2   = force(2)
+ ae    = force(3)*pi/180.0_ark
+ a1 = force(4)
+ a2 = force(5)
+ !
+ ! transformation to the standard form 
+ !
+ y(1) = 1.0_ark-exp(-a1*(local(1)-re1)) 
+ y(2) = 1.0_ark-exp(-a2*(local(2)-re2))
+ y(3) = 1.0_ark-exp(-a2*(local(3)-re2))
+ y(4) = local(4)-ae
+ y(5) = local(5)-ae
+ y(6) = 1.0_ark+cos(local(6))
+ !
+ v = 0.0_ark
+ !
+ do iterm = 6, molec%parmax
+  !
+  if (abs(force(iterm))<small_) cycle
+  !
+  xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+  !
+  v = v + force(iterm)*product(xi(1:6))
+  !
+  if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then
+    !
+    k_ind(1) = molec%pot_ind(1,iterm)
+    k_ind(2) = molec%pot_ind(3,iterm)
+    k_ind(3) = molec%pot_ind(2,iterm)
+    k_ind(4) = molec%pot_ind(5,iterm)
+    k_ind(5) = molec%pot_ind(4,iterm)
+    k_ind(6) = molec%pot_ind(6,iterm)
+    !
+    xi(1:6) = y(1:6)**k_ind(1:6)
+    !
+    v = v + force(iterm)*product(xi(1:6))
+    !
+  endif
+  !
+ enddo
+ !
+ f = v
+ !
+end function MLpoten_zxy2_morse_cos
 
 
 
@@ -1235,6 +1297,105 @@ end function MLpoten_h2cs_damp_scaling
  !
 end function MLpoten_zxy2_mep_r_alpha_rho_powers
 
+
+ function MLpoten_zxy2_mep_r_alpha_rho_powers_iso(ncoords,natoms,x,xyz,force) result(f) 
+  !
+  integer(ik),intent(in) ::  ncoords,natoms
+  real(ark),intent(in)   ::  x(ncoords)
+  real(ark),intent(in)   ::  xyz(natoms,3)
+  real(ark),intent(in)   ::  force(:)
+  real(ark)              ::  f
+  !
+  integer(ik)          :: N,N0,N_iso,iterm,k_ind(6)
+  real(ark)            :: M0,M_main,V_iso,V,M_iso,xieq(6),local(6),cosrho,rho,y(6),xi(6)
+  !
+  N0     = force(1)
+  N_iso  = force(2)
+  M_main = force(3)
+  M_iso  = force(4)
+  !
+  local = from_local_to_r1r2r3a1a2tau(x,6)
+  !
+  rho = local(6)
+  !
+  cosrho = cos(rho) + 1.0_ark
+  !
+  ! reference
+  !
+  !xieq(1:6) = ML_MEP_zxy2_R_rho(rho)
+  !
+  xieq(1)     = sum(force(5:9)*cosrho**molec%pot_ind(1,5:9))
+  xieq(2)     = sum(force(10:14)*cosrho**molec%pot_ind(2,10:14))
+  xieq(3)     = xieq(2)
+  xieq(4)     = sum(force(15:19)*cosrho**molec%pot_ind(4,15:19))
+  xieq(5)     = xieq(4)
+  !
+  N = 19
+  !
+  ! expansion functions
+  !
+  y(1:3) = 1.0_ark-exp(-(local(1:3)-xieq(1:3)))
+  y(4:5) = local(4:5)-xieq(4:5)
+  y(6)   = cosrho
+  !
+  ! def potential energy
+  !
+  V = 0.0_ark
+  !
+  do iterm = N+1,N+N0
+    !
+    xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+    !
+    v = v + force(iterm)*product(xi(1:6))
+    !
+    if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then 
+      !
+      k_ind(1) = molec%pot_ind(1,iterm)
+      k_ind(2) = molec%pot_ind(3,iterm)
+      k_ind(3) = molec%pot_ind(2,iterm)
+      k_ind(4) = molec%pot_ind(5,iterm)
+      k_ind(5) = molec%pot_ind(4,iterm)
+      k_ind(6) = molec%pot_ind(6,iterm)
+      !
+      xi(1:6) = y(1:6)**k_ind(1:6)
+      !
+      v = v + force(iterm)*product(xi(1:6))
+      !
+    endif
+    !
+  enddo
+  N = N+N0
+  !
+  V_iso = 0.0_ark
+  !
+  do iterm = N+1,N+N_iso
+    !
+    xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+    !
+    V_iso = V_iso + force(iterm)*product(xi(1:6))
+    !
+    if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then 
+      !
+      k_ind(1) = molec%pot_ind(1,iterm)
+      k_ind(2) = molec%pot_ind(3,iterm)
+      k_ind(3) = molec%pot_ind(2,iterm)
+      k_ind(4) = molec%pot_ind(5,iterm)
+      k_ind(5) = molec%pot_ind(4,iterm)
+      k_ind(6) = molec%pot_ind(6,iterm)
+      !
+      xi(1:6) = y(1:6)**k_ind(1:6)
+      !
+      V_iso = V_iso + force(iterm)*product(xi(1:6))
+      !
+    endif
+    !
+  enddo
+  !
+  f = V + V_iso*(M_main-M_iso)/M_main
+  !
+end function MLpoten_zxy2_mep_r_alpha_rho_powers_iso
+
+
   !
   ! Defining potential energy function 
   !
@@ -1861,7 +2022,7 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
     xi5 = alpha1-alphae
     xi6 = alpha2-alphae
 
-	t0 = F0
+    t0 = F0
     !
     t1=0 ; t2=0 ; t3=0 ; t4=0 ; t5=0 ; t6=0
     if (N>=1) then 
@@ -2549,16 +2710,6 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
       forall(i=1:4) x(i,1:3)=xyz(i,1:3)-xyz(1,1:3) ! 1:C  2:O  3:H1  4:H2
       !
     endif
-    !
-!x0(1,1)=	1.09571974	;		x0(1,2)=	-0.00005285	;	x0(1,3)=	-0.10870311	;
-!x0(2,1)=	-1.09216296	;		x0(2,2)=	-0.010405	;	x0(2,3)=	0.0265336	;
-!x0(3,1)=	1.98402007	;		x0(3,2)=	1.76078934	;	x0(3,3)=	0.41631981	;
-!x0(4,1)=	2.30285151	;		x0(4,2)=	-1.59502514	;	x0(4,3)=	0.45688199	;
-!
-!
-!x0 = x0*bohr
-!
-!forall(i=1:4) x(i,1:3)=(x0(i,1:3)-x0(1,1:3)) ! 1:C  2:O  3:H1  4:H2
     !
     ! internal coordinates
     !

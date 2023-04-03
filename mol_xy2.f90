@@ -206,8 +206,8 @@ module mol_xy2
           !endif
           !
           r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
+          !
+          !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
           dst(1) = r12 -r12e
           dst(2) = (r1-r2)*0.5_ark
@@ -218,8 +218,6 @@ module mol_xy2
           R = src(3)
           !
           r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
           !theta = src(2) + pi*0.5_ark
           !
@@ -342,17 +340,9 @@ module mol_xy2
           r12 = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(alpha))
           !
           R = 0.5_ark*sqrt(r1**2+r2**2+2.0_ark*r1*r2*cos(alpha))
-		  !
-		  !r1x = 0.5_ark*r1*r2*sin(alpha)/R
-		  !r1y = 0.5_ark*r1*(r1+r2*cos(alpha))/R
-		  !r2x =-0.5_ark*r1*r2*sin(alpha)/R
-		  !r2y = 0.5_ark*r2*(r2+r1*cos(alpha))/R
-		  !
-          r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
-          !dst(1) = r1x-0.5_ark*r12e-(r2x+0.5_ark*r12e)
+          r12e = ML_MEP_xy2_R12_R(R)
+          !
           dst(2) = (r1-r2)*0.5_ark
           dst(3) = R
           !
@@ -361,8 +351,8 @@ module mol_xy2
           R = src(3)
           !
           r12e = ML_MEP_xy2_R12_R(R)
-		  !
-		  !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
+          !
+          !r12e = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
           !
           !theta = src(2) + pi*0.5_ark
           !
@@ -396,27 +386,27 @@ module mol_xy2
     case('R-EXPRHO')
        !
        if (direct) then 
-	      !
+          !
           dst(1:2) = dsrc(1:2)
-		  !
-		  rho = max(pi-src(3),small_)
-		  !
+          !
+          rho = max(pi-src(3),small_a)
+          !
           dst(3) = log(rho)
-		  !
-		  !dst(3) = (1.0_ark+rho**2)/rho
-		  !
+          !
+          !dst(3) = (1.0_ark+rho**2)/rho
+          !
        else
-	      !
+          !
           dst(1:2) = src(1:2)+molec%local_eq(1:2)
-		  !
+          !
           rho = exp(src(3))
-		  !
-		  !rho = (src(3))**(0.1)
+          !
+          !rho = (src(3))**(0.1)
           !
           !rho = 0.5_ark*(src(3)-sqrt( src(3)**2-4.0_ark ))
-		  !
+          !
           dst(3) = pi-rho
-		  !
+          !
        endif
        !
     case('RADAU-R-ALPHA-Z')
@@ -432,10 +422,10 @@ module mol_xy2
        !
        r_e2(1) = molec%local_eq(2)*cos(molec%local_eq(3))
        r_e2(2) = molec%local_eq(2)*sin(molec%local_eq(3))
-	   !
+       !
        radau_e1(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_e1(:)+(a0-1.0_ark)*mY/(mY+mY)*r_e2(:)
        radau_e2(:) = ( 1.0_ark+(a0-1.0_ark)*mY/(mY+mY) )*r_e2(:)+(a0-1.0_ark)*mY/(mY+mY)*r_e1(:)
-	   !
+       !
        radau_e(1) = sqrt( sum( radau_e1(:)**2 )  )
        radau_e(2) = sqrt( sum( radau_e2(:)**2 )  )
        !
@@ -443,7 +433,7 @@ module mol_xy2
           !
           r1 = src(1) ; r2 = src(2) ;  alpha = src(3)
           !
-		  alpha1 = src(3)
+          alpha1 = src(3)
           !
           r_t1 = 0
           r_t2 = 0
@@ -480,7 +470,7 @@ module mol_xy2
           !
        else
           !
-		  salpha = src(3)+molec%local_eq(3)
+          salpha = src(3)+molec%local_eq(3)
           s1 = src(1)+molec%local_eq(1)
           s2 = src(2)+molec%local_eq(2)
           !
@@ -490,7 +480,7 @@ module mol_xy2
           r1 = sqrt( (t1*s1)**2+(t2*s2)**2-s1*mY*s2*cos(salpha)/mX )
           r2 = sqrt( (t1*s2)**2+(t2*s1)**2-s1*mY*s2*cos(salpha)/mX )
           !
-          cosalpha = -s1*s2*cos(salpha)+(-s1*s2*cos(salpha)+0.5_ark*s1**2+0.5_ark*s2**2)*mY/mX		  
+          cosalpha = -s1*s2*cos(salpha)+(-s1*s2*cos(salpha)+0.5_ark*s1**2+0.5_ark*s2**2)*mY/mX
           !
           if ( abs(cosalpha)>1.0_ark+sqrt(small_) ) then 
              !
@@ -516,16 +506,16 @@ module mol_xy2
        !
        r_e2(1) = molec%local_eq(2)*cos(molec%local_eq(3))
        r_e2(2) = molec%local_eq(2)*sin(molec%local_eq(3))
-	   !
+       !
        radau_e1(:) = ( 1.0_ark+(a0-1.0_ark)*m1/(m1+m2) )*r_e1(:)+(a0-1.0_ark)*m2/(m1+m2)*r_e2(:)
        radau_e2(:) = ( 1.0_ark+(a0-1.0_ark)*m2/(m1+m2) )*r_e2(:)+(a0-1.0_ark)*m1/(m1+m2)*r_e1(:)
-	   !
+       !
        radau_e(1) = sqrt( sum( radau_e1(:)**2 )  )
        radau_e(2) = sqrt( sum( radau_e2(:)**2 )  )
        !
        if (direct) then 
           !
-		  alpha1 = src(3)
+          alpha1 = src(3)
           !
           r_t1(1) = src(1)
           r_t1(2) = 0
@@ -560,9 +550,9 @@ module mol_xy2
        else
           !
           !alpha1 = acos(src(3)-1.0_ark)
-		  alpha1 = pi-src(3)
-		  !
-		  dsrc(1:2) = src(1:2) + radau_e(1:2)
+          alpha1 = pi-src(3)
+          !
+          dsrc(1:2) = src(1:2) + radau_e(1:2)
           !
           radau_t1(1) = dsrc(1)
           radau_t1(2) = 0
@@ -1004,9 +994,9 @@ module mol_xy2
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
             !
             !if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-log(rho)
-			!
-			!if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-(1.0_ark+rho**2)/(max(rho,small_))
-			!
+            !
+            !if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-(1.0_ark+rho**2)/(max(rho,small_))
+            !
             if(trim(molec%coords_transform)=='RADAU') then 
               !
               !
@@ -1034,8 +1024,8 @@ module mol_xy2
                  alpha = acos(rho-1.0_ark)
               endif
               !
-			  alpha = pi-rho
-			  !
+              alpha = pi-rho
+              !
               !alpha = acos(rho-1.0_ark)
               !
               cosa = -(a02*cos(alpha)+cos(alpha)+1.0_ark-a02)/(-a02+a02*cos(alpha)-1.0_ark-cos(alpha))
@@ -1059,8 +1049,8 @@ module mol_xy2
               rho_ark = rho
               !
               r12 = ML_MEP_xy2_R12_R(rho_ark)
-			  !
-			  !r12 = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
+              !
+              !r12 = sqrt(2.0_ark*molec%local_eq(1)**2-2.0_ark*molec%local_eq(1)**2*cos(molec%local_eq(3)))
               !
               alpha = atan2(r12*0.5_ark,rho)*2.0_ark
               !
@@ -1471,13 +1461,10 @@ module mol_xy2
               stop 'ML_symmetry_transformation_XY2: DNH odd for R1-R2-Y+X is not implemented' 
           endif
           !
-          !qx= 1
-          !qy= 1
-          !q2x= 2
-          !q2y= -2
-          !
           NC2 = sym%N/2
           N_Cn = sym%N/2-1
+          !
+          phi = 2.0_ark*pi/real(Nrot,ark)
           !
           if (ioper==1) then ! E 
             !
@@ -1713,11 +1700,6 @@ module mol_xy2
           if (mod(sym%N,2)==1) then
               stop 'ML_symmetry_transformation_XY2: DNH odd for R1-R2-Y+X is not implemented' 
           endif
-          !
-          !qx= 1
-          !qy= 1
-          !q2x= 2
-          !q2y= -2
           !
           NC2 = sym%N/2
           N_Cn = sym%N/2-1
