@@ -106,7 +106,7 @@ module pot_user
    real(ark)            :: r1,r2,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
 
    real(ark)            :: aa1,aa2,re1,re2,alphae,xst,xs1,xs2,v0
-   integer(ik)          :: N
+   integer(ik)          :: N,Nparams
    real(ark)            :: rho,xp,vp1
    real(ark)            :: ReNN_ang,ReNO_ang
    !
@@ -127,7 +127,7 @@ module pot_user
    ! calculate potential energy function values
    !    
    !
-   !
+   Nparams = size(force)
    !
    rho=pi-alpha
    !   
@@ -146,7 +146,10 @@ module pot_user
      +force(N+7)  *xs1**1*xs2**0*xst**1& 
      +force(N+8)  *xs1**0*xs2**2*xst**0& 
      +force(N+9)  *xs1**0*xs2**1*xst**1& 
-     +force(N+10) *xs1**0*xs2**0*xst**2&    ! end of 2
+     +force(N+10) *xs1**0*xs2**0*xst**2     ! end of 2
+ 
+ if (Nparams>N+10) then 
+   vp1=vp1+&     
      +force(N+11) *xs1**3*xs2**0*xst**0& 
      +force(N+12) *xs1**2*xs2**1*xst**0& 
      +force(N+13) *xs1**2*xs2**0*xst**1& 
@@ -156,11 +159,83 @@ module pot_user
      +force(N+17) *xs1**0*xs2**3*xst**0& 
      +force(N+18) *xs1**0*xs2**2*xst**1& 
      +force(N+19) *xs1**0*xs2**1*xst**2& 
-     +force(N+20) *xs1**0*xs2**0*xst**3     !  end of 3
+     +force(N+20) *xs1**0*xs2**0*xst**3&     !  end of 3
+     +force(N+21) *xs1**4*xs2**0*xst**0& 
+     +force(N+22) *xs1**3*xs2**1*xst**0& 
+     +force(N+23) *xs1**3*xs2**0*xst**1& 
+     +force(N+24) *xs1**2*xs2**2*xst**0& 
+     +force(N+25) *xs1**2*xs2**1*xst**1& 
+     +force(N+26) *xs1**2*xs2**0*xst**2& 
+     +force(N+27) *xs1**1*xs2**3*xst**0& 
+     +force(N+28) *xs1**1*xs2**2*xst**1&
+     +force(N+29) *xs1**1*xs2**1*xst**2& 
+     +force(N+30) *xs1**1*xs2**0*xst**3& 
+     +force(N+31) *xs1**0*xs2**4*xst**0& 
+     +force(N+32) *xs1**0*xs2**3*xst**1& 
+     +force(N+33) *xs1**0*xs2**2*xst**2& 
+     +force(N+34) *xs1**0*xs2**1*xst**3& 
+     +force(N+35) *xs1**0*xs2**0*xst**4   !  end of 4
+ endif
+ !
+ if (Nparams>N+35) then 
+   vp1=vp1+&          
+     +force(N+36) *xs1**5*xs2**0*xst**0& 
+     +force(N+37) *xs1**4*xs2**1*xst**0& 
+     +force(N+38) *xs1**4*xs2**0*xst**1& 
+     +force(N+39) *xs1**3*xs2**2*xst**0& 
+     +force(N+40) *xs1**3*xs2**1*xst**1& 
+     +force(N+41) *xs1**3*xs2**0*xst**2& 
+     +force(N+42) *xs1**2*xs2**3*xst**0& 
+     +force(N+43) *xs1**2*xs2**2*xst**1& 
+     +force(N+44) *xs1**2*xs2**1*xst**2& 
+     +force(N+45) *xs1**2*xs2**0*xst**3& 
+     +force(N+46) *xs1**1*xs2**4*xst**0& 
+     +force(N+47) *xs1**1*xs2**3*xst**1& 
+     +force(N+48) *xs1**1*xs2**2*xst**2& 
+     +force(N+49) *xs1**1*xs2**1*xst**3& 
+     +force(N+50) *xs1**1*xs2**0*xst**4&  !
+     +force(N+51) *xs1**0*xs2**5*xst**0& 
+     +force(N+52) *xs1**0*xs2**4*xst**1& 
+     +force(N+53) *xs1**0*xs2**3*xst**2& 
+     +force(N+54) *xs1**0*xs2**2*xst**3& 
+     +force(N+55) *xs1**0*xs2**1*xst**4& 
+     +force(N+56) *xs1**0*xs2**0*xst**5   !  end of 5
+ endif
+ !
+ if (Nparams>N+56) then 
+   vp1=vp1+&          
+     +force(N+57) *xs1**6*xs2**0*xst**0& 
+     +force(N+58) *xs1**5*xs2**1*xst**0& 
+     +force(N+59) *xs1**5*xs2**0*xst**1& 
+     +force(N+60) *xs1**4*xs2**2*xst**0& 
+     +force(N+61) *xs1**4*xs2**1*xst**1& 
+     +force(N+62) *xs1**4*xs2**0*xst**2& 
+     +force(N+63) *xs1**3*xs2**3*xst**0& 
+     +force(N+64) *xs1**3*xs2**2*xst**1& 
+     +force(N+65) *xs1**3*xs2**1*xst**2& 
+     +force(N+66) *xs1**3*xs2**0*xst**3& 
+     +force(N+67) *xs1**2*xs2**4*xst**0& 
+     +force(N+68) *xs1**2*xs2**3*xst**1& 
+     +force(N+69) *xs1**2*xs2**2*xst**2& 
+     +force(N+70) *xs1**2*xs2**1*xst**3& 
+     +force(N+71) *xs1**2*xs2**0*xst**4& 
+     +force(N+72) *xs1**1*xs2**5*xst**0& 
+     +force(N+73) *xs1**1*xs2**4*xst**1& 
+     +force(N+74) *xs1**1*xs2**3*xst**2& 
+     +force(N+75) *xs1**1*xs2**2*xst**3& 
+     +force(N+76) *xs1**1*xs2**1*xst**4& 
+     +force(N+77) *xs1**1*xs2**0*xst**5& 
+     +force(N+78) *xs1**0*xs2**6*xst**0& 
+     +force(N+79) *xs1**0*xs2**5*xst**1& 
+     +force(N+80) *xs1**0*xs2**4*xst**2& 
+     +force(N+81) *xs1**0*xs2**3*xst**3& 
+     +force(N+82) *xs1**0*xs2**2*xst**4& 
+     +force(N+83) *xs1**0*xs2**1*xst**5& 
+     +force(N+84) *xs1**0*xs2**0*xst**6   !  enf of 6
+ endif
+ f=v0+vp1
 
-       f=v0+vp1
-
-  end function MLpoten_xyz_N2O_Zobov
+ end function MLpoten_xyz_N2O_Zobov
 
 
   function MLpoten_n2opotlongrange(ncoords,natoms,local,xyz,force) result(f)
@@ -233,7 +308,7 @@ module pot_user
 	    a3=a3*a3
         !
         v0=0
-        do i=22,Ncoe
+        do i=24,Ncoe
           v0=v0+force(i)*r1**molec%pot_ind(1,i)*r2**molec%pot_ind(2,i)*a3**(molec%pot_ind(3,i))
         end do
         !
