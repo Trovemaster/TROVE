@@ -500,18 +500,20 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
           tens%kmat_cmplx, 'ielem =', ielem
       stop 'STOP, error in extfield/rovib_me_jpair'
     endif
-    write(iounit_me, '(a,1x,i4,1x,i2,1x,a)') 'alpha', ielem, icmplx, trim(tens%selem(ielem))
+    ! write(iounit_me, '(a,1x,i4,1x,i2,1x,a)') 'alpha', ielem, icmplx, trim(tens%selem(ielem))
+    write(iounit_me, '(a,1x,i4,1x,i2,1x,a)') 'alpha', ielem, tens%mmat_cmplx(ielem), trim(tens%selem(ielem))
     do m1=-jval1, jval1
       do m2=-jval2, jval2
         if (abs(m1-m2)>tens%dm) cycle
         if (any(abs(tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2))>print_tol)) then
-          write(iounit_me,'(i4,1x,i4,100(1x,f20.12))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2) * isign
+          ! write(iounit_me,'(i4,1x,i4,100(1x,f))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2) * isign
+          write(iounit_me,'(i4,1x,i4,100(1x,f20.12))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2)
         endif
       enddo
     enddo
   enddo
 
-  write(iounit_me, '(a)') 'K-tensor'
+  write(iounit_me, '(a,1x,i2)') 'K-tensor', tens%kmat_cmplx
 
 
   ! start calculations of matrix elements
@@ -927,7 +929,8 @@ subroutine read_vibme_rank1()
   call IOStop(job_is)
 
   if (intensity%J(1)==0 .and. intensity%J(2)==0) then
-    call check_extf_vib_me
+    ! call check_extf_vib_me
+    call check_extf_vib_me(1d-12, 100)
   endif
 
 end subroutine read_vibme_rank1
@@ -1006,7 +1009,7 @@ subroutine read_vibme_rank2_sym()
   call IOStop(job_is)
 
   if (intensity%J(1)==0 .and. intensity%J(2)==0) then
-    call check_extf_vib_me
+    call check_extf_vib_me(1d-12, size(extf_vib_me, dim=2))
   endif
 
 end subroutine read_vibme_rank2_sym
@@ -1340,7 +1343,7 @@ subroutine check_extf_vib_me(tol_, nstates_print_)
     open(iounit, form='formatted', action='write', position='rewind', status='unknown', file='extfield_vibme.txt')
     do i=1, min(ncontr,nstates_print)
       do j=1, min(ncontr,nstates_print)
-        write(iounit,'(1x,i6,1x,i6,9(1x,es16.8))') i,j, extf_vib_me(:,i,j)
+        write(iounit,'(1x,i6,1x,i6,100(1x,es16.8))') i,j, extf_vib_me(:,i,j)
       enddo
     enddo
     close(iounit)

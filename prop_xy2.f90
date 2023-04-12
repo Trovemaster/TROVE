@@ -9,7 +9,7 @@ module prop_xy2
 
   implicit none
 
-  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_spin_rotation_bisector
+  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_spin_rotation_bisector, prop_xy2_alpha_sym
 
   private
  
@@ -814,7 +814,7 @@ end subroutine TEST_xy2_qmom_sym
 !###################################################################################################################################
 
 
-recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
+recursive subroutine prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
@@ -825,7 +825,7 @@ recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
                coords(3), alpha_mb(3,3), alpha_xyz(3,3), alpha_xyz_(3,3), tmat_inv(3,3)
 
   if (rank/=6) then
-    write(out, '(/a,1x,i3,1x,a)') 'xy2_alpha_sym error: rank of the dipole moment vector =', rank, ', expected 6'
+    write(out, '(/a,1x,i3,1x,a)') 'prop_xy2_alpha_sym error: rank of the dipole moment vector =', rank, ', expected 6'
     stop
   endif
 
@@ -882,12 +882,12 @@ recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
     v(3) = v1(1)*v2(2)-v1(2)*v2(1)
   end function vector_product
 
-end subroutine xy2_alpha_sym
+end subroutine prop_xy2_alpha_sym
 
 
-! Subroutine to test xy2_alpha_sym if it is able to reproduce the original ab initio Cartesian components
+! Subroutine to test prop_xy2_alpha_sym if it is able to reproduce the original ab initio Cartesian components
 
-subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
+subroutine TEST_prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
@@ -903,7 +903,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   if (ithread==0) then
 
-  write(out, '(/a)') 'TEST_xy2_alpha_sym/start: test polarizability tensor transformation'
+  write(out, '(/a)') 'TEST_prop_xy2_alpha_sym/start: test polarizability tensor transformation'
 
   angs = 0.529177209_ark
   fname = 'ALPHA.dat'
@@ -912,7 +912,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   open(iounit,form='formatted',file=fname,iostat=info)
   if (info/=0) then
-    write(out, '(/a,a,a)') 'TEST_xy2_alpha_sym error: file "', trim(fname), '" not found'
+    write(out, '(/a,a,a)') 'TEST_prop_xy2_alpha_sym error: file "', trim(fname), '" not found'
     stop
   endif
 
@@ -923,7 +923,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
     read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), (mu_xyz0(i,1:3), i=1, 3)
     if (info/=0) exit
     xyz_ = xyz_ * angs
-    call xy2_alpha_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
+    call prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
     ii = 0
     dmu = 0
     do i=1, 3
@@ -942,14 +942,14 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   write(out, '(/1x,a,6(1x,f12.4))') 'rms =', rms
 
-  write(out, '(/a)') 'TEST_xy2_alpha_sym/done'
+  write(out, '(/a)') 'TEST_prop_xy2_alpha_sym/done'
 
   endif
 
   !$omp barrier
   stop
 
-end subroutine TEST_xy2_alpha_sym
+end subroutine TEST_prop_xy2_alpha_sym
 
 
 !###################################################################################################################################
