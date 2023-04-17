@@ -16,6 +16,7 @@ module pot_xy2
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,&
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
+  public MLdms_c3_Schroeder
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -3980,7 +3981,7 @@ endif
     !
     select case(trim(molec%coords_transform))
        !
-    case('R-RHO-Z')
+    case('R-RHO-Z','R-RHO-Z-M2-M3')
        !
        a0(2, 1) = -r(1) * cos(alpha_2)
        a0(2, 3) = -r(1) * sin(alpha_2)
@@ -4068,7 +4069,7 @@ endif
     real(ark)             :: f(molec%natoms, 3)
 
     integer(ik)           :: icart
-    real(ark)             :: a0(molec%natoms, 3), cm,alpha0,r10,r20,r1,r2,alpha,v,mX,mY,mZ
+    real(ark)             :: a0(molec%natoms, 3), cm,alpha0,r10,r20,r1,r2,alpha,v,mX,mY,mZ,alpha_2
     !
     a0 = 0
     !
@@ -4107,6 +4108,16 @@ endif
                    sin(v)*mY*R1)/(mX+mY+mZ)
        a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+&
                    cos(v)*mY*R1)/(mX+mY+mZ)
+       !
+    case('R-RHO-Z','R-RHO-Z-M2-M3')
+       !
+       alpha_2 = r(3)*0.5_ark
+       !
+       a0(2, 1) = -r(1) * cos(alpha_2)
+       a0(2, 3) = -r(1) * sin(alpha_2)
+       !
+       a0(3, 1) = -r(2) * cos(alpha_2)
+       a0(3, 3) =  r(2) * sin(alpha_2)
        !
     case default 
        stop 'MLloc2pqr_xyz: illegla coordinate type'
@@ -4250,6 +4261,132 @@ endif
      
  
    end function MLpoten_c3_R_theta
+
+
+
+
+ !returns electric dipole moment cartesian coordinates of C3
+ !
+ recursive subroutine MLdms_c3_Schroeder(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: k,i,k_ind(3)
+    real(ark)             :: y(3),q(3),s(3),mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,alphae
+    real(ark)             :: xyz0(3,3),v1(3),v2(3),x1,x2,cosalpha1,theta
+    character(len=cl)     :: txt
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n2 + n1
+    u3 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u3 = u3 / sqrt(sum(u3(:)**2))
+    !
+    u2 = MLvector_product(u3,u1)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    re = extF%coef(1,1)
+    alphae = extF%coef(2,1)
+    !
+    q(1)=local(1)-re
+    q(2)=local(2)-re
+    q(1:2) = q(1:2)/bohr
+    q(3) = (pi-local(3))-alphae*pi/180.0_ark
+    !
+    ! 3N-5 case
+    if  (molec%Ndihedrals>1) then
+      !
+      stop 'MLdms_c3_Schroeder: molec%Ndihedrals>1 is not tested'
+      !
+      v1(:) = xyz(2,:)-xyz(1,:)
+      v2(:) = xyz(3,:)-xyz(1,:)
+      !
+      x1 = sqrt(sum(v1(:)**2))
+      x2 = sqrt(sum(v2(:)**2))
+      !
+      cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+      !
+      alpha = aacos(cosalpha1,txt)
+      theta  = pi- alpha
+      q(3) = theta
+      !
+    endif
+    !
+    S(1) = 1.0_ark/sqrt(2.0_ark)*(q(1)+q(2))
+    S(2) = 1.0_ark/sqrt(2.0_ark)*(q(1)-q(2))
+    S(3) = Q(3)
+    !
+    mu = 0 
+    !
+    do i=3,extF%nterms(1)
+      !
+      y(1:3) = S(1:3)**extF%term(1:3,i,1)
+      !
+      mu(1)=mu(1)+extF%coef(i,1)*product(y(1:3))
+      !
+    enddo
+    !
+    re = extF%coef(1,2)
+    alphae = extF%coef(2,2)
+    !
+    q(1)=local(1)-re
+    q(2)=local(2)-re
+    q(1:2) = q(1:2)/bohr
+    !
+    q(3) = (pi-local(3))-alphae*pi/180.0_ark
+    !
+    if  (molec%Ndihedrals>1) then
+      q(3) = theta
+    endif
+    !
+    S(1) = 1.0_ark/sqrt(2.0_ark)*(q(1)+q(2))
+    S(2) = 1.0_ark/sqrt(2.0_ark)*(q(1)-q(2))
+    S(3) = Q(3)
+    !
+    do i=3,extF%nterms(2)
+      !
+      y(1:3) = S(1:3)**extF%term(1:3,i,2)
+      !
+      mu(3)=mu(3)+extF%coef(i,2)*product(y(1:3))
+      !
+    enddo
+    !
+    mu(2) = 0
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+    f = f/0.393430_ark ! to debye
+    !
+ end subroutine MLdms_c3_Schroeder
+
 
 
 

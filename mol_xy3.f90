@@ -9,19 +9,10 @@ module mol_xy3
   implicit none
 
   public ML_b0_XY3,ML_coordinate_transform_XY3,ML_symmetry_transformation_XY3,ML_rotsymmetry_XY3,ML_MEP_NH3
-  !public MLpoten_xy3_mlt_II,MLpoten_xy3_mlt,MLpoten_xy3_d3h
-  !public MLpoten_xy3_morbid_10
-  !MLpoten_xy3_morbid_delta,MLpoten_xy3_handy,MLpoten_xy3_sears
-  !public MLpoten_xy3_halonen_I
-  !public MLdms2xyz_xy3_mb,MLdms2xyz_xy3_symmb,MLpoten_xy3_morbid_45760,MLloc2pqr_xy3,MLdms2xyz_xy3_mb4
-  !public MLpoten_xy3_morbid_10,MLpoten_xy3_Nikitin,MLpotential_xy3_Nikitin,MLspinspin_xy3_mb
-  !public MLpoten_xy3_solomonik_h,MLpoten_oh3p_mep,MLpoten_xy3_morbid_11,MLpoten_xy3_HSL,MLpoten_nh3_qff_morsecos
 
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
-
-  !type(MoleculeT),save :: molec
 
   contains
 

@@ -42,7 +42,7 @@ module molecules
   use prop_xy2_spinspin, only : prop_xy2_spinspin_dipoleYY
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-                       MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_bisect_EKE_sinrho
+                       MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho
 
@@ -482,9 +482,13 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_bisect_EKE
          !
+    case('KINETIC_XYZ_EKE_BOND') 
+         !
+         MLkineticfunc => MLkinetic_xyz_bond_EKE
+         !
     case('KINETIC_XYZ_EKE_BISECT_SINRHO') 
          !
-         MLkineticfunc => MLkinetic_xyz_bisect_EKE_sinrho
+         MLkineticfunc => MLkinetic_xyz_EKE_sinrho
          !
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO') 
          !
@@ -610,6 +614,10 @@ end function ML_MEPfunc
     case('DIPOLE_AMES1')
         !
         MLextF_func => MLdipole_ames1
+        !
+    case('XY2_C3_SCHROEDER') 
+        !
+        MLextF_func => MLdms_c3_Schroeder         
         !
     case('DIPOLE_XY2_LORENZO')
         !

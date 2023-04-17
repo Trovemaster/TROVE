@@ -8,7 +8,7 @@ module kin_xy2
   implicit none
 
   public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-         MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_bisect_EKE_sinrho
+         MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -269,11 +269,11 @@ module kin_xy2
 
 !
   ! Defining kinetic energy function 
-  ! This is EKE generated using Maple for a bisecting frame with bond-length-angle and 
+  ! This is EKE generated using Maple for a bond frame with bond-length-angle and 
   ! removed singularity by combining U rho with dG/drho and multiplying muzz by rho^2
   ! and muxz and muyz by rho. The vecinity of zero (singularity) is expanded wrt rho, up to the 7th order 
   !
-  subroutine MLkinetic_xyz_bisect_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+  subroutine MLkinetic_xyz_bond_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
    !
    integer(ik),intent(in) ::  nmodes,Nterms
    real(ark),intent(in)   ::  rho
@@ -283,8 +283,8 @@ module kin_xy2
    real(ark),parameter  :: rho_threshold = 0.02_rk
      !
      if (manifold/=1) then
-       write(out,"('MLkinetic_xyz_bisect_EKE-error: can be used with non-rigid case only')")
-       stop 'MLkinetic_xyz_bisect_EKE can be used only with npoints>0'
+       write(out,"('MLkinetic_xyz_bond_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bond_EKE can be used only with npoints>0'
      endif
      !
      mX = molec%AtomMasses(1)
@@ -350,7 +350,7 @@ module kin_xy2
      endif
 
      !
-   end subroutine  MLkinetic_xyz_bisect_EKE
+   end subroutine  MLkinetic_xyz_bond_EKE
 
 
 
@@ -359,7 +359,7 @@ module kin_xy2
   ! removed singularity by combining U rho with dG/drho and multiplying muzz by sinrho^2
   ! and muxz and muyz by sinrho. 
   !
-  subroutine MLkinetic_xyz_bisect_EKE_sinrho(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+  subroutine MLkinetic_xyz_EKE_sinrho(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
    !
    integer(ik),intent(in) ::  nmodes,Nterms
    real(ark),intent(in)   ::  rho
@@ -369,8 +369,8 @@ module kin_xy2
    real(ark),parameter  :: rho_threshold = 0.02_rk
      !
      if (manifold/=1) then
-       write(out,"('MLkinetic_xyz_bisect_EKE_sinrho-error: can be used with non-rigid case only')")
-       stop 'MLkinetic_xyz_bisect_EKE_sinrho can be used only with npoints>0'
+       write(out,"('MLkinetic_xyz_EKE_sinrho-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_EKE_sinrho can be used only with npoints>0'
      endif
      !
      mX = molec%AtomMasses(1)
@@ -414,9 +414,107 @@ module kin_xy2
      !
      pseudo(4) =  sin(rho)*cos(rho)/(mX)
      !
-   end subroutine  MLkinetic_xyz_bisect_EKE_sinrho
+   end subroutine  MLkinetic_xyz_EKE_sinrho
 
 
 
+  ! Defining kinetic energy function 
+  ! This is EKE generated using Maple for a bisect non-symmetric frame with bond-length-angle and 
+  ! removed singularity by combining U rho with dG/drho and multiplying muzz by rho^2
+  ! and muxz and muyz by rho. The vecinity of zero (singularity) is expanded wrt rho, up to the 7th order 
+  !
+  subroutine MLkinetic_xyz_bisect_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY1,mY2,rho_2
+   real(ark),parameter  :: rho_threshold = 0.02_rk
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xyz_bond_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bond_EKE can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY1 = molec%AtomMasses(2)
+     mY2 = molec%AtomMasses(3)
+     !
+     g_vib = 0 
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     rho_2 = rho*0.5_ark
+     !
+     g_vib(1,1,1) =  (mX+mY1)/mX/mY1 
+     g_vib(1,2,1) =  -cos(rho)/mX 
+     g_vib(1,3,2) =  sin(rho)/mX 
+     g_vib(2,1,1) =  -cos(rho)/mX 
+     g_vib(2,2,1) =  (mX+mY2)/mY2/mX 
+     g_vib(2,3,3) =  sin(rho)/mX 
+     g_vib(3,1,2) =  sin(rho)/mX 
+     g_vib(3,2,3) =  sin(rho)/mX 
+     g_vib(3,3,4) =  (mX+mY2)/mY2/mX 
+     g_vib(3,3,5) =  2.0_ark*cos(rho)/mX 
+     g_vib(3,3,6) =  (mX+mY1)/mX/mY1 
+     !     
+     g_rot(1,1,4) =  0.25_ark*(mX+mY2)/cos(rho_2)**2/mX/mY2      
+     g_rot(1,1,5) =  -0.5_ark/cos(rho_2)**2/mX 
+     g_rot(1,1,6) =  0.25_ark*(mX+mY1)/cos(rho_2)**2/mX/mY1 
+     g_rot(2,2,4) =  0.25_ark*(mX+mY2)/mY2/mX 
+     g_rot(2,2,5) =  -0.5_ark*(2.0_ark*cos(rho_2)**2-1._ark)/mX 
+     g_rot(2,2,6) =  0.25_ark*(mX+mY1)/mX/mY1 
+     !
+     g_cor(1,2,2) =  -0.5_ark*sin(rho)/mX 
+     g_cor(2,2,3) =  0.5_ark*sin(rho)/mX 
+     g_cor(3,2,4) =  -0.5_ark*(mX+mY2)/mY2/mX 
+     g_cor(3,2,6) =  0.5_ark*(mX+mY1)/mX/mY1 
+     !     
+     if (rho>rho_threshold) then
+       !
+       g_rot(1,3,4) =  0.250_ark*rho*(mX+mY2)/cos(rho_2)/sin(rho_2)/mX/mY2 
+       g_rot(1,3,6) =  -0.250_ark*rho*(mX+mY1)/cos(rho_2)/sin(rho_2)/mX/mY1 
+       g_rot(3,1,4) =  0.250_ark*rho*(mX+mY2)/cos(rho_2)/sin(rho_2)/mX/mY2 
+       g_rot(3,1,6) =  -0.250_ark*rho*(mX+mY1)/cos(rho_2)/sin(rho_2)/mX/mY1 
+       g_rot(3,3,4) =  0.250_ark*rho**2*(mX+mY2)/sin(rho_2)**2/mX/mY2 
+       g_rot(3,3,5) =  0.5_ark*rho**2/mX/sin(rho_2)**2 
+       g_rot(3,3,6) =  0.250_ark*rho**2*(mX+mY1)/sin(rho_2)**2/mX/mY1 
+       !
+       pseudo(4) =  0.125_ark*(rho**2*mY2*cos(rho)**2+rho**2*mX*cos(rho)**2-mX*cos(rho)**2-mY2*cos(rho)**2-&
+                    2.0_ark*rho**2*mX-2.0_ark*rho**2*mY2+mY2+mX)/sin(rho)**2/mY2/mX/rho 
+       pseudo(5) =  -0.25_ark*(cos(rho)**3+rho**2*cos(rho)**3+2.0_ark*rho*sin(rho)*cos(rho)**2-cos(rho)-&
+                    2.0_ark*rho*sin(rho))/sin(rho)**2/mX/rho 
+       pseudo(6) =  0.125_ark*(rho**2*mX*cos(rho)**2+rho**2*mY1*cos(rho)**2-mY1*cos(rho)**2-mX*cos(rho)**2+mY1-&
+                        2.0_ark*rho**2*mX+mX-2.0_ark*rho**2*mY1)/sin(rho)**2/mX/mY1/rho 
+       !
+     else
+       !
+       g_rot(1,3,4) =  (2.0_ark*mX+2.0_ark*mY2)/mX/mY2/4.0_ark+(mX/3.0_ark+mY2/3.0_ark)/mX/mY2*rho**2/4.0_ark+&
+                       (7.0_ark/180.0_ark*mX+7.0_ark/180.0_ark*mY2)/mX/mY2*rho**4/4.0_ark+&
+                       (31.0_ark/7560.0_ark*mX+31.0_ark/7560.0_ark*mY2)/mX/mY2*rho**6/4.0_ark
+       g_rot(1,3,6) =  -(2.0_ark*mX+2.0_ark*mY1)/mX/mY1/4.0_ark-(mX/3.0_ark+mY1/3.0_ark)/mX/mY1*rho**2/4.0_ark-&
+                       (7.0_ark/180.0_ark*mX+7.0_ark/180.0_ark*mY1)/mX/mY1*rho**4/4.0_ark-(31.0_ark/7560.0_ark*mX+&
+                       31.0_ark/7560.0_ark*mY1)/mX/mY1*rho**6/4.0_ark
+       g_rot(3,1,4) =  (2.0_ark*mX+2.0_ark*mY2)/mX/mY2/4.0_ark+(mX/3.0_ark+mY2/3.0_ark)/mX/mY2*rho**2/4.0_ark+&
+                       (7.0_ark/180.0_ark*mX+7.0_ark/180.0_ark*mY2)/mX/mY2*rho**4/4.0_ark+(31.0_ark/7560.0_ark*mX+&
+                       31.0_ark/7560.0_ark*mY2)/mX/mY2*rho**6/4.0_ark
+       g_rot(3,1,6) =  -(2.0_ark*mX+2.0_ark*mY1)/mX/mY1/4.0_ark-(mX/3.0_ark+mY1/3.0_ark)/mX/mY1*rho**2/4.0_ark-&
+                       (7.0_ark/180.0_ark*mX+7.0_ark/180.0_ark*mY1)/mX/mY1*rho**4/4.0_ark-(31.0_ark/7560.0_ark*mX+&
+                       31.0_ark/7560.0_ark*mY1)/mX/mY1*rho**6/4.0_ark
+       g_rot(3,3,4) =  -(-4.0_ark*mX-4.0_ark*mY2)/mX/mY2/4.0_ark-(-mX/3.0_ark-mY2/3.0_ark)/mX/mY2*rho**2/4.0_ark-&
+                       (-mX/60.0_ark-mY2/60.0_ark)/mX/mY2*rho**4/4.0_ark
+       g_rot(3,3,5) =  2.0_ark/mX+1.0_ark/mX*rho**2/6.0_ark+1.0_ark/mX*rho**4/120.0_ark
+       g_rot(3,3,6) =  -(-4.0_ark*mX-4.0_ark*mY1)/mX/mY1/4.0_ark-(-mX/3.0_ark-mY1/3.0_ark)/mX/mY1*rho**2/4.0_ark-&
+                       (-mX/60.0_ark-mY1/60.0_ark)/mX/mY1*rho**4/4.0_ark
+       !
+       pseudo(4) =  -(4.0_ark/3.0_ark*mY2+4.0_ark/3.0_ark*mX)/mY2/mX*rho/8.0_ark-(mY2/15.0_ark+mX/15.0_ark)/mY2/mX*rho**3/8.0_ark
+       pseudo(5) =    2.0_ark/3.0_ark/mX*rho-11.0_ark/60.0_ark/mX*rho**3
+       pseudo(6) =  -(4.0_ark/3.0_ark*mX+4.0_ark/3.0_ark*mY1)/mX/mY1*rho/8.0_ark-(mX/15.0_ark+mY1/15.0_ark)/mX/mY1*rho**3/8.0_ark
+       !     
+     endif
+     !
+   end subroutine  MLkinetic_xyz_bisect_EKE
 
 end module kin_xy2
