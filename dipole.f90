@@ -993,6 +993,7 @@ contains
     endif
     !
     deallocate(vecI, vecF, vec, vec_,icoeffI,vecE,vecE_)
+    !
     call ArrayStop('density-vectors')
     !
     do irep = 1,Nrepresen
@@ -1064,8 +1065,12 @@ contains
     integer(ik), pointer :: Jeigenvec_unit(:,:)
     type(DmatT),pointer  :: vec_ram(:,:)
     type(DkmatT),pointer :: ijterm(:)
+
+    integer(ik), allocatable :: icontrI_pack(:),irlevelI_pack(:),irdegI_pack(:)
+    real(rk),allocatable     :: dipole_me_pack(:,:,:)
+
     !
-    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax
+    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax,icontrI
     !
     integer(ik)  :: ram_size_,alloc_p
     !
@@ -1563,6 +1568,17 @@ contains
       call ArrayStart('intensity-vectors-kblock',info,size(itau_kblock),kind(itau_kblock))
       allocate(vecPack_kblock(dimenmax,0:jmax), stat = info)
       call ArrayStart('intensity-vectors-kblock',info,size(vecPack_kblock),kind(vecPack_kblock))
+    else
+      allocate(icontrI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(icontrI_pack),kind(icontrI_pack))
+      allocate(irlevelI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(irlevelI_pack),kind(icoeffI))
+      allocate(irdegI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(irdegI_pack),kind(irdegI_pack))
+      !
+      allocate(dipole_me_pack(dimenmax,bset_contr(1)%Maxcontracts,3),stat=info)
+      call ArrayStart('intensity-dipole-rotsym',info,1,kind(dipole_me_pack),kind(dipole_me_pack))
+      !
     endif
     !
     ! loop over final states -> count states for each symmetry
@@ -1971,12 +1987,26 @@ contains
                       icoeffI(cdimenI) = idimen
                       vecPack(cdimenI) = vec(idimen)
                       !
+                      !icontrI_pack(cdimenI)  = bset_contr(indI)%iroot_correlat_j0(idimen)
+                      !
+                      icontrI  = bset_contr(indI)%iroot_correlat_j0(idimen)
+                      !
+                      irlevelI_pack(cdimenI) = bset_contr(indI)%ktau(idimen)
+                      irdegI_pack(cdimenI)   = bset_contr(indI)%k(idimen)
+                      !
+                      dipole_me_pack(cdimenI,:,1:3) = dipole_me(icontrI,:,1:3)*vec(idimen)
+                      !
                    end if
                 end do
                 !
-                call do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vecPack,&
-                                              half_linestr(:,indF,idegI,1))
-                                              !
+                !call do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,&
+                !                      icontrI_pack,irlevelI_pack,irdegI_pack,&
+                !                      vecPack,half_linestr(:,indF,idegI,1))
+                !                      !
+                call do_1st_half_linestrength_rotsym_symmvec_V(jI,jF,indI,indF,cdimenI,&
+                                      dipole_me_pack,irlevelI_pack,irdegI_pack,&
+                                      half_linestr(:,indF,idegI,1))
+                                      !
               else
                 !
                 cdimen_kblock  = 0
@@ -2636,6 +2666,16 @@ contains
     if (.not.job%rotsym_do) then
       deallocate(vecPack_kblock,icoeff_kblock,cdimen_kblock,itau_kblock)
       call ArrayStop('intensity-vectors-kblock')
+    else
+      !
+      deallocate(icontrI_pack)
+      deallocate(irlevelI_pack)
+      deallocate(irdegI_pack)
+      call ArrayStop('intensity-vectors-rotsym')
+      !      
+      deallocate(dipole_me_pack)
+      call ArrayStop('intensity-dipole-rotsym')
+      !
     endif
     !
     deallocate(half_linestr)
@@ -5806,7 +5846,7 @@ contains
       ! in case the proper treatment of the rotational symmetrization is performed. 
       ! this is the only way to treat Td(M) spectra
       !
-      subroutine do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,icoeffI,vector,half_ls)
+      subroutine do_1st_half_linestrength_rotsym_symmvec_orig(jI,jF,indI,indF,cdimenI,icoeffI,vector,half_ls)
         !
         implicit none 
         integer(ik),intent(in)  :: jI,jF,indI,indF,cdimenI,icoeffI(:)
@@ -5831,7 +5871,7 @@ contains
           !loop over final state basis components
           !
           !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,irootI,icontrI,irlevelI,irdegI,f_w,dip) &
-          !$omp& shared(half_ls) schedule(dynamic)
+          !$omp& shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
                icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
@@ -5851,7 +5891,75 @@ contains
                   !
                   f_w(:) = wigner(indI,dJ)%rot(:,irlevelI,irlevelF,irdegI,irdegF)
                   !
-                  dip = sum(dipole_me(icontrI,icontrF,:)*f_w(:))
+                  dip = dipole_me(icontrI,icontrF,1)*f_w(1)+dipole_me(icontrI,icontrF,2)*f_w(2)+dipole_me(icontrI,icontrF,3)*f_w(3)
+                  !
+                  f_t = f_t + vector(cirootI)*dip
+                  !
+               end do  loop_I
+               !
+               half_ls(irootF) = f_t
+               !
+            end do   loop_F
+            !$omp end parallel do
+            !
+            !call TimerStop('do_1st_half_linestr')
+            !
+      end subroutine do_1st_half_linestrength_rotsym_symmvec_orig
+
+
+      !
+      ! symmilar procedure of evaluating the (left) half-transformation of the line strength 
+      ! in case the proper treatment of the rotational symmetrization is performed. 
+      ! this is the only way to treat Td(M) spectra. 
+      ! In this version, the lower state objects iroot_correlat_j0_I,ktau,k are parsed in the compacted form to safe time 
+    subroutine do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,&
+                                      iroot_correlat_j0_I,ktau_I,k_I,&
+                                      vector,half_ls)
+        !
+        implicit none 
+        integer(ik),intent(in)  :: jI,jF,indI,indF,cdimenI
+        !
+        integer(ik),intent(in)  :: iroot_correlat_j0_I(:)
+        integer(ik),intent(in)  :: ktau_I(:)
+        integer(ik),intent(in)  :: k_I(:)
+        !
+        real(rk),intent(in)     :: vector(:)
+        real(rk),intent(out)    :: half_ls(:)
+        integer(ik)             :: irootF, cirootI, icontrF, icontrI, & 
+                                   irlevelI, irlevelF, irdegI, irdegF, irootI,dJ, dimenI, dimenF
+        real(rk)                :: f_w(3),dip,f_t
+
+          !
+          !call TimerStart('do_1st_half_linestr')
+          !
+          dJ = jF-jI
+          !
+          dimenI = bset_contr(indI)%Maxcontracts
+          dimenF = bset_contr(indF)%Maxcontracts
+          !
+          !loop over final state basis components
+          !
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,icontrI,irlevelI,irdegI,f_w,dip) &
+          !$omp& shared(half_ls) schedule(static)
+          loop_F : do irootF = 1, dimenF
+               !
+               icontrF  = bset_contr(indF)%iroot_correlat_j0(irootF)
+               irlevelF = bset_contr(indF)%ktau(irootF)
+               irdegF   = bset_contr(indF)%k(irootF)
+               !
+               !loop over initial state basis components
+               !
+               f_t = 0
+               !
+               loop_I : do cirootI = 1, cdimenI
+                  !
+                  icontrI  = iroot_correlat_j0_I(cirootI)
+                  irlevelI = ktau_I(cirootI)
+                  irdegI   = k_I(cirootI)
+                  !
+                  f_w(:) = wigner(indI,dJ)%rot(:,irlevelI,irlevelF,irdegI,irdegF)
+                  !
+                  dip = dipole_me(icontrI,icontrF,1)*f_w(1)+dipole_me(icontrI,icontrF,2)*f_w(2)+dipole_me(icontrI,icontrF,3)*f_w(3)
                   !
                   f_t = f_t + vector(cirootI)*dip
                   !
@@ -5865,6 +5973,76 @@ contains
             !call TimerStop('do_1st_half_linestr')
             !
       end subroutine do_1st_half_linestrength_rotsym_symmvec
+      
+      
+
+      !
+      ! symmilar procedure of evaluating the (left) half-transformation of the line strength 
+      ! in case the proper treatment of the rotational symmetrization is performed. 
+      ! this is the only way to treat Td(M) spectra. 
+      ! In this version, the lower state objects iroot_correlat_j0_I,ktau,k are parsed in the compacted form to safe time 
+    subroutine do_1st_half_linestrength_rotsym_symmvec_V(jI,jF,indI,indF,cdimenI,&
+                                      dipole_me_pack,ktau_I,k_I,&
+                                      half_ls)
+        !
+        implicit none 
+        integer(ik),intent(in)  :: jI,jF,indI,indF,cdimenI
+        !
+        real(rk),intent(in)     :: dipole_me_pack(:,:,:)
+        integer(ik),intent(in)  :: ktau_I(:)
+        integer(ik),intent(in)  :: k_I(:)
+        !
+        !real(rk),intent(in)     :: vector(:)
+        real(rk),intent(out)    :: half_ls(:)
+        integer(ik)             :: irootF, cirootI, icontrF, icontrI, & 
+                                   irlevelI, irlevelF, irdegI, irdegF, irootI,dJ, dimenI, dimenF
+        real(rk)                :: f_w(3),dip,f_t
+
+          !
+          !call TimerStart('do_1st_half_linestr')
+          !
+          dJ = jF-jI
+          !
+          dimenI = bset_contr(indI)%Maxcontracts
+          dimenF = bset_contr(indF)%Maxcontracts
+          !
+          !loop over final state basis components
+          !
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,icontrI,irlevelI,irdegI,f_w,dip) &
+          !$omp& shared(half_ls) schedule(static)
+          loop_F : do irootF = 1, dimenF
+               !
+               icontrF  = bset_contr(indF)%iroot_correlat_j0(irootF)
+               irlevelF = bset_contr(indF)%ktau(irootF)
+               irdegF   = bset_contr(indF)%k(irootF)
+               !
+               !loop over initial state basis components
+               !
+               f_t = 0
+               !
+               loop_I : do cirootI = 1, cdimenI
+                  !
+                  !icontrI  = iroot_correlat_j0_I(cirootI)
+                  irlevelI = ktau_I(cirootI)
+                  irdegI   = k_I(cirootI)
+                  !
+                  f_w(:) = wigner(indI,dJ)%rot(:,irlevelI,irlevelF,irdegI,irdegF)
+                  !
+                  dip = dipole_me(cirootI,icontrF,1)*f_w(1)+dipole_me(cirootI,icontrF,2)*f_w(2)+dipole_me(cirootI,icontrF,3)*f_w(3)
+                  !
+                  f_t = f_t + dip
+                  !
+               end do  loop_I
+               !
+               half_ls(irootF) = f_t
+               !
+            end do   loop_F
+            !$omp end parallel do
+            !
+            !call TimerStop('do_1st_half_linestr')
+            !
+      end subroutine do_1st_half_linestrength_rotsym_symmvec_V      
+
 
 
 
