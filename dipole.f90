@@ -1077,7 +1077,7 @@ contains
     integer(ik)  :: iram_,Nterms,iterm,ielem,isrootF,isrootI,nelem
     !
     integer(ik)  :: igamma_pair(sym%Nrepresen)
-    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_
+    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_,matsize_dipole_me
     !
     !
     character(len=1) :: branch
@@ -1576,8 +1576,10 @@ contains
       allocate(irdegI_pack(dimenmax), stat = info)
       call ArrayStart('intensity-vectors-rotsym',info,size(irdegI_pack),kind(irdegI_pack))
       !
+      matsize_dipole_me = dimenmax*bset_contr(1)%Maxcontracts*3
+      !
       allocate(dipole_me_pack(dimenmax,bset_contr(1)%Maxcontracts,3),stat=info)
-      call ArrayStart('intensity-dipole-rotsym',info,1,kind(dipole_me_pack),kind(dipole_me_pack))
+      call ArrayStart('intensity-dipole-rotsym',info,1,kind(dipole_me_pack),matsize_dipole_me)
       !
     endif
     !
@@ -6008,7 +6010,7 @@ contains
           !
           !loop over final state basis components
           !
-          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,icontrI,irlevelI,irdegI,f_w,dip) &
+          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,irlevelI,irdegI,f_w,dip) &
           !$omp& shared(half_ls) schedule(static)
           loop_F : do irootF = 1, dimenF
                !
