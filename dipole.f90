@@ -1055,7 +1055,7 @@ contains
     logical        :: vector_diagonal = .false.
     integer(ik)    :: ID_I
     !
-    integer(ik), allocatable :: icoeffI(:), istored(:),isave(:),isaved(:),iID(:)
+    integer(ik), allocatable :: istored(:),isave(:),isaved(:),iID(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
     real(rk),    allocatable :: vecI(:), vecF(:),vec(:),vecPack(:),vec_(:)
     real(rk),    allocatable :: vecPack_kblock(:,:)
@@ -1067,17 +1067,17 @@ contains
     type(DkmatT),pointer :: ijterm(:)
 
     integer(ik), allocatable :: icontrI_pack(:),irlevelI_pack(:),irdegI_pack(:)
-    real(rk),allocatable     :: dipole_me_pack(:,:,:)
-
+    logical,    allocatable :: vec_mask(:)
     !
     integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax,icontrI
     !
     integer(ik)  :: ram_size_,alloc_p
     !
-    integer(ik)  :: iram_,Nterms,iterm,ielem,isrootF,isrootI,nelem
+    integer(ik)  :: iram_,Nterms,iterm,ielem,isrootF,isrootI,nelem,num_threads
     !
     integer(ik)  :: igamma_pair(sym%Nrepresen)
-    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_,matsize_dipole_me
+    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_
+    integer(ik), external :: omp_get_max_threads
     !
     !
     character(len=1) :: branch
@@ -1104,7 +1104,11 @@ contains
     ! In case the vector obtained without diagonalization, as diagonal solution of the Hamiltonian matrix
     ! the reading of the vectors can be omitted 
     !
-    if (trim(job%diagonalizer)=='NO-DIAGONALIZATION') vector_diagonal = .true.
+    if (trim(job%diagonalizer)=='NO-DIAGONALIZATION') then
+       vector_diagonal = .true.
+       write(out,"('dm_intensity_symmvec: NO-DIAGONALIZATION option is currently deactivated')") 
+       stop 'dm_intensity_symmvec: NO-DIAGONALIZATION option is currently deactivated'
+    endif
     !
     nmodes = molec%nmodes
     nclasses = size(eigen(1)%cgamma)-1
@@ -1301,18 +1305,35 @@ contains
     !
     call TimerStop('Intens_Filter-1')
     !
-    !loop over final states -> count states for each symmetry
-    !
-    dimenmax_ = 1
-    do jind = 1, nJ
-       do irep = 1,Nrepresen
-         dimenmax_ = max(bset_contr(jind)%nsize(irep),dimenmax_)
-       enddo
-    enddo
-    !
-    allocate(vecI(dimenmax_),vecF(dimenmax_), stat = info)
+    allocate(vecI(nsizemax),vecF(nsizemax), stat = info)
     call ArrayStart('intensity-vec',info,size(vecI),kind(vecI))
     call ArrayStart('intensity-vec',info,size(vecF),kind(vecF))
+    !
+    allocate(vec(dimenmax),vecPack(dimenmax), stat = info)
+    call ArrayStart('intensity-vectors',info,size(vec),kind(vec))
+    call ArrayStart('intensity-vectors',info,size(vecPack),kind(vecpack))
+    !
+    if (.not.job%rotsym_do) then 
+      allocate(icoeff_kblock(dimenmax,0:jmax),cdimen_kblock(0:jmax),itau_kblock(dimenmax,0:jmax),stat = info)
+      call ArrayStart('intensity-vectors-kblock',info,size(icoeff_kblock),kind(icoeff_kblock))
+      call ArrayStart('intensity-vectors-kblock',info,size(cdimen_kblock),kind(cdimen_kblock))
+      call ArrayStart('intensity-vectors-kblock',info,size(itau_kblock),kind(itau_kblock))
+      allocate(vecPack_kblock(dimenmax,0:jmax), stat = info)
+      call ArrayStart('intensity-vectors-kblock',info,size(vecPack_kblock),kind(vecPack_kblock))
+    else
+      allocate(icontrI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(icontrI_pack),kind(icontrI_pack))
+      allocate(irlevelI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(irlevelI_pack),kind(irlevelI_pack))
+      allocate(irdegI_pack(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(irdegI_pack),kind(irdegI_pack))
+      !
+      allocate(vec_mask(dimenmax), stat = info)
+      call ArrayStart('intensity-vectors-rotsym',info,size(vec_mask),kind(vec_mask))
+      !
+    endif
+    !
+    !loop over final states -> count states for each symmetry
     !
     nlevelsG = 0
     !
@@ -1381,11 +1402,18 @@ contains
     !
     ! memory now + expected 
     !
-    memory_now_ = memory_now+real((2*dimenmax+dimenmax_+dimenmax*nJ*sym%Maxdegen*3+dimenmax*(jmax+1)+&
+    memory_now_ = memory_now+real((2*dimenmax+nsizemax+dimenmax*nJ*sym%Maxdegen*3+&
                   dimenmax*nJ*sym%Maxdegen*3)*8+&                  
-                  nlevels*4+dimenmax+2*(dimenmax+1)*(jmax+1)*4)/1024.0_rk**3
-                  !
-    ! decrease by some factor just in case
+                  nlevels*4+dimenmax)/1024.0_rk**3
+    !
+    num_threads = omp_get_max_threads()
+    !
+    if (job%verbose>=5) write(out,"('   Number of OMP threads is ',i)") num_threads
+    !
+    ! Account for the vectors alloacted for each thread vecF and vec_
+    memory_now_ = memory_now_ + num_threads*(nsizemax+dimenmax)
+    !
+    ! Scale by some small factor just in case
     !
     memory_now_ = memory_now_*1.2_rk
     !
@@ -1474,7 +1502,7 @@ contains
          stop 'dm_intensity_symmvec: the filters are too tight' 
     endif 
     !
-    !omp do private(ilevelF,jF,energyF,igammaF,quantaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
+    !omp do private(ilevelF,jF,energyF,igammaF,indF,ndegF,dimenF,unitF,unitO,unitC,idegF,irec,cdimen,idimen) schedule(guided)
     do ilevelF = 1, nlevels
       !
       if (job%verbose>=5.and.mod(ilevelF,nlevels/min(500,ilevelF))==0 ) write(out,"('ilevel = ',i0)") ilevelF
@@ -1485,7 +1513,6 @@ contains
       !
       energyF = eigen(ilevelF)%energy
       igammaF = eigen(ilevelF)%igamma        
-      quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
       normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
       !
       call energy_filter_upper(jF,energyF,normalF(0),passed)
@@ -1516,16 +1543,16 @@ contains
         !
         irec = eigen(ilevelF)%irec(1)
         !
-        if (.not.vector_diagonal) then
+        !if (.not.vector_diagonal) then
            !
            read(unitF,rec=irec) vec_ram(indF,igammaF)%mat(1:nsizeF,iram(indF,igammaF))
            !
-        else
-           !
-           vec_ram(indF,igammaF)%mat(:,iram(indF,igammaF)) = 0 
-           vec_ram(indF,igammaF)%mat(eigen(ilevelF)%icoeff,iram(indF,igammaF)) = 1.0_rk
-           !
-        endif
+        !else
+        !   !
+        !   vec_ram(indF,igammaF)%mat(:,iram(indF,igammaF)) = 0 
+        !   vec_ram(indF,igammaF)%mat(eigen(ilevelF)%icoeff,iram(indF,igammaF)) = 1.0_rk
+        !   !
+        !endif
         !
       else
         !
@@ -1544,44 +1571,8 @@ contains
     !
     write(out,"(/'...done!')")
     !
-    dimenmax_ = 1
-    do jind = 1, nJ
-       do irep = 1,Nrepresen
-         dimenmax_ = max(bset_contr(jind)%nsize(irep),dimenmax_)
-       enddo
-    enddo
-    !
-    allocate(vecI(dimenmax_),vec(dimenmax),vecPack(dimenmax), stat = info)
-    !
+    allocate(vecI(nsizemax), stat = info)
     call ArrayStart('intensity-vectors',info,size(vecI),kind(vecI))
-    !call ArrayStart('intensity-vectors',info,size(vecF),kind(vecF))
-    call ArrayStart('intensity-vectors',info,size(vec),kind(vec))
-    call ArrayStart('intensity-vectors',info,size(vecPack),kind(vecpack))
-    !
-    allocate(icoeffI(dimenmax), stat = info)
-    call ArrayStart('intensity-vectors',info,size(icoeffI),kind(icoeffI))
-    !
-    if (.not.job%rotsym_do) then 
-      allocate(icoeff_kblock(dimenmax,0:jmax),cdimen_kblock(0:jmax),itau_kblock(dimenmax,0:jmax),stat = info)
-      call ArrayStart('intensity-vectors-kblock',info,size(icoeff_kblock),kind(icoeff_kblock))
-      call ArrayStart('intensity-vectors-kblock',info,size(cdimen_kblock),kind(cdimen_kblock))
-      call ArrayStart('intensity-vectors-kblock',info,size(itau_kblock),kind(itau_kblock))
-      allocate(vecPack_kblock(dimenmax,0:jmax), stat = info)
-      call ArrayStart('intensity-vectors-kblock',info,size(vecPack_kblock),kind(vecPack_kblock))
-    else
-      allocate(icontrI_pack(dimenmax), stat = info)
-      call ArrayStart('intensity-vectors-rotsym',info,size(icontrI_pack),kind(icontrI_pack))
-      allocate(irlevelI_pack(dimenmax), stat = info)
-      call ArrayStart('intensity-vectors-rotsym',info,size(irlevelI_pack),kind(icoeffI))
-      allocate(irdegI_pack(dimenmax), stat = info)
-      call ArrayStart('intensity-vectors-rotsym',info,size(irdegI_pack),kind(irdegI_pack))
-      !
-      matsize_dipole_me = dimenmax*bset_contr(1)%Maxcontracts*3
-      !
-      allocate(dipole_me_pack(dimenmax,bset_contr(1)%Maxcontracts,3),stat=info)
-      call ArrayStart('intensity-dipole-rotsym',info,1,kind(dipole_me_pack),matsize_dipole_me)
-      !
-    endif
     !
     ! loop over final states -> count states for each symmetry
     !
@@ -1595,7 +1586,6 @@ contains
        !
        energyF = eigen(ilevelF)%energy
        igammaF = eigen(ilevelF)%igamma        
-       quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes)
        normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
        !
        indF = eigen(ilevelF)%jind
@@ -1686,8 +1676,6 @@ contains
     !
     if (job%exomol_format) then
       !
-      !write(out,"(/a/)") 'States file in the Exomol format'
-      !
       allocate(iID(nlevels),stat=info)
       call ArrayStart('iID',info,size(iID),kind(iID))
       !
@@ -1696,25 +1684,9 @@ contains
          indI = eigen(ilevelI)%jind
          igammaI  = eigen(ilevelI)%igamma
          !
-         !if (indI/=jind.or.igamma/=igammaI) cycle
-         !
-         !dimenI = bset_contr(indI)%Maxcontracts
-         !
-         !energy, quanta, and gedeneracy order of the initial state
-         !
-         !jI = eigen(ilevelI)%jval
-         !energyI = eigen(ilevelI)%energy-intensity%ZPE
-         !quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
-         !normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
-         !
          ID_I = eigen(ilevelI)%ilevel + bset_contr(indI)%nsize_base(igammaI)
          !
          iID(ilevelI) = ID_I
-         !
-         !write(out,"(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,<nmodes>i3,1x,<nclasses>(1x,a3),1x,2i4,1x,a3,2x,f5.2,' ::',1x,i9,1x,<nmodes>i3)") & 
-         !ID_I,energyI,int(intensity%gns(igammaI),4)*(2*jI+1),jI,sym%label(igammaI),normalI(1:nmodes),eigen(ilevelI)%cgamma(1:nclasses),&
-         !eigen(ilevelI)%krot,eigen(ilevelI)%taurot,eigen(ilevelI)%cgamma(0),&
-         !eigen(ilevelI)%largest_coeff,eigen(ilevelI)%ilevel,quantaI(1:nmodes)
          !
       enddo
       !
@@ -1749,19 +1721,9 @@ contains
        !
        if (.not.job%exomol_format) then
          !
-         !write(my_fmt_tm,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a,i0,a)') &
-         !                   '(i4,1x,a3,3x,"<-",i4,1x,a3,3x,a1,2x,f13.6,1x,"<-",1x, f13.6,1x,f12.6,2x,"(",a3,";",i3,")",1x,"(",',&
-         !                   nclasses,'a3,";",',nmodes,'(1x,i3),")",2x,"<- ","(",a3,";",i3,")",1x,"(",',&
-         !                   nclasses,'a3,";",',nmodes,'(1x,i3),")",2(1x,es15.8),i8,2x,"(",',&
-         !                   nmodes,'(1x, i3),")",2x,"<- ",1x,"(",',nmodes,'(1x, i3),")",3(',nformat,'(1x,f16.8,1x,3i1)))' 
-         !
          write(my_fmt1,'(a,i0,a,i0,a,i0,a,i0,a)') "(/t4,a1,t6,a8,t17,a1,t19,a5,t25,a3,t35,a2,t42,a2,t50,a2,t62,a5,t85,",nclasses,&
                                    "(4x),1x,",nmodes,"(4x),3x,a2,14x,",nclasses,"(4x),1x,",nmodes,&
                                    "(4x),8x,a7,10x,a5,12x,a7,12x,a2,8x,a2,8x,a1)"
-
-         !
-         !write(my_fmt1,'(a)') "(/t4,a1,t6,a8,t17,a1,t19,a5)"
-         !write(out,"(/t4a1,t6a8,t17a1,t19a5,t25a3,t35a1,t42a2,t50a1,t62a5,t85,<nclasses>(4x),1x,<nmodes>(4x),3x,a2,14x,<nclasses>(4x),1x,<nmodes>(4x),8x,a7,10x,a5,12x,a7,12x,a1,8x,a1,8x,a1)") 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'
          !
          write(out,my_fmt1) 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei' ,'nu_if','<-','S(f<-i)','A(if)','I(f<-i)','Ni','Nf','N'
          !
@@ -1813,7 +1775,6 @@ contains
       jI = eigen(ilevelI)%jval
       energyI = eigen(ilevelI)%energy
       igammaI  = eigen(ilevelI)%igamma
-      quantaI(0:nmodes) = eigen(ilevelI)%quanta(0:nmodes)
       normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
       ndegI   = eigen(ilevelI)%ndeg
       nsizeI = bset_contr(indI)%nsize(igammaI)
@@ -1847,16 +1808,16 @@ contains
           !
           irec = isaved(ilevelI)
           !
-          if (.not.vector_diagonal) then
+          !if (.not.vector_diagonal) then
              !
              read(unitI,rec=irec) vecI(1:nsizeI)
              !
-          else
-             !
-             vecI(:) = 0 
-             vecI(eigen(ilevelI)%icoeff) = 1.0_rk
-             !
-          endif
+          !else
+          !   !
+          !   vecI(:) = 0 
+          !   vecI(eigen(ilevelI)%icoeff) = 1.0_rk
+          !   !
+          !endif
           !
       else
           !
@@ -1888,14 +1849,13 @@ contains
         !
         passed = .false.
         !
-        !omp parallel do private(ilevelF,energyF,igammaF,quantaF,passed_) schedule(guided) reduction(+:passed)
+        !omp parallel do private(ilevelF,energyF,igammaF,passed_) schedule(guided) reduction(+:passed)
         do ilevelF = 1, nlevels
           !
           if (eigen(ilevelF)%jval/=jF) cycle 
           !
           energyF = eigen(ilevelF)%energy
           igammaF = eigen(ilevelF)%igamma        
-          quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
           !
           call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
           !
@@ -1942,7 +1902,7 @@ contains
                  !
                  nelem = bset_contr(indI)%irr(igammaI)%N(irow)
                  !
-                 if (.not.vector_diagonal.or..false.) then
+                 !if (.not.vector_diagonal.or..false.) then
                    !
                    dtemp0 = 0
                    !
@@ -1954,15 +1914,15 @@ contains
                       !
                    enddo
                    !
-                 else
-                    !
-                    isrootI = eigen(ilevelI)%icoeff
-                    !
-                    if (isrootI-iterm<1.or.isrootI-iterm>nelem) cycle
-                    !
-                    dtemp0 = vecI(isrootI)*bset_contr(indI)%irr(igammaI)%repres(isrootI,idegI,ib)
-                    !
-                 endif 
+                 !else
+                 !   !
+                 !   isrootI = eigen(ilevelI)%icoeff
+                 !   !
+                 !   if (isrootI-iterm<1.or.isrootI-iterm>nelem) cycle
+                 !   !
+                 !   dtemp0 = vecI(isrootI)*bset_contr(indI)%irr(igammaI)%repres(isrootI,idegI,ib)
+                 !   !
+                 !endif 
                  !
                  vec(irootI) = dtemp0
                  !
@@ -1971,43 +1931,52 @@ contains
               !
               call TimerStop('Unfolding-to-primitives')
               !
-              call TimerStart('Pre-screening')
-              !
               !vecPack = pack(vec,abs(vec)>intensity%threshold%coeff)
               !cdimenI = count(abs(vec)>intensity%threshold%coeff)
               !
-              cdimenI    = 0 
-              icoeffI(:) = 0
-              !
-              call TimerStop('Pre-screening')
-              !
               if (job%rotsym_do) then 
                 !
+                !
+                call TimerStart('Pre-screening')
+                !
+                !vec_mask = abs(vec) .ge.intensity%threshold%coeff
+                !
+                !omp parallel sections 
+                !omp section
+                !  icontrI_pack = pack(bset_contr(indI)%iroot_correlat_j0,mask=vec_mask)
+                !omp section
+                !  irlevelI_pack = pack(bset_contr(indI)%ktau,mask=vec_mask)
+                !omp section
+                !  irdegI_pack = pack(bset_contr(indI)%k,mask=vec_mask)
+                !omp section
+                !  vecPack = pack(vec,mask=vec_mask)
+                !omp section
+                !  cdimenI = count(mask=vec_mask)
+                !omp end parallel sections 
+                !
+                !
+                cdimenI = 0
+                !
+                !omp  parallel do private(idimen) reduction(+:cdimenI) &
+                !omp& shared(vecPack,icontrI_pack,irlevelI_pack,irdegI_pack) schedule(static)
                 do idimen = 1, dimenI
                    if (abs(vec(idimen)) > intensity%threshold%coeff) then
                       cdimenI = cdimenI + 1
-                      icoeffI(cdimenI) = idimen
                       vecPack(cdimenI) = vec(idimen)
                       !
-                      !icontrI_pack(cdimenI)  = bset_contr(indI)%iroot_correlat_j0(idimen)
-                      !
-                      icontrI  = bset_contr(indI)%iroot_correlat_j0(idimen)
-                      !
+                      icontrI_pack(cdimenI)  = bset_contr(indI)%iroot_correlat_j0(idimen)
                       irlevelI_pack(cdimenI) = bset_contr(indI)%ktau(idimen)
                       irdegI_pack(cdimenI)   = bset_contr(indI)%k(idimen)
                       !
-                      dipole_me_pack(cdimenI,:,1:3) = dipole_me(icontrI,:,1:3)*vec(idimen)
-                      !
                    end if
                 end do
+                !omp end parallel do
                 !
-                !call do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,&
-                !                      icontrI_pack,irlevelI_pack,irdegI_pack,&
-                !                      vecPack,half_linestr(:,indF,idegI,1))
-                !                      !
-                call do_1st_half_linestrength_rotsym_symmvec_V(jI,jF,indI,indF,cdimenI,&
-                                      dipole_me_pack,irlevelI_pack,irdegI_pack,&
-                                      half_linestr(:,indF,idegI,1))
+                call TimerStop('Pre-screening')
+                !
+                call do_1st_half_linestrength_rotsym_symmvec(jI,jF,indI,indF,cdimenI,&
+                                      icontrI_pack,irlevelI_pack,irdegI_pack,&
+                                      vecPack,half_linestr(:,indF,idegI,1))
                                       !
               else
                 !
@@ -2015,6 +1984,9 @@ contains
                 icoeff_kblock  = 0  
                 itau_kblock    = 0
                 vecPack_kblock = 0 
+                cdimenI    = 0 
+                !
+                call TimerStart('Pre-screening')
                 !
                 do idimen = 1, dimenI
                    if (abs(vec(idimen)) > intensity%threshold%coeff) then
@@ -2029,6 +2001,8 @@ contains
                       !
                    end if
                 end do
+                !
+                call TimerStop('Pre-screening')
                 !
                 call do_1st_half_linestrength_III_symmvec(jI,jF,indI,indF,jmax,dimenmax,&
                 cdimen_kblock,icoeff_kblock,vecPack_kblock,itau_kblock,threej,half_linestr(:,indF,idegI,1))
@@ -2084,13 +2058,13 @@ contains
       ! Loop over final states
       !
       !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state) shared(A_einst_cache,nu_if_cache)
-      allocate(vecF(dimenmax_),vec_(dimenmax),stat = alloc_p)
+      allocate(vecF(nsizemax),vec_(dimenmax),stat = alloc_p)
       if (alloc_p/=0) then
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
           stop 'dipole-vecF - out of memory'
       end if
       !
-      !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,quantaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
+      !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
       !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,&
       !$omp& absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static)
       Flevels_loop: do ilevelF = 1,nlevels
@@ -2106,7 +2080,6 @@ contains
          jF = eigen(ilevelF)%jval
          energyF = eigen(ilevelF)%energy
          igammaF  = eigen(ilevelF)%igamma
-         quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes)
          normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
          ndegF   = eigen(ilevelF)%ndeg
          nsizeF = bset_contr(indF)%nsize(igammaF)
@@ -2140,26 +2113,20 @@ contains
          !
          if (istored(ilevelF)==0) then
            !
-           if (.not.vector_diagonal) then
-              !
-              !call TimerStart('Reading eigenfuncs')
+           !if (.not.vector_diagonal) then
               !
               irec = isaved(ilevelF)
-              !
-              !read(unitF,rec=irec) vec_ram(indF,igammaF)%mat(1:nsizeF,iram(indF,igammaF))
               !
               !$omp critical
               read(unitF, rec = irec) vecF(1:nsizeF)
               !$omp end critical 
               !
-              !call TimerStop('Reading eigenfuncs')
-              !
-           else
-              !
-              vecF = 0 
-              vecF(eigen(ilevelF)%icoeff) = 1.0_rk
-              !
-           endif
+           !else
+           !   !
+           !   vecF = 0 
+           !   vecF(eigen(ilevelF)%icoeff) = 1.0_rk
+           !   !
+           !endif
            !
          else
            !
@@ -2177,7 +2144,7 @@ contains
              !
            case('ABSORPTION')
              !
-             linestr_deg = 0 
+             !linestr_deg = 0 
              !
              !loops over degenerate states
              !
@@ -2189,11 +2156,11 @@ contains
                 !
                 if (intensity%reduced.and.idegF/=1) cycle
                 !
-                if (.not.vector_diagonal) then
+                !if (.not.vector_diagonal) then
                    !
                    vec_ = 0
                    !
-                   !omp parallel do private(irootF,irow,ib,iterm,dtemp0,nelem,ielem,isrootF) shared(vec) schedule(static)
+                   !omp parallel do private(irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF) shared(vec_) schedule(static)
                    do irootF = 1,dimenF
                       !
                       irow = bset_contr(indF)%icontr2icase(irootF,1)
@@ -2242,50 +2209,48 @@ contains
                      !
                      linestr_deg(idegI,idegF) = ddot(dimenF,half_linestr(1:dimenF,indF,idegI,1),1,vec_(1:dimenF),1)
                      !
-                     !linestr_deg(idegI,idegF) = dtemp
-                     !
                    end do Fdegs_loop
                    !
-                else 
-                   !
-                   !omp parallel do private(irootF,idegi,hf_ls,irow,ib,iterm,dtemp0,nelem,ielem,isrootF) shared(vec) schedule(static)
-                   do irootF = 1,dimenF
-                      !
-                      do idegI = 1,ndegI
-                        !
-                        call degeneracy_filter(igammaI,igammaF,idegI,idegF,passed)
-                        !
-                        if (.not.passed) cycle
-                        !
-                        linestr = half_linestr(irootF,indF,idegI,1)
-                        !
-                        if (abs(linestr)<intensity%threshold%linestrength) cycle
-                        !
-                        irow = bset_contr(indF)%icontr2icase(irootF,1)
-                        ib   = bset_contr(indF)%icontr2icase(irootF,2)
-                        !
-                        !icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
-                        !
-                        iterm = ijterm(indF)%kmat(irow,igammaF)
-                        !
-                        nelem = bset_contr(indF)%irr(igammaF)%N(irow)
-                        !
-                        dtemp0 = 0
-                        !
-                        isrootF = eigen(ilevelF)%icoeff
-                        !
-                        if (isrootF-iterm<1.or.isrootF-iterm>nelem) cycle
-                        !
-                        dtemp0 = vecF(isrootF)*bset_contr(indF)%irr(igammaF)%repres(isrootF,idegF,ib)
-                        !                        
-                        linestr_deg(idegI,idegF) = linestr_deg(idegI,idegF) + dtemp0*linestr
-                        !
-                     enddo
-                     !
-                   enddo
-                   !omp end parallel do  
-                   !
-                endif
+                !else 
+                !   !
+                !   !omp parallel do private(irootF,idegi,hf_ls,irow,ib,iterm,dtemp0,nelem,ielem,isrootF) shared(vec) schedule(static)
+                !   do irootF = 1,dimenF
+                !      !
+                !      do idegI = 1,ndegI
+                !        !
+                !        call degeneracy_filter(igammaI,igammaF,idegI,idegF,passed)
+                !        !
+                !        if (.not.passed) cycle
+                !        !
+                !        linestr = half_linestr(irootF,indF,idegI,1)
+                !        !
+                !        if (abs(linestr)<intensity%threshold%linestrength) cycle
+                !        !
+                !        irow = bset_contr(indF)%icontr2icase(irootF,1)
+                !        ib   = bset_contr(indF)%icontr2icase(irootF,2)
+                !        !
+                !        !icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
+                !        !
+                !        iterm = ijterm(indF)%kmat(irow,igammaF)
+                !        !
+                !        nelem = bset_contr(indF)%irr(igammaF)%N(irow)
+                !        !
+                !        dtemp0 = 0
+                !        !
+                !        isrootF = eigen(ilevelF)%icoeff
+                !        !
+                !        if (isrootF-iterm<1.or.isrootF-iterm>nelem) cycle
+                !        !
+                !        dtemp0 = vecF(isrootF)*bset_contr(indF)%irr(igammaF)%repres(isrootF,idegF,ib)
+                !        !                        
+                !        linestr_deg(idegI,idegF) = linestr_deg(idegI,idegF) + dtemp0*linestr
+                !        !
+                !     enddo
+                !     !
+                !   enddo
+                !   !omp end parallel do  
+                !   !
+                !endif
                 !
              end do Idegs_loop
              !
@@ -2293,13 +2258,13 @@ contains
              !
              !sum up all degenerate components
              !
-             linestr = sum( linestr_deg(1:ndegI,1:ndegF)**2 )/real(ndegI,rk)
+             linestr = sum( linestr_deg(1:ndegI,1:ndegF)**2 )
              !
-             ! swtich to a reduced C3v/D3h/Td case by commenting this line and undcommenting the next one
+             if (linestr<intensity%threshold%linestrength) cycle
              !
-             if (intensity%reduced.and.ndegF/=1.and.ndegI/=1) linestr  = linestr*real(ndegI,rk)
+             ! switch to a reduced C3v/D3h/Td case
              !
-             !linestr = sum( linestr_deg(1:ndegI,1:ndegF)**2 )
+             if (.not.intensity%reduced) linestr  = linestr/real(ndegI,rk)
              !
              ! calculate the intensity 
              !
@@ -2314,7 +2279,7 @@ contains
              !
              absorption_int = linestr * intens_cm_molecule * boltz_fc
              !
-             if (absorption_int>=intensity%threshold%intensity.and.linestr>=intensity%threshold%linestrength) then 
+             if (absorption_int>=intensity%threshold%intensity) then 
                 !
                 A_einst_cache(ilevelF) = A_einst
                 nu_if_cache(ilevelF) = nu_if
@@ -2337,7 +2302,7 @@ contains
                   !$omp end critical
                   !
                 endif
-              !
+                !
              endif
              !
            case('TM')
@@ -2529,11 +2494,11 @@ contains
            !
            jI = eigen(ilevelI_)%jval
            energyI = eigen(ilevelI_)%energy
-           igammaI  = eigen(ilevelI_)%igamma
-           quantaI(0:nmodes) = eigen(ilevelI_)%quanta(0:nmodes)
            normalI(0:nmodes) = eigen(ilevelI_)%normal(0:nmodes)
            !
            call energy_filter_lower(jI,energyI,normalI(0),passed)
+           !
+           igammaI  = eigen(ilevelI_)%igamma
            !
            if (.not.passed) cycle
            !
@@ -2542,7 +2507,6 @@ contains
               jF = eigen(ilevelF)%jval 
               energyF = eigen(ilevelF)%energy
               igammaF = eigen(ilevelF)%igamma        
-              quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes) 
               !
               call intens_filter(jI,jF,energyI,energyF,igammaI,igammaF,igamma_pair,passed)
               !
@@ -2656,7 +2620,7 @@ contains
       !
     endif 
     !
-    deallocate(vecI, vecPack, vec, icoeffI)
+    deallocate(vecI, vecPack, vec)
     call ArrayStop('intensity-vectors')
     !
     if (allocated(A_einst_cache)) then 
@@ -2673,10 +2637,8 @@ contains
       deallocate(icontrI_pack)
       deallocate(irlevelI_pack)
       deallocate(irdegI_pack)
+      deallocate(vec_mask)
       call ArrayStop('intensity-vectors-rotsym')
-      !      
-      deallocate(dipole_me_pack)
-      call ArrayStop('intensity-dipole-rotsym')
       !
     endif
     !
@@ -5977,75 +5939,6 @@ contains
       end subroutine do_1st_half_linestrength_rotsym_symmvec
       
       
-
-      !
-      ! symmilar procedure of evaluating the (left) half-transformation of the line strength 
-      ! in case the proper treatment of the rotational symmetrization is performed. 
-      ! this is the only way to treat Td(M) spectra. 
-      ! In this version, the lower state objects iroot_correlat_j0_I,ktau,k are parsed in the compacted form to safe time 
-    subroutine do_1st_half_linestrength_rotsym_symmvec_V(jI,jF,indI,indF,cdimenI,&
-                                      dipole_me_pack,ktau_I,k_I,&
-                                      half_ls)
-        !
-        implicit none 
-        integer(ik),intent(in)  :: jI,jF,indI,indF,cdimenI
-        !
-        real(rk),intent(in)     :: dipole_me_pack(:,:,:)
-        integer(ik),intent(in)  :: ktau_I(:)
-        integer(ik),intent(in)  :: k_I(:)
-        !
-        !real(rk),intent(in)     :: vector(:)
-        real(rk),intent(out)    :: half_ls(:)
-        integer(ik)             :: irootF, cirootI, icontrF, icontrI, & 
-                                   irlevelI, irlevelF, irdegI, irdegF, irootI,dJ, dimenI, dimenF
-        real(rk)                :: f_w(3),dip,f_t
-
-          !
-          !call TimerStart('do_1st_half_linestr')
-          !
-          dJ = jF-jI
-          !
-          dimenI = bset_contr(indI)%Maxcontracts
-          dimenF = bset_contr(indF)%Maxcontracts
-          !
-          !loop over final state basis components
-          !
-          !$omp parallel do private(irootF,icontrF,irlevelF,irdegF,f_t,cirootI,irlevelI,irdegI,f_w,dip) &
-          !$omp& shared(half_ls) schedule(static)
-          loop_F : do irootF = 1, dimenF
-               !
-               icontrF  = bset_contr(indF)%iroot_correlat_j0(irootF)
-               irlevelF = bset_contr(indF)%ktau(irootF)
-               irdegF   = bset_contr(indF)%k(irootF)
-               !
-               !loop over initial state basis components
-               !
-               f_t = 0
-               !
-               loop_I : do cirootI = 1, cdimenI
-                  !
-                  !icontrI  = iroot_correlat_j0_I(cirootI)
-                  irlevelI = ktau_I(cirootI)
-                  irdegI   = k_I(cirootI)
-                  !
-                  f_w(:) = wigner(indI,dJ)%rot(:,irlevelI,irlevelF,irdegI,irdegF)
-                  !
-                  dip = dipole_me(cirootI,icontrF,1)*f_w(1)+dipole_me(cirootI,icontrF,2)*f_w(2)+dipole_me(cirootI,icontrF,3)*f_w(3)
-                  !
-                  f_t = f_t + dip
-                  !
-               end do  loop_I
-               !
-               half_ls(irootF) = f_t
-               !
-            end do   loop_F
-            !$omp end parallel do
-            !
-            !call TimerStop('do_1st_half_linestr')
-            !
-      end subroutine do_1st_half_linestrength_rotsym_symmvec_V      
-
-
 
 
 

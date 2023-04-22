@@ -18370,7 +18370,7 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew, phivphi_t  - out of memory'
              end if
              !
-             !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
+             !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(static)
              do vl = 0,bs%Size
                 !
                 read (io_slot,rec=vl+1) (phil_leg(k),k=0,npoints),(dphil_leg(k),k=0,npoints)

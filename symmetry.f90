@@ -66,7 +66,7 @@ contains
   real(ark), dimension(6, 2, 2) :: E_rep_1, E_rep_2
   integer(ik), dimension(6) :: A2_char  
   integer(ik), dimension(6 , 6) :: pos_array
-  integer(ik) :: j,r,s,n_c2v
+  integer(ik) :: j,r,s,n_c2v,n_cs
   real :: log_n  
   integer(ik), dimension(144) :: tempG36  
   integer, dimension(2,2) :: z2_mat
@@ -224,6 +224,70 @@ contains
     sym%product_table_set = .true.
 
     call irr_allocation
+    !
+  case("CSN","CS(N)","CSN(M)")
+    !
+    sym_group = "CSN"
+    !
+    log_n = log(2.0_ark*( real(sym%N,ark)+1.0_ark ))/log(2.0_ark)
+    n_cs = ceiling(log_n)
+
+    sym%Nrepresen = 2**n_cs
+    sym%Noper = 2**n_cs
+    sym%Nclasses = 2**n_cs
+    sym%CII%Noper = 0
+
+    call simple_arrays_allocation
+
+    z2_mat = reshape( (/1, 1, &
+                        1,-1/),(/2,2/))
+
+
+    sym%characters(1:2,1:2) = z2_mat
+    do j = 2, n_cs
+      sym%characters(1:2**(j-1), 2**(j-1)+1:2**j)      = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,1)
+      sym%characters(2**(j-1)+1:2**j, 1:2**(j-1))      = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(1,2)
+      sym%characters(2**(j-1)+1:2**j, 2**(j-1)+1:2**j) = sym%characters(1:2**(j-1),1:2**(j-1))*z2_mat(2,2)
+    enddo
+
+    !do j=1, 2**n_c2v
+    !  do k=1, 2**n_c2v
+    !    !write(*,*) sym%characters(k,j)
+    !  enddo
+    !enddo
+    
+    do j=1, 2**n_cs
+      sym%degen(j) = 1
+      sym%Nelements(j) = 1
+      if(mod(j,2) == 1) then
+        sym_sub_label = 'e'
+      elseif(mod(j,2) == 0) then
+        sym_sub_label = 'f' 
+      endif
+      write(k_num,'(i5)') (j-1-mod(j-1,4))/4
+      sym_cur_label = trim(sym_sub_label)//trim(adjustl(k_num))
+      sym%label(j) =  sym_cur_label
+      !write(*,*) sym%label(j)
+    enddo
+    !
+    sym%label(1:2)=(/'A''','B"'/)
+    !
+    ! generators and the product table  
+    !
+    allocate(sym%product_table(sym%Noper,2),stat=alloc)
+    call ArrayStart('sym%product_table',alloc,size(sym%product_table),kind(sym%product_table))
+    !
+    sym%product_table(1:2,1:2) = reshape((/0,0, &
+                                           0,0/), (/2,2/))
+    !
+    do j = 1,2**(n_cs-2)-1
+      sym%product_table(2*j+1: 2*j+2,1:2) = reshape((/1,2, &
+                                                      1,1 /), (/2,2/))
+    enddo
+    !
+    sym%product_table_set = .true.
+
+    call irr_allocation    
     !
   case("C2H(M)","C2H")
 
