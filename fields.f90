@@ -3043,6 +3043,9 @@ module fields
                job%IOkinet_action = "SAVE"
                job%IOeigen_action = "SAVE"
                !
+               job%iswap(1) = 0
+               job%iswap(2) = 12
+               !
              case("2","CONVERT")
                !
                controlstep = "2"
@@ -3052,6 +3055,7 @@ module fields
                trove%IO_basisset  = "READ"
                job%IOcontr_action = "SAVE"
                !
+               job%IOj0matel_action = "SAVE"
                job%IOkinet_action = "CONVERT"
                action%convert_vibme = .true.
                job%IOeigen_action = "READ"

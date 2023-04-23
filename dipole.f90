@@ -1052,7 +1052,7 @@ contains
     integer(ik)    :: nJ,dimenmax
     integer(ik)    :: ilevelI, ilevelF, ndegI, ndegF, idegI, idegF, irec, idimen, nsizeF,nsizeI,ilevelI_
     integer(ik)    :: cdimenI,irep
-    integer(ik)    :: nmodes,info,indI,indF,itransit,Ntransit,jI,jF,Nrepresen,Ntransit_,ilevels_lower
+    integer(ik)    :: nmodes,info,indI,indF,itransit,jI,jF,Nrepresen,Ntransit_,ilevels_lower
     integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),&
                       normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
@@ -1084,7 +1084,7 @@ contains
     integer(ik)  :: iram_,Nterms,iterm,ielem,isrootF,isrootI,nelem,num_threads
     !
     integer(ik)  :: igamma_pair(sym%Nrepresen)
-    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_
+    integer(hik) :: matsize,ram_size_max,dimenmax_ram,dimenmax_ram_,Ntransit
     integer(ik), external :: omp_get_max_threads
     !
     !
@@ -1704,6 +1704,7 @@ contains
         !
         write(linelistname, '(a, 2i5)') 'trans for J=', intensity%J(1:2)
         call iostart(trim(linelistname), trans_unit)
+        write(out,"(/a,a,a,a)") 'The ExoMol Trans file is printed  into ',trim(intensity%linelist_file)
         !
       endif
       !
@@ -1714,6 +1715,7 @@ contains
     !
     if (job%verbose>=5) call MemoryReport
     !
+    if (.not.job%exomol_format) &
     write(out,"(/a,a,a,a)") 'Linestrength S(f<-i) [Debye**2],',' Transition moments [Debye],'& 
                           &,'Einstein coefficient A(if) [1/s],','and Intensities [cm/mol]'
     !
@@ -2636,7 +2638,7 @@ contains
     if ( job%exomol_format.and.trans_unit/=out ) then    
       !
       close(unit = trans_unit,status='keep')
-      call IOstop(trim(linelistname))
+      call IOstop(linelistname)
       !
     endif
     !
