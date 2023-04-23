@@ -1419,7 +1419,7 @@ contains
     if (job%verbose>=5) write(out,"('   Number of OMP threads is ',i)") num_threads
     !
     ! Account for the vectors alloacted for each thread vecF and vec_
-    memory_now_ = memory_now_ + num_threads*(nsizemax+dimenmax)
+    memory_now_ = memory_now_ + num_threads*(nsizemax+dimenmax)/1024.0_rk**3
     !
     ! Scale by some small factor just in case
     !
@@ -1430,7 +1430,7 @@ contains
     !
     if (job%verbose>=5) call MemoryReport
     !
-    if (job%verbose>=4) write(out,"(a,f12.5,a,f12.5,'Gb;  available = ',f12.5,a,i0/)") &
+    if (job%verbose>=4) write(out,"(a,f12.5,a,g12.5,'Gb;  available = ',g12.5,a,i0/)") &
     'Memory needed = ',f_t*real(nlevels,rk),'Gb;  spent = ',memory_now_,memory_limit-memory_now_,&
     'Gb; number of vectors to be kept in RAM =  ',ram_size_max
     !
