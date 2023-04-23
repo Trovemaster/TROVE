@@ -1416,7 +1416,7 @@ contains
     !
     num_threads = omp_get_max_threads()
     !
-    if (job%verbose>=5) write(out,"('   Number of OMP threads is ',i)") num_threads
+    if (job%verbose>=5) write(out,"('   Number of OMP threads is ',i5)") num_threads
     !
     ! Account for the vectors alloacted for each thread vecF and vec_
     memory_now_ = memory_now_ + num_threads*(nsizemax+dimenmax)/1024.0_rk**3
