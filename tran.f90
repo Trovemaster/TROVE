@@ -6,13 +6,13 @@ module tran
 ! set tran_debug > 2 with small vibrational bases and small expansions only
 !#define tran_debug  1 
 
- use accuracy,  only : ik, rk, hik, ark, cl, wl, out, small_
- use timer,     only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport,get_real_time
- use me_numer,  only : simpsonintegral_ark
- use molecules, only : MLcoord_direct
- use fields,    only : FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
- use moltype,   only : manifold,intensity,extF
- use symmetry,  only : sym
+ use accuracy,     only : ik, rk, hik, ark, cl, wl, out, small_
+ use timer,        only : IOstart,IOstop,arraystart,arraystop,arrayminus,Timerstart,Timerstop,TimerReport,MemoryReport
+ use me_numer,     only : simpsonintegral_ark
+ use molecules,    only : MLcoord_direct
+ use fields,       only : FLfingerprint, job,FLNmodes,FLextF_coeffs,FLread_extF_rank,FLextF_matelem,fitting
+ use moltype,      only : manifold,intensity,extF
+ use symmetry,     only : sym
 
  use perturbation, only : PTintcoeffsT,PTrotquantaT,PTNclasses,PTstore_icontr_cnu,PTeigenT,PTdefine_contr_from_eigenvect,PTrepresT
 
@@ -464,12 +464,12 @@ contains
     integer(ik)             :: jind, nmodes, nroots, ndeg, nlevels,  iroot, irec, igamma, ilevel, jlevel, &
                                ideg, ilarge_coef,k0,tau0,nclasses,nsize,nsize_base,id_,j_,   &
                                iounit, jounit, info, quanta(0:FLNmodes), iline, nroots_t, nu(0:FLNmodes),&
-                               normal(0:FLNmodes),Npolyad_t,ll_unit
+                               normal(0:FLNmodes),Npolyad_t
     integer(ik),allocatable :: ktau_rot(:,:),isym(:),cnu(:)
     !
     real(rk)                :: energy,energy_t,largest_coeff
     !
-    character(cl)           :: filename, ioname, buf,linelistname
+    character(cl)           :: filename, ioname, buf
     character(4)            :: jchar,gchar
     character(500)          :: buf500
     character(3)            :: grep   ! for a string to indicate specific type of output to be grepped from 
@@ -478,8 +478,6 @@ contains
     logical                 :: normalmode_input = .false.,largest_coeff_input = .false.
     integer(ik)             :: jind_t,maxdeg,gamma,jval_,irec_, igamma_, ilevel_
     real(rk)                :: energy_, state_intensity
-    real(rk)                :: timenow
-    character(len=wl)       :: char_timenow
     !
     type(PTeigenT)          :: eigen_t   ! temporal object used for sorting 'eigen'
     character(len=wl)       :: my_fmt !format for I/O specification
@@ -717,27 +715,8 @@ contains
       !
     enddo
     !
-    if (job%exomol_format) then    
-      !
-      write(linelistname, '(a, 2i5)') 'states for J=', intensity%J(1:2)
-      call iostart(trim(linelistname), ll_unit)
-      !
-      filename = trim(intensity%linelist_file)//'.states'
-      open(unit = ll_unit, action = 'write',status='new',file = filename,err=21)
-      !
-      if (.false.) then 
-        !
-        21 continue
-        ! use time as a random number to create a unique name
-        timenow = get_real_time()
-        write(char_timenow,'(f16.2)') timenow
-        filename = trim(intensity%linelist_file)//'.states.'//trim(adjustl(char_timenow))
-        open(unit = ll_unit, action = 'write',status='new',file = filename)
-        !
-      endif
-      !
-      !write(ll_unit,"(/a/)") 'States file in the Exomol format'
-      !
+    if (job%exomol_format) then
+      write(out,"(/a/)") 'States file in the Exomol format'
     endif
     !
     ! Now we can actually read and store the energies and their description. 
@@ -857,7 +836,7 @@ contains
                              "(i12,1x,f12.6,1x,i6,1x,i7,2x,a3,2x,",nmodes,"i3,1x",&
                              nclasses,"(1x,a3),2i4,1x,a3,2x,f5.2,a3,1x,i9,1x",nmodes,"i3,",nclasses,"i9)"
                !
-               write(ll_unit,my_fmt) & 
+               write(out,my_fmt) & 
                ID_,energy-intensity%ZPE,int(intensity%gns(gamma),4)*(2*J_+1),J_,sym%label(gamma),&
                quanta(1:nmodes),sym%label(isym(1:nclasses)),&
                ktau_rot(quanta(0),1),ktau_rot(quanta(0),2),sym%label(isym(0)),&
@@ -988,13 +967,6 @@ contains
         !
       enddo
     enddo
-    !
-    if (job%exomol_format) then    
-      !
-      close(unit = ll_unit,status='keep')
-      call IOstop(trim(linelistname))
-      !
-    endif
     !
     deallocate(ktau_rot,isym,cnu) 
     !
