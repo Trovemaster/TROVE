@@ -3855,6 +3855,10 @@ module fields
              !
              call reada (intensity%linelist_file)
              !
+           case('STATES-ONLY','STATES_ONLY')
+             !
+             intensity%states_only = .true.
+             !
            case('GAIN')
              !
              job%gain_format = .true.

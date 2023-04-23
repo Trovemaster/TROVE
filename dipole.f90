@@ -116,6 +116,16 @@ contains
            stop 'dm_tranint: read_eigenval error, some eigenfiles are missing'
        endif 
        !
+       if (intensity%states_only) then 
+            write(out,"(/'--- The transition intensities are not requested (states_only option). ---')") 
+            call MemoryReport
+            !
+            call TimerReport
+            !
+            write(out, '(/a)') 'done'
+            return 
+       endif 
+       !
        !restore vibrational contracted matrix elements
        !for all  dipole moment vector components
        !
@@ -134,8 +144,6 @@ contains
        else
           call dm_intensity(Jval)
        endif
-       !
-       continue 
        !
        write(out, '(/a)') 'done'
        !
@@ -1081,11 +1089,11 @@ contains
     !
     !
     character(len=1) :: branch
-    character(len=wl) :: my_fmt,my_fmt_tm,my_fmt1
+    character(len=wl) :: my_fmt,my_fmt_tm,my_fmt1,my_fmt_trans
     !
-    character(cl)           :: filename, ioname
+    character(cl)           :: filename, ioname,linelistname
     character(4)            :: jchar,gchar
-    integer(ik)             :: iounit
+    integer(ik)             :: iounit,trans_unit
     !
     real(rk)     :: ddot,boltz_fc,beta,intens_cm_mol,A_coef_s_1,A_einst,absorption_int,dtemp0,dmu(3),&
                     intens_cm_molecule
@@ -1689,6 +1697,15 @@ contains
          iID(ilevelI) = ID_I
          !
       enddo
+      !
+      trans_unit = out
+      !
+      if (intensity%linelist_file/="NONE") then 
+        !
+        write(linelistname, '(a, 2i5)') 'trans for J=', intensity%J(1:2)
+        call iostart(trim(linelistname), trans_unit)
+        !
+      endif
       !
     endif
     !
@@ -2417,33 +2434,36 @@ contains
       deallocate(vecF,vec_)    
       !$omp end parallel
       !
-      if (intensity%output_short) then 
+      if (intensity%output_short) then
         !
-        do ilevelF = 1,nlevels
+        if (trans_unit==out) then 
+          my_fmt_trans = "(i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')"
+        else
+          my_fmt_trans = "(i12,1x,i12,1x,1x,es16.8,1x,f16.6)"
+        endif
+        !
+        if (job%exomol_format) then
           !
-          nu_if = nu_if_cache(ilevelF) 
-          A_einst = A_einst_cache(ilevelF)
-          !
-          if (A_einst_cache(ilevelF)>small_) then 
+          do ilevelF = 1,nlevels
             !
-            if (job%exomol_format) then
-              !
-              write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
-                           iID(ilevelF),iID(ilevelI),A_einst,nu_if 
-                           !
-            elseif (job%gain_format) then 
-              !
-              jF = eigen(ilevelF)%jval
-              energyF = eigen(ilevelF)%energy
-              igammaF  = eigen(ilevelF)%igamma
-              !
-              write(out, "( f12.6,1x,i8,1x,i4,1x,i4,' <- ',i8,1x,i4,1x,i4,&
-                           &1x,es16.9,2x,'||')") &
-                           !
-                           nu_if,eigen(ilevelF)%ilevel,jF,igammaF,&
-                                 eigen(ilevelI)%ilevel,jI,igammaI,A_einst
-                           !
-            else 
+            nu_if = nu_if_cache(ilevelF) 
+            A_einst = A_einst_cache(ilevelF)
+            !
+            if (A_einst_cache(ilevelF)>small_) then 
+                !
+                write(trans_unit,my_fmt_trans)&
+                             iID(ilevelF),iID(ilevelI),A_einst,nu_if 
+            endif
+          enddo
+          !
+        elseif (job%gain_format) then 
+          !
+          do ilevelF = 1,nlevels
+            !
+            nu_if = nu_if_cache(ilevelF) 
+            A_einst = A_einst_cache(ilevelF)
+            !
+            if (A_einst_cache(ilevelF)>small_) then
               !
               jF = eigen(ilevelF)%jval
               energyF = eigen(ilevelF)%energy
@@ -2458,12 +2478,32 @@ contains
                            A_einst,&
                            eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
                            !
-       
             endif
-            !             
-          endif
+          enddo
+          !        
+        else
           !
-        enddo
+          do ilevelF = 1,nlevels
+            !
+            nu_if = nu_if_cache(ilevelF) 
+            A_einst = A_einst_cache(ilevelF)
+            !
+            if (A_einst_cache(ilevelF)>small_) then 
+              !
+              jF = eigen(ilevelF)%jval
+              energyF = eigen(ilevelF)%energy
+              igammaF  = eigen(ilevelF)%igamma
+              !
+              write(out, "( f12.6,1x,i8,1x,i4,1x,i4,' <- ',i8,1x,i4,1x,i4,&
+                           &1x,es16.9,2x,'||')") &
+                           !
+                           nu_if,eigen(ilevelF)%ilevel,jF,igammaF,&
+                                 eigen(ilevelI)%ilevel,jI,igammaI,A_einst
+                           !
+            endif
+          enddo
+          !
+        endif
         !
       endif
       !
@@ -2592,6 +2632,13 @@ contains
                         max(1,intensity%istate_count(1)),min(nlevelI_,intensity%istate_count(2)),nlevelI
     !
     call TimerStop('Intensity loop')
+    !
+    if ( job%exomol_format.and.trans_unit/=out ) then    
+      !
+      close(unit = trans_unit,status='keep')
+      call IOstop(trim(linelistname))
+      !
+    endif
     !
     ! write out the list of states with maximal intensities
     !

@@ -278,6 +278,7 @@ module moltype
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
      logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
      character(cl)    :: linelist_file="NONE"   ! filename for the line list (filename.states and filename.trans)
+     logical          :: states_only = .false.  ! Only .states file is generated while .trans is skipped. Equivalent to setting negative freq-window 
      !
      ! variables used in extfield module
      integer(ik)   :: tens_rank = 1
