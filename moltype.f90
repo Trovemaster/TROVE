@@ -255,7 +255,7 @@ module moltype
      real(rk)            :: freq_window(1:2) ! frequency window (1/cm)
      real(rk)            :: erange_low(1:2)  ! energy range for the lower state
      real(rk)            :: erange_upp(1:2)  ! energy range for the upper state
-     integer(ik)         :: J(1:2)           ! range of J-values, from..to; in order to avoid double counting of transitions
+     integer(ik)         :: J(1:2)=0         ! range of J-values, from..to; in order to avoid double counting of transitions
                                              ! in the calculations it is always assumed that 
                                              ! J1<=J_lower<=J2 and J1<=J_upper<J2;
                                              !
@@ -277,6 +277,7 @@ module moltype
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
      logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
+     character(cl)    :: linelist_file="NONE"   ! filename for the line list (filename.states and filename.trans)
      !
      ! variables used in extfield module
      integer(ik)   :: tens_rank = 1

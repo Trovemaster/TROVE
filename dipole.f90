@@ -1083,9 +1083,9 @@ contains
     character(len=1) :: branch
     character(len=wl) :: my_fmt,my_fmt_tm,my_fmt1
     !
-    character(cl)           :: filename, ioname
+    character(cl)           :: filename, ioname,linelistname
     character(4)            :: jchar,gchar
-    integer(ik)             :: iounit
+    integer(ik)             :: iounit,ll_unit
     !
     real(rk)     :: ddot,boltz_fc,beta,intens_cm_mol,A_coef_s_1,A_einst,absorption_int,dtemp0,dmu(3),&
                     intens_cm_molecule
@@ -1689,6 +1689,11 @@ contains
          iID(ilevelI) = ID_I
          !
       enddo
+      !
+      write(linelistname, '(a, 2i5)') 'trans for J=', intensity%J(1:2)
+      call iostart(trim(linelistname), ll_unit)
+      open(unit = ll_unit, action = 'write',status='replace',file = trim(intensity%linelist_file)//'.trans')
+      !write(ll_unit,"(/a/)") 'States file in the Exomol format'
       !
     endif
     !
@@ -2428,7 +2433,10 @@ contains
             !
             if (job%exomol_format) then
               !
-              write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
+              !write(out, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6,' ||')")&
+              !             iID(ilevelF),iID(ilevelI),A_einst,nu_if 
+              !             !
+              write(ll_unit, "( i12,1x,i12,1x,1x,es16.8,1x,f16.6)")&
                            iID(ilevelF),iID(ilevelI),A_einst,nu_if 
                            !
             elseif (job%gain_format) then 
@@ -2574,9 +2582,13 @@ contains
       time_per_ilevel = real_time/real(max(ilevels_lower,1),rk)
       !
       if (real_time+time_per_ilevel*4.0>=intensity%wallclock*3600.0 ) then 
-          if (job%verbose>=3) write(out,"(/a,i8,a,i8,a,i18,a,i8,' states, last energy = ',f16.6)") &
+          if (job%verbose>=3) then 
+               write(out,"(/a,i8,a,i,a,i18,a,i8,' states;')") &
                                     '   ... [wall-clock stop]: last lower-state ',&
-                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower,energyI-intensity%ZPE
+                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower,&
+                                    energyI-intensity%ZPE
+               write(out,"('   ... last energy = ',f16.6)") energyI-intensity%ZPE
+          endif 
           exit Ilevels_loop
       endif
       !
@@ -2588,6 +2600,13 @@ contains
                         max(1,intensity%istate_count(1)),min(nlevelI_,intensity%istate_count(2)),nlevelI
     !
     call TimerStop('Intensity loop')
+    !
+    if (job%exomol_format) then    
+      !
+      close(unit = ll_unit,status='keep')
+      call IOstop(trim(linelistname))
+      !
+    endif
     !
     ! write out the list of states with maximal intensities
     !

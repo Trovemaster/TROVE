@@ -382,27 +382,27 @@ module plasma
    end function get_cpu_time
 
 
-  function get_real_time() result(t)
-    real(rk) :: t
-    !
-    integer         :: count, count_rate, count_max
-    real(rk), save :: overflow   =  0
-    integer, save   :: last_count = -1
-    !
-    call system_clock(count,count_rate,count_max)
-    !
-    ! Try to detect a rollover
-    !
-    if (count<last_count) then
-      overflow = overflow + count_max
-    end if
-    last_count = count
-    !
-    ! Convert to seconds
-    !
-    t = (overflow+count)/count_rate
-    !
-  end function get_real_time
+  !function get_real_time() result(t)
+  !  real(rk) :: t
+  !  !
+  !  integer         :: count, count_rate, count_max
+  !  real(rk), save :: overflow   =  0
+  !  integer, save   :: last_count = -1
+  !  !
+  !  call system_clock(count,count_rate,count_max)
+  !  !
+  !  ! Try to detect a rollover
+  !  !
+  !  if (count<last_count) then
+  !    overflow = overflow + count_max
+  !  end if
+  !  last_count = count
+  !  !
+  !  ! Convert to seconds
+  !  !
+  !  t = (overflow+count)/count_rate
+  !  !
+  !end function get_real_time
 
 
 end module plasma

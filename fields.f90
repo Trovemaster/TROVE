@@ -664,7 +664,7 @@ module fields
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
    logical :: kinetic_defined
-   character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type
+   character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w
    real(rk)    :: lfact,f_t, func_coef
    integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
@@ -1971,12 +1971,16 @@ module fields
                 if (job%bset(imode)%dvrpoints==0) job%bset(imode)%dvrpoints = job%bset(imode)%range(2)+1
                 !
               case("JROT")
-                call readi(Jrot)
                 !
                 ! we use range(1) to store the Jrot value 
                 !
+                call readi(i_t)
+                !
+                if (Jrot==0) then 
+                  Jrot = i_t
+                endif
+                !
                 job%bset(imode)%range(1) = Jrot
-                !job%bset(imode)%range(2) = 2*Jrot
                 !
               case("KROT","K")
                 !
@@ -3002,6 +3006,11 @@ module fields
          !
        case("CONTROL")
          !
+         trove%separate_store = .true.
+         job%IOmatelem_split  = .true.
+         !
+         job%vib_contract = .true.
+         !
          call readu(w)
          !
          call read_line(eof) ; if (eof) exit
@@ -3012,18 +3021,157 @@ module fields
          do while (trim(w)/="".and.trim(w)/="END")
            !
            select case(w)
-           !
+             !
+           case('STEP','CASE')
+             !
+             call readu(controlstep)
+             ! 
+             select case(controlstep)
+               !
+             case("1","J=0")
+               !
+               controlstep = "1"
+               !
+               ! only 1st step does not use J=0 representation
+               job%vib_contract = .false.
+               !
+               trove%IO_kinetic   = "SAVE"
+               trove%IO_potential = "SAVE"
+               trove%IO_basisset  = "SAVE"
+               trove%IO_primitive = "SAVE"
+               job%IOcontr_action = "SAVE"
+               job%IOkinet_action = "SAVE"
+               job%IOeigen_action = "SAVE"
+               !
+             case("2","CONVERT")
+               !
+               controlstep = "2"
+               !
+               trove%IO_kinetic   = "READ"
+               trove%IO_potential = "READ"
+               trove%IO_basisset  = "READ"
+               job%IOcontr_action = "SAVE"
+               !
+               job%IOkinet_action = "CONVERT"
+               action%convert_vibme = .true.
+               job%IOeigen_action = "READ"
+               job%IOj0contr_action = "SAVE"
+               !
+             case("3","ENERGIES","EIGENFUNCTIONS","EIGENSOLUTION")
+               !
+               controlstep = "3"
+               !
+               job%IOj0matel_action = "READ"
+               !
+               trove%IO_kinetic   = "READ"
+               trove%IO_potential = "READ"
+               trove%IO_basisset  = "READ"
+               job%IOcontr_action = "READ"
+               !
+               job%IOkinet_action = "READ"
+               job%IOeigen_action = "SAVE"
+               !
+             case("4","INTENSITY","INTENSITIES")
+               !
+               controlstep = "4"
+               !
+               trove%IO_kinetic   = "READ"
+               trove%IO_potential = "READ"
+               trove%IO_basisset  = "READ"
+               job%IOcontr_action = "READ"
+               !
+               job%IOkinet_action = "READ"
+               job%IOeigen_action = "SAVE"
+               !
+               trove%IO_ext_coeff = "READ"
+               job%IOextF_action  = "READ"
+               !
+               FLextF_coeffs = .true.
+               FLextF_matelem = .true.
+               !
+             case("5","FITPOT")
+               !
+               controlstep = "5"
+               !
+               trove%IO_kinetic   = "READ"
+               trove%IO_potential = "READ"
+               trove%IO_basisset  = "READ"
+               job%IOcontr_action = "READ"
+               !
+               job%IOkinet_action = "READ"
+               job%IOeigen_action = "READ"
+               !
+               trove%IO_ext_coeff = "READ"
+               job%IOextF_action  = "READ"
+               job%IOj0ext_action = "READ"
+               !
+               FLextF_coeffs = .true.
+               FLextF_matelem = .true.
+               !
+               job%IOfitpot_action = "SAVE"
+               !
+             case("6","FITTING","REFINEMENT")
+               !
+               controlstep = "6"
+               !
+               trove%IO_kinetic   = "READ"
+               trove%IO_potential = "READ"
+               trove%IO_basisset  = "READ"
+               job%IOcontr_action = "READ"
+               !
+               job%IOkinet_action = "READ"
+               job%IOeigen_action = "READ"
+               !
+               trove%IO_ext_coeff = "READ"
+               job%IOextF_action  = "READ"
+               job%IOj0ext_action = "READ"
+               !
+               job%IOfitpot_action = "READ"
+               !
+             end select
+               !
            case('HAMILTONIAN')
              !
              call readu(w)
              !
            case('EXTERNAL','DIPOLE')
-             !
-             call readu(w)
+             ! 
+             select case(controlstep)
+               !
+             case("1")
+               !
+               trove%IO_ext_coeff = "SAVE"
+               job%IOextF_action  = "SAVE"
+               !
+               FLextF_coeffs = .true.
+               FLextF_matelem = .true.
+               !
+             case("2")
+               !
+               trove%IO_ext_coeff = "READ"
+               job%IOextF_action  = "CONVERT"
+               !
+               job%IOj0ext_action = 'SAVE'
+               !
+               FLextF_coeffs = .true.
+               FLextF_matelem = .true.
+               !
+             end select
              !
            case('JROT','J')
              !
-             call readi(Jrot)
+             select case(controlstep)
+               !
+             case("3")
+               !
+               call readi(Jrot)
+               !
+             case("4")
+               !
+               call readi(intensity%j(1))
+               call readi(intensity%j(2))
+               !
+             end select
              !
            case default
              !
@@ -3644,7 +3792,6 @@ module fields
          intensity%v_upp(:,1) = 0 ; intensity%v_upp(:,2) = job%bset(1:)%range(2)
          intensity%istate_count(1) = 1 ; intensity%istate_count(2) = huge(1)
          !
-         !
          call read_line(eof) ; if (eof) exit
          call readu(w)
          !
@@ -3664,7 +3811,7 @@ module fields
                !
                action%intensity = .true.
                intensity%do = .true.
-                 !
+               !
                job%IOextF_action = 'READ'
                !
                if (job%vib_contract) then 
@@ -3703,6 +3850,10 @@ module fields
              !
              job%exomol_format = .true.
              intensity%output_short = .true.
+             !
+           case('LINELIST')
+             !
+             call reada (intensity%linelist_file)
              !
            case('GAIN')
              !
@@ -3828,9 +3979,11 @@ module fields
              call readf(intensity%wallclock)
              !
            case('J')
-             !
-             call readi(intensity%j(1))
-             call readi(intensity%j(2))
+             ! read only if it has not been defined before int he control block 
+             if (intensity%j(1)==0.and.intensity%j(2)==0) then 
+               call readi(intensity%j(1))
+               call readi(intensity%j(2))
+             endif
              !
            case('FREQ-WINDOW','FREQ','NU','FREQUENCY')
              !

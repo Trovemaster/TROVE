@@ -23,7 +23,7 @@ module timer
   private
   public TimerStart, TimerStop, TimerReport, TimerProbe, IOStart, IOStop , ArrayStart, ArrayStop, ArrayMinus, MemoryReport
   public memory_limit,maxmemory,memory_now
-  public to_upper, to_lower, tokenize
+  public to_upper, to_lower, tokenize, get_real_time
   !
   integer, parameter :: trk        = selected_real_kind(12)
   integer, parameter :: table_size = 10000 ! Max number of entries to track
