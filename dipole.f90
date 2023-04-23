@@ -2617,7 +2617,7 @@ contains
       !
       if (real_time+time_per_ilevel*4.0>=intensity%wallclock*3600.0 ) then 
           if (job%verbose>=3) then 
-               write(out,"(/a,i8,a,i,a,i18,a,i8,' states;')") &
+               write(out,"(/a,i8,a,i16,a,i16,a,i8,' states;')") &
                                     '   ... [wall-clock stop]: last lower-state ',&
                                     nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower,&
                                     energyI-intensity%ZPE
