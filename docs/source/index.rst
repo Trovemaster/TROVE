@@ -7,7 +7,7 @@ Welcome to TROVE's documentation!
    :caption: Contents:
 
    quickstart.rst
-
+   theory.rst
 
 News
 ====
