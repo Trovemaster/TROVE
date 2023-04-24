@@ -542,8 +542,7 @@ The basis set checkpoint files are usually generated next. In the Checkpoint blo
      basis_set   save
      CONTRACT    save
      
-The `basis_set` keyword generates the file `prim_bset.chk` and, if a Numerov basis is selected,
- `numerov_bset.chk`. 
+The `basis_set` keyword generates the file `prim_bset.chk` and, if a Numerov basis is selected, `numerov_bset.chk`. 
 `CONTRACT` generates the file `contr_vectors.chk` which contains the contracted basis functions. 
 This also generates the file `contr_matelem.chk` which contains 
 vibrational matrix elements of the Hamiltonian in the contracted basis representation.
@@ -554,7 +553,7 @@ the contracted basis functions and of the energies corresponding to the contract
 It is also possible instead to use the `Hamiltonian` keyword. If this is set to save then the kinetic and potential expansion and primitive basis set will be generated.
 
 At this stage, TROVE will calculate and output the vibrational energies. The eigenfunctions for each vibrational state are saved using
-::
+:
      
      EIGENFUNC   save
      
@@ -577,7 +576,8 @@ use of the `J=0 representation`. This is where the vibrational eigenfunctions fo
 are used as a basis set for J:math:`>0` calculations.\cite{jt466} This usually leads to much faster
 calculations of excited rotational states. 
 To use this method put `model j=0` anywhere in the Contraction block and in the Checkpoint block put
-::
+:
+     
      CONTRACT    save
      matelem     convert
      extmatelem  convert
@@ -589,14 +589,14 @@ be run setting `CONTRACT` and `matelem` to read and `EIGENFUNC` save. This will 
 files for the :math:`J=0` eigenfunctions but saved in the J=0 representation. 
 
 Once these files have been generated it is then straightforward to carry out calculations for :math:`J>0`. In the Basis block change
-::
+:
      
-     0,'JKtau', Jrot 0 
+     0,JKtau, Jrot 0 
      
 to 
-::
+:
      
-     0,'JKtau', Jrot 1
+     0,JKtau, Jrot 1
      
 (or whatever J of interest). 
 The `model j=0` keyword should be left in the Contraction block. In the Diagonalizer block the keyword ZPE should 
@@ -623,159 +623,155 @@ Although TROVE can calculate intensities, the GPU program GAIN can do this far f
 The use of the program will be described in Chapter \ref{chap:linelists} but the input is the same as described above. 
 
 
-\section{Sample TROVE Input File}
+Sample TROVE Input File
+-----------------------
 
 Below is a sample TROVE input file for the molecule PF:math:`_3`. Using this file (and adding in Intensity blocks when needed)
 a full line list for this molecule could be produced. To save space the PES and DMS parameters have not been included
 in full. The actual text file should be kept in the same directory as this manual.
-
-::
-
-mem 20 gb
-
-
-KinOrder  6 (Max order in the kinetic energy expansion)
-PotOrder  8 (Max order in the potential energy expansion)
-
-
-Natoms 4    (Number of atoms)
-Nmodes 6    (Number of modes = 3*Natoms-6)
-
-
-(ACTIVE SPACE CUTOFFS:)
-
-PRIMITIVES
-  Npolyads         14   (how many polyads we calculate)
-  enercut        100000.(energy cut in the primitive matrix for the diagonalization)
-END
-
-CONTRACTION
-  Npolyads         14    (how many polyads in the contracted represent.)
-  enercut       100000.  (energy cut in the primitive matrix for the diagonalization)
-  degeneracy    1e-3     (threshold to define degeneracy)
-  sample_points  40
-  sample_attempts 500
-  symm_toler      1e-3
-  coeff_thresh    1e-16
-  fast_ci
-  exp_coeff_thresh   1.0d-8
-END
-
-
-verbose 3
-
-
-DIAGONALIZER
- SYEV
-end
-
-
-dstep 0.01    (finite difference element for each mode )
-TRANSFORM  r-alpha
-MOLTYPE    XY3
-MOLECULE   PF3
-COORDS     linear
-REFER-CONF RIGID  (Reference configuarion: RIGID or NON-RIGID)
-
-
-SYMGROUP C3v(M)
-
-
-ZMAT
-    P   0  0  0  0   30.973761998
-    F   1  0  0  0   18.998403162
-    F   1  2  0  0   18.998403162
-    F   1  2  3  0   18.998403162
-end
-
-CHECK_POINT
-HAMILTONIAN none
-kinetic     save
-potential   save
-external    none
-basis_set   save
-CONTRACT    save
-contr-ci    save
-EIGENFUNC   none
-matelem     save 
-extmatelem  none
-END
-
-
-
-
-BASIS
-  0,'JKtau', Jrot 0
-  1,'numerov','linear','morse',range 0,7,resc 2.0,points 2000, borders -0.4,2.0
-  1,'numerov','linear','morse',range 0,7,resc 2.0, points 2000, borders -0.4,2.0
-  1,'numerov','linear','morse',range 0,7, resc 2.0, points 2000, borders -0.4,2.0
-  2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
-  2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
-  2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
-END
-
-EQUILIBRIUM
-Re          0       1.56
-Re          0       1.56
-Re          0       1.56
-alphae      0     98.000 deg
-alphae      0     98.000 deg
-alphae      0     98.000 deg
-end
-
-
-
-SPECPARAM
-beta        0        1.00000
-beta        0        1.00000
-beta        0        1.00000
-END
-
-POTEN
-NPARAM   304
-POT_TYPE  poten_xy3_morbid_10
-COEFF  list  (powers or list)
-VE                      0                   0.000000000000
-FA1                     1               -5730.010012350451
-FA2                     1             1091683.728331340943
-FA3                     1            -1947258.254744407022
-FA4                     1            18286059.212070591748
-FA5                     1          -105327110.803434416652
-.
-.
-.
-.
-end
-        
-
-DIPOLE
-rank 3
-NPARAM  127 0 0
-DMS_TYPE  XY3_MB
-COEFF   list
-dstep   0.005
-COORDS  linear
-Order   6
-parameters
- charge                  0                  0.0
- order                   0                  4.0
- alphae                  0                  98.000000000000
- re14                    0                   1.560000000000
- beta                    0                   1.000000000000
- gamma                   0                   0.000000000000
- delta                   0                   0.000000000000
- mu0                     1                  -0.177517341983
- F1                      1                  -2.287669265640
- F3                      1                   0.432166856494
- F4                      1                  -0.037093470208
- F5                      1                  -0.761988732763
- .
- .
- .
- .
-
-
+:
      
+     mem 20 gb
+      
+      
+     KinOrder  6 (Max order in the kinetic energy expansion)
+     PotOrder  8 (Max order in the potential energy expansion)
+     
+     
+     Natoms 4    (Number of atoms)
+     Nmodes 6    (Number of modes = 3*Natoms-6)
+    
+    
+    (ACTIVE SPACE CUTOFFS:)
+    
+    PRIMITIVES
+      Npolyads         14   (how many polyads we calculate)
+      enercut        100000.(energy cut in the primitive matrix for the diagonalization)
+    END
+    
+    CONTRACTION
+      Npolyads         14    (how many polyads in the contracted represent.)
+      enercut       100000.  (energy cut in the primitive matrix for the diagonalization)
+      degeneracy    1e-3     (threshold to define degeneracy)
+      sample_points  40
+      sample_attempts 500
+      symm_toler      1e-3
+      coeff_thresh    1e-16
+      exp_coeff_thresh   1.0d-8
+    END
+    
+    
+    verbose 3
+    
+    DIAGONALIZER
+     SYEV
+    end
+    
+    
+    dste    p 0.01    (finite difference element for each mode )
+    TRANSFORM  r-alpha
+    MOLTYPE    XY3
+    MOLECULE   PF3
+    COORDS     linear
+    REFER-CONF RIGID  (Reference configuarion: RIGID or NON-RIGID)
+    
+    
+    SYMGROUP C3v(M)
+    
+    
+    ZMAT
+        P   0  0  0  0   30.973761998
+        F   1  0  0  0   18.998403162
+        F   1  2  0  0   18.998403162
+        F   1  2  3  0   18.998403162
+    end
+    
+    CHECK_POINT
+    ascii
+    kinetic     save
+    potential   save
+    external    none
+    basis_set   save
+    CONTRACT    save
+    contr-ci    save
+    EIGENFUNC   none
+    matelem     save 
+    extmatelem  none
+    END
+    
+    
+    BASIS
+      0,'JKtau', Jrot 0
+      1,'numerov','linear','morse',range 0,7,resc 2.0,points 2000, borders -0.4,2.0
+      1,'numerov','linear','morse',range 0,7,resc 2.0, points 2000, borders -0.4,2.0
+      1,'numerov','linear','morse',range 0,7, resc 2.0, points 2000, borders -0.4,2.0
+      2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
+      2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
+      2,'numerov','linear','linear',range 0,14,resc 1.0, points 2000, borders -1.3,1.3
+    END
+    
+    EQUILIBRIUM
+    Re          0       1.56
+    Re          0       1.56
+    Re          0       1.56
+    alphae      0     98.000 deg
+    alphae      0     98.000 deg
+    alphae      0     98.000 deg
+    end
+    
+    
+    
+    SPECPARAM
+    beta        0        1.00000
+    beta        0        1.00000
+    beta        0        1.00000
+    END
+    
+    POTEN
+    NPARAM   304
+    POT_TYPE  poten_xy3_morbid_10
+    COEFF  list  (powers or list)
+    VE                      0                   0.000000000000
+    FA1                     1               -5730.010012350451
+    FA2                     1             1091683.728331340943
+    FA3                     1            -1947258.254744407022
+    FA4                     1            18286059.212070591748
+    FA5                     1          -105327110.803434416652
+    .
+    .
+    .
+    .
+    end
+            
+    
+    DIPOLE
+    rank 3
+    NPARAM  127 0 0
+    DMS_TYPE  XY3_MB
+    COEFF   list
+    dstep   0.005
+    COORDS  linear
+    Order   6
+    parameters
+     charge                  0                  0.0
+     order                   0                  4.0
+     alphae                  0                  98.000000000000
+     re14                    0                   1.560000000000
+     beta                    0                   1.000000000000
+     gamma                   0                   0.000000000000
+     delta                   0                   0.000000000000
+     mu0                     1                  -0.177517341983
+     F1                      1                  -2.287669265640
+     F3                      1                   0.432166856494
+     F4                      1                  -0.037093470208
+     F5                      1                  -0.761988732763
+     .
+     .
+     .
+     .
+     .     
+     end
+    
 
 
 
