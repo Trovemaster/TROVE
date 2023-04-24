@@ -87,7 +87,7 @@ The polyad number and maximum energy for the primitive basis functions are set i
      
 As discussed in more detail in later chapters, TROVE uses products of primitive one-dimensional functions as basis functions. 
 The polyad number, :math:`P`, is a way to restrict the size of the basis set.\cite{TROVE} 
-The sum of the primitive function's vibrational quantum number, :math:`v_i', is then restricted to be below `n`, that is:
+The sum of the primitive function's vibrational quantum number, :math:`v_i`, is then restricted to be below `n`, that is:
 \begin{equation}
 \label{eq.polyad}
 P = \sum_i a_i v_i \le n.
@@ -320,9 +320,9 @@ which generates the `contr_extfield.chk` file.
 If the eigenfunction of the calculation are required (for example for transition moment calculations) 
 then the `EIGENFUNC` keyword should be set to save. 
 This generates `eigen_vectors[J].chk` files and human readable `eigen_descr[J].chk` files, where J is the rotational
-quantum number. The eigenfunctions are used to for generating basis functions for J:math:`>`0 calculations as discussed below. 
+quantum number. The eigenfunctions are used to for generating basis functions for :math:`J>0` calculations as discussed below. 
 
-A description of how these files are used for J:math:`>`0 calculations is given below.
+A description of how these files are used for :math:`J>0` calculations is given below.
 
 
 Equilibrium Block
@@ -552,7 +552,7 @@ the contracted basis functions and of the energies corresponding to the contract
 It is also possible instead to use the `Hamiltonian` keyword. If this is set to save then the kinetic and potential expansion and primitive basis set will be generated.
 
 At this stage, TROVE will calculate and output the vibrational energies. The eigenfunctions for each vibrational state are saved using
-:
+::
      
      EIGENFUNC   save
      
@@ -575,7 +575,7 @@ use of the `J=0 representation`. This is where the vibrational eigenfunctions fo
 are used as a basis set for J:math:`>0` calculations.\cite{jt466} This usually leads to much faster
 calculations of excited rotational states. 
 To use this method put `model j=0` anywhere in the Contraction block and in the Checkpoint block put
-:
+::
      
      CONTRACT    save
      matelem     convert
@@ -588,12 +588,12 @@ be run setting `CONTRACT` and `matelem` to read and `EIGENFUNC` save. This will 
 files for the :math:`J=0` eigenfunctions but saved in the J=0 representation. 
 
 Once these files have been generated it is then straightforward to carry out calculations for :math:`J>0`. In the Basis block change
-:
+::
      
      0,JKtau, Jrot 0 
      
 to 
-:
+::
      
      0,JKtau, Jrot 1
      
@@ -628,7 +628,7 @@ Sample TROVE Input File
 Below is a sample TROVE input file for the molecule PF:math:`_3`. Using this file (and adding in Intensity blocks when needed)
 a full line list for this molecule could be produced. To save space the PES and DMS parameters have not been included
 in full. The actual text file should be kept in the same directory as this manual.
-:
+::
      
      mem 20 gb
       
@@ -778,9 +778,6 @@ in full. The actual text file should be kept in the same directory as this manua
 
 
 
-
-
-test
 
 
 
