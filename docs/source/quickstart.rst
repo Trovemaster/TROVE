@@ -265,8 +265,7 @@ procedure are discussed in the Theory chapter and in a recent paper \cite{17YuYa
 For a given basis function row the options are as follows. The first keyword specifies what the one-dimensional basis 
 functions are. In this example they are numerically generated using the Numerov-Cooley method. 
 Other options are `harmonic` and `morse` where these analytical basis functions shall be used.
-The second keyword specifies how the kinetic energy operator is expanded.
-The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates` of the form
+The second keyword specifies how the kinetic energy operator is expanded. The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates` of the form
  :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while `linear` (the angles themselves) 
 coordinates are used for the bends.
 
@@ -780,6 +779,8 @@ in full. The actual text file should be kept in the same directory as this manua
 
 
 
+
+test
 
 
 
