@@ -267,7 +267,7 @@ functions are. In this example they are numerically generated using the Numerov-
 Other options are `harmonic` and `morse` where these analytical basis functions shall be used.
 The second keyword specifies how the kinetic energy operator is expanded.
 The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates` of the form
- :math:`1 - e^{-\alpha(r-re)}` are used for the stretching coordinates while `linear` (the angles themselves) 
+ :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while `linear` (the angles themselves) 
 coordinates are used for the bends.
 
 The numbers after `range` specify the range of vibrational quantum numbers of the one-dimensional functions to be used.
