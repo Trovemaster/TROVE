@@ -73,11 +73,12 @@ see Bunker and Jensen \cite{98BuJexx} or Zare's book on angular momentum \cite{8
 The :math:`\xi_n` coordinates described vibration. There are :math:`3N - 6` of these for a non-linear molecule and they can be defined
 in whatever manner is convenient (see below).
 
-The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta  ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
+The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta  (recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
 
 
 .. math::
    :label: eq.gen_momenta
+   
    \hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)
 
 where :math:`\hat{P}_F^{CM}` :math:`(F=X,Y,Z)` is the momentum conjugate to (associated with) the translation motion of the centre
@@ -87,13 +88,15 @@ and :math:`\hat{p}_n = -i \hbar \partial / \partial \xi_n (n=1, \cdots , 3N-6)` 
 It is possible to write :math:`\hat{T}` in these generalised momenta as
 
 
-.. math::\hat{T} = `\frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} 
+.. math::
      :label: eq.general_T
+     
+     \hat{T} = \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} 
      + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}
      -\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)
      \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]
      -\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)
-     \frac{\partial}{\partial \xi_{n'}} + U(\xi).`
+     \frac{\partial}{\partial \xi_{n'}} + U(\xi).
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the
 generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`.
@@ -107,6 +110,7 @@ equation :eq.general_T: in the compact form
 
 .. math::
    :label: eq.general_T_compact
+   
    \hat{T} = \frac{1}{2} \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \hat{\Pi}_{\lambda} G_{\lambda,\lambda'}(\xi)\hat{\Pi}_{\lambda'} + U(\xi)
 
 where :math:`\Pi_{\lambda}` is an element of :math:`\hat{\Pi}` of equation :eq.gen_momenta:.
@@ -124,18 +128,25 @@ quantities as a series expansion in terms of the :math:`\xi` themselves or funct
 
 .. math::
    :label: eq.func_of_xi
+   
    g_n = g_n(\xi_n).
 
 Thus, we can write
 
 
-:label: eq.G_expansion
-:math:`G_{\lambda,\lambda'} = \sum_{l_1,l_2,l_3,\cdots} G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots`
+
+.. math:
+    :label: eq.G_expansion
+    
+    G_{\lambda,\lambda'} = \sum_{l_1,l_2,l_3,\cdots} G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots
 
 and
 
-:label: eq.U_expansion
-:math:`U = \sum_{l_1,l_2,l_3,\cdots} U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots`
+
+.. math: 
+   :label: eq.U_expansion
+
+   U = \sum_{l_1,l_2,l_3,\cdots} U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots
 
 where :math:`G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` and :math:`U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` are constant expansion
 coefficients. Similarly the potential :math:`V` is expressed as
