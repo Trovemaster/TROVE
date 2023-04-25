@@ -63,6 +63,7 @@ To construct the kinetic energy operator TROVE expresses the Hamiltonian in equa
 
 .. math::
    :label: eq.gen_coord
+   
    \Xi = \left(R_X^{CM},R_Y^{CM},R_Z^{CM},\theta,\phi,\chi,\xi_1,\xi_2 \cdots ,\xi_{3N-6} \right)
 
 where :math:`R_F^{CM} = \sum_{i=1}^N m_iR_{iF} / \sum_{j=1}^N m_j` :math:`(F=X,Y,Z)` is the :math:`F`-coordinate of the nuclear centre of mass;
