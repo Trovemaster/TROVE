@@ -96,7 +96,7 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
      \frac{\partial}{\partial \xi_{n'}} + U(\xi).`
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the
-generalised momenta with suitable `expansion coefficients' :math:`G_{\lambda,\lambda'}`.
+generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`.
 The first term is the translation kinetic energy of the
 centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`. This term is exactly separable from the other terms
 as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational
