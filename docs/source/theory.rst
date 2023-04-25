@@ -47,7 +47,7 @@ molecule's equilibrium structure.
 TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system.
 This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule.
 This allows TROVE to be used for a wide variety of molecules as seen in chapter \ref{chap:molecules}. The actual construction
-of the Hamiltonian can be used in a rather `black box' manner, with the user only needing to define coordinate
+of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
 transforms and so on (see chapter \ref{chap:newmol}).
 
 A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum
@@ -60,8 +60,10 @@ Numerical Construction of Kinetic Energy Operator
 
 To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation :eq.schrodiger_lab_cart: in terms of the generalised coordinates
 
-:label: eq.gen_coord
-:math:`\Xi = \left(R_X^{CM},R_Y^{CM},R_Z^{CM},\theta,\phi,\chi,\xi_1,\xi_2 \cdots ,\xi_{3N-6} \right)`
+
+.. math::
+   :label: eq.gen_coord
+   \Xi = \left(R_X^{CM},R_Y^{CM},R_Z^{CM},\theta,\phi,\chi,\xi_1,\xi_2 \cdots ,\xi_{3N-6} \right)
 
 where :math:`R_F^{CM} = \sum_{i=1}^N m_iR_{iF} / \sum_{j=1}^N m_j` :math:`(F=X,Y,Z)` is the :math:`F`-coordinate of the nuclear centre of mass;
 these three coordinates describe translation of the molecule through space. The three Euler angles (:math:`\theta,\phi,\chi`)
@@ -71,8 +73,7 @@ see Bunker and Jensen \cite{98BuJexx} or Zare's book on angular momentum \cite{8
 The :math:`\xi_n` coordinates described vibration. There are :math:`3N - 6` of these for a non-linear molecule and they can be defined
 in whatever manner is convenient (see below).
 
-The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta
- ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
+The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta  ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
 
 :label: eq.gen_momenta
 :math:`\hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)`
