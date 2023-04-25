@@ -4,11 +4,10 @@ Introduction
 
 What is TROVE?
 --------------
-.. _sec-whatsTrove
 
 
 TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs primarily designed for the
-calculation of molecular infrared line lists\cite{TROVE}.
+calculation of molecular infrared line lists ([TROVE]_).
 It was (and is) developed by Sergey Yurchenko with contributions from others over the years.
 It has been used to study a range of molecules and features continue to be added.
 
@@ -19,7 +18,7 @@ The calculation of infrared transition intensities and absorption cross sections
 The philosophy of TROVE is to enable the study of molecules of arbitrary structure.
 This is possible since TROVE uses a numerically generated Hamiltonian unlike other programs which are hard coded with
 specific analytical Hamiltonians.
-So far TROVE has been used for diatomics,\cite{TROVE} triatomics,\cite{TROVE} tetratomics,
+So far TROVE has been used for diatomics,\cite{TROVE} triatomics,[[TROVE]_] tetratomics,
 \cite{jt466,jt500,jt554,jt553,jt556,jt597,jt592}
 pentatomics\cite{jt564,jt612,jt701} and hexatomic molecules\cite{jt729}
 and there are plans to implement even larger molecules.
@@ -56,8 +55,13 @@ the calculation of line lists, a list of molecules already implemented in TROVE 
 how to set up TROVE for a new molecule and finally, new features in TROVE.
 
 
+Citations
+---------
 
 
+.. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical
+ROVibrational Energies (TROVE): A robust numerical approach to the calculation of
+rovibrational energies for polyatomic molecules.
 
 
 
