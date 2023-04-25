@@ -75,8 +75,10 @@ in whatever manner is convenient (see below).
 
 The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta  ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
 
-:label: eq.gen_momenta
-:math:`\hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)`
+
+.. math::
+   :label: eq.gen_momenta
+   \hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)
 
 where :math:`\hat{P}_F^{CM}` :math:`(F=X,Y,Z)` is the momentum conjugate to (associated with) the translation motion of the centre
 of mass coordinate :math:`R_F^{CM}`, (:math:`\hat{J}_x, \hat{J}_y, \hat{J}_z`) are the :math:`xyz` components of the total angular momentum
@@ -84,13 +86,14 @@ and :math:`\hat{p}_n = -i \hbar \partial / \partial \xi_n (n=1, \cdots , 3N-6)` 
 
 It is possible to write :math:`\hat{T}` in these generalised momenta as
 
-:label: eq.general_T
-:math:`\hat{T} = `\frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM}`
-:math:` + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}`
-:math:`-\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)`
-:math:`\frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]`
-:math:`-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)`
-:math:`\frac{\partial}{\partial \xi_{n'}} + U(\xi).`
+
+.. math::\hat{T} = `\frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} 
+     :label: eq.general_T
+     + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}
+     -\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)
+     \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]
+     -\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)
+     \frac{\partial}{\partial \xi_{n'}} + U(\xi).`
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the
 generalised momenta with suitable `expansion coefficients' :math:`G_{\lambda,\lambda'}`.
@@ -101,8 +104,10 @@ motion, fourth term is the kinetic energy of vibrational motion and the final te
 terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
 equation :eq.general_T: in the compact form
 
-:label: eq.general_T_compact
-:math:`\hat{T} = \frac{1}{2} \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \hat{\Pi}_{\lambda} G_{\lambda,\lambda'}(\xi)\hat{\Pi}_{\lambda'} + U(\xi)`
+
+.. math::
+   :label: eq.general_T_compact
+   \hat{T} = \frac{1}{2} \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \hat{\Pi}_{\lambda} G_{\lambda,\lambda'}(\xi)\hat{\Pi}_{\lambda'} + U(\xi)
 
 where :math:`\Pi_{\lambda}` is an element of :math:`\hat{\Pi}` of equation :eq.gen_momenta:.
 
@@ -116,8 +121,10 @@ To utilise equation :eq.general_T: the expansion terms :math:`G_{\lambda,\lambda
 the Born-Oppenheimer potential energy function :math:`V` must be expressed in terms of :math:`\xi_n`. This is done by expressing these
 quantities as a series expansion in terms of the :math:`\xi` themselves or functions of them
 
-:label: eq.func_of_xi
-:math:`g_n = g_n(\xi_n).`
+
+.. math::
+   :label: eq.func_of_xi
+   g_n = g_n(\xi_n).
 
 Thus, we can write
 
