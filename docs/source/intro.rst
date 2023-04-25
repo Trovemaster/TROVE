@@ -58,43 +58,27 @@ Citations
 ---------
 
 
-.. [1] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of
-rovibrational energies for polyatomic molecules. 
+.. [1] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules. 
 
-.. [2]_ S. N. Yurchenko, R. J. Barber, A. Yachmenev, W. Thiel, P. Jensen, J. Tennyson, J. Phys.
-Chem. A 113, 11845 (2009), A variationally computed T=300 K line list for NH3.
+.. [2] S. N. Yurchenko, R. J. Barber, A. Yachmenev, W. Thiel, P. Jensen, J. Tennyson, J. Phys. Chem. A 113, 11845 (2009), A variationally computed T=300 K line list for NH3.
 
-.. [3]_ S. N. Yurchenko, R. J. Barber, J. Tennyson, Mon. Not. R. Astron. Soc. 413, 1828 (2011),
-A variationally computed hot line list for NH3.
+.. [3] S. N. Yurchenko, R. J. Barber, J. Tennyson, Mon. Not. R. Astron. Soc. 413, 1828 (2011), A variationally computed hot line list for NH3.
 
-.. [4]_ D. S. Underwood, J. Tennyson, S. N. Yurchenko, Phys. Chem. Chem. Phys. 15, 10118
-(2013), An ab initio variationally computed room-temperature line list for SO3.
+.. [4] D. S. Underwood, J. Tennyson, S. N. Yurchenko, Phys. Chem. Chem. Phys. 15, 10118 (2013), An ab initio variationally computed room-temperature line list for SO3.
 
-.. [5]_ O. L. Polyansky, I. N. Kozin, P. Malyszek, J. Koput, J. Tennyson, S. N. Yurchenko, J.
-Phys. Chem. A 117, 7367 (2013), Variational calculation of highly excited rovibrational
-energy levels of H2O2.
+.. [5] O. L. Polyansky, I. N. Kozin, P. Malyszek, J. Koput, J. Tennyson, S. N. Yurchenko, J. Phys. Chem. A 117, 7367 (2013), Variational calculation of highly excited rovibrational energy levels of H2O2.
 
-.. [6]_ C. Sousa-Silva, S. N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 288, 28 (2013), A computed
-room temperature line list for phosphine.
+.. [6] C. Sousa-Silva, S. N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 288, 28 (2013), A computed room temperature line list for phosphine. 
 
-.. [7]_ A. F. Al-Refaie, S. N. Yurchenko, A. Yachmenev, J. Tennyson, Mon. Not. R. Astron.
-Soc. 448, 1704 (2015), ExoMol line lists - VIII: A variationally computed line list for hot
-formaldehyde.
+.. [7] A. F. Al-Refaie, S. N. Yurchenko, A. Yachmenev, J. Tennyson, Mon. Not. R. Astron. Soc. 448, 1704 (2015), ExoMol line lists - VIII: A variationally computed line list for hot formaldehyde.
 
-.. [8]_ C. Sousa-Silva, A. F. Al-Refaie, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc.
-446, 2337 (2015), ExoMol line lists - VII. the rotation-vibration spectrum of phosphine
-up to 1500 K.
+.. [8] C. Sousa-Silva, A. F. Al-Refaie, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 446, 2337 (2015), ExoMol line lists - VII. the rotation-vibration spectrum of phosphine up to 1500 K.
 
-.. [9]_ S. N. Yurchenko, J. Tennyson, Mon. Not. R. Astron. Soc. 440, 1649 (2014), ExoMol line
-lists IV: The rotation-vibration spectrum of methane up to 1500 K.
+.. [9] S. N. Yurchenko, J. Tennyson, Mon. Not. R. Astron. Soc. 440, 1649 (2014), ExoMol line lists IV: The rotation-vibration spectrum of methane up to 1500 K.
 
-.. [10]_ A. Owens, S. N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, J. Chem. Phys. 142,
-244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
+.. [10] A. Owens, S. N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, J. Chem. Phys. 142, 244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
 
-.. [11]_ A. Owens, S. N. Yurchenko, A. Yachmenev, W. Thiel, J. Tennyson, Mon. Not. R. Astron.
-Soc. 471, 5025 (2017), ExoMol molecular line lists XXII. The rotation-vibration spectrum
-of silane up to 1200K.
+.. [11] A. Owens, S. N. Yurchenko, A. Yachmenev, W. Thiel, J. Tennyson, Mon. Not. R. Astron. Soc. 471, 5025 (2017), ExoMol molecular line lists XXII. The rotation-vibration spectrum of silane up to 1200K.
 
-.. [12]_ B. P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478,
-3220 (2018), ExoMol molecular line lists - XXVII: spectra of C2H4.
+.. [12] B. P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C2H4.
 
