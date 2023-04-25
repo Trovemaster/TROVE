@@ -1,7 +1,7 @@
 
 Theory
 ======
-: _chap:theory
+.. _theory:
 
 In this chapter the theory underlying the TROVE program will be described. Since the original TROVE paper many new
 features have been added to the code and described in publications as used. Here all of the theoretical framework
@@ -56,12 +56,11 @@ simulation of molecular spectra, especially at high temperatures where lots of s
 
 Numerical Construction of Kinetic Energy Operator
 -------------------------------------------------
-: _sec.numerical_T
+.. _numerical_T:
 
-To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation \ref{eq.schrodiger_lab_cart}
-in terms of the generalised coordinates
+To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation :eq.schrodiger_lab_cart: in terms of the generalised coordinates
 
-: _eq.gen_coord
+:label: eq.gen_coord
 :math:`\Xi = \left(R_X^{CM},R_Y^{CM},R_Z^{CM},\theta,\phi,\chi,\xi_1,\xi_2 \cdots ,\xi_{3N-6} \right)`
 
 where :math:`R_F^{CM} = \sum_{i=1}^N m_iR_{iF} / \sum_{j=1}^N m_j` :math:`(F=X,Y,Z)` is the :math:`F`-coordinate of the nuclear centre of mass;
@@ -73,26 +72,25 @@ The :math:`\xi_n` coordinates described vibration. There are :math:`3N - 6` of t
 in whatever manner is convenient (see below).
 
 The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta
- ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar
-\frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
-:math:`
-\label{eq.gen_momenta}
-\hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)`
+ ( recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
+
+:label: eq.gen_momenta
+:math:`\hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)`
 
 where :math:`\hat{P}_F^{CM}` :math:`(F=X,Y,Z)` is the momentum conjugate to (associated with) the translation motion of the centre
 of mass coordinate :math:`R_F^{CM}`, (:math:`\hat{J}_x, \hat{J}_y, \hat{J}_z`) are the :math:`xyz` components of the total angular momentum
 and :math:`\hat{p}_n = -i \hbar \partial / \partial \xi_n (n=1, \cdots , 3N-6)` is the momentum conjugate to :math:`\xi_n`.
 
 It is possible to write :math:`\hat{T}` in these generalised momenta as
-\begin{align}
-\label{eq.general_T}
-\hat{T} = & \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} \\ \nonumber
-          & + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'} \\ \nonumber
-          & -\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)
-          \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] \\ \nonumber
-          & -\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)
-          \frac{\partial}{\partial \xi_{n'}} + U(\xi).
-\end{align}
+
+:label: eq.general_T
+:math:`\hat{T} = `\frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM}`
+:math:` + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}`
+:math:`-\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)`
+:math:`\frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]`
+:math:`-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)`
+:math:`\frac{\partial}{\partial \xi_{n'}} + U(\xi).`
+
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the
 generalised momenta with suitable `expansion coefficients' :math:`G_{\lambda,\lambda'}`.
 The first term is the translation kinetic energy of the
@@ -100,13 +98,12 @@ centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`
 as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational
 motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these
 terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
-equation \ref{eq.general_T} in the compact form
+equation :eq.general_T: in the compact form
 
-\label{eq.general_T_compact}
-
+:label: eq.general_T_compact
 :math:`\hat{T} = \frac{1}{2} \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \hat{\Pi}_{\lambda} G_{\lambda,\lambda'}(\xi)\hat{\Pi}_{\lambda'} + U(\xi)`
 
-where :math:`\Pi_{\lambda}` is an element of :math:`\hat{\Pi}` of equation \ref{eq.gen_momenta}.
+where :math:`\Pi_{\lambda}` is an element of :math:`\hat{\Pi}` of equation :eq.gen_momenta:.
 
 The vibrational coordinates :math:`\xi_n` can be any coordinates which represent the internal degrees of freedom and
 unambiguously define the instantaneous relative positions of the nuclei. Examples are internal displacement coordinates
@@ -114,33 +111,33 @@ unambiguously define the instantaneous relative positions of the nuclei. Example
 (see below) and symmetric combinations of these. This ability to choose which coordinates to use is the power of this approach
 which makes it applicable to a wide variety of molecules.
 
-To utilise equation \ref{eq.general_T} the expansion terms :math:`G_{\lambda,\lambda'}(\xi)`, pseudopotential term :math:`U(\xi)` and
+To utilise equation :eq.general_T: the expansion terms :math:`G_{\lambda,\lambda'}(\xi)`, pseudopotential term :math:`U(\xi)` and
 the Born-Oppenheimer potential energy function :math:`V` must be expressed in terms of :math:`\xi_n`. This is done by expressing these
 quantities as a series expansion in terms of the :math:`\xi` themselves or functions of them
 
-\label{eq.func_of_xi}
+:label: eq.func_of_xi
 :math:`g_n = g_n(\xi_n).`
 
 Thus, we can write
 
 
-\label{eq.G_expansion}
+:label: eq.G_expansion
 :math:`G_{\lambda,\lambda'} = \sum_{l_1,l_2,l_3,\cdots} G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots`
 
 and
 
-\label{eq.U_expansion}
+:label: eq.U_expansion
 :math:`U = \sum_{l_1,l_2,l_3,\cdots} U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots`
 
 where :math:`G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` and :math:`U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` are constant expansion
 coefficients. Similarly the potential :math:`V` is expressed as
 
-\label{eq.V_expansion}
+:label: eq.V_expansion
 :math:`V = \sum_{l_1,l_2,l_3,\cdots} V_{l_1,l_2,l_3,\cdots} f_1^{l_1} f_2^{l_2} f_3^{l_3} \cdots`
 
 where :math:`V_{l_1,l_2,l_3}` are constant expansion coefficients in terms of convenient expansion functions
 
-\label{eq.v_exp_func}
+:label: eq.v_exp_func
 :math:`f_n = f_n(\xi_n).`
 
 For example :math:`f_n = 1 - \exp(-a \xi_n)` (Morse type) or :math:`f_n = \cos(\xi_n)`. Typically Morse or Harmonic functions are used
@@ -148,44 +145,44 @@ for bond stretches and :math:`\xi_n` is used itself for bends.
 
 The method of actually finding the expansion coefficients introduced above will now be discussed. This is arguably the most
 technical part of the TROVE approach and could be skipped on first (or even second!) reading. It is based on a paper by
-Sorensen \cite{79Soxxxx.method}.
+Sorensen [1_].
 
-To go from the expression for the kinetic energy in equation \ref{eq.schrodiger_lab_cart} to that in equation
-\ref{eq.general_T} we start by noting that :math:`\hat{T}` in the former equation can be expressed as
+To go from the expression for the kinetic energy in equation :eq.schrodiger_lab_cart: to that in equation
+:eq.general_T: we start by noting that :math:`\hat{T}` in the former equation can be expressed as
 
-\label{eq.T_as_P}
+:label: eq.T_as_P
 :math:`\hat{T} = -\frac{\hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i = \sum_{X,Y,Z} \sum_{i=1}^{N}\frac{\hat{P}^2_{iF}}{2m_i} = \sum_{i=1}^N 
 \frac{\hat{\mathbf{P}}_i^2}{2m_i}`
 
 where the momentum vector :math:`\hat{\mathbf{P}}_{iF}` has the :math:`XYZ` coordinates (:math:`\hat{P}_{iX}, \hat{P}_{iY}, \hat{P}_{iZ}`).
 The chain-rule transformation in Hermitian form is defined as
 
-\label{eq.chain_hermit}
+:label: eq.chain_hermit
 :math:`\hat{P}_{iF} = \frac{1}{2} \sum_{\lambda = 1}^{3N} \left( s_{\lambda,iF} \hat{\Pi}_{\lambda} + \hat{\Pi}_{\lambda}s_{\lambda,iF} \right)`
 
 with
 
-\label{eq.def_s}
+:label: eq.def_s
 :math:`s_{\lambda,iF} = \frac{\partial \Xi_{\lambda} }{\partial R_{iF} }.`
 
 This relation states that the momentum in the :math:`XYZ` lab-fixed coordinate system :math:`\hat{P}_{iF}` can be expressed in terms
 of the generalised momenta :math:`\hat{\Pi}` with the derivative of the generalised coordinates :math:`\Xi` with respect to a given
 lab-fixed coordinate :math:`R_{iF}` linking them. The Jacobian-matrix elements :math:`s_{\lambda,iF}` (:math:`F = X,Y,Z`) define vectors and so
-the vector from of equation \ref{eq.chain_hermit} is
+the vector from of equation :eq.chain_hermit: is
 
-\label{eq.chain_hermit_vec}
+:label: eq.chain_hermit_vec
 :math:`\hat{\mathbf{P}}_i = \frac{1}{2} \sum_{\lambda = 1}^{3N} \left(\mathbf{s}_{\lambda,i} \hat{\Pi}_{\lambda} +\hat{\Pi}_{\lambda} 
 \mathbf{s}_{\lambda,i}\right).`
 
 
-When equation \ref{eq.chain_hermit_vec} is inserted into equation \ref{eq.T_as_P} the following equations for the
+When equation :eq.chain_hermit_vec: is inserted into equation :eq.T_as_P: the following equations for the
 :math:`G_{\lambda,\lambda'}` coefficients and pseudopotential term :math:`U` are given
 
-\label{eq.G_with_s}
+:label: eq.G_with_s
 :math:`G_{\lambda,\lambda'} = \sum_{i=1}^N \frac{\mathbf{s}_{\lambda,i} \mathbf{s}_{\lambda',i}}{m_i}`
 
 
-\label{eq.U_with_s}
+:label: eq.U_with_s
 :math:`U = \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \sum_{i=1}^N \left\{  \frac{1}{8m_i} \left[\hat{\Pi}_{\lambda},\mathbf{s}_{\lambda,i} \right] 
 \cdot\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i} \right]+ \frac{1}{4 m_i} \mathbf{s}_{\lambda,i} \cdot 
 \left[\hat{\Pi}_{\lambda},\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i}\right] \right] \right \}`
@@ -194,35 +191,35 @@ where the square brackets indicate the communicator of the quantities in them.
 
 To make progress the quantity :math:`t_{iF,\lambda}` is introduced with the definition
 
-\label{eq.def_t}
+:label: eq.def_t
 :math:`t_{iF,\lambda} = \frac{\partial R_{iF}}{\partial \Xi_{\lambda}}.`
 
 From the application of the chain rule the following relation is found
 
-\label{eq.chain_s_t}
+:label: eq.chain_s_t
 :math:`\sum_{i=1}^{N} \sum_{F=X,Y,Z} \frac{\partial \Xi_{\lambda} }{\partial R_{iF} } \frac{\partial R_{iF}}{\partial \Xi_{\lambda'}}= 
 \mathbf{s}_{\lambda,i}\cdot \mathbf{t}_{i,\lambda'} = \delta_{\lambda,\lambda'}`
 
 where the vector :math:`\mathbf{t}_{i,\lambda'}` has been introduced. If the :math:`\mathbf{t}_{i,\lambda'}` vectors are known then
 we can solve this equation to obtain the :math:`\mathbf{s}_{i,\lambda'}` vectors.
 
-At this point further technical details of how to solve equation \ref{eq.chain_s_t} will not be given and instead the
+At this point further technical details of how to solve equation :eq.chain_s_t: will not be given and instead the
 interested reader is referred to the TROVE paper \cite{TROVE} for more information. Instead a qualitative description
 will be given.
 
 Sorensen \cite{79Soxxxx.method} showed what values the various components of the :math:`\mathbf{t}_{i,\lambda'}` vectors have,
 consistent with Eckart conditions, which achieve optimum separation of rotational and vibrational motion. Equation
-\ref{eq.chain_s_t} can then be solved numerically. Components of the :math:`\mathbf{s}_{\lambda,i}` and :math:`\mathbf{t}_{i,\lambda'}`
-are expanded as a power series in :math:`g_n({\xi_n})` (from equation \ref{eq.func_of_xi} above) to a given order
+:eq.chain_s_t: can then be solved numerically. Components of the :math:`\mathbf{s}_{\lambda,i}` and :math:`\mathbf{t}_{i,\lambda'}`
+are expanded as a power series in :math:`g_n({\xi_n})` (from equation :eq.func_of_xi: above) to a given order
 (this is what the integer after \verb|kinetic| refers to in the TROVE input file). When these
-power series are substituted into equation \ref{eq.chain_s_t} and coefficients up to a given order are collected, a
+power series are substituted into equation :eq.chain_s_t: and coefficients up to a given order are collected, a
 system of linear equations is obtained of form :math:`\mathbf{T}\mathbf{x} = \mathbf{b}`. The systems of equations can be
 set up and solved numerically by making use of the fact that values of :math:`\mathbf{t}_{i,\lambda'}` are known.
 
-The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :math:`U` given in equations \ref{eq.G_with_s} and
-\ref{eq.U_with_s} are expressed in terms of products of :math:`g_n(\xi_n)` raised to powers and multiplied by expansion
+The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :math:`U` given in equations :eq.G_with_s: and
+:eq.U_with_s: are expressed in terms of products of :math:`g_n(\xi_n)` raised to powers and multiplied by expansion
 coefficients which are found from the linear equations described. This ultimately means that we can write :math:`\hat{T}`
-in terms of molecule-fixed :math:`xyz` coordinates as in equation \ref{eq.general_T}. The entire procedure
+in terms of molecule-fixed :math:`xyz` coordinates as in equation :eq.general_T:. The entire procedure
 (although complicated) is a numerical one
 and thus does not require any analytic algebra to define the kinetic energy operator for a given molecular shape. This is
 what makes TROVE general.
@@ -245,7 +242,7 @@ The linearized coordinates are introduced in terms of the Cartesian displacement
 nuclei and
 :math:`\alpha = x,y,z`) of the nuclei from their equilibrium positions :math:`a_{i \alpha}` in the :math:`xyz` molecule-fixed axis system
 
-\label{eq.linearized_def}
+:label: eq.linearized_def
 :math:`R^{MS}_{i \alpha} = a_{i \alpha} + d_{i \alpha}.`
 
 In general the :math:`3N - 6` internal displacement coordinates :math:`\xi_n` are non-linear functions of the displacements :math:`d_{i,\alpha}`
@@ -253,16 +250,16 @@ since, for example a bond stretch or bend will not usually lie along an axis. A 
 :math:`\xi_n \equiv \xi_n^l` are defined to be linear combinations of :math:`d_{i \alpha}` and to coincide with the :math:`3N-6` coordinates
 :math:`\xi_n` in the linear approximation
 
-\label{eq.linearized_def2}
+:label: eq.linearized_def2
 :math:`\xi_n^l = \sum_{i=1}^N \sum_{\alpha=x,y,z} B_{n,i \alpha} d_{i \alpha}`
 
 where :math:`B_{n,i \alpha} = \partial \xi_n / \partial d_{i \alpha}` are derived at equilibrium. The :math:`B_{n,i \alpha}` can be
 obtained from geometrical considerations (for example using trigonometry, etc).
 
 The :math:`xyz` coordinate system has its origin at the molecule's centre of mass and so the constant equilibrium coordinates
-:math:`a_{i \alpha}` in equation \ref{eq.linearized_def} satisfy
+:math:`a_{i \alpha}` in equation :eq.linearized_def: satisfy
 
-\label{eq.centre_of_mass}
+:label: eq.centre_of_mass
 :math:`\sum_{i=1}^N m_i a_{i \alpha} = 0.`
 
 The :math:`a_{i \alpha}` are easy to determine from the molecule's equilibrium geometry but they can be obtained numerically from the
@@ -314,14 +311,13 @@ Expansion of the Potential Energy Function
 ------------------------------------------
 
 The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised
-form. This function is required as an input to TROVE (see chapter \ref{chap:newmol}) but for computational efficiency,
-TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (\ref{eq.v_exp_func})
-\begin{align}
-\label{eq.V_expand}
-V(\xi_n) & =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})}
-                 V_{l_1 l_2 \cdots l_{(3N-6)}}^L \prod_i f_n^{l_i}
-         &  = \sum_{L=0}^{N_{pot}} \sum_{L[l]} V_{L[l]}(f_n)^{L[l]}.
-\end{align}
+form. This function is required as an input to TROVE (see chapter :chap:newmol:) but for computational efficiency,
+TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
+
+:label: eq.V_expand
+:math:`V(\xi_n)  =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})}`
+:math:` V_{l_1 l_2 \cdots l_{(3N-6)}}^L \prod_i f_n^{l_i} = \sum_{L=0}^{N_{pot}} \sum_{L[l]} V_{L[l]}(f_n)^{L[l]}.`
+
 This is a sum of products of the coordinates (or functions of the coordinates) used raised to powers. This
 means that all integrals involving the potential will be separable into products of one-dimensional integrals.
 The expansion coefficients are
@@ -340,39 +336,37 @@ each vibrational motion. These are then combined and truncated to build up a bas
 molecule. The details of this process are given here.
 
 From the previous sections the rotation-vibration Hamiltonian expanded in terms of molecule-fixed :math:`xyz` coordinates is given
-(in notation introduced in equation \ref{eq.V_expand}) as
+(in notation introduced in equation :eq.V_expand:) as
 
-\label{eq.rovibH}
-:math:`\hat{H}_{rv} = \frac{1}{2} \sum_{L \geq 0} \sum_{L[l]} \sum_{\lambda,\lambda'} \hat{\Pi}_{\lambda} 
-G_{L[l]}^{\lambda,\lambda'}(g)^{L[l]}\hat{\Pi}_{\lambda'} + \sum_{L \geq 0} \sum_{L[l]} U_{L[l]}(g)^{L[l]}+ \sum_{L \geq 0} \sum_{L[l]} V_{L[l]} 
-(f)^{L[l]}`
+:label: eq.rovibH
+:math:`\hat{H}_{rv} = \frac{1}{2} \sum_{L \geq 0} \sum_{L[l]} \sum_{\lambda,\lambda'} \hat{\Pi}_{\lambda} G_{L[l]}^{\lambda,\lambda'}(g)^{L[l]}\hat{\Pi}_{\lambda'} + \sum_{L \geq 0} \sum_{L[l]} U_{L[l]}(g)^{L[l]}+ \sum_{L \geq 0} \sum_{L[l]} V_{L[l]} (f)^{L[l]}`
 
-with :math:`g_n(\xi_n)` and :math:`f_n(\xi_n)` defined in equations \ref{eq.func_of_xi} and \ref{eq.v_exp_func}. TROVE uses
+with :math:`g_n(\xi_n)` and :math:`f_n(\xi_n)` defined in equations :eq.func_of_xi: and :eq.v_exp_func:. TROVE uses
 vibrational basis set functions :math:`|\nu \rangle` constructed as products of 1D basis functions
 
-\label{eq.vib_basis_prod}
+:label: eq.vib_basis_prod
 :math:`|\nu \rangle = \prod_{v} | \nu_v \rangle = \phi_{\nu_1}(\xi_1)\phi_{\nu_2}(\xi_2)\cdots \phi_{\nu_{3N-6}}(\xi_{3N-6}).`
 
 The 1D basis functions implemented in TROVE are either analytically defined harmonic-oscillator or Morse-oscillator
 functions or are numerical solutions to the 1D Schro\"{o}dinger equations for each vibrational coordinate obtained
 using  Numerov-Cooley integration. These numerical solutions are obtained by solving
 
-\label{eq.1Dschrodinger}
+:label: eq.1Dschrodinger
 :math:`\hat{H}_n^{(1D)} | \nu_n \rangle = E_{\nu_n} | \nu_n \rangle`
 
 for the Hamiltonian
 
-\label{eq.1D_Ham}
+:label: eq.1D_Ham
 :math:`\hat{H}_n = -\frac{\hbar^2}{2} \frac{\partial}{\partial \xi_n} G_{n,n}^{(1D)}(\xi_n) \frac{\partial}{\partial \xi_n}+ V^{(1D)}(\xi_n) + 
 U^{(1D)}(\xi_n)`
 
 where the other :math:`3N-7` coordinates are constrained to their equilibrium values to give :math:`G_{n,n}^{(1D)}(\xi_n)`, :math:`V^{(1D)}(\xi_n)` and 
 :math:`U^{(1D)}(\xi_n)`.
 
- The vibrational matrix elements of the Hamiltonian in equation \ref{eq.rovibH} can all be expressed in terms of
+ The vibrational matrix elements of the Hamiltonian in equation :eq.rovibH: can all be expressed in terms of
  one-dimensional integrals of each :math:`\xi_n` coordinate as
 
- \label{eq.1d_matrix_elem}
+ :label: eq.1d_matrix_elem
 :math:`V_{\nu_n,\nu'_n}^l(n) = \left< \nu_n | f_n^l(\xi_n) | \nu'_n \right>,`
 :math:`T^{(0),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) | \nu'_n \right>,`
 :math:`T^{(1),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) \frac{\partial}{\partial \xi_n} | \nu'_n \right>,`
@@ -380,8 +374,8 @@ where the other :math:`3N-7` coordinates are constrained to their equilibrium va
 
 The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or
 analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite
-difference methods. Vibrational matrix elements of the Hamiltonian in \ref{eq.rovibH} are then given by products of the
-matrix elements given in equations \ref{eq.1d_matrix_elem}. If the HBJ approach is required then these 1D matrix elements
+difference methods. Vibrational matrix elements of the Hamiltonian in :eq.rovibH: are then given by products of the
+matrix elements given in equations :eq.1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements
 are computed for each grid point along :math:`\rho` (see the TROVE paper \cite{TROVE} ).
 
 Rotational Basis Functions
@@ -389,11 +383,10 @@ Rotational Basis Functions
 : _sec.rot_basis
 
 TROVE uses linear combinations of rigid-rotor functions given as linear combinations :math:`|J,K,m,\pm \rangle`
-\begin{align}
-\label{eq.rigid_rot}
-&|J,0,m,+ \rangle = |J,0,m \rangle, \\
-&|J,K,m,\pm \rangle = \frac{p(J,K,\pm)}{\sqrt{2}} \left(|J,K,m\rangle \pm |J,-K,m\rangle \right)
-\end{align}
+
+:label: eq.rigid_rot
+:math:`|J,0,m,+ \rangle = |J,0,m \rangle, |J,K,m,\pm \rangle = \frac{p(J,K,\pm)}{\sqrt{2}} \left(|J,K,m\rangle \pm |J,-K,m\rangle \right)`
+
 where :math:`J` is the total angular momentum (specified by the \verb|0,'JKtau', Jrot n| part of the TROVE input file in the
 basis block), :math:`K` and :math:`m` are projections of :math:`J` onto a certain axis. :math:`\frac{p(J,K,\pm)}{\sqrt{2}}` is a phase factor
 chosen to make the matrix representations of the kinetic energy operator real.
@@ -404,7 +397,7 @@ Matrix elements of these functions with the :math:`\hat{J}_{\alpha}` operators a
 
 The complete basis set which to be used in TROVE was a combination of these functions with the vibrational functions
 
-\label{eq.rovib_basis}
+:label: eq.rovib_basis
 :math:`|\nu,J,K,m,\pm \rangle = \prod_{v} |\nu _v \rangle \times |J,K,m,\pm \rangle.:math:`
 
 This form of basis set can still be used in TROVE but it is much efficient to use the `:math:`J=0`' method discussed below.
@@ -420,15 +413,15 @@ to obtain the rotational-vibrational energies and eigenfunctions is to diagonali
 
 The Schr\={o}dinger equation in matrix form is written as
 
-\label{eq.Schrodinger_matrix}
+:label: eq.Schrodinger_matrix
 :math:`\mathbf{H}\mathbf{C} = \mathbf{E}\mathbf{C}`
 
 where :math:`\mathbf{H}` is the Hamiltonian matrix, :math:`\mathbf{C}` is a matrix of coefficients and :math:`\mathbf{E}` is a diagonal
-matrix of energies (or `eigenvalues'). :math:`\mathbf{H}` contains matrix elements of \ref{eq.rovibH} with the basis functions
-of equation \ref{eq.rovib_basis}. :math:`\mathbf{C}` is a matrix of (unknown) coefficients which multiply each basis function
-of equation \ref{eq.rovib_basis} to give a variational approximation to the eigenfunction of that rotational-vibrational state.
+matrix of energies (or `eigenvalues'). :math:`\mathbf{H}` contains matrix elements of :eq.rovibH: with the basis functions
+of equation :eq.rovib_basis:. :math:`\mathbf{C}` is a matrix of (unknown) coefficients which multiply each basis function
+of equation :eq.rovib_basis: to give a variational approximation to the eigenfunction of that rotational-vibrational state.
  Each column will give the coefficients required for a single state. :math:`\mathbf{E}` contains the energies of each state. Equation
-\ref{eq.Schrodinger_matrix} is an eigenvalue equation. To solve it the Hamiltonian matrix is `diagonalised'. This is a
+:eq.Schrodinger_matrix: is an eigenvalue equation. To solve it the Hamiltonian matrix is `diagonalised'. This is a
 standard problem in many areas of science and mathematics and general programs have been written for its solution. TROVE
 uses the LAPACK/BLAS libraries. The full Hamiltonian decouples into blocks of independent :math:`J` and symmetry :math:`\Gamma` that is, matrix elements 
 between different :math:`J`s and :math:`\Gamma`s are zero. This greatly reduces the size of the matrices to
@@ -454,24 +447,24 @@ Yurchenko, Yachmenev and Ovsyannikov \cite{17YuYaOv.methods}
 which discusses TROVE's implementation of symmetry in a pedagogical manner
 with examples. The reader is referred there for more detail and only a summary is given here.
 
-Following the symmetry paper the rotational-vibrational basis functions of equation \ref{eq.rovib_basis} are written as
+Following the symmetry paper the rotational-vibrational basis functions of equation :eq.rovib_basis: are written as
 
-\label{eq.rovib_basis2}
+:label: eq.rovib_basis2
 :math:`\Phi_{k,\nu}^J(\theta,\phi,\chi,\xi_1,\xi_2\cdots, \xi_{3N-6}) = \prod_{v} |\nu_v \rangle \times |J,K,m,\pm \rangle.`
 
 Symmetry adapted basis functions are formed from linear combinations of these primitive functions as
 
-\label{eq.sym_adapted_basis}
+:label: eq.sym_adapted_basis
 :math:`\Psi_{\mu,n}^{J,\Gamma_s} = \sum_{k,v} T_{k,v,n}^{\mu,J,\Gamma_s} \Phi_{k,\nu}^J.`
 
 In this equation the :math:`T_{k,v,n}^{\mu,J,\Gamma_s}` are symmetrization coefficients (not to be confused with the
-variational expansion coefficients of equation \ref{eq.Schrodinger_matrix}). Here :math:`\mu` is a counting number,
+variational expansion coefficients of equation :eq.Schrodinger_matrix}:. Here :math:`\mu` is a counting number,
 :math:`\Gamma_s` is symmetry label of a certain irreducible representation (irrep) of the symmetry group (see Atkin's MQM for
 a good introduction to this \cite{11Atkins.book}) and :math:`n` is used for degenerate symmetries.
 
 Symmetrised basis functions have the important advantage that they the make the Hamiltonian block diagonal. That is
 
-\label{eq.Ham_block_diag}
+:label: eq.Ham_block_diag
 :math:`\left< \Psi_{\mu,n}^{J,\Gamma_s} | H^{rv} | \Psi_{\mu',n'}^{J,\Gamma_t} \right>  = H_{\mu,\mu'} \delta_{s,t}\delta_{n,n'}`
 
 so that each :math:`J_{\Gamma_s,n}` Hamiltonian block can be diagonalised independently. This gives a huge time and memory
@@ -482,7 +475,7 @@ With the advantage of symmetrised functions noted, the method for obtaining them
 
 The Hamiltonian operator for a system :math:`\hat{H}` commutes with all operations of a given symmetry operation :math:`R`
 
-\label{eq.Ham_commute}
+:label: eq.Ham_commute
 :math:`\left[\hat{H},R\right] = 0`
 
 and eigenfunctions of :math:`\hat{H}` are also eigenfunctions of :math:`R` (as a simple example of this, a hydrogen s-orbital is invariant
@@ -491,18 +484,18 @@ irrep of the symmetry group, :math:`\mathbf{G}`.
 
 The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we
 are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done
-for finding 1D basis functions in equation \ref{eq.1Dschrodinger}. The approach used in TROVE for this is as follows:
+for finding 1D basis functions in equation :eq.1Dschrodinger:. The approach used in TROVE for this is as follows:
 
-(i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of
-:math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter \ref{chap:Quickstart}, the basis block was divided into `1s'
+  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of
+:math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter :chap:Quickstart:, the basis block was divided into `1s'
 and `2s' for the stretches and bends respectively.
 
-(ii) For each subspace :math:`i = 1, \cdots, L`, a reduced Hamiltonian operator :math:`\hat{H}^{(i)}` is constructed by neglecting
+  (ii) For each subspace :math:`i = 1, \cdots, L`, a reduced Hamiltonian operator :math:`\hat{H}^{(i)}` is constructed by neglecting
 or integrating over the other degrees of freedom.
 
-(iii) The symmetry-adapted wave functions for each subspace are obtained by diagonalising the corresponding :math:`\hat{H}^{(i)}`.
+  (iii) The symmetry-adapted wave functions for each subspace are obtained by diagonalising the corresponding :math:`\hat{H}^{(i)}`.
 
-(iv) The total basis set is built as a direct product of the subspace bases and transformed to irreps using standard approaches.
+  (iv) The total basis set is built as a direct product of the subspace bases and transformed to irreps using standard approaches.
 
 Symmetrically independent subspaces of coordinates are chosen such that each subspace contains only coordinates which can be
 symmetrically related by operations of the symmetry group (for example the three stretches of PF:math:`_3` for one subspace and the
@@ -510,7 +503,7 @@ three bends as the other).
 
 The details of the above steps are as follows. For each subspace a reduced eigenvalue problem is given by
 
-\label{eq.Schrodinger_subspace}
+:label: eq.Schrodinger_subspace
 :math:`\hat{H}^{(i)}(\mathbf{Q}^{(i)})\Psi^{(i)}_{\lambda_i}(\mathbf{Q}^{(i)}) = E_{\lambda_i}\Psi^{(i)}_{\lambda_i}(\mathbf{Q}^{(i)})`
 
 where :math:`\mathbf{Q}^{(i)}` is a set of coordinates (:math:`\xi_1,\xi_2,\cdots`) from a subspace :math:`i` and :math:`\lambda_i` is a counter
@@ -518,10 +511,10 @@ of each solution from :math:`i`. The eigenfunctions will transform as an irrpe o
 reduced Hamiltonian is constructed by averaging the total vibrational (:math:`J=0`) Hamiltonian :math:`\hat{H}` on the
 ground-state primitive vibrational basis functions of the other subspaces
 
-\label{eq.reduced_H}
+:label: eq.reduced_H
 :math:`\hat{H}^{(i)}(\mathbf{Q}^{(i)}) = \left< 0_p| \langle 0_q | \cdots \left<0_r|\hat{H}|0_r \right> \cdots |0_q \rangle |0_p \right>`
 
-As well as giving symmetrised functions, solving equation \ref{eq.Schrodinger_subspace} also gives better basis functions
+As well as giving symmetrised functions, solving equation :eq.Schrodinger_subspace: also gives better basis functions
 for the system since the problem is closer to the full dimensionality. The solutions can also be contracted, by energy for
 example. The TROVE symmetry paper gives examples of how the method works for AB:math:`_2` and XY:math:`_3` type molecules.
 The total basis set for the full dimensionality of the molecule is constructed by a direct product of the :math:`L`
@@ -544,7 +537,7 @@ The same procedure is used to obtained symmetrised functions for :math:`J>0` rot
 The :math:`J=0` Contraction Method
 ----------------------------------
 
-The basis functions described in section \ref{sec.rot_basis} which are a product of rigid-rotor and primitive
+The basis functions described in section :sec.rot_basis: which are a product of rigid-rotor and primitive
 (or symmetry-adapted) basis functions can in principle be used for :math:`J>0` calculations. This approach requires the full
  Hamiltonian matrix
 for each symmetry to be diagonalised each time and ignores the fact that the purely vibrational :math:`J=0` problem has already
@@ -553,28 +546,26 @@ been solved. A better approach is to use the :math:`J=0` vibrational solutions a
 
 The :math:`J=0` vibrational eigenfunctions :math:`\Psi_{J=0,i}^{\Gamma_s}` for each symmetry :math:`\Gamma_s` of the molecule is
 first obtained by diagonalising the vibrational Hamiltonian. These are then multiplied by the rigid rotor functions
-discussed in section \ref{sec.rot_basis} and symmetrised. This gives a basis :math:`\Psi^{\Gamma_s}_{J,K,i}`.
+discussed in section :sec.rot_basis: and symmetrised. This gives a basis :math:`\Psi^{\Gamma_s}_{J,K,i}`.
 
-From section \ref{sec.numerical_T} the Hamiltonian is given as
+From section :Lsec.numerical_T: the Hamiltonian is given as
 
-\label{eq.general_H_simp}
-:math:`\hat{T} =  \frac{1}{2} \sum_{\alpha,\alpha'} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}  -\frac{i \hbar}{2} \sum_{\alpha,n} 
-\left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] 
-+\hat{H}_{\text{vib}}`
+:label: eq.general_H_simp
+:math:`\hat{T} =  \frac{1}{2} \sum_{\alpha,\alpha'} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}  -\frac{i \hbar}{2} \sum_{\alpha,n} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] +\hat{H}_{\text{vib}}`
 
 where the centre of mass motion has been ignored and simplified notation used. Here :math:`\hat{H}_{\text{vib}}` is given as
 
-\label{eq.Hvib}
+:label: eq.Hvib
 :math:`\hat{H}_{\text{vib}} = -\frac{\hbar^2}{2} \sum_{n,n'}  \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)  \frac{\partial}{\partial \xi_{n'}} + U(\xi) + 
 V. `
 
 The functions :math:`\Psi_{J=0,i}^{\Gamma_s}` are solutions for this Hamiltonian and satisfy
 
-\label{eq.vib_orth}
+:label: eq.vib_orth
 :math:`\left< \Psi_{J=0,i}^{\Gamma_s} | \hat{H}_{\text{vib}} | \Psi_{J=0,i'}^{\Gamma_s} \right> = E_i^{\text{vib}} \delta_{i,i'}.`
 
 
-Calculating matrix elements of the Hamiltonian equation \ref{eq.general_H_simp} can be further simplified by pre-computing
+Calculating matrix elements of the Hamiltonian equation :eq.general_H_simp: can be further simplified by pre-computing
 integrals using the :math:`J=0` basis
 
 :math:`G_{\alpha,\alpha'}^{\Gamma_s,\Gamma_s',i,i'} = \left< \Psi_{J=0,i}^{\Gamma_s} | G_{\alpha,\alpha'} | \Psi_{J=0,i'}^{\Gamma_s'} \right>`
@@ -590,7 +581,7 @@ the primitive basis set is required. Many of the matrix elements involving the r
 The :math:`J=0` contraction greatly speeds up the calculation of :math:`J>0` matrix elements. Matrix elements of the dipole moment surface
 can also be calculated using a similar approach.
 
-Another feature of this approach is the possibility to use experimental band centres in equation \ref{eq.vib_orth} instead
+Another feature of this approach is the possibility to use experimental band centres in equation :eq.vib_orth: instead
 of calculated vibrational energies. This is denoted the `empirical basis set correction' since effectively the vibrational
 basis set is improved (there is no correction to the rotational structure using this method). This is a useful and pragmatic
 approach when many experimental energies are available, especially if the band of interest has a Q-branch. Even after
@@ -616,7 +607,7 @@ computation of transition intensities involving eigenfunction of each ro-vibrati
 
 The Einstein-A coefficient for a particular transition from the initial state :math:`i` to the final state :math:`f` is given by
 
-\label{eq.einsteinA}
+:label: eq.einsteinA
 :math:`A_{if} = \frac{8 \pi^4 \nu^3_{if}}{3h} (2J_i + 1) \sum_{\alpha = x, y, z} \left|  \bra{\Psi^f}  \bar{\mu}_{\alpha} \ket{\Psi^i}  \right| ^2`
 
 where :math:`J_i` is the rotation quantum number for the initial state, :math:`h` is Planck's constant, :math:`\nu_{if}` is the
@@ -630,9 +621,16 @@ for any temperature can be computed relatively straightforwardly (using Exocross
 
 The absolute absorption intensities are given by
 
-\label{eq.intensity}
-:math:`I(f \leftarrow i) = \frac{A_{if}}{8 \pi c} g_{ns} (2 J_f + 1) \frac{\exp(-E_i/kT) }{Q(T) \nu^2_{if}}\times \left[ 1 - \exp\left( - \frac{c_2 
-\nu_{if}}{T}\right)\right]`
+:label: eq.intensity
+:math:`I(f \leftarrow i) = \frac{A_{if}}{8 \pi c} g_{ns} (2 J_f + 1) \frac{\exp(-E_i/kT) }{Q(T) \nu^2_{if}}\times \left[ 1 - \exp\left( - \frac{c_2 \nu_{if}}{T}\right)\right]`
 
 where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature, :math:`Q(T)` is the partition function, :math:`g_{ns}` is the
 nuclear statistical weight and :math:`c_2 = hc/k`.
+
+
+
+References
+----------
+
+
+1_ G. O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
