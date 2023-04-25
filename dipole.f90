@@ -2619,8 +2619,7 @@ contains
           if (job%verbose>=3) then 
                write(out,"(/a,i8,a,i16,a,i16,a,i8,' states;')") &
                                     '   ... [wall-clock stop]: last lower-state ',&
-                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower,&
-                                    energyI-intensity%ZPE
+                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower
                write(out,"('   ... last energy = ',f16.6)") energyI-intensity%ZPE
           endif 
           exit Ilevels_loop

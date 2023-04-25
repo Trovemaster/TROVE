@@ -6,6 +6,7 @@ Welcome to TROVE's documentation!
    :maxdepth: 4
    :caption: Contents:
 
+   intro.rst
    quickstart.rst
    theory.rst
 
