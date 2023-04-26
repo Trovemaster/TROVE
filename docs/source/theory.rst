@@ -171,7 +171,7 @@ for bond stretches and :math:`\xi_n` is used itself for bends.
 
 The method of actually finding the expansion coefficients introduced above will now be discussed. This is arguably the most
 technical part of the TROVE approach and could be skipped on first (or even second!) reading. It is based on a paper by
-Sorensen [1]_.
+Sorensen [Sorensen]_.
 
 To go from the expression for the kinetic energy in equation :eq:`schrodiger_lab_cart` to that in equation :eq:`generalT` we start by noting that :math:`\hat{T}` in the former equation can be expressed as
 
@@ -253,7 +253,7 @@ At this point further technical details of how to solve equation :eq:`chain_s_t`
 interested reader is referred to the TROVE paper [2]_ for more information. Instead a qualitative description
 will be given.
 
-Sorensen [1]_ showed what values the various components of the :math:`\mathbf{t}_{i,\lambda'}` vectors have,
+Sorensen [Sorensen]_ showed what values the various components of the :math:`\mathbf{t}_{i,\lambda'}` vectors have,
 consistent with Eckart conditions, which achieve optimum separation of rotational and vibrational motion. Equation
 :eq:`chain_s_t` can then be solved numerically. Components of the :math:`\mathbf{s}_{\lambda,i}` and :math:`\mathbf{t}_{i,\lambda'}`
 are expanded as a power series in :math:`g_n({\xi_n})` (from equation :eq:`func_of_xi` above) to a given order
@@ -734,7 +734,7 @@ nuclear statistical weight and :math:`c_2 = hc/k`.
 References
 ----------
 
-.. [1] G. O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
+.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
 
 .. [2] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules. 
 
