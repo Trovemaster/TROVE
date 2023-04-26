@@ -171,7 +171,7 @@ for bond stretches and :math:`\xi_n` is used itself for bends.
 
 The method of actually finding the expansion coefficients introduced above will now be discussed. This is arguably the most
 technical part of the TROVE approach and could be skipped on first (or even second!) reading. It is based on a paper by
-Sorensen [1_].
+Sorensen [1]_.
 
 To go from the expression for the kinetic energy in equation :eq.schrodiger_lab_cart: to that in equation :eq.generalT: we start by noting that :math:`\hat{T}` in the former equation can be expressed as
 
@@ -737,4 +737,4 @@ References
 ----------
 
 
-1_ G. O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
+[1]_ G. O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
