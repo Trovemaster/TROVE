@@ -710,7 +710,7 @@ The Einstein-A coefficient for a particular transition from the initial state :m
 .. math::
     :label: eq.einsteinA
 
-    A_{if} = \frac{8 \pi^4 \nu^3_{if}}{3h} (2J_i + 1) \sum_{\alpha = x, y, z} \left|  \bra{\Psi^f}  \bar{\mu}_{\alpha} \ket{\Psi^i}  \right| ^2
+    A_{if} = \frac{8 \pi^4 \nu^3_{if}}{3h} (2J_i + 1) \sum_{\alpha = x, y, z} \left|  \langle \Psi^f  \bar{\mu}_{\alpha} {\Psi^i}\rangle  \right|^2
 
 where :math:`J_i` is the rotation quantum number for the initial state, :math:`h` is Planck's constant, :math:`\nu_{if}` is the
 transition frequency (:math:`hc \cdot \nu_{if} = E_f - E_i`) and :math:`\Psi^f` and :math:`\Psi^i` are the initial and final rovibrational states
