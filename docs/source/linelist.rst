@@ -59,9 +59,9 @@ rules limit transitions to :math:`J'' = J'` and :math:`J'' = J' \pm 1`. Currentl
 lower Q branch transitions and so these duplicates should be removed for a complete line list. 
 Using the selection rule, intensities can be calculated by setting
 :math:`J` in the ``intensity`` block to 0,1 then 1,2 then 2,3, etc. Symmetry also limits transitions but these are molecule
-dependent. For example, for PF:sub:`3` transitions can only take place for :math:`A_1` :math:`\leftrightarrow` :math:`A_2` and 
+dependent. For example, for PF\ :sub:`3` transitions can only take place for :math:`A_1` :math:`\leftrightarrow` :math:`A_2` and 
 E :math:`\leftrightarrow` E. To make use of this symmetry the nuclear statistical weights (:math:`g_{ns}`) for the symmetries which are
-allowed should be set to their usual values but others set to 0. For example for :math:`A_1` `\leftrightarrow` `A_2` in PF:sub:`3` the
+allowed should be set to their usual values but others set to 0. For example for :math:`A_1` `\leftrightarrow` `A_2` in PF\ :sub:`3` the
 :math:`g_{ns}` would be set to 8.0 8.0 0.0. For both :math:`J` and symmetry selection rules, a separate input file and run of GAIN
 should be carried out for each selection rule.
 
@@ -164,10 +164,10 @@ An input example is
 ``Temperature`` is the temperature of interest in Kelvin. 
 
 ``Range`` specifies the wavelength range to be used,
-in this case 0 to 9000 cm:sup:`-1`. 
+in this case 0 to 9000 cm\ :sup:`-1`. 
 
 ``Npoints`` controls the density of the grid produced. In this example there will be
-10 points per cm:sup:`-1`. 
+10 points per cm\ :sup:`-1`. 
 
  ``absoprtion`` specifies that a spectra is to be computed and ``stick`` indicates
 that a stick spectrum is required. 

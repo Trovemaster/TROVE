@@ -180,7 +180,7 @@ The basis set can then be pruned using the `J=0' method. In the ``CONTRACTION`` 
       
 ``tm_cutoff`` sets the minimum intensity for removing states. This should ideally by set to as low a value as possible and
 will depend on practical considerations such as computing time and memory. ``tm_enermin`` is the minimum energy in
-wavenumbers for which pruning will occur. In this example, all states below 8000 cm:sup:`-1` will be included in the
+wavenumbers for which pruning will occur. In this example, all states below 8000 cm\ :sup:`-1` will be included in the
 basis set regardless of intensity. This value should be set as large as possible but will again be determined by practical
 considerations.
 

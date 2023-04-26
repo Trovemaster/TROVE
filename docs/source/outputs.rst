@@ -49,7 +49,7 @@ At the end of the grid the outer most points where the one-dimensional vibration
 Contracted basis
 ----------------
 
-After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in a recent paper\cite{17YuYaOv.methods} and here in Chapter _theory. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF:sub:`3`
+After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in a recent paper\cite{17YuYaOv.methods} and here in Chapter _theory. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF\ :sub:`3`
 ::
       
       Variational eigenvalues:
@@ -82,7 +82,7 @@ The final step of a vibrational or rotational calculation is an output of the ro
 
 This output section can be reached by searching for ``Zero-point-energy`` (continuing past the basis set sections). This gives the zero-point energy for the vibrational ground state of the molecule, an important quantity. Below this the rotational-vibrational energies for each symmetry are given in order of `reducing' symmetry.
 
-The vibrational energies of PF:sub:`3` will be given as an example.
+The vibrational energies of PF\ :sub:`3` will be given as an example.
 ::
       
       Variational solution - irreducible representation
@@ -95,9 +95,9 @@ In this example, ``Gamma`` is the symmetry, in this case the totally symmetric :
 
 ``j  k  t   quanta`` are related to the rotational states and are discussed below. The next two brackets are the quantum numbers of the state in both normal coordinates and local coordinates used by TROVE. Unless the relations between these quantum numbers have been set up this will not be automatically correct.
 
-The decimal before the second set of quantum numbers gives the certainty of that state consisting of the specified quantum numbers. This is related to the magnitude of the expansion coefficient of this state. For example, here the second row is a a fundamental mode of PF:sub:`3` while the third row is an overtone with :math:`\nu = 2`. Often states need to be compared to experimental assignments. For vibrational states the total excitation number is usually reliable if not the actual states included.
+The decimal before the second set of quantum numbers gives the certainty of that state consisting of the specified quantum numbers. This is related to the magnitude of the expansion coefficient of this state. For example, here the second row is a a fundamental mode of PF\ :sub:`3` while the third row is an overtone with :math:`\nu = 2`. Often states need to be compared to experimental assignments. For vibrational states the total excitation number is usually reliable if not the actual states included.
 
-An example from a :math:`J=2` calculation on PF:sub:`3` is shown below.
+An example from a :math:`J=2` calculation on PF\ :sub:`3` is shown below.
 ::
       
       Variational solution - irreducible representation
@@ -150,7 +150,7 @@ The contr files describe the details of the contracted functions formed by group
 
 The file contr-quanta.chk gives the vibrational quantum numbers for the primitive basis functions used for each class of contractions. This is just columns of integers corresponding to the primitive basis functions.
 
-The file contr-descr.chk give the details of the contracted functions themselves. This file first gives some detail on the masses of the atoms and geometries and symmetry of the molecule. This is followed by a summary of how the primitive functions were generated, for example a summary of the Numerov parameters. Details are then given on the contraction. For each class. For example for PF:sub:`3` the first class is
+The file contr-descr.chk give the details of the contracted functions themselves. This file first gives some detail on the masses of the atoms and geometries and symmetry of the molecule. This is followed by a summary of how the primitive functions were generated, for example a summary of the Numerov parameters. Details are then given on the contraction. For each class. For example for PF\ :sub:`3` the first class is
 ::
      
      Class #       1

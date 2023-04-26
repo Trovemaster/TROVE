@@ -16,8 +16,8 @@ Adding a Similar Symmetry Molecule
 ----------------------------------
 
 Adding a molecule of similar symmetry is relatively straightforward. It is possible that no new TROVE files for defining 
-the potential, etc will be required. An example of this is adding arsine (AsH:sub:`3`) when
-phosphine (PH:sub:`3`) is already set up in TROVE. Both molecules have trigonal pyramidal structure and belong to the 
+the potential, etc will be required. An example of this is adding arsine (AsH\ :sub:`3`) when
+phosphine (PH\ :sub:`3`) is already set up in TROVE. Both molecules have trigonal pyramidal structure and belong to the 
 :math:`C_{3v}` point group. 
 
 In the TROVE input file the molecule is defined in various places as was discussed in Chapter Quickstart_. If a 
@@ -35,7 +35,7 @@ as used for a previously defined molecule.
 ``MOLECULE`` is an optional keyword which does not necessarily need to be changed. 
 
 The ``ZMAT`` does need to be changed for a new molecule type but probably only the atomic masses. For example
-on going from PH:sub:`3` to AsH:sub:`3`, only the central atom mass changes. Similarly the ``Equilibrium`` block needs to 
+on going from PH\ :sub:`3` to AsH\ :sub:`3`, only the central atom mass changes. Similarly the ``Equilibrium`` block needs to 
 be changed with the new molecule's bond lengths and angles. The order of these will be the same as the 
 previously defined molecule if the same Z-matrix is used.
 
@@ -93,7 +93,7 @@ The mol File
 
 The mol file controls the coordinates used for a molecule in TROVE. Many such files have been written and when implementing
 a new mol file it is recommended to follow a similar style to these. Specific details such as which routines need to be 
-set to ``Public`` and which modules are to be used can be obtained from previous mol files. The PF:sub:`3` molecule will be used
+set to ``Public`` and which modules are to be used can be obtained from previous mol files. The PF\ :sub:`3` molecule will be used
  to illustrate  each section of the mol file.
 
 The details of the TROVE coordinates and transformations to Z-matrix coordinates are given in the 
@@ -109,7 +109,7 @@ As is standard in Fortran, any variables required in the subroutine are then dec
 multiple IF statements to choose which transform and coordinates to use. As mentioned, many may be set up as 
 some will work better for specific applications/molecules. 
 
-The PF:sub:`3` molecule is of the generic type XY:sub:`3` and the mol file used is  ``mol_xy3.f90``. The first part of the
+The PF\ :sub:`3` molecule is of the generic type XY\ :sub:`3` and the mol file used is  ``mol_xy3.f90``. The first part of the
 transform subroutine is 
 ::
      
@@ -131,7 +131,7 @@ This will print out the message if the ``verbose`` value is $>5$. Next the value
 then the molecule's equilibrium parameters (defined in a global vector from the input file) are subtracted from the
 ``src``. This is for Z-matrix to TROVE. Otherwise, the ``src`` vector is transferred to ``dsrc``. 
 
-After this initial step many different choices of coordinates and transforms are defined. From Chapter Quickstart_ the PF:sub:`3` example was defined using
+After this initial step many different choices of coordinates and transforms are defined. From Chapter Quickstart_ the PF\ :sub:`3` example was defined using
 ::
      
      dstep            0.01
@@ -189,7 +189,7 @@ The symmetry group and coordinates used are chosen using ``case`` statements sim
 are defined in the input file. For each symmetry operation the ``dst`` coordinates should be defined in terms of the 
 initial ``src`` coordinates. This may involve introducing normalisation constants or other variables as needed. 
 
-For PF:sub:`3` the symmetry transforms are defined in  ``ML_symmetry_transformation_XY3(ioper,nmodes,src,dst)``. The subroutine
+For PF\ :sub:`3` the symmetry transforms are defined in  ``ML_symmetry_transformation_XY3(ioper,nmodes,src,dst)``. The subroutine
 starts by performing checks on the number of modes. The symmetry group is then chosen as
 ::
      
@@ -200,7 +200,7 @@ starts by performing checks on the number of modes. The symmetry group is then c
        stop 'ML_symmetry_transformation_XY3 - bad symm. type'
      case('C3V','C3V(M)')
      
-where both ``C3V`` and ``C3V(M)`` can be used in the input file. As there are many TROVE coordinates defined for  XY:sub:`3` molecules, further ``case`` selections are required (if for a given molecule only one type of TROVE coordinates
+where both ``C3V`` and ``C3V(M)`` can be used in the input file. As there are many TROVE coordinates defined for  XY\ :sub:`3` molecules, further ``case`` selections are required (if for a given molecule only one type of TROVE coordinates
 has been set up then no further selects are necessary). For the ``r-alpha`` example the symmetry is defined by
 ::
      
@@ -237,8 +237,8 @@ The centre of mass of the molecule in Cartesian coordinates is defined in the su
 other subroutine arguments are optional and are for defining multiple geometries. This is needed if HBJ theory
 is being used for a large amplitude coordinate. 
 
-For PF:sub:`3` the subroutine is ``ML_b0_XY3``. This routine starts by performing checks to see if the number of 
-atoms, equilibrium coordinates and atomic masses are consistent for an XY:sub:`3` molecule. Coordinates are then defined from
+For PF\ :sub:`3` the subroutine is ``ML_b0_XY3``. This routine starts by performing checks to see if the number of 
+atoms, equilibrium coordinates and atomic masses are consistent for an XY\ :sub:`3` molecule. Coordinates are then defined from
 the input file equilibrium block as
 ::
      
@@ -267,7 +267,7 @@ Using these coordinates the ``b0`` matrix is filled in with the Cartesian coordi
      
 
 In this case ``b0`` has been defined explicitly with respect to the centre of mass of the molecule. If this is 
-not the case then the centre of mass can be found using a subroutine. This step is part of the XY:sub:`3` subroutine as
+not the case then the centre of mass can be found using a subroutine. This step is part of the XY\ :sub:`3` subroutine as
 ::
      
      if (any(molec%AtomMasses(2:4)/=mH1)) then
@@ -279,7 +279,7 @@ not the case then the centre of mass can be found using a subroutine. This step 
      
 
 
-If the molecule contains a non-rigid degree of freedom (for example, the umbrella motion in NH:sub:`3`) then HBJ theory is used
+If the molecule contains a non-rigid degree of freedom (for example, the umbrella motion in NH\ :sub:`3`) then HBJ theory is used
 as discussed in Chapter theory_. In this case TROVE expands the Hamiltonian on a grid of geometries along the 
 non-rigid degree of freedom. The other arguments to the subroutine then come into play. ``Npoints`` is the number of 
 points the non-rigid degree of freedom is split into, chosen in the ``BASIS`` block of the input file. ``rho_i`` 
@@ -289,7 +289,7 @@ geometry (usually at equilibrium) and the ends of the grid along the non-rigid c
 The array which contains the Cartesian coordinates, ``b0`` is of size ``(Natoms,3,Npoints)``. For rigid molecules, 
 ``Npoints`` = 0 and only the equilibrium geometry is necessary. For non-rigid, the coordinates of each atom are required
 at each point along the non-rigid coordinate. A loop over  ``Npoints`` is required and the way the other rigid 
-coordinates change at each ``rho_i`` is given. The mol file for NH:sub:`3` or H$_2$O$_2$ shows examples of this. 
+coordinates change at each ``rho_i`` is given. The mol file for NH\ :sub:`3` or H$_2$O$_2$ shows examples of this. 
 Ideally the rigid coordinates should be set to change along the least energy path. Quantum chemistry programs such as 
 MOLPRO can be used to find this where a geometry optimisation is carried out at each step. Alternatively
 it can be done `by hand' from the PES.
@@ -320,7 +320,7 @@ The function arguments are as follows. ``ncoords`` and ``natoms`` are the number
 of atomic positions in Cartesian coordinates. ``force`` is a list of parameters for the PES defined in the input. The
 energy at a given coordinate is the output (result) of the function, ``f``.  
 
-For the PF:sub:`3` molecule the pot file is ``pot_xy3.f90``. This file contains multiple PES and DMS functions. From the PF:sub:`3`
+For the PF\ :sub:`3` molecule the pot file is ``pot_xy3.f90``. This file contains multiple PES and DMS functions. From the PF\ :sub:`3`
 example the PES is chosen in the input file as `` MLpoten_xy3_morbid_10``. This function starts by defining equilibrium
 parameters from the input file and coordinates from ``local``. The specific choice for the ``r-alpha`` coordinate
 transform is not given by a ``case`` (unlike others in the function) but instead by the specifics of the coordinates
@@ -359,7 +359,7 @@ obtained from symbolic mathematical software such as Mathematica or Python.
 
 Rather than explicitly give all the symmetrised expansion coordinates in a PES routine, another approach is to 
 do the symmetry `on the fly'. This means to apply the symmetry operations to coordinates by making use of the 
-symmetry operation matrices for the group. This method is used in TROVE for the C:sub:`2`H:sub:`4` molecule. In the pot file this
+symmetry operation matrices for the group. This method is used in TROVE for the C\ :sub:`2`H\ :sub:`4` molecule. In the pot file this
 is specified as
 ::
      
