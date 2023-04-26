@@ -184,7 +184,7 @@ wavenumbers for which pruning will occur. In this example, all states below 8000
 basis set regardless of intensity. This value should be set as large as possible but will again be determined by practical
 considerations.
 
-An example of using this procedure is for the ethylene (C$_2$H$_6$) molecule [18MaYaTe]_.
+An example of using this procedure is for the ethylene (C\ :sub:`2`H\ :sub:`4`) molecule [18MaYaTe]_.
 For this relatively large molecule a basis set
 with a polyad number of 10 produced split ``matelem`` files which were 158 Gb each. Using these basis sets would not
 have been practical at high $J$s. Using the pruning method with the parameters as given in the example above reduced the

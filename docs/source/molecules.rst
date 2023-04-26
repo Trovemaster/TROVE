@@ -393,8 +393,8 @@ Notes: Data for :math:`^{35}{\rm Cl}` and :math:`^{37}{\rm Cl} isotopologues.
 Reference: [15OwYuTa]_,[18OwYaTe]_.
 
 
-Ethylene, C\ :sub:`2`H\ :sub:`4`
-----------------------------
+Ethylene, C\ :sub:`2`\ H\ :sub:`4`
+----------------------------------
 
 Symmetry: :math:`D_2h`
 
