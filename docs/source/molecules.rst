@@ -264,8 +264,8 @@ Reference: [15AlOvYu]_, [16AlPoOv]_.
 
 
 
-Phosphine, PH:sub:`3`
----------------------
+Phosphine, PH :sub:`3`
+----------------------
 
 Symmetry: :math:`C_{3v}`
 
@@ -298,8 +298,8 @@ References: [13SoYuTe]_, [15SoAlTe]_.
 
 
 
-Formaldehyde, H:sub:`2`CO
--------------------------
+Formaldehyde, H :sub:`2`CO
+--------------------------
 
 Symmetry: :math:`C_{2v}`
 
@@ -329,8 +329,8 @@ Results: Linelist for temperatures up to 1500 K for transitions up to 10,000 cm:
 Reference: [15AlOvPo]_. 
 
 
-Silane, SiH:sub:`4`
--------------------
+Silane, SiH :sub:`4`
+--------------------
 
 Symmetry: :math:`T_d`
 
