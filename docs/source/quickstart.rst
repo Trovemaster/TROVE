@@ -11,7 +11,7 @@ and that a PES and DMS has been implemented.
 If this is not the case then see later chapters for how this is carried out. 
 
 TROVE inputs will be treated in a general manner with occasional examples given for 
-the phosphorus trifluoride molecule, PF3. This molecule has the same trigonal pyramidal shape as ammonia but 
+the phosphorus trifluoride molecule, PF:sub:`3`. This molecule has the same trigonal pyramidal shape as ammonia but 
 without the complication of tunnelling inversion. This is a 'rigid molecule', for molecules with a non-rigid degree of 
 freedom, see later chapters. A 'typical' way TROVE is used to go from vibrational calculations 
 to full line lists is also given. 
@@ -23,7 +23,7 @@ Input File Keywords and Check Point Files
 
 The TROVE input file is structured in blocks with keywords within each block controlling options and parameters
 of the calculation. These blocks will be described individually along with a description of the checkpoint file structure. 
-A full input file for PF3 is given at the end of the chapter.
+A full input file for PF:sub:`3` is given at the end of the chapter.
 
 Memory Allocation
 -----------------
@@ -132,7 +132,7 @@ Symmetry
 
 The symmetry of the molecule is specified by the `SYMGROUP` keyword. 
 The symmetry of a given molecule is set in the .mol file which, as ever, will be discussed in later chapters. 
-For PF3 the ``SYMGROUP`` is set using
+For PF:sub:`3` the ``SYMGROUP`` is set using
 ::
      
      SYMGROUP C3v(M)
@@ -194,11 +194,11 @@ Another option is ``local`` which  uses curvilinear coordinates [15YaYu]_. Curre
 
 `TRANSFORM` specifies how to transform the coordinates from Z-matrix to the coordinates used in TROVE.
 This is specified in the .mol file for the molecule of interest.
-For the PF3 example here, the details of the transformation are given in the ``r-alpha`` subroutine.
+For the PF:sub:`3` example here, the details of the transformation are given in the ``r-alpha`` subroutine.
 
 As the symmetry transforms only need to specified for each type of molecule of the same symmetry, they can be reused. 
 For example PCl3 belongs to the same symmetry
-group as PF3. The ``MOLTYPE`` keyword identifies the "type of molecule" and molecules of the same symmetry can 
+group as PF:sub:`3`. The ``MOLTYPE`` keyword identifies the "type of molecule" and molecules of the same symmetry can 
 then be straightforwardly used. This keyword specifies the subroutine to use to define rotational symmetries, etc.
 
 `MOLECULE` is an optional keyword which specifies the molecule's name.
@@ -213,7 +213,7 @@ motion in ammonia or the torsional motion in ethane. In this case HBJ theory (se
 Z-Matrix Block
 --------------
 
-The Z-matrix block specifies the molecule's geometry and masses of atoms. For example for PF3 the Z-matrix is
+The Z-matrix block specifies the molecule's geometry and masses of atoms. For example for PF:sub:`3` the Z-matrix is
 ::
      
      ZMAT
@@ -237,7 +237,7 @@ Basis Block
 The Basis block specifies the type of basis functions used by TROVE and how the kinetic and potential energy is expanded
 for each coordinate.
 Specifically, the one-dimensional basis functions which will then be used to build up contracted and symmetrized functions. 
-An example for PF3 is 
+An example for PF:sub:`3` is 
 ::
      
      BASIS
@@ -252,7 +252,7 @@ An example for PF3 is
      
 The first line in this block, ``0,'JKtau``, ``Jrot 0`` specifies the rotational functions. 
 For :math:`J>0` calculations the value of ``Jrot`` is changed to :math:`J` of interest.
-PF3 has :math:`3N - 6 = 3(4) - 6 = 6` internal degrees of freedom and thus 6 basis functions are required. 
+PF:sub:`3` has :math:`3N - 6 = 3(4) - 6 = 6` internal degrees of freedom and thus 6 basis functions are required. 
 Basis functions are grouped using an integer label.
 For this example, '1s' are the P-F stretches and '2s' are the P-F bends. The grouping is used for producing symmetric 
 combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this
@@ -468,7 +468,7 @@ If this is not the case (for example, for a test calculation) then a literature 
 
 
 ``GNS`` is the spin statistical weights for each symmetry. These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen, chapter 8 [98BuJe]_. ``selection`` is used to specify which symmetries can make up the initial and final states of a transition.
-The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Thus for the PF:math:`_3` example, A:math:`_1` and A:math:`_2` are grouped together while E can only go to E. Integers are used to form groups, in this case 1 1 are for A:math:`_1` and A:math:`_2` and 2 is for E.
+The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Thus for the PF:sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while E can only go to E. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E.
 
 
 ``J,  i,j`` specifies the rotational states to be included. In the example above 0 to 10 were used. It is often 
@@ -499,7 +499,7 @@ once they have been decided on and typically the user does not need to modify th
 
 This section can be followed most easily in conjunction with the TROVE training directory which should come
 with this manual. This contains a TROVE executable file and inputs, outputs and checkpoints for a model
-PF:math:`_3` calculation as well as a README file. It may be necessary to compile a version of TROVE on the local 
+PF:sub:`3` calculation as well as a README file. It may be necessary to compile a version of TROVE on the local 
 computer to get working executable. 
 
 The first step in any TROVE calculation is the production of the hamiltonian.chk checkpoint file. 
@@ -610,7 +610,7 @@ The use of the program will be described in Chapter \ref{chap:linelists} but the
 Sample TROVE Input File
 -----------------------
 
-Below is a sample TROVE input file for the molecule PF:math:`_3`. Using this file (and adding in Intensity blocks when needed)
+Below is a sample TROVE input file for the molecule PF:sub:`3`. Using this file (and adding in Intensity blocks when needed)
 a full line list for this molecule could be produced. To save space the PES and DMS parameters have not been included
 in full. The actual text file should be kept in the same directory as this manual.
 ::
