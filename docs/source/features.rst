@@ -64,9 +64,10 @@ Since these are independent calculations however, the elements can be saved and 
 matrix.
 
 To use this restart feature, in the ``CHECK_POINT`` block the ``matelem`` keyword should be set to
-\begin{verbatim}
-matelem  save  split  0 0 dump
-\end{verbatim}
+::
+     
+     matelem  save  split  0 0 dump
+     
 In this case the ``dump`` keyword gets TROVE to sequentially save the matrix at intervals. This will produce an output
 file which after giving the dimensions of the contracted matrix will print out to which matrix element TROVE has saved.
 If the calculation then runs out of time, the user can read back in these pre-computed elements up to that point by

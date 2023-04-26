@@ -1,6 +1,6 @@
 New Molecules
 =============
--- _newmol:
+.. _newmol:
 
 In this chapter details will be given on how to set up a new molecule in TROVE. 
 There are two approaches to this. If a molecule of the same symmetry has already been set up in TROVE then it is
@@ -111,21 +111,22 @@ some will work better for specific applications/molecules.
 
 The PF:sub:`3` molecule is of the generic type XY:sub:`3` and the mol file used is  ``mol_xy3.f90``. The first part of the
 transform subroutine is 
-\begin{verbatim}
-if (verbose>=5) write(out,"('ML_coordinate_transform_XY3/start')")
-!
-if (direct) then
-!
-dsrc(:) = src(:) - molec%local_eq(:)
-!
-else
-!
-dsrc(:) = src(:)
-!
-endif
-!
-nsrc = size(src)
-\end{verbatim}
+::
+     
+     if (verbose>=5) write(out,"('ML_coordinate_transform_XY3/start')")
+     !
+     if (direct) then
+     !
+     dsrc(:) = src(:) - molec%local_eq(:)
+     !
+     else
+     !
+     dsrc(:) = src(:)
+     !
+     endif
+     !
+     nsrc = size(src)
+     
 This will print out the message if the ``verbose`` value is $>5$. Next the value of ``direct`` is checked. If true
 then the molecule's equilibrium parameters (defined in a global vector from the input file) are subtracted from the
 ``src``. This is for Z-matrix to TROVE. Otherwise, the ``src`` vector is transferred to ``dsrc``. 
