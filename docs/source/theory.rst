@@ -92,7 +92,7 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
 
 
 .. math::
-     :label: eq.general_T
+     :label: eq.generalT
      
      \hat{T} = \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} 
      + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}
@@ -108,11 +108,11 @@ centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`
 as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational
 motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these
 terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
-equation :eq.general_T: in the compact form
+equation :eq.generalT: in the compact form
 
 
 .. math::
-   :label: eq.general_T_compact
+   :label: eq.generalT_compact
    
    \hat{T} = \frac{1}{2} \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \hat{\Pi}_{\lambda} G_{\lambda,\lambda'}(\xi)\hat{\Pi}_{\lambda'} + U(\xi)
 
@@ -124,7 +124,7 @@ unambiguously define the instantaneous relative positions of the nuclei. Example
 (see below) and symmetric combinations of these. This ability to choose which coordinates to use is the power of this approach
 which makes it applicable to a wide variety of molecules.
 
-To utilise equation :eq.general_T: the expansion terms :math:`G_{\lambda,\lambda'}(\xi)`, pseudopotential term :math:`U(\xi)` and
+To utilise equation :eq.generalT: the expansion terms :math:`G_{\lambda,\lambda'}(\xi)`, pseudopotential term :math:`U(\xi)` and
 the Born-Oppenheimer potential energy function :math:`V` must be expressed in terms of :math:`\xi_n`. This is done by expressing these
 quantities as a series expansion in terms of the :math:`\xi` themselves or functions of them
 
@@ -173,7 +173,7 @@ The method of actually finding the expansion coefficients introduced above will 
 technical part of the TROVE approach and could be skipped on first (or even second!) reading. It is based on a paper by
 Sorensen [1_].
 
-To go from the expression for the kinetic energy in equation :eq.schrodiger_lab_cart: to that in equation :eq.general_T: we start by noting that :math:`\hat{T}` in the former equation can be expressed as
+To go from the expression for the kinetic energy in equation :eq.schrodiger_lab_cart: to that in equation :eq.generalT: we start by noting that :math:`\hat{T}` in the former equation can be expressed as
 
 
 .. math::
@@ -265,7 +265,7 @@ set up and solved numerically by making use of the fact that values of :math:`\m
 The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :math:`U` given in equations :eq.G_with_s: and
 :eq.U_with_s: are expressed in terms of products of :math:`g_n(\xi_n)` raised to powers and multiplied by expansion
 coefficients which are found from the linear equations described. This ultimately means that we can write :math:`\hat{T}`
-in terms of molecule-fixed :math:`xyz` coordinates as in equation :eq.general_T:. The entire procedure
+in terms of molecule-fixed :math:`xyz` coordinates as in equation :eq.generalT:. The entire procedure
 (although complicated) is a numerical one
 and thus does not require any analytic algebra to define the kinetic energy operator for a given molecular shape. This is
 what makes TROVE general.
