@@ -33,8 +33,7 @@ The total working memory which TROVE can use in a calculation is specified by
      
     mem 20GB
     
-where in this case TROVE could use 20 GB of RAM. If no ``mem`` command is given TROVE will assume the whole CPU memory is available which can cause problems if running on a shared memory computer. When running TROVE
-on such machines it is recommended that the memory is set to the combined memory of the number of cores being used.  
+where in this case TROVE could use 20 GB of RAM. If no ``mem`` command is given TROVE will assume the whole CPU memory is available which can cause problems if running on a shared memory computer. When running TROVE on such machines it is recommended that the memory is set to the combined memory of the number of cores being used.  
 
 Kinetic and Potential Energy Expansion Order
 --------------------------------------------
@@ -86,7 +85,7 @@ The polyad number and maximum energy for the primitive basis functions are set i
      END
      
 As discussed in more detail in later chapters, TROVE uses products of primitive one-dimensional functions as basis functions. 
-The polyad number, :math:`P`, is a way to restrict the size of the basis set.\cite{TROVE} 
+The polyad number, :math:`P`, is a way to restrict the size of the basis set [TROVE]_.
 The sum of the primitive function's vibrational quantum number, :math:`v_i`, is then restricted to be below ``N``, that is:
 \begin{equation}
 \label{eq.polyad}
@@ -100,8 +99,7 @@ Note that because of how the polyad number is defined, even increasing :math:`N`
 
 Another way of limiting the size of the primitive basis functions is by energy. 
 The ``enercut`` keyword specifies the maximum energy a primitive basis function can have if it is to be included. 
-As discussed below, the basis set is further restricted by energy in the Contraction block and so usually ``x``
- is set to a large value. For example 40,000 (in units of wavenumbers, cm:math:`^{-1}`). 
+As discussed below, the basis set is further restricted by energy in the Contraction block and so usually ``x`` is set to a large value. For example 40,000 (in units of wavenumbers, cm:math:`^{-1}` ). 
 
 Contraction Block
 -----------------
@@ -126,7 +124,7 @@ Similar to the primitive block, ``enercut`` sets the maximum energy a contractio
 Because the maximum energy of the contracted basis functions are set, it makes sense to set the value of ``enercut`` in the Primitive block large.
 
 Also given in the Contraction block are parameters relating to how TROVE works out the symmetry
-of contracted basis functions (``coeff_thresh``, ``degeneracy``). This will be described in later chapters and has been discussed in a recent publication \cite{17YuYaOv.methods}.
+of contracted basis functions (``coeff_thresh``, ``degeneracy``). This will be described in later chapters and has been discussed in a recent publication [17YuYaOv]_.
 
 
 Symmetry
@@ -226,8 +224,7 @@ The Z-matrix block specifies the molecule's geometry and masses of atoms. For ex
      end
      
 The Z-matrix used by TROVE is very similar to those used by electronic structure programs such as Molpro 
-and Gaussian.\cite{06Jensen.book}
-The first column is the atom's (element) symbol. The second column is the atom which the atom of that row is connected to. 
+and Gaussian. The first column is the atom's (element) symbol. The second column is the atom which the atom of that row is connected to. 
 The third column is the bond angle between the atom of the row and a specified atom. The fourth column is the dihedral angle 
 between the atom of that row and a specified atom. The fifth column has to do with the way a particular molecule type is
 set up in TROVE and describes the type of dihedral angle. The sixth column is the atom's mass in atomic mass units. 
@@ -259,21 +256,13 @@ PF3 has :math:`3N - 6 = 3(4) - 6 = 6` internal degrees of freedom and thus 6 bas
 Basis functions are grouped using an integer label.
 For this example, '1s' are the P-F stretches and '2s' are the P-F bends. The grouping is used for producing symmetric 
 combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this
-procedure are discussed in the Theory chapter and in a recent paper \cite{17YuYaOv.methods}.
+procedure are discussed in the Theory chapter and in a recent paper [17YuYaOv]_.
 
 For a given basis function row the options are as follows. The first keyword specifies what the one-dimensional basis 
-functions are. In this example they are numerically generated using the Numerov-Cooley method. 
-Other options are ``harmonic`` and ``morse`` where these analytical basis functions shall be used.
-The second keyword specifies how the kinetic energy operator is expanded. The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates` of the form
- :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while ``linear`` (the angles themselves) 
+functions are. In this example they are numerically generated using the Numerov-Cooley method. Other options are ``harmonic`` and ``morse`` where these analytical basis functions shall be used. The second keyword specifies how the kinetic energy operator is expanded. The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates' of the form  :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while ``linear`` (the angles themselves) 
 coordinates are used for the bends.
 
-The numbers after ``range`` specify the range of vibrational quantum numbers of the one-dimensional functions to be used.
- For the example here, 0-7 is used for stretches and 0-14 for bends.
-This is related to the definition of the maximum polyad number used in equation \ref{eq.polyad}. The number after ``resc``
-gives the waiting of the vibrational quantum number for that coordinate. 
-Since the P-F stretches here have a waiting of 2, it only makes sense to generate them from 0-7 if the
-polyad number is set to 14.
+The numbers after ``range`` specify the range of vibrational quantum numbers of the one-dimensional functions to be used.  For the example here, 0-7 is used for stretches and 0-14 for bends. This is related to the definition of the maximum polyad number used in equation \ref{eq.polyad}. The number after ``resc`` gives the waiting of the vibrational quantum number for that coordinate.  Since the P-F stretches here have a waiting of 2, it only makes sense to generate them from 0-7 if the polyad number is set to 14.
 
 ``points`` and   ``borders`` specify the number of points and the starting points for the Numerov-Cooley integration.
 Generating these one-dimensional functions is fast and so many points should be taken. 
@@ -478,12 +467,8 @@ Note that at high temperatures enough energy levels must be included for accurat
 If this is not the case (for example, for a test calculation) then a literature value could be used.
 
 
-``GNS`` is the spin statistical weights for each symmetry. 
-These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen, chapter 8 \cite{98BuJexx}.
-``selection`` is used to specify which symmetries can make up the initial and final states of a transition.
-The product of the upper and lower eigenfunctions must contain a component of the dipole itself \cite{98BuJexx}. Thus for the PF:math:`_3`
-example, A:math:`_1` and A:math:`_2` are grouped together while E can only go to E. Integers are used to form groups, in this case
-1 1 are for A:math:`_1` and A:math:`_2` and 2 is for E.
+``GNS`` is the spin statistical weights for each symmetry. These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen, chapter 8 [98BuJe]_. ``selection`` is used to specify which symmetries can make up the initial and final states of a transition.
+The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Thus for the PF:math:`_3` example, A:math:`_1` and A:math:`_2` are grouped together while E can only go to E. Integers are used to form groups, in this case 1 1 are for A:math:`_1` and A:math:`_2` and 2 is for E.
 
 
 ``J,  i,j`` specifies the rotational states to be included. In the example above 0 to 10 were used. It is often 
@@ -571,7 +556,7 @@ Once the ``contr_matelem.chk`` file has been created along with vibrational eige
 it is in principle possible to calculate J:math:`>0` energies. 
 A faster and more efficient way to do this however is to make
 use of the ``J=0 representation``. This is where the vibrational eigenfunctions for J=0 calculation 
-are used as a basis set for J:math:`>0` calculations.\cite{jt466} This usually leads to much faster
+are used as a basis set for J:math:`>0` calculations.  This usually leads to much faster
 calculations of excited rotational states. 
 To use this method put ``model j=0`` anywhere in the Contraction block and in the Checkpoint block put
 ::
@@ -596,6 +581,7 @@ to
      
      0,JKtau, Jrot 1
      
+     
 (or whatever J of interest). 
 The ``model j=0`` keyword should be left in the Contraction block. In the Diagonalizer block the keyword ZPE should 
 be added to set the vibrational zero point energy. 
@@ -617,7 +603,7 @@ The Intensity block should be included in the input block with the ``absorption`
 For both transition moment and absorption intensity calculations everything should be set to read in the Checkpoint block 
 (with the relevant checkpoint files included in the directory). 
 
-Although TROVE can calculate intensities, the GPU program GAIN can do this far faster.\cite{jt653} 
+Although TROVE can calculate intensities, the GPU program GAIN can do this far faster [GAIN]_.
 The use of the program will be described in Chapter \ref{chap:linelists} but the input is the same as described above. 
 
 
@@ -783,3 +769,9 @@ in full. The actual text file should be kept in the same directory as this manua
 .. [15YaYu] A. Yachmenev, S. N. Yurchenko, J. Chem. Phys. 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the eckart frame.
 
 
+.. [98BuJe] P. R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition
+
+
+.. [17YuYaOv] S. N. Yurchenko, A. Yachmenev, R. I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
+
+.. [GAIN] A. F. Al-Refaie, J. Tennyson, S. N. Yurchenko, Comput. Phys. Commun. 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
