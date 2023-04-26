@@ -162,7 +162,7 @@ For J > 0 calculations, the keyword ``ZPE`` followed by the vibrational zero poi
 so that rotational-vibrational energies are also given relative to the ground state.
 
 For large calculations, it is more efficient to diagonalize each symmetry's Hamiltonian matrix separately. The symmetry of 
-interest is specified using the keyword ``gamma n`` where ``n``=1,2.. is the symmetry of interest.
+interest is specified using the keyword ``gamma n`` where ``n`` = 1,2.. is the symmetry of interest.
 
 Print Out Level
 ---------------
@@ -191,9 +191,8 @@ The molecule is defined in TROVE by the following
 `dstep` has to do with how fine a grid TROVE carries out the coordinate transform on.
 
 The ``COORDS`` keyword specifies the type of internal coordinates. The standard option is ``linear`` which indicates 
-that the kinetic and potential energy should be expanded in linear coordinates \cite{TROVE}. 
-Another option is ``local`` which 
-uses curvilinear coordinates \cite{15YaYuxx.method}. Currently curvilinear coordinates are not a part of 'standard' TROVE. 
+that the kinetic and potential energy should be expanded in linear coordinates [TROVE]_. 
+Another option is ``local`` which  uses curvilinear coordinates [15YaYu]_. Currently curvilinear coordinates are not a part of 'standard' TROVE. 
 
 `TRANSFORM` specifies how to transform the coordinates from Z-matrix to the coordinates used in TROVE.
 This is specified in the .mol file for the molecule of interest.
@@ -781,5 +780,6 @@ in full. The actual text file should be kept in the same directory as this manua
 .. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules. 
 
 
+.. [15YaYu] A. Yachmenev, S. N. Yurchenko, J. Chem. Phys. 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the eckart frame.
 
 

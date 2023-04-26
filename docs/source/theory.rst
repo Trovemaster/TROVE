@@ -495,13 +495,13 @@ The Schrodinger equation in matrix form is written as
 
 where :math:`\mathbf{H}` is the Hamiltonian matrix, :math:`\mathbf{C}` is a matrix of coefficients and :math:`\mathbf{E}` is a diagonal
 matrix of energies (or 'eigenvalues'). :math:`\mathbf{H}` contains matrix elements of :eq:`rovibH` with the basis functions
-of equation :eq:`rovib_basis:. :math:`\mathbf{C}` is a matrix of (unknown) coefficients which multiply each basis function
+of equation :eq:`rovib_basis`. :math:`\mathbf{C}` is a matrix of (unknown) coefficients which multiply each basis function
 of equation :eq:`rovib_basis` to give a variational approximation to the eigenfunction of that rotational-vibrational state.
- Each column will give the coefficients required for a single state. :math:`\mathbf{E}` contains the energies of each state. Equation
+ Each column will give the coefficients required for a single state. :math:`E` contains the energies of each state. Equation
 :eq.Schrodinger_matrix` is an eigenvalue equation. To solve it the Hamiltonian matrix is 'diagonalised'. This is a
 standard problem in many areas of science and mathematics and general programs have been written for its solution. TROVE
 uses the LAPACK/BLAS libraries. The full Hamiltonian decouples into blocks of independent :math:`J` and symmetry :math:`\Gamma` that is, matrix elements 
-between different :math:`J`s and :math:`\Gamma`s are zero. This greatly reduces the size of the matrices to
+between different :math:`J` and :math:`\Gamma` are zero. This greatly reduces the size of the matrices to
 be diagonalised.
 
 After diagonalisation of :math:`\mathbf{H}` the coefficients are stored (if \verb|Eigenfunc SAVE| is used). Further calculations
