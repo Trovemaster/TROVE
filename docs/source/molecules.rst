@@ -14,10 +14,10 @@ linelists if they were calculated.
 
 
 
-Hydrogen sulfide, H:sub:`2`S
+Hydrogen sulfide, H :sub:`2` S
 ----------------------------
 
-Symmetry: C:math:`_{2v}`
+Symmetry: :math:`C_{2v}`
 
 Coordinates: Linearized coordinates. :math:`\xi_1 = r_1^l - r_e`, :math:`\xi_2 = r_2^l - r_e` and :math:`\xi = \alpha^l - \alpha_e` .
 
@@ -120,7 +120,7 @@ are of course recommended such as Duo [Duo]_. CO, like H:sub:`2`, CO is included
 Reference: [TROVE]_
 
 
-Ammonia, NH:sub:`3`
+Ammonia, NH :sub: `3`
 -------------------
 
 Symmetry: :math:`C_{3v}`
@@ -156,8 +156,8 @@ line list from the work of Coles \textit{et al.} [10CoYuTe]_.
 Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_. 
 
 
-Methane, CH:sub:`4`
--------------------
+Methane, CH :sub:`4`
+--------------------
 
 Symmetry: :math:`{T}_d`
 
@@ -194,8 +194,8 @@ symmetry of methane meant special symmetry considerations are required. Details 
 Reference: [13YuTeBa]_, [14YuJo]_. 
 
 
-Sulfur trioxide, SO:sub:`3`
----------------------------
+Sulfur trioxide, SO :sub:`3`
+----------------------------
 
 Symmetry: :math:`D_{3h}`
 
@@ -227,8 +227,8 @@ a complete linelist at 800 K. For calculating :math:`J` this large, special proc
 Reference: [16UnTeYu]_. 
 
 
-Hydrogen peroxide, H:sub:`2`O:sub:`2`
--------------------------------------
+Hydrogen peroxide, H :sub:`2` O :sub:`2`
+----------------------------------------
 
 Symmetry: :math:`D_{2h}`. This is not the same as the point group of the molecule which is C:sub:`2`.
 
