@@ -1,7 +1,7 @@
 TROVE Quickstart
 ****************
 
-.. Quickstart:
+.. _Quickstart:
 
 
 The aim of this chapter is to get a new TROVE user, especially PhD students and postdocs, up 
@@ -154,9 +154,9 @@ There is another keyword, ``enermax``, which limits the energies of eigenfunctio
       enermax 16000.0
      end
      
-If a pure vibrational calculation (J = 0) is being carried out, 
+If a pure vibrational calculation (:math:`J = 0`) is being carried out, 
 the energies of excited states are automatically given relative to the zero point energy (ZPE) of the ground vibrational state. 
-For J > 0 calculations, the keyword ``ZPE`` followed by the vibrational zero point energy should be specified 
+For :math:`J > 0` calculations, the keyword ``ZPE`` followed by the vibrational zero point energy should be specified 
 so that rotational-vibrational energies are also given relative to the ground state.
 
 For large calculations, it is more efficient to diagonalize each symmetry's Hamiltonian matrix separately. The symmetry of 
@@ -759,7 +759,8 @@ in full. The actual text file should be kept in the same directory as this manua
 
 
 
-
+References 
+----------
 
 
 

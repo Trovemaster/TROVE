@@ -9,6 +9,12 @@ Welcome to TROVE's documentation!
    intro.rst
    quickstart.rst
    theory.rst
+   outputs.rst
+   molecules.rst
+   newmolecules.rst
+   linelist.rst
+   refinement.rst
+   features.rst
 
 News
 ====
