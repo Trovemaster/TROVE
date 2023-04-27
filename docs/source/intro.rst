@@ -1,9 +1,9 @@
 Introduction
-============
+************
 .. _sec-intro:
 
 What is TROVE?
---------------
+==============
 
 
 TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs primarily designed for the calculation of molecular infrared line lists [1]_.
@@ -17,7 +17,7 @@ The philosophy of TROVE is to enable the study of molecules of arbitrary structu
 TROVE calculates rotational-vibrational energy levels using the variational method. In very simple terms this method requires a suitable choice of functions called a basis set, the calculation of a Hamiltonian matrix using the basis set and the diagonalisation of the Hamiltonian. The eigenvalues are the energy levels for the system while the eigenfunctions are the states/wavefunctions of the system. TROVE carries out this procedure in a very sophisticated manner by building up basis sets from calculations on smaller parts of the system and makes use of symmetry to simplify the calculation of matrix elements and reduce the size of matrices to be diagonalised. Despite the complexity of the implementation in TROVE, the basic procedure should be kept in mind.
 
 What is this manual for?
-------------------------
+========================
 
 This aim of this manual is to describe the theory behind TROVE and especially how to operate TROVE in more detail than would be possible in a journal publication. Since the original paper, many new features have been added to TROVE which have been described as they were applied. In this manual these new features will be described in one place in more detail.
 

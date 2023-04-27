@@ -1,6 +1,5 @@
-
 Theory
-======
+******
 .. _theory:
 
 In this chapter the theory underlying the TROVE program will be described. Since the original TROVE paper many new features have been added to the code and described in publications as used. Here all of the theoretical framework for the main aspects of TROVE shall be described in one place.
@@ -8,7 +7,7 @@ In this chapter the theory underlying the TROVE program will be described. Since
 The aim of this chapter is not to derive and explain every technical aspect of TROVE per say but to give users knowledge of the underlying concepts of TROVE. This is especially useful for those using it as a 'black box' (and for PhD Vivas!). For full technical details of derivations and theoretical concepts, the reader should consult the references as given and the TROVE source code.
 
 The TROVE Approach
-------------------
+==================
 
 
 The Schroedinger equation for a molecule within the Born-Oppenheimer (BO) approximation can be written in laboratory-fixed :math:`XYZ` Cartesian coordinates as
@@ -32,7 +31,7 @@ transforms and so on (see chapter \ref{chap:newmol}).
 A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum number :math:`J` by minimising the coupling of the vibrational and rotational motion. Access to high :math:`J`s is crucial for the simulation of molecular spectra, especially at high temperatures where lots of states are populated.
 
 Numerical Construction of Kinetic Energy Operator
--------------------------------------------------
+=================================================
 .. _numerical_T:
 
 To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation :eq:`schrodiger_lab_cart` in terms of the generalised coordinates
@@ -197,13 +196,13 @@ The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :m
 (although complicated) is a numerical one and thus does not require any analytic algebra to define the kinetic energy operator for a given molecular shape. This is what makes TROVE general.
 
 
-Vibrational Coordinates}
-------------------------
+Vibrational Coordinates
+=======================
 
 The procedure described in the previous section for the numerical construction of the kinetic energy operator is general and can be used with any choice of suitable vibrational coordinates :math:`\xi_n` as long as :math:`t_{i \alpha,\mu}` can be provided. There are three basic types of coordinates used by TROVE: linearized coordinates, geometrically defined coordinates and coordinates for non-rigid molecules with large amplitude vibrations. Of these, linearized coordinates tend to be used the most but geometrically defined coordinates have been used more recently due to a better implementation for them [5]_. Each type of coordinate shall be described in the next subsections.
 
 Linearized Coordinates
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The linearized coordinates are introduced in terms of the Cartesian displacements :math:`d_{i \alpha}` (where :math:`i = 1` to :math:`N` nuclei and :math:`\alpha = x,y,z`) of the nuclei from their equilibrium positions :math:`a_{i \alpha}` in the :math:`xyz` molecule-fixed axis system
 
@@ -236,7 +235,7 @@ The :math:`a_{i \alpha}` are easy to determine from the molecule's equilibrium g
 For linear coordinates the expansions needed for determining the kinetic energy operator are linear. This makes them amenable to be numerically solved. The details are given in the TROVE publication [2]_. The simple form of the kinetic energy operator is an advantage of these coordinates.
 
 Geometrically Defined Coordinates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 Although linearized coordinates give a simple form for the kinetic energy operator they are not as good for expanding the potential energy. Geometrically defined coordinates have the advantage that when used, lower expansion orders are required for an accurate representation of the potential. Geometrically defined coordinates are any convenient coordinates used to unambiguously define a molecule's geometry for example, the bond lengths and angles from a Z-matrix.
  
@@ -246,7 +245,7 @@ A new way to obtain the expansion of the Hamiltonian was developed by Andrey Yac
 
 
 Coordinates for Large Amplitude Vibrations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 If the kinetic and potential energy operators cannot be expanded in a Taylor series then a different approach is required. This is the case for molecules with a large amplitude degree of freedom for example inversion in ammonia or torsional motion in ethane. This degree of freedom will be labelled as coordinate :math:`\rho`.
 
@@ -254,7 +253,7 @@ The method TROVE uses to handle this case is the Hougen-Bunker-Johns or HBJ appr
 
 
 Expansion of the Potential Energy Function
-------------------------------------------
+==========================================
 
 The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised form. This function is required as an input to TROVE (see chapter :chap:newmol:) but for computational efficiency, TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
 
@@ -269,7 +268,7 @@ This is a sum of products of the coordinates (or functions of the coordinates) u
 
 
 Vibrational Basis Functions and Matrix Elements
------------------------------------------------
+===============================================
 .. _sec.Vib_basis_matelem:
 
 TROVE solves the Schr\"{o}dinger equation using the variational method. This requires a suitable choice of basis functions for the method to be efficient. TROVE builds basis functions, starting from one-dimensional basis sets for each vibrational motion. These are then combined and truncated to build up a basis for the full dimensionality of the molecule. The details of this process are given here. 
@@ -321,7 +320,7 @@ where the other :math:`3N-7` coordinates are constrained to their equilibrium va
 The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [2]_).
 
 Rotational Basis Functions
---------------------------
+==========================
 .. _sec.rot_basis:
 
 TROVE uses linear combinations of rigid-rotor functions given as linear combinations :math:`|J,K,m,\pm \rangle`
@@ -348,7 +347,7 @@ This form of basis set can still be used in TROVE but it is much efficient to us
 
 
 Diagonalisation of the Hamiltonian
-----------------------------------
+==================================
 
 The previous sections of this chapter have described: how the rotational-vibrational Hamiltonian is expanded in terms of internal coordinates of the molecule, the vibrational basis functions used in TROVE and how matrix elements of them are computed and the rotational basis functions used in TROVE. With all of this in place, the final computation required to obtain the rotational-vibrational energies and eigenfunctions is to diagonalise the Hamiltonian matrix.
 
@@ -366,7 +365,7 @@ After diagonalisation of :math:`\mathbf{H}` the coefficients are stored (if \ver
 
 
 Symmetrised Basis Functions in TROVE
-------------------------------------
+====================================
 
 Symmetry plays a crucial part in the TROVE program and the calculation of molecular energy levels and spectra in general. Using symmetry systematically via the application of Group Theory  can greatly reduce the effort required to solve the Schrodinger equation as many of the required matrix elements which are zero can be shown to be so without computing them explicitly. Symmetry is also required to assess which spectroscopic transitions are possible [3]_.
 
@@ -442,7 +441,7 @@ The same procedure is used to obtained symmetrised functions for :math:`J>0` rot
 
 
 The :math:`J=0` Contraction Method
-----------------------------------
+==================================
 
 The basis functions described in section sec.rot_basis_ which are a product of rigid-rotor and primitive (or symmetry-adapted) basis functions can in principle be used for :math:`J>0` calculations. This approach requires the full  Hamiltonian matrix for each symmetry to be diagonalised each time and ignores the fact that the purely vibrational :math:`J=0` problem has already been solved. A better approach is to use the :math:`J=0` vibrational solutions as a basis for :math:`J>0` calculations. This is the :math:`J=0` contraction.
 
@@ -493,7 +492,7 @@ Another feature of this approach is the possibility to use experimental band cen
 
 
 Intensity Calculations in TROVE
--------------------------------
+===============================
 
 Transition intensities can be calculated using TROVE but for the production of line lists, the GAIN program is recommended. To calculate intensities a dipole moment surface (DMS) for the molecule of interest is required. This is similar to a PES but instead of giving the molecule's electronic energy as a function of molecular geometry, it gives a molecule's dipole. Since this is a vector quantity a DMS has three values associated with a given molecular geometry: one for each X,Y,Z coordinate.
 
