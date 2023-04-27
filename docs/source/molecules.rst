@@ -1,5 +1,5 @@
 Molecules
-#########
+*********
 .. _molecules:
 
 In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter newmol_, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
@@ -9,7 +9,7 @@ The list of molecules are given in roughly chronological order with the relevant
 
 
 Hydrogen sulfide, H\ :sub:`2` S
-----------------------------
+===============================
 
 Symmetry: :math:`C_{2v}`
 
@@ -39,7 +39,7 @@ Reference: [TROVE]_
 
 
 Methyl cation, :math:`{\rm CH}_3^+`
------------------------------------
+===================================
 
 
 
@@ -76,7 +76,7 @@ Reference: [TROVE]_
 
 
 Carbon monoxide, CO
--------------------
+===================
 
 
 
@@ -110,7 +110,7 @@ Reference: [TROVE]_
 
 
 Ammonia, NH\ :sub:`3`
--------------------
+=====================
 
 Symmetry: :math:`C_{3v}`
 
@@ -142,7 +142,7 @@ Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_.
 
 
 Methane, CH\ :sub:`4`
---------------------
+=====================
 
 Symmetry: :math:`{T}_d`
 
@@ -176,7 +176,7 @@ Reference: [13YuTeBa]_, [14YuJo]_.
 
 
 Sulfur trioxide, SO\ :sub:`3`
-----------------------------
+=============================
 
 Symmetry: :math:`D_{3h}`
 
@@ -208,7 +208,7 @@ Reference: [16UnTeYu]_.
 
 
 Hydrogen peroxide, H\ :sub:`2` O\ :sub:`2`
-----------------------------------------
+==========================================
 
 Symmetry: :math:`D_{2h}`. This is not the same as the point group of the molecule which is C\ :sub:`2`.
 
@@ -245,7 +245,7 @@ Reference: [15AlOvYu]_, [16AlPoOv]_.
 
 
 Phosphine, PH\ :sub:`3`
-----------------------
+=======================
 
 Symmetry: :math:`C_{3v}`
 
@@ -279,7 +279,7 @@ References: [13SoYuTe]_, [15SoAlTe]_.
 
 
 Formaldehyde, H\ :sub:`2`CO
---------------------------
+===========================
 
 Symmetry: :math:`C_{2v}`
 
@@ -310,7 +310,7 @@ Reference: [15AlOvPo]_.
 
 
 Silane, SiH\ :sub:`4`
---------------------
+=====================
 
 Symmetry: :math:`T_d`
 
@@ -341,7 +341,7 @@ Reference: [17OwYuYa]_.
 
 
 Methyl chloride, CH\ :sub:`3`Cl
------------------------------
+===============================
 
 Symmetry: :math:`C_{3v}`
 
@@ -374,7 +374,7 @@ Reference: [15OwYuTa]_,[18OwYaTe]_.
 
 
 Ethylene, C\ :sub:`2`\ H\ :sub:`4`
-----------------------------------
+==================================
 
 Symmetry: :math:`D_2h`
 
@@ -409,7 +409,7 @@ Reference: [18MaYaTe]_.
 
 
 Phosphorus trifluoride, PF\ :sub:`3`
-----------------------------------
+====================================
 
 Symmetry: :math:`C_{3v}`
 

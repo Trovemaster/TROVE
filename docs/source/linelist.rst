@@ -1,5 +1,5 @@
 Linelists and Spectra
-=====================
+*********************
 .. _chap:linelists:
 
 This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax. 
@@ -7,7 +7,7 @@ This chapter will give details on how to use TROVE and associated programs to ma
 Before discussing these programs, the selection of absorption parameters is addressed.
 
 Choosing absorption parameters
-------------------------------
+==============================
 
 The intensity block in TROVE requires a choice for the minimum intensities to be printed out and for the range of states and frequencies to be included. The value of intensity thresholds should be set very small for production quality line lists, for example ``THRESH_INTES`` and ``THRESH_LINE`` can be set at :math:`1\times 10^{-50}` to ensure all transitions are included.
 
@@ -15,7 +15,7 @@ Values for ``freq-window`` and ``energy low`` and ``upper`` depend on the molecu
 Of course, the range which is included will also be limited by practical considerations such as computational time, memory, basis set convergence, etc.
 
 Intensities with GAIN
----------------------
+=====================
 
 As discussed in Chapter Quickstart_, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
 
@@ -30,7 +30,7 @@ eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file f
 currently GAIN cannot accept split dipole files, these must be stitched together).
 
 Using GAIN
-^^^^^^^^^^
+----------
 
 The number of states for a polynomial molecule quickly increases with :math:`J` and energy. This leads to millions of transitions
 and so even with GAIN, intensity calculations scale quite drastically. There are a few ways in which calculations can be
@@ -71,7 +71,7 @@ In the future it may be that GAIN is modified to directly output the correct for
 
 
 Exocross
---------
+========
 
 As discussed above, GAIN produces a list of temperature and pressure independent Einstein A coefficients. To simulate a
 spectra, these must be converted into intensities. This can be achieved using Exocross, providing the data is correctly

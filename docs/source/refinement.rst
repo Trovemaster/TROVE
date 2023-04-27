@@ -1,4 +1,5 @@
 Refinement
+**********
 .. _refine:
 
 In this chapter details will be given of the refinement procedure implemented in TROVE.
@@ -8,7 +9,7 @@ Usually there is relatively few experimental energies and so *ab intio* electron
 Although experimental data is usually at fairly low energies, it is often the case that correcting the lower energy  region of the PES gives more accurate values at high energies also.
 
 Refinement with TROVE: Theory
------------------------------
+=============================
 
 Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has
 already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
@@ -59,10 +60,10 @@ procedures can then be used to determine how they should be varied. This is all 
 
 
 Refinement Implementation with TROVE
-------------------------------------
+====================================
 
 Setting up Refinement
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 The specific inputs and checkpoint files required to carry out refinement of a PES using TROVE is discussed in this section
 
@@ -92,7 +93,7 @@ generated for each :math:`J` and symmetry :math:`\Gamma` for each expansion para
 
 
 Running Refinement
-^^^^^^^^^^^^^^^^^^
+------------------
 
 When all of the required checkpoint files described above have been generated, TROVE can be used to refine the PES. The following block should be added to the TROVE input file
 ::
@@ -141,8 +142,8 @@ reached. The first iteration is essentially a checking step and does not change 
 
 
 
-\subsection{Refinement Output}
-
+Refinement Output
+-----------------
 
 The refinement procedure produces three output files. A regular .out file with a prefix the same as the .inp file and a
 .pot file and .en file with prefixes as determined by the name given in the ``output`` keyword in the Fitting block.

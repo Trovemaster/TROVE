@@ -1,5 +1,5 @@
-New Molecules
-=============
+Adding new molecules
+********************
 .. _newmol:
 
 In this chapter details will be given on how to set up a new molecule in TROVE. There are two approaches to this. If a molecule of the same symmetry has already been set up in TROVE then it is relatively straightforward to add a similar molecule. This is one of the strengths of the TROVE approach. If a completely new kind of molecular structure is needed then more work is required. The former case will be discussed first.
@@ -8,7 +8,7 @@ If a new isotopologue is required then a combination of the two approaches will 
 
 
 Adding a Similar Symmetry Molecule
-----------------------------------
+==================================
 
 Adding a molecule of similar symmetry is relatively straightforward. It is possible that no new TROVE files for defining the potential, etc will be required. An example of this is adding arsine (AsH\ :sub:`3`) when phosphine (PH\ :sub:`3`) is already set up in TROVE. Both molecules have trigonal pyramidal structure and belong to the :math:`C_{3v}` point group.
 
@@ -30,7 +30,7 @@ If new functional forms for the PES or DMS are required then these need to be de
 
 
 Setting Up a New Molecule
--------------------------
+=========================
 
 Setting up a new molecule for TROVE requires the user to modify or add new subroutines to TROVE which will be added to the list of files to be compiled with the main program. Before the specific details of these are provided a description of what is required will be given.
 
@@ -48,7 +48,7 @@ A final part of setting up a new molecule is describing the rotational symmetry.
 A detailed discussion of all of these files and examples are discussed below. TROVE is written in Fortran90 and in this chapter knowledge of that programming language shall be assumed (although the main points can be appreciated without it).
 
 The mol File
-^^^^^^^^^^^^
+------------
 
 The mol file controls the coordinates used for a molecule in TROVE. Many such files have been written and when implementing a new mol file it is recommended to follow a similar style to these. Specific details such as which routines need to be set to ``Public`` and which modules are to be used can be obtained from previous mol files. The PF\ :sub:`3` molecule will be used  to illustrate  each section of the mol file.
 
@@ -210,7 +210,7 @@ Ideally the rigid coordinates should be set to change along the least energy pat
 A final part of the mol file which needs to be set up is the ``ML_rotsymmetry_XXX`` subroutine which defines the rotational symmetry.
 
 The pot File
-^^^^^^^^^^^^
+------------
 
 The pot file is used to define potential energy surfaces in TROVE. Although TROVE re-expands the PES in whichever coordinates have been chosen in the mol file (see Chapter theory_, the program needs the potential energy function as part of this process. As with the mol file the pot file can make use of parameters defined in the input file.
 

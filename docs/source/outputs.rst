@@ -1,5 +1,5 @@
 Outputs
-=======
+*******
 
 .. _outputs:
 
@@ -9,7 +9,7 @@ The TROVE output will differ depending on the checkpoints read/saved. The order 
 from the start.
 
 Beginning Output
-----------------
+================
 
 The first part of the TROVE output file is a repeat of the input followed by statements about setting up the calculation. Details on the geometry of the molecule are given such as the number of angles, connectivity and Cartesian coordinates. When setting up a new molecule (see Chapter newmol_) this section is important as errors are often highlighted. Details of this will be given in that chapter.
 
@@ -19,6 +19,7 @@ Trove will then print all of the finite difference steps which will be carried o
 
 
 Numerov basis
+-------------
 
 The details of the Numerov-Cooley generated basis can be reached by searching the output file for ``Numerov``. This section contains a grid for each coordinate of the form
 ::
@@ -76,7 +77,7 @@ TROVE will then make use of the symmetry of these functions to set up matrix ele
 
 
 Rotational-Vibrational energies
--------------------------------
+===============================
 
 The final step of a vibrational or rotational calculation is an output of the rotational-vibrational energies. These are ordered by energy and separated into symmetry blocks.
 
@@ -111,7 +112,7 @@ In this case the energies are from the doubly degenerate E symmetry class. The f
 
 
 Transition Moment output
-------------------------
+========================
 
 
 The output for a transition moment calculation is similar to the output for intensities discussed below. The section starts at the line
@@ -126,7 +127,7 @@ The transition moments are printed out along with the line strength. The end of 
 
 
 Intensity output
-----------------
+================
 
 The intensity output section also starts after the line
 ::
@@ -138,7 +139,7 @@ This section is similar to the transition moment output. The symmetries, quantum
 
 
 Checkpoint File Outputs
------------------------
+=======================
 
 
 As well as the main TROVE output file, useful information is also contained in the descr checkpoint files. These will be described here.

@@ -1,5 +1,5 @@
-Features
-========
+Additional Features
+*******************
 .. _newfeat
 
 This chapter discusses the latest additions to TROVE and their implementation. Many of these different features are still being tested and developed and so this chapter, even more than others, should be treated as subject to change. These features have already proven important however and so will likely remain a part of TROVE but perhaps with a different implementation. 
@@ -8,7 +8,7 @@ Most of these  features are for dealing with larger molecules in TROVE.
 
 
 Splitting and Stitching
------------------------
+=======================
 
 As discussed in Chapter Quickstart_, matrix elements between contracted basis functions are saved to a file, ``contr_matelem.chk``. This step is time consuming and for large molecules/basis sets it may not be possible to carry out this step within a computer's allocated time limit. The ``split`` command solves this problem by splitting the matrix into 12 'slices'. Each slice contains matrix elements of a component of the full Hamiltonian operator.
 
@@ -45,7 +45,7 @@ This will combine the split matelem files into a ``j0_extfield.chk`` files (whic
 
 
 Restarting
-----------
+==========
 
 For large molecules and basis sets it may be that the vibrational part of the calculation does not finish within a large computer's time limit. In this case it is usually the calculation of matrix elements which is the time consuming part. Since these are independent calculations however, the elements can be saved and read back in to form the full Hamiltonian matrix.
 
@@ -65,7 +65,7 @@ Again, this is only for the :math:`J=0` vibrational step and is useful when used
 
 
 Fast-CI
--------
+=======
 
 The Fast-CI method was implemented in TROVE by Andrey Yachmenev as a way of speeding up calculations. The method does this by essentially re-ordering loops and indices in a more efficient manner. Another aspect of the method is the ability to choose a cut-off where expansion coefficients of the Hamiltonian are discarded if too small. The method is optimally designed when using curvilinear coordinates.
 
@@ -77,7 +77,7 @@ When using Fast-CI, TROVE can be used as normal for other steps in the calculati
 
 
 Storing Hamiltonian and External Diagonalization
-------------------------------------------------
+================================================
 
 For larger production calculations involving high values of :math:`J` it is likely that the construction and diagonalization of the Hamiltonian matrix will exceed the time limit of the computer which is used. In this case the Hamiltonian matrix can be saved and then diagonalized separately for each symmetry.
 
@@ -115,7 +115,7 @@ This will cause TROVE to read the energies file and produce the usual descriptor
 
 
 Transition Moment Intensity Pruning
------------------------------------
+===================================
 
 Another  method which has been developed to reduce calculation time of line lists for large molecules is transition moment intensity pruning. This procedure reduces how many vibrational levels are included based on their intensity. Levels which have very weak intensities for both transitions to and from them are discarded. This results in a large reduction of the basis set but should only remove transitions of very low intensity.
 
