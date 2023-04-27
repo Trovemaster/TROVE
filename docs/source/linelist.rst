@@ -19,71 +19,36 @@ Intensities with GAIN
 
 As discussed in Chapter Quickstart_, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
 
-A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (\textbf{G}PU \textbf{A}ccelerated
-\textbf{IN}tensities) is a program which was written by Ahmed Al-Rafaie.\cite{GAIN}
-It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using
+A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (\textbf{G}PU \textbf{A}ccelerated \textbf{IN}tensities) is a program which was written by Ahmed Al-Rafaie.\cite{GAIN} It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using
 conventional TROVE.
 
-GAIN uses the same input file as TROVE but only the ``intensity`` block is actually used to control the calculation.
-GAIN requires the eigenvectors, eigen description and eigen quanta files for the states of interest. It also requires the
-eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file for the dipole matrix elements (note that
-currently GAIN cannot accept split dipole files, these must be stitched together).
+GAIN uses the same input file as TROVE but only the ``intensity`` block is actually used to control the calculation. GAIN requires the eigenvectors, eigen description and eigen quanta files for the states of interest. It also requires the eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file for the dipole matrix elements (note that currently GAIN cannot accept split dipole files, these must be stitched together).
 
 Using GAIN
 ----------
 
-The number of states for a polynomial molecule quickly increases with :math:`J` and energy. This leads to millions of transitions
-and so even with GAIN, intensity calculations scale quite drastically. There are a few ways in which calculations can be
-sped up however so that they can be run within wall clock limits.
+The number of states for a polynomial molecule quickly increases with :math:`J` and energy. This leads to millions of transitions and so even with GAIN, intensity calculations scale quite drastically. There are a few ways in which calculations can be sped up however so that they can be run within wall clock limits.
 
-The first is to increase the number of nodes used. GAIN is an mpi parallel program and can make use of multiple nodes,
-which themselves have multiple cores. A rule of thumb for how many cores to use is: size of eigenvectors / memory available
-per core.
+The first is to increase the number of nodes used. GAIN is an mpi parallel program and can make use of multiple nodes, which themselves have multiple cores. A rule of thumb for how many cores to use is: size of eigenvectors / memory available per core.
 
-Another speed increase is to split the intensities which are being calculated by :math:`J` and symmetry. Rotational selection
-rules limit transitions to :math:`J'' = J'` and :math:`J'' = J' \pm 1`. Currently GAIN does not have a rule for only computing upper or
-lower Q branch transitions and so these duplicates should be removed for a complete line list.
-Using the selection rule, intensities can be calculated by setting
-:math:`J` in the ``intensity`` block to 0,1 then 1,2 then 2,3, etc. Symmetry also limits transitions but these are molecule
-dependent. For example, for PF\ :sub:`3` transitions can only take place for :math:`A_1` :math:`\leftrightarrow` :math:`A_2` and
-E :math:`\leftrightarrow` E. To make use of this symmetry the nuclear statistical weights (:math:`g_{ns}`) for the symmetries which are
-allowed should be set to their usual values but others set to 0. For example for :math:`A_1` `\leftrightarrow` `A_2` in PF\ :sub:`3` the
-:math:`g_{ns}` would be set to 8.0 8.0 0.0. For both :math:`J` and symmetry selection rules, a separate input file and run of GAIN
-should be carried out for each selection rule.
+Another speed increase is to split the intensities which are being calculated by :math:`J` and symmetry. Rotational selection rules limit transitions to :math:`J'' = J'` and :math:`J'' = J' \pm 1`. Currently GAIN does not have a rule for only computing upper or lower Q branch transitions and so these duplicates should be removed for a complete line list. Using the selection rule, intensities can be calculated by setting :math:`J` in the ``intensity`` block to 0,1 then 1,2 then 2,3, etc. Symmetry also limits transitions but these are molecule dependent. For example, for PF\ :sub:`3` transitions can only take place for :math:`A_1` :math:`\leftrightarrow` :math:`A_2` and E :math:`\leftrightarrow` E. To make use of this symmetry the nuclear statistical weights (:math:`g_{ns}`) for the symmetries which are allowed should be set to their usual values but others set to 0. For example for :math:`A_1 \leftrightarrow A_2` in PF\ :sub:`3` the :math:`g_{\rm ns}` would be set to ``8.0 8.0 0.0``. For both :math:`J` and symmetry selection rules, a separate input file and run of GAIN should be carried out for each selection rule.
 
-GAIN produces two types of output files. The .out files begins with a repeat of the input file. Information is then given on
-which .chk files were opened and which GPUs are being used and their memory. Information is then given on how GAIN
-splits up the calculation and how many transitions are to be computed. GAIN then cycles through the energy states starting
-with the lowest energy and computes all transitions to higher energies. For each complete lower energy calculation
-the current lines per second computed (L/s) is reported along with the predicted total time required. The other output
-file produced is a ``__n__.out`` file. Here ``n`` is an integer starting at 0 going up to number of nodes :math:`-1`. This
-file(s) contain the GAIN results and lists the frequency and the Einstein A coefficient \cite{98BuJexx}
-for a transition. Labels are also given for which states the transition is between.
+GAIN produces two types of output files. The .out files begins with a repeat of the input file. Information is then given on which .chk files were opened and which GPUs are being used and their memory. Information is then given on how GAIN splits up the calculation and how many transitions are to be computed. GAIN then cycles through the energy states starting with the lowest energy and computes all transitions to higher energies. For each complete lower energy calculation the current lines per second computed (L/s) is reported along with the predicted total time required. The other output file produced is a ``__n__.out`` file. Here ``n`` is an integer starting at 0 going up to number of nodes :math:`-1`. This file(s) contain the GAIN results and lists the frequency and the Einstein A coefficient \cite{98BuJexx} for a transition. Labels are also given for which states the transition is between. 
 
-Einstein A coefficients are calculated as opposed to intensities as these are temperature (and pressure) independent. To
-simulate and plot a spectrum Exocross is used which is discussed in the next section.
+Einstein A coefficients are calculated as opposed to intensities as these are temperature (and pressure) independent. To simulate and plot a spectrum Exocross is used which is discussed in the next section.
 
 
-Currently the format for the intensities from GAIN is not compatible with Exocross. Programs can be used however to convert
-the GAIN output to the slightly more compact Exomol format.\cite{jt631}
-Code for doing this can be obtained from Sergey Yurchenko.
-In the future it may be that GAIN is modified to directly output the correct format for Exocross.
+Currently the format for the intensities from GAIN is not compatible with Exocross. Programs can be used however to convert the GAIN output to the slightly more compact Exomol format. Code for doing this can be obtained from Sergey Yurchenko. In the future it may be that GAIN is modified to directly output the correct format for Exocross.
 
 
 Exocross
 ========
 
-As discussed above, GAIN produces a list of temperature and pressure independent Einstein A coefficients. To simulate a
-spectra, these must be converted into intensities. This can be achieved using Exocross, providing the data is correctly
-formatted. TROVE can directly produced intensities but Exocross has features which make it a better choice for production
-quality simulations.
+As discussed above, GAIN produces a list of temperature and pressure independent Einstein A coefficients. To simulate a spectra, these must be converted into intensities. This can be achieved using Exocross, providing the data is correctly formatted. TROVE can directly produced intensities but Exocross has features which make it a better choice for production quality simulations.
 
-To run Exocross, two types of file are required. A TRANS file which contains information about the intensity of transitions
-and a STATES file which contains the energy levels of the molecule. These files should be obtained using a program to change
-GAIN output or from TROVE directly. This is likely to change depending on situation and will not be discussed here.
+To run Exocross, two types of file are required. A TRANS file which contains information about the intensity of transitions and a STATES file which contains the energy levels of the molecule. These files should be obtained using a program to change GAIN output or from TROVE directly. This is likely to change depending on situation and will not be discussed here.
 
-A simple but important calculation which can be performed using Exocross is finding the partition function at a given
-temperature. This is determined from the States file only. An example input is
+A simple but important calculation which can be performed using Exocross is finding the partition function at a given temperature. This is determined from the States file only. An example input is
 ::
 
      mem 63 gb
@@ -99,19 +64,13 @@ temperature. This is determined from the States file only. An example input is
 
      States C2H4_v01.states
 
-The keyword ``partfunc`` is used to select a partition function calculation.
-``ntemps`` is the number of partitions of the temperature, ``tempmax`` which will be calculated.
-For this example the partition function will be calculated at 80, 160, ... and 800 K.
-``verbose`` is the level of print out. ``States`` is the name of the states file.
+The keyword ``partfunc`` is used to select a partition function calculation. ``ntemps`` is the number of partitions of the temperature, ``tempmax`` which will be calculated. For this example the partition function will be calculated at 80, 160, ... and 800 K. ``verbose`` is the level of print out. ``States`` is the name of the states file.
 
-The output for this calculation is simple. A repeat of the input is first given and then the partition function calculation
-for each temperature is given in columns. The running total of the partition function with :math:`J` is given in rows.
+The output for this calculation is simple. A repeat of the input is first given and then the partition function calculation for each temperature is given in columns. The running total of the partition function with :math:`J` is given in rows.
 
 
 
-Exocross can also be used to make a `stick spectrum``. This is an idealised spectrum where each absorption is only
-represented by a line at a given wavenumber and intensity and broadening effects (doppler, collision, etc) are ignored.
-An input example is
+Exocross can also be used to make a `stick spectrum``. This is an idealised spectrum where each absorption is only represented by a line at a given wavenumber and intensity and broadening effects (doppler, collision, etc) are ignored. An input example is
 ::
 
      mem 63.0 gb
@@ -176,10 +135,7 @@ to use.
 ``States`` is the States file to use and ``Transitions`` is a list of Trans files to use.
 
 
-Exocross has other options for simulating spectra. Examples include accounting for line broadening by using Gaussian
-or Voigt profiles for each line. The effects of particular background gas collisions can also be taken into account.
-These features are fully discussed in a recent publication and manual for the Exocross program and the reader is
-directed there for full details \cite{ExoCross}.
+Exocross has other options for simulating spectra. Examples include accounting for line broadening by using Gaussian or Voigt profiles for each line. The effects of particular background gas collisions can also be taken into account. These features are fully discussed in a recent publication and manual for the Exocross program and the reader is directed there for full details \cite{ExoCross}.
 
 
 

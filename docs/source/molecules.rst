@@ -368,9 +368,9 @@ Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ(+d for Cl) level of theory.
 
 Results: Line list applicable up to 1200 K.
 
-.. Note:: Data for :math:`^{35}{\rm Cl}` and :math:`^{37}{\rm Cl} isotopologues.
+.. Note:: Data for :sup:`35`\ Cl and :sup:`37`\ Cl isotopologues.
 
-Reference: [15OwYuTa]_,[18OwYaTe]_.
+Reference: [15OwYuTa]_, [18OwYaTe]_ .
 
 
 Ethylene, C\ :sub:`2`\ H\ :sub:`4`
@@ -435,9 +435,9 @@ Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fit
 Results: Room temperature line list for up to :math:`J = 60`.
 
 .. Note:: The room temperature line list for this molecule is not complete but could be easily extended using the methods applied
-to SO\ :sub:`3` and :math:`{\rm C}_2{\rm H}_6`.
+to SO\ :sub:`3` and C\ :sub:`2`\ H\ :sub:`4`.
 
-Reference: 19MaChYa]_.
+Reference: [19MaChYa]_.
 
 
 References
