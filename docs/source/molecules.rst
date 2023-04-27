@@ -2,15 +2,9 @@ Molecules
 #########
 .. _molecules:
 
-In this chapter a list is given of all of the molecules which have been studied using TROVE.
-This serves two purposes: as a
-summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter
-\ref{chap:newmol}, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and
-structure has already been implemented.
+In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter newmol_, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
 
-The list of molecules are given in roughly chronological order with the relevant references. Details are given of the
-symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of
-linelists if they were calculated.
+The list of molecules are given in roughly chronological order with the relevant references. Details are given of the symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of linelists if they were calculated.
 
 
 
@@ -21,7 +15,7 @@ Symmetry: :math:`C_{2v}`
 
 Coordinates: Linearized coordinates. :math:`\xi_1 = r_1^l - r_e`, :math:`\xi_2 = r_2^l - r_e` and :math:`\xi = \alpha^l - \alpha_e` .
 
-Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1,2,3)`. 
+Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1,2,3)`.
 
 Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(r_1^l - r_e))` :math:`(n = 1, 2)`, :math:`f_3 = \cos(\alpha^l) - \cos(\alpha_e)`
 
@@ -39,10 +33,7 @@ Dipole moment surface expansion: N/A
 
 Results: :math:`J = 0` vibrational energy levels up to 8000 cm\ :sup:`-1`.
 
-Notes: Usually TROVE would not be used for a triatomic molecule as programs exist which have the `exact' triatomic
-Hamiltonian (DVR3D for example [DVR3D]_). This molecule was used as a test case to demonstrate TROVE's capabilities in the
-original TROVE paper. The calculation was also repeated using HBJ theory, taking the bending coordinate to be the
-large amplitude coordinate and using normal coordinates.
+.. Note:: Usually TROVE would not be used for a triatomic molecule as programs exist which have the 'exact' triatomic Hamiltonian (DVR3D for example [DVR3D]_). This molecule was used as a test case to demonstrate TROVE's capabilities in the original TROVE paper. The calculation was also repeated using HBJ theory, taking the bending coordinate to be the large amplitude coordinate and using normal coordinates.
 
 Reference: [TROVE]_
 
@@ -62,8 +53,7 @@ two symmetrized bending variables :math:`\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
 
-Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_n))` :math:`(n = 1, 3)` for stretching coordinates,
-:math:`f_4 = S_{4a}`, :math:`f_5 = S_{4b}` for two bending modes and :math:`f_6 = \rho`.
+Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_n))` :math:`(n = 1, 3)` for stretching coordinates, :math:`f_4 = S_{4a}`, :math:`f_5 = S_{4b}` for two bending modes and :math:`f_6 = \rho`.
 
 Primitive basis set: Numerov generated for all coordinates.
 
@@ -79,8 +69,7 @@ Dipole moment surface expansion: N/A
 
 Results: :math:`J = 0` vibrational energy levels up to 6000 cm\ :sup:`-1`.
 
-Notes: This was also used as a test example in the original TROVE paper.
-The coordinate scheme employed is similar to that for Ammonia (see below).
+.. Note:: This was also used as a test example in the original TROVE paper. The coordinate scheme employed is similar to that for Ammonia (see below).
 
 Reference: [TROVE]_
 
@@ -114,7 +103,7 @@ Dipole moment surface expansion: N/A
 
 Results: :math:`J = 0` vibrational energy levels up to 43000 cm\ :sup:`-1` (corresponding to :math:`v = 22`).
 
-Notes: This was also used as a test example in the original TROVE paper. For diatomic molecules specialist programs
+.. Note:: This was also used as a test example in the original TROVE paper. For diatomic molecules specialist programs
 are of course recommended such as Duo [Duo]_. CO, like H\ :sub:`2`, CO is included only as a test case.
 
 Reference: [TROVE]_
@@ -142,18 +131,14 @@ Polyad scheme: For BYTe line list it is :math:`P = 2(v_1 + v_2 + v_3) + v_4 + v_
 
 Potential energy function: Refinement of published potential [09YuBaYa]_.
 
-Dipole moment surface expansion: For BYTe line list, an \textit{ab initio} DMS was computed at the CCSD(T)/aug-cc-pVQZ level of
+Dipole moment surface expansion: For BYTe line list, an *ab initio* DMS was computed at the CCSD(T)/aug-cc-pVQZ level of
  theory [09YuBaYa]_.
 
-Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to
-1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers,
-constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
+Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to 1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers, constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
 
-Notes: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods.
-The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate
-line list from the work of Coles \textit{et al.} [10CoYuTe]_. 
+.. Note:: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods. The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate line list from the work of Coles \textit{et al.} [10CoYuTe]_.
 
-Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_. 
+Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_.
 
 
 Methane, CH\ :sub:`4`
@@ -169,8 +154,7 @@ Coordinates: Linearised coordinates. :math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-9)`, linearised coordinates.
 
-Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_i^l))` :math:`(i = 1, 4)` for stretching coordinates and
-:math:`f_n = \xi_i^l` :math:`(i = 5, 9)` for bending coordinates.
+Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_i^l))` :math:`(i = 1, 4)` for stretching coordinates and :math:`f_n = \xi_i^l` :math:`(i = 5, 9)` for bending coordinates.
 
 Primitive basis set: Numerov generated for stretching coordinates, harmonic oscillator basis for bends.
 
@@ -180,18 +164,15 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 20` with caveats, see paper.
 
-Potential energy function:  CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections \textit{ab initio} data fit using
-polynomial of symmetrised coordinates given above. Refined using experimental :math:`J = 0, 4` data from HITRAN 2008 database.
+Potential energy function:  CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections *ab initio* data fit using polynomial of symmetrised coordinates given above. Refined using experimental :math:`J = 0, 4` data from HITRAN 2008 database.
 
-Dipole moment surface expansion: CCSD(T)-F12c/aug-cc-pVTZ-F12 \textit{ab initio} points fit using polynomial of
-symmetrised coordinates which is then expressed in symmetrised molecular bond (SMB) representation.
+Dipole moment surface expansion: CCSD(T)-F12c/aug-cc-pVTZ-F12 *ab initio* points fit using polynomial of symmetrised coordinates which is then expressed in symmetrised molecular bond (SMB) representation.
 
 Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to `J = 39`.
 
-Notes: This describes the 10to10 calculation which was based on a previous calculation for lower frequencies. The high
-symmetry of methane meant special symmetry considerations are required. Details of this are given in the papers.
+.. Note:: This describes the 10to10 calculation which was based on a previous calculation for lower frequencies. The high symmetry of methane meant special symmetry considerations are required. Details of this are given in the papers.
 
-Reference: [13YuTeBa]_, [14YuJo]_. 
+Reference: [13YuTeBa]_, [14YuJo]_.
 
 
 Sulfur trioxide, SO\ :sub:`3`
@@ -213,18 +194,17 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18 `
 
-Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs \textit{ab initio}
-energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
+Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs *ab initio* energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
 
-Dipole moment surface expansion: \textit{Ab initio} calculations at the same levels as for PES. Fitted using SMB
+Dipole moment surface expansion: *ab initio* calculations at the same levels as for PES. Fitted using SMB
 representation.
 
 Results: Linelist complete up to 5000 cm\ :sup:`-1` for temperatures up to 800 K.
 
-Notes: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`s need to be included. Up to :math:`J = 130` was included for
+.. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`s need to be included. Up to :math:`J = 130` was included for
 a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
 
-Reference: [16UnTeYu]_. 
+Reference: [16UnTeYu]_.
 
 
 Hydrogen peroxide, H\ :sub:`2` O\ :sub:`2`
@@ -248,7 +228,7 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 4n_1 + 8(n_2 + n_3 + n_4 + n_5) +n_6 \leq 42`
 
-Potential energy function: \textit{Ab initio} energies using CCSD(T)-F12b/aug-cc-pVNZ for N up to 7
+Potential energy function: *ab initio* energies using CCSD(T)-F12b/aug-cc-pVNZ for N up to 7
 for different parts of surface including DBO, relativistic, core-valence corrections fit to polynomial function
 of coordinates. Refined to experimental energies for :math:`J \leq 4`.
 
@@ -258,9 +238,9 @@ Dipole moment surface expansion:  CCSD(T)-F12b/aug-cc-pV(T+d)Z fittied to polyno
 Results:  Linelist complete up to 6000 cm\ :sup:`-1`. Extended linelist up to 8000 cm\ :sup:`-1` with reduced completeness
 at high temperatures.
 
-Notes: The :math:`\tau` coordinate for this molecule adds complications to expansion of dipole, etc. See papers for details.
+.. Note:: The :math:`\tau` coordinate for this molecule adds complications to expansion of dipole, etc. See papers for details.
 
-Reference: [15AlOvYu]_, [16AlPoOv]_. 
+Reference: [15AlOvYu]_, [16AlPoOv]_.
 
 
 
@@ -283,15 +263,15 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(s_1 + s_2 + s_3) + b_1 + b_2 + b_3 \leq 16` plus some additions, see paper.
 
-Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) \textit{ab initio} energies fitted to polynomial expansion.
+Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) *ab initio* energies fitted to polynomial expansion.
 Refined using HITRAN data up to :math:`J = 4`.
 
-Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ \textit{ab initio} dipole data fitted to polynomial expansion.
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fitted to polynomial expansion.
 
 
 Results: SAlTY linelist, complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to :math:`J = 46`
 
-Notes: For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_.
+.. Note:: For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_.
 
 
 References: [13SoYuTe]_, [15SoAlTe]_.
@@ -318,15 +298,15 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(n_2 + n_3) + n_1 + n_4 + n_5 \leq 16` plus some additions, see paper.
 
-Potential energy function:  CCSD(T)/aug-cc-pVQZ) \textit{ab initio} energies fitted to polynomial expansion.
+Potential energy function:  CCSD(T)/aug-cc-pVQZ) *ab initio* energies fitted to polynomial expansion.
 Refined using HITRAN data up to :math:`J = 5`.
 
-Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ \textit{ab initio} dipole data fitted to polynomial expansion.
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ *ab initio* dipole data fitted to polynomial expansion.
 
 Results: Linelist for temperatures up to 1500 K for transitions up to 10,000 cm\ :sup:`-1` and :math:`J = 70`.
 
 
-Reference: [15AlOvPo]_. 
+Reference: [15AlOvPo]_.
 
 
 Silane, SiH\ :sub:`4`
@@ -351,7 +331,7 @@ Polyad scheme: :math:`P = 2(n_1 + n_2 n_3 + n_4) + n_5 + n_6 + n_7 + n_8 + n_9 \
 Potential energy function: CBS-F12 PES including extensive corrections, see paper. Fitted to polynomial expansion.
 Refined using 1452 experimental energies up to :math:`J = 6`.
 
-Dipole moment surface expansion: CCSD(T)/aug-cc-pVT(+d for Si)Z \textit{ab initio} dipole data fitted to polynomial expansion.
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVT(+d for Si)Z *ab initio* dipole data fitted to polynomial expansion.
 
 Results: Linelist for temperatures up to 1200 K for transitions up to 5000 cm\ :sup:`-1` and :math:`J = 42`.
 
@@ -388,7 +368,7 @@ Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ(+d for Cl) level of theory.
 
 Results: Line list applicable up to 1200 K.
 
-Notes: Data for :math:`^{35}{\rm Cl}` and :math:`^{37}{\rm Cl} isotopologues.
+.. Note:: Data for :math:`^{35}{\rm Cl}` and :math:`^{37}{\rm Cl} isotopologues.
 
 Reference: [15OwYuTa]_,[18OwYaTe]_.
 
@@ -399,7 +379,7 @@ Ethylene, C\ :sub:`2`\ H\ :sub:`4`
 Symmetry: :math:`D_2h`
 
 Coordinates: :math:`\xi_n = r_i-r_e` :math:`i=1,5` for stretches, :math:`\xi_n = \theta_i - \theta_e`  :math:`i = 1, 4` for bends,
-:math:`\xi_10 = \pi - \beta_1`, :math:`\xi_11 = \beta_2 - \pi` for two :math:`\beta` H-C-H `book type' angles and
+:math:`\xi_10 = \pi - \beta_1`, :math:`\xi_11 = \beta_2 - \pi` for two :math:`\beta` H-C-H 'book type' angles and
 :math:`\xi_12 = 2 \tau - \beta_1 + \beta_2` where :math:`\tau` is H-C-C-H dihedral angle.
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n`. Curvilinear coordinates.
@@ -415,7 +395,7 @@ Potential expansion order: 8
 Polyad scheme: :math:`P = n_1 + 2(n_2 + n_3 + n_4 + n_5) + n_6 + n_7 + n_8 + n_9 + n_{10} + n_{11} + n_{12} \leq 10` plus additions,
 see paper.
 
-Potential energy function: \textit{ab initio} PES calculated at  CCSD(T)-F12b/cc-pVTZ-F12 level of theory. Fit to polynomial
+Potential energy function: *ab initio* PES calculated at  CCSD(T)-F12b/cc-pVTZ-F12 level of theory. Fit to polynomial
 form. Refined PES using HITRAN data for :math:`J=1-4` and other sources for vibrational band centres.
 
 Dipole moment surface expansion: DMS calculated at CCSD(T)-F12b/aug-cc-pVTZ level of theory and fit to polynomial form with
@@ -423,7 +403,7 @@ appropriate axis system.
 
 Results: Line list for 0-7000 cm\ :sup:`-1` up to :math:`J=78`. Applicable up to 700 K.
 
-Notes: Largest molecule in TROVE so far. Special techniques developed to cope with such a large molecule.
+.. Note:: Largest molecule in TROVE so far. Special techniques developed to cope with such a large molecule.
 
 Reference: [18MaYaTe]_.
 
@@ -447,20 +427,20 @@ Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + n_6 \leq 14`.
 
-Potential energy function:  \textit{Ab initio} PES calculated at CCSD(T)-F12b/cc-pVTZ-f12 level of theory fitted using
+Potential energy function:  *ab initio* PES calculated at CCSD(T)-F12b/cc-pVTZ-f12 level of theory fitted using
 polynomial expansion of symmetrized coordinates.
 
-Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ \textit{ab initio} dipole data fitted to polynomial expansion.
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fitted to polynomial expansion.
 
 Results: Room temperature line list for up to :math:`J = 60`.
 
-Notes: The room temperature line list for this molecule is not complete but could be easily extended using the methods applied
+.. Note:: The room temperature line list for this molecule is not complete but could be easily extended using the methods applied
 to SO\ :sub:`3` and :math:`{\rm C}_2{\rm H}_6`.
 
 Reference: 19MaChYa]_.
 
 
-References 
+References
 ----------
 
 
@@ -468,26 +448,22 @@ References
 .. [DVR3D] J. Tennyson, M. A. Kostin, P. Barletta, G. J. Harris, O. L. Polyansky, J. Ramanlal, N. F. Zobov, Comput. Phys. Commun. 163, 85 (2004), DVR3D: a program suite for the calculation of rotation-vibration spectra of triatomic molecules.
 
 
-.. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules. 
+.. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
 
 
 .. [Duo] S. N. Yurchenko, L. Lodi, J. Tennyson, A. V. Stolyarov, Comput. Phys. Commun. 202, 262 (2016), Duo: A general program for calculating spectra of diatomic molecules.
 
 .. [09YuBaYa] S. N. Yurchenko, R. J. Barber, A. Yachmenev, W. Thiel, P. Jensen, J. Tennyson, J. Phys. Chem. A 113, 11845 (2009), A variationally computed T=300 K line list for NH\ :sub:`3`.
 
-
-.. [10CoYuTe] Phillip A Coles, Sergei N Yurchenko, and Jonathan Tennyson. Mon. Not. R. Astron. Soc., 490, 4638 - 4647 (2019), ExoMol molecular line lists XXXV: a rotation-vibration line list for hot ammonia. 
+.. [10CoYuTe] Phillip A Coles, Sergei N Yurchenko, and Jonathan Tennyson. Mon. Not. R. Astron. Soc., 490, 4638 - 4647 (2019), ExoMol molecular line lists XXXV: a rotation-vibration line list for hot ammonia.
 
 .. [11YuBaTe]  S. N. Yurchenko, R. J. Barber, J. Tennyson, Mon. Not. R. Astron. Soc. 413, 1828 (2011), A variationally computed hot line list for NH\ :sub:`3`.
-
 
 .. [13YuTeBa] S. N. Yurchenko, J. Tennyson, R. J. Barber, W. Thiel, J. Mol. Spectrosc. 291, 69 (2013), Vibrational transition moments of CH\ :sub:`4` from the first principles.
 
 .. [14YuJo] Sergei N. Yurchenko and Jonathan Tennyson.  Mon. Not. R. Astron. Soc., 440, 1649-1661 (2014), ExoMol line lists - IV. The rotation-vibration spectrum of methane up to 1500 K.
 
-
 .. [16UnTeYu] D. S. Underwood, J. Tennyson, S. N. Yurchenko, S. Clausen, A. Fateev, Mon. Not. R. Astron. Soc. 462, 4300 (2016), ExoMol line lists XVII: A line list for hot SO\ :sub:`3`.
-
 
 .. [15AlOvYu] A. F. Al-Refaie, R. I. Ovsyannikov, O. L. Polyansky, S. N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 318, 84 (2015), A variationally calculated room temperature line-list for H\ :sub:`2`O\ :sub:`2`.
 
@@ -506,7 +482,7 @@ References
 .. [18OwYaTe] A. Owens, A. Yachmenev, J. Tennyson, W. Thiel, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 479, 3002 (2018), ExoMol Molecular line lists XXIX: The rotation-vibration spectrum of methyl chloride up to 1200 K.
 
 .. [15OwYuTa] A. Owens, S. N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, J. Chem. Phys. 142, 244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
- 
+
 .. [18MaYaTe] B. P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`H\ :sub:`4`.
 
 .. [19MaChYa] Barry P. Mant, Katy L. Chubb, Andrey Yachmenev, Jonathan Tennyson, and Sergei N. Yurchenko, Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
