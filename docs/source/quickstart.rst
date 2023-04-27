@@ -19,7 +19,7 @@ The TROVE pipeline can broken down into the following steps:
 
   + Expansions of the KEO (``kinetic``), PEF (``potential``) and dipole moment function (DMF)  or any other  'external functions' (``external``) are generated and stored. 
 
-  + Primitive 1D basis functions :math:`\phi_{n_i}(\xi_i)` and corresponding vibrational matrix elements of expansion terms (e.g. :math:`\xi_i^n`, :math:`\xi_i^n \frac{\partial}{\partial \xi_}`) - ``basis_set`` and stored. 
+  + Primitive 1D basis functions :math:`\phi_{n_i}(\xi_i)` and corresponding vibrational matrix elements of expansion terms (e.g. :math:`\xi_i^n`, :math:`\xi_i^n \frac{\partial}{\partial \xi_n}`) - ``basis_set`` and stored. 
   
   + Primitive rigid rotor matrix elements of the rotational angular momenta operators are constructed as stored. 
   
