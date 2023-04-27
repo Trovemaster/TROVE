@@ -8,8 +8,8 @@ The list of molecules are given in roughly chronological order with the relevant
 
 
 
-Hydrogen sulfide, H\ :sub:`2` S
-===============================
+Hydrogen sulfide, H\ :sub:`2`\ S
+================================
 
 Symmetry: :math:`C_{2v}`
 
@@ -38,8 +38,8 @@ Results: :math:`J = 0` vibrational energy levels up to 8000 cm\ :sup:`-1`.
 Reference: [TROVE]_
 
 
-Methyl cation, :math:`{\rm CH}_3^+`
-===================================
+Methyl cation, CH\ :sub:`3`\ :sup:`+`
+=====================================
 
 
 
@@ -207,8 +207,8 @@ a complete linelist at 800 K. For calculating :math:`J` this large, special proc
 Reference: [16UnTeYu]_.
 
 
-Hydrogen peroxide, H\ :sub:`2` O\ :sub:`2`
-==========================================
+Hydrogen peroxide, H\ :sub:`2`\ O\ :sub:`2`
+===========================================
 
 Symmetry: :math:`D_{2h}`. This is not the same as the point group of the molecule which is C\ :sub:`2`.
 
@@ -278,8 +278,8 @@ References: [13SoYuTe]_, [15SoAlTe]_.
 
 
 
-Formaldehyde, H\ :sub:`2`CO
-===========================
+Formaldehyde, H\ :sub:`2`\ CO
+=============================
 
 Symmetry: :math:`C_{2v}`
 
@@ -340,8 +340,8 @@ Reference: [17OwYuYa]_.
 
 
 
-Methyl chloride, CH\ :sub:`3`Cl
-===============================
+Methyl chloride, CH\ :sub:`3`\ Cl
+=================================
 
 Symmetry: :math:`C_{3v}`
 
@@ -442,8 +442,6 @@ Reference: [19MaChYa]_.
 
 References
 ----------
-
-
 
 .. [DVR3D] J. Tennyson, M. A. Kostin, P. Barletta, G. J. Harris, O. L. Polyansky, J. Ramanlal, N. F. Zobov, Comput. Phys. Commun. 163, 85 (2004), DVR3D: a program suite for the calculation of rotation-vibration spectra of triatomic molecules.
 
