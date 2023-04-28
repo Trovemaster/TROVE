@@ -16,7 +16,7 @@ The Schroedinger equation for a molecule within the Born-Oppenheimer (BO) approx
 
     \left(-\frac{\ \hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i + V \right) \Psi_{trv} = E_{trv} \Psi_{trv}`
 
-where nucleus :math:`i` has mass :math:`m_i` and coordinates :math:`(R_{iX},R_{iY},R_{iZ})`. :math:`\nabla^2_i = \partial ^2 / \partial R_{iX}^2 + 
+where nucleus :math:`i` has mass :math:`m_i` and coordinates :math:`(R_{iX},R_{iY},R_{iZ})`. :math:`\nabla^2_i = \partial ^2 / \partial R_{iX}^2 +
 \partial ^2 / \partial R_{iY}^2  + \partial ^2 / \partial R_{iZ}^2` is the kinetic energy for each nucleus and :math:`V` is the potential energy, which is equal to the electronic energy within the the BO approximation (and absence of electric and magnetic fields). :math:`\Psi_{trv}` and :math:`E_{trv}` are the wavefunction and energy respectively.
 
 Although this equation has a simple mathematical form, it is not suited for actual solution. The label :math:`trv` on the energies and wavefunction stands for translation, rotation and vibration. In this coordinate system these motions are all coupled. Translational motion can be exactly separated from rotation and vibration (indeed, for spectroscopy we are usually not interested in the overall translation of a molecule through space). Rotational and vibrational motion are often fairy weakly coupled and coordinates can be chosen to exploit that fact. Maximal separation of all of these motion makes the solution of the nuclear Schr\"{o}dinger equation simpler.
@@ -25,8 +25,8 @@ To carry out this decoupling, a more suitable coordinate system is required. Thi
 
 Defining a molecule-fixed axis system immediately introduces a problem however due to the variety of shapes and sizes of molecules. For each molecule type (e.g. trigonal pyramidal, tetrahedral, etc) there are different choices of coordinate system which lead to different kinetic energy operators (and different computer programs for their solution). Normal coordinates are an exception and can be defined in a general manner but are best suited for small amplitude vibrations near a molecule's equilibrium structure.
 
-TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system. This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule. This allows TROVE to be used for a wide variety of molecules as seen in chapter \ref{chap:molecules}. The actual construction of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
-transforms and so on (see chapter \ref{chap:newmol}).
+TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system. This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule. This allows TROVE to be used for a wide variety of molecules as seen in chapter molecules_. The actual construction of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
+transforms and so on (see chapter newmol_ ).
 
 A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum number :math:`J` by minimising the coupling of the vibrational and rotational motion. Access to high :math:`J`s is crucial for the simulation of molecular spectra, especially at high temperatures where lots of states are populated.
 
@@ -52,7 +52,7 @@ The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadrat
 
    \hat{\Pi} = \left(\hat{P}_X^{CM}, \hat{P}_Y^{CM},\hat{P}_Z^{CM},\hat{J}_x,\hat{J}_y,\hat{J}_z,\hat{p}_1,\hat{p}_2, \cdots ,\hat{p}_{3N-6} \right)
 
-where :math:`\hat{P}_F^{CM}` :math:`(F=X,Y,Z)` is the momentum conjugate to (associated with) the translation motion of the centre of mass coordinate :math:`R_F^{CM}`, (:math:`\hat{J}_x, \hat{J}_y, \hat{J}_z`) are the :math:`xyz` components of the total angular momentum and :math:`\hat{p}_n = -i \hbar \partial / \partial \xi_n (n=1, \cdots , 3N-6)` is the momentum conjugate to :math:`\xi_n`. 
+where :math:`\hat{P}_F^{CM}` :math:`(F=X,Y,Z)` is the momentum conjugate to (associated with) the translation motion of the centre of mass coordinate :math:`R_F^{CM}`, (:math:`\hat{J}_x, \hat{J}_y, \hat{J}_z`) are the :math:`xyz` components of the total angular momentum and :math:`\hat{p}_n = -i \hbar \partial / \partial \xi_n (n=1, \cdots , 3N-6)` is the momentum conjugate to :math:`\xi_n`.
 
 It is possible to write :math:`\hat{T}` in these generalised momenta as
 
@@ -68,7 +68,7 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
      \frac{\partial}{\partial \xi_{n'}} + U(\xi).
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`. The first term is the translation kinetic energy of the centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`. This term is exactly separable from the other terms as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
-equation :eq:`generalT` in the compact form 
+equation :eq:`generalT` in the compact form
 
 .. math::
    :label: generalT_compact
@@ -107,7 +107,7 @@ where :math:`G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` and :math:`U_{l_1,l_2,l_
    :label: V_expansion
    V = \sum_{l_1,l_2,l_3,\cdots} V_{l_1,l_2,l_3,\cdots} f_1^{l_1} f_2^{l_2} f_3^{l_3} \cdots
 
-where :math:`V_{l_1,l_2,l_3}` are constant expansion coefficients in terms of convenient expansion functions 
+where :math:`V_{l_1,l_2,l_3}` are constant expansion coefficients in terms of convenient expansion functions
 
 .. math::
    :label: v_exp_func
@@ -238,7 +238,7 @@ Geometrically Defined Coordinates
 ---------------------------------
 
 Although linearized coordinates give a simple form for the kinetic energy operator they are not as good for expanding the potential energy. Geometrically defined coordinates have the advantage that when used, lower expansion orders are required for an accurate representation of the potential. Geometrically defined coordinates are any convenient coordinates used to unambiguously define a molecule's geometry for example, the bond lengths and angles from a Z-matrix.
- 
+
 A disadvantage of these coordinates is that the kinetic energy operator is harder to derive with the expansion being non-linear. The original TROVE publication describes how this can be carried out numerically using 'quadruple precision' in the program to calculate numerical derivatives accurately.
 
 A new way to obtain the expansion of the Hamiltonian was developed by Andrey Yachmenev by using 'automatic differentiation'. This is a computational method of obtaining derivatives of functions with the accuracy of symbolic algebra but carried out in a numerical manner. The technical details of expanding the Hamiltonian and making use of the Eckart frame are discussed in detail in the publication [5]_. Examples comparing linear and geometrically defined (or 'curvilinear') coordinates are also presented.
@@ -271,7 +271,7 @@ Vibrational Basis Functions and Matrix Elements
 ===============================================
 .. _sec.Vib_basis_matelem:
 
-TROVE solves the Schr\"{o}dinger equation using the variational method. This requires a suitable choice of basis functions for the method to be efficient. TROVE builds basis functions, starting from one-dimensional basis sets for each vibrational motion. These are then combined and truncated to build up a basis for the full dimensionality of the molecule. The details of this process are given here. 
+TROVE solves the Schr\"{o}dinger equation using the variational method. This requires a suitable choice of basis functions for the method to be efficient. TROVE builds basis functions, starting from one-dimensional basis sets for each vibrational motion. These are then combined and truncated to build up a basis for the full dimensionality of the molecule. The details of this process are given here.
 
 From the previous sections the rotation-vibration Hamiltonian expanded in terms of molecule-fixed :math:`xyz` coordinates is given (in notation introduced in equation :eq:`V_expand:) as
 
@@ -406,7 +406,7 @@ The Hamiltonian operator for a system :math:`\hat{H}` commutes with all operatio
 
 and eigenfunctions of :math:`\hat{H}` are also eigenfunctions of :math:`R` (as a simple example of this, a hydrogen s-orbital is invariant under all operations of the spherical group :math:`R^3`). This means that the eigenfunctions transform as an irrep of the symmetry group, :math:`\mathbf{G}`.
 
-The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger:. The approach used in TROVE for this is as follows: 
+The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger:. The approach used in TROVE for this is as follows:
 
   (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter :chap:Quickstart:, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
 
@@ -432,7 +432,7 @@ where :math:`\mathbf{Q}^{(i)}` is a set of coordinates (:math:`\xi_1,\xi_2,\cdot
 
      \hat{H}^{(i)}(\mathbf{Q}^{(i)}) = \left< 0_p| \langle 0_q | \cdots \left<0_r|\hat{H}|0_r \right> \cdots |0_q \rangle |0_p \right>
 
-As well as giving symmetrised functions, solving equation :eq:`Schrodinger_subspace` also gives better basis functions for the system since the problem is closer to the full dimensionality. The solutions can also be contracted, by energy for example. The TROVE symmetry paper gives examples of how the method works for AB:math:`_2` and XY:math:`_3` type molecules. The total basis set for the full dimensionality of the molecule is constructed by a direct product of the :math:`L` symmetrised basis sets. This is then transformed to irreps using standard approaches. 
+As well as giving symmetrised functions, solving equation :eq:`Schrodinger_subspace` also gives better basis functions for the system since the problem is closer to the full dimensionality. The solutions can also be contracted, by energy for example. The TROVE symmetry paper gives examples of how the method works for AB:math:`_2` and XY:math:`_3` type molecules. The total basis set for the full dimensionality of the molecule is constructed by a direct product of the :math:`L` symmetrised basis sets. This is then transformed to irreps using standard approaches.
 
 Although the solutions of the reduced Schr\"odinger equations are guaranteed to be an irrep of the symmetry group :math:`\mathbf{G}` it may not be obvious to which symmetry a given function belongs. Degenerate solutions will also be mixed together. TROVE solves both of these problems in a numerical manner. To determine which irrep a given solutions belongs to, TROVE samples the basis functions on a grid of geometries :math:`N^{(i)}_{\text{grid}}`. The number of these points used is the value of \verb|sample_points| in the TROVE input file. For a given subspace :math:`i`, a random grid of geometries of that space
 :math:`\mathbf{Q}_k^{(i)}`(:math:`k=1,\cdots,N^{(i)}_{\text{grid}})`, all symmetry related images :math:`R (\mathbf{Q}^{(i)})` are generated. These are used to find the values of the wave functions :math:`\Psi^{(i)}_{\lambda_i}(R \mathbf{Q}^{(i)})` at each geometry. This allows the transformation matrices  :math:`\mathbf{D}[R]` for each operation of the group :math:`\mathbf{G}` to be established and the symmetry of wave functions to be worked out.

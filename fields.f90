@@ -1298,7 +1298,9 @@ module fields
          !
          select case (trim(w))
          !
-         case('SYEV','SYEVR','SYEVX')
+         case('SYEV','SYEVR','SYEVX','DSYEV')
+           !
+           if (trim(w)=='DSYEV') w = 'SYEV'
            !
            job%diagonalizer = trim(w)
            !
@@ -2017,7 +2019,7 @@ module fields
                 !
                 call readu(job%bset(imode)%dvr)
                 !
-              case("RESC","RESCOEF","COEFF")
+              case("RESC","RESCOEF","COEFF","WEIGHT")
                 !
                 call readf(job%bset(imode)%res_coeffs)
                 !
@@ -4347,7 +4349,7 @@ module fields
             !
             select case(w)
               !
-            case("RANK")
+            case("RANK","DIMENSION","DIM")
               !
               call readi(extF%rank)
               !

@@ -27,3 +27,6 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+The documentaiton has been written by Barry Mant. 
