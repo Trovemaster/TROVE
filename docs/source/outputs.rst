@@ -50,7 +50,7 @@ At the end of the grid the outer most points where the one-dimensional vibration
 Contracted basis
 ----------------
 
-After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in a recent paper\cite{17YuYaOv.methods} and here in Chapter _theory. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF\ :sub:`3`
+After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in [17YuYaOv]_ and here in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF\ :sub:`3`
 ::
 
       Variational eigenvalues:

@@ -321,7 +321,7 @@ The Basis block specifies the type of basis functions used by TROVE and how the 
      END
 
 The first line in this block, ``0, JKtau``, ``Jrot 0`` specifies the rotational functions. For :math:`J>0` calculations the value of ``Jrot`` is changed to :math:`J` of interest. PF\ :sub:`3` has :math:`3N - 6 = 3(4) - 6 = 6` internal degrees of freedom and thus 6 basis functions are required. Basis functions are grouped using an integer label. For this example, '1's are the P-F stretches and '2's are the P-F bends. The grouping is used for producing symmetric
-combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in the Theory chapter and in a recent paper [17YuYaOv]_.
+combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__ and in [17YuYaOv]_.
 
 For a given basis function row the options are as follows. The first keyword specifies what the one-dimensional basis functions are. In this example they are numerically generated using the Numerov-Cooley method. Other options are ``harmonic`` and ``morse`` where these analytical basis functions shall be used. The second keyword specifies how the kinetic energy operator is expanded. The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates' of the form  :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while ``linear`` (the angles themselves) coordinates are used for the bends.
 

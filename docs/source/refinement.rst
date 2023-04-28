@@ -44,7 +44,7 @@ where
 
 
 The derivatives of the energies with respect to adjustable parameters, which are requred for least squares fitting,
-are given by the Hellman-Feynman theorem\cite{11Atkins.book,jt503}
+are given by the Hellman-Feynman theorem 
 .. math::
 
       \frac{\partial E^{J,\Gamma}_{n} }{ \partial \Delta f_{ijk...} } = \left< \psi^{J,\Gamma}_{n} \left| \frac{\partial \Delta V}{\partial \Delta f_{ijk...} }       \right |\psi^{J,\Gamma}_{n} \right> = \left< \psi^{J,\Gamma}_{n} \left| \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A \right| \psi^{J,\Gamma}_{n} \right>.

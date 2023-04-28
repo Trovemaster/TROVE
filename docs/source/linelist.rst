@@ -2,7 +2,7 @@ Linelists and Spectra
 *********************
 .. _linelists:
 
-This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax. 
+This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax.
 
 Before discussing these programs, the selection of absorption parameters is addressed.
 
@@ -11,7 +11,7 @@ Choosing absorption parameters
 
 The intensity block in TROVE requires a choice for the minimum intensities to be printed out and for the range of states and frequencies to be included. The value of intensity thresholds should be set very small for production quality line lists, for example ``THRESH_INTES`` and ``THRESH_LINE`` can be set at :math:`1\times 10^{-50}` to ensure all transitions are included.
 
-Values for ``freq-window`` and ``energy low`` and ``upper`` depend on the molecule and temperature of interest. The lower energy range required will depend on the desired temperature range. For room temperature line lists, only relatively low energy states will be significantly populated. For hot line lists, this range will be increased. The partition function for the molecule can be used to judge which states are required for coverage at a certain temperature (see below for how to calculate using Exocross). The frequency window (and thus upper states to include) depends on the frequency of light which of interest. 
+Values for ``freq-window`` and ``energy low`` and ``upper`` depend on the molecule and temperature of interest. The lower energy range required will depend on the desired temperature range. For room temperature line lists, only relatively low energy states will be significantly populated. For hot line lists, this range will be increased. The partition function for the molecule can be used to judge which states are required for coverage at a certain temperature (see below for how to calculate using Exocross). The frequency window (and thus upper states to include) depends on the frequency of light which of interest.
 Of course, the range which is included will also be limited by practical considerations such as computational time, memory, basis set convergence, etc.
 
 Intensities with GAIN
@@ -33,7 +33,7 @@ The first is to increase the number of nodes used. GAIN is an mpi parallel progr
 
 Another speed increase is to split the intensities which are being calculated by :math:`J` and symmetry. Rotational selection rules limit transitions to :math:`J'' = J'` and :math:`J'' = J' \pm 1`. Currently GAIN does not have a rule for only computing upper or lower Q branch transitions and so these duplicates should be removed for a complete line list. Using the selection rule, intensities can be calculated by setting :math:`J` in the ``intensity`` block to 0,1 then 1,2 then 2,3, etc. Symmetry also limits transitions but these are molecule dependent. For example, for PF\ :sub:`3` transitions can only take place for :math:`A_1` :math:`\leftrightarrow` :math:`A_2` and E :math:`\leftrightarrow` E. To make use of this symmetry the nuclear statistical weights (:math:`g_{ns}`) for the symmetries which are allowed should be set to their usual values but others set to 0. For example for :math:`A_1 \leftrightarrow A_2` in PF\ :sub:`3` the :math:`g_{\rm ns}` would be set to ``8.0 8.0 0.0``. For both :math:`J` and symmetry selection rules, a separate input file and run of GAIN should be carried out for each selection rule.
 
-GAIN produces two types of output files. The .out files begins with a repeat of the input file. Information is then given on which .chk files were opened and which GPUs are being used and their memory. Information is then given on how GAIN splits up the calculation and how many transitions are to be computed. GAIN then cycles through the energy states starting with the lowest energy and computes all transitions to higher energies. For each complete lower energy calculation the current lines per second computed (L/s) is reported along with the predicted total time required. The other output file produced is a ``__n__.out`` file. Here ``n`` is an integer starting at 0 going up to number of nodes :math:`-1`. This file(s) contain the GAIN results and lists the frequency and the Einstein A coefficient \cite{98BuJexx} for a transition. Labels are also given for which states the transition is between. 
+GAIN produces two types of output files. The .out files begins with a repeat of the input file. Information is then given on which .chk files were opened and which GPUs are being used and their memory. Information is then given on how GAIN splits up the calculation and how many transitions are to be computed. GAIN then cycles through the energy states starting with the lowest energy and computes all transitions to higher energies. For each complete lower energy calculation the current lines per second computed (L/s) is reported along with the predicted total time required. The other output file produced is a ``__n__.out`` file. Here ``n`` is an integer starting at 0 going up to number of nodes :math:`-1`. This file(s) contain the GAIN results and lists the frequency and the Einstein A coefficient \cite{98BuJexx} for a transition. Labels are also given for which states the transition is between.
 
 Einstein A coefficients are calculated as opposed to intensities as these are temperature (and pressure) independent. To simulate and plot a spectrum Exocross is used which is discussed in the next section.
 
@@ -135,7 +135,7 @@ to use.
 ``States`` is the States file to use and ``Transitions`` is a list of Trans files to use.
 
 
-Exocross has other options for simulating spectra. Examples include accounting for line broadening by using Gaussian or Voigt profiles for each line. The effects of particular background gas collisions can also be taken into account. These features are fully discussed in a recent publication and manual for the Exocross program and the reader is directed there for full details \cite{ExoCross}.
+Exocross has other options for simulating spectra. Examples include accounting for line broadening by using Gaussian or Voigt profiles for each line. The effects of particular background gas collisions can also be taken into account. These features are fully discussed in a recent publication and manual for the Exocross program and the reader is directed there for full details ExoCross_.
 
 
 

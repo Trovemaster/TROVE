@@ -187,7 +187,7 @@ Using these coordinates the ``b0`` matrix is filled in with the Cartesian coordi
      b0(1,3,0) = -Mtotal*re14*cosr/(Mtotal+mX)
 
 
-In this case ``b0`` has been defined explicitly with respect to the centre of mass of the molecule. If this is not the case then the centre of mass can be found using a subroutine. This step is part of the XY\ :sub:`3` subroutine as 
+In this case ``b0`` has been defined explicitly with respect to the centre of mass of the molecule. If this is not the case then the centre of mass can be found using a subroutine. This step is part of the XY\ :sub:`3` subroutine as
 ::
 
      if (any(molec%AtomMasses(2:4)/=mH1)) then
@@ -221,7 +221,7 @@ Each PES function is initiated by
 
      function MLpoten_xxx(ncoords,natoms,local,xyz,force) result(f).
 
-The function arguments are as follows. ``ncoords`` and ``natoms`` are the number of vibrational coordinates and atoms respectively. ``local`` is the molecule's coordinates given in Z-matrix form as defined in the input file. ``xyz`` is a matrix of atomic positions in Cartesian coordinates. ``force`` is a list of parameters for the PES defined in the input. The energy at a given coordinate is the output (result) of the function, ``f``. 
+The function arguments are as follows. ``ncoords`` and ``natoms`` are the number of vibrational coordinates and atoms respectively. ``local`` is the molecule's coordinates given in Z-matrix form as defined in the input file. ``xyz`` is a matrix of atomic positions in Cartesian coordinates. ``force`` is a list of parameters for the PES defined in the input. The energy at a given coordinate is the output (result) of the function, ``f``.
 
 For the PF\ :sub:`3` molecule the pot file is ``pot_xy3.f90``. This file contains multiple PES and DMS functions. From the PF\ :sub:`3` example the PES is chosen in the input file as `` MLpoten_xy3_morbid_10``. This function starts by defining equilibrium parameters from the input file and coordinates from ``local``. The specific choice for the ``r-alpha`` coordinate transform is not given by a ``case`` (unlike others in the function) but instead by the specifics of the coordinates
 ::
@@ -280,10 +280,10 @@ This approach guarantees that the symmetry of the molecule is taken into account
 
 The best way of setting up the pot file is molecule dependent. Many options are possible, as long as the energy is returned for a certain geometry. Many pot files have already been set up in TROVE, some with multiple choices per molecule type. These can be referred to for more details of the procedure or used as a starting point for new potentials.
 
+References
+----------
 
-
-
-
+.. [17YuYaOv] S. N. Yurchenko, A. Yachmenev, R. I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
 
 
 

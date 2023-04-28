@@ -255,7 +255,7 @@ The method TROVE uses to handle this case is the Hougen-Bunker-Johns or HBJ appr
 Expansion of the Potential Energy Function
 ==========================================
 
-The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised form. This function is required as an input to TROVE (see chapter :chap:newmol:) but for computational efficiency, TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
+The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised form. This function is required as an input to TROVE (see Chapter `New molecules <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__) but for computational efficiency, TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
 
 
 .. math::
