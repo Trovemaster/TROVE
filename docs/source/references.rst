@@ -1,11 +1,11 @@
 References
 ==========
 
-.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
+.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175. 
 
-.. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
+.. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.   `doi:10.1016/j.jms.2007.07.009 <http://dx.doi.org/10.1016/j.jms.2007.07.009>`__  
 
-.. [98BuJe] P.R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition
+.. [98BuJe] P.R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition.
 
 .. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
 
@@ -56,5 +56,5 @@ References
 
 .. [18MaYaTe] B.P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`H\ :sub:`4`.
 
-.. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
+.. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, #Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
 
