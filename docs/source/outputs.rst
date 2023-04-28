@@ -11,7 +11,7 @@ from the start.
 Beginning Output
 ================
 
-The first part of the TROVE output file is a repeat of the input followed by statements about setting up the calculation. Details on the geometry of the molecule are given such as the number of angles, connectivity and Cartesian coordinates. When setting up a new molecule (see Chapter newmol_) this section is important as errors are often highlighted. Details of this will be given in that chapter.
+The first part of the TROVE output file is a repeat of the input followed by statements about setting up the calculation. Details on the geometry of the molecule are given such as the number of angles, connectivity and Cartesian coordinates. When setting up a new molecule (see Chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__) this section is important as errors are often highlighted. Details of this will be given in that chapter.
 
 Details of the S-matrix calculation are also printed in the section (see Theory chapter).
 
@@ -135,7 +135,7 @@ The intensity output section also starts after the line
       Linestrength S(f<-i) [Debye**2], Transition moments [Debye],...
 
 
-This section is similar to the transition moment output. The symmetries, quantum numbers and energies of the lower and upper states are given along with the transition frequency. The intensity is given for the transitions along with the line strength and the Einstein A coefficient (see Chapter theory_).
+This section is similar to the transition moment output. The symmetries, quantum numbers and energies of the lower and upper states are given along with the transition frequency. The intensity is given for the transitions along with the line strength and the Einstein A coefficient (see Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__).
 
 
 Checkpoint File Outputs

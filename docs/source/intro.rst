@@ -1,6 +1,6 @@
 Introduction
 ************
-.. _sec-intro:
+.. _intro:
 
 What is TROVE?
 ==============

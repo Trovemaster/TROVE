@@ -1,6 +1,6 @@
 Linelists and Spectra
 *********************
-.. _chap:linelists:
+.. _linelists:
 
 This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax. 
 
@@ -17,7 +17,7 @@ Of course, the range which is included will also be limited by practical conside
 Intensities with GAIN
 =====================
 
-As discussed in Chapter Quickstart_, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
+As discussed in Chapter `Quickstart <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
 
 A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (\textbf{G}PU \textbf{A}ccelerated \textbf{IN}tensities) is a program which was written by Ahmed Al-Rafaie.\cite{GAIN} It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using
 conventional TROVE.

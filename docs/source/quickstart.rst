@@ -329,7 +329,7 @@ The numbers after ``range`` specify the range of vibrational quantum numbers of 
 
 ``points`` and   ``borders`` specify the number of points and the starting points for the Numerov-Cooley integration. Generating these one-dimensional functions is fast and so many points should be taken.  The borders should be set far enough into the classically forbidden region of the potential such that  the results are not sensitive to slightly larger or lower values. The units for ``borders`` are the same as those used that the potential was expanded in (Morse for stretches and angles in radians for bends in this example).
 
-The details of the primitive basis sets are given in the TROVE output file and will be discussed in Chapter outputs_.
+The details of the primitive basis sets are given in the TROVE output file and will be discussed in Chapter `Outputs <https://spectrove.readthedocs.io/en/latest/output.html>`__.
 
 Checkpoint Block
 ----------------

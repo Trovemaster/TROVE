@@ -2,7 +2,7 @@ Molecules
 *********
 .. _molecules:
 
-In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter newmol_, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
+In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
 
 The list of molecules are given in roughly chronological order with the relevant references. Details are given of the symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of linelists if they were calculated.
 
