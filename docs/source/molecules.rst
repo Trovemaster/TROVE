@@ -35,7 +35,7 @@ Results: :math:`J = 0` vibrational energy levels up to 8000 cm\ :sup:`-1`.
 
 .. Note:: Usually TROVE would not be used for a triatomic molecule as programs exist which have the 'exact' triatomic Hamiltonian (DVR3D for example [DVR3D]_). This molecule was used as a test case to demonstrate TROVE's capabilities in the original TROVE paper. The calculation was also repeated using HBJ theory, taking the bending coordinate to be the large amplitude coordinate and using normal coordinates.
 
-Reference: [#TROVE]_
+Reference: [TROVE]_
 
 
 Methyl cation, CH\ :sub:`3`\ :sup:`+`
