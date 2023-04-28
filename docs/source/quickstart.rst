@@ -185,9 +185,8 @@ The polyad number and maximum energy for the primitive basis functions are set i
 
 As discussed in more detail in later chapters, TROVE uses products of primitive one-dimensional functions as basis functions. The polyad number, :math:`P`, is a way to restrict the size of the basis set [TROVE]_. The sum of the primitive function's vibrational quantum number, :math:`v_i`, is then restricted to be below ``N``, that is:
 
-
 .. math::
-     :label:polyad
+     :label: polyad
 
      P = \sum_i a_i v_i \le n.
 
@@ -196,7 +195,7 @@ where :math:`a_i` is an integer used to control the basis further. For fast, tes
 Increasing n gives a larger basis set which will give more accurate results (and extend the energy range) at the expense of time and memory.
 Note that because of how the polyad number is defined, even increasing :math:`N`  by 1 can lead to a much larger basis.
 
-Another way of limiting the size of the primitive basis functions is by energy. The ``enercut`` keyword specifies the maximum energy a primitive basis function can have if it is to be included. As discussed below, the basis set is further restricted by energy in the Contraction block and so usually ``x`` is set to a large value. For example 40,000 (in units of wavenumbers, cm:math:`^{-1}` ).
+Another way of limiting the size of the primitive basis functions is by energy. The ``enercut`` keyword specifies the maximum energy a primitive basis function can have if it is to be included. As discussed below, the basis set is further restricted by energy in the Contraction block and so usually ``x`` is set to a large value. For example 40,000 (in units of wavenumbers, cm\ :sub:`-1`).
 
 Contraction Block
 -----------------
