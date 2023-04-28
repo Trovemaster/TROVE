@@ -34,3 +34,5 @@ Indices and tables
 
 
 The documentaiton has been written by Barry Mant. 
+
+Please report issues at github_ or contact Sergey Yurchenko via s.yurchenko@ucl.ac.uk if you have any questions.
