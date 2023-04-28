@@ -15,6 +15,7 @@ Welcome to TROVE's documentation!
    linelist.rst
    refinement.rst
    features.rst
+   compile.rst
 
 News
 ====
