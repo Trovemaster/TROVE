@@ -408,7 +408,7 @@ and eigenfunctions of :math:`\hat{H}` are also eigenfunctions of :math:`R` (as a
 
 The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger:. The approach used in TROVE for this is as follows:
 
-  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter :chap:Quickstart:, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
+  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter `Quickstart <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
 
   (ii) For each subspace :math:`i = 1, \cdots, L`, a reduced Hamiltonian operator :math:`\hat{H}^{(i)}` is constructed by neglecting or integrating over the other degrees of freedom.
 
