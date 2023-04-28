@@ -16,6 +16,9 @@ Welcome to TROVE's documentation!
    refinement.rst
    features.rst
    compile.rst
+   references
+   license
+   
 
 News
 ====

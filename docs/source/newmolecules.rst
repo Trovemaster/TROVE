@@ -280,10 +280,4 @@ This approach guarantees that the symmetry of the molecule is taken into account
 
 The best way of setting up the pot file is molecule dependent. Many options are possible, as long as the energy is returned for a certain geometry. Many pot files have already been set up in TROVE, some with multiple choices per molecule type. These can be referred to for more details of the procedure or used as a starting point for new potentials.
 
-References
-----------
-
-.. [17YuYaOv] S. N. Yurchenko, A. Yachmenev, R. I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
-
-
 

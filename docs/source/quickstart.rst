@@ -818,21 +818,3 @@ As a more sophisticating alternative to the ``Control`` block, the following ``C
     END
 
 
-
-References
-----------
-
-
-.. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
-
-
-.. [15YaYu] A. Yachmenev, S. N. Yurchenko, J. Chem. Phys. 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the eckart frame.
-
-
-.. [98BuJe] P. R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition
-
-
-.. [17YuYaOv] S. N. Yurchenko, A. Yachmenev, R. I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
-
-.. [GAIN] A. F. Al-Refaie, J. Tennyson, S. N. Yurchenko, Comput. Phys. Commun. 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
-

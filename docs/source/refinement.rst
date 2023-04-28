@@ -187,14 +187,6 @@ zero-calc and the weight for the energy.
 
 
 
-References
-----------
-
-.. [11YuBaTe] S. N. Yurchenko, R. J. Barber, J. Tennyson, W. Thiel, P. Jensen, J. Mol. Spectrosc. 268, 123 (2011), Towards efficient refinement of molecular potential energy surfaces: Ammonia as a case study.
-
-
-
-
 
 
 

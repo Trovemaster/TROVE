@@ -42,7 +42,7 @@ To construct the kinetic energy operator TROVE expresses the Hamiltonian in equa
 
    \Xi = \left(R_X^{CM},R_Y^{CM},R_Z^{CM},\theta,\phi,\chi,\xi_1,\xi_2 \cdots ,\xi_{3N-6} \right)
 
-where :math:`R_F^{CM} = \sum_{i=1}^N m_iR_{iF} / \sum_{j=1}^N m_j` :math:`(F=X,Y,Z)` is the :math:`F`-coordinate of the nuclear centre of mass; these three coordinates describe translation of the molecule through space. The three Euler angles (:math:`\theta,\phi,\chi`) define the orientation of the :math:`xyz` molecule-fixed axis relative to lab-fixed :math:`XYZ` and thus define overall rotation (for a description of Euler angles see Bunker and Jensen [3]_ or Zare's book on angular momentum [4]_). The :math:`\xi_n` coordinates described vibration. There are :math:`3N - 6` of these for a non-linear molecule and they can be defined in whatever manner is convenient (see below).
+where :math:`R_F^{CM} = \sum_{i=1}^N m_iR_{iF} / \sum_{j=1}^N m_j` :math:`(F=X,Y,Z)` is the :math:`F`-coordinate of the nuclear centre of mass; these three coordinates describe translation of the molecule through space. The three Euler angles (:math:`\theta,\phi,\chi`) define the orientation of the :math:`xyz` molecule-fixed axis relative to lab-fixed :math:`XYZ` and thus define overall rotation (for a description of Euler angles see Bunker and Jensen [98BuJe]_ or Zare's book on angular momentum [88Zare]_). The :math:`\xi_n` coordinates described vibration. There are :math:`3N - 6` of these for a non-linear molecule and they can be defined in whatever manner is convenient (see below).
 
 The transformed kinetic energy operator :math:`\hat{T}` is essentially a quadratic form in the generalised momenta  (recall that :math:`-\frac{\hbar^2}{2m} \frac{\partial^2 }{ \partial x^2 } = \frac{1}{2m} \left( -i \hbar \frac{\partial}{\partial x} \right)^2 = \frac{\hat{p}^2}{2m}` )
 
@@ -188,7 +188,7 @@ From the application of the chain rule the following relation is found
 
 where the vector :math:`\mathbf{t}_{i,\lambda'}` has been introduced. If the :math:`\mathbf{t}_{i,\lambda'}` vectors are known then we can solve this equation to obtain the :math:`\mathbf{s}_{i,\lambda'}` vectors.
 
-At this point further technical details of how to solve equation :eq:`chain_s_t` will not be given and instead the interested reader is referred to the TROVE paper [2]_ for more information. Instead a qualitative description will be given.
+At this point further technical details of how to solve equation :eq:`chain_s_t` will not be given and instead the interested reader is referred to the TROVE paper [TROVE]_ for more information. Instead a qualitative description will be given.
 
 Sorensen [Sorensen]_ showed what values the various components of the :math:`\mathbf{t}_{i,\lambda'}` vectors have, consistent with Eckart conditions, which achieve optimum separation of rotational and vibrational motion. Equation :eq:`chain_s_t` can then be solved numerically. Components of the :math:`\mathbf{s}_{\lambda,i}` and :math:`\mathbf{t}_{i,\lambda'}` are expanded as a power series in :math:`g_n({\xi_n})` (from equation :eq:`func_of_xi` above) to a given order (this is what the integer after \verb|kinetic| refers to in the TROVE input file). When these power series are substituted into equation :eq:`chain_s_t` and coefficients up to a given order are collected, a system of linear equations is obtained of form :math:`\mathbf{T}\mathbf{x} = \mathbf{b}`. The systems of equations can be set up and solved numerically by making use of the fact that values of :math:`\mathbf{t}_{i,\lambda'}` are known.
 
@@ -199,7 +199,7 @@ The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :m
 Vibrational Coordinates
 =======================
 
-The procedure described in the previous section for the numerical construction of the kinetic energy operator is general and can be used with any choice of suitable vibrational coordinates :math:`\xi_n` as long as :math:`t_{i \alpha,\mu}` can be provided. There are three basic types of coordinates used by TROVE: linearized coordinates, geometrically defined coordinates and coordinates for non-rigid molecules with large amplitude vibrations. Of these, linearized coordinates tend to be used the most but geometrically defined coordinates have been used more recently due to a better implementation for them [5]_. Each type of coordinate shall be described in the next subsections.
+The procedure described in the previous section for the numerical construction of the kinetic energy operator is general and can be used with any choice of suitable vibrational coordinates :math:`\xi_n` as long as :math:`t_{i \alpha,\mu}` can be provided. There are three basic types of coordinates used by TROVE: linearized coordinates, geometrically defined coordinates and coordinates for non-rigid molecules with large amplitude vibrations. Of these, linearized coordinates tend to be used the most but geometrically defined coordinates have been used more recently due to a better implementation for them [15YaYu]_. Each type of coordinate shall be described in the next subsections.
 
 Linearized Coordinates
 ----------------------
@@ -232,7 +232,7 @@ The :math:`xyz` coordinate system has its origin at the molecule's centre of mas
 
 The :math:`a_{i \alpha}` are easy to determine from the molecule's equilibrium geometry but they can be obtained numerically from the Z-matrix. This gives an arbitrary molecule fixed axis :math:`x'y'z'` which is transformed to the principle axis system :math:`xyz` by means of a diagonalization of the inertial matrix.
 
-For linear coordinates the expansions needed for determining the kinetic energy operator are linear. This makes them amenable to be numerically solved. The details are given in the TROVE publication [2]_. The simple form of the kinetic energy operator is an advantage of these coordinates.
+For linear coordinates the expansions needed for determining the kinetic energy operator are linear. This makes them amenable to be numerically solved. The details are given in the TROVE publication [TROVE]_. The simple form of the kinetic energy operator is an advantage of these coordinates.
 
 Geometrically Defined Coordinates
 ---------------------------------
@@ -241,7 +241,7 @@ Although linearized coordinates give a simple form for the kinetic energy operat
 
 A disadvantage of these coordinates is that the kinetic energy operator is harder to derive with the expansion being non-linear. The original TROVE publication describes how this can be carried out numerically using 'quadruple precision' in the program to calculate numerical derivatives accurately.
 
-A new way to obtain the expansion of the Hamiltonian was developed by Andrey Yachmenev by using 'automatic differentiation'. This is a computational method of obtaining derivatives of functions with the accuracy of symbolic algebra but carried out in a numerical manner. The technical details of expanding the Hamiltonian and making use of the Eckart frame are discussed in detail in the publication [5]_. Examples comparing linear and geometrically defined (or 'curvilinear') coordinates are also presented.
+A new way to obtain the expansion of the Hamiltonian was developed by Andrey Yachmenev by using 'automatic differentiation'. This is a computational method of obtaining derivatives of functions with the accuracy of symbolic algebra but carried out in a numerical manner. The technical details of expanding the Hamiltonian and making use of the Eckart frame are discussed in detail in the publication [15YaYu]_. Examples comparing linear and geometrically defined (or 'curvilinear') coordinates are also presented.
 
 
 Coordinates for Large Amplitude Vibrations
@@ -249,7 +249,7 @@ Coordinates for Large Amplitude Vibrations
 
 If the kinetic and potential energy operators cannot be expanded in a Taylor series then a different approach is required. This is the case for molecules with a large amplitude degree of freedom for example inversion in ammonia or torsional motion in ethane. This degree of freedom will be labelled as coordinate :math:`\rho`.
 
-The method TROVE uses to handle this case is the Hougen-Bunker-Johns or HBJ approach. A grid of equidistant values along :math:`\rho` is introduced. Each point of this grid is called a reference configuration. The remaining :math:`3N-7` small amplitude vibrational coordinates are then defined as displacements from this configuration. At each grid point along :math:`\rho` all relevant functions are expanded in terms of the small amplitude coordinates :math:`\xi_n`. The steps given above for expanding the kinetic energy operator in either linearized or geometrically defined coordinates are carried out at each grid point along :math:`\rho`. The details are given in the TROVE paper [2]_.
+The method TROVE uses to handle this case is the Hougen-Bunker-Johns or HBJ approach. A grid of equidistant values along :math:`\rho` is introduced. Each point of this grid is called a reference configuration. The remaining :math:`3N-7` small amplitude vibrational coordinates are then defined as displacements from this configuration. At each grid point along :math:`\rho` all relevant functions are expanded in terms of the small amplitude coordinates :math:`\xi_n`. The steps given above for expanding the kinetic energy operator in either linearized or geometrically defined coordinates are carried out at each grid point along :math:`\rho`. The details are given in the TROVE paper [TROVE]_.
 
 
 Expansion of the Potential Energy Function
@@ -317,7 +317,7 @@ where the other :math:`3N-7` coordinates are constrained to their equilibrium va
          T^{(1),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) \frac{\partial}{\partial \xi_n} | \nu'_n \right>,
          T^{(2),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | \frac{\partial}{\partial \xi_n} g_n^l(\xi_n) \frac{\partial}{\partial \xi_n}   \nu'_n \right>.
 
-The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [2]_).
+The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [TROVE]_).
 
 Rotational Basis Functions
 ==========================
@@ -333,7 +333,7 @@ TROVE uses linear combinations of rigid-rotor functions given as linear combinat
 
 where :math:`J` is the total angular momentum (specified by the \verb|0,'JKtau', Jrot n| part of the TROVE input file in the basis block), :math:`K` and :math:`m` are projections of :math:`J` onto a certain axis. :math:`\frac{p(J,K,\pm)}{\sqrt{2}}` is a phase factor chosen to make the matrix representations of the kinetic energy operator real.
 
-Descriptions of these functions are given in introductory textbooks to quantum mechanics  and in detail in Bunker and Jensen's book [3]_. Matrix elements of these functions with the :math:`\hat{J}_{\alpha}` operators are analytical.
+Descriptions of these functions are given in introductory textbooks to quantum mechanics  and in detail in Bunker and Jensen's book [98BuJe]_. Matrix elements of these functions with the :math:`\hat{J}_{\alpha}` operators are analytical.
 
 The complete basis set which to be used in TROVE was a combination of these functions with the vibrational functions
 
@@ -367,7 +367,7 @@ After diagonalisation of :math:`\mathbf{H}` the coefficients are stored (if \ver
 Symmetrised Basis Functions in TROVE
 ====================================
 
-Symmetry plays a crucial part in the TROVE program and the calculation of molecular energy levels and spectra in general. Using symmetry systematically via the application of Group Theory  can greatly reduce the effort required to solve the Schrodinger equation as many of the required matrix elements which are zero can be shown to be so without computing them explicitly. Symmetry is also required to assess which spectroscopic transitions are possible [3]_.
+Symmetry plays a crucial part in the TROVE program and the calculation of molecular energy levels and spectra in general. Using symmetry systematically via the application of Group Theory  can greatly reduce the effort required to solve the Schrodinger equation as many of the required matrix elements which are zero can be shown to be so without computing them explicitly. Symmetry is also required to assess which spectroscopic transitions are possible [98BuJe]_.
 
 TROVE implements symmetry methods in a numerical manner. The following section is based on a recent paper by Yurchenko, Yachmenev and Ovsyannikov [17YuYaOv]_ which discusses TROVE's implementation of symmetry in a pedagogical manner with examples. The reader is referred there for more detail and only a summary is given here.
 
@@ -520,22 +520,5 @@ where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature
 
 
 
-References
-----------
 
-.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
-
-.. [2] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
-
-.. [3] P. R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition
-
-.. [4] R. N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
-
-.. [5] A. Yachmenev, S. N. Yurchenko, J. Chem. Phys. 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the eckart frame.
-
-.. [17YuYaOv] S. N. Yurchenko, A. Yachmenev, R. I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
-
-.. [GAIN] A. F. Al-Refaie, J. Tennyson, S. N. Yurchenko, Comput. Phys. Commun. 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
-
-.. [ExoCross] S. N. Yurchenko, A. F. Al-Refaie, J. Tennyson, Astron. Astrophys. 614, A131 (2018), ExoCross: A general program for generating spectra from molecular line lists
 
