@@ -3,7 +3,7 @@ References
 
 .. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M. J. S. D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
 
-.. [TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
+.. [#TROVE] S. N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.
 
 .. [98BuJe] P. R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition
 

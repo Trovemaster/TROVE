@@ -154,7 +154,7 @@ As described in more detail in later chapters, TROVE numerically generates the H
     KinOrder i
     PotOrder j
 
-where ``i`` and ``j`` are integers. The larger these integers are, the more accurate an expansion of the Hamiltonian is produced. For fast, test calculations, setting ``i`` and ``j`` to 2 and 4 respectively should be sufficient. For accurate results ``i`` and ``j`` should be set to 6 and 8 or 8 and 10 respectively [#TROVE]_.
+where ``i`` and ``j`` are integers. The larger these integers are, the more accurate an expansion of the Hamiltonian is produced. For fast, test calculations, setting ``i`` and ``j`` to 2 and 4 respectively should be sufficient. For accurate results ``i`` and ``j`` should be set to 6 and 8 or 8 and 10 respectively [TROVE]_.
 
 By default, the KEO is generated numerically 'on-the-fly' using the linearised coordinates as a Taylor-type expansion of an order :math:`i`. Alternatively, the KEO can be given as a subroutine in a sum-of-products form using geometrically-defined-coordinates (referenced to as 'local'). In this case, the corresponding expansion order is pre-defined by the given expansion.
 
@@ -183,7 +183,7 @@ The polyad number and maximum energy for the primitive basis functions are set i
      enercut  x
      END
 
-As discussed in more detail in later chapters, TROVE uses products of primitive one-dimensional functions as basis functions. The polyad number, :math:`P`, is a way to restrict the size of the basis set [#TROVE]_. The sum of the primitive function's vibrational quantum number, :math:`v_i`, is then restricted to be below ``N``, that is:
+As discussed in more detail in later chapters, TROVE uses products of primitive one-dimensional functions as basis functions. The polyad number, :math:`P`, is a way to restrict the size of the basis set [TROVE]_. The sum of the primitive function's vibrational quantum number, :math:`v_i`, is then restricted to be below ``N``, that is:
 
 .. math::
      :label: polyad
@@ -278,7 +278,7 @@ The molecule is defined in TROVE by the following
 
 `dstep` has to do with how fine TROVE carries out the finite derivatives when the PEF or DMF is re-expanded in terms of the internal TROVE coordinates.
 
-The ``COORDS`` keyword specifies the type of internal coordinates. The standard option is ``linear`` which indicates that the kinetic and potential energy should be expanded in linear coordinates [#TROVE]_. Another option is ``local`` which  uses curvilinear (geometrically defined) coordinates [15YaYu]_. For the curvilinear coordinates, the KEO operators are currently available for a few specific cases. Externally generated curvilinear KEOs can be also used, provided they are given in some TROVE-standard form.
+The ``COORDS`` keyword specifies the type of internal coordinates. The standard option is ``linear`` which indicates that the kinetic and potential energy should be expanded in linear coordinates [TROVE]_. Another option is ``local`` which  uses curvilinear (geometrically defined) coordinates [15YaYu]_. For the curvilinear coordinates, the KEO operators are currently available for a few specific cases. Externally generated curvilinear KEOs can be also used, provided they are given in some TROVE-standard form.
 
 `TRANSFORM` specifies how to transform the coordinates from Z-matrix to the coordinates used in TROVE. This is specified in the mol_*.f90 file for the molecule of interest. For the PF\ :sub:`3` example here, the details of the transformation are given in the ``r-alpha`` subroutine.
 
