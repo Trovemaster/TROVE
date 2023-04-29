@@ -2,6 +2,18 @@ Molecules
 *********
 .. _molecules:
 
+
+In order to define a Hamiltonian for an arbitrary molecular systems the following ingredients are required: 
+
+- Molecular frame :math:`xyz` defining the rotation of the molecule via the positions of the three Euler angles :math:`\alpha,\brta,\gamma`;
+- :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`,  internal degrees of freedom defining the molecular vibrations; 
+- Kinetic energy operator (KEO) in a sum-of-products form. In TROVE it has to be an expansion in terms of some 1D functions of :math:`\xi_n`, their conjugate momenta and rotational angular momenta :math:`\hat{J}_\alpha`;
+- Potential energy function (PEF). In TROVE, it is also an expansion in terms of some 1D functions of :math:`\xi_n`. 
+- For intensity calculations, 3D dipole moment functions, also as expansion in terms of some 1D functions of :math:`\xi_n`.
+
+
+
+
 In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
 
 The list of molecules are given in roughly chronological order with the relevant references. Details are given of the symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of linelists if they were calculated.
@@ -33,14 +45,12 @@ Dipole moment surface expansion: N/A
 
 Results: :math:`J = 0` vibrational energy levels up to 8000 cm\ :sup:`-1`.
 
-.. Note:: Usually TROVE would not be used for a triatomic molecule as programs exist which have the 'exact' triatomic Hamiltonian (DVR3D for example [DVR3D]_). This molecule was used as a test case to demonstrate TROVE's capabilities in the original TROVE paper. The calculation was also repeated using HBJ theory, taking the bending coordinate to be the large amplitude coordinate and using normal coordinates.
 
 Reference: [TROVE]_
 
 
 Methyl cation, CH\ :sub:`3`\ :sup:`+`
 =====================================
-
 
 
 Symmetry: :math:`D_{3h}`
