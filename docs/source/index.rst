@@ -21,10 +21,6 @@ Welcome to TROVE's documentation!
    license
 
 
-Table of Contents   
-=================
-
-.. contents:: Table of Contents   
 
 News
 ====

@@ -104,5 +104,8 @@ XY\ :sub:`3` type molecules
 
 Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`. 
 
+.. figure:: img/NH3.jpg
+   :alt: reStructuredText, NH3 equilibrium structure 
 
+   NH\ :sub:`3` equilibrium structure 
 
