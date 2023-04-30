@@ -28,17 +28,21 @@ There are currently at least two  exact, curvilinear KEO forms are provided for 
 
 .. math::
 
-    \xi_1 = r_1 - r_{\rm e}, \\
-    \xi_2 = r_2 - r_{\rm e}, \\
-    \xi_3 = \rho,
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm e}, \\
+    \xi_2 &= r_2 - r_{\rm e}, \\
+    \xi_3 &= \rho,
+    \end{split}
 
 where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium.
 
 .. math::
 
-    \xi_1 = r_1 - r_{\rm ref}, \\
-    \xi_2 = r_2 - r_{\rm ref}, \\
-    \xi_3 = \rho,
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm ref}, \\
+    \xi_2 &= r_2 - r_{\rm ref}, \\
+    \xi_3 &= \rho,
+    \end{split}
 
 Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section).
 
