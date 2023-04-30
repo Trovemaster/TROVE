@@ -110,14 +110,14 @@ Linearized KEOs use the Eckart frame with the PAS at the equilibrium configurati
 
 For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of the valence coordinates consists of three bond lengths :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_{23}`, :math:`\alpha_{13}` and :math:`\alpha_{12}`. For the linearised KEO, these valence are used to form the linearised coordinates in the same way as before (1st order expansion in terms of the Cartesian displacement). For the curvilinear KEO (``local``), the vibrational coordinates are then defined as displacement from the corresponding equilibrium (or non-rigid reference) values:
 .. math::
-
+    
     \xi_1 = r_1 - r_{\rm e},
     \xi_2 = r_2 - r_{\rm e},
     \xi_3 = r_3 - r_{\rm e},
     \xi_4 = \alpha_{23}-\alpha_{\rm e},
     \xi_5 = \alpha_{13}-\alpha_{\rm e},
     \xi_6 = \alpha_{12}-\alpha_{\rm e}.
-
+    
 
 
 .. figure:: img/PH3.jpg
@@ -126,13 +126,38 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
    PH\ :sub:`3` equilibrium structure 
 
 
+
+XY\ :sub:`3` non-rigid molecules with an umbrella motion. 
+---------------------------
+
+Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced. 
+
+
+.. sidebar::
+   .. figure:: img/umbrella.jpg
+       :alt: Umbrella motions
+
+       NH\ :sub:`3`: umbrella modes :math:`\rho` and :math:`\delta`. 
+
+
+
+
+Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`.
+
+
+
+
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
 
-.. figure:: img/NH3.jpg
-   :alt: reStructuredText, NH3 equilibrium structure
+For the 
 
-   NH\ :sub:`3` equilibrium structure
+
+.. sidebar:: 
+   .. figure:: img/NH3.jpg
+       :alt: NH3 equilibrium structure
+
+       NH\ :sub:`3` equilibrium structure
 
 
 

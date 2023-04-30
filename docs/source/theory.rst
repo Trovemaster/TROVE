@@ -14,7 +14,7 @@ The Schroedinger equation for a molecule within the Born-Oppenheimer (BO) approx
 
 .. math::
 
-    \left(-\frac{\ \hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i + V \right) \Psi_{trv} = E_{trv} \Psi_{trv}`
+    \left(-\frac{\ \hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i + V \right) \Psi_{trv} = E_{trv} \Psi_{trv}
 
 where nucleus :math:`i` has mass :math:`m_i` and coordinates :math:`(R_{iX},R_{iY},R_{iZ})`. :math:`\nabla^2_i = \partial ^2 / \partial R_{iX}^2 +
 \partial ^2 / \partial R_{iY}^2  + \partial ^2 / \partial R_{iZ}^2` is the kinetic energy for each nucleus and :math:`V` is the potential energy, which is equal to the electronic energy within the the BO approximation (and absence of electric and magnetic fields). :math:`\Psi_{trv}` and :math:`E_{trv}` are the wavefunction and energy respectively.
