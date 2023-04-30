@@ -28,7 +28,7 @@ Defining a molecule-fixed axis system immediately introduces a problem however d
 TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system. This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule. This allows TROVE to be used for a wide variety of molecules as seen in chapter `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__. The actual construction of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
 transforms and so on (see chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__ ).
 
-A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum number :math:`J` by minimising the coupling of the vibrational and rotational motion. Access to high :math:`J`s is crucial for the simulation of molecular spectra, especially at high temperatures where lots of states are populated.
+A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum number :math:`J` by minimising the coupling of the vibrational and rotational motion. Access to high :math:`J` is crucial for the simulation of molecular spectra, especially at high temperatures where lots of states are populated.
 
 Numerical Construction of Kinetic Energy Operator
 =================================================
@@ -63,10 +63,9 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
      \begin{split}
      \hat{T} &= \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} \\
      &+ \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'} \\
-     &-\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \\
-     \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] \\
-     &-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi) \\
-     \frac{\partial}{\partial \xi_{n'}} + U(\xi).
+     &-\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)  \frac{\partial}{\partial \xi_n} \\
+     & + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] \\
+     &-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi) \frac{\partial}{\partial \xi_{n'}} + U(\xi). 
      \end{split}
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`. The first term is the translation kinetic energy of the centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`. This term is exactly separable from the other terms as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
@@ -127,8 +126,7 @@ To go from the expression for the kinetic energy in equation :eq:`schrodiger_lab
 .. math::
    :label: T_as_P
 
-   \hat{T} = -\frac{\hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i = \sum_{X,Y,Z} \sum_{i=1}^{N}\frac{\hat{P}^2_{iF}}{2m_i} = \sum_{i=1}^N
-\frac{\hat{\mathbf{P}}_i^2}{2m_i}
+   \hat{T} = -\frac{\hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i = \sum_{X,Y,Z} \sum_{i=1}^{N}\frac{\hat{P}^2_{iF}}{2m_i} = \sum_{i=1}^N \frac{\hat{\mathbf{P}}_i^2}{2m_i}
 
 where the momentum vector :math:`\hat{\mathbf{P}}_{iF}` has the :math:`XYZ` coordinates (:math:`\hat{P}_{iX}, \hat{P}_{iY}, \hat{P}_{iZ}`). The chain-rule transformation in Hermitian form is defined as
 
@@ -166,11 +164,7 @@ When equation :eq:`chain_hermit_vec` is inserted into equation :eq:`T_as_P` the 
 .. math::
     :label: U_with_s
 
-    \begin{split}
-    U &= \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \sum_{i=1}^N \left\{  \frac{1}{8m_i} \left[\hat{\Pi}_{\lambda},\mathbf{s}_{\lambda,i} \right] \\
-      &  \cdot\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i} \right]+ \frac{1}{4 m_i} \mathbf{s}_{\lambda,i} \cdot \\
-      &  \left[\hat{\Pi}_{\lambda},\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i}\right] \right] \right \}
-    \end{split}
+    U = \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \sum_{i=1}^N \left\{  \frac{1}{8m_i} \left[\hat{\Pi}_{\lambda},\mathbf{s}_{\lambda,i} \right]        \cdot\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i} \right]+ \frac{1}{4 m_i} \mathbf{s}_{\lambda,i} \cdot        \left[\hat{\Pi}_{\lambda},\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i}\right] \right] \right \}
 
 where the square brackets indicate the communicator of the quantities in them.
 
@@ -325,7 +319,7 @@ where the other :math:`3N-7` coordinates are constrained to their equilibrium va
          &T^{(2),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | \frac{\partial}{\partial \xi_n} g_n^l(\xi_n) \frac{\partial}{\partial \xi_n}   \nu'_n \right>.
     \end{split}
 
-The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [TROVE]_).
+The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem`. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [TROVE]_).
 
 Rotational Basis Functions
 ==========================
@@ -351,7 +345,7 @@ The complete basis set which to be used in TROVE was a combination of these func
 
     |\nu,J,K,m,\pm \rangle = \prod_{v} |\nu _v \rangle \times |J,K,m,\pm \rangle.
 
-This form of basis set can still be used in TROVE but it is much efficient to use the `:math:`J=0` method discussed below.
+This form of basis set can still be used in TROVE but it is much efficient to use the :math:`J=0` method discussed below.
 
 
 Diagonalisation of the Hamiltonian
@@ -362,12 +356,12 @@ The previous sections of this chapter have described: how the rotational-vibrati
 The Schrödinger equation in matrix form is written as
 
 .. math::
-    :label: Schrödinger_matrix
+    :label: Schrodinger_matrix
 
     \mathbf{H}\mathbf{C} = \mathbf{E}\mathbf{C}
 
 where :math:`\mathbf{H}` is the Hamiltonian matrix, :math:`\mathbf{C}` is a matrix of coefficients and :math:`\mathbf{E}` is a diagonal matrix of energies (or 'eigenvalues'). :math:`\mathbf{H}` contains matrix elements of :eq:`rovibH` with the basis functions of equation :eq:`rovib_basis`. :math:`\mathbf{C}` is a matrix of (unknown) coefficients which multiply each basis function of equation :eq:`rovib_basis` to give a variational approximation to the eigenfunction of that rotational-vibrational state.  Each column will give the coefficients required for a single state. :math:`E` contains the energies of each state. Equation
-:eq.Schrodinger_matrix` is an eigenvalue equation. To solve it the Hamiltonian matrix is 'diagonalised'. This is a standard problem in many areas of science and mathematics and general programs have been written for its solution. TROVE uses the LAPACK/BLAS libraries. The full Hamiltonian decouples into blocks of independent :math:`J` and symmetry :math:`\Gamma` that is, matrix elements between different :math:`J` and :math:`\Gamma` are zero. This greatly reduces the size of the matrices to be diagonalised.
+:eq:`Schrodinger_matrix` is an eigenvalue equation. To solve it the Hamiltonian matrix is 'diagonalised'. This is a standard problem in many areas of science and mathematics and general programs have been written for its solution. TROVE uses the LAPACK/BLAS libraries. The full Hamiltonian decouples into blocks of independent :math:`J` and symmetry :math:`\Gamma` that is, matrix elements between different :math:`J` and :math:`\Gamma` are zero. This greatly reduces the size of the matrices to be diagonalised.
 
 After diagonalisation of :math:`\mathbf{H}` the coefficients are stored (if \verb|Eigenfunc SAVE| is used). Further calculations using the eigenfunctions (for example, obtaining transition intensities) are then simplified into multiplying and adding the corresponding coefficients together and multiplying pre-computed integrals.
 
@@ -394,7 +388,7 @@ Symmetry adapted basis functions are formed from linear combinations of these pr
 
     \Psi_{\mu,n}^{J,\Gamma_s} = \sum_{k,v} T_{k,v,n}^{\mu,J,\Gamma_s} \Phi_{k,\nu}^J.
 
-In this equation the :math:`T_{k,v,n}^{\mu,J,\Gamma_s}` are symmetrization coefficients (not to be confused with the variational expansion coefficients of equation :eq:`Schrodinger_matrix}:. Here :math:`\mu` is a counting number, :math:`\Gamma_s` is symmetry label of a certain irreducible representation (irrep) of the symmetry group (see Atkin's MQM for a good introduction to this)  and :math:`n` is used for degenerate symmetries.
+In this equation the :math:`T_{k,v,n}^{\mu,J,\Gamma_s}` are symmetrization coefficients (not to be confused with the variational expansion coefficients of equation :eq:`Schrodinger_matrix`. Here :math:`\mu` is a counting number, :math:`\Gamma_s` is symmetry label of a certain irreducible representation (irrep) of the symmetry group (see Atkin's MQM for a good introduction to this)  and :math:`n` is used for degenerate symmetries.
 
 Symmetrised basis functions have the important advantage that they the make the Hamiltonian block diagonal. That is
 
@@ -414,9 +408,9 @@ The Hamiltonian operator for a system :math:`\hat{H}` commutes with all operatio
 
 and eigenfunctions of :math:`\hat{H}` are also eigenfunctions of :math:`R` (as a simple example of this, a hydrogen s-orbital is invariant under all operations of the spherical group :math:`R^3`). This means that the eigenfunctions transform as an irrep of the symmetry group, :math:`\mathbf{G}`.
 
-The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger:. The approach used in TROVE for this is as follows:
+The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger`. The approach used in TROVE for this is as follows:
 
-  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF:math:`_3` example from chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
+  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF\ :sub:`3` example from chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
 
   (ii) For each subspace :math:`i = 1, \cdots, L`, a reduced Hamiltonian operator :math:`\hat{H}^{(i)}` is constructed by neglecting or integrating over the other degrees of freedom.
 
@@ -424,7 +418,7 @@ The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrise
 
   (iv) The total basis set is built as a direct product of the subspace bases and transformed to irreps using standard approaches.
 
-Symmetrically independent subspaces of coordinates are chosen such that each subspace contains only coordinates which can be symmetrically related by operations of the symmetry group (for example the three stretches of PF:math:`_3` for one subspace and the three bends as the other).
+Symmetrically independent subspaces of coordinates are chosen such that each subspace contains only coordinates which can be symmetrically related by operations of the symmetry group (for example the three stretches of PF\ :sub:`3` for one subspace and the three bends as the other).
 
 The details of the above steps are as follows. For each subspace a reduced eigenvalue problem is given by
 
@@ -440,10 +434,10 @@ where :math:`\mathbf{Q}^{(i)}` is a set of coordinates (:math:`\xi_1,\xi_2,\cdot
 
      \hat{H}^{(i)}(\mathbf{Q}^{(i)}) = \left< 0_p| \langle 0_q | \cdots \left<0_r|\hat{H}|0_r \right> \cdots |0_q \rangle |0_p \right>
 
-As well as giving symmetrised functions, solving equation :eq:`Schrodinger_subspace` also gives better basis functions for the system since the problem is closer to the full dimensionality. The solutions can also be contracted, by energy for example. The TROVE symmetry paper gives examples of how the method works for AB:math:`_2` and XY:math:`_3` type molecules. The total basis set for the full dimensionality of the molecule is constructed by a direct product of the :math:`L` symmetrised basis sets. This is then transformed to irreps using standard approaches.
+As well as giving symmetrised functions, solving equation :eq:`Schrodinger_subspace` also gives better basis functions for the system since the problem is closer to the full dimensionality. The solutions can also be contracted, by energy for example. The TROVE symmetry paper gives examples of how the method works for AB\ :sub:`2` and XY\ :sub:`3` type molecules. The total basis set for the full dimensionality of the molecule is constructed by a direct product of the :math:`L` symmetrised basis sets. This is then transformed to irreps using standard approaches.
 
 Although the solutions of the reduced Schrödinger equations are guaranteed to be an irrep of the symmetry group :math:`\mathbf{G}` it may not be obvious to which symmetry a given function belongs. Degenerate solutions will also be mixed together. TROVE solves both of these problems in a numerical manner. To determine which irrep a given solutions belongs to, TROVE samples the basis functions on a grid of geometries :math:`N^{(i)}_{\text{grid}}`. The number of these points used is the value of \verb|sample_points| in the TROVE input file. For a given subspace :math:`i`, a random grid of geometries of that space
-:math:`\mathbf{Q}_k^{(i)}`(:math:`k=1,\cdots,N^{(i)}_{\text{grid}})`, all symmetry related images :math:`R (\mathbf{Q}^{(i)})` are generated. These are used to find the values of the wave functions :math:`\Psi^{(i)}_{\lambda_i}(R \mathbf{Q}^{(i)})` at each geometry. This allows the transformation matrices  :math:`\mathbf{D}[R]` for each operation of the group :math:`\mathbf{G}` to be established and the symmetry of wave functions to be worked out.
+:math:`\mathbf{Q}_k^{(i)}` (:math:`k=1,\cdots,N^{(i)}_{\text{grid}})`, all symmetry related images :math:`R (\mathbf{Q}^{(i)})` are generated. These are used to find the values of the wave functions :math:`\Psi^{(i)}_{\lambda_i}(R \mathbf{Q}^{(i)})` at each geometry. This allows the transformation matrices  :math:`\mathbf{D}[R]` for each operation of the group :math:`\mathbf{G}` to be established and the symmetry of wave functions to be worked out.
 
 The same procedure is used to obtained symmetrised functions for :math:`J>0` rotational-vibrational states.
 
@@ -491,7 +485,7 @@ and
      
                    \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]  \Psi_{J=0,i'}^{\Gamma_s'} \right>.
 
-Matrix elements are neglected if the values are below a certain tolerance, usually 10:math:`^{-16}`. This is the last step where the primitive basis set is required. Many of the matrix elements involving the rigid-rotor functions are analytic.
+Matrix elements are neglected if the values are below a certain tolerance, usually :math:`10^{-16}`. This is the last step where the primitive basis set is required. Many of the matrix elements involving the rigid-rotor functions are analytic.
 
 The :math:`J=0` contraction greatly speeds up the calculation of :math:`J>0` matrix elements. Matrix elements of the dipole moment surface can also be calculated using a similar approach.
 
