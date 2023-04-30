@@ -17,6 +17,7 @@ Welcome to TROVE's documentation!
    refinement.rst
    features.rst
    compile.rst
+   benchmarks.rst
    references
    license
 
