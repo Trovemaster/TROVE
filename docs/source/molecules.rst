@@ -3,12 +3,12 @@ Molecules
 .. _molecules:
 
 
-In order to define a Hamiltonian for an arbitrary molecular systems the following ingredients are required: 
+In order to define a Hamiltonian for an arbitrary molecular systems the following ingredients are required:
 
-- Molecular frame :math:`xyz` defining the rotation of the molecule via the positions of the three Euler angles :math:`\alpha,\brta,\gamma`;
-- :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`,  internal degrees of freedom defining the molecular vibrations; 
+- Molecular frame :math:`xyz` defining the rotation of the molecule via the positions of the three Euler angles :math:`\alpha,\beta,\gamma` ;
+- :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`,  internal degrees of freedom defining the molecular vibrations;
 - Kinetic energy operator (KEO) in a sum-of-products form. In TROVE it has to be an expansion in terms of some 1D functions of :math:`\xi_n`, their conjugate momenta and rotational angular momenta :math:`\hat{J}_\alpha`;
-- Potential energy function (PEF). In TROVE, it is also an expansion in terms of some 1D functions of :math:`\xi_n`. 
+- Potential energy function (PEF). In TROVE, it is also an expansion in terms of some 1D functions of :math:`\xi_n`.
 - For intensity calculations, 3D dipole moment functions, also as expansion in terms of some 1D functions of :math:`\xi_n`.
 
 
