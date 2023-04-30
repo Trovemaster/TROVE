@@ -48,8 +48,8 @@ The advantage of the linearised coordinates is that the corresponding KEO can be
 
 
 
-'R-RHO-Z-ECKART'
-^^^^^^^^^^^^^^^^
+``R-RHO-Z-ECKART``
+^^^^^^^^^^^^^^^^^^
 
 This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions.
 
@@ -124,11 +124,12 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
     \xi_6 &= \alpha_{12}-\alpha_{\rm e}.
     \end{split}
 
+.. sidebar::
 
-.. figure:: img/PH3.jpg
-   :alt: PH3 equilibrium structure 
-
-   PH\ :sub:`3` equilibrium structure 
+    .. figure:: img/PH3.jpg
+       :alt: PH3 equilibrium structure 
+     
+       PH\ :sub:`3` equilibrium structure 
 
 
 This representation has been used for PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_.
@@ -184,12 +185,11 @@ For this ``TRANSFORM`` case, the following valence-based coordinates are used:
     \xi_2 &= r_2 - r_{\rm e}, \\
     \xi_3 &= r_3 - r_{\rm e}, \\
     \xi_4 &= \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),  \\
-    \xi_4 &= \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),  \\
+    \xi_5 &= \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),  \\
     \xi_6 &= \delta. 
     \end{split}
 
 The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation. 
-
 
 .. sidebar:: 
 
@@ -203,16 +203,34 @@ The umbrella mode :math:``\delta`` is defined as an angle between the trisector 
 ZXY\ :sub:`2` (Formaldehyde type)
 ---------------------------------
 
-The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\theta`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\theta_i` ranging from  :math`[-\theta_{0}\ldots \theta_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\theta_i`. Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. 
-
-
-
-
-
 .. sidebar::
 
    .. figure:: img/H2CO.jpg
-       :alt: H2CO 
+       :alt: H2CO
 
-       Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO. 
+       Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO.
+
+
+
+
+The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
+
+
+``R-THETA-TAU``
+^^^^^^^^^^^^^^^
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm e}, \\
+    \xi_2 &= r_2 - r_{\rm e}, \\
+    \xi_3 &= r_3 - r_{\rm e}, \\
+    \xi_4 &= \theta_1,  \\
+    \xi_5 &= \theta_2,  \\
+    \xi_6 &= \tau.
+    \end{split}
+
+
+
+
 
