@@ -29,10 +29,6 @@ Here we introduce different ingredients available for triatomic molecules, inclu
 - Potential energy functions (PEF);
 - For intensity calculations, 3D dipole moment functions.
 
-XY\ :sub:`2` type molecules
-===========================
-
-   XY2.rst
 
 
 Hydrogen sulfide, H\ :sub:`2`\ S

@@ -1,5 +1,5 @@
 Triatomics
-**********
+==========
 
 Here we introduce different ingredients available for triatomic molecules, including
 
@@ -10,12 +10,10 @@ Here we introduce different ingredients available for triatomic molecules, inclu
 - For intensity calculations, 3D dipole moment functions.
 
 XY\ :sub:`2` type molecules
-===========================
+---------------------------
 
-The main frame is the 'bisector', with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule. In TROVE, the definition of the frame is combine the definition of the internal coordinates via the keyword ``transform``. In the following, these are described. 
+The main frame is the 'bisector', with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. In TROVE, the definition of the frame is combine the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
-Bisecting embedding
--------------------
 
 ``R-RHO-Z``
 ^^^^^^^^^^^
@@ -40,6 +38,13 @@ For the linearised coordinates type (``COORDS Linear``), the actual internal coo
 
 The advantage of the linearised coordinates is that the corresponding KEO can be constructed on the fly as part of the TROVE generalised procedure as a Taylor type expansion. The main disadvantage however is that the approximate linearised KEO operator is less accurate than the (exact) curvilinear EKO. Besides, the convergence of the variational solution is also poorer for the linearised case (see [15YaYu]_). 
 
+
+'R-RHO-Z-ECKART'
+^^^^^^^^^^^^^^^^
+
+This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions. 
+
+
 ``R-ALPHA-Z``
 ^^^^^^^^^^^
 
@@ -51,6 +56,7 @@ The advantage of the linearised coordinates is that the corresponding KEO can be
     \xi_3 = \alpha-\alpha_{\rm e}. 
 
 In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements. 
+
 
 
 
