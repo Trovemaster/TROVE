@@ -109,6 +109,7 @@ Linearized KEOs use the Eckart frame with the PAS at the equilibrium configurati
 ^^^^^^^^^^^
 
 For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of the valence coordinates consists of three bond lengths :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_{23}`, :math:`\alpha_{13}` and :math:`\alpha_{12}`. For the linearised KEO, these valence are used to form the linearised coordinates in the same way as before (1st order expansion in terms of the Cartesian displacement). For the curvilinear KEO (``local``), the vibrational coordinates are then defined as displacement from the corresponding equilibrium (or non-rigid reference) values:
+
 .. math::
     
     \xi_1 = r_1 - r_{\rm e},
@@ -130,15 +131,33 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
 XY\ :sub:`3` non-rigid molecules with an umbrella motion. 
 ---------------------------
 
-Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced. 
+Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced as one of the bending modes. An example of an umbrella coordinate is an angle between the :math:`C_3` symmetry axis and the bond X-Y, see Figure. It is natural to use the non-rigid reference configuration along the umbrella, inversion motion and build the KEO as an expansion around it. For two other bending modes, in principle one can use two inter-bond angles, e.g.  :math:`\alpha_2` and :math:`\alpha_3`, two dihedral angles :math:`\phi_2` and :math:`\phi_3`. However, for symmetry reasons, TROVE employs the symmetry-adapted bending pair :math:`S_a` and :math:`S_b`, defined as follows:
+
+.. math::
+
+    S_a = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{12}-\alpha_{13}),
+    S_b  = \frac{1}{\sqrt{2}} ( \alpha_{12}-\alpha_{13})
+    
+
+or 
+
+
+.. math::
+
+    S_a = \frac{1}{\sqrt{6}} (2 \phi_{23}-\phi_{12}-\phi_{13}),
+    S_b  = \frac{1}{\sqrt{2}} ( \phi_{12}-\phi_{13})
+
+
+The umbrella mode for any instantaneous configuration of the nuclei is defined in TROVE as the angle between a trisector 
+
 
 
 .. sidebar::
+
    .. figure:: img/umbrella.jpg
        :alt: Umbrella motions
 
        NH\ :sub:`3`: umbrella modes :math:`\rho` and :math:`\delta`. 
-
 
 
 
@@ -154,6 +173,7 @@ For the
 
 
 .. sidebar:: 
+
    .. figure:: img/NH3.jpg
        :alt: NH3 equilibrium structure
 
