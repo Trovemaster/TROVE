@@ -42,6 +42,8 @@ For the linearised coordinates type (``COORDS Linear``), the actual internal coo
 The advantage of the linearised coordinates is that the corresponding KEO can be constructed on the fly as part of the TROVE generalised procedure as a Taylor type expansion. The main disadvantage however is that the approximate linearised KEO operator is less accurate than the (exact) curvilinear EKO. Besides, the convergence of the variational solution is also poorer for the linearised case (see [15YaYu]_). 
 
 
+
+
 'R-RHO-Z-ECKART'
 ^^^^^^^^^^^^^^^^
 
@@ -61,6 +63,36 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements. 
 
 
+TROVE input example:
+::
+
+COORDS       local    (curvilinear coordinates)
+TRANSFORM    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
+MOLTYPE      XY2   
+REFER-CONF   non-RIGID  (Reference configuration)
+
+.. Note:: The text in brackets is used for comments.
 
 
+
+
+
+XYZ type molecules
+------------------
+
+The main embedding here is the 'bond'-embedding, with the :math:`z` axis placed parallel to the bond Y-Z with a heavier atom Z comparing to X (second bond). 
+For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``TRANSFOrM`` can be used. 
+
+
+
+``R1-Z-R2-RHO``
+^^^^^^^^^^^^^^^^^
+
+This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z``. 
+
+
+``R1-Z-R2-ALPHA``
+^^^^^^^^^^^^^^^^^
+
+This is another 'bond'-embedding with the same vibrational coordinates as in ``R-ALPHA-Z``.
 
