@@ -1,21 +1,24 @@
 Frames and vibrational coordinates 
 **********************************
 
-Triatomics
-==========
 
 Here we introduce different ingredients available for triatomic molecules, including
 
 - Molecular frames :math:`xyz`;
 - :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`;
-- Kinetic energy operators (KEO);
-- Potential energy functions (PEF);
-- For intensity calculations, 3D dipole moment functions.
+
+For the linearised coordinates, the default frame is Eckart. The equilibrium structures, required for the definition of the linearised KEO and PEF, are chosen as the principal axis system (PAS). For the curvilinear KEOs, the frames are defined by the construction of the KEOs in their analytic representations.
+
+Triatomics
+==========
 
 XY\ :sub:`2` type molecules
 ---------------------------
 
-The main frame is the 'bisector', with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. In TROVE, the definition of the frame is combine the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
+
+in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
+
+There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``MLkinetic_xy2_bisect_EKE``, ``MLkinetic_xy2_bisect_EKE_sinrho``, see below. 
 
 
 ``R-RHO-Z``
@@ -27,27 +30,26 @@ The main frame is the 'bisector', with the :math:`x` axis bisecting the bond ang
     \xi_1 = r_1 - r_{\rm e},
     \xi_2 = r_2 - r_{\rm e},
     \xi_3 = \rho,
-     
-where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium. 
+
+where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium.
 .. math::
 
     \xi_1 = r_1 - r_{\rm ref},
     \xi_2 = r_2 - r_{\rm ref},
     \xi_3 = \rho,
 
-Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section). 
+Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section).
 
-For the linearised coordinates type (``COORDS Linear``), the actual internal coordinates are the linearised versions of :math:`\xi_i` above. More specifically, for the ``non-rigid`` reference configuration, the bending coordinate :math`\rho` is kept curvilinear on a grid of :math`\rho_k` points as before, while the stretching coordinates are defined by linearly expanding :math`r_1` and :math`r_2` in terms of the Cartesian displacement around the corresponding reference values :math:`r_{\rm ref}`. In the ``Rigid`` case, the bending coordinate is also linearised. 
+For the linearised coordinates type (``COORDS Linear``), the actual internal coordinates are the linearised versions of :math:`\xi_i` above. More specifically, for the ``non-rigid`` reference configuration, the bending coordinate :math`\rho` is kept curvilinear on a grid of :math`\rho_k` points as before, while the stretching coordinates are defined by linearly expanding :math`r_1` and :math`r_2` in terms of the Cartesian displacement around the corresponding reference values :math:`r_{\rm ref}`. In the ``Rigid`` case, the bending coordinate is also linearised.
 
-The advantage of the linearised coordinates is that the corresponding KEO can be constructed on the fly as part of the TROVE generalised procedure as a Taylor type expansion. The main disadvantage however is that the approximate linearised KEO operator is less accurate than the (exact) curvilinear EKO. Besides, the convergence of the variational solution is also poorer for the linearised case (see [15YaYu]_). 
-
+The advantage of the linearised coordinates is that the corresponding KEO can be constructed on the fly as part of the TROVE generalised procedure as a Taylor type expansion. The main disadvantage however is that the approximate linearised KEO operator is less accurate than the (exact) curvilinear EKO. Besides, the convergence of the variational solution is also poorer for the linearised case (see [15YaYu]_).
 
 
 
 'R-RHO-Z-ECKART'
 ^^^^^^^^^^^^^^^^
 
-This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions. 
+This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions.
 
 
 ``R-ALPHA-Z``
@@ -58,9 +60,9 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 
     \xi_1 = r_1 - r_{\rm ref},
     \xi_2 = r_2 - r_{\rm ref},
-    \xi_3 = \alpha-\alpha_{\rm e}. 
+    \xi_3 = \alpha-\alpha_{\rm e}.
 
-In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements. 
+In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements.
 
 
 TROVE input example:
@@ -68,31 +70,39 @@ TROVE input example:
 
 COORDS       local    (curvilinear coordinates)
 TRANSFORM    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
-MOLTYPE      XY2   
+MOLTYPE      XY2
 REFER-CONF   non-RIGID  (Reference configuration)
 
 .. Note:: The text in brackets is used for comments.
 
 
-
-
-
 XYZ type molecules
 ------------------
 
-The main embedding here is the 'bond'-embedding, with the :math:`z` axis placed parallel to the bond Y-Z with a heavier atom Z comparing to X (second bond). 
-For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``TRANSFOrM`` can be used. 
+The main embedding here is the 'bond'-embedding, with the :math:`z` axis placed parallel to the bond Y-Z with a heavier atom Z comparing to X (second bond).
+For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``TRANSFORM`` can be used.
 
 
 
 ``R1-Z-R2-RHO``
 ^^^^^^^^^^^^^^^^^
 
-This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z``. 
+This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z``.
 
 
 ``R1-Z-R2-ALPHA``
 ^^^^^^^^^^^^^^^^^
 
 This is another 'bond'-embedding with the same vibrational coordinates as in ``R-ALPHA-Z``.
+
+
+Tetratomics
+===========
+
+XY\ :sub:`3` type molecules
+---------------------------
+
+Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`. 
+
+
 
