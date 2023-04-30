@@ -191,13 +191,6 @@ For this ``TRANSFORM`` case, the following valence-based coordinates are used:
 
 The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation. 
 
-.. sidebar:: 
-
-   .. figure:: img/NH3.jpg
-       :alt: NH3 equilibrium structure
-
-       NH\ :sub:`3` equilibrium structure
-
 
 
 ZXY\ :sub:`2` (Formaldehyde type)
