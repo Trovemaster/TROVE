@@ -60,11 +60,11 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
 .. math::
      :label: generalT
 
-     \hat{T} = \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM}
-     + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'}
-     -\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)
-     \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]
-     -\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi)
+     \hat{T} = \frac{1}{2} \sum_{F=X,Y,Z} \hat{P}_F^{CM} G_{FF} \hat{P}_F^{CM} \\
+     + \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'} \\
+     -\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \\
+     \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] \\
+     -\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi) \\ 
      \frac{\partial}{\partial \xi_{n'}} + U(\xi).
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`. The first term is the translation kinetic energy of the centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`. This term is exactly separable from the other terms as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
@@ -164,9 +164,9 @@ When equation :eq:`chain_hermit_vec` is inserted into equation :eq:`T_as_P` the 
 .. math::
     :label: U_with_s
 
-    U = \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \sum_{i=1}^N \left\{  \frac{1}{8m_i} \left[\hat{\Pi}_{\lambda},\mathbf{s}_{\lambda,i} \right]
-        \cdot\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i} \right]+ \frac{1}{4 m_i} \mathbf{s}_{\lambda,i} \cdot
-        \left[\hat{\Pi}_{\lambda},\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i}\right] \right] \right \}
+    U = \sum_{\lambda=1}^{3N} \sum_{\lambda'=1}^{3N} \sum_{i=1}^N \left\{  \frac{1}{8m_i} \left[\hat{\Pi}_{\lambda},\mathbf{s}_{\lambda,i} \right] \\ 
+        \cdot\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i} \right]+ \frac{1}{4 m_i} \mathbf{s}_{\lambda,i} \cdot \\
+        \left[\hat{\Pi}_{\lambda},\left[\hat{\Pi}_{\lambda'},\mathbf{s}_{\lambda',i}\right] \right] \right \} 
 
 where the square brackets indicate the communicator of the quantities in them.
 
@@ -183,7 +183,7 @@ From the application of the chain rule the following relation is found
 .. math::
     :label: chain_s_t
 
-    \sum_{i=1}^{N} \sum_{F=X,Y,Z} \frac{\partial \Xi_{\lambda} }{\partial R_{iF} } \frac{\partial R_{iF}}{\partial \Xi_{\lambda'}}=
+    \sum_{i=1}^{N} \sum_{F=X,Y,Z} \frac{\partial \Xi_{\lambda} }{\partial R_{iF} } \frac{\partial R_{iF}}{\partial \Xi_{\lambda'}}= \\
      \mathbf{s}_{\lambda,i}\cdot \mathbf{t}_{i,\lambda'} = \delta_{\lambda,\lambda'}
 
 where the vector :math:`\mathbf{t}_{i,\lambda'}` has been introduced. If the :math:`\mathbf{t}_{i,\lambda'}` vectors are known then we can solve this equation to obtain the :math:`\mathbf{s}_{i,\lambda'}` vectors.
@@ -261,7 +261,7 @@ The potential energy function for a molecule is typically expressed in some suit
 .. math::
    :label: V_expand
 
-    V(\xi_n)  =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})}
+    V(\xi_n)  =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})} \\
                   V_{l_1 l_2 \cdots l_{(3N-6)}}^L \prod_i f_n^{l_i} = \sum_{L=0}^{N_{pot}} \sum_{L[l]} V_{L[l]}(f_n)^{L[l]}.
 
 This is a sum of products of the coordinates (or functions of the coordinates) used raised to powers. This means that all integrals involving the potential will be separable into products of one-dimensional integrals. The expansion coefficients are obtained from the input potential using finite difference methods. This step also requires use of quadruple precision numbers in the program to avoid the accumulation of round off errors. The order to expand the potential to, :math:`N_{pot}` is controlled by the  \verb|potential| keyword in the TROVE input file.
@@ -312,9 +312,9 @@ where the other :math:`3N-7` coordinates are constrained to their equilibrium va
 .. math::
    :label: 1d_matrix_elem
 
-    V_{\nu_n,\nu'_n}^l(n) = \left< \nu_n | f_n^l(\xi_n) | \nu'_n \right>,
-         T^{(0),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) | \nu'_n \right>,
-         T^{(1),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) \frac{\partial}{\partial \xi_n} | \nu'_n \right>,
+    V_{\nu_n,\nu'_n}^l(n) = \left< \nu_n | f_n^l(\xi_n) | \nu'_n \right>, \\
+         T^{(0),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) | \nu'_n \right>, \\ 
+         T^{(1),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | g_n^l(\xi_n) \frac{\partial}{\partial \xi_n} | \nu'_n \right>, \\
          T^{(2),l}_{\nu_n,\nu'_n}(n) = \left< \nu_n | \frac{\partial}{\partial \xi_n} g_n^l(\xi_n) \frac{\partial}{\partial \xi_n}   \nu'_n \right>.
 
 The integrals are computed in TROVE using Simpson's rule if numerically obtained basis functions are used or analytically if Harmonic or Morse oscillator functions are used. First derivatives are computed numerically using finite difference methods. Vibrational matrix elements of the Hamiltonian in :eq:`rovibH` are then given by products of the matrix elements given in equations :eq:`1d_matrix_elem:. If the HBJ approach is required then these 1D matrix elements are computed for each grid point along :math:`\rho` (see the TROVE paper [TROVE]_).
@@ -479,7 +479,7 @@ and
 
 .. math::
 
-     G_{\alpha,n}^{\Gamma_s,\Gamma_s',i,i'} = \left< \Psi_{J=0,i}^{\Gamma_s} | \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} +
+     G_{\alpha,n}^{\Gamma_s,\Gamma_s',i,i'} = \left< \Psi_{J=0,i}^{\Gamma_s} | \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} + \\
                    \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]  \Psi_{J=0,i'}^{\Gamma_s'} \right>.
 
 Matrix elements are neglected if the values are below a certain tolerance, usually 10:math:`^{-16}`. This is the last step where the primitive basis set is required. Many of the matrix elements involving the rigid-rotor functions are analytic.

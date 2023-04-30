@@ -28,16 +28,16 @@ There are currently at least two  exact, curvilinear KEO forms are provided for 
 
 .. math::
 
-    \xi_1 = r_1 - r_{\rm e},
-    \xi_2 = r_2 - r_{\rm e},
+    \xi_1 = r_1 - r_{\rm e}, \\
+    \xi_2 = r_2 - r_{\rm e}, \\
     \xi_3 = \rho,
 
 where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium.
 
 .. math::
 
-    \xi_1 = r_1 - r_{\rm ref},
-    \xi_2 = r_2 - r_{\rm ref},
+    \xi_1 = r_1 - r_{\rm ref}, \\
+    \xi_2 = r_2 - r_{\rm ref}, \\
     \xi_3 = \rho,
 
 Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section).
@@ -60,9 +60,11 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 - ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ```Rigid` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
 .. math::
 
-    \xi_1 = r_1 - r_{\rm e},
-    \xi_2 = r_2 - r_{\rm e},
-    \xi_3 = \alpha-\alpha_{\rm e}.
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm e}, \\
+    \xi_2 &= r_2 - r_{\rm e},\\ 
+    \xi_3 &= \alpha-\alpha_{\rm e}.
+    \end{split}
 
 In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements.
 
@@ -101,8 +103,8 @@ This is another 'bond'-embedding with the same vibrational coordinates as in ``R
 Tetratomics
 ===========
 
-XY\ :sub:`3` rigid  molecules
----------------------------
+XY\ :sub:`3` rigid  molecules (PH\ :sub:`3` type)
+-------------------------------------------------
 
 Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`. 
 
@@ -129,9 +131,11 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
    PH\ :sub:`3` equilibrium structure 
 
 
+This representation has been used for PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_.
 
-XY\ :sub:`3` non-rigid molecules with an umbrella motion. 
----------------------------
+
+XY\ :sub:`3` non-rigid with umbrella motion (NH\ :sub:`3` type)
+---------------------------------------------------------------
 
 Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced as one of the bending modes. An example of an umbrella coordinate is an angle between the :math:`C_3` symmetry axis and the bond X-Y, see Figure. It is natural to use the non-rigid reference configuration along the umbrella, inversion motion and build the KEO as an expansion around it. For two other bending modes, in principle one can use two inter-bond angles, e.g.  :math:`\alpha_2` and :math:`\alpha_3`, two dihedral angles :math:`\phi_2` and :math:`\phi_3`. However, for symmetry reasons, TROVE employs the symmetry-adapted bending pair :math:`S_a` and :math:`S_b`, defined as follows:
 
@@ -146,8 +150,7 @@ or
 
 .. math::
 
-    S_a = \frac{1}{\sqrt{6}} (2 \phi_{23}-\phi_{13}-\phi_{12}),
-    
+    S_a = \frac{1}{\sqrt{6}} (2 \phi_{23}-\phi_{13}-\phi_{12}), \\
     S_b  = \frac{1}{\sqrt{2}} ( \phi_{13}-\phi_{12})
 
 
@@ -176,18 +179,14 @@ For this ``TRANSFORM`` case, the following valence-based coordinates are used:
 
 .. math::
 
-    \xi_1 = r_1 - r_{\rm e},
-    
-    \xi_2 = r_2 - r_{\rm e},
-    
-    \xi_3 = r_3 - r_{\rm e},
-    
-    \xi_4 = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),
-    
-    \xi_4  = \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),
-    
-    \xi_6 = \delta.
-    
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm e}, \\
+    \xi_2 &= r_2 - r_{\rm e}, \\
+    \xi_3 &= r_3 - r_{\rm e}, \\
+    \xi_4 &= \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),  \\
+    \xi_4 &= \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),  \\
+    \xi_6 &= \delta. 
+    \end{split}
 
 The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation. 
 
@@ -200,4 +199,20 @@ The umbrella mode :math:``\delta`` is defined as an angle between the trisector 
        NH\ :sub:`3` equilibrium structure
 
 
+
+ZXY\ :sub:`2` (Formaldehyde type)
+---------------------------------
+
+The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\theta`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\theta_i` ranging from  :math`[-\theta_{0}\ldots \theta_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\theta_i`. Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. 
+
+
+
+
+
+.. sidebar::
+
+   .. figure:: img/H2CO.jpg
+       :alt: H2CO 
+
+       Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO. 
 

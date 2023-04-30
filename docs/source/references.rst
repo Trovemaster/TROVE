@@ -1,9 +1,9 @@
 References
 ==========
 
-.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175. 
+.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
 
-.. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.   `doi:10.1016/j.jms.2007.07.009 <http://dx.doi.org/10.1016/j.jms.2007.07.009>`__  
+.. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.   `doi:10.1016/j.jms.2007.07.009 <http://dx.doi.org/10.1016/j.jms.2007.07.009>`__
 
 .. [98BuJe] P.R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition.
 
@@ -31,8 +31,7 @@ References
 
 .. [14YuJo] S.N. Yurchenko and J. Tennyson.  Mon. Not. R. Astron. Soc., 440, 1649-1661 (2014), ExoMol line lists - IV. The rotation-vibration spectrum of methane up to 1500 K.
 
-.. [13UnTeYu] D.S. Underwood, J. Tennyson, S. N. Yurchenko, Phys. Chem. Chem. Phys. 15, 10118 (2013), An ab initio variationally computed room-temperature line list for SO3.
-
+.. [13UnTeYu] D.S. Underwood, J. Tennyson, S. N. Yurchenko, Phys. Chem. Chem. Phys. 15, 10118 (2013), An ab initio variationally computed room-temperature line list for SO\ :sub:`3`.
 
 .. [16UnTeYu] D.S. Underwood, J. Tennyson, S.N. Yurchenko, S. Clausen, A. Fateev, Mon. Not. R. Astron. Soc. 462, 4300 (2016), ExoMol line lists XVII: A line list for hot SO\ :sub:`3`.
 
@@ -56,5 +55,8 @@ References
 
 .. [18MaYaTe] B.P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`H\ :sub:`4`.
 
-.. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, #Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
+.. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
 
+.. [19CoYuKo] P.A. Coles, S.N. Yurchenko, R.P. Kovacich, J. Hobby, and J. Tennyson, Phys. Chem. Chem. Phys. 21, 3264 (2019), A variationally computed room temperature line list for AsH\ :sub:`3`
+
+.. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ Sb\ :sub:`3`
