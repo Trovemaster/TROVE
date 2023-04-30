@@ -11,6 +11,7 @@ Welcome to TROVE's documentation!
    theory.rst
    outputs.rst
    molecules.rst
+     XY2.rst
    newmolecules.rst
    linelist.rst
    refinement.rst
@@ -18,7 +19,12 @@ Welcome to TROVE's documentation!
    compile.rst
    references
    license
-   
+
+
+Table of Contents   
+=================
+
+.. contents:: Table of Contents   
 
 News
 ====

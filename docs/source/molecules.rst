@@ -13,11 +13,26 @@ In order to define a Hamiltonian for an arbitrary molecular systems the followin
 
 
 
-
 In this chapter a list is given of all of the molecules which have been studied using TROVE. This serves two purposes: as a summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and structure has already been implemented.
 
 The list of molecules are given in roughly chronological order with the relevant references. Details are given of the symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of linelists if they were calculated.
 
+
+Triatomics
+**********
+
+Here we introduce different ingredients available for triatomic molecules, including
+
+- Molecular frames :math:`xyz`;
+- :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`;
+- Kinetic energy operators (KEO);
+- Potential energy functions (PEF);
+- For intensity calculations, 3D dipole moment functions.
+
+XY\ :sub:`2` type molecules
+===========================
+
+   XY2.rst
 
 
 Hydrogen sulfide, H\ :sub:`2`\ S
