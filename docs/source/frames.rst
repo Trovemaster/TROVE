@@ -120,14 +120,19 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
 
 
 
-.. figure:: img/NH3.jpg
-   :alt: reStructuredText, NH3 equilibrium structure 
+.. figure:: img/PH3.jpg
+   :alt: PH3 equilibrium structure 
 
-   NH\ :sub:`3` equilibrium structure 
+   PH\ :sub:`3` equilibrium structure 
 
 
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
+
+.. figure:: img/NH3.jpg
+   :alt: reStructuredText, NH3 equilibrium structure
+
+   NH\ :sub:`3` equilibrium structure
 
 
 
