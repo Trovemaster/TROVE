@@ -25,6 +25,7 @@ There are currently at least two  exact, curvilinear KEO forms are provided for 
 ^^^^^^^^^^^
 
 - ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). For the rigid reference frame (``REFER-CONF RIGID``), the actual internal coordinates are the displacements of :math:`r_1`, :math:`r_2` and :math:`\rho` from the corresponding equilibrium:
+
 .. math::
 
     \xi_1 = r_1 - r_{\rm e},
@@ -32,6 +33,7 @@ There are currently at least two  exact, curvilinear KEO forms are provided for 
     \xi_3 = \rho,
 
 where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium.
+
 .. math::
 
     \xi_1 = r_1 - r_{\rm ref},
@@ -135,8 +137,8 @@ Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to t
 
 .. math::
 
-    S_a = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{12}-\alpha_{13}),
-    S_b  = \frac{1}{\sqrt{2}} ( \alpha_{12}-\alpha_{13})
+    S_a = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),
+    S_b  = \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12})
     
 
 or 
@@ -144,8 +146,8 @@ or
 
 .. math::
 
-    S_a = \frac{1}{\sqrt{6}} (2 \phi_{23}-\phi_{12}-\phi_{13}),
-    S_b  = \frac{1}{\sqrt{2}} ( \phi_{12}-\phi_{13})
+    S_a = \frac{1}{\sqrt{6}} (2 \phi_{23}-\phi_{13}-\phi_{12}),
+    S_b  = \frac{1}{\sqrt{2}} ( \phi_{13}-\phi_{12})
 
 
 The umbrella mode for any instantaneous configuration of the nuclei is defined in TROVE as the angle between a trisector 
@@ -165,11 +167,23 @@ Linearized KEOs use the Eckart frame with the PAS at the equilibrium configurati
 
 
 
-
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
 
-For the 
+For this ``TRANSFORM`` case, the following valence-based coordinates are used: 
+
+
+.. math::
+
+    \xi_1 = r_1 - r_{\rm e},
+    \xi_2 = r_2 - r_{\rm e},
+    \xi_3 = r_3 - r_{\rm e},
+    \xi_4 = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),
+    \xi_4  = \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),
+    \xi_6 = \delta.
+    
+
+The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation. 
 
 
 .. sidebar:: 
