@@ -9,9 +9,9 @@ Welcome to TROVE's documentation!
    intro.rst
    quickstart.rst
    theory.rst
+   frames.rst
    outputs.rst
    molecules.rst
-     XY2.rst
    newmolecules.rst
    linelist.rst
    refinement.rst

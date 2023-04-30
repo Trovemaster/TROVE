@@ -5,7 +5,7 @@ Molecules
 
 In order to define a Hamiltonian for an arbitrary molecular systems the following ingredients are required:
 
-- Molecular frame :math:`xyz` defining the rotation of the molecule via the positions of the three Euler angles :math:`\alpha,\beta,\gamma` ;
+- Molecular frame :math:`xyz` defining the rotation of the molecule via the positions of the three Euler angles :math:`\alpha,\beta,\gamma`;
 - :math:`3N-6` (:math:`3N-5`) vibrational coordinates :math:`\xi_n`,  internal degrees of freedom defining the molecular vibrations;
 - Kinetic energy operator (KEO) in a sum-of-products form. In TROVE it has to be an expansion in terms of some 1D functions of :math:`\xi_n`, their conjugate momenta and rotational angular momenta :math:`\hat{J}_\alpha`;
 - Potential energy function (PEF). In TROVE, it is also an expansion in terms of some 1D functions of :math:`\xi_n`.
@@ -17,9 +17,6 @@ In this chapter a list is given of all of the molecules which have been studied 
 
 The list of molecules are given in roughly chronological order with the relevant references. Details are given of the symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of linelists if they were calculated.
 
-
-Triatomics
-**********
 
 Here we introduce different ingredients available for triatomic molecules, including
 
