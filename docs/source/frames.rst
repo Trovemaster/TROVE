@@ -58,8 +58,8 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 - ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ```Rigid` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
 .. math::
 
-    \xi_1 = r_1 - r_{\rm ref},
-    \xi_2 = r_2 - r_{\rm ref},
+    \xi_1 = r_1 - r_{\rm e},
+    \xi_2 = r_2 - r_{\rm e},
     \xi_3 = \alpha-\alpha_{\rm e}.
 
 In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid of points ranging from :math:`\alpha_{\rm min}` to :math:`\alpha_{\rm max}` and including the equilibrium value. In the linearised ``Rigid`` case, the bending coordinated is defined as a linear expansion of :math:`\alpha` at :math:`\alpha_{\rm eq}`  in terms of the Cartesian displacements.
@@ -99,13 +99,38 @@ This is another 'bond'-embedding with the same vibrational coordinates as in ``R
 Tetratomics
 ===========
 
-XY\ :sub:`3` type molecules
+XY\ :sub:`3` rigid  molecules
 ---------------------------
 
 Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`. 
+
+
+``R-ALPHA``
+^^^^^^^^^^^
+
+For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of the valence coordinates consists of three bond lengths :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_{23}`, :math:`\alpha_{13}` and :math:`\alpha_{12}`. For the linearised KEO, these valence are used to form the linearised coordinates in the same way as before (1st order expansion in terms of the Cartesian displacement). For the curvilinear KEO (``local``), the vibrational coordinates are then defined as displacement from the corresponding equilibrium (or non-rigid reference) values:
+.. math::
+
+    \xi_1 = r_1 - r_{\rm ref},
+.. math::
+
+    \xi_1 = r_1 - r_{\rm e},
+    \xi_2 = r_2 - r_{\rm e},
+    \xi_3 = r_3 - r_{\rm e},
+    \xi_4 = \alpha_{23}-\alpha_{\rm e},
+    \xi_5 = \alpha_{13}-\alpha_{\rm e},
+    \xi_6 = \alpha_{12}-\alpha_{\rm e}.
+
+
 
 .. figure:: img/NH3.jpg
    :alt: reStructuredText, NH3 equilibrium structure 
 
    NH\ :sub:`3` equilibrium structure 
+
+
+``R-S-DELTA``
+^^^^^^^^^^^^^
+
+
 
