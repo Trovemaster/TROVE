@@ -481,9 +481,7 @@ and
 
 .. math::
 
-     G_{\alpha,n}^{\Gamma_s,\Gamma_s',i,i'} = \left< \Psi_{J=0,i}^{\Gamma_s} | \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} + 
-     
-                   \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]  \Psi_{J=0,i'}^{\Gamma_s'} \right>.
+     G_{\alpha,n}^{\Gamma_s,\Gamma_s',i,i'} = \left< \Psi_{J=0,i}^{\Gamma_s} | \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi) \frac{\partial}{\partial \xi_n} + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right]  \Psi_{J=0,i'}^{\Gamma_s'} \right>.
 
 Matrix elements are neglected if the values are below a certain tolerance, usually :math:`10^{-16}`. This is the last step where the primitive basis set is required. Many of the matrix elements involving the rigid-rotor functions are analytic.
 
