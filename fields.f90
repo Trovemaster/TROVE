@@ -4631,6 +4631,10 @@ module fields
     end if
    end select
    !
+   ! For intensities, the extmatelem should be set to read, even if the user forgot to do so in the input:
+   !
+   if (intensity%do) job%IOextF_action='READ'
+   !
    if (trim(job%IOextF_action)=='SAVE') then 
        if (trim(job%IOcontr_action)  =='NONE') job%IOcontr_action   = 'READ'
        if (trim(job%IOj0matel_action)=='NONE'.and.job%vib_contract) job%IOj0matel_action = 'READ'

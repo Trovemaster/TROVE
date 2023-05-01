@@ -1056,7 +1056,7 @@ contains
     integer(ik)    :: igammaI,igammaF,quantaI(0:molec%nmodes),quantaF(0:molec%nmodes),normalF(0:molec%nmodes),&
                       normalI(0:molec%nmodes)
     integer(ik)    :: dimenI,dimenF,unitI,unitF,irootF,irootI,imu,jmax,kI,kF,icontrF,irow,ib,int_increm,ktauI
-    real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_
+    real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_,energy_low_min
     real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time,memory_now_,time_per_ilevel
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
     logical        :: passed,passed_
@@ -1311,6 +1311,10 @@ contains
     enddo
     !omp end parallel do
     !
+    ! adjust the upper limit for the number of the lower states 
+    !
+    intensity%istate_count(2) = min(intensity%istate_count(2),nlevelI)
+    !
     call TimerStop('Intens_Filter-1')
     !
     allocate(vecI(nsizemax),vecF(nsizemax), stat = info)
@@ -1351,6 +1355,39 @@ contains
     intensity%factor = 1
     nsizemax = 1
     !
+    ! the lowest lower state due to the selection of  istate_count(1)
+    ! find this vlaue
+    !
+    nlevelI_ = 0 
+    !
+    energy_low_min = 0 
+    !
+    do ilevelI = 1,nlevels
+      !
+      indI = eigen(ilevelI)%jind
+      !
+      !energy, quanta, and gedeneracy order of the initial state
+      !
+      jI = eigen(ilevelI)%jval
+      energyI = eigen(ilevelI)%energy
+      normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+      !
+      call energy_filter_lower(jI,energyI,normalI(0),passed)
+      !
+      if (.not.passed) cycle
+      !
+      ! nlevelI_ counts all lower state energies before the istate_count filter 
+      !
+      nlevelI_ = nlevelI_ + 1
+      ! 
+      ! filter based on lower state count 
+      if (nlevelI_==intensity%istate_count(1)) then
+         energy_low_min = energyI
+         exit 
+      endif    
+      !
+    enddo
+    !
     do ilevelF = 1, nlevels
        !
        jF = eigen(ilevelF)%jval
@@ -1363,6 +1400,10 @@ contains
        igammaF = eigen(ilevelF)%igamma        
        quantaF(0:nmodes) = eigen(ilevelF)%quanta(0:nmodes)
        normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
+       !
+       ! no need to count states that below the lower state istate_count(1)
+       !
+       if (energyF<energy_low_min) cycle
        !
        call energy_filter_upper(jF,energyF,normalF(0),passed)
        !
@@ -1522,6 +1563,10 @@ contains
       energyF = eigen(ilevelF)%energy
       igammaF = eigen(ilevelF)%igamma        
       normalF(0:nmodes) = eigen(ilevelF)%normal(0:nmodes)
+      !
+      ! no need to count states that below the lower state istate_count(1)
+      !
+      if (energyF<energy_low_min) cycle
       !
       call energy_filter_upper(jF,energyF,normalF(0),passed)
       !
@@ -2619,7 +2664,7 @@ contains
           if (job%verbose>=3) then 
                write(out,"(/a,i8,a,i16,a,i16,a,i8,' states;')") &
                                     '   ... [wall-clock stop]: last lower-state ',&
-                                    nlevelI_,' out of ',intensity%istate_count(2),'(',nlevelI,'), processed = ',ilevels_lower
+                                    nlevelI_,' out of ',intensity%istate_count(2),' (',nlevelI,'), processed = ',ilevels_lower
                write(out,"('   ... last energy = ',f16.6)") energyI-intensity%ZPE
           endif 
           exit Ilevels_loop
