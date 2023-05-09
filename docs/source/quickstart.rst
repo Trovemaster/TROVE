@@ -108,7 +108,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     J 1
     end
 
-- Step 3:
+- Step 4:
 ::
 
     Control
