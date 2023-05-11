@@ -530,26 +530,43 @@ module lapack
                                                ! Out: Eigenvectors
     double precision, intent(out)   :: e(:)    ! Out: Eigenvalues
 
-    integer          :: info
-    integer          :: nh1, nh2,liwork,lwork
+    integer(ik)          :: info
+    integer(ik)          :: nh1, nh2,liwork,lwork
+    integer(hik)         :: lwork_hik
     double precision,allocatable :: work(:)
+    real(rk) :: safe_max
     integer,allocatable :: iwork(:)
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
     !
-    lwork  = 2*nh1**2+6*nh1+10
+    safe_max = huge(1_4)*0.9_rk
+    !
+    lwork_hik  = 2*nh1**2+6*nh1+10
+    !
+    if (lwork_hik>safe_max) then 
+       write(out,"('lapack_dsyevd: the size of work= ',i22,' is too big for syevd, use dsyevd_ilp')") lwork_hik
+       stop 'lapack_dsyevd: the size of work= is too big for syevd, use dsyevd_ilp' 
+    endif
+    !
+    lwork = lwork_hik
+    !
     liwork = 3*nh1+10
     !
     allocate(work(lwork),stat=info)
-    call ArrayStart('lapack_ssyevd-arrays-work',info,size(work),kind(work))
+    call ArrayStart('lapack_syevd-arrays-work',info,size(work),kind(work))
     allocate(iwork(liwork),stat=info)
-    call ArrayStart('lapack_ssyevd-arrays-work',info,size(iwork),kind(iwork))
+    call ArrayStart('lapack_syevd-arrays-work',info,size(iwork),kind(iwork))
     !
     if (info/=0) then
       write (out,"(' dsyevd returned allocation work failed',i8)") info
       stop 'lapack_dsyevd - allocation work failed'
     end if
     call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,iwork,-1,info)
+    !
+    if (info/=0) then
+      write (out,"(' dsyevd-1 returned ',i8)") info
+      stop 'lapack_dsyevd-1 - dsyev failed'
+    end if
     !
     if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
       !
@@ -558,15 +575,16 @@ module lapack
       !
       deallocate(work,iwork)
       !
-      allocate(work(lwork),iwork(liwork))
+      call ArrayStop('lapack_syevd-arrays-work')
       !
-      call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
+      allocate(work(lwork),iwork(liwork),stat=info)
       !
-    else
-      !
-      call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
+      call ArrayStart('lapack_syevd-arrays-work',info,size(work),kind(work))
+      call ArrayStart('lapack_syevd-arrays-work',info,size(iwork),kind(iwork))
       !
     endif 
+    !
+    call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
     !
     if (info/=0) then
       write (out,"(' dsyevd returned ',i8)") info
@@ -574,7 +592,7 @@ module lapack
     end if
     !
     deallocate(work,iwork)
-    call ArrayStop('lapack_ssyevd-arrays-work')
+    call ArrayStop('lapack_syevd-arrays-work')
     !
   end subroutine lapack_dsyevd
 

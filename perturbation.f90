@@ -7436,9 +7436,9 @@ module perturbation
         dimen_s = PT%Max_sym_levels(isym)
         !
         !----------Only allocate if we are putting vectors into memory---------------!
-        if (trim(job%diagonalizer(1:13))/='READ-ENERGIES') then 
+        if (trim(job%diagonalizer(1:4))/='READ') then 
            matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
-           if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i8)") dimen_s,job%nroots(isym),matsize
+           if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i12)") dimen_s,job%nroots(isym),matsize
            allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
            !
            a = 0
