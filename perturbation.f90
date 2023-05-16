@@ -7436,14 +7436,15 @@ module perturbation
         dimen_s = PT%Max_sym_levels(isym)
         !
         !----------Only allocate if we are putting vectors into memory---------------!
-        if (trim(job%diagonalizer(1:4))/='READ') then 
-           matsize = int(dimen_s,hik)*int(job%nroots(isym),hik)
-           if (job%verbose>=4) write(out,"('Allocate array b',i7,'x',i7,' = ',i12)") dimen_s,job%nroots(isym),matsize
-           allocate (a(dimen_s,job%nroots(isym)),bterm(job%nroots(isym),2),stat=alloc)
+        if (trim(job%diagonalizer(1:4))/='READ-ENERGIES') then 
+           matsize = int(dimen_s,hik)*int(dimen_s,hik)
+           if (job%verbose>=4) write(out,"('Allocate Hamiltonian matrix',i7,'x',i7,' = ',i12)") dimen_s,dimen_s,matsize
+           allocate (a(dimen_s,dimen_s),stat=alloc)
+           call ArrayStart('PThamiltonian_contract:a',alloc,1,kind(a),matsize)
+           allocate (bterm(dimen_s,2),stat=alloc)
+           call ArrayStart('PThamiltonian_contract:bterm',alloc,size(bterm),kind(bterm))
            !
            a = 0
-           !
-           call ArrayStart('PThamiltonian_contract:b',alloc,1,kind(a),matsize)
            !
            bterm = 1
            !
@@ -7458,9 +7459,10 @@ module perturbation
         !
         !Only deallocate if we arent Reading the energy checkpoint files.
         if(trim(job%diagonalizer(1:13))/='READ-ENERGIES') then !Only deallocate if we allocated
-           deallocate (bterm)
            deallocate (a)
-           call ArrayStop('PThamiltonian_contract:b')
+           call ArrayStop('PThamiltonian_contract:a')
+           deallocate (bterm)
+           call ArrayStop('PThamiltonian_contract:bterm')
         endif
         !
       enddo
@@ -8287,22 +8289,6 @@ module perturbation
            !
         enddo
         !
-        !do ielem = 1,dimen_s
-        !   !
-        !   if (job%sparse) then
-        !     !
-        !     dimen_row = ielem-bterm(ielem,1)+1
-        !     !
-        !     a(ielem,1) = smat(isym)%coeffs(ielem,dimen_row)
-        !     !
-        !   else
-        !     !
-        !     a(ielem,1) = smat(isym)%coeffs(ielem,ielem)
-        !     !
-        !   endif
-        !   !
-        !enddo
-        !
         call diagonalization_contract(jrot,isym,dimen_s,a,zpe,rlevel,total_roots,bterm,k_row(isym,1:dimen_s)) 
         !
       else ! diagonalize
@@ -8372,7 +8358,7 @@ module perturbation
         deallocate (smat(isym)%coeffs)
         call Arraystop('PThamiltonian_contract:smat'//sym%label(isym))
         !
-        if (job%verbose>=3) write(out,"('Diagonalization...')")
+        if (job%verbose>=3) write(out,"('Ready fo diagonalization...')")
         !
         if (job%verbose>=1) then 
            write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)

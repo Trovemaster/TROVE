@@ -16,7 +16,7 @@ module pot_xy2
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,&
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame,MLpoten_xyz_tyuterev_rho
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
-  public MLdms_c3_Schroeder
+  public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -6386,6 +6386,55 @@ endif
     !if (verbose>=6) write(out,"('MLpoten_xy2_sym_morse/end')")
 
  end function MLpoten_xy2_sym_morse
+
+
+
+  function MLpoten_xy2_morse_powers(ncoords,natoms,local,xyz,force) result(f)
+   !
+   implicit none
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)          :: i,Ncoeff,n1,n2,n3
+   real(ark)            :: r12,r32,alpha,y1,y2,y3,aa1,re12,alphae,v0
+      !
+      r12  = local(1) ;  r32    = local(2) ;  alpha = local(3)
+      !
+      re12    = force(1)
+      alphae  = force(2)
+      aa1     = force(3)
+      !
+      ! calculate potential energy function values
+      !
+      y1=1.0_ark-exp(-aa1*(r12-re12))
+      y2=1.0_ark-exp(-aa1*(r32-re12))
+      !
+      y3=cos(alpha)-cos(alphae)
+      !
+      Ncoeff = size(force)
+      !
+      v0=0
+      do i=4,Ncoeff
+         !
+         n1 = molec%pot_ind(1,i)
+         n2 = molec%pot_ind(2,i)
+         n3 = molec%pot_ind(3,i)
+         !
+         v0=v0+force(i)*y1**n1*y2**n2*y3**n3
+         if( n1/=n2 )then
+           v0=v0+force(i)*y2**n1*y1**n2*y3**n3
+         end if
+         !
+      end do
+      !
+      f=v0 
+      !
+  end function MLpoten_xy2_morse_powers
+
 
 
 end module pot_xy2
