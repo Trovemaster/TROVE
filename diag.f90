@@ -780,7 +780,7 @@ module diag
     !
     double precision :: vl,vu,abstol
     character(len=1) :: rng_,jobz_
-    integer(hik) ::  matsize
+    integer(hik) ::  matsize,lwork_hik
     !
     if (verbose>=2) call TimerStart('diag_syev_i8')
     !
@@ -804,7 +804,9 @@ module diag
     !
     iksize = lwork
     !
-    call ArrayStart('diag_tridiag-arrays',alloc,1,rk,lwork)
+    lwork_hik = lwork
+    !
+    call ArrayStart('diag_tridiag-arrays',alloc,1,rk,lwork_hik)
     !
     if (verbose>=2) call TimerStart('diag_dsyev')
     !
