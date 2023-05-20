@@ -597,6 +597,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xyz_z_frame
         !
+    case('DIPOLE_PQR_XYZ_Z-FRAME_SINRHO')
+        !
+        MLextF_func => MLdms2pqr_xyz_z_frame_sinrho
+        !
         ! pq space-fixed frame of P.Jensen for xy2-type molecule (J.Mol.Spectr.132 (1988) 429)
         !
     case('XY2_PQ')
