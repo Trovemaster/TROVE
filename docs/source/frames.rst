@@ -1,4 +1,4 @@
-Frames and vibrational coordinates 
+Frames and vibrational coordinates
 **********************************
 
 
@@ -18,7 +18,7 @@ XY\ :sub:`2` type molecules
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
-There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``MLkinetic_xy2_bisect_EKE``, ``MLkinetic_xy2_bisect_EKE_sinrho``, see below. 
+There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``MLkinetic_xy2_bisect_EKE``, ``MLkinetic_xy2_bisect_EKE_sinrho``, see below.
 
 
 ``R-RHO-Z``
@@ -66,7 +66,7 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 
     \begin{split}
     \xi_1 &= r_1 - r_{\rm e}, \\
-    \xi_2 &= r_2 - r_{\rm e},\\ 
+    \xi_2 &= r_2 - r_{\rm e},\\
     \xi_3 &= \alpha-\alpha_{\rm e}.
     \end{split}
 
@@ -110,7 +110,7 @@ Tetratomics
 XY\ :sub:`3` rigid  molecules (PH\ :sub:`3` type)
 -------------------------------------------------
 
-Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`. 
+Linearized KEOs use the Eckart frame with the PAS at the equilibrium configuration. The latter has the :math:`z` axis along the axis of symmetry :math:`C_3` with the :math:`x` axis chosen in plane containing the X-Y\ :sub:`1` bond and passing through :math:`C_3`.
 
 
 ``R-ALPHA``
@@ -131,10 +131,20 @@ For the rigid XY\ :sub:`3`, like PH\ :sub:`3`, the logical coordinate choice of 
 .. sidebar::
 
     .. figure:: img/PH3.jpg
-       :alt: PH3 equilibrium structure 
-     
-       PH\ :sub:`3` equilibrium structure 
+       :alt: PH3 equilibrium structure
 
+       PH\ :sub:`3` equilibrium structure
+
+The underlying Z-matrix coordinates are defined using the following Z-matrix:
+::
+
+      ZMAT
+          N   0  0  0  0  14.00307401
+          H   1  0  0  0   1.00782505
+          H   1  2  0  0   1.00782505
+          H   1  2  3  1   1.00782505
+      end
+      
 
 This representation has been used for PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_.
 
@@ -148,9 +158,9 @@ Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to t
 
     S_a = \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}), \\
     S_b  = \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12})
-    
 
-or 
+
+or
 
 
 .. math::
@@ -159,7 +169,7 @@ or
     S_b  = \frac{1}{\sqrt{2}} ( \phi_{13}-\phi_{12})
 
 
-The umbrella mode for any instantaneous configuration of the nuclei is defined in TROVE as the angle between a trisector 
+The umbrella mode for any instantaneous configuration of the nuclei is defined in TROVE as the angle between a trisector
 
 
 
@@ -168,7 +178,7 @@ The umbrella mode for any instantaneous configuration of the nuclei is defined i
    .. figure:: img/umbrella.jpg
        :alt: Umbrella motions
 
-       NH\ :sub:`3`: umbrella modes :math:`\rho` and :math:`\delta`. 
+       NH\ :sub:`3`: umbrella modes :math:`\rho` and :math:`\delta`.
 
 
 
@@ -179,7 +189,7 @@ Linearized KEOs use the Eckart frame with the PAS at the equilibrium configurati
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
 
-For this ``TRANSFORM`` case, the following valence-based coordinates are used: 
+For this ``TRANSFORM`` case, the following valence-based coordinates are used:
 
 
 .. math::
@@ -190,10 +200,10 @@ For this ``TRANSFORM`` case, the following valence-based coordinates are used:
     \xi_3 &= r_3 - r_{\rm e}, \\
     \xi_4 &= \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),  \\
     \xi_5 &= \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}),  \\
-    \xi_6 &= \delta. 
+    \xi_6 &= \delta.
     \end{split}
 
-The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation. 
+The umbrella mode :math:``\delta`` is defined as an angle between the trisector and any of the bonds X-Y. The other 5 coordinates are then used to construct the corresponding linearised vibrational coordinates (see above) for the linearised (``linear``) representation.
 
 
 
@@ -228,6 +238,66 @@ The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengt
     \end{split}
 
 
+ZXY\ :sub:`3` (Methyl Chloride type)
+------------------------------------
 
+.. sidebar::
+
+   .. figure:: img/CH3Cl.jpg
+       :alt: CH3Cl
+
+       Valence coordinates and the bisector frame used for CH\ :sub:`3`\ Cl.
+
+
+
+Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
+
+
+``R-BETA-SYM``
+^^^^^^^^^^^^^^
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= r_0 - r_{\rm e}^{(0)}, \\
+    \xi_2 &= r_1 - r_{\rm e}, \\
+    \xi_3 &= r_2 - r_{\rm e}, \\
+    \xi_4 &= r_3 - r_{\rm e}, \\
+    \xi_5 &= \beta_1,  \\
+    \xi_6 &= \beta_2,  \\
+    \xi_7 &= \beta_3,  \\
+    \xi_8 &= \frac{1}{\sqrt{6}} (2 \tau_{23}-\tau_{13}-\tau_{12}),  \\
+    \xi_9 &= \frac{1}{\sqrt{2}} ( \tau_{13}-\tau_{12}).  \\
+    \end{split}
+    
+
+The Z-matrix coordinates (underlying basic TROVE coordinates) are as given by the Z-matrix rules:
+::
+
+     ZMAT
+         C   0  0  0  0  12.000000000
+         Cl  1  0  0  0  34.968852721
+         H   1  2  0  0   1.007825035
+         H   1  2  3  0   1.007825035
+         H   1  2  3  4   1.007825035
+     end
+     
+are as follows: 
+
+- :math:`r_0`
+- :math:`r_1`, :math:`\beta_{1}`
+- :math:`r_2`, :math:`\beta_{2}`, :math:`\alpha_{12}`
+- :math:`r_3`, :math:`\beta_{3}`, :math:`\alpha_{13}`
+
+where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed 
+to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
+.. math::
+
+    \begin{split}
+    \cos \tau_{12} &= \frac{\cos\alpha_{12}-\cos\beta_{1}\cos\beta_{2}}{\sin\beta_{1}\sin\beta_{2}}, \\
+    \cos \tau_{13} &= \frac{\cos\alpha_{13}-\cos\beta_{1}\cos\beta_{3}}{\sin\beta_{1}\sin\beta_{3}}, \\
+    \tau_{23} &= 2\pi - \tau_{12}-\tau_{13},\\
+    \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
+    \end{split}
 
 
