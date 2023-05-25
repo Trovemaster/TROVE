@@ -291,13 +291,14 @@ are as follows:
 
 where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed 
 to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
-.. math::
 
+.. math::
+     
     \begin{split}
     \cos \tau_{12} &= \frac{\cos\alpha_{12}-\cos\beta_{1}\cos\beta_{2}}{\sin\beta_{1}\sin\beta_{2}}, \\
     \cos \tau_{13} &= \frac{\cos\alpha_{13}-\cos\beta_{1}\cos\beta_{3}}{\sin\beta_{1}\sin\beta_{3}}, \\
     \tau_{23} &= 2\pi - \tau_{12}-\tau_{13},\\
     \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
     \end{split}
-
+     
 
