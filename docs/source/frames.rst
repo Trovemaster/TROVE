@@ -472,9 +472,9 @@ In MEP, the 5 internal coordinate displacements :math:`\xi_i` are defined around
     
 where :math: the MEP values are given by a parameterised expansion, for example
 .. math::
-
+    
     \zeta_i^{\rm ref} = \zeta_i^{\rm e} + \sum_{n} a_i^n (\cos\delta - \cos\delta_{\rm e})
- 
+     
 where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`. 
 
 
