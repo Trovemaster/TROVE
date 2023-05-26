@@ -10,6 +10,7 @@ Welcome to TROVE's documentation!
    quickstart.rst
    theory.rst
    frames.rst
+   symmetry.rst 
    outputs.rst
    molecules.rst
    newmolecules.rst
