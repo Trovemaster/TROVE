@@ -359,9 +359,9 @@ Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates cons
     \xi_2 &= r_1 - r_{\rm e}, \\
     \xi_3 &= r_2 - r_{\rm e}, \\
     \xi_4 &= r_3 - r_{\rm e}, \\
-    \xi_5 &= \beta_1,  \\
-    \xi_6 &= \beta_2,  \\
-    \xi_7 &= \beta_3,  \\
+    \xi_5 &= \beta_1-\beta_{\rm e},  \\
+    \xi_6 &= \beta_2-\beta_{\rm e},  \\
+    \xi_7 &= \beta_3-\beta_{\rm e},  \\
     \xi_8 &= \frac{1}{\sqrt{6}} (2 \tau_{23}-\tau_{13}-\tau_{12}),  \\
     \xi_9 &= \frac{1}{\sqrt{2}} ( \tau_{13}-\tau_{12}).  \\
     \end{split}
@@ -422,8 +422,8 @@ The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of t
     \xi_1 &= R - R_{\rm e}, \\
     \xi_2 &= r_1 - r_{\rm e}, \\
     \xi_3 &= r_2 - r_{\rm e}, \\
-    \xi_4 &= \alpha_{123},  \\
-    \xi_5 &= \alpha_{234},  \\
+    \xi_4 &= \alpha_{123}-\alpha_{\rm e},  \\
+    \xi_5 &= \alpha_{234}-\alpha_{\rm e},  \\
     \xi_6 &= \delta.
     \end{split}
 
@@ -449,10 +449,32 @@ The non-rigid reference frame such that the :math:`x` axis bisects the dihedral 
 For this embedding, in order to be able to separate the vibrational and rotational bases into a product form, it is important to the an extended range for the dihedral angle :math:`\delta = 0\ldots 720^\circ`. Otherwise the eigenfunction is obtained double valued due to the  :math:`x` axis appearing in the opposite direction to the two bonds after one :math:`\delta = 360^\circ` revolution.
 
 .. figure:: img/H2O2_3_dysplays.jpg
-:alt: H2O2 3 displays
+   :alt: H2O2 3 displays
 
-     Principal axis system with an extended torsional angle :math:`\delta = 0\ldots 720^\circ` for HOOH.
+   Principal axis system with an extended torsional angle :math:`\delta = 0\ldots 720^\circ` for HOOH.
 
 
+A minimum energy path  (MEP) as a non-rigid reference configuration
+-------------------------------------------------------------------
+
+In MEP, the 5 internal coordinate displacements :math:`\xi_i` are defined around :math:`\delta`-dependent reference values. The latter are obtained as oprmised geometries by minimised molecule's energy:
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= R - R_{\rm ref}(\delta), \\
+    \xi_2 &= r_1 - r_{\rm ref}(\delta), \\
+    \xi_3 &= r_2 - r_{\rm ref}(\delta), \\
+    \xi_4 &= \alpha_{123}-\alpha_{\rm ref}(\delta),  \\
+    \xi_5 &= \alpha_{234}-\alpha_{\rm ref}(\delta),  \\
+    \xi_6 &= \delta,
+    \end{split}
+    
+where :math: the MEP values are given by a parameterised expansion, for example
+.. math::
+
+    \zeta_i^{\rm ref} = \zeta_i^{\rm e} + \sum_{n} a_i^n (\cos\delta - \cos\delta_{\rm e})
+ 
+where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`. 
 
 
