@@ -15,6 +15,15 @@ Triatomics
 XY\ :sub:`2` type molecules
 ---------------------------
 
+.. sidebar::
+
+    .. figure:: img/XY2.jpg
+       :alt: XY2 equilibrium structure
+
+       An XY\ :sub:`2`  type molecule and the bisector embedding.
+
+
+
 A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  example it is 
 ::
        
@@ -102,6 +111,15 @@ REFER-CONF   non-RIGID  (Reference configuration)
 
 XYZ type molecules
 ------------------
+
+.. sidebar::
+
+    .. figure:: img/XYZ.jpg
+       :alt: XYZ equilibrium structure
+
+       An XYZ type molecule and the :math:`z`  embedding. 
+
+
 
 The main embedding here is the 'bond'-embedding, with the :math:`z` axis placed parallel to the bond Y-Z with a heavier atom Z comparing to X (second bond).
 For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``TRANSFORM`` can be used.
@@ -248,6 +266,14 @@ The umbrella mode :math:``\delta`` is defined as an angle between the trisector 
 ZXY\ :sub:`2` (Formaldehyde type)
 ---------------------------------
 
+
+::
+
+       MolType ZXY2
+       
+The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. The reference configuration is always in the principle axis sysetm, i.e. for each value of the book angle :math:`\tau`, TROVE solve the PAS conditions to reorient the molecule. 
+
+
 .. sidebar::
 
    .. figure:: img/H2CO.jpg
@@ -255,11 +281,8 @@ ZXY\ :sub:`2` (Formaldehyde type)
 
        Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO.
 
-::
 
-       MolType ZXY2
-       
-The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
+ Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
 
 
 ``R-THETA-TAU``
@@ -282,7 +305,7 @@ The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengt
 Isotopologues of XY\ :sub:`3`  as ZXY\ :sub:`2` type
 ----------------------------------------------------
 
-The Z type can be used to define signle or double deturated isotopologues of a rigid XY\ :sub:`3` molecule such as PH\ :sub:`3`. For PDH\ :sub:`2`, we use ``R-THETA-TAU`` in combination with the Z-matrix given as follows:
+The Z type can be used to define signle or double deturated isotopologues of an XY\ :sub:`3` molecule such as a rigid PH\ :sub:`3` or non-rigid NH\ :sub:`3`. For PDH\ :sub:`2`, we use ``R-THETA-TAU`` in combination with the Z-matrix given as follows:
 ::
 
       ZMAT
@@ -307,10 +330,15 @@ For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by
 
 
 
-
-
 ZXY\ :sub:`3` (Methyl Chloride type)
 ------------------------------------
+::
+
+       MolType ZXY3
+       
+
+Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
+
 
 .. sidebar::
 
@@ -319,12 +347,6 @@ ZXY\ :sub:`3` (Methyl Chloride type)
 
        Valence coordinates and the bisector frame used for CH\ :sub:`3`\ Cl.
 
-::
-
-       MolType ZXY3
-       
-
-Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
 
 
 ``R-BETA-SYM``
@@ -375,4 +397,64 @@ to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rule
     \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
     \end{split}
      
+
+A chain ABCD type molecule  (hydrogen peroxide type)
+----------------------------------------------------
+::
+
+       MolType ABCD
+
+
+
+``R-ALPHA-TAU``
+^^^^^^^^^^^^^^
+
+.. math::
+
+
+The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by  
+
+
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= R - R_{\rm e}, \\
+    \xi_2 &= r_1 - r_{\rm e}, \\
+    \xi_3 &= r_2 - r_{\rm e}, \\
+    \xi_4 &= \alpha_{123},  \\
+    \xi_5 &= \alpha_{234},  \\
+    \xi_6 &= \delta.
+    \end{split}
+
+
+
+.. sidebar::
+
+   .. figure:: img/A2B2.jpg
+       :alt: A2B2
+
+       Valence coordinates used for HOOH.
+
+The non-rigid reference frame such that the :math:`x` axis bisects the dihedral angle. 
+
+
+.. sidebar::
+
+   .. figure:: img/H2O2-bisector.jpg
+       :alt: H2O2-bisector
+
+       Molecular frame used for HOOH: the :math:`x` axis  always bisecting the dihedral angle :math:`\delta` .
+
+For this embedding, in order to be able to separate the vibrational and rotational bases into a product form, it is important to the an extended range for the dihedral angle :math:`\delta = 0\ldots 720^\circ`. Otherwise the eigenfunction is obtained double valued due to the  :math:`x` axis appearing in the opposite direction to the two bonds after one :math:`\delta = 360^\circ` revolution.
+
+.. sidebar::
+
+   .. figure:: img/H2O2_3_dysplays.jpg
+       :alt: H2O2_3_dysplay
+
+       Principal axis system with an extended torsional angle :math:`\delta = 0\ldots 720^\circ` for HOOH.
+
+
+
 
