@@ -490,7 +490,7 @@ The C\ :sub:`2`\ H:sub:`4` molecule and C2H4 type
 ^^^^^^^^^^^^^^^^^^^
 
 
-The internal coordinates are defined using the following 12 valence coordinates: 5 stretching (molecular bond) coordinates , 4 bending (inter-bond angles) and 3 dihedral coordinates, with the last mode as a book angle describing the relative motion of two moieties:
+The internal coordinates are defined using the following 12 valence coordinates: 5 stretching (molecular bond) coordinates, 4 bending (inter-bond angles) and 3 dihedral coordinates, with the last mode as a book angle describing the relative motion of two moieties:
 
 
 
@@ -499,7 +499,7 @@ The internal coordinates are defined using the following 12 valence coordinates:
    .. figure:: img/C2H4.jpg
        :alt: C2H4
 
-       The structure and molecular frame of the C\ :math:`2`H\ :math:`4` molecule.
+       The structure and molecular frame of the C\ :sub:`2`H\ :sub:`4` molecule.
 
 
 
@@ -516,9 +516,9 @@ The internal coordinates are defined using the following 12 valence coordinates:
     \xi_7 &= \beta_2-\beta_{\rm e},  \\
     \xi_8 &= \beta_3-\beta_{\rm e},  \\
     \xi_9 &= \beta_4-\beta_{\rm e},  \\
-    \xi_10 &= \theta_1 - \pi,  \\
-    \xi_11 &= \theta_2 - \pi,  \\
-    \xi_12 & = \theta_1 + \theta_2 - 2\tau,
+    \xi_{10} &= \theta_1 - \pi,  \\
+    \xi_{11} &= \theta_2 - \pi,  \\
+    \xi_{12} & = \theta_1 + \theta_2 - 2\tau,
     \end{split}
 
 where 
@@ -529,7 +529,7 @@ where
      \begin{array}{cc}
          \delta, & \delta <\pi, \\
          \delta - 2\pi, & \delta >\pi, \\
-     \end{array}
+     \end{array} \right. 
 
 
 
@@ -540,7 +540,7 @@ where
    .. figure:: img/C2H4_coords.jpg
        :alt: C2H4 coordinates
 
-       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :math:`2`H\ :math:`4` molecule.
+       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :sub:`2`H\ :sub:`4` molecule.
 
 
 
