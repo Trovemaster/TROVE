@@ -15,6 +15,11 @@ Triatomics
 XY\ :sub:`2` type molecules
 ---------------------------
 
+A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  example it is 
+::
+       
+       MolType XY2
+       
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
@@ -34,7 +39,7 @@ There are currently at least two  exact, curvilinear KEO forms are provided for 
     \xi_3 &= \rho,
     \end{split}
 
-where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium.
+where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium:
 
 .. math::
 
@@ -43,6 +48,17 @@ where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid referen
     \xi_2 &= r_2 - r_{\rm ref}, \\
     \xi_3 &= \rho,
     \end{split}
+
+
+TROVE uses Z-matrix coordinates to build any user-defined coordinates. In this case, the Z=matrix is given by 
+::
+
+     ZMAT
+         S   0  0  0  0  31.97207070
+         H   1  0  0  0   1.00782505
+         H   1  2  0  0   1.00782505
+     end
+     
 
 Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section).
 
@@ -95,7 +111,25 @@ For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues
 ``R1-Z-R2-RHO``
 ^^^^^^^^^^^^^^^^^
 
-This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z``.
+This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis. The coordinates are givem as above:
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= r_1 - r_{\rm e}, \\
+    \xi_2 &= r_2 - r_{\rm e}, \\
+    \xi_3 &= \rho,
+    \end{split}
+
+Here is an example of the Z-matrix for NNO.  
+::
+
+     ZMAT
+         N   0  0  0  0   14.00307401
+         N   1  0  0  0   14.00307401
+         O   1  2  0  0   15.994915
+     end
+     
 
 
 ``R1-Z-R2-ALPHA``
@@ -152,6 +186,10 @@ This representation has been used for PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [1
 XY\ :sub:`3` non-rigid with umbrella motion (NH\ :sub:`3` type)
 ---------------------------------------------------------------
 
+::
+
+       MolType XY3
+       
 Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced as one of the bending modes. An example of an umbrella coordinate is an angle between the :math:`C_3` symmetry axis and the bond X-Y, see Figure. It is natural to use the non-rigid reference configuration along the umbrella, inversion motion and build the KEO as an expansion around it. For two other bending modes, in principle one can use two inter-bond angles, e.g.  :math:`\alpha_2` and :math:`\alpha_3`, two dihedral angles :math:`\phi_2` and :math:`\phi_3`. However, for symmetry reasons, TROVE employs the symmetry-adapted bending pair :math:`S_a` and :math:`S_b`, defined as follows:
 
 .. math::
@@ -217,9 +255,10 @@ ZXY\ :sub:`2` (Formaldehyde type)
 
        Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO.
 
+::
 
-
-
+       MolType ZXY2
+       
 The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
 
 
@@ -238,6 +277,38 @@ The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengt
     \end{split}
 
 
+
+
+Isotopologues of XY\ :sub:`3`  as ZXY\ :sub:`2` type
+----------------------------------------------------
+
+The Z type can be used to define signle or double deturated isotopologues of a rigid XY\ :sub:`3` molecule such as PH\ :sub:`3`. For PDH\ :sub:`2`, we use ``R-THETA-TAU`` in combination with the Z-matrix given as follows:
+::
+
+      ZMAT
+          P   0  0  0  0  14.00307401
+          D   1  0  0  0   2.01410178
+          H   1  2  0  0   1.007825032
+          H   1  2  3  2   1.007825032
+      end
+      
+
+Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane conteining PD and bisetcing the angle betwen two PH bonds. 
+
+
+For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by 
+
+      ZMAT
+          P   0  0  0  0  14.00307401
+          H   1  0  0  0   1.007825032
+          D   1  2  0  0   2.01410178
+          D   1  2  3  2   2.01410178
+      end
+
+
+
+
+
 ZXY\ :sub:`3` (Methyl Chloride type)
 ------------------------------------
 
@@ -248,7 +319,10 @@ ZXY\ :sub:`3` (Methyl Chloride type)
 
        Valence coordinates and the bisector frame used for CH\ :sub:`3`\ Cl.
 
+::
 
+       MolType ZXY3
+       
 
 Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
 
