@@ -9,7 +9,7 @@ In order to specify the symmetry, the keyword ``SYMGROUP`` should be given anywh
 
      SYMGROUP D2H(M)
 
-Here the molecular symmetry group is :math:`D_{2h}`(M). 
+Here the molecular symmetry group is D\ :sub:`2h`(M). 
 
 C(M)
 =====
@@ -28,14 +28,14 @@ Cs(M)
 It is usually used for non-symmetric planar molecules such as triatomics XYZ.  
 
 
-C2v(M)
-=====
+C\ :sub:`2v`(M)
+===============
 
 
-``C2v(M)`` is a molecular symmetry consisting of for irreps: :math:`A_1`, :math:`A_2`, :math:`B_1`, :math:`B_2`. The meaning of these irreps depends on the molecule  as well as its embedding. For an XY\ :sub:`2` molecule with the :math:`x` axis chosen as a bisector of the inter-bond angle, the characters are shown in the following table
+``C2v(M)`` is a molecular symmetry consisting of 4 irreps: :math:`A_1`, :math:`A_2`, :math:`B_1`, :math:`B_2`. The meaning of these irreps depends on the molecule  as well as its embedding. The characters are shown in the following table
 
 +------------+-------------+------+-------------+----------------+
-|            | :math:`E^*` | (12) | :math:`E^*` | (12)\ :sup:`*` |
+|            | :math:`E`   | (12) | :math:`E^*` | (12)\ :sup:`*` |
 +============+=============+======+=============+================+
 |:math:`A_1` |      1      |  1   |       1     |       1        | 
 +------------+-------------+------+-------------+----------------+
@@ -46,3 +46,22 @@ C2v(M)
 |:math:`B_2` |      1      | -1   |       1     |      -1        | 
 +------------+-------------+------+-------------+----------------+
 
+where :math:`E`, (12), :math:`E^*` and (12)\ :sup:`*` are the 4 point group operations. Typical C\ :sub:`2v`(M) molecules are XY\ :sub:`2` (e.g. water, H\ :sub:`2`S), ZXY\ :sub:`2` (e.g. formaldehyde. )
+
+C3v(M)
+=====
+
+``C3v(M)`` is a molecular symmetry consisting of 3 irreps: :math:`A_1`, :math:`A_2`, :math:`E` and 6 operations: 
+
+
+============= ============ ======= ================
+               :math:`E`    (123)   (23)\ :sup:`*` 
+                           ------------------------
+                            (132)   (12)\ :sup:`*`
+                           ------------------------
+                                    (23)\ :sup:`*`
+============= ============ ======= ================
+ :math:`A_1`        1         1           1     
+ :math:`A_2`        1         1          -1   
+ :math:`E`          2        -1           0   
+============= ============ ======= ================
