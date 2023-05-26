@@ -409,11 +409,15 @@ A chain ABCD type molecule  (hydrogen peroxide type)
 ``R-ALPHA-TAU``
 ^^^^^^^^^^^^^^
 
-.. math::
-
-
 The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by  
 
+
+.. sidebar::
+
+   .. figure:: img/A2B2.jpg
+       :alt: A2B2
+
+       Valence coordinates used for HOOH.
 
 
 .. math::
@@ -428,13 +432,6 @@ The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of t
     \end{split}
 
 
-
-.. sidebar::
-
-   .. figure:: img/A2B2.jpg
-       :alt: A2B2
-
-       Valence coordinates used for HOOH.
 
 The non-rigid reference frame such that the :math:`x` axis bisects the dihedral angle. 
 
