@@ -448,12 +448,10 @@ The non-rigid reference frame such that the :math:`x` axis bisects the dihedral 
 
 For this embedding, in order to be able to separate the vibrational and rotational bases into a product form, it is important to the an extended range for the dihedral angle :math:`\delta = 0\ldots 720^\circ`. Otherwise the eigenfunction is obtained double valued due to the  :math:`x` axis appearing in the opposite direction to the two bonds after one :math:`\delta = 360^\circ` revolution.
 
-.. sidebar::
+.. figure:: img/H2O2_3_dysplays.jpg
+:alt: H2O2 3 displays
 
-   .. figure:: img/H2O2_3_dysplays.jpg
-       :alt: H2O2_3_dysplay
-
-       Principal axis system with an extended torsional angle :math:`\delta = 0\ldots 720^\circ` for HOOH.
+     Principal axis system with an extended torsional angle :math:`\delta = 0\ldots 720^\circ` for HOOH.
 
 
 
