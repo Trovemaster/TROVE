@@ -9,7 +9,7 @@ In order to specify the symmetry, the keyword ``SYMGROUP`` should be given anywh
 
      SYMGROUP D2H(M)
 
-Here the molecular symmetry group is D\ :sub:`2h`\ (M). 
+Here the molecular symmetry group is D\ :sub:`2h`\ (M).
 
 C(M)
 =====
@@ -25,25 +25,25 @@ Cs(M)
 
      SYMGROUP Cs(M)
 
-It is usually used for non-symmetric planar molecules such as triatomics XYZ.  
+It is usually used for non-symmetric planar molecules such as triatomics XYZ.
 
 
 C\ :sub:`2v`\ (M)
 =================
 
 
-``C2v(M)`` is a molecular symmetry consisting of 4 irreps: :math:`A_1`, :math:`A_2`, :math:`B_1`, :math:`B_2`. The meaning of these irreps depends on the molecule  as well as its embedding. The characters are shown in the following table
+``C2v(M)`` is a molecular symmetry group consisting of 4 irreps: :math:`A_1`, :math:`A_2`, :math:`B_1`, :math:`B_2`. The meaning of these irreps depends on the molecule  as well as its embedding. The characters are shown in the following table
 
 +------------+-------------+------+-------------+----------------+
 |            | :math:`E`   |(12)\ | :math:`E^*` | (12)\ :sup:`*` |
 +============+=============+======+=============+================+
-|:math:`A_1` |      1      |  1   |       1     |       1        | 
+|:math:`A_1` |      1      |  1   |       1     |       1        |
 +------------+-------------+------+-------------+----------------+
-|:math:`A_2` |      1      |  1   |      -1     |      -1        | 
+|:math:`A_2` |      1      |  1   |      -1     |      -1        |
 +------------+-------------+------+-------------+----------------+
-|:math:`B_1` |      1      | -1   |      -1     |       1        | 
+|:math:`B_1` |      1      | -1   |      -1     |       1        |
 +------------+-------------+------+-------------+----------------+
-|:math:`B_2` |      1      | -1   |       1     |      -1        | 
+|:math:`B_2` |      1      | -1   |       1     |      -1        |
 +------------+-------------+------+-------------+----------------+
 
 where :math:`E`, (12), :math:`E^*` and (12)\ :sup:`*` are the 4 point group operations. Typical C\ :sub:`2v`\ (M) molecules are XY\ :sub:`2` (e.g. water, H\ :sub:`2`\ S), ZXY\ :sub:`2` (e.g. formaldehyde.)
@@ -51,7 +51,7 @@ where :math:`E`, (12), :math:`E^*` and (12)\ :sup:`*` are the 4 point group oper
 C3v(M)
 ======
 
-``C3v(M)`` is a molecular symmetry consisting of 3 irreps: :math:`A_1`, :math:`A_2`, :math:`E` and 6 operations: 
+``C3v(M)`` is a molecular symmetry group consisting of 3 irreps: :math:`A_1`, :math:`A_2`, :math:`E` and 6 operations:
 
 
 +------------+------------+-------+----------------+
@@ -98,4 +98,28 @@ D\ :sub:`3h`\ (M)
 +-------------+------------+-------+-------------+------------------+-----------------+----------------+
 
 
-The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub:`3` [19AdJeYa]_. 
+The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub:`3` [19AdJeYa]_.
+
+
+
+T\ :sub:`d`\ (M)
+=================
+
+``Td(M)`` is a molecular symmetry group is used for the methane-like molecules, CH\ :sub:`4` [14YuJo]_, SiH\ :sub:`3` [17OwYuYa]_. It consists of 5 irreps and 24 symmetry operations spanning 5 classes:
+
+
++-------------+------------+-------+-------------+------------------+----------------+
+|             | :math:`E`  |(123)\ | (14)\ (23)\ |(1423)\ :sup:`*`  | (23)\ :sup:`*` |
++=============+============+=======+=============+==================+================+
+|Elements     |      1     |   8   |      3      |      6           |       6        |
++-------------+------------+-------+-------------+------------------+----------------+
+|:math:`A_1`  |      1     |   1   |       1     |      1           |       1        |
++-------------+------------+-------+-------------+------------------+----------------+
+|:math:`A_2`  |      1     |   1   |       1     |     -1           |      -1        |
++-------------+------------+-------+-------------+------------------+----------------+
+|:math:`E`    |      2     |  -1   |       2     |      0           |       0        |
++-------------+------------+-------+-------------+------------------+----------------+
+|:math:`F_1`  |      3     |   0   |      -1     |      1           |      -1        |
++-------------+------------+-------+-------------+------------------+----------------+
+|:math:`F_2`  |      3     |   0   |      -1     |     -1           |       1        |
++-------------+------------+-------+-------------+------------------+----------------+
