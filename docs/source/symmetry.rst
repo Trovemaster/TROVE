@@ -200,32 +200,32 @@ where :math:`{\bf D}(G)` are 2x2 transformation matrices given by
     {\bf D}(E) &= \left( \begin{array}{cc}
                            1 & 0 \\
                            0 & 1 \\
-                          \end{array}
+                          \end{array} 
                   \right) \\ 
     {\bf D}(123) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & \frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
-                          \end{array}
+                          \end{array} 
                   \right) \\
     {\bf D}(321) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
-                          \end{array}
+                          \end{array} 
                   \right) \\
     {\bf D}(23) &= \left( \begin{array}{cc}
                            1 &  0 \\
                            0 & -1 \\
-                          \end{array}
+                          \end{array} 
                   \right) \\
     {\bf D}(12) &= \left( \begin{array}{cc}
                            -\frac{1}{2} &  \frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
-                          \end{array}
+                          \end{array} 
                   \right) \\
     {\bf D}(13) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
-                          \end{array}
+                          \end{array} 
                   \right) \\
         \end{split}
 
@@ -238,7 +238,7 @@ Finally, the umbrella coordinate transform as follows
     {\bf G} \delta = \left\{ \begin{array}{cc}
                                \delta  &   :math:`E`,(123)\ ,(321)\ ,(23)\ ,(12)\ ,(13)\ ,\\
                                -\delta &   :math:`E`,(123)\ :sup:`*`,(321)\ :sup:`*`,(23)\ :sup:`*`,(12)\ :sup:`*`,(13)\ :sup:`*` .\\
-                             \end{array}
+                             \end{array} \right.
 
 
 
