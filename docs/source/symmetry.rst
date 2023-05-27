@@ -126,7 +126,6 @@ This is a rigid frame with 6 valence coordinates :math:`r_1`, :math:`r_2`, :math
 
 
 
-
 D\ :sub:`3h`\ (M)
 =================
 
@@ -155,6 +154,93 @@ D\ :sub:`3h`\ (M)
 
 
 The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub:`3` [19AdJeYa]_.
+
+
+
+
+``R-S-DELTA``
+^^^^^^^^^^^^^
+
+This is a non-rigid frame with 3 valence stretching coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, a symmetry adapted bending vector :math:`(S_a,S_b)` and an umbrella coordinate :math:`\delta`, where 
+
+.. math::
+
+    \begin{split}
+    S_a &= \frac{1}{\sqrt{6}} (2 \alpha_{23}-\alpha_{13}-\alpha_{12}),  \\
+    S_b &= \frac{1}{\sqrt{2}} ( \alpha_{13}-\alpha_{12}).  \\
+    \end{split}
+
+
+
+The transformation properties of the stretching coordinates are given by 
+
+
++----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
+| Coordinates    |     :math:`E`  |(123)\ , (123)\ :sup:`*`|(321)\ , (321)\ :sup:`*`|(23)\ ,(23)\ :sup:`*`|(12)\ ,(12)\ :sup:`*`|(13)\ ,(13)\ :sup:`*`|
++================+================+========================+========================+=====================+=====================+=====================+
+|    :math:`r_1` |    :math:`r_1` |           :math:`r_2`  |           :math:`r_3`  |        :math:`r_1`  |        :math:`r_2`  |        :math:`r_3`  |
++----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
+|    :math:`r_2` |    :math:`r_2` |           :math:`r_3`  |           :math:`r_1`  |        :math:`r_3`  |        :math:`r_1`  |        :math:`r_2`  |
++----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
+|    :math:`r_2` |    :math:`r_3` |           :math:`r_1`  |           :math:`r_2`  |        :math:`r_2`  |        :math:`r_3`  |        :math:`r_1`  |
++----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
+
+The bending vector :math:`(S_a,S_b)` transforms as follows 
+
+.. math::
+
+    {\bf S} = {\bf D}(G) {\bf S}, 
+
+where :math:`\bf D}(G)` are 2x2 transformation matrices given by 
+
+
+.. math::
+
+    \begin{split}
+    {\bg D}(E) &= \left( \begin{array}{cc}
+                           1 & 0 \\
+                           0 & 1 \\
+                          \end{array}
+                  \right) \\ 
+    {\bg D}(123) &= \left( \begin{array}{cc}
+                           -\frac{1}{2} & \frac{\sqrt{3}}{2}  \\
+                           -\frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
+                          \end{array}
+                  \right) \\
+    {\bg D}(321) &= \left( \begin{array}{cc}
+                           -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
+                            \frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
+                          \end{array}
+                  \right) \\
+    {\bg D}(23) &= \left( \begin{array}{cc}
+                           1 &  0 \\
+                           0 & -1 \\
+                          \end{array}
+                  \right) \\
+    {\bg D}(12) &= \left( \begin{array}{cc}
+                           -\frac{1}{2} &  \frac{\sqrt{3}}{2}  \\
+                            \frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
+                          \end{array}
+                  \right) \\
+    {\bg D}(13) &= \left( \begin{array}{cc}
+                           -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
+                           -\frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
+                          \end{array}
+                  \right) \\
+        \end{split}
+
+The operations with inversion have the same matrices, :math:`{\bf D}(G^*) = {\bf D}(G)`. 
+
+Finally, the umbrella coordinate transform as follows 
+
+.. math::
+
+    {\bf G} \delta = \left\{ \begin{array}{cc}
+                               \delta  &   :math:`E`,(123)\ ,(321)\ ,(23)\ ,(12)\ ,(13)\ ,\\
+                               -\delta &   :math:`E`,(123)\ :sup:`*`,(321)\ :sup:`*`,(23)\ :sup:`*`,(12)\ :sup:`*`,(13)\ :sup:`*` .\\
+                             \end{array}
+
+
 
 
 
