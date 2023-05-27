@@ -176,5 +176,48 @@ Example of the split option include
  
  
 
+- fitpot_ma\ :math:`J`\ _\ :math:`\Gamma`\ _:math:`i`\.chk (``fit_poten``) are checkpoint files to store matrix elements of the fitting part of the potential, with :math:`i` representing the vibrational contribution from a specific potential parameter :math:`i` to be refined.
+
+  To produce and store the fitpot*.chk checkpoints, the following line should be added to the ``check_point`` section:
+  :: 
+      
+      .....
+      fit_poten  save  split 
+      .....
+      
+  and to use them 
+  ::
+
+      .....
+      fit_poten  read  split
+      .....
+
+
+
+  Similar to the usage of other ``split`` objects, it is possible to request only specific terms in the potential, e.g. 
+  ::
+      
+      ....
+      fit_poten  save split  32 45 
+      ....
+      
+  will compute the ``fit_poten`` matrix elements for :math:`i=32\ldots 45`. 
+
+  The matrix elements in fitpot*.chk are used for the refinement of the PEF, which is controlled by the section ``FITTING``, see Chapter refine_. This section contains keywords for selection of fitpot*.chk, namely   ``J-LIST`` and ``symmetries`` specifying the values of :math:`J` and symmetries :math:`\Gamma`, respectively (both are integer) to be processed. For example: 
+  ::
+       
+       FITTING
+       J-LIST   0 1 2 
+       Symmetries  2 3 5 6 
+       .....
+       
+  will process the fit (``fit_poten`` matrix elements) for  :math`J=0,1,2` and :math:`\Gamma = 2,3,5,6`. 
+
+
+
+ 
+  
+  
+
 
 
