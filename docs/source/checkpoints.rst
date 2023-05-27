@@ -153,7 +153,7 @@ Example of the split option include
         ....
          
 
-- j0_matelem1.chk, j0_matelem2.chk ... j0_matelem12.chk are the  :math`J=0` representation of matelem1.chk, matelem2.chk ... matelem12.chk, respectively, in the ``split`` form.
+- j0_matelem1.chk, j0_matelem2.chk ... j0_matelem12.chk are the  :math:`J=0` representation of matelem1.chk, matelem2.chk ... matelem12.chk, respectively, in the ``split`` form.
 
   These files are generated as part of step 2, which can be accomplished by simply setting ``step 2`` in the ``Control`` section: 
   :: 
@@ -172,7 +172,7 @@ Example of the split option include
         eigenfunc read
         ....
 
-  In the :math`J=0` representation, the zero-term, pure vibrational j0_matelem0.chk is not produced. This is because this part is diagonal on the  :math`J=0` basis, with the corresponding energies on the diagonal. 
+  In the :math:`J=0` representation, the zero-term, pure vibrational j0_matelem0.chk is not produced. This is because this part is diagonal on the  :math:`J=0` basis, with the corresponding energies on the diagonal. 
  
  
 
