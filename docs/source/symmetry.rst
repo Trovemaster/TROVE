@@ -48,6 +48,33 @@ C\ :sub:`2v`\ (M)
 
 where :math:`E`, (12), :math:`E^*` and (12)\ :sup:`*` are the 4 point group operations. Typical C\ :sub:`2v`\ (M) molecules are XY\ :sub:`2` (e.g. water, H\ :sub:`2`\ S), ZXY\ :sub:`2` (e.g. formaldehyde.)
 
+
+Symmetry properties of the vibrational coordinates
+--------------------------------------------------
+
+TROVE uses the symmetry properties of the vibrational coordinates, i.e. how they transform upon applying the symmetry operations, to build symmetry adapted vibrational basis functions. The symmetrisation method is described in [17YuYaOv]_. In the following, we show how the coordinates, we show these transformation properties for the corresponding coordination frames implemented in TROVE. 
+
+
+``R-RHO-Z``, ``R-ALPHA-Z``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
++--------------+---------------+--------------+---------------+---------------+
+|              | :math:`E`     |     (12)\    |  :math:`E^*`  |(12)\ :sup:`*` |
++==============+===============+==============+===============+===============+
+|:math:`r_1`   | :math:`r_1`   |  :math:`r_2` |:math:`r_1`    |  :math:`r_2`  |
++--------------+---------------+--------------+---------------+---------------+
+|:math:`r_2`   | :math:`r_2`   |  :math:`r_1` |:math:`r_2`    |  :math:`r_1`  |
++--------------+---------------+--------------+---------------+---------------+
+| :math:`\rho` |  :math:`\rho` | :math:`\rho` |:math:`\rho`   | :math:`\rho`  |
++--------------+---------------+--------------+---------------+---------------+
+|:math:`\alpha`| :math:`\alpha`|:math:`\alpha`|:math:`\alpha` | :math:`\alpha`|
++--------------+---------------+--------------+---------------+---------------+
+
+
+
+
+
 C3v(M)
 ======
 
