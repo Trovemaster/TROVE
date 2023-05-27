@@ -191,38 +191,38 @@ The bending vector :math:`(S_a,S_b)` transforms as follows
 
     {\bf S} = {\bf D}(G) {\bf S}, 
 
-where :math:`\bf D}(G)` are 2x2 transformation matrices given by 
+where :math:`{\bf D}(G)` are 2x2 transformation matrices given by 
 
 
 .. math::
 
     \begin{split}
-    {\bg D}(E) &= \left( \begin{array}{cc}
+    {\bf D}(E) &= \left( \begin{array}{cc}
                            1 & 0 \\
                            0 & 1 \\
                           \end{array}
                   \right) \\ 
-    {\bg D}(123) &= \left( \begin{array}{cc}
+    {\bf D}(123) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & \frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
                           \end{array}
                   \right) \\
-    {\bg D}(321) &= \left( \begin{array}{cc}
+    {\bf D}(321) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
                           \end{array}
                   \right) \\
-    {\bg D}(23) &= \left( \begin{array}{cc}
+    {\bf D}(23) &= \left( \begin{array}{cc}
                            1 &  0 \\
                            0 & -1 \\
                           \end{array}
                   \right) \\
-    {\bg D}(12) &= \left( \begin{array}{cc}
+    {\bf D}(12) &= \left( \begin{array}{cc}
                            -\frac{1}{2} &  \frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
                           \end{array}
                   \right) \\
-    {\bg D}(13) &= \left( \begin{array}{cc}
+    {\bf D}(13) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
                           \end{array}
