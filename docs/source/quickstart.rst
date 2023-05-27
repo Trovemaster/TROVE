@@ -339,7 +339,7 @@ The Checkpoint block determines which checkpoint files are saved by TROVE. This 
 
 
 
-The kinetic.chk and potentail.chk  contain detail the expansion coefficients of KEO and PEF  expansions, controlled by the ``Kinorder`` and `Potorder` keywords discussed above. The associated keywords are ``kinetic`` and  ``potential``, respectively. The corresponding input values are ``save``, ``read`` or ``none``.  This is usually the first part of a TROVE calculation. Once these objects are generated with the expansions to a sufficient order (for example 6/8 for kin/pot order) it can be reused while different basis sets, polyads, etc are compared.
+The kinetic.chk and potentail.chk  contain the expansion coefficients of the KEO and PEF  expansions, controlled by the ``Kinorder`` and `Potorder` keywords discussed above. The associated keywords are ``kinetic`` and  ``potential``, respectively. The corresponding input values are ``save``, ``read`` or ``none``.  This is usually the first part of a TROVE calculation. Once these objects are generated with the expansions to a sufficient order (for example 6/8 for kin/pot order) it can be reused while different basis sets, polyads, etc are compared.
 Example: 
 ::
 

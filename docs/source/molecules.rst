@@ -363,9 +363,8 @@ Methyl chloride, CH\ :sub:`3`\ Cl
 
 Symmetry: :math:`C_{3v}`
 
-Coordinates:  :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3,4` for vibrational coordinates,
-:math:`\xi_i = \beta_i - \beta_e` :math:`i = 5,6,7` for bending coordinates, :math:`\xi_8 = \frac{1}{\sqrt{6}} (2 \tau_{23} -
- \tau_{13} - \tau_{12})` and :math:`\xi_9 = \frac{1}{2}(\tau_{13} - \tau_{12})`.
+Coordinates:  :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3,4` for vibrational coordinates, 
+:math:`\xi_i = \beta_i - \beta_e` , :math:`i = 5,6,7` for bending coordinates, :math:`\xi_8 = \frac{1}{\sqrt{6}} (2 \tau_{23} - \tau_{13} - \tau_{12})` and :math:`\xi_9 = \frac{1}{2}(\tau_{13} - \tau_{12})`.
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n`, curvilinear coordinates used.
 

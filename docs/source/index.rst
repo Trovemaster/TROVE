@@ -3,7 +3,7 @@ Welcome to TROVE's documentation!
 
 .. toctree::
    :glob:
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Contents:
 
    intro.rst
@@ -12,6 +12,7 @@ Welcome to TROVE's documentation!
    frames.rst
    symmetry.rst 
    outputs.rst
+   checkpoints.rst
    molecules.rst
    newmolecules.rst
    linelist.rst
