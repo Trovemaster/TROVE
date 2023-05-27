@@ -235,9 +235,9 @@ Finally, the umbrella coordinate transform as follows
 
 .. math::
 
-    {\bf G} \delta = \left\{ \begin{array}{cc}
-                               \delta  &   :math:`E` ,(123)\ ,(321)\ ,(23)\ ,(12)\ ,(13)\ ,\\
-                               -\delta &   :math:`E` ,(123)\ :sup:`*` ,(321)\ :sup:`*` ,(23)\ :sup:`*` ,(12)\ :sup:`*` ,(13)\ :sup:`*` .\\
+    G \delta = \left\{ \begin{array}{cc}
+                               \delta  &  G=  E ,(123) ,(321), (23), (12), (13),\\
+                               -\delta &   G = E^* ,(123)^* ,(321)^*,(23)^*,(12)^*,(13)^*.\\
                              \end{array} \right.
 
 
