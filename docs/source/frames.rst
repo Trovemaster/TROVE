@@ -84,7 +84,7 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 
 
 ``R-ALPHA-Z``
-^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 - ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ```Rigid` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
 .. math::
