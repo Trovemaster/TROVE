@@ -68,7 +68,7 @@ C3v(M)
 |:math:`E`   |      2     |  -1   |       0        |
 +------------+------------+-------+----------------+
 
-It can be used for the molecules PH\ :sub:`3`, SbH\ :sub:`3`, SO\ :sub:`3`, CH\ :sub:`3`\ Cl, CH\ :sub:`3`\ Cl, isotopologue CDH\ :sub:`3` etc.
+It can be used for the molecules PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_, CH\ :sub:`3`\ Cl [18OwYaTe]_, CH\ :sub:`3`\ F, isotopologue CDH\ :sub:`3` etc.
 
 
 D\ :sub:`3h`\ (M)
@@ -98,5 +98,4 @@ D\ :sub:`3h`\ (M)
 +-------------+------------+-------+-------------+------------------+-----------------+----------------+
 
 
-It can be used for the molecules PH\ :sub:`3`, SbH\ :sub:`3`, SO\ :sub:`3`, CH\ :sub:`3`Cl, CH\ :sub:`3`Cl, isotopologue CDH\ :sub:\ `3` etc.
-
+The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub:`3` [19AdJeYa]_. 
