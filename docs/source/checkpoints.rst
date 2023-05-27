@@ -72,7 +72,7 @@ List of checkpoints
   
     individual energies of the basis functions from different sub-classes together with their classifications, symmetries, TROVE quantum number, IDs, largest expansion coefficients used in their assignment as well as a placeholder for the spectroscopic quantum numbers. This file can be edited in order to include these spectroscopic quantum numbers.
   
-- contr_matelem.chk (``matelem``) contains vibrational matrix of the different pars of the Hamiltonian operator (KEO and PEF)
+- contr_matelem.chk (``matelem``) contains vibrational matrix elements  of the different pars of the Hamiltonian operator (KEO and PEF)
 
   on the basis set produced at the ``contract`` step, i.e. contracted symmetry adapted basis functions. 
 
@@ -119,16 +119,62 @@ Example of the split option include
    
 - eigen_descr*chk, eigen_vector*chk and eigen_quant*chk (``eigenfunc``) contain the  eigencoefficients and their descriptions. 
 
-  - eigen_descr\ :math:`J`\ _\ :math:`G`\ .chk contain the eigenvalues (energy term values in cm\ :sup:`-1`\ ):
+  - eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk contain the eigenvalues (energy term values in cm\ :sup:`-1`\ ):
    
-   state IDs, symmetries, TROVE quantum numbers, largest coefficients as well as a placeholder for the spectroscopic quantum numbers. These files formatted (ASCII) and can be used for the analysis or postprocessing (e.g. construction of line lists). Here :math:`J` is the rotational angular momentum and :math:`G` is the symmetry (irrep), i.e. there is a description for each J/symmetry.
-
-- eigen_quant\ :math:`J`\ .chk contain the bookkeeping information for the basis sets used: 
-
-  the mapping between the multidimensional, multimode description of the product-form basis functions to a 1D basis set index.
+   state IDs, symmetries, TROVE quantum numbers, largest coefficients as well as a placeholder for the spectroscopic quantum numbers. These files formatted (ASCII) and can be used for the analysis or postprocessing (e.g. construction of line lists). Here :math:`J` is the rotational angular momentum and :math:`\Gamma` is the symmetry (irrep), i.e. there is a description for each J/symmetry. For example, eigen_descr0_2.chk is a checkpoint file with the description of the eigenstates and their eigenvalues for :math:`J=0` and :math:`\Gamma=2`.
   
-- eigen_vectors\ :math:`J`\ _\ :math:`G`\ .chk contain the eigencoefficients written in direct unformatted form. 
+- eigen_vectors\ :math:`J`\ _\ :math:`\Gamma`\ .chk contain the eigencoefficients written in direct unformatted form. 
 
   For each eigen_descr*chk there is an eigen_vector*chk file.   
+
+
+- eigen_quant\ :math:`J`\ .chk contain the bookkeeping information for the basis sets used:
+
+  the mapping between the multidimensional, multimode description of the product-form basis functions to a 1D basis set index.
+
+
+- j0_matelem.chk (``matelem``) is the :math:`J=0` representation of contr_matelem.chk generated at step 2. 
+
+  In order to switch to step 2 and thus distinguish from step 1, the following changes to the step 1 input file should be made: 
+  
+  1. In the ``contracted`` section, set 
+     ::
+      
+      model J=0
+      
+
+  2. In the ``check_point`` section set 
+     ::
+         
+        ....
+        contract save
+        matelem convert
+        eigenfunc read
+        ....
+         
+
+- j0_matelem1.chk, j0_matelem2.chk ... j0_matelem12.chk are the  :math`J=0` representation of matelem1.chk, matelem2.chk ... matelem12.chk, respectively, in the ``split`` form.
+
+  These files are generated as part of step 2, which can be accomplished by simply setting ``step 2`` in the ``Control`` section: 
+  :: 
+      
+      control 
+         step 2
+      end
+       
+  Alternatively, the changes described above to produce j0_matelem.chk should be introduced, with only one difference of including the ``split`` sub-option: 
+ 
+     ::
+
+        ....
+        contract save
+        matelem convert split 
+        eigenfunc read
+        ....
+
+  In the :math`J=0` representation, the zero-term, pure vibrational j0_matelem0.chk is not produced. This is because this part is diagonal on the  :math`J=0` basis, with the corresponding energies on the diagonal. 
+ 
+ 
+
 
 
