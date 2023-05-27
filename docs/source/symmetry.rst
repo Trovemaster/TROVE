@@ -117,11 +117,11 @@ This is a rigid frame with 6 valence coordinates :math:`r_1`, :math:`r_2`, :math
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
 |    :math:`r_3` |    :math:`r_3` |     :math:`r_2`  |     :math:`r_2`  |     :math:`r_2`  |      :math:`r_1`  |     :math:`r_3`  |
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
-|:math:`\alpha1` |:math:`\alpha1` | :math:`\alpha2`  | :math:`\alpha3`  | :math:`\alpha1`  |  :math:`\alpha3`  | :math:`\alpha2`  |
+|:math:`\alpha_1`|:math:`\alpha_1`| :math:`\alpha_2` | :math:`\alpha_3` | :math:`\alpha_1` |  :math:`\alpha_3` | :math:`\alpha_2` |
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
-|:math:`\alpha2` |:math:`\alpha2` | :math:`\alpha3`  | :math:`\alpha1`  | :math:`\alpha3`  |  :math:`\alpha2`  | :math:`\alpha1`  |
+|:math:`\alpha_2`|:math:`\alpha_2`| :math:`\alpha_3` | :math:`\alpha_1` | :math:`\alpha_3` |  :math:`\alpha_2` | :math:`\alpha_1` |
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
-|:math:`\alpha3` |:math:`\alpha3` | :math:`\alpha2`  | :math:`\alpha2`  | :math:`\alpha2`  |  :math:`\alpha1`  | :math:`\alpha3`  |
+|:math:`\alpha_3`|:math:`\alpha_3`| :math:`\alpha_2` | :math:`\alpha_2` | :math:`\alpha_2` |  :math:`\alpha_1` | :math:`\alpha_3` |
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
 
 
