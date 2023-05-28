@@ -106,17 +106,17 @@ List of checkpoints
   where different components are written into separate extmatelem chk-files.
   
 
-Example of the split option include 
+Examples of the split option include 
 :
      
      extmatelem  save split 1  1
      
-:
 
+:
+     
      extmatelem  save split 
-     
-     
-   
+          
+
 - eigen_descr*chk, eigen_vector*chk and eigen_quant*chk (``eigenfunc``) contain the  eigencoefficients and their descriptions. 
 
   - eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk contain the eigenvalues (energy term values in cm\ :sup:`-1`\ ):
