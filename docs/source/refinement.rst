@@ -1,6 +1,7 @@
 Refinement
 **********
-.. _refine:
+
+.. _refine
 
 In this chapter details will be given of the refinement procedure implemented in TROVE.
 Refinement in this context means to adjust the *ab intio* potential energy surface by comparing computed rotational-vibrational energy levels to experimental values.
