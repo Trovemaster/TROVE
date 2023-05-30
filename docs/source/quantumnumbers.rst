@@ -10,11 +10,9 @@ Consider, for example,  variationally computed wavefunctions of the form
 
 .. math::
 
-   \begin{equation}
      :label: phii_sum_C_phiv
 
     \psi_{i} = \sum_{v_1,v_2,\ldots} C_{v_1,v_2,\ldots,}^{i} \phi_{v_1,v_2,v_3\ldots v_M}.
-   \end{equation}
 
 
 An eigen-state  :math:`\psi_{i}` is said to inherit quantum numbers :math:`v_1', v'_2,\ldots, v'_M` of the most `similar' basis function :math:`\phi_{v'_1,v_2',v'_3\ldots v'_M}`. According to the largest contribution concept used in TROVE, the eigen-state :math:`\psi_i` is assigned the excitation numbers :math:`v'_1, v'_2, \ldots v'_M` that correspond to the largest basis set contribution measured by the corresponding expansion (eigen-)coefficient  :math:`|C_{v'_1,v'_2,\ldots,}^{i}|^2`. The accuracy of this approach depends on the quality of the basis set and can only provide meaningful information when the coupling  between different basis set components is relatively small, i.e. when the magnitude of the largest coefficients  :math:`|C_{v'_1,v'_2,\ldots,}^{i}|^2` is well separated from other contributions. The magnitude of the largest coefficient plays a role of a similarity index between the TROVE eigenfunction and the corresponding reference (basis) function.
