@@ -203,7 +203,7 @@ Examples of the split option include
       
   will compute the ``fit_poten`` matrix elements for :math:`i=32\ldots 45`. 
 
-  The matrix elements in fitpot*.chk are used for the refinement of the PEF, which is controlled by the section ``FITTING``, see Chapter refine_. This section contains keywords for selection of fitpot*.chk, namely   ``J-LIST`` and ``symmetries`` specifying the values of :math:`J` and symmetries :math:`\Gamma`, respectively (both are integer) to be processed. For example: 
+  The matrix elements in fitpot*.chk are used for the refinement of the PEF, which is controlled by the section ``FITTING``, see Chapter :ref:`refine`. This section contains keywords for selection of fitpot*.chk, namely   ``J-LIST`` and ``symmetries`` specifying the values of :math:`J` and symmetries :math:`\Gamma`, respectively (both are integer) to be processed. For example: 
   ::
        
        FITTING
