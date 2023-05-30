@@ -13,6 +13,7 @@ Welcome to TROVE's documentation!
    symmetry.rst 
    outputs.rst
    checkpoints.rst
+   quantumnumbers.rst
    molecules.rst
    newmolecules.rst
    linelist.rst
