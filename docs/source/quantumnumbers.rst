@@ -9,8 +9,7 @@ TROVE uses the largest coefficient approach from the expansion of eigenvectors i
 Consider, for example,  variationally computed wavefunctions of the form
 
 .. math::
-
-     :label: phii-sum-C-phiv
+    :label: phii-sum-C-phiv
 
     \psi_{i} = \sum_{v_1,v_2,\ldots} C_{v_1,v_2,\ldots,}^{i} \phi_{v_1,v_2,v_3\ldots v_M}.
 
