@@ -30,6 +30,67 @@ where :math:`H_n(x)` is a Hermite polynomial. For the numerically generated basi
 
 
 
+Assignment of the 'contracted' symmetry adapted basis functions
+---------------------------------------------------------------
+
+Following the TROVE pipeline of step 1, after the 1D primitive basis functions are contracted, TROVE solves reduced Hamiltonians for  a set of sub-classes with the goal of building a symmetry adapted contracted basis set. These reduced problems are solved variationally and therefore the corresponding eigen-functions can be assigned the quantum numbers using the largest contribution approach. Here TROVE uses its native quantum numbers that directly correspond to the basis set as defined in the section ``BASIS``.  For example, or a symmetric triatomic molecule of the type XY\ :sub:`2`\ , a typical ``Basis`` set is defined as follows
+::
+
+    BASIS
+     0,'JKtau', Jrot 0
+     1,'numerov','linear', 'morse', range 0,  4,  resc 1.0, points 600,borders -0.5,1.40
+     1,'numerov','linear', 'morse', range 0,  4,  resc 1.0, points 600,borders -0.5,1.40
+     2,'numerov','linear', 'linear', range 0, 4,  resc 1.0, points 4000,borders   4.0,150.0 deg
+    END
+    
+where the first line corresponds to the rotational basis set (sub-class 0), lines 2 and 3 belong to sub-class 1 containing two stretching modes XY\ :sub:`1` and XY\ :sub:`2`.  The last line describes the bending mode from sub-class 2. After solving the reduced vibrational problem for class 1, the energies in the TROVE standard output are printed out as given by
+::
+
+     Symmetry of the contracted solution, class:   1
+          i       ener         deg  symmetry  quanta:
+          1        0.00000000   1   1  A1     0   0   0    0
+          2     2606.33588428   1   1  A1     1   0   0    0
+          3     3289.35032517   1   4  B2     0   1   0    0
+          4     5167.94761210   1   1  A1     1   1   0    0
+          5     5792.74038338   1   4  B2     0   2   0    0
+          6     6500.04075468   1   1  A1     1   1   0    0
+          7     7704.33822743   1   1  A1     2   1   0    0
+          8     8334.12791848   1   4  B2     0   3   0    0
+          9     9079.13120953   1   1  A1     0   3   0    0
+         10     9911.69433846   1   4  B2     1   2   0    0
+         11    10163.09614410   1   1  A1     2   2   0    0
+         12    10789.04196300   1   4  B2     4   0   0    0
+         13    11578.19544716   1   1  A1     4   0   0    0
+         14    12431.56258951   1   4  B2     3   1   0    0
+         15    13239.83629333   1   1  A1     2   2   0    0
+         
+        
+where the 1st column (``i``) is a counting index of the contracted solution for sub-class 1; the 2nd column (``ener``) contains the energies (in wavenumbers); col 3 (``deg``) shows the degeneracy of the state (here it is 1 for the C\ :sub:`2`\ v(M) symmetry group), columns 4 and 5 contain the symmetry (irrep), the symmetry index (1,2,3,4) and the symmetry label (``A1``, ``A2``, ``B1``, ``B2``); cols 6 and 7 are the stretching quantum :math:`v_1,v_2`; col 8 gives bending quantum number (here it is zero for the stretching sub-class) and the last column is reserved for the rotational quantum number of sub-class 0 (not used in practice for the vibrational basis sets).
+
+The exact distribution of the tow quanta between the two equivalent stretching modes :math:`v_1,v_2` is random, only the total quanta :math:`v_1+v_2` has a physical meaning plus the total symmetry. Using these two criteria it is usually possible to match the TROVE (local mode) quantum numbers to the spectroscopic (normal mode) quantum numbers. Form example, the energy state 2 (:math:`E_2 = 2606.33588428`\ cm\ :sup:`-1`) is assigned (1,0) ``A1``, which is the (1,0,0) state in the normal mode notation. The next energy state 3 (:math:`E_2 = 3289.35032517`\ cm\ :sup:`-1`) is (0,1) ``B2`` has the same total number of quanta (1), but has the symmetry :math:`B_2`, which corresponds to the (0,0,1) state in the normal mode notation. 
+
+
+The second sub-class in the case of the XY2 molecules  is classified as follows:
+::
+
+      Symmetry of the contracted solution, class:   2
+           i       ener         deg  symmetry  quanta:
+           1        0.00000000   1   1  A1     0   0   0    0
+           2     1186.71845689   1   1  A1     0   0   1    0
+           3     2368.45025285   1   1  A1     0   0   2    0
+           4     3547.01501601   1   1  A1     0   0   3    0
+           5     4728.42983827   1   1  A1     0   0   4    0
+      
+with only one active TROVE mode 3 :math:`v_3`\ , which is directly mapped to the normal mode states :math:`(0,v_3,0)`. 
+
+
+
+ 
+
+
+
+
+
 
 
 
