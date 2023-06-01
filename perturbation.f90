@@ -7,7 +7,7 @@ module perturbation
   use molecules, only : MOrepres_arkT,MLsymmetry_transform_func,polintark,MLrotsymmetry_func,MLrotsymmetry_generate
   use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark
   use lapack
-  use plasma
+  !use plasma
   use fields
   use timer
   use symmetry , only : SymmetryInitialize,sym
@@ -9940,9 +9940,9 @@ module perturbation
        call diag_tridiag(mat(1:dimen_s,1:dimen_s),energy(1:dimen_s),job%diagonalizer,rng=rng,jobz=jobz,iroots=nroots,&
                          vrange=vrange,irange=irange,tol=job%tolerance)
        !
-     case('PLASMA_DSYTRDX') 
+     !case('PLASMA_DSYTRDX') 
        !
-       call plasma_sytrdx(dimen_s,mat,energy,nroots,vrange(2))
+     !  call plasma_sytrdx(dimen_s,mat,energy,nroots,vrange(2))
        !
      case('DSYEV-ILP','DSYEVR-ILP','DSYEVD-ILP','DSYEVX-ILP') 
        !

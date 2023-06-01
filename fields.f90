@@ -16429,7 +16429,7 @@ end subroutine check_read_save_none
                        PTorder,trove%Nmodes,trove%Natoms,Npolyads,enercut(:)
       write(chkptIO,'('//rfmt_modes//',''  <= dstep       '')')  trove%fdstep(:)
       write(chkptIO,'('//rfmt_atoms//',''  <= masses      '')')  trove%mass
-      write(chkptIO,'('//rfmt_coords//',''  <= equilbrium  '')')  trove%local_eq
+      write(chkptIO,'('//rfmt_coords//',''  <= equilibrium '')')  trove%local_eq
       !
       write(chkptIO,"(a10,' ',a10,' ',a10,' ',a10)") trove%internal_coords,trove%coords_transform,trove%symmetry,trove%Moltype
       !
