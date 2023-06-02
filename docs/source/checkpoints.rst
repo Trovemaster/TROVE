@@ -259,8 +259,8 @@ Structure of the description checkpoints
 
 contr_descr.chk contains the energies and quantum numbers of the contracted basis states. It has the following structure 
 
-1. "Fingerprint" section, for example 
-::
+   1. "Fingerprint" section, for example 
+   ::
 
     Start Fingerprints
           0      3      3      4     38000.0     38000.0  <= PTorder, Nmodes, Natoms,  Npolyads, enercut
@@ -276,8 +276,8 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
              3 NUMEROV    LINEAR     LINEAR      1000   1D    2      2    0   4     1.0       4000     0.070    2.618     F  0 NUMEROV-PO        5    F    F    T
     End Fingerprints
     
-2. Sub-class 1
-::
+   2. Sub-class 1
+   ::
 
         Class #       1
                     15            15  <-  number of roots and dimension of basis 
@@ -291,8 +291,8 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
               8   4       8   1  11965.585881042278   0   0   3   0     0   3   0   0         0.62572431 
               
        
-2. Sub-class 2
-::
+   2. Sub-class 2
+   ::
 
        Class #       2
                     5             5  <-  number of roots and dimension of basis
@@ -303,6 +303,9 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
             20   1       5   1   8404.773619941834   0   0   0   4     0   0   0   4         0.99669840
               
 etc. 
+
+
+The structure of the columns is as follows:  
 ::
 
               n   Sym     m   deg     Energy (cm-1)   k   v1  v2  v3    K   n1  n2  n3          C_i
@@ -311,15 +314,87 @@ etc.
               3   4       3   1   6920.808287732269   0   0   1   0     0   1   0   0        -0.69933488
               4   1       4   1   8799.405574657818   0   1   1   0     0   2   0   0        -0.66971512
               5   4       5   1   9424.198345933781   0   0   2   0     0   2   0   0        -0.69495690
+
+
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              n   Sym     m   deg     Energy (cm-1)   k   v1  v2  v3    K   n1  n2  n3          C_i
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              1   1       1   1   3631.457962557468   0   0   0   0     0   0   0   0         0.99650855
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              2   1       2   1   6237.793846833698   0   1   0   0     0   1   0   0        -0.70449312
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              3   4       3   1   6920.808287732269   0   0   1   0     0   1   0   0        -0.69933488
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              4   1       4   1   8799.405574657818   0   1   1   0     0   2   0   0        -0.66971512
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+              5   4       5   1   9424.198345933781   0   0   2   0     0   2   0   0        -0.69495690
+              -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
+
+
               
 Here 
 
-    1. ``n`` is the counting number of the state including degeneracies;
-    2. ``Sym`` is the irrep of this state;
-    3. ``m`` is  the running number of the energy, excluding degeneracies. 
-    4. ``Energy`` term value of a state from the given sub-class. 
-    5. ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
-    6. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
-    7. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
-    8. ``C_i`` is the corresponding largest coefficient used in the assignment. 
+  1. ``n`` is the counting number of the state including degeneracies;
+  2. ``Sym`` is the irrep of this state;
+  3. ``m`` is  the running number of the energy, excluding degeneracies. 
+  4. ``Energy`` term value of a state from the given sub-class. 
+  5. ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
+  6. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
+  7. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
+  8. ``C_i`` is the corresponding largest coefficient used in the assignment. 
 
+
+
+``eigen_descr*_*.chk``
+----------------------
+
+   1. "Fingerprint" section, for example:
+   ::
+
+
+       Start Fingerprints
+              0      3      3      4     38000.0     38000.0  <= PTorder, Nmodes, Natoms,  Npolyads, enercut
+               0.01000000        0.01000000        0.01000000  <= dstep
+              31.97207070        1.00782505        1.00782505  <= masses
+               1.33590070        1.33590070        1.61034345  <= equilbrium
+       LINEAR     R-RHO      C2V(M)     XY2
+       BASIS:   i  type     coord_kinet coord_poten model dim species class range dvrpoints res_coeffs npoints borders periodic period
+              0   <- Jrot, rotational angular momentum
+                0 JKTAU      xxxxxx     xxxxxx      1000   1D    0      0    0   0     0.0          0     0.000    0.000     F  0 xxxxxx            0    F    F    T
+                1 NUMEROV    LINEAR     MORSE       1000   1D    1      1    0   4     1.0        600    -0.500    1.400     F  0 NUMEROV-PO        5    F    F    T
+                2 NUMEROV    LINEAR     MORSE       1000   1D    1      1    0   4     1.0        600    -0.500    1.400     F  0 NUMEROV-PO        5    F    F    T
+                3 NUMEROV    LINEAR     LINEAR      1000   1D    2      2    0   4     1.0       4000     0.070    2.618     F  0 NUMEROV-PO        5    F    F    T
+       End Fingerprints
+       
+       
+     2.  Energy term values and description of the ro-vibrational states: 
+     ::
+       Start Quantum numbers and energies
+              4 <== Contracted polyad number
+       Class #       1
+                   22            22  <-  number of roots and dimension of basis
+              1       1       1       1   3627.658022299023       0   0   0   0       1   1   1   1       0   0   0   0         0.99958266      1      1
+              2       1       2       1   4800.325667905056       0   0   0   1       2   1   1   1       0   0   0   1        -0.99819947      1      2
+              3       1       3       1   5962.955540973960       0   0   0   2       3   1   1   1       0   0   0   2         0.99055229      1      3
+              4       1       4       1   6236.371962631670       0   1   0   0       6   1   1   1       0   1   0   0         0.99283316      2      1
+              5       1       5       1   7130.700436920808       0   0   0   3       4   1   1   1       0   0   0   3         0.97608301      1      4
+              6       1       6       1   7393.117966742439       0   1   0   1       7   1   1   1       0   1   0   1         0.97535336      2      2
+              ......
+              ......
+       End Quantum numbers and energies
+       
+       
+
+
+Here
+
+  1. ``n`` is the counting number of the state including degeneracies;
+  2. ``Sym`` is the irrep of this state;
+  3. ``m`` is  the running number of the energy, excluding degeneracies.
+  4. ``Energy`` term value of a state from the given sub-class.
+  5. ``k`` is a rotational index (typically it is zero in contr_descr.chk).
+  6. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers.
+  7. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates.
+  8. ``C_i`` is the corresponding largest coefficient used in the assignment.
+
+       
