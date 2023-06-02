@@ -321,38 +321,18 @@ The structure of the columns is as follows:
               
 
 
-
-
-
-And another table 
-
-
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-             |n | Sym  |  m | deg|    Energy (cm-1) | k | v1 |v2 |v3  | K | n1 |n2 |n3    |     C_i     |
-             +==+======+====+====+==================+===+====+===+====+===+====+===+======+=============+
-             |1 | 1    |  1 | 1  |3631.457962557468 | 0 | 0  |0  |0   | 0 | 0  |0  |0     |   0.99650855|
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-             |2 | 1    |  2 | 1  |6237.793846833698 | 0 | 1  |0  |0   | 0 | 1  |0  |0     |  -0.70449312|
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-             |3 | 4    |  3 | 1  |6920.808287732269 | 0 | 0  |1  |0   | 0 | 1  |0  |0     |  -0.69933488|
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-             |4 | 1    |  4 | 1  |8799.405574657818 | 0 | 1  |1  |0   | 0 | 2  |0  |0     |  -0.66971512|
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-             |5 | 4    |  5 | 1  |9424.198345933781 | 0 | 0  |2  |0   | 0 | 2  |0  |0     |  -0.69495690|
-             +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
-
-
               
-Here 
+where
 
   1. ``n`` is the counting number of the state including degeneracies;
   2. ``Sym`` is the irrep of this state;
   3. ``m`` is  the running number of the energy, excluding degeneracies. 
-  4. ``Energy`` term value of a state from the given sub-class. 
-  5. ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
-  6. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
-  7. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
-  8. ``C_i`` is the corresponding largest coefficient used in the assignment. 
+  4. ``deg`` is  a degenerate component (e.g. :math:`E_a = `  ``1`` and  :math:`E_b =` ``2`` for a 2D irrep of C\ :sub:`3v`\ ). 
+  5. ``Energy`` term value of a state from the given sub-class. 
+  6. ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
+  7-9. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
+  10-13. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
+  14. ``C_i`` is the corresponding largest coefficient used in the assignment. 
 
 
 
