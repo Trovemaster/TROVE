@@ -317,6 +317,8 @@ The structure of the columns is as follows:
               
 
 
+Here it is again as a table: 
+
 
               -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
               n   Sym     m   deg     Energy (cm-1)   k   v1  v2  v3    K   n1  n2  n3          C_i
@@ -334,7 +336,7 @@ The structure of the columns is as follows:
 
 
 
-
+And another table 
 
 
              +--+------+----+----+------------------+---+----+---+----+---+----+---+------+-------------+
