@@ -109,6 +109,28 @@ REFER-CONF   non-RIGID  (Reference configuration)
 .. Note:: The text in brackets is used for comments.
 
 
+R-RHO-Z-M2-M3
+^^^^^^^^^^^^^
+
+A 'bisecting' XY\ :sub:`2` frame used for isotopologies with slightly different masses of Y\ :sub:`1` and Y\ :sub:`2`, for example O\ :sup:`16`\ CO\ :sup:`17`. 
+Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2 but with non-symmetric masses and the Cs symmetry, e.g.: 
+::
+     
+     TRANSFORM    R-RHO-Z-M2-M3 ( xi(chi): harmonic, linear, r-s-delta, r-s-rho, r-alpha-tau, r-rho see molecule.f90)
+     MOLTYPE      XY2    (Identifying type of the Molecule (e.g. XY3))
+     MOLECULE     CO2    (Identifying the Molecule, e.g. PH3, BiH3 - optional)
+     REFER-CONF   non-RIGID  (Reference configuarion: RIGID or NON-RIGID)  
+     
+     SYMGROUP Cs(M)
+     
+     ZMAT
+         C   0  0  0  0   11.996709
+         O   1  0  0  0   16.995245
+         O   1  2  0  0   15.9905256 
+     end
+     
+
+
 XYZ type molecules
 ------------------
 
@@ -154,6 +176,8 @@ Here is an example of the Z-matrix for NNO.
 ^^^^^^^^^^^^^^^^^
 
 This is another 'bond'-embedding with the same vibrational coordinates as in ``R-ALPHA-Z``.
+
+
 
 
 Tetratomics
