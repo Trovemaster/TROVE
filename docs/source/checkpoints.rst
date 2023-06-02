@@ -241,14 +241,14 @@ Here is an example of the top part of a file eigen_descr0_3.chk from an H\ :sub:
               .........
               .........
        End Quantum numbers and energies
-        
-
-This information is automatically degenerated using some key parameters from the input project in question, such as atomic masses, number of atoms, maximal polyad, frame, coordinates type, symmetry and a detailed description of the basis set. When such a checkpoint is read by TROVE, the fingerprint is compared against the corresponding parameters of the current project. TROVE will stop and report in case of any differences found. 
-
-These ``descr`` files end with an "End ..." section, which is also used to check if all the information required has been read correctly. 
 
 
-Similar preventive check are used in unformatted files as well, which also start with a section "Start ... " and end with a section "End...". These are useful to catch files that are too short or long for a given project. 
+This information is automatically degenerated using some key parameters from the input project in question, such as atomic masses, number of atoms, maximal polyad, frame, coordinates type, symmetry and a detailed description of the basis set. When such a checkpoint is read by TROVE, the fingerprint is compared against the corresponding parameters of the current project. TROVE will stop and report in case of any differences found.
+
+These ``descr`` files end with an "End ..." section, which is also used to check if all the information required has been read correctly.
+
+
+Similar preventive check are used in unformatted files as well, which also start with a section "Start ... " and end with a section "End...". These are useful to catch files that are too short or long for a given project.
 
 
 Structure of the description checkpoints
@@ -257,9 +257,9 @@ Structure of the description checkpoints
 ``contr_descr.chk``
 -------------------
 
-contr_descr.chk contains the energies and quantum numbers of the contracted basis states. It has the following structure 
+contr_descr.chk contains the energies and quantum numbers of the contracted basis states. It has the following structure
 
-   1. "Fingerprint" section, for example 
+   1. "Fingerprint" section, for example
    ::
 
     Start Fingerprints
@@ -275,22 +275,22 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
              2 NUMEROV    LINEAR     MORSE       1000   1D    1      1    0   4     1.0        600    -0.500    1.400     F  0 NUMEROV-PO        5    F    F    T
              3 NUMEROV    LINEAR     LINEAR      1000   1D    2      2    0   4     1.0       4000     0.070    2.618     F  0 NUMEROV-PO        5    F    F    T
     End Fingerprints
-    
+
    2. Sub-class 1
    ::
 
         Class #       1
-                    15            15  <-  number of roots and dimension of basis 
+                    15            15  <-  number of roots and dimension of basis
               1   1       1   1   3631.457962557468   0   0   0   0     0   0   0   0         0.99650855
               2   1       2   1   6237.793846833698   0   1   0   0     0   1   0   0        -0.70449312
               3   4       3   1   6920.808287732269   0   0   1   0     0   1   0   0        -0.69933488
               4   1       4   1   8799.405574657818   0   1   1   0     0   2   0   0        -0.66971512
               5   4       5   1   9424.198345933781   0   0   2   0     0   2   0   0        -0.69495690
-              6   1       6   1  10131.498717237881   0   1   1   0     0   2   0   0         0.72224834 
-              7   1       7   1  11335.796189988198   0   2   1   0     0   3   0   0        -0.57998640 
-              8   4       8   1  11965.585881042278   0   0   3   0     0   3   0   0         0.62572431 
-              
-       
+              6   1       6   1  10131.498717237881   0   1   1   0     0   2   0   0         0.72224834
+              7   1       7   1  11335.796189988198   0   2   1   0     0   3   0   0        -0.57998640
+              8   4       8   1  11965.585881042278   0   0   3   0     0   3   0   0         0.62572431
+
+
    2. Sub-class 2
    ::
 
@@ -301,43 +301,47 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
             18   1       3   1   6044.794034517188   0   0   0   2     0   0   0   2        -0.99558857
             19   1       4   1   7223.358797674692   0   0   0   3     0   0   0   3        -0.99426327
             20   1       5   1   8404.773619941834   0   0   0   4     0   0   0   4         0.99669840
-              
-etc. 
+
+etc.
 
 
-The structure of the columns is as follows:  
+The structure of the columns is as follows:
 ::
 
               -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
               1   2       3   4          5            6   7   8   9    10   11 12   13          14
               -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
-              n   Sym     m   deg     Energy (cm-1)   k   v1  v2  v3    K   n1  n2  n3          C_i  
+              n   Sym     m   deg     Energy (cm-1)   k   v1  v2  v3    K   n1  n2  n3          C_i
               -- ------ ---- ---- ------------------ --- ---- --- ---- --- ---- --- ------ -------------
               1   1       1   1   3631.457962557468   0   0   0   0     0   0   0   0         0.99650855
               2   1       2   1   6237.793846833698   0   1   0   0     0   1   0   0        -0.70449312
               3   4       3   1   6920.808287732269   0   0   1   0     0   1   0   0        -0.69933488
               4   1       4   1   8799.405574657818   0   1   1   0     0   2   0   0        -0.66971512
               5   4       5   1   9424.198345933781   0   0   2   0     0   2   0   0        -0.69495690
-              
 
 
-              
+
+
 where
 
   - Col 1: ``n`` is the counting number of the state including degeneracies;
   - Col 2: ``Sym`` is the irrep of this state;
-  - Col 3: ``m`` is  the running number of the energy, excluding degeneracies. 
-  - Col 4: ``deg`` is  a degenerate component (e.g. :math:`E_a = `\  ``1`` and  :math:`E_b =`\ ``2`` for a 2D irrep of C\ :sub:`3v`\ ). 
-  - Col 5: ``Energy`` term value of a state from the given sub-class. 
-  - Col 6: ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
-  - Cols 7-9: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
-  - Col 10-13: ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
-  - Col 14: ``C_i`` is the corresponding largest coefficient used in the assignment. 
+  - Col 3: ``m`` is  the running number of the energy, excluding degeneracies.
+  - Col 4: ``deg`` is  a degenerate component (e.g. :math:`E_a = `\  ``1`` and  :math:`E_b =`\ ``2`` for a 2D irrep of C\ :sub:`3v`\ ).
+  - Col 5: ``Energy`` term value of a state from the given sub-class.
+  - Col 6: ``k`` is a rotational index (typically it is zero in contr_descr.chk).
+  - Cols 7-9: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers.
+  - Col 10-13: ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates.
+  - Col 14: ``C_i`` is the corresponding largest coefficient used in the assignment.
 
 
 
 ``eigen_descr*_*.chk``
 ----------------------
+
+The eigenvector igen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively.
+
+
 
    1. "Fingerprint" section, for example:
    ::
@@ -356,12 +360,12 @@ where
                 2 NUMEROV    LINEAR     MORSE       1000   1D    1      1    0   4     1.0        600    -0.500    1.400     F  0 NUMEROV-PO        5    F    F    T
                 3 NUMEROV    LINEAR     LINEAR      1000   1D    2      2    0   4     1.0       4000     0.070    2.618     F  0 NUMEROV-PO        5    F    F    T
        End Fingerprints
-       
 
 
-     2.  Energy term values and description of the ro-vibrational states: 
+
+     2.  "Quantum numbers and energies" section,  Energy term values and description of the ro-vibrational states:
      ::
-       
+
        Start Quantum numbers and energies
               4 <== Contracted polyad number
        Class #       1
@@ -375,22 +379,22 @@ where
               ......
               ......
        End Quantum numbers and energies
-       
 
-The meaning of the state columns is as follows: 
+
+The meaning of the state columns is as follows:
 ::
-     
-      
+
+
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ------ ---------------- ----- ------
       1       2       3       4         5                 6   7   8  9       10   11  12 13      14   15 16   17           18         19     20
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- - ---------------- ----- ------
-      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i          c1     c2
+      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i         c1    c2
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- ------------------ ----- ------
       1       1       1       1   3627.658022299023       0   0   0   0       1   1   1   1       0   0   0   0         0.99958266      1      1
       2       1       2       1   4800.325667905056       0   0   0   1       2   1   1   1       0   0   0   1        -0.99819947      1      2
       3       1       3       1   5962.955540973960       0   0   0   2       3   1   1   1       0   0   0   2         0.99055229      1      3
       .................
-      
+
 
 Here
 
@@ -402,11 +406,19 @@ Here
   - Col 5: ``Energy`` term value of a state from the given sub-class.
   - Col 6: ``k`` is a rotational index (typically it is zero in contr_descr.chk).
   - Cols 7-9: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers.
-  - Col 10: ``imax`` is the position index of the largest coefficient in the basis vector. 
+  - Col 10: ``imax`` is the position index of the largest coefficient in the basis vector.
   - Col 11: ``s0`` is the symmetry of the rotational basis set contribution for the term with the largest eigen-coefficient.
-  - Col 12-13: ``s1`` and ``s2`` are symmetries of the vibrational contribution for each sub-space. 
+  - Col 12-13: ``s1`` and ``s2`` are symmetries of the vibrational contribution for each sub-space.
   - Col 14-17: ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates.
   - Col 18: ``C_i`` is the corresponding largest coefficient used in the assignment.
-  - Col 19-20: ``c1``- ``c2`` are counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set. 
+  - Col 19-20: ``c1``- ``c2`` are counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set.
 
-       
+
+
+``j0eigen_descr*_*.chk``
+------------------------
+
+
+The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the J=0 representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The j=0 representation contains a single one-sub class with full vibrational (J=0 ) basis functions. 
+
+
