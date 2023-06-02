@@ -313,12 +313,13 @@ etc.
               5   4       5   1   9424.198345933781   0   0   2   0     0   2   0   0        -0.69495690
               
 Here 
-1. n is the counting number of the state including degeneracies;
-2. Sym is the irrep of this state;
-3. m i  the running number of the energy, excluding degeneracies. 
-4. Energy term value of a state from the given sub-class. 
-5. k is a rotational quantum number (typically it is zero in contr_descr.chk).  
-6. v1, v2, v3 are the TROVE (local mode) vibrational quantum numbers. 
-7. K, n1, n2, n3 are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
-8. C_i is the corresponding largest coefficient used in the assignment. 
+
+    1. ``n`` is the counting number of the state including degeneracies;
+    2. ``Sym`` is the irrep of this state;
+    3. ``m`` is  the running number of the energy, excluding degeneracies. 
+    4. ``Energy`` term value of a state from the given sub-class. 
+    5. ``k`` is a rotational index (typically it is zero in contr_descr.chk).  
+    6. ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers. 
+    7. ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates. 
+    8. ``C_i`` is the corresponding largest coefficient used in the assignment. 
 
