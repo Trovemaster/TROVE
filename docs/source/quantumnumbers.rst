@@ -95,7 +95,7 @@ Once the individual vibrational basis set components are defined together with t
 
     \begin{split}
      \phi_{v_1,v_2}^{\Gamma_{\rm str}}(r_1,r_2) &= | v_1 v_2, \Gamma_{\rm str} \rangle,\\
-     \phi_{v_3}(\alpha)^{\Gamma_{\rm bend} &= | v_3, \Gamma_{\rm bend} \rangle,\\
+     \phi_{v_3}^{\Gamma_{\rm bend}}(\alpha) &= | v_3, \Gamma_{\rm bend} \rangle,\\
      \phi_{J,K,\Gamma_{\rm rot}}(\phi,\theta,\chi) &= | J,K,\Gamma_{\rm rot} \rangle, \\
     \end{split}
 
