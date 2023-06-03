@@ -139,7 +139,7 @@ Consider an example of H\ :sub:`2`\ S calculations. The the J=0 energy output fo
      
 
 
-
+where the designation of the columns is as follows 
 
   - Col 1: ``G_tot`` is the total symmetry of a ro-vibrational state;
   - Col 2: ``n`` is the counting number of the energy;
