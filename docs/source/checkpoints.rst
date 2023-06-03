@@ -403,8 +403,8 @@ Here
   - Col 2: ``Sym`` is the irrep of this state;
   - Col 3: ``m`` is  the running number of the energy, excluding degeneracies.
   - Col 4: ``deg`` is  a degenerate component (e.g. :math:`E_a =`\   ``1`` and  :math:`E_b =``\   ``2`` for a 2D irrep of C\ :sub:`3v`\ ).
-  - Col 5: ``Energy`` term value of a state from the given sub-class.
-  - Col 6: ``k`` is a rotational index (typically it is zero in contr_descr.chk).
+  - Col 5: ``Energy`` term value (cm-1).
+  - Col 6: ``k`` is a rotational index.
   - Cols 7-9: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers.
   - Col 10: ``imax`` is the position index of the largest coefficient in the basis vector.
   - Col 11: ``s0`` is the symmetry of the rotational basis set contribution for the term with the largest eigen-coefficient.
@@ -419,6 +419,6 @@ Here
 ------------------------
 
 
-The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the J=0 representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The j=0 representation contains a single one-sub class with full vibrational (J=0 ) basis functions. 
+The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the :math:`J=0` representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The :math:`J=0` representation contains a single one-sub class with full vibrational (:math:`J=0`\ ) basis functions. 
 
 
