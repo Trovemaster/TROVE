@@ -109,11 +109,11 @@ a ro-vibrational basis function :math`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}` i
 The ro-vibrational eigenfunctions are computed variationally on the basis the symmetry adapted basis of :math:`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}`\ . The TROVE quantum numbers obtained using the largest contribution approach eigenfunction thus include:
      
   - :math:`J` is the total angular momentum rotational quantum number. 
-  - :math:`Gamma_{\rm tot}` is the total symmetry (irrep) of the corresponding molecular symmetry group. 
+  - :math:`\Gamma_{\rm tot}` is the total symmetry (irrep) of the corresponding molecular symmetry group. 
   - :math:`K` is a rotational quantum number describing the projection of :math:`J` on the molecular axis :math:`z`\ .
-  - :math:`Gamma_{\rm rot}` is the rotational symmetry of the corresponding molecular symmetry group.
+  - :math:`\Gamma_{\rm rot}` is the rotational symmetry of the corresponding molecular symmetry group.
   - :math:`v_1, v_2, \ldots` are the TROVE (local mode) quantum numbers.
-  - :math:`Gamma_{\rm vib}` is the vibrational symmetry of the corresponding molecular symmetry group.
+  - :math:`\Gamma_{\rm vib}` is the vibrational symmetry of the corresponding molecular symmetry group.
    
 
 TROVE energy output 
@@ -137,6 +137,8 @@ Consider an example of H\ :sub:`2`\ S calculations. The the J=0 energy output fo
        ...........
        ...........
      
+
+
 
 
   - Col 1: ``G_tot`` is the total symmetry of a ro-vibrational state;
@@ -196,7 +198,7 @@ It is trivial to assign normal mode quantum numbers :math:`(n_1,n_2,n_3)` to the
 +------+------+-------------+----+---+-----+--+---+----+    
                                      
 Indeed, all the pure bending TROVE quantum numbers :math:`(0,0,v_3)` can be directly mapped to the normal mode quantum numbers :math:`(0,v_2,0)`\ . 
-For the stretching modes, although only the sum of the TROVE quantum numbers :math:`v_1+v_2` is unambiguous, the correlation to the normal modes can be established with the help of the symmetry: :math:`v_1+v_2=1, A_1` is :math:`(n_1,n_2,n_3) = (1,0,0) and :math:`v_1+v_2=1, B_2` is :math:`(n_1,n_2,n_3) = (0,0,1). 
+For the stretching modes, although only the sum of the TROVE quantum numbers :math:`v_1+v_2` is unambiguous, the correlation to the normal modes can be established with the help of the symmetry: :math:`v_1+v_2=1, A_1` is :math:`(n_1,n_2,n_3) = (1,0,0)` and :math:`v_1+v_2=1, B_2` is :math:`(n_1,n_2,n_3) = (0,0,1)`\ . 
 
 
 It is less trivial for higher excitations, where knowing the symmetry :math:`A_1, B_2`  of different stretching combinations corresponding to the same value of :math:`v_1+v_2` is not enough to resolve the ambiguity. What helps in this case is to notice that the energy quanta of the :math:`n_1` stretching component is lower than that of :math:`n_3`. Combining this assumption with the state symmetry allows one to correlate the TROVE and normal model quantum numbers to the other vibrational states as given by 
