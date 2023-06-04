@@ -160,7 +160,7 @@ It should be noted that for equivalent modes, such as the two stretches in the c
 
 Similarity, the :math:`B_2` symmetry TROVE output is given by
 ::
-
+     
       Variational solution - irreducible representation
         Gamma     i       value             j  k  t   quanta
         B2        1   3280.145078   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   1   0 )      1.00 (   1   0   0   0 ) (    3    1 )
@@ -171,7 +171,7 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         B2        6   6914.548146   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   1 )      0.96 (   2   0   1   0 ) (    5    2 )
         B2        7   8041.707663   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   2 )      0.98 (   2   0   2   0 ) (    5    3 )
         ....
-
+     
 
 
 
@@ -326,8 +326,8 @@ This file can be then ``read`` into the TROVE pipeline using the TROVE restart p
     
 
 Here we assume that all other TROVE components (especially ``matelem``) have been generated. If not, the ``matelem`` line can be changed to ``save``. It is important to recompute and store the eigen-vectors (``eigenfunc   save``), which will (re-)generate the eigen_descr*.chk files with the QN template section modified to inherit the normal mode quantum numbers. For our example of H\ :sub:`2`\ S, the energy output is now given by: 
-
-
+::
+     
      Variational solution - irreducible representation
        Gamma     i       value             j  k  t   quanta
        A1        1      0.000000   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   0 )      1.00 (   0   0   0   0 ) (    1    1 )
