@@ -70,7 +70,7 @@ List of checkpoints
   - contr_quanta.chk is a formatted (ASCII) file with the information on the basis set bookkeeping - mapping of the multimode quantum numbers into a 1D array.
   - contr_descr.chk is a formatted file containing descriptions of the basis sets:
 
-    individual energies of the basis functions from different sub-classes together with their classifications, symmetries, TROVE quantum number, IDs, largest expansion coefficients used in their assignment as well as a placeholder for the spectroscopic quantum numbers. This file can be edited in order to include these spectroscopic quantum numbers.
+    individual energies of the basis functions from different sub-sets  together with their classifications, symmetries, TROVE quantum number, IDs, largest expansion coefficients used in their assignment as well as a placeholder for the spectroscopic quantum numbers. This file can be edited in order to include these spectroscopic quantum numbers.
 
 - contr_matelem.chk (``matelem``) contains vibrational matrix elements  of the different pars of the Hamiltonian operator (KEO and PEF)
 
@@ -302,7 +302,7 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
             19   1       4   1   7223.358797674692   0   0   0   3     0   0   0   3        -0.99426327
             20   1       5   1   8404.773619941834   0   0   0   4     0   0   0   4         0.99669840
 
-etc.
+etc. Here the TROVE ``sub-class`` stands for a symmetry independent sub-set. 
 
 
 The structure of the columns is as follows:
@@ -388,7 +388,7 @@ The meaning of the state columns is as follows:
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ------ ---------------- ----- ------
       1       2       3       4         5                 6   7   8  9       10   11  12 13      14   15 16   17           18         19     20
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- - ---------------- ----- ------
-      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i         c1    c2
+      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i       ivib1  ivib2 
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- ------------------ ----- ------
       1       1       1       1   3627.658022299023       0   0   0   0       1   1   1   1       0   0   0   0         0.99958266      1      1
       2       1       2       1   4800.325667905056       0   0   0   1       2   1   1   1       0   0   0   1        -0.99819947      1      2
@@ -411,7 +411,7 @@ Here
   - Col 12-13: ``s1`` and ``s2`` are symmetries of the vibrational contribution for each sub-space.
   - Col 14-17: ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final rovibrational eigenstates.
   - Col 18: ``C_i`` is the corresponding largest coefficient used in the assignment.
-  - Col 19-20: ``c1``- ``c2`` are counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set.
+  - Col 19-20: ``ivib1``, ``ivib2`` are counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set.
 
 
 

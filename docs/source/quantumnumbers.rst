@@ -107,26 +107,26 @@ a ro-vibrational basis function :math`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}` i
 
 
 The ro-vibrational eigenfunctions are computed variationally on the basis the symmetry adapted basis of :math:`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}`\ . The TROVE quantum numbers obtained using the largest contribution approach eigenfunction thus include:
-     
-  - :math:`J` is the total angular momentum rotational quantum number. 
-  - :math:`\Gamma_{\rm tot}` is the total symmetry (irrep) of the corresponding molecular symmetry group. 
+
+  - :math:`J` is the total angular momentum rotational quantum number.
+  - :math:`\Gamma_{\rm tot}` is the total symmetry (irrep) of the corresponding molecular symmetry group.
   - :math:`K` is a rotational quantum number describing the projection of :math:`J` on the molecular axis :math:`z`\ .
   - :math:`\Gamma_{\rm rot}` is the rotational symmetry of the corresponding molecular symmetry group.
   - :math:`v_1, v_2, \ldots` are the TROVE (local mode) quantum numbers.
   - :math:`\Gamma_{\rm vib}` is the vibrational symmetry of the corresponding molecular symmetry group.
-   
 
-TROVE energy output 
+
+TROVE energy output
 -------------------
 
-Consider an example of H\ :sub:`2`\ S calculations. The the J=0 energy output for the total symmetry :math:`A_1` is given by 
+Consider an example of H\ :sub:`2`\ S calculations. The the J=0 energy output for the total symmetry :math:`A_1` is given by
 ::
-     
-      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- ----
+
+      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- -----
         1        2        3           4    5  6  7    8    9     10   11  12       13      14  15  16  17       18    19
-      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- ----
-      G_tot      n     Energy        G_r   J  K  t    Gv1 Gv2     v1  v2  v3       C_i      n1  n2  n3  l        c1   c2
-      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- ----
+      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- -----
+      G_tot      n     Energy        G_r   J  K  t    Gv1 Gv2     v1  v2  v3       C_i      n1  n2  n3  l    ivib1   ivib2
+      ------ ------ ------------- ------- --- -- --- ---- ----- ---- --- ------ -------- ------ --- --- --- -------- -----
        A1        1      0.000000   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   0 )      1.00 (   0   0   0   0 ) (    1    1 )
        A1        2   1172.667646   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   1 )      1.00 (   0   0   1   0 ) (    1    2 )
        A1        3   2335.297519   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   2 )      0.98 (   0   0   2   0 ) (    1    3 )
@@ -136,10 +136,10 @@ Consider an example of H\ :sub:`2`\ S calculations. The the J=0 energy output fo
        A1        7   4675.006191   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   4 )      0.92 (   0   0   4   0 ) (    1    5 )
        ...........
        ...........
-     
 
 
-where the designation of the columns is as follows 
+
+where the designation of the columns is as follows
 
   - Col 1: ``G_tot`` is the total symmetry of a ro-vibrational state;
   - Col 2: ``n`` is the counting number of the energy;
@@ -148,17 +148,17 @@ where the designation of the columns is as follows
   - Col 5: ``J`` is the total angular momentum rotational quantum number;
   - Col 6: ``k`` is a rotational quantum number (projection of :math:`J` on the molecular axis :math:`z` );
   - Col 7: ``t`` is a rotational index defining the state parity :math:`\tau`;
-  - Col 8-9: ``Gv1`` are ``Gv2`` are the vibrational symmetries of the corresponding vibrational sub-classes; 
+  - Col 8-9: ``Gv1`` are ``Gv2`` are the vibrational symmetries of the corresponding vibrational sub-classes;
   - Cols 10-12: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers;
   - Col 13: ``C_i`` is the largest eigen-coefficient used in the assignment.
   - Cols 14-17: ``K, n1, n2, n3`` are placeholder for the user-defined quantum numbers to be propagated to the final ro-vibrational eigenstates.
-  - Cols 18-19: ``c1``- ``c2`` are the counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set.
+  - Cols 18-19: ``ivib1``, ``ivib2`` are the counting indices of sub-classes in the representation of direct products of the symmetry adapted 'contracted' basis set.
 
 
 It should be noted that for equivalent modes, such as the two stretches in the case of H\ :sub:`2`\ S, only their total quanta :math:`v_1+v_2` is meaningful, not the individual values. For example, the following TROVE stretching states  :math:`(v_1,v_2) = (2,0), (1,1)`\ , and :math:`(0,2)` (:math:`v_1+v+2 = 2`\ ) are equivalent and cannot be distinguished without some extra information (e.g. their symmetry).
 
 
-Similarity, the :math:`B_2` symmetry TROVE output is given by 
+Similarity, the :math:`B_2` symmetry TROVE output is given by
 ::
 
       Variational solution - irreducible representation
@@ -171,37 +171,68 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         B2        6   6914.548146   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   1 )      0.96 (   2   0   1   0 ) (    5    2 )
         B2        7   8041.707663   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   2 )      0.98 (   2   0   2   0 ) (    5    3 )
         ....
-       
+
+
+
+
+Quantum numbers in the :math:`J=0` representation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ro-vibrational calculations in the :math:`J=0` representation (step 3) are characterised by a single contracted :math:`J=0` sub-class. Therefore, in this case the energy output has a slightly different form:
+
+
+      ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ------ --- --- --- --------
+        1        2        3           4    5  6  7     8      9  10   11       12       13   14 15  16       17
+      ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ----- --- --- ---- --------
+      G_tot      n     Energy        G_r   J  K  t     Gv    v1  v2  v3        C_i     n1   n2  n3  l      ivib
+      ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ----- --- --- ---- --------
+       A1        1   3329.579210   ( B2 ;  1  1  0 ) ( B2 ;   0   1   0 )      1.00 (   1   0   0   0 ) (    5 )
+       A1        2   4465.843673   ( B2 ;  1  1  0 ) ( B2 ;   0   1   1 )      1.00 (   1   0   1   0 ) (    8 )
+       A1        3   5607.333481   ( B2 ;  1  1  0 ) ( B2 ;   0   1   2 )      1.00 (   1   0   2   0 ) (   12 )
+       A1        4   5834.782843   ( B2 ;  1  1  0 ) ( B2 ;   0   2   0 )      1.00 (   2   0   0   0 ) (   13 )
+       A1        5   6770.421491   ( B2 ;  1  1  0 ) ( B2 ;   0   1   3 )      1.00 (   1   0   3   0 ) (   17 )
+       A1        6   6964.556323   ( B2 ;  1  1  0 ) ( B2 ;   0   2   1 )      1.00 (   2   0   1   0 ) (   18 )
+
+
+
+where
+
+
+  - Col 8: ``Gv`` is now a single vibrational symmetry
+  - Col 17: ``ivib`` is a single counting index of the vibrational symmetry adapted 'contracted' basis set.
+
+
+In fact, ``ivib`` is an unique vibrational ID and can be used to track the vibrational quantum numbers through the ro-vibrational calculations.
 
 
 'Normal mode' quantum numbers
 -----------------------------
 
 
-It is common for spectroscopic applications to relate the vibrational assignment to normal mode quantum numbers with the associated harmonic normal mode wavefunctions. Correlating TROVE local mode quantum numbers to the normal mode ones is not always trivial. Consider the above H\ :sub:`2`\ S example. The normal mode quantum numbers for this C\ :sub:`2v`\ (M) molecule are :math:`(n_1,n_2,n_3)`\ , where :math:`n_1` represents a symmetric stretch (:math:`A_1`\ ), 
-:math:`n_2` is a symmetric bend (:math:`A_1`\ ) and  :math:`n_3` an asymmetric stretch (:math:`B_2`\ ). In the corresponding TROVE quantum numbers scheme :math:`(v_1,v_2,v_3)`\ , :math:`v_1,v_2` are two equivalent local mode stretches (un-symmetrised) and :math:`v_3` is a bending quantum number. 
+It is common for spectroscopic applications to relate the vibrational assignment to normal mode quantum numbers with the associated harmonic normal mode wavefunctions. Correlating TROVE local mode quantum numbers to the normal mode ones is not always trivial. Consider the above H\ :sub:`2`\ S example. The normal mode quantum numbers for this C\ :sub:`2v`\ (M) molecule are :math:`(n_1,n_2,n_3)`\ , where :math:`n_1` represents a symmetric stretch (:math:`A_1`\ ),
+:math:`n_2` is a symmetric bend (:math:`A_1`\ ) and  :math:`n_3` an asymmetric stretch (:math:`B_2`\ ). In the corresponding TROVE quantum numbers scheme :math:`(v_1,v_2,v_3)`\ , :math:`v_1,v_2` are two equivalent local mode stretches (un-symmetrised) and :math:`v_3` is a bending quantum number.
 
 It is trivial to assign normal mode quantum numbers :math:`(n_1,n_2,n_3)` to the following lowest 5 vibrational states based on their quanta and symmetries:
-                                    
+
 +------+------+-------------+----+---+-----+--+---+----+
-|G_tot |    n |   Energy    |  v1| v2| v3  |n1| n2| n3 |    
-+======+======+=============+====+===+=====+==+===+====+    
-|  A1  |     1|     0.000000|  0 | 0 | 0   | 0|  0|  0 |    
-+------+------+-------------+----+---+-----+--+---+----+    
-|  A1  |     2|  1172.667646|  0 | 0 | 1   | 0|  1|  0 |    
-+------+------+-------------+----+---+-----+--+---+----+    
-|  A1  |     3|  2335.297519|  0 | 0 | 2   | 0|  2|  0 |    
-+------+------+-------------+----+---+-----+--+---+----+    
-|  A1  |     4|  2608.713940|  1 | 0 | 0   | 1|  0|  0 |    
-+------+------+-------------+----+---+-----+--+---+----+    
-|  B2  |     5|  3280.145078|  0 | 1 | 0   | 0|  0|  1 |    
-+------+------+-------------+----+---+-----+--+---+----+    
-                                     
-Indeed, all the pure bending TROVE quantum numbers :math:`(0,0,v_3)` can be directly mapped to the normal mode quantum numbers :math:`(0,v_2,0)`\ . 
-For the stretching modes, although only the sum of the TROVE quantum numbers :math:`v_1+v_2` is unambiguous, the correlation to the normal modes can be established with the help of the symmetry: :math:`v_1+v_2=1, A_1` is :math:`(n_1,n_2,n_3) = (1,0,0)` and :math:`v_1+v_2=1, B_2` is :math:`(n_1,n_2,n_3) = (0,0,1)`\ . 
+|G_tot |    n |   Energy    |  v1| v2| v3  |n1| n2| n3 |
++======+======+=============+====+===+=====+==+===+====+
+|  A1  |     1|     0.000000|  0 | 0 | 0   | 0|  0|  0 |
++------+------+-------------+----+---+-----+--+---+----+
+|  A1  |     2|  1172.667646|  0 | 0 | 1   | 0|  1|  0 |
++------+------+-------------+----+---+-----+--+---+----+
+|  A1  |     3|  2335.297519|  0 | 0 | 2   | 0|  2|  0 |
++------+------+-------------+----+---+-----+--+---+----+
+|  A1  |     4|  2608.713940|  1 | 0 | 0   | 1|  0|  0 |
++------+------+-------------+----+---+-----+--+---+----+
+|  B2  |     5|  3280.145078|  0 | 1 | 0   | 0|  0|  1 |
++------+------+-------------+----+---+-----+--+---+----+
+
+Indeed, all the pure bending TROVE quantum numbers :math:`(0,0,v_3)` can be directly mapped to the normal mode quantum numbers :math:`(0,v_2,0)`\ .
+For the stretching modes, although only the sum of the TROVE quantum numbers :math:`v_1+v_2` is unambiguous, the correlation to the normal modes can be established with the help of the symmetry: :math:`v_1+v_2=1, A_1` is :math:`(n_1,n_2,n_3) = (1,0,0)` and :math:`v_1+v_2=1, B_2` is :math:`(n_1,n_2,n_3) = (0,0,1)`\ .
 
 
-It is less trivial for higher excitations, where knowing the symmetry :math:`A_1, B_2`  of different stretching combinations corresponding to the same value of :math:`v_1+v_2` is not enough to resolve the ambiguity. What helps in this case is to notice that the energy quanta of the :math:`n_1` stretching component is lower than that of :math:`n_3`. Combining this assumption with the state symmetry allows one to correlate the TROVE and normal model quantum numbers to the other vibrational states as given by 
+It is less trivial for higher excitations, where knowing the symmetry :math:`A_1, B_2`  of different stretching combinations corresponding to the same value of :math:`v_1+v_2` is not enough to resolve the ambiguity. What helps in this case is to notice that the energy quanta of the :math:`n_1` stretching component is lower than that of :math:`n_3`. Combining this assumption with the state symmetry allows one to correlate the TROVE and normal model quantum numbers to the other vibrational states as given by
 
 
  +-----+------+-------------+----+---+-----+--+---+----+
@@ -233,7 +264,95 @@ It is less trivial for higher excitations, where knowing the symmetry :math:`A_1
  +-----+------+-------------+----+---+-----+--+---+----+
 
 
-It is however less trivial to use this approach for rotationally excited states :math:`(J>0)`\ , for larger number of sub-states and for degenerate symmetries. In the following chapter, we show, how the checkpoint file contr_descr.chk can be used to map the TROVE quantum numbers to the normal mode ones at the sub-class level and then propagate them to any the ro-vibrational state. 
+It is however less trivial to use this approach for rotationally excited states :math:`(J>0)`\ , for larger number of sub-states and for degenerate symmetries. In the following chapter, we show, how the checkpoint file contr_descr.chk can be used to map the TROVE quantum numbers to the normal mode ones at the sub-class level and then propagate them to any the ro-vibrational state.
+
+
+Assigning 'normal mode' quantum numbers
+---------------------------------------
+
+Considering that different vibrational and rotational contributions can be heavily mixed in the final ro-vibrational eigen-vectors, correlating the TROVE and spectroscopic ('normal mode') quantum numbers (QN) can be challenging. It is therefore instructive to start correlating them as earlier in calculation pipeline as possible. The earliest stage when this can be sensibly done is for the symmetry adapted reduced contractions. The correlation is not a straightforward procedure, currently requiring a human to build a mapping between the TROVE local mode and normal mode representation. The propagation of this mapping is done via a QN placeholder in the ``descr`` checkpoint files.
+
+Consider for example the local :math:`(v_1,v_2,v_3)`  to normal :math:`(n_1,n_2,n_3)` mode mapping presented above for the H\ :sub:`2`\ S example.  Using this correlation, we can modify the QN placeholder section in the ``contr_descr.chk`` file as follows:
+::
+
+       Class #       1
+                   15            15  <-  number of roots and dimension of basis
+
+                                                        ---- --- ---      --- ---- ---  
+                                                         v1  v2  v3        n1  n2  n3
+                                                        ---- --- ---      --- ---- ---
+             1   1       1   1   3631.457962557469   0   0   0   0     0   0   0   0         0.99650855
+             2   1       2   1   6237.793846833702   0   0   1   0     0   1   0   0        -0.70449312
+             3   4       3   1   6920.808287732268   0   1   0   0     0   0   0   1         0.69933488
+             4   1       4   1   8799.405574657821   0   1   1   0     0   2   0   0        -0.66971512
+             5   4       5   1   9424.198345933786   0   0   2   0     0   1   0   1         0.69495690
+             6   1       6   1  10131.498717237881   0   1   1   0     0   0   0   2         0.72224834
+             7   1       7   1  11335.796189988205   0   2   1   0     0   3   0   0        -0.57998640
+             8   4       8   1  11965.585881042271   0   0   3   0     0   2   0   1         0.62572431
+             9   1       9   1  12710.589172085258   0   3   0   0     0   1   0   2        -0.55924495
+            10   4      10   1  13543.152301015232   0   1   2   0     0   0   0   3         0.61849364
+            11   1      11   1  13794.554106652784   0   2   2   0     0   4   0   0         0.55571833
+            12   4      12   1  14420.499925557249   0   4   0   0     0   3   0   1         0.55493771
+            13   1      13   1  15209.653409713983   0   4   0   0     0   2   0   2         0.58837860
+            14   4      14   1  16063.020552071870   0   1   3   0     0   1   0   3         0.54684816
+            15   1      15   1  16871.294255882527   0   2   2   0     0   0   0   4         0.65892621
+       Class #       2
+                    5             5  <-  number of roots and dimension of basis
+                                                        ---- --- ---      --- ---- ---
+                                                         v1  v2  v3        n1  n2  n3
+                                                        ---- --- ---      --- ---- ---
+            16   1       1   1   3676.343781669159   0   0   0   0     0   0   0   0         0.99914576
+            17   1       2   1   4863.062238559608   0   0   0   1     0   0   1   0        -0.99741510
+            18   1       3   1   6044.794034517188   0   0   0   2     0   0   2   0        -0.99558857
+            19   1       4   1   7223.358797674689   0   0   0   3     0   0   3   0        -0.99426327
+            20   1       5   1   8404.773619941838   0   0   0   4     0   0   4   0         0.99669840
+       End Quantum numbers and energies
+             
+
+The format of this checkpoint file ``contr_descr.chk`` is not sensitive to the number of spaces between the columns, but is sensitive to their order as well as to the order of the lines. 
+
+This file can be then ``read`` into the TROVE pipeline using the TROVE restart procedure at step 1 by modifying the ``CHECK_POINT`` section as follows 
+::
+    
+    CHECK_POINT
+     ascii
+     kinetic     read
+     potential   read
+     basis_set   read
+     contract    read
+     matelem     read    split
+     eigenfunc   save
+    END
+    
+
+Here we assume that all other TROVE components (especially ``matelem``) have been generated. If not, the ``matelem`` line can be changed to ``save``. It is important to recompute and store the eigen-vectors (``eigenfunc   save``), which will (re-)generate the eigen_descr*.chk files with the QN template section modified to inherit the normal mode quantum numbers. For our example of H\ :sub:`2`\ S, the energy output is now given by: 
+
+
+     Variational solution - irreducible representation
+       Gamma     i       value             j  k  t   quanta
+       A1        1      0.000000   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   0 )      1.00 (   0   0   0   0 ) (    1    1 )
+       A1        2   1172.667646   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   1 )      1.00 (   0   0   1   0 ) (    1    2 )
+       A1        3   2335.297519   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   2 )      0.98 (   0   0   2   0 ) (    1    3 )
+       A1        4   2608.713940   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   1   0 )      0.99 (   1   0   0   0 ) (    2    1 )
+       A1        5   3503.042415   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   3 )      0.95 (   0   0   3   0 ) (    1    4 )
+       A1        6   3765.459944   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   1   1 )      0.95 (   1   0   1   0 ) (    2    2 )
+       A1        7   4675.006191   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   4 )      0.92 (   0   0   4   0 ) (    1    5 )
+       A1        8   4927.853585   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   1   2 )      0.89 (   1   0   2   0 ) (    2    3 )
+       A1        9   5171.458835   ( A1 ;  0  0  0 ) ( A1  A1 ;   1   1   0 )      0.98 (   2   0   0   0 ) (    4    1 )
+     
+
+where the second vibrational QN section now contains the correct normal mode quantum numbers as in the tables above. One can notice that the last QN is kept  zero on this case. This field can be useful for an additional quantum number, e.g. the vibrational angular momentum :math:`l`, required for the linear molecular normal mode classification or in other cases. The normal mode QN are then prorogated to all other energy outputs, including step 3 (ro-vibrational eigenvalues) and step 4 (line list  calculations).
+
+
+
+
+
+
+
+
+
+
+
 
 
 
