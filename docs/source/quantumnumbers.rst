@@ -179,8 +179,8 @@ Quantum numbers in the :math:`J=0` representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ro-vibrational calculations in the :math:`J=0` representation (step 3) are characterised by a single contracted :math:`J=0` sub-class. Therefore, in this case the energy output has a slightly different form:
-
-
+::
+      
       ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ------ --- --- --- --------
         1        2        3           4    5  6  7     8      9  10   11       12       13   14 15  16       17
       ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ----- --- --- ---- --------
@@ -192,7 +192,7 @@ The ro-vibrational calculations in the :math:`J=0` representation (step 3) are c
        A1        4   5834.782843   ( B2 ;  1  1  0 ) ( B2 ;   0   2   0 )      1.00 (   2   0   0   0 ) (   13 )
        A1        5   6770.421491   ( B2 ;  1  1  0 ) ( B2 ;   0   1   3 )      1.00 (   1   0   3   0 ) (   17 )
        A1        6   6964.556323   ( B2 ;  1  1  0 ) ( B2 ;   0   2   1 )      1.00 (   2   0   1   0 ) (   18 )
-
+       
 
 
 where
@@ -327,7 +327,8 @@ This file can be then ``read`` into the TROVE pipeline using the TROVE restart p
 
 Here we assume that all other TROVE components (especially ``matelem``) have been generated. If not, the ``matelem`` line can be changed to ``save``. It is important to recompute and store the eigen-vectors (``eigenfunc   save``), which will (re-)generate the eigen_descr*.chk files with the QN template section modified to inherit the normal mode quantum numbers. For our example of H\ :sub:`2`\ S, the energy output is now given by: 
 ::
-     
+
+      
      Variational solution - irreducible representation
        Gamma     i       value             j  k  t   quanta
        A1        1      0.000000   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   0 )      1.00 (   0   0   0   0 ) (    1    1 )
@@ -339,7 +340,7 @@ Here we assume that all other TROVE components (especially ``matelem``) have bee
        A1        7   4675.006191   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   4 )      0.92 (   0   0   4   0 ) (    1    5 )
        A1        8   4927.853585   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   1   2 )      0.89 (   1   0   2   0 ) (    2    3 )
        A1        9   5171.458835   ( A1 ;  0  0  0 ) ( A1  A1 ;   1   1   0 )      0.98 (   2   0   0   0 ) (    4    1 )
-     
+       
 
 where the second vibrational QN section now contains the correct normal mode quantum numbers as in the tables above. One can notice that the last QN is kept  zero on this case. This field can be useful for an additional quantum number, e.g. the vibrational angular momentum :math:`l`, required for the linear molecular normal mode classification or in other cases. The normal mode QN are then prorogated to all other energy outputs, including step 3 (ro-vibrational eigenvalues) and step 4 (line list  calculations).
 
