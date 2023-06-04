@@ -94,7 +94,7 @@ Once the individual vibrational basis set components are defined together with t
 .. math::
 
     \begin{split}
-     \phi_{v_1,v_2}^{\Gamma_{\rm str}}(r_1,r_2) &= | v_1 v_2, \Gamma_{\rm str} \rangle,\\
+     \phi_{v_1,v_2}^{\Gamma_{\rm str}}(r_1,r_2) &= | v_1, v_2, \Gamma_{\rm str} \rangle,\\
      \phi_{v_3}^{\Gamma_{\rm bend}}(\alpha) &= | v_3, \Gamma_{\rm bend} \rangle,\\
      \phi_{J,K,\Gamma_{\rm rot}}(\phi,\theta,\chi) &= | J,K,\Gamma_{\rm rot} \rangle, \\
     \end{split}
@@ -103,7 +103,7 @@ a ro-vibrational basis function :math`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}` i
 
 .. math::
 
-      \phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}} = \{| v_1 v_2, \Gamma_{\rm str} \otimes  | v_3, \Gamma_{\rm bend} \rangle \otimes | J,K,\Gamma_{\rm rot} \rangle \}^{\Gamma_{\rm tot}}
+      \phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}} = \{| v_1, v_2, \Gamma_{\rm str} \otimes  | v_3, \Gamma_{\rm bend} \rangle \otimes | J,K,\Gamma_{\rm rot} \rangle \}^{\Gamma_{\rm tot}}
 
 
 The ro-vibrational eigenfunctions are computed variationally on the basis the symmetry adapted basis of :math:`\phi_{J,K,v_1,v_2,v_3,\Gamma_{\rm tot}}`\ . The TROVE quantum numbers obtained using the largest contribution approach eigenfunction thus include:
@@ -160,7 +160,7 @@ It should be noted that for equivalent modes, such as the two stretches in the c
 
 Similarity, the :math:`B_2` symmetry TROVE output is given by
 ::
-     
+
       Variational solution - irreducible representation
         Gamma     i       value             j  k  t   quanta
         B2        1   3280.145078   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   1   0 )      1.00 (   1   0   0   0 ) (    3    1 )
@@ -171,16 +171,24 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         B2        6   6914.548146   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   1 )      0.96 (   2   0   1   0 ) (    5    2 )
         B2        7   8041.707663   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   2 )      0.98 (   2   0   2   0 ) (    5    3 )
         ....
-     
+
 
 
 
 Quantum numbers in the :math:`J=0` representation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ro-vibrational calculations in the :math:`J=0` representation (step 3) are characterised by a single contracted :math:`J=0` sub-class. Therefore, in this case the energy output has a slightly different form:
+The ro-vibrational calculations in the :math:`J=0` representation (step 3) are characterised by a single contracted :math:`J=0` sub-class with the basis set given by
+
+.. math::
+
+      \phi_{J,K,v_1,v_2,v_3, \ldots  \Gamma_{\rm tot}} = \{| v_1, v_2, v_3, \ldots  \Gamma_{\rm vib} \rangle  \otimes | J,K,\Gamma_{\rm rot} \rangle \}^{\Gamma_{\rm tot}}
+
+Phi_{\lambda}^{(J=0)} \ket{J,k,\tau},
+
+where  :math`| J,K,\Gamma_{\rm rot} \rangle ` is a rigid rotor basis function. Therefore, in this case the energy output has a slightly different form:
 ::
-      
+
       ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ------ --- --- --- --------
         1        2        3           4    5  6  7     8      9  10   11       12       13   14 15  16       17
       ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ----- --- --- ---- --------
@@ -192,7 +200,7 @@ The ro-vibrational calculations in the :math:`J=0` representation (step 3) are c
        A1        4   5834.782843   ( B2 ;  1  1  0 ) ( B2 ;   0   2   0 )      1.00 (   2   0   0   0 ) (   13 )
        A1        5   6770.421491   ( B2 ;  1  1  0 ) ( B2 ;   0   1   3 )      1.00 (   1   0   3   0 ) (   17 )
        A1        6   6964.556323   ( B2 ;  1  1  0 ) ( B2 ;   0   2   1 )      1.00 (   2   0   1   0 ) (   18 )
-       
+
 
 
 where
@@ -278,7 +286,7 @@ Consider for example the local :math:`(v_1,v_2,v_3)`  to normal :math:`(n_1,n_2,
        Class #       1
                    15            15  <-  number of roots and dimension of basis
 
-                                                        ---- --- ---      --- ---- ---  
+                                                        ---- --- ---      --- ---- ---
                                                          v1  v2  v3        n1  n2  n3
                                                         ---- --- ---      --- ---- ---
              1   1       1   1   3631.457962557469   0   0   0   0     0   0   0   0         0.99650855
@@ -307,13 +315,13 @@ Consider for example the local :math:`(v_1,v_2,v_3)`  to normal :math:`(n_1,n_2,
             19   1       4   1   7223.358797674689   0   0   0   3     0   0   3   0        -0.99426327
             20   1       5   1   8404.773619941838   0   0   0   4     0   0   4   0         0.99669840
        End Quantum numbers and energies
-             
 
-The format of this checkpoint file ``contr_descr.chk`` is not sensitive to the number of spaces between the columns, but is sensitive to their order as well as to the order of the lines. 
 
-This file can be then ``read`` into the TROVE pipeline using the TROVE restart procedure at step 1 by modifying the ``CHECK_POINT`` section as follows 
+The format of this checkpoint file ``contr_descr.chk`` is not sensitive to the number of spaces between the columns, but is sensitive to their order as well as to the order of the lines.
+
+This file can be then ``read`` into the TROVE pipeline using the TROVE restart procedure at step 1 by modifying the ``CHECK_POINT`` section as follows
 ::
-    
+
     CHECK_POINT
      ascii
      kinetic     read
@@ -323,12 +331,12 @@ This file can be then ``read`` into the TROVE pipeline using the TROVE restart p
      matelem     read    split
      eigenfunc   save
     END
-    
 
-Here we assume that all other TROVE components (especially ``matelem``) have been generated. If not, the ``matelem`` line can be changed to ``save``. It is important to recompute and store the eigen-vectors (``eigenfunc   save``), which will (re-)generate the eigen_descr*.chk files with the QN template section modified to inherit the normal mode quantum numbers. For our example of H\ :sub:`2`\ S, the energy output is now given by: 
+
+Here we assume that all other TROVE components (especially ``matelem``) have been generated. If not, the ``matelem`` line can be changed to ``save``. It is important to recompute and store the eigen-vectors (``eigenfunc   save``), which will (re-)generate the eigen_descr*.chk files with the QN template section modified to inherit the normal mode quantum numbers. For our example of H\ :sub:`2`\ S, the energy output is now given by:
 ::
 
-      
+
      Variational solution - irreducible representation
        Gamma     i       value             j  k  t   quanta
        A1        1      0.000000   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   0 )      1.00 (   0   0   0   0 ) (    1    1 )
@@ -340,7 +348,7 @@ Here we assume that all other TROVE components (especially ``matelem``) have bee
        A1        7   4675.006191   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   0   4 )      0.92 (   0   0   4   0 ) (    1    5 )
        A1        8   4927.853585   ( A1 ;  0  0  0 ) ( A1  A1 ;   0   1   2 )      0.89 (   1   0   2   0 ) (    2    3 )
        A1        9   5171.458835   ( A1 ;  0  0  0 ) ( A1  A1 ;   1   1   0 )      0.98 (   2   0   0   0 ) (    4    1 )
-       
+
 
 where the second vibrational QN section now contains the correct normal mode quantum numbers as in the tables above. One can notice that the last QN is kept  zero on this case. This field can be useful for an additional quantum number, e.g. the vibrational angular momentum :math:`l`, required for the linear molecular normal mode classification or in other cases. The normal mode QN are then prorogated to all other energy outputs, including step 3 (ro-vibrational eigenvalues) and step 4 (line list  calculations).
 
