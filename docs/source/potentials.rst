@@ -166,7 +166,10 @@ XY\ :sub:`2` type
 There are several PEFs available for this molecule type.
 
 
-``POTEN_XY2_MORBID`` ^^^^^^^^^^^^^^^^^^^^
+``POTEN_XY2_MORBID``
+^^^^^^^^^^^^^^^^^^^^
+
+This form is given by 
 
 .. math:: 
 
