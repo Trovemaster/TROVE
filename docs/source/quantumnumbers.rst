@@ -102,7 +102,6 @@ In calculations of ro-vibrational energy, :math:`m` plays no direct role and can
 TROVE uses symmetry adapted rotational basis functions. For asymmetric  and symmetric tops, these are the  so-called Wang functions :math:`|J,K,\tau\rangle`\ ), which are given by
 
 .. math::
-
   :label: e-JKtay-v2
 
    \begin{split}
@@ -179,8 +178,8 @@ T\ :sub:`d` symmetry
 The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rotational basis. This is because the group symmetry transformations cannot be associated  with equivalent rotations about the :math:`x`, :math:`y` or :math:`z` axes only. As a result, symmetry-adapted rotational functions are obtained  as a general linear combinations of :math:`|J,k,m\rangle` with :math:`k` spanning all :math:`k=-J\ldots J`. Because of that, the rotational quantum number :math:`K` can no longer be used for classification of the symmetrised rigid-rotor combinations. Instead they are labelled  as :math:`|J,\Gamma,n\rangle`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
 
 .. math::
-
     :label: e-J,Gamma,n-CH4
+
         |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} | J,k,m\rangle.
 
 
