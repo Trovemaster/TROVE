@@ -181,7 +181,7 @@ The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rot
 .. math::
 
     :label: e-J,Gamma,n-CH4
-        |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} \ket|J,k,m\rangle.
+        |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} | J,k,m\rangle.
 
 
 
