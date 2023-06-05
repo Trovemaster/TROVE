@@ -587,10 +587,10 @@ with the Cartesian coordinates at equilibrium given by
 .. math::
 
    \begin{split}
-      H_{1x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{1y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{1z} &=  \frac{r_{\rm e}}{\sqrt{3}}, \\
-      H_{2x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{2y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{2z} &= -\frac{r_{\rm e}}{\sqrt{3}}, \\
-      H_{3x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{3y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{3z} &= -\frac{r_{\rm e}}{\sqrt{3}}, \\
-      H_{4x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{4y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{4z} &=  \frac{r_{\rm e}}{\sqrt{3}}.
+      H_{1x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{1y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{1z} =  \frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{2x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{2y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{2z} = -\frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{3x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{3y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{3z} = -\frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{4x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{4y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{4z} =  \frac{r_{\rm e}}{\sqrt{3}}.
    \end{align}
 
 
