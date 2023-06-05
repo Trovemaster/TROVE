@@ -99,7 +99,7 @@ where
       y_1 & = 1-e^{-a (r_1 - r_{\rm e})}, \\
       y_2 & = 1-e^{-a (r_2 - r_{\rm e})}, \\
       y_3 &= \cos\alpha-\cos\alpha_{\rm e}, \\
-      r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha.\\
+      r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha}.\\
    \end{split}
    
    
@@ -162,6 +162,9 @@ Implemented PEFs
 
 XY\ :sub:`2` type
 -----------------
+
+There are several PEFs available for this molecule type.
+
 
 ``POTEN_XY2_MORBID`` ^^^^^^^^^^^^^^^^^^^^
 

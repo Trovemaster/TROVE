@@ -111,7 +111,7 @@ TROVE uses symmetry adapted rotational basis functions. For asymmetric  and symm
     &|J,K,\tau=1\rangle = \frac{i (-1)^{\sigma} }{\sqrt{2}} \left[ |J,K,m\rangle - (-1)^{J+K} |J,-K,m\rangle  \right].
     \end{split}
 
-Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake. The meaning of :math:`\sigma` is explained below. :math:`K` is commonly used as the rotational quantum number, :math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis. The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is.
+Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`|J,K,\tau_{\rm rot}\rangle`  and :math:`m` is omitted on the left-hand side for simplicity's sake. The meaning of :math:`\sigma` is explained below. :math:`K` is commonly used as the rotational quantum number, :math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis. The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is.
 
 The :math:`|J,K,\tau\rangle` functions allow one to classify them according with the corresponding molecular symmetry group they belong to. This is done by following the symmetry properties of the rigid rotor wavefunctions upon the group transformations. For example, the XY\ :sub:`2` Wang functions transform as irreps :math:`\Gamma = A_1, A_2, B_1, B_2` of the C\ :sub:`2v`(M) group  (:math`K\ne 0`\ ), which are defined by the quantum numbers :math:`J, K, \tau` as follows
 
@@ -129,7 +129,7 @@ As in the case of the vibrational quantum numbers, the rotational components of 
   - :math:`J` : the total angular momentum rotational quantum number;
   - :math:`K` : the projection of :math:`J` on the molecular axis :math:`z` rotational quantum number;
   - :math:`\tau`:  a rotational index defining the state parity;
-  - :math:`\Gamma_{\tm rot}`: the rotational symmetry.
+  - :math:`\Gamma_{\rm rot}`: the rotational symmetry.
 
 Due to symmetry :math:`\Gamma`, the parity :math:`\tau` is in fact redundant.
 
@@ -176,12 +176,12 @@ where ``class:   0`` corresponds to the rotational sub-set = 0.
 T\ :sub:`d` symmetry 
 ^^^^^^^^^^^^^^^^^^^^
 
-The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rotational basis. This is because the group symmetry transformations cannot be associated  with equivalent rotations about the :math:`x`, :math:`y` or :math:`z` axes only. As a result, symmetry-adapted rotational functions are obtained  as a general linear combinations of :math:`\ket{J,k,m}` with :math:`k` spanning all :math:`k=-J\ldots J`. Because of that, the rotational quantum number :math:`K` can no longer be used for classification of the symmetrised rigid-rotor combinations. Instead they are labelled  as :math:`\ket{J,\Gamma,n}`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
+The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rotational basis. This is because the group symmetry transformations cannot be associated  with equivalent rotations about the :math:`x`, :math:`y` or :math:`z` axes only. As a result, symmetry-adapted rotational functions are obtained  as a general linear combinations of :math:`|J,k,m\rangle` with :math:`k` spanning all :math:`k=-J\ldots J`. Because of that, the rotational quantum number :math:`K` can no longer be used for classification of the symmetrised rigid-rotor combinations. Instead they are labelled  as :math:`|J,\Gamma,n\rangle`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
 
 .. math::
 
     :label: e-J,Gamma,n-CH4
-        \ket{J,\Gamma,n} = \sum_{k} T_{n,k}^{(J,\Gamma)} \ket{J,k,m}.
+        |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} \ket|J,k,m\rangle.
 
 
 
@@ -289,7 +289,7 @@ The ro-vibrational calculations in the :math:`J=0` representation (step 3) are c
 
       \phi_{J,K,v_1,v_2,v_3, \ldots  \Gamma_{\rm tot}} = \{| v_1, v_2, v_3, \ldots  \Gamma_{\rm vib} \rangle  \otimes | J,K,\Gamma_{\rm rot} \rangle \}^{\Gamma_{\rm tot}}
 
-Phi_{\lambda}^{(J=0)} \ket{J,k,\tau},
+Phi_{\lambda}^{(J=0)} |J,K,\tau\rangle,
 
 where  :math`| J,K,\Gamma_{\rm rot} \rangle ` is a rigid rotor basis function. Therefore, in this case the energy output has a slightly different form:
 ::

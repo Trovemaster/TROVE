@@ -327,7 +327,7 @@ where
   - Col 1: ``n`` is the counting number of the state including degeneracies;
   - Col 2: ``Sym`` is the irrep of this state;
   - Col 3: ``m`` is  the running number of the energy, excluding degeneracies.
-  - Col 4: ``deg`` is  a degenerate component (e.g. :math:`E_a = `\  ``1`` and  :math:`E_b =`\ ``2`` for a 2D irrep of C\ :sub:`3v`\ ).
+  - Col 4: ``deg`` is  a degenerate component (e.g. :math:`E_a = `\  ``1`` and  :math:`E_b =`\  ``2`` for a 2D irrep of C\ :sub:`3v`\ ).
   - Col 5: ``Energy`` term value of a state from the given sub-class.
   - Col 6: ``k`` is a rotational index (typically it is zero in contr_descr.chk).
   - Cols 7-9: ``v1``, ``v2``, ``v3`` are the TROVE (local mode) vibrational quantum numbers.
