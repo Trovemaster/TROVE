@@ -587,10 +587,10 @@ with the Cartesian coordinates at equilibrium given by
 .. math::
 
    \begin{split}
-      H_{1x} &= -\frac{r_\rme}{\sqrt{3}}, &H_{1y} &=  \frac{r_\rme}{\sqrt{3}}, &H_{1z} &=  \frac{r_\rme}{\sqrt{3}}, \\
-      H_{2x} &= -\frac{r_\rme}{\sqrt{3}}, &H_{2y} &= -\frac{r_\rme}{\sqrt{3}}, &H_{2z} &= -\frac{r_\rme}{\sqrt{3}}, \\
-      H_{3x} &=  \frac{r_\rme}{\sqrt{3}}, &H_{3y} &=  \frac{r_\rme}{\sqrt{3}}, &H_{3z} &= -\frac{r_\rme}{\sqrt{3}}, \\
-      H_{4x} &=  \frac{r_\rme}{\sqrt{3}}, &H_{4y} &= -\frac{r_\rme}{\sqrt{3}}, &H_{4z} &=  \frac{r_\rme}{\sqrt{3}}.
+      H_{1x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{1y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{1z} &=  \frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{2x} &= -\frac{r_{\rm e}}{\sqrt{3}},  H_{2y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{2z} &= -\frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{3x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{3y}  =  \frac{r_{\rm e}}{\sqrt{3}},  H_{3z} &= -\frac{r_{\rm e}}{\sqrt{3}}, \\
+      H_{4x} &=  \frac{r_{\rm e}}{\sqrt{3}},  H_{4y}  = -\frac{r_{\rm e}}{\sqrt{3}},  H_{4z} &=  \frac{r_{\rm e}}{\sqrt{3}}.
    \end{align}
 
 
@@ -612,58 +612,58 @@ with the Cartesian coordinates at equilibrium given by
 ^^^^^^^^^^^
 
 
-The tetrahedral five-atomic molecule XY\ :sub:`4`  has 9 vibrational degrees of freedom. For a semi-rigid molecule (i.e. ignoring any isomerisation that can occur at higher energies), they can be characterised by four bond lengths :math:`r_i \equiv r_{{\rm C}-{\rm H}_i}` and six inter-bond angles :math:`\alpha_{{\rm H}_i-{\rm C}-{\rm H}_j} = \alpha_{ij}`.  For the equilibrium value of the tetrahedral angle :math:`\alpha`,  :math:`\cos(\alpha_\rme)` =  :math:`-1/\sqrt{3}` which explains the factor :math:`1/\sqrt{3}` in the definition of the  Cartesian coordinates.
+The tetrahedral five-atomic molecule XY\ :sub:`4`  has 9 vibrational degrees of freedom. For a semi-rigid molecule (i.e. ignoring any isomerisation that can occur at higher energies), they can be characterised by four bond lengths :math:`r_i \equiv r_{{\rm C}-{\rm H}_i}` and six inter-bond angles :math:`\alpha_{{\rm H}_i-{\rm C}-{\rm H}_j} = \alpha_{ij}`.  For the equilibrium value of the tetrahedral angle :math:`\alpha`,  :math:`\cos(\alpha_{\rm e})` =  :math:`-1/\sqrt{3}` which explains the factor :math:`1/\sqrt{3}` in the definition of the  Cartesian coordinates.
 There should, however, be only 9 independent vibrational degrees of freedom in a 5 atomic molecule. One of the inter-bond angles :math:`\alpha_{ij}` is redundant as there should be only five independent bending vibrations, with the following redundancy condition:
 
 .. math::
-
-     :label: e-redund
      
+     :label: e-redund
       \left| \begin{array}{cccc}
-      1               & \cos\alpha_{12} &  \cos\alpha_{13} &  \cos\alpha_{14} \\
-      \cos\alpha_{12} & 1               &  \cos\alpha_{23} &  \cos\alpha_{24} \\
-       \cos\alpha_{13} & \cos\alpha_{23} & 1                &  \cos\alpha_{34} \\
-      \cos\alpha_{14} & \cos\alpha_{24} & \cos\alpha_{34}   &        1
-      \end{array}
+       1               & \cos\alpha_{12} &  \cos\alpha_{13} &  \cos\alpha_{14} \\
+       \cos\alpha_{12} & 1               &  \cos\alpha_{23} &  \cos\alpha_{24} \\
+        \cos\alpha_{13} & \cos\alpha_{23} & 1                &  \cos\alpha_{34} \\
+       \cos\alpha_{14} & \cos\alpha_{24} & \cos\alpha_{34}   &        1
+       \end{array} 
       \right| = 0 .
- 
+      
 
 XY\ :sub:`4`  belongs to the T\ :sub:`d`\ (M) molecular symmetry group, which consists of five irreducible representations, :math:`A_1`, :math:`A_2`, :math:`E`, :math:`F_1` and :math:`F_2`. One way to define independent bending modes is to reduce the six inter-bond angles :math:`\alpha_{ij}` to five symmetry-adapted  irreducible combinations,  which, together with four bond lengths :math:`r_i` form nine independent vibrational modes :math:`\xi_i` as follows:  four stretches
 
 .. math:: 
-
+    
    :label: e-vects-i
     \xi_i  =r_i, \;\; i = 1,2,3,4,
-
+     
 
 two :math:`E`-symmetry bends
 
 .. math::
-
+     
     :label:  e-vects-5-6
     \begin{split}
        \xi_5^{E_a}   &= \frac{1}{\sqrt{12}} (2 \alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2 \alpha_{34} ), \\
        \xi_6^{E_b}  &= \frac{1}{2} (\alpha_{13} - \alpha_{14} - \alpha_{23} + \alpha_{24} ),
     \end{split}
-    
+        
     
 and three :math:`F`-symmetry bends
 
 .. math::
-
+     
    :label: e-vects-7-9
      \begin{split}
        \xi_7^{F_{2x}}  &= \frac{1}{\sqrt{2}} ( \alpha_{24} - \alpha_{13} ),  \\
        \xi_8^{F_{2y}}  &= \frac{1}{\sqrt{2}} ( \alpha_{23} - \alpha_{14} ), \\
        \xi_9^{F_{2z}}  &= \frac{1}{\sqrt{2}} ( \alpha_{34} - \alpha_{12} ),
       \end{split}
-
+       
 
 where the corresponding symmetries of the bending modes are indicated.
 
 The stretching modes :math:`r_i` can also be in principle combined into symmetry-adapted coordinates in T\ :sub:`d`\ (M):
 
 .. math:: 
+     
     :label: e-CH4-xi1=4
      \begin{split}
        \xi_1^{A_1}  &= \frac{1}{2} \left(  r_1 + r_2 + r_3 + r_4\right), \\
@@ -671,5 +671,5 @@ The stretching modes :math:`r_i` can also be in principle combined into symmetry
        \xi_3^{F_{2y}}  &= \frac{1}{2} \left(  r_1 - r_2 - r_3 + r_4\right), \\
        \xi_4^{F_{2z}}  &= \frac{1}{2} \left(  r_1 + r_2 - r_3 - r_4\right).
      \end{split}
-
+      
        
