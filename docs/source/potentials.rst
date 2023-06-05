@@ -138,7 +138,7 @@ where
   - 'Values' are the actual potential parameters. Their order is not important for this implementation as long as the corresponding powers are defined. 
 
 
-In case the definition of PEF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`\ , equilibrium inter-bond angles :math:`\alpha_{\rm e}, Morse exponents :math:`a` etc., in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column. For example: 
+In case the definition of PEF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`\ , equilibrium inter-bond angles :math:`\alpha_{\rm e}`, Morse exponents :math:`a` etc., in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column. For example: 
 ::
 
     POTEN
