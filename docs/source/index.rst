@@ -15,6 +15,7 @@ Welcome to TROVE's documentation!
    checkpoints.rst
    quantumnumbers.rst
    molecules.rst
+   potentials.rst
    newmolecules.rst
    linelist.rst
    refinement.rst

@@ -86,6 +86,106 @@ with only one active TROVE mode 3 :math:`v_3`\ , which is directly mapped to the
 
 
 
+Rotational basis set and quantum numbers
+----------------------------------------
+
+TROVE uses the rigid rotor wavefunctions :math:`|J,k,m\rangle`, where :math:`J` is the total angular momentum in units of :math:`\hbar`, while :math:`m` and :math:`k` are the rotational quantum numbers, describing its  projection onto laboratory :math:`Z` and molecular :math:`z`-axes, respectively, which satisfy
+
+.. math::
+
+     m,k = -J,-J-1,\ldots,0,\ldots,J-1,J.
+
+
+In calculations of ro-vibrational energy, :math:`m` plays no direct role and can be ignored. The :math:`k` quantum number is however a critical quantity,  defined by the choice of the :math:`z`-axes. For asymmetric tops, it is common in spectroscopic applications to choose :math:`z` along the axis with the smallest moment of inertia, such as frames ``R-RHO-Z`` or ``R-ALPHA-Z`` used for quasi-linear XY\ :sun:`2` molecules. For symmetric tops, the :math:`z` axis is taken as the symmetry axis, such as the ``R-ALPHA`` and ``R-S-DELTA`` frames used for the XY\ :sub:`3` type. The spherical top XY\ :sub:`4` will be discussed separately.
+
+
+TROVE uses symmetry adapted rotational basis functions. For asymmetric  and symmetric tops, these are the  so-called Wang functions :math:`|J,K,\tau\rangle`\ ), which are given by
+
+.. math::
+
+  :label: e-JKtay-v2
+
+   \begin{split}
+    &|J,0,\tau\rangle = |J,0\rangle, \quad \tau =  J\; \hbox{mod}\; 2 , \\
+    &|J,K,\tau=0\rangle = \frac{1}{\sqrt{2}} \left[ |J,K,m\rangle + (-1)^{J+K} |J,-K,m\rangle  \right],\\
+    &|J,K,\tau=1\rangle = \frac{i (-1)^{\sigma} }{\sqrt{2}} \left[ |J,K,m\rangle - (-1)^{J+K} |J,-K,m\rangle  \right].
+    \end{split}
+
+Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake. The meaning of :math:`\sigma` is explained below. :math:`K` is commonly used as the rotational quantum number, :math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis. The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is.
+
+The :math:`|J,K,\tau\rangle` functions allow one to classify them according with the corresponding molecular symmetry group they belong to. This is done by following the symmetry properties of the rigid rotor wavefunctions upon the group transformations. For example, the XY\ :sub:`2` Wang functions transform as irreps :math:`\Gamma = A_1, A_2, B_1, B_2` of the C\ :sub:`2v`(M) group  (:math`K\ne 0`\ ), which are defined by the quantum numbers :math:`J, K, \tau` as follows
+
++--------------+--------------+-----------------+-+-----------+--------------+----------------+
+|   :math:`K`  | :math:`\tau` | :math:`\Gamma`  | | :math:`K` | :math:`\tau` | :math:`\Gamma` |
++==============+==============+=================+=+===========+==============+================+
+|   even       | 0            | :math:`A_1`     | | odd       | 0            | :math:`B_2`    |
++--------------+--------------+-----------------+-+-----------+--------------+----------------+
+|   even       | 1            | :math:`B_1`     | | odd       | 1            | :math:`A_2`    |
++--------------+--------------+-----------------+-+-----------+--------------+----------------+
+
+
+As in the case of the vibrational quantum numbers, the rotational components of the ro-vibrational eigenstates are also assigned using the largest contribution approach. Hence, the rotational quantum numbers are
+
+  - :math:`J` : the total angular momentum rotational quantum number;
+  - :math:`K` : the projection of :math:`J` on the molecular axis :math:`z` rotational quantum number;
+  - :math:`\tau`:  a rotational index defining the state parity;
+  - :math:`\Gamma_{\tm rot}`: the rotational symmetry.
+
+Due to symmetry :math:`\Gamma`, the parity :math:`\tau` is in fact redundant.
+
+
+
+The mappings  between the :math:`J, K, \tau` and :math:`\Gamma` appear in modules ``mol_*.f90``. For example, for this C\ :sub:`2v`(M) example of a XY\ :sub:`2` type molecule the mapping is given by (see ``mol_xy2.f90``):
+::
+
+         !
+      case('C2V','C2V(M)')
+         !
+         gamma = 0
+         ideg = 1
+         if (mod(K+2,2)==0.and.tau==0) gamma = 1
+         if (mod(K+2,2)==0.and.tau==1) gamma = 2
+         if (mod(K+2,2)/=0.and.tau==0) gamma = 4
+         if (mod(K+2,2)/=0.and.tau==1) gamma = 3
+         !
+
+
+
+The symmetry classification of the rotational basis functions can be also found in the standard TROVE output:
+::
+
+
+     Symmetry of the contracted solution, class:   0
+          i       ener         deg  symmetry  j   k  tau  quanta:
+          1      151.97406555   1   1  A1     4   0   0   0   0   0
+          2      153.39155239   1   4  B2     4   1   0   0   0   0
+          3      153.39155239   1   3  B1     4   1   1   0   0   0
+          4      157.64401293   1   1  A1     4   2   0   0   0   0
+          5      157.64401293   1   2  A2     4   2   1   0   0   0
+          6      164.73144716   1   4  B2     4   3   0   0   0   0
+          7      164.73144716   1   3  B1     4   3   1   0   0   0
+          8      174.65385507   1   1  A1     4   4   0   0   0   0
+          9      174.65385507   1   2  A2     4   4   1   0   0   0
+     
+
+where ``class:   0`` corresponds to the rotational sub-set = 0.  
+
+
+
+
+T\ :sub:`d` symmetry 
+^^^^^^^^^^^^^^^^^^^^
+
+The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rotational basis. This is because the group symmetry transformations cannot be associated  with equivalent rotations about the :math:`x`, :math:`y` or :math:`z` axes only. As a result, symmetry-adapted rotational functions are obtained  as a general linear combinations of :math:`\ket{J,k,m}` with :math:`k` spanning all :math:`k=-J\ldots J`. Because of that, the rotational quantum number :math:`K` can no longer be used for classification of the symmetrised rigid-rotor combinations. Instead they are labelled  as :math:`\ket{J,\Gamma,n}`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
+
+.. math::
+
+    :label: e-J,Gamma,n-CH4
+        \ket{J,\Gamma,n} = \sum_{k} T_{n,k}^{(J,\Gamma)} \ket{J,k,m}.
+
+
+
+
 Assignment of the ro-vibrational eigen-functions
 ------------------------------------------------
 
@@ -171,6 +271,11 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         B2        6   6914.548146   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   1 )      0.96 (   2   0   1   0 ) (    5    2 )
         B2        7   8041.707663   ( A1 ;  0  0  0 ) ( B2  A1 ;   0   2   2 )      0.98 (   2   0   2   0 ) (    5    3 )
         ....
+
+
+
+
+
 
 
 
@@ -351,16 +456,6 @@ Here we assume that all other TROVE components (especially ``matelem``) have bee
 
 
 where the second vibrational QN section now contains the correct normal mode quantum numbers as in the tables above. One can notice that the last QN is kept  zero on this case. This field can be useful for an additional quantum number, e.g. the vibrational angular momentum :math:`l`, required for the linear molecular normal mode classification or in other cases. The normal mode QN are then prorogated to all other energy outputs, including step 3 (ro-vibrational eigenvalues) and step 4 (line list  calculations).
-
-
-
-
-
-
-
-
-
-
 
 
 

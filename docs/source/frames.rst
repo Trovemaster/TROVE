@@ -24,11 +24,11 @@ XY\ :sub:`2` type molecules
 
 
 
-A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  example it is 
+A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  example it is
 ::
-       
+
        MolType XY2
-       
+
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
@@ -59,7 +59,7 @@ where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid referen
     \end{split}
 
 
-TROVE uses Z-matrix coordinates to build any user-defined coordinates. In this case, the Z=matrix is given by 
+TROVE uses Z-matrix coordinates to build any user-defined coordinates. In this case, the Z=matrix is given by
 ::
 
      ZMAT
@@ -67,7 +67,7 @@ TROVE uses Z-matrix coordinates to build any user-defined coordinates. In this c
          H   1  0  0  0   1.00782505
          H   1  2  0  0   1.00782505
      end
-     
+
 
 Alternatively, the reference value of the bond length :math:`r_{\rm ref}` can also vary with :math:`\rho` as e.g. in the minimum energy path (MEP) definition with :math:`r_{\rm ref}` being the optimised value at the given value of :math:`\rho` corresponding to the local energy minimum. In this case, the non-rigid frame must be defined using the ``MEP`` block (see the corresponding section).
 
@@ -112,23 +112,23 @@ REFER-CONF   non-RIGID  (Reference configuration)
 R-RHO-Z-M2-M3
 ^^^^^^^^^^^^^
 
-A 'bisecting' XY\ :sub:`2` frame used for isotopologies with slightly different masses of Y\ :sub:`1` and Y\ :sub:`2`, for example O\ :sup:`16`\ CO\ :sup:`17`. 
-Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2 but with non-symmetric masses and the Cs symmetry, e.g.: 
+A 'bisecting' XY\ :sub:`2` frame used for isotopologies with slightly different masses of Y\ :sub:`1` and Y\ :sub:`2`, for example O\ :sup:`16`\ CO\ :sup:`17`.
+Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2 but with non-symmetric masses and the Cs symmetry, e.g.:
 ::
-     
-     TRANSFORM    R-RHO-Z-M2-M3 
-     MOLTYPE      XY2  
-     MOLECULE     CO2  
-     REFER-CONF   non-RIGID  
-     
+
+     TRANSFORM    R-RHO-Z-M2-M3
+     MOLTYPE      XY2
+     MOLECULE     CO2
+     REFER-CONF   non-RIGID
+
      SYMGROUP Cs(M)
-     
+
      ZMAT
          C   0  0  0  0   11.996709
          O   1  0  0  0   16.995245
-         O   1  2  0  0   15.9905256 
+         O   1  2  0  0   15.9905256
      end
-     
+
 
 
 XYZ type molecules
@@ -139,7 +139,7 @@ XYZ type molecules
     .. figure:: img/XYZ.jpg
        :alt: XYZ equilibrium structure
 
-       An XYZ type molecule and the :math:`z`  embedding. 
+       An XYZ type molecule and the :math:`z`  embedding.
 
 
 
@@ -161,7 +161,7 @@ This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z
     \xi_3 &= \rho,
     \end{split}
 
-Here is an example of the Z-matrix for NNO.  
+Here is an example of the Z-matrix for NNO.
 ::
 
      ZMAT
@@ -169,7 +169,7 @@ Here is an example of the Z-matrix for NNO.
          N   1  0  0  0   14.00307401
          O   1  2  0  0   15.994915
      end
-     
+
 
 
 ``R1-Z-R2-ALPHA``
@@ -220,7 +220,7 @@ The underlying Z-matrix coordinates are defined using the following Z-matrix:
           H   1  2  0  0   1.00782505
           H   1  2  3  1   1.00782505
       end
-      
+
 
 This representation has been used for PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_.
 
@@ -231,7 +231,7 @@ XY\ :sub:`3` non-rigid with umbrella motion (NH\ :sub:`3` type)
 ::
 
        MolType XY3
-       
+
 Consider the Ammonia molecule NH3\ :sub:`3` with a relatively small barrier to the planarity. The three bending angles are not suitable in this case  as they cannot distinguish the two opposite inversion configurations above and below the planarity. Instead, an umbrella mode has to be introduced as one of the bending modes. An example of an umbrella coordinate is an angle between the :math:`C_3` symmetry axis and the bond X-Y, see Figure. It is natural to use the non-rigid reference configuration along the umbrella, inversion motion and build the KEO as an expansion around it. For two other bending modes, in principle one can use two inter-bond angles, e.g.  :math:`\alpha_2` and :math:`\alpha_3`, two dihedral angles :math:`\phi_2` and :math:`\phi_3`. However, for symmetry reasons, TROVE employs the symmetry-adapted bending pair :math:`S_a` and :math:`S_b`, defined as follows:
 
 .. math::
@@ -294,8 +294,8 @@ ZXY\ :sub:`2` (Formaldehyde type)
 ::
 
        MolType ZXY2
-       
-The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. The reference configuration is always in the principle axis sysetm, i.e. for each value of the book angle :math:`\tau`, TROVE solve the PAS conditions to reorient the molecule. 
+
+The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengths , two bond angles and a dihedral angle :math:`\tau`. The latter can be treated as the reference for a non-rigid reference configuration in TROVE on a grid of :math:`\tau_i` ranging from  :math`[-\tau_{0}\ldots \tau_{0}]`, while other 5 modes are treated as displacement from their equilibrium values at each grid point :math:`\tau_i`. The reference configuration is always in the principle axis sysetm, i.e. for each value of the book angle :math:`\tau`, TROVE solve the PAS conditions to reorient the molecule.
 
 
 .. sidebar::
@@ -338,12 +338,12 @@ The Z type can be used to define signle or double deturated isotopologues of an 
           H   1  2  0  0   1.007825032
           H   1  2  3  2   1.007825032
       end
-      
-
-Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane conteining PD and bisetcing the angle betwen two PH bonds. 
 
 
-For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by 
+Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane conteining PD and bisetcing the angle betwen two PH bonds.
+
+
+For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by
 
       ZMAT
           P   0  0  0  0  14.00307401
@@ -359,7 +359,7 @@ ZXY\ :sub:`3` (Methyl Chloride type)
 ::
 
        MolType ZXY3
-       
+
 
 Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
 
@@ -389,7 +389,7 @@ Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates cons
     \xi_8 &= \frac{1}{\sqrt{6}} (2 \tau_{23}-\tau_{13}-\tau_{12}),  \\
     \xi_9 &= \frac{1}{\sqrt{2}} ( \tau_{13}-\tau_{12}).  \\
     \end{split}
-    
+
 
 The Z-matrix coordinates (underlying basic TROVE coordinates) are as given by the Z-matrix rules:
 ::
@@ -401,26 +401,26 @@ The Z-matrix coordinates (underlying basic TROVE coordinates) are as given by th
          H   1  2  3  0   1.007825035
          H   1  2  3  4   1.007825035
      end
-     
-are as follows: 
+
+are as follows:
 
 - :math:`r_0`
 - :math:`r_1`, :math:`\beta_{1}`
 - :math:`r_2`, :math:`\beta_{2}`, :math:`\alpha_{12}`
 - :math:`r_3`, :math:`\beta_{3}`, :math:`\alpha_{13}`
 
-where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed 
+where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed
 to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
 
 .. math::
-     
+
     \begin{split}
     \cos \tau_{12} &= \frac{\cos\alpha_{12}-\cos\beta_{1}\cos\beta_{2}}{\sin\beta_{1}\sin\beta_{2}}, \\
     \cos \tau_{13} &= \frac{\cos\alpha_{13}-\cos\beta_{1}\cos\beta_{3}}{\sin\beta_{1}\sin\beta_{3}}, \\
     \tau_{23} &= 2\pi - \tau_{12}-\tau_{13},\\
     \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
     \end{split}
-     
+
 
 A chain ABCD type molecule  (hydrogen peroxide type)
 ----------------------------------------------------
@@ -433,7 +433,7 @@ A chain ABCD type molecule  (hydrogen peroxide type)
 ``R-ALPHA-TAU``
 ^^^^^^^^^^^^^^
 
-The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by  
+The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by
 
 
 .. sidebar::
@@ -457,7 +457,7 @@ The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of t
 
 
 
-The non-rigid reference frame such that the :math:`x` axis bisects the dihedral angle. 
+The non-rigid reference frame such that the :math:`x` axis bisects the dihedral angle.
 
 
 .. sidebar::
@@ -490,20 +490,20 @@ In MEP, the 5 internal coordinate displacements :math:`\xi_i` are defined around
     \xi_5 &= \alpha_{234}-\alpha_{\rm ref}(\delta),  \\
     \xi_6 &= \delta,
     \end{split}
-    
+
 where :math: the MEP values are given by a parameterised expansion, for example
 
 .. math::
-    
+
     \zeta_i^{\rm ref} = \zeta_i^{\rm e} + \sum_{n} a_i^n (\cos\delta - \cos\delta_{\rm e})
-     
-where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`. 
+
+where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`.
 
 
 
 
-The C\ :sub:`2`\ H:sub:`4` molecule and C2H4 type 
--------------------------------------------------
+The C\ :sub:`2`\ H:sub:`4` molecule and the ``C2H4`` type
+---------------------------------------------------------
 ::
 
        MolType C2H4
@@ -545,15 +545,15 @@ The internal coordinates are defined using the following 12 valence coordinates:
     \xi_{12} & = \theta_1 + \theta_2 - 2\tau,
     \end{split}
 
-where 
+where
 
 .. math::
 
-     \tau = \left\{ 
+     \tau = \left\{
      \begin{array}{cc}
          \delta, & \delta <\pi, \\
          \delta - 2\pi, & \delta >\pi, \\
-     \end{array} \right. 
+     \end{array} \right.
 
 
 
@@ -568,9 +568,108 @@ where
 
 
 
-This type can be used both for rigid and non-rigid molecule types. The non-rigid coordinate is  :math:`\xi_{12}` in the latter case. 
+This type can be used both for rigid and non-rigid molecule types. The non-rigid coordinate is  :math:`\xi_{12}` in the latter case.
+
+
+
+
+The XY\ :sub:`4` molecule (T\ :sub:`d`\ ) and the ``XY4`` type
+--------------------------------------------------------------
+::
+
+       MolType XY4
+
+
+
+The frame for the tetrahedral molecule XY\ :sub:`4` spanning the T\ :sub:`d`\ (M) symmetry group is chosen with the :math:`xyz` axes orthogonal to the faces of the box containing the molecule with the four atoms :math:`{\rm Y}_i` at its vertices, as shown in the figure, 
+with the Cartesian coordinates at equilibrium given by 
+
+.. math::
+
+   \begin{split}
+      H_{1x} &= -\frac{r_\rme}{\sqrt{3}}, &H_{1y} &=  \frac{r_\rme}{\sqrt{3}}, &H_{1z} &=  \frac{r_\rme}{\sqrt{3}}, \\
+      H_{2x} &= -\frac{r_\rme}{\sqrt{3}}, &H_{2y} &= -\frac{r_\rme}{\sqrt{3}}, &H_{2z} &= -\frac{r_\rme}{\sqrt{3}}, \\
+      H_{3x} &=  \frac{r_\rme}{\sqrt{3}}, &H_{3y} &=  \frac{r_\rme}{\sqrt{3}}, &H_{3z} &= -\frac{r_\rme}{\sqrt{3}}, \\
+      H_{4x} &=  \frac{r_\rme}{\sqrt{3}}, &H_{4y} &= -\frac{r_\rme}{\sqrt{3}}, &H_{4z} &=  \frac{r_\rme}{\sqrt{3}}.
+   \end{align}
 
 
 
 
 
+.. sidebar::
+
+   .. figure:: img/XY4.jpg
+       :alt: XY4
+
+       The structure and molecular frame of the XY\ :sub:`4` molecule.
+
+
+
+
+
+``R-ALPHA``
+^^^^^^^^^^^
+
+
+The tetrahedral five-atomic molecule XY\ :sub:`4`  has 9 vibrational degrees of freedom. For a semi-rigid molecule (i.e. ignoring any isomerisation that can occur at higher energies), they can be characterised by four bond lengths :math:`r_i \equiv r_{{\rm C}-{\rm H}_i}` and six inter-bond angles :math:`\alpha_{{\rm H}_i-{\rm C}-{\rm H}_j} = \alpha_{ij}`.  For the equilibrium value of the tetrahedral angle :math:`\alpha`,  :math:`\cos(\alpha_\rme)` =  :math:`-1/\sqrt{3}` which explains the factor :math:`1/\sqrt{3}` in the definition of the  Cartesian coordinates.
+There should, however, be only 9 independent vibrational degrees of freedom in a 5 atomic molecule. One of the inter-bond angles :math:`\alpha_{ij}` is redundant as there should be only five independent bending vibrations, with the following redundancy condition:
+
+.. math::
+
+     :label: e-redund
+     
+      \left| \begin{array}{cccc}
+      1               & \cos\alpha_{12} &  \cos\alpha_{13} &  \cos\alpha_{14} \\
+      \cos\alpha_{12} & 1               &  \cos\alpha_{23} &  \cos\alpha_{24} \\
+       \cos\alpha_{13} & \cos\alpha_{23} & 1                &  \cos\alpha_{34} \\
+      \cos\alpha_{14} & \cos\alpha_{24} & \cos\alpha_{34}   &        1
+      \end{array}
+      \right| = 0 .
+ 
+
+XY\ :sub:`4`  belongs to the T\ :sub:`d`\ (M) molecular symmetry group, which consists of five irreducible representations, :math:`A_1`, :math:`A_2`, :math:`E`, :math:`F_1` and :math:`F_2`. One way to define independent bending modes is to reduce the six inter-bond angles :math:`\alpha_{ij}` to five symmetry-adapted  irreducible combinations,  which, together with four bond lengths :math:`r_i` form nine independent vibrational modes :math:`\xi_i` as follows:  four stretches
+
+.. math:: 
+
+   :label: e-vects-i
+    \xi_i  =r_i, \;\; i = 1,2,3,4,
+
+
+two :math:`E`-symmetry bends
+
+.. math::
+
+    :label:  e-vects-5-6
+    \begin{split}
+       \xi_5^{E_a}   &= \frac{1}{\sqrt{12}} (2 \alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2 \alpha_{34} ), \\
+       \xi_6^{E_b}  &= \frac{1}{2} (\alpha_{13} - \alpha_{14} - \alpha_{23} + \alpha_{24} ),
+    \end{split}
+    
+    
+and three :math:`F`-symmetry bends
+
+.. math::
+
+   :label: e-vects-7-9
+     \begin{split}
+       \xi_7^{F_{2x}}  &= \frac{1}{\sqrt{2}} ( \alpha_{24} - \alpha_{13} ),  \\
+       \xi_8^{F_{2y}}  &= \frac{1}{\sqrt{2}} ( \alpha_{23} - \alpha_{14} ), \\
+       \xi_9^{F_{2z}}  &= \frac{1}{\sqrt{2}} ( \alpha_{34} - \alpha_{12} ),
+      \end{split}
+
+
+where the corresponding symmetries of the bending modes are indicated.
+
+The stretching modes :math:`r_i` can also be in principle combined into symmetry-adapted coordinates in T\ :sub:`d`\ (M):
+
+.. math:: 
+    :label: e-CH4-xi1=4
+     \begin{split}
+       \xi_1^{A_1}  &= \frac{1}{2} \left(  r_1 + r_2 + r_3 + r_4\right), \\
+       \xi_2^{F_{2x}}  &= \frac{1}{2} \left(  r_1 - r_2 + r_3 - r_4\right), \\
+       \xi_3^{F_{2y}}  &= \frac{1}{2} \left(  r_1 - r_2 - r_3 + r_4\right), \\
+       \xi_4^{F_{2z}}  &= \frac{1}{2} \left(  r_1 + r_2 - r_3 - r_4\right).
+     \end{split}
+
+       

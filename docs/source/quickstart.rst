@@ -464,7 +464,7 @@ The Poten block is used to specify the PES. For PF:math:`_3` the first few lines
      .
      .
 
-``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the .mol file. The ``COEFF`` keyword specifies whether the potential is given as a simple list or if the powers or the expansion are given. This depends on how the potential has been set up. The list of PES parameters is then given.
+``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90`` file. The ``COEFF`` keyword specifies whether the potential is given as a simple list or if the powers or the expansion are given. This depends on how the potential has been set up. The list of PES parameters is then given.
 
 External (Dipole) Block
 -----------------------
