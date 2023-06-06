@@ -59,6 +59,8 @@ Here ``NPARAM`` is used to specify the number of parameters used to define the P
      .....
      end
 
+which is from the variational calculations of H\ :sub:`2`\ CO, see the TROVE input `1H2-12C-16O__AYTY__TROVE.inp <input/1H2-12C-16O__AYTY__TROVE.inp>`_. 
+
 
 The potential parameters are listed after the keyword ``COEFF`` and terminated with the keyword ``END`` with exactly ``NPARAM``. For the ``COEFF  list`` option, the meaning of the columns is as follows:
 
