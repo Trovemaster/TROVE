@@ -94,18 +94,18 @@ The potential parameters are listed after the keyword ``COEFF`` and terminated w
 
 Here 'Labels' are the parameter names,  used only for printing purposes and not in any calculations. The 'Index' field can be used to as a switch to indicate if the corresponding parameter was fitted or can be fitted. Otherwise it has no impact on any evaluations of the PEF values. 'Values' are the actual potential parameters, listed in the order implemented in the corresponding PEF ``POT_TYPE``, for example
 
-.. math:: 
-   
+.. math::
+
    \begin{split}
    V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{100} [ y_1 + y_2 ] + f_{100} [ y_1 + y_2 ] + f_{002} y_3^2 + \ldots +  \\
                      & + b_1 e^{-g_1 r_{\rm HH}} + b_2 e^{-g_2 r_{\rm HH}^2} \\
    \end{split}
-   
- 
+
+
 
 where
 
-.. math:: 
+.. math::
 
    \begin{split}
       y_1 & = 1-e^{-a (r_1 - r_{\rm e})}, \\
@@ -113,9 +113,9 @@ where
       y_3 &= \cos\alpha-\cos\alpha_{\rm e}, \\
       r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha}.\\
    \end{split}
-   
-   
-   
+
+
+
 For the ``COEFF  Powers`` option, the meaning of the columns is as follows:
 
    +---------+-----+--+--+--+--+--+-----+-----------------------+
@@ -136,17 +136,17 @@ For the ``COEFF  Powers`` option, the meaning of the columns is as follows:
    |  f000003|    0| 0| 0| 0| 0| 3|    1|  0.14394787420943E+04 |
    +---------+-----+--+--+--+--+--+-----+-----------------------+
 
-where 
+where
 
- - 'Labels' are the parameter name,  for printing purposes only; 
- - 'n1', 'n2', 'n3', ... are the 'powers' of an expansion term, e.g. 
+ - 'Labels' are the parameter name,  for printing purposes only;
+ - 'n1', 'n2', 'n3', ... are the 'powers' of an expansion term, e.g.
    :math:`V(r_1,r_2,r_3,r_4,r_5, r_6) = \sum_{n_1,n_2,n_3,n_4,n_5,n_1} f_{n_1,n_2,n_3,n_4,n_5,n_1} \xi_1^{n_1} \xi_2^{n_2} \xi_3^{n_3} \xi_4^{n_4} \xi_5^{n_5} \xi_6^{n_6}`
-  - 'Index' is a switch to indicate if the corresponding parameter was fitted or can be fitted, with no impact on any evaluations of the PEF values. 
-  - 'Values' are the actual potential parameters. Their order is not important for this implementation as long as the corresponding powers are defined. 
+  - 'Index' is a switch to indicate if the corresponding parameter was fitted or can be fitted, with no impact on any evaluations of the PEF values.
+  - 'Values' are the actual potential parameters. Their order is not important for this implementation as long as the corresponding powers are defined.
 
 
 
-In case the definition of PEF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`\ , equilibrium inter-bond angles :math:`\alpha_{\rm e}`, Morse exponents :math:`a` etc., in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column. For example: 
+In case the definition of PEF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`\ , equilibrium inter-bond angles :math:`\alpha_{\rm e}`, Morse exponents :math:`a` etc., in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column. For example:
 ::
 
     POTEN
@@ -160,9 +160,9 @@ In case the definition of PEF requires also structural parameters, such as equil
     f400          4      0      0      0        0.22690209
     f500          5      0      0      0       -0.11822982
     .....
-    
 
-Here, ``RE12`` and ``theta0`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using column 6. 
+
+Here, ``RE12`` and ``theta0`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using column 6.
 
 Implemented PEFs
 ================
@@ -177,18 +177,19 @@ There are several PEFs available for this molecule type.
 ``POTEN_XY2_MORBID``
 ^^^^^^^^^^^^^^^^^^^^
 
-This form is given by 
+This form is given by
 
-.. math:: 
+.. math::
 
    \begin{split}
-   V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{002} y_3^2 +  + f_{003} y_4 + \ldots  \\
-                   & + (f_{100} + f_{101} y_3 + f_{102} y_3^2 +  + f_{103} y_4 + \ldots) [y_1 + y_2] \\ 
-                   & + (f_{200} + f_{201} y_3 + f_{202} y_3^2 +  + f_{203} y_4 + \ldots) [y_1^2 + y_2^2] \\
-                   & + (f_{110} + f_{111} y_3 + f_{112} y_3^2 +  + f_{113} y_4 + \ldots) y_1y_2 \\
+   V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{002} y_3^2 +  f_{003} y_4 + \ldots  \\
+                   & + (f_{100} + f_{101} y_3 + f_{102} y_3^2 +  f_{103} y_4 + \ldots) [y_1 + y_2] \\
+                   & + (f_{200} + f_{201} y_3 + f_{202} y_3^2 +  f_{203} y_4 + \ldots) [y_1^2 + y_2^2] \\
+                   & + (f_{110} + f_{111} y_3 + f_{112} y_3^2 +  f_{113} y_4 + \ldots) y_1y_2 \\
                    & + \ldots \\
-
+                     & + b_1 e^{-g_1 r_{\rm HH}} + b_2 e^{-g_2 r_{\rm HH}^2} \\
    \end{split}
+
 
 where
 
@@ -198,6 +199,7 @@ where
       y_1 & = 1-e^{-a (r_1 - r_{\rm e})}, \\
       y_2 & = 1-e^{-a (r_2 - r_{\rm e})}, \\
       y_3 &= \cos\alpha-\cos\alpha_{\rm e}, \\
+      r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha}.\\
    \end{split}
 
 
@@ -235,7 +237,7 @@ For description and example see 'Potential Block' above with the input file exam
       end
 
 
-Using the structural parameters in the ``POTEN`` section is important for PES refinements, see the corresponding section for details. 
+Using the structural parameters in the ``POTEN`` section is important for PES refinements, see the corresponding section for details.
 The input file example is  `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_ .
 
 
@@ -249,7 +251,7 @@ An empirical PES of CO\ :sub:`2` is from [17HuScFr]_. The input file example is 
 
 
 
-It is programmed using the ``powers`` format as follows: 
+It is programmed using the ``powers`` format as follows:
 ::
 
 
@@ -278,11 +280,11 @@ It is programmed using the ``powers`` format as follows:
      f003    0    0    3  0   -0.1531231748456E+03
      f004    0    0    4  0    0.2090079612238E+03
      f005    0    0    5  0   -0.1883325770080E+03
-     ...... 
+     ......
      end
-     
 
-The first part contains some structural parameters with 'powers' indexes filled with dummy zeros to maintain the ``powers`` format. 
+
+The first part contains some structural parameters with 'powers' indexes filled with dummy zeros to maintain the ``powers`` format.
 
 
 
@@ -305,11 +307,11 @@ XYZ type
 
 The PEF is given by (see [22OwMiYu]_)
 
-.. math:: 
+.. math::
 
        V =  \sum_{ijk} f_{ijk} \xi_1^{i} \xi_2^{j} \xi_3^{k},
 
-The vibrational coordinates are 
+The vibrational coordinates are
 
 .. math::
 
@@ -318,8 +320,8 @@ The vibrational coordinates are
       \xi_2 &= (r_2-r_2^{\rm eq})/r_2, \\
      \xi_3 &= \alpha-\alpha_{\rm eq},
    \end{split}
-   
-where the internal stretching coordinates :math:`r_1  = r_1^{\rm eq}`\ , :math:`r_2  = r_2^{\rm eq}`\ , the interbond angle :math:`\alpha = \angle({\rm e})`\ , and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
+
+where :math:`r_1  = r_1^{\rm eq}`  and :math:`r_2  = r_2^{\rm eq}` are the internal stretching coordinates  and  :math:`\alpha` is the interbond angle, and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
 
 
 The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
