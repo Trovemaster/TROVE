@@ -196,7 +196,44 @@ For an example, see `SO2_morbid_step1.inp <https://raw.githubusercontent.com/Tro
 
 
 
+``POTEN_XY2_TYUTEREV``
+^^^^^^^^^^^^^^^^^^^^^^
+
+For description and example see above. 
+The input file example is  `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_  where this PES is used.
+
+
+
+
+
 **Examples** and **References**
 
 
 
+XYZ type
+--------
+
+
+``POTEN_XYZ_KOPUT``
+^^^^^^^^^^^^^^^^^^^
+
+
+The PEF is given by (see [22OwMiYu]_)
+
+.. math:: 
+
+       V =  \sum_{ijk} f_{ijk} \xi_1^{i} \xi_2^{j} \xi_3^{k},
+
+The vibrational coordinates are 
+
+.. math 
+
+\begin{split}
+  \xi_1 &= (r_1-r_1^{\rm eq})/r_1, \\
+  \xi_2 &= (r_2-r_2^{\rm eq})/r_2, \\
+  \xi_3 &= \alpha-\alpha_{\rm eq},
+\end{split}
+where the internal stretching coordinates $r_1  = r_1^{\rm eq} $, $r_2  = r_2^{\rm eq} $, the interbond angle $\alpha = \angle({\rm e})$, and the equilibrium parameters are $r_1^{\rm eq}$, $r_2^{\rm eq}$ and $\alpha_{\rm eq}$. Note that the exponent $k$ associated with the bending coordinate $\xi_3$ assumes only even values because of the symmetry of the XYZ molecule.
+
+
+The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.

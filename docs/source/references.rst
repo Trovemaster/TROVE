@@ -62,3 +62,5 @@ References
 .. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ Sb\ :sub:`3`
 
 .. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations. 
+
+.. [22OwMiYu] A. Owens, A. Mitrushchenkov, S.N. Yurchenko, and J. Tennyson. MNRAS, 516, 3995 (2022), ExoMol line lists - XLVII. Rovibronic molecular line list of the calcium monohydroxide radical (CaOH).
