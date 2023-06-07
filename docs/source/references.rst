@@ -64,3 +64,6 @@ References
 .. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations. 
 
 .. [22OwMiYu] A. Owens, A. Mitrushchenkov, S.N. Yurchenko, and J. Tennyson. MNRAS, 516, 3995 (2022), ExoMol line lists - XLVII. Rovibronic molecular line list of the calcium monohydroxide radical (CaOH).
+
+.. [17HuScFr] X. Huang, D.W. Schwenke, R.S. Freedman, Т.J. Lee, J. Quant. Spectrosc. Radiat. Transf., 203, 224 (2017), Ames-2016 line lists for 13 isotopologues of CO\ :sub:`2`\ : Updates, consistency, and remaining issues.
+

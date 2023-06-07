@@ -203,10 +203,57 @@ For description and example see above.
 The input file example is  `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_  where this PES is used.
 
 
+``poten_co2_ames1``
+^^^^^^^^^^^^^^^^^^^
+
+
+An empirical PES of CO\ :sub:`2` is from [17HuScFr]_. The input file example is  `CO2_bisect_xyz_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CO2_bisect_xyz_step1.inp>`_  where this PES is used.
+
+
+
+It is programmed using the ``powers`` format as follows: 
+::
+
+
+     POTEN
+     NPARAM  234
+     POT_TYPE  poten_co2_ames1
+     COEFF  powers  (powers or list)
+     r12ref    0 0 0  1    1.16139973893
+     alpha2    0 0 0  1    1.0000000000
+     De1       0 0 0  1    155000.0000
+     De2       0 0 0  1    40000.0000
+     Ae1       0 0 0  1   40000.0000
+     Ae2       0 0 0  1   20000.0000
+     edamp2    0 0 0  1   -2.0000
+     edamp4    0 0 0  1   -4.0000
+     edamp5    0 0 0  1   -0.2500
+     edamp6    0 0 0  1   -0.5000
+     Emin      0 0 0  1  -0.000872131085d0
+     Rmin      0 0 0  1  0.1161287540428520D+01
+     rminbohr  0 0 0  1  0.2194515245360671D+01
+     alpha     0 0 0  1  1.00000000000000000000
+     rref      0 0 0  1  1.1613997389
+     f000    0    0    0  0    0.3219238090183E+01
+     f001    0    0    1  0   -0.2181831901567E+02
+     f002    0    0    2  0    0.7355163655139E+02
+     f003    0    0    3  0   -0.1531231748456E+03
+     f004    0    0    4  0    0.2090079612238E+03
+     f005    0    0    5  0   -0.1883325770080E+03
+     ...... 
+     end
+     
+
+The first part contains some structural parameters with 'powers' indexes filled with dummy zeros to maintain the ``powers`` format. 
+
+
+
+
 
 
 
 **Examples** and **References**
+
 
 
 
@@ -226,14 +273,15 @@ The PEF is given by (see [22OwMiYu]_)
 
 The vibrational coordinates are 
 
-.. math 
+.. math::
 
-\begin{split}
-  \xi_1 &= (r_1-r_1^{\rm eq})/r_1, \\
-  \xi_2 &= (r_2-r_2^{\rm eq})/r_2, \\
-  \xi_3 &= \alpha-\alpha_{\rm eq},
-\end{split}
-where the internal stretching coordinates $r_1  = r_1^{\rm eq} $, $r_2  = r_2^{\rm eq} $, the interbond angle $\alpha = \angle({\rm e})$, and the equilibrium parameters are $r_1^{\rm eq}$, $r_2^{\rm eq}$ and $\alpha_{\rm eq}$. Note that the exponent $k$ associated with the bending coordinate $\xi_3$ assumes only even values because of the symmetry of the XYZ molecule.
+   \begin{split}
+      \xi_1 &= (r_1-r_1^{\rm eq})/r_1, \\
+      \xi_2 &= (r_2-r_2^{\rm eq})/r_2, \\
+     \xi_3 &= \alpha-\alpha_{\rm eq},
+   \end{split}
+   
+where the internal stretching coordinates :math:`r_1  = r_1^{\rm eq} `, :math:`r_2  = r_2^{\rm eq} `, the interbond angle :math:`\alpha = \angle({\rm e})`, and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
 
 
 The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
