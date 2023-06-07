@@ -357,19 +357,6 @@ The vibrational coordinates are
 where :math:`a_{ijklmn}:math:` are the expansion parameters. Here, :math:`r_1:math:`, :math:`r_2:math:` and :math:`r_3:math:` are the bond lengths, :math:`\alpha_{1}:math:` and :math:`\alpha_{2}:math:` are the bond angles, :math:`\tau:math:` is the dihedral angle between two bond planes, and :math:`b_i:math:` is a Morse-oscillator parameter.
 
 
+An input file example for H\ :sub:`2`\ CS is  `H2CS_zxy2_morse_cos_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/H2CS_zxy2_morse_cos_step1.inp>`_  where this PES is used.
 
 
-
-
-
-
-
-
-
-
-
-
-where :math:`r_1  = r_1^{\rm eq}`  and :math:`r_2  = r_2^{\rm eq}` are the internal stretching coordinates  and  :math:`\alpha` is the interbond angle, and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
-
-
-The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
