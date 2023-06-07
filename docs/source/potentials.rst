@@ -325,3 +325,51 @@ where :math:`r_1  = r_1^{\rm eq}`  and :math:`r_2  = r_2^{\rm eq}` are the inter
 
 
 The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
+
+
+
+ZXY2 type
+---------
+
+
+``poten_zxy2_morse_cos``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+The PEF is expressed analytically as  (see [15AlOvPo]_, [23MeOwTe]_)
+
+.. math::
+
+     V =  \sum_{ijklmn} a_{ijklmn} \xi_{1}^{i} \xi_{2}^{j} \xi_{3}^{k} \xi_{4}^{l} \xi_{5}^{m} \xi_6^{n},
+
+The vibrational coordinates are
+
+.. math::
+
+   \begin{split}
+     \xi_i &= 1 - \exp[-b_i(r_i-r_i^{\rm e})],\quad i={\rm 1, 2, 3},  \\
+     \xi_4 &= \alpha_1-\alpha_{\rm e}, \\
+     \xi_5 &= \alpha_2-\alpha_{\rm e}, \\
+     \xi_6 &= 1+\cos\tau.
+   \end{split}
+
+
+where :math:`a_{ijklmn}:math:` are the expansion parameters. Here, :math:`r_1:math:`, :math:`r_2:math:` and :math:`r_3:math:` are the bond lengths, :math:`\alpha_{1}:math:` and :math:`\alpha_{2}:math:` are the bond angles, :math:`\tau:math:` is the dihedral angle between two bond planes, and :math:`b_i:math:` is a Morse-oscillator parameter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+where :math:`r_1  = r_1^{\rm eq}`  and :math:`r_2  = r_2^{\rm eq}` are the internal stretching coordinates  and  :math:`\alpha` is the interbond angle, and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
+
+
+The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
