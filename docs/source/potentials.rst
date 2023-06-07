@@ -24,21 +24,30 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
 
 ::
 
-      POTENTIAL
-      NPARAM  99
-      POT_TYPE  poten_xy2_tyuterev
-      COEFF  list
-      b1        0    0.80000000000000E+06
-      b2        0    0.80000000000000E+05
-      g1        0    0.13000000000000E+02
-      g2        0    0.55000000000000E+01
-      f000      0    0.00000000000000E+00
-      f001      1    0.25298724728304E+01
-      f100      1    0.76001446034650E+01
+      POTEN
+      NPARAM  102
+      POT_TYPE  POTEN_XY2_MORSE_COS
+      COEFF  list  (powers or list)
+       RE13         1  0.15144017558000E+01
+       ALPHAE       1  0.92005073880000E+02
+       AA           1  0.12705074620000E+01
+       B1           1  0.50000000000000E+06
+       B2           1  0.50000000000000E+05
+       G1           1  0.15000000000000E+02
+       G2           1  0.10000000000000E+02
+       V0           0  0.00000000000000E+00
+       F_0_0_1      1 -0.11243403302598E+02
+       F_1_0_0      1 -0.94842865087918E+01
+       F_0_0_2      1  0.17366522840412E+05
+       F_1_0_1      1 -0.25278354456474E+04
+       F_1_1_0      1  0.20295521820240E+03
+       F_2_0_0      1  0.38448640879698E+05
+       F_0_0_3      1  0.27058767090918E+04
+       F_1_0_2      0 -0.47718397149800E+04
       ...
       end
 
-For an example, see `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_  where this PES is used.
+For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
 ::
@@ -196,11 +205,40 @@ For an example, see `SO2_morbid_step1.inp <https://raw.githubusercontent.com/Tro
 
 
 
+``POTEN_XY2_MORSE_COS``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+For description and example see 'Potential Block' above with the input file example for SiH\ :sub:`2`  `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_. This PES was used in [21ClYu}_ .
+
+
+
 ``POTEN_XY2_TYUTEREV``
 ^^^^^^^^^^^^^^^^^^^^^^
 
-For description and example see above. 
-The input file example is  `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_  where this PES is used.
+``POTEN_XY2_TYUTEREV`` is the essentially the same PES as ``POTEN_XY2_MORSE_COS``, with the difference that the ``POTEN`` input part does not contain the structural parameters:
+
+
+::
+
+      POTENTIAL
+      NPARAM  99
+      POT_TYPE  poten_xy2_tyuterev
+      COEFF  list
+      b1        0    0.80000000000000E+06
+      b2        0    0.80000000000000E+05
+      g1        0    0.13000000000000E+02
+      g2        0    0.55000000000000E+01
+      f000      0    0.00000000000000E+00
+      f001      1    0.25298724728304E+01
+      f100      1    0.76001446034650E+01
+      ...
+      end
+
+
+Using the structural parameters in the ``POTEN`` section is important for PES refinements, see the corresponding section for details. 
+The input file example is  `h2s_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/h2s_step1.inp>`_ .
+
+
 
 
 ``poten_co2_ames1``
@@ -281,7 +319,7 @@ The vibrational coordinates are
      \xi_3 &= \alpha-\alpha_{\rm eq},
    \end{split}
    
-where the internal stretching coordinates :math:`r_1  = r_1^{\rm eq} `, :math:`r_2  = r_2^{\rm eq} `, the interbond angle :math:`\alpha = \angle({\rm e})`, and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
+where the internal stretching coordinates :math:`r_1  = r_1^{\rm eq}`\ , :math:`r_2  = r_2^{\rm eq}`\ , the interbond angle :math:`\alpha = \angle({\rm e})`\ , and the equilibrium parameters are :math:`r_1^{\rm eq}`, :math:`r_2^{\rm eq}` and :math:`\alpha_{\rm eq}`. Note that the exponent :math:`k` associated with the bending coordinate :math:`\xi_3` assumes only even values because of the symmetry of the XYZ molecule.
 
 
 The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.

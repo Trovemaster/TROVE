@@ -67,3 +67,4 @@ References
 
 .. [17HuScFr] X. Huang, D.W. Schwenke, R.S. Freedman, Т.J. Lee, J. Quant. Spectrosc. Radiat. Transf., 203, 224 (2017), Ames-2016 line lists for 13 isotopologues of CO\ :sub:`2`\ : Updates, consistency, and remaining issues.
 
+.. [21ClYu]  V.H. J. Clark and S.N. Yurchenko. Phys. Chem. Chem. Phys., 23, 11990 (2021), Modelling the non-local thermodynamic equilibrium spectra of silylene (SiH\ :sub:`2`\ ). 
