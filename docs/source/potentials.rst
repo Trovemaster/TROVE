@@ -354,7 +354,7 @@ The vibrational coordinates are
    \end{split}
 
 
-where :math:`a_{ijklmn}:math:` are the expansion parameters. Here, :math:`r_1:math:`, :math:`r_2:math:` and :math:`r_3:math:` are the bond lengths, :math:`\alpha_{1}:math:` and :math:`\alpha_{2}:math:` are the bond angles, :math:`\tau:math:` is the dihedral angle between two bond planes, and :math:`b_i:math:` is a Morse-oscillator parameter.
+where :math:`a_{ijklmn}` are the expansion parameters. Here, :math:`r_1`, :math:`r_2` and :math:`r_3` are the bond lengths, :math:`\alpha_{1}` and :math:`\alpha_{2}` are the bond angles, :math:`\tau` is the dihedral angle between two bond planes, and :math:`b_i` is a Morse-oscillator parameter.
 
 
 An input file example for H\ :sub:`2`\ CS is  `H2CS_zxy2_morse_cos_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/H2CS_zxy2_morse_cos_step1.inp>`_  where this PES is used.
