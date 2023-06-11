@@ -328,8 +328,8 @@ The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.
 
 
 
-ZXY2 type
----------
+ZXY\ :sub:`2` type
+------------------
 
 
 ``poten_zxy2_morse_cos``
@@ -347,16 +347,58 @@ The vibrational coordinates are
 .. math::
 
    \begin{split}
-     \xi_i &= 1 - \exp[-b_i(r_i-r_i^{\rm e})],\quad i={\rm 1, 2, 3},  \\
+     \xi_i &= 1 - \exp[-b_i(r_i-r_i^{\rm e})],\quad i={\rm 0, 1, 2},  \\
      \xi_4 &= \alpha_1-\alpha_{\rm e}, \\
      \xi_5 &= \alpha_2-\alpha_{\rm e}, \\
      \xi_6 &= 1+\cos\tau.
    \end{split}
 
 
-where :math:`a_{ijklmn}` are the expansion parameters. Here, :math:`r_1`, :math:`r_2` and :math:`r_3` are the bond lengths, :math:`\alpha_{1}` and :math:`\alpha_{2}` are the bond angles, :math:`\tau` is the dihedral angle between two bond planes, and :math:`b_i` is a Morse-oscillator parameter.
+where :math:`a_{ijklmn}` are the expansion parameters. Here, :math:`r_0`, :math:`r_1` and :math:`r_2` are the bond lengths, :math:`\alpha_{1}` and :math:`\alpha_{2}` are the bond angles, :math:`\tau` is the dihedral angle between two bond planes, and :math:`b_i` is a Morse-oscillator parameter.
+
+The expansion has a symmetry adapted form, which is invariant upon interchanging the two equivalent atoms Y\ :sub:`1` and Y\ :sub:`2``, i.e. for :math:`r_1 \leftrightarrow r_2` simultaneously with  :math:`\alpha_1 \leftrightarrow \alpha_2`.  
+
+The TROVE function for this PEF is ``MLpoten_zxy2_morse_cos``, which can be found in the module ``mol_zxy2.f09``. 
 
 
-An input file example for H\ :sub:`2`\ CS is  `H2CS_zxy2_morse_cos_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/H2CS_zxy2_morse_cos_step1.inp>`_  where this PES is used.
+``poten_zxy2_morse_cos`` uses the ``powers`` form for the potential parameters. An input file example for H\ :sub:`2`\ CS is  `H2CS_zxy2_morse_cos_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/H2CS_zxy2_morse_cos_step1.inp>`_  where this PES is used.
+
+
+
+XY\ :sub:`3` type (pyramidal)
+-----------------------------
+
+
+``POTEN_XY3_MORBID_11``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate representing the 1D inversion motion and other 5 are displacements from their equilibrium values, but it can be equally used for rigid molecules like phosphine as well. As all PEFs in TROVE, ``POTEN_XY3_MORBID_11``  is a symmetry adapted to be fully symmetric for all operations (permutations) of the D\ :sub: `3h`\ (M) (and also C\ :sub:`3v`\ (M)) molecular group symmetry. It uses the following coordinates 
+
+
+.. math::
+
+   \begin{split}
+     \xi_i &= 1 - \exp[-a(r_i-r_i^{\rm e})],\quad i={\rm 1, 2, 3},  \\
+     \xi_4 &= \frac{\sqrt{2}}{\sqrt{3}} (2\alpha_1-\alpha_2-\alpha_3), \\
+     \xi_5 &= \frac{\sqrt{2}}{2} (\alpha_2-\alpha_3), \\
+     \xi_6 &= \sin\rho_{\rm e}-\sin\rho,
+   \end{split}
+
+where :math:`r_i` (:math`i=1,2,3,`) are three bond lengths, :math:`\alpha_i` (:math`i=1,2,3,`) are three bond angles with :math:`\alpha_i` opposite to :math:`r_i` and :math:`\rho` is an umbrella coordinate defined as an 'average' angle between three bonds and an average symmetry axis as follows:
+
+.. math::
+        
+   \sin\rho = \frac{2}{sqrt{{3}}\sin\left(\frac{\bar\alpha}{2}\right)
+
+and 
+
+.. math::
+
+     \bar\alpha = \frac{1}{3} (\alpha_1+\alpha_2+\alpha_3). 
+
+
+The corresponding Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  It uses the ``Coeffs LIST`` form. A TROVE input example can be found in XXXXXXXXX. 
+
+
 
 
