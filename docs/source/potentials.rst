@@ -384,7 +384,7 @@ This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate repres
      \xi_6 &= \sin\rho_{\rm e}-\sin\rho,
    \end{split}
 
-where :math:`r_i` (:math`i=1,2,3,`) are three bond lengths, :math:`\alpha_i` (\ :math`i=1,2,3,`\ ) are three bond angles with :math:`\alpha_i` opposite to :math:`r_i` and :math:`\rho` is an umbrella coordinate defined as an 'average' angle between three bonds and an average symmetry axis as follows:
+where :math:`r_i` (\ :math`i=1,2,3,`\ ) are three bond lengths, :math:`\alpha_i` (\ :math`i=1,2,3,`\ ) are three bond angles with :math:`\alpha_i` opposite to :math:`r_i` and :math:`\rho` is an umbrella coordinate defined as an 'average' angle between three bonds and an average symmetry axis as follows:
 
 .. math::
         
@@ -403,7 +403,7 @@ The corresponding Fortran function is ``MLpoten_xy3_morbid_10``, which can found
 ``POTEN_XY3_MORBID_11``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-This is a similar PES to ``POTEN_XY3_MORBID_10``, but with the structural parameters (\ :math:`r_{\rm e}`\ , :math:`\alpha_{\rm e}`\ and :math:`a`\ (Morse parameter)) included into the POTENTIAL block:
+This is a similar PES to ``POTEN_XY3_MORBID_10``, but with the structural parameters (\ :math:`r_{\rm e}`\ , :math:`\alpha_{\rm e}` and :math:`a` (Morse parameter)) included into the POTENTIAL block:
 ::
 
     POTEN
