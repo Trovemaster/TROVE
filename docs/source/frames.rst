@@ -500,76 +500,9 @@ where :math: the MEP values are given by a parameterised expansion, for example
 where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`.
 
 
-
-
-The C\ :sub:`2`\ H:sub:`4` molecule and the ``C2H4`` type
----------------------------------------------------------
-::
-
-       MolType C2H4
-
-
-
-``C2H4_2BETA_1TAU``
-^^^^^^^^^^^^^^^^^^^
-
-
-The internal coordinates are defined using the following 12 valence coordinates: 5 stretching (molecular bond) coordinates, 4 bending (inter-bond angles) and 3 dihedral coordinates, with the last mode as a book angle describing the relative motion of two moieties:
-
-
-
-.. sidebar::
-
-   .. figure:: img/C2H4.jpg
-       :alt: C2H4
-
-       The structure and molecular frame of the C\ :sub:`2`H\ :sub:`4` molecule.
-
-
-
-
-.. math::
-
-    \begin{split}
-    \xi_1 &= r_0 - r_{\rm e}^{(0)}, \\
-    \xi_2 &= r_1 - r_{\rm e}, \\
-    \xi_3 &= r_2 - r_{\rm e}, \\
-    \xi_4 &= r_3 - r_{\rm e}, \\
-    \xi_5 &= r_4 - r_{\rm e}, \\
-    \xi_6 &= \beta_1-\beta_{\rm e},  \\
-    \xi_7 &= \beta_2-\beta_{\rm e},  \\
-    \xi_8 &= \beta_3-\beta_{\rm e},  \\
-    \xi_9 &= \beta_4-\beta_{\rm e},  \\
-    \xi_{10} &= \theta_1 - \pi,  \\
-    \xi_{11} &= \theta_2 - \pi,  \\
-    \xi_{12} & = \theta_1 + \theta_2 - 2\tau,
-    \end{split}
-
-where
-
-.. math::
-
-     \tau = \left\{
-     \begin{array}{cc}
-         \delta, & \delta <\pi, \\
-         \delta - 2\pi, & \delta >\pi, \\
-     \end{array} \right.
-
-
-
-
-
-.. sidebar::
-
-   .. figure:: img/C2H4_coords.jpg
-       :alt: C2H4 coordinates
-
-       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :sub:`2`H\ :sub:`4` molecule.
-
-
-
-This type can be used both for rigid and non-rigid molecule types. The non-rigid coordinate is  :math:`\xi_{12}` in the latter case.
-
+       
+Fuive-atomic molecules
+======================
 
 
 
@@ -673,3 +606,79 @@ The stretching modes :math:`r_i` can also be in principle combined into symmetry
      \end{split}
       
        
+       
+       
+Six-atomic molecules
+====================
+
+
+
+The C\ :sub:`2`\ H:sub:`4` molecule and the ``C2H4`` type
+---------------------------------------------------------
+::
+
+       MolType C2H4
+
+
+
+``C2H4_2BETA_1TAU``
+^^^^^^^^^^^^^^^^^^^
+
+
+The internal coordinates are defined using the following 12 valence coordinates: 5 stretching (molecular bond) coordinates, 4 bending (inter-bond angles) and 3 dihedral coordinates, with the last mode as a book angle describing the relative motion of two moieties:
+
+
+
+.. sidebar::
+
+   .. figure:: img/C2H4.jpg
+       :alt: C2H4
+
+       The structure and molecular frame of the C\ :sub:`2`H\ :sub:`4` molecule.
+
+
+
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= r_0 - r_{\rm e}^{(0)}, \\
+    \xi_2 &= r_1 - r_{\rm e}, \\
+    \xi_3 &= r_2 - r_{\rm e}, \\
+    \xi_4 &= r_3 - r_{\rm e}, \\
+    \xi_5 &= r_4 - r_{\rm e}, \\
+    \xi_6 &= \beta_1-\beta_{\rm e},  \\
+    \xi_7 &= \beta_2-\beta_{\rm e},  \\
+    \xi_8 &= \beta_3-\beta_{\rm e},  \\
+    \xi_9 &= \beta_4-\beta_{\rm e},  \\
+    \xi_{10} &= \theta_1 - \pi,  \\
+    \xi_{11} &= \theta_2 - \pi,  \\
+    \xi_{12} & = \theta_1 + \theta_2 - 2\tau,
+    \end{split}
+
+where
+
+.. math::
+
+     \tau = \left\{
+     \begin{array}{cc}
+         \delta, & \delta <\pi, \\
+         \delta - 2\pi, & \delta >\pi, \\
+     \end{array} \right.
+
+
+
+
+
+.. sidebar::
+
+   .. figure:: img/C2H4_coords.jpg
+       :alt: C2H4 coordinates
+
+       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :sub:`2`H\ :sub:`4` molecule.
+
+
+
+This type can be used both for rigid and non-rigid molecule types. The non-rigid coordinate is  :math:`\xi_{12}` in the latter case.
+
+
