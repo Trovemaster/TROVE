@@ -388,7 +388,7 @@ where :math:`r_i` (:math`i=1,2,3,`) are three bond lengths, :math:`\alpha_i` (\ 
 
 .. math::
         
-   \sin\rho = \frac{2}{sqrt{3}}\sin\left(\frac{\bar\alpha}{2}\right)
+   \sin\rho = \frac{2}{\sqrt{3}}\sin\left(\frac{\bar\alpha}{2}\right)
 
 and 
 
