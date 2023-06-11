@@ -369,10 +369,10 @@ XY\ :sub:`3` type (pyramidal)
 -----------------------------
 
 
-``POTEN_XY3_MORBID_11``
+``POTEN_XY3_MORBID_10``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate representing the 1D inversion motion and other 5 are displacements from their equilibrium values, but it can be equally used for rigid molecules like phosphine as well. As all PEFs in TROVE, ``POTEN_XY3_MORBID_11``  is a symmetry adapted to be fully symmetric for all operations (permutations) of the D\ :sub: `3h`\ (M) (and also C\ :sub:`3v`\ (M)) molecular group symmetry. It uses the following coordinates 
+This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate representing the 1D inversion motion and other 5 are displacements from their equilibrium values, but it can be equally used for rigid molecules like phosphine as well. As all PEFs in TROVE, ``POTEN_XY3_MORBID_10``  is a symmetry adapted to be fully symmetric for all operations (permutations) of the D\ :sub: `3h`\ (M) (and also C\ :sub:`3v`\ (M)) molecular group symmetry. It uses the following coordinates 
 
 
 .. math::
@@ -384,11 +384,11 @@ This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate repres
      \xi_6 &= \sin\rho_{\rm e}-\sin\rho,
    \end{split}
 
-where :math:`r_i` (:math`i=1,2,3,`) are three bond lengths, :math:`\alpha_i` (:math`i=1,2,3,`) are three bond angles with :math:`\alpha_i` opposite to :math:`r_i` and :math:`\rho` is an umbrella coordinate defined as an 'average' angle between three bonds and an average symmetry axis as follows:
+where :math:`r_i` (:math`i=1,2,3,`) are three bond lengths, :math:`\alpha_i` (\ :math`i=1,2,3,`\ ) are three bond angles with :math:`\alpha_i` opposite to :math:`r_i` and :math:`\rho` is an umbrella coordinate defined as an 'average' angle between three bonds and an average symmetry axis as follows:
 
 .. math::
         
-   \sin\rho = \frac{2}{sqrt{{3}}\sin\left(\frac{\bar\alpha}{2}\right)
+   \sin\rho = \frac{2}{sqrt{3}}\sin\left(\frac{\bar\alpha}{2}\right)
 
 and 
 
@@ -397,8 +397,33 @@ and
      \bar\alpha = \frac{1}{3} (\alpha_1+\alpha_2+\alpha_3). 
 
 
-The corresponding Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  It uses the ``Coeffs LIST`` form. A TROVE input example can be found in XXXXXXXXX. 
+The corresponding Fortran function is ``MLpoten_xy3_morbid_10``, which can found in ``mol_xy3.f90``.  It uses the ``Coeffs LIST`` form. A TROVE input example  for NH\ :sub:`3` is  `NH3_BYTe_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/NH3_BYTe_step1.inp>`_ , see [09YuBaYa]_ where this empirical PES was used to compute the BYTe line list for ammonia. 
 
+
+``POTEN_XY3_MORBID_11``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This is a similar PES to ``POTEN_XY3_MORBID_10``, but with the structural parameters (\ :math:`r_{\rm e}`\ , :math:`\alpha_{\rm e}`\ and :math:`a`\ (Morse parameter)) included into the POTENTIAL block:
+::
+
+    POTEN
+    NPARAM   112
+    POT_TYPE  poten_xy3_morbid_11
+    COEFF  list  (powers or list)
+    Re           0       1.01092848
+    alphae       0     106.7468338
+    a            0        2.15000000
+    VE           0  0.00000000000000E+00
+    FA1          0  0.00000000000000E+00
+    FA2          1  0.32385663790004E+06
+    FA3          1 -0.38722198084727E+06
+    FA4          1  0.10799634949894E+07
+    FA5          1 -0.25243109949867E+06
+    .....
+    end
+    
+
+The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  A TROVE input example  for NH\ :sub:`3` is  `NH3_BYTe_morbid_11_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/NH3_BYTe_morbid_11_step1.inp>`_ using the same parameters as in ``NH3_BYTe_step1.inp``. 
 
 
 
