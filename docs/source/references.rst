@@ -61,13 +61,14 @@ References
 
 .. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ Sb\ :sub:`3`
 
-.. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations. 
+.. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations.
 
 .. [22OwMiYu] A. Owens, A. Mitrushchenkov, S.N. Yurchenko, and J. Tennyson. MNRAS, 516, 3995 (2022), ExoMol line lists - XLVII. Rovibronic molecular line list of the calcium monohydroxide radical (CaOH).
 
 .. [17HuScFr] X. Huang, D.W. Schwenke, R.S. Freedman, Т.J. Lee, J. Quant. Spectrosc. Radiat. Transf., 203, 224 (2017), Ames-2016 line lists for 13 isotopologues of CO\ :sub:`2`\ : Updates, consistency, and remaining issues.
 
-.. [21ClYu]  V.H. J. Clark and S.N. Yurchenko. Phys. Chem. Chem. Phys., 23, 11990 (2021), Modelling the non-local thermodynamic equilibrium spectra of silylene (SiH\ :sub:`2`\ ). 
+.. [21ClYu]  V.H. J. Clark and S.N. Yurchenko. Phys. Chem. Chem. Phys., 23, 11990 (2021), Modelling the non-local thermodynamic equilibrium spectra of silylene (SiH\ :sub:`2`\ ).
 
 .. [23MeOwTe] T. Mellor, A. Owens, J. Tennyson, and S.N. Yurchenko. MNRAS, 520, 1997 (2023), ExoMol line lists - XLVIII. High-temperature line list of thioformaldehyde (H\ :sub:`2`\ CS).
 
+.. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi: <http://dx.doi.org/10.1093/mnras/staa2034>`_ .

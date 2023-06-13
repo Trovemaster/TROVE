@@ -407,23 +407,25 @@ This is a similar PES to ``POTEN_XY3_MORBID_10``, but with the structural parame
 ::
 
     POTEN
-    NPARAM   112
+    NPARAM   307
     POT_TYPE  poten_xy3_morbid_11
-    COEFF  list  (powers or list)
-    Re           0       1.01092848
-    alphae       0     106.7468338
-    a            0        2.15000000
-    VE           0  0.00000000000000E+00
-    FA1          0  0.00000000000000E+00
-    FA2          1  0.32385663790004E+06
-    FA3          1 -0.38722198084727E+06
-    FA4          1  0.10799634949894E+07
-    FA5          1 -0.25243109949867E+06
-    .....
+    COEFF  list
+     re           0  0.97580369000000E+00
+     alphae       0  0.11195131680000E+03
+     beta         0  0.21500000000000E+01
+     VE           0  0.00000000000000E+00
+     FA1          1  0.19897404278336E+02
+     FA2          1  0.34574086467373E+06
+     FA3          1 -0.45576605893993E+06
+     FA4          1  0.21457903182324E+07
+     .....
     end
 
 
-The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  A TROVE input example  for NH\ :sub:`3` is  `NH3_BYTe_morbid_11_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/NH3_BYTe_morbid_11_step1.inp>`_ using the same parameters as in ``NH3_BYTe_step1.inp``.
+The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  A TROVE input example  for H\ :sub:`3`\ O\ :sup:`+` is  `1H3-16O_p__eXeL__model-TROVE.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/1H3-16O_p__eXeL__model-TROVE.inp>`_ from [20YuTeMi]_ , where it was used to compute an ExoMol line list for this molecule. 
+
+
+
 
 
 
