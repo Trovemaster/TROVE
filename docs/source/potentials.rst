@@ -335,12 +335,12 @@ ZXY\ :sub:`2` type
 ``poten_zxy2_morse_cos``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-
 The PEF is expressed analytically as  (see [15AlOvPo]_, [23MeOwTe]_)
 
 .. math::
-
+     
      V =  \sum_{ijklmn} a_{ijklmn} \xi_{1}^{i} \xi_{2}^{j} \xi_{3}^{k} \xi_{4}^{l} \xi_{5}^{m} \xi_6^{n},
+     
 
 The vibrational coordinates are
 
@@ -436,11 +436,12 @@ A chain molecule of HOOH type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-This PEF is an expansion 
+The HOOH PES is given by the expansion 
 
-.. math..
+.. math::
 
-   V = \sum_{i_1,i_2,i_3,i_4,i_5,i_6} f_{i_1,i_2,i_3,i_4,i_5,i_6} \xi_1^{i_1} \xi_2^{i_2}  \xi_3^{i_3} \xi_4^{i_4} \xi_5^{i_5} \cos(i_6 \delta)
+     V = \sum_{i_1,i_2,i_3,i_4,i_5,i_6} f_{i_1,i_2,i_3,i_4,i_5,i_6} \xi_1^{i_1} \xi_2^{i_2}  \xi_3^{i_3} \xi_4^{i_4} \xi_5^{i_5} \cos(i_6 \delta)
+
 
 in terms of the following coordinates: 
 
