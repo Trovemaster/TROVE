@@ -1715,6 +1715,7 @@ contains
     else 
       ! 
       allocate(max_intens_state(1),stat=info)
+      max_intens_state = 0
       !
     endif
     !

@@ -427,5 +427,60 @@ The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.
 
 
 
+A chain molecule of HOOH type
+-----------------------------
+
+
+
+``POTEN_H2O2_KOPUT_UNIQUE``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+This PEF is an expansion 
+
+.. math..
+
+   V = \sum_{i_1,i_2,i_3,i_4,i_5,i_6} f_{i_1,i_2,i_3,i_4,i_5,i_6} \xi_1^{i_1} \xi_2^{i_2}  \xi_3^{i_3} \xi_4^{i_4} \xi_5^{i_5} \cos(i_6 \delta)
+
+in terms of the following coordinates: 
+
+.. math::
+
+   \begin{split}
+     \xi_1 &= \frac{R - R_{\rm e}}{R},  \\
+     \xi_2 &= \frac{r_1 - r_{\rm e}}{r_1},  \\
+     \xi_3 &= \frac{r_2 - r_{\rm e}}{r_2},  \\
+     \xi_4 &= \alpha_1-\alpha_{\rm e}, \\
+     \xi_5 &= \alpha_2-\alpha_{\rm e}, \\
+     \xi_6 &= \delta,
+   \end{split}
+
+where :math:`R, r_1, r_2`  are three bond lengths, :math:`\alpha_i` (\ :math:`i=1,2,`\ ) are two bond angles with :math:`\alpha_i` and :math:`\delta` is a dihedral angle. 
+
+
+This a ``powers`` type: 
+::
+
+    POTEN
+    NPARAM  166
+    POT_TYPE  POTEN_H2O2_KOPUT_UNIQUE
+    COEFF  powers  (powers or list)  (oo oh1  oh2 h1oo h2oo rho)
+    f000000       0  0  0  0  0  0  1  0.14557772800000E+01
+    f000000       0  0  0  0  0  0  1  0.96253006000000E+00
+    f000000       0  0  0  0  0  0  1  0.10108194717000E+03
+    f000000       0  0  0  0  0  0  1  0.11246000000000E+03
+    f000000       0  0  0  0  0  0  1  0.39611300000000E-02
+    f000001       0  0  0  0  0  1  1  0.48279121261621E-02
+    f000002       0  0  0  0  0  2  1  0.31552076592194E-02
+    f000003       0  0  0  0  0  3  1  0.27380895575892E-03
+    f000004       0  0  0  0  0  4  1  0.53200000000000E-04
+    
+
+
+The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_abcd.f90``.  A TROVE input example  for HOOH is  `HOOH_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/HOOH_step1.inpp>`_ from [15AlOvYu]_ , where it was used to compute an ExoMol line list for this molecule.
+
+
+      
+
 
 
