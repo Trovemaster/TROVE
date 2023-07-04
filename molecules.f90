@@ -827,7 +827,7 @@ end function ML_MEPfunc
        !
      enddo
      !
-     force(rank:molec%parmax) = 0
+     force(rank+1:molec%parmax) = 0
      !
      mu = 0 
      !

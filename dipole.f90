@@ -566,8 +566,6 @@ contains
       !
     enddo
     !
-    dimenmax_ram = max(nsizemax,1)
-    !
     write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
     allocate(vec_ram(nJ,sym%Nrepresen),stat = info)
@@ -1077,7 +1075,7 @@ contains
     integer(ik), allocatable :: icontrI_pack(:),irlevelI_pack(:),irdegI_pack(:)
     logical,    allocatable :: vec_mask(:)
     !
-    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax,icontrI
+    integer(ik)  :: jind,nlevels,igamma,nformat,nclasses,nsize_need,nlevelI,nlevelI_,dimenmax_,nsizemax,icontrI,nsizemax_
     !
     integer(ik)  :: ram_size_,alloc_p
     !
@@ -1168,7 +1166,9 @@ contains
         dimenmax = max(dimenmax,bset_contr(jind)%Maxcontracts)
         nsizemax = max(nsizemax,maxval(bset_contr(jind)%nsize(:)))
         !
-    enddo 
+    enddo
+    !
+    dimenmax_ram = max(nsizemax,1)
     !
     jmax = Jval(nJ)
     !
@@ -1353,7 +1353,7 @@ contains
     matsize = 0
     !
     intensity%factor = 1
-    nsizemax = 1
+    nsizemax_ = 1
     !
     ! the lowest lower state due to the selection of  istate_count(1)
     ! find this vlaue
@@ -1420,7 +1420,7 @@ contains
        !nsize_ram = nsize_need + nsize_need
        !
        matsize = matsize + nsize_need
-       nsizemax = max(nsizemax,nsize_need)
+       nsizemax_ = max(nsizemax_,nsize_need)
        !
     enddo
     !
@@ -1432,7 +1432,7 @@ contains
       !
     enddo
     !
-    dimenmax_ram = max(nsizemax,1)
+    !dimenmax_ram = max(nsizemax,1)
     !
     write(out,"('Max size of vectors: sym = ',i0,' prim =  ',i0)") dimenmax_ram,matsize
     !
@@ -1451,7 +1451,7 @@ contains
     !
     ! memory now + expected 
     !
-    memory_now_ = memory_now+real((2*dimenmax+nsizemax+dimenmax*nJ*sym%Maxdegen*3+&
+    memory_now_ = memory_now+real((2*dimenmax+nsizemax_+dimenmax*nJ*sym%Maxdegen*3+&
                   dimenmax*nJ*sym%Maxdegen*3)*8+&                  
                   nlevels*4+dimenmax)/1024.0_rk**3
     !
@@ -1460,7 +1460,7 @@ contains
     if (job%verbose>=5) write(out,"('   Number of OMP threads is ',i5)") num_threads
     !
     ! Account for the vectors alloacted for each thread vecF and vec_
-    memory_now_ = memory_now_ + num_threads*(nsizemax+dimenmax)/1024.0_rk**3
+    memory_now_ = memory_now_ + num_threads*(nsizemax_+dimenmax)/1024.0_rk**3
     !
     ! Scale by some small factor just in case
     !
@@ -5325,10 +5325,10 @@ contains
             return 
          endif 
          !
-         !if (J<intensity%J(1)) then 
-         !   passed = .false.
-         !   return 
-         !endif 
+         if (J<intensity%J(1)) then 
+            passed = .false.
+            return 
+         endif 
          !
          !if (J>intensity%J(2)) then 
          !   passed = .false.
