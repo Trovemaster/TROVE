@@ -3010,6 +3010,7 @@ module fields
          !
          trove%separate_store = .true.
          job%IOmatelem_split  = .true.
+         job%IOExtF_divide    = .true.
          !
          job%vib_contract = .true.
          !
@@ -4674,7 +4675,7 @@ module fields
    !
    if (.not.chk_defined) then 
       !
-      write (out,"('FLinput: The check_point section has not been defined')") 
+      write (out,"('FLinput: The check_point or control sections have not been defined')") 
       stop 'FLinput - The check_point section has not been defined'
       !
    endif 
