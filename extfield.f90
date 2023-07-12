@@ -350,7 +350,7 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
   integer(ik) :: nirrep, jval1, jval2, dimen1, dimen2, jind, ilevel_, ilevel, jlevel, jlevel_, isym1, &
       isym2, nsize1, nsize2, eigunit1, eigunit2, irec, ndeg1, ndeg2, irrep, ideg, jdeg, info, nsize, &
       maxdeg, maxdimen, iounit_me, ielem, m1, m2, isym, Jeigenvec_unit(size(Jval),sym%Nrepresen), &
-      isign, icmplx, num_threads, n, ithread
+      isign, icmplx, num_threads, n, ithread, nktau1, nktau2
   integer(ik), allocatable :: ind_sparse(:,:), nelem_sparse(:)
   integer(ik), external :: omp_get_max_threads, omp_get_thread_num
   real(rk) :: energy1, energy2, nu
@@ -362,6 +362,12 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
 
   jval1 = Jval(jind1)
   jval2 = Jval(jind2)
+
+
+  nktau1 = tens%nktau(jval1)
+  nktau2 = tens%nktau(jval2)
+
+
 
   write(out, '(/a,1x,i3,1x,i3,1x,a)') 'Compute and store rovibrational matrix elements for J pair = ', &
       jval1, jval2, '(rovib_me_jpair)'
@@ -502,9 +508,12 @@ subroutine rovib_me_jpair( tens, nJ, Jval, jind1, jind2, nlevels1, level_ind1, n
     endif
     ! write(iounit_me, '(a,1x,i4,1x,i2,1x,a)') 'alpha', ielem, icmplx, trim(tens%selem(ielem))
     write(iounit_me, '(a,1x,i4,1x,i2,1x,a)') 'alpha', ielem, tens%mmat_cmplx(ielem), trim(tens%selem(ielem))
-    do m1=-jval1, jval1
-      do m2=-jval2, jval2
-        if (abs(m1-m2)>tens%dm) cycle
+    do m1=1, nktau1
+    !do m1=-jval1, jval1
+      do m2=1, nktau1
+      !do m2=-jval2, jval2
+        if (abs(jval2-jval1)>tens%dm) cycle
+        !if (abs(m1-m2)>tens%dm) cycle
         if (any(abs(tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2))>print_tol)) then
           ! write(iounit_me,'(i4,1x,i4,100(1x,f))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2) * isign
           write(iounit_me,'(i4,1x,i4,100(1x,f20.12))') m1, m2, tens%mmat(jval1,jval2)%me(1:nirrep,ielem,m1,m2)

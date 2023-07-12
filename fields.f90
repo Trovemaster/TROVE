@@ -663,7 +663,7 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
-   logical :: kinetic_defined
+   logical :: kinetic_defined,pot_form_compact = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w
    real(rk)    :: lfact,f_t, func_coef
@@ -3483,10 +3483,10 @@ module fields
          !
          ! read Nparam and Type of PES
          !
-         do i = 1,3
-            !
-            call read_line(eof) ; if (eof) exit
-            call readu(w)
+         call read_line(eof) ; if (eof) exit
+         call readu(w)
+         !
+         do while(w(1:5)/='COEFF')
             !
             select case(w)
             !
@@ -3496,21 +3496,26 @@ module fields
               !
               trove%potentype = trim(w)
               !
+            case("COMPACT")
+              !
+              pot_form_compact = .true.
+              !
             case("NPARAM")
               !
               call readi(Nparam)
               !
             case("COEFF")
               !
-              call readu(w)
-              !
-              pot_coeff_type = trim(w)
+              call readu(pot_coeff_type)
               !
             case default
               !
               call report ("Unrecognized unit name "//trim(w),.true.)
               !
             end select
+            !
+            call read_line(eof) ; if (eof) exit
+            call readu(w)
             !
          enddo
          !
@@ -3541,7 +3546,9 @@ module fields
             case("LIST")
               !
               forcename(iparam)=trim(w)
-              call readi(ifit(iparam))
+              !
+              if (.not.pot_form_compact) call readi(ifit(iparam))
+              !
               call readf(force(iparam))
               !
             case("POWERS")
@@ -3559,7 +3566,7 @@ module fields
                  call readi(pot_ind(i,iparam))
               enddo
               !
-              call readi(ifit(iparam))
+              if (.not.pot_form_compact) call readi(ifit(iparam))
               call readf(force(iparam))
               !
               !if (any(pot_ind(:,iparam)<0)) then 
@@ -19171,7 +19178,7 @@ end subroutine check_read_save_none
              enddo
              !$omp end do
              !
-             deallocate (phivphi_t,phil,phir,dphil,dphir,phil_leg,phir_leg,phil_sin,phir_sin,dphil_leg,dphir_leg)
+             deallocate (phivphi_t,phil,phir,dphil,dphir,phil_leg,phir_leg,dphil_leg,dphir_leg)
              !$omp end parallel
              !
            case default 
