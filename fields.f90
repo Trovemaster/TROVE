@@ -663,7 +663,7 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
-   logical :: kinetic_defined,pot_form_compact = .false.
+   logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w
    real(rk)    :: lfact,f_t, func_coef
@@ -3504,10 +3504,6 @@ module fields
               !
               call readi(Nparam)
               !
-            case("COEFF")
-              !
-              call readu(pot_coeff_type)
-              !
             case default
               !
               call report ("Unrecognized unit name "//trim(w),.true.)
@@ -3518,6 +3514,10 @@ module fields
             call readu(w)
             !
          enddo
+         !
+         !"COEFF")
+         !
+         call readu(pot_coeff_type)
          !
          ! Allocation of the pot. parameters 
          !
@@ -3553,7 +3553,7 @@ module fields
               !
             case("POWERS")
               !
-              if (nitems<trove%Ncoords+3) then 
+              if ((pot_form_compact.and.nitems<trove%Ncoords+2).or.(.not.pot_form_compact.and.nitems<trove%Ncoords+3)) then 
                  !
                  write (out,"('FLinput: wrong number of records in POTEN on row=',i6,'()')") iparam
                  stop 'FLinput - illigal number of records in POTEN'
@@ -4412,6 +4412,10 @@ module fields
               !
               call readf(extF%matelem_threshold)
               !
+            case("COMPACT")
+              !
+              ExtF_form_compact = .true.
+              !
             case("COORDS")
               !
               if (nitems-1==1) then 
@@ -4578,12 +4582,14 @@ module fields
                !
                extF%name(iterm,imu)=trim(w)
                !
-               call readi(i_t) ; extF%ifit(iterm,imu) = i_t
+               if (.not.extF_form_compact) call readi(extF%ifit(iterm,imu))
+               !
                call readf(f_t) ; extF%coef(iterm,imu) = f_t
                !
              case("POWERS")
                !
-               if (nitems<trove%Ncoords+3) then 
+               if ((extF_form_compact.and.nitems<trove%Ncoords+2).or.&
+                   (.not.extF_form_compact.and.nitems<trove%Ncoords+3)) then 
                   !
                   write (out,"('FLinput: wrong number of records in extF on row=',i6,'()')") iparam
                   stop 'FLinput - illigal number of records in extF'
@@ -4596,7 +4602,7 @@ module fields
                   !
                enddo
                !
-               call readf(f_t); extF%ifit(iterm,imu) = int(f_t)
+               if (.not.extF_form_compact) call readi(extF%ifit(iterm,imu))
                call readf(f_t); extF%coef(iterm,imu) = f_t
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
