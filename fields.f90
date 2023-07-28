@@ -665,14 +665,23 @@ module fields
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
    logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
-   character(len=wl) :: w
+   character(len=wl) :: w,ioname
    real(rk)    :: lfact,f_t, func_coef
    integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
    character(len=4) :: char_j, func_name
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
+   !
    character(len=cl) :: my_fmt !format for I/O specification
+   integer(ik)       :: iut !  iut is a unit number. 
+   character(len=wl) :: large_fmt
+   integer           :: ierr,ic
+   character(len=wl) :: line_buffer
+   logical           :: zEchoInput = .true.
+   integer,parameter :: max_input_lines=500000  ! maximum length (in lines) of input. 500,000 lines is plenty..
+   !                                              ! to avoid feeding in GB of data by mistake.
+   integer(ik)  :: Nparam_check    !number of parameters as determined automatically by duo (Nparam is specified in input).
    !
    !
    ! default values: 
@@ -778,29 +787,64 @@ module fields
    !
    Jrot = 0
    !
-   arg_unit = 5
-   call get_command_argument(1, status=arg_status, length=arg_length)
-   if (arg_status == 0) then
-     allocate( character(arg_length) :: arg )
-     call get_command_argument(1, status=arg_status, value=arg)
-     if (arg_status == 0) then
-       open(newunit=arg_unit, file=arg, status='old')
-     end if
-   end if
+   ! read the general input
+   ! read everything from std input and write to a temporary (scratch) file.
    !
-   call input_options(echo_lines=.true.,error_flag=1, default_unit=arg_unit)
+   write(ioname, '(a, i4)') 'write to a temporary (scratch) file.'
+   call IOstart(trim(ioname), iut)
+   !
+   open(unit=iut, status='scratch', action='readwrite')
+   write(large_fmt, '(A,i0,A)') '(A', wl, ')'
+   trans_loop: do i=1, max_input_lines
+     read(unit=*,fmt=large_fmt,iostat=ierr) line_buffer
+     if(ierr /=0) exit trans_loop
+     write(iut, '(a)') trim(line_buffer)
+
+     ! This is a hack; I need to know if to echo the input or not before processing it
+     ! The option 'do_not_echo_input' is dealt with here as a special case
+     line_buffer = adjustl(line_buffer) ! remove leading spaces
+
+     do j=1, len(trim(line_buffer)) ! convert to uppercase
+      ic = ichar( line_buffer(j:j))
+      if( ic >= 97) line_buffer(j:j) = achar(ic-32)
+     enddo
+
+     if( trim(line_buffer) == 'DO_NOT_ECHO_INPUT' ) zEchoInput = .false.
+   enddo trans_loop
+   rewind(iut)
+   !
+   if( zEchoInput) then
+     write(out,"('(Transcript of the input --->)')")
+     call input_options(echo_lines=.true.,error_flag=1)
+   else
+     call input_options(echo_lines=.false.,error_flag=1)
+   endif
+   !
+   !arg_unit = 5
+   !call get_command_argument(1, status=arg_status, length=arg_length)
+   !if (arg_status == 0) then
+   !  allocate( character(arg_length) :: arg )
+   !  call get_command_argument(1, status=arg_status, value=arg)
+   !  if (arg_status == 0) then
+   !    open(newunit=arg_unit, file=arg, status='old')
+   !  end if
+   !end if
+   !
+   !call input_options(echo_lines=.true.,error_flag=1, default_unit=arg_unit)
    !
    ! read the general input 
    !
    do
-       call read_line(eof) ; if (eof) exit
+       call read_line(eof,iut) ; if (eof) exit
        call readu(w)
        select case(w)
        case("STOP","FINISH","END")
          exit
        case("")
          !
-         !print "(1x)"    !  Echo blank lines
+       case("DO_NOT_ECHO_INPUT") 
+         !
+         zEchoInput = .false.
          !
        case ("PTORDER")
          !
@@ -836,7 +880,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -857,7 +901,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -998,7 +1042,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -1035,7 +1079,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -1051,7 +1095,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -1083,7 +1127,7 @@ module fields
              if (nitems-1==1) then 
                 call readf(f_t)
                 job%symm_toler(:) = f_t
-                call read_line(eof) ; if (eof) exit
+                call read_line(eof,iut) ; if (eof) exit
                 call readu(w)
                 cycle 
              endif 
@@ -1242,7 +1286,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -1311,7 +1355,7 @@ module fields
            !
          end select
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -1556,7 +1600,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -1724,7 +1768,7 @@ module fields
              stop 'FLinput, zmat - out of memory'
          end if
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          !
          call readu(w)
          !
@@ -1755,7 +1799,7 @@ module fields
            !
            call readf(trove%mass(iatom))
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            !
            call readu(w)
            !
@@ -1854,7 +1898,7 @@ module fields
          !
          imode = 0
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          !call readu(w)
          !
          do while (trim(w)/="".and.imode<Nmodes.and.trim(w)/="END")
@@ -2075,7 +2119,7 @@ module fields
               !
            enddo 
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            !
          end do
          !
@@ -2140,14 +2184,14 @@ module fields
          imode = 0
          ifunc = 0
          allocate(molec%basic_function_list(Nmodes))
-         call read_line(eof) ; if (eof) exit 
+         call read_line(eof,iut) ; if (eof) exit 
          do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
             call readu(w)
             call readi(imode)
             call readi(numfunc)     
             allocate(molec%basic_function_list(imode)%mode_set(numfunc))
             do i = 1, numfunc
-              call read_line(eof); if (eof) exit
+              call read_line(eof,iut); if (eof) exit
               call readi(ifunc)
               call readi(numterms)
               molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
@@ -2177,7 +2221,7 @@ module fields
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
               enddo 
             enddo
-            call read_line(eof); if (eof) exit
+            call read_line(eof,iut); if (eof) exit
          enddo 
          !
       case("EQUIL","EQUILIBRIUM")
@@ -2191,7 +2235,7 @@ module fields
          !
          imode = 0
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
@@ -2232,7 +2276,7 @@ module fields
              !
            endif 
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -2257,7 +2301,7 @@ module fields
          !
          imode = 0
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
@@ -2298,7 +2342,7 @@ module fields
              !
            endif 
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -2320,7 +2364,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          chk_defined = .true.
@@ -2994,7 +3038,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -3016,7 +3060,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          chk_defined = .true.
@@ -3186,7 +3230,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -3202,7 +3246,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -3394,7 +3438,7 @@ module fields
              !
            case('STATE_LIST','STATE-LIST')
              !
-             call read_line(eof) ; if (eof) exit
+             call read_line(eof,iut) ; if (eof) exit
              !
              i = 0
              !
@@ -3408,7 +3452,7 @@ module fields
                 call readi(analysis%sym_list(i))
                 call readi(analysis%dens_list(i))
                 !
-                call read_line(eof) ; if (eof) exit
+                call read_line(eof,iut) ; if (eof) exit
                 call readu(w)
                 !
              enddo
@@ -3420,7 +3464,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -3439,7 +3483,7 @@ module fields
             stop 'FLinput - reading KINETIC  second time'
          endif 
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -3458,7 +3502,7 @@ module fields
                !
            end select 
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo
@@ -3483,7 +3527,7 @@ module fields
          !
          ! read Nparam and Type of PES
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while(w(1:5)/='COEFF')
@@ -3510,7 +3554,7 @@ module fields
               !
             end select
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
          enddo
@@ -3518,6 +3562,43 @@ module fields
          !"COEFF")
          !
          call readu(pot_coeff_type)
+         !
+         ! find the number of points/parameters in input
+         !
+         Nparam_check = 0
+         !
+         call input_options(echo_lines=.false.)
+         !
+         do while (trim(w)/="END")
+            !
+            call read_line(eof,iut) ; if (eof) exit
+            !
+            call readu(w)
+            !
+            Nparam_check = Nparam_check+1
+            !
+         enddo
+         !
+         Nparam_check = Nparam_check-1
+         !
+         if (zEchoInput) call input_options(echo_lines=.true.)
+         !
+         if (trim(w) /= "END") then
+             call report ("ERROR: Cannot find `END' statement)",.true.)
+         endif
+         !
+         ! go back to beginning of VALUES block and reset `w' to original value
+         do i=1, Nparam_check+1
+           backspace(unit=iut)
+         enddo
+         !
+         w = trim(pot_coeff_type)
+         !
+         Nparam = Nparam_check
+         !
+         if (Nparam <= 0) then
+             call report ("ERROR: Number of points or parameters <= 0 )",.true.)
+         endif
          !
          ! Allocation of the pot. parameters 
          !
@@ -3534,7 +3615,7 @@ module fields
          !
          forcename = 'dummy'
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
@@ -3580,7 +3661,7 @@ module fields
               !
             end select
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
          enddo 
@@ -3602,7 +3683,7 @@ module fields
          !
          do i = 1,3
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
             select case(w)
@@ -3651,7 +3732,7 @@ module fields
          molec%mep_ind = 0
          molec%mep_params = 0 
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.iparam<Nparam.and.trim(w)/="END")
@@ -3695,7 +3776,7 @@ module fields
               !
             end select
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
          enddo 
@@ -3718,7 +3799,7 @@ module fields
          !
          iparam = 0 
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          trove%specparam = 0
@@ -3761,7 +3842,7 @@ module fields
               !
             endif
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
          enddo 
@@ -3806,7 +3887,7 @@ module fields
          intensity%v_upp(:,1) = 0 ; intensity%v_upp(:,2) = job%bset(1:)%range(2)
          intensity%istate_count(1) = 1 ; intensity%istate_count(2) = huge(1)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while (trim(w)/="".and.trim(w)/="END")
@@ -4069,7 +4150,7 @@ module fields
                !
            end select 
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo
@@ -4108,7 +4189,7 @@ module fields
          !
          call readu(w)
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          action%fitting = .true.
@@ -4228,7 +4309,7 @@ module fields
              !
              i = 0
              !
-             call read_line(eof) ; if (eof) exit
+             call read_line(eof,iut) ; if (eof) exit
              call readu(w) 
              !
              do while (trim(w)/="END".and.i<fitting%Nenergies)
@@ -4260,7 +4341,7 @@ module fields
                 !
                 call readf(fitting%obs(i)%weight)
                 !
-                call read_line(eof) ; if (eof) exit
+                call read_line(eof,iut) ; if (eof) exit
                 call readu(w)
                 !
              enddo
@@ -4287,7 +4368,7 @@ module fields
              !
              i = 0
              !
-             call read_line(eof) ; if (eof) exit
+             call read_line(eof,iut) ; if (eof) exit
              call readu(w) 
              !
              do while (trim(w)/="END".and.i<j0fit%Nenergies)
@@ -4314,7 +4395,7 @@ module fields
                 !
                 call readf(j0fit%obs(i)%weight)
                 !
-                call read_line(eof) ; if (eof) exit
+                call read_line(eof,iut) ; if (eof) exit
                 call readu(w)
                 !
              enddo
@@ -4325,7 +4406,7 @@ module fields
              !
            end select
            !
-           call read_line(eof) ; if (eof) exit
+           call read_line(eof,iut) ; if (eof) exit
            call readu(w)
            !
          enddo 
@@ -4350,7 +4431,7 @@ module fields
          !
          ! read Nparam and Type of PES
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
          do while(w(1:5)/='PARAM')
@@ -4423,7 +4504,7 @@ module fields
                  call readu(w)
                  extF%intcoords(:) = trim(w)
                  !
-                 call read_line(eof) ; if (eof) exit
+                 call read_line(eof,iut) ; if (eof) exit
                  call readu(w)
                  cycle 
                  !
@@ -4498,7 +4579,7 @@ module fields
                  !
                  call readf(f_t)
                  extF%fdstep(:) = f_t
-                 call read_line(eof) ; if (eof) exit
+                 call read_line(eof,iut) ; if (eof) exit
                  call readu(w)
                  cycle 
                  !
@@ -4539,7 +4620,7 @@ module fields
               !
             end select
             !
-            call read_line(eof) ; if (eof) exit
+            call read_line(eof,iut) ; if (eof) exit
             call readu(w)
             !
          enddo
@@ -4568,7 +4649,7 @@ module fields
              !
              iparam = iparam+1 
              !
-             call read_line(eof) ; if (eof) exit
+             call read_line(eof,iut) ; if (eof) exit
              call readu(w)
              !
              if (trim(w)=="".or.trim(w)=="END") then
@@ -4624,7 +4705,7 @@ module fields
            !
          enddo
          !
-         call read_line(eof) ; if (eof) exit
+         call read_line(eof,iut) ; if (eof) exit
          call readu(w)
          !
        case default
