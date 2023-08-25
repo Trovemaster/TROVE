@@ -3575,6 +3575,12 @@ module perturbation
                  cf%gamma = trim(sym%label(cf%isym))
                  !
                endif
+               if (trim(trove%symmetry)=='CSN') then
+                 !
+                 cf%isym = gamma + 2*contr(iclasses)%eigen(ilevel)%lquant
+                 cf%gamma = trim(sym%label(cf%isym))
+                 !
+               endif
                !
              endif
              !
@@ -32567,7 +32573,7 @@ end subroutine read_contr_matelem_expansion_classN
        write(out,"(/'Primitive matrix elements calculations...')")
     endif
     !
-    !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a) schedule(static)
+    !$omp parallel do private(i,j,nu_i,nu_j,v_i,k_i,n_i,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
     do i = 1,dimen
       !
       if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i8)"), i

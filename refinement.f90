@@ -371,7 +371,7 @@ contains
       character(len=1)   :: rng
       character(len=1),allocatable  :: mark(:)
       character(len=cl) :: my_fmt,my_fmt_pot1,my_fmt_pot2 !format for I/O specification
-      character(len=cl) :: my_fmt_en2,my_fmt_par1,my_fmt_par2 !format for I/O specification
+      character(len=cl) :: my_fmt_en2,my_fmt_par1,my_fmt_par2,my_fmt_par_fit !format for I/O specification
       character(len=wl) :: my_fmt_en1 !wider format for I/O specification
        !
        if (job%verbose>=2) write(out,"(/'The least-squares fitting ...')")
@@ -592,7 +592,8 @@ contains
        write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
 
        write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g12.5),1x,f12.5,1x,e12.4)"
-       write(my_fmt_par1,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,1x,i2,e22.14)"
+       write(my_fmt_par1,   '(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14)"
+       write(my_fmt_par_fit,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14,4x,a3)"
        !
        nlevels = Neigenlevels
        !
@@ -1397,7 +1398,7 @@ contains
                !
                do ncol=1,numpar 
                   i = ifitparam(ncol)
-                  potparam(i)=potparam(i)+dx(ncol)*fitting%fit_scale
+                  if (ivar(i)>0) potparam(i)=potparam(i)+dx(ncol)*fitting%fit_scale
                enddo
                !
                ! Robust fit: adjust the fitting weights
@@ -1468,13 +1469,23 @@ contains
             if (all(extF%term(:,1,1)==-1)) then
                !
                do i=1,parmax
-                  write (out,"(a8,4x,i2,e22.14)") nampar(i),ivar(i),potparam(i)
+                 if (ivar(i)>0) then 
+                   write (out,"(a8,4x,e22.14,4x,'fit')") nampar(i),potparam(i)
+                 elseif (ivar(i)<0) then 
+                   write (out,"(a8,4x,e22.14,4x,'fix')") nampar(i),potparam(i)
+                 else
+                   write (out,"(a8,4x,e22.14)") nampar(i),potparam(i)
+                 endif
                enddo
                !
                write(out,"(/'Potential parameters:')")
                !
                do i=1,parmax
-                 write (out,"(a8,4x,i2,e22.14)") nampar(i),ivar(i),molec%force(i)+potparam(i)
+                 if (ivar(i)>0) then  
+                    write (out,"(a8,4x,e22.14)") nampar(i),molec%force(i)+potparam(i)
+                 else
+                    write (out,"(a8,4x,e22.14)") nampar(i),molec%force(i)
+                 endif
                enddo
                !
             else
@@ -1482,13 +1493,23 @@ contains
                ! 'powers'
                !
                do i=1,parmax
-                  write (out,my_fmt_par1) nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),potparam(i)
+                 if (ivar(i)>0) then 
+                   write (out,my_fmt_par_fit) nampar(i),(extF%term(l,1,i),l=1,Ncoords),potparam(i),"fit"
+                 elseif (ivar(i)<0) then 
+                   write (out,my_fmt_par_fit) nampar(i),(extF%term(l,1,i),l=1,Ncoords),potparam(i),"fix"
+                 else
+                   write (out,my_fmt_par1) nampar(i),(extF%term(l,1,i),l=1,Ncoords),potparam(i)
+                 endif
                enddo
                !
                write(out,"(/'Potential parameters:')")
                !
                do i=1,parmax
-                 write (out,my_fmt_par1) nampar(i),(extF%term(l,1,i),l=1,Ncoords),ivar(i),molec%force(i)+potparam(i)
+                 if (ivar(i)>0) then  
+                    write (out,my_fmt_par1) nampar(i),(extF%term(l,1,i),l=1,Ncoords),molec%force(i)+potparam(i)
+                 else
+                    write (out,my_fmt_par1) nampar(i),(extF%term(l,1,i),l=1,Ncoords),molec%force(i)
+                 endif
                enddo
                !
             endif 

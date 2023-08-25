@@ -818,8 +818,9 @@ end function ML_MEPfunc
    real(ark)              :: force(molec%parmax) ! force(rank)
      !
      do i = 1,rank
-       !
-       if (extF%ifit(1,i)==0) then 
+       ! 
+       ! negative means the value of the parameter is fixed to the input value
+       if (extF%ifit(1,i)<0) then 
          force(i) = extF%coef(1,i)
        else
          force(i) = 0
@@ -834,8 +835,9 @@ end function ML_MEPfunc
      do imu = 1,rank
        !
        !force = 0 
+       ! parameter with zero or negative indices are skipped from derivatives and expansions
        !
-       if (extF%ifit(1,imu)==0) cycle
+       if (extF%ifit(1,imu)<=0) cycle
        !
        force(imu) = 1.0_ark
        !
@@ -844,7 +846,7 @@ end function ML_MEPfunc
        force(imu) = 0.0_ark
        !
      enddo
-    !
+     !
   end subroutine MLextF_potential
 
 

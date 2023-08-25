@@ -1298,6 +1298,7 @@ end function MLpoten_zxy2_morse_cos
 end function MLpoten_zxy2_mep_r_alpha_rho_powers
 
 
+
  function MLpoten_zxy2_mep_r_alpha_rho_powers_iso(ncoords,natoms,x,xyz,force) result(f) 
   !
   integer(ik),intent(in) ::  ncoords,natoms
@@ -1306,13 +1307,16 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
   real(ark),intent(in)   ::  force(:)
   real(ark)              ::  f
   !
-  integer(ik)          :: N,N0,N_iso,iterm,k_ind(6)
-  real(ark)            :: M0,M_main,V_iso,V,M_iso,xieq(6),local(6),cosrho,rho,y(6),xi(6)
+  integer(ik)          :: N,N0,N_iso_carbon,N_iso_hydrogen,iterm,k_ind(6)
+  real(ark)            :: M0,CarbonMassMain,HydrogenMassMain,V_iso_carbon,V_iso_hydrogen,V,CarbonMassIso,HydrogenMassIso,xieq(6),local(6),cosrho,rho,y(6),xi(6)
   !
   N0     = force(1)
-  N_iso  = force(2)
-  M_main = force(3)
-  M_iso  = force(4)
+  N_iso_carbon  = force(2)
+  N_iso_hydrogen = force(3)
+  CarbonMassMain = force(4)
+  CarbonMassIso  = force(5)
+  HydrogenMassMain = force(6)
+  HydrogenMassIso = force(7)
   !
   local = from_local_to_r1r2r3a1a2tau(x,6)
   !
@@ -1324,13 +1328,13 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
   !
   !xieq(1:6) = ML_MEP_zxy2_R_rho(rho)
   !
-  xieq(1)     = sum(force(5:9)*cosrho**molec%pot_ind(1,5:9))
-  xieq(2)     = sum(force(10:14)*cosrho**molec%pot_ind(2,10:14))
+  xieq(1)     = sum(force(8:12)*cosrho**molec%pot_ind(1,8:12))
+  xieq(2)     = sum(force(13:17)*cosrho**molec%pot_ind(2,13:17))
   xieq(3)     = xieq(2)
-  xieq(4)     = sum(force(15:19)*cosrho**molec%pot_ind(4,15:19))
+  xieq(4)     = sum(force(18:22)*cosrho**molec%pot_ind(4,18:22))
   xieq(5)     = xieq(4)
   !
-  N = 19
+  N = 22
   !
   ! expansion functions
   !
@@ -1366,13 +1370,13 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
   enddo
   N = N+N0
   !
-  V_iso = 0.0_ark
+  V_iso_carbon = 0.0_ark
   !
-  do iterm = N+1,N+N_iso
+  do iterm = N+1,N+N_iso_carbon
     !
     xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
     !
-    V_iso = V_iso + force(iterm)*product(xi(1:6))
+    V_iso_carbon = V_iso_carbon + force(iterm)*product(xi(1:6))
     !
     if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then 
       !
@@ -1385,16 +1389,42 @@ end function MLpoten_zxy2_mep_r_alpha_rho_powers
       !
       xi(1:6) = y(1:6)**k_ind(1:6)
       !
-      V_iso = V_iso + force(iterm)*product(xi(1:6))
+      V_iso_carbon = V_iso_carbon + force(iterm)*product(xi(1:6))
       !
     endif
     !
   enddo
   !
-  f = V + V_iso*(M_main-M_iso)/M_main
+  N = N+N_iso_carbon
+  !
+  V_iso_hydrogen = 0.0_ark
+  !
+  do iterm = N+1,N+N_iso_hydrogen
+    !
+    xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+    !
+    V_iso_hydrogen = V_iso_hydrogen + force(iterm)*product(xi(1:6))
+    !
+    if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then 
+      !
+      k_ind(1) = molec%pot_ind(1,iterm)
+      k_ind(2) = molec%pot_ind(3,iterm)
+      k_ind(3) = molec%pot_ind(2,iterm)
+      k_ind(4) = molec%pot_ind(5,iterm)
+      k_ind(5) = molec%pot_ind(4,iterm)
+      k_ind(6) = molec%pot_ind(6,iterm)
+      !
+      xi(1:6) = y(1:6)**k_ind(1:6)
+      !
+      V_iso_hydrogen = V_iso_hydrogen + force(iterm)*product(xi(1:6))
+      !
+    endif
+    !
+  enddo
+
+  f = V + V_iso_carbon*(CarbonMassIso-CarbonMassMain)/CarbonMassMain + V_iso_hydrogen*(HydrogenMassIso - HydrogenMassMain)/HydrogenMassMain
   !
 end function MLpoten_zxy2_mep_r_alpha_rho_powers_iso
-
 
   !
   ! Defining potential energy function 

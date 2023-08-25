@@ -2765,7 +2765,7 @@ module mol_xy2
           write (out,"('ML_symmetry_transformation_XY2: symmetry ',a,' unknown')") trim(molec%symmetry)
           stop 'ML_symmetry_transformation_XY2 - bad symm. type'
           !
-       case('CS','CS(M)')
+       case('CS','CS(M)','CSN','CSN(M)')
           !
           dst = src
           !
@@ -2838,6 +2838,23 @@ module mol_xy2
            !
            if (mod(K+tau+2,2)==0) gamma = 1 !; return
            if (mod(K+tau+2,2)/=0) gamma = 2 !; return
+           !
+         endif 
+         !
+      case('CSN')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         if (molec%AtomMasses(2)/=molec%AtomMasses(3).or.molec%req(1)/=molec%req(2)) then
+           !
+           if (mod(tau+2,2)==0) gamma = 1+2*K !; return
+           if (mod(tau+2,2)/=0) gamma = 2+2*K !; return
+           !
+         else
+           !
+           if (mod(K+tau+2,2)==0) gamma = 1+2*K  !; return
+           if (mod(K+tau+2,2)/=0) gamma = 2+2*K  !; return
            !
          endif 
          !
@@ -3092,6 +3109,23 @@ module mol_xy2
          if (mod(K+2,2)==0.and.tau==1) gamma = 4+4*K
          if (mod(K+2,2)/=0.and.tau==0) gamma = 2+4*K
          if (mod(K+2,2)/=0.and.tau==1) gamma = 3+4*K
+         !
+      case('CSN')
+         !
+         gamma = 0 
+         ideg = 1
+         !
+         if (molec%AtomMasses(2)/=molec%AtomMasses(3).or.molec%req(1)/=molec%req(2)) then
+           !
+           if (mod(tau+2,2)==0) gamma = 1+2*K !; return
+           if (mod(tau+2,2)/=0) gamma = 2+2*K !; return
+           !
+         else
+           !
+           if (mod(K+tau+2,2)==0) gamma = 1+2*K  !; return
+           if (mod(K+tau+2,2)/=0) gamma = 2+2*K  !; return
+           !
+         endif 
          !
       case('DNH','DNH(M)')
          !

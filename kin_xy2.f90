@@ -433,8 +433,8 @@ module kin_xy2
    real(ark),parameter  :: rho_threshold = 0.02_rk
      !
      if (manifold/=1) then
-       write(out,"('MLkinetic_xyz_bond_EKE-error: can be used with non-rigid case only')")
-       stop 'MLkinetic_xyz_bond_EKE can be used only with npoints>0'
+       write(out,"('MLkinetic_xyz_bisect_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bisect_EKE can be used only with npoints>0'
      endif
      !
      mX = molec%AtomMasses(1)

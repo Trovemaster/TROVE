@@ -264,7 +264,7 @@ contains
       elseif(mod(j,2) == 0) then
         sym_sub_label = 'f' 
       endif
-      write(k_num,'(i5)') (j-1-mod(j-1,4))/4
+      write(k_num,'(i5)') (j-1-mod(j-1,2))/2
       sym_cur_label = trim(sym_sub_label)//trim(adjustl(k_num))
       sym%label(j) =  sym_cur_label
       !write(*,*) sym%label(j)
@@ -280,7 +280,7 @@ contains
     sym%product_table(1:2,1:2) = reshape((/0,0, &
                                            0,0/), (/2,2/))
     !
-    do j = 1,2**(n_cs-2)-1
+    do j = 1,2**(n_cs-1)-1
       sym%product_table(2*j+1: 2*j+2,1:2) = reshape((/1,2, &
                                                       1,1 /), (/2,2/))
     enddo

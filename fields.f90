@@ -665,7 +665,7 @@ module fields
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
    logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
-   character(len=wl) :: w,ioname
+   character(len=wl) :: w,ioname,w_t
    real(rk)    :: lfact,f_t, func_coef
    integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
@@ -681,7 +681,7 @@ module fields
    logical           :: zEchoInput = .true.
    integer,parameter :: max_input_lines=500000  ! maximum length (in lines) of input. 500,000 lines is plenty..
    !                                              ! to avoid feeding in GB of data by mistake.
-   integer(ik)  :: Nparam_check    !number of parameters as determined automatically by duo (Nparam is specified in input).
+   !integer(ik)  :: Nparam_check    !number of parameters as determined automatically by duo (Nparam is specified in input).
    !
    !
    ! default values: 
@@ -3565,40 +3565,7 @@ module fields
          !
          ! find the number of points/parameters in input
          !
-         Nparam_check = 0
-         !
-         call input_options(echo_lines=.false.)
-         !
-         do while (trim(w)/="END")
-            !
-            call read_line(eof,iut) ; if (eof) exit
-            !
-            call readu(w)
-            !
-            Nparam_check = Nparam_check+1
-            !
-         enddo
-         !
-         Nparam_check = Nparam_check-1
-         !
-         if (zEchoInput) call input_options(echo_lines=.true.)
-         !
-         if (trim(w) /= "END") then
-             call report ("ERROR: Cannot find `END' statement)",.true.)
-         endif
-         !
-         ! go back to beginning of VALUES block and reset `w' to original value
-         do i=1, Nparam_check+1
-           backspace(unit=iut)
-         enddo
-         !
-         w = trim(pot_coeff_type)
-         !
-         Nparam = Nparam_check
-         !
-         if (Nparam <= 0) then
-             call report ("ERROR: Number of points or parameters <= 0 )",.true.)
-         endif
+         call count_parameters_in_input_file(iut,Nparam)
          !
          ! Allocation of the pot. parameters 
          !
@@ -3713,6 +3680,8 @@ module fields
             end select
             !
          enddo
+         !
+         call count_parameters_in_input_file(iut,Nparam)
          !
          ! Allocation of the pot. parameters 
          !
@@ -4289,9 +4258,9 @@ module fields
              !
              call readf(fitting%threshold_coeff)
              !
-           case('OBS','OBS_ENERGIES')
+           case('OBS','OBS_ENERGIES','ENERGIES')
              !
-             call readi(fitting%Nenergies)
+             call count_parameters_in_input_file(iut,fitting%Nenergies)
              !
              allocate (fitting%obs(1:fitting%Nenergies),stat=alloc)
              if (alloc/=0) then
@@ -4625,6 +4594,13 @@ module fields
             !
          enddo
          !
+         call count_parameters_in_input_file(iut,Nparam)
+         !
+         if ( Nparam /= sum(extF%nterms(:)) ) then
+             write (out,"('FLinput: number of rows in EXTERNAL <> NPARAM',i8,' <> sum of ',20i5)") Nparam,extF%nterms(:)
+             stop 'FLinput - illigal number of rows (parameters) in ExtF'
+         endif 
+         !
          ! Allocation of the pot. parameters 
          !
          allocate (extF%coef(Nparam,extF%rank),extF%name(Nparam,extF%rank),& 
@@ -4639,9 +4615,7 @@ module fields
          extF%coef = 0
          extF%name = 'xxxx'
          extF%term = -1
-         extF%ifit = 1
-         !
-         Nparam = sum(extF%nterms(:))
+         extF%ifit = 0
          !
          do imu = 1,extF%rank
            !
@@ -4667,6 +4641,29 @@ module fields
                !
                call readf(f_t) ; extF%coef(iterm,imu) = f_t
                !
+               if (extF_form_compact.and.nitems>2) then
+                  !
+                  call readu(w_t)
+                  !
+                  select case (trim(w_t))
+                    !
+                  case("FIT")
+                    !
+                    ! positv index means the parameter is fitted 
+                    !
+                    extF%ifit(iterm,imu) = 1
+                    !
+                  case("FIX")
+                    !
+                    ! negative index means the value of the paramater is fixed to the input value
+                    ! zero is for non fitted parameters and non-fixed values
+                    !
+                    extF%ifit(iterm,imu) = -1
+                    !
+                  end select
+                  !
+               endif
+               !
              case("POWERS")
                !
                if ((extF_form_compact.and.nitems<trove%Ncoords+2).or.&
@@ -4685,6 +4682,29 @@ module fields
                !
                if (.not.extF_form_compact) call readi(extF%ifit(iterm,imu))
                call readf(f_t); extF%coef(iterm,imu) = f_t
+               !
+               if (extF_form_compact.and.nitems>trove%Ncoords+2) then
+                  !
+                  call readu(w_t)
+                  !
+                  select case (trim(w_t))
+                    !
+                  case("FIT")
+                    !
+                    ! positv index means the parameter is fitted 
+                    !
+                    extF%ifit(iterm,imu) = 1
+                    !
+                  case("FIX")
+                    !
+                    ! negative index means the value of the paramater is fixed to the input value
+                    ! zero is for non fitted parameters and non-fixed values
+                    !
+                    extF%ifit(iterm,imu) = -1
+                    !
+                  end select
+                  !
+               endif
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
                !
@@ -4931,6 +4951,50 @@ module fields
      enddo 
      !
    end subroutine print_symmetries
+   !
+   subroutine count_parameters_in_input_file(iut,Nparam_check)
+     !
+     integer(ik),intent(in)  :: iut
+     integer(ik),intent(out) :: Nparam_check
+     logical :: eof
+     character(len=wl) :: w
+     integer(ik) :: i 
+         !
+         Nparam_check = 0
+         !
+         w = ""
+         !
+         call input_options(echo_lines=.false.)
+         !
+         do while (trim(w)/="END")
+            !
+            call read_line(eof,iut) ; if (eof) exit
+            !
+            call readu(w)
+            !
+            Nparam_check = Nparam_check+1
+            !
+         enddo
+         !
+         Nparam_check = Nparam_check-1
+         !
+         if (Nparam_check <= 0) then
+             call report ("ERROR: Number of parameters or energies <= 0 )",.true.)
+         endif
+         !
+         if (zEchoInput) call input_options(echo_lines=.true.)
+         !
+         if (trim(w) /= "END") then
+             call report ("ERROR: Cannot find `END' statement)",.true.)
+         endif
+         !
+         ! go back to beginning of VALUES block and reset `w' to original value
+         do i=1, Nparam_check+1
+           backspace(unit=iut)
+         enddo
+         !
+      end subroutine count_parameters_in_input_file
+   
    !
 end subroutine FLReadInput
 
@@ -18632,7 +18696,7 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew, phivphi_t  - out of memory'
              end if
              !
-             !$omp do private(vl,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(static)
+             !$omp do private(vl,k,nl,krot1,k_l,vr,nr,krot2,k_r,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(static)
              do vl = 0,bs%Size
                 !
                 read (io_slot,rec=vl+1) (phil_leg(k),k=0,npoints),(dphil_leg(k),k=0,npoints)
