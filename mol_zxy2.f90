@@ -449,7 +449,7 @@ module mol_zxy2
      real(ark),   intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
 
      real(ark)               :: a0(molec%Natoms,3),CM_shift,tau,cosalpha_2,costau,delta,cosrho,req(1:3),alphaeq(1:2),tau_
-     real(ark)               :: xieq(6),rho,theta,sint_2,theta12,beta
+     real(ark)               :: xieq(6),rho,theta,sint_2,theta12,beta,m1,m2,m3,m4,ax,ay
      integer(ik)             :: Nbonds,i,n
 
 
@@ -485,6 +485,11 @@ module mol_zxy2
          tau = molec%taueq(1)
          !
       end select 
+      !
+      m1 = molec%AtomMasses(1) 
+      m2 = molec%AtomMasses(2) 
+      m3 = molec%AtomMasses(3) 
+      m4 = molec%AtomMasses(4)
       !
       if (trim(molec%coords_transform)=='R-THETA-TAU-MEP') then 
          !
@@ -619,6 +624,20 @@ module mol_zxy2
                !
                !
             endif 
+            !
+            if ( abs(req(1)-req(2))<sqrt(small_).and.abs(req(1)-req(3))<sqrt(small_) ) then 
+               ax = sqrt( 1._ark-2.0_rk*cos(tau) )/(-1.0_ark+cos(tau))
+               ay= -cos(tau)/(-1.0_ark+cos(tau))
+               !
+               if (tau<0) ax = -ax
+               !
+               theta = atan2(ay,ax)
+               !
+               theta = acos( cos(tau)/(1.0_ark-cos(tau)) )
+               !
+            endif 
+
+
             !
             b0(1,1,i) = 0.0_ark
             b0(1,2,i) = 0.0_ark

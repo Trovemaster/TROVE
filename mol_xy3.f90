@@ -334,11 +334,11 @@ module mol_xy3
                !
             enddo
             !
-            if (verbose>=6) then 
+            if (verbose>=3) then 
               write(out,"(i6)") molec%natoms
               !
               write(out,"(/'N',3x,3f14.8)") b0(1,:,i)
-              write(out,"( 'F',3x,3f14.8)") b0(2,:,i)
+              write(out,"( 'D',3x,3f14.8)") b0(2,:,i)
               write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
               write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
               !
