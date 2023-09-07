@@ -493,13 +493,6 @@ module mol_zxy2
       !
       if (trim(molec%coords_transform)=='R-THETA-TAU-MEP') then 
          !
-         !if (trim(molec%potentype)/='POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS') then
-         ! write (out,"('ML_b0_ZXY2: potential function',a,' cannot be used with coord type ',a)") trim(molec%potentype),&
-         ! trim(molec%coords_transform)
-         ! stop 'ML_b0_ZXY2 - bad PES type'
-         !endif 
-         !
-         !
          rho = tau
          !
          xieq(:) = ML_MEP_zxy2_R_rho(rho)
@@ -614,24 +607,9 @@ module mol_zxy2
                req(1:3)     = xieq(1:3)
                alphaeq(1:2) = xieq(1:2)
                !
-               !cosrho = cos(tau) + 1.0_ark
-               !
-               !req(1)     = molec%req(1)+sum(molec%force(2:5 )*cosrho**molec%pot_ind(1,2:5 ))
-               !req(2)     = molec%req(2)+sum(molec%force(7:10)*cosrho**molec%pot_ind(2,7:10))
-               !req(3)     = req(2)
-               !alphaeq(1) = molec%alphaeq(1)+sum(molec%force(12:15)*cosrho**molec%pot_ind(4,12:15))
-               !alphaeq(2) = alphaeq(1)
-               !
-               !
             endif 
             !
             if ( abs(req(1)-req(2))<sqrt(small_).and.abs(req(1)-req(3))<sqrt(small_) ) then 
-               ax = sqrt( 1._ark-2.0_rk*cos(tau) )/(-1.0_ark+cos(tau))
-               ay= -cos(tau)/(-1.0_ark+cos(tau))
-               !
-               if (tau<0) ax = -ax
-               !
-               theta = atan2(ay,ax)
                !
                theta = acos( cos(tau)/(1.0_ark-cos(tau)) )
                !
