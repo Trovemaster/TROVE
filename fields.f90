@@ -3113,6 +3113,7 @@ module fields
                controlstep = "3"
                !
                job%IOj0matel_action = "READ"
+               job%IOj0ext_action = "READ"
                !
                trove%IO_kinetic   = "READ"
                trove%IO_potential = "READ"
@@ -3136,6 +3137,9 @@ module fields
                !
                trove%IO_ext_coeff = "READ"
                job%IOextF_action  = "READ"
+               !
+               job%IOj0matel_action = "READ"
+               job%IOj0ext_action = "READ"
                !
                FLextF_coeffs = .true.
                FLextF_matelem = .true.
