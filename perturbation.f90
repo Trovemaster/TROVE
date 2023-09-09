@@ -477,7 +477,7 @@ module perturbation
     integer(ik)                   :: alloc,i
     integer(ik)                   :: imode,ispecies,Nspecies,Nclasses,iclass
 
-    if (job%verbose>=5) write(out,"(/'PTinit/start: Initialization of the perturbation theory elements ')") 
+    if (job%verbose>=5) write(out,"(/'PTinit/start: Initialization of the variational theory elements ')") 
 
 
     ! Define the PT-elements 
@@ -8361,10 +8361,10 @@ module perturbation
         !
         ! Diagonalization
         !
-        deallocate (smat(isym)%coeffs)
+        deallocate (smat(isym)%coeffs)  
         call Arraystop('PThamiltonian_contract:smat'//sym%label(isym))
         !
-        if (job%verbose>=3) write(out,"('Ready fo diagonalization...')")
+        if (job%verbose>=3) write(out,"('Ready for diagonalization...')")
         !
         if (job%verbose>=1) then 
            write (out,"(//'Size of the symmetrized hamiltonian = ',i7,' Symmetry = ',a4)") dimen_s,sym%label(isym)

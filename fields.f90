@@ -1463,18 +1463,6 @@ module fields
                 !
              enddo
              !
-             !call readi(i_t)
-             !
-             !do while (i_t/=0.and.i<=size(job%select_gamma))
-             !   !
-             !   i = i+1
-             !   !
-             !   job%select_gamma(i_t) = .true.
-             !   !
-             !   call readi(i_t)
-             !   !
-             !enddo 
-             !
            case ("GRAM-SCHMIDT","SVD","SCHMIDT")
              !
              job%orthogonalizer =trim(w)
@@ -2005,7 +1993,7 @@ module fields
                 call readi(job%bset(imode)%range(1))
                 call readi(job%bset(imode)%range(2))
                 !
-                ! in case the range(2) is given for imode=0 we use Jrot as range(2) in order 
+                ! in case the range(2) is given for imode=0 we use Jrot as range(2)
                 !
                 if (imode==0.and.Jrot/=0) then 
                   !
@@ -2018,13 +2006,13 @@ module fields
                 !
               case("JROT")
                 !
-                ! we use range(1) to store the Jrot value 
-                !
                 call readi(i_t)
                 !
                 if (Jrot==0) then 
                   Jrot = i_t
                 endif
+                !
+                ! we use range(1) to store the Jrot value 
                 !
                 job%bset(imode)%range(1) = Jrot
                 !
@@ -3220,6 +3208,7 @@ module fields
              case("3")
                !
                call readi(Jrot)
+               job%bset(0)%range(1) = Jrot
                !
              case("4")
                !
@@ -3227,6 +3216,51 @@ module fields
                call readi(intensity%j(2))
                !
              end select
+             !
+           case ("GAMMA")
+             !
+             if (.not.symmetry_defined) then 
+                !
+                write (out,"('FLinput: keyword GAMMA in CONTRACT cannot appear before symmetry is defined')") 
+                stop 'FLinput - symmetry should be defined before GAMMA '
+                !
+             endif
+             !
+             if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
+               write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i7)") Nitems-1
+               stop 'FLinput - illegal number of gammas in DIAGONALIZER'
+             endif
+             !
+             i = 0
+             job%select_gamma = .false.
+             !
+             do while (item<Nitems.and.i<size(job%select_gamma))
+                !
+                i = i + 1
+                !
+                call readu(w)
+                !
+                if (trim(w)/="-") then
+                  !
+                  read(w,*) i_t
+                  job%select_gamma(i_t) = .true.
+                  !
+                else
+                  !
+                  call readi(i_tt)
+                  !
+                  do while (i_t<i_tt.and.i<size(job%select_gamma))
+                    !
+                    i_t = i_t + 1
+                    job%select_gamma(i_t) = .true.
+                    i = i + 1
+                    !
+                  enddo
+                  i = i - 1
+                  !
+                endif
+                !
+             enddo
              !
            case default
              !
