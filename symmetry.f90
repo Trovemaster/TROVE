@@ -270,7 +270,7 @@ contains
       !write(*,*) sym%label(j)
     enddo
     !
-    sym%label(1:2)=(/'A''','B"'/)
+    sym%label(1:2)=(/'A''','A"'/)
     !
     ! generators and the product table  
     !

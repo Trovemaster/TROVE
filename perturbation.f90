@@ -4841,7 +4841,7 @@ module perturbation
     !type(FLbasissetT),intent(in)  :: bs(0:PT%Nmodes) ! Basis set specifications: range and type
 
     integer(ik)         :: dimen,nroots,ideg,ndeg,nu(0:PT%Nmodes),alloc,iroot,icount,k0,i
-    integer(ik)         :: irepr,tau0,Ncount
+    integer(ik)         :: irepr,tau0,Ncount,kmax
     real(rk)            :: zpe
     integer(ik),allocatable   :: count_index(:,:)
     real(rk),allocatable      :: eigenvects(:,:)
@@ -4850,19 +4850,6 @@ module perturbation
     real(ark)          :: MaxEigenvects
     !
     integer(ik)        :: isym,Ntotal(sym%Nrepresen),ilarge_coeff
-    !type(MOrepres_arkT),pointer   :: irr(:)
-
-    !integer(ik)        :: ibstype,Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift
-    !integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
-    !integer(ik)        :: ipoint_t,iclass,charact(sym%Noper),irepr,iroot,Npar,gamma,info,jlevel
-    !character(len=cl)  :: unitfname ,char_,diag_
-    !real(ark)          :: f_value,f_prim,f_t
-    !integer(ik)        :: nroots,jrot,icount,ideg,kdeg,ndeg,Ncount,tau0,k0,ioper
-    !integer(ik)        :: jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot
-    !type(PTlevelT),pointer    ::  cf
-    !integer(ik),parameter    ::  mpoints = 100
-    !logical                  ::  reduced_model
-
     !
     ! The contracted basis set field has to be allocated before this stage:
     !
@@ -4901,7 +4888,10 @@ module perturbation
       iroot  = 1
       icount = 1
       contr(0)%max_degen = 1
+      kmax = job%bset(0)%range(2)
       do k0 = 1,j
+        !
+        if (k0>kmax) cycle 
         !
         do tau0 = 0,1 
           !
@@ -4956,6 +4946,8 @@ module perturbation
       PT%rot_primindex(0)%tau = mod(j,2)
       !
       do k0 = 1,j
+        !
+        if (k0>kmax) cycle
         !
         do tau0 = 0,1
           !

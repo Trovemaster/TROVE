@@ -664,6 +664,7 @@ module fields
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
    logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.
+   logical :: krot_defined = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w,ioname,w_t
    real(rk)    :: lfact,f_t, func_coef
@@ -2015,6 +2016,7 @@ module fields
                 ! we use range(1) to store the Jrot value 
                 !
                 job%bset(imode)%range(1) = Jrot
+                job%bset(imode)%range(2) = Jrot
                 !
               case("KROT","K")
                 !
@@ -2025,12 +2027,11 @@ module fields
                 job%bset(imode)%range(2) = i_t
                 trove%krot = i_t
                 if (trove%kmax==0) trove%kmax = i_t
+                krot_defined = .true.
                 !
               case("KMAX")
                 !
                 call readi(i_t)
-                !
-                ! we use range(1) to store the Jrot value 
                 !
                 trove%kmax = i_t
                 !
@@ -3209,6 +3210,8 @@ module fields
                !
                call readi(Jrot)
                job%bset(0)%range(1) = Jrot
+               !
+               if (.not.krot_defined) job%bset(0)%range(2) = Jrot
                !
              case("4")
                !
@@ -4809,6 +4812,11 @@ module fields
    !
    if (trim(trove%symmetry)=='C2VN'.and.sym%N<job%bset(0)%range(2)) then
       write (out,"('FLinput: The C2VN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
+      stop 'FLinput - The C2VN number is undefined or too small'
+   endif
+   !
+   if (trim(trove%symmetry)=='CSN'.and.sym%N<job%bset(0)%range(2)) then
+      write (out,"('FLinput: The CSN number',i5,' must be defined and equal to (or <) krot',i5)") sym%N,job%bset(0)%range(2)
       stop 'FLinput - The C2VN number is undefined or too small'
    endif
     !
@@ -16747,6 +16755,13 @@ end subroutine check_read_save_none
         if (bs_%range(2)/=job%bset(imode)%range(2)) then
           write (out,"('fingerprintRead:  parameters mismatch for  ',i9,'th mode:')") imode
           write (out,"('range2 (stored) /=  range (given)  : ',2i8)") bs_%range(2),job%bset(imode)%range(2)
+          !
+          ! 
+          if (imode==0) then 
+             write(out,"('** For now we allow the rotational basis range(2) to deviate from chk**')")
+             write(out,"('** in order not to break chk from older calculations. **')")
+             cycle 
+          endif
           stop 'fingerprintRead - parameters mismatch:range'
         end if
         !
