@@ -3981,7 +3981,7 @@ endif
     !
     select case(trim(molec%coords_transform))
        !
-    case('R-RHO-Z','R-RHO-Z-M2-M3')
+    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
        !
        a0(2, 1) = -r(1) * cos(alpha_2)
        a0(2, 3) = -r(1) * sin(alpha_2)
@@ -4109,7 +4109,7 @@ endif
        a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+&
                    cos(v)*mY*R1)/(mX+mY+mZ)
        !
-    case('R-RHO-Z','R-RHO-Z-M2-M3')
+    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
        !
        alpha_2 = r(3)*0.5_ark
        !

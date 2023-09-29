@@ -71,7 +71,7 @@ module mol_xy2
            dst(:) = dst(:) +  molec%local_eq(:)
        endif
        !
-    case('R-RHO','R-RHO-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3')
+    case('R-RHO','R-RHO-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
        !
        if (direct) then 
           dst(1:2) = dsrc(1:2)
@@ -718,7 +718,7 @@ module mol_xy2
       !b0(2,1,0) = (m1+m3)/m*re23*cos(e)+m3/m*re13*cos(rho-e)
 
 
-      select case(trim(molec%coords_transform))
+      select case(trim(molec%frame))
       case default
          !
       case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF')
@@ -763,6 +763,26 @@ module mol_xy2
          b0(3,3,0) = re13*sin(alphae_h)*(m1+m2+m2)/m  
          b0(3,2,0) = 0.0_ark
          b0(3,1,0) =-m1/m*re13*cos(alphae_h)
+         !
+      case('R-RHO-Z-M2-M3-BISECT')
+         !
+         if (Nangles==0) then
+           stop 'R-RHO-Z-M2-M3-BISECT does not work for Nangles = 0'
+         endif
+         !
+         alphae_h = alphaeq*0.5_ark
+         !         
+         b0(1,1,0) = cos(alphae_h)*(m2*re13+m3*re23)/(m1+m2+m3)
+         b0(1,2,0) = 0
+         b0(1,3,0) = sin(alphae_h)*(m2*re13-m3*re23)/(m1+m2+m3)
+         !
+         b0(2,1,0) =-cos(alphae_h)*(re13*m1+re13*m3-m3*re23)/(m1+m2+m3)   
+         b0(2,2,0) = 0
+         b0(2,3,0) =-sin(alphae_h)*(re13*m1+re13*m3+m3*re23)/(m1+m2+m3)
+         !
+         b0(3,1,0) =-cos(alphae_h)*(re23*m1+re23*m2-m2*re13)/(m1+m2+m3)
+         b0(3,2,0) = 0
+         b0(3,3,0) = sin(alphae_h)*(re23*m1+re23*m2+m2*re13)/(m1+m2+m3)
          !
       case('R-R-R')
          !
@@ -944,9 +964,9 @@ module mol_xy2
          !   stop 'ML_b0_XY2: rho_borders or rho_ref not specified '
          !endif
          !
-         select case(trim(molec%coords_transform))
+         select case(trim(molec%frame))
          case default
-            write (out,"('ML_b0_XY2: coord. type ',a,' unknown')") trim(molec%coords_transform)
+            write (out,"('ML_b0_XY2: coord. type ',a,' unknown')") trim(molec%frame)
             stop 'ML_b0_XY2 - bad coord. type'
             !
          case('LINEAR')
@@ -962,7 +982,7 @@ module mol_xy2
             a02 = (m1/m)
             !
          case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z',&
-              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3')
+              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1005,7 +1025,7 @@ module mol_xy2
             !
             select case(trim(molec%coords_transform))
               case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
-                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3')
+                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -1017,7 +1037,7 @@ module mol_xy2
             !
             !if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-(1.0_ark+rho**2)/(max(rho,small_))
             !
-            if(trim(molec%coords_transform)=='RADAU') then 
+            if(trim(molec%frame)=='RADAU') then 
               !
               !
               !f1= 1.0_ark/g1
@@ -1110,7 +1130,7 @@ module mol_xy2
             b0(3,2,i) = 0.0_ark
             b0(3,3,i) =-m1/m*re13*cos(alphae_h)
             !
-            select case(trim(molec%coords_transform))
+            select case(trim(molec%frame))
                !
             case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF')
                !
@@ -1139,6 +1159,20 @@ module mol_xy2
               b0(3,1,i) =-m1/m*re13*cos(alphae_h)
               b0(3,2,i) = 0.0_ark
               b0(3,3,i) = re13*sin(alphae_h)*(m1+m2+m2)/m  
+              !
+            case('R-RHO-Z-M2-M3-BISECT')
+              !         
+              b0(1,1,i) = cos(alphae_h)*(m2*re13+m3*re23)/(m1+m2+m3)
+              b0(1,2,i) = 0
+              b0(1,3,i) = sin(alphae_h)*(m2*re13-m3*re23)/(m1+m2+m3)
+              !
+              b0(2,1,i) =-cos(alphae_h)*(re13*m1+re13*m3-m3*re23)/(m1+m2+m3)   
+              b0(2,2,i) = 0
+              b0(2,3,i) =-sin(alphae_h)*(re13*m1+re13*m3+m3*re23)/(m1+m2+m3)
+              !
+              b0(3,1,i) =-cos(alphae_h)*(re23*m1+re23*m2-m2*re13)/(m1+m2+m3)
+              b0(3,2,i) = 0
+              b0(3,3,i) = sin(alphae_h)*(re23*m1+re23*m2+m2*re13)/(m1+m2+m3)
               !
             case('R-R-R')
                !
@@ -1332,9 +1366,9 @@ module mol_xy2
             if (verbose>=4) then 
               write(out,"(i6)") molec%natoms
               !
-              write(out,"(/'C',3x,3f14.8)") b0(1,:,i) !*bohr
-              write(out,"( 'O',3x,3f14.8)") b0(2,:,i) !*bohr
-              write(out,"( 'O',3x,3f14.8)") b0(3,:,i) !*bohr
+              write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
               !
             endif
             !
@@ -2758,7 +2792,7 @@ module mol_xy2
           !
        end select       
        !
-    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3')
+    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
        !
        select case(trim(molec%symmetry))
        case default

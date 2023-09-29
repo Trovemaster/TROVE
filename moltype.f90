@@ -155,6 +155,7 @@ module moltype
      type(MLZmatrixT),pointer  :: zmatrix(:)       ! 
      !
      character(len=cl)         :: coords_transform ! type of the coordinate transformation 
+     character(len=cl)         :: frame            ! body fixed frame
      integer(ik),pointer       :: dihedtype(:)   ! dihedral type 
      character(len=cl),pointer :: coordinates(:,:)  ! Identifying the coordinate system, e.g. 'Cartesian', 'Bond-Angle'
      integer(ik)               :: Nmodes,Ndihedrals,Natoms,Nbonds,Nangles,Ncoords
@@ -315,7 +316,7 @@ module moltype
                                   AtomMasses,local_eq, &
                                   force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
                                   IO_primitive,chk_numerov_fname,&
-                                  symmetry_,rho_border,zmatrix_)
+                                  symmetry_,rho_border,zmatrix_,frame)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -337,6 +338,7 @@ module moltype
   character(len=cl),intent(in)  :: IO_primitive,chk_numerov_fname
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
+  character(len=cl),intent(in)  :: frame   ! coordinate transformation type
   !
   integer(ik)              :: alloc,Ncoords
     !
@@ -344,6 +346,7 @@ module moltype
     !
     molec%moltype = Moltype
     molec%coords_transform = coords_transform
+    molec%frame = frame
     !
     molec%Natoms = size(AtomMasses)
     molec%Ndihedrals = Ndihedrals

@@ -142,7 +142,8 @@ module fields
       character(len=cl)   :: Moltype        ! Identifying type of the Molecule (e.g. XY3)
       character(len=cl),pointer :: Coordinates(:,:) ! Identifying the coordinate system, e.g. 'normal'; kinetic and potential part can be different
       character(len=cl)         :: internal_coords  ! type of the internal coordinates: linear,harmonic,local
-      character(len=cl)         :: coords_transform ! type of the coordinate transformation: linear,morse-xi-s-rho,...
+      character(len=cl)         :: coords_transform = 'LINEAR' ! type of the coordinate transformation: linear,morse-xi-s-rho,...
+      character(len=cl)         :: frame = "DEFAULT"  ! body fixed frame 
       character(len=cl)         :: symmetry         ! molecular symmetry
       integer(ik)::  Natoms               ! Number of atoms
       integer(ik)::  Nmodes               ! Number of modes = 3*Natoms-6
@@ -724,7 +725,6 @@ module fields
    job%vib_contract = .false.
    !
    trove%internal_coords  = 'LINEARIZED'
-   trove%coords_transform = 'LINEAR'
    job%PTtype = 'POWERS'
    if (manifold==1) job%PTtype = 'DIAGONAL'
    !
@@ -1659,7 +1659,15 @@ module fields
          !
          call readu(w)
          !
-         trove%coords_transform =    trim(w)
+         trove%coords_transform =  trim(w)
+         !
+         if (trim(trove%frame)=='DEFAULT') trove%frame = trim(w)
+         !
+       case("FRAME")
+         !
+         call readu(w)
+         !
+         trove%frame =  trim(w)
          !
        case("MOLTYPE")
          !
@@ -5302,6 +5310,8 @@ end subroutine check_read_save_none
       !
       write(out,"('The coordinate-transformation type (coords_transform):',a)") trim(trove%coords_transform)
       !
+      write(out,"('The body-fixed frame is ',a)") trim(trove%frame)
+      !
       write(out,"('Bonds  connections are ')")  
       do ibond = 1,trove%Nbonds
        write(out,"(i4,' - ',2i4)") ibond,trove%bonds(ibond,:)
@@ -5497,7 +5507,7 @@ end subroutine check_read_save_none
                               trove%mass,trove%local_eq,&
                               force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
                               trove%IO_primitive,trove%chk_numerov_fname,&
-                              trove%symmetry,trove%rho_border,trove%zmatrix)
+                              trove%symmetry,trove%rho_border,trove%zmatrix,trove%frame)
     !
     ! define the potential function method
     !
