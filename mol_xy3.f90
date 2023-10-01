@@ -3259,10 +3259,10 @@ module mol_xy3
           ! 
           ! for the planer configuration, x is along the symmetry axis, z is in the plane and y is orhogonal to the plane
           !
-          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-          if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-          if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
-          if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; 1;1
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !; 2;2
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; 3;4
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !; 4;3
           !
        case('R1-X-R2-Y-Z')
           ! 
@@ -3270,10 +3270,10 @@ module mol_xy3
           !
           gamma = 0 
           ideg = 1
-          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-          if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-          if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
-          if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !;  1;1;1;1;1
+          if (mod(K+2,2)==0.and.tau==1) gamma = 4 !;  2;2;3;3;4
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !;  3;4;4;2;2
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !;  4;3;2;4;3
           !
        case('R1-Z-R2-X-Y')
           ! 
