@@ -3093,10 +3093,10 @@ contains
        !ilevelF = fit(gamma,indJ)%ilevel(jentry)
        !
        !mat(jentry) = mat(jentry) + sum( half_matelem(tmat(jentry)%icoeff(:))*tmat(jentry)%coeff(:) )
-	   !
-	   !cirootI = cdimen(jentry)
-	   !
-	   !mat(jentry) = dot_product( half_matelem( tmat(jentry)%icoeff( 1:cirootI ) ),tmat(jentry)%coeff( 1:cirootI ) )
+    !
+    !cirootI = cdimen(jentry)
+    !
+    !mat(jentry) = dot_product( half_matelem( tmat(jentry)%icoeff( 1:cirootI ) ),tmat(jentry)%coeff( 1:cirootI ) )
        !
        do cirootI = 1, cdimen(jentry)
         !
@@ -4040,7 +4040,7 @@ contains
                 enddo
                 !
               enddo
-		      !
+        !
               iunit = fit(isym,jind)%IOunit
               !write (iunit) 'start fitener'
               !

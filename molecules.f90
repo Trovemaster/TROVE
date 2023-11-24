@@ -627,6 +627,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms_c3_Schroeder         
         !
+    case('XY2_SCHROEDER_XYZ_ECKART') 
+        !
+        MLextF_func => MLdms_Schroeder_xyz_Eckart         
+        !
     case('DIPOLE_XY2_LORENZO')
         !
         MLextF_func => MLdipole_xy2_lorenzo

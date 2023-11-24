@@ -1538,10 +1538,10 @@ contains
     isave = 0
     ilevelsG = 0
     !
-	!cdimenmax = 0
-	!cfactor = 0
-	!
-	!dimenmax_ram = max(min(int(matsize),nsizemax),1)
+ !cdimenmax = 0
+ !cfactor = 0
+ !
+ !dimenmax_ram = max(min(int(matsize),nsizemax),1)
     !
     !
     if (Ntransit==0) then 
@@ -4387,9 +4387,9 @@ contains
         !
         return 
       endif
-	  !
-	  write(out,"(/a,i0,' out of ',i0,' suggested compression  = ',f12.5/)") &
-	               'Maximal number of non-zero values after vector compression  = ',cdimenmax,dimenmax,cfactor
+   !
+   write(out,"(/a,i0,' out of ',i0,' suggested compression  = ',f12.5/)") &
+                'Maximal number of non-zero values after vector compression  = ',cdimenmax,dimenmax,cfactor
       !
     endif
     !

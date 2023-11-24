@@ -16,7 +16,7 @@ module pot_xy2
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,&
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame,MLpoten_xyz_tyuterev_rho
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
-  public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho
+  public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -4389,6 +4389,115 @@ endif
 
 
 
+
+ !returns electric dipole moment cartesian coordinates of N2O in the Eckart frame
+ !
+ recursive subroutine MLdms_Schroeder_xyz_Eckart(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: k,i,k_ind(3)
+    real(ark)             :: y(3),q(3),s(3),mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(3,3),r1,r2,alpha,re,alphae
+    real(ark)             :: xyz0(3,3),v1(3),v2(3),x1,x2,cosalpha1,theta,alpha0,r10,r20,tan_phi,phi,mx,my1,my2,local0(3),x0(3,3)
+    real(ark)             :: reNN,reNO,thetae
+    character(len=cl)     :: txt
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      x = MLloc2pqr_xyz(local)
+      !
+    else
+      !
+      x =  xyz
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    mx  = molec%ATOMMASSES(1)
+    my1 = molec%ATOMMASSES(2)
+    my2 = molec%ATOMMASSES(3)
+    !
+    r10 = molec%req(1)
+    r20 = molec%req(2)
+    alpha0 = molec%alphaeq(1)
+    !
+    local0(1) = r10
+    local0(2) = r20
+    local0(3) = alpha0
+    !
+    x0 = MLloc2pqr_xyz(local0)
+    !
+    tan_phi = ( mX*(X0(1,3)*X(1,1)-X0(1,1)*X(1,3))+mY1*(X0(2,3)*X(2,1)-X0(2,1)*X(2,3))+mY2*(X0(3,3)*X(3,1)-X0(3,1)*X(3,3)) )/&
+              ( mX*(X0(1,3)*X(1,3)+X0(1,1)*X(1,1))+mY1*(X0(2,3)*X(2,3)+X0(2,1)*X(2,1))+mY2*(X0(3,3)*X(3,3)+X0(3,1)*X(3,1)) )
+    !
+    !tan_phi = cotan(0.5_ark*alpha)*&
+    !          (mX*mY1*R10*R1-mX*mY2*R20*R2-mY2*R20*R2*mY1+mY1*R10*R1*mY2-mY1*R10*mY2*R2+mY2*R20*mY1*R1)/&
+    !          (mX*mY2*R20*R2+mX*mY1*R10*R1+mY1*R10*R1*mY2+mY2*R20*R2*mY1+mY2*R20*mY1*R1+mY1*R10*mY2*R2)
+              !
+    phi  = atan(tan_phi)
+    !
+    tmat = 0 
+    !
+    tmat(1, 1) =  cos(phi)
+    tmat(1, 3) = -sin(phi)
+    tmat(2, 2) =  1.0_ark
+    tmat(3, 1) =  sin(phi)
+    tmat(3, 3) =  cos(phi)
+    !
+    reNN   = extF%coef(1,1)
+    reNO   = extF%coef(2,1)
+    thetae = extF%coef(3,1)
+    !
+    q(1)=local(1)-reNN
+    q(2)=local(2)-reNO
+    q(1:2) = q(1:2)/bohr
+    q(3) = (pi-local(3))-thetae*pi/180.0_ark
+    !
+    mu = 0 
+    !
+    do i=4,extF%nterms(1)
+      !
+      y(1:3) = q(1:3)**extF%term(1:3,i,1)
+      !
+      mu(1  )=mu(1)+extF%coef(i,1)*product(y(1:3))
+      !
+    enddo
+    !
+    !
+    reNN   = extF%coef(1,1)
+    reNO   = extF%coef(2,1)
+    thetae = extF%coef(3,1)
+    !
+    q(1)=local(1)-reNN
+    q(2)=local(2)-reNO
+    q(1:2) = q(1:2)/bohr
+    q(3) = (pi-local(3))-thetae*pi/180.0_ark
+    !
+    do i=4,extF%nterms(2)
+      !
+      y(1:3) = q(1:3)**extF%term(1:3,i,2)
+      !
+      mu(3)=mu(3)+extF%coef(i,2)*product(y(1:3))
+      !
+    enddo
+    !
+    mu(2) = 0
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+    f = f/0.393430_ark ! to debye
+    !
+ end subroutine MLdms_Schroeder_xyz_Eckart
 
 
    function MLpoten_h2s_dvr3d(ncoords,natoms,local,xyz,force) result(f) 
