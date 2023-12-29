@@ -17127,6 +17127,7 @@ end subroutine check_read_save_none
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
     real(ark)   :: g2_term
+    real(ark)   :: fd_step =0.005_ark,f_1,f_2,f_3 ! step for finite differences  
     !
     ! substitute for easier reference 
     !
@@ -18095,11 +18096,46 @@ end subroutine check_read_save_none
              if (trove%ipotmin>0.and.trove%ipotmin<npoints) then
                f_t = ( f1drho(trove%ipotmin+1)+f1drho(trove%ipotmin-1)-2.0_ark*f1drho(trove%ipotmin) )/trove%rhostep**2 
              elseif (trove%ipotmin == 0 ) then
-               f_t = ( 2.0_ark*f1drho(2)-2.0_ark*f1drho(0) )/(trove%rhostep*2.0_ark)**2 
+               ! 
+               ! estimate second derivative using a step of  ~0.005 rad
+               ! 
+               ! irho that that distance: 
+               irho = max(nint(fd_step/trove%rhostep),2)
+               !
+               f_t = ( 2.0_ark*f1drho(irho)-2.0_ark*f1drho(0) )/(fd_step)**2
+               !
+               if (f_t<sqrt(small_).or.f_t>1000.0_rk) then
+                 !
+                 ! try using a different point for the second derivative 
+                 !
+                 f_1 = f1drho(irho)
+                 irho = max(nint(2.0_ark*fd_step/trove%rhostep),3)
+                 f_2 = f1drho(irho)
+                 irho = max(nint(3.0_ark*fd_step/trove%rhostep),4)
+                 f_3 = f1drho(irho)
+                 !
+                 f_t = ( f_3-2.0_ark*f_2+f_1 )/fd_step**2
+                 !
+               endif 
+               !
              elseif (trove%ipotmin == npoints ) then
-               f_t = ( 2.0_ark*f1drho(npoints-1)-2.0_ark*f1drho(npoints) )/trove%rhostep**2 
+               !
+               !
+               irho = max(nint(fd_step/trove%rhostep),2)
+               !
+               f_t = ( 2.0_ark*f1drho(npoints-irho)-2.0_ark*f1drho(npoints) )/fd_step**2 
              else 
                stop 'At ME_laguerre_k: illegal imin'
+             endif
+             !
+             if (f_t<=sqrt(small_).or.f_t>10000.0_rk) then
+                !
+                write(out,"('1D ME_laguerre_k: the f_m constant is negative or too large.')")
+                write(out,"('Check if 1D PEC is quadratic at linearity if it is a linear molecule.')")
+                write(out,"('Alternatively, set f_m as a SPECPARAM parameter using sensible values from successful runs:')")
+                write(out,"('fm   0   77.0')")
+                stop '1D ME_laguerre_k: the f_m constant is negative or too large'
+                !
              endif
              !
              if (trove%specparam(bs%mode(1))>0d0 ) then

@@ -1481,7 +1481,7 @@ contains
                write(out,"(/'Potential parameters:')")
                !
                do i=1,parmax
-                 if (ivar(i)>0) then  
+                 if (ivar(i)>=0) then  
                     write (out,"(a8,4x,e22.14)") nampar(i),molec%force(i)+potparam(i)
                  else
                     write (out,"(a8,4x,e22.14)") nampar(i),molec%force(i)

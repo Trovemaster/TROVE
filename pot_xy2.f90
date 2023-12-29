@@ -4265,7 +4265,7 @@ endif
 
 
 
- !returns electric dipole moment cartesian coordinates of C3
+ !returns electric dipole moment cartesian coordinates of C3 using Eckart 
  !
  recursive subroutine MLdms_c3_Schroeder(rank,ncoords,natoms,local,xyz,f)
 
@@ -4274,46 +4274,53 @@ endif
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: k,i,k_ind(3)
-    real(ark)             :: y(3),q(3),s(3),mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,alphae
-    real(ark)             :: xyz0(3,3),v1(3),v2(3),x1,x2,cosalpha1,theta
+    real(ark)             :: y(3),q(3),s(3),mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(3,3),r1,r2,alpha,re,alphae
+    real(ark)             :: xyz0(3,3),v1(3),v2(3),x1,x2,cosalpha1,theta,alpha0,r10,r20,tan_phi,phi,mx,my1,my2,local0(3),x0(3,3)
     character(len=cl)     :: txt
     !
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
-      xyz0 = MLloc2pqr_xy2(local)
-      !
-      x(1,:) = xyz0(2,:) - xyz0(1,:)
-      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      x = MLloc2pqr_xy2(local)
       !
     else
       !
-      x(1,:) = xyz(2,:) - xyz(1,:)
-      x(2,:) = xyz(3,:) - xyz(1,:)
+      x = xyz
       !
     endif
     !
-    r1 = sqrt(sum(x(1,:)**2))
-    r2 = sqrt(sum(x(2,:)**2))
+    mx  = molec%ATOMMASSES(1)
+    my1 = molec%ATOMMASSES(2)
+    my2 = molec%ATOMMASSES(3)
     !
-    n1 = x(1,:) / r1
-    n2 = x(2,:) / r2
+    r10 = molec%req(1)
+    r20 = molec%req(2)
+    alpha0 = molec%alphaeq(1)
     !
-    alpha = acos(sum(n1*n2))
+    local0(1) = r10
+    local0(2) = r20
+    local0(3) = alpha0
     !
-    u1 = n2 + n1
-    u3 = n2 - n1
+    x0 = MLloc2pqr_xy2(local0)
     !
-    u1 = u1 / sqrt(sum(u1(:)**2))
-    u3 = u3 / sqrt(sum(u3(:)**2))
+    tan_phi = ( mX*(X0(1,3)*X(1,1)-X0(1,1)*X(1,3))+mY1*(X0(2,3)*X(2,1)-X0(2,1)*X(2,3))+mY2*(X0(3,3)*X(3,1)-X0(3,1)*X(3,3)) )/&
+              ( mX*(X0(1,3)*X(1,3)+X0(1,1)*X(1,1))+mY1*(X0(2,3)*X(2,3)+X0(2,1)*X(2,1))+mY2*(X0(3,3)*X(3,3)+X0(3,1)*X(3,1)) )
     !
-    u2 = MLvector_product(u3,u1)
+    !tan_phi = cotan(0.5_ark*alpha)*&
+    !          (mX*mY1*R10*R1-mX*mY2*R20*R2-mY2*R20*R2*mY1+mY1*R10*R1*mY2-mY1*R10*mY2*R2+mY2*R20*mY1*R1)/&
+    !          (mX*mY2*R20*R2+mX*mY1*R10*R1+mY1*R10*R1*mY2+mY2*R20*R2*mY1+mY2*R20*mY1*R1+mY1*R10*mY2*R2)
+              !
+    phi  = atan(tan_phi)
     !
-    tmat(1, :) = u1
-    tmat(2, :) = u2
-    tmat(3, :) = u3
+    tmat = 0 
     !
-    re = extF%coef(1,1)
+    tmat(1, 1) =  cos(phi)
+    tmat(1, 3) = -sin(phi)
+    tmat(2, 2) =  1.0_ark
+    tmat(3, 1) =  sin(phi)
+    tmat(3, 3) =  cos(phi)
+    !
+    re   = extF%coef(1,1)
     alphae = extF%coef(2,1)
     !
     q(1)=local(1)-re
@@ -4417,11 +4424,6 @@ endif
     !
     r1 = sqrt(sum(x(1,:)**2))
     r2 = sqrt(sum(x(2,:)**2))
-    !
-    n1 = x(1,:) / r1
-    n2 = x(2,:) / r2
-    !
-    alpha = acos(sum(n1*n2))
     !
     mx  = molec%ATOMMASSES(1)
     my1 = molec%ATOMMASSES(2)

@@ -2517,14 +2517,21 @@ contains
               energyF = eigen(ilevelF)%energy
               igammaF  = eigen(ilevelF)%igamma
               !
-              write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
-                           &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
-                           &1(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
+              !write(out, "( i4,1x,i2,9x,i4,1x,i2,3x,&
+              !             &2x, f11.4,3x,f11.4,1x,f11.4,2x,&
+              !             &1(1x,es16.8),3x,i6,1x,2x,i6,1x,'||')")&
+              !             !
+              !             jF,igammaF,jI,igammaI, & 
+              !             energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
+              !             A_einst,&
+              !             eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
+              !             !
+              write(out,"(f12.6,1x,i8,1x,i4,1x,i4,' <- ',i8,1x,i4,1x,i4,1x,es16.8,1x,' ||')")&
                            !
-                           jF,igammaF,jI,igammaI, & 
-                           energyF-intensity%ZPE,energyI-intensity%ZPE,nu_if,                 &
-                           A_einst,&
-                           eigen(ilevelF)%ilevel,eigen(ilevelI)%ilevel
+                           nu_if,eigen(ilevelF)%ilevel,jF,igammaF,&
+                                 eigen(ilevelI)%ilevel,jI,igammaI,& 
+                           A_einst
+                           
                            !
             endif
           enddo
