@@ -348,6 +348,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c3_R_theta
          !
+    case('POTEN_O3_OLEG')
+         !
+         MLpotentialfunc => MLpoten_o3_oleg
+         !
     case('POTEN_H2S_DVR3D') 
          !
          MLpotentialfunc => MLpoten_h2s_dvr3d
@@ -490,7 +494,7 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_bond_EKE
          !
-    case('KINETIC_XYZ_EKE_BISECT_SINRHO') 
+    case('KINETIC_XYZ_EKE_BOND_SINRHO') 
          !
          MLkineticfunc => MLkinetic_xyz_EKE_sinrho
          !

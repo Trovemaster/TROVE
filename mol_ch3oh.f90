@@ -32,6 +32,7 @@ module mol_ch3oh
     integer(ik)               :: i0,nsrc, k(0:4),n(0:4),icoord
     real(ark)                 :: beta(3),alpha(3),cosa(3),phi1,phi2,phi3,chi1,chi2,chi3
     real(ark)                 :: alpha0(3),cosa0(3),phi(3),chi(3),coschi(3)
+    real(ark)                 :: t1,t2,t3,theta12,theta23,theta13,a1,a2,tbar
     !
     if (verbose>=7) write(out,"('ML_coordinate_transform_ch3oh/start')") 
     !
@@ -679,8 +680,7 @@ module mol_ch3oh
           !dst(10:12) = mod(dst(10:12)+2.0_ark*pi,2.0_ark*pi)+molec%local_eq(10:12)
           !
       endif
-
-
+      !
     case('R-ALPHA-S-TAU-BETA-REF')
        !
        rref( 1,0:4)  = molec%force( 1: 5) 
@@ -864,6 +864,54 @@ module mol_ch3oh
           !
           !dst(10:12) = mod(dst(10:12)+2.0_ark*pi,2.0_ark*pi)+molec%local_eq(10:12)
           !
+      endif
+      !
+    case('R-ALPHA-THETA-TAU')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:12) = src(1:12)-molec%local_eq(1:12)
+        !
+        t1 = src(10)
+        t2 = src(11)
+        t3 = src(12)
+        !
+        ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
+        ! and ensure consistent transfroms
+        !
+        if (t2-t1<small_) t2 = t2 + 2.0_ark*pi
+        if (t3-t2<small_) t3 = t3 + 2.0_ark*pi
+        !
+        theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(10) = a1
+        dst(11) = a2
+        dst(12) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:12) = src(1:12)+molec%local_eq(1:12)
+        !
+        A1 = src(10) 
+        A2 = src(11) 
+        tbar = src(12) ! + 2.0_ark*pi/3.0_ark
+        !
+        t1 = tbar+1.0_ark/3.0_ark*sqrt(2.0_ark)*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
+        !
+        dst(10) =  mod(t1+4.0_ark*pi,4.0_ark*pi)
+        dst(11) =  mod(t2+4.0_ark*pi,4.0_ark*pi)
+        dst(12) =  mod(t3+4.0_ark*pi,4.0_ark*pi)
+        !
       endif
       !
     end select
@@ -1492,9 +1540,9 @@ module mol_ch3oh
       tau = molec%taueq(1)
       !
       call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-                                                beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
+                                                 beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
       !
-     if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
+      if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
 
 
         select case(trim(molec%coords_transform))

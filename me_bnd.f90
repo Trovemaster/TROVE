@@ -2288,7 +2288,7 @@ module me_bnd
         !
         rho = rho_b(1)+real(i,kind=ark)*rhostep
         x(i) = cos(rho)
-        sinrho(i) = sin(rho)
+        sinrho(i) = abs(sin(rho))
         cosrho(i) = cos(rho)
         !
      enddo
@@ -2372,7 +2372,7 @@ module me_bnd
           do i=0,npoints
              !
              rho = rho_b(1)+real(i,kind=ark)*rhostep
-             phil(i)  = L(i,vl)*sqrt(sin(rho))
+             phil(i)  = L(i,vl)*sqrt(abs(sin(rho)))
              dphil(i) = dL(i,vl)*sqrt(real((vl+k)*(vl-k+1),ark))
              !
           enddo
@@ -2384,7 +2384,7 @@ module me_bnd
               do i=0,npoints
                  !
                  rho = rho_b(1)+real(i,kind=ark)*rhostep
-                 phir(i)  = L(i,vr)*sqrt(sin(rho))
+                 phir(i)  = L(i,vr)*sqrt(abs(sin(rho)))
                  dphir(i) = dL(i,vr)*sqrt(real((vr+k)*(vr-k+1),ark))
                  !
               enddo
@@ -2571,7 +2571,7 @@ module me_bnd
               sigma = max(sigma,sigma_t)
               rms = rms + sigma_t**2
               !
-              ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
+              ! Now we test the h_t = <vl|h|vr> matrix elements and check it cracked
               ! the Schroedinger all right
               if (nl/=nr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
                  write(out,"('ME_Associate_Legendre: wrong  solution for <',i4,'|H|',i4,'> = ',f20.10)") nl,nr,h_t

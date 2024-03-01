@@ -4,7 +4,6 @@
 module pot_xy2
   use accuracy
   use moltype
-  !use pot_h216o
 
   implicit none
 
@@ -16,7 +15,8 @@ module pot_xy2
          MLdipole_xy2_lorenzo,MLdms2pqr_xy2_linear,MLpoten_xy2_bubukina,MLpoten_xyz_tyuterev,MLdms2pqr_xyz_coeff,&
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame,MLpoten_xyz_tyuterev_rho
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
-  public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart
+  public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
+         MLpoten_o3_oleg
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -6972,6 +6972,97 @@ endif
   end function MLpoten_xy2_morse_powers
 
 
+  ! Ozone potential function from Polyansky et al 2017
+  ! JQSRT doi:10.1016/j.jqsrt.2018.02.018
+  !
+  function MLpoten_o3_oleg(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r1,r2,theta,re,thetae,e0,a1,b1,b2,c1
+   real(ark)            :: xs1,xs2,xst,vpot,v0,v1,roo,voo,xep1,xep2,xep3,xep4,rr1,rr2
+   real(ark)            :: pd,deg
+   !
+   if (verbose>=6) write(out,"('MLpoten_o3_oleg/start')")
+      !
+      pd=pi/180.0_ark
+      deg=180.0_ark/pi
+      ! 
+      r1 = local(1)
+      r2 = local(2)
+      theta = local(3)
+      !
+      re = force(1)
+      thetae = force(2)*pd
+      e0 = force(3)
+      a1 = force(4)
+      b1 = force(5)
+      b2 = force(6)
+      c1 = force(7)
+      !
+      xs1 = (r1+r2)*0.5_ark-re
+      xs2 = (r1-r2)*0.5_ark
+      xst = cos(theta)-cos(thetae)
+      !
+      rr1 = r1-re
+      rr2 = r2-re
+      roo = sqrt(r1**2+r2**2-2.0_ark*r1*r2*cos(theta))
+      voo = 800000.0_ark*exp(-c1*roo)
+      !
+      xep1 = (exp(-2.0_ark*a1*rr1)-2.0_ark*exp(-a1*rr1)+1.0_ark)*e0
+      xep2 = (exp(-2.0_ark*a1*rr2)-2.0_ark*exp(-a1*rr2)+1.0_ark)*e0
+      xep3 = exp(-b1*((r1-re)**2+(r2-re)**2))
+      xep4 = exp(-b2*(theta-thetae))
+      !
+      v0 = force(  8)**xs1**0*xs2**0*xst**0
+      v1 = force(  9)*xs1**0*xs2**0*xst**1&
+          +force( 10)*xs1**1*xs2**0*xst**0&
+          +force( 11)*xs1**0*xs2**0*xst**2&
+          +force( 12)*xs1**0*xs2**2*xst**0&
+          +force( 13)*xs1**1*xs2**0*xst**1&
+          +force( 14)*xs1**2*xs2**0*xst**0&
+          +force( 15)*xs1**0*xs2**0*xst**3&
+          +force( 16)*xs1**0*xs2**2*xst**1&
+          +force( 17)*xs1**1*xs2**0*xst**2&
+          +force( 18)*xs1**1*xs2**2*xst**0&
+          +force( 19)*xs1**2*xs2**0*xst**1&
+          +force( 20)*xs1**3*xs2**0*xst**0&
+          +force( 21)*xs1**0*xs2**0*xst**4&
+          +force( 22)*xs1**0*xs2**2*xst**2&
+          +force( 23)*xs1**0*xs2**4*xst**0&
+          +force( 24)*xs1**1*xs2**0*xst**3&
+          +force( 25)*xs1**1*xs2**2*xst**1&
+          +force( 26)*xs1**2*xs2**0*xst**2&
+          +force( 27)*xs1**2*xs2**2*xst**0&
+          +force( 28)*xs1**3*xs2**0*xst**1&
+          +force( 29)*xs1**4*xs2**0*xst**0&
+          +force( 30)*xs1**0*xs2**0*xst**5&
+          +force( 31)*xs1**0*xs2**2*xst**3&
+          +force( 32)*xs1**0*xs2**4*xst**1&
+          +force( 33)*xs1**1*xs2**0*xst**4&
+          +force( 34)*xs1**1*xs2**2*xst**2&
+          +force( 35)*xs1**1*xs2**4*xst**0&
+          +force( 36)*xs1**2*xs2**0*xst**3&
+          +force( 37)*xs1**2*xs2**2*xst**1&
+          +force( 38)*xs1**3*xs2**0*xst**2&
+          +force( 39)*xs1**3*xs2**2*xst**0&
+          +force( 40)*xs1**4*xs2**0*xst**1&
+          +force( 41)*xs1**5*xs2**0*xst**0&
+          +force( 42)*xs1**0*xs2**0*xst**6&
+          +force( 43)*xs1**0*xs2**6*xst**0
+      !
+      vpot=v0+v1*xep3+voo+xep1+xep2+xep4
+      if(theta*deg< 50.0_ark) vpot=30000.0_ark
+      !
+      f = vpot
+      !
+      if (verbose>=6) write(out,"('MLpoten_o3_oleg/end')")
+      !
+  end function MLpoten_o3_oleg
 
 
 

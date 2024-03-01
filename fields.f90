@@ -18128,16 +18128,6 @@ end subroutine check_read_save_none
                stop 'At ME_laguerre_k: illegal imin'
              endif
              !
-             if (f_t<=sqrt(small_).or.f_t>10000.0_rk) then
-                !
-                write(out,"('1D ME_laguerre_k: the f_m constant is negative or too large.')")
-                write(out,"('Check if 1D PEC is quadratic at linearity if it is a linear molecule.')")
-                write(out,"('Alternatively, set f_m as a SPECPARAM parameter using sensible values from successful runs:')")
-                write(out,"('fm   0   77.0')")
-                stop '1D ME_laguerre_k: the f_m constant is negative or too large'
-                !
-             endif
-             !
              if (trove%specparam(bs%mode(1))>0d0 ) then
                 !
                 f_t = trove%specparam(bs%mode(1))**2*g_t
@@ -18146,6 +18136,16 @@ end subroutine check_read_save_none
                   write(out,"('the input special-parameter ',f18.8,' will be used to obtain m for laguarre basis')") & 
                         trove%specparam(bs%mode(1)) 
                 endif
+                !
+             endif
+             !
+             if (f_t<=sqrt(small_).or.f_t>10000.0_rk) then
+                !
+                write(out,"('1D ME_laguerre_k: the f_m constant is negative or too large.')")
+                write(out,"('Check if 1D PEC is quadratic at linearity if it is a linear molecule.')")
+                write(out,"('Alternatively, set f_m as a SPECPARAM parameter 3 using sensible values from successful runs:')")
+                write(out,"('fm   0   77.0')")
+                stop '1D ME_laguerre_k: the f_m constant is negative or too large'
                 !
              endif
              !
