@@ -1,0 +1,202 @@
+mem 380 Gb
+
+KinOrder  0
+PotOrder  2
+
+Natoms 9
+Nmodes 21
+
+PRIMITIVES
+  Npolyads   8
+  enercut    40000.0
+END
+
+
+POTENTIAL_SIMPLE
+
+IRON-OUT
+
+CONTRACTION
+  Npolyads        4
+  enercut         18000.0
+  coeff_thresh    1.0d-30
+  degeneracy      1d-02
+  sample_points   40
+  sample_attempts 500
+  symm_toler      1.0d-8
+END
+
+SYMGROUP C3v(M)
+
+DIAGONALIZER
+ SYEVR
+ enermax 16000.0
+end
+
+verbose 6
+
+dstep            0.002
+COORDS           linear
+TRANSFORM        7ALF_TAU_1RHO
+MOLTYPE          C3H6
+MOLECULE         C3H6
+REFER-CONF       non-RIGID
+
+
+
+ZMAT
+  C   0  0  0  0  12.00000000
+  C   1  0  0  0  12.00000000
+  C   2  1  0  0  12.00000000
+  H   1  2  3  202   1.00782505
+  H   1  2  4  202   1.00782505
+  H   1  2  4 -202   1.00782505
+  H   3  2  1  202 1.00782505
+  H   3  2  7  202 1.00782505
+  H   2  1  7  202 1.00782505
+end
+
+
+
+CHECK_POINT
+hamiltonian none ascii
+kinetic     save
+potential   save
+external    none
+basis_set   save
+CONTRACT    save
+EIGENFUNC   none
+matelem     save
+extmatelem  none 
+END
+
+
+sparse
+
+
+EQUILIBRIUM
+  rCC        0         1.49749273
+  rCC        0         1.33190890
+  rCH        0         1.09046359
+  rCH        0         1.09046359
+  rCH        0         1.09046359
+  rCH        0         1.08626757
+  rCH        0         1.08198107
+  rCH        0         1.08612521
+  alp_321     0         124.12191596 DEG
+  alp_214     0         110.73758845 DEG
+  alp_215     0         110.73758845 DEG
+  alp_216     0         110.73758845 DEG
+  alp_238     0         118.87334567 DEG
+  alp_239     0         121.41499214 DEG
+  alp_127     0         118.97285084 DEG
+  di_CCCH     0          0.00000000 DEG
+  di_HCCH     0        120.00000000 DEG
+  di_HCCH     0        120.00000000 DEG
+  di_HCCH     0          0.00000000 DEG
+  di_CCCH     0        180.00000000 DEG
+  di_HCCH     0        180.00000000 DEG
+end
+
+
+
+
+BASIS
+  0,'JKtau', Jrot 0
+  1,'numerov','linear', 'morse',  range 0,2,  r,8  resc 1.0, points 900, borders -0.5,0.6
+  2,'numerov','linear', 'morse',  range 0,2,  r,8  resc 1.0, points 900, borders -0.5,0.6
+  3,'numerov','linear', 'morse',  range 0,1,  r,2, resc 1.0, points 3000, borders -0.5,0.7 nocheck
+  3,'numerov','linear', 'morse',  range 0,1,  r,2, resc 1.0, points 3000, borders -0.5,0.7 nocheck
+  3,'numerov','linear', 'morse',  range 0,1,  r,2, resc 1.0, points 3000, borders -0.5,0.7 nocheck
+  4,'numerov','linear', 'morse',  range 0,2,  r,8, resc 1.0, points 900, borders -0.5,0.6
+  5,'numerov','linear', 'morse',  range 0,2,  r,8, resc 1.0, points 900, borders -0.5,0.6
+  6,'numerov','linear', 'morse',  range 0,2,  r,8, resc 1.0, points 900, borders -0.5,0.6
+  7,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.5,1.5
+  8,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6 nocheck
+  8,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6 nocheck
+  8,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6 nocheck
+  9,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 10,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 11,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 12,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 13,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 14,'numerov','linear', 'linear', range 0,2, r,8, resc 1.0, points 900, borders -1.6,1.6
+ 15,'harmonic','linear', 'linear', range 0,2, r,2, resc 1.0, points 900, borders -50,50.0001 degrees
+ 15,'harmonic','linear', 'linear', range 0,2, r,2, resc 1.0, points 900, borders -50,50.000  degrees
+ 16,'Fourier', 'linear', 'linear', range 0,2, r,8, resc 1.0, points 600, borders  0,360 degrees, period 1
+END
+
+
+SPECPARAM
+amorseCC         0       1.44143543 
+amorseCC         0       1.66741850 
+amorseCH         0       1.66741850 
+amorseCH         0       1.66741850 
+amorseCH         0       1.54622540 
+amorseCH         0       1.56838544 
+amorseCH         0       1.58272387 
+amorseCH         0       1.57650747 
+end
+
+
+POTEN
+NPARAM  45
+POT_TYPE  poten_c3h6_sym
+COEFF  powers  (powers or list)
+rC1e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.49749622   
+rC2e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.33191055   
+rH1e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.09046509   
+rH4e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.08626757   
+rH5e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.08198107   
+rH6e   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.08612521   
+ae1    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      124.12191596   
+ae2    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      110.73758845   
+ae5    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      118.87334567   
+ae6    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      121.41330611   
+ae7    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      118.97284516   
+de1    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        0.00000000   
+de2    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      120.00000000   
+de4    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        0.00000000   
+de5    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      180.00000000   
+de6    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0      180.00000000   
+a1     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.44143543   
+a2     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.66741850   
+b1     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.54622540   
+b3     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.56838544   
+b4     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.58272387   
+b5     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0        1.57650747   
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0   5      11059.16086328
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  3   9       -348.91074269
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   9          0.00000000
+f0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0          0.00000000
+f0  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0      59370.00000000
+f0  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0          0.00000000
+f0  0  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0      85710.00000000
+f0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0       0.0000               -388.00000000
+f0  0  0  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0     166608.00000000
+f0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0      55767.00000000
+f0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0   0      56310.00000000
+f0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  0  0  0   0      55130.00000000
+f0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  0  0   0      34409.00000000
+f0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0   9       0.000                 -325.58316756
+f0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0  0  0  0   8      71590.99141060
+f0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0  0   0      25921.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0  0   0      24373.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0  0   0      27109.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0  0   0       9776.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0  0   0       7807.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  2  0  0  0   0       8968.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  6   0          0.00000000
+f0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  9   0          0.00000000
+end
+
+
+
+
+
+
+
+
+
+
+
