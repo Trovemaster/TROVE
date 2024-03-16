@@ -47,65 +47,6 @@ module mol_ch3oh
     endif
     !
     nsrc = size(src)
-
-    !
-    select case(trim(molec%coords_transform))
-    case default
-       write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
-       stop 'MLcoordinate_transform_func - bad coord. type'
-       !
-    case('R-TAU-BOWMAN-REF')
-       !
-       if (direct) then
-         !
-         alpha(3) = src( 9)
-         alpha(2) = src(11)
-         !
-         beta(1) = src(7)
-         beta(2) = src(8)
-         beta(3) = src(10)
-         !
-         cosa(2) =  ( cos(alpha(2))-cos(beta(3))*cos(beta(1)) )/( sin(beta(3))*sin(beta(1)) )
-         cosa(3) =  ( cos(alpha(3))-cos(beta(2))*cos(beta(1)) )/( sin(beta(2))*sin(beta(1)) )
-         !
-         chi2 =-acos(cosa(2))
-         chi3 = acos(cosa(3))
-         !
-         chi1 = 2.0_ark*pi-(-chi2+chi3)
-         !
-         tau = src(12)+(chi2+chi3)/3.0_ark
-         !
-       else
-         !
-         tau = src(12)
-         !
-      endif
-       !
-    case('R-TAU-CHI')
-       !
-       if (direct) then
-         !
-         !
-         phi1   = src(10)
-         phi2   = src(11)
-         phi3   = src(12)
-         !
-         if (phi2>2.0_ark/3.0_ark*pi)  phi2 = phi2-2.0_ark*pi
-         !
-         tau = 1.0_ark/3.0_ark*( phi1+phi2+phi3 )
-         !
-       else
-         !
-         tau = src(12)
-         !
-      endif
-       !
-    end select 
-    !
-    call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),beta(1),beta(2),beta(3),&
-                                       alpha(1),alpha(2),alpha(3),phi(1),phi(2),phi(3),chi(1),chi(2),chi(3))
-
-
     !
     select case(trim(molec%coords_transform))
     case default
@@ -113,6 +54,18 @@ module mol_ch3oh
        stop 'MLcoordinate_transform_func - bad coord. type'
        !
     case('R-TAU-CHI')
+       !
+       !
+       call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),beta(1),beta(2),beta(3),&
+                                          alpha(1),alpha(2),alpha(3),phi(1),phi(2),phi(3),chi(1),chi(2),chi(3))
+       !
+       phi1   = src(10)
+       phi2   = src(11)
+       phi3   = src(12)
+       !
+       if (phi2>2.0_ark/3.0_ark*pi)  phi2 = phi2-2.0_ark*pi
+       !
+       tau = 1.0_ark/3.0_ark*( phi1+phi2+phi3 )
        !
        xi_eq(1:2) = r_eq(1:2)
 
@@ -356,11 +309,33 @@ module mol_ch3oh
           !if (dst(12)-molec%local_eq(12)>pi) dst(12) = -(2.0_ark*pi-dst(12))
           !
       endif
-
-
-
        !
     case('R-TAU-BOWMAN-REF')
+       !
+       if (direct) then
+         !
+         alpha(3) = src( 9)
+         alpha(2) = src(11)
+         !
+         beta(1) = src(7)
+         beta(2) = src(8)
+         beta(3) = src(10)
+         !
+         cosa(2) =  ( cos(alpha(2))-cos(beta(3))*cos(beta(1)) )/( sin(beta(3))*sin(beta(1)) )
+         cosa(3) =  ( cos(alpha(3))-cos(beta(2))*cos(beta(1)) )/( sin(beta(2))*sin(beta(1)) )
+         !
+         chi2 =-acos(cosa(2))
+         chi3 = acos(cosa(3))
+         !
+         chi1 = 2.0_ark*pi-(-chi2+chi3)
+         !
+         tau = src(12)+(chi2+chi3)/3.0_ark
+         !
+       else
+         !
+         tau = src(12)
+         !
+       endif
        !
        rref( 1,0:4)  = molec%force( 1: 5) 
        rref( 2,0:4)  = molec%force( 6:10) 
@@ -1539,12 +1514,13 @@ module mol_ch3oh
       !
       tau = molec%taueq(1)
       !
-      call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-                                                 beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-      !
       if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
 
 
+        !
+        call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
+                                                 beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
+        !
         select case(trim(molec%coords_transform))
         case default
            write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
@@ -1608,13 +1584,12 @@ module mol_ch3oh
          do i = 0,npoints
             !
             tau = rho_i(i)
-
-            !
-            call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-                                                      beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-
             !
             if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
+              !
+              !
+              call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
+                                                     beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
               !
               select case(trim(molec%coords_transform))
               case default
@@ -1672,7 +1647,7 @@ module mol_ch3oh
             Inert(2) = sum(molec%AtomMasses(:)*( a0_ark(:,1)**2+ a0_ark(:,3)**2) )
             Inert(3) = sum(molec%AtomMasses(:)*( a0_ark(:,1)**2+ a0_ark(:,2)**2) )
             !
-            if (verbose>=5) then 
+            if (verbose>=6) then 
               write(out,"('i0',3f12.8)") Inert(1:3)
             endif
             !
@@ -1680,7 +1655,7 @@ module mol_ch3oh
             !  write(out,"('b0',i8,18f12.8)") i,b0(:,:,i)
             !endif
 
-            if (verbose>=6) then 
+            if (verbose>=5) then 
               write(out,"(i6)") molec%natoms
               !
               write(out,"(/'C',3x,3f14.8)") b0(1,:,i)

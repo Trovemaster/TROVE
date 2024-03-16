@@ -42,7 +42,7 @@ module molecules
   use prop_xy2_spinspin, only : prop_xy2_spinspin_dipoleYY
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-                       MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE
+                       MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho
 
@@ -498,6 +498,10 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_bond_EKE
          !
+    case('KINETIC_XYZ_EKE_BOND-R2') 
+         !
+         MLkineticfunc => MLkinetic_xyz_bond_EKE_r2
+         !
     case('KINETIC_XYZ_EKE_BOND_SINRHO') 
          !
          MLkineticfunc => MLkinetic_xyz_EKE_sinrho
@@ -650,6 +654,14 @@ end function ML_MEPfunc
     case('DIPOLE_PQR_XYZ')
         !
         MLextF_func => MLdms2pqr_xyz_coeff
+        !
+    case('DIPOLE_PQR_XYZ_Z-BOND')
+        !
+        MLextF_func => MLdms2pqr_xyz_z_bond
+        !
+    case('DIPOLE_PQR_XYZ_BISECTING')
+        !
+        MLextF_func => MLdms2pqr_xyz_bisecting
         !
     case('DIPOLE_BISECT_S1S2T_XYZ')
         !
