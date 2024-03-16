@@ -591,7 +591,7 @@ module mol_xy2
           dst(3) = pi-(src(3)+molec%local_eq(3))
        endif
        !
-    case('R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART')
+    case('R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R2-Z-R1-RHO')
        !
        if (direct) then 
           dst(1:2) = dsrc(1:2)
@@ -904,6 +904,25 @@ module mol_xy2
            b0(:,i,0) = b0(:,i,0) - CM_shift
          enddo 
          !
+       case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+         !
+         b0(1,1,0) = 0
+         b0(1,2,0) = 0
+         b0(1,3,0) = 0
+         !
+         b0(2,1,0) = re13*sin(pi-alphaeq)
+         b0(2,2,0) = 0.0_ark
+         b0(2,3,0) = re13*cos(pi-alphaeq)
+         !
+         b0(3,1,0) = 0
+         b0(3,2,0) = 0
+         b0(3,3,0) =-re23
+         !
+         do i = 1,3
+           CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,i,0) = b0(:,i,0) - CM_shift
+         enddo 
+         !
        case('R1-R2-ALPHA-Z')
          !
          if (all(molec%AtomMasses(2:3)==m2).and.re13==re23) then
@@ -1005,7 +1024,7 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
-         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R2-Z-R1-RHO')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1025,7 +1044,8 @@ module mol_xy2
             !
             select case(trim(molec%coords_transform))
               case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
-                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
+                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
+                   'R2-Z-R1-RHO')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -1298,6 +1318,37 @@ module mol_xy2
                  b0(:,ix,i) = b0(:,ix,i) - CM_shift
                enddo 
                !
+             case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+               !
+               if (Nangles>0) then
+                 alphaeq = molec%alphaeq(1)
+               elseif (molec%Ndihedrals>1) then
+                 !
+                 tau = rho
+                 !
+                 alphaeq = pi-asin( sqrt( sin(tau)**2+sin(tau)**2 ))
+                 !
+               else
+                 alphaeq = pi-rho
+               endif 
+               !
+               b0(1,1,i) = 0
+               b0(1,2,i) = 0
+               b0(1,3,i) = 0
+               !
+               b0(2,1,i) = re13*sin(pi-alpha)
+               b0(2,2,i) = 0.0_ark
+               b0(2,3,i) = re13*cos(pi-alpha)
+               !
+               b0(3,1,i) = 0
+               b0(3,2,i) = 0
+               b0(3,3,i) = -re23
+             
+               do ix = 1,3
+                 CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,ix,i) = b0(:,ix,i) - CM_shift
+               enddo 
+                 !
              case('R1-R2-ALPHA-Z')
                !
                b0(1,1,i) = 0
@@ -2792,7 +2843,8 @@ module mol_xy2
           !
        end select       
        !
-    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
+    case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
+         'R2-Z-R1-RHO')
        !
        select case(trim(molec%symmetry))
        case default

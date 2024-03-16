@@ -4046,6 +4046,14 @@ endif
        a0(3, 1) = -r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
        !
+    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+       !
+       a0(2, 1) =  r(1) * sin(pi-r(3))
+       a0(2, 3) =  r(1) * cos(pi-r(3))
+       !
+       a0(3, 1) =  0
+       a0(3, 3) = -r(2)
+       !
     case default 
        write(out,"('MLloc2pqr_xy2: illegal coordinate type ',a)") trim(molec%coords_transform)
        stop 'MLloc2pqr_xy2: illegal coordinate type'
@@ -4082,6 +4090,14 @@ endif
        !
        a0(3, 1) = -r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
+       !
+    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+       !
+       a0(2, 1) =  r(1) * sin(pi-r(3))
+       a0(2, 3) =  r(1) * cos(pi-r(3))
+       !
+       a0(3, 1) =  0
+       a0(3, 3) = -r(2)
        !
     case('R1-Z-R2-RHO-ECKART')
        !
