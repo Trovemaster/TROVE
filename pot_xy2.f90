@@ -5752,9 +5752,7 @@ endif
     !
     uy = MLvector_product(uz,n2)
     !
-    ! assume that ab initio embedding is with x = -x and y = - y 
-    !
-    if (sum(uy(:)**2)<sqrt(small_)) uy = (/0.0_ark,-1.0_ark,0.0_ark/)
+    if (sum(uy(:)**2)<sqrt(small_)) uy = (/0.0_ark,1.0_ark,0.0_ark/)
     !
     uy = uy / sqrt(sum(uy(:)**2))
     !

@@ -386,61 +386,62 @@ module kin_xy2
      g_cor = 0
      pseudo = 0
      !
-     g_vib(1,1,1) =  (mX+mZ)/mX/mZ 
+     g_vib(1,1,1) =  (mX+mY)/mX/mY 
      g_vib(1,2,1) =  -cos(rho)/mX 
      g_vib(1,3,2) =  sin(rho)/mX 
      g_vib(2,1,1) =  -cos(rho)/mX 
-     g_vib(2,2,1) =  (mX+mY)/mX/mY 
+     g_vib(2,2,1) =  (mX+mZ)/mX/mZ 
      g_vib(2,3,3) =  sin(rho)/mX 
      g_vib(3,1,2) =  sin(rho)/mX 
      g_vib(3,2,3) =  sin(rho)/mX 
-     g_vib(3,3,4) =  (mX+mY)/mX/mY 
+     g_vib(3,3,4) =  (mX+mZ)/mX/mZ 
      g_vib(3,3,5) =  2.0_ark*cos(rho)/mX 
-     g_vib(3,3,6) =  (mX+mZ)/mX/mZ 
-     g_rot(1,1,4) =  (mX+mY)/mX/mY 
-     g_rot(2,2,4) =  (mX+mY)/mX/mY 
+     g_vib(3,3,6) =  (mX+mY)/mX/mY 
+     !
+     g_rot(1,1,4) =  (mX+mZ)/mX/mZ 
+     g_rot(2,2,4) =  (mX+mZ)/mX/mZ 
+     !
+     g_cor(1,2,2) =  -sin(rho)/mX 
+     g_cor(3,2,4) =  -(mX+mZ)/mX/mZ 
+     g_cor(3,2,5) =  -cos(rho)/mX 
+
+
      !
      if (rho>rho_threshold) then
         !
-        g_rot(1,3,4) =  rho*cos(rho)*(mX+mY)/sin(rho)/mX/mY 
-        g_rot(1,3,5) =  1/sin(rho)/mX*rho 
-        g_rot(3,1,4) =  rho*cos(rho)*(mX+mY)/sin(rho)/mX/mY 
+        g_rot(1,3,4) =  rho*cos(rho)*(mX+mZ)/sin(rho)/mX/mZ 
+        g_rot(1,3,5) =  1.0_ark/sin(rho)/mX*rho 
+        g_rot(3,1,4) =  rho*cos(rho)*(mX+mZ)/sin(rho)/mX/mZ 
         g_rot(3,1,5) =  1.0_ark/sin(rho)/mX*rho 
-        g_rot(3,3,4) =  rho**2*cos(rho)**2*(mX+mY)/mX/mY/sin(rho)**2 
-        g_rot(3,3,5) =  2.*cos(rho)*rho**2/mX/sin(rho)**2 
-        g_rot(3,3,6) =  rho**2*(mX+mZ)/sin(rho)**2/mX/mZ 
-        g_cor(1,2,2) =  -sin(rho)/mX 
-        g_cor(3,2,4) =  -(mX+mY)/mX/mY 
-        g_cor(3,2,5) =  -cos(rho)/mX 
-        pseudo(4) =  .125_ark*(mY+mX+rho**2*mX*cos(rho)**2-2.0_ark*rho**2*mX+rho**2*mY*cos(rho)**2-&
-                     2.0_ark*rho**2*mY-mY*cos(rho)**2-mX*cos(rho)**2)/mY/mX/rho/sin(rho)**2 
-        pseudo(5) =  -.250_ark*(-cos(rho)+cos(rho)**3+2.0_ark*rho*sin(rho)*cos(rho)**2-2.0_ark*sin(rho)*rho+&
-                     rho**2*cos(rho)**3)/mX/rho/sin(rho)**2 
-        pseudo(6) =  0.125_ark*(-2.0_ark*rho**2*mX-2.0_ark*rho**2*mZ+mZ+rho**2*mX*cos(rho)**2+rho**2*mZ*cos(rho)**2+&
-                         mX-mZ*cos(rho)**2-mX*cos(rho)**2)/mZ/mX/rho/sin(rho)**2 
+        g_rot(3,3,4) =  rho**2*cos(rho)**2*(mX+mZ)/sin(rho)**2/mX/mZ 
+        g_rot(3,3,5) =  2.0_ark*cos(rho)*rho**2/mX/sin(rho)**2 
+        g_rot(3,3,6) =  rho**2*(mX+mY)/sin(rho)**2/mX/mY 
+        !
+        pseudo(4) =  .125_ark*(-2.0_ark*rho**2*mX-mZ*cos(rho)**2+mZ+rho**2*mZ*cos(rho)**2-&
+                               2.0_ark*rho**2*mZ-mX*cos(rho)**2+mX+rho**2*mX*cos(rho)**2)/mZ/mX/rho/sin(rho)**2 
+        pseudo(5) =  -.25_ark*(2.0_ark*rho*sin(rho)*cos(rho)**2-2.0_ark*sin(rho)*rho-&
+                               cos(rho)+cos(rho)**3+rho**2*cos(rho)**3)/mX/rho/sin(rho)**2 
+        pseudo(6) =  .125_ark*(-2.0_ark*rho**2*mX-2.0_ark*rho**2*mY-mY*cos(rho)**2+mY+rho**2*mX*cos(rho)**2+&
+                               rho**2*mY*cos(rho)**2-mX*cos(rho)**2+mX)/mY/mX/rho/sin(rho)**2 
         !
      else
         !
         ! expansion around rho=0
         !
-        g_rot(1,3,4) =  (mX+mY)/mX/mY-(mX+mY)/mX/mY*rho**2/3.0_ark-(mX+mY)/mX/mY*rho**4/45.0_ark-&
-                        2.0_ark/945.0_ark*(mX+mY)/mX/mY*rho**6
-        g_rot(1,3,5) =  1.0_ark/mX+1.0_ark/mX*rho**2/6.0_ark+7.0_ark/360.0_ark/mX*rho**4+31.0_ark/15120.0_ark/mX*rho**6
-        g_rot(3,1,4) =  (mX+mY)/mX/mY-(mX+mY)/mX/mY*rho**2/3.0_ark-(mX+mY)/mX/mY*rho**4/45.0_ark-&
-                        2.0_ark/945.0_ark*(mX+mY)/mX/mY*rho**6
-        g_rot(3,1,5) =  1.0_ark/mX+1.0_ark/mX*rho**2/6.0_ark+7.0_ark/360.0_ark/mX*rho**4+31.0_ark/15120.0_ark/mX*rho**6
-        g_rot(3,3,4) =  (mX+mY)/mX/mY-2.0_ark/3.0_ark*(mX+mY)/mX/mY*rho**2+(mX+mY)/mX/mY*rho**4/15.0_ark+&
-                         2.0_ark/189.0_ark*(mX+mY)/mX/mY*rho**6
-        g_rot(3,3,5) =  2.0_ark/mX-1.0_ark/mX*rho**2/3.0_ark-7.0_ark/60.0_ark/mX*rho**4-31.0_ark/1512.0_ark/mX*rho**6
-        g_rot(3,3,6) =  (mX+mZ)/mX/mZ+(mX+mZ)/mX/mZ*rho**2/3.0_ark+(mX+mZ)/mX/mZ*rho**4/15.0_ark+&
-                         2.0_ark/189.0_ark*(mX+mZ)/mX/mZ*rho**6
-       
-        pseudo(4) =  -(mX+mY)/mX/mY*rho/6.0_ark-(mX+mY)/mX/mY*rho**3/120.0_ark-(mX+mY)/mX/mY*rho**5/756.0_ark
-        pseudo(5) =  2.0_ark/3.0_ark/mX*rho-11.0_ark/60.0_ark/mX*rho**3+127.0_ark/7560.0_ark/mX*rho**5
-        pseudo(6) =  -(mX+mZ)/mX/mZ*rho/6.0_ark-(mX+mZ)/mX/mZ*rho**3/120.0_ark-(mX+mZ)/mX/mZ*rho**5/756.0_ark
+        g_rot(1,3,4) =  (mX+mZ)/mX/mZ-(mX+mZ)/mX/mZ*rho**2/3._ark-(mX+mZ)/mX/mZ*rho**4/45._ark-2._ark/945._ark*(mX+mZ)/mX/mZ*rho**6
+        g_rot(1,3,5) =  1._ark/mX+1._ark/mX*rho**2/6._ark+7._ark/360._ark/mX*rho**4+31._ark/15120._ark/mX*rho**6
+        g_rot(3,1,4) =  (mX+mZ)/mX/mZ-(mX+mZ)/mX/mZ*rho**2/3._ark-(mX+mZ)/mX/mZ*rho**4/45._ark-2._ark/945._ark*(mX+mZ)/mX/mZ*rho**6
+        g_rot(3,1,5) =  1._ark/mX+1._ark/mX*rho**2/6._ark+7._ark/360._ark/mX*rho**4+31._ark/15120._ark/mX*rho**6
+        g_rot(3,3,4) =  (mX+mZ)/mX/mZ-2._ark/3._ark*(mX+mZ)/mX/mZ*rho**2+(mX+mZ)/mX/mZ*rho**4/15._ark+&
+                        2._ark/189._ark*(mX+mZ)/mX/mZ*rho**6
+        g_rot(3,3,5) =  2._ark/mX-1._ark/mX*rho**2/3._ark-7._ark/60._ark/mX*rho**4-31._ark/1512._ark/mX*rho**6
+        g_rot(3,3,6) =  (mX+mY)/mX/mY+(mX+mY)/mX/mY*rho**2/3._ark+(mX+mY)/mX/mY*rho**4/15._ark+2._ark/189._ark*(mX+mY)/mX/mY*rho**6
+        !       
+        pseudo(4) =  -(mX+mZ)/mX/mZ*rho/6._ark-(mX+mZ)/mX/mZ*rho**3/120._ark-(mX+mZ)/mX/mZ*rho**5/756._ark
+        pseudo(5) =   2._ark/3._ark/mX*rho-11._ark/60._ark/mX*rho**3+127._ark/7560._ark/mX*rho**5
+        pseudo(6) =  -(mX+mY)/mX/mY*rho/6._ark-(mX+mY)/mX/mY*rho**3/120._ark-(mX+mY)/mX/mY*rho**5/756._ark
         !
      endif
-
      !
    end subroutine  MLkinetic_xyz_bond_EKE_r2
 
