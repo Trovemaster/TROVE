@@ -8,7 +8,8 @@ module kin_xy2
   implicit none
 
   public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
-         MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2
+         MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
+         MLkinetic_xyz_Radau_EKE
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -340,7 +341,7 @@ module kin_xy2
         g_rot(3,1,5) = 1._ark/mX+1._ark/mX*rho**2/6._ark+7._ark/360._ark/mX*rho**4+31._ark/15120._ark/mX*rho**6
         g_rot(3,1,6) = (mX+mY)/mX/mY-(mX+mY)/mX/mY*rho**2/3._ark-(mX+mY)/mX/mY*rho**4/45._ark-2._ark/945._ark*(mX+mY)/mX/mY*rho**6
         g_rot(3,3,4) = (mX+mZ)/mX/mZ+(mX+mZ)/mX/mZ*rho**2/3._ark+(mX+mZ)/mX/mZ*rho**4/15._ark+2._ark/189._ark*(mX+mZ)/mX/mZ*rho**6
-        g_rot(3,3,5) = 2._ark/mX-1._ark/mX*rho**2/3._ark-7._ark/60._ark/mX*rho**4-31._ark/1512.D0/mX*rho**6
+        g_rot(3,3,5) = 2._ark/mX-1._ark/mX*rho**2/3._ark-7._ark/60._ark/mX*rho**4-31._ark/1512._ark/mX*rho**6
         g_rot(3,3,6) = (mX+mY)/mX/mY-2._ark/3._ark*(mX+mY)/mX/mY*rho**2+(mX+mY)/mX/mY*rho**4/15._ark+&
                        2._ark/189._ark*(mX+mY)/mX/mY*rho**6
         pseudo(4) = -(mX+mZ)/mX/mZ*rho/6._ark-(mX+mZ)/mX/mZ*rho**3/120._ark-(mX+mZ)/mX/mZ*rho**5/756._ark
@@ -445,6 +446,79 @@ module kin_xy2
      !
    end subroutine  MLkinetic_xyz_bond_EKE_r2
 
+
+  ! Defining kinetic energy function: Radau XYZ
+  ! This is EKE generated using Maple for a bond frame with bond-length-angle and 
+  ! removed singularity by combining U rho with dG/drho and multiplying muzz by rho^2
+  ! and muxz and muyz by rho. The vecinity of zero (singularity) is expanded wrt rho, up to the 7th order 
+  !
+  subroutine MLkinetic_xyz_Radau_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY,mZ,rho_2
+   real(ark),parameter  :: rho_threshold = 0.02_rk
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xyz_bond_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bond_EKE can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(2)
+     mZ = molec%AtomMasses(3)
+     !
+     rho_2 = 0.5_ark*rho
+     !
+     g_vib = 0 
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     g_vib(1,1,1) =  1.0_ark/mY 
+     g_vib(2,2,1) =  1.0_ark/mZ 
+     g_vib(3,3,4) =  1.0_ark/mZ 
+     g_vib(3,3,6) =  1.0_ark/mY 
+     g_rot(1,1,4) =  .250_ark/mZ/cos(rho_2)**2 
+     g_rot(1,1,6) =  .250_ark/mY/cos(rho_2)**2 
+     g_rot(2,2,4) =  .250_ark/mZ 
+     g_rot(2,2,6) =  .250_ark/mY 
+
+     g_cor(3,2,4) =  -.500_ark/mZ 
+     g_cor(3,2,6) =  .500_ark/mY 
+
+
+     if (rho>rho_threshold) then
+        !
+        g_rot(1,3,4) =  .250_ark*rho/mZ/sin(rho_2)/cos(rho_2) 
+        g_rot(1,3,6) =  -.250_ark*rho/mY/sin(rho_2)/cos(rho_2) 
+        g_rot(3,1,4) =  .250_ark*rho/mZ/sin(rho_2)/cos(rho_2) 
+        g_rot(3,1,6) =  -.250_ark*rho/mY/sin(rho_2)/cos(rho_2) 
+        g_rot(3,3,4) =  .125_ark*rho**2/mZ/(1.-cos(rho)) 
+        g_rot(3,3,6) =  .125_ark*rho**2/mY/(1.-cos(rho)) 
+        !
+        pseudo(4) =  .125_ark*(-2._ark*rho**2+1._ark+rho**2*cos(rho)**2-cos(rho)**2)/rho/mZ/sin(rho)**2 
+        pseudo(6) =  .125_ark*(-2._ark*rho**2+1._ark+rho**2*cos(rho)**2-cos(rho)**2)/rho/mY/sin(rho)**2 
+        !
+     else
+        !
+        ! expansion around rho=0
+        !
+       g_rot(1,3,4) = 1.0_ark/mZ/2.0_ark+1.0_ark/mZ*rho**2/12.0_ark+7.0_ark/720.0_ark/mZ*rho**4+31.0_ark/30240.0_ark/mZ*rho**6
+       g_rot(1,3,6) = -1.0_ark/mY/2.0_ark-1.0_ark/mY*rho**2/12.0_ark-7.0_ark/720.0_ark/mY*rho**4-31.0_ark/30240.0_ark/mY*rho**6
+       g_rot(3,1,4) = 1.0_ark/mZ/2.0_ark+1.0_ark/mZ*rho**2/12.0_ark+7.0_ark/720.0_ark/mZ*rho**4+31.0_ark/30240.0_ark/mZ*rho**6
+       g_rot(3,1,6) = -1.0_ark/mY/2.0_ark-1.0_ark/mY*rho**2/12.0_ark-7.0_ark/720.0_ark/mY*rho**4-31.0_ark/30240.0_ark/mY*rho**6
+       g_rot(3,3,4) = 1.0_ark/mZ+1.0_ark/mZ*rho**2/12.0_ark+1.0_ark/mZ*rho**4/240.0_ark+1.0_ark/mZ*rho**6/6048.0_ark
+       g_rot(3,3,6) = 1.0_ark/mY+1.0_ark/mY*rho**2/12.0_ark+1.0_ark/mY*rho**4/240.0_ark+1.0_ark/mY*rho**6/6048.0_ark
+       pseudo(4) = -1.0_ark/mZ*rho/6.0_ark-1.0_ark/mZ*rho**3/120.0_ark-1.0_ark/mZ*rho**5/756.0_ark
+       pseudo(6) = -1.0_ark/mY*rho/6.0_ark-1.0_ark/mY*rho**3/120.0_ark-1.0_ark/mY*rho**5/756.0_ark
+        !
+     endif
+
+     !
+   end subroutine  MLkinetic_xyz_Radau_EKE
 
 
 
