@@ -5742,8 +5742,8 @@ endif
     r1 = sqrt(sum(x(1,:)**2))
     r2 = sqrt(sum(x(2,:)**2))
     !
-    n1 = x(1,:) / r1
-    n2 = x(2,:) / r2
+    n1 =  x(1,:) / r1
+    n2 = -x(2,:) / r2
     !
     alpha = acos(sum(n1*n2))
     !
