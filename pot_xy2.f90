@@ -16,7 +16,7 @@ module pot_xy2
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame,MLpoten_xyz_tyuterev_rho
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
-         MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting
+         MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -4088,7 +4088,7 @@ endif
        a0(2, 1) =  0
        a0(2, 3) =  r(1)
        !
-       a0(3, 1) = -r(2) * sin(r(3))
+       a0(3, 1) =  r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
        !
     case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
@@ -5743,7 +5743,7 @@ endif
     r2 = sqrt(sum(x(2,:)**2))
     !
     n1 =  x(1,:) / r1
-    n2 = -x(2,:) / r2
+    n2 =  x(2,:) / r2
     !
     alpha = acos(sum(n1*n2))
     !
@@ -5779,7 +5779,7 @@ endif
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: k
-    real(ark)             :: y1,y2,y3, mu(3),n1(3),n2(3),x(2,3),r1,r2,alpha,re1,re2,ae,a0,b0
+    real(ark)             :: y1,y2,y3, mu(3),n1(3),n2(3),x(2,3),r1,r2,alpha,re1,re2,ae,a0,b0,r3,aocs
     real(ark)             :: p(3:extF%nterms(1)),q(5:extF%nterms(2)),v0,v1,v2,v3,v4,v5,v6,v7,v8,xyz0(natoms,3)
     !
     ! xyz are undefined for the local case
@@ -5794,12 +5794,12 @@ endif
       !
     endif
     !
-    !
     x(1,:) = xyz0(2,:) - xyz0(1,:)
     x(2,:) = xyz0(3,:) - xyz0(1,:)
     !
     r1 = sqrt(sum(x(1,:)**2))
     r2 = sqrt(sum(x(2,:)**2))
+    r3 = sqrt(sum((x(1,:)-x(2,:))**2)) 
     !
     n1 = x(1,:)/r1
     n2 = x(2,:)/r2
@@ -5815,6 +5815,9 @@ endif
     y1 = (r1 - re1)*exp(-a0*(r1-re1)**2)
     y2 = (r2 - re2)*exp(-b0*(r1-re2)**2)
     y3 = cos(alpha) - cos(ae)
+    !
+    !aocs=(r1**2+r2**2-r3**2)/(2.0_ark*r1*r2)
+    !y3=max(-1.0_ark,min(1.0_ark,aocs))-cos(ae)
     !
     k = extF%nterms(1)
     !
@@ -5999,7 +6002,7 @@ endif
     !
     k = extF%nterms(2) 
     !
-    q(5:k) = extF%coef(5:k,2)
+    q(7:k) = extF%coef(7:k,2)
     !
     v0 = q(  7)*y1**0*y2**0*y3**0
     v1 = q(  8)*y1**0*y2**0*y3**1& 
@@ -7867,6 +7870,83 @@ endif
     if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/end')")
 
  end function MLpoten_xyz_morse_cos_mep
+
+
+
+
+ !returns electric dipole moment ames1 for xyz type cartesian coordinates in the user-defined frame for locals specified
+ !
+ recursive subroutine MLdipole_ames1_xyz(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)            :: i,Ndcoe,ma,k
+    real(ark)              :: tmat(3,3),n1(3),n2(3),n3(3),mu(3),xyz0(3,3)
+    !
+    real(ark)   :: dcoe(1000),idcoe(1000,3)
+    real(ark)   :: x(3,3),r1,r2,r3,str1,str2,bend3,re1,re2,ae,aocs
+    real(ark)   :: afunc(1000),afunc1(1000),afunc2(1000)
+    !
+    ! xyz are undefined for the local case
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xyz(local)
+      !
+    else
+      !
+      xyz0 =  xyz
+      !
+    endif
+    !
+    do i=1,3
+      x(i,:)=xyz0(i,:)-xyz0(1,:)
+    end do
+    !    
+    r1=sqrt(sum(x(2,:)**2)) !r12 distance
+    r2=sqrt(sum(x(3,:)**2)) !r13 distance
+    r3=sqrt(sum((x(2,:)-x(3,:))**2)) !r23 distance
+    ! 
+    !str1=r1-1.15958d0 !Emil: shifting to 0 when in equilibrium geometry?!
+    !str2=r2-1.15958d0
+    !
+    re1 = extF%coef(1,1)
+    re2 = extF%coef(2,1)
+    ae = extF%coef(3,1)*pi/180.0_ark
+    !
+    str1=r1-re1
+    str2=r2-re2
+    !
+    aocs=(r1**2+r2**2-r3**2)/(2.0_ark*r1*r2)
+    bend3=max(-1.0_ark,min(1.0_ark,aocs))-cos(ae)
+    !
+    !bend3=max(-1.0_ark,min(1.0_ark,bend3))-cos(2.0825435274_ark)
+    !
+    Ndcoe = extF%nterms(1)-3
+    !
+    ma=Ndcoe
+    afunc1=0; afunc2=0; afunc=0
+    do i=1,ma/2
+      k = i+3
+      afunc1(i)=str1**extF%term(1,k,1)*str2**extF%term(2,k,1)*bend3**extF%term(3,k,1)
+      afunc2(i)=str2**extF%term(1,k,1)*str1**extF%term(2,k,1)*bend3**extF%term(3,k,1)
+      afunc1(i+ma/2)=afunc1(i)
+      afunc2(i+ma/2)=afunc2(i)
+    end do
+
+    do i=1,3
+      afunc(1:ma/2)   =afunc1(1     :ma/2)*x(2,i)
+      afunc(ma/2+1:ma)=afunc2(ma/2+1:ma  )*x(3,i)
+      mu(i)=dot_product(extF%coef(1+3:Ndcoe+3,1),afunc(1:Ndcoe))
+    end do
+    !
+    f = mu*2.541765_ark
+
+   end subroutine MLdipole_ames1_xyz
+
+
 
 
 end module pot_xy2

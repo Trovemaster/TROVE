@@ -640,6 +640,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdipole_ames1
         !
+    case('DIPOLE_AMES1_XYZ')
+        !
+        MLextF_func => MLdipole_ames1_xyz
+        !
     case('XY2_C3_SCHROEDER') 
         !
         MLextF_func => MLdms_c3_Schroeder         
