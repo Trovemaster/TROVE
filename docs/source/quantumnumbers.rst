@@ -165,14 +165,14 @@ The symmetry classification of the rotational basis functions can be also found 
           7      164.73144716   1   3  B1     4   3   1   0   0   0
           8      174.65385507   1   1  A1     4   4   0   0   0   0
           9      174.65385507   1   2  A2     4   4   1   0   0   0
-     
-
-where ``class:   0`` corresponds to the rotational sub-set = 0.  
 
 
+where ``class:   0`` corresponds to the rotational sub-set = 0.
 
 
-T\ :sub:`d` symmetry 
+
+
+T\ :sub:`d` symmetry
 ^^^^^^^^^^^^^^^^^^^^
 
 The Wang-functions cannot be used for symmetry adaptation of the T\ :sub:`d` rotational basis. This is because the group symmetry transformations cannot be associated  with equivalent rotations about the :math:`x`, :math:`y` or :math:`z` axes only. As a result, symmetry-adapted rotational functions are obtained  as a general linear combinations of :math:`|J,k,m\rangle` with :math:`k` spanning all :math:`k=-J\ldots J`. Because of that, the rotational quantum number :math:`K` can no longer be used for classification of the symmetrised rigid-rotor combinations. Instead they are labelled  as :math:`|J,\Gamma,n\rangle`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
@@ -272,9 +272,20 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         ....
 
 
+The non-rigourous quantum numbers :math:`K` and :math:`v_i` are defined using the largest eigen-coefficient  approach and are approximate. They represent the measure of how the given wavefunction is similar to a single selected basis set function selected as the largest contribution the corresponding expansion.  The quality of the assignment can be judged based on the expansion eigen-coefficients
+(column with numbers :math:`\le 1` and two decimal points): coefficients smaller than 0.7 indicate that the corresponding quantum number are less reliable. Due to this approximate nature of the TROVE quantum numbers, the TROVE assignment is usually not complete and unambiguous. It is common to find states with duplicate assignments as well as some missing combinations (see Quantum Numbers).
 
+In order to help resolve ensuing  ambiguity and degeneracies, the quantum numbers from the second largest contribution can be printed. This feature can be activated using the ``NASSIGNMENTS`` keyword as part of the ``PRINT`` section. The section can appear anywhere in main body of the input file, for example:
+::
 
+      DIAGONALIZER
+       SYEV
+       enermax 20000
+      end
 
+      print
+       Nassignments  2
+      end
 
 
 
