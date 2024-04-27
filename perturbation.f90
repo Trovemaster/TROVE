@@ -17606,7 +17606,7 @@ module perturbation
         !
         filename = trim(suffix)//trim(adjustl(jchar))//'.chk'
         !
-        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=filename)
+        open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',err=123,file=filename)
         !
         write(chkptIO) trim(name)
         !
@@ -17615,6 +17615,12 @@ module perturbation
         write(chkptIO) trim(name)
         !
         close(chkptIO)
+        !
+        return 
+        !
+      123  write(out,"('write_divided_slice error, size of field = ',i)") size(field)
+        !
+        stop 'write_divided_slice error, overflows record?' 
         !
       end subroutine write_divided_slice
 

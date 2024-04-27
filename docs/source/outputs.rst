@@ -76,8 +76,8 @@ The symmetry of these eigenfunctions of the reduced Hamiltonian are then reporte
 TROVE will then make use of the symmetry of these functions to set up matrix elements of the full Hamiltonian.
 
 
-Rotational-Vibrational energies
-===============================
+Rotational-Vibrational energies and quantum numbers
+===================================================
 
 The final step of a vibrational or rotational calculation is an output of the rotational-vibrational energies. These are ordered by energy and separated into symmetry blocks.
 
@@ -96,7 +96,7 @@ In this example, ``Gamma`` is the symmetry, in this case the totally symmetric :
 
 ``j  k  t   quanta`` are related to the rotational states and are discussed below. The next two brackets are the quantum numbers of the state in both normal coordinates and local coordinates used by TROVE. Unless the relations between these quantum numbers have been set up this will not be automatically correct.
 
-The decimal before the second set of quantum numbers gives the certainty of that state consisting of the specified quantum numbers. This is related to the magnitude of the expansion coefficient of this state. For example, here the second row is a a fundamental mode of PF\ :sub:`3` while the third row is an overtone with :math:`\nu = 2`. Often states need to be compared to experimental assignments. For vibrational states the total excitation number is usually reliable if not the actual states included.
+The decimal before the second set of quantum numbers gives the certainty of that state consisting of the specified quantum numbers. This is related to the magnitude of the expansion coefficient of this state. For example, here the second row is a fundamental mode of PF\ :sub:`3` while the third row is an overtone with :math:`\nu = 2`. Often states need to be compared to experimental assignments. For vibrational states the total excitation number is usually reliable if not the actual states included.
 
 An example from a :math:`J=2` calculation on PF\ :sub:`3` is shown below.
 ::
@@ -108,9 +108,21 @@ An example from a :math:`J=2` calculation on PF\ :sub:`3` is shown below.
       E 3 347.957388 (E; 2 1 0) (E ; 0 0 0 0 0 1) 1.00 (0 0 0 0 0 1 0) (2)
       E 4 348.255477 (E; 2 2 0) (E ; 0 0 0 0 0 1) 0.73 (0 0 0 0 0 1 0) (2)
 
-In this case the energies are from the doubly degenerate E symmetry class. The first two rows are pure rotational states. The ``j k t`` section for these two states are ``2 2 0`` and ``2 1 0`` respectively. This means the total angular momentum is 2 and the projection of the angular momentum onto an axis (usually the z-axis is chosen) is 2 and 1 respectively. The third and fourth row are ro-vibrational states with the same vibrational quantum numbers but different values of :math:`k`.
+In this case the energies are from the doubly degenerate :math:`E` symmetry class. The first two rows are pure rotational states. The ``j k t`` section for these two states are ``2 2 0`` and ``2 1 0`` respectively. This means the total angular momentum is 2 and the projection of the angular momentum onto an axis (usually the :math:`z`-axis is chosen) is 2 and 1 respectively. The third and fourth row are ro-vibrational states with the same vibrational quantum numbers :math:`v_1, v_2,\ldots,`,  but different values of :math:`K`. The non-rigourous quantum numbers :math:`K` and :math:`v_i` are defined using the largest eigen-coefficient  approach and are approximate. They represent the measure of how the given wavefunction is similar to a single selected basis set function selected as the largest contribution the corresponding expansion.  The quality of the assignment can be judged based on the expansion eigen-coefficients
+(column with numbers :math:`\le 1` and two decimal points): coefficients smaller than 0.7 indicate that the corresponding quantum number are less reliable. Due to this approximate nature of the TROVE quantum numbers, the TROVE assignment is usually not complete and unambiguous. It is common to find states with duplicate assignments as well as some missing combinations. 
 
+In order to help resolve ensuing  ambiguity and degeneracies, the quantum numbers from the second largest contribution can be printed. This feature can be activated using the ``NASSIGNMENTS`` keyword as part of the ``PRINT`` section. The section can appear anywhere in main body of the input file, for exmaple:
+::
 
+      DIAGONALIZER
+       SYEV
+       enermax 20000
+      end
+
+      print
+       Nassignments  2
+      end
+      
 Transition Moment output
 ========================
 

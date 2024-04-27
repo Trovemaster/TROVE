@@ -337,13 +337,13 @@ module mol_xy3
                 !
                 forall(ix=1:4) b0(ix,:,i) = matmul(transpose(tmat),b0(ix,:,i))
                 !
+                Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,i)**2+ b0(:,3,i)**2) )
+                Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,3,i)**2) )
+                Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,2,i)**2) )
+                !
+                write(out,"(f15.8,1x,3f15.8)") rho,Inert(1:3)
+                !
              enddo
-             !
-             !Inert(1) = sum(molec%AtomMasses(:)*( b0(:,2,i)**2+ b0(:,3,i)**2) )
-             !Inert(2) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,3,i)**2) )
-             !Inert(3) = sum(molec%AtomMasses(:)*( b0(:,1,i)**2+ b0(:,2,i)**2) )
-             !
-             !write(out,"(f15.8,1x,3f15.8)") rho,Inert(1:3)
              !
            enddo  
            !
