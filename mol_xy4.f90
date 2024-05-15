@@ -1308,7 +1308,8 @@ module mol_xy4
     real(ark),intent(in)      :: src(natoms)
     real(ark),intent(out)     :: dst(natoms)
     !
-    real(ark),dimension(size(src)) :: tmp,a,b,e,o,repres(12,2,2)
+    real(ark),dimension(size(src)) :: tmp
+    real(ark)  :: a,b,e,o,repres(12,2,2)
     !
     integer(ik)  :: tn(24,2)
     integer(ik) :: nsrc
