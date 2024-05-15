@@ -2216,7 +2216,7 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
-   real(ark)            :: rho,rhostep,potmin,C_l,C_r,ddphi_rho(vmax+1),zpe
+   real(ark)            :: rho,rhostep,potmin,C_l,C_r,ddphi_rho(vmax+1),zpe = 0
    real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t
    !
    integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1
@@ -2439,7 +2439,7 @@ module me_bnd
        !
        write (out,"(/' Legendre-optimized energies are:')") 
        !
-       zpe = ener(1)
+       if (k==0) zpe = ener(1)
        !
        do nl=0,nmax
          i = k*(nmax+1)+nl

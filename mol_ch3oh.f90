@@ -1514,51 +1514,44 @@ module mol_ch3oh
       !
       tau = molec%taueq(1)
       !
-      if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
-
-
-        !
-        call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-                                                 beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-        !
-        select case(trim(molec%coords_transform))
-        case default
-           write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
-           stop 'ML_b0_ch3oh - bad coord. type'
-           !
-        case('R-TAU-BOWMAN-REF')
-
-        !if (trim(molec%potentype)=='POTEN_CH3OH_REF'.or.trim(molec%potentype)=='R-ALPHA-S-TAU-BETA-REF'&
-        !.or.trim(molec%potentype)=='R-TAU-BOWMAN-REF'.or.trim(molec%potentype)=='R-1TAU-2BETA-REF') then 
-
-           !
-           r_at(1:6) = r_eq(1:6)
-           !
-           r_at(7)  = beta1
-           r_at(8)  = beta2
-           r_at(9)  = alpha2
-           r_at(10) = beta3
-           r_at(11) = alpha3
-           r_at(12) = tau
-           !
-        case('R-TAU-CHI')
-           !
-           r_at(1:6) = r_eq(1:6)
-           !
-           r_at(7)  = beta1
-           r_at(8)  = beta2
-           r_at(9)  = beta3
-           r_at(10) = tau1
-           r_at(11) = tau2
-           r_at(12) = tau3
-           !
-        end select 
-        !
-     else      
-        !
-        r_at = molec%local_eq
-        !
-      endif 
+      r_at = molec%local_eq
+      !
+      !
+      !call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
+      !                                         beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
+      !
+      select case(trim(molec%frame))
+      case default
+         write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
+         stop 'ML_b0_ch3oh - bad coord. type'
+         !
+      case('R-TAU-BOWMAN-REF')
+         !
+         r_at(1:6) = r_eq(1:6)
+         !
+         r_at(7)  = beta1
+         r_at(8)  = beta2
+         r_at(9)  = alpha2
+         r_at(10) = beta3
+         r_at(11) = alpha3
+         r_at(12) = tau
+         !
+      case('R-TAU-CHI')
+         !
+         r_at(1:6) = r_eq(1:6)
+         !
+         r_at(7)  = beta1
+         r_at(8)  = beta2
+         r_at(9)  = beta3
+         r_at(10) = tau1
+         r_at(11) = tau2
+         r_at(12) = tau3
+         !
+      case('R-ALPHA-THETA-TAU')
+         !
+         r_at = molec%local_eq
+         !
+      end select 
       !
       call MLfromlocal2cartesian(-1,r_at,a0_ark)
       !
@@ -1585,50 +1578,42 @@ module mol_ch3oh
             !
             tau = rho_i(i)
             !
-            if (trim(molec%potentype)=='POTEN_CH3OH_REF') then 
-              !
-              !
-              call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-                                                     beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-              !
-              select case(trim(molec%coords_transform))
-              case default
-                 write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
-                 stop 'ML_b0_ch3oh - bad coord. type'
-                 !
-              case('R-TAU-BOWMAN-REF')
-
-              !if (trim(molec%potentype)=='POTEN_CH3OH_REF'.or.trim(molec%potentype)=='R-ALPHA-S-TAU-BETA-REF'&
-              !.or.trim(molec%potentype)=='R-TAU-BOWMAN-REF'.or.trim(molec%potentype)=='R-1TAU-2BETA-REF') then 
-
-                 !
-                 r_at(1:6) = r_eq(1:6)
-                 !
-                 r_at(7)  = beta1
-                 r_at(8)  = beta2
-                 r_at(9)  = alpha2
-                 r_at(10) = beta3
-                 r_at(11) = alpha3
-                 r_at(12) = tau
-                 !
-              case('R-TAU-CHI')
-                 !
-                 r_at(1:6) = r_eq(1:6)
-                 !
-                 r_at(7)  = beta1
-                 r_at(8)  = beta2
-                 r_at(9)  = beta3
-                 r_at(10) = tau1
-                 r_at(11) = tau2
-                 r_at(12) = tau3
-                 !
-              end select 
+            !
+            !call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
+            !                                       beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
+            !
+            select case(trim(molec%coords_transform))
+            case default
+               write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
+               stop 'ML_b0_ch3oh - bad coord. type'
                !
-               if (verbose>=6) then 
-                 write(out,"('r0',i8,12f12.8)") i,r_at(1:12)
-               endif 
+            case('R-TAU-BOWMAN-REF')
+
+            !if (trim(molec%potentype)=='POTEN_CH3OH_REF'.or.trim(molec%potentype)=='R-ALPHA-S-TAU-BETA-REF'&
+            !.or.trim(molec%potentype)=='R-TAU-BOWMAN-REF'.or.trim(molec%potentype)=='R-1TAU-2BETA-REF') then 
+
                !
-            else
+               r_at(1:6) = r_eq(1:6)
+               !
+               r_at(7)  = beta1
+               r_at(8)  = beta2
+               r_at(9)  = alpha2
+               r_at(10) = beta3
+               r_at(11) = alpha3
+               r_at(12) = tau
+               !
+            case('R-TAU-CHI')
+               !
+               r_at(1:6) = r_eq(1:6)
+               !
+               r_at(7)  = beta1
+               r_at(8)  = beta2
+               r_at(9)  = beta3
+               r_at(10) = tau1
+               r_at(11) = tau2
+               r_at(12) = tau3
+               !
+            case('R-ALPHA-THETA-TAU')
                !
                r_eq(10) = tau
                r_eq(11) = tau+molec%local_eq(10)-molec%local_eq(11)
@@ -1636,9 +1621,14 @@ module mol_ch3oh
                !
                r_at = r_eq
                !
+            end select
+            !
+            if (verbose>=6) then 
+              write(out,"('r0',i8,12f12.8)") i,r_at(1:12)
             endif 
             !
             call MLfromlocal2cartesian(-1,r_at,a0_ark)
+            !
             b0(:,:,i) = a0_ark(:,:)
             !
             call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform)
@@ -1655,25 +1645,27 @@ module mol_ch3oh
             !  write(out,"('b0',i8,18f12.8)") i,b0(:,:,i)
             !endif
 
-            if (verbose>=5) then 
+         enddo
+         !
+         if (verbose>=4) then 
+           do i = 0,npoints
               write(out,"(i6)") molec%natoms
               !
-              write(out,"(/'C',3x,3f14.8)") b0(1,:,i)
-              write(out,"( 'O',3x,3f14.8)") b0(2,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(5,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(6,:,i)
-            endif
-
-         enddo
+              write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(4,:,i)
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(5,:,i)
+              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(6,:,i)
+              !
+           enddo
+         endif
          !
          do i = 0,npoints
             if (verbose>=6) then 
               write(out,"('b0',i8,18f12.8)") i,( (b0(i0,icoord,i),icoord=1,3),i0=1,6 )
             endif
          enddo 
-
          !
       endif
       !

@@ -133,7 +133,7 @@ module pot_ch3oh
       write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
       stop 'mlpoten_ch3oh_ref - bad coord. type'
       !
-   case('R-TAU-BOWMAN-REF')
+   case('R-TAU-BOWMAN-REF','R-ALPHA-THETA-TAU')
         !
         alpha(3) = local( 9)
         alpha(2) = local(11)
@@ -236,8 +236,7 @@ module pot_ch3oh
       !
       y(1:11) = y(1:11)-r_t(1:11)
       !
-   case('R-TAU-BOWMAN-REF')
-
+   case('R-TAU-BOWMAN-REF','R-ALPHA-THETA-TAU')
       !
       r_t(1:2) = r_eq(1:2)
 

@@ -18099,7 +18099,7 @@ end subroutine check_read_save_none
                ! 
                ! estimate second derivative using a step of  ~0.005 rad
                ! 
-               ! irho that that distance: 
+               ! irho at that distance: 
                irho = max(nint(fd_step/trove%rhostep),2)
                !
                f_t = ( 2.0_ark*f1drho(irho)-2.0_ark*f1drho(0) )/(fd_step)**2
@@ -18139,7 +18139,7 @@ end subroutine check_read_save_none
                 !
              endif
              !
-             if (f_t<=sqrt(small_).or.f_t>10000.0_rk) then
+             if (f_t<=sqrt(small_).or.f_t>500000.0_rk) then
                 !
                 write(out,"('1D ME_laguerre_k: the f_m constant is negative or too large.')")
                 write(out,"('Check if 1D PEC is quadratic at linearity if it is a linear molecule.')")

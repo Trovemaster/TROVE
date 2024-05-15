@@ -285,6 +285,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xyz_morse_cos_mep
          !
+    case('POTEN_XYZ_MORSE_FOURIER_MEP')
+         !
+         MLpotentialfunc => MLpoten_xyz_morse_fourier_mep
+         !
     case('POTEN_XY2_DMBE') 
          !
          MLpotentialfunc => MLpoten_xy2_dmbe

@@ -16,7 +16,8 @@ module pot_xy2
          MLpoten_xy2_tyuterev_alpha,MLdms2pqr_xyz_z_frame,MLpoten_xyz_tyuterev_rho
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
-         MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz
+         MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz,&
+         MLpoten_xyz_morse_fourier_mep
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -7870,6 +7871,276 @@ endif
     if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/end')")
 
  end function MLpoten_xyz_morse_cos_mep
+
+
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xyz_morse_fourier_mep(ncoords,natoms,local,xyz,force) result(pot) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  pot
+   !
+   real(ark)            :: r12,r32,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8
+
+   real(ark)            :: a1,a2,re12,re32,x1,x2,x3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh,f(1:180)
+   integer(ik)          :: n0
+   !
+   if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/start')")
+      !
+      r12  = local(1) ;  r32    = local(2) ;  alpha = local(3)
+      !
+      alpha = local(3)
+      !
+      a1  = force(2)+force(3)*cos(alpha)+force(4)*sin(alpha)
+      a2  = force(5)+force(6)*cos(alpha)+force(7)*sin(alpha)
+      !
+      b1   = force(8)
+      b2   = force(9)
+      g1   = force(10)
+      g2   = force(11)
+      !
+      x3=alpha
+      !
+      f(1:13) = force(12:)
+      !
+      re12 =  f(1) &
+            + f(2)*cos(x3) &
+            + f(3)*cos(2.0_ark*x3) &
+            + f(4)*cos(3.0_ark*x3) &
+            + f(5)*cos(4.0_ark*x3) &
+            + f(6)*cos(5.0_ark*x3) &
+            + f(7)*cos(6.0_ark*x3) &
+            + f(8)*sin(x3) &
+            + f(9)*sin(2.0_ark*x3) &
+            + f(10)*sin(3.0_ark*x3) &
+            + f(11)*sin(4.0_ark*x3) &
+            + f(12)*sin(5.0_ark*x3) &
+            + f(13)*sin(6.0_ark*x3)
+
+      f(1:13) = force(25:)
+      !
+      re32 =  f(1) &
+            + f(2)*cos(x3) &
+            + f(3)*cos(2.0_ark*x3) &
+            + f(4)*cos(3.0_ark*x3) &
+            + f(5)*cos(4.0_ark*x3) &
+            + f(6)*cos(5.0_ark*x3) &
+            + f(7)*cos(6.0_ark*x3) &
+            + f(8)*sin(x3) &
+            + f(9)*sin(2.0_ark*x3) &
+            + f(10)*sin(3.0_ark*x3) &
+            + f(11)*sin(4.0_ark*x3) &
+            + f(12)*sin(5.0_ark*x3) &
+            + f(13)*sin(6.0_ark*x3)
+
+      !
+      rhh=sqrt(r12**2+r32**2-2.0_ark*r12*r32*cos(alpha))
+      vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+      !
+      !
+      x1=1.0d+00-exp(-a1*(r12-re12))
+      x2=1.0d+00-exp(-a2*(r32-re32))
+      !
+      x3=(alpha)
+      n0 = 38
+      !
+      f(2:180) = force(n0:216)
+      !
+      V =  force(1) &
+        + f(2)*cos(x3) &
+        + f(3)*cos(2.0_ark*x3) &
+        + f(4)*cos(3.0_ark*x3) &
+        + f(5)*cos(4.0_ark*x3) &
+        + f(6)*cos(5.0_ark*x3) &
+        + f(7)*cos(6.0_ark*x3) &
+        + f(8)*sin(x3) &
+        + f(9)*sin(2.0_ark*x3) &
+        + f(10)*sin(3.0_ark*x3) &
+        + f(11)*sin(4.0_ark*x3) &
+        + f(12)*sin(5.0_ark*x3) &
+        + f(13)*sin(6.0_ark*x3) &
+        + f(14)*x2 &
+        + f(15)*x2*cos(x3) &
+        + f(16)*x2*cos(2.0_ark*x3) &
+        + f(17)*x2*cos(3.0_ark*x3) &
+        + f(18)*x2*cos(4.0_ark*x3) &
+        + f(19)*x2*cos(5.0_ark*x3) &
+        + f(20)*x2*sin(x3) &
+        + f(21)*x2*sin(2.0_ark*x3) &
+        + f(22)*x2*sin(3.0_ark*x3) &
+        + f(23)*x2*sin(4.0_ark*x3) &
+        + f(24)*x2*sin(5.0_ark*x3) &
+        + f(25)*x1 &
+        + f(26)*x1*cos(x3) &
+        + f(27)*x1*cos(2.0_ark*x3) &
+        + f(28)*x1*cos(3.0_ark*x3) &
+        + f(29)*x1*cos(4.0_ark*x3) &
+        + f(30)*x1*cos(5.0_ark*x3) &
+        + f(31)*x1*sin(x3) &
+        + f(32)*x1*sin(2.0_ark*x3) &
+        + f(33)*x1*sin(3.0_ark*x3) &
+        + f(34)*x1*sin(4.0_ark*x3) &
+        + f(35)*x1*sin(5.0_ark*x3) &
+        + f(36)*x2**2 &
+        + f(37)*x2**2*cos(x3) &
+        + f(38)*x2**2*cos(2.0_ark*x3) &
+        + f(39)*x2**2*cos(3.0_ark*x3) &
+        + f(40)*x2**2*cos(4.0_ark*x3) &
+        + f(41)*x2**2*sin(x3) &
+        + f(42)*x2**2*sin(2.0_ark*x3) &
+        + f(43)*x2**2*sin(3.0_ark*x3) &
+        + f(44)*x2**2*sin(4.0_ark*x3) &
+        + f(45)*x1*x2 &
+        + f(46)*x1*x2*cos(x3) &
+        + f(47)*x1*x2*cos(2.0_ark*x3) &
+        + f(48)*x1*x2*cos(3.0_ark*x3) &
+        + f(49)*x1*x2*cos(4.0_ark*x3) &
+        + f(50)*x1*x2*sin(x3) &
+        + f(51)*x1*x2*sin(2.0_ark*x3) &
+        + f(52)*x1*x2*sin(3.0_ark*x3) &
+        + f(53)*x1*x2*sin(4.0_ark*x3) &
+        + f(54)*x1**2 &
+        + f(55)*x1**2*cos(x3) &
+        + f(56)*x1**2*cos(2.0_ark*x3) &
+        + f(57)*x1**2*cos(3.0_ark*x3) &
+        + f(58)*x1**2*cos(4.0_ark*x3) &
+        + f(59)*x1**2*sin(x3) &
+        + f(60)*x1**2*sin(2.0_ark*x3) &
+        + f(61)*x1**2*sin(3.0_ark*x3) &
+        + f(62)*x1**2*sin(4.0_ark*x3) &
+        + f(63)*x2**3 &
+        + f(64)*x2**3*cos(x3) &
+        + f(65)*x2**3*cos(2.0_ark*x3) &
+        + f(66)*x2**3*cos(3.0_ark*x3) &
+        + f(67)*x2**3*sin(x3) &
+        + f(68)*x2**3*sin(2.0_ark*x3) &
+        + f(69)*x2**3*sin(3.0_ark*x3) &
+        + f(70)*x1*x2**2 &
+        + f(71)*x1*x2**2*cos(x3) &
+        + f(72)*x1*x2**2*cos(2.0_ark*x3) &
+        + f(73)*x1*x2**2*cos(3.0_ark*x3) &
+        + f(74)*x1*x2**2*sin(x3) &
+        + f(75)*x1*x2**2*sin(2.0_ark*x3) &
+        + f(76)*x1*x2**2*sin(3.0_ark*x3) &
+        + f(77)*x1**2*x2 &
+        + f(78)*x1**2*x2*cos(x3) &
+        + f(79)*x1**2*x2*cos(2.0_ark*x3) &
+        + f(80)*x1**2*x2*cos(3.0_ark*x3) &
+        + f(81)*x1**2*x2*sin(x3) &
+        + f(82)*x1**2*x2*sin(2.0_ark*x3) &
+        + f(83)*x1**2*x2*sin(3.0_ark*x3) &
+        + f(84)*x1**3 &
+        + f(85)*x1**3*cos(x3) &
+        + f(86)*x1**3*cos(2.0_ark*x3) &
+        + f(87)*x1**3*cos(3.0_ark*x3) &
+        + f(88)*x1**3*sin(x3) &
+        + f(89)*x1**3*sin(2.0_ark*x3) &
+        + f(90)*x1**3*sin(3.0_ark*x3) &
+        + f(91)*x2**4 &
+        + f(92)*x2**4*cos(x3) &
+        + f(93)*x2**4*cos(2.0_ark*x3) &
+        + f(94)*x2**4*sin(x3) &
+        + f(95)*x2**4*sin(2.0_ark*x3) &
+        + f(96)*x1*x2**3 &
+        + f(97)*x1*x2**3*cos(x3) &
+        + f(98)*x1*x2**3*cos(2.0_ark*x3) &
+        + f(99)*x1*x2**3*sin(x3) &
+        + f(100)*x1*x2**3*sin(2.0_ark*x3) &
+        + f(101)*x1**2*x2**2 &
+        + f(102)*x1**2*x2**2*cos(x3) &
+        + f(103)*x1**2*x2**2*cos(2.0_ark*x3) &
+        + f(104)*x1**2*x2**2*sin(x3) &
+        + f(105)*x1**2*x2**2*sin(2.0_ark*x3) &
+        + f(106)*x1**3*x2 &
+        + f(107)*x1**3*x2*cos(x3) &
+        + f(108)*x1**3*x2*cos(2.0_ark*x3) &
+        + f(109)*x1**3*x2*sin(x3) &
+        + f(110)*x1**3*x2*sin(2.0_ark*x3) &
+        + f(111)*x1**4 &
+        + f(112)*x1**4*cos(x3) &
+        + f(113)*x1**4*cos(2.0_ark*x3) &
+        + f(114)*x1**4*sin(x3) &
+        + f(115)*x1**4*sin(2.0_ark*x3) &
+        + f(116)*x2**5 &
+        + f(117)*x2**5*cos(x3) &
+        + f(118)*x2**5*cos(2.0_ark*x3) &
+        + f(119)*x2**5*sin(x3) &
+        + f(120)*x2**5*sin(2.0_ark*x3) &
+        + f(121)*x1*x2**4 &
+        + f(122)*x1*x2**4*cos(x3) &
+        + f(123)*x1*x2**4*cos(2.0_ark*x3) &
+        + f(124)*x1*x2**4*sin(x3) &
+        + f(125)*x1*x2**4*sin(2.0_ark*x3) &
+        + f(126)*x1**2*x2**3 &
+        + f(127)*x1**2*x2**3*cos(x3) &
+        + f(128)*x1**2*x2**3*cos(2.0_ark*x3) &
+        + f(129)*x1**2*x2**3*sin(x3) &
+        + f(130)*x1**2*x2**3*sin(2.0_ark*x3) &
+        + f(131)*x1**3*x2**2 &
+        + f(132)*x1**3*x2**2*cos(x3) &
+        + f(133)*x1**3*x2**2*cos(2.0_ark*x3) &
+        + f(134)*x1**3*x2**2*sin(x3) &
+        + f(135)*x1**3*x2**2*sin(2.0_ark*x3) &
+        + f(136)*x1**4*x2 &
+        + f(137)*x1**4*x2*cos(x3) &
+        + f(138)*x1**4*x2*cos(2.0_ark*x3) &
+        + f(139)*x1**4*x2*sin(x3) &
+        + f(140)*x1**4*x2*sin(2.0_ark*x3) &
+        + f(141)*x1**5 &
+        + f(142)*x1**5*cos(x3) &
+        + f(143)*x1**5*cos(2.0_ark*x3) &
+        + f(144)*x1**5*sin(x3) &
+        + f(145)*x1**5*sin(2.0_ark*x3) &
+        + f(146)*x2**6 &
+        + f(147)*x2**6*cos(x3) &
+        + f(148)*x2**6*cos(2.0_ark*x3) &
+        + f(149)*x2**6*sin(x3) &
+        + f(150)*x2**6*sin(2.0_ark*x3) &
+        + f(151)*x1*x2**5 &
+        + f(152)*x1*x2**5*cos(x3) &
+        + f(153)*x1*x2**5*cos(2.0_ark*x3) &
+        + f(154)*x1*x2**5*sin(x3) &
+        + f(155)*x1*x2**5*sin(2.0_ark*x3) &
+        + f(156)*x1**2*x2**4 &
+        + f(157)*x1**2*x2**4*cos(x3) &
+        + f(158)*x1**2*x2**4*cos(2.0_ark*x3) &
+        + f(159)*x1**2*x2**4*sin(x3) &
+        + f(160)*x1**2*x2**4*sin(2.0_ark*x3) &
+        + f(161)*x1**3*x2**3 &
+        + f(162)*x1**3*x2**3*cos(x3) &
+        + f(163)*x1**3*x2**3*cos(2.0_ark*x3) &
+        + f(164)*x1**3*x2**3*sin(x3) &
+        + f(165)*x1**3*x2**3*sin(2.0_ark*x3) &
+        + f(166)*x1**4*x2**2 &
+        + f(167)*x1**4*x2**2*cos(x3) &
+        + f(168)*x1**4*x2**2*cos(2.0_ark*x3) &
+        + f(169)*x1**4*x2**2*sin(x3) &
+        + f(170)*x1**4*x2**2*sin(2.0_ark*x3) &
+        + f(171)*x1**5*x2 &
+        + f(172)*x1**5*x2*cos(x3) &
+        + f(173)*x1**5*x2*cos(2.0_ark*x3) &
+        + f(174)*x1**5*x2*sin(x3) &
+        + f(175)*x1**5*x2*sin(2.0_ark*x3) &
+        + f(176)*x1**6 &
+        + f(177)*x1**6*cos(x3) &
+        + f(178)*x1**6*cos(2.0_ark*x3) &
+        + f(179)*x1**6*sin(x3) &
+        + f(180)*x1**6*sin(2.0_ark*x3)
+
+
+         !
+         pot=V+vhh
+         !
+    if (verbose>=6) write(out,"('MLpoten_xy2_morse_cos/end')")
+
+ end function MLpoten_xyz_morse_fourier_mep
+
 
 
 

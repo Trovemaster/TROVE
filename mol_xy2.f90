@@ -633,7 +633,7 @@ module mol_xy2
      real(ark),   intent(out),optional :: rho_ref
      real(ark),   intent(in),optional  :: rho_borders(2)  ! rhomim, rhomax - borders
      !
-     real(ark)                :: re13,m1,m2,m3,rho,m,rho0,re23,u2,u3,u23,e,r12,alphaR,R0
+     real(ark)                :: re13,m1,m2,m3,rho,m,rho0,re23,u2,u3,u23,e,r12,alphaR,R0,rbond_mep(2)
      real(ark)                :: alpha,alphae_h,a02,cosa,a,b,g1,g2,rot(3,3),alphaeq
      real(ark)               :: rho_ark,alpha_ark,transform(3,3),CM_shift,a_t,a0(molec%Natoms,3),phi
      real(ark)               :: tmat(3,3),transform0(3,3),transform1(3,3),sinrho,hx,hy,unit(3),tanphi,Inert(3),tau
@@ -904,6 +904,45 @@ module mol_xy2
            b0(:,i,0) = b0(:,i,0) - CM_shift
          enddo 
          !
+       case('R1-Z-R2-RHO-MEP')
+         !
+         select case (molec%meptype)
+           !
+         case default
+           !
+         case ('MEP_XYZ_R1_R2_COSALPHA')
+           !
+           rbond_mep(:) = ML_MEP_xyz_R1_R2_cosalpha(alphaeq)
+           !
+           re13 = rbond_mep(1)
+           re23 = rbond_mep(2)
+           !
+         case ('MEP_XYZ_R1_R2_FOURIER')
+           !
+           rbond_mep(:) = ML_MEP_xyz_R1_R2_fourier(alphaeq)
+           !
+           re13 = rbond_mep(1)
+           re23 = rbond_mep(2)
+           !
+         end select
+         !
+         b0(1,1,0) = 0
+         b0(1,2,0) = 0
+         b0(1,3,0) = 0
+         !
+         b0(2,1,0) = 0
+         b0(2,2,0) = 0
+         b0(2,3,0) = re13
+         !
+         b0(3,1,0) = re23*sin(alphaeq)
+         b0(3,2,0) = 0.0_ark
+         b0(3,3,0) = re23*cos(alphaeq)
+         !
+         do i = 1,3
+           CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,i,0) = b0(:,i,0) - CM_shift
+         enddo 
+         !
        case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
          !
          b0(1,1,0) = 0
@@ -1024,7 +1063,7 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
-         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R2-Z-R1-RHO')
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R2-Z-R1-RHO','R1-Z-R2-RHO-MEP')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1045,7 +1084,7 @@ module mol_xy2
             select case(trim(molec%coords_transform))
               case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
                    'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-                   'R2-Z-R1-RHO')
+                   'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP')
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
@@ -1289,17 +1328,44 @@ module mol_xy2
                !
              case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
                !
-               if (Nangles>0) then
-                 alphaeq = molec%alphaeq(1)
-               elseif (molec%Ndihedrals>1) then
+               b0(1,1,i) = 0
+               b0(1,2,i) = 0
+               b0(1,3,i) = 0
+               !
+               b0(2,1,i) = 0
+               b0(2,2,i) = 0
+               b0(2,3,i) = re13
+               !
+               b0(3,1,i) = re23*sin(alpha)
+               b0(3,2,i) = 0.0_ark
+               b0(3,3,i) = re23*cos(alpha)
+               !
+               do ix = 1,3
+                 CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,ix,i) = b0(:,ix,i) - CM_shift
+               enddo 
+               !
+             case('R1-Z-R2-RHO-MEP')
+               !
+               select case (molec%meptype)
                  !
-                 tau = rho
+               case default
                  !
-                 alphaeq = pi-asin( sqrt( sin(tau)**2+sin(tau)**2 ))
+               case ('MEP_XYZ_R1_R2_COSALPHA')
                  !
-               else
-                 alphaeq = pi-rho
-               endif 
+                 rbond_mep(:) = ML_MEP_xyz_R1_R2_cosalpha(alpha)
+                 !
+                 re13 = rbond_mep(1)
+                 re23 = rbond_mep(2)
+                 !
+               case ('MEP_XYZ_R1_R2_FOURIER')
+                 !
+                 rbond_mep(:) = ML_MEP_xyz_R1_R2_fourier(alpha)
+                 !
+                 re13 = rbond_mep(1)
+                 re23 = rbond_mep(2)
+                 !
+               end select
                !
                b0(1,1,i) = 0
                b0(1,2,i) = 0
@@ -1312,7 +1378,7 @@ module mol_xy2
                b0(3,1,i) = re23*sin(alpha)
                b0(3,2,i) = 0.0_ark
                b0(3,3,i) = re23*cos(alpha)
-             
+               !
                do ix = 1,3
                  CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
                  b0(:,ix,i) = b0(:,ix,i) - CM_shift
@@ -3365,6 +3431,84 @@ module mol_xy2
         f = a0+a1*y+a2*y**2+a3*y**3+a4*y**4+a5*y**5+a6*y**6
  
   end function ML_MEP_xy2_R13_alpha
+
+
+  !
+  ! Defining MEP function for CH2 molecule
+  !
+  function ML_MEP_xyz_R1_R2_cosalpha(x)  result(r)
+
+   real(ark),intent(in) ::  x
+   real(ark)            ::  r(2)
+   real(ark)            ::  a0,a1,a2,a3,a4,a5,a6,y,x0,b0,b1,b2,b3,b4,b5,b6
+
+        a0      = molec%mep_params(1)
+        a1      = molec%mep_params(2)
+        a2      = molec%mep_params(3)
+        a3      = molec%mep_params(4)
+        a4      = molec%mep_params(5)
+        a5      = molec%mep_params(6)
+        a6      = molec%mep_params(7)
+        !
+        b0      = molec%mep_params(8)
+        b1      = molec%mep_params(9)
+        b2      = molec%mep_params(10)
+        b3      = molec%mep_params(11)
+        b4      = molec%mep_params(12)
+        b5      = molec%mep_params(13)
+        b6      = molec%mep_params(14)
+        !
+        y = cos(x)
+        !
+        r(1) = a0+a1*y+a2*y**2+a3*y**3+a4*y**4+a5*y**5+a6*y**6
+        r(2) = b0+b1*y+b2*y**2+b3*y**3+b4*y**4+b5*y**5+b6*y**6
+ 
+  end function ML_MEP_xyz_R1_R2_cosalpha
+
+
+
+  !
+  ! Defining MEP function for CH2 molecule
+  !
+  function ML_MEP_xyz_R1_R2_fourier(x)  result(r)
+
+   real(ark),intent(in) ::  x
+   real(ark)            ::  r(2)
+   real(ark)            ::  f(1:13)
+      !
+      f(1:13) = molec%mep_params(1:13)
+      !
+      r(1) =  f(1) &
+      + f(2)*cos(x) &
+      + f(3)*cos(2.0_ark*x) &
+      + f(4)*cos(3.0_ark*x) &
+      + f(5)*cos(4.0_ark*x) &
+      + f(6)*cos(5.0_ark*x) &
+      + f(7)*cos(6.0_ark*x) &
+      + f(8)*sin(x) &
+      + f(9)*sin(2.0_ark*x) &
+      + f(10)*sin(3.0_ark*x) &
+      + f(11)*sin(4.0_ark*x) &
+      + f(12)*sin(5.0_ark*x) &
+      + f(13)*sin(6.0_ark*x)
+      !
+      f(1:13) = molec%mep_params(14:26)
+      !
+      r(2) =  f(1) &
+      + f(2)*cos(x) &
+      + f(3)*cos(2.0_ark*x) &
+      + f(4)*cos(3.0_ark*x) &
+      + f(5)*cos(4.0_ark*x) &
+      + f(6)*cos(5.0_ark*x) &
+      + f(7)*cos(6.0_ark*x) &
+      + f(8)*sin(x) &
+      + f(9)*sin(2.0_ark*x) &
+      + f(10)*sin(3.0_ark*x) &
+      + f(11)*sin(4.0_ark*x) &
+      + f(12)*sin(5.0_ark*x) &
+      + f(13)*sin(6.0_ark*x)
+      ! 
+  end function ML_MEP_xyz_R1_R2_fourier
 
 
   

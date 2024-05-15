@@ -301,7 +301,7 @@ The ro-vibrational calculations in the :math:`J=0` representation (step 3) are c
 
 Phi_{\lambda}^{(J=0)} |J,K,\tau\rangle,
 
-where  :math`| J,K,\Gamma_{\rm rot} \rangle ` is a rigid rotor basis function. Therefore, in this case the energy output has a slightly different form:
+where  :math:`| J,K,\Gamma_{\rm rot} \rangle` is a rigid rotor basis function. Therefore, in this case the energy output has a slightly different form:
 ::
 
       ------ ------ ------------- ------- --- -- --- ----- ----- --- ----   -------- ------ --- --- --- --------
