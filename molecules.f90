@@ -48,7 +48,7 @@ module molecules
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho
 
   !
-  use pot_user, only : MLdipole,MLpoten,ML_MEP
+  use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
   !
   use symmetry,     only : sym
   !
@@ -384,6 +384,18 @@ module molecules
     case('POTEN_USER','USER','GENERAL','POTEN') 
          !
          MLpotentialfunc => MLpoten
+         !
+         select case(trim(molec%potenname))
+           !
+         case default
+           !
+           call MLpoten_name(molec%potenname)
+           !
+         case ('GENERAL')
+           !
+           ! do nothing here as this means that the name of the user type PES was not defined
+           !
+         end select 
          !
     case('POTEN_XY4_NIKITIN') 
          !

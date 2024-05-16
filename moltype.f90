@@ -173,6 +173,7 @@ module moltype
      character(len=cl)         :: symmetry      ! molecular symmetry
      character(len=cl)         :: IO_primitive  ! control writing/reading of primitive basis sets 
      character(len=cl)         :: chk_primitive_fname  ! filename to store primitive functions on a grid
+     character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
      !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
      !
@@ -314,7 +315,7 @@ module moltype
   subroutine MLinitialize_molec(Moltype,Coordinates,coords_transform,&
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
                                   AtomMasses,local_eq, &
-                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
+                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,potenname,kinetic_type,&
                                   IO_primitive,chk_numerov_fname,&
                                   symmetry_,rho_border,zmatrix_,frame)
 
@@ -333,7 +334,7 @@ module moltype
   character(len=16),intent(in) :: forcename_(:)
   real(ark),   intent(in)      :: specparam(:)
   !
-  character(len=cl),intent(in)  :: potentype,kinetic_type
+  character(len=cl),intent(in)  :: potentype,kinetic_type,potenname
   character(len=cl),intent(in)  :: symmetry_
   character(len=cl),intent(in)  :: IO_primitive,chk_numerov_fname
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
@@ -395,6 +396,7 @@ module moltype
     !
     molec%local_eq = local_eq
     molec%potentype = potentype
+    molec%potenname = potenname
     molec%kinetic_type = kinetic_type
     molec%atomMasses = AtomMasses
     molec%specparam = specparam

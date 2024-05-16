@@ -254,6 +254,7 @@ module fields
       logical             :: tetraatom_sing_resolve = .false.
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
+      character(len=cl)        ::  potenname='GENERAL' ! name of the user type potential function (for control purposes)
       !
    end type JobT
    !
@@ -3593,6 +3594,10 @@ module fields
               !
               pot_form_compact = .true.
               !
+            case("NAME")
+              !
+              pot_form_compact = .true.
+              !
             case("NPARAM")
               !
               call readi(Nparam)
@@ -5505,7 +5510,8 @@ end subroutine check_read_save_none
                               trove%Nbonds,trove%Nangles,trove%Ndihedrals,&
                               trove%dihedtype,&
                               trove%mass,trove%local_eq,&
-                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%kinetic_type,&
+                              force,forcename,ifit,pot_ind,trove%specparam,trove%potentype,trove%potenname,&
+                              trove%kinetic_type,&
                               trove%IO_primitive,trove%chk_numerov_fname,&
                               trove%symmetry,trove%rho_border,trove%zmatrix,trove%frame)
     !

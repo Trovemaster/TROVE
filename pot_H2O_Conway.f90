@@ -8,7 +8,7 @@ module pot_user
 
   implicit none
 
-  public MLdipole,MLpoten,ML_MEP
+  public MLdipole,MLpoten,ML_MEP,MLpoten_name
 
   private
  
@@ -29,6 +29,20 @@ module pot_user
   f(molec%Ncoords) = rho
 
  end function ML_MEP
+ !
+ ! Check the potential name 
+ subroutine MLpoten_name(name)
+   !
+   character(len=cl),intent(in) ::  name
+   character(len=cl),parameter ::  poten_name = 'GENERAL'
+   ! 
+   if (poten_name/=trim(name)) then
+     write(out,"('a,a,a,a')") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
+   endif
+   !
+   write(out,"('a')") '  Using USER-tpye PES ',trim(poten_name)
+   !
+ end subroutine MLpoten_name
  !
  !
  recursive subroutine MLdipole(rank,ncoords,natoms,local,xyz,f)
