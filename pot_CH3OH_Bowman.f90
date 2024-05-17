@@ -62,19 +62,29 @@ module pot_user
    real(ark),intent(in)   ::  local(ncoords)
    real(ark),intent(in)   ::  xyz(natoms,3)
    real(ark),intent(in)   ::  force(:)
-   real(ark)              ::  f
+   real(ark)              ::  f,xyz_user(3,natoms)
    integer(ik) :: m,mr,N
    !
    m  = int(force(1),ik)
    mr = int(force(2),ik)
    !
    N = size(force(:))
+   ! 
+   ! convert TROVE xyz to uzer's XYZ
    !
-   call potshell(force(3:N),m,mr,xyz,f)
+   xyz_user(:,1) = xyz(3,:)
+   xyz_user(:,2) = xyz(4,:)
+   xyz_user(:,3) = xyz(5,:)
+   xyz_user(:,4) = xyz(6,:)
+   xyz_user(:,5) = xyz(1,:)
+   xyz_user(:,6) = xyz(2,:)
+   !
+   xyz_user = xyz_user/bohr
+   !
+   call potshell(force(3:N),m,mr,xyz_user,f)
    !
  end function MLpoten
- 
- 
+
  
  !
  subroutine potshell(coef,m,mr,xn,V)
