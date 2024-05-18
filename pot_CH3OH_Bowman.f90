@@ -62,11 +62,12 @@ module pot_user
    real(ark),intent(in)   ::  local(ncoords)
    real(ark),intent(in)   ::  xyz(natoms,3)
    real(ark),intent(in)   ::  force(:)
-   real(ark)              ::  f,xyz_user(3,natoms)
+   real(ark)              ::  f,xyz_user(3,natoms),V0
    integer(ik) :: m,mr,N
    !
    m  = int(force(1),ik)
    mr = int(force(2),ik)
+   V0 = force(3)
    !
    N = size(force(:))
    ! 
@@ -81,7 +82,9 @@ module pot_user
    !
    xyz_user = xyz_user/bohr
    !
-   call potshell(force(3:N),m,mr,xyz_user,f)
+   call potshell(force(4:N),m,mr,xyz_user,f)
+   !
+   f = (f-V0)/hartree
    !
  end function MLpoten
 

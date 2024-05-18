@@ -113,6 +113,7 @@ POT_TYPE  user
 COEFF  list  (powers or list) 
 m                      3250
 mr                       22
+V0             -115.562384961004
 f1             -262.9576538
 f2              4806.102732
 f3              74.96809319

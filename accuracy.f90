@@ -4,7 +4,7 @@ module accuracy
   public sik, ik, hik, rk, ark, out, inp, safe_max,safe_min,max_exp, pi, twopi, cl, wl
   public accuracyInitialize
   public planck,avogno,vellgt,boltz,bohr
-  public epsil,small_,sqrt2,sqrt3,rad,fititermax,small_a
+  public epsil,small_,sqrt2,sqrt3,rad,fititermax,small_a,hartree
   !
   integer, parameter :: sik         = selected_int_kind(4)       ! Small integers
   integer, parameter :: ik          = selected_int_kind(8)       ! "Normal" integers. This must map on
@@ -25,6 +25,7 @@ module accuracy
   real(drk), parameter :: vellgt     =  2.99792458E+10            ! Speed of light constant
   real(drk), parameter :: boltz      =  1.380658E-16              ! Boltzmann constant
   real(drk), parameter :: bohr       =  0.529177249               ! a.u.
+  real(drk), parameter :: hartree    =  219474.6313708_rk         ! hartree in cm-1
   
   real(rk)           :: safe_max                                 ! Largest number we want to work with
   real(rk)           :: safe_min                                 ! Smalles number we want to work with
