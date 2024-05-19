@@ -442,7 +442,6 @@ module mol_zxy3
     !
     if (verbose>=5) write(out,"('ML_rotsymmetry_ZXY3/start')") 
     !
-    !
     select case(trim(molec%symmetry))
     case default
        write (out,"('ML_rotsymmetry_ZXY3: symmetry ',a,' unknown')") trim(molec%symmetry)

@@ -12,7 +12,7 @@ module molecules
   use mol_zxy2, only : ML_coordinate_transform_ZXY2, ML_symmetry_transformation_ZXY2, ML_b0_ZXY2, ML_rotsymmetry_ZXY2,&
                        ML_coordinate_transform_SOHF,ML_b0_SOHF
   use mol_zxy3, only : ML_coordinate_transform_ZXY3, ML_symmetry_transformation_ZXY3, ML_b0_ZXY3, ML_rotsymmetry_ZXY3
-  use mol_ch3oh
+  use mol_ch3oh, only : ML_b0_ch3oh,ML_coordinate_transform_ch3oh,ML_symmetry_transformation_ch3oh,ML_rotsymmetry_CH3OH
   use mol_abcd
   use mol_x2y2, only : ML_coordinate_transform_X2Y2, ML_symmetry_transformation_X2Y2, ML_b0_X2Y2, ML_rotsymmetry_X2Y2
   use mol_c2h4
@@ -1047,8 +1047,8 @@ end function ML_MEPfunc
          !
          MLcoordinate_transform_func =>  ML_coordinate_transform_ch3oh
          MLequilibrium_xyz => ML_b0_ch3oh
-         MLsymmetry_transform_func => MLsymmetry_transform_C
-         MLrotsymmetry_func => ML_rotsymmetry_C
+         MLsymmetry_transform_func => ML_symmetry_transformation_ch3oh
+         MLrotsymmetry_func => ML_rotsymmetry_ch3oh
          !
     case('SOHF') 
          !

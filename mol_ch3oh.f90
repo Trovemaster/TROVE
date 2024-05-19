@@ -9,7 +9,7 @@ module mol_ch3oh
 
   implicit none
 
-  public ML_b0_ch3oh,ML_coordinate_transform_ch3oh
+  public ML_b0_ch3oh,ML_coordinate_transform_ch3oh,ML_symmetry_transformation_ch3oh,ML_rotsymmetry_CH3OH
   !
   private
  
@@ -1674,6 +1674,212 @@ module mol_ch3oh
       !
   end subroutine ML_b0_ch3oh
 
+
+  subroutine ML_symmetry_transformation_CH3OH(ioper, nmodes, src, dst)
+    !
+    ! Symmetry transformation rules of coordinates
+    !
+    integer(ik), intent(in)  ::  ioper
+    integer(ik), intent(in)  ::  nmodes
+    real(ark), intent(in)    ::  src(1:nmodes)
+    real(ark), intent(out)   ::  dst(1:nmodes)
+    real(ark) :: a,b,p
+    !
+    a = 0.5_ark
+    b = 0.5_ark*sqrt(3.0_ark)
+    p = 2.0_ark*pi/3.0_ark
+    if (verbose>=6) write(out, '(/a)') 'ML_symmetry_transformation_CH3OH/start'
+    !
+    select case(trim(molec%coords_transform))
+      !
+    case default
+      !
+      write(out, '(/a,1x,a,1x,a)') &
+      'ML_symmetry_transformation_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
+      stop 'ML_symmetry_transformation_CH3OH error: bad coordinate type'
+      !
+    case('R-ALPHA-THETA-TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_CH3OH error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('C3V(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_CH3OH error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (2) ! (123)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(5)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(9)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = -b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !
+        case (3) !(132)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(3)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(7)
+          dst(9) = src(8)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = +b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !
+        case (4) ! (32)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(3)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(7)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          !
+          dst(10) = src(10)
+          dst(11) = -src(11)
+          dst(12) = 2.0_ark*pi-src(12)
+          !
+        case (5) ! (12)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(9)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = +b*src(10) + a*src(11)
+          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
+          !
+        case (6) ! (13)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(4)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(8)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = -b*src(10) + a*src(11)
+          !
+          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+          !
+        end select
+        !
+      end select
+      !
+    end select
+    !
+    if (verbose>=6) write(out, '(/a)') 'ML_symmetry_transformation_CH3OH/end'
+    !
+  end subroutine ML_symmetry_transformation_CH3OH
+
+
+  subroutine ML_rotsymmetry_CH3OH(J,K,tau,gamma,ideg)
+    !
+    ! Symmetry transformation rules of TROVE rotational functions
+    !
+    integer(ik),intent(in) :: J,K,tau
+    integer(ik),intent(out) :: gamma,ideg
+    !
+    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_CH3OH/start'
+    !
+    select case(trim(molec%coords_transform))
+      !
+    case default
+      !
+      write(out, '(/a,1x,a,1x,a)') &
+      'ML_rotsymmetry_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
+      stop 'ML_rotsymmetry_CH3OH error: bad coordinate type'
+      !
+    case('R-ALPHA-THETA-TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_CH3OH: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_CH3OH error: bad symmetry type'
+        !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('C3V','C3V(M)')
+         !
+         gamma = 0 
+         ideg = 1 
+         !
+         if (mod(K+3,3)==0.and.tau==0) gamma = 1 !; return
+         if (mod(K+3,3)==0.and.tau==1) gamma = 2 !; return
+         !
+         if (mod(K+3,3)/=0.and.tau==0) then 
+            gamma = 3 ; ideg = 1 
+         endif 
+         if (mod(K+3,3)/=0.and.tau==1) then 
+            gamma = 3 ; ideg = 2
+         endif 
+        !
+      end select
+      !
+    end select
+    !
+    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_CH3OH/end'
+    !
+  end subroutine ML_rotsymmetry_CH3OH
 
 
 end module mol_ch3oh
