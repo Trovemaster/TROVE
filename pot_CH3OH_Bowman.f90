@@ -84,7 +84,7 @@ module pot_user
    !
    call potshell(force(4:N),m,mr,xyz_user,f)
    !
-   f = (f-V0)/hartree
+   f = (f-V0)*hartree
    !
  end function MLpoten
 
