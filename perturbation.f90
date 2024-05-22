@@ -17618,7 +17618,7 @@ module perturbation
         !
         return 
         !
-      123  write(out,"('write_divided_slice error, size of field = ',i)") size(field)
+      123  write(out,"('write_divided_slice error, size of field = ',i8)") size(field)
         !
         stop 'write_divided_slice error, overflows record?' 
         !
