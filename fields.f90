@@ -3594,7 +3594,7 @@ module fields
               !
               pot_form_compact = .true.
               !
-            case("NAME")
+            case("NAME","POT_NAME","POT-NAME")
               !
               pot_form_compact = .true.
               !
