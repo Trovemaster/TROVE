@@ -727,7 +727,10 @@ contains
          write(linelistname, '(a, 2i5)') 'states for J=', intensity%J(1:2)
          call iostart(trim(linelistname), states_unit)
          !
-         filename = trim(intensity%linelist_file)//'.states'
+         write(j1char,'(i3)') intensity%J(1)
+         write(j2char,'(i3)') intensity%J(2)
+         !
+         filename = trim(intensity%linelist_file)//'_'//trim(adjustl(j1char))//'_'//trim(adjustl(j2char))//'.states'
          open(unit = states_unit, action = 'write',status='new',file = filename,err=21)
          !
          if (.false.) then 
@@ -736,7 +739,8 @@ contains
            ! use time as a random number to create a unique name
            timenow = get_real_time()
            write(char_timenow,'(f16.2)') timenow
-           filename = trim(intensity%linelist_file)//'.states.'//trim(adjustl(char_timenow))
+           filename = trim(intensity%linelist_file)//'_'//trim(adjustl(j1char))//'_'//trim(adjustl(j2char))//&
+                      '.states.'//trim(adjustl(char_timenow))
            open(unit = states_unit, action = 'write',status='new',file = filename)
            !
          endif
@@ -744,9 +748,6 @@ contains
          ! trans file 
          write(linelistname, '(a, 2i5)') 'trans for J=', intensity%J(1:2)
          call iostart(trim(linelistname), trans_unit)
-         !
-         write(j1char,'(i3)') intensity%J(1)
-         write(j2char,'(i3)') intensity%J(2)
          !
          filename = trim(intensity%linelist_file)//'_'//trim(adjustl(j1char))//'_'//trim(adjustl(j2char))//'.trans'
          open(unit = trans_unit, action = 'write',status='new',file = filename,err=22)
