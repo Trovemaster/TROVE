@@ -7944,8 +7944,8 @@ endif
       vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
       !
       !
-      x1=1.0d+00-exp(-a1*(r12-re12))
-      x2=1.0d+00-exp(-a2*(r32-re32))
+      x1=1.0_ark-exp(-a1*(r12-re12))
+      x2=1.0_ark-exp(-a2*(r32-re32))
       !
       x3=(alpha)
       n0 = 38

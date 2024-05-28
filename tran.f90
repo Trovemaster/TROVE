@@ -978,32 +978,39 @@ contains
        !
     end do
     !
-    ! Sort according the energy increasing 
+    ! Sort according the energy increasing. Skip if only states printing is required 
     !
-    allocate(eigen_t%irec(maxdeg),eigen_t%iroot(maxdeg),eigen_t%quanta(0:nmodes),eigen_t%cgamma(0:nmodes), stat = info)
-    if (info /= 0) stop 'read_eigenval allocation error: eigen_t%irec,quanta - out of memory'
-    !
-    do ilevel =1,nlevels
+    if (.not.intensity%states_only) then
       !
-      energy = eigen(ilevel)%energy
+      allocate(eigen_t%irec(maxdeg),eigen_t%iroot(maxdeg),eigen_t%quanta(0:nmodes),eigen_t%cgamma(0:nmodes), stat = info)
+      if (info /= 0) stop 'read_eigenval allocation error: eigen_t%irec,quanta - out of memory'
       !
-      do jlevel =ilevel+1,nlevels
+      do ilevel =1,nlevels
         !
-        if (energy>eigen(jlevel)%energy) then 
+        energy = eigen(ilevel)%energy
+        !
+        do jlevel =ilevel+1,nlevels
           !
-          eigen_t       = eigen(jlevel)
-          eigen(jlevel) = eigen(ilevel)
-          eigen(ilevel) = eigen_t
-          energy        = eigen(ilevel)%energy
+          if (energy>eigen(jlevel)%energy) then 
+            !
+            eigen_t       = eigen(jlevel)
+            eigen(jlevel) = eigen(ilevel)
+            eigen(ilevel) = eigen_t
+            energy        = eigen(ilevel)%energy
+            !
+            istate2ilevel(eigen(ilevel)%jind,eigen(ilevel)%igamma,eigen(ilevel)%ilevel) = ilevel
+            istate2ilevel(eigen(jlevel)%jind,eigen(jlevel)%igamma,eigen(jlevel)%ilevel) = jlevel
+            !
+          endif 
           !
-          istate2ilevel(eigen(ilevel)%jind,eigen(ilevel)%igamma,eigen(ilevel)%ilevel) = ilevel
-          istate2ilevel(eigen(jlevel)%jind,eigen(jlevel)%igamma,eigen(jlevel)%ilevel) = jlevel
-          !
-        endif 
+        enddo
         !
       enddo
       !
-    enddo
+      !deallocate(eigen_t%irec,eigen_t%iroot,eigen_t%quanta,eigen_t%cgamma, stat = info)
+      !if (info /= 0) stop 'read_eigenval de-allocation error'
+      !
+    endif
     !
     iroot = 0 
     !

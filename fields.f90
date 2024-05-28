@@ -3596,7 +3596,7 @@ module fields
               !
             case("NAME","POT_NAME","POT-NAME")
               !
-              pot_form_compact = .true.
+              call readu(trove%potenname)
               !
             case("NPARAM")
               !
