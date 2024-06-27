@@ -35,11 +35,11 @@ module pot_user
     character(len=cl),intent(in) ::  name
     character(len=cl),parameter ::  poten_name = 'GENERAL'
     ! 
-    if (poten_name/=trim(name)) then
-      write(out,"('a,a,a,a')") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
-    endif
-    !
-    write(out,"('a')") '  Using USER-tpye PES ',trim(poten_name)
+   if (poten_name/=trim(name)) then
+     write(out,"(a,a,a,a)") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
+   endif
+   !
+   write(out,"(a,a)") '  Using USER-type PES ',trim(poten_name)
     !
   end subroutine MLpoten_name
 
