@@ -373,7 +373,7 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
     !
     !OCH
-    xi(6) = local(6)- alpha_COHe
+    xi(6) = cos(local(6))- cos(alpha_COHe)
     !
     ! alphas
     !H2-C-H3,H1-C-H2,H1-C-H3
