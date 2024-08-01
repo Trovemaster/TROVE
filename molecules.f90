@@ -25,7 +25,7 @@ module molecules
   use pot_zxy2
   use pot_zxy3
   use pot_xy4
-  use pot_ch3oh
+  use pot_ch3oh,only : MLpoten_ch3oh_sym,MLpoten_ch3oh_ref
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
@@ -408,6 +408,10 @@ module molecules
     case('POTEN_CH3OH_REF') 
          !
          MLpotentialfunc => MLpoten_ch3oh_ref
+         !
+    case('POTEN_CH3OH_SYM') 
+         !
+         MLpotentialfunc => MLpoten_ch3oh_sym
          !
     case('POTEN_SOHF') 
          !
