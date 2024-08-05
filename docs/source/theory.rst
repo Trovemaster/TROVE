@@ -521,5 +521,95 @@ where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature
 
 
 
+ The absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the
+transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
+
+.. math::
+        :label: e-intensityabsorption
+
+       \begin{split}
+       I(f \leftarrow i) & = 
+            \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \,
+            \frac{e^{-E_i/kT}}{Q} \,
+            \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,
+            S(f \leftarrow i) ,
+       \end{split}
+ 
+ where
+ :math:`{\nu}` = :math:`(E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the \xs{partition function} defined as
+
+.. math .. 
+       Q = \sum_j g_j \, {\rm e}^{-E_j/kT},
+
+where :math:`g_j` is the total degeneracy of the ro-vibrational state with energy :math:`E_j`, which in turn is given by
+
+.. math::
+     :label: e-gns
+     
+        g_j = g_{\rm ns}^{(j)} J_j(J_j+1)
+      
+      
+      and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
+
+
+
+The main ingredients to compute the ro-vibrational line strengths  :math:`S(f \leftarrow i)` are (i) the dipole moment surfaces (DMS) and  ro-vibrational wavefunctions :math:` \Phi^i_{\rm rv}`:
+
+.. math::
+    :label: e-linestrength
+
+      S(f \leftarrow i) =
+        g_{\rm ns} \,
+        \sum_{m_f, m_i} \,
+         \sum_{\sigma=-1}^1
+         \left\vert  \left\langle
+        \Psi_{\rm rv}^{(f)} \,
+         \left\vert
+         \mu_{\rm s}^{(1,\sigma)}
+         \right\vert
+          \Psi_{\rm rv}^{(i)}
+         \right\rangle \right\vert^2.
+
+
+In TROVE, the variationally computed rovibration wavefunctions :math:`\ket{\Psi_{\rm rv}^{(i)}}` are given by expansions in terms of basis function:
+.. math::
+     :label: e-RVwi
+
+         \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, \ket{v} \ket{J \, k, \, m} ,
+        
+where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`\ket{v}` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`\ket{\Psi_{\rm rv}^{(i)}}` from Eq. (:eq:`e-RVwi`) into  Eq. (e-linestrength) both for the initial and final state wavefunctions, one obtains
+.. math::
+     :label: e-linestrength-deg-irrtens
+
+      \begin{split}
+        S(f \leftarrow i) &= g_{ns}  \sum_{m_i,m_f} \sum_{\sigma=-1}^1 \Bigg\vert  \sum_{v' k'}  \,  \sum_{v'' k''}  \,
+         {C_{v' k'}^{(f)*}} \,  C_{v'' k''}^{(i)}\\
+         & \times  \sum_{\sigma'=-1}^1 \,   \left\langle  v' \left\vert \bar\mu_{\rm m}^{(1,\sigma')}  \right\vert  v''  \right\rangle \\
+         &\times  \left\langle J' \, k' \, m_f \,  \left\vert [D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* \right\vert    J'' \, k'' \, m_i \, \right\rangle \Bigg\vert^2.
+       \end{split}
+
+Here :math:`\bar\mu_{\rm m}^{(1,\sigma')}` is the electronically averaged molecule-fixed dipole moment component which depends on the vibrational coordinates only, whereas the rigid rotor wavefunctions :math:`\ket{J \, k\, m}` and :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` depend solely on the \xs{Euler angles} :math:`(\theta,\phi,\chi)`. The  dipole moment operators
+.. math::
+     :label: e-electronicaverage
+
+        \bar\mu_{\rm m}^{(1,\sigma')}   =        \left\langle  \Psi_{\rm elec}^{(w)} \left\vert \mu_{\rm m}^{(1,\sigma')} \right\vert  \Psi_{\rm elec}^{(w)}  \right\rangle_{\rm el}
+        
+        
+are assumed to originate from electronic structure calculations as averages over  the electronic coordinates. Now using the standard expression and properties of the integrals of :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` over :math:`\ket{J \, k\, m}` one obtain:
+.. math::
+  :label: e-Sif-sigma
+
+    \begin{split}
+        &S(f \leftarrow i) = g_{ns} \, (2 J' + 1) \, (2 J'' + 1) \\
+        & \times  \left| \sum_{\sigma=-1,0,1}\sum_{v' k' v'' k'' }  \, C_{v' k' }^{(f)*}\,  C_{v'' k'' }^{(i)} \,  (-1)^{k'} \left(\begin{array}{ccc} J''&1&J'\\  k''&\sigma&-k'\end{array}\right) \bra{v'} \bar\mu_{\rm m}^{(1),\sigma} \ket{ v''}  \right|^2 ,
+     \end{split}
+
+where
+.. math:: 
+      
+      \left(\begin{array}{ccc} J''&\phantom{-}1&J'\\ k''&\sigma&-k'      \end{array}\right)
+      
+
+is the standard 3j-symbol.
 
 

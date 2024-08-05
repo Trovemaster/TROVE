@@ -1,10 +1,80 @@
-Linelists and Spectra
-*********************
+Line lists and Spectra
+**********************
 .. _linelists:
 
 This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross_. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax.
 
-Before discussing these programs, the selection of absorption parameters is addressed.
+
+Intensity calculations are a part of step 4 (see Chapter Quickstart_ for the description of TROVE steps an Chapter Theory_ for theoretical details of the intensity calculations). 
+
+
+Prerequisites of intensity calculations in TROVE
+================================================
+
+We assume that all three initial steps have been accomplished. This includes: solution of the ro-vibrational problem by computing the ro-vibrational wavefunctions :math:`\Psi_{\rm rv}^{(i)}` and energy term values :math:`\tilde{E}_}`, steps 1-3. The wavefunction coefficients :math:` C_{v'' k'' }^{(i)}` are stored in the check points ``j0eigen_vectors*.chk``, while the energies are in the ascii files ``j0eigen_descr*.chk`` for a set of :math:`J`s from 0 to :math:`J_{\rm max}`. We also assume that the DMS components have fully been processed in steps 1 and 2. At step 1 this incudes (i) definition of DMS in the step 1 input file, (ii) re-expansion in terms of the TROVE internal vibrational coordinates (``external.chk``) and (iii) calculation of the vibrational matrix elements of the DMS components (``extmatelem1.chk``, ``extmatelem2.chk`` and ``extmatelem3.chk``). At step, the DM matrix elements are converted to the :math:`J=0` representation (``j0_extmatelem1.chk``, ``j0_extmatelem2.chk`` and ``j0_extmatelem3.chk``). Providing that these ingredients are available, the intensities can be generated as follows. 
+
+
+INTENSITY input file: step 4
+============================
+
+In order to start the intensity calculations, the following changes in the input are required. In the ``CONTROL`` section, the keyword ``step`` has to be set to  4 and the range of the values of :math:`J` needs to be defined, e.g. 
+
+::
+
+    Control
+    Step 4
+    J 0 10
+    end
+
+Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Quickstart_), e.g. 
+::
+
+      INTENSITY
+       absorption
+       exomol
+       name *filename*
+       THRESH_INTES  1e-20
+       THRESH_LINE   1e-20
+       THRESH_COEFF  1e-18
+       TEMPERATURE   300.0
+       Partition     1000.0
+       GNS          8.0 8.0 8.0
+       selection (rules) 1 1 2  (N of irreps)
+       J,  0,10
+       freq-window  -0.1,   4000.0
+       energy low   -0.1,  2000.0, upper   -0.1, 6000.0
+     END
+
+Here 
+``absorption`` specifies that absorption intensities between states are to be calculated.
+
+
+``THRESH_INTES/LINE/COEFF`` are used to control the level of print out for intensities. Very large outputs can be produced if these are set very low (as needed for 'production' quality line lists) but for quicker checks higher values should be used.
+
+
+``TEMPERATURE`` is used to specify the temperature of interest. This will affect the population of states (Boltzmann population).
+
+
+``Partition`` is the value of the partition function. This can be calculated from all of the ro-vibrational energy levels used. Note that at high temperatures enough energy levels must be included for accurate results. If this is not the case (for example, for a test calculation) then a literature value could be used.
+
+
+``GNS`` is the spin statistical weights for each symmetry. These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen,  chapter 8 [98BuJe]_. ``selection`` is used to specify which symmetries can make up the initial and final states of a transition. The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Thus for the PF\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while E can only go to E. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E.
+
+
+``J,  i,j`` specifies the rotational states to be included. In the example above 0 to 10 were used. It is often better to split a calculation into 0,1-1,2-2,3, etc to fit into time allocations on computers. The vibrational states to be included can also be specified by the ``v i, lower x, y, upper x', y'``
+where i is the number of a vibrational mode and x, x' and y, y' give the limits for the lower and upper states included. If this is not included then all vibrational states are considered.
+
+
+``freq-window`` This specifies the frequency window (in wavenumbers) in the spectra to be used. In the example here -0.1 is used as the minimum to guarantee values from 0 are used while 4000 is the maximum considered. ``energy low`` specifies the energies of the lower and upper states to be included. In the example the highest energy lower state to include it 2000 so since the maximum frequency of light considered is 4000, the upper state needs a maximum of 6000 (energy proportional to frequency, :math:`E = h \nu`).
+
+``exomol``is the keyword to produce a line list in the ExoMol format, which will be written into the .trans and .states files. In this case, the absorption intensities computed for the temperature and partition functions specifies are not printed out only used together with the corresponding threshold ``THRESH_INTES`` to decide to keep the line in the line list or not.
+
+
+``name``  is the *filename* of the .trans and .states files.
+
+To calculate absorption intensities the eigenfunctions and eigenvalue files of the states to be included must be included in the directory where TROVE is run. More on this will be described below.
+
+
 
 Choosing absorption parameters
 ==============================
@@ -17,12 +87,13 @@ Of course, the range which is included will also be limited by practical conside
 Intensities with GAIN
 =====================
 
-As discussed in Chapter `Quickstart <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
+As discussed in Chapter Quickstart_, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
 
-A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (\textbf{G}PU \textbf{A}ccelerated \textbf{IN}tensities) is a program which was written by Ahmed Al-Rafaie.\cite{GAIN} It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using
-conventional TROVE.
+A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (GPU Accelerated INtensities) is a program which was written by Ahmed Al-Rafaie (see GAIN_). It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using conventional TROVE.
 
 GAIN uses the same input file as TROVE but only the ``intensity`` block is actually used to control the calculation. GAIN requires the eigenvectors, eigen description and eigen quanta files for the states of interest. It also requires the eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file for the dipole matrix elements (note that currently GAIN cannot accept split dipole files, these must be stitched together).
+
+GAIN can be found at gitGAIN_. 
 
 Using GAIN
 ----------
@@ -144,12 +215,11 @@ ExoCross_ has other options for simulating spectra. Examples include accounting 
 .. _ExoCross: https://github.com/Trovemaster/ExoCross
 
 
+.. _Quickstart: https://spectrove.readthedocs.io/en/latest/quickstart.html
 
+.. _Theory: https://spectrove.readthedocs.io/en/latest/theory.html#intensity-calculations-in-trove
 
-
-
-
-
+.. _gitGAIN: https://github.com/ExoMol/GAIN-MPI
 
 
 
