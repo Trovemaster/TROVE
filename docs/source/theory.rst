@@ -65,7 +65,7 @@ It is possible to write :math:`\hat{T}` in these generalised momenta as
      &+ \frac{1}{2} \sum_{\alpha=x,y,z} \sum_{\alpha'=x,y,z} \hat{J}_{\alpha} G_{\alpha,\alpha'}(\xi) \hat{J}_{\alpha'} \\
      &-\frac{i \hbar}{2} \sum_{\alpha=x,y,z} \sum_{n=1}^{3N-6} \left[\hat{J}_{\alpha} G_{\alpha,n}(\xi)  \frac{\partial}{\partial \xi_n} \right. \\
      & \left. + \frac{\partial}{\partial \xi_n} G_{\alpha,n}(\xi) \hat{J}_{\alpha} \right] \\
-     &-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi) \frac{\partial}{\partial \xi_{n'}} + U(\xi). 
+     &-\frac{\hbar^2}{2} \sum_{n=1}^{3N-6} \sum_{n'=1}^{3N-6} \frac{\partial}{\partial \xi_n} G_{n,n'}(\xi) \frac{\partial}{\partial \xi_{n'}} + U(\xi).
      \end{split}
 
 This equation expresses the fact that the kinetic energy operator :math:`\hat{T}` can be expressed in terms of an expansion of the generalised momenta with suitable *expansion coefficients* :math:`G_{\lambda,\lambda'}`. The first term is the translation kinetic energy of the centre of mass for which :math:`G_{XX} = G_{YY} = G_{ZZ} = 1 / \sum_{j=1}^N m_j`. This term is exactly separable from the other terms as expected. The second term is the kinetic energy of rotation, third term is the coupling between rotational and vibrational motion, fourth term is the kinetic energy of vibrational motion and the final term is the pseudopotential term. For these terms all of the :math:`G_{\lambda,\lambda'}` depend on the complete set of vibrational coordinates :math:`\xi`.  We can write
@@ -181,8 +181,8 @@ From the application of the chain rule the following relation is found
 .. math::
     :label: chain_s_t
 
-    \sum_{i=1}^{N} \sum_{F=X,Y,Z} \frac{\partial \Xi_{\lambda} }{\partial R_{iF} } \frac{\partial R_{iF}}{\partial \Xi_{\lambda'}}= 
-    
+    \sum_{i=1}^{N} \sum_{F=X,Y,Z} \frac{\partial \Xi_{\lambda} }{\partial R_{iF} } \frac{\partial R_{iF}}{\partial \Xi_{\lambda'}}=
+
      \mathbf{s}_{\lambda,i}\cdot \mathbf{t}_{i,\lambda'} = \delta_{\lambda,\lambda'}
 
 where the vector :math:`\mathbf{t}_{i,\lambda'}` has been introduced. If the :math:`\mathbf{t}_{i,\lambda'}` vectors are known then we can solve this equation to obtain the :math:`\mathbf{s}_{i,\lambda'}` vectors.
@@ -260,8 +260,8 @@ The potential energy function for a molecule is typically expressed in some suit
 .. math::
    :label: V_expand
 
-    V(\xi_n)  =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})} 
-    
+    V(\xi_n)  =  \sum_{l_1 = 0}^L \sum_{l_2 = 0}^{(L-l_1)} \cdots \sum_{l_{(3N-6)-1}=0}^{ (L-l_1 \cdots l_{(3N-6)-2})}
+
                   V_{l_1 l_2 \cdots l_{(3N-6)}}^L \prod_i f_n^{l_i} = \sum_{L=0}^{N_{pot}} \sum_{L[l]} V_{L[l]}(f_n)^{L[l]}.
 
 This is a sum of products of the coordinates (or functions of the coordinates) used raised to powers. This means that all integrals involving the potential will be separable into products of one-dimensional integrals. The expansion coefficients are obtained from the input potential using finite difference methods. This step also requires use of quadruple precision numbers in the program to avoid the accumulation of round off errors. The order to expand the potential to, :math:`N_{pot}` is controlled by the  \verb|potential| keyword in the TROVE input file.
@@ -521,34 +521,29 @@ where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature
 
 
 
- The absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the
+ In terms of the line strength, the absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the
 transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
 
 .. math::
         :label: e-intensityabsorption
 
-       \begin{split}
-       I(f \leftarrow i) & = 
-            \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \,
-            \frac{e^{-E_i/kT}}{Q} \,
-            \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,
+          I(f \leftarrow i)  = \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \, \frac{e^{-E_i/kT}}{Q} \, \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,
             S(f \leftarrow i) ,
-       \end{split}
- 
+          
  where
- :math:`{\nu}` = :math:`(E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the \xs{partition function} defined as
+ :math:`{\nu}` = :math:`(E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
 
-.. math .. 
+.. math::
        Q = \sum_j g_j \, {\rm e}^{-E_j/kT},
 
 where :math:`g_j` is the total degeneracy of the ro-vibrational state with energy :math:`E_j`, which in turn is given by
 
 .. math::
      :label: e-gns
-     
+
         g_j = g_{\rm ns}^{(j)} J_j(J_j+1)
-      
-      
+
+
       and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
 
 
@@ -576,7 +571,7 @@ In TROVE, the variationally computed rovibration wavefunctions :math:`|\Psi_{\rm
      :label: e-RVwi
 
          \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, |v\rangle |J \, k, \, m\rangle ,
-        
+
 where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. (:eq:`e-RVwi`) into  Eq. (e-linestrength) both for the initial and final state wavefunctions, one obtains
 .. math::
      :label: e-linestrength-deg-irrtens
@@ -588,14 +583,14 @@ where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvec
          &\times  \left\langle J' \, k' \, m_f \,  \left\vert [D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* \right\vert    J'' \, k'' \, m_i \, \right\rangle \Bigg\vert^2.
        \end{split}
 
-Here :math:`\bar\mu_{\rm m}^{(1,\sigma')}` is the electronically averaged molecule-fixed dipole moment component which depends on the vibrational coordinates only, whereas the rigid rotor wavefunctions :math:`|J \, k\, m\rangle` and :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` depend solely on the \xs{Euler angles} :math:`(\theta,\phi,\chi)`. The  dipole moment operators
+Here :math:`\bar\mu_{\rm m}^{(1,\sigma')}` is the electronically averaged molecule-fixed dipole moment component which depends on the vibrational coordinates only, whereas the rigid rotor wavefunctions :math:`|J \, k\, m\rangle` and :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^*` depend solely on the \xs{Euler angles} :math:`(\theta,\phi,\chi)`. The  dipole moment operators
 .. math::
      :label: e-electronicaverage
 
         \bar\mu_{\rm m}^{(1,\sigma')}   =        \left\langle  \Psi_{\rm elec}^{(w)} \left\vert \mu_{\rm m}^{(1,\sigma')} \right\vert  \Psi_{\rm elec}^{(w)}  \right\rangle_{\rm el}
-        
-        
-are assumed to originate from electronic structure calculations as averages over  the electronic coordinates. Now using the standard expression and properties of the integrals of :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` over :math:`|J \, k\, m\rangle` one obtain:
+
+
+are assumed to originate from electronic structure calculations as averages over  the electronic coordinates. Now using the standard expression and properties of the integrals of :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^*` over :math:`|J \, k\, m\rangle` one obtain:
 .. math::
   :label: e-Sif-sigma
 
@@ -605,10 +600,10 @@ are assumed to originate from electronic structure calculations as averages over
      \end{split}
 
 where
-.. math:: 
-      
+.. math::
+
       \left(\begin{array}{ccc} J''&\phantom{-}1&J'\\ k''&\sigma&-k'      \end{array}\right)
-      
+
 
 is the standard 3j-symbol.
 
