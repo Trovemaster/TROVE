@@ -571,13 +571,13 @@ The main ingredients to compute the ro-vibrational line strengths  :math:`S(f \l
          \right\rangle \right\vert^2.
 
 
-In TROVE, the variationally computed rovibration wavefunctions :math:`\ket{\Psi_{\rm rv}^{(i)}}` are given by expansions in terms of basis function:
+In TROVE, the variationally computed rovibration wavefunctions :math:`|\Psi_{\rm rv}^{(i)}\rangle` are given by expansions in terms of basis function:
 .. math::
      :label: e-RVwi
 
-         \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, \ket{v} \ket{J \, k, \, m} ,
+         \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, |v\rangle |J \, k, \, m\rangle ,
         
-where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`\ket{v}` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`\ket{\Psi_{\rm rv}^{(i)}}` from Eq. (:eq:`e-RVwi`) into  Eq. (e-linestrength) both for the initial and final state wavefunctions, one obtains
+where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. (:eq:`e-RVwi`) into  Eq. (e-linestrength) both for the initial and final state wavefunctions, one obtains
 .. math::
      :label: e-linestrength-deg-irrtens
 
@@ -588,20 +588,20 @@ where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvec
          &\times  \left\langle J' \, k' \, m_f \,  \left\vert [D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* \right\vert    J'' \, k'' \, m_i \, \right\rangle \Bigg\vert^2.
        \end{split}
 
-Here :math:`\bar\mu_{\rm m}^{(1,\sigma')}` is the electronically averaged molecule-fixed dipole moment component which depends on the vibrational coordinates only, whereas the rigid rotor wavefunctions :math:`\ket{J \, k\, m}` and :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` depend solely on the \xs{Euler angles} :math:`(\theta,\phi,\chi)`. The  dipole moment operators
+Here :math:`\bar\mu_{\rm m}^{(1,\sigma')}` is the electronically averaged molecule-fixed dipole moment component which depends on the vibrational coordinates only, whereas the rigid rotor wavefunctions :math:`|J \, k\, m\rangle` and :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` depend solely on the \xs{Euler angles} :math:`(\theta,\phi,\chi)`. The  dipole moment operators
 .. math::
      :label: e-electronicaverage
 
         \bar\mu_{\rm m}^{(1,\sigma')}   =        \left\langle  \Psi_{\rm elec}^{(w)} \left\vert \mu_{\rm m}^{(1,\sigma')} \right\vert  \Psi_{\rm elec}^{(w)}  \right\rangle_{\rm el}
         
         
-are assumed to originate from electronic structure calculations as averages over  the electronic coordinates. Now using the standard expression and properties of the integrals of :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` over :math:`\ket{J \, k\, m}` one obtain:
+are assumed to originate from electronic structure calculations as averages over  the electronic coordinates. Now using the standard expression and properties of the integrals of :math:`[D_{\sigma\sigma'}^{(1)} (\phi,\theta,\chi)]^* ` over :math:`|J \, k\, m\rangle` one obtain:
 .. math::
   :label: e-Sif-sigma
 
     \begin{split}
         &S(f \leftarrow i) = g_{ns} \, (2 J' + 1) \, (2 J'' + 1) \\
-        & \times  \left| \sum_{\sigma=-1,0,1}\sum_{v' k' v'' k'' }  \, C_{v' k' }^{(f)*}\,  C_{v'' k'' }^{(i)} \,  (-1)^{k'} \left(\begin{array}{ccc} J''&1&J'\\  k''&\sigma&-k'\end{array}\right) \bra{v'} \bar\mu_{\rm m}^{(1),\sigma} \ket{ v''}  \right|^2 ,
+        & \times  \left| \sum_{\sigma=-1,0,1}\sum_{v' k' v'' k'' }  \, C_{v' k' }^{(f)*}\,  C_{v'' k'' }^{(i)} \,  (-1)^{k'} \left(\begin{array}{ccc} J''&1&J'\\  k''&\sigma&-k'\end{array}\right) \langle v'| \bar\mu_{\rm m}^{(1),\sigma} | v''\rangle  \right|^2 ,
      \end{split}
 
 where
