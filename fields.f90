@@ -4035,9 +4035,33 @@ module fields
              !  !
              !endif 
              !
-           case('SELECTION','SELECTION_RULES','SELECT','PAIRS')
+           case('SELECTION','SELECTION-GROUPS','SELECT','PAIRS')
              !
              ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
+             do i=1,sym%Nrepresen,2
+               intensity%isym_pairs(i  ) = (i+1)/2
+               if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
+             enddo
+             !
+             if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
+             !
+             i = 0
+             !
+             do while (item<Nitems.and.i<sym%Nrepresen)
+               !
+               i = i + 1
+               !
+               call readi(intensity%isym_pairs(i))
+               !
+             enddo
+             !
+             if (sym%Nrepresen<=8.and.i/=sym%Nrepresen) then 
+               write (out,"('FLinput: illegal number entries in SELECTION for Nrepresen<=8',i8,' /= ',i8)") i,sym%Nrepresen
+               stop 'FLinput - illegal number entries in SELECTION, Nentries<>Nrepresen'
+             endif 
+             !
+           case('SELECTION-RULES')
+             !
              do i=1,sym%Nrepresen,2
                intensity%isym_pairs(i  ) = (i+1)/2
                if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
