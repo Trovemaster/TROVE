@@ -519,18 +519,15 @@ The absolute absorption intensities are given by
 
 where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature, :math:`Q(T)` is the partition function, :math:`g_{ns}` is the nuclear statistical weight and :math:`c_2 = hc/k`.
 
-
-
- In terms of the line strength, the absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
+In terms of the line strength, the absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
 
 .. math::
-        :label: e-intensityabsorption
-
-          I(f \leftarrow i)  = \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \, \frac{e^{-E_i/kT}}{Q} \, \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,
-            S(f \leftarrow i) ,
+       :label: e-intensityabsorption
+          
+          I(f \leftarrow i)  = \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \, \frac{e^{-E_i/kT}}{Q} \, \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,  S(f \leftarrow i) ,
                   
 
- where  :math:`\nu =  (E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
+where  :math:`\nu =  (E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
 
 .. math::
 
