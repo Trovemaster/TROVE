@@ -32,7 +32,7 @@ Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Qui
       INTENSITY
        absorption
        exomol
-       name *filename*
+       linelist *filename*
        THRESH_INTES  1e-20
        THRESH_LINE   1e-20
        THRESH_COEFF  1e-18
@@ -254,8 +254,8 @@ where the designation of the columns is as follows
   
 
 
-The separator labels ``::`` and ``:;``  are introduced to avoid double counting when combining States file from intensity calculations covering different ranges of :math:`J`. As discussed above, a given calculation for :math:`J = [J_1,J_2]` does not include transitions between :math:`J=J_1` and :math:`J' = J_1` (lower bound), but includes transitions between  :math:`J=J_2` and :math:`J' = J_2` (upper bound). the next interval to be considered is for :math:`J = [J_2,J_3]`, which thus also produces a States file with the same states :math:`J=J_2`. When combining states multiple file, in order to avoid double counting, one can grep all state with the label ``::`` first
-:
+The separator labels ``::`` and ``:;``  are introduced to avoid double counting when combining States file from intensity calculations covering different ranges of :math:`J`. As discussed above, a given calculation for :math:`J = [J_1,J_2]` does not include transitions between :math:`J''=J_1` and :math:`J' = J_1` (lower bound), but includes transitions between  :math:`J''=J_2` and :math:`J' = J_2` (upper bound). the next interval to be considered is for :math:`J = [J_2,J_3]`, which thus also produces a States file with the same states :math:`J=J_2`. When combining states multiple file, in order to avoid double counting, one can grep all state with the label ``::`` first
+::
    
    grep -h "::" *.states > All.states 
    
