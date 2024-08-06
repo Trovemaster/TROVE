@@ -67,7 +67,7 @@ where i is the number of a vibrational mode and x, x' and y, y' give the limits 
 
 ``freq-window`` This specifies the frequency window (in wavenumbers) in the spectra to be used. In the example here -0.1 is used as the minimum to guarantee values from 0 are used while 4000 is the maximum considered. ``energy low`` specifies the energies of the lower and upper states to be included. In the example the highest energy lower state to include it 2000 so since the maximum frequency of light considered is 4000, the upper state needs a maximum of 6000 (energy proportional to frequency, :math:`E = h \nu`).
 
-``exomol``is the keyword to produce a line list in the ExoMol format, which will be written into the .trans and .states files. In this case, the absorption intensities computed for the temperature and partition functions specifies are not printed out only used together with the corresponding threshold ``THRESH_INTES`` to decide to keep the line in the line list or not.
+``exomol`` is the keyword to produce a line list in the ExoMol format, which will be written into the .trans and .states files. In this case, the absorption intensities computed for the temperature and partition functions specifies are not printed out only used together with the corresponding threshold ``THRESH_INTES`` to decide to keep the line in the line list or not.
 
 
 ``name``  is the *filename* of the .trans and .states files.
