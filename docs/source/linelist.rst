@@ -60,7 +60,7 @@ Here
 ``GNS`` is the state dependent  spin statistical weights :math:`g_{\rm ns}^{(i)}` for each symmetry (irrep). These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen,  chapter 8 [98BuJe]_.  The :math:`g_{\rm ns}` value is used directly in the intensity calculations if required as well as to evaluate the total degeneracy for States file outputs, :math:`g_{\rm tot}^{(i)} = J(J+1) g_{\rm ns}^{(i)}`.
 
 
-``*selection-rule*`` is used to specify  selection rules, i.e. which symmetries can make up the initial and final states of a transition. The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Let's consider a symmetry group spanning :math:`N_{irrep}` irreps :math:`\Gamma_1. \Gamma_2, \ldots` (which we denote in TROVE with integers 1,2,3,4...)  with the selection rules
+``selection-rules`` is used to specify  selection rules, i.e. which symmetries can make up the initial and final states of a transition. The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Let's consider a symmetry group spanning :math:`N_{irrep}` irreps :math:`\Gamma_1. \Gamma_2, \ldots` (which we denote in TROVE with integers 1,2,3,4...)  with the selection rules
 
 .. math:: 
     \Gamma \leftrightarrow \Gamma'
@@ -69,7 +69,7 @@ Here :math:`\Gamma'` is the allowed irrep partner for :math:`\Gamma`.
 
 
 
-``*selection-groups*`` *under construction* (``selection``) is an alternative way to specify the selection rules by defining  groups of allowed transitions they belong to. Thus for the PH\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while :math:`E` can only go to :math:`E`. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E. The ``selection`` card is then given by
+``*selection-groups*``  (``selection``) is an alternative way to specify the selection rules by defining  groups of allowed transitions they belong to. Thus for the PH\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while :math:`E` can only go to :math:`E`. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E. The ``selection`` card is then given by
 :: 
     
     1 1 2

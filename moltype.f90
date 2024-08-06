@@ -253,6 +253,7 @@ module moltype
      real(rk)            :: ZPE              ! zero point energy
      type(MLthresholdsT) :: threshold        ! different thresholds
      real(rk),pointer    :: gns(:)           ! nuclear stat. weights
+     integer(ik),pointer :: isym_groups(:)   ! groups defining symmetry pairs with allowed transitions, analogous to gns
      integer(ik),pointer :: isym_pairs(:)    ! numbers defining symmetry pairs with allowed transitions, analogous to gns
      real(rk)            :: freq_window(1:2) ! frequency window (1/cm)
      real(rk)            :: erange_low(1:2)  ! energy range for the lower state

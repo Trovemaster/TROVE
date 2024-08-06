@@ -1246,12 +1246,12 @@ contains
          !
       enddo
     enddo
+    ! 
+    ! link selection rules 
     !
-    ! For a given symmetry igamma with some gns(igamma) we find its counterpart jgamma/=igamma
-    ! having the same gns(jgamma). We assume that there is only one such pair 
-    ! in case of absorption or emission calcs. 
+    igamma_pair = intensity%isym_pairs
     !
-    call find_igamma_pair(igamma_pair)
+    !call find_igamma_pair(igamma_pair)
     !
     call TimerStart('Intens_Filter-1')
     !
@@ -4023,12 +4023,10 @@ contains
     !number of initial states
     !
     nlevels = Neigenlevels
+    ! 
+    ! link selection rules 
     !
-    ! For a given symmetry igamma with some gns(igamma) we find its counterpart jgamma/=igamma
-    ! having the same gns(jgamma). We assume that there is only one such pair 
-    ! in case of absorption or emission calcs. 
-    !
-    call find_igamma_pair(igamma_pair)
+    igamma_pair = intensity%isym_pairs
     !
     call TimerStart('Intens_Filter-1')
     !
@@ -5283,7 +5281,7 @@ contains
         !
         do igammaF = 1,sym%Nrepresen
           !
-          if (igammaI/=igammaF.and.intensity%isym_pairs(igammaI)==intensity%isym_pairs(igammaF)) then 
+          if (igammaI/=igammaF.and.intensity%isym_groups(igammaI)==intensity%isym_groups(igammaF)) then 
             !
             igamma_pair(igammaI) = igammaF
             !
@@ -5459,7 +5457,7 @@ contains
                return 
              endif
              !
-             if ( intensity%isym_pairs(igammaI)/=intensity%isym_pairs(igammaF) ) then 
+             if ( intensity%isym_groups(igammaI)/=intensity%isym_groups(igammaF) ) then 
                passed = .false.
                return 
              endif

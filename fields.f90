@@ -3896,10 +3896,10 @@ module fields
          endif 
          !
          allocate(intensity%gns(sym%Nrepresen),intensity%isym_pairs(sym%Nrepresen),intensity%v_low(trove%nmodes,2),&
-                  intensity%v_upp(trove%nmodes,2),stat=alloc)
+                  intensity%v_upp(trove%nmodes,2),intensity%isym_groups(sym%Nrepresen),stat=alloc)
          if (alloc/=0) then
-             write (out,"(' Error ',i9,' trying to allocate qwrange')") alloc
-             stop 'FLinput, qwrange - out of memory'
+             write (out,"(' Error ',i9,' trying to allocate gns,isym_groups,isym_pairs etc')") alloc
+             stop 'FLinput, allocate gns,isym_groups,isym_pairs etc - out of memory'
          end if
          !
          ! defauls values
@@ -4039,11 +4039,11 @@ module fields
              !
              ! default values are by pairs: 1 1 2 2 3 3 4 4 ...
              do i=1,sym%Nrepresen,2
-               intensity%isym_pairs(i  ) = (i+1)/2
-               if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
+               intensity%isym_groups(i  ) = (i+1)/2
+               if (i+1<=sym%Nrepresen) intensity%isym_groups(i+1) = (i+1)/2
              enddo
              !
-             if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
+             if( trim(intensity%action)=='TM') intensity%isym_groups = 1 
              !
              i = 0
              !
@@ -4051,21 +4051,22 @@ module fields
                !
                i = i + 1
                !
-               call readi(intensity%isym_pairs(i))
+               call readi(intensity%isym_groups(i))
                !
              enddo
              !
              if (sym%Nrepresen<=8.and.i/=sym%Nrepresen) then 
                write (out,"('FLinput: illegal number entries in SELECTION for Nrepresen<=8',i8,' /= ',i8)") i,sym%Nrepresen
                stop 'FLinput - illegal number entries in SELECTION, Nentries<>Nrepresen'
-             endif 
+             endif
+             !
+             ! For a given symmetry igamma with some gns(igamma) we find its counterpart jgamma/=igamma
+             ! having the same gns(jgamma). We assume that there is only one such pair 
+             ! in case of absorption or emission calcs. 
+             !
+             call find_igamma_pair(intensity%isym_pairs)
              !
            case('SELECTION-RULES')
-             !
-             do i=1,sym%Nrepresen,2
-               intensity%isym_pairs(i  ) = (i+1)/2
-               if (i+1<=sym%Nrepresen) intensity%isym_pairs(i+1) = (i+1)/2
-             enddo
              !
              if( trim(intensity%action)=='TM') intensity%isym_pairs = 1 
              !
@@ -4827,6 +4828,23 @@ module fields
    ! For intensities, the extmatelem should be set to read, even if the user forgot to do so in the input:
    !
    if (intensity%do) job%IOextF_action='READ'
+   !
+   ! check gns is consistent with selection rules
+   !
+   if (intensity%do) then 
+      !
+      do i = 1,sym%Nrepresen
+        !
+        if ( intensity%gns(i)/=intensity%gns(intensity%isym_pairs(i)) ) then 
+          !
+          write(out,"('FLinput: selection rules do not agree with Gns',3i4)") i,intensity%gns(i),intensity%gns(intensity%isym_pairs(i))
+          stop 'FLinput: selection rules do not agree with Gns!'
+          !
+        endif   
+        !
+      enddo
+      !
+   endif
    !
    if (trim(job%IOextF_action)=='SAVE') then 
        if (trim(job%IOcontr_action)  =='NONE') job%IOcontr_action   = 'READ'
@@ -26486,9 +26504,56 @@ end subroutine check_read_save_none
     if (associated(bset%rot)) deallocate(bset%rot)
     !
   end subroutine deallocate_all_fields_arrays
-  
-  
-  !
 
+  subroutine find_igamma_pair(igamma_pair)
+   !
+   implicit none 
+   integer(ik),intent(out) :: igamma_pair(:)
+   integer(ik)     :: igammaI,igammaF,ngamma
+   !
+   if (trim(intensity%action)=='TM') then 
+     !
+     igamma_pair = 1
+     return 
+     ! 
+   endif
+   !
+   do igammaI = 1,sym%Nrepresen
+     !
+     ! count number of hits
+     !
+     ngamma = 0
+     igamma_pair(igammaI) = igammaI
+     !
+     do igammaF = 1,sym%Nrepresen
+       !
+       if (igammaI/=igammaF.and.intensity%isym_groups(igammaI)==intensity%isym_groups(igammaF)) then 
+         !
+         igamma_pair(igammaI) = igammaF
+         !
+         ngamma = ngamma + 1 
+         !
+         if (ngamma>1) then 
+           !
+           write(out,"('find_igamma_pair: Assumption that selection rules come in pairs is not fulfilled!')")
+           stop 'find_igamma_pair: Assumption that all selection rules work in pairs is not fulfilled!'
+           !
+         endif   
+         !
+       endif
+       !
+     enddo
+     !
+     !if ( intensity%gns(igammaI)/=intensity%gns(igamma_pair(igammaI)) ) then 
+     !  !
+     !  write(out,"('find_igamma_pair: selection rules do not agree with Gns')")
+     !  stop 'find_igamma_pair: selection rules do not agree with Gns!'
+     !  !
+     !endif   
+     !
+   enddo 
+   !
+  end subroutine find_igamma_pair  
+  !
 end module fields
 
