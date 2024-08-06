@@ -69,7 +69,7 @@ Here :math:`\Gamma'` is the allowed irrep partner for :math:`\Gamma`.
 
 
 
-``*selection-groups*``  (``selection``) is an alternative way to specify the selection rules by defining  groups of allowed transitions they belong to. Thus for the PH\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while :math:`E` can only go to :math:`E`. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E. The ``selection`` card is then given by
+``selection-groups``  (``selection``) is an alternative way to specify the selection rules by defining  groups of allowed transitions they belong to. Thus for the PH\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while :math:`E` can only go to :math:`E`. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E. The ``selection`` card is then given by
 :: 
     
     1 1 2
