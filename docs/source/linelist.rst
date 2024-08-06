@@ -114,6 +114,20 @@ To calculate absorption intensities the eigenfunctions and eigenvalue files of t
 
 ``states_only``  card is used to produce the States file only. It can be used to collect all the states into a single file.
 
+``symmetry reduced`` card in the ``Intensity`` section is to switch on the reduced treatment of the degenerate symmetry components of the ro-vibrational wavefunctions  when calculating the line strength and thus safe time. In particular, the ro-vibrational matrix elements of the dipole moments between degenerate symmetry components :math:`\Gamma_\alpha` have the following properties 
+
+.. math:: 
+      
+      \begin{split}
+      \langle \Psi_{i}^{\Gamma_\alpha} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\beta}  \rangle = 0, & \alpha = \beta \\
+       \langle \Psi_{i}^{\Gamma_\alpha} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\beta}  \rangle = \pm  \langle \Psi_{i}^{\Gamma_\beta} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\alpha}  \rangle
+      \end{split} 
+       
+therefore only one non-diagonal component is unique and needs to be computed. 
+
+.. Note:: When invoking this option, it is advised to check that the results are the same. 
+
+
 Choosing threshold values
 =========================
 
@@ -121,6 +135,78 @@ The intensity block in TROVE requires a choice for the minimum intensities to be
 
 Values for ``freq-window`` and ``energy low`` and ``upper`` depend on the molecule and temperature of interest. The lower energy range required will depend on the desired temperature range. For room temperature line lists, only relatively low energy states will be significantly populated. For hot line lists, this range will be increased. The partition function for the molecule can be used to judge which states are required for coverage at a certain temperature (see below for how to calculate using ExoCross_). The frequency window (and thus upper states to include) depends on the frequency of light which of interest.
 Of course, the range which is included will also be limited by practical considerations such as computational time, memory, basis set convergence, etc.
+
+
+Restarting unfinished intensity jobs 
+====================================
+
+The line intensity calculations are organised as follows. First, energies selected for a given run are combined, sorted and renumbered. Here is an example of such as selection: 
+::
+
+    J, 20,      21
+    freq-window  0,12000
+    energy low   0,10000.0, upper  -0.00,18000.0
+    
+
+Then, the intensities are processed in batches divided by lower states: each batch corresponds to transitions from a given lower state to all upper states in a given selection. Within each batch, the calculations are OpenMP parallelised. In large projects, it is common that a given selection does not fit into the wall-clock limit of an HPC the job selection needs to be divided into sub-selection. The most natural way is to divide jobs by the lower states by energy ranges, e.g. 0 to 1000 1/cm, 1000.0001 to 2000, 2000.0001 to 3000 etc.  However such selection is uneven. The higher the range the more transitions it corresponds to. 
+
+A more efficient way to divide a selection into sub-selections is by the lower state count. Before introducing this concept, let first define the following useful card.  
+
+``wallclock`` gives control of the calculation time and prevents crashing when running on an HPC scheduler with a time limit (wallclock time):
+::
+    
+    wallclock 32.0 
+    
+    
+ By setting ``wallclock`` to a value in hours which is less than the HPC wallclock, TROVE will do a control stop and report marks describing the calculation stage to be used in the restart. When time is close to wallclock, TROVE will let the current group (all transitions starting from the same lower state) of intensities to finish and provide the following report (e.g.): 
+::
+      
+        ... [wall-clock stop]: last lower-state     1189 out of            15462 (           15462), processed =     1189 states;
+        ... last energy =     10140.830465
+        
+        ...Intensities finished: From        1 to     1189 of    15462 lower states.
+        
+Here, 
+
+ - *1* is the counting number of the 1st lower state selected for the current run; 
+ - *1189* is the counting number of last lower state finished; 
+ - *15462* is the total number of the lower states selected for the current run (and available); 
+ - *1189* is the number of states prossed during the current run;
+ - *10140.830465* is the value (1/cm) of the last lower state processed. 
+
+One can assume that each line takes approximately the same time, for a given set of :math:`J'` and :math:`J''`. These numbers also tell how many lower states can fit into one wallclock limit and thus can help divide the intensity jobs into sub-groups, organised by the lower states. Here, e.g., it is 1189 states per one wallclock limit. We can therefore divide the intensity jobs e.g. by  1049 (smaller than 1189 just in case): 
+::
+   
+  1190-2239
+  2240-3289
+  3290-4339
+  4340-5389
+  5390-6439
+  6440-7489
+  7490-8539
+  8540-9589
+  9590-10639
+  10640-11689
+  11690-12739
+  12740-13789
+  13790-14839
+  14840-15462
+  
+
+For the restart the first batch, the following card needs to be used: 
+::
+    
+   count  1190 2239
+   
+
+If the jobs has fully completed, the following printout will appear at the end of the standard TROVE output file:
+:: 
+        
+   
+     ...Intensities finished: From     1190 to     2239 of    15462 lower states.
+     
+
+Otherwise, the print out information can be used to restart this batch again. 
 
 
 Line list format
@@ -327,7 +413,7 @@ in this case 0 to 9000 cm\ :sup:`-1`.
 ``Npoints`` controls the density of the grid produced. In this example there will be
 10 points per cm\ :sup:`-1`.
 
- ``absorption`` specifies that a spectra is to be computed and ``stick`` indicates
+``absorption`` specifies that a spectra is to be computed and ``stick`` indicates
 that a stick spectrum is required.
 
 ``mass`` is the molecule's mass in atomic mass units.
