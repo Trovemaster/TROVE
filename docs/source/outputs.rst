@@ -199,7 +199,7 @@ A typical output has the following form
         0 A1    <-   0 A1    D    4927.853585 <-      0.000000  4927.853585  (A1 ;  0) (A1 ;   1   0   2)  <- (A1 ;  0) (A1 ;   0   0   0)  5.50415352E-04  3.07955132E-26      10  (   1   0   2)  <-  (   0   0   0)       0.00000000       0.00000000      -0.00055042
 
 
-and provides the total vibrational transition dipole moment :math:`\bar\my=u = \sqrt{\bar\mu_x^2+\bar\mu_y^2+\bar\mu_z^2}`, the individual components of the transition dipole :math:`\mu_\alpha` as well the vibrational band intensity computed for the reference temperature. 
+and provides the total vibrational transition dipole moment :math:`\bar\mu = \sqrt{\bar\mu_x^2+\bar\mu_y^2+\bar\mu_z^2}`, the individual components of the transition dipole :math:`\mu_\alpha` as well the vibrational band intensity computed for the reference temperature. 
 
 
 A list of information on the transition moments between vibrational states is then given. Similar to the output of the rotational-vibrational energy levels, the symmetry and energy of the upper and lower vibrational states is given along with the corresponding vibrational quantum numbers and transition frequency between the states.
