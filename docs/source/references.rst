@@ -59,7 +59,7 @@ References
 
 .. [19CoYuKo] P.A. Coles, S.N. Yurchenko, R.P. Kovacich, J. Hobby, and J. Tennyson, Phys. Chem. Chem. Phys. 21, 3264 (2019), A variationally computed room temperature line list for AsH\ :sub:`3`
 
-.. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ Sb\ :sub:`3`
+.. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ SbH\ :sub:`3`
 
 .. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations.
 
@@ -71,4 +71,4 @@ References
 
 .. [23MeOwTe] T. Mellor, A. Owens, J. Tennyson, and S.N. Yurchenko. MNRAS, 520, 1997 (2023), ExoMol line lists - XLVIII. High-temperature line list of thioformaldehyde (H\ :sub:`2`\ CS).
 
-.. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi: <http://dx.doi.org/10.1093/mnras/staa2034>`_ .
+.. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi:10.1093/mnras/staa2034 <http://dx.doi.org/10.1093/mnras/staa2034>`__ 
