@@ -49,13 +49,13 @@ Here
 ``absorption`` specifies that absorption intensities between states are to be calculated.
 
 
-``THRESH_INTES/LINE/COEFF`` are used to control the level of print out for intensities. Very large outputs can be produced if these are set very low (as needed for 'production' quality line lists) but for quicker checks higher values should be used.
+``THRESH_INTES/LINE/COEFF`` are used to control the level of print out for intensities. Very large outputs can be produced if these are set very low (as needed for 'production' quality line lists) but for quicker checks higher values should be used. The intensities are evaluated and checked for the reference ``temperature`` value specified. 
 
 
-``TEMPERATURE`` is used to specify the temperature of interest. This will affect the population of states (Boltzmann population).
+``TEMPERATURE`` is used to specify the reference temperature used to evaluate the intensities and also check them against the threshold value ``THRESH_INTES``. It should be noted that the main product of the 'Intensity' calculations are the temperature independent Einstein coefficients and therefore temperature does play any role. It is only used for (i) a quick intensity check when the intensities are printed out in the standard output file (not  ``exomol`` format) and a reference temperature is needed or (ii) to apply the intensity threshold. For the latter it can be seen as the maximal temperature in conjunction with the lower state energy threshold and :math:`J_{\rm max}`. Once the Einstein coefficients are produced, any temperature can be in principle used to simulate intensities using e.g. ExoCross. 
 
 
-``Partition`` is the value of the partition function. This can be calculated from all of the ro-vibrational energy levels used. Note that at high temperatures enough energy levels must be included for accurate results. If this is not the case (for example, for a test calculation) then a literature value could be used.
+``Partition`` is the reference value of the partition function :math:`Q(T)`. It is used to evaluate the intensities in connection with the reference ``temperature`` as explained above. Although in principle, TROVE's calculated values could be used to evaluate the value of :math:`Q(T)`, in practice the intensity calculations are split into sub-ranges of :math:`J` and therefore the full set of energies is not always known for accurate evaluation of :math:`Q(T)`. As reference values  needed for the intensity threshold purposes, even a very rough estimate is sufficient. For the transition moments ``TM``, this corresponds to the vibrational :math:`Q(T)`. 
 
 
 ``GNS`` is the spin statistical weights for each symmetry. These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen,  chapter 8 [98BuJe]_. ``selection`` is used to specify which symmetries can make up the initial and final states of a transition. The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Thus for the PF\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while E can only go to E. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E.
@@ -76,8 +76,8 @@ To calculate absorption intensities the eigenfunctions and eigenvalue files of t
 
 
 
-Choosing absorption parameters
-==============================
+Choosing threshold values
+=========================
 
 The intensity block in TROVE requires a choice for the minimum intensities to be printed out and for the range of states and frequencies to be included. The value of intensity thresholds should be set very small for production quality line lists, for example ``THRESH_INTES`` and ``THRESH_LINE`` can be set at :math:`1\times 10^{-50}` to ensure all transitions are included.
 
