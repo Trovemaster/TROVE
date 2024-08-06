@@ -1,4 +1,4 @@
-Theory
+fTheory
 ******
 .. _theory:
 
@@ -521,30 +521,30 @@ where :math:`k` is the Boltzmann constant, :math:`T` is the absolute temperature
 
 
 
- In terms of the line strength, the absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the
-transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
+ In terms of the line strength, the absorption ro-vibrational line intensities  in thermal equilibrium at the temperature for the transition from the state :math:`i` with energy :math:`E_i` to the state :math:`f` with energy :math:`E_f` is given by (SI units)
 
 .. math::
         :label: e-intensityabsorption
 
           I(f \leftarrow i)  = \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \, \frac{e^{-E_i/kT}}{Q} \, \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,
             S(f \leftarrow i) ,
-          
- where
- :math:`{\nu}` = :math:`(E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
+                  
+
+ where  :math:`\nu =  (E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
 
 .. math::
+
        Q = \sum_j g_j \, {\rm e}^{-E_j/kT},
 
 where :math:`g_j` is the total degeneracy of the ro-vibrational state with energy :math:`E_j`, which in turn is given by
 
 .. math::
       :label: e-gns
-
+        
         g_j = g_{\rm ns}^{(j)} J_j(J_j+1)
+        
 
-
-      and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
+and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
 
 
 
@@ -573,7 +573,7 @@ In TROVE, the variationally computed rovibration wavefunctions :math:`|\Psi_{\rm
 
          \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, |v\rangle |J \, k, \, m\rangle ,
 
-where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. (:eq:`e-RVwi`) into  Eq. (e-linestrength) both for the initial and final state wavefunctions, one obtains
+where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. :eq:`e-RVwi` into  Eq. :label:`e-linestrength)` both for the initial and final state wavefunctions, one obtains
 
 .. math::
      :label: e-linestrength-deg-irrtens
