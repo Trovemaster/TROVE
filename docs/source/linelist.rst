@@ -85,13 +85,14 @@ The ``selection-rule``  'card'  has then the following format
 where :math:`i_{\Gamma'_1}` is the ID of the allowed irrep partner for the irrep 1, :math:`i_{\Gamma'_2}` is the ID of the allowed irrep partner for the irrep 2 etc. For example, for a C\ :sub:`3v` molecule like PH\ :sub:`3`, spanning :math:`A_1` (irrep 1), :math:`A_2` (irrep 2) and E (irrep 3) with the selection rules
 
 .. math::
+   
    \begin{split}
       A_1 &\leftrightarrow A_2 \\
       A_2 &\leftrightarrow A_1 \\
       E & \leftrightarrow E \\
    \end{split}
-    
- it is given by
+      
+it is given by
 ::
      
      2 1 3
