@@ -311,6 +311,22 @@ where
   - col 4: Transition wavenumber(cm\ :sup:`-1`). 
 
 
+Different functionality of INTENSITY
+====================================
+
+The card ``PRUNING`` is for building an intensity (transition-moment, TM) list used for intensity (TM) pruning (see  `Features <https://spectrove.readthedocs.io/en/latest/features.html>`__ about the basis set pruning).
+
+
+``TDM_REPLACE`` (``DIPOLE_REPLACE``, ``DIPOLE_SCALE``) is for scaling the vibrational transition dipole moments for individual bands in order to improve the agreement with experimental intensities. The scaling factors must be stored in the file ``j0_tdm.chk`` in the following format:
+::
+   
+    i1 i2 factor 
+     
+where ``i1`` and ``i2`` are the vibrational state indexes as in ``j0contr_descr.chk`` for a given band and ``factor`` is the factor to scale. 
+
+
+``ZPE``: a ZPE can be specified directly in the ``INTENSITY`` block. 
+
 
 Intensities with GAIN
 =====================
@@ -338,6 +354,45 @@ Einstein A coefficients are calculated as opposed to intensities as these are te
 
 
 Currently the format for the intensities from GAIN is not compatible with Exocross_. Programs can be used however to convert the GAIN output to the slightly more compact Exomol format. Code for doing this can be obtained from Sergey Yurchenko. In the future it may be that GAIN is modified to directly output the correct format for Exocross_.
+
+
+The intensity format of MPI GAIN is as in the following example:
+::
+    
+    ------------  ------  ----  ---       ----- ---  ---  ---------------  --
+          1          2      3    4           5    6    7          8        9
+    ------------  ------  ----  ---       ----- ---  ---  ---------------  --
+    5681.655690     6568   36    5 <-        1   36    4  1.463207104E-08  ||
+    6429.676249    12215   36    5 <-        1   36    4  1.182320455E-05  ||
+    6736.982789    13452   37    5 <-        1   36    4  1.462048511E-09  ||
+    8478.662096    42951   37    5 <-        1   36    4  1.439647858E-05  ||
+    6641.929053    12600   37    5 <-        1   36    4  3.588055083E-09  ||
+    8375.333158    40203   37    5 <-        1   36    4  2.714626451E-06  ||
+    6827.326880    15974   36    5 <-        1   36    4  2.652568503E-07  ||
+    5994.493882     7351   37    5 <-        1   36    4  2.458227845E-08  ||
+    4738.559823     2479   37    5 <-        1   36    4  5.619855017E-08  ||
+    3635.227725      826   37    5 <-        1   36    4  7.447377296E-09  ||
+    6429.981779    12218   36    5 <-        1   36    4  2.205478079E-07  ||
+    ....    
+    
+where 
+ - col 1: Transition wavenumber(cm\ :sup:`-1`);
+ - col 2: upper state counting (:math:`J-\Gamma`-block) number;
+ - col 3: upper state :math:`J`.
+ - col 3: upper state symmetry :math:`\Gamma`.
+ - col 5: lower state counting (:math:`J-\Gamma`-block) number;
+ - col 6: lower state :math:`J`.
+ - col 7: lower state symmetry :math:`\Gamma`.
+ - col 8: Einstein A coefficient (1/s);
+ - col 9: "||" label to help extracting and combining intensity entries from the GAIN outputs. 
+ 
+
+The same format can be used in TROVE, which is invoked by the keyword ``GAIN`` in the step 4 ``INTENSITY`` as in the following card: 
+:: 
+    
+    GAIN
+    
+
 
 
 Exocross

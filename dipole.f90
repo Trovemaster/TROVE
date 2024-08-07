@@ -4280,7 +4280,7 @@ contains
           !
         elseif(trim(intensity%swap)=="READ") then
           !
-          ! use the predefined file to store the compacted vectors
+          ! use the predefined file to read the compacted vectors
           !
           filename = trim(intensity%swap_file)//'_vect'//trim(adjustl(jchar))//'.tmp'
           open(unitO,access='direct',action = 'read',status='old',file=filename,recl=rec_len) 
@@ -4392,8 +4392,8 @@ contains
         !
         return 
       endif
-   !
-   write(out,"(/a,i0,' out of ',i0,' suggested compression  = ',f12.5/)") &
+      !
+      write(out,"(/a,i0,' out of ',i0,' suggested compression  = ',f12.5/)") &
                 'Maximal number of non-zero values after vector compression  = ',cdimenmax,dimenmax,cfactor
       !
     endif
