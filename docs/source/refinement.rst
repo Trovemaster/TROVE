@@ -15,6 +15,7 @@ Refinement with TROVE: Theory
 
 Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has
 already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
+
 .. math::
      
     \Delta V = \sum_{ijk...} \Delta f_{ijk...} \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A
@@ -22,6 +23,7 @@ already been obtained, a correction is added in terms of internal coordinates :m
 where :math:`\left(\xi_1^i \xi_2^j \xi_3^k ... \right)^A` corresponds to totally symmetric permutation of the internal coordinates
 so that all symmetry properties of the molecule are properly accounted for. :math:`\Delta f_{ijk}` are the expansion coefficients which are found by refinement.
 The Hamiltonian is now given as
+
 .. math::
     
     H = T + V + \Delta V = H_0 + \sum_{ijk...} \Delta f_{ijk...} \left(\xi_1^i \xi_2^j \xi_3^k \right)^A
@@ -29,17 +31,20 @@ The Hamiltonian is now given as
 where :math:`H_0` is the initial Hamiltonian with *ab initio* PES.
 
 If the eigenvalue problem for the initial Hamiltonian has been solved,
+
 .. math::
     
     H_0 \psi^{J,\Gamma}_{0,i} = E^{J,\Gamma}_{0,i} \psi^{J,\Gamma}_{0,i}
     
 where :math:`J` is the total angular momentum quantum number and :math:`\Gamma` is a symmetry label, then matrix elements of :math:`H`,
 using the :math:`H_0` solutions as a basis, are
+
 .. math::
       
       \left< \psi^{J,\Gamma}_{0,i} | H |\psi^{J,\Gamma}_{0,i'}   \right> = E^{J,\Gamma}_{0,i} + \sum_{ijk...} \Delta f_{ijk...} \Xi_{i,i'}^{J, \Gamma}
       
 where
+
 .. math::
       
       \Xi_{i,i'}^{J, \Gamma} = \left< \psi^{J,\Gamma}_{0,i} | \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A | \psi^{J,\Gamma}_{0,i'} \right>.
@@ -47,12 +52,14 @@ where
 
 The derivatives of the energies with respect to adjustable parameters, which are requred for least squares fitting,
 are given by the Hellman-Feynman theorem
+
 .. math::
       
       \frac{\partial E^{J,\Gamma}_{n} }{ \partial \Delta f_{ijk...} } = \left< \psi^{J,\Gamma}_{n} \left| \frac{\partial \Delta V}{\partial \Delta f_{ijk...} }       \right |\psi^{J,\Gamma}_{n} \right> = \left< \psi^{J,\Gamma}_{n} \left| \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A \right| \psi^{J,\Gamma}_{n} \right>.
        
 where :math:`E^{J,\Gamma}_{n}` and :math:`\psi^{J,\Gamma}_{n}` are eigenvalues and eigenvectors of :math:`H` respectively.
 In the J=0 representation :math:`\psi^{J,\Gamma}_{n}` is given by
+
 .. math::
      
      \psi^{J,\Gamma}_{n} = \sum_i C_i^{J, \Gamma} \psi_{0,i}^{J, \gamma}
@@ -67,11 +74,20 @@ Refinement Implementation with TROVE
 Setting up Refinement
 ---------------------
 
-The specific inputs and checkpoint files required to carry out refinement of a PES using TROVE is discussed in this section
+The specific inputs and checkpoint files required to carry out refinement of a PES using TROVE are discussed in this section.
 
-Prior to refinement TROVE requires checkpoint files and eigenfunctions for the basis set being used (see above). If a calculation of the rotational-vibrational levels using an unrefined PES has already been carried out, then all necessary files for refinement will have been generated. Refinement can be carried out in the :math:`J=0` basis.
+Prior to refinement, TROVE requires checkpoint files and eigenfunctions for the basis set being used (see above). If a calculation of the rotational-vibrational levels using an unrefined PES has already been carried out, then all necessary files for refinement will have been generated. Refinement can be carried out in the :math:`J=0` basis.
 
-The refinement parameters (:math:`\Delta f_{ijk...}` from previous section) are defined in the `external`` block on the TROVE input  file. If the PES to be refined is of the same form, that is, in terms of a polynomial of symmetrised internal coordinates, then the refinement parameters will just be a repeat of
+ As explained above, refinement in TROVE is represented as a correction :math:`\Delta V(r)` to the *ab initio* PES :math:`V(r)` an represented by refinement parameters :math:`\Delta f_{ijk...}`. In the current TROVE implementation, the refinement part :math:`\Delta V(r)` is required to have exactly the same analytic representation as :math:`V(r)`, i.e. the refined PES is represented by the expansion parameters `\Delta f'_{ijk...}` given by 
+ .. math::  
+      
+ 
+ are defined in the ``external`` block on the TROVE input file.
+ 
+
+
+
+ the PES to be refined is of the same form, that is, in terms of a polynomial of symmetrised internal coordinates, then the refinement parameters will just be a repeat of
 the potential block.
 
 The required matrix elements of the refinement parameters are computed in stages. First matrix elements of the primitive basis functions used by TROVE are calculated. This is carried out by putting
