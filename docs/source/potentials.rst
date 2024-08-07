@@ -210,7 +210,7 @@ For an example, see `SO2_morbid_step1.inp <https://raw.githubusercontent.com/Tro
 ``POTEN_XY2_MORSE_COS``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-For description and example see 'Potential Block' above with the input file example for SiH\ :sub:`2`  `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_. This PES was used in [21ClYu}_ .
+For description and example see 'Potential Block' above with the input file example for SiH\ :sub:`2`  `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_. This PES was used in [21ClYu]_ .
 
 
 
