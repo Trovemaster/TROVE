@@ -16,47 +16,47 @@ Refinement with TROVE: Theory
 Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has
 already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
 .. math::
-
+     
     \Delta V = \sum_{ijk...} \Delta f_{ijk...} \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A
-
+     
 where :math:`\left(\xi_1^i \xi_2^j \xi_3^k ... \right)^A` corresponds to totally symmetric permutation of the internal coordinates
 so that all symmetry properties of the molecule are properly accounted for. :math:`\Delta f_{ijk}` are the expansion coefficients which are found by refinement.
 The Hamiltonian is now given as
 .. math::
-
+    
     H = T + V + \Delta V = H_0 + \sum_{ijk...} \Delta f_{ijk...} \left(\xi_1^i \xi_2^j \xi_3^k \right)^A
-
+    
 where :math:`H_0` is the initial Hamiltonian with *ab initio* PES.
 
 If the eigenvalue problem for the initial Hamiltonian has been solved,
 .. math::
-
+    
     H_0 \psi^{J,\Gamma}_{0,i} = E^{J,\Gamma}_{0,i} \psi^{J,\Gamma}_{0,i}
-
+    
 where :math:`J` is the total angular momentum quantum number and :math:`\Gamma` is a symmetry label, then matrix elements of :math:`H`,
 using the :math:`H_0` solutions as a basis, are
 .. math::
-
+      
       \left< \psi^{J,\Gamma}_{0,i} | H |\psi^{J,\Gamma}_{0,i'}   \right> = E^{J,\Gamma}_{0,i} + \sum_{ijk...} \Delta f_{ijk...} \Xi_{i,i'}^{J, \Gamma}
-
+      
 where
 .. math::
-
+      
       \Xi_{i,i'}^{J, \Gamma} = \left< \psi^{J,\Gamma}_{0,i} | \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A | \psi^{J,\Gamma}_{0,i'} \right>.
-
+       
 
 The derivatives of the energies with respect to adjustable parameters, which are requred for least squares fitting,
-are given by the Hellman-Feynman theorem 
+are given by the Hellman-Feynman theorem
 .. math::
-
+      
       \frac{\partial E^{J,\Gamma}_{n} }{ \partial \Delta f_{ijk...} } = \left< \psi^{J,\Gamma}_{n} \left| \frac{\partial \Delta V}{\partial \Delta f_{ijk...} }       \right |\psi^{J,\Gamma}_{n} \right> = \left< \psi^{J,\Gamma}_{n} \left| \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A \right| \psi^{J,\Gamma}_{n} \right>.
-
+       
 where :math:`E^{J,\Gamma}_{n}` and :math:`\psi^{J,\Gamma}_{n}` are eigenvalues and eigenvectors of :math:`H` respectively.
 In the J=0 representation :math:`\psi^{J,\Gamma}_{n}` is given by
 .. math::
-
+     
      \psi^{J,\Gamma}_{n} = \sum_i C_i^{J, \Gamma} \psi_{0,i}^{J, \gamma}
-
+      
 As the derivative of the energy levels with respect to the correction parameters are given, standard least squares fitting
 procedures can then be used to determine how they should be varied. This is all implemented in TROVE.
 
@@ -91,7 +91,7 @@ As discussed above, the refinement procedure requires matrix elements of the :ma
     fit_poten save split
 
 in the checkpoint block. This generates ``fitpot-J-Gamma-n.chk`` files. Since a file is
-generated for each :math:`J` and symmetry :math:`\Gamma` for each expansion parameter n, many files are generated in this step. 
+generated for each :math:`J` and symmetry :math:`\Gamma` for each expansion parameter n, many files are generated in this step.
 
 
 Running Refinement
@@ -155,7 +155,7 @@ some information is given about the eigenfunctions which were read in, etc. Afte
 and then a list comparing the observed to calculated energies. For example
 ::
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------
     | ## |  N |  J | sym|  Obs. | Calc.| Obs.-Calc. | Weight | K     vib. quanta
     ---------------------------------------------------------------------------------
     1  2  0  Ag  1343.5400  1346.2786  -2.7386 0.51E-03 (0) ( 0 0 0 0 0 1 0 0 0 0 0 0)*
@@ -173,11 +173,11 @@ TROVE then prints a list of corrections to the potential parameters followed by 
 A table is then printed which gives details on the fit for this iteration.
 ::
 
-    -----------------------------------------------------------------------
-    |  Iter | Points | Params | Deviat | ssq_ener | ssq_pot | Convergence |
-    -----------------------------------------------------------------------
-    |  1 | 18107  |   21   |  0.34175E-01 |  0.61230E+01 | 0.173E+03 | 0.293E+12 |
-    -------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------------
+    |  Iter | Points | Params | Deviat       | ssq_ener     | ssq_pot   | Convergence |
+    -----------------------------------------------------------------------------------
+    |  1    | 18107  |   21   |  0.34175E-01 |  0.61230E+01 | 0.173E+03 | 0.293E+12   |
+    -----------------------------------------------------------------------------------
 
 This gives the statistics of the fit including both the experimental energies and the *ab initio* energies used to constrain the fit.
 
