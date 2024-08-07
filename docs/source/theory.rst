@@ -1,4 +1,4 @@
-fTheory
+Theory
 ******
 .. _theory:
 
