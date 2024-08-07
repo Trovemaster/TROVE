@@ -4,25 +4,18 @@ Refinement
 .. _refine:
 
 
-In this chapter details will be given of the refinement procedure implemented in TROVE.
-Refinement in this context means to adjust the *ab intio* potential energy surface by comparing computed rotational-vibrational energy levels to experimental values.
-Parameters of the PES are varied, energy levels re-computed and compared to experiment. This process is continued until acceptable agreement between the calculated and experimental energy levels is obtained.
-Usually there is relatively few experimental energies and so *ab intio* electronic energies are used to constrain the refinement to prevent over fitting.
-Although experimental data is usually at fairly low energies, it is often the case that correcting the lower energy  region of the PES gives more accurate values at high energies also.
+In this chapter details will be given of the refinement procedure implemented in TROVE. Refinement in this context means to adjust the *ab intio* potential energy surface by comparing computed rotational-vibrational energy levels to experimental values. Parameters of the PES are varied, energy levels re-computed and compared to experiment. This process is continued until acceptable agreement between the calculated and experimental energy levels is obtained. Usually there is relatively few experimental energies and so *ab intio* electronic energies are used to constrain the refinement to prevent over fitting. Although experimental data is usually at fairly low energies, it is often the case that correcting the lower energy  region of the PES gives more accurate values at high energies also.
 
 Refinement with TROVE: Theory
 =============================
 
-Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has
-already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
+Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
 
 .. math::
      
     \Delta V = \sum_{ijk...} \Delta f_{ijk...} \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A
      
-where :math:`\left(\xi_1^i \xi_2^j \xi_3^k ... \right)^A` corresponds to totally symmetric permutation of the internal coordinates
-so that all symmetry properties of the molecule are properly accounted for. :math:`\Delta f_{ijk}` are the expansion coefficients which are found by refinement.
-The Hamiltonian is now given as
+where :math:`\left(\xi_1^i \xi_2^j \xi_3^k ... \right)^A` corresponds to totally symmetric permutation of the internal coordinates so that all symmetry properties of the molecule are properly accounted for. :math:`\Delta f_{ijk}` are the expansion coefficients which are found by refinement. The Hamiltonian is now given as
 
 .. math::
     
@@ -36,36 +29,35 @@ If the eigenvalue problem for the initial Hamiltonian has been solved,
     
     H_0 \psi^{J,\Gamma}_{0,i} = E^{J,\Gamma}_{0,i} \psi^{J,\Gamma}_{0,i}
     
-where :math:`J` is the total angular momentum quantum number and :math:`\Gamma` is a symmetry label, then matrix elements of :math:`H`,
-using the :math:`H_0` solutions as a basis, are
+where :math:`J` is the total angular momentum quantum number and :math:`\Gamma` is a symmetry label, then matrix elements of :math:`H`, using the :math:`H_0` solutions as a basis, are
 
 .. math::
       
-      \left< \psi^{J,\Gamma}_{0,i} | H |\psi^{J,\Gamma}_{0,i'}   \right> = E^{J,\Gamma}_{0,i} + \sum_{ijk...} \Delta f_{ijk...} \Xi_{i,i'}^{J, \Gamma}
+      \langle  \psi^{J,\Gamma}_{0,i} | H |\psi^{J,\Gamma}_{0,i'}   \rangle = E^{J,\Gamma}_{0,i} + \sum_{ijk...} \Delta f_{ijk...} \Xi_{i,i'}^{J, \Gamma}
       
 where
 
 .. math::
       
-      \Xi_{i,i'}^{J, \Gamma} = \left< \psi^{J,\Gamma}_{0,i} | \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A | \psi^{J,\Gamma}_{0,i'} \right>.
+      \Xi_{i,i'}^{J, \Gamma} = \langle  \psi^{J,\Gamma}_{0,i} | \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A | \psi^{J,\Gamma}_{0,i'} \rangle.
        
 
-The derivatives of the energies with respect to adjustable parameters, which are requred for least squares fitting,
-are given by the Hellman-Feynman theorem
+The derivatives of the energies with respect to adjustable parameters, which are required for least squares fitting, are given by the Hellman-Feynman theorem
 
 .. math::
       
-      \frac{\partial E^{J,\Gamma}_{n} }{ \partial \Delta f_{ijk...} } = \left< \psi^{J,\Gamma}_{n} \left| \frac{\partial \Delta V}{\partial \Delta f_{ijk...} }       \right |\psi^{J,\Gamma}_{n} \right> = \left< \psi^{J,\Gamma}_{n} \left| \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A \right| \psi^{J,\Gamma}_{n} \right>.
+      \frac{\partial E^{J,\Gamma}_{n} }{ \partial \Delta f_{ijk...} } = \langle \psi^{J,\Gamma}_{n} \left| \frac{\partial \Delta V}{\partial \Delta f_{ijk...} }       \right |\psi^{J,\Gamma}_{n} \rangle  = \langle  \psi^{J,\Gamma}_{n} \left| \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A \right| \psi^{J,\Gamma}_{n} \rangle .
        
-where :math:`E^{J,\Gamma}_{n}` and :math:`\psi^{J,\Gamma}_{n}` are eigenvalues and eigenvectors of :math:`H` respectively.
-In the J=0 representation :math:`\psi^{J,\Gamma}_{n}` is given by
+where :math:`E^{J,\Gamma}_{n}` and :math:`\psi^{J,\Gamma}_{n}` are eigenvalues and eigenvectors of :math:`H` respectively. In the J=0 representation :math:`\psi^{J,\Gamma}_{n}` is given by
 
 .. math::
      
      \psi^{J,\Gamma}_{n} = \sum_i C_i^{J, \Gamma} \psi_{0,i}^{J, \gamma}
       
-As the derivative of the energy levels with respect to the correction parameters are given, standard least squares fitting
-procedures can then be used to determine how they should be varied. This is all implemented in TROVE.
+
+Since TROVE typically uses linearised coordinates :math:`\xi^{\rm lin}_i` to represent PESs internally, i.e. in most cases different from the analytic representation of the *ab initio* PES, typically given in terms of some valence coordinates :math:`r_\lambda`, the TROVE eigenfunctions :math:`\psi^{J,\Gamma}_{n}` as well as basis functions :math:`\psi^{J,\Gamma}_{0,n}` are also solved and represented in terms of :math:`\xi^{\rm lin}_i`. Therefore, in order ro evaluate the integrals :math:`\langle  \psi^{J,\Gamma}_{0,i} | \left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A | \psi^{J,\Gamma}_{0,i'} \rangle`, each combination :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` has to be Taylor re-expanded in terms of the linearised coordinates :math:`\xi^{\rm lin}_i`. 
+
+In the fittings the derivatives of the energy levels with respect to the correction parameters are evaluated at each fitting iteration in line with the  standard least squares fitting Newton procedures. This is all implemented in TROVE.
 
 
 Refinement Implementation with TROVE
@@ -78,17 +70,228 @@ The specific inputs and checkpoint files required to carry out refinement of a P
 
 Prior to refinement, TROVE requires checkpoint files and eigenfunctions for the basis set being used (see above). If a calculation of the rotational-vibrational levels using an unrefined PES has already been carried out, then all necessary files for refinement will have been generated. Refinement can be carried out in the :math:`J=0` basis.
 
- As explained above, refinement in TROVE is represented as a correction :math:`\Delta V(r)` to the *ab initio* PES :math:`V(r)` an represented by refinement parameters :math:`\Delta f_{ijk...}`. In the current TROVE implementation, the refinement part :math:`\Delta V(r)` is required to have exactly the same analytic representation as :math:`V(r)`, i.e. the refined PES is represented by the expansion parameters `\Delta f'_{ijk...}` given by 
+ As explained above, refinement in TROVE is represented as a correction :math:`\Delta V(r)` to the *ab initio* PES :math:`V(r)` an represented by refinement parameters :math:`\Delta f_{ijk...}`. In the current TROVE implementation, the refinement part :math:`\Delta V(r)` is required to have exactly the same analytic representation as :math:`V(r)`, i.e. the refined PES is represented by the expansion parameters `f'_{ijk...}` given by 
+ 
  .. math::  
+            f'_{ijk...} =  f^{\rm ai}_{ijk...} + \Delta f_{ijk...}
+            
+             
+ While the potential is defined in the ``POTEN`` block, the refined PES  the ``external`` block on the TROVE input file. This is the same structure as used to define the ``dipole`` moment for intensity calculations and can assume a vector structure of dimension :math:`D`, for example in the case of DMS, the dimension is 3. For the refinement, each expansion term  :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` is treated as an independent function and thus the ``external`` field is represented as a vector of dimension :math:`N`,  where  :math:`N` is the number of expansion parameters :math:`\Delta f_{ijk...}` and each vector elements holds a combination  :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A`. 
+ 
+Thus the structure of the ``external`` parameter section is just a repeat of the ``potential`` block.
+
+  ..Note:: Only linear parameters like :math:`\Delta f_{ijk...}` can be fitted in TROVE. Non-linear parameters such as equilibrium positions, structural parameters currently cannot be refined in TROVE. 
+ 
+ A typical fitting ``external`` section has the following form
+::
+
+     external
+     dimension 102
+     Nparam  1
+     compact
+     TYPE  potential
+     COEFF   list  (powers or list)
+     dstep   0.005
+     Order   4
+     COORDS  morse morse linear
+     parameters
+     RE13            1.5144017558        fix
+     alphae          92.00507388         fix
+     a               0.127050746200E+01  fix
+     b1              0.500000000000E+06  fix
+     b2              0.500000000000E+05  fix
+     g1              0.150000000000E+02  fix
+     g2              0.100000000000E+02  fix
+     V0              0.0000000000000000
+     F_0_0_1     0.0              fit
+     F_1_0_0     0.0              fit
+     F_0_0_2    -0.173956405672E+05 fit
+     F_1_0_1     0.241119856834E+04 fit
+     F_1_1_0     0.0
+     ....
+     end
+     
+Here 
+
+  - ``dimension`` is the number of all parameters :math:`N` of the PEF (number of lines between the cards ``parameters`` and ``end``). 
+  - ``Nparam`` tells TROVE that each component of the :math:`N` dimensional external field (:math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A`) is a single parameter object. Compare this with ``DIPOLE`` which can have 3 components each of which is an :math:`N_i`-dimensional analytic expansion (:math:`i=`1..3`) represented  with :math:`N_i` parameters. 
+  - ``compact`` is the format without a fitting weight in the column before the parameter values (penultimate). 
+  - ``type`` in the case of the fitting must be `potential` (in the current implementation), which tells TROVE to refer to the functional type of the PEF (``POT_TYPE``), see `Potentials  <https://spectrove.readthedocs.io/en/latest/potentials.html>`__. 
+  - ``coeff``  is the card specifying whether  that the parameters are given as a ``list`` with predefined order as implemented in the code or via list with ``powers``-s (exponents). Here we use the ``list`` form.
+    .. Note:: Although ``Coords`` in ``external`` does not have to coincide with that in ``POTEN``, it is advised to used the same type in both fields for consistency.
+  - ``dstep`` defines the derivation step size used to evaluate high order derivatives with finite differences. 
+  - ``Order`` defines the re-expansion order of each :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` term.
+  - ``Coords`` defines the types of the linearised coordinates used in the re-expansion. 
+  - ``parameters`` indicates the beginning of the section with parameters. 
+  - ``fix`` and ``fit`` are the keywords to distinguish the parameters to fix and parameters to fit. It is important that all structural parameters are marked with the ``fix`` card. This will insure that the derivatives and expansions of :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` are evaluated correctly. ``fit`` needs to be set only to the parameters that will need t o be varied. 
+  
+  .. Note:: It is important to ``fix`` all structural parameters in the ``external`` section. For the example above, the potential function it is linked to has the ``pot_type`` ``POTEN_XY2_MORSE_COS`` and is defined as follows 
+:: 
+
+    POTEN 
+    NPARAM  102
+    POT_TYPE  POTEN_XY2_MORSE_COS
+    compact
+    COEFF  list  (powers or list)
+    RE13              1.5144017558
+    alphae            92.00507388
+    a                 0.127050746200E+01
+    b1                0.500000000000E+06
+    b2                0.500000000000E+05
+    g1                0.150000000000E+02
+    g2                0.100000000000E+02
+    V0                0.000000000000E+00
+    F_0_0_1           0.000000000000E+00
+    F_1_0_0           0.000000000000E+00
+    F_0_0_2           0.173956405672E+05
+    F_1_0_1          -0.241119856834E+04
+    F_1_1_0           0.223873811001E+03
+    ...
+    ...
+    end 
+    
+
+Here, the structural parameters are :math:`r_{\rm e}`, :math:`\alpha_{\rm e}`, Morse parameter :math:`a` as well as parameters :math:`b_1`, :math:`b_2`, :math:`g_1`, :math:`g_2`. The must be fixed to their values when doing the re-expansion of the external part. 
+
+
+Here is another example, where the potential function type ``poten_C3_R_theta`` was used: 
+::
+
+
+     POTEN
+     compact
+     POT_TYPE  poten_C3_R_theta
+     COEFF  powers  (powers or list)
+     RE12          0      0      0     1.29397
+     theta0        0      0      0     0.000000000000E+00
+     f000          0      0      0        0.00000000
+     f100          1      0      0        0.00000000
+     f200          2      0      0        0.33240693
+     f300          3      0      0       -0.35060064
+     f400          4      0      0        0.22690209
+     f500          5      0      0       -0.11822982
+     .....
+     .....
+     end 
       
+
+The ``external`` field is then given by 
+::
+     
+     external
+     dimension 60
+     compact
+     NPARAM  1
+     compact
+     type potential
+     order 8
+     coords morse morse   linear
+     COEFF  powers  (powers or list)
+     parameters
+     RE12          1      0      0        1.29397   fix
+     theta0        0      0      0        0.0000000 fix
+     f000          0      0      0        0.00000000 fit
+     f100          1      0      0        0.00000000 fit
+     f200          2      0      0        0.00000000 fit
+     f300          3      0      0        0.00000000 fit
+     f400          4      0      0        0.00000000 fit
+     f500          5      0      0        0.00000000 fit
+     ....
+     ....
+     end
+     
+
+The fitted potential parameters in the ``external`` section  can be assumed  to be zero but never actually featured until step 4, so the actual values won't matter at steps 1,2,3. 
+     
+Calculation steps 
+-----------------
+
+At step 1 and 2, for the ``external`` field to be processed, the ``control`` block has to include the card ``external``: 
+
+- Step 1:
+::
+
+    Control
+    Step 1
+    external
+    end
+
+- Step 2:
+::
+
+    Control
+    Step 2
+    end
+
+See `Quick Start  <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__. 
+
+Step 3 does not involve any operations with the external field and therefore should be processed as usual, e.g. 
+::
+
+    Control
+    Step 3
+    J 1
+    end
+
+After step 3, in the case of the refinements, in the control block  we skip step 4 (``intensities``) and start step 5 (``fitpot``), at which matrix elements of the expansion terms :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` are computed on the final ro-vibrational eigenfunctions obtained at step 3 for the *ab initio* model, for all values of :math:`J` and all symmetries considered. A typical Step 5 ``control`` block has the following structure:
+::
+
+    Control
+      Step 5  (FITPOT)
+      external  3 60
+      J  0, 1, 2, 3
+      symmetries 1, 2, 3, 4
+    end
+
+Here, 
+ - 3-60 in the ``external`` is the range of the expansion terms (i.e. corresponding to the expansion parameters :math:`f^{\rm ai}_{ijk...}`) to be processed. 
+ - `J` card  lists all values of :math:`J` to be processed. Note that it is not a range but a list i.e. the parameters can appear in any combination or order. Alias `Jrot`. 
+ - `symmetries` card (alias `gamma`) is similar to the `gamma` card used in step 3. It gives a list of symmetries to be processed, again, in any combination or order. 
+
+  .. Note:: Alias for ``step 5`` is ``step fitpot``. 
+
+At ``step 6`` (alias ``step refinement``), the actual fits are taking place. At this step, the control block will have similar format as for step 5:
+::
+
+    Control
+      Step 5  (FITPOT)
+      external  3 60
+      J  0, 1, 2, 3
+      symmetries 1, 2, 3, 4
+    end
+
+
+At this step, as an additional to the ``control`` block, the user needs to include the ``fitting`` section, which will be extensively used at step 6 ``refinement``. Let's consider the following example of the ``fitting``  block:
+::
  
- are defined in the ``external`` block on the TROVE input file.
+ FITTING
+ J-LIST         0
+ symmetries     1 2 3 4
+ itmax   0
+ fit_factor     1e-4
+ THRESH_COEFF   1e-20
+ lock           100
+ output         f01
+ TARGET_RMS     1e-18
+ fit_scale      0.25
+ thresh_obs-calc  10
+ robust  0.0
+ geometries     poten.dat
+ OBS_ENERGIES  26   (J  symmetry NN )
+     0    1    1      0.00000  0  0   0   0   1.00
+     0    1    3   1978.1533   0  0   0   2   1.00
+     0    1    4   2005.469    0  1   0   0   1.00
+     0    1    5   2952.7      0  0   0   3   1.00
+     0    1    6   2998.6      0  1   0   1   1.00
+     0    1    7   3907.4      0  1   0   2   1.00
+ .....
+ end
  
 
 
 
- the PES to be refined is of the same form, that is, in terms of a polynomial of symmetrised internal coordinates, then the refinement parameters will just be a repeat of
-the potential block.
+
+
 
 The required matrix elements of the refinement parameters are computed in stages. First matrix elements of the primitive basis functions used by TROVE are calculated. This is carried out by putting
 ::

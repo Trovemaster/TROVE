@@ -3163,6 +3163,14 @@ module fields
                !
                job%IOfitpot_action = "SAVE"
                !
+               job%IOextF_divide = .true.
+               job%IOfitpot_divide = .true.
+               !
+               if (Nitems>2) then
+                  call readi(fitting%iparam(1))
+                  call readi(fitting%iparam(2))
+               endif
+               !
              case("6","FITTING","REFINEMENT")
                !
                controlstep = "6"
