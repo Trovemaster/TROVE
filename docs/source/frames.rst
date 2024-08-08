@@ -32,7 +32,7 @@ A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  exa
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
-There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``MLkinetic_xy2_bisect_EKE``, ``MLkinetic_xy2_bisect_EKE_sinrho``, see below.
+There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``KINETIC_XY2_EKE_BISECT``, ``KINETIC_XY2_EKE_BISECT_SINRHO``, see below.
 
 
 ``R-RHO-Z``
@@ -86,7 +86,7 @@ This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular f
 ``R-ALPHA-Z``
 ^^^^^^^^^^^^^
 
-- ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ```Rigid` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
+- ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ``Rigid`` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
 .. math::
 
     \begin{split}
@@ -100,12 +100,12 @@ In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid 
 
 TROVE input example:
 ::
-
-COORDS       local    (curvilinear coordinates)
-TRANSFORM    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
-MOLTYPE      XY2
-REFER-CONF   non-RIGID  (Reference configuration)
-
+  
+  COORDS       local    (curvilinear coordinates)
+  TRANSFORM    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
+  MOLTYPE      XY2
+  REFER-CONF   non-RIGID  (Reference configuration)
+  
 .. Note:: The text in brackets is used for comments.
 
 
@@ -500,7 +500,7 @@ where :math: the MEP values are given by a parameterised expansion, for example
 where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`.
 
 
-       
+
 Fuive-atomic molecules
 ======================
 
@@ -514,8 +514,8 @@ The XY\ :sub:`4` molecule (T\ :sub:`d`\ ) and the ``XY4`` type
 
 
 
-The frame for the tetrahedral molecule XY\ :sub:`4` spanning the T\ :sub:`d`\ (M) symmetry group is chosen with the :math:`xyz` axes orthogonal to the faces of the box containing the molecule with the four atoms :math:`{\rm Y}_i` at its vertices, as shown in the figure, 
-with the Cartesian coordinates at equilibrium given by 
+The frame for the tetrahedral molecule XY\ :sub:`4` spanning the T\ :sub:`d`\ (M) symmetry group is chosen with the :math:`xyz` axes orthogonal to the faces of the box containing the molecule with the four atoms :math:`{\rm Y}_i` at its vertices, as shown in the figure,
+with the Cartesian coordinates at equilibrium given by
 
 .. math::
 
@@ -556,17 +556,17 @@ There should, however, be only 9 independent vibrational degrees of freedom in a
        \cos\alpha_{12} & 1               &  \cos\alpha_{23} &  \cos\alpha_{24} \\
         \cos\alpha_{13} & \cos\alpha_{23} & 1                &  \cos\alpha_{34} \\
        \cos\alpha_{14} & \cos\alpha_{24} & \cos\alpha_{34}   &        1
-       \end{array} 
+       \end{array}
       \right| = 0 .
-      
+
 
 XY\ :sub:`4`  belongs to the T\ :sub:`d`\ (M) molecular symmetry group, which consists of five irreducible representations, :math:`A_1`, :math:`A_2`, :math:`E`, :math:`F_1` and :math:`F_2`. One way to define independent bending modes is to reduce the six inter-bond angles :math:`\alpha_{ij}` to five symmetry-adapted  irreducible combinations,  which, together with four bond lengths :math:`r_i` form nine independent vibrational modes :math:`\xi_i` as follows:  four stretches
 
-.. math:: 
+.. math::
    :label: e-vects-i
 
     \xi_i  =r_i, \;\; i = 1,2,3,4,
-     
+
 
 two :math:`E`-symmetry bends
 
@@ -577,8 +577,8 @@ two :math:`E`-symmetry bends
        \xi_5^{E_a}   &= \frac{1}{\sqrt{12}} (2 \alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2 \alpha_{34} ), \\
        \xi_6^{E_b}  &= \frac{1}{2} (\alpha_{13} - \alpha_{14} - \alpha_{23} + \alpha_{24} ),
     \end{split}
-        
-    
+
+
 and three :math:`F`-symmetry bends
 
 .. math::
@@ -589,13 +589,13 @@ and three :math:`F`-symmetry bends
        \xi_8^{F_{2y}}  &= \frac{1}{\sqrt{2}} ( \alpha_{23} - \alpha_{14} ), \\
        \xi_9^{F_{2z}}  &= \frac{1}{\sqrt{2}} ( \alpha_{34} - \alpha_{12} ),
       \end{split}
-       
+
 
 where the corresponding symmetries of the bending modes are indicated.
 
 The stretching modes :math:`r_i` can also be in principle combined into symmetry-adapted coordinates in T\ :sub:`d`\ (M):
 
-.. math:: 
+.. math::
     :label: e-CH4-xi1=4
 
      \begin{split}
@@ -604,10 +604,10 @@ The stretching modes :math:`r_i` can also be in principle combined into symmetry
        \xi_3^{F_{2y}}  &= \frac{1}{2} \left(  r_1 - r_2 - r_3 + r_4\right), \\
        \xi_4^{F_{2z}}  &= \frac{1}{2} \left(  r_1 + r_2 - r_3 - r_4\right).
      \end{split}
-      
-       
-       
-       
+
+
+
+
 Six-atomic molecules
 ====================
 
