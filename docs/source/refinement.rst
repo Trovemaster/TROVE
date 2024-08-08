@@ -259,6 +259,8 @@ Step 3 does not involve any operations with the external field and therefore sho
     J 1
     end
 
+As discussed above, the refinement procedure requires matrix elements of the :math:`H_0` Hamiltonian and so eigenfunctions for each :math:`J` of interest must  be computed. 
+
 After step 3, in the case of the refinements, in the control block  we skip step 4 (``intensities``) and start step 5 (``fitpot``), at which matrix elements of the expansion terms :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` are computed on the final ro-vibrational eigenfunctions obtained at step 3 for the *ab initio* model, for all values of :math:`J` and all symmetries considered. A typical Step 5 ``control`` block has the following structure:
 ::
 
@@ -274,7 +276,7 @@ Here,
  - `J` card  lists all values of :math:`J` to be processed. Note that it is not a range but a list i.e. the parameters can appear in any combination or order. Alias `Jrot`. 
  - `symmetries` card (alias `gamma`) is similar to the `gamma` card used in step 3. It gives a list of symmetries to be processed, again, in any combination or order. 
 
-An alias for ``step 5`` is ``step fitpot``. 
+An alias for ``step 5`` is ``step fitpot``. At this step, checkpoint files ``fitpot-J-Gamma-n.chk`` containing all  matrix elements required for each :math:`J`, symmetry :math:`\Gamma`, for each expansion parameter :math:`n` are generated. Since a file is generated for each expansion parameter n, many files are generated in this step.
 
 At ``step 6`` (alias ``step refinement``), the actual fits are taking place. At this step, the control block will have similar format as for step 5:
 ::
@@ -297,7 +299,10 @@ or simply with ``Step refinement``:
     end
 
 
-At this step, additionally to the ``control`` block change, the user needs to include the ``fitting`` section. Here is an example of a ``fitting``  block used for SiH\ :sub:`2`:
+Fitting block
+------------- 
+
+At step 6, additionally to the ``control`` block change, the user needs to include the ``fitting`` section. Here is an example of a ``fitting``  block used for SiH\ :sub:`2`:
 ::
 
       FITTING
@@ -323,7 +328,7 @@ At this step, additionally to the ``control`` block change, the user needs to in
 
 Here
 
- - ``itmax`` is the number of iterations of refining carried out. ``itmax 0`` means no refinement and used for one straight-through calculation for checking purposes. 
+ - ``itmax`` is the number of iterations of refining carried out. ``itmax 0`` means no refinement and used for one straight-through calculation for checking purposes.  TROVE will carry out refinement until the number of iterations specified is reached. 
 
  - ``fit_factor`` is the relative weighting for the experimental data compared to *ab initio* energies :math:`\omega` in Eq. :eq:`e-fit`. The larger this is, the more importance will be given to the experimental energies.
 
@@ -344,41 +349,58 @@ Here
  
  
  
-``OBS_ENERGIES`` is the number of observed (experimental) energies used. Below this a list of energies is given in the format
+``OBS_ENERGIES`` is the card indicating the beginning of the list with experimental (observed) energies. 
+
+Below is an example of a list of energies as an illustration of the format.
 ::
+    
+    fitting
+    .......
+    .....
+    OBS_ENERGIES 
+      0    1    1      0.00000  0  0   0   0   1.00
+      0    1    3   1978.1533   0  0   0   2   1.00
+      0    1    4   2005.469    0  1   0   0   1.00
+      0    1    5   2952.7      0  0   0   3   1.00
+      0    1    6   2998.6      0  1   0   1   1.00
+      0    1    7   3907.4      0  1   0   2   1.00
+      0    1    8   3923.3      0  0   2   0   1.00
+      0    1    9   3976.8      0  0   0   4   1.00
+      0    1   10   3997.5      0  1   1   0   1.00
+      0    4    1   1992.816    0  0   1   0   1.00
+      1    2    1   11.801      2  0   0   0   1.00
+      1    2    2   1010.64     2  0   0   1   1.00
+      ......
+      ......
+    end
+    
+The meaning of the columns is as follows. 
 
-     J \Gamma NN E_i t_1 t_2 t_3 . . .    weight e o
-
-where :math:`J` and :math:`\Gamma` are the angular momentum and symmetry number of the energies, NN is the block number, which is the number of the energy given by TROVE. The following numbers are the TROVE assignment of the energy level, followed by a weighting.
-
-With the fitting block added to the input, TROVE can be used to refine a PES. In the external block ``NPARAM`` should be set to the number of parameters which are to be refined. In the list of parameters, the first column of integers specifies if a parameter is to be refined. `1` will include in refinement, `0` will exclude. The next column of real numbers are the starting values of the refinement parameters and should be set to 0.0 if initial refinement.
-
-To carry out refinement all parts of the checkpoint block should be set to `read`` or `none``. TROVE will carry
-out refinement until the number of iterations specified is
-reached. The first iteration is essentially a checking step and does not change the value of the parameters.
-
-
-
-
-
-The required matrix elements of the refinement parameters are computed in stages. First matrix elements of the primitive basis functions used by TROVE are calculated. This is carried out by putting
-::
-
-     extmatelem save split n n
-
-in the TROVE input file in the checkpoint block. n is the number of a specific expansion parameter. If all parameters are required this can be ignored but this may not be possible for all molecules or if there are lots of expansion parameters. This will generate extmatelemn.chk files (where n is number of expansion parameter). These files can then be converted to the `J=0`` representation using
-::
-
-     extmatelem convert split n n.
-
-
-As discussed above, the refinement procedure requires matrix elements of the :math:`H_0` Hamiltonian and so eigenfunctions for each :math:`J` of interest must  be computed. To save matrix elements of the eigenfunctions, TROVE is run for each :math:`J` with
-::
-
-    fit_poten save split
-
-in the checkpoint block. This generates ``fitpot-J-Gamma-n.chk`` files. Since a file is
-generated for each :math:`J` and symmetry :math:`\Gamma` for each expansion parameter n, many files are generated in this step.
+    OBS_ENERGIES
+    ---- ---- ---  ----------- -- -- --- ---- -----
+      1    2    3       4       5  6   7   8    9
+    ---- ---- ---  ----------- -- -- --- ---- -----
+      0    1    1      0.00000  0  0   0   0   1.00
+      0    1    3   1978.1533   0  0   0   2   1.00
+      0    1    4   2005.469    0  1   0   0   1.00
+      0    1    5   2952.7      0  0   0   3   1.00
+      0    1    6   2998.6      0  1   0   1   1.00
+      0    1    7   3907.4      0  1   0   2   1.00
+      0    1    8   3923.3      0  0   2   0   1.00
+      0    1    9   3976.8      0  0   0   4   1.00
+      0    1   10   3997.5      0  1   1   0   1.00
+      0    4    1   1992.816    0  0   1   0   1.00
+      1    2    1   11.801      2  0   0   0   1.00
+    ---- ---- ---  ----------- -- -- --- ---- -----
+  
+ - col 1: Rotational angular momentum :math:`J` (rigourous QN);
+ - col 2: A symmetry count :math:`\Gamma`, e.g. for 1,2,3,4 for :math:`A_1`, :math:`A_2`, :math:`B_1` and :math:`B_2`, respectively in C :sub:`2v`(M);
+ - col 3: A block number, i.e. a state counting number of the states with the same :math:`J`, :math:`\Gamma`, sorted by energy. 
+ - col 4: Experimental energy term values (cm :sup:`-1`) relative to ZPE. 
+ - col 5: Rotational QN :math:`K` (non rigourous), assuming the TROVE assignment.
+ - col 6-8: Vibrational TROVE QNs :math:`v_1`, :math:`v_2`, :math:`v_3` etc. (non rigourous), assuming  the TROVE assignment.
+ - col 9: Fitting weight, which is usually inverse proportional to the experimental uncertainty of the state, but can be manipulated to influence the fit. 
+ 
 
 
 Watson Robust fitting
@@ -396,50 +418,7 @@ Formats of the auxiliary files
 Running Refinement
 ------------------
 
-When all of the required checkpoint files described above have been generated, TROVE can be used to refine the PES. The following block should be added to the TROVE input file
-::
 
-    FITTING
-    J-LIST         0 1......
-    symmetries     1 2 .....n
-    itmax          10
-    fit_factor     100
-    lock           20.0
-    output         fittest
-    robust         0.0
-    geometries     c2h4_pes.dat
-    OBS_ENERGIES   52 (J  symmetry NN Energy 12 QNs weight  )
-    0 1 2  1343.31   0   0   0   0   0   0   0   1   0   0   0   0   10  e  o
-    .
-    .
-    .
-
-``J-LIST`` is a list of total angular momentums to be included in the refinement, all checkpoint files for :math:`J` selected must have been already computed.
-
-``symmetries`` is a list of symmetries to be included, again all checkpoint files for each :math:`\Gamma` must have already been computed.
-
-``itmax`` is the number of iterations of refining carried out.
-
-``fit_factor`` is the relative weighting for the experimental data compared to *ab initio* energies. The larger this is, the more importance will be given to the experimental energies.
-
-``output`` is a string which specifies the pre-fix for output file names.
-
-``robust`` specifies whether Watson Robust fitting is used, for 0.0 it is not, for 2.0 it is.
-
-``geometries`` is the name of the file which contains *ab initio* energies. This file should give geometries in the same coordinates as specified by the potential energy surface for the molecule of interest in TROVE followed by the *ab initio* energy (from Molpro for example) and a weighting.
-
-``OBS_ENERGIES`` is the number of observed (experimental) energies used. Below this a list of energies is given in the format
-::
-
-     J \Gamma NN E_i t_1 t_2 t_3 . . .    weight e o
-
-where :math:`J` and :math:`\Gamma` are the angular momentum and symmetry number of the energies, NN is the block number, which is the number of the energy given by TROVE. The following numbers are the TROVE assignment of the energy level, followed by a weighting.
-
-With the fitting block added to the input, TROVE can be used to refine a PES. In the external block ``NPARAM`` should be set to the number of parameters which are to be refined. In the list of parameters, the first column of integers specifies if a parameter is to be refined. `1` will include in refinement, `0` will exclude. The next column of real numbers are the starting values of the refinement parameters and should be set to 0.0 if initial refinement.
-
-To carry out refinement all parts of the checkpoint block should be set to `read`` or `none``. TROVE will carry
-out refinement until the number of iterations specified is
-reached. The first iteration is essentially a checking step and does not change the value of the parameters.
 
 
 
