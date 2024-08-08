@@ -67,6 +67,7 @@ Refinement with a constraint to the *ab initio* PES
 A common problem of fitting of the model represented by a large number of parameters required for description of the full complexity of the spectroscopic model (e.g. potential energy function) is the lack of experimental data. Broadly speaking, vibrational energies are defined by the shape of the potential energy surface and are therefore controlled by the parameterised expansion of PEF, while rotational energies are defined by the equilibrium structure of a molecule via the rotational constants :math:`A_{\rm e}`, :math:`B_{\rm e}` and :math:`C_{\rm e}`. PEFs are typically defined by a few hundreds of expansion parameters, while the experimental data does not usually cover a sufficiently large number of vibrational excited states to be probed by all the parameters required. Furthermore, not all excitations of the molecule are equally well represented in the experiment with  strongest absorption bands better characterised. Overpopulated sets of potential parameters lead to an over-fitting, ill-defined or unstable minimisations an result in nonphysical potential energy functions.
 
 To tackle the problem of correlation of the over-determined parameters,  TROVE can constrain PEF to the original *ab initio* PES. This is implemented via a fit of the PEF (i.e. parameters representing its analytic form) simultaneously to the experimental ro-vibrational energies :math:`E_\lambda^{\rm (exp)}` for different states :math:`\lambda`   and to the *ab initio* potential energy data points :math:`V_{n}^{\rm ai}` at different geometries :math:`\xi_n`. In this case, the fitting functional to minimise is  constructed to include the differences between the (reference) *ab initio* PES and the  potential energy function  as follows:
+
 .. math::
     :label: e-fit
     
@@ -75,8 +76,8 @@ To tackle the problem of correlation of the over-determined parameters,  TROVE c
       
 
 where :math:`V_\lambda^{\rm calc}(\bm{f})` are the corresponding values of potential energy computed at the geometry :math:`\xi_n` and defined using the same set of potential parameters :math:`\bm{f}`; :math:`\omega` is a normalised weight factor representing the relative importance of the two sets of data; and :math:`\sigma_{n}^{\rm (ai)}` is the uncertainty associated with the *ab initio* potential energy value :math:`V_{n}^{\rm (ai)}`.   The required derivatives of the eigenvalues are obtained via  Eqs.~\eqref{e:E:finite-diff} or \eqref{e:Hellmann-Feynman:2}, while the derivatives of PEF are simply
- ..math::
-        
+
+..math::
         \frac{\partial V(\xi)}{\partial  f_{ijk \ldots}} =  \xi_1^i \xi_2^j \xi_3^k \ldots
         
 
@@ -343,7 +344,7 @@ Here
  
  - ``fit_scale`` is the parameter used to scale down the Newton-Raphson increment by this factor. ``fit_scale 1`` means the full increment is used, while a smaller value should make the slower but more stable. It is especially useful when the parameters are strongly correlated and has the potential even to work with over-defined problems. 
  
- - ``thresh_obs-calc`` is the threshold (cm :sup:`-1`) to exclude accidental outliers  from the fit. It is a common situation that in the middle of the fit, the state assignment of the calculated energies changes  from the inial description, whether it is the running or the full set of quantum numbers are used, leading to a large residual and thus driving the fit to the wrong direction. The most reasonable approach is to exclude such an outlier from the current fit on the fly, let the process finish and then worry about the re-assignment later, before the next fit. For an almost converged fit, a typical ``thresh_obs-calc`` value is 2-5 :sup:`-1`. For the initial stage, a recommended value is about 10-20 :sup:`-1`.  
+ - ``thresh_obs-calc`` is the threshold (cm :sup:`-1`) to exclude accidental outliers  from the fit. It is a common situation that in the middle of the fit, the state assignment of the calculated energies changes  from the inial description, whether it is the running or the full set of quantum numbers are used, leading to a large residual and thus driving the fit to the wrong direction. The most reasonable approach is to exclude such an outlier from the current fit on the fly, let the process finish and then worry about the re-assignment later, before the next fit. For an almost converged fit, a typical ``thresh_obs-calc`` value is 2-5 cm :sup:`-1`. For the initial stage, a recommended value is about 10-20 cm :sup:`-1`.  
  
  
  
@@ -394,7 +395,7 @@ The meaning of the columns is as follows.
       1    2    1   11.801      2  0   0   0   1.00
     ---- ---- ---  ----------- -- -- --- ---- -----
     
-  
+
  - col 1: Rotational angular momentum :math:`J` (rigourous QN);
  - col 2: A symmetry count :math:`\Gamma`, e.g. for 1,2,3,4 for :math:`A_1`, :math:`A_2`, :math:`B_1` and :math:`B_2`, respectively in C :sub:`2v`(M);
  - col 3: A block number, i.e. a state counting number of the states with the same :math:`J`, :math:`\Gamma`, sorted by energy. 
@@ -540,8 +541,7 @@ The fitting iteration output is finished with a table which gives summary detail
     ----------------------------------------------------------------------------------------
     
     
-This gives the statistics of the fit including both the experimental energies (``ssq_ener ``) and the *ab initio* energies (``ssq_pot ``) used to constrain the fit as well as the total weighted standard deviation (*ab initio* + experiment). The latter is usually less informative because of the weighted character and a large *ab initio* error contribution. The most informative number in this table is ``ssq_ener ``. 
-The Obs-Calc table, tables with potential parameters and the fit statistics are then repeated for each iteration.
+This gives the statistics of the fit including both the experimental energies (ssq_ener) and the *ab initio* energies (ssq_pot) used to constrain the fit as well as the total weighted standard deviation (*ab initio* + experiment). The latter is usually less informative because of the weighted character and a large *ab initio* error contribution. The most informative number in this table is ssq_ener. The Obs-Calc table, tables with potential parameters and the fit statistics are then repeated for each iteration.
 
 
 
@@ -555,7 +555,7 @@ The .en file has a similar purpose as the Obs-Calc table in the output file but 
 
 The .en printout generally repeats the format of the Obs-Calc table in the output: 
 :
-
+     
      ----------------------------------------------------------------------------------------------------
     |## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.)
      ----------------------------------------------------------------------------------------------------
@@ -565,6 +565,7 @@ The .en printout generally repeats the format of the Obs-Calc table in the outpu
         4    4    0  A1      2005.4690    2008.9579      -3.4889   0.38E-05  ( A1 ;  0 ) ( A1 ;  1  0  0 )(  0  1  0  0)
         5    5    0  A1      2952.7000    2956.2565      -3.5565   0.38E-05  ( A1 ;  0 ) ( A1 ;  2  0  1 )(  0  0  0  3)*
      
+
 with additional QNs after in the last columns. They show the "experimental" QNs, i.e. QNs from the input file. This is to help with (re-)assignment and (re)-matching. In the case the QNs do not match, am asterisk (*) is added. It is also added if the residual obs-calc is too large. 
 
 
