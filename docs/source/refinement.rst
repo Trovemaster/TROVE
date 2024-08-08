@@ -80,7 +80,7 @@ where :math:`V_\lambda^{\rm calc}(\bm{f})` are the corresponding values of poten
 ..math::
         \frac{\partial V(\xi)}{\partial  f_{ijk \ldots}} =  \xi_1^i \xi_2^j \xi_3^k \ldots
         
-
+        
 A common artifact of empirical adjustments, is that different imperfections of the model such as basis set incompleteness or  approximations involved can also affect the refined PEF. As a result, these imperfections are effectively absorbed by the 'improved' PEF, thus making it a rather effective object that is able to reproduce the experimental energies with the accuracy achieved only with the same imperfect model used in the refinements. The *ab initio* constraint can provide a measure for the deformation of PEF introduced by the fit as a difference with the *ab initio* data. Controlling the fitting shape can be especially important when the over-fitting is difficult to avoid. Moreover, since lower fitting residuals defined by :math:`\Delta(f_{ijk \ldots})` do not necessarily mean improvement of the PEF, the deviation from the first principles data is the only objective measure of the shape of the refined PEF.
 
 Assuming that the *ab initio* PES is close to the ''true'' potential energy surface (in the Born-Oppenheimer approximation) within a known *ab initio* accuracy :math:`\delta E`, the *ab initio* constraint forces the refined PES also to stay close to the *ab initio* one. Providing that the refined PES does not deviate from the *ab initio* by  more than :math:`\delta E`, one can argue that the refined PES is at least as close to the "true" PES as the *ab initio* one.
@@ -96,7 +96,7 @@ The specific inputs and checkpoint files required to carry out refinement of a P
 
 Prior to refinement, TROVE requires checkpoint files and eigenfunctions for the basis set being used (see above). If a calculation of the rotational-vibrational levels using an unrefined PES has already been carried out, then all necessary files for refinement will have been generated. Refinement can be carried out in the :math:`J=0` basis.
 
- As explained above, refinement in TROVE is represented as a correction :math:`\Delta V(r)` to the *ab initio* PES :math:`V(r)` an represented by refinement parameters :math:`\Delta f_{ijk...}`. In the current TROVE implementation, the refinement part :math:`\Delta V(r)` is required to have exactly the same analytic representation as :math:`V(r)`, i.e. the refined PES is represented by the expansion parameters `f'_{ijk...}` given by 
+ As explained above, refinement in TROVE is represented as a correction :math:`\Delta V(r)` to the *ab initio* PES :math:`V(r)` an represented by refinement parameters :math:`\Delta f_{ijk...}`. In the current TROVE implementation, the refinement part :math:`\Delta V(r)` is required to have exactly the same analytic representation as :math:`V(r)`, i.e. the refined PES is represented by the expansion parameters :math:`f'_{ijk...}` given by 
  
  .. math::  
             f'_{ijk...} =  f^{\rm ai}_{ijk...} + \Delta f_{ijk...}
@@ -554,7 +554,7 @@ To help with the refinement process, two auxiliary files are created.
 The .en file has a similar purpose as the Obs-Calc table in the output file but gives *all* calculated energies for all states calculated by TROVE. This file is very useful when matching the experimental energies to the calculated TROVE values. It is also useful for spotting and sorting out state swaps, i.e,  when accidental assignment mismatches happen. It is relatively straightforward to identify which state a mismatched/replaced experimental value should be reassigned to in order to fix the match. 
 
 The .en printout generally repeats the format of the Obs-Calc table in the output: 
-:
+::
      
      ----------------------------------------------------------------------------------------------------
     |## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.)
