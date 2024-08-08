@@ -77,7 +77,7 @@ To tackle the problem of correlation of the over-determined parameters,  TROVE c
 
 where :math:`V_\lambda^{\rm calc}(\bm{f})` are the corresponding values of potential energy computed at the geometry :math:`\xi_n` and defined using the same set of potential parameters :math:`\bm{f}`; :math:`\omega` is a normalised weight factor representing the relative importance of the two sets of data; and :math:`\sigma_{n}^{\rm (ai)}` is the uncertainty associated with the *ab initio* potential energy value :math:`V_{n}^{\rm (ai)}`.   The required derivatives of the eigenvalues are obtained via  Eqs.~\eqref{e:E:finite-diff} or \eqref{e:Hellmann-Feynman:2}, while the derivatives of PEF are simply
 
-..math::
+.. math::
         \frac{\partial V(\xi)}{\partial  f_{ijk \ldots}} =  \xi_1^i \xi_2^j \xi_3^k \ldots
         
         
