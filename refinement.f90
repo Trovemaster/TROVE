@@ -589,7 +589,7 @@ contains
        write(my_fmt_en2,'(a,i0,a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a2,a3,a1,i3,a2,1x,a2,",&
                                                nclasses,"a3,a1,",nmodes,"(i3),a2)"
 
-       write(my_fmt_pot1,'(a,i0,a)') "(1h1,5x,a,a,a//4x,",ncoords,"(7x),a,7x,a,3x,a,3x,a/)"
+       write(my_fmt_pot1,'(a,i0,a)') "(",ncoords,"(20x),4x,a,9x,a,8x,a,5x,a)"
 
        write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g12.5),1x,f12.5,1x,e12.4)"
        write(my_fmt_par1,   '(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14)"
@@ -1263,7 +1263,7 @@ contains
             !
             rewind(abinitunit)
             !
-            write(abinitunit,my_fmt_pot1) '************',' ab initio points','************','zero','calc.','zero-calc','weight'
+            write(abinitunit,my_fmt_pot1) 'Ref.','Calc.','Ref.-Calc.','weight'
             !
             do i=1,pot_npts
                !

@@ -4325,7 +4325,7 @@ module fields
              !
              call readu(fitting%fit_type)
              !
-           case('THRESH_ASSIGN','THRESH_REASSIGN','LOCK')
+           case('THRESH_ASSIGN','THRESH_REASSIGN','LOCK','ASSIGNMENT')
              !
              call readf(fitting%threshold_lock)
              !

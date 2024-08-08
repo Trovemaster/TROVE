@@ -306,7 +306,7 @@ At step 6, additionally to the ``control`` block change, the user needs to inclu
 
       FITTING
       itmax   0
-      fit_factor     1e-4
+      fit_factor     1e4
       geometries     poten.dat
       output         f01
       robust  0.0001
@@ -329,7 +329,7 @@ Here
 
  - ``itmax`` is the number of iterations of refining carried out. ``itmax 0`` means no refinement and used for one straight-through calculation for checking purposes.  TROVE will carry out refinement until the number of iterations specified is reached. 
 
- - ``fit_factor`` is the relative weighting for the experimental data compared to *ab initio* energies :math:`\omega` in Eq. :eq:`e-fit`. The larger this is, the more importance will be given to the experimental energies.
+ - ``fit_factor`` is the relative weighting for the experimental data compared to *ab initio* energies :math:`\omega` in Eq. :eq:`e-fit`. The larger this is, the more importance will be given to the experimental energies. We initial value is usually of the order of 0.01 to 1, which is gradually increased to about 100000.  
 
  - ``geometries`` is the name of the file which contains energies of an *ab initio* PES used in the constrained fit. This file should give geometries in the same valence coordinates as specified by the potential energy surface for the molecule of interest in TROVE followed by the *ab initio* energy (from MOLPRO for example) and a weighting. The format is explained below.  
 
@@ -404,68 +404,203 @@ The meaning of the columns is as follows.
  - col 9: Fitting weight, which is usually inverse proportional to the experimental uncertainty of the state, but can be manipulated to influence the fit. 
  
 
+The format of the ``geometry`` file is as illustrated in the example below:
+::
+      -----  -------- --------------- --------- --------------
+        1       2           3               4         5       
+      -----  -------- --------------- --------- --------------
+      1.520   1.520     1.570796327      0.0000     1.000000 
+      1.520   1.520     1.649336143      0.3255     1.000000 
+      1.520   1.500     1.649336143     13.7810     1.000000 
+      1.500   1.520     1.649336143     13.7810     1.000000 
+      1.520   1.500     1.570796327     18.2147     1.000000 
+      1.500   1.520     1.570796327     18.2147     1.000000 
+      1.520   1.520     1.675516082     47.3732     1.000000 
+      1.500   1.520     1.675516082     59.5502     1.000000 
+    .....
+    
+
+where 
+ - col 1-3: geometries in the input (usually valence) coordinates, the same as used to define the TROVE internal coordinates, in Angstrom for the bond lengths and radians for the angles for all :math:`M=3N-6` vibrational degrees of freedom. 
+ - col 4: Values of the reference "*ab initio*" PES for each geometry (cm :sup:`-1`);
+ - col 5: Fitting weights; usually estimated using the Partridge and Schewnke's formula. 
+ 
+
+
+Refinement Output
+-----------------
+
+The refinement procedure produces three output files. A regular .out file with a prefix the same as the .inp file and two auxiliary files .pot file and .en with prefixes as determined by the name given in the ``output`` keyword in the Fitting block.
+
+The main output file for refinement is straightforward. The input is repeated as with other TROVE output files and then some information is given about the eigenfunctions which were read in, etc. After this TROVE prints the iteration number and then a list comparing the observed to calculated energies. For example
+::
+
+     ----------------------------------------------------------------------------------------------------
+     |## |  N |  J | sym|      Obs.    |    Calc.   | Obs.-Calc. |   Weight |  K   vib. quanta
+     ----------------------------------------------------------------------------------------------------
+        1    1    0  A1         0.0000       0.0000       0.0000   0.38E-05  (  0) (  0  0  0)
+        2    3    0  A1      1978.1533    1981.4636      -3.3103   0.38E-05  (  0) (  0  0  2)
+        3    4    0  A1      2005.4690    2008.9579      -3.4889   0.38E-05  (  0) (  1  0  0)
+        4    5    0  A1      2952.7000    2956.2565      -3.5565   0.38E-05  (  0) (  0  0  3)
+        5    6    0  A1      2998.6000    3003.6017      -5.0017   0.38E-05  (  0) (  1  0  1)
+        6    7    0  A1      3907.4000    3914.4824      -7.0824   0.38E-05  (  0) (  0  2  0)*
+        7    8    0  A1      3923.3000    3930.2323      -6.9323   0.38E-05  (  0) (  0  2  0)
+        8    9    0  A1      3976.8000    3982.5964      -5.7964   0.38E-05  (  0) (  1  1  0)*
+        9   10    0  A1      3997.5000    4003.2424      -5.7424   0.38E-05  (  0) (  1  1  0)
+       10    1    0  B2      1992.8160    1996.2817      -3.4657   0.38E-05  (  0) (  0  1  0)
+    
+where 
+ ``##`` is the counting number of the experimental entries;
+ ``N`` is the TROVE block number (counting number with :math:`J` and :math:`\Gamma`);
+ ``J`` is the rotational angular momentum :math:`J`;
+ ``sym`` is the irrep in the symmetry group of the molecule in question; 
+ ``Obs.`` is the experimental energy term value (cm :sup:`-1`);
+ ``Calc.`` is the calculated TROVE energy term value (cm :sup:`-1`);
+ ``Obs.-Calc.`` is the residual (cm :sup:`-1`);
+ ``Weight`` is the fitting weight value. This is modified from the input value, first by re-normalising all experimental weights to sum to 1, then scaling wih a ``fit_factor``  :math:`\omega` and then renormalising them together with the *ab initio* weights (see below), which iniially also normalised to 1. When the fit starts, these weights are also adjusted through the Robust Watson re-weighting procedure, which is then printed in this output at each iteration; 
+ ``K`` is the TROVE rotational QN;
+ ``vib. quanta`` are the TROVE vibrational quantum numbers. 
+ 
+If an asterisk (*) is printed at the end of the row (as in the first row of this example) it means that TROVE has assigned the state differently to how it was labelled in the input in the Fitting block. 
+
+The energy output is followed by three blocks of the potential parameters. 
+
+The first block lists corrections :math:`\Delta f_{ijk...}` to the potential parameters is as follows:
+::
+    
+    Correction to potential parameters:
+    RE13          0.15144017558000E+01    fix
+    ALPHAE        0.92005073880000E+02    fix
+    AA            0.12705074620000E+01    fix
+    B1            0.50000000000000E+06    fix
+    B2            0.50000000000000E+05    fix
+    G1            0.15000000000000E+02    fix
+    G2            0.10000000000000E+02    fix
+    V0            0.00000000000000E+00
+    F_0_0_1       0.00000000000000E+00    fit
+    F_1_0_0       0.00000000000000E+00    fit
+    F_0_0_2      -0.17395640567200E+05    fit
+    F_1_0_1       0.24111985683400E+04    fit
+    F_1_1_0       0.00000000000000E+00
+    F_2_0_0       0.00000000000000E+00
+    
+
+The second block lists new values for the potential parameters :math:`f'_{ijk...} = f_{ijk...} + \Delta f_{ijk...}` at the current iteration:
+::
+    
+    Potential parameters:
+    RE13          0.15144017558000E+01
+    ALPHAE        0.92005073880000E+02
+    AA            0.12705074620000E+01
+    B1            0.50000000000000E+06
+    B2            0.50000000000000E+05
+    G1            0.15000000000000E+02
+    G2            0.10000000000000E+02
+    V0            0.00000000000000E+00
+    F_0_0_1       0.00000000000000E+00
+    F_1_0_0       0.00000000000000E+00
+    F_0_0_2      -0.77718868851662E-13
+    F_1_0_1      -0.16208272427320E-12
+    F_1_1_0       0.22387381100100E+03
+    F_2_0_0       0.38563857069600E+05
+    
+    
+which is followed the  corrections  :math:`\Delta f_{ijk...}` again, but with their standard errors and also rounded according to their standard error:
+::
+
+    Potential parameters rounded in accord. with their standard errors
+    
+    RE13      -1              1.51440176
+    ALPHAE    -1             92.00507388
+    AA        -1              1.27050746
+    B1        -1         500000.00000000
+    B2        -1          50000.00000000
+    G1        -1             15.00000000
+    G2        -1             10.00000000
+    V0         0                    0.00
+    F_0_0_1    1                    -18.(            11)
+    F_1_0_0    1                   -109.(           242)
+    F_0_0_2    1                 -13218.(           390)
+    F_1_0_1    1                   1176.(          1047)
+    F_1_1_0    0                    0.00
+    F_2_0_0    0                    0.00
+    F_0_0_3    0                    0.00
+    
+
+The standard errors in the parentheses are understood as the last figures of the value shown, e.g. :math:`-18.\pm 0.11`. The standard errors are computed using the diagonal elements of the correlation matrix.  
+
+
+The fitting iteration output is finished with a table which gives summary details on the fit for this iteration.
+::
+    
+    ----------------------------------------------------------------------------------------
+    |  Iter  | Points | Params |    Deviat     |     ssq_ener  |    ssq_pot  | Convergence |
+    ----------------------------------------------------------------------------------------
+    |      2 |   1924 |      4 |   0.46480E+02 |  0.30230E+01  |   0.289E+04 |  0.319E+00  |
+    ----------------------------------------------------------------------------------------
+    
+    
+This gives the statistics of the fit including both the experimental energies (``ssq_ener ``) and the *ab initio* energies (``ssq_pot ``) used to constrain the fit as well as the total weighted standard deviation (*ab initio* + experiment). The latter is usually less informative because of the weighted character and a large *ab initio* error contribution. The most informative number in this table is ``ssq_ener ``. 
+The Obs-Calc table, tables with potential parameters and the fit statistics are then repeated for each iteration.
+
+
+
+
+Auxiliary files
+---------------
+
+To help with the refinement process, two auxiliary files are created. 
+
+The .en file has a similar purpose as the Obs-Calc table in the output file but gives *all* calculated energies for all states calculated by TROVE. This file is very useful when matching the experimental energies to the calculated TROVE values. It is also useful for spotting and sorting out state swaps, i.e,  when accidental assignment mismatches happen. It is relatively straightforward to identify which state a mismatched/replaced experimental value should be reassigned to in order to fix the match. 
+
+The .en printout generally repeats the format of the Obs-Calc table in the output: 
+:
+
+     ----------------------------------------------------------------------------------------------------
+    |## |  N |  J | Sym|     Obs.    |    Calc.   | Obs.-Calc. |   Weight |    K    quanta   (Calc./Obs.)
+     ----------------------------------------------------------------------------------------------------
+        1    1    0  A1         0.0000       0.0000       0.0000   0.38E-05  ( A1 ;  0 ) ( A1 ;  0  0  0 )(  0  0  0  0)
+        2    0    0  A1         0.0000     999.8872       0.0000   0.00E+00  ( A1 ;  0 ) ( A1 ;  0  0  1 )
+        3    3    0  A1      1978.1533    1981.4636      -3.3103   0.38E-05  ( A1 ;  0 ) ( A1 ;  0  0  2 )(  0  0  0  2)
+        4    4    0  A1      2005.4690    2008.9579      -3.4889   0.38E-05  ( A1 ;  0 ) ( A1 ;  1  0  0 )(  0  1  0  0)
+        5    5    0  A1      2952.7000    2956.2565      -3.5565   0.38E-05  ( A1 ;  0 ) ( A1 ;  2  0  1 )(  0  0  0  3)*
+     
+with additional QNs after in the last columns. They show the "experimental" QNs, i.e. QNs from the input file. This is to help with (re-)assignment and (re)-matching. In the case the QNs do not match, am asterisk (*) is added. It is also added if the residual obs-calc is too large. 
+
+
+The .pot file is a *ab initio* counterpart of the .en file. It list *ab initio* PES energies with the corresponding geometries from the ``geometry`` file used for constraining the fit.  The calculated PEF values are compared to the *ab initio* once and the differnes are printed (cm :sup:`-1`), together with the fitting *ab initio* weights. 
+
+Here is an example of a .pot file:
+::
+
+                                                                    Ref.         Calc.        Ref.-calc     weight
+             1.520000000         1.520000000         1.570796327   0.0000       27.487        -27.48678   0.5661E-03
+             1.520000000         1.520000000         1.649336143  0.32550       26.223        -25.89790   0.5661E-03
+             1.520000000         1.500000000         1.649336143   13.781       40.492        -26.71074   0.5661E-03
+             1.500000000         1.520000000         1.649336143   13.781       40.492        -26.71074   0.5661E-03
+             1.520000000         1.500000000         1.570796327   18.215       46.703        -28.48839   0.5661E-03
+             1.500000000         1.520000000         1.570796327   18.215       46.703        -28.48839   0.5661E-03
+             1.520000000         1.520000000         1.675516082   47.373       72.300        -24.92634   0.5661E-03
+             1.500000000         1.520000000         1.675516082   59.550       85.239        -25.68921   0.5661E-03
+     
+
+where the first :math:`M` columns (number of the vibrational degrees of freedom) list the valance coordinates as defined in the ``geometry`` file, followed the *ab initio* or "reference" (``Ref.``) PES values, calculated (``Calc.``) values, the differences ``Ref.-Calc.`` and the fitting weights (after being normalised within the *ab initio* set, combined with the experimental weights and re-normalised to 1 again). 
+
+
+
 
 Watson Robust fitting
 ---------------------
 
 **In progress** 
 
-Formats of the auxiliary files 
-------------------------------
-
-**In progress**
-
 
 
 Running Refinement
 ------------------
 
+**In progress** 
 
-
-
-
-Refinement Output
------------------
-
-The refinement procedure produces three output files. A regular .out file with a prefix the same as the .inp file and a
-.pot file and .en file with prefixes as determined by the name given in the ``output`` keyword in the Fitting block.
-
-The main output file for refinement is straightforward. The input is repeated as with other TROVE output files and then
-some information is given about the eigenfunctions which were read in, etc. After this Trove prints the iteration number
-and then a list comparing the observed to calculated energies. For example
-::
-
-    ---------------------------------------------------------------------------------
-    | ## |  N |  J | sym|  Obs. | Calc.| Obs.-Calc. | Weight | K     vib. quanta
-    ---------------------------------------------------------------------------------
-    1  2  0  Ag  1343.5400  1346.2786  -2.7386 0.51E-03 (0) ( 0 0 0 0 0 1 0 0 0 0 0 0)*
-    2  3  0  Ag  1625.4000  1632.5923  -7.1923 0.26E-03 (0) ( 1 0 0 0 0 0 0 0 0 0 0 0)
-    3  4  0  Ag  1662.2000  1667.4972  -5.2972 0.26E-04 (0) ( 0 0 0 0 0 1 0 1 0 0 0 0)
-
-
-The first number in a row is just a label to order the output. The second is the block number which was given to a particular state in the input file in the Fitting block. For the :math:`A_g` state in the example the first energy corresponding to a
-fundamental mode has a block number of 2 since 1 would correspond to the ground state with relative energy of 0. After this the angular momentum of the state, :math:`J`, is given along with the symmetry. The observed energy as given in the input file
-is then given followed by the current iterations calculation of the energy using the adjusted potential parameters and the difference between them. The weighting given to the state is then given. The rotational :math:`k` quantum number and vibrational
-quantum numbers are then given. If an asterisk (*) is printed at the end of the row (as in the first row of this example) it means that TROVE has assigned the state differently to how it was labelled in the input in the Fitting block.
-
-TROVE then prints a list of corrections to the potential parameters followed by the new values for the potential parameters and the corrections rounded according to their error.
-
-A table is then printed which gives details on the fit for this iteration.
-::
-
-    -----------------------------------------------------------------------------------
-    |  Iter | Points | Params | Deviat       | ssq_ener     | ssq_pot   | Convergence |
-    -----------------------------------------------------------------------------------
-    |  1    | 18107  |   21   |  0.34175E-01 |  0.61230E+01 | 0.173E+03 | 0.293E+12   |
-    -----------------------------------------------------------------------------------
-
-This gives the statistics of the fit including both the experimental energies and the *ab initio* energies used to constrain the fit.
-
-The Obs-Calc table and fit statistics is then repeated for each iteration.
-
-The .en file gives similar information to the Obs-Calc table in the output file but gives calculated energies for all states calculated by TROVE. The .pot file is a list of the *ab initio* geometries with the observed (that is,
-the energy given for that geometry in the file listed under geometries in the Fitting bock) energies. The calculated  energy is also given, which is the energy given by the potential with the corrections from refinement, along with
-zero-calc and the weight for the energy.
 
 
 
