@@ -60,6 +60,32 @@ Since TROVE typically uses linearised coordinates :math:`\xi^{\rm lin}_i` to rep
 In the fittings the derivatives of the energy levels with respect to the correction parameters are evaluated at each fitting iteration in line with the  standard least squares fitting Newton procedures. This is all implemented in TROVE.
 
 
+Refinement with a constraint to the *ab initio* PES
+---------------------------------------------------
+
+
+A common problem of fitting of the model represented by a large number of parameters required for description of the full complexity of the spectroscopic model (e.g. potential energy function) is the lack of experimental data. Broadly speaking, vibrational energies are defined by the shape of the potential energy surface and are therefore controlled by the parameterised expansion of PEF, while rotational energies are defined by the equilibrium structure of a molecule via the rotational constants :math:`A_{\rm e}`, :math:`B_{\rm e}` and :math:`C_{\rm e}`. PEFs are typically defined by a few hundreds of expansion parameters, while the experimental data does not usually cover a sufficiently large number of vibrational excited states to be probed by all the parameters required. Furthermore, not all excitations of the molecule are equally well represented in the experiment with  strongest absorption bands better characterised. Overpopulated sets of potential parameters lead to an over-fitting, ill-defined or unstable minimisations an result in nonphysical potential energy functions.
+
+To tackle the problem of correlation of the over-determined parameters,  TROVE can constrain PEF to the original *ab initio* PES. This is implemented via a fit of the PEF (i.e. parameters representing its analytic form) simultaneously to the experimental ro-vibrational energies :math:`E_\lambda^{\rm (exp)}` for different states :math:`\lambda`   and to the *ab initio* potential energy data points :math:`V_{n}^{\rm ai}` at different geometries :math:`\xi_n`. In this case, the fitting functional to minimise is  constructed to include the differences between the (reference) *ab initio* PES and the  potential energy function  as follows:
+.. math::
+    :label: e-fit
+    
+    \Delta(f_{ijk \ldots}) = \sum_{\lambda}\frac{1}{\sigma_{\lambda}^{\rm (exp)}} \left(E_{\lambda}^{\rm (exp)} - E_{\lambda}(\bm{f}) \right)^2 + \omega
+     \sum_{n} \frac{1}{\sigma_{n}^{\rm (ai)}} \left(V_{n}^{\rm (ai)} - V(\bm{f},\xi_n) \right)^2,
+      
+
+where :math:`V_\lambda^{\rm calc}(\bm{f})` are the corresponding values of potential energy computed at the geometry :math:`\xi_n` and defined using the same set of potential parameters :math:`\bm{f}`; :math:`\omega` is a normalised weight factor representing the relative importance of the two sets of data; and :math:`\sigma_{n}^{\rm (ai)}` is the uncertainty associated with the *ab initio* potential energy value :math:`V_{n}^{\rm (ai)}`.   The required derivatives of the eigenvalues are obtained via  Eqs.~\eqref{e:E:finite-diff} or \eqref{e:Hellmann-Feynman:2}, while the derivatives of PEF are simply
+ ..math::
+        
+        \frac{\partial V(\xi)}{\partial  f_{ijk \ldots}} =  \xi_1^i \xi_2^j \xi_3^k \ldots
+        
+
+A common artifact of empirical adjustments, is that different imperfections of the model such as basis set incompleteness or  approximations involved can also affect the refined PEF. As a result, these imperfections are effectively absorbed by the `improved' PEF, thus making it a rather effective object that is able to reproduce the experimental energies with the accuracy achieved only with the same imperfect model used in the refinements.
+The *ab initio* constraint can provide a measure for the deformation of PEF introduced by the fit as a difference with the *ab initio* data. Controlling the fitting shape can be especially important when the over-fitting is difficult to avoid. Moreover, since lower fitting residuals defined by :math:`\Delta(f_{ijk \ldots})` do not necessarily mean improvement of the PEF, the deviation from the first principles data is the only objective measure of the shape of the refined PEF.
+
+Assuming that the *ab initio* PES is close to the ''true'' potential energy surface (in the Born-Oppenheimer approximation) within a known *ab initio* accuracy :math:`\delta E`, the *ab initio* constraint forces the refined PES also to stay close to the *ab initio* one. Providing that the refined PES does not deviate from the *ab initio* by  more than :math:`\delta E`, one can argue that the refined PES is at least as close to the ``true'' PES as the *ab initio* one.
+
+
 Refinement Implementation with TROVE
 ====================================
 
@@ -248,46 +274,88 @@ Here,
  - `J` card  lists all values of :math:`J` to be processed. Note that it is not a range but a list i.e. the parameters can appear in any combination or order. Alias `Jrot`. 
  - `symmetries` card (alias `gamma`) is similar to the `gamma` card used in step 3. It gives a list of symmetries to be processed, again, in any combination or order. 
 
-  .. Note:: Alias for ``step 5`` is ``step fitpot``. 
+An alias for ``step 5`` is ``step fitpot``. 
 
 At ``step 6`` (alias ``step refinement``), the actual fits are taking place. At this step, the control block will have similar format as for step 5:
 ::
 
     Control
-      Step 5  (FITPOT)
+      Step 6  (refinement)
+      external  3 60
+      J  0, 1, 2, 3
+      symmetries 1, 2, 3, 4
+    end
+
+or simply with ``Step refinement``: 
+::
+
+    Control
+      Step refinement
       external  3 60
       J  0, 1, 2, 3
       symmetries 1, 2, 3, 4
     end
 
 
-At this step, as an additional to the ``control`` block, the user needs to include the ``fitting`` section, which will be extensively used at step 6 ``refinement``. Let's consider the following example of the ``fitting``  block:
+At this step, additionally to the ``control`` block change, the user needs to include the ``fitting`` section. Here is an example of a ``fitting``  block used for SiH\ :sub:`2`:
 ::
- 
- FITTING
- J-LIST         0
- symmetries     1 2 3 4
- itmax   0
- fit_factor     1e-4
- THRESH_COEFF   1e-20
- lock           100
- output         f01
- TARGET_RMS     1e-18
- fit_scale      0.25
- thresh_obs-calc  10
- robust  0.0
- geometries     poten.dat
- OBS_ENERGIES  26   (J  symmetry NN )
-     0    1    1      0.00000  0  0   0   0   1.00
-     0    1    3   1978.1533   0  0   0   2   1.00
-     0    1    4   2005.469    0  1   0   0   1.00
-     0    1    5   2952.7      0  0   0   3   1.00
-     0    1    6   2998.6      0  1   0   1   1.00
-     0    1    7   3907.4      0  1   0   2   1.00
- .....
- end
- 
 
+      FITTING
+      itmax   0
+      fit_factor     1e-4
+      geometries     poten.dat
+      output         f01
+      robust  0.0001
+      lock           100
+      target_rms     1e-18
+      fit_scale      0.25
+      thresh_obs-calc  10
+      OBS_ENERGIES 
+          0    1    1      0.00000  0  0   0   0   1.00
+          0    1    3   1978.1533   0  0   0   2   1.00
+          0    1    4   2005.469    0  1   0   0   1.00
+          0    1    5   2952.7      0  0   0   3   1.00
+          0    1    6   2998.6      0  1   0   1   1.00
+          0    1    7   3907.4      0  1   0   2   1.00
+      .....
+      end
+      
+
+Here
+
+ - ``itmax`` is the number of iterations of refining carried out. ``itmax 0`` means no refinement and used for one straight-through calculation for checking purposes. 
+
+ - ``fit_factor`` is the relative weighting for the experimental data compared to *ab initio* energies :math:`\omega` in Eq. :eq:`e-fit`. The larger this is, the more importance will be given to the experimental energies.
+
+ - ``geometries`` is the name of the file which contains energies of an *ab initio* PES used in the constrained fit. This file should give geometries in the same valence coordinates as specified by the potential energy surface for the molecule of interest in TROVE followed by the *ab initio* energy (from MOLPRO for example) and a weighting. The format is explained below.  
+
+ - ``output`` is a string which specifies the pre-fix for auxiliary output file names, .en and .pot. 
+
+ - ``robust`` specifies whether Watson Robust Fit (WRF) is used, for 0.0 it is not, for 0.0001 it is.  The main function of WRF is to control and remove outliers, but can be also used to adjust the weights according to the real uncertainty of the energy levels.  The non-zero values also indicate how tight the robust weighting should distinguish between good and very good uncertainties. Currently, this is a trial-and-error parameter. A good staring value is about 0.0001. 
+ 
+- ``lock`` (aka ``assignment``) is the card specifying if the quantum numbers will be used to match the experimental and theoretical energies: zero means that assignment is not used. By default, the energies are matched using :math:`J`, symmetry :math:`\Gamma` and the running number :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N` give a unique ID for all TROVE ro-vibrational energies. However experimental energies use quantum numbers as unique identifiers and thus need to be matched to the TROVE values, which must be done by manually checking the experimental and theoretical values stored in the auxiliary .en file. The disadvantage of the running state numbers as unique IDs :math:`N`  is that they can change though the fit, which is a very common problem.  If the ``lock`` value is not zero, TROVE will use an automatic matching using the TROVE quantum numbers and will "lock" its matching to the given state through the fit, regardless of if the running number will change. The ``lock`` value is in this case is used a threshold to match the quantum numbers. For example, ``lock`` 100 means that TROVE will attempt to find a QN match within 100 cm :sup:`-1` from the value associated with :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N`. 
+ 
+ - ``target_rms`` is to value of the RMS error to terminate the fit when archived. In practice however, the desired RMS error is rarely achieved. 
+ 
+ - ``fit_scale`` is the parameter used to scale down the Newton-Raphson increment by this factor. ``fit_scale 1`` means the full increment is used, while a smaller value should make the slower but more stable. It is especially useful when the parameters are strongly correlated and has the potential even to work with over-defined problems. 
+ 
+ - ``thresh_obs-calc`` is the threshold (cm :sup:`-1`) to exclude accidental outliers  from the fit. It is a common situation that in the middle of the fit, the state assignment of the calculated energies changes  from the inial description, whether it is the running or the full set of quantum numbers are used, leading to a large residual and thus driving the fit to the wrong direction. The most reasonable approach is to exclude such an outlier from the current fit on the fly, let the process finish and then worry about the re-assignment later, before the next fit. For an almost converged fit, a typical ``thresh_obs-calc`` value is 2-5 :sup:`-1`. For the initial stage, a recommended value is about 10-20 :sup:`-1`.  
+ 
+ 
+ 
+ 
+``OBS_ENERGIES`` is the number of observed (experimental) energies used. Below this a list of energies is given in the format
+::
+
+     J \Gamma NN E_i t_1 t_2 t_3 . . .    weight e o
+
+where :math:`J` and :math:`\Gamma` are the angular momentum and symmetry number of the energies, NN is the block number, which is the number of the energy given by TROVE. The following numbers are the TROVE assignment of the energy level, followed by a weighting.
+
+With the fitting block added to the input, TROVE can be used to refine a PES. In the external block ``NPARAM`` should be set to the number of parameters which are to be refined. In the list of parameters, the first column of integers specifies if a parameter is to be refined. `1` will include in refinement, `0` will exclude. The next column of real numbers are the starting values of the refinement parameters and should be set to 0.0 if initial refinement.
+
+To carry out refinement all parts of the checkpoint block should be set to `read`` or `none``. TROVE will carry
+out refinement until the number of iterations specified is
+reached. The first iteration is essentially a checking step and does not change the value of the parameters.
 
 
 
@@ -311,6 +379,18 @@ As discussed above, the refinement procedure requires matrix elements of the :ma
 
 in the checkpoint block. This generates ``fitpot-J-Gamma-n.chk`` files. Since a file is
 generated for each :math:`J` and symmetry :math:`\Gamma` for each expansion parameter n, many files are generated in this step.
+
+
+Watson Robust fitting
+---------------------
+
+**In progress** 
+
+Formats of the auxiliary files 
+------------------------------
+
+**In progress**
+
 
 
 Running Refinement

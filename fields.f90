@@ -3163,14 +3163,6 @@ module fields
                !
                job%IOfitpot_action = "SAVE"
                !
-               job%IOextF_divide = .true.
-               job%IOfitpot_divide = .true.
-               !
-               if (Nitems>2) then
-                  call readi(fitting%iparam(1))
-                  call readi(fitting%iparam(2))
-               endif
-               !
              case("6","FITTING","REFINEMENT")
                !
                controlstep = "6"
@@ -3217,6 +3209,16 @@ module fields
                FLextF_coeffs = .true.
                FLextF_matelem = .true.
                !
+             case("5")
+               !
+               job%IOextF_divide = .true.
+               job%IOfitpot_divide = .true.
+               !
+               if (Nitems>2) then
+                  call readi(fitting%iparam(1))
+                  call readi(fitting%iparam(2))
+               endif
+               !
              end select
              !
            case('JROT','J')
@@ -3235,52 +3237,82 @@ module fields
                call readi(intensity%j(1))
                call readi(intensity%j(2))
                !
+             case("5","6")
+               !
+               i = 0
+               do while (item<Nitems.and.i<100)
+                  !
+                  i = i + 1 
+                  !
+                  call readi(fitting%j_list(i))
+                  !
+               enddo
+               !
              end select
              !
-           case ("GAMMA")
+           case ("GAMMA","SYMMETRIES")
              !
-             if (.not.symmetry_defined) then 
-                !
-                write (out,"('FLinput: keyword GAMMA in CONTRACT cannot appear before symmetry is defined')") 
-                stop 'FLinput - symmetry should be defined before GAMMA '
-                !
-             endif
-             !
-             if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
-               write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i7)") Nitems-1
-               stop 'FLinput - illegal number of gammas in DIAGONALIZER'
-             endif
-             !
-             i = 0
-             job%select_gamma = .false.
-             !
-             do while (item<Nitems.and.i<size(job%select_gamma))
-                !
-                i = i + 1
-                !
-                call readu(w)
-                !
-                if (trim(w)/="-") then
+             select case(controlstep)
+               !
+             case("3")
+               !
+               if (.not.symmetry_defined) then 
                   !
-                  read(w,*) i_t
-                  job%select_gamma(i_t) = .true.
+                  write (out,"('FLinput: keyword GAMMA in CONTRACT cannot appear before symmetry is defined')") 
+                  stop 'FLinput - symmetry should be defined before GAMMA '
                   !
-                else
+               endif
+               !
+               if (Nitems>sym%Nrepresen+1.or.Nitems==1) then  
+                 write (out,"('FLinput: illegal number of irreps in gamma in DIAGONALIZER: ',i7)") Nitems-1
+                 stop 'FLinput - illegal number of gammas in DIAGONALIZER'
+               endif
+               !
+               i = 0
+               job%select_gamma = .false.
+               !
+               do while (item<Nitems.and.i<size(job%select_gamma))
                   !
-                  call readi(i_tt)
+                  i = i + 1
                   !
-                  do while (i_t<i_tt.and.i<size(job%select_gamma))
+                  call readu(w)
+                  !
+                  if (trim(w)/="-") then
                     !
-                    i_t = i_t + 1
+                    read(w,*) i_t
                     job%select_gamma(i_t) = .true.
-                    i = i + 1
                     !
-                  enddo
-                  i = i - 1
+                  else
+                    !
+                    call readi(i_tt)
+                    !
+                    do while (i_t<i_tt.and.i<size(job%select_gamma))
+                      !
+                      i_t = i_t + 1
+                      job%select_gamma(i_t) = .true.
+                      i = i + 1
+                      !
+                    enddo
+                    i = i - 1
+                    !
+                  endif
                   !
-                endif
-                !
-             enddo
+               enddo
+               !
+             case("5","6")
+               !
+               job%isym_do = .false.
+               job%select_gamma = .false.
+               !
+               do while (item<Nitems.and.item-1<sym%Nrepresen)
+                 !
+                 call readi(i)
+                 if (i>0) job%isym_do(i) = .true.
+                 if (i>0) job%select_gamma(i) = .true.
+                 !
+               enddo
+               !
+             end select
              !
            case default
              !
