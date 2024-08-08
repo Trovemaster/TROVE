@@ -80,10 +80,9 @@ where :math:`V_\lambda^{\rm calc}(\bm{f})` are the corresponding values of poten
         \frac{\partial V(\xi)}{\partial  f_{ijk \ldots}} =  \xi_1^i \xi_2^j \xi_3^k \ldots
         
 
-A common artifact of empirical adjustments, is that different imperfections of the model such as basis set incompleteness or  approximations involved can also affect the refined PEF. As a result, these imperfections are effectively absorbed by the `improved' PEF, thus making it a rather effective object that is able to reproduce the experimental energies with the accuracy achieved only with the same imperfect model used in the refinements.
-The *ab initio* constraint can provide a measure for the deformation of PEF introduced by the fit as a difference with the *ab initio* data. Controlling the fitting shape can be especially important when the over-fitting is difficult to avoid. Moreover, since lower fitting residuals defined by :math:`\Delta(f_{ijk \ldots})` do not necessarily mean improvement of the PEF, the deviation from the first principles data is the only objective measure of the shape of the refined PEF.
+A common artifact of empirical adjustments, is that different imperfections of the model such as basis set incompleteness or  approximations involved can also affect the refined PEF. As a result, these imperfections are effectively absorbed by the 'improved' PEF, thus making it a rather effective object that is able to reproduce the experimental energies with the accuracy achieved only with the same imperfect model used in the refinements. The *ab initio* constraint can provide a measure for the deformation of PEF introduced by the fit as a difference with the *ab initio* data. Controlling the fitting shape can be especially important when the over-fitting is difficult to avoid. Moreover, since lower fitting residuals defined by :math:`\Delta(f_{ijk \ldots})` do not necessarily mean improvement of the PEF, the deviation from the first principles data is the only objective measure of the shape of the refined PEF.
 
-Assuming that the *ab initio* PES is close to the ''true'' potential energy surface (in the Born-Oppenheimer approximation) within a known *ab initio* accuracy :math:`\delta E`, the *ab initio* constraint forces the refined PES also to stay close to the *ab initio* one. Providing that the refined PES does not deviate from the *ab initio* by  more than :math:`\delta E`, one can argue that the refined PES is at least as close to the ``true'' PES as the *ab initio* one.
+Assuming that the *ab initio* PES is close to the ''true'' potential energy surface (in the Born-Oppenheimer approximation) within a known *ab initio* accuracy :math:`\delta E`, the *ab initio* constraint forces the refined PES also to stay close to the *ab initio* one. Providing that the refined PES does not deviate from the *ab initio* by  more than :math:`\delta E`, one can argue that the refined PES is at least as close to the "true" PES as the *ab initio* one.
 
 
 Refinement Implementation with TROVE
@@ -375,7 +374,9 @@ Below is an example of a list of energies as an illustration of the format.
     end
     
 The meaning of the columns is as follows. 
-
+::
+    
+    .......
     OBS_ENERGIES
     ---- ---- ---  ----------- -- -- --- ---- -----
       1    2    3       4       5  6   7   8    9
@@ -392,6 +393,7 @@ The meaning of the columns is as follows.
       0    4    1   1992.816    0  0   1   0   1.00
       1    2    1   11.801      2  0   0   0   1.00
     ---- ---- ---  ----------- -- -- --- ---- -----
+    
   
  - col 1: Rotational angular momentum :math:`J` (rigourous QN);
  - col 2: A symmetry count :math:`\Gamma`, e.g. for 1,2,3,4 for :math:`A_1`, :math:`A_2`, :math:`B_1` and :math:`B_2`, respectively in C :sub:`2v`(M);
