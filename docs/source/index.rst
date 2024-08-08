@@ -22,6 +22,7 @@ Welcome to TROVE's documentation!
    features.rst
    compile.rst
    benchmarks.rst
+   basissets.rst
    references
    license
 

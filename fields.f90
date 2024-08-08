@@ -1656,6 +1656,16 @@ module fields
          !
          trove%internal_coords = trim(w)
          !
+         select case 
+           case ('CURVILINEAR','LOCAL')
+             trove%internal_coords = 'LOCAL'
+           case ('LINEARISED','LINEAR','LINEARIZED')
+             trove%internal_coords = 'LINEAR'
+           case default 
+            write (out,"('FLinput: wrong COORDS =',a)") trim(w)
+            call report ("FLinput: wrong COORDS "//trim(w),.true.)
+         end select
+         !
        case("TRANSFORM","XI")
          !
          call readu(w)

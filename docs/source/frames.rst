@@ -32,7 +32,7 @@ A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  exa
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
 
-There are currently at least two  exact, curvilinear KEO forms are provided for a quasi-linear XY\ :sub:`2` molecules, ``KINETIC_XY2_EKE_BISECT``, ``KINETIC_XY2_EKE_BISECT_SINRHO``, see below.
+For quasi-linear triatomic molecules, it is also possible to use exact curvilinear KEO in implemented analytically, see below. 
 
 
 ``R-RHO-Z``
@@ -176,6 +176,78 @@ Here is an example of the Z-matrix for NNO.
 ^^^^^^^^^^^^^^^^^
 
 This is another 'bond'-embedding with the same vibrational coordinates as in ``R-ALPHA-Z``.
+
+
+Exact KEO frames for triatomic molecules
+----------------------------------------
+
+There several exact, curvilinear KEO forms are available in TROVE for quasi-linear triatomic molecules, XY\ :sub:`2` and XYZ. These KEOs are implemented in TROVE analytically, together with the corresponding matrix elements with the singularity resolution. These forms require a ``kinetic`` block in input with a reference to the specific frame. This is the difference with the linearised KEOs which use a general TROVE approach applicable for arbitrary molecules, except the linear ones. Exact KEO frames require that the ``COORDS`` card is set to ``LOCAL`` (aka ``CURVILINEAR``), which stands for the curvilinear coordinates.
+
+
+
+``KINETIC_XY2_EKE_BISECT``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is a bisector frame for curvilinear coordinates of an XY\ :sub:`2` molecules with ``kinetic`` input block is given by 
+:: 
+   
+   KINETIC
+     kinetic_type  KINETIC_XY2_EKE_BISECT
+   END
+   
+
+It can be only used with the coordinates/frame type ``R-RHO-Z``  (see above), i.e. for the valence coordinates with :math:`\rho` as the bending angle (:math:`\rho=0` at the linear geometry), the basis set ``laguerre-k`` and with the ``NON-RIGID`` reference configuration. 
+The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.
+
+Here is an input example for this case for the C :sub:`3` molecule:
+::
+
+    COORDS local 
+    TRANSFORM  r-rho-z  
+    MOLTYPE XY2   
+    REFER-CONF NON-RIGID  
+    
+    SYMGROUP C2v(M)
+    
+    ZMAT
+        C   0  0  0  0  11.996709
+        C   1  0  0  0  11.996709
+        C   1  2  0  0  11.996709
+    end
+     
+    BASIS
+      0,'JKtau', Jrot 0, krot 12
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      2,'laguerre-k','linear','linear', range 0,56,     resc 1.0, points 10000, borders  0.,110.0 deg
+    END
+    
+    KINETIC
+      kinetic_type  KINETIC_XY2_EKE_BISECT
+    END
+    
+
+
+``KINETIC_XY2_EKE_BISECT_SINRHO``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This a similar to the basis set ``KINETIC_XY2_EKE_BISECT``, which is introduced to work with the basis set ``sinrho-laguerre-k`` and only with this basis set. This basis set is constructed from the  Associated Laguerre polynomial with the factor :math:`(\sin\rho)^{K+\frac{1}{2}}`.
+
+
+
+KINETIC_XYZ_EKE_BISECT
+^^^^^^^^^^^^^^^^^^^^^^
+
+
+KINETIC_XYZ_EKE_BOND
+^^^^^^^^^^^^^^^^^^^^
+
+KINETIC_XYZ_EKE_BOND-R2
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+KINETIC_XYZ_EKE_BOND_SINRHO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
