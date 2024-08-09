@@ -199,7 +199,7 @@ Exact KEO frames for triatomic molecules
 
 There several exact, curvilinear KEO forms are available in TROVE for quasi-linear triatomic molecules, XY\ :sub:`2` and XYZ. These KEOs are implemented in TROVE analytically, together with the corresponding matrix elements with the singularity resolution. These forms require a ``kinetic`` block in input with a reference to the specific frame. This is the difference with the linearised KEOs which use a general TROVE approach applicable for arbitrary molecules, except the linear ones. Exact KEO frames require that the ``COORDS`` card is set to ``LOCAL`` (aka ``CURVILINEAR``), which stands for the curvilinear coordinates.
 
-The associated kinetic expansion order ``KinOrder`` must be set to 2 in the following exact KEO. Here the expansion plays a formal role as this KEO i represented as a formal expansion of the 2nd order in terms of two stretches around the non-rigid reference configuration along the :math:`\rho` coordinate.
+The associated kinetic expansion order ``KinOrder`` must be set to 2 in the following exact KEO. Here the expansion plays a formal role as this KEO i represented as a formal expansion of the 2nd order in terms of two stretches around the non-rigid reference configuration along the :math:`\rho` coordinate (see the ``rational`` expansion type in the basis set in the stretching subgroup 1).
 Each KEO presented case is constructed to be used with the specific basis set configuration and usually also for a specific frame. These must be always used together. 
 
 ``KINETIC_XY2_EKE_BISECT``
@@ -216,7 +216,7 @@ This is a bisector frame for curvilinear coordinates of an XY\ :sub:`2` molecule
 It can be only used with the coordinates/frame type ``R-RHO-Z``  (see above), i.e. for the valence coordinates with :math:`\rho` as the bending angle (:math:`\rho=0` at the linear geometry), the basis set ``laguerre-k`` and with the ``NON-RIGID`` reference configuration. 
 The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.   The associated kinetic expansion order ``KinOrder`` must be set to 2. 
 
-Here is an input example for this case for the C :sub:`3` molecule:
+Here is an input example for this case for the C\ :sub:`3` molecule:
 ::
 
     KinOrder  2

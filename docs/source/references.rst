@@ -72,3 +72,5 @@ References
 .. [23MeOwTe] T. Mellor, A. Owens, J. Tennyson, and S.N. Yurchenko. MNRAS, 520, 1997 (2023), ExoMol line lists - XLVIII. High-temperature line list of thioformaldehyde (H\ :sub:`2`\ CS).
 
 .. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi:10.1093/mnras/staa2034 <http://dx.doi.org/10.1093/mnras/staa2034>`__ 
+
+.. [23Yurchenko] S.N. Yurchenko, Computational Spectroscopy of Polyatomic Molecules (CRC Press, Boca Raton, 2023).

@@ -338,13 +338,13 @@ Here
 
  - ``robust`` specifies whether Watson Robust Fit (WRF) is used, for 0.0 it is not, for 0.0001 it is.  The main function of WRF is to control and remove outliers, but can be also used to adjust the weights according to the real uncertainty of the energy levels.  The non-zero values also indicate how tight the robust weighting should distinguish between good and very good uncertainties. Currently, this is a trial-and-error parameter. A good staring value is about 0.0001. 
  
-- ``lock`` (aka ``assignment``) is the card specifying if the quantum numbers will be used to match the experimental and theoretical energies: zero means that assignment is not used. By default, the energies are matched using :math:`J`, symmetry :math:`\Gamma` and the running number :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N` give a unique ID for all TROVE ro-vibrational energies. However experimental energies use quantum numbers as unique identifiers and thus need to be matched to the TROVE values, which must be done by manually checking the experimental and theoretical values stored in the auxiliary .en file. The disadvantage of the running state numbers as unique IDs :math:`N`  is that they can change though the fit, which is a very common problem.  If the ``lock`` value is not zero, TROVE will use an automatic matching using the TROVE quantum numbers and will "lock" its matching to the given state through the fit, regardless of if the running number will change. The ``lock`` value is in this case is used a threshold to match the quantum numbers. For example, ``lock`` 100 means that TROVE will attempt to find a QN match within 100 cm :sup:`-1` from the value associated with :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N`. 
+- ``lock`` (aka ``assignment``) is the card specifying if the quantum numbers will be used to match the experimental and theoretical energies: zero means that assignment is not used. By default, the energies are matched using :math:`J`, symmetry :math:`\Gamma` and the running number :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N` give a unique ID for all TROVE ro-vibrational energies. However experimental energies use quantum numbers as unique identifiers and thus need to be matched to the TROVE values, which must be done by manually checking the experimental and theoretical values stored in the auxiliary .en file. The disadvantage of the running state numbers as unique IDs :math:`N`  is that they can change though the fit, which is a very common problem.  If the ``lock`` value is not zero, TROVE will use an automatic matching using the TROVE quantum numbers and will "lock" its matching to the given state through the fit, regardless of if the running number will change. The ``lock`` value is in this case is used a threshold to match the quantum numbers. For example, ``lock`` 100 means that TROVE will attempt to find a QN match within 100 cm\ :sup:`-1` from the value associated with :math:`N`. :math:`J`, :math:`\Gamma` and :math:`N`.
  
  - ``target_rms`` is to value of the RMS error to terminate the fit when archived. In practice however, the desired RMS error is rarely achieved. 
  
  - ``fit_scale`` is the parameter used to scale down the Newton-Raphson increment by this factor. ``fit_scale 1`` means the full increment is used, while a smaller value should make the slower but more stable. It is especially useful when the parameters are strongly correlated and has the potential even to work with over-defined problems. 
  
- - ``thresh_obs-calc`` is the threshold (cm :sup:`-1`) to exclude accidental outliers  from the fit. It is a common situation that in the middle of the fit, the state assignment of the calculated energies changes  from the inial description, whether it is the running or the full set of quantum numbers are used, leading to a large residual and thus driving the fit to the wrong direction. The most reasonable approach is to exclude such an outlier from the current fit on the fly, let the process finish and then worry about the re-assignment later, before the next fit. For an almost converged fit, a typical ``thresh_obs-calc`` value is 2-5 cm :sup:`-1`. For the initial stage, a recommended value is about 10-20 cm :sup:`-1`.  
+ - ``thresh_obs-calc`` is the threshold (cm\ :sup:`-1`) to exclude accidental outliers  from the fit. It is a common situation that in the middle of the fit, the state assignment of the calculated energies changes  from the inial description, whether it is the running or the full set of quantum numbers are used, leading to a large residual and thus driving the fit to the wrong direction. The most reasonable approach is to exclude such an outlier from the current fit on the fly, let the process finish and then worry about the re-assignment later, before the next fit. For an almost converged fit, a typical ``thresh_obs-calc`` value is 2-5 cm\ :sup:`-1`. For the initial stage, a recommended value is about 10-20 cm :sup:`-1`.
  
  
  
@@ -399,7 +399,7 @@ The meaning of the columns is as follows.
  - col 1: Rotational angular momentum :math:`J` (rigourous QN);
  - col 2: A symmetry count :math:`\Gamma`, e.g. for 1,2,3,4 for :math:`A_1`, :math:`A_2`, :math:`B_1` and :math:`B_2`, respectively in C :sub:`2v`(M);
  - col 3: A block number, i.e. a state counting number of the states with the same :math:`J`, :math:`\Gamma`, sorted by energy. 
- - col 4: Experimental energy term values (cm :sup:`-1`) relative to ZPE. 
+ - col 4: Experimental energy term values (cm\ :sup:`-1`) relative to ZPE.
  - col 5: Rotational QN :math:`K` (non rigourous), assuming the TROVE assignment.
  - col 6-8: Vibrational TROVE QNs :math:`v_1`, :math:`v_2`, :math:`v_3` etc. (non rigourous), assuming  the TROVE assignment.
  - col 9: Fitting weight, which is usually inverse proportional to the experimental uncertainty of the state, but can be manipulated to influence the fit. 
@@ -423,7 +423,7 @@ The format of the ``geometry`` file is as illustrated in the example below:
 
 where 
  - col 1-3: geometries in the input (usually valence) coordinates, the same as used to define the TROVE internal coordinates, in Angstrom for the bond lengths and radians for the angles for all :math:`M=3N-6` vibrational degrees of freedom. 
- - col 4: Values of the reference "*ab initio*" PES for each geometry (cm :sup:`-1`);
+ - col 4: Values of the reference "*ab initio*" PES for each geometry (cm\ :sup:`-1`);
  - col 5: Fitting weights; usually estimated using the Partridge and Schewnke's formula. 
  
 
@@ -455,9 +455,9 @@ where
  ``N`` is the TROVE block number (counting number with :math:`J` and :math:`\Gamma`);
  ``J`` is the rotational angular momentum :math:`J`;
  ``sym`` is the irrep in the symmetry group of the molecule in question; 
- ``Obs.`` is the experimental energy term value (cm :sup:`-1`);
- ``Calc.`` is the calculated TROVE energy term value (cm :sup:`-1`);
- ``Obs.-Calc.`` is the residual (cm :sup:`-1`);
+ ``Obs.`` is the experimental energy term value (cm\ :sup:`-1`);
+ ``Calc.`` is the calculated TROVE energy term value (cm\ :sup:`-1`);
+ ``Obs.-Calc.`` is the residual (cm\ :sup:`-1`);
  ``Weight`` is the fitting weight value. This is modified from the input value, first by re-normalising all experimental weights to sum to 1, then scaling wih a ``fit_factor``  :math:`\omega` and then renormalising them together with the *ab initio* weights (see below), which iniially also normalised to 1. When the fit starts, these weights are also adjusted through the Robust Watson re-weighting procedure, which is then printed in this output at each iteration; 
  ``K`` is the TROVE rotational QN;
  ``vib. quanta`` are the TROVE vibrational quantum numbers. 
@@ -569,7 +569,7 @@ The .en printout generally repeats the format of the Obs-Calc table in the outpu
 with additional QNs after in the last columns. They show the "experimental" QNs, i.e. QNs from the input file. This is to help with (re-)assignment and (re)-matching. In the case the QNs do not match, am asterisk (*) is added. It is also added if the residual obs-calc is too large. 
 
 
-The .pot file is a *ab initio* counterpart of the .en file. It list *ab initio* PES energies with the corresponding geometries from the ``geometry`` file used for constraining the fit.  The calculated PEF values are compared to the *ab initio* once and the differnes are printed (cm :sup:`-1`), together with the fitting *ab initio* weights. 
+The .pot file is a *ab initio* counterpart of the .en file. It list *ab initio* PES energies with the corresponding geometries from the ``geometry`` file used for constraining the fit.  The calculated PEF values are compared to the *ab initio* once and the differnes are printed (cm\ :sup:`-1`), together with the fitting *ab initio* weights. 
 
 Here is an example of a .pot file:
 ::

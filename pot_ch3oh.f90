@@ -387,12 +387,23 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     theta2 = local(11)
     theta3 = local(12)
     !
+    if (theta2-theta1<small_) theta2 = theta2 + 2.0_ark*pi
+    if (theta3-theta2<small_) theta3 = theta3 + 2.0_ark*pi
+    !
     theta12 = mod(theta2-theta1+2.0_ark*pi,2.0_ark*pi)
     theta23 = mod(theta3-theta2+2.0_ark*pi,2.0_ark*pi)
-    theta13 = mod(theta1-theta3+2.0_ark*pi,2.0_ark*pi)
+    !theta13 = mod(theta1-theta3+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
     !
     xi(10)   = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
     xi(11)   = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    if (theta1<-sqrt(small_)) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+sqrt(small_)) then
+      theta1 = theta1 - 2.0_ark*pi
+    endif
     !
     tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
     !
@@ -475,33 +486,33 @@ end function  MLpoten_ch3oh_sym
     repres(1,11,11) = 1.0_ark
     !
     !C3+/(132)
-    repres(3,3,5) = 1.0_ark
-    repres(3,4,3) = 1.0_ark
-    repres(3,5,4) = 1.0_ark
+    repres(2,3,5) = 1.0_ark
+    repres(2,4,3) = 1.0_ark
+    repres(2,5,4) = 1.0_ark
     !
-    repres(3,7,9) = 1.0_ark
-    repres(3,8,7) = 1.0_ark
-    repres(3,9,8) = 1.0_ark
+    repres(2,7,9) = 1.0_ark
+    repres(2,8,7) = 1.0_ark
+    repres(2,9,8) = 1.0_ark
     !
-    repres(3,10,10) = -a
-    repres(3,10,11) = -b
-    repres(3,11,10) =  b
-    repres(3,11,11) = -a
+    repres(2,10,10) = -a
+    repres(2,10,11) = -b
+    repres(2,11,10) =  b
+    repres(2,11,11) = -a
     !
     !C3-/(93)
     !
-    repres(2,3,4) = 1.0_ark
-    repres(2,4,5) = 1.0_ark
-    repres(2,5,3) = 1.0_ark
+    repres(3,3,4) = 1.0_ark
+    repres(3,4,5) = 1.0_ark
+    repres(3,5,3) = 1.0_ark
     !
-    repres(2,7,8) = 1.0_ark
-    repres(2,8,9) = 1.0_ark
-    repres(2,9,7) = 1.0_ark
+    repres(3,7,8) = 1.0_ark
+    repres(3,8,9) = 1.0_ark
+    repres(3,9,7) = 1.0_ark
     !
-    repres(2,10,10) = -a
-    repres(2,10,11) =  b
-    repres(2,11,10) = -b
-    repres(2,11,11) = -a
+    repres(3,10,10) = -a
+    repres(3,10,11) =  b
+    repres(3,11,10) = -b
+    repres(3,11,11) = -a
     !
     !C2/(23)->(45)
     !
