@@ -1656,7 +1656,7 @@ module fields
          !
          trove%internal_coords = trim(w)
          !
-         select case 
+         select case (w)
            case ('CURVILINEAR','LOCAL')
              trove%internal_coords = 'LOCAL'
            case ('LINEARISED','LINEAR','LINEARIZED')

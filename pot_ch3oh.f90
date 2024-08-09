@@ -373,7 +373,7 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
     !
     !OCH
-    xi(6) = cos(local(6))- cos(alpha_COHe)
+    xi(6) = local(6)- alpha_COHe
     !
     ! alphas
     !H2-C-H3,H1-C-H2,H1-C-H3
@@ -475,33 +475,33 @@ end function  MLpoten_ch3oh_sym
     repres(1,11,11) = 1.0_ark
     !
     !C3+/(132)
-    repres(2,3,5) = 1.0_ark
-    repres(2,4,3) = 1.0_ark
-    repres(2,5,4) = 1.0_ark
+    repres(3,3,5) = 1.0_ark
+    repres(3,4,3) = 1.0_ark
+    repres(3,5,4) = 1.0_ark
     !
-    repres(2,7,9) = 1.0_ark
-    repres(2,8,7) = 1.0_ark
-    repres(2,9,8) = 1.0_ark
+    repres(3,7,9) = 1.0_ark
+    repres(3,8,7) = 1.0_ark
+    repres(3,9,8) = 1.0_ark
     !
-    repres(2,10,10) = -a
-    repres(2,10,11) = -b
-    repres(2,11,10) =  b
-    repres(2,11,11) = -a
+    repres(3,10,10) = -a
+    repres(3,10,11) = -b
+    repres(3,11,10) =  b
+    repres(3,11,11) = -a
     !
     !C3-/(93)
     !
-    repres(3,3,4) = 1.0_ark
-    repres(3,4,5) = 1.0_ark
-    repres(3,5,3) = 1.0_ark
+    repres(2,3,4) = 1.0_ark
+    repres(2,4,5) = 1.0_ark
+    repres(2,5,3) = 1.0_ark
     !
-    repres(3,7,8) = 1.0_ark
-    repres(3,8,9) = 1.0_ark
-    repres(3,9,7) = 1.0_ark
+    repres(2,7,8) = 1.0_ark
+    repres(2,8,9) = 1.0_ark
+    repres(2,9,7) = 1.0_ark
     !
-    repres(3,10,10) = -a
-    repres(3,10,11) =  b
-    repres(3,11,10) = -b
-    repres(3,11,11) = -a
+    repres(2,10,10) = -a
+    repres(2,10,11) =  b
+    repres(2,11,10) = -b
+    repres(2,11,11) = -a
     !
     !C2/(23)->(45)
     !

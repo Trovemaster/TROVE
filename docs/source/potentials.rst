@@ -164,6 +164,23 @@ In case the definition of PEF requires also structural parameters, such as equil
 
 Here, ``RE12`` and ``theta0`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using column 6.
 
+
+
+TROVE configuration option useds for PEF and KEO expansions
+===========================================================
+
+In the case of non-rigid reference configurations with periodicity used for representing the KEO and PEF as expansions, it is not uncommon that the numerically generated expansion parameter :math:`f_{ijk}(\rho_i)` on a grid of :math:`\rho_i` have discontinuities. They appear because of numerical problems at points like 180, 360, 720 :math:`^\circ`, i.e where trigonometric functions can change their values because of their periodicity constraints. In principle, these problems indicate that there are implementation in the code that could not be resolved. As ad hoc solution, TROVE can check and iron-out possible discontinuities by interpolating between points were the behaviour is nice and smooth. TROVE will always check and report if there are any discontinuity issues at the expansion stage, e.g.
+:: 
+   check_field_smoothness: potencheck_field_smoothness: potencheck_field_smoothness: poten; an outlier found for iterm =      18 at i =   400: -0.46876607222E+07 vs  0.28075523334E+05
+   
+In order to switch on the "ironing-out" procedure, the ``iron-out`` card must be added anywhere in the main body of the TROVE input:
+::
+   IRON-OUT
+   
+
+
+
+
 Implemented PEFs
 ================
 
@@ -338,9 +355,9 @@ ZXY\ :sub:`2` type
 The PEF is expressed analytically as  (see [15AlOvPo]_, [23MeOwTe]_)
 
 .. math::
-     
+
      V =  \sum_{ijklmn} a_{ijklmn} \xi_{1}^{i} \xi_{2}^{j} \xi_{3}^{k} \xi_{4}^{l} \xi_{5}^{m} \xi_6^{n},
-     
+
 
 The vibrational coordinates are
 
@@ -422,7 +439,7 @@ This is a similar PES to ``POTEN_XY3_MORBID_10``, but with the structural parame
     end
 
 
-The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  A TROVE input example  for H\ :sub:`3`\ O\ :sup:`+` is  `1H3-16O_p__eXeL__model-TROVE.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/1H3-16O_p__eXeL__model-TROVE.inp>`_ from [20YuTeMi]_ , where it was used to compute an ExoMol line list for this molecule. 
+The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.f90``.  A TROVE input example  for H\ :sub:`3`\ O\ :sup:`+` is  `1H3-16O_p__eXeL__model-TROVE.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/1H3-16O_p__eXeL__model-TROVE.inp>`_ from [20YuTeMi]_ , where it was used to compute an ExoMol line list for this molecule.
 
 
 
@@ -436,14 +453,14 @@ A chain molecule of HOOH type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-The HOOH PES is given by the expansion 
+The HOOH PES is given by the expansion
 
 .. math::
 
      V = \sum_{i_1,i_2,i_3,i_4,i_5,i_6} f_{i_1,i_2,i_3,i_4,i_5,i_6} \xi_1^{i_1} \xi_2^{i_2}  \xi_3^{i_3} \xi_4^{i_4} \xi_5^{i_5} \cos(i_6 \delta)
 
 
-in terms of the following coordinates: 
+in terms of the following coordinates:
 
 .. math::
 
@@ -456,10 +473,10 @@ in terms of the following coordinates:
      \xi_6 &= \delta,
    \end{split}
 
-where :math:`R, r_1, r_2`  are three bond lengths, :math:`\alpha_i` (\ :math:`i=1,2,`\ ) are two bond angles with :math:`\alpha_i` and :math:`\delta` is a dihedral angle. 
+where :math:`R, r_1, r_2`  are three bond lengths, :math:`\alpha_i` (\ :math:`i=1,2,`\ ) are two bond angles with :math:`\alpha_i` and :math:`\delta` is a dihedral angle.
 
 
-This a ``powers`` type: 
+This a ``powers`` type:
 ::
 
     POTEN
@@ -475,13 +492,13 @@ This a ``powers`` type:
     f000002       0  0  0  0  0  2  1  0.31552076592194E-02
     f000003       0  0  0  0  0  3  1  0.27380895575892E-03
     f000004       0  0  0  0  0  4  1  0.53200000000000E-04
-    
+
 
 
 The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_abcd.f90``.  A TROVE input example  for HOOH is  `HOOH_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/HOOH_step1.inpp>`_ from [15AlOvYu]_ , where it was used to compute an ExoMol line list for this molecule.
 
 
-      
+
 
 
 

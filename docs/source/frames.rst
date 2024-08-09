@@ -30,7 +30,7 @@ A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  exa
        MolType XY2
 
 
-in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keyword ``transform``. In the following, these are described.
+in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keywords ``transform`` or ``frame``. In the following, these are described.
 
 For quasi-linear triatomic molecules, it is also possible to use exact curvilinear KEO in implemented analytically, see below. 
 
@@ -80,7 +80,7 @@ The advantage of the linearised coordinates is that the corresponding KEO can be
 ``R-RHO-Z-ECKART``
 ^^^^^^^^^^^^^^^^^^
 
-This ``Transform`` type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions.
+This ``Transform`` (``frame``) type is very similar to ``R-RHO-Z``, but with the molecular frame define using the Eckart conditions.
 
 
 ``R-ALPHA-Z``
@@ -102,7 +102,7 @@ TROVE input example:
 ::
   
   COORDS       local    (curvilinear coordinates)
-  TRANSFORM    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
+  frame    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
   MOLTYPE      XY2
   REFER-CONF   non-RIGID  (Reference configuration)
   
@@ -116,7 +116,7 @@ A 'bisecting' XY\ :sub:`2` frame used for isotopologies with slightly different 
 Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2 but with non-symmetric masses and the Cs symmetry, e.g.:
 ::
 
-     TRANSFORM    R-RHO-Z-M2-M3
+     frame    R-RHO-Z-M2-M3
      MOLTYPE      XY2
      MOLECULE     CO2
      REFER-CONF   non-RIGID
@@ -136,22 +136,22 @@ XYZ type molecules
 
 .. sidebar::
 
-    .. figure:: img/XYZ.jpg
+    .. figure:: img/XYZ-r1.jpg
        :alt: XYZ equilibrium structure
 
-       An XYZ type molecule and the :math:`z`  embedding.
+       Frame ``R-RHO-Z-M2-M3``: An XYZ type molecule and the :math:`z`  embedding along :math:`r_2` and :math:`r_3` with negative :math:`x`.
 
 
 
 The main embedding here is the 'bond'-embedding, with the :math:`z` axis placed parallel to the bond Y-Z with a heavier atom Z comparing to X (second bond).
-For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``TRANSFORM`` can be used.
+For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues), the bisector frames and associated ``frame`` can be used.
 
 
 
 ``R1-Z-R2-RHO``
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
-This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis. The coordinates are givem as above:
+This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis and :math:`r_2` in the negative direction of :math:`x`. The coordinates are given as above:
 
 .. math::
 
@@ -178,12 +178,29 @@ Here is an example of the Z-matrix for NNO.
 This is another 'bond'-embedding with the same vibrational coordinates as in ``R-ALPHA-Z``.
 
 
+
+``R2-Z-R1-RHO``
+^^^^^^^^^^^^^^^
+
+This is a 'bond'-embedding with the :math:`r_2` along the :math:`z` axis and :math:`r_1` in the positive direction of :math:`x`, which is illustrated in the figure. 
+
+.. sidebar::
+
+    .. figure:: img/XYZ-r2.jpg
+       :alt: XYZ equilibrium structure
+
+       Frame ``R2-Z-R1-RHO``: An XYZ type molecule and the :math:`z` embedding along :math:`r_2` and :math:`r_3` with negative :math:`x`.
+
+
+
+
 Exact KEO frames for triatomic molecules
 ----------------------------------------
 
 There several exact, curvilinear KEO forms are available in TROVE for quasi-linear triatomic molecules, XY\ :sub:`2` and XYZ. These KEOs are implemented in TROVE analytically, together with the corresponding matrix elements with the singularity resolution. These forms require a ``kinetic`` block in input with a reference to the specific frame. This is the difference with the linearised KEOs which use a general TROVE approach applicable for arbitrary molecules, except the linear ones. Exact KEO frames require that the ``COORDS`` card is set to ``LOCAL`` (aka ``CURVILINEAR``), which stands for the curvilinear coordinates.
 
-
+The associated kinetic expansion order ``KinOrder`` must be set to 2 in the following exact KEO. Here the expansion plays a formal role as this KEO i represented as a formal expansion of the 2nd order in terms of two stretches around the non-rigid reference configuration along the :math:`\rho` coordinate.
+Each KEO presented case is constructed to be used with the specific basis set configuration and usually also for a specific frame. These must be always used together. 
 
 ``KINETIC_XY2_EKE_BISECT``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -197,13 +214,15 @@ This is a bisector frame for curvilinear coordinates of an XY\ :sub:`2` molecule
    
 
 It can be only used with the coordinates/frame type ``R-RHO-Z``  (see above), i.e. for the valence coordinates with :math:`\rho` as the bending angle (:math:`\rho=0` at the linear geometry), the basis set ``laguerre-k`` and with the ``NON-RIGID`` reference configuration. 
-The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.
+The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.   The associated kinetic expansion order ``KinOrder`` must be set to 2. 
 
 Here is an input example for this case for the C :sub:`3` molecule:
 ::
 
+    KinOrder  2
+    
     COORDS local 
-    TRANSFORM  r-rho-z  
+    frame  r-rho-z  
     MOLTYPE XY2   
     REFER-CONF NON-RIGID  
     
@@ -233,22 +252,74 @@ Here is an input example for this case for the C :sub:`3` molecule:
 
 This a similar to the basis set ``KINETIC_XY2_EKE_BISECT``, which is introduced to work with the basis set ``sinrho-laguerre-k`` and only with this basis set. This basis set is constructed from the  Associated Laguerre polynomial with the factor :math:`(\sin\rho)^{K+\frac{1}{2}}`.
 
+The associated TROVE configuration is as in the following input: 
+::
+    
+    KinOrder  2
+
+    COORDS local
+    frame  r-rho-z
+    MOLTYPE XY2
+    REFER-CONF NON-RIGID
+
+    BASIS
+      0,'JKtau', Jrot 0, krot 12
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      2,'sinrho-laguerre-k','linear','linear', range 0,56, resc 1.0, points 10000, borders  0.,110.0 deg
+    END
+
+    KINETIC
+      kinetic_type  KINETIC_XY2_EKE_BISECT_SINRHO
+    END
 
 
 KINETIC_XYZ_EKE_BISECT
 ^^^^^^^^^^^^^^^^^^^^^^
 
-
-KINETIC_XYZ_EKE_BOND
-^^^^^^^^^^^^^^^^^^^^
-
-KINETIC_XYZ_EKE_BOND-R2
-^^^^^^^^^^^^^^^^^^^^^^^
-
+For asymmetric triatomic molecules of type XYZ, there are several ways to orient the in-plane axes :math:`x` and :math:`z` at a general instantaneous geometry. The ``KINETIC_XYZ_EKE_BISECT`` KEO is constructed for the frame with the :math:`x` axis along the molecular bisector. The bisector XYZ frame is for asymmetric molecules XYZ with similar masses of Y and Z, i.e. when a bisector is a more natural description of the axis than a bond-frame. This KEO must be used with the correct XYZ-type bisector frames: ``R-RHO-Z-M2-M3-BISECT`` is used for general asymmetric molecules with similar masses of Y (M2) and Z (M3).
+ 
+In principle, the KEO should fully define the configuration of the problem to solve and the associated frame type should not matter for the solution of the Schroedniger equation. The point where the choice of the frame becomes critical is when the dipoles are involved, which need to be re-defined into the correct frame. The actual transformation of the dipole is performed in the subroutine ``MLloc2pqr_xyz``. 
+ 
+ 
 
 KINETIC_XYZ_EKE_BOND_SINRHO
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``. 
+
+ 
+KINETIC_XYZ_EKE_BOND
+^^^^^^^^^^^^^^^^^^^^
+
+Is one of the bond-frames constructed for the XYZ type molecules (X is in the centre), with the :math:`z` axis along the instantaneous orientation of the bond :math:`r_1` (X-Y). Bond-frames are better suited for molecules with a light nucleus and the :math:`z` axis is assumed for the heavier nucleus. The associated ``frame`` is ``R1-Z-R2-RHO`` and the basis set type is ``laguerre-k``:
+
+::
+
+    KinOrder  2
+
+    COORDS local
+    frame  r-rho-z
+    MOLTYPE XY2
+    REFER-CONF NON-RIGID
+
+    BASIS
+      0,'JKtau', Jrot 0, krot 12
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
+      2,'laguerre-k','linear','linear', range 0,56, resc 1.0, points 10000, borders  0.,110.0 deg
+    END
+
+    KINETIC
+      kinetic_type  KINETIC_XYZ_EKE_BOND
+    END
+ 
+
+    
+KINETIC_XYZ_EKE_BOND-R2
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This is the case of the bond-frame with :math:`z` along the bong :math:`r_2` (Z nucleus). The associated frames and basis sets are ``R2-Z-R1-RHO`` and ``laguerre-k``, respectively. See the figure illustrating the ``R2-Z-R1-RHO`` frame above. 
 
 
 
@@ -341,7 +412,7 @@ Linearized KEOs use the Eckart frame with the PAS at the equilibrium configurati
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
 
-For this ``TRANSFORM`` case, the following valence-based coordinates are used:
+For this ``frame`` case, the following valence-based coordinates are used:
 
 
 .. math::
@@ -505,7 +576,7 @@ A chain ABCD type molecule  (hydrogen peroxide type)
 ``R-ALPHA-TAU``
 ^^^^^^^^^^^^^^
 
-The six internal coordinates for the ``Transform R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by
+The six internal coordinates for the ``frame R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by
 
 
 .. sidebar::
