@@ -189,4 +189,47 @@ CH\ :sub:`4`
     END 
     
 
+Rotational basis set
+====================
 
+
+For the rotational motion, the standard rigid rotor wavefunctions are used, which are then symmetrised via the Wang-combinations (all expect for some special cases of the Td symmetry) in the :math:`J-K-\tau` form as follows
+
+.. math::
+     
+      \begin{split}
+          &|{J,0,\tau\rangle = |J,0\rangle, \quad \tau =  J\; \hbox{mod}\; 2 , \\
+          &|J,K,\tau=0\rangle = \frac{1}{\sqrt{2}} \left[ |J,K,m\rangle + (-1)^{J+K} |J,-K,m\rangle  \right],\\
+          &|J,K,\tau=1\rangle = \frac{i (-1)^{\sigma} }{\sqrt{2}} \left[ |J,K,m\rangle - (-1)^{J+K} |J,-K,m\rangle  \right].
+          \end{split}
+      
+       
+Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake.  :math:`K` is the rotational quantum number (:math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis). The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is. :math:`\sigma_{\rm rot} = K\, {\rm mod}\, 3`. The symmetry classification must be implemented for each molecule/symmetry case as part of the subroutines ML_rotsymmetry_<MOLECULE> for each nodule mol_<MOLECULE>.f90. Once implemented, there is nothing else to be specified in the input file as far as the rotational basis set is concerned, except to set the value of :math:`J`:
+::
+::
+
+    BASIS
+       0,'JKtau', Jrot 15
+    .....
+    
+
+For a Td symmetry molecule like methane or silane, the symmetry-adapted rotational functions are obtained as linear combinations of $\ket{J,k,m}$ with $k=-J\ldots J$, spanning multiple values of :math:`k`. Therefore, the rotational quantum number $K$ can no longer be used for classification of these symmetrised rigid-rotor combinations. Instead they can be labelled  as $\ket{J,\Gamma,n}$, where $\Gamma$ is the symmetry and $n$ is a counting index:
+
+.. math::
+    
+    |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} |J,k,m\rangle.
+     
+
+The coefficients :math:`T_{n,k}^{(J,\Gamma)}` are generated based on the symmetry properties of the transformations of  the Euler angles in :math:`|J,k,m\rangle`. All expansion coefficients required for this symmetry adaptation are generated automatically as part a numerical procedure. For this type of molecules, it is necessary to switch on by placing the card  ``rotsym euler`` inside the ``CONTRACTION`` block, e.g.
+::
+      
+     CONTRACTION
+        Npolyads      14   
+        rotsym        euler
+        model j=0
+     END
+     
+
+
+
+ 
