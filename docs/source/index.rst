@@ -17,6 +17,7 @@ Welcome to TROVE's documentation!
    quantumnumbers.rst
    molecules.rst
    potentials.rst
+   dipoles.rst
    newmolecules.rst
    linelist.rst
    refinement.rst

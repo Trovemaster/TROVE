@@ -28,7 +28,7 @@ Here we introduce different ingredients available for triatomic molecules, inclu
 
 
 
-Hydrogen sulfide, H\ :sub:`2`\ S
+Hydrogen sulfide, SiH\ :sub:`2`
 ================================
 
 Symmetry: :math:`C_{2v}`
@@ -41,21 +41,179 @@ Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(r_1^l - r_e))` 
 
 Primitive basis set: Numerov generated for all coordinates
 
-Kinetic energy expansion order: 8
+Kinetic energy expansion order: 6
 
-Potential expansion order: 10
+Potential expansion order: 8
 
-Polyad scheme: :math:`P = 2(v_1 + v_2) + v_3 \leq 20`
+Polyad scheme: :math:`P = 2(v_1 + v_2) + v_3 \leq 24`
 
-Potential energy function: Morbid expansion of published potential.
+Potential energy function: ``POTEN_XY2_MORSE_COS`` with a refined potential represented in terms of Morse coordinates and :math:`\cos(\alpha)`.
 
-Dipole moment surface expansion: N/A
-
-Results: :math:`J = 0` vibrational energy levels up to 8000 cm\ :sup:`-1`.
+Dipole moment surface expansion:  *Ab initio* DMS of the type ``xy2_pq_coeff``. 
 
 
 Reference: [TROVE]_
 
+The TROVE input for step 1 is illustrated below. 
+:: 
+      
+      KinOrder  6
+      PotOrder  8
+
+      Natoms 3
+      Nmodes 3
+
+      SYMGROUP C2v(M)
+
+      verbose 5
+
+      dstep 2.0e-03
+      COORDS linear
+      FRAME  r-rho-z
+      MOLTYPE XY2
+      REFER-CONF NON-RIGID
+
+      PRIMITIVES
+        Npolyads     24
+       END
+
+      CONTRACTION
+        Npolyads        24
+        sample_points   60
+        sample_attempts 500
+        symm_toler      1e-5
+      END
+
+
+      DIAGONALIZER
+       SYEV
+       enermax 18000
+      end
+
+      ZMAT
+          Si  0  0  0  0   27.97692654
+          H   1  0  0  0   1.007825032
+          H   1  2  0  0   1.007825032
+      end
+      control
+      step 1
+      external
+      end
+
+
+      BASIS
+       0,'JKtau', Jrot 0
+       1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
+       1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
+       2,'numerov','linear', 'linear', range 0, 24, r 8, resc 1.0, points 3000,borders 10.0,160.0 deg
+      END
+
+
+
+      EQUILIBRIUM
+      re            9      1.5144017558
+      re            9      1.5144017558
+      alphae        9      92.00507388 DEG	
+      end
+
+
+      SPECPARAM
+      a-Morse           0      0.127050746200E+01
+      a-Morse           0      0.127050746200E+01
+      END
+
+
+      POTEN
+      NPARAM  102
+      compact
+      POT_TYPE  POTEN_XY2_MORSE_COS
+      COEFF  list  (powers or list)
+      RE13          0.15144017558000E+01
+      ALPHAE        0.92005073880000E+02
+      AA            0.12705074620000E+01
+      B1            0.50000000000000E+06
+      B2            0.50000000000000E+05
+      G1            0.15000000000000E+02
+      G2            0.10000000000000E+02
+      V0            0.00000000000000E+00
+      F_0_0_1      -0.11243403302598E+02
+      F_1_0_0      -0.94842865087918E+01
+      F_0_0_2       0.17366522840412E+05
+      F_1_0_1      -0.25278354456474E+04
+      F_1_1_0       0.20295521820240E+03
+      F_2_0_0       0.38448640879698E+05
+      .....
+      ....
+      end
+
+      DIPOLE
+      dimension 3
+      NPARAM  72 99 0
+      compact
+      TYPE  xy2_pq_coeff
+      COEFF   list  (powers or list)
+      COORDS  linear linear linear
+      Orders   6  6  6
+      dstep 0.005 0.005 0.005
+      Parameters
+      re               0.152000000000E+01
+      alphae           0.945000000000E+02
+      f_1_0_0         -0.170274198034E+01
+      f_1_0_1         -0.122791150585E+00
+      f_2_0_0         -0.519187500441E+00
+      f_1_0_2          0.185415937182E+00
+      f_2_0_1          0.715740118118E+00
+      f_2_1_0         -0.147662628115E+00
+      f_3_0_0          0.598556914831E+00
+      .....
+      re               0.152000000000E+01
+      alphae           0.945000000000E+03
+      a                0.000000000000E+00
+      dummy            0.000000000000E+00
+      xp(1)            0.176547582678E+01
+      x0x0x1          -0.492245503195E+01
+      x1x0x0          -0.193070832496E+01
+      x0x0x2           0.900424248416E+01
+      x0x2x0           0.114484321174E+01
+      x1x0x1          -0.116840841811E+01
+      x2x0x0          -0.101953882061E+01
+      x0x0x3          -0.152151621639E+02
+      .....
+      .....
+      end
+
+
+A short description of the keywords, cards and sections used is as follows. 
+
+
+ - ``KinOrder``: Expansion order of the KEO. 
+ - ``PotOrder``: Expansion order of the PEF.
+ - ``Natoms``: Number of atoms (nuclei) :math:`N`.
+ - ``Nmodes``: Number of modes or degrees of freedom :math:`M` (here :math:`M=3N-6`). 
+ - ``SYMGROUP``: Molecular symmetry group. 
+ - ``verbose``: Verbosity level controlling amount of information in the standard output. 
+ - ``dstep``: numerical difference step size used in finite differences (Angstrom or radian).
+ - ``COORDS``: type of the coordinate, ``linear`` (``linearised``) or ``local`` (``curvilinear``).
+ - ``FRAME``: Molecular frame. 
+ - ``MOLTYPE``: The type of molecule (XYZ, XY2, XY3, XY4, ZXY3, etc).
+ -  ``REFER-CONF``: reference configuration, ``RIGID`` or ``NON-RIGID``.
+ - ``PRIMITIVES``: block defining parameters of the primitive bases.
+ - ``Npolyads``: Maximal number of polyads.
+ - ``CONTRACTION``: Block defining parameters of the contracted basis set.  
+ - ``Npolyads``: Maximal number of polyads in the contracted basis. 
+ - ``sample_points``: number of sampling points in the symmetrisation procedure. 
+ - ``sample_attempts``: number of symmetrisation attempts. 
+ - ``symm_toler``: Numerical tolerance used in symmetrisation. 
+ - ``DIAGONALIZER``: Block defining the diagonaliser (eigensolver) as well as its options (number of roots, maximal energy etc). 
+ - ``SYEV``: LAPACK Eigensolver type DSYEV. 
+ - ``enermax``: Maximal energy (cm\ :sup:`-1`).
+ - ``ZMAT``: Z-matrix block defining the Z-matrix coordinates and nuclear (atomic) masses.
+ - ``control``: Control block (see **Quick start**). 
+ - ``Basis``: Basis set block (See **Basis sets**).
+ - ``EQUILIBRIUM``: Equilibrium values of the molecule geometries in terms of the Z-matrix coordinates.
+ - ``SPECPARAM``: Special parameters used to define the coordinate to expand PEF, e.g. the Morse parameter :math:`a`.
+ - ``POTEN``: Potential block (see **Potential energy functions**). 
+ - ``DIPOLE``: Dipole moment block (or ``external`` field block). 
 
 Methyl cation, CH\ :sub:`3`\ :sup:`+`
 =====================================
