@@ -63,10 +63,7 @@ Methyl cation, CH\ :sub:`3`\ :sup:`+`
 
 Symmetry: :math:`D_{3h}`
 
-Coordinates: Linearized coordinates. :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3` for vibrational coordinates,
-two symmetrized bending variables :math:`\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 \alpha_1^l - \alpha_2^l - \alpha_3^l)` and
-:math:`\xi_5 = S_{4b} = \frac{1}{\sqrt{2}}(\alpha_2^l - \alpha_3^l)` and an out of plane vibration coordinate
-:math:`\xi_6 = \rho = \frac{\mathbf{r_1} \cdot (\mathbf{r_2} \times \mathbf{r_3} )} {r_{1}r_{2}r_{3}} `. See paper for details.
+Coordinates: Linearized coordinates. :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3` for vibrational coordinates, two symmetrized bending variables :math:`\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 \alpha_1^l - \alpha_2^l - \alpha_3^l)` and :math:`\xi_5 = S_{4b} = \frac{1}{\sqrt{2}}(\alpha_2^l - \alpha_3^l)` and an out of plane vibration coordinate :math:`\xi_6 = \rho = \frac{\mathbf{r_1} \cdot (\mathbf{r_2} \times \mathbf{r_3} )} {r_{1}r_{2}r_{3}}`. See paper for details.
 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
@@ -154,7 +151,7 @@ Dipole moment surface expansion: For BYTe line list, an *ab initio* DMS was comp
 
 Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to 1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers, constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
 
-.. Note:: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods. The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate line list from the work of Coles \textit{et al.} [10CoYuTe]_.
+.. Note:: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods. The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate line list from the work of Coles *et al.* [10CoYuTe]_.
 
 Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_.
 
@@ -164,11 +161,14 @@ Methane, CH\ :sub:`4`
 
 Symmetry: :math:`{T}_d`
 
-Coordinates: Linearised coordinates. :math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)` :math:`i = 1,4` for stretching coordinates.
- :math:`\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}`),
- :math:`\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})`, :math:`\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24}
- - \alpha_{23})`, :math:`\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})` and :math:`\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}
- - \alpha_{12})`. Where :math:`\alpha_{ij}` is the interbond angles. Also complimented by redundancy conditions (see paper).
+Coordinates: Linearised coordinates. 
+:math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)` 
+:math:`i = 1,4` for stretching coordinates.  
+:math:`\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}`),  
+:math:`\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})`, 
+:math:`\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23})`, :math:`\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})` and 
+:math:`\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12})`. 
+Where :math:`\alpha_{ij}` is the interbond angles. Also complimented by redundancy conditions (see paper).
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-9)`, linearised coordinates.
 
@@ -219,8 +219,7 @@ representation.
 
 Results: Linelist complete up to 5000 cm\ :sup:`-1` for temperatures up to 800 K.
 
-.. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`s need to be included. Up to :math:`J = 130` was included for
-a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
+.. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`\ s need to be included. Up to :math:`J = 130` was included for a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
 
 Reference: [16UnTeYu]_.
 
@@ -363,7 +362,7 @@ Methyl chloride, CH\ :sub:`3`\ Cl
 
 Symmetry: :math:`C_{3v}`
 
-Coordinates:  :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3,4` for vibrational coordinates, 
+Coordinates:  :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3,4` for vibrational coordinates,
 :math:`\xi_i = \beta_i - \beta_e` , :math:`i = 5,6,7` for bending coordinates, :math:`\xi_8 = \frac{1}{\sqrt{6}} (2 \tau_{23} - \tau_{13} - \tau_{12})` and :math:`\xi_9 = \frac{1}{2}(\tau_{13} - \tau_{12})`.
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n`, curvilinear coordinates used.
