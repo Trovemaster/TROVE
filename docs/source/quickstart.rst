@@ -340,7 +340,7 @@ The Checkpoint block determines which checkpoint files are saved by TROVE. This 
 
 
 The kinetic.chk and potentail.chk  contain the expansion coefficients of the KEO and PEF  expansions, controlled by the ``Kinorder`` and `Potorder` keywords discussed above. The associated keywords are ``kinetic`` and  ``potential``, respectively. The corresponding input values are ``save``, ``read`` or ``none``.  This is usually the first part of a TROVE calculation. Once these objects are generated with the expansions to a sufficient order (for example 6/8 for kin/pot order) it can be reused while different basis sets, polyads, etc are compared.
-Example: 
+Example:
 ::
 
      check_point
@@ -353,9 +353,9 @@ Example:
 If transition moments or intensity calculations are being carried out then the keyword ``external`` should be included and set to save. This generates an expansion of the DMF and requires a DMF to be provided.
 
 The primitive basis set can be saved/read with the ``basis_set`` keyword. This will generate .chk files with the one dimensional numerov and contracted primitive basis functions. The corresponding data with the primitive basis functions and 1D matrix elements are stored in two checkpoint files,
-``numerov_bset.chk`` and ``prim_bset.chk``. 
+``numerov_bset.chk`` and ``prim_bset.chk``.
 
-The contracted, symmetry-adapted basis is saved/read with the ``contract`` keyword and generates a ``contr_vectors.chk`` checkpoint file and human readable files ``contr_descr.chk`` and ``contr_quanta.chk``. For example, 
+The contracted, symmetry-adapted basis is saved/read with the ``contract`` keyword and generates a ``contr_vectors.chk`` checkpoint file and human readable files ``contr_descr.chk`` and ``contr_quanta.chk``. For example,
 ::
 
      check_point
@@ -367,25 +367,25 @@ The contracted, symmetry-adapted basis is saved/read with the ``contract`` keywo
 
 The matrix elements of the Hamiltonian between contracted functions can be saved using the ``matelem`` keyword. The file ``contr_matelem.chk`` is generated.  This can be very large depending on the basis set. There is an option to split this checkpoint file into 13 files responsible for different parts of the Hamiltonian operator (see below). in this case, ``contr_matelem.chk```` contains matrix elements of the pure vibrational part of the Hamiltonian, while other parts are stored in ``matelem_1.chk``, ``matelem_2.chk`` ... ``matelem_12.chk``. To use the option, the keyword ``split`` should be added, which can be followed by the numbers specifying the term to compute, e.g. to read all checkpoints of the KEO matrix elements in the split form:
 ::
-     
+
      check_point
      ...
-     matelem  read split 
+     matelem  read split
      extmatelem none
      ....
      end
-     
-or to compute the terms from 1 to 6: 
+
+or to compute the terms from 1 to 6:
 ::
 
      check_point
      ...
-     matelem  save split  1 6  
-     extmatelem none 
+     matelem  save split  1 6
+     extmatelem none
      ....
      end
 
-Similarly, vibrational elements of the DMS can be saved using the keyword ``extmatelem`` to generate the ``contr_extfield.chk`` file, which can also be split into sub-parts (3 for the 3D dipole moment object). 
+Similarly, vibrational elements of the DMS can be saved using the keyword ``extmatelem`` to generate the ``contr_extfield.chk`` file, which can also be split into sub-parts (3 for the 3D dipole moment object).
 
 If the eigenfunction of the calculation are required (for example for transition moment calculations) then the ``EIGENFUNC`` keyword should be set to save.
 This generates ``eigen_vectors[J].chk`` files and human readable ``eigen_descr[J].chk`` files, where J is the rotational quantum number. The eigenfunctions are used to for generating basis functions for :math:`J>0` calculations as discussed below, e.g.
@@ -398,11 +398,11 @@ This generates ``eigen_vectors[J].chk`` files and human readable ``eigen_descr[J
 
 
 .. note::
-   The Step 1 in the ``control`` block 
+   The Step 1 in the ``control`` block
 ::
-   control 
-     Step 1 
-   end 
+   control
+     Step 1
+   end
 
 
    corresponds to and replaces the following configuration of the ``check_point`` block:
@@ -416,7 +416,7 @@ This generates ``eigen_vectors[J].chk`` files and human readable ``eigen_descr[J
      eigenfunc   save
      end
 
-In this case the check_point block should be omitted. However a combination of the control and check_point blocks can be used to specify a non-standard configuration. In this case the control block must appear first. 
+In this case the check_point block should be omitted. However a combination of the control and check_point blocks can be used to specify a non-standard configuration. In this case the control block must appear first.
 
 A description of how these files are used for :math:`J>0` calculations is given below.
 
@@ -566,15 +566,15 @@ ExoMol Line list calculations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In order to produce a line list in the ExoMol format, the keyword ``exomol`` must be added anywhere inside the intensity block:
-:: 
-     
-     Intensity 
+::
+
+     Intensity
        ....
        exomol
        name *filename*
        ...
      end
-     
+
 where *filename* defines the name of the line list files (.states and .trans). In this case, the absorption intensities computed for the temperature and partition functions specifies are not printed out only used together with the corresponding threshold ``THRESH_INTES`` to decide to keep the line in the line list or not.
 
 
@@ -589,7 +589,7 @@ This section can be followed most easily in conjunction with the TROVE training 
 The first step in any TROVE calculation is the production of the hamiltonian.chk checkpoint file. As discussed above, this contains the details of the kinetic and PES expansion and if required, the DMS expansion, which are used in later parts of TROVE. In the Checkpoint block the following should be set to save
 ::
 
-     check_point 
+     check_point
      kinetic    save
      potential  save
      external   save
@@ -602,7 +602,7 @@ depending on the expansion orders of the kinetic energy, PES and DMS. As mention
 The basis set checkpoint files are usually generated next. In the Checkpoint block this is specified by
 ::
      check_point
-     ... 
+     ...
      basis_set   save
      CONTRACT    save
      ....
@@ -613,13 +613,13 @@ The ``basis_set`` keyword generates the file ``prim_bset.chk`` and, if a Numerov
 
 At this stage, TROVE will calculate and output the vibrational energies. The eigenfunctions for each vibrational state are saved using
 ::
-     
+
      check_point
      ....
      EIGENFUNC   save
      ....
-     end 
-     
+     end
+
 These are used in subsequent transition moment and absorption intensity calculations.  A series of files, ``eigen_vectors0_n.chk`` are generated where n ranges from 1 to however many symmetry classes there are for the molecule of interest.  Similar to the contracted basis, ``eigen_desc0_n.chk`` human readable files for each symmetry class of eigenvectors are also generated along with ``eigen_quanta0.chk`` which contains a description of eigenvectors and eigenvalues.
 
 The steps described above can all be carried out with a single run of TROVE, setting all of the keywords to save. For large calculations however, it is usually best to build up the checkpoint files, checking each step is successful. To follow the steps outlined above, the keywords should be set to read for .chk files which have already been generated. For example, once the ``hamiltonian.chk`` file is generated, ``kinetic`` and ``potential`` can be set to read.
@@ -627,7 +627,7 @@ The steps described above can all be carried out with a single run of TROVE, set
 Once the ``contr_matelem.chk`` file has been created along with vibrational eigenfunctions, it is in principle possible to calculate J:math:`>0` energies.
 A faster and more efficient way to do this however is to make use of the ``J=0 representation``. This is where the vibrational eigenfunctions for J=0 calculation are used as a basis set for J:math:`>0` calculations.  This usually leads to much faster calculations of excited rotational states. To use this method put ``model j=0`` anywhere in the Contraction block and in the Checkpoint block put
 ::
-     
+
      check_point
      .....
      contract    save
@@ -635,7 +635,7 @@ A faster and more efficient way to do this however is to make use of the ``J=0 r
      extmatelem  convert
      eigenfunc   read
      end
-     
+
 
 This will produce a new file, ``j0_matelem.chk`` and, if extmatelem specified, ``j0_extfield.chk``. ``j0contr_descr.chk``, ``j0contr_quanta.chk`` and
 ``j0contr_vectors.chk`` files are also generated, equivalent to those described above. A :math:`J=0` calculation should then be run setting ``CONTRACT`` and ``matelem`` to read and ``EIGENFUNC`` save. This will produce a desc and checkpoint files for the :math:`J=0` eigenfunctions but saved in the J=0 representation.

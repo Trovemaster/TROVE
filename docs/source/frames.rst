@@ -236,9 +236,9 @@ Here is an input example for this case for the C\ :sub:`3` molecule:
      
     BASIS
       0,'JKtau', Jrot 0, krot 12
-      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
-      1,'numerov','rational', 'morse',  range 0,30,r 8, resc 1.0, points  3000, borders -0.40,1.40
-      2,'laguerre-k','linear','linear', range 0,56,     resc 1.0, points 10000, borders  0.,110.0 deg
+      1,'numerov','rational', 'morse',  range 0,30,r 8, weight 1.0, points  3000, borders -0.40,1.40
+      1,'numerov','rational', 'morse',  range 0,30,r 8, weight 1.0, points  3000, borders -0.40,1.40
+      2,'laguerre-k','linear','linear', range 0,56,     weight 1.0, points 10000, borders  0.,110.0 deg
     END
     
     KINETIC
