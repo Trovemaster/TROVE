@@ -198,14 +198,29 @@ For the rotational motion, the standard rigid rotor wavefunctions are used, whic
 .. math::
      
       \begin{split}
-          &|{J,0,\tau\rangle = |J,0\rangle, \quad \tau =  J\; \hbox{mod}\; 2 , \\
+          &|J,0,\tau\rangle = |J,0\rangle, \quad \tau =  J\; {\rm mod}\; 2 , \\
           &|J,K,\tau=0\rangle = \frac{1}{\sqrt{2}} \left[ |J,K,m\rangle + (-1)^{J+K} |J,-K,m\rangle  \right],\\
           &|J,K,\tau=1\rangle = \frac{i (-1)^{\sigma} }{\sqrt{2}} \left[ |J,K,m\rangle - (-1)^{J+K} |J,-K,m\rangle  \right].
-          \end{split}
+      \end{split}
       
        
-Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake.  :math:`K` is the rotational quantum number (:math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis). The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is. :math:`\sigma_{\rm rot} = K\, {\rm mod}\, 3`. The symmetry classification must be implemented for each molecule/symmetry case as part of the subroutines ML_rotsymmetry_<MOLECULE> for each nodule mol_<MOLECULE>.f90. Once implemented, there is nothing else to be specified in the input file as far as the rotational basis set is concerned, except to set the value of :math:`J`:
-::
+Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake.  :math:`K` is the rotational quantum number (:math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis). The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is. :math:`\sigma_{\rm rot} = K\, {\rm mod}\, 3`. The symmetry classification must be implemented for each molecule/symmetry case as part of the subroutines ML_rotsymmetry_<MOLECULE> for each nodule mol_<MOLECULE>.f90. For example, such an implementation for the rotational basis functions :math:`|J,K,\tau\rangle`
+of C\ :sub:`3v`\ (M) are given by
+
++----------------+---------------+---------------------------+
+| :math:`K`      |  :math:`\tau` |  :math:`\Gamma_{\rm rot}` |
++----------------+---------------+---------------------------+
+|  :math:`3n`    |       0       |       :math:`A_1`         |    
++----------------+---------------+---------------------------+
+|  :math:`3n`    |       1       |       :math:`A_2`         |
++----------------+---------------+---------------------------+
+| :math:`3n\pm 1`|       0       |       :math:`E_a`         |
++----------------+---------------+---------------------------+
+| :math:`3n\pm 1`|       1       |       :math:`E_b`         |
++----------------+---------------+---------------------------+
+
+
+Once implemented, there is nothing else to be specified in the input file as far as the rotational basis set is concerned, except to set the value of :math:`J`:
 ::
 
     BASIS
@@ -213,7 +228,7 @@ Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the pari
     .....
     
 
-For a Td symmetry molecule like methane or silane, the symmetry-adapted rotational functions are obtained as linear combinations of $\ket{J,k,m}$ with $k=-J\ldots J$, spanning multiple values of :math:`k`. Therefore, the rotational quantum number $K$ can no longer be used for classification of these symmetrised rigid-rotor combinations. Instead they can be labelled  as $\ket{J,\Gamma,n}$, where $\Gamma$ is the symmetry and $n$ is a counting index:
+For a Td symmetry molecule like methane or silane, the symmetry-adapted rotational functions are obtained as linear combinations of :math:`\ket{J,k,m}` with :math:`k=-J\ldots J`, spanning multiple values of :math:`k`. Therefore, the rotational quantum number :math:`K` can no longer be used for classification of these symmetrised rigid-rotor combinations. Instead they can be labelled  as :math:`\ket{J,\Gamma,n}`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
 
 .. math::
     
