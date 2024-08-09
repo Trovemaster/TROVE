@@ -12,6 +12,7 @@ Welcome to TROVE's documentation!
    frames.rst
    symmetry.rst 
    outputs.rst
+   basissets.rst
    checkpoints.rst
    quantumnumbers.rst
    molecules.rst
@@ -22,7 +23,6 @@ Welcome to TROVE's documentation!
    features.rst
    compile.rst
    benchmarks.rst
-   basissets.rst
    references
    license
 

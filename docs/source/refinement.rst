@@ -6,8 +6,8 @@ Refinement
 
 In this chapter details will be given of the refinement procedure implemented in TROVE. Refinement in this context means to adjust the *ab intio* potential energy surface by comparing computed rotational-vibrational energy levels to experimental values. Parameters of the PES are varied, energy levels re-computed and compared to experiment. This process is continued until acceptable agreement between the calculated and experimental energy levels is obtained. Usually there is relatively few experimental energies and so *ab intio* electronic energies are used to constrain the refinement to prevent over fitting. Although experimental data is usually at fairly low energies, it is often the case that correcting the lower energy  region of the PES gives more accurate values at high energies also.
 
-Refinement with TROVE: Theory
-=============================
+Theory
+======
 
 Details of the method of refinement implemented in TROVE have been published [11YuBaTe]_ and only a brief summary  will be given here. Assuming a reasonable PES has already been obtained, a correction is added in terms of internal coordinates :math:`\xi`
 
@@ -86,8 +86,8 @@ A common artifact of empirical adjustments, is that different imperfections of t
 Assuming that the *ab initio* PES is close to the ''true'' potential energy surface (in the Born-Oppenheimer approximation) within a known *ab initio* accuracy :math:`\delta E`, the *ab initio* constraint forces the refined PES also to stay close to the *ab initio* one. Providing that the refined PES does not deviate from the *ab initio* by  more than :math:`\delta E`, one can argue that the refined PES is at least as close to the "true" PES as the *ab initio* one.
 
 
-Refinement Implementation with TROVE
-====================================
+How to do refinement
+====================
 
 Setting up Refinement
 ---------------------
