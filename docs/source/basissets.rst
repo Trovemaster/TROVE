@@ -30,7 +30,7 @@ Other cards of the mode 0 include ``KMAX`` (``Lmax``) defining the maximal value
 
 
 
-SiH\ :sub:`2` has :math:`3N - 6 = 3` internal degrees of freedom and thus 3 vibrational basis functions are required. For this example, the first group ``1`` combines the two stretches SiH` :sub:`1` and SiH\ :sub:`2` based on their symmetry equivalence: these two degrees of freedom transform through  each other when acted upon with the C\ :sub:`3v`(M) symmetry operations. The sub-group '2' is for the bending mode H-Si-H, which is a stand-alone degree of freedom that transforms independently from the sub-group 1. The grouping is used for producing symmetric combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__ and in [17YuYaOv]_.
+SiH\ :sub:`2` has :math:`3N - 6 = 3` internal degrees of freedom and thus 3 vibrational basis functions are required. For this example, the first group ``1`` combines the two stretches SiH` :sub:`1` and SiH\ :sub:`2` based on their symmetry equivalence: these two degrees of freedom transform through  each other when acted upon with the C\ :sub:`3v` (M) symmetry operations. The sub-group '2' is for the bending mode H-Si-H, which is a stand-alone degree of freedom that transforms independently from the sub-group 1. The grouping is used for producing symmetric combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__ and in [17YuYaOv]_.
 
 
 2. Basis set method/type
@@ -57,7 +57,7 @@ Here are the currently available options in TROVE:
 
  - 'Rational': used for triatomic exact KEOs, which corresponds to the expansion of the stretching modes in terms of :math:`\frac{1}{r_i}` (1st "order"), :math:`\frac{1}{r_i}^2` (2nd "order") and :math:`\frac{1}{r_i r_j}` (mixed term).
  -  ``Automatic``: the KEO constructed as part of the input (under construction).
- - ``Bond-Length``: is similar to rational but independent for polyatomic molecules together with the ``Angle`` type. It has been used for the H\ :sub:`2`CS molecule [23MeOwTe]_.
+ - ``Bond-Length``: is similar to rational but independent for polyatomic molecules together with the ``Angle`` type. It has been used for the H\ :sub:`2`\ CS molecule [23MeOwTe]_.
  - ``Angle`` type is to expand the KEO in terms of the trigonometric combinations :math:`\cos(\alpha)` (1st order),  :math:`1/\tan(\alpha)` (2nd), :math:`1/\sin(\alpha)` (3rd), :math:`\sin(\alpha)` (4th), :math:`1/\tan(\alpha)^2` and :math:`1/\sin(\alpha)^2`, where :math:`\alpha` is a generic angle.
  - ``Dihedral`` is a part of the ``bond-length/angle/dihedral`` option; it is used to introduce the following terms in the KEO: :math:`\cos(\delta/2)` (1st), :math:`\sin(\delta/2)` (2nd), :math:`\cos(\delta/2)^2` (3rd), :math:`\cos(\delta/2)\sin(\delta/2)` (4th) and :math:`\sin(\delta/2)^2` (5th), where :math:`\delta` is a generic dihedral mode.
 
@@ -69,7 +69,7 @@ The next card gives the expansion coordinates for the potential. The available o
 
  - ``linear``, used for the displacement :math:`\xi_i-\xi_i^{\rm eq}`; a popular option for bending degrees of freedom.
  - ``morse``, used to represent the expansion in the form of the Morse coordinate :math:`1 - e^{-a (r-r_e)}` and a good option for the stretching coordinates.
- - ``cos(x)`` is to expand PEF in terms of :math:`\cos\alpha`, but can lead to singularities at around :math`\alpha=0` and :math`\alpha=\pi`.
+ - ``cos(x)`` is to expand PEF in terms of :math:`\cos\alpha`, but can lead to singularities at around :math:`\alpha=0` and :math:`\alpha=\pi`.
 
 5. Quantum number range
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,7 +90,7 @@ The ``borders`` card can be combined with the units cards, ``deg``, ``Degree``, 
 
 6. Polyad weights
 ^^^^^^^^^^^^^^^^^
-The number after ``weight`` (aka ``resc``) gives the weighting :math:`a_i` of the vibrational quantum number for that coordinate in equation :math:`P_{\rm max} `.  Since the Si-H stretches here have a waiting of 2, it only makes sense to generate them from 0-12 if the polyad number is set to 24. The legacy aliases for ``weight`` are ``resc`` (resonance coefficients).
+The number after ``weight`` (aka ``resc``) gives the weighting :math:`a_i` of the vibrational quantum number for that coordinate in :math:`P_{\rm max}`.  Since the Si-H stretches here have a waiting of 2, it only makes sense to generate them from 0-12 if the polyad number is set to 24. The legacy aliases for ``weight`` are ``resc`` (resonance coefficients).
 
 7-8. Integration points and borders
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,12 +111,12 @@ Other non-standard options
      5,'fourier','linear', 'linear', range 0,17,  weight  1.0, points  500, borders,0.d0,720.d0 deg, periodic 2
 
 
- - ``Lvib`` (``Vib_Momentum``) is used for systems where the basis set is constructed by diagonalising the vibrational angular momentum :math:`\hat{l}^2`. The advantage of this construction scheme is that the basis set functions are assigned the vibrational angular momentum value :math:`l` and associated symmetry. This option is extensively used for the linear molecule C\ :sub:`2` H\ :sub:`2`, which is classified by irreps of D\ :sub:`nh` (M), e.g. :math:`E_{l}`, where :math:`l` is the vibrational angular momentum value.
+ - ``Lvib`` (``Vib_Momentum``) is used for systems where the basis set is constructed by diagonalising the vibrational angular momentum :math:`\hat{l}^2`. The advantage of this construction scheme is that the basis set functions are assigned the vibrational angular momentum value :math:`l` and associated symmetry. This option is extensively used for the linear molecule C\ :sub:`2`\ H\ :sub:`2`, which is classified by irreps of D\ :sub:`nh`\ (M), e.g. :math:`E_{l}`, where :math:`l` is the vibrational angular momentum value.
 
  As another example, it an be used to for spherical tops such as ammonia or phosphine to assign the vibrational basis and eignefunctions with he vibrational index :math:`l`. Since typical basis sets used for these systems are 1D, they do not have this useful property and the ``lvib`` option could help recover it.
 
 
- - ``Postprocess`` (``post``): this option is used to postprocess the contracted vibrational basis set generated on a reduced potential or Hamiltonian for the full PEF. It helps improve the basis set by re-optimising it. For example, for the ``lvib``-constructed contracted basis functions, i.e. generated as eigenfunctions of :math:`\hat{l}^2`,  they can be post-processed by eigen-solving a reduced Hamiltonian to obtain a more efficient basis and keep :math:`l` as a quantum number. Example (from C\ :sub:`2` H\ :sub:`2`):
+ - ``Postprocess`` (``post``): this option is used to postprocess the contracted vibrational basis set generated on a reduced potential or Hamiltonian for the full PEF. It helps improve the basis set by re-optimising it. For example, for the ``lvib``-constructed contracted basis functions, i.e. generated as eigenfunctions of :math:`\hat{l}^2`,  they can be post-processed by eigen-solving a reduced Hamiltonian to obtain a more efficient basis and keep :math:`l` as a quantum number. Example (from C\ :sub:`2`\ H\ :sub:`2`):
 ::
 
     BASIS
@@ -130,10 +130,10 @@ Other non-standard options
      3,'harmonic','linear', 'linear',range 0, 6,r 2, weight 1.0, points 2000, borders -1.8,1.8  lvib post
     END
 
-Here, the ``harmonic`` basis set was used for the sub-group 4 combing four linearised bending degrees of freedom of C\ :sub:`2` H\ :sub:`2` as the basis for eigen-solving for the vibrational angular momentum :math:`\hat{l}^2` (``lvib``). After the new wavefunctions are obtained as classified by :math:`l`, they are re-optimised (``post``) for the given :math:`l` by solving an eigenvalue problem for a reduced 4D Hamiltonian with a  quadratic PEF (``r 2``).
+Here, the ``harmonic`` basis set was used for the sub-group 4 combing four linearised bending degrees of freedom of C\ :sub:`2`\ H\ :sub:`2` as the basis for eigen-solving for the vibrational angular momentum :math:`\hat{l}^2` (``lvib``). After the new wavefunctions are obtained as classified by :math:`l`, they are re-optimised (``post``) for the given :math:`l` by solving an eigenvalue problem for a reduced 4D Hamiltonian with a  quadratic PEF (``r 2``).
 
 
- - ``Nocheck`` is used to suppress checking of the symmetry equivalence of the modes within the same sub-group. This is necessary for the modes which are dynamically symmetry equivalent. For example, when treating molecule CH\ :sub:`3` OH can be treat a C\ :subs`3v` (M) molecule, the individual stretching CH modes   are not equivalent at any fixed torsional configuration and would nt be allowed in TROVE to be used for generating the basis sets. Instead, TROVE would choose the 1st mode at some reference torsional angle to generate a reference basis set and will used it for all three modes. For example:
+ - ``Nocheck`` is used to suppress checking of the symmetry equivalence of the modes within the same sub-group. This is necessary for the modes which are dynamically symmetry equivalent. For example, when treating molecule CH\ :sub:`3`\ OH can be treat a C\ :subs:`3v`\ (M) molecule, the individual stretching CH modes   are not equivalent at any fixed torsional configuration and would not be allowed in TROVE to be used for generating the basis sets. Instead, TROVE would choose the 1st mode at some reference torsional angle to generate a reference basis set and will used it for all three modes. For example:
  ::
 
     3, 'numerov', 'linear', 'morse', range  0, 4 , weight 1.0,points 1000,borders -0.4,  2.23 nocheck
@@ -145,8 +145,8 @@ Here, the ``harmonic`` basis set was used for the sub-group 4 combing four linea
 Examples of Basis
 -----------------
 
-H\ :sub:`2` O
-^^^^^^^^^^^^^
+H\ :sub:`2`\ O
+^^^^^^^^^^^^^^
 ::
 
     BASIS

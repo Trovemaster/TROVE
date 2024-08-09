@@ -2037,7 +2037,7 @@ module fields
                 job%bset(imode)%range(1) = Jrot
                 job%bset(imode)%range(2) = Jrot
                 !
-              case("KROT","K")
+              case("KROT","K","LMAX")
                 !
                 call readi(i_t)
                 !
