@@ -47,9 +47,12 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
       ...
       end
 
-For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  For an example, see `SiH2_XY2_MORSE_COS_step1.inp <input/SiH2_XY2_MORSE_COS_step1.inp>`_
+For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  For an example, see `SiH2_XY2_MORSE_COS_step1.inp <_input/SiH2_XY2_MORSE_COS_step1.inp>`_
+
 
 .. doc:: input/SiH2_XY2_MORSE_COS_step1.inp
+      
+
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
 ::
@@ -173,6 +176,7 @@ TROVE configuration option used for PEF and KEO expansions
 
 In the case of non-rigid reference configurations with periodicity used for representing the KEO and PEF as expansions, it is not uncommon that the numerically generated expansion parameter :math:`f_{ijk}(\rho_i)` on a grid of :math:`\rho_i` have discontinuities. They appear because of numerical problems at points like 180, 360, 720 :math:`^\circ`, i.e where trigonometric functions can change their values because of their periodicity constraints. In principle, these problems indicate that there are implementation in the code that could not be resolved. As ad hoc solution, TROVE can check and iron-out possible discontinuities by interpolating between points were the behaviour is nice and smooth. TROVE will always check and report if there are any discontinuity issues at the expansion stage, e.g.
 :: 
+   
    check_field_smoothness: potencheck_field_smoothness: potencheck_field_smoothness: poten; an outlier found for iterm =      18 at i =   400: -0.46876607222E+07 vs  0.28075523334E+05
    
 In order to switch on the "ironing-out" procedure, the ``iron-out`` card must be added anywhere in the main body of the TROVE input:
@@ -345,36 +349,53 @@ The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.
 
 
 
+``POTEN_XYZ_TYUTEREV_SINRHO``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-POTEN
-NPARAM  174
-compact
-POT_TYPE  POTEN_XYZ_TYUTEREV_SINRHO
-COEFF  list    (powers or list)
-RE12          0.11282020845500E+01
-RE32          0.11845554074200E+01
-ALPHAE        0.18000000000000E+03
-AA1           0.27742521800000E+01
-AA3           0.11000000000000E+01
-B1            0.50000000000000E+06
-B2            0.50000000000000E+05
-G1            0.15000000000000E+02
-G2            0.10000000000000E+02
-V0            0.54849195576882E+00
-F_0_0_1       0.00000000000000E+00
-F_1_0_0       0.23128656428427E+02
-F_0_1_0      -0.10015174180097E+02
-F_0_0_2       0.16660757971566E+05
-F_1_0_1       0.20446313480126E+03
-F_0_1_1       0.22996151739413E+02
-F_1_1_0       0.16908763769413E+05
-F_2_0_0       0.59573023581912E+05
-F_0_2_0       0.24906928837814E+06
-F_0_0_3       0.14768287442718E+04
-F_1_0_2      -0.20570616009469E+05
+This expansion is similar to ``POTEN_XY2_TYUTEREV`` but with the :mah:`\sin\rho` instead of :mah:`\cos\rho`:
+.. math::
+
+   \begin{split}
+   V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{100} [ y_1 + y_2 ] + f_{100} [ y_1 + y_2 ] + f_{002} y_3^2 + \ldots +  \\
+                     & + b_1 e^{-g_1 r_{\rm HH}} + b_2 e^{-g_2 r_{\rm HH}^2} \\
+   \end{split}
 
 
 
+where
+
+.. math::
+
+   \begin{split}
+      y_1 & = 1-e^{-a (r_1 - r_{\rm e})}, \\
+      y_2 & = 1-e^{-a (r_2 - r_{\rm e})}, \\
+      y_3 &= \sin\rho-\sin\rho_{\rm e}, \\
+      r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha}.\\
+   \end{split}
+    
+where :math:`\rho  = \pi - \alpha`. The ``potential`` block for NNO is illustrated below 
+::
+     
+     POTEN
+     compact
+     POT_TYPE  POTEN_XYZ_TYUTEREV_SINRHO
+     COEFF  list  
+     RE12          0.11282020845500E+01
+     RE32          0.11845554074200E+01
+     ALPHAE        0.18000000000000E+03
+     AA1           0.27742521800000E+01
+     AA3           0.11000000000000E+01
+     B1            0.50000000000000E+06
+     B2            0.50000000000000E+05
+     G1            0.15000000000000E+02
+     G2            0.10000000000000E+02
+     V0            0.54849195576882E+00
+     F_0_0_1       0.00000000000000E+00
+     F_1_0_0       0.23128656428427E+02
+     F_0_1_0      -0.10015174180097E+02
+     F_0_0_2       0.16660757971566E+05
+     
+ 
 
 ZXY\ :sub:`2` type
 ------------------
