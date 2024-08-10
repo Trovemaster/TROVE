@@ -521,7 +521,8 @@ The valence coordinates is defined using the ``Zmat`` card as follows:
     end
 
 
-The coordinates type ``R-S-DELTA`` (card ``TRANSFORM``) defines the internal coordinates the same as in the case of XY\ :sub:`3`, while the frame ``R1-Z-R2-X-Y`` places the :math:`z` axis containing the vector :math:`\vec{r}_1` (ND), axis :math:`x` in the direction of the :math:`\vec{r}_1` (NH\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NH\ :sub:`2`\ D is illustrated in the side figure, where the evolution of the PAS is shown. At the planar configuration, the :math:`y` axis is normal to the plane with :math:`z` as the symmetry axis. The card ``MOLTYPE XY3`` means that all the associated transformation rules are implemented in the module mol_xy3.f90.
+The coordinates type ``R-S-DELTA`` (card ``TRANSFORM``) defines the internal coordinates the same as in the case of XY\ :sub:`3`, while the frame ``R1-Z-R2-X-Y`` places the :math:`z` axis containing the vector :math:`\vec{r}_1` (ND), axis :math:`x` in the direction of the :math:`\vec{r}_1` (NH\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NH\ :sub:`2`\ D is illustrated in the side figure, where the evolution of the PAS is shown. At the planar configuration, the :math:`y` axis is normal to the plane with :math:`z` as the symmetry axis. 
+
 
 .. sidebar::
 
@@ -529,6 +530,19 @@ The coordinates type ``R-S-DELTA`` (card ``TRANSFORM``) defines the internal coo
        :alt: NH2D
 
        Non-rigid reference frame for NH\ :sub:`2`\ D.
+
+
+The card ``MOLTYPE XY3`` means that all the associated transformation rules are implemented in the module mol_xy3.f90.
+
+
+
+.. sidebar::
+
+   .. figure:: img/NHD2.png
+       :alt: NH2D
+
+       Non-rigid reference frame for NH\ :sub:`2`\ D.
+
 
 The same non-rigid frame is used for NHD\ :sub:`2`, now with the :math:`z` axis containing the vector :math:`\vec{r}_1` (NH), axis :math:`x` in the direction of the :math:`\vec{r}_1` (ND\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NHD\ :sub:`2` and the evolution of PAS  is illustrated in the side figure with the Z-matrix given by
 ::
@@ -541,14 +555,6 @@ The same non-rigid frame is used for NHD\ :sub:`2`, now with the :math:`z` axis 
     end
     
 Although the definition of the frames is similar, the transformations of the corresponding PASs are very distinct.
-
-
-.. sidebar::
-
-   .. figure:: img/NHD2.png
-       :alt: NH2D
-
-       Non-rigid reference frame for NH\ :sub:`2`\ D.
 
 
 
