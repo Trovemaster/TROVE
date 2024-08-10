@@ -47,10 +47,10 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
       ...
       end
 
-For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  For an example, see `SiH2_XY2_MORSE_COS_step1.inp <_input/SiH2_XY2_MORSE_COS_step1.inp>`_
+For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  
 
 
-.. doc:: input/SiH2_XY2_MORSE_COS_step1.inp
+:doc:`input/SiH2_XY2_MORSE_COS_step1.inp`
       
 
 
