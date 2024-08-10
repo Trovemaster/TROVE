@@ -287,8 +287,7 @@ Ammonia, NH\ :sub:`3`
 
 Symmetry: :math:`C_{3v}`
 
-Coordinates: Similar to those for :math:`{\rm CH}_3^+` but for sixth coordinate, :math:`xi_6 = \sin \rho_e - \sin \rho` where
-:math:`\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]`.
+Coordinates: Similar to those for :math:`{\rm CH}_3^+` but for sixth coordinate, :math:`xi_6 = \sin \rho_e - \sin \rho` where :math:`\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]`.
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
 
@@ -304,8 +303,7 @@ Polyad scheme: For BYTe line list it is :math:`P = 2(v_1 + v_2 + v_3) + v_4 + v_
 
 Potential energy function: Refinement of published potential [09YuBaYa]_.
 
-Dipole moment surface expansion: For BYTe line list, an *ab initio* DMS was computed at the CCSD(T)/aug-cc-pVQZ level of
- theory [09YuBaYa]_.
+Dipole moment surface expansion: For BYTe line list, an *ab initio* DMS was computed at the CCSD(T)/aug-cc-pVQZ level of theory [09YuBaYa]_.
 
 Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to 1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers, constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
 
