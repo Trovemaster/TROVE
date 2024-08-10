@@ -54,18 +54,18 @@ Here ``NPARAM`` is used to specify the number of parameters used to define the P
 ::
 
      POTEN
-     NPARAM  114
+     compact
      POT_TYPE  poten_zxy2_mep_r_alpha_rho_powers
      COEFF  powers
-     f_0_0      0 0 0 0 0 0   1  0.00000000000000E+00
-     f_0_1      1 0 0 0 0 0   1  0.00000000000000E+00
-     f_0_1      0 1 0 0 0 0   1  0.00000000000000E+00
-     f_0_2      0 0 0 1 0 0   1  0.00000000000000E+00
-     f_1_1      0 0 0 0 0 1   1  0.13239727881219E+05
-     f_2_1      0 0 0 0 0 2   1  0.46279621687684E+04
-     f_3_1      0 0 0 0 0 3   1  0.14394787420943E+04
-     f_4_1      0 0 0 0 0 4   1  0.10067584554678E+04
-     f_5_1      0 0 0 2 0 0   1  0.31402651686299E+05
+     f_0_0      0 0 0 0 0 0    0.00000000000000E+00
+     f_0_1      1 0 0 0 0 0    0.00000000000000E+00
+     f_0_1      0 1 0 0 0 0    0.00000000000000E+00
+     f_0_2      0 0 0 1 0 0    0.00000000000000E+00
+     f_1_1      0 0 0 0 0 1    0.13239727881219E+05
+     f_2_1      0 0 0 0 0 2    0.46279621687684E+04
+     f_3_1      0 0 0 0 0 3    0.14394787420943E+04
+     f_4_1      0 0 0 0 0 4    0.10067584554678E+04
+     f_5_1      0 0 0 2 0 0    0.31402651686299E+05
      .....
      end
 
@@ -526,7 +526,7 @@ where :math:`R, r_1, r_2`  are three bond lengths, :math:`\alpha_i` (\ :math:`i=
 
 This a ``powers`` type:
 ::
-
+    
     POTEN
     NPARAM  166
     POT_TYPE  POTEN_H2O2_KOPUT_UNIQUE
@@ -540,7 +540,10 @@ This a ``powers`` type:
     f000002       0  0  0  0  0  2  1  0.31552076592194E-02
     f000003       0  0  0  0  0  3  1  0.27380895575892E-03
     f000004       0  0  0  0  0  4  1  0.53200000000000E-04
-
+    .................
+    .................
+    end
+    
 
 
 The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_abcd.f90``.  A TROVE input example  for HOOH is  `HOOH_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/HOOH_step1.inpp>`_ from [15AlOvYu]_ , where it was used to compute an ExoMol line list for this molecule.
@@ -548,5 +551,64 @@ The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_
 
 
 
+A CH3Cl type system
+-------------------
 
+``poten_zxy3_sym``
+^^^^^^^^^^^^^^^^^^
+
+The potential function is build on the fly as follows. Taking an initial potential term of the form 
+.. math::
+   :label: eq-V_i
+    
+    V_{ijk\ldots}^{\mathrm{initial}}=\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}
+
+
+with maximum expansion order :math:`i+j+k+l+m+n+p+q+r=6`, each symmetry operation of :math:`\bm{C}_{3\mathrm{v}}`(M) is independently applied to :math:`V_{ijk\ldots}^{\mathrm{initial}}`, i.e.
+.. math::
+   :label: eq-V_op
+
+   V_{ijk\ldots}^{\mathbf{X}}=\mathbf{X}{\,}V_{ijk\ldots}^{\mathrm{initial}}=\mathbf{X}\left(\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}\right)
+   
+where :math:`\mathbf{X}=\lbrace E,(123),(132),(12)^{*},(23)^{*},(13)^{*}\rbrace`, to create six new terms. The results are summed together to produce a final term,
+.. math::
+     :label:  eq-V_f
+
+      V_{ijk\ldots}^{\mathrm{final}}=V_{ijk\ldots}^{E}+V_{ijk\ldots}^{(123)}+V_{ijk\ldots}^{(132)}+V_{ijk\ldots}^{(12)^*}+V_{ijk\ldots}^{(23)^*}+V_{ijk\ldots}^{(13)^*}
+
+which is itself subject to the six :math:`\bm{C}_{3\mathrm{v}}`(M) symmetry operations.  :math:`V_{ijk\ldots}^{\mathrm{final}}` is invariant after the application of all operations and therefore the total potential function is then given by
+.. math::
+   :label: eq-pot_f
+
+   V_{\mathrm{total}}(\xi_{0},\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}^{\mathrm{final}}
+   
+   
+An extract from the potential block for this PEF form is given by 
+::
+    
+    POTEN
+    compact
+    POT_TYPE  poten_zxy3_sym
+    COEFF  powers (powers or list)
+    Re    0  0  0  0  0  0  0  0  0  0      1.77747221
+    re    0  0  0  0  0  0  0  0  0  0      1.08371647
+    betae 0  0  0  0  0  0  0  0  0  0    108.44534363
+    a0    0  0  0  0  0  0  0  0  0  0      1.65000000
+    b0    0  0  0  0  0  0  0  0  0  0      1.75000000
+    f     0  0  0  0  0  0  0  0  0  0        0.98040000
+    f     1  0  0  0  0  0  0  0  0  0        2.86590750
+    f     2  0  0  0  0  0  0  0  0  0     5526.62524810
+    f     3  0  0  0  0  0  0  0  0  0       92.33053568
+    f     4  0  0  0  0  0  0  0  0  0      347.37743030
+    f     5  0  0  0  0  0  0  0  0  0      190.77128084
+    f     6  0  0  0  0  0  0  0  0  0      105.42316955
+    f     0  1  0  0  0  0  0  0  0  0       19.13953554
+    f     0  2  0  0  0  0  0  0  0  0    22484.15160152
+    f     0  3  0  0  0  0  0  0  0  0    -2397.07662148
+    .......
+    .......
+    end
+    
+ 
+.. note:: For the ``power`` form of the PEF expansion, the structural (non-exapnsion) parameters contain dummy zeros to keep the format. 
 

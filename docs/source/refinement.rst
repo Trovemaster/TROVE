@@ -424,7 +424,11 @@ The format of the ``geometry`` file is as illustrated in the example below:
 where 
  - col 1-3: geometries in the input (usually valence) coordinates, the same as used to define the TROVE internal coordinates, in Angstrom for the bond lengths and radians for the angles for all :math:`M=3N-6` vibrational degrees of freedom. 
  - col 4: Values of the reference "*ab initio*" PES for each geometry (cm\ :sup:`-1`);
- - col 5: Fitting weights; usually estimated using the Partridge and Schewnke's formula. 
+ - col 5: Fitting weights; usually estimated using the  form suggested by Partridge and Schwenke, [97PaSc]_
+ .. math::
+     :label: eq-weights
+      
+     w_i=\left(\frac{\tanh\left[-0.0006\times(\tilde{E}_i  {\rm cm} - 15{\,}000)\right]+1.002002002}{2.002002002}\right)\times\frac{1}{N \tilde{E}_i^{(w)} {\rm cm}}
  
 
 
