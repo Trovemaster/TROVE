@@ -272,19 +272,19 @@ Artificial symmetries (AEM)
 
 The concept of artificial molecular symmetries was introduced in [21MeYuJe]_. 
 
-C\ :sub:`2nv`\ (AEM) 
+C\ :sub:`2vn`\ (AEM)
 -------------------
 
 
-Linear molecules usually represent a special case in rotational-vibrational calculations due to a singularity of the kinetic energy operator that arises from the rotation about the :math:`a` (the principal axis of least moment of inertia, becoming the molecular axis at the linear equilibrium geometry) being undefined. Assuming the standard ro-vibrational basis functions, in the :math:`3N-6` approach,  of the form :math:`\ket{\nu_1, \nu_2, \nu_3^{\ell_3}; J, k, m}`, tackling the unique difficulties of linear molecules involves constraining the vibrational and rotational functions with :math:`k=\ell_3`,  which are the projections, in units of :math:`\hbar`, of the corresponding angular momenta onto the molecular axis. These basis functions are assigned to irreducible representations (irreps) of the {\itshape\bfseries C}:math:`_{2{\rm v}}`(M) molecular symmetry group. This, in turn, necessitates purpose-built codes that specifically deal with linear molecules. In the present work, we describe an alternative scheme and introduce an (artificial) group that ensures that the condition :math:`\ell_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications.
+Linear molecules usually represent a special case in rotational-vibrational calculations due to a singularity of the kinetic energy operator that arises from the rotation about the :math:`a` (the principal axis of least moment of inertia, becoming the molecular axis at the linear equilibrium geometry) being undefined. Assuming the standard ro-vibrational basis functions, in the :math:`3N-6` approach,  of the form :math:`\ket{\nu_1, \nu_2, \nu_3^{l_3}; J, k, m}`, tackling the unique difficulties of linear molecules involves constraining the vibrational and rotational functions with :math:`k=l_3`,  which are the projections, in units of :math:`\hbar`, of the corresponding angular momenta onto the molecular axis. These basis functions are assigned to irreps of the C\ :math:`_{2{\rm v}}`\ (M) molecular symmetry group. This, in turn, necessitates purpose-built codes that specifically deal with linear molecules. In the present work, we describe an alternative scheme and introduce an (artificial) group that ensures that the condition :math:`l_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications.
 
-In TROVE an alternative scheme is implemented as an (artificial) group that ensures that the condition :math:`\ell_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications. To this end, we construct an artificial molecular symmetry  group C\ :sub:`2nv`\ (AEM), which consists of one-dimensional (non-degenerate) irreducible representations and use it to classify vibrational and rotational basis  functions according to :math:`\ell` and :math:`k`.  This extension to non-rigorous, artificial symmetry groups  is based on cyclic groups of prime-order. Opposite to the usual scenario, where the form of symmetry adapted basis sets is dictated by the symmetry group the molecule belongs to, here the symmetry  group C\ :sub:`2nv`\ (AEM) is built to satisfy properties for the convenience of the basis set construction and matrix elements calculations. We believe that the idea of  purpose-built artificial symmetry groups can be useful in other~applications.
+In TROVE an alternative scheme is implemented as an (artificial) group that ensures that the condition :math:`l_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications. To this end, we construct an artificial molecular symmetry  group C\ :sub:`2vn`\ (AEM), which consists of one-dimensional (non-degenerate) irreducible representations and use it to classify vibrational and rotational basis  functions according to :math:`l` and :math:`k`.  This extension to non-rigorous, artificial symmetry groups  is based on cyclic groups of prime-order. Opposite to the usual scenario, where the form of symmetry adapted basis sets is dictated by the symmetry group the molecule belongs to, here the symmetry  group C\ :sub:`2vn`\ (AEM) is built to satisfy properties for the convenience of the basis set construction and matrix elements calculations. We believe that the idea of  purpose-built artificial symmetry groups can be useful in other~applications.
 
 Examples of character tables for :math:`n=4` are given in Table below 
 
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
-|C\ :sub:`2nv`\ (AEM) | :math:`E^0` |:math:`C_2^0` | :math:`\sigma^0` |:math:`\sigma_v^0` | :math:`E^1` |:math:`C_2^1` | :math:`\sigma^1` |:math:`\sigma_v^1` | :math:`E^2` |:math:`C_2^2` | :math:`\sigma^2` |:math:`\sigma_v^2` |  :math:`E^3` |:math:`C_2^3` | :math:`\sigma^3` |:math:`\sigma_v^3` |
-+---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|C\ :sub:`2vn`\ (AEM) | :math:`E^0` |:math:`C_2^0` | :math:`\sigma^0` |:math:`\sigma_v^0` | :math:`E^1` |:math:`C_2^1` | :math:`\sigma^1` |:math:`\sigma_v^1` | :math:`E^2` |:math:`C_2^2` | :math:`\sigma^2` |:math:`\sigma_v^2` |  :math:`E^3` |:math:`C_2^3` | :math:`\sigma^3` |:math:`\sigma_v^3` |
++=====================+=============+==============+==================+===================+=============+==============+==================+===================+=============+==============+==================+===================+==============+==============+==================+===================+
 |       :math:`A_1^0` |    1        |       1      |      1           |         1         |        1    |     1        |        1         |      1            |      1      |     1        |         1        |      1            |         1    |        1     |      1           |      1            |
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 |       :math:`B_1^0` |    1        |      -1      |      1           |        -1         |        1    |    -1        |        1         |     -1            |      1      |    -1        |         1        |     -1            |         1    |       -1     |      1           |     -1            |
@@ -318,6 +318,25 @@ Examples of character tables for :math:`n=4` are given in Table below
 |       :math:`B_2^3` |    1        |      -1      |      -1          |         1         |       -1    |     1        |        1         |     -1            |      -1     |     1        |         1        |     -1            |       1      |       -1     |     -1           |      1            |
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 
+How to use C\ :sub:`2vn`\ (AEM)   
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An artificial symmetry C\ :sub:`2vn`\ (AEM)    is invoked via the following card places anywhere (but before the ``diagonalizer`` section):
+::
+
+    SYMGROUP C2vn 18
+
+Here the integer number :math:`n=18` corresponds to the maximal value of the vibrational angular momentum :math:`l_{\rm max}` and therefore to the maximal value of the rotational quantum number :math:`k` due to the constraint :math:`k=l` used for linear triatomic molecules (case 3N-6). This number muster coincide with the value of the ``k`` or ``kmax`` cards in the ``BASIS`` block (rotational basis line), e.g.
+::
+
+    BASIS
+      0,'JKtau', Jrot 0, krot  18
+      1,'numerov','rational', 'morse',  range 0,20, r 8, resc 3.0, points   2000, borders -0.3,0.90
+      2,'numerov','rational', 'morse',  range 0,36, r 8, resc 1.5, points   3000, borders -0.4,0.90
+      3,'laguerre-k','linear','linear', range 0,48, r 8, resc 1.0, points  12000, borders  0.,120.0 deg
+    END
+
+
 
 C\ :sub:`ns`\ (AEM) 
 -------------------
@@ -327,22 +346,37 @@ The artificial symmetry group C\ :sub:`ns`\ (AEM) consists of one-dimensional, r
 
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
 |C\ :sub:`4s`  |C\ :sub:`s`| :math:`E^0` |:math:`\sigma^0` | :math:`E^1` |:math:`\sigma^1` |  :math:`E^2` |:math:`\sigma^2` | :math:`E^3` |:math:`\sigma^3`|
-+--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
++==============+===========+=============+=================+=============+=================+==============+=================+=============+================+
 |:math:`A'_0`  |:math:`A'` |   1         |   1             |       1     |        1        |       1      |        1        |          1  |   1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A''_0  |:math:`A''`|   1         |  -1             |       1     |       -1        |       1      |       -1        |          1  |  -1            |
+|:math:`A''_0` |:math:`A''`|   1         |  -1             |       1     |       -1        |       1      |       -1        |          1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A'_1   |           |   1         |   1             |      -1     |       -1        |       1      |        1        |         -1  |  -1            |
+|:math:`A'_1`  |           |   1         |   1             |      -1     |       -1        |       1      |        1        |         -1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A''_1  |           |   1         |  -1             |      -1     |        1        |       1      |       -1        |         -1  |   1            |
+|:math:`A''_1` |           |   1         |  -1             |      -1     |        1        |       1      |       -1        |         -1  |   1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A'_2   |           |   1         |   1             |       1     |        1        |      -1      |       -1        |         -1  |  -1            |
+|:math:`A'_2`  |           |   1         |   1             |       1     |        1        |      -1      |       -1        |         -1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A''_2  |           |   1         |  -1             |       1     |       -1        |      -1      |        1        |         -1  |   1            |
+|:math:`A''_2` |           |   1         |  -1             |       1     |       -1        |      -1      |        1        |         -1  |   1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A'_3   |           |   1         |   1             |      -1     |       -1        |      -1      |       -1        |          1  |   1            |
+|:math:`A'_3`  |           |   1         |   1             |      -1     |       -1        |      -1      |       -1        |          1  |   1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
-|:math:`A''_3  |           |   1         |  -1             |      -1     |        1        |      -1      |        1        |          1  |  -1            |
+|:math:`A''_3` |           |   1         |  -1             |      -1     |        1        |      -1      |        1        |          1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
 
 The  effects of the C\ :sub:`ns`\ (AEM) group operations on the coordinates is as follows: all operations leave the vibrational coordinates invariant; the  :math:`E^a` operations (in the notation of Table above leave the rotational functions invariant while the :math:`\sigma^a` operation has the same effect as the :math:`\sigma^0` operation. 
+
+How to use C\ :sub:`ns`\ (AEM) 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An artificial symmetry C\ :sub:`ns`\ (AEM) is invoked via the following card places anywhere (but before the ``diagonalizer`` section):
+::
+    
+    SYMGROUP Csn 18
+   
+The integer number :math:`n=18` corresponds to the maximal value of the vibrational angular momentum :math:`l_{\rm max}` and therefore to the maximal value of the rotational quantum number :math:`k` due to the constraint :math:`k=l` used for linear triatomic molecules (case 3N-6). This number muster coincide with the value of the ``k`` or ``kmax`` cards in the ``BASIS`` block (rotational basis line) (see above). 
+
+
+
+
+
