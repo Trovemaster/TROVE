@@ -113,7 +113,7 @@ R-RHO-Z-M2-M3
 ^^^^^^^^^^^^^
 
 A 'bisecting' XY\ :sub:`2` frame used for isotopologies with slightly different masses of Y\ :sub:`1` and Y\ :sub:`2`, for example O\ :sup:`16`\ CO\ :sup:`17`.
-Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2 but with non-symmetric masses and the Cs symmetry, e.g.:
+Although this is an XYZ molecule, in this case it is formally treated as XY\ :sub:`2` but with non-symmetric masses and the Cs symmetry, e.g.:
 ::
 
      frame    R-RHO-Z-M2-M3
@@ -855,7 +855,7 @@ Six-atomic molecules
 ====================
 
 
-The C\ :sub:`2`\ H:sub:`4` molecule and the ``C2H4`` type
+The C\ :sub:`2`\ H\ :sub:`4` molecule and the ``C2H4`` type
 ---------------------------------------------------------
 ::
 
@@ -876,7 +876,7 @@ The internal coordinates are defined using the following 12 valence coordinates:
    .. figure:: img/C2H4.jpg
        :alt: C2H4
 
-       The structure and molecular frame of the C\ :sub:`2`H\ :sub:`4` molecule.
+       The structure and molecular frame of the C\ :sub:`2`\ H\ :sub:`4` molecule.
 
 
 
@@ -917,7 +917,7 @@ where
    .. figure:: img/C2H4_coords.jpg
        :alt: C2H4 coordinates
 
-       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :sub:`2`H\ :sub:`4` molecule.
+       The vibrational coordinates of the ``C2H4_2BETA_1TAU`` type used for  the C\ :sub:`2`\ H\ :sub:`4` molecule.
 
 
 
