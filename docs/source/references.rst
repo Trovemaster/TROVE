@@ -57,6 +57,8 @@ References
 
 .. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
 
+.. [21MeYuJe] T. M. Mellor, S.N. Yurchenko, P. Jensen P., Symmetry, 13, 548 2021, Artificial Symmetries for Calculating Vibrational Energies of Linear Molecules. `doi:10.3390/sym13040548 <http://dx.doi.org/10.3390/sym13040548>`__
+
 .. [19CoYuKo] P.A. Coles, S.N. Yurchenko, R.P. Kovacich, J. Hobby, and J. Tennyson, Phys. Chem. Chem. Phys. 21, 3264 (2019), A variationally computed room temperature line list for AsH\ :sub:`3`
 
 .. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ SbH\ :sub:`3`
@@ -71,8 +73,10 @@ References
 
 .. [23MeOwTe] T. Mellor, A. Owens, J. Tennyson, and S.N. Yurchenko. MNRAS, 520, 1997 (2023), ExoMol line lists - XLVIII. High-temperature line list of thioformaldehyde (H\ :sub:`2`\ CS).
 
-.. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi:10.1093/mnras/staa2034 <http://dx.doi.org/10.1093/mnras/staa2034>`__ 
+.. [20YuTeMi]  S.N. Yurchenko, J. Tennyson, S. Miller, V.V. Melnikov, J. O'Donoghue, and L. Moore, MNRAS, 497, 2340 (2020), ExoMol line lists - XL. Ro-vibrational molecular line list for Hydronium ion (H\ :sub:`3`\ O\ :sup:`+`\ ). `doi:10.1093/mnras/staa2034 <http://dx.doi.org/10.1093/mnras/staa2034>`__
 
 .. [23Yurchenko] S.N. Yurchenko, Computational Spectroscopy of Polyatomic Molecules (CRC Press, Boca Raton, 2023).
 
-.. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997).
+.. [24YuMeTe] S. N. Yurchenko and T. Mellor and J. Tennyson, MNRAS, in press (2024).
+
+.. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997). 

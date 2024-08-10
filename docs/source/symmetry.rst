@@ -52,7 +52,7 @@ where :math:`E`, (12), :math:`E^*` and (12)\ :sup:`*` are the 4 point group oper
 Symmetry properties of the vibrational coordinates
 --------------------------------------------------
 
-TROVE uses the symmetry properties of the vibrational coordinates, i.e. how they transform upon applying the symmetry operations, to build symmetry adapted vibrational basis functions. The symmetrisation method is described in [17YuYaOv]_. In the following, we show how the coordinates, we show these transformation properties for the corresponding coordination frames implemented in TROVE. 
+TROVE uses the symmetry properties of the vibrational coordinates, i.e. how they transform upon applying the symmetry operations, to build symmetry adapted vibrational basis functions. The symmetrisation method is described in [17YuYaOv]_. In the following, we show how the coordinates, we show these transformation properties for the corresponding coordination frames implemented in TROVE.
 
 
 ``R-RHO-Z``, ``R-ALPHA-Z``
@@ -98,14 +98,14 @@ C3v(M)
 It can be used for the molecules PH\ :sub:`3` [15SoAlTe]_, SbH\ :sub:`3` [10YuCaYa]_, AsH\ :sub:`3` [19CoYuKo]_, PF\ :sub:`3` [19MaChYa]_, CH\ :sub:`3`\ Cl [18OwYaTe]_, CH\ :sub:`3`\ F, isotopologue CDH\ :sub:`3` etc.
 
 
-Coordinate transformation properties 
+Coordinate transformation properties
 ------------------------------------
 
 
 ``R-ALPHA``
 ^^^^^^^^^^^
 
-This is a rigid frame with 6 valence coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_1`, :math:`\alpha_2` and :math:`\alpha_3`. 
+This is a rigid frame with 6 valence coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_1`, :math:`\alpha_2` and :math:`\alpha_3`.
 
 
 +----------------+----------------+------------------+------------------+------------------+-------------------+------------------+
@@ -161,7 +161,7 @@ The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub
 ``R-S-DELTA``
 ^^^^^^^^^^^^^
 
-This is a non-rigid frame with 3 valence stretching coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, a symmetry adapted bending vector :math:`(S_a,S_b)` and an umbrella coordinate :math:`\delta`, where 
+This is a non-rigid frame with 3 valence stretching coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, a symmetry adapted bending vector :math:`(S_a,S_b)` and an umbrella coordinate :math:`\delta`, where
 
 .. math::
 
@@ -172,7 +172,7 @@ This is a non-rigid frame with 3 valence stretching coordinates :math:`r_1`, :ma
 
 
 
-The transformation properties of the stretching coordinates are given by 
+The transformation properties of the stretching coordinates are given by
 
 
 +----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
@@ -185,13 +185,13 @@ The transformation properties of the stretching coordinates are given by
 |    :math:`r_2` |    :math:`r_3` |           :math:`r_1`  |           :math:`r_2`  |        :math:`r_2`  |        :math:`r_3`  |        :math:`r_1`  |
 +----------------+----------------+------------------------+------------------------+---------------------+---------------------+---------------------+
 
-The bending vector :math:`(S_a,S_b)` transforms as follows 
+The bending vector :math:`(S_a,S_b)` transforms as follows
 
 .. math::
 
-    {\bf S} = {\bf D}(G) {\bf S}, 
+    {\bf S} = {\bf D}(G) {\bf S},
 
-where :math:`{\bf D}(G)` are 2x2 transformation matrices given by 
+where :math:`{\bf D}(G)` are 2x2 transformation matrices given by
 
 
 .. math::
@@ -200,38 +200,38 @@ where :math:`{\bf D}(G)` are 2x2 transformation matrices given by
     {\bf D}(E) &= \left( \begin{array}{cc}
                            1 & 0 \\
                            0 & 1 \\
-                          \end{array} 
-                  \right) \\ 
+                          \end{array}
+                  \right) \\
     {\bf D}(123) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & \frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
-                          \end{array} 
+                          \end{array}
                   \right) \\
     {\bf D}(321) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} & -\frac{1}{2}  \\
-                          \end{array} 
+                          \end{array}
                   \right) \\
     {\bf D}(23) &= \left( \begin{array}{cc}
                            1 &  0 \\
                            0 & -1 \\
-                          \end{array} 
+                          \end{array}
                   \right) \\
     {\bf D}(12) &= \left( \begin{array}{cc}
                            -\frac{1}{2} &  \frac{\sqrt{3}}{2}  \\
                             \frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
-                          \end{array} 
+                          \end{array}
                   \right) \\
     {\bf D}(13) &= \left( \begin{array}{cc}
                            -\frac{1}{2} & -\frac{\sqrt{3}}{2}  \\
                            -\frac{\sqrt{3}}{2} &  \frac{1}{2}  \\
-                          \end{array} 
+                          \end{array}
                   \right) \\
         \end{split}
 
-The operations with inversion have the same matrices, :math:`{\bf D}(G^*) = {\bf D}(G)`. 
+The operations with inversion have the same matrices, :math:`{\bf D}(G^*) = {\bf D}(G)`.
 
-Finally, the umbrella coordinate transform as follows 
+Finally, the umbrella coordinate transform as follows
 
 .. math::
 
@@ -265,3 +265,84 @@ T\ :sub:`d`\ (M)
 +-------------+------------+-------+-------------+------------------+----------------+
 |:math:`F_2`  |      3     |   0   |      -1     |     -1           |       1        |
 +-------------+------------+-------+-------------+------------------+----------------+
+
+
+Artificial symmetries (AEM)
+===========================
+
+The concept of artificial molecular symmetries was introduced in [21MeYuJe]_. 
+
+C\ :sub:`2nv`\ (AEM) 
+-------------------
+
+
+Linear molecules usually represent a special case in rotational-vibrational calculations due to a singularity of the kinetic energy operator that arises from the rotation about the :math:`a` (the principal axis of least moment of inertia, becoming the molecular axis at the linear equilibrium geometry) being undefined. Assuming the standard ro-vibrational basis functions, in the :math:`3N-6` approach,  of the form :math:`\ket{\nu_1, \nu_2, \nu_3^{\ell_3}; J, k, m}`, tackling the unique difficulties of linear molecules involves constraining the vibrational and rotational functions with :math:`k=\ell_3`,  which are the projections, in units of :math:`\hbar`, of the corresponding angular momenta onto the molecular axis. These basis functions are assigned to irreducible representations (irreps) of the {\itshape\bfseries C}:math:`_{2{\rm v}}`(M) molecular symmetry group. This, in turn, necessitates purpose-built codes that specifically deal with linear molecules. In the present work, we describe an alternative scheme and introduce an (artificial) group that ensures that the condition :math:`\ell_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications.
+
+In TROVE an alternative scheme is implemented as an (artificial) group that ensures that the condition :math:`\ell_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications. To this end, we construct an artificial molecular symmetry  group C\ :sub:`2nv`\ (AEM), which consists of one-dimensional (non-degenerate) irreducible representations and use it to classify vibrational and rotational basis  functions according to :math:`\ell` and :math:`k`.  This extension to non-rigorous, artificial symmetry groups  is based on cyclic groups of prime-order. Opposite to the usual scenario, where the form of symmetry adapted basis sets is dictated by the symmetry group the molecule belongs to, here the symmetry  group C\ :sub:`2nv`\ (AEM) is built to satisfy properties for the convenience of the basis set construction and matrix elements calculations. We believe that the idea of  purpose-built artificial symmetry groups can be useful in other~applications.
+
+Examples of character tables for :math:`n=4` are given in Table below 
+
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|C\ :sub:`2nv`\ (AEM) | :math:`E^0` |:math:`C_2^0` | :math:`\sigma^0` |:math:`\sigma_v^0` | :math:`E^1` |:math:`C_2^1` | :math:`\sigma^1` |:math:`\sigma_v^1` | :math:`E^2` |:math:`C_2^2` | :math:`\sigma^2` |:math:`\sigma_v^2` |  :math:`E^3` |:math:`C_2^3` | :math:`\sigma^3` |:math:`\sigma_v^3` |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_1^0` |    1        |       1      |      1           |         1         |        1    |     1        |        1         |      1            |      1      |     1        |         1        |      1            |         1    |        1     |      1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_1^0` |    1        |      -1      |      1           |        -1         |        1    |    -1        |        1         |     -1            |      1      |    -1        |         1        |     -1            |         1    |       -1     |      1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_2^0` |    1        |      1       |      -1          |        -1         |        1    |     1        |       -1         |     -1            |      1      |     1        |        -1        |     -1            |         1    |        1     |     -1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_2^0` |    1        |      -1      |      -1          |         1         |        1    |    -1        |       -1         |      1            |      1      |    -1        |        -1        |      1            |         1    |       -1     |     -1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_1^1` |    1        |       1      |      1           |         1         |       -1    |    -1        |       -1         |     -1            |      1      |     1        |         1        |      1            |        -1    |       -1     |     -1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_1^1` |    1        |      -1      |      1           |        -1         |       -1    |     1        |       -1         |      1            |      1      |    -1        |         1        |     -1            |        -1    |        1     |     -1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_2^1` |    1        |       1      |      -1          |        -1         |       -1    |    -1        |        1         |      1            |      1      |     1        |        -1        |     -1            |        -1    |       -1     |     -1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_2^1` |    1        |      -1      |      -1          |         1         |       -1    |     1        |        1         |     -1            |      1      |    -1        |        -1        |      1            |        -1    |        1     |      1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_1^2` |    1        |       1      |      1           |         1         |        1    |     1        |        1         |      1            |      -1     |    -1        |        -1        |     -1            |      -1      |       -1     |     -1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_1^2` |    1        |      -1      |      1           |        -1         |        1    |    -1        |        1         |     -1            |      -1     |     1        |        -1        |      1            |      -1      |        1     |     -1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_2^2` |    1        |      1       |      -1          |        -1         |        1    |     1        |       -1         |     -1            |      -1     |    -1        |         1        |      1            |      -1      |       -1     |      1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_2^2` |    1        |      -1      |      -1          |         1         |        1    |    -1        |       -1         |      1            |      -1     |    -1        |         1        |      1            |      -1      |        1     |      1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_1^3` |    1        |       1      |      1           |         1         |       -1    |    -1        |       -1         |     -1            |      -1     |    -1        |        -1        |     -1            |       1      |        1     |      1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_1^3` |    1        |      -1      |      1           |        -1         |       -1    |     1        |       -1         |      1            |      -1     |     1        |        -1        |      1            |       1      |       -1     |      1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`A_2^3` |    1        |       1      |      -1          |        -1         |       -1    |    -1        |        1         |      1            |      -1     |    -1        |         1        |      1            |       1      |        1     |     -1           |     -1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+|       :math:`B_2^3` |    1        |      -1      |      -1          |         1         |       -1    |     1        |        1         |     -1            |      -1     |     1        |         1        |     -1            |       1      |       -1     |     -1           |      1            |
++---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+
+
+C\ :sub:`ns`\ (AEM) 
+-------------------
+
+
+The artificial symmetry group C\ :sub:`ns`\ (AEM) consists of one-dimensional, real irreps, which are contracted to correlate with irreps of C\ :math:`_{\infty v}`. The irreps of C\ :sub:`ns`\ (AEM) are labelled as :math:`\Gamma=A'` and :math:`A''` irreps with an extra subscript (see Table below), e.g., :math:`A'_4`.  For example, a vibrational function with :math:`l=4` and transforming as :math:`A'` in C\ :sub:`s` would be assigned the symmetry :math:`A'_4` in C\ :sub:`ns`\ (AEM). The 0-superscripted irreps are the only physical irreps, matched to :math:`A'` and :math:`A''` of \Cs\ together with the corresponding characters of each element, while all irreps of :math:`l>0` are non-physical, i.e. "artificial". The full description of this case is given in [24YuMeTe]_.
+
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|C\ :sub:`4s`  |C\ :sub:`s`| :math:`E^0` |:math:`\sigma^0` | :math:`E^1` |:math:`\sigma^1` |  :math:`E^2` |:math:`\sigma^2` | :math:`E^3` |:math:`\sigma^3`|
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A'_0`  |:math:`A'` |   1         |   1             |       1     |        1        |       1      |        1        |          1  |   1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A''_0  |:math:`A''`|   1         |  -1             |       1     |       -1        |       1      |       -1        |          1  |  -1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A'_1   |           |   1         |   1             |      -1     |       -1        |       1      |        1        |         -1  |  -1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A''_1  |           |   1         |  -1             |      -1     |        1        |       1      |       -1        |         -1  |   1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A'_2   |           |   1         |   1             |       1     |        1        |      -1      |       -1        |         -1  |  -1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A''_2  |           |   1         |  -1             |       1     |       -1        |      -1      |        1        |         -1  |   1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A'_3   |           |   1         |   1             |      -1     |       -1        |      -1      |       -1        |          1  |   1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+|:math:`A''_3  |           |   1         |  -1             |      -1     |        1        |      -1      |        1        |          1  |  -1            |
++--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+
+The  effects of the C\ :sub:`ns`\ (AEM) group operations on the coordinates is as follows: all operations leave the vibrational coordinates invariant; the  :math:`E^a` operations (in the notation of Table above leave the rotational functions invariant while the :math:`\sigma^a` operation has the same effect as the :math:`\sigma^0` operation. 
