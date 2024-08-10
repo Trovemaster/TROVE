@@ -409,7 +409,7 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     !
     xi(12) = tau
     !
-    call ML_symmetry_transformation_CH3OH_II(nsym,xi,chi,ndeg)
+    call ML_symmetry_transformation_CH3OH(nsym,xi,chi,ndeg)
     !
     do iparam = nparam_eq+1,parmax
       !

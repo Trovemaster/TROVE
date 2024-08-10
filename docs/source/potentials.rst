@@ -580,7 +580,7 @@ where :math:`\mathbf{X}=\lbrace E,(123),(132),(12)^{*},(23)^{*},(13)^{*}\rbrace`
      
       V_{ijk\ldots}^{\mathrm{final}}=V_{ijk\ldots}^{E}+V_{ijk\ldots}^{(123)}+V_{ijk\ldots}^{(132)}+V_{ijk\ldots}^{(12)^*}+V_{ijk\ldots}^{(23)^*}+V_{ijk\ldots}^{(13)^*}
 
-which is itself subject to the six :math:`\bm{C}_{3\mathrm{v}}`(M) symmetry operations.  :math:`V_{ijk\ldots}^{\mathrm{final}}` is invariant after the application of all operations and therefore the total potential function is then given by
+which is itself subject to the six :math:`\bm{C}_{3\mathrm{v}}`\ (M) symmetry operations.  :math:`V_{ijk\ldots}^{\mathrm{final}}` is invariant after the application of all operations and therefore the total potential function is then given by
 
 .. math::
    :label: eq-pot_f
