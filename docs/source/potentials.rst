@@ -47,7 +47,9 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
       ...
       end
 
-For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  For an example, see `SiH2_XY2_MORSE_COS_step1.inp </input/SiH2_XY2_MORSE_COS_step1.inp>`_
+For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  For an example, see `SiH2_XY2_MORSE_COS_step1.inp <input/SiH2_XY2_MORSE_COS_step1.inp>`_
+
+.. doc:: input/SiH2_XY2_MORSE_COS_step1.inp
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
 ::
@@ -307,8 +309,6 @@ The first part contains some structural parameters with 'powers' indexes filled 
 
 
 
-
-
 **Examples** and **References**
 
 
@@ -342,6 +342,37 @@ where :math:`r_1  = r_1^{\rm eq}`  and :math:`r_2  = r_2^{\rm eq}` are the inter
 
 
 The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/CaOH_Koput_step1.inp>`_  where this PES is used.
+
+
+
+
+POTEN
+NPARAM  174
+compact
+POT_TYPE  POTEN_XYZ_TYUTEREV_SINRHO
+COEFF  list    (powers or list)
+RE12          0.11282020845500E+01
+RE32          0.11845554074200E+01
+ALPHAE        0.18000000000000E+03
+AA1           0.27742521800000E+01
+AA3           0.11000000000000E+01
+B1            0.50000000000000E+06
+B2            0.50000000000000E+05
+G1            0.15000000000000E+02
+G2            0.10000000000000E+02
+V0            0.54849195576882E+00
+F_0_0_1       0.00000000000000E+00
+F_1_0_0       0.23128656428427E+02
+F_0_1_0      -0.10015174180097E+02
+F_0_0_2       0.16660757971566E+05
+F_1_0_1       0.20446313480126E+03
+F_0_1_1       0.22996151739413E+02
+F_1_1_0       0.16908763769413E+05
+F_2_0_0       0.59573023581912E+05
+F_0_2_0       0.24906928837814E+06
+F_0_0_3       0.14768287442718E+04
+F_1_0_2      -0.20570616009469E+05
+
 
 
 
@@ -389,7 +420,7 @@ XY\ :sub:`3` type (pyramidal)
 ``POTEN_XY3_MORBID_10``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate representing the 1D inversion motion and other 5 are displacements from their equilibrium values, but it can be equally used for rigid molecules like phosphine as well. As all PEFs in TROVE, ``POTEN_XY3_MORBID_10``  is a symmetry adapted to be fully symmetric for all operations (permutations) of the D\ :sub: `3h`\ (M) (and also C\ :sub:`3v`\ (M)) molecular group symmetry. It uses the following coordinates
+This PEF is for ammonia (non-rigid) molecules with an umbrella coordinate representing the 1D inversion motion and other 5 are displacements from their equilibrium values, but it can be equally used for rigid molecules like phosphine as well. As all PEFs in TROVE, ``POTEN_XY3_MORBID_10``  is a symmetry adapted to be fully symmetric for all operations (permutations) of the D\ :sub:`3h`\ (M) (and also C\ :sub:`3v`\ (M)) molecular group symmetry. It uses the following coordinates
 
 
 .. math::
