@@ -558,28 +558,33 @@ A CH3Cl type system
 ^^^^^^^^^^^^^^^^^^
 
 The potential function is build on the fly as follows. Taking an initial potential term of the form 
+
 .. math::
    :label: eq-V_i
     
     V_{ijk\ldots}^{\mathrm{initial}}=\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}
+    
 
+with maximum expansion order :math:`i+j+k+l+m+n+p+q+r=6`, each symmetry operation of :math:`\bm{C}_{3\mathrm{v}}`\ (M) is independently applied to :math:`V_{ijk\ldots}^{\mathrm{initial}}`, i.e.
 
-with maximum expansion order :math:`i+j+k+l+m+n+p+q+r=6`, each symmetry operation of :math:`\bm{C}_{3\mathrm{v}}`(M) is independently applied to :math:`V_{ijk\ldots}^{\mathrm{initial}}`, i.e.
 .. math::
    :label: eq-V_op
-
+   
    V_{ijk\ldots}^{\mathbf{X}}=\mathbf{X}{\,}V_{ijk\ldots}^{\mathrm{initial}}=\mathbf{X}\left(\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}\right)
    
+   
 where :math:`\mathbf{X}=\lbrace E,(123),(132),(12)^{*},(23)^{*},(13)^{*}\rbrace`, to create six new terms. The results are summed together to produce a final term,
+
 .. math::
      :label:  eq-V_f
-
+     
       V_{ijk\ldots}^{\mathrm{final}}=V_{ijk\ldots}^{E}+V_{ijk\ldots}^{(123)}+V_{ijk\ldots}^{(132)}+V_{ijk\ldots}^{(12)^*}+V_{ijk\ldots}^{(23)^*}+V_{ijk\ldots}^{(13)^*}
 
 which is itself subject to the six :math:`\bm{C}_{3\mathrm{v}}`(M) symmetry operations.  :math:`V_{ijk\ldots}^{\mathrm{final}}` is invariant after the application of all operations and therefore the total potential function is then given by
+
 .. math::
    :label: eq-pot_f
-
+   
    V_{\mathrm{total}}(\xi_{0},\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}^{\mathrm{final}}
    
    
