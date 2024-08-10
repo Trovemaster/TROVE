@@ -286,7 +286,29 @@ In principle, the KEO should fully define the configuration of the problem to so
 KINETIC_XYZ_EKE_BOND_SINRHO
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``.
+This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``, for example for :sup:`12`\ C\ :sup:`12`\ C\ :sup:`13`\ C, the corresponding TROVE input is as follows:
+::
+
+COORDS local (curvilinear)
+TRANSFORM   R-RHO-Z-M2-M3-BISECT (FRAME)
+MOLTYPE XY2   
+REFER-CONF NON-RIGID 
+
+ZMAT
+    C   0  0  0  0  12.000000
+    C   1  0  0  0  13.003355
+    C   1  2  0  0  12.000000
+end
+
+KINETIC
+  kinetic_type  KINETIC_XYZ_EKE_bisect
+END
+
+The associated symmetry is either Cs(M) or C\ :sub:`ns`\ (M):
+::
+   
+   symmetry Cs(M)
+   
 
 
 KINETIC_XYZ_EKE_BOND
