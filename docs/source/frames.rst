@@ -449,7 +449,7 @@ The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengt
        Valence coordinates and the bisector frame used for H\ :sub:`2`\ CO.
 
 
- Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
+Apart from the standard linearised KEO, a curvilinear exact KEO has been recently introduced into TROVE. This is exactly the ``R-THETA-TAU`` type, detailed below.
 
 
 ``R-THETA-TAU``
@@ -486,40 +486,41 @@ The Z type can be used to define single or double deuterated isotopologues of an
       end
 
 
-Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane conteining PD and bisetcing the angle betwen two PH bonds.
+Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane contemning PD and bisecting the angle between two PH bonds.
 
 
 For a  PH\ :sub:`2`\ D type isotopologue, the Z-matrix is given by
-
+::
+      
       ZMAT
           P   0  0  0  0  14.00307401
           H   1  0  0  0   1.007825032
           D   1  2  0  0   2.01410178
           D   1  2  3  2   2.01410178
       end
-
+      
 
 Non-rigid isotopologues of XY\ :sub:`3` as ZXY\ :sub:`2` type
 -------------------------------------------------------------
 
 For non-rigid NH\ :sub:`2`\ D and NHD\ :sub:`2`,  the choice of the non-rigid frame becomes important. During to the large amplitude motion, the frame can lead to a flip of the moments of inertia. In TROVE, the frame is chosen as the principle axis system (PAS), which, for most of the system, is straightforward to define. Therefore, frame and the internal coordinates are usually selected via a single keyword ``Transform``. For non-rigid systems, however, due to accidental degeneracies of the moments of inertia, the PAS along the non-rigid path must be carefully constructed to prevent such flips. Besides, for the ammonia isotopologues, despite the structure ZXY\ :sub:`2` being formally similar the structure of formaldehyde, the coordinates should be chosen as ammonia-like, not formaldehyde-like. Therefore, in this case we distinguish ``frame`` and ``transform``. For NHD\ :sub:`2`, the following setting is used:
 ::
-
+    
     TRANSFORM  R-S-DELTA
     frame      R1-Z-R2-X-Y
     MOLTYPE    XY3
     REFER-CONF NON-RIGID
-
+    
 The valence coordinates is defined using the ``Zmat`` card as follows:
 ::
-
+    
     ZMAT
         N   0  0  0  0  14.00307401
         D   1  0  0  0   2.01410178
         H   1  2  0  0   1.007825032
         H   1  2  3  1   1.007825032
     end
-
+    
 
 The coordinates type ``R-S-DELTA`` (card ``TRANSFORM``) defines the internal coordinates the same as in the case of XY\ :sub:`3`, while the frame ``R1-Z-R2-X-Y`` places the :math:`z` axis containing the vector :math:`\vec{r}_1` (ND), axis :math:`x` in the direction of the :math:`\vec{r}_1` (NH\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NH\ :sub:`2`\ D is illustrated in the side figure, where the evolution of the PAS is shown. At the planar configuration, the :math:`y` axis is normal to the plane with :math:`z` as the symmetry axis. 
 
@@ -546,7 +547,7 @@ The card ``MOLTYPE XY3`` means that all the associated transformation rules are 
 
 The same non-rigid frame is used for NHD\ :sub:`2`, now with the :math:`z` axis containing the vector :math:`\vec{r}_1` (NH), axis :math:`x` in the direction of the :math:`\vec{r}_1` (ND\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NHD\ :sub:`2` and the evolution of PAS  is illustrated in the side figure with the Z-matrix given by
 ::
-
+    
     ZMAT
         N   0  0  0  0  14.00307401
         D   1  0  0  0   2.01410178
@@ -554,6 +555,7 @@ The same non-rigid frame is used for NHD\ :sub:`2`, now with the :math:`z` axis 
         H   1  2  3  1   1.007825032
     end
     
+
 Although the definition of the frames is similar, the transformations of the corresponding PASs are very distinct.
 
 
