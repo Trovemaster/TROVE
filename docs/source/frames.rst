@@ -32,7 +32,7 @@ A molecule type is defined by the keyword ``MolType``. For the XY\ :sub:`2`  exa
 
 in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the XY\ :sub:`2` molecules, with the :math:`x` axis bisecting the bond angle and the :math:`z` in the plane of the molecule, but other embeddings are possible. The PAS frame coincides with the bisector frame at the equilibrium or non-rigid reference configuration (i.e. symmetric).  In TROVE, the definition of the frame is combined with the definition of the internal coordinates via the keywords ``transform`` or ``frame``. In the following, these are described.
 
-For quasi-linear triatomic molecules, it is also possible to use exact curvilinear KEO in implemented analytically, see below. 
+For quasi-linear triatomic molecules, it is also possible to use exact curvilinear KEO in implemented analytically, see below.
 
 
 ``R-RHO-Z``
@@ -100,12 +100,12 @@ In the ``Non-rigid`` reference configuration, :math:`\alpha` is given on a grid 
 
 TROVE input example:
 ::
-  
+
   COORDS       local    (curvilinear coordinates)
   frame    r-rho-z  (r1, r2, rho with the x parallel to the bisector)
   MOLTYPE      XY2
   REFER-CONF   non-RIGID  (Reference configuration)
-  
+
 .. Note:: The text in brackets is used for comments.
 
 
@@ -182,7 +182,7 @@ This is another 'bond'-embedding with the same vibrational coordinates as in ``R
 ``R2-Z-R1-RHO``
 ^^^^^^^^^^^^^^^
 
-This is a 'bond'-embedding with the :math:`r_2` along the :math:`z` axis and :math:`r_1` in the positive direction of :math:`x`, which is illustrated in the figure. 
+This is a 'bond'-embedding with the :math:`r_2` along the :math:`z` axis and :math:`r_1` in the positive direction of :math:`x`, which is illustrated in the figure.
 
 .. sidebar::
 
@@ -200,51 +200,51 @@ Exact KEO frames for triatomic molecules
 There several exact, curvilinear KEO forms are available in TROVE for quasi-linear triatomic molecules, XY\ :sub:`2` and XYZ. These KEOs are implemented in TROVE analytically, together with the corresponding matrix elements with the singularity resolution. These forms require a ``kinetic`` block in input with a reference to the specific frame. This is the difference with the linearised KEOs which use a general TROVE approach applicable for arbitrary molecules, except the linear ones. Exact KEO frames require that the ``COORDS`` card is set to ``LOCAL`` (aka ``CURVILINEAR``), which stands for the curvilinear coordinates.
 
 The associated kinetic expansion order ``KinOrder`` must be set to 2 in the following exact KEO. Here the expansion plays a formal role as this KEO i represented as a formal expansion of the 2nd order in terms of two stretches around the non-rigid reference configuration along the :math:`\rho` coordinate (see the ``rational`` expansion type in the basis set in the stretching subgroup 1).
-Each KEO presented case is constructed to be used with the specific basis set configuration and usually also for a specific frame. These must be always used together. 
+Each KEO presented case is constructed to be used with the specific basis set configuration and usually also for a specific frame. These must be always used together.
 
 ``KINETIC_XY2_EKE_BISECT``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is a bisector frame for curvilinear coordinates of an XY\ :sub:`2` molecules with ``kinetic`` input block is given by 
-:: 
-   
+This is a bisector frame for curvilinear coordinates of an XY\ :sub:`2` molecules with ``kinetic`` input block is given by
+::
+
    KINETIC
      kinetic_type  KINETIC_XY2_EKE_BISECT
    END
-   
 
-It can be only used with the coordinates/frame type ``R-RHO-Z``  (see above), i.e. for the valence coordinates with :math:`\rho` as the bending angle (:math:`\rho=0` at the linear geometry), the basis set ``laguerre-k`` and with the ``NON-RIGID`` reference configuration. 
-The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.   The associated kinetic expansion order ``KinOrder`` must be set to 2. 
+
+It can be only used with the coordinates/frame type ``R-RHO-Z``  (see above), i.e. for the valence coordinates with :math:`\rho` as the bending angle (:math:`\rho=0` at the linear geometry), the basis set ``laguerre-k`` and with the ``NON-RIGID`` reference configuration.
+The ``laguerre-k`` basis functions are constructed using the Associated Laguerre polynomial with the factor :math:`\sqrt{\rho}` or :math:`\sqrt{\rho} \rho`, depending if :math:`K` (rotational quantum number) is zero or not, respectively.   The associated kinetic expansion order ``KinOrder`` must be set to 2.
 
 Here is an input example for this case for the C\ :sub:`3` molecule:
 ::
 
     KinOrder  2
-    
-    COORDS local 
-    frame  r-rho-z  
-    MOLTYPE XY2   
-    REFER-CONF NON-RIGID  
-    
+
+    COORDS local
+    frame  r-rho-z
+    MOLTYPE XY2
+    REFER-CONF NON-RIGID
+
     SYMGROUP C2v(M)
-    
+
     ZMAT
         C   0  0  0  0  11.996709
         C   1  0  0  0  11.996709
         C   1  2  0  0  11.996709
     end
-     
+
     BASIS
       0,'JKtau', Jrot 0, krot 12
       1,'numerov','rational', 'morse',  range 0,30,r 8, weight 1.0, points  3000, borders -0.40,1.40
       1,'numerov','rational', 'morse',  range 0,30,r 8, weight 1.0, points  3000, borders -0.40,1.40
       2,'laguerre-k','linear','linear', range 0,56,     weight 1.0, points 10000, borders  0.,110.0 deg
     END
-    
+
     KINETIC
       kinetic_type  KINETIC_XY2_EKE_BISECT
     END
-    
+
 
 
 ``KINETIC_XY2_EKE_BISECT_SINRHO``
@@ -252,9 +252,9 @@ Here is an input example for this case for the C\ :sub:`3` molecule:
 
 This a similar to the basis set ``KINETIC_XY2_EKE_BISECT``, which is introduced to work with the basis set ``sinrho-laguerre-k`` and only with this basis set. This basis set is constructed from the  Associated Laguerre polynomial with the factor :math:`(\sin\rho)^{K+\frac{1}{2}}`.
 
-The associated TROVE configuration is as in the following input: 
+The associated TROVE configuration is as in the following input:
 ::
-    
+
     KinOrder  2
 
     COORDS local
@@ -278,17 +278,17 @@ KINETIC_XYZ_EKE_BISECT
 ^^^^^^^^^^^^^^^^^^^^^^
 
 For asymmetric triatomic molecules of type XYZ, there are several ways to orient the in-plane axes :math:`x` and :math:`z` at a general instantaneous geometry. The ``KINETIC_XYZ_EKE_BISECT`` KEO is constructed for the frame with the :math:`x` axis along the molecular bisector. The bisector XYZ frame is for asymmetric molecules XYZ with similar masses of Y and Z, i.e. when a bisector is a more natural description of the axis than a bond-frame. This KEO must be used with the correct XYZ-type bisector frames: ``R-RHO-Z-M2-M3-BISECT`` is used for general asymmetric molecules with similar masses of Y (M2) and Z (M3).
- 
-In principle, the KEO should fully define the configuration of the problem to solve and the associated frame type should not matter for the solution of the Schroedniger equation. The point where the choice of the frame becomes critical is when the dipoles are involved, which need to be re-defined into the correct frame. The actual transformation of the dipole is performed in the subroutine ``MLloc2pqr_xyz``. 
- 
- 
+
+In principle, the KEO should fully define the configuration of the problem to solve and the associated frame type should not matter for the solution of the Schroedniger equation. The point where the choice of the frame becomes critical is when the dipoles are involved, which need to be re-defined into the correct frame. The actual transformation of the dipole is performed in the subroutine ``MLloc2pqr_xyz``.
+
+
 
 KINETIC_XYZ_EKE_BOND_SINRHO
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``. 
+This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``.
 
- 
+
 KINETIC_XYZ_EKE_BOND
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -313,13 +313,13 @@ Is one of the bond-frames constructed for the XYZ type molecules (X is in the ce
     KINETIC
       kinetic_type  KINETIC_XYZ_EKE_BOND
     END
- 
 
-    
+
+
 KINETIC_XYZ_EKE_BOND-R2
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the case of the bond-frame with :math:`z` along the bong :math:`r_2` (Z nucleus). The associated frames and basis sets are ``R2-Z-R1-RHO`` and ``laguerre-k``, respectively. See the figure illustrating the ``R2-Z-R1-RHO`` frame above. 
+This is the case of the bond-frame with :math:`z` along the bong :math:`r_2` (Z nucleus). The associated frames and basis sets are ``R2-Z-R1-RHO`` and ``laguerre-k``, respectively. See the figure illustrating the ``R2-Z-R1-RHO`` frame above.
 
 
 
@@ -469,10 +469,13 @@ The common valence coordinate choice for ZXY\ :sub:`2` includes three bond lengt
 
 
 
-Isotopologues of XY\ :sub:`3`  as ZXY\ :sub:`2` type
-----------------------------------------------------
 
-The Z type can be used to define signle or double deturated isotopologues of an XY\ :sub:`3` molecule such as a rigid PH\ :sub:`3` or non-rigid NH\ :sub:`3`. For PDH\ :sub:`2`, we use ``R-THETA-TAU`` in combination with the Z-matrix given as follows:
+
+
+Rigid isotopologues of XY\ :sub:`3`  as ZXY\ :sub:`2` type
+----------------------------------------------------------
+
+The Z type can be used to define single or double deuterated isotopologues of an XY\ :sub:`3` molecule such as a rigid PH\ :sub:`3`. For PDH\ :sub:`2`, we use ``R-THETA-TAU`` in combination with the Z-matrix given as follows:
 ::
 
       ZMAT
@@ -486,7 +489,7 @@ The Z type can be used to define signle or double deturated isotopologues of an 
 Here, the equilibrium frame coinsides with the principle axis system with the :math:`z` axis in the plane conteining PD and bisetcing the angle betwen two PH bonds.
 
 
-For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by
+For a  PH\ :sub:`2`\ D type isotopologue, the Z-matrix is given by
 
       ZMAT
           P   0  0  0  0  14.00307401
@@ -496,73 +499,57 @@ For a  PH\ :sub:`2`D type isotopologue, the Z-matrix is given by
       end
 
 
+Non-rigid isotopologues of XY\ :sub:`3` as ZXY\ :sub:`2` type
+-------------------------------------------------------------
 
-ZXY\ :sub:`3` (Methyl Chloride type)
-------------------------------------
+For non-rigid NH\ :sub:`2`\ D and NHD\ :sub:`2`,  the choice of the non-rigid frame becomes important. During to the large amplitude motion, the frame can lead to a flip of the moments of inertia. In TROVE, the frame is chosen as the principle axis system (PAS), which, for most of the system, is straightforward to define. Therefore, frame and the internal coordinates are usually selected via a single keyword ``Transform``. For non-rigid systems, however, due to accidental degeneracies of the moments of inertia, the PAS along the non-rigid path must be carefully constructed to prevent such flips. Besides, for the ammonia isotopologues, despite the structure ZXY\ :sub:`2` being formally similar the structure of formaldehyde, the coordinates should be chosen as ammonia-like, not formaldehyde-like. Therefore, in this case we distinguish ``frame`` and ``transform``. For NHD\ :sub:`2`, the following setting is used:
 ::
 
-       MolType ZXY3
+    TRANSFORM  R-S-DELTA
+    frame      R1-Z-R2-X-Y
+    MOLTYPE    XY3
+    REFER-CONF NON-RIGID
+
+The valence coordinates is defined using the ``Zmat`` card as follows:
+::
+
+    ZMAT
+        N   0  0  0  0  14.00307401
+        D   1  0  0  0   2.01410178
+        H   1  2  0  0   1.007825032
+        H   1  2  3  1   1.007825032
+    end
 
 
-Similarilly, for the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
+The coordinates type ``R-S-DELTA`` (card ``TRANSFORM``) defines the internal coordinates the same as in the case of XY\ :sub:`3`, while the frame ``R1-Z-R2-X-Y`` places the :math:`z` axis containing the vector :math:`\vec{r}_1` (ND), axis :math:`x` in the direction of the :math:`\vec{r}_1` (NH\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NH\ :sub:`2`\ D is illustrated in the side figure, where the evolution of the PAS is shown. At the planar configuration, the :math:`y` axis is normal to the plane with :math:`z` as the symmetry axis. The card ``MOLTYPE XY3`` means that all the associated transformation rules are implemented in the module mol_xy3.f90.
+
+.. sidebar::
+
+   .. figure:: img/NH2D.png
+       :alt: NH2D
+
+       Non-rigid reference frame for NH\ :sub:`2`\ D.
+
+The same non-rigid frame is used for NHD\ :sub:`2`, now with the :math:`z` axis containing the vector :math:`\vec{r}_1` (NH), axis :math:`x` in the direction of the :math:`\vec{r}_1` (ND\ :sub:`1`) and the symmetry plane to be :math:`zy`, see the figure. This non-rigid frame of NHD\ :sub:`2` and the evolution of PAS  is illustrated in the side figure with the Z-matrix given by
+::
+
+    ZMAT
+        N   0  0  0  0  14.00307401
+        D   1  0  0  0   2.01410178
+        H   1  2  0  0   1.007825032
+        H   1  2  3  1   1.007825032
+    end
+    
+Although the definition of the frames is similar, the transformations of the corresponding PASs are very distinct.
 
 
 .. sidebar::
 
-   .. figure:: img/CH3Cl.jpg
-       :alt: CH3Cl
+   .. figure:: img/NHD2.png
+       :alt: NH2D
 
-       Valence coordinates and the bisector frame used for CH\ :sub:`3`\ Cl.
+       Non-rigid reference frame for NH\ :sub:`2`\ D.
 
-
-
-``R-BETA-SYM``
-^^^^^^^^^^^^^^
-
-.. math::
-
-    \begin{split}
-    \xi_1 &= r_0 - r_{\rm e}^{(0)}, \\
-    \xi_2 &= r_1 - r_{\rm e}, \\
-    \xi_3 &= r_2 - r_{\rm e}, \\
-    \xi_4 &= r_3 - r_{\rm e}, \\
-    \xi_5 &= \beta_1-\beta_{\rm e},  \\
-    \xi_6 &= \beta_2-\beta_{\rm e},  \\
-    \xi_7 &= \beta_3-\beta_{\rm e},  \\
-    \xi_8 &= \frac{1}{\sqrt{6}} (2 \tau_{23}-\tau_{13}-\tau_{12}),  \\
-    \xi_9 &= \frac{1}{\sqrt{2}} ( \tau_{13}-\tau_{12}).  \\
-    \end{split}
-
-
-The Z-matrix coordinates (underlying basic TROVE coordinates) are as given by the Z-matrix rules:
-::
-
-     ZMAT
-         C   0  0  0  0  12.000000000
-         Cl  1  0  0  0  34.968852721
-         H   1  2  0  0   1.007825035
-         H   1  2  3  0   1.007825035
-         H   1  2  3  4   1.007825035
-     end
-
-are as follows:
-
-- :math:`r_0`
-- :math:`r_1`, :math:`\beta_{1}`
-- :math:`r_2`, :math:`\beta_{2}`, :math:`\alpha_{12}`
-- :math:`r_3`, :math:`\beta_{3}`, :math:`\alpha_{13}`
-
-where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed
-to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
-
-.. math::
-
-    \begin{split}
-    \cos \tau_{12} &= \frac{\cos\alpha_{12}-\cos\beta_{1}\cos\beta_{2}}{\sin\beta_{1}\sin\beta_{2}}, \\
-    \cos \tau_{13} &= \frac{\cos\alpha_{13}-\cos\beta_{1}\cos\beta_{3}}{\sin\beta_{1}\sin\beta_{3}}, \\
-    \tau_{23} &= 2\pi - \tau_{12}-\tau_{13},\\
-    \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
-    \end{split}
 
 
 A chain ABCD type molecule  (hydrogen peroxide type)
@@ -644,8 +631,8 @@ where :math:`{\bf\zeta} = \{R,r_1,r_2,\alpha_{123},\alpha_{234}\}`.
 
 
 
-Fuive-atomic molecules
-======================
+Five-atomic molecules
+=====================
 
 
 
@@ -684,8 +671,8 @@ with the Cartesian coordinates at equilibrium given by
 
 
 
-``R-ALPHA``
-^^^^^^^^^^^
+``TRANSFORM R-ALPHA``
+^^^^^^^^^^^^^^^^^^^^^
 
 
 The tetrahedral five-atomic molecule XY\ :sub:`4`  has 9 vibrational degrees of freedom. For a semi-rigid molecule (i.e. ignoring any isomerisation that can occur at higher energies), they can be characterised by four bond lengths :math:`r_i \equiv r_{{\rm C}-{\rm H}_i}` and six inter-bond angles :math:`\alpha_{{\rm H}_i-{\rm C}-{\rm H}_j} = \alpha_{ij}`.  For the equilibrium value of the tetrahedral angle :math:`\alpha`,  :math:`\cos(\alpha_{\rm e})` =  :math:`-1/\sqrt{3}` which explains the factor :math:`1/\sqrt{3}` in the definition of the  Cartesian coordinates.
@@ -750,10 +737,92 @@ The stretching modes :math:`r_i` can also be in principle combined into symmetry
 
 
 
+ZXY\ :sub:`3` (Methyl Chloride type)
+------------------------------------
+::
+
+       MolType ZXY3
+
+
+For the ZXY\ :sub:`3` type molecule we use valence coordinates consisting of four bond lengths :math:`r_0`, :math:`r_i` (:math:`i-1,2,3`), three bond angles :math:`\beta_i` and two symmetry adapted dihedral coordinates constructed from three dihedral angles :math:`\tau_{12}, \tau_{23}, \tau_{13}`, where :math:`\tau_{12}+\tau_{23}+\tau_{13} = \pi`. This is a ``rigid`` type, where all coordinates are treated as displacements from the corresponding equilibrium values. Currently, only the standard linearised KEO is available in TROVE.
+
+
+.. sidebar::
+
+   .. figure:: img/CH3Cl.jpg
+       :alt: CH3Cl
+
+       Valence coordinates and the bisector frame used for CH\ :sub:`3`\ Cl.
+
+
+
+``TRANSFORM  R-BETA-SYM``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. math::
+
+    \begin{split}
+    \xi_1 &= r_0 - r_{\rm e}^{(0)}, \\
+    \xi_2 &= r_1 - r_{\rm e}, \\
+    \xi_3 &= r_2 - r_{\rm e}, \\
+    \xi_4 &= r_3 - r_{\rm e}, \\
+    \xi_5 &= \beta_1-\beta_{\rm e},  \\
+    \xi_6 &= \beta_2-\beta_{\rm e},  \\
+    \xi_7 &= \beta_3-\beta_{\rm e},  \\
+    \xi_8 &= \frac{1}{\sqrt{6}} (2 \tau_{23}-\tau_{13}-\tau_{12}),  \\
+    \xi_9 &= \frac{1}{\sqrt{2}} ( \tau_{13}-\tau_{12}).  \\
+    \end{split}
+
+
+The Z-matrix coordinates (underlying basic TROVE coordinates) are as given by the Z-matrix rules:
+::
+
+     ZMAT
+         C   0  0  0  0  12.000000000
+         Cl  1  0  0  0  34.968852721
+         H   1  2  0  0   1.007825035
+         H   1  2  3  0   1.007825035
+         H   1  2  3  4   1.007825035
+     end
+
+are as follows:
+
+- :math:`r_0`
+- :math:`r_1`, :math:`\beta_{1}`
+- :math:`r_2`, :math:`\beta_{2}`, :math:`\alpha_{12}`
+- :math:`r_3`, :math:`\beta_{3}`, :math:`\alpha_{13}`
+
+where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed
+to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
+
+.. math::
+
+    \begin{split}
+    \cos \tau_{12} &= \frac{\cos\alpha_{12}-\cos\beta_{1}\cos\beta_{2}}{\sin\beta_{1}\sin\beta_{2}}, \\
+    \cos \tau_{13} &= \frac{\cos\alpha_{13}-\cos\beta_{1}\cos\beta_{3}}{\sin\beta_{1}\sin\beta_{3}}, \\
+    \tau_{23} &= 2\pi - \tau_{12}-\tau_{13},\\
+    \cos \alpha_{23} &= \cos\beta_{2}\cos\beta_{3}+\cos(\tau_{12}+\tau_{13})\sin\beta_{2}\sin\beta_{3}.\\
+    \end{split}
+
+
+The CH\ :sub:`3`\ D molecule (C\ :sub:`3v`\ ) of the ``ZXY3`` type
+------------------------------------------------------------------
+
+``TRANSFORM  R-BETA-SYM``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is a similar to the Methyl Chloride molecule type (``MOLTYPE   ZXY3``) in terms of the symmetry properties, although being a methane-deuterated product. The same coordinate ``Transform`` type ``TRANSFORM  R-BETA-SYM`` as for fZXY\ :sub:`3` can be used for CH\ :sub:`3`\ D with the following setting:
+
+::
+
+     TRANSFROM R-BETA-SYM
+     MOLTYPE   ZXY3
+
+but with the PES of methane (see **Potential energy functions**).
+
 
 Six-atomic molecules
 ====================
-
 
 
 The C\ :sub:`2`\ H:sub:`4` molecule and the ``C2H4`` type
