@@ -267,11 +267,21 @@ T\ :sub:`d`\ (M)
 +-------------+------------+-------+-------------+------------------+----------------+
 
 
-Numerical molecualr symmetry group D\ :sub:`nh`\ (M)
+Numerical molecular symmetry group D\ :sub:`nh`\ (M)
 ====================================================
 
 
 As a numerical application of linear-molecule symmetry properties, described by the D\ :math:`\infty h` point group, lower-order symmetry groups D\ :sub:`nh`\ (M) with finite :math:`n` can be used. Character tables and irreducible representation transformation matrices are implemented in TROVE for D\ :sub:`nh`\ (M) groups with arbitrary :math:`n` - values. These groups can subsequently be used in the construction of symmetry-adapted ro-vibrational basis functions for solving the Schrödinger equations of linear molecules.  HCCC is an example of a linear molecule of the D\ :math:`\infty h`  point group symmetry for which D\ :sub:`nh`\ (M) can be used in symmetrisations. 
+
+
+
+.. sidebar::
+
+    .. figure:: img/block_diag.png
+       :alt: Block diagram 
+
+       The block diagonal structure of a Hamiltonian matrix in the D\ :sub:`nh` irreducible representation. The empty (white) cells indicate blocks of vanishing matrix elements. 
+
 
 
 Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their characters under the generating operations :math:`R_+`,  :math:`R_+'` and :math:`R_-` (:math:`n` is even). 
@@ -326,6 +336,30 @@ Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their c
 +----------------+-----------+------------------------------+----------------------------+-----------------------+
 
 where for :math:`E_r''`, :math:`r` = 1, 2, \dots, :math:`\frac{n-1}{2}`.
+
+The following table gives the correspondence between the :math:`g/u` (gerade/ungerade) notation of the irreps of D\ :sub:`nh`  (even :math:`n`) and the :math:`'/''` notation of the irreps of D\ :sub:`nh`  (odd :math:`n`), based on :math:`K` (the absolute value of the projection, in units of :math:`\hbar`, onto the molecule-fixed :math:`z`-axis of the rotational angular momentum).
+
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|:math:`K`        | :math:`\Gamma` (even :math:`n`) | :math:`\Gamma` (odd :math:`n`) | \Dh{\infty}(EM)                                           |
++=================+=================================+================================+===========================================================+
+|    0            | :math:`A_{1{\rm g}}`            | :math:`A_{1}^{'}`              | :math:`\Sigma_{\rm g}{}^+`                                |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|    0            | :math:`A_{1{\rm u}}`            | :math:`A_{1}^{''}`             | :math:`\Sigma_{\rm u}{}^+`                                |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|    0            | :math:`A_{2{\rm g}}`            | :math:`A_{2}^{'}`              | :math:`\Sigma_{\rm g}{}^-`                                |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|    0            | :math:`A_{2{\rm u}}`            | :math:`A_{2}^{''}`             | :math:`\Sigma_{\rm u}{}^-`                                |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|:math:`>0`, even | :math:`E_{k{\rm g}}`            | :math:`E_{k}^{'}`              | :math:` \Delta_{\rm g}, \Gamma_{\rm g}, I_{\rm g} \cdots` |
++                 +---------------------------------+--------------------------------+-----------------------------------------------------------+
+|                 | :math:`E_{k{\rm u}}`            | :math:`E_{k}^{''}`             | :math:` \Delta_{\rm u}, \Gamma_{\rm u}, I_{\rm u} \cdots` |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|:math:`>0`, odd  | :math:`E_{k{\rm g}}`            | :math:`E_{k}^{''}`             | :math:` \Pi_{\rm g}, \Phi_{\rm g}, H_{\rm g} \cdots`      |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+|                 | :math:`E_{k{\rm u}}`            | :math:`E_{k}^{'}`              |  :math:`\Pi_{\rm u}, \Phi_{\rm u}, H_{\rm u} \cdots`      |
++-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+
+
 
 
 Artificial symmetries (AEM)
