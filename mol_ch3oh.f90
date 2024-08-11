@@ -1547,7 +1547,7 @@ module mol_ch3oh
          r_at(11) = tau2
          r_at(12) = tau3
          !
-      case('R-ALPHA-THETA-TAU')
+      case('R-ALPHA-THETA-TAU','R-ALPHA-THETA--TAU')
          !
          r_at = molec%local_eq
          !
@@ -1582,7 +1582,7 @@ module mol_ch3oh
             !call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
             !                                       beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
             !
-            select case(trim(molec%coords_transform))
+            select case(trim(molec%frame))
             case default
                write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
                stop 'ML_b0_ch3oh - bad coord. type'
@@ -1618,6 +1618,14 @@ module mol_ch3oh
                r_eq(10) = tau
                r_eq(11) = tau+molec%local_eq(10)+molec%local_eq(11)
                r_eq(12) = tau+molec%local_eq(10)+molec%local_eq(12)
+               !
+               r_at = r_eq
+               !
+            case('R-ALPHA-THETA--TAU')
+               !
+               r_eq(10) = -tau+molec%local_eq(10)
+               r_eq(11) = -tau+molec%local_eq(10)+molec%local_eq(11)
+               r_eq(12) = -tau+molec%local_eq(10)+molec%local_eq(12)
                !
                r_at = r_eq
                !
@@ -1848,7 +1856,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) + b*src(11)
           dst(11) = -b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
           !
         case (2) !(132)
           !
@@ -1867,7 +1875,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) - b*src(11)
           dst(11) = +b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
           !
         case (4) ! (32)
           !
@@ -1887,7 +1895,7 @@ module mol_ch3oh
           dst(11) = -src(11)
           dst(12) = -src(12)+2.0_ark*pi
           !
-        case (5) ! (12)
+        case (6) ! (12)
           !
           dst(1:2) = src(1:2)
           !
@@ -1903,9 +1911,9 @@ module mol_ch3oh
           !
           dst(10) = -a*src(10) + b*src(11)
           dst(11) = +b*src(10) + a*src(11)
-          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
+          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
           !
-        case (6) ! (13)
+        case (5) ! (13)
           !
           dst(1:2) = src(1:2)
           !
@@ -1922,7 +1930,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) - b*src(11)
           dst(11) = -b*src(10) + a*src(11)
           !
-          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
           !
         end select
         !
@@ -1996,7 +2004,7 @@ module mol_ch3oh
           dst(11) = -src(11)
           dst(12) = -src(12)+2.0_ark*pi
           !
-        case (5) ! (12)
+        case (6) ! (12)
           !
           dst(1:2) = src(1:2)
           !
@@ -2014,7 +2022,7 @@ module mol_ch3oh
           dst(11) = +b*src(10) + a*src(11)
           dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
           !
-        case (6) ! (13)
+        case (5) ! (13)
           !
           dst(1:2) = src(1:2)
           !

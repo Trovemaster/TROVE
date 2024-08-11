@@ -267,10 +267,71 @@ T\ :sub:`d`\ (M)
 +-------------+------------+-------+-------------+------------------+----------------+
 
 
+Numerical molecualr symmetry group D\ :sub:`nh`\ (M)
+====================================================
+
+
+As a numerical application of linear-molecule symmetry properties, described by the D\ :math:`\infty h` point group, lower-order symmetry groups D\ :sub:`nh`\ (M) with finite :math:`n` can be used. Character tables and irreducible representation transformation matrices are implemented in TROVE for D\ :sub:`nh`\ (M) groups with arbitrary :math:`n` - values. These groups can subsequently be used in the construction of symmetry-adapted ro-vibrational basis functions for solving the Schrödinger equations of linear molecules.  HCCC is an example of a linear molecule of the D\ :math:`\infty h`  point group symmetry for which D\ :sub:`nh`\ (M) can be used in symmetrisations. 
+
+
+Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their characters under the generating operations :math:`R_+`,  :math:`R_+'` and :math:`R_-` (:math:`n` is even). 
+
++---------------------+-----------+------------------------------+--------------+----------------------+
+| D\ :sub:`nh`        | :math:`E` | :math:`R_+`                  | :math:`R_+'` | :math:`R_-`          |
++=====================+===========+==============================+==============+======================+
+|(:math:`n` even)     |           | :math:`(= C_n)`              | :math:`(=i)` | :math:`(=C_2^{(x)})` |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`A_{1{\rm g}}` |   1       |     1                        |   1          |    1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`A_{2{\rm g}}` |   1       |     1                        |   1          |   -1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`B_{1{\rm g}}` |   1       |    -1                        |   1          |    1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`B_{2{\rm g}}` |   1       |    -1                        |   1          |   -1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`E_{r{\rm g}}` |   2       |:math:`2\cos\frac{2\pi r}{n}` |   2          |    0                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`A_{1{\rm u}}` |   1       |     1                        |  -1          |    1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`A_{2{\rm u}}` |   1       |     1                        |  -1          |   -1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`B_{1{\rm u}}` |   1       |    -1                        |  -1          |    1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`B_{2{\rm u}}` |   1       |    -1                        |  -1          |   -1                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+|:math:`E_{r{\rm u}}` |   2       |:math:`2\cos\frac{2\pi r}{n}` |  -2          |    0                 |
++---------------------+-----------+------------------------------+--------------+----------------------+
+
+where for :math:`E_{r{\rm g}}` and :math:`E_{r{\rm u}}`, :math:`r` = 1, 2, \dots, :math:`\frac{n}{2}-1`.
+
+Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their characters under the generating operations :math:`R_+`,  :math:`R_+'` and :math:`R_-` (:math:`n` is odd).
+
+
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|D\ :sub:`nh`    | :math:`E` | :math:`R_+`                  | :math:`R_+'`               | :math:`R_-`           |
++================+===========+==============================+============================+=======================+
+|(:math:`n` odd) |           | :math:`(= C_n)`              | :math:`(= \sigma_{\rm h})` | :math:`(= C_2^{(x)})` |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`A_1'`    |   1       |   1                          |          1                 |   1                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`A_2'`    |   1       |   1                          |          1                 |  -1                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`E_r'`    |   2       |:math:`2\cos\frac{2\pi r}{n}` |          2                 |   0                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`A_1''`   |   1       |   1                          |         -1                 |   1                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`A_2''`   |   1       |   1                          |         -1                 |  -1                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+|:math:`E_r''`   |   2       |:math:`2\cos\frac{2\pi r}{n}` |         -2                 |   0                   |
++----------------+-----------+------------------------------+----------------------------+-----------------------+
+
+where for :math:`E_r''`, :math:`r` = 1, 2, \dots, :math:`\frac{n-1}{2}`.
+
+
 Artificial symmetries (AEM)
 ===========================
 
-The concept of artificial molecular symmetries was introduced in [21MeYuJe]_. 
+The concept of artificial molecular symmetries was introduced in [21MeYuJe]_.
 
 C\ :sub:`2vn`\ (AEM)
 -------------------
@@ -280,7 +341,7 @@ Linear molecules usually represent a special case in rotational-vibrational calc
 
 In TROVE an alternative scheme is implemented as an (artificial) group that ensures that the condition :math:`l_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications. To this end, we construct an artificial molecular symmetry  group C\ :sub:`2vn`\ (AEM), which consists of one-dimensional (non-degenerate) irreducible representations and use it to classify vibrational and rotational basis  functions according to :math:`l` and :math:`k`.  This extension to non-rigorous, artificial symmetry groups  is based on cyclic groups of prime-order. Opposite to the usual scenario, where the form of symmetry adapted basis sets is dictated by the symmetry group the molecule belongs to, here the symmetry  group C\ :sub:`2vn`\ (AEM) is built to satisfy properties for the convenience of the basis set construction and matrix elements calculations. We believe that the idea of  purpose-built artificial symmetry groups can be useful in other~applications.
 
-Examples of character tables for :math:`n=4` are given in Table below 
+Examples of character tables for :math:`n=4` are given in Table below
 
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 |C\ :sub:`2vn`\ (AEM) | :math:`E^0` |:math:`C_2^0` | :math:`\sigma^0` |:math:`\sigma_v^0` | :math:`E^1` |:math:`C_2^1` | :math:`\sigma^1` |:math:`\sigma_v^1` | :math:`E^2` |:math:`C_2^2` | :math:`\sigma^2` |:math:`\sigma_v^2` |  :math:`E^3` |:math:`C_2^3` | :math:`\sigma^3` |:math:`\sigma_v^3` |
@@ -318,7 +379,7 @@ Examples of character tables for :math:`n=4` are given in Table below
 |       :math:`B_2^3` |    1        |      -1      |      -1          |         1         |       -1    |     1        |        1         |     -1            |      -1     |     1        |         1        |     -1            |       1      |       -1     |     -1           |      1            |
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 
-How to use C\ :sub:`2vn`\ (AEM)   
+How to use C\ :sub:`2vn`\ (AEM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An artificial symmetry C\ :sub:`2vn`\ (AEM)    is invoked via the following card places anywhere (but before the ``diagonalizer`` section):
@@ -338,7 +399,7 @@ Here the integer number :math:`n=18` corresponds to the maximal value of the vib
 
 
 
-C\ :sub:`ns`\ (AEM) 
+C\ :sub:`ns`\ (AEM)
 -------------------
 
 
@@ -364,17 +425,17 @@ The artificial symmetry group C\ :sub:`ns`\ (AEM) consists of one-dimensional, r
 |:math:`A''_3` |           |   1         |  -1             |      -1     |        1        |      -1      |        1        |          1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
 
-The  effects of the C\ :sub:`ns`\ (AEM) group operations on the coordinates is as follows: all operations leave the vibrational coordinates invariant; the  :math:`E^a` operations (in the notation of Table above leave the rotational functions invariant while the :math:`\sigma^a` operation has the same effect as the :math:`\sigma^0` operation. 
+The  effects of the C\ :sub:`ns`\ (AEM) group operations on the coordinates is as follows: all operations leave the vibrational coordinates invariant; the  :math:`E^a` operations (in the notation of Table above leave the rotational functions invariant while the :math:`\sigma^a` operation has the same effect as the :math:`\sigma^0` operation.
 
-How to use C\ :sub:`ns`\ (AEM) 
+How to use C\ :sub:`ns`\ (AEM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An artificial symmetry C\ :sub:`ns`\ (AEM) is invoked via the following card places anywhere (but before the ``diagonalizer`` section):
 ::
-    
+
     SYMGROUP Csn 18
-   
-The integer number :math:`n=18` corresponds to the maximal value of the vibrational angular momentum :math:`l_{\rm max}` and therefore to the maximal value of the rotational quantum number :math:`k` due to the constraint :math:`k=l` used for linear triatomic molecules (case 3N-6). This number muster coincide with the value of the ``k`` or ``kmax`` cards in the ``BASIS`` block (rotational basis line) (see above). 
+
+The integer number :math:`n=18` corresponds to the maximal value of the vibrational angular momentum :math:`l_{\rm max}` and therefore to the maximal value of the rotational quantum number :math:`k` due to the constraint :math:`k=l` used for linear triatomic molecules (case 3N-6). This number muster coincide with the value of the ``k`` or ``kmax`` cards in the ``BASIS`` block (rotational basis line) (see above).
 
 
 

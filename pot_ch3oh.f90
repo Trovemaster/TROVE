@@ -409,7 +409,7 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     !
     xi(12) = tau
     !
-    call ML_symmetry_transformation_CH3OH(nsym,xi,chi,ndeg)
+    call ML_symmetry_transformation_CH3OH_II(nsym,xi,chi,ndeg)
     !
     do iparam = nparam_eq+1,parmax
       !
@@ -647,43 +647,43 @@ end function  MLpoten_ch3oh_sym
     repres(4,11,11) = -1.0_ark
     !
     !C2'/(9)->(34)
-    repres(5,3,4) = 1.0_ark
-    repres(5,4,3) = 1.0_ark
-    repres(5,5,5) = 1.0_ark
+    repres(6,3,4) = 1.0_ark
+    repres(6,4,3) = 1.0_ark
+    repres(6,5,5) = 1.0_ark
     !
-    repres(5,7,8)  = 1.0_ark
-    repres(5,8,7)  = 1.0_ark
-    repres(5,9,9)  = 1.0_ark
-    !
-    repres(5,10,10) = -a
-    repres(5,10,11) =  b
-    repres(5,11,10) =  b
-    repres(5,11,11) =  a
-    !
-    !(13)->(35)
-    repres(6,3,5) = 1.0_ark
-    repres(6,4,4) = 1.0_ark
-    repres(6,5,3) = 1.0_ark
-    !
-    repres(6,7,9) = 1.0_ark
-    repres(6,8,8) = 1.0_ark
-    repres(6,9,7) = 1.0_ark
+    repres(6,7,8)  = 1.0_ark
+    repres(6,8,7)  = 1.0_ark
+    repres(6,9,9)  = 1.0_ark
     !
     repres(6,10,10) = -a
-    repres(6,10,11) = -b
-    repres(6,11,10) = -b
+    repres(6,10,11) =  b
+    repres(6,11,10) =  b
     repres(6,11,11) =  a
+    !
+    !(13)->(35)
+    repres(5,3,5) = 1.0_ark
+    repres(5,4,4) = 1.0_ark
+    repres(5,5,3) = 1.0_ark
+    !
+    repres(5,7,9) = 1.0_ark
+    repres(5,8,8) = 1.0_ark
+    repres(5,9,7) = 1.0_ark
+    !
+    repres(5,10,10) = -a
+    repres(5,10,11) = -b
+    repres(5,11,10) = -b
+    repres(5,11,11) =  a
     !
     do ioper = 1,nsym
       dst(:,ioper) = matmul(repres(ioper,:,:),src) 
     enddo
     !
     dst(12,1) = src(12)
-    dst(12,2) = src(12)-2.0_ark*pi/3.0_ark
-    dst(12,3) = src(12)+2.0_ark*pi/3.0_ark
+    dst(12,2) = src(12)+2.0_ark*pi/3.0_ark
+    dst(12,3) = src(12)-2.0_ark*pi/3.0_ark
     dst(12,4) =-src(12)
-    dst(12,5) =-src(12)+2.0_ark*pi/3.0_ark
-    dst(12,6) =-src(12)-2.0_ark*pi/3.0_ark
+    dst(12,5) =-src(12)-2.0_ark*pi/3.0_ark
+    dst(12,6) =-src(12)+2.0_ark*pi/3.0_ark
     !
     if (verbose>=6) write(out,"('ML_symmetry_transformation_CH3OH_II/end')")
     !
