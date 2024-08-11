@@ -39,7 +39,7 @@ module pot_user
       write(out,"('a,a,a,a')") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
     endif
     !
-    write(out,"('a')") '  Using USER-tpye PES ',trim(poten_name)
+    write(out,"('a')") '  Using USER-type PES ',trim(poten_name)
     !
   end subroutine MLpoten_name
   !

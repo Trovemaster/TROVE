@@ -47,7 +47,7 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
       ...
       end
 
-For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.  
+For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.
 
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
@@ -171,14 +171,14 @@ TROVE configuration option used for PEF and KEO expansions
 ===========================================================
 
 In the case of non-rigid reference configurations with periodicity used for representing the KEO and PEF as expansions, it is not uncommon that the numerically generated expansion parameter :math:`f_{ijk}(\rho_i)` on a grid of :math:`\rho_i` have discontinuities. They appear because of numerical problems at points like 180, 360, 720 :math:`^\circ`, i.e where trigonometric functions can change their values because of their periodicity constraints. In principle, these problems indicate that there are implementation in the code that could not be resolved. As ad hoc solution, TROVE can check and iron-out possible discontinuities by interpolating between points were the behaviour is nice and smooth. TROVE will always check and report if there are any discontinuity issues at the expansion stage, e.g.
-:: 
-   
+::
+
    check_field_smoothness: potencheck_field_smoothness: potencheck_field_smoothness: poten; an outlier found for iterm =      18 at i =   400: -0.46876607222E+07 vs  0.28075523334E+05
-   
+
 In order to switch on the "ironing-out" procedure, the ``iron-out`` card must be added anywhere in the main body of the TROVE input:
 ::
    IRON-OUT
-   
+
 
 
 
@@ -368,14 +368,14 @@ where
       y_3 &= \sin\rho-\sin\rho_{\rm e}, \\
       r_{HH}=\sqrt{r_1^2+r_2^2-2 r_1 r_2 \cos\alpha}.\\
    \end{split}
-    
-where :math:`\rho  = \pi - \alpha`. The ``potential`` block for NNO is illustrated below 
+
+where :math:`\rho  = \pi - \alpha`. The ``potential`` block for NNO is illustrated below
 ::
-     
+
      POTEN
      compact
      POT_TYPE  POTEN_XYZ_TYUTEREV_SINRHO
-     COEFF  list  
+     COEFF  list
      RE12          0.11282020845500E+01
      RE32          0.11845554074200E+01
      ALPHAE        0.18000000000000E+03
@@ -390,8 +390,8 @@ where :math:`\rho  = \pi - \alpha`. The ``potential`` block for NNO is illustrat
      F_1_0_0       0.23128656428427E+02
      F_0_1_0      -0.10015174180097E+02
      F_0_0_2       0.16660757971566E+05
-     
- 
+
+
 
 ZXY\ :sub:`2` type
 ------------------
@@ -526,7 +526,7 @@ where :math:`R, r_1, r_2`  are three bond lengths, :math:`\alpha_i` (\ :math:`i=
 
 This a ``powers`` type:
 ::
-    
+
     POTEN
     NPARAM  166
     POT_TYPE  POTEN_H2O2_KOPUT_UNIQUE
@@ -543,7 +543,7 @@ This a ``powers`` type:
     .................
     .................
     end
-    
+
 
 
 The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_abcd.f90``.  A TROVE input example  for HOOH is  `HOOH_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/HOOH_step1.inpp>`_ from [15AlOvYu]_ , where it was used to compute an ExoMol line list for this molecule.
@@ -557,40 +557,40 @@ A CH3Cl type system
 ``poten_zxy3_sym``
 ^^^^^^^^^^^^^^^^^^
 
-The potential function is build on the fly as follows. Taking an initial potential term of the form 
+The potential function is build on the fly as follows. Taking an initial potential term of the form
 
 .. math::
    :label: eq-V_i
-    
+
     V_{ijk\ldots}^{\mathrm{initial}}=\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}
-    
+
 
 with maximum expansion order :math:`i+j+k+l+m+n+p+q+r=6`, each symmetry operation of :math:`\bm{C}_{3\mathrm{v}}`\ (M) is independently applied to :math:`V_{ijk\ldots}^{\mathrm{initial}}`, i.e.
 
 .. math::
    :label: eq-V_op
-   
+
    V_{ijk\ldots}^{\mathbf{X}}=\mathbf{X}{\,}V_{ijk\ldots}^{\mathrm{initial}}=\mathbf{X}\left(\xi_{0}^{\,i}\xi_{1}^{\,j}\xi_{2}^{\,k}\xi_{3}^{\,l}\xi_{4}^{\,m}\xi_{5}^{\,n}\xi_{6}^{\,p}\xi_{7}^{\,q}\xi_{8}^{\,r}\right)
-   
-   
+
+
 where :math:`\mathbf{X}=\lbrace E,(123),(132),(12)^{*},(23)^{*},(13)^{*}\rbrace`, to create six new terms. The results are summed together to produce a final term,
 
 .. math::
      :label:  eq-V_f
-     
+
       V_{ijk\ldots}^{\mathrm{final}}=V_{ijk\ldots}^{E}+V_{ijk\ldots}^{(123)}+V_{ijk\ldots}^{(132)}+V_{ijk\ldots}^{(12)^*}+V_{ijk\ldots}^{(23)^*}+V_{ijk\ldots}^{(13)^*}
 
 which is itself subject to the six :math:`\bm{C}_{3\mathrm{v}}`\ (M) symmetry operations.  :math:`V_{ijk\ldots}^{\mathrm{final}}` is invariant after the application of all operations and therefore the total potential function is then given by
 
 .. math::
    :label: eq-pot_f
-   
+
    V_{\mathrm{total}}(\xi_{0},\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}^{\mathrm{final}}
-   
-   
-An extract from the potential block for this PEF form is given by 
+
+
+An extract from the potential block for this PEF form is given by
 ::
-    
+
     POTEN
     compact
     POT_TYPE  poten_zxy3_sym
@@ -613,7 +613,132 @@ An extract from the potential block for this PEF form is given by
     .......
     .......
     end
-    
- 
-.. note:: For the ``power`` form of the PEF expansion, the structural (non-exapnsion) parameters contain dummy zeros to keep the format. 
 
+
+.. note:: For the ``power`` form of the PEF expansion, the structural (non-expansion) parameters contain dummy zeros to keep the format.
+
+
+User-defined potentials 
+=======================
+
+TROVE provide a functionality to add a new user-defined PEF without fully integrating them into the TROVE code. This is done using the ``general``
+``pot_user`` type of ``Potential`` objects and the modules ``pot_user``. 
+
+In the TROVE input file, a user-defined  PEF will look as follows:
+::
+
+    POTEN
+    POT_TYPE  general
+    pot_name CS2_ames1
+    compact
+    COEFF  powers  (powers or list)
+    r12ref    0 0 0     1.5521000000
+    alpha2    0 0 0     1.500000
+    De1       0 0 0     120000.000
+    De_1      0 0 0     100000.000
+    De3       0 0 0    160000.000
+    .....
+    .....
+    end
+    
+
+Here, ``general`` is the generic PEF type associated with a module ``pot_user`` and ``pot_name`` is an optional name of the PEF as implemented in the ``pot_user``. The latter is a stand-along Fortran file with a unique name that must be included into the TROVE compilation set. There can be only one such file containing a ``pot_user`` module included. 
+
+A ``pot_user`` module must have the following structure:
+
+
+       module pot_user
+          use accuracy
+          use moltype
+
+          implicit none
+
+          public MLdipole,MLpoten,ML_MEP,MLpoten_name
+
+          private
+
+          integer(ik), parameter :: verbose     = 4                          ! Verbosity level
+          !
+          contains
+          !
+
+         ! Check the potential name
+         subroutine MLpoten_name(name)
+           !
+           character(len=cl),intent(in) ::  name
+           character(len=cl),parameter ::  poten_name = '-NAME-'
+           !
+           if (poten_name/=trim(name)) then
+             write(out,"('a,a,a,a')") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
+           endif
+           !
+           write(out,"('a')") '  Using USER-type PES ',trim(poten_name)
+           !
+         end subroutine MLpoten_name
+         !
+
+         recursive subroutine MLdipole(rank,ncoords,natoms,local,xyz,f)
+           !
+           integer(ik),intent(in) ::  rank,ncoords,natoms
+           real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+           real(ark),intent(out)  ::  f(rank)
+               !
+               f = user_function_defined_below(xyz)
+               !
+          end subroutine MLdipole
+
+         !
+         ! Defining potential energy function
+
+         function MLpoten(ncoords,natoms,local,xyz,force) result(f)
+           !
+           integer(ik),intent(in) ::  ncoords,natoms
+           integer(ik)            ::  i, j
+           real(ark),intent(in)   ::  local(ncoords)
+           real(ark),intent(in)   ::  xyz(natoms,3)
+           real(ark),intent(in)   ::  force(:)
+           real(ark)              ::  S(ncoords), expansionIndices(940, 6), coefficients(940)
+           real(ark)              ::  y1,y2,y3,y4,y5, r1, r2, r3, alpha1, alpha2, alpha3, phi1, phi2, phi3, addToPotential
+           real(ark)              ::  f, b, rho_eq, r_eq, alpha_eq
+           !
+           f = user_function_defined_below(xyz)
+           !
+         end function
+          !
+          function ML_MEP(dim,rho)  result(f)
+
+           integer(ik),intent(in) ::  dim
+           real(ark),intent(in)   ::  rho
+           real(ark)              ::  f(dim)
+           !
+           f(:) = user_function_defined_below(xyz)
+
+          end function ML_MEP
+
+        .....
+        ....
+
+       end module p
+       
+
+Currently, the following  user-defined PEFs are available:
+
+
+- pot_ch4.f90: A PEF used for Methane. 
+- pot_CO2.f90: 
+- pot_CS2_ames1.f90: 
+- pot_DVR3D.f90: 
+- pot_ext_const.f90: 
+- pot_H2O_Conway.f90:
+- pot_H2O_DMBE.f90:
+- pot_H2O_DVR3D_PES40K.f90:
+- pot_H3p.f90:
+- pot_H3p_MiZATeP.f90:
+- pot_HCN.f90:
+- pot_HCN_Harris.f90:
+- pot_N2O.f90: 
+- pot_NH3_Egorov.f90
+- pot_NH3_Roman.f90
+- pot_so2.f90
+- pot_triatom.f90
+ 
