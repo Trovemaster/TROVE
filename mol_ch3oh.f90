@@ -89,15 +89,17 @@ module mol_ch3oh
         !
         A1 = src(10) 
         A2 = src(11) 
-        tbar = src(12) ! + 2.0_ark*pi/3.0_ark
+        tbar = src(12)
         !
-        t1 = tbar+1.0_ark/3.0_ark*sqrt(2.0_ark)*A2 
-        t2 = 2.0_ark/3.0_ark*Pi+tbar-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2-1.0_ark/6.0_ark*sqrt(6.0_ark)*A1
-        t3 = 4.0_ark/3.0_ark*Pi+tbar+1.0_ark/6.0_ark*sqrt(6.0_ark)*A1-1.0_ark/6.0_ark*sqrt(2.0_ark)*A2
+        t1 =                    tbar+sqrt(2.0_ark)/3.0_ark*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
         !
         dst(10) =  mod(t1+4.0_ark*pi,4.0_ark*pi)
         dst(11) =  mod(t2+4.0_ark*pi,4.0_ark*pi)
         dst(12) =  mod(t3+4.0_ark*pi,4.0_ark*pi)
+        !
+        continue
         !
       endif
       !
@@ -2039,7 +2041,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) - b*src(11)
           dst(11) = -b*src(10) + a*src(11)
           !
-          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+          dst(12) = 2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
           !
         end select
         !

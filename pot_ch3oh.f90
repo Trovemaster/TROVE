@@ -679,8 +679,8 @@ end function  MLpoten_ch3oh_sym
     enddo
     !
     dst(12,1) = src(12)
-    dst(12,2) = src(12)+2.0_ark*pi/3.0_ark
-    dst(12,3) = src(12)-2.0_ark*pi/3.0_ark
+    dst(12,2) = src(12)-2.0_ark*pi/3.0_ark
+    dst(12,3) = src(12)+2.0_ark*pi/3.0_ark
     dst(12,4) =-src(12)
     dst(12,5) =-src(12)-2.0_ark*pi/3.0_ark
     dst(12,6) =-src(12)+2.0_ark*pi/3.0_ark

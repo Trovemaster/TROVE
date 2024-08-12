@@ -645,8 +645,8 @@ In the TROVE input file, a user-defined  PEF will look as follows:
 Here, ``general`` is the generic PEF type associated with a module ``pot_user`` and ``pot_name`` is an optional name of the PEF as implemented in the ``pot_user``. The latter is a stand-along Fortran file with a unique name that must be included into the TROVE compilation set. There can be only one such file containing a ``pot_user`` module included. 
 
 A ``pot_user`` module must have the following structure:
-
-
+::
+       
        module pot_user
           use accuracy
           use moltype
@@ -719,7 +719,7 @@ A ``pot_user`` module must have the following structure:
         ....
 
        end module p
-       
+              
 
 Currently, the following  user-defined PEFs are available:
 
