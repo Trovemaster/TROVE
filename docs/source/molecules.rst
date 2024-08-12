@@ -346,7 +346,7 @@ Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm\ :
 
 .. Note:: This describes the 10to10 calculation which was based on a previous calculation for lower frequencies. The high symmetry of methane meant special symmetry considerations are required. Details of this are given in the papers.
 
-Reference: [13YuTeBa]_, [14YuJo]_.
+Reference: [13YuTeBa]_, [14YuJe]_.
 
 
 Sulfur trioxide, SO\ :sub:`3`

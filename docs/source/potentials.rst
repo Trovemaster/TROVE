@@ -721,9 +721,108 @@ A ``pot_user`` module must have the following structure:
 Currently, the following  user-defined PEFs are available:
 
 
-- pot_ch4.f90: A PEF used for Methane. 
-- pot_CO2.f90: 
-- pot_CS2_ames1.f90: 
+
+User-defined PEF for CH\ :subs:`4`
+----------------------------------
+
+pot_ch4.f90
+^^^^^^^^^^^
+
+This PEF is implemented as a ``general`` (``user-type``) object provided in pot_ch4.f90, which is not included into the main installation and needs to be added to the TROVE compilation. 
+
+It is given by the an analytic symmetrised (:math:`A_1`) representation used for CH\ :sub:`4` [14YuJe]_, [24YuOwTe]_  and SiH\ :sub:`3` [17OwYuYa]_:
+
+.. math:: 
+          
+       V(\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8},\xi_{9})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}
+       
+where 
+.. math::
+         
+         V_{ijk\ldots}=\lbrace\xi_{1}^{\,i}\xi_{2}^{\,j}\xi_{3}^{\,k}\xi_{4}^{\,l}\xi_{5}^{\,m}\xi_{6}^{\,n}\xi_{7}^{\,p}\xi_{8}^{\,q}\xi_{9}^{\,r}\rbrace^{\bm{T}_{\mathrm{d}}\mathrm{(M)}}
+
+
+are expanded as sum-of-products in terms of the stretch coordinates,
+
+.. math :: 
+      
+       \xi_i=1-\exp\left(-a(r_i - r^{\mathrm{ref}})\right){\,};\hspace{2mm}i=1,2,3,4
+               
+and and symmetrized combinations of interbond angles, 
+
+.. math::
+    \begin{split}
+       \xi_5 &= \frac{1}{\sqrt{12}}\left(2\alpha_{12}-\alpha_{13}-\alpha_{14}-\alpha_{23}-\alpha_{24}+2\alpha_{34}\right) \\
+       \xi_6 &= \frac{1}{2}\left(\alpha_{13}-\alpha_{14}-\alpha_{23}+\alpha_{24}\right)  \\
+       \xi_7 &= \frac{1}{\sqrt{2}}\left(\alpha_{24}-\alpha_{13}\right)  \\
+       \xi_8 &= \frac{1}{\sqrt{2}}\left(\alpha_{23}-\alpha_{14}\right)  \\
+       \xi_9 &= \frac{1}{\sqrt{2}}\left(\alpha_{34}-\alpha_{12}\right)  \\
+    \end{split}
+       
+
+where :math:a: (:math:`\mathrm{\AA}^{-1}`) is the Morse parameter and :math:`r^{\mathrm{ref}}` (:math:`\mathrm{\AA}`) is a reference equilibrium bond length value.
+
+
+The input file (see `12C-1H4__MM__TROVE-model.inp <https://exomol.com/db/CH4/12C-1H4/MM/12C-1H4__MM__TROVE-model.inp>`_ ) has the following the ``powers`` type form:
+::
+
+   POTEN
+   POT_TYPE  general
+   compact
+   COEFF  powers
+   re              1  0  0  0  0  0  0  0  0  0   0.10859638364000E+01
+   a0              2  1  0  0  0  0  0  0  0  0   0.18450000000000E+01
+   f000000000      3  0  0  0  0  0  0  0  0  0   0.00000000000000E+00
+   f100000000      4  0  0  0  0  0  0  0  0  0   0.43141069937976E+01
+   f000000200      5  0  0  0  0  0  0  2  0  0   0.13361306231300E+05
+   f000020000      6  0  0  0  0  2  0  0  0  0   0.14513674906543E+05
+   f000100100      7  0  0  0  1  0  0  1  0  0   0.28425912225345E+04
+   f011000000      8  0  1  1  0  0  0  0  0  0   0.35221935136193E+03
+   f020000000      9  0  2  0  0  0  0  0  0  0   0.40067820471441E+05
+   ......
+   ......
+   end
+
+
+Other user-defined modules:
+---------------------------
+
+
+pot_CS2_ames1.f90
+^^^^^^^^^^^^^^^^^
+
+This is an Ames1 type PES by Xinchuan Huang  from `CS2 <https://huang.seti.org/CS2/cs2.html>`_. An example of the input ``poten`` section is as follows:
+::
+
+    POTEN
+    POT_TYPE  general
+    pot_name CS2_ames1
+    compact
+    COEFF  powers  (powers or list)
+    r12ref    0 0 0     1.5521000000
+    alpha2    0 0 0     1.500000
+    De1       0 0 0     120000.000
+    De_1      0 0 0     100000.000
+    De3       0 0 0    160000.000
+    De_3      0 0 0     0.000
+    edp1      0 0 0    -0.2
+    edp2      0 0 0    -0.2
+    edp3      0 0 0    -0.5
+    edp4      0 0 0    -1.5
+    edp5      0 0 0    -0.5
+    edp6      0 0 0    0
+    Emin      0 0 0   -3.022028932409919E-006
+    f       0       0       0      -0.479253456996E+00
+    f       0       0       1      -0.513538057270E+05
+    f       1       0       0      -0.281216617575E+03
+    f       0       0       2       0.190072611427E+05
+    f       1       0       1      -0.372871472531E+05
+    f       1       1       0       0.324693877654E+05
+    .....
+    .....
+    end
+
+
 - pot_DVR3D.f90: 
 - pot_ext_const.f90: 
 - pot_H2O_Conway.f90:

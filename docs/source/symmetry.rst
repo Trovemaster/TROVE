@@ -247,7 +247,7 @@ Finally, the umbrella coordinate transform as follows
 T\ :sub:`d`\ (M)
 =================
 
-``Td(M)`` is a molecular symmetry group is used for the methane-like molecules, CH\ :sub:`4` [14YuJo]_, SiH\ :sub:`3` [17OwYuYa]_. It consists of 5 irreps and 24 symmetry operations spanning 5 classes:
+``Td(M)`` is a molecular symmetry group is used for the methane-like molecules, CH\ :sub:`4` [14YuJe]_, SiH\ :sub:`3` [17OwYuYa]_. It consists of 5 irreps and 24 symmetry operations spanning 5 classes:
 
 
 +-------------+------------+-------+-------------+------------------+----------------+

@@ -29,7 +29,7 @@ References
 
 .. [13YuTeBa] S.N. Yurchenko, J. Tennyson, R.J. Barber, W. Thiel, J. Mol. Spectrosc. 291, 69 (2013), Vibrational transition moments of CH\ :sub:`4` from the first principles.
 
-.. [14YuJo] S.N. Yurchenko and J. Tennyson.  Mon. Not. R. Astron. Soc., 440, 1649-1661 (2014), ExoMol line lists - IV. The rotation-vibration spectrum of methane up to 1500 K.
+.. [14YuJe] S.N. Yurchenko and J. Tennyson.  Mon. Not. R. Astron. Soc., 440, 1649-1661 (2014), ExoMol line lists - IV. The rotation-vibration spectrum of methane up to 1500 K.
 
 .. [13UnTeYu] D.S. Underwood, J. Tennyson, S. N. Yurchenko, Phys. Chem. Chem. Phys. 15, 10118 (2013), An ab initio variationally computed room-temperature line list for SO\ :sub:`3`.
 
@@ -77,6 +77,8 @@ References
 
 .. [23Yurchenko] S.N. Yurchenko, Computational Spectroscopy of Polyatomic Molecules (CRC Press, Boca Raton, 2023).
 
-.. [24YuMeTe] S. N. Yurchenko and T. Mellor and J. Tennyson, MNRAS, in press (2024).
+.. [24YuMeTe] S. N. Yurchenko,  T. Mellor and J. Tennyson, MNRAS, in press (2024), ExoMol line lists - LIX. High-temperature line list for N\ :sub:`2`\ O.
 
-.. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997). 
+.. [24YuOwTe] S. N. Yurchenko, A. Owens, K. Kefala, and J. Tennyson. MNRAS, 528, 3719 (2024),  ExoMol line lists - LVII: High accuracy ro-vibrational line list for methane.  `doi:10.1093/mnras/stae148 <https://doi.org/10.1093/mnras/stae148>`__
+
+.. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997).
