@@ -697,9 +697,6 @@ A ``pot_user`` module must have the following structure:
            real(ark),intent(in)   ::  local(ncoords)
            real(ark),intent(in)   ::  xyz(natoms,3)
            real(ark),intent(in)   ::  force(:)
-           real(ark)              ::  S(ncoords), expansionIndices(940, 6), coefficients(940)
-           real(ark)              ::  y1,y2,y3,y4,y5, r1, r2, r3, alpha1, alpha2, alpha3, phi1, phi2, phi3, addToPotential
-           real(ark)              ::  f, b, rho_eq, r_eq, alpha_eq
            !
            f = user_function_defined_below(xyz)
            !

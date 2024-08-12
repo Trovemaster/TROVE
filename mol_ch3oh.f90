@@ -1858,7 +1858,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) + b*src(11)
           dst(11) = -b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
           !
         case (2) !(132)
           !
@@ -1877,7 +1877,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) - b*src(11)
           dst(11) = +b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
           !
         case (4) ! (32)
           !
