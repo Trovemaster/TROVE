@@ -348,14 +348,15 @@ The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.
 ``POTEN_XYZ_TYUTEREV_SINRHO``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This expansion is similar to ``POTEN_XY2_TYUTEREV`` but with the :mah:`\sin\rho` instead of :mah:`\cos\rho`:
-.. math::
+This expansion is similar to ``POTEN_XY2_TYUTEREV`` but with the :math:`\sin\rho` instead of :math:`\cos\rho`:
 
+.. math::
+    
    \begin{split}
    V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{100} [ y_1 + y_2 ] + f_{100} [ y_1 + y_2 ] + f_{002} y_3^2 + \ldots +  \\
                      & + b_1 e^{-g_1 r_{\rm HH}} + b_2 e^{-g_2 r_{\rm HH}^2} \\
    \end{split}
-
+    
 
 
 where
@@ -722,8 +723,8 @@ Currently, the following  user-defined PEFs are available:
 
 
 
-User-defined PEF for CH\ :subs:`4`
-----------------------------------
+User-defined PEF for CH\ :sub:`4`
+---------------------------------
 
 pot_ch4.f90
 ^^^^^^^^^^^
@@ -736,21 +737,25 @@ It is given by the an analytic symmetrised (:math:`A_1`) representation used for
           
        V(\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8},\xi_{9})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}
        
+      
 where 
+
 .. math::
          
          V_{ijk\ldots}=\lbrace\xi_{1}^{\,i}\xi_{2}^{\,j}\xi_{3}^{\,k}\xi_{4}^{\,l}\xi_{5}^{\,m}\xi_{6}^{\,n}\xi_{7}^{\,p}\xi_{8}^{\,q}\xi_{9}^{\,r}\rbrace^{\bm{T}_{\mathrm{d}}\mathrm{(M)}}
-
+         
 
 are expanded as sum-of-products in terms of the stretch coordinates,
 
 .. math :: 
       
        \xi_i=1-\exp\left(-a(r_i - r^{\mathrm{ref}})\right){\,};\hspace{2mm}i=1,2,3,4
+         
                
-and and symmetrized combinations of interbond angles, 
+and symmetrized combinations of interbond angles, 
 
 .. math::
+    
     \begin{split}
        \xi_5 &= \frac{1}{\sqrt{12}}\left(2\alpha_{12}-\alpha_{13}-\alpha_{14}-\alpha_{23}-\alpha_{24}+2\alpha_{34}\right) \\
        \xi_6 &= \frac{1}{2}\left(\alpha_{13}-\alpha_{14}-\alpha_{23}+\alpha_{24}\right)  \\
