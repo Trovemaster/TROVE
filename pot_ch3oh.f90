@@ -392,8 +392,9 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     !
     theta12 = mod(theta2-theta1+2.0_ark*pi,2.0_ark*pi)
     theta23 = mod(theta3-theta2+2.0_ark*pi,2.0_ark*pi)
-    !theta13 = mod(theta1-theta3+2.0_ark*pi,2.0_ark*pi)
-    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(theta1-theta3+2.0_ark*pi,2.0_ark*pi)
+    !
+    !theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
     !
     xi(10)   = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
     xi(11)   = (                   theta13 - theta12 )/sqrt(2.0_ark)

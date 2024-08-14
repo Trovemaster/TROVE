@@ -7441,6 +7441,18 @@ end subroutine check_read_save_none
               call diff_2d_4points_ark(Npoints,trove%rho_border,trove%Bmatrho(imode,iatom,ix,0:Npoints  ),&
                                   job%bset(imode)%periodic,0_ik,trove%dBmatrho(imode,iatom,ix,0:Npoints,1),&
                                                            trove%dBmatrho(imode,iatom,ix,0:Npoints,2))
+
+              if (job%verbose>=7) then
+                do irho = 0,Npoints
+                    write(out,"(i8,1x,i3,1x,i3,1x,i3,1x,5(f16.8))") irho,iatom,imode,ix,trove%dAmatrho(iatom,ix,imode,irho,1),&
+                                                                                        trove%dAmatrho(iatom,ix,imode,irho,2),&
+                                                                                        trove%dAmatrho(iatom,ix,imode,irho,3),&
+                                                                                        trove%dBmatrho(imode,iatom,ix,irho,1),&
+                                                                                        trove%dBmatrho(imode,iatom,ix,irho,2)
+                enddo
+              endif
+
+
               !
            enddo
            !

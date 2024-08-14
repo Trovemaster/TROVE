@@ -1518,48 +1518,7 @@ module mol_ch3oh
       !
       r_at = molec%local_eq
       !
-      !
-      !call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-      !                                         beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-      !
-      select case(trim(molec%frame))
-      case default
-         write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
-         stop 'ML_b0_ch3oh - bad coord. type'
-         !
-      case('R-TAU-BOWMAN-REF')
-         !
-         r_at(1:6) = r_eq(1:6)
-         !
-         r_at(7)  = beta1
-         r_at(8)  = beta2
-         r_at(9)  = alpha2
-         r_at(10) = beta3
-         r_at(11) = alpha3
-         r_at(12) = tau
-         !
-      case('R-TAU-CHI')
-         !
-         r_at(1:6) = r_eq(1:6)
-         !
-         r_at(7)  = beta1
-         r_at(8)  = beta2
-         r_at(9)  = beta3
-         r_at(10) = tau1
-         r_at(11) = tau2
-         r_at(12) = tau3
-         !
-      case('R-ALPHA-THETA-TAU','R-ALPHA-THETA--TAU')
-         !
-         r_at = molec%local_eq
-         !
-      end select 
-      !
-      call MLfromlocal2cartesian(-1,r_at,a0_ark)
-      !
-      a0 = a0_ark
-      !
-      call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
+      call generate_structure(tau,a0)
       !
       b0(:,:,0) = a0(:,:)
       !
@@ -1581,67 +1540,10 @@ module mol_ch3oh
             tau = rho_i(i)
             !
             !
+            call generate_structure(tau,b0(1:6,1:3,i))
+            !
+            !
             !call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),&
-            !                                       beta1,beta2,beta3,alpha1,alpha2,alpha3,tau1,tau2,tau3,chi1,chi2,chi3)
-            !
-            select case(trim(molec%frame))
-            case default
-               write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
-               stop 'ML_b0_ch3oh - bad coord. type'
-               !
-            case('R-TAU-BOWMAN-REF')
-
-            !if (trim(molec%potentype)=='POTEN_CH3OH_REF'.or.trim(molec%potentype)=='R-ALPHA-S-TAU-BETA-REF'&
-            !.or.trim(molec%potentype)=='R-TAU-BOWMAN-REF'.or.trim(molec%potentype)=='R-1TAU-2BETA-REF') then 
-
-               !
-               r_at(1:6) = r_eq(1:6)
-               !
-               r_at(7)  = beta1
-               r_at(8)  = beta2
-               r_at(9)  = alpha2
-               r_at(10) = beta3
-               r_at(11) = alpha3
-               r_at(12) = tau
-               !
-            case('R-TAU-CHI')
-               !
-               r_at(1:6) = r_eq(1:6)
-               !
-               r_at(7)  = beta1
-               r_at(8)  = beta2
-               r_at(9)  = beta3
-               r_at(10) = tau1
-               r_at(11) = tau2
-               r_at(12) = tau3
-               !
-            case('R-ALPHA-THETA-TAU')
-               !
-               r_eq(10) = tau
-               r_eq(11) = tau+molec%local_eq(10)+molec%local_eq(11)
-               r_eq(12) = tau+molec%local_eq(10)+molec%local_eq(12)
-               !
-               r_at = r_eq
-               !
-            case('R-ALPHA-THETA--TAU')
-               !
-               r_eq(10) = -tau+molec%local_eq(10)
-               r_eq(11) = -tau+molec%local_eq(10)+molec%local_eq(11)
-               r_eq(12) = -tau+molec%local_eq(10)+molec%local_eq(12)
-               !
-               r_at = r_eq
-               !
-            end select
-            !
-            if (verbose>=6) then 
-              write(out,"('r0',i8,12f12.8)") i,r_at(1:12)
-            endif 
-            !
-            call MLfromlocal2cartesian(-1,r_at,a0_ark)
-            !
-            b0(:,:,i) = a0_ark(:,:)
-            !
-            call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform)
             !
             Inert(1) = sum(molec%AtomMasses(:)*( a0_ark(:,2)**2+ a0_ark(:,3)**2) )
             Inert(2) = sum(molec%AtomMasses(:)*( a0_ark(:,1)**2+ a0_ark(:,3)**2) )
@@ -1657,20 +1559,6 @@ module mol_ch3oh
 
          enddo
          !
-         if (verbose>=4) then 
-           do i = 0,npoints
-              write(out,"(i6)") molec%natoms
-              !
-              write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
-              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
-              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
-              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(4,:,i)
-              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(5,:,i)
-              write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(6,:,i)
-              !
-           enddo
-         endif
-         !
          do i = 0,npoints
             if (verbose>=6) then 
               write(out,"('b0',i8,18f12.8)") i,( (b0(i0,icoord,i),icoord=1,3),i0=1,6 )
@@ -1680,7 +1568,133 @@ module mol_ch3oh
       endif
       !
       !
+      if (verbose>=4) then 
+        do i = 0,npoints
+           write(out,"(i6)") molec%natoms
+           !
+           write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(4,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(5,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(6,:,i)
+           !
+        enddo
+      endif
+      !
       if (verbose>=4) write(out,"('ML_b0_ch3oh/end')") 
+      !
+      contains 
+      !
+      subroutine generate_structure(tau,b0)
+        !
+        real(ark),intent(in)  :: tau
+        real(ark),intent(out) :: b0(6,3)
+        real(ark) :: CM_shift,reCO,reOH,reCH,beta,alpha,theta12,theta13,r_eq(12),a0_ark(6,3)
+        integer(ik) :: n
+         !
+         r_eq = molec%local_eq
+         !
+         if (verbose>=6) then 
+           write(out,"('r0',i8,12f12.8)") i,r_at(1:12)
+         endif 
+         !
+         select case(trim(molec%frame))
+           !
+           case default
+              !
+              write (out,"('ML_b0_ch3oh: coord. type ',a,' unknown')") trim(molec%coords_transform)
+              stop 'ML_b0_ch3oh - bad coord. type'
+              !
+           case('R-ALPHA-THETA-TAU-OH')
+              !
+              reCO = molec%req(1)
+              reOH = molec%req(2)
+              reCH = molec%req(3)
+              beta = molec%alphaeq(1)
+              alpha = molec%alphaeq(2)
+              theta12 = 2.0_ark/3.0_ark*pi
+              theta13 = 2.0_ark/3.0_ark*pi
+              !
+              b0(1,1) = 0
+              b0(1,2) = 0
+              b0(1,3) = 0
+              b0(2,1) = 0
+              b0(2,2) = 0
+              b0(2,3) = reCO
+              !
+              b0(3,1) = reOH*cos(tau)*sin(beta)
+              b0(3,2) = reOH*sin(tau)*sin(beta)
+              b0(3,3) =-reOH*cos(beta)+reCO
+              !
+              b0(4,1) = reCH*sin(alpha)
+              b0(4,2) = 0
+              b0(4,3) = reCH*cos(alpha)
+              !
+              b0(5,1) = reCH*sin(alpha)*cos(theta12)
+              b0(5,2) = reCH*sin(alpha)*sin(theta12)
+              b0(5,3) = reCH*cos(alpha)
+              !
+              b0(6,1) =  reCH*sin(alpha)*cos(theta13)
+              b0(6,2) = -reCH*sin(alpha)*sin(theta13)
+              b0(6,3) =  reCH*cos(alpha)
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                !
+                b0(:,n) = b0(:,n) - CM_shift
+              enddo 
+              !
+              !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:))
+              !
+           case('R-TAU-BOWMAN-REF')
+              !
+              r_at(1:6) = r_eq(1:6)
+              !
+              r_at(7)  = beta1
+              r_at(8)  = beta2
+              r_at(9)  = alpha2
+              r_at(10) = beta3
+              r_at(11) = alpha3
+              r_at(12) = tau
+              !
+              call MLfromlocal2cartesian(-1,r_at,a0_ark)
+              !
+              b0(:,:) = a0_ark(:,:)
+              !
+              call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:),transform)
+              !
+           case('R-ALPHA-THETA-TAU')
+              !
+              r_eq(10) = tau
+              r_eq(11) = tau+2.0_ark/3.0_ark*pi
+              r_eq(12) = tau+4.0_ark/3.0_ark*pi
+              !
+              r_at = r_eq
+              !
+              call MLfromlocal2cartesian(-1,r_at,a0_ark)
+              !
+              b0(:,:) = a0_ark(:,:)
+              !
+              call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:),transform)
+              !
+           case('R-ALPHA-THETA--TAU')
+              !
+              r_eq(10) = -tau
+              r_eq(11) = -tau-2.0_ark/3.0_ark*pi
+              r_eq(12) = -tau-4.0_ark/3.0_ark*pi
+              !
+              r_at = r_eq
+              !
+              call MLfromlocal2cartesian(-1,r_at,a0_ark)
+              !
+              b0(:,:) = a0_ark(:,:)
+              !
+              call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:),transform)
+              !
+           end select
+           !      
+      end subroutine
       !
   end subroutine ML_b0_ch3oh
 
