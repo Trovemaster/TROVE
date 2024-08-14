@@ -103,6 +103,107 @@ module mol_ch3oh
         !
       endif
       !
+    case('R-ALPHA-BETA-THETA-TAU')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:12) = src(1:12)-molec%local_eq(1:12)
+        !
+        theta12 = src(10)
+        theta23 = src(11)
+        t1      = src(12)
+        !
+        theta12 = mod(theta12+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(theta23+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23,2.0_ark*pi)
+        !
+        t2 = t1 + theta12
+        t3 = t2 + theta23
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(10) = a1
+        dst(11) = a2
+        dst(12) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:12) = src(1:12)+molec%local_eq(1:12)
+        !
+        A1 = src(10) 
+        A2 = src(11) 
+        tbar = src(12)
+        !
+        t1 =                    tbar+sqrt(2.0_ark)/3.0_ark*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        !
+        theta12 = t2-t1
+        theta23 = t3-t2
+        !
+        dst(11) =  mod(theta12+2.0_ark*pi,2.0_ark*pi)
+        dst(12) =  mod(theta23+2.0_ark*pi,2.0_ark*pi)
+        dst(12) =  mod(t1+2.0_ark*pi,2.0_ark*pi)
+        !
+        continue
+        !
+      endif
+      !
+    case('R-ALPHA-BETA-TAU-THETA')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:12) = src(1:12)-molec%local_eq(1:12)
+        !
+        t1      = src(10)
+        theta12 = src(11)
+        theta23 = src(12)
+        !
+        theta12 = mod(theta12+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(theta23+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(2.0_ark*pi-theta12-theta23,2.0_ark*pi)
+        !
+        t2 = t1 + theta12
+        t3 = t2 + theta23
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(10) = a1
+        dst(11) = a2
+        dst(12) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:12) = src(1:12)+molec%local_eq(1:12)
+        !
+        A1 = src(10) 
+        A2 = src(11) 
+        tbar = src(12)
+        !
+        t1 =                    tbar+sqrt(2.0_ark)/3.0_ark*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        !
+        dst(10) =  mod(t1+2.0_ark*pi,2.0_ark*pi)
+        !
+        theta12 = t2-t1
+        theta23 = t3-t2
+        !
+        dst(11) =  mod(theta12+2.0_ark*pi,2.0_ark*pi)
+        dst(12) =  mod(theta23+2.0_ark*pi,2.0_ark*pi)
+        !
+        continue
+        !
+      endif
+      !
     case('R-TAU-CHI')
        !
        !
@@ -203,7 +304,7 @@ module mol_ch3oh
           beta(2) = dst(8)
           beta(3) = dst(9)
           !
-          call find_phi_from_beta(beta(1:3),r_t(10:12),phi(1:3))
+          !call find_phi_from_beta(beta(1:3),r_t(10:12),phi(1:3))
           !
           dst(10:12) = phi(1:3)
           !
@@ -551,7 +652,7 @@ module mol_ch3oh
           beta(2) = dst(8)
           beta(3) = dst(10)
           !
-          call find_alpha_from_beta(beta(1:3),r_t(10:12),dst(11),dst(9),dst(12))
+          !call find_alpha_from_beta(beta(1:3),r_t(10:12),dst(11),dst(9),dst(12))
           !
       endif
 
@@ -880,7 +981,7 @@ module mol_ch3oh
           dst(8) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)+sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
           dst(9) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)-sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
           !
-          call find_alpha_for_ch3oh(dst(7:9),r_t(10:12),dst(10:12))
+          !call find_alpha_for_ch3oh(dst(7:9),r_t(10:12),dst(10:12))
           !call find_alpha_for_ch3oh_II(r_t(7:12),dst(7:12))
           !
           !dst(10) =(r_t(12)+2.0_ark*r_t(10)        )
@@ -898,588 +999,6 @@ module mol_ch3oh
     !
     !
   end function ML_coordinate_transform_ch3oh
-
-
-
-
-  !
-  subroutine find_alpha_from_beta(beta,xi,alpha2,alpha3,tau)
-    ! obtaining 3 angles phi from 3 beta_i, tau, s_a, and s_b 
-    real(ark),intent(in)  :: beta(3),xi(3)
-    real(ark),intent(out) :: alpha2,alpha3,tau
-
-    real(ark) :: eps(3)
-    real(ark) :: rjacob(3,3),dx(3),phi_l(3),phi_r(3),xi_t(3),phi(3)
-
-    real(ark) :: hstep
-    real(rk)  :: stadev_old,stability,stadev,stadev_best,ssq,a(3,3),b(3,1)
-    !
-    integer(ik) :: iter,itmax,i1,irow,icolumn
-         
-    !
-    rjacob = 0 
-    iter = 0
-    stadev_old = 1.e10
-    stability =  1.e10
-    stadev    =  1.e10
-    !
-    hstep = 1e-4
-    !
-    phi(1) = molec%local_eq( 9)
-    phi(2) = molec%local_eq(11)
-    phi(3) = molec%local_eq(12)
-    xi_t = xi
-    !xi_t(3) = mod(xi_t(3)+2.0_ark*pi,2.0_ark*pi)
-    !
-    stadev_best = sqrt(small_)*0.01_ark
-    itmax = 500
-    !
-    outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
-       !
-       iter = iter + 1
-       ssq=0
-       !
-       ! Caclulate the function 
-       !
-       eps(:) = calc_xi(beta,phi)-xi_t(:)
-       !
-       ssq=sqrt(sum(eps(:)**2))
-       !
-       ! calculate derivatives with respect to parameters (RJACOB)
-       !
-       do i1 = 1,3
-         !
-         phi_r = phi ; phi_l = phi
-         phi_r(i1) = phi(i1) + hstep
-         phi_l(i1) = phi(i1) - hstep
-         !
-         rjacob(:,i1)  = ( calc_xi(beta,phi_r)-calc_xi(beta,phi_l))/hstep*0.5_ark
-         !
-       enddo
-       !
-       if (itmax>=0) then
-         !
-         ! form A matrix 
-         do irow=1,3         !==== row-...... ====!
-           do icolumn=1,irow      !==== column-....====!
-               a(irow,icolumn)=sum( rjacob(:,irow)*rjacob(:,icolumn))
-               a(icolumn,irow) = a(irow,icolumn)
-           enddo
-         enddo
-         ! form B matrix 
-         do irow=1,3       !==== row-...... ====!
-           b(irow,1)=sum(eps(:)*rjacob(:,irow))
-         enddo   
-         !
-         call lapack_gelss(a(:,:),b(:,:))
-         !
-         dx(:) = b(:,1)
-         !
-         stadev=sqrt(ssq)
-         !
-         phi(1:3) = phi(1:3) - dx(1:3)
-         !
-         !phi(:) = mod(phi(:)+2.0_ark*pi,2.0_ark*pi)
-         !      
-         stability=abs( (stadev-stadev_old)/stadev )
-         stadev_old=stadev
-             
-      else   ! Itmax = 0, so there is no fit
-             ! only straightforward calculations 
-             !
-         stadev_old=stadev
-         stadev=sqrt(ssq)
-         !
-      endif 
-
-      !
-    enddo  outer_loop ! --- iter
-    !
-    if (iter==itmax) then
-     write(out,"('find_alpha_from_beta: could not find solution after ',i8,' iterations')") iter
-     stop 'find_alpha_from_beta: could not find solution'
-    endif 
-    !
-    alpha2 = phi(1)
-    alpha3 = phi(2)
-    tau    = phi(3)
-    !
-
-
-  contains
-
-
-  function calc_xi(beta,x) result (xi)
-
-    real(ark),intent(in)  :: beta(3),x(3)
-    real(ark)             :: xi(3)
-    real(ark)             :: cosa(3),phi(3),tau,alpha(3),chi1,chi2,chi3
-       
-
-
-     alpha(2) = x(1)
-     alpha(3) = x(2)
-     tau = x(3)
-     !
-     cosa(2) =  ( cos(alpha(2))-cos(beta(3))*cos(beta(1)) )/( sin(beta(3))*sin(beta(1)) )
-     cosa(3) =  ( cos(alpha(3))-cos(beta(2))*cos(beta(1)) )/( sin(beta(2))*sin(beta(1)) )
-     !
-     chi2 =-acos(cosa(2))
-     chi3 = acos(cosa(3))
-     !
-     chi1 = 2.0_ark*pi-(-chi2+chi3)
-     !
-     cosa(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( chi1 )
-     !
-     alpha(1) = acos(cosa(1))
-     !
-     xi(1) = (2.0_ark*alpha(1)-alpha(2)-alpha(3))/sqrt(6.0_ark)
-     xi(2) = (                 alpha(2)-alpha(3))/sqrt(2.0_ark)
-     xi(3) = tau+(chi2+chi3)/3.0_ark
-     !
-     !
-  end function calc_xi
-
-
-  end subroutine find_alpha_from_beta
-  !
-
-
-
-
-  !
-  subroutine find_phi_from_beta(beta,xi,phi)
-    ! obtaining 3 angles phi from 3 beta_i, tau, s_a, and s_b 
-    real(ark),intent(in)  :: beta(3),xi(3)
-    real(ark),intent(out) :: phi(3)
-
-    real(ark) :: eps(3)
-    real(ark) :: rjacob(3,3),dx(3),phi_l(3),phi_r(3),xi_t(3)
-
-    real(ark) :: hstep
-    real(rk)  :: stadev_old,stability,stadev,stadev_best,ssq,a(3,3),b(3,1)
-    !
-    integer(ik) :: iter,itmax,i1,irow,icolumn
-         
-    !
-    rjacob = 0 
-    iter = 0
-    stadev_old = 1.e10
-    stability =  1.e10
-    stadev    =  1.e10
-    !
-    hstep = 1e-4
-    !
-    phi(1) = molec%local_eq(10)
-    phi(2) = molec%local_eq(11)-2.0_ark*pi
-    phi(3) = molec%local_eq(12)
-    xi_t = xi
-    !xi_t(3) = mod(xi_t(3)+2.0_ark*pi,2.0_ark*pi)
-    !
-    stadev_best = sqrt(small_)*0.01_ark
-    itmax = 500
-    !
-    outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
-       !
-       iter = iter + 1
-       ssq=0
-       !
-       ! Caclulate the function 
-       !
-       eps(:) = calc_xi(beta,phi)-xi_t(:)
-       !
-       ssq=(sum(eps(:)**2))
-       !
-       ! calculate derivatives with respect to parameters (RJACOB)
-       !
-       do i1 = 1,3
-         !
-         phi_r = phi ; phi_l = phi
-         phi_r(i1) = phi(i1) + hstep
-         phi_l(i1) = phi(i1) - hstep
-         !
-         rjacob(:,i1)  = ( calc_xi(beta,phi_r)-calc_xi(beta,phi_l))/hstep*0.5_ark
-         !
-       enddo
-       !
-       if (itmax>=0) then
-         !
-         ! form A matrix 
-         do irow=1,3         !==== row-...... ====!
-           do icolumn=1,irow      !==== column-....====!
-               a(irow,icolumn)=sum( rjacob(:,irow)*rjacob(:,icolumn))
-               a(icolumn,irow) = a(irow,icolumn)
-           enddo
-         enddo
-         ! form B matrix 
-         do irow=1,3       !==== row-...... ====!
-           b(irow,1)=sum(eps(:)*rjacob(:,irow))
-         enddo   
-         !
-         call lapack_gelss(a(:,:),b(:,:))
-         !
-         dx(:) = b(:,1)
-         !
-         stadev=sqrt(ssq/3.0_ark)
-         !
-         phi(1:3) = phi(1:3) - dx(1:3)
-         !
-         !phi(:) = mod(phi(:)+2.0_ark*pi,2.0_ark*pi)
-         !      
-         stability=abs( (stadev-stadev_old)/stadev )
-         stadev_old=stadev
-             
-      else   ! Itmax = 0, so there is no fit
-             ! only straightforward calculations 
-             !
-         stadev_old=stadev
-         stadev=sqrt(ssq)
-         !
-      endif 
-
-      !
-    enddo  outer_loop ! --- iter
-    !
-    if (iter==itmax) then
-     write(out,"('find_alpha_from_beta: could not find solution after ',i8,' iterations')") iter
-     stop 'find_alpha_from_beta: could not find solution'
-    endif 
-    !
-  contains
-
-
-  function calc_xi(beta,x) result (xi)
-
-    real(ark),intent(in)  :: beta(3),x(3)
-    real(ark)             :: xi(3)
-    real(ark)             :: cosa(3),phi(3),tau,alpha(3),chi(3),coschi(3)
-       
-
-
-     phi(:) = x(:)
-
-     cosa(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi(2) - phi(3) )
-     cosa(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi(3) - phi(1) )
-     cosa(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi(1) - phi(2) )
-     !
-     if ( any(abs(cosa(:))>1.0_ark+sqrt(small_))) then 
-         !
-         write (out,"('ML_coordinate_transform_ch3oh: cosalpha>1: ',3f18.8)") cosa(1:3)
-         write (out,"('Consider change coordinate type ')")
-         stop 'MLcoordinate_transform_func - bad cos(alpha)'
-     endif 
-     !
-     cosa(:) = max(-1.0_ark,cosa(:))
-     cosa(:) = min( 1.0_ark,cosa(:))
-     !
-     alpha(:) = acos(cosa(:))
-     !
-     coschi(1) =  ( cos(alpha(1))-cos(beta(2))*cos(beta(3)) )/( sin(beta(2))*sin(beta(3)) )
-     coschi(2) =  ( cos(alpha(2))-cos(beta(3))*cos(beta(1)) )/( sin(beta(3))*sin(beta(1)) )
-     coschi(3) =  ( cos(alpha(3))-cos(beta(2))*cos(beta(1)) )/( sin(beta(2))*sin(beta(1)) )
-     !
-     chi(:) = acos(coschi(:))
-     !
-     xi(1) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*chi(1)-chi(2)-chi(3) )
-     xi(2) = 1.0_ark/sqrt(2.0_ark)*(                chi(2)-chi(3) )
-     xi(3) = 1.0_ark/3.0_ark*( phi(1)+phi(2)+phi(3) )
-
-     !
-  end function calc_xi
-
-
-  end subroutine find_phi_from_beta
-
-
-
-  !
-  subroutine find_alpha_for_ch3oh(beta,xi,phi)
-    ! obtaining 3 angles phi from 3 beta_i, tau, s_a, and s_b 
-    real(ark),intent(in)  :: beta(3),xi(3)
-    real(ark),intent(out) :: phi(3)
-
-    real(ark) :: eps(3)
-    real(ark) :: rjacob(3,3),dx(3),phi_l(3),phi_r(3),xi_t(3)
-
-    real(ark) :: hstep
-    real(rk)  :: stadev_old,stability,stadev,stadev_best,ssq,a(3,3),b(3,1)
-    !
-    integer(ik) :: iter,itmax,i1,irow,icolumn
-         
-    !
-    rjacob = 0 
-    iter = 0
-    stadev_old = 1.e10
-    stability =  1.e10
-    stadev    =  1.e10
-    !
-    hstep = 1e-4
-    !
-    phi(1:3) = molec%local_eq(10:12)
-    xi_t = xi
-    !xi_t(3) = mod(xi_t(3)+2.0_ark*pi,2.0_ark*pi)
-    !
-    stadev_best = sqrt(small_)*10.0_ark
-    itmax = 500
-    !
-    outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
-       !
-       iter = iter + 1
-       ssq=0
-       !
-       ! Caclulate the function 
-       !
-       eps(:) = calc_xi(beta,phi)-xi_t(:)
-       !
-       ssq=(sum(eps(:)**2))
-       !
-       ! calculate derivatives with respect to parameters (RJACOB)
-       !
-       do i1 = 1,3
-         !
-         phi_r = phi ; phi_l = phi
-         phi_r(i1) = phi(i1) + hstep
-         phi_l(i1) = phi(i1) - hstep
-         !
-         rjacob(:,i1)  = ( calc_xi(beta,phi_r)-calc_xi(beta,phi_l))/hstep*0.5_ark
-         !
-       enddo
-       !
-       if (itmax>=0) then
-         !
-         ! form A matrix 
-         do irow=1,3         !==== row-...... ====!
-           do icolumn=1,irow      !==== column-....====!
-               a(irow,icolumn)=sum( rjacob(:,irow)*rjacob(:,icolumn))
-               a(icolumn,irow) = a(irow,icolumn)
-           enddo
-         enddo
-         ! form B matrix 
-         do irow=1,3       !==== row-...... ====!
-           b(irow,1)=sum(eps(:)*rjacob(:,irow))
-         enddo   
-         !
-         call lapack_gelss(a(:,:),b(:,:))
-         !
-         dx(:) = b(:,1)
-         !
-         stadev=sqrt(ssq)
-         !
-         phi(1:3) = phi(1:3) - dx(1:3)
-         !
-         !phi(:) = mod(phi(:)+2.0_ark*pi,2.0_ark*pi)
-         !      
-         stability=abs( (stadev-stadev_old)/stadev )
-         stadev_old=stadev
-             
-      else   ! Itmax = 0, so there is no fit
-             ! only straightforward calculations 
-             !
-         stadev_old=stadev
-         stadev=sqrt(ssq)
-         !
-      endif 
-
-      !
-    enddo  outer_loop ! --- iter
-    !
-    if (iter==itmax) then
-     write(out,"('find_alpha_for_ch3oh: could not find solution after ',i8,' iterations')") iter
-     stop 'find_alpha_for_ch3oh: could not find solution'
-    endif 
-
-
-  contains
-
-
-  function calc_xi(beta,phi) result (xi)
-
-    real(ark),intent(in)  :: beta(3),phi(3)
-    real(ark)             :: xi(3)
-    real(ark)             :: cosa(3),alpha(3)
-       
-    
-      cosa(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi(2) - phi(3) )
-      cosa(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi(3) - phi(1) )
-      cosa(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi(1) - phi(2) )
-
-      if ( any(abs(cosa(:))>1.0_ark+sqrt(small_))) then 
-          !
-          write (out,"('ML_coordinate_transform_ch3oh: cosalpha>1: ',3f18.8)") cosa(1:3)
-          write (out,"('Consider change coordinate type ')")
-          stop 'MLcoordinate_transform_func - bad cos(alpha)'
-      endif 
-      !
-      cosa(:) = max(-1.0_ark,cosa(:))
-      cosa(:) = min( 1.0_ark,cosa(:))
-      !
-      alpha(:) = acos(cosa(:))
-      !
-      xi(1) = (2.0_ark*alpha(1)-alpha(2)-alpha(3))/sqrt(6.0_ark)
-      xi(2) = (                alpha(2)-alpha(3))/sqrt(2.0_ark)
-      xi(3) = phi(1) ! 1.0_ark/3.0_ark*( phi(1)+phi(2)+phi(3) )
-      !
-      !xi(3) = mod(xi(3)+2.0_ark*pi,2.0_ark*pi/3.0_ark)
-      !if (xi(3)>2.0_ark*pi/3.0_ark-small_) xi(3) = 2.0_ark*pi-xi(3)
-      !
-      !
-  end function calc_xi
-
-
-  end subroutine find_alpha_for_ch3oh
-  !
-
-
-
-
-  !
-  subroutine find_alpha_for_ch3oh_II(xi,phi)
-    ! obtaining 3 angles phi from 3 beta_i, tau, s_a, and s_b 
-    real(ark),intent(in)  :: xi(6)
-    real(ark),intent(out) :: phi(6)
-
-    real(ark) :: eps(6)
-    real(ark) :: rjacob(6,6),dx(6),phi_l(6),phi_r(6),xi_t(6)
-
-    real(ark) :: hstep
-    real(rk)  :: stadev_old,stability,stadev,stadev_best,ssq,a(6,6),b(6,1)
-    !
-    integer(ik) :: iter,itmax,i1,irow,icolumn
-         
-    !
-    rjacob = 0 
-    iter = 0
-    stadev_old = 1.e10
-    stability =  1.e10
-    stadev    =  1.e10
-    !
-    hstep = 1e-4
-    !
-    phi(1:6) = molec%local_eq(7:12)
-    xi_t(1:6) = xi(1:6)
-    !xi_t(4)   = xi(1)
-    !xi_t(3) = mod(xi_t(3)+2.0_ark*pi,2.0_ark*pi)
-    !
-    stadev_best = 1e-2 ! sqrt(small_)*10.0_ark
-    itmax = 500
-    !
-    outer_loop: & 
-    do while( iter<itmax .and. stadev>stadev_best )   
-       !
-       iter = iter + 1
-       ssq=0
-       !
-       ! Caclulate the function 
-       !
-       eps(:) = calc_xi(phi)-xi_t(:)
-       !
-       ssq=sqrt(sum(eps(:)**2))
-       !
-       ! calculate derivatives with respect to parameters (RJACOB)
-       !
-       do i1 = 1,3
-         !
-         phi_r = phi ; phi_l = phi
-         phi_r(i1) = phi(i1) + hstep
-         phi_l(i1) = phi(i1) - hstep
-         !
-         rjacob(:,i1)  = ( calc_xi(phi_r)-calc_xi(phi_l))/hstep*0.5_ark
-         !
-       enddo
-       !
-       if (itmax>=0) then
-         !
-         ! form A matrix 
-         do irow=1,3         !==== row-...... ====!
-           do icolumn=1,irow      !==== column-....====!
-               a(irow,icolumn)=sum( rjacob(:,irow)*rjacob(:,icolumn))
-               a(icolumn,irow) = a(irow,icolumn)
-           enddo
-         enddo
-         ! form B matrix 
-         do irow=1,3       !==== row-...... ====!
-           b(irow,1)=sum(eps(:)*rjacob(:,irow))
-         enddo   
-         !
-         call lapack_gelss(a(:,:),b(:,:))
-         !
-         dx(:) = b(:,1)
-         !
-         stadev=sqrt(ssq)
-         !
-         phi(1:6) = phi(1:6) - dx(1:6)
-         !
-         !phi(:) = mod(phi(:)+2.0_ark*pi,2.0_ark*pi)
-         !      
-         stability=abs( (stadev-stadev_old)/stadev )
-         stadev_old=stadev
-             
-      else   ! Itmax = 0, so there is no fit
-             ! only straightforward calculations 
-             !
-         stadev_old=stadev
-         stadev=sqrt(ssq)
-         !
-      endif 
-
-      !
-    enddo  outer_loop ! --- iter
-    !
-    if (iter==itmax) then
-     write(out,"('find_alpha_for_ch3oh_II: could not find solution after ',i8,' iterations')") iter
-     stop 'find_alpha_for_ch3oh_II: could not find solution'
-    endif 
-
-
-
-  contains
-
-
-  function calc_xi(phi_) result (xi)
-
-    real(ark),intent(in)  :: phi_(6)
-    real(ark)             :: xi(6),beta(3),phi(3)
-    real(ark)             :: cosa(3),alpha(3)
-       
-      beta(1:3) = phi_(1:3)
-      phi(1:3)   = phi_(4:6)
-      !
-      cosa(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi(2) - phi(3) )
-      cosa(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi(3) - phi(1) )
-      cosa(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi(1) - phi(2) )
-
-      if ( any(abs(cosa(:))>1.0_ark+sqrt(small_))) then 
-          !
-          write (out,"('ML_coordinate_transform_ch3oh: cosalpha>1: ',3f18.8)") cosa(1:3)
-          write (out,"('Consider change coordinate type ')")
-          stop 'MLcoordinate_transform_func - bad cos(alpha)'
-      endif 
-      !
-      cosa(:) = max(-1.0_ark,cosa(:))
-      cosa(:) = min( 1.0_ark,cosa(:))
-      !
-      alpha(:) = acos(cosa(:))
-      !
-      xi(1) = (beta(1)+beta(2)+beta(3)-(alpha(1)+alpha(2)+alpha(3)) )/sqrt(6.0_ark)
-      xi(2) = (2.0_ark*beta(1)-beta(2)-beta(3) )/sqrt(6.0_ark)
-      xi(3) = (                 beta(2)-beta(3) )/sqrt(2.0_ark)
-
-      xi(4) = (2.0_ark*alpha(1)-alpha(2)-alpha(3))/sqrt(6.0_ark)
-      xi(5) = (                alpha(2)-alpha(3))/sqrt(2.0_ark)
-      xi(6) = phi(1) ! 1.0_ark/3.0_ark*( phi(1)+phi(2)+phi(3) )
-      !
-      !xi(3) = mod(xi(3)+2.0_ark*pi,2.0_ark*pi/3.0_ark)
-      !if (xi(3)>2.0_ark*pi/3.0_ark-small_) xi(3) = 2.0_ark*pi-xi(3)
-      !
-      !
-  end function calc_xi
-
-
-
-  end subroutine find_alpha_for_ch3oh_II
 
 
 
@@ -1513,18 +1032,19 @@ module mol_ch3oh
         stop 'ML_b0_ch3oh: wrong Natoms '
       endif 
       !
-      !
-      tau = molec%taueq(1)
-      !
-      r_at = molec%local_eq
-      !
-      call generate_structure(tau,a0)
-      !
-      b0(:,:,0) = a0(:,:)
-      !
-      ! We can also simulate the reference structure at each point of rho, if npoints presented
-      !
-      if (Npoints/=0) then
+      if (Npoints==0) then
+         !
+         tau = molec%taueq(1)
+         !
+         r_at = molec%local_eq
+         !
+         call generate_structure(tau,a0)
+         !
+         b0(:,:,0) = a0(:,:)
+         !
+         ! We can also simulate the reference structure at each point of rho, if npoints presented
+         !
+      else
          ! 
          if (.not.present(rho_borders).or..not.present(rho_ref)) then  
             write(out,"('ML_b0_ch3oh: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
@@ -1538,7 +1058,6 @@ module mol_ch3oh
          do i = 0,npoints
             !
             tau = rho_i(i)
-            !
             !
             call generate_structure(tau,b0(1:6,1:3,i))
             !
@@ -1645,6 +1164,12 @@ module mol_ch3oh
                 b0(:,n) = b0(:,n) - CM_shift
               enddo 
               !
+              !r_at(10) = tau
+              !
+              !call MLfromlocal2cartesian(-1,r_at,a0_ark)
+              !
+              b0(:,:) = a0_ark(:,:)
+              !
               !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:))
               !
            case('R-TAU-BOWMAN-REF')
@@ -1666,11 +1191,15 @@ module mol_ch3oh
               !
            case('R-ALPHA-THETA-TAU')
               !
-              r_eq(10) = tau
-              r_eq(11) = tau+2.0_ark/3.0_ark*pi
-              r_eq(12) = tau+4.0_ark/3.0_ark*pi
-              !
               r_at = r_eq
+              !
+              if (Npoints/=0) then 
+                !
+                r_at(10) = tau
+                r_at(11) = tau+2.0_ark/3.0_ark*pi
+                r_at(12) = tau+4.0_ark/3.0_ark*pi
+                !
+              endif
               !
               call MLfromlocal2cartesian(-1,r_at,a0_ark)
               !
@@ -1680,17 +1209,70 @@ module mol_ch3oh
               !
            case('R-ALPHA-THETA--TAU')
               !
-              r_eq(10) = -tau
-              r_eq(11) = -tau-2.0_ark/3.0_ark*pi
-              r_eq(12) = -tau-4.0_ark/3.0_ark*pi
-              !
               r_at = r_eq
+              !
+              if (Npoints/=0) then 
+                !
+                r_at(10) = -tau
+                r_at(11) = -tau-2.0_ark/3.0_ark*pi
+                r_at(12) = -tau-4.0_ark/3.0_ark*pi
+                !
+              endif
               !
               call MLfromlocal2cartesian(-1,r_at,a0_ark)
               !
               b0(:,:) = a0_ark(:,:)
               !
               call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:),transform)
+              !
+           case('C-O-H1-H2-H3-OH')
+              !
+              r_at = r_eq
+              !
+              if (Npoints/=0) r_at(12) = tau
+              !
+              call MLfromlocal2cartesian(-1,r_at,a0_ark)
+              !
+              b0(:,:) = a0_ark(:,:)
+              !
+           case('C-O-H1-H2-H3-OH-EXPLICIT')
+              !
+              reCO = molec%req(1)
+              reCH = molec%req(2)
+              reOH = molec%req(5)
+              alpha = molec%alphaeq(1)
+              beta = molec%alphaeq(4)
+              theta12 = 2.0_ark/3.0_ark*pi
+              theta13 = 2.0_ark/3.0_ark*pi
+              !
+              b0(1,1) = 0
+              b0(1,2) = 0
+              b0(1,3) = 0
+              b0(2,1) = 0
+              b0(2,2) = 0
+              b0(2,3) = reCO
+              !
+              b0(3,1) = reCH*sin(alpha)
+              b0(3,2) = 0
+              b0(3,3) = reCH*cos(alpha)
+              !
+              b0(4,1) = reCH*sin(alpha)*cos(theta12)
+              b0(4,2) = reCH*sin(alpha)*sin(theta12)
+              b0(4,3) = reCH*cos(alpha)
+              !
+              b0(5,1) =  reCH*sin(alpha)*cos(theta13)
+              b0(5,2) = -reCH*sin(alpha)*sin(theta13)
+              b0(5,3) =  reCH*cos(alpha)
+              !
+              b0(6,1) = reOH*cos(tau)*sin(beta)
+              b0(6,2) =-reOH*sin(tau)*sin(beta)
+              b0(6,3) =-reOH*cos(beta)+reCO
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                !
+                b0(:,n) = b0(:,n) - CM_shift
+              enddo 
               !
            end select
            !      
@@ -1722,7 +1304,7 @@ module mol_ch3oh
       'ML_symmetry_transformation_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_symmetry_transformation_CH3OH error: bad coordinate type'
       !
-    case('R-ALPHA-THETA-TAU')
+    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -2085,7 +1667,7 @@ module mol_ch3oh
       'ML_rotsymmetry_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_rotsymmetry_CH3OH error: bad coordinate type'
       !
-    case('R-ALPHA-THETA-TAU')
+    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU')
       !
       select case(trim(molec%symmetry))
         !
