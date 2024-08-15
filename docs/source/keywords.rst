@@ -9,7 +9,7 @@ POTENTIAL_SIMPLE
 ``verbose``: Verbosity level
 
 
-``sparce``:
+``sparse``:
 
 
 ``exp_coeff_thresh``

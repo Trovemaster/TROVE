@@ -2,7 +2,7 @@ Additional Features
 *******************
 .. _newfeat
 
-This chapter discusses the latest additions to TROVE and their implementation. Many of these different features are still being tested and developed and so this chapter, even more than others, should be treated as subject to change. These features have already proven important however and so will likely remain a part of TROVE but perhaps with a different implementation. 
+This chapter discusses the latest additions to TROVE and their implementation. Many of these different features are still being tested and developed and so this chapter, even more than others, should be treated as subject to change. These features have already proven important however and so will likely remain a part of TROVE but perhaps with a different implementation.
 
 Most of these  features are for dealing with larger molecules in TROVE.
 
@@ -121,7 +121,7 @@ Another  method which has been developed to reduce calculation time of line list
 
 As the method prunes the basis using the vibrational intensities, it assumes that rotational levels with the same vibrational quantum numbers will also be weak.
 
-To use this method, the usual steps for calculating the transition moment should be followed but the keyword ``pruning`` should be added into the intensity block. TROVE will then calculate the transition moments and intensities as usual but also work out and store the most intense transitions to and from each state. This calculations produces the checkpoint files ``eigen_intens0_n.chk`` for each symmetry ``n``. In applications the temperature for this step has been set to around the maximum for which the line list being calculated to try and make sure no important states are left out. 
+To use this method, the usual steps for calculating the transition moment should be followed but the keyword ``pruning`` should be added into the intensity block. TROVE will then calculate the transition moments and intensities as usual but also work out and store the most intense transitions to and from each state. This calculations produces the checkpoint files ``eigen_intens0_n.chk`` for each symmetry ``n``. In applications the temperature for this step has been set to around the maximum for which the line list being calculated to try and make sure no important states are left out.
 
 The basis set can then be pruned using the ``J=0`` method. In the ``CONTRACTION`` the following should be included
 ::
@@ -134,4 +134,11 @@ considerations.
 
 An example of using this procedure is for the ethylene (C\ :sub:`2`H\ :sub:`4`) molecule [18MaYaTe]_. For this relatively large molecule a basis set
 with a polyad number of 10 produced split ``matelem`` files which were 158 Gb each. Using these basis sets would not have been practical at high :math:`J`. Using the pruning method with the parameters as given in the example above reduced the matelems to 1.4 Gb. This then allowed refinement and a full line list calculation to be carried out.
+
+
+
+Iron-out
+--------
+
+``IRON-OUT``: the card to switch on an automatic smoothing of all expansion terms of the PEF, DMF, KEO and external field when expanded around a non-rigid reference configuration. TROVE does not use this feature by default. It can however recommend to use it in the case of to large errors in the derivatives of these fields. The card needs to be place anywhere in the main body of the step 1 input.
 
