@@ -49,14 +49,14 @@ Polyad scheme: :math:`P = 2(v_1 + v_2) + v_3 \leq 24`
 
 Potential energy function: ``POTEN_XY2_MORSE_COS`` with a refined potential represented in terms of Morse coordinates and :math:`\cos(\alpha)`.
 
-Dipole moment surface expansion:  *Ab initio* DMS of the type ``xy2_pq_coeff``. 
+Dipole moment surface expansion:  *Ab initio* DMS of the type ``xy2_pq_coeff``.
 
 
 Reference: [TROVE]_
 
-The TROVE input for step 1 is illustrated below. 
-:: 
-      
+The TROVE input for step 1 is illustrated below.
+::
+
       KinOrder  6
       PotOrder  8
 
@@ -183,37 +183,37 @@ The TROVE input for step 1 is illustrated below.
       end
 
 
-A short description of the keywords, cards and sections used is as follows. 
+A short description of the keywords, cards and sections used is as follows.
 
 
- - ``KinOrder``: Expansion order of the KEO. 
+ - ``KinOrder``: Expansion order of the KEO.
  - ``PotOrder``: Expansion order of the PEF.
  - ``Natoms``: Number of atoms (nuclei) :math:`N`.
- - ``Nmodes``: Number of modes or degrees of freedom :math:`M` (here :math:`M=3N-6`). 
- - ``SYMGROUP``: Molecular symmetry group. 
- - ``verbose``: Verbosity level controlling amount of information in the standard output. 
+ - ``Nmodes``: Number of modes or degrees of freedom :math:`M` (here :math:`M=3N-6`).
+ - ``SYMGROUP``: Molecular symmetry group.
+ - ``verbose``: Verbosity level controlling amount of information in the standard output.
  - ``dstep``: numerical difference step size used in finite differences (Angstrom or radian).
  - ``COORDS``: type of the coordinate, ``linear`` (``linearised``) or ``local`` (``curvilinear``).
- - ``FRAME``: Molecular frame. 
+ - ``FRAME``: Molecular frame.
  - ``MOLTYPE``: The type of molecule (XYZ, XY2, XY3, XY4, ZXY3, etc).
  -  ``REFER-CONF``: reference configuration, ``RIGID`` or ``NON-RIGID``.
  - ``PRIMITIVES``: block defining parameters of the primitive bases.
  - ``Npolyads``: Maximal number of polyads.
- - ``CONTRACTION``: Block defining parameters of the contracted basis set.  
- - ``Npolyads``: Maximal number of polyads in the contracted basis. 
- - ``sample_points``: number of sampling points in the symmetrisation procedure. 
- - ``sample_attempts``: number of symmetrisation attempts. 
- - ``symm_toler``: Numerical tolerance used in symmetrisation. 
- - ``DIAGONALIZER``: Block defining the diagonaliser (eigensolver) as well as its options (number of roots, maximal energy etc). 
- - ``SYEV``: LAPACK Eigensolver type DSYEV. 
+ - ``CONTRACTION``: Block defining parameters of the contracted basis set.
+ - ``Npolyads``: Maximal number of polyads in the contracted basis.
+ - ``sample_points``: number of sampling points in the symmetrisation procedure.
+ - ``sample_attempts``: number of symmetrisation attempts.
+ - ``symm_toler``: Numerical tolerance used in symmetrisation.
+ - ``DIAGONALIZER``: Block defining the diagonaliser (eigensolver) as well as its options (number of roots, maximal energy etc).
+ - ``SYEV``: LAPACK Eigensolver type DSYEV.
  - ``enermax``: Maximal energy (cm\ :sup:`-1`).
  - ``ZMAT``: Z-matrix block defining the Z-matrix coordinates and nuclear (atomic) masses.
- - ``control``: Control block (see **Quick start**). 
+ - ``control``: Control block (see **Quick start**).
  - ``Basis``: Basis set block (See **Basis sets**).
  - ``EQUILIBRIUM``: Equilibrium values of the molecule geometries in terms of the Z-matrix coordinates.
  - ``SPECPARAM``: Special parameters used to define the coordinate to expand PEF, e.g. the Morse parameter :math:`a`.
- - ``POTEN``: Potential block (see **Potential energy functions**). 
- - ``DIPOLE``: Dipole moment block (or ``external`` field block). 
+ - ``POTEN``: Potential block (see **Potential energy functions**).
+ - ``DIPOLE``: Dipole moment block (or ``external`` field block).
 
 Methyl cation, CH\ :sub:`3`\ :sup:`+`
 =====================================
@@ -285,9 +285,17 @@ Reference: [TROVE]_
 Ammonia, NH\ :sub:`3`
 =====================
 
-Symmetry: :math:`C_{3v}`
+KEO: non-exact, constructed using the Sorensen procedure as an expansion about the non-rigid reference frame. 
 
-Coordinates: Similar to those for :math:`{\rm CH}_3^+` but for sixth coordinate, :math:`xi_6 = \sin \rho_e - \sin \rho` where :math:`\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]`.
+Molecular type (``MOLTYPE``): ``XY3``.
+
+Symmetry: :math:`D_{3h}`\ (M)
+
+Frame: Non-rigid, Eckart conditions, follows the umbrella motion for a rigid stretches and equal angles. 
+
+Coordinates: Linearised, similar to those for :math:`{\rm CH}_3^+` but for sixth coordinate, :math:`\xi_6 = \sin \rho_e - \sin \rho` where :math:`\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]`.
+
+Coordinates type (``TRANSFORM``):  ``r-s-delta``. 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
 
@@ -297,34 +305,69 @@ Primitive basis set: Numerov generated for all coordinates.
 
 Kinetic energy expansion order: 6
 
-Potential expansion order: 8
+Spectroscopic Model BYTe
+------------------------
 
-Polyad scheme: For BYTe line list it is :math:`P = 2(v_1 + v_2 + v_3) + v_4 + v_5 + \frac{v_6}{2} \leq 14`
+Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. 
+
+
+Basis set: Polyad scheme with  :math:`P = 2(v_1 + v_2 + v_3) + v_4 + v_5 + \frac{v_6}{2} \leq 14`.
 
 Potential energy function: Refinement of published potential [09YuBaYa]_.
 
-Dipole moment surface expansion: For BYTe line list, an *ab initio* DMS was computed at the CCSD(T)/aug-cc-pVQZ level of theory [09YuBaYa]_.
+Dipole moment surface expansion: DMF ``XY3_SYMMB``. For the BYTe line list, an *ab initio* DMS was computed at the CCSD(T)/aug-cc-pVQZ level of theory [09YuBaYa]_.
 
-Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to 1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers, constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
+Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to 1500 K. It comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers, constructed from 1373 897 energy levels below 18 000 wavenumbers having J values :math:`\le` 36.
 
 .. Note:: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods. The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate line list from the work of Coles *et al.* [10CoYuTe]_.
 
 Reference:  [09YuBaYa]_, [11YuBaTe]_, [10CoYuTe]_.
 
+For BYTe, a sample input file can be found at exomol.com, see `BYTe spectroscopic model <https://exomol.com/models/NH3/14N-1H3/BYTe/>`__.
+
+
+Spectroscopic model CoYuTe
+--------------------------
+
+Potential energy function: ``general`` as defined in a stand-alone ``pot-user`` module ``pot_NH3_Roman.f90``. PEF was expanded to the 8th order using the internal linearised coordinates. 
+
+Basis set: Polyad scheme with  :math:`P = 4(v_1 + v_2 + v_3) + 2(v_4 + v_5) + v_6 \leq 32`.
+
+Dipole moment surface expansion: Same in BYTe. 
+
+A sample input file defining the spectroscopic model can be found at  `CoYuTe spectroscopic model <https://exomol.com/models/NH3/14N-1H3/CoYuTe/>`__.
+
+
 
 Methane, CH\ :sub:`4`
 =====================
 
-Symmetry: :math:`{T}_d`
+Spectroscopic Model 10to10
+--------------------------
 
-Coordinates: Linearised coordinates. 
-:math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)` 
-:math:`i = 1,4` for stretching coordinates.  
-:math:`\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}`),  
-:math:`\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})`, 
-:math:`\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23})`, :math:`\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})` and 
-:math:`\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12})`. 
-Where :math:`\alpha_{ij}` is the interbond angles. Also complimented by redundancy conditions (see paper).
+The model is described in [14YuJe]_.
+
+
+
+KEO: non-exact, expanded in terms of linearised coordinates around a rigid reference geometry 
+::
+
+   REFER-CONF RIGID
+
+
+Symmetry: :math:`{T}_d` 
+
+Frame: Eckart. 
+
+
+Coordinates: Type ``R-SYM``,  linearised coordinates obtained from the following valence coordinates: 
+:math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)`
+:math:`i = 1,4` for stretching coordinates.
+:math:`\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}`),
+:math:`\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})`,
+:math:`\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23})`, :math:`\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})` and
+:math:`\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12})`.
+Where :math:`\alpha_{ij}` is the interbond angles. Also complimented by redundancy conditions (see [14YuJe]_).
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-9)`, linearised coordinates.
 
@@ -334,13 +377,14 @@ Primitive basis set: Numerov generated for stretching coordinates, harmonic osci
 
 Kinetic energy expansion order: 6
 
+
+PEF: type  ``general`` implemented as a stand alone (pot_user) module ``pot_ch4.f90``. Original PEF CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections *ab initio* was refined to experimental  (:math:`J = 0, 4`) data from the HITRAN 2008 database.
+
 Potential expansion order: 8
 
-Polyad scheme: :math:`P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 20` with caveats, see paper.
+Polyad scheme: :math:`P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 10`.
 
-Potential energy function:  CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections *ab initio* data fit using polynomial of symmetrised coordinates given above. Refined using experimental :math:`J = 0, 4` data from HITRAN 2008 database.
-
-Dipole moment surface expansion: CCSD(T)-F12c/aug-cc-pVTZ-F12 *ab initio* points fit using polynomial of symmetrised coordinates which is then expressed in symmetrised molecular bond (SMB) representation.
+DMF: type  ``general`` included in the same module ``pot_ch4.f90``. Dipole moment surface expansion: CCSD(T)-F12c/aug-cc-pVTZ-F12 *ab initio* points were fit using polynomial of symmetrised coordinates which is then expressed in symmetrised molecular bond (SMB) representation, see [[13YuTeBa]]_.
 
 Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to `J = 39`.
 
@@ -348,21 +392,45 @@ Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm\ :
 
 Reference: [13YuTeBa]_, [14YuJe]_.
 
+Model input files: `YT10to10 spectroscopic model <https://exomol.com/models/CH4/12C-1H4/YT10to10/>`__. 
+
+
+Spectroscopic Model **MM**
+--------------------------
+
+The model is described in [24YuOwTe]_. 
+
+KEO: Non-exact Taylor expansion around the equilibrium structure in terms of the valence (curvilinear) coordinates using the automatic differentiation (AD)  technique [15YaYu]_ up to 6th order. 
+
+
+Coordinates: The choice of the valence coordinates is the same as used in 10to10, type  ``R-SYM``. 
+
+Frame: Eckart. 
+
+PEF: the same type  ``general`` from the module ``pot_ch4.f90``. A new *ab initio* PEF was refined to experimentally derived MARVEL energies of methane. 
+
+Potential expansion order: 8
+
+Polyad scheme: :math:`P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 14` with caveats, see paper.
+
+DMF: A new accurate *ab initio* DMS of the QZ quality. 
+
+Model input files: `MM spectroscopic model <https://exomol.com/models/CH4/12C-1H4/MM/>`__.
+
+
 
 Sulfur trioxide, SO\ :sub:`3`
 =============================
 
-Symmetry: :math:`D_{3h}`
+The model is essentially the same as used for Ammonia (see above) and described in [13UnTeYu]_ and [16UnTeYu]_. 
 
-Coordinates: As for ammonia.
-
-Coordinate to expand kinetic energy: As for ammonia.
-
-Coordinates to expand Potential energy: As for ammonia.
-
-Primitive basis set: As for ammonia.
+Symmetry: :math:`D_{3h}`\ (M).
 
 Kinetic energy expansion order: 6
+
+Coordinates type: ``r-s-delta`` 
+
+PEF: A refined PES of type ``poten_xy3_morbid_10``. 
 
 Potential expansion order: 8
 
@@ -370,48 +438,71 @@ Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18
 
 Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs *ab initio* energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
 
-Dipole moment surface expansion: *ab initio* calculations at the same levels as for PES. Fitted using SMB
-representation.
+Dipole moment surface expansion: The same type as for Ammonia (``XY3_SYMMB``) based on *ab initio* calculations at the same levels as for PES. Fitted using the SMB representation.
 
 Results: Linelist complete up to 5000 cm\ :sup:`-1` for temperatures up to 800 K.
 
 .. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`\ s need to be included. Up to :math:`J = 130` was included for a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
 
-Reference: [16UnTeYu]_.
+An example of the TROVE input file for the SO\ :sub:`3` calculations using the UYT2 model can be found at `UYT2 spectroscopic model <https://exomol.com/models/SO3/32S-16O3/UYT2/>`__.
+
+
+
+References: [13UnTeYu]_, [16UnTeYu]_.
 
 
 Hydrogen peroxide, H\ :sub:`2`\ O\ :sub:`2`
 ===========================================
 
-Symmetry: :math:`D_{2h}`. This is not the same as the point group of the molecule which is C\ :sub:`2`.
+The model (APTY) is described in [15AlOvYu]_, [16AlPoOv]_.
 
-Coordinates: :math:`\xi_i = (x_i^l - x_i^e)` where :math:`i = 1, 6` are :math:`R`, :math:`r_1`, :math:`r_2`, :math:`\theta_1`, :math:`\theta
-_2` and :math:`\tau`.
+KEO: non-exact (linearised), expanded around a non-rigid reference configuration constructed to follow the torsion motion with all other valence coordinates fixed to their equilibrium values. 
+Symmetry: :math:`D_{2h}`\ (EM). 
+
+
+Frame: Eckart-Saywitz conditions with the x-axis in the plane bisecting the HOOH book-angle. The integration range for the torsional coordinate is extended to :math:`2\pi` in order to efficiently separate the torsional and rotational degrees of freedom. 
+
+Coordinates: type (``transform``) ``r-alpha-tau``. These are linearised except the torsional mode, based on the following valence-type coordinates, 
+:math:`\xi_i = (x_i^l - x_i^e)` where :math:`i = 1, 6` are :math:`R`, :math:`r_1`, :math:`r_2`, :math:`\theta_1`, :math:`\theta
+_2` and :math:`\tau`. 
+
+Molecular type (``MOLTYPE``):  ``ABCD``. This means that the coordinates, their symmetry properties and frame are defined in the module ``mol-ABCD.f90``. 
+
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`, linearised coordinates
 
 Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a_i(\xi_i^l))` :math:`(i = 1, 3)` for stretches and
-:math:`f_n = \xi_i^l` :math:`(i = 4, 6)` for bending coordinates.
+:math:`f_n = \xi_i^l` :math:`(i = 4, 6)` for bending coordinates. 
 
-Primitive basis set: Numerov generated for all coordinates.
+Potential linearised expansion order: 8
+
+
+Primitive basis set: Numerov generated for all coordinates. 
 
 Kinetic energy expansion order: 6
 
-Potential expansion order: 8
+PEF: One of the integrated functional forms into the main, default TROVE compilation, type ``POTEN_H2O2_KOPUT_UNIQUE``. 
+::
 
-Polyad scheme: :math:`P = 4n_1 + 8(n_2 + n_3 + n_4 + n_5) +n_6 \leq 42`
+   POT_TYPE  POTEN_H2O2_KOPUT_UNIQUE
 
-Potential energy function: *ab initio* energies using CCSD(T)-F12b/aug-cc-pVNZ for N up to 7
-for different parts of surface including DBO, relativistic, core-valence corrections fit to polynomial function
-of coordinates. Refined to experimental energies for :math:`J \leq 4`.
+The PEF used was obtained by refining an *ab initio* CCSD(T)-F12b/aug-cc-pVNZ  PES of HOOH to experimental ro-vibrational energies of the main isotopologue of HOOH , for :math:`J \leq 4`.
 
-Dipole moment surface expansion:  CCSD(T)-F12b/aug-cc-pV(T+d)Z fittied to polynomial function.
+Basis set: Constructed using the polyad scheme: :math:`P = 4n_1 + 8(n_2 + n_3 + n_4 + n_5) +n_6 \leq 42`.
+
+DMF type (DMS_TYPE):  ``HOOH_MB``. This dipole moment surface was computed using CCSD(T)-F12b/aug-cc-pV(T+d)Z and fitted to a polynomial. 
 
 
 Results:  Linelist complete up to 6000 cm\ :sup:`-1`. Extended linelist up to 8000 cm\ :sup:`-1` with reduced completeness
 at high temperatures.
 
-.. Note:: The :math:`\tau` coordinate for this molecule adds complications to expansion of dipole, etc. See papers for details.
+.. Note:: The :math:`\tau` coordinate for this molecule adds complications to expansion of dipole, etc.  In order to guarantee a smooth torsional behaviour of all expansion terms of PEF and DMF, the ``iron-out`` feature was used. The ``iron-out`` card is placed anywhere of the main body of the input file (step 1) outside of any sections.
+
+
+See papers for details.
+
+Examples of the TROVE input file for the HOOH calculations using the APTY model can be found at `APTY spectroscopic model <https://exomol.com/models/H2O2/1H2-16O2/APTY/>`__.
+
 
 Reference: [15AlOvYu]_, [16AlPoOv]_.
 

@@ -719,7 +719,7 @@ module me_bnd
   ! Matrix elements with Fourier-eigenfunctions
   !
   subroutine ME_Fourier(vmax,maxorder,rho_b_,isingular,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,&
-                        iperiod,verbose,g_numerov,energy)
+                        iperiod_,verbose,g_numerov,energy)
    !
    integer(ik),intent(in) :: vmax,maxorder,npoints_,numerpoints_,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
@@ -729,14 +729,14 @@ module me_bnd
    real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
-   integer(ik),intent(in) :: iperiod
+   integer(ik),intent(in) :: iperiod_
    !
    integer(ik),parameter  :: Factor_FF=10 ! factor to increase the Fourier basis set size 
    !
    real(ark)            :: rho,L,rhostep,potmin,rhostep_
    real(ark)            :: psipsi_t,characvalue,rho_b(2),cross_prod,factor,fval,df_t,step_scale
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot,kl,kr,p,fmax,npoints,i_,i1,i2,alloc_p,iperiod
    !
    real(ark),allocatable :: poten(:),mu_rr(:),rho_(:),xton(:,:)
    !
@@ -756,13 +756,14 @@ module me_bnd
      !
      ! large grid 
      npoints   = numerpoints_
+     iperiod = min(iperiod_,1)
      !
      allocate(rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),stat=alloc)
      call ArrayStart('rho-grids',alloc,size(rho_kinet),kind(rho_kinet))
      call ArrayStart('rho-grids',alloc,size(rho_poten),kind(rho_poten))
      call ArrayStart('rho-grids',alloc,size(rho_extF),kind(rho_extF))
      !
-     fmax = vmax*factor_ff*iperiod
+     fmax = vmax*factor_ff*max(iperiod,1)
      !
      allocate(poten(0:npoints),mu_rr(0:npoints),stat=alloc)
      call ArrayStart('mu-poten',alloc,size(poten),kind(poten))

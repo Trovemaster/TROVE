@@ -483,10 +483,10 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     b1       = force(8)
     !
     rCO      = local(1)
-    rOH      = local(2)
-    rH1      = local(3)
-    rH2      = local(4)
-    rH3      = local(5)
+    rH1      = local(2)
+    rH2      = local(3)
+    rH3      = local(4)
+    rOH      = local(5)
     !
     ! C-O
     xi(1)=1.0_ark-exp(-a1*(rCO-rCOe))
@@ -496,14 +496,14 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
     xi(4)=1.0_ark-exp(-b1*(rH2-rH1e))
     xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
     !
-    !OCH
-    xi(6) = local(6)- alpha_COHe
-    !
     ! alphas
     !H2-C-H3,H1-C-H2,H1-C-H3
-    xi(7) = local(7)- alpha_OCHe
-    xi(8) = local(8)- alpha_OCHe
-    xi(9) = local(9)- alpha_OCHe
+    xi(7) = local(6)- alpha_OCHe
+    xi(8) = local(7)- alpha_OCHe
+    xi(9) = local(8)- alpha_OCHe
+    !
+    !OCH
+    xi(6) = local(9)- alpha_COHe
     !
     theta1 = local(12)
     theta1 = mod(theta1+2.0_ark*pi,2.0_ark*pi)

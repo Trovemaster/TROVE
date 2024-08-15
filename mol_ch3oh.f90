@@ -1109,7 +1109,7 @@ module mol_ch3oh
         !
         real(ark),intent(in)  :: tau
         real(ark),intent(out) :: b0(6,3)
-        real(ark) :: CM_shift,reCO,reOH,reCH,beta,alpha,theta12,theta13,r_eq(12),a0_ark(6,3)
+        real(ark) :: CM_shift,reCO,reOH,reCH,beta,alpha,theta12,theta13,r_eq(12),a0_ark(6,3),tau_
         integer(ik) :: n
          !
          r_eq = molec%local_eq
@@ -1135,6 +1135,9 @@ module mol_ch3oh
               theta12 = 2.0_ark/3.0_ark*pi
               theta13 = 2.0_ark/3.0_ark*pi
               !
+              tau_ = tau 
+              if (Npoints==0) tau_ = molec%taueq(1)
+              !
               b0(1,1) = 0
               b0(1,2) = 0
               b0(1,3) = 0
@@ -1142,8 +1145,8 @@ module mol_ch3oh
               b0(2,2) = 0
               b0(2,3) = reCO
               !
-              b0(3,1) = reOH*cos(tau)*sin(beta)
-              b0(3,2) = reOH*sin(tau)*sin(beta)
+              b0(3,1) = reOH*cos(tau_)*sin(beta)
+              b0(3,2) = reOH*sin(tau_)*sin(beta)
               b0(3,3) =-reOH*cos(beta)+reCO
               !
               b0(4,1) = reCH*sin(alpha)
@@ -1164,13 +1167,59 @@ module mol_ch3oh
                 b0(:,n) = b0(:,n) - CM_shift
               enddo 
               !
-              !r_at(10) = tau
+              !r_at = r_eq
+              !
+              !if (Npoints/=0) r_at(12) = tau
               !
               !call MLfromlocal2cartesian(-1,r_at,a0_ark)
               !
-              b0(:,:) = a0_ark(:,:)
+              !b0(:,:) = a0_ark(:,:)
               !
               !call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:))
+              !
+           case('R-ALPHA-THETA-TAU-OH-CLOCKWISE')
+              !
+              reCO = molec%req(1)
+              reOH = molec%req(2)
+              reCH = molec%req(3)
+              beta = molec%alphaeq(1)
+              alpha = molec%alphaeq(2)
+              theta12 = 2.0_ark/3.0_ark*pi
+              theta13 = 2.0_ark/3.0_ark*pi
+              !
+              tau_ = tau 
+              if (Npoints==0) tau_ = molec%taueq(1)
+              !
+              b0(1,1) = 0
+              b0(1,2) = 0
+              b0(1,3) = 0
+              b0(2,1) = 0
+              b0(2,2) = 0
+              b0(2,3) = reCO
+              !
+              b0(3,1) = reOH*cos(tau_)*sin(beta)
+              !
+              ! sign has changed to make it rota
+              b0(3,2) =-reOH*sin(tau_)*sin(beta) 
+              b0(3,3) =-reOH*cos(beta)+reCO
+              !
+              b0(4,1) = reCH*sin(alpha)
+              b0(4,2) = 0
+              b0(4,3) = reCH*cos(alpha)
+              !
+              b0(5,1) = reCH*sin(alpha)*cos(theta12)
+              b0(5,2) = reCH*sin(alpha)*sin(theta12)
+              b0(5,3) = reCH*cos(alpha)
+              !
+              b0(6,1) =  reCH*sin(alpha)*cos(theta13)
+              b0(6,2) = -reCH*sin(alpha)*sin(theta13)
+              b0(6,3) =  reCH*cos(alpha)
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                !
+                b0(:,n) = b0(:,n) - CM_shift
+              enddo 
               !
            case('R-TAU-BOWMAN-REF')
               !
@@ -1244,6 +1293,9 @@ module mol_ch3oh
               beta = molec%alphaeq(4)
               theta12 = 2.0_ark/3.0_ark*pi
               theta13 = 2.0_ark/3.0_ark*pi
+              tau_ = tau 
+              !
+              if (Npoints==0) tau_ = molec%taueq(3)
               !
               b0(1,1) = 0
               b0(1,2) = 0
@@ -1264,8 +1316,8 @@ module mol_ch3oh
               b0(5,2) = -reCH*sin(alpha)*sin(theta13)
               b0(5,3) =  reCH*cos(alpha)
               !
-              b0(6,1) = reOH*cos(tau)*sin(beta)
-              b0(6,2) =-reOH*sin(tau)*sin(beta)
+              b0(6,1) = reOH*cos(tau_)*sin(beta)
+              b0(6,2) =-reOH*sin(tau_)*sin(beta)
               b0(6,3) =-reOH*cos(beta)+reCO
               !
               do n = 1,3 
@@ -1304,7 +1356,7 @@ module mol_ch3oh
       'ML_symmetry_transformation_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_symmetry_transformation_CH3OH error: bad coordinate type'
       !
-    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU')
+    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-THETA-TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -1638,6 +1690,127 @@ module mol_ch3oh
           dst(11) = -b*src(10) + a*src(11)
           !
           dst(12) = 2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
+          !
+        end select
+        !
+      end select
+      !
+    case('R-ALPHA-BETA-TAU-THETA')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_CH3OH error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('C3V(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_CH3OH error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (3) ! (123)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(5)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(9)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = -b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !
+        case (2) !(132)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(3)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(7)
+          dst(9) = src(8)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = +b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !
+        case (4) ! (32)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(3)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(7)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          !
+          dst(10) = src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)+2.0_ark*pi
+          !
+        case (6) ! (12)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(9)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = +b*src(10) + a*src(11)
+          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
+          !
+        case (5) ! (13)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(4)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(8)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = -b*src(10) + a*src(11)
+          !
+          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
           !
         end select
         !

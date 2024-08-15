@@ -227,7 +227,7 @@ A number of stand-along control keywords exist that are to be used in the main b
 
 
 Symmetry
-********
+^^^^^^^^
 
 The symmetry of the molecule is specified by the `SYMGROUP` keyword. The symmetry of a given molecule is set in the mol_*.f90 file which, as ever, will be discussed in later chapters. For PF\ :sub:`3` the ``SYMGROUP`` is set using
 ::
@@ -236,7 +236,7 @@ The symmetry of the molecule is specified by the `SYMGROUP` keyword. The symmetr
 
 
 Sparse representation of field checkpoints 
-******************************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is a relatively recent option which became default to use the sparse representation to store the field checkpoints ``kinetic.chk``, ``potential.chk`` and ``external.chk``. In conjunction with the threshold parameter defined by the card ``exp_coeff_thresh`` from the ``contraction`` section: expansion coefficients that are smaller by magnitude than this threshold are not included in the the corresponding checkpoint. 
 
