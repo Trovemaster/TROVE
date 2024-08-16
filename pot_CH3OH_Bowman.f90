@@ -13,7 +13,7 @@ module pot_user
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
-  logical, parameter :: check_symmetries = .true.
+  logical, parameter :: check_symmetries = .false.
   real(rk),parameter :: tol  = 0.1_rk
   !
  contains

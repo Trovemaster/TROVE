@@ -34,17 +34,17 @@ covering the following steps:
 
 Memory and time requirements:
  
- -Step1:    84 Gb 27032.7
- -Step2:   9.9 Gb 1220.9 s
- -Step3:   0.8 Gb 2.6 s
- -Step4:   6.8 Gb 73 s
- -Step5:   7.8 Gb 198 s
- -Step6:   8.4 Gb  502 s
- -Step7:   9.0 Gb  830 s
- -Step8:   9.6 Gb  1449 s
- -Step9:  19.3 Gb  9032 s
- -Step10: 32.5 Gb  12096 s
- -Step_intensity: 89 Gb  1592 s
+ - Step1:    84 Gb 27032.7
+ - Step2:   9.9 Gb 1220.9 s
+ - Step3:   0.8 Gb 2.6 s
+ - Step4:   6.8 Gb 73 s
+ - Step5:   7.8 Gb 198 s
+ - Step6:   8.4 Gb  502 s
+ - Step7:   9.0 Gb  830 s
+ - Step8:   9.6 Gb  1449 s
+ - Step9:  19.3 Gb  9032 s
+ - Step10: 32.5 Gb  12096 s
+ - Step_intensity: 89 Gb  1592 s
 
 Disk space used: 300 Gb
 

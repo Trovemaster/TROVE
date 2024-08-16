@@ -60,9 +60,9 @@ module mol_ch3oh
         !for stretches and 'alpha' bends just subtract equilibrium coordinates
         dst(1:12) = src(1:12)-molec%local_eq(1:12)
         !
-        t1 = mod(src(10),2.0_ark*pi)
-        t2 = mod(src(11),2.0_ark*pi)
-        t3 = mod(src(12),2.0_ark*pi)
+        t1 = src(10)
+        t2 = src(11)
+        t3 = src(12)
         !
         ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
         ! and ensure consistent transfroms
@@ -73,6 +73,8 @@ module mol_ch3oh
         theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
         theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        !theta13 = mod(2.0_ark*pi-(theta12+theta23),2.0_ark*pi)
         !
         a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
         a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
