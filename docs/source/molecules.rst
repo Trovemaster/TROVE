@@ -57,6 +57,8 @@ Reference: [TROVE]_
 The TROVE input for step 1 is illustrated below.
 ::
 
+      mem 64 gb 
+      
       KinOrder  6
       PotOrder  8
 
@@ -185,7 +187,7 @@ The TROVE input for step 1 is illustrated below.
 
 A short description of the keywords, cards and sections used is as follows.
 
-
+ - ``Mem``: Maximal memory value available for the job in ``gb``, ``mb`` or ``kb``. TROVE uses an internal book keeping of the memory usage and will stop if it is large than the ``mem`` value. 
  - ``KinOrder``: Expansion order of the KEO.
  - ``PotOrder``: Expansion order of the PEF.
  - ``Natoms``: Number of atoms (nuclei) :math:`N`.
