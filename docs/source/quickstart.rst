@@ -321,7 +321,7 @@ The Z-matrix used by TROVE is very similar to those used by electronic structure
 Basis Block
 -----------
 
-The Basis block specifies the type of basis functions used by TROVE and how the kinetic and potential energy is expanded for each coordinate. Specifically, the one-dimensional basis functions which will then be used to build up contracted and symmetrized functions. An example for PF\ :sub:`3` is
+The ``Basis`` block specifies the type of basis functions used by TROVE and how the kinetic and potential energy is expanded for each coordinate. Specifically, the one-dimensional basis functions which will then be used to build up contracted and symmetrized functions. An example for PF\ :sub:`3` is
 ::
 
      BASIS
@@ -438,7 +438,7 @@ A description of how these files are used for :math:`J>0` calculations is given 
 Equilibrium Block
 -----------------
 
-The Equilibrium block specifies the equilibrium bond lengths (in Angstrom) and bond angles of the molecule. TROVE uses these values
+The ``Equilibrium`` block specifies the equilibrium bond lengths (in Angstrom) and bond angles of the molecule. TROVE uses these values
 to calculate Cartesian coordinates and transform between coordinate systems. For PF:math:`_3` this is
 ::
 
@@ -452,19 +452,28 @@ to calculate Cartesian coordinates and transform between coordinate systems. For
      end
 
 
-
+.. note: The second column is not used. It was originally introduced to be consistent with the ``potential`` function block, where it is used for fitting indexes. It will become obsolete in future versions.
 
 Specparam Block
 ---------------
 
-The Specparam block is used to define special parameters. For example, the value of :math:`\alpha` in the Morse potential
-function.
+
+The ``Specparam`` block is used to define "special" parameters. It is mostly used to define the Morse parameters :math:`\alpha` used in combination with the ``morse`` expansion type in the ``BASIS`` block:: 
+::
+
+     SPECPARAM
+     alpha        0        1.8000000
+     alpha        0        1.8000000
+     alpha        0        1.8000000
+     END
+
+The second column is not used. It was originally introduced to be consistent with the ``potential`` function block, where it is used for fitting indexes. It will become obsolete in future versions.  
 
 
 Poten Block
 -----------
 
-The Poten block is used to specify the PES. For PF:math:`_3` the first few lines are
+The ``Poten`` block is used to specify the PES. For PF:math:`_3` the first few lines are
 ::
      POTEN
      NPARAM   304
@@ -474,11 +483,27 @@ The Poten block is used to specify the PES. For PF:math:`_3` the first few lines
      FA1                     1               -5730.010012350451
      FA2                     1             1091683.728331340943
      FA3                     1            -1947258.254744407022
-     .
-     .
-     .
+     ...
+     ...
+     end
 
-``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90`` file. The ``COEFF`` keyword specifies whether the potential is given as a simple list or if the powers or the expansion are given. This depends on how the potential has been set up. The list of PES parameters is then given.
+``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90`` file. The ``COEFF`` keyword specifies whether the potential is given as a simple list or if the powers or the expansion are given. This depends on how the potential has been set up. The list of PES parameters is then given. A new ``compact`` form can be used without the second column:
+
+::
+     POTEN
+     compact 
+     POT_TYPE  poten_xy3_morbid_10
+     COEFF  list
+     VE               0.000000000000
+     FA1       -5730.010012350451
+     FA2      1091683.728331340943
+     FA3       -1947258.254744407022
+     ...
+     ...
+     end
+     
+The ``NPARAM`` card is obsolete and can be omitted. 
+ 
 
 External (Dipole) Block
 -----------------------
