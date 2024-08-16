@@ -82,3 +82,5 @@ References
 .. [24YuOwTe] S. N. Yurchenko, A. Owens, K. Kefala, and J. Tennyson. MNRAS, 528, 3719 (2024),  ExoMol line lists - LVII: High accuracy ro-vibrational line list for methane.  `doi:10.1093/mnras/stae148 <https://doi.org/10.1093/mnras/stae148>`__
 
 .. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997).
+
+.. [16MaKyPo]  V. Y. Makhnev, A. A. Kyuberis, O. L. Polyansky, I. I. Mizus, J. Tennyson,  and N. F. Zobov, J.Mol. Spectrosc. 353, 40 (2018).
