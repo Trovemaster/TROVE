@@ -60,9 +60,9 @@ module mol_ch3oh
         !for stretches and 'alpha' bends just subtract equilibrium coordinates
         dst(1:12) = src(1:12)-molec%local_eq(1:12)
         !
-        t1 = src(10)
-        t2 = src(11)
-        t3 = src(12)
+        t1 = mod(src(10),2.0_ark*pi)
+        t2 = mod(src(11),2.0_ark*pi)
+        t3 = mod(src(12),2.0_ark*pi)
         !
         ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
         ! and ensure consistent transfroms
@@ -112,7 +112,7 @@ module mol_ch3oh
         !
         theta12 = src(10)
         theta23 = src(11)
-        t1      = src(12)
+        t1      = mod(src(12),2.0_ark*pi)
         !
         theta12 = mod(theta12+2.0_ark*pi,2.0_ark*pi)
         theta23 = mod(theta23+2.0_ark*pi,2.0_ark*pi)
@@ -160,7 +160,7 @@ module mol_ch3oh
         !for stretches and 'alpha' bends just subtract equilibrium coordinates
         dst(1:12) = src(1:12)-molec%local_eq(1:12)
         !
-        t1      = src(10)
+        t1      = mod(src(10),2.0_ark*pi)
         theta12 = src(11)
         theta23 = src(12)
         !
@@ -205,7 +205,6 @@ module mol_ch3oh
       endif
       !
     case('R-TAU-CHI')
-       !
        !
        call ML_CH3OH_MEP_geometry(tau,r_eq(1),r_eq(2),r_eq(6),r_eq(3),r_eq(4),r_eq(5),beta(1),beta(2),beta(3),&
                                           alpha(1),alpha(2),alpha(3),phi(1),phi(2),phi(3),chi(1),chi(2),chi(3))
@@ -377,17 +376,6 @@ module mol_ch3oh
        xi_eq(10:11) = rref(10:11,0)
        xi_eq(12) = rref(12,0) + tau
        !
-       !xi_eq(1:6) = r_t(1:6)
-       !
-       !xi_eq(8) =(sqrt(2.0_ark)*r_t(7)+2.0_ark*r_t(8)                     )/sqrt(6.0_ark)
-       !xi_eq(9) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)+sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-       !xi_eq(7) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)-sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-       !
-       !xi_eq(10:11) = r_t(10:11) !tau+molec%local_eq(10)-molec%local_eq(11)
-       !xi_eq(12) = 0
-       !
-       !xi_eq(11) = tau+molec%local_eq(10)-molec%local_eq(12)
-       !
        if (direct) then
           !
           dst(1:2) = src(1:2)
@@ -402,18 +390,6 @@ module mol_ch3oh
           dst( 8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*src(7)-src(8)-src(9) )
           dst( 9) = 1.0_ark/sqrt(2.0_ark)*(                src(8)-src(9) )
           !
-          !dsrc(10) = src(10)
-          !
-          !dsrc(11) = src(11) 
-          !if (dsrc(11)-molec%local_eq(11)>2.0_ark*pi-sqrt(small_)) dsrc(11) = dsrc(11)-2.0_ark*pi
-          !if (dsrc(11)-molec%local_eq(11)<-sqrt(small_)) dsrc(11) = dsrc(11)+2.0_ark*pi
-          !dsrc(12) = src(12) 
-          !if (dsrc(12)-molec%local_eq(12)>2.0_ark*pi-sqrt(small_)) dsrc(12) = dsrc(12)-2.0_ark*pi
-          !if (dsrc(12)-molec%local_eq(12)<-sqrt(small_)) dsrc(12) = dsrc(12)+2.0_ark*pi
-          !
-          !dsrc(11) = mod(src(11),rref(11,0))+rref(11,0)
-          !dsrc(12) = mod(src(12),rref(12,0))+rref(12,0)
-          !
           dst(10) = 1.0_ark/6.0_ark*( 2.0_ark*dsrc(10)-dsrc(11)-dsrc(12) )
           if (dst(10)>pi) dst(10) = 2.0_ark*pi-dst(10)
           dst(11) = 1.0_ark/2.0_ark*(                  dsrc(11)-dsrc(12) )
@@ -422,8 +398,6 @@ module mol_ch3oh
           if (dst(12)>pi) dst(12) = 2.0_ark*pi-dst(12)
           !
           dst(1:11) = dst(1:11)-xi_eq(1:11)
-          !
-
           !
       else ! not direct
           !
@@ -653,342 +627,6 @@ module mol_ch3oh
           beta(3) = dst(10)
           !
           !call find_alpha_from_beta(beta(1:3),r_t(10:12),dst(11),dst(9),dst(12))
-          !
-      endif
-
-       !
-    case('R-1TAU-2BETA-REF')
-       !
-       rref( 1,0:4)  = molec%force( 1: 5) 
-       rref( 2,0:4)  = molec%force( 6:10) 
-       rref( 3,0:4)  = molec%force(11:15)  
-       rref( 4,0:4)  = molec%force(16:20)
-       rref( 5,0:4)  = molec%force(21:25) 
-       !
-       rref( 6,0:4)  = molec%force(26:30)/rad
-       rref( 7,0:4)  = molec%force(31:35)/rad 
-       rref( 8,0:4)  = molec%force(36:40)/rad  
-       rref( 9,0:4)  = molec%force(41:45)/rad 
-       !
-       rref(10,0:4)  = molec%force(46:50)/rad 
-       rref(11,0:4)  = molec%force(51:55)/rad  
-       rref(12,0:4)  = molec%force(56:60)/rad 
-       !
-       !
-       tau = src(12)
-       !
-       i0 = 0 
-       !
-       do icoord = 1,9
-         !
-         n(0:4) = molec%pot_ind(11,i0+1:i0+5)
-         k(0:4) = molec%pot_ind(12,i0+1:i0+5)
-         !
-         if (all(n(:)==0)) then 
-           !
-           xi_eq(icoord) = rref(icoord,0)+sum(rref(icoord,1:4)*cos(real(k(1:4),ark)*tau))
-           !
-         else
-           !
-           xi_eq(icoord) = rref(icoord,0)+sum(rref(icoord,1:4)*sin(real(n(1:4),ark)*tau))
-           !
-         endif 
-         !
-         i0 = i0+5
-         !
-       enddo
-       !
-       xi_eq(10:11) = rref(10:11,0)
-       xi_eq(12) = rref(12,0) + tau
-       !
-       beta(1) = (sqrt(2.0_ark)*xi_eq(7)+2.0_ark*xi_eq(8)                       )/sqrt(6.0_ark)
-       beta(2) = (sqrt(2.0_ark)*xi_eq(7)-        xi_eq(8)+sqrt(3.0_ark)*xi_eq(9))/sqrt(6.0_ark)
-       beta(3) = (sqrt(2.0_ark)*xi_eq(7)-        xi_eq(8)-sqrt(3.0_ark)*xi_eq(9))/sqrt(6.0_ark)
-       !
-       phi1   = (xi_eq(12)+2.0_ark*xi_eq(10)          )
-       phi2   = (xi_eq(12)-        xi_eq(10)+xi_eq(11))
-       phi3   = (xi_eq(12)-        xi_eq(10)-xi_eq(11))
-       !
-       cosa0(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi2 - phi3 )
-       cosa0(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi3 - phi1 )
-       cosa0(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi1 - phi2 )
-       !
-       if ( any(abs(cosa0(:))>1.0_ark+sqrt(small_))) then 
-           !
-           write (out,"('ML_coordinate_transform_ch3oh: cosalpha0>1: ',3f18.8)") cosa0(1:3)
-           write (out,"('Consider change coordinate type ')")
-           stop 'MLcoordinate_transform_func - bad cos(alpha)'
-       endif 
-       !
-       cosa0(:) = max(-1.0_ark,cosa0(:))
-       cosa0(:) = min( 1.0_ark,cosa0(:))
-       !
-       alpha0(:) = acos(cosa0(:))
-       !
-       !xi_eq(10) = (alpha0(2)+alpha0(3))/sqrt(2.0_ark)
-       !xi_eq(11) = (alpha0(2)-alpha0(3))/sqrt(2.0_ark)
-       !
-       xi_eq(10) = alpha0(3)
-       xi_eq(11) = alpha0(2)
-       !
-       if (direct) then
-          !
-          dst(1:2) = src(1:2)
-          !
-          dst( 3) = 1.0_ark/sqrt(3.0_ark)*(         src(3)+src(4)+src(5) )
-          dst( 4) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*src(3)-src(4)-src(5) )
-          dst( 5) = 1.0_ark/sqrt(2.0_ark)*(                src(4)-src(5) )
-          !
-          dst( 6) = src(6)
-          !
-          dst( 7) = 1.0_ark/sqrt(3.0_ark)*(         src(7)+src(8)+src(10) )
-          dst( 8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*src(7)-src(8)-src(10) )
-          dst( 9) = 1.0_ark/sqrt(2.0_ark)*(                src(8)-src(10) )
-          !
-          !dsrc(10) = src(10)
-          !
-          !dsrc(11) = src(11) 
-          !if (dsrc(11)-molec%local_eq(11)>2.0_ark*pi-sqrt(small_)) dsrc(11) = dsrc(11)-2.0_ark*pi
-          !if (dsrc(11)-molec%local_eq(11)<-sqrt(small_)) dsrc(11) = dsrc(11)+2.0_ark*pi
-          !dsrc(12) = src(12) 
-          !if (dsrc(12)-molec%local_eq(12)>2.0_ark*pi-sqrt(small_)) dsrc(12) = dsrc(12)-2.0_ark*pi
-          !if (dsrc(12)-molec%local_eq(12)<-sqrt(small_)) dsrc(12) = dsrc(12)+2.0_ark*pi
-          !
-          !dsrc(11) = mod(src(11),rref(11,0))+rref(11,0)
-          !dsrc(12) = mod(src(12),rref(12,0))+rref(12,0)
-          !
-          !dst(7)   = dst(7)  /sqrt(2.0_ark)-(alpha(1) +alpha(2) +alpha(3) )/sqrt(6.0_ark)
-          !xi_eq(7) = xi_eq(7)/sqrt(2.0_ark)-(alpha0(1)+alpha0(2)+alpha0(3))/sqrt(6.0_ark)
-          !
-          !dst(10) = (src( 9)+src(11))/sqrt(2.0_ark)
-          !dst(11) = (src( 9)-src(11))/sqrt(2.0_ark)
-          !
-          dst(10) = src( 9)
-          dst(11) = src(11)
-          dst(12) = tau
-          !
-          dst(1:11) = dst(1:11)-xi_eq(1:11)
-          !
-      else ! not direct
-          !
-          r_t(12) = tau
-          !
-          !xi_eq(7) = xi_eq(7)/sqrt(2.0_ark)-(alpha0(1)+alpha0(2)+alpha0(3))/sqrt(6.0_ark)
-          !
-          r_t(1:11) = src(1:11)+xi_eq(1:11)
-          !
-          dst(1:2) = r_t(1:2)
-          !
-          dst(3) =(sqrt(2.0_ark)*r_t(3)+2.0_ark*r_t(4)                     )/sqrt(6.0_ark)
-          dst(4) =(sqrt(2.0_ark)*r_t(3)-        r_t(4)+sqrt(3.0_ark)*r_t(5))/sqrt(6.0_ark)
-          dst(5) =(sqrt(2.0_ark)*r_t(3)-        r_t(4)-sqrt(3.0_ark)*r_t(5))/sqrt(6.0_ark)
-          !
-          dst(6) = r_t(6)
-          !
-          dst( 7) =(sqrt(2.0_ark)*r_t(7)+2.0_ark*r_t(8)                     )/sqrt(6.0_ark)
-          dst( 8) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)+sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-          dst(10) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)-sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-
-          !dst( 9) = (r_t(10)+r_t(11))/sqrt(2.0_ark)
-          !dst(11) = (r_t(10)-r_t(11))/sqrt(2.0_ark)
-          !
-          dst( 9) = r_t(10)
-          dst(11) = r_t(11)
-          dst(12) = tau
-          !
-          !call find_alpha_for_ch3oh(dst(7:9),r_t(10:12),dst(10:12))
-          !call find_alpha_for_ch3oh_II(r_t(7:12),dst(7:12))
-          !
-          !dst(10) =(r_t(12)+2.0_ark*r_t(10)        )
-          !dst(11) =(r_t(12)-        r_t(10)+r_t(11))
-          !dst(12) =(r_t(12)-        r_t(10)-r_t(11))
-          !
-          !dst(10:12) = mod(dst(10:12)+2.0_ark*pi,2.0_ark*pi)+molec%local_eq(10:12)
-          !
-      endif
-      !
-    case('R-ALPHA-S-TAU-BETA-REF')
-       !
-       rref( 1,0:4)  = molec%force( 1: 5) 
-       rref( 2,0:4)  = molec%force( 6:10) 
-       rref( 3,0:4)  = molec%force(11:15)  
-       rref( 4,0:4)  = molec%force(16:20)
-       rref( 5,0:4)  = molec%force(21:25) 
-       !
-       rref( 6,0:4)  = molec%force(26:30)/rad
-       rref( 7,0:4)  = molec%force(31:35)/rad 
-       rref( 8,0:4)  = molec%force(36:40)/rad  
-       rref( 9,0:4)  = molec%force(41:45)/rad 
-       !
-       rref(10,0:4)  = molec%force(46:50)/rad 
-       rref(11,0:4)  = molec%force(51:55)/rad  
-       rref(12,0:4)  = molec%force(56:60)/rad 
-       !
-       !
-       if (direct) then
-          !
-          !dsrc(10) = src(10)
-          !if (dsrc(10)>2.0_ark*pi-sqrt(small_)) dsrc(10) = dsrc(10)-2.0_ark*pi
-          !if (dsrc(10)<-sqrt(small_)) dsrc(10) = dsrc(10)+2.0_ark*pi
-          !
-          !dsrc(11) = src(11) 
-          !if (dsrc(11)-rref(11,1)>2.0_ark*pi-sqrt(small_)) dsrc(11) = dsrc(11)-2.0_ark*pi
-          !if (dsrc(11)-rref(11,1)<-sqrt(small_)) dsrc(11) = dsrc(11)+2.0_ark*pi
-          !dsrc(12) = src(12) 
-          !if (dsrc(12)-rref(12,1)>2.0_ark*pi-sqrt(small_)) dsrc(12) = dsrc(12)-2.0_ark*pi
-          !if (dsrc(12)-rref(12,1)<-sqrt(small_)) dsrc(12) = dsrc(12)+2.0_ark*pi
-          !
-          tau = src(10) ! 1.0_ark/3.0_ark*( src(10)+src(11)+src(12) )
-          !
-          !tau = 1.0_ark/3.0_ark*( src(10)+src(11)+src(12) )
-          !
-          !tau = mod(tau+2.0_ark*pi,2.0_ark*pi/3.0_ark)
-          !
-          beta(1) = src(7)
-          beta(2) = src(8)
-          beta(3) = src(9)
-          !
-          phi1   = src(10)
-          phi2   = src(11)
-          phi3   = src(12)
-          !
-          cosa(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi2 - phi3 )
-          cosa(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi3 - phi1 )
-          cosa(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi1 - phi2 )
-
-          !
-          if ( any(abs(cosa(:))>1.0_ark+sqrt(small_))) then 
-              !
-              write (out,"('ML_coordinate_transform_ch3oh: cosalpha>1: ',3f18.8)") cosa(1:3)
-              write (out,"('Consider change coordinate type ')")
-              stop 'MLcoordinate_transform_func - bad cos(alpha)'
-          endif 
-          !
-          cosa(:) = max(-1.0_ark,cosa(:))
-          cosa(:) = min( 1.0_ark,cosa(:))
-          !
-          alpha(:) = acos(cosa(:))
-          !
-       else  ! not direct
-          !
-          tau = src(12)
-          !
-       endif
-       !
-       i0 = 0 
-       !
-       do icoord = 1,9
-         !
-         n(0:4) = molec%pot_ind(11,i0+1:i0+5)
-         k(0:4) = molec%pot_ind(12,i0+1:i0+5)
-         !
-         if (all(n(:)==0)) then 
-           !
-           xi_eq(icoord) = rref(icoord,0)+sum(rref(icoord,1:4)*cos(real(k(1:4),ark)*tau))
-           !
-         else
-           !
-           xi_eq(icoord) = rref(icoord,0)+sum(rref(icoord,1:4)*sin(real(n(1:4),ark)*tau))
-           !
-         endif 
-         !
-         i0 = i0+5
-         !
-       enddo
-       !
-       xi_eq(10:11) = rref(10:11,0)
-       xi_eq(12) = rref(12,0) + tau
-       !
-       beta(1) = (sqrt(2.0_ark)*xi_eq(7)+2.0_ark*xi_eq(8)                       )/sqrt(6.0_ark)
-       beta(2) = (sqrt(2.0_ark)*xi_eq(7)-        xi_eq(8)+sqrt(3.0_ark)*xi_eq(9))/sqrt(6.0_ark)
-       beta(3) = (sqrt(2.0_ark)*xi_eq(7)-        xi_eq(8)-sqrt(3.0_ark)*xi_eq(9))/sqrt(6.0_ark)
-       !
-       phi1   = (xi_eq(12)+2.0_ark*xi_eq(10)          )
-       phi2   = (xi_eq(12)-        xi_eq(10)+xi_eq(11))
-       phi3   = (xi_eq(12)-        xi_eq(10)-xi_eq(11))
-       !
-       cosa0(1) = cos( beta(2) )*cos( beta(3) ) + sin( beta(2) )*sin( beta(3) )*cos( phi2 - phi3 )
-       cosa0(2) = cos( beta(3) )*cos( beta(1) ) + sin( beta(3) )*sin( beta(1) )*cos( phi3 - phi1 )
-       cosa0(3) = cos( beta(1) )*cos( beta(2) ) + sin( beta(1) )*sin( beta(2) )*cos( phi1 - phi2 )
-       !
-       if ( any(abs(cosa0(:))>1.0_ark+sqrt(small_))) then 
-           !
-           write (out,"('ML_coordinate_transform_ch3oh: cosalpha0>1: ',3f18.8)") cosa0(1:3)
-           write (out,"('Consider change coordinate type ')")
-           stop 'MLcoordinate_transform_func - bad cos(alpha)'
-       endif 
-       !
-       cosa0(:) = max(-1.0_ark,cosa0(:))
-       cosa0(:) = min( 1.0_ark,cosa0(:))
-       !
-       alpha0(:) = acos(cosa0(:))
-       !
-       xi_eq(10) = (2.0_ark*alpha0(1)-alpha0(2)-alpha0(3))/sqrt(6.0_ark)
-       xi_eq(11) = (                  alpha0(2)-alpha0(3))/sqrt(2.0_ark)
-       !
-       if (direct) then
-          !
-          dst(1:2) = src(1:2)
-          !
-          dst( 3) = 1.0_ark/sqrt(3.0_ark)*(         src(3)+src(4)+src(5) )
-          dst( 4) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*src(3)-src(4)-src(5) )
-          dst( 5) = 1.0_ark/sqrt(2.0_ark)*(                src(4)-src(5) )
-          !
-          dst( 6) = src(6)
-          !
-          dst( 7) = 1.0_ark/sqrt(3.0_ark)*(         src(7)+src(8)+src(9) )
-          dst( 8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*src(7)-src(8)-src(9) )
-          dst( 9) = 1.0_ark/sqrt(2.0_ark)*(                src(8)-src(9) )
-          !
-          !dsrc(10) = src(10)
-          !
-          !dsrc(11) = src(11) 
-          !if (dsrc(11)-molec%local_eq(11)>2.0_ark*pi-sqrt(small_)) dsrc(11) = dsrc(11)-2.0_ark*pi
-          !if (dsrc(11)-molec%local_eq(11)<-sqrt(small_)) dsrc(11) = dsrc(11)+2.0_ark*pi
-          !dsrc(12) = src(12) 
-          !if (dsrc(12)-molec%local_eq(12)>2.0_ark*pi-sqrt(small_)) dsrc(12) = dsrc(12)-2.0_ark*pi
-          !if (dsrc(12)-molec%local_eq(12)<-sqrt(small_)) dsrc(12) = dsrc(12)+2.0_ark*pi
-          !
-          !dsrc(11) = mod(src(11),rref(11,0))+rref(11,0)
-          !dsrc(12) = mod(src(12),rref(12,0))+rref(12,0)
-          !
-          !dst(7)   = dst(7)  /sqrt(2.0_ark)-(alpha(1) +alpha(2) +alpha(3) )/sqrt(6.0_ark)
-          !xi_eq(7) = xi_eq(7)/sqrt(2.0_ark)-(alpha0(1)+alpha0(2)+alpha0(3))/sqrt(6.0_ark)
-          !
-          dst(10) = (2.0_ark*alpha(1)-alpha(2)-alpha(3))/sqrt(6.0_ark)
-          dst(11) = (                alpha(2)-alpha(3))/sqrt(2.0_ark)
-          dst(12) = tau
-          !
-          dst(1:11) = dst(1:11)-xi_eq(1:11)
-          !
-      else ! not direct
-          !
-          r_t(12) = tau
-          !
-          !xi_eq(7) = xi_eq(7)/sqrt(2.0_ark)-(alpha0(1)+alpha0(2)+alpha0(3))/sqrt(6.0_ark)
-          !
-          r_t(1:11) = src(1:11)+xi_eq(1:11)
-          !
-          dst(1:2) = r_t(1:2)
-          !
-          dst(3) =(sqrt(2.0_ark)*r_t(3)+2.0_ark*r_t(4)                     )/sqrt(6.0_ark)
-          dst(4) =(sqrt(2.0_ark)*r_t(3)-        r_t(4)+sqrt(3.0_ark)*r_t(5))/sqrt(6.0_ark)
-          dst(5) =(sqrt(2.0_ark)*r_t(3)-        r_t(4)-sqrt(3.0_ark)*r_t(5))/sqrt(6.0_ark)
-          !
-          dst(6) = r_t(6)
-          !
-          dst(7) =(sqrt(2.0_ark)*r_t(7)+2.0_ark*r_t(8)                     )/sqrt(6.0_ark)
-          dst(8) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)+sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-          dst(9) =(sqrt(2.0_ark)*r_t(7)-        r_t(8)-sqrt(3.0_ark)*r_t(9))/sqrt(6.0_ark)
-          !
-          !call find_alpha_for_ch3oh(dst(7:9),r_t(10:12),dst(10:12))
-          !call find_alpha_for_ch3oh_II(r_t(7:12),dst(7:12))
-          !
-          !dst(10) =(r_t(12)+2.0_ark*r_t(10)        )
-          !dst(11) =(r_t(12)-        r_t(10)+r_t(11))
-          !dst(12) =(r_t(12)-        r_t(10)-r_t(11))
-          !
-          !dst(10:12) = mod(dst(10:12)+2.0_ark*pi,2.0_ark*pi)+molec%local_eq(10:12)
           !
       endif
       !

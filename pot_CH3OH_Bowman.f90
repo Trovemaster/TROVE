@@ -4,6 +4,7 @@
 module pot_user
   use accuracy
   use moltype
+  use mol_ch3oh
 
   implicit none
 
@@ -12,6 +13,8 @@ module pot_user
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
+  logical, parameter :: check_symmetries = .true.
+  real(rk),parameter :: tol  = 0.1_rk
   !
  contains
  !
@@ -61,8 +64,10 @@ module pot_user
    real(ark),intent(in)   ::  local(ncoords)
    real(ark),intent(in)   ::  xyz(natoms,3)
    real(ark),intent(in)   ::  force(:)
-   real(ark)              ::  f,xyz_user(3,natoms),V0
-   integer(ik) :: m,mr,N
+   real(ark)              ::  f,xyz_user(3,natoms),V0,xi(12),chi(12,6),y(12),f_,r(12),r_na(6,3)
+   integer(ik) :: m,mr,N,ioper,pm
+   integer,parameter :: Nsym = 6, Ndeg = 12
+   logical           :: dir
    !
    m  = int(force(1),ik)
    mr = int(force(2),ik)
@@ -84,6 +89,52 @@ module pot_user
    call potshell(force(4:N),m,mr,xyz_user,f)
    !
    f = (f-V0)*hartree
+   !
+   !check symmetry of PEF
+   !
+   if (check_symmetries) then 
+      !
+      dir = .true.
+      !
+      xi = coordinate_transform_ch3oh(local,size(local),dir)
+      !
+      call symmetry_transformation_CH3OH(nsym,xi,chi,ndeg)
+      !
+      dir = .false.
+      !
+      do ioper =1,Nsym
+        !
+        y(1:12) = chi(1:12,ioper)
+        !
+        r = coordinate_transform_ch3oh(y,size(local),dir)
+        !
+        pm = 1
+        !
+        call MLfromlocal2cartesian(pm,r,r_na)
+        !
+        ! convert TROVE xyz to uzer's XYZ
+        !
+        xyz_user(:,1) = r_na(3,:)
+        xyz_user(:,2) = r_na(4,:)
+        xyz_user(:,3) = r_na(5,:)
+        xyz_user(:,4) = r_na(6,:)
+        xyz_user(:,5) = r_na(1,:)
+        xyz_user(:,6) = r_na(2,:)
+        !
+        xyz_user = xyz_user/bohr
+        !
+        call potshell(force(4:N),m,mr,xyz_user,f_)
+        !
+        f_ = (f_-V0)*hartree
+        !
+        if (abs(f-f_)>tol) then
+          write(out,"('Pot_CH3OH_Bowman sym-error:',i4,1x,12f15.6,2x,3f12.4)") ioper,local,f,f_,f-f_
+          !stop 'Pot_CH3OH_Bowman is not symmetric'
+        endif
+        !
+      enddo
+      !
+   endif
    !
  end function MLpoten
 
@@ -719,6 +770,225 @@ module pot_user
     endif
     return
   end subroutine getv_x4yz 
+
+
+subroutine symmetry_transformation_CH3OH(nsym,src,dst,ndeg)
+    implicit none
+    !
+    integer(ik),intent(in)    :: nsym,ndeg  ! group operation  
+    real(ark),intent(in)      :: src(1:ndeg)
+    real(ark),intent(out)     :: dst(1:ndeg,6)
+    !
+    real(ark)         :: repres(nsym,ndeg,ndeg),a,b,e,o
+    integer(rk)       :: ioper
+    !
+    if (verbose>=6) write(out,"('symmetry_transformation_CH3OH/start')")
+    !
+    a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
+    !
+    repres = 0
+    !
+    repres(:,1,1) = 1.0_ark
+    repres(:,2,2) = 1.0_ark
+    !
+    repres(:,6,6) = 1.0_ark
+    !
+    repres(:,12,12) = 1.0_ark
+    !
+    ! E
+    ! r123
+    repres(1,3,3) = 1.0_ark
+    repres(1,4,4) = 1.0_ark
+    repres(1,5,5) = 1.0_ark
+    ! a123
+    repres(1,7,7) = 1.0_ark
+    repres(1,8,8) = 1.0_ark
+    repres(1,9,9) = 1.0_ark
+    !d9
+    repres(1,10,10) = 1.0_ark
+    repres(1,11,11) = 1.0_ark
+    !
+    !C3+/(132)
+    repres(2,3,5) = 1.0_ark
+    repres(2,4,3) = 1.0_ark
+    repres(2,5,4) = 1.0_ark
+    !
+    repres(2,7,9) = 1.0_ark
+    repres(2,8,7) = 1.0_ark
+    repres(2,9,8) = 1.0_ark
+    !
+    repres(2,10,10) = -a
+    repres(2,10,11) = -b
+    repres(2,11,10) =  b
+    repres(2,11,11) = -a
+    !
+    !C3-/(93)
+    !
+    repres(3,3,4) = 1.0_ark
+    repres(3,4,5) = 1.0_ark
+    repres(3,5,3) = 1.0_ark
+    !
+    repres(3,7,8) = 1.0_ark
+    repres(3,8,9) = 1.0_ark
+    repres(3,9,7) = 1.0_ark
+    !
+    repres(3,10,10) = -a
+    repres(3,10,11) =  b
+    repres(3,11,10) = -b
+    repres(3,11,11) = -a
+    !
+    !C2/(23)->(45)
+    !
+    repres(4,3,3) = 1.0_ark
+    repres(4,4,5) = 1.0_ark
+    repres(4,5,4) = 1.0_ark
+    !
+    repres(4,7,7) = 1.0_ark
+    repres(4,8,9) = 1.0_ark
+    repres(4,9,8) = 1.0_ark
+    !
+    repres(4,10,10) =  1.0_ark
+    repres(4,11,11) = -1.0_ark
+    !
+    !C2'/(9)->(34)
+    repres(6,3,4) = 1.0_ark
+    repres(6,4,3) = 1.0_ark
+    repres(6,5,5) = 1.0_ark
+    !
+    repres(6,7,8)  = 1.0_ark
+    repres(6,8,7)  = 1.0_ark
+    repres(6,9,9)  = 1.0_ark
+    !
+    repres(6,10,10) = -a
+    repres(6,10,11) =  b
+    repres(6,11,10) =  b
+    repres(6,11,11) =  a
+    !
+    !(13)->(35)
+    repres(5,3,5) = 1.0_ark
+    repres(5,4,4) = 1.0_ark
+    repres(5,5,3) = 1.0_ark
+    !
+    repres(5,7,9) = 1.0_ark
+    repres(5,8,8) = 1.0_ark
+    repres(5,9,7) = 1.0_ark
+    !
+    repres(5,10,10) = -a
+    repres(5,10,11) = -b
+    repres(5,11,10) = -b
+    repres(5,11,11) =  a
+    !
+    do ioper = 1,nsym
+      dst(:,ioper) = matmul(repres(ioper,:,:),src) 
+    enddo
+    !
+    dst(12,1) = src(12)
+    dst(12,2) = src(12)-2.0_ark*pi/3.0_ark
+    dst(12,3) = src(12)+2.0_ark*pi/3.0_ark
+    dst(12,4) =-src(12)
+    dst(12,5) =-src(12)+2.0_ark*pi/3.0_ark
+    dst(12,6) =-src(12)-2.0_ark*pi/3.0_ark
+    !
+    if (verbose>=6) write(out,"('symmetry_transformation_CH3OH/end')")
+    !
+  end subroutine symmetry_transformation_CH3OH
+
+
+  !
+  ! Procedures to define  ch3oh 
+  ! 
+  function coordinate_transform_ch3oh(src,ndst,direct) result (dst)
+    !
+    real(ark),intent(in)  :: src(:)
+    integer(ik),intent(in) :: ndst
+    logical,intent(in):: direct
+
+    !
+    real(ark),dimension(ndst) :: dst
+    real(ark)                 :: dsrc(size(src))
+    real(ark)                 :: tau,rref(12,0:4),r_eq(12),r_t(12),xi_eq(12)
+    integer(ik)               :: i0,nsrc, k(0:4),n(0:4),icoord
+    real(ark)                 :: beta(3),alpha(3),cosa(3),phi1,phi2,phi3,chi1,chi2,chi3
+    real(ark)                 :: alpha0(3),cosa0(3),phi(3),chi(3),coschi(3)
+    real(ark)                 :: t1,t2,t3,theta12,theta23,theta13,a1,a2,tbar
+    !
+    if (verbose>=7) write(out,"('coordinate_transform_ch3oh/start')") 
+    !
+    if (direct) then 
+       !
+       dsrc(:) = src(:)
+       !
+    else 
+       !
+       dsrc(:) = src(:)
+       !
+    endif
+    !
+    nsrc = size(src)
+    !
+    select case(trim(molec%coords_transform))
+    case default
+       write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
+       stop 'MLcoordinate_transform_func - bad coord. type'
+      !
+    case('R-ALPHA-THETA-TAU')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:12) = src(1:12)
+        !
+        t1 = mod(src(10),2.0_ark*pi)
+        t2 = mod(src(11),2.0_ark*pi)
+        t3 = mod(src(12),2.0_ark*pi)
+        !
+        ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
+        ! and ensure consistent transfroms
+        !
+        if (t2-t1<small_) t2 = t2 + 2.0_ark*pi
+        if (t3-t2<small_) t3 = t3 + 2.0_ark*pi
+        !
+        theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(10) = a1
+        dst(11) = a2
+        dst(12) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:12) = src(1:12)
+        !
+        A1 = src(10) 
+        A2 = src(11) 
+        tbar = src(12)
+        !
+        t1 =                    tbar+sqrt(2.0_ark)/3.0_ark*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        !
+        dst(10) =  mod(t1+4.0_ark*pi,4.0_ark*pi)
+        dst(11) =  mod(t2+4.0_ark*pi,4.0_ark*pi)
+        dst(12) =  mod(t3+4.0_ark*pi,4.0_ark*pi)
+        !
+        continue
+        !
+      endif
+      !
+    end select
+    !
+    !
+    if (verbose>=7) write(out,"('coordinate_transform_ch3oh/end')") 
+    !
+    !
+  end function coordinate_transform_ch3oh
+
 
 
 end module pot_user
