@@ -12,25 +12,28 @@ PH\ :sub:`3`
 
 This PH\ :sub:`3` benchmark is to produce a small line list for phosphine (PH\ :sub:`3`) using a relatively  large primitive basis set.
 
-It includes the following set of jobs:
+It includes the following input files:
 ::
+        
+    ph3_P18_step1.inp
+    ph3_P18_step2.inp
+    ph3_P18_step3_J0.inp
+    ph3_P18_step3_J1.inp
+    ph3_P18_step3_J2.inp
+    ph3_P18_step3_J3.inp
+    ph3_P18_step3_J4.inp
+    ph3_P18_step3_J5.inp
+    ph3_P18_step3_J10.inp
+    ph3_P18_step3_J50.inp
+    ph3_P18_step4_intensity.inp
     
-   ./trove.x <ph3_P18_step1.inp > ph3_P18_step1.out
-   ./trove.x <ph3_P18_step2.inp > ph3_P18_step3.out
-   ......
-   ./trove.x <ph3_P18_step10.inp > ph3_P18_step10.out
-   ./trove.x <ph3_P18_intensity.inp > ph3_P18_intensity.out
-    
-
 covering the following steps:
 
 - Step 1: Produce the initial smaller :math:`J=0` HAMILTONIAN matrix and diagonalize it using ``DSYEV`` (step1)
 - Step 2: Convert to :math:`J=0` representation; prepare matrix elements for  :math:`J>0` calculations (step2)
-- Step 3: Generate a :math:`J=0-5` 10 energies and eigenfunctions  (step3-step9) by diagonalising three double real, symmetric matrices for each J using  DSYEV.
+- Step 3: Generate a :math:`J=0-5` 10, 50 energies and eigenfunctions  (step3-step9) by diagonalising three double real, symmetric matrices for each J using  DSYEV.
          Each calculation is independent, but depends on the checkpoints produced at steps 1-2. It requires checkpoints from steps 1-2.
-- Step 4: Generate a :math:``J=100` (double real, symmetric) matrix  and store to the disk without diagonalisation (step 10)
-- Step 5: Intensity calculations between J=0-5 states (ph3_P18_step_intensity.inp).
-        It will depend on the checkpoints produced at steps 1-3.
+- Step 4: Intensity calculations between J=0-5 states (ph3_P18_step4_intensity.inp). It will depend on the checkpoints produced at steps 1-3.
 
 Memory and time requirements:
  
@@ -62,12 +65,167 @@ where :math:`N_0` are the  dimensions of the :math:`\Gamma=A_1, A_2` and  :math:
 
 The first step in this case is relatively expensive, 84 Gb and 27032.7 s on a 16 processor workstation.
 
+The input file has the structure described in detail in the following. 
+
+ 
+ - Stand-alone keywords, memory, verbosity level, expansion order of KEO and PEF, sparse methods. 
+:: 
+     
+     mem 64 gb
+     verbose 5
+     
+     KinOrder  6   (Max order in the kinetic energy expansion)
+     PotOrder  8   (Max order in the potential energy expansion)
+     
+     Natoms 4       (Number of atoms)
+     Nmodes 6       (Number of modes = 3*Natoms-6)
+
+     sparse
+
+- More stand-alone keywords: 
+ - Finite difference steps, general coordinates type (``linear``-ised or ``local``), TROVE coordinates, Molecule type, the molecule name (only for printing), reference configuration: 
+ ::
+     
+     dstep   0.01
+     COORDS  linear
+     TRANSFORM  R-ALPHA
+     MOLTYPE    XY3
+     MOLECULE   PH3
+     REFER-CONF RIGID
+     
+ - Molecular symmetry group 
+ ::
+          
+     SYMGROUP C3v(M)
+
+- Primitive basis block:      
+::
+         
+     PRIMITIVES
+       Npolyads        18        (Number of primitive polyads)
+       enercut        80000.     (energy cut for the primitive basis set)
+     END
+     
+- Contracted basis block:
+::
+          
+     CONTRACTION
+       Npolyads        18         (Number of contracted polyads)
+       enercut       80000.0      (energy cut for the contracted basis set)
+       degeneracy     1e-3        (threshold used to define degenerate energies)
+       coeff_thresh   1e-14       (threshold used to define symmetry)
+       enercut_matelem 10000.0
+       exp_coeff_thresh   1.0d-6
+     END
+          
+- Eigensolver (diagonalizer) block: 
+::
+     
+     DIAGONALIZER
+      syev
+      enermax 15000
+     end
+     
+- Zmatrix block defining the structure and masses:
+:: 
+          
+     ZMAT
+         P   0  0  0  0   30.9737620
+         H   1  0  0  0   1.00782505
+         H   1  2  0  0   1.00782505
+         H   1  2  3  0   1.00782505
+     end
+     
+- Control block:
+     
+     
+     control
+     step 1
+     external
+     end
+     
+     
+- Basis set block defining the order of the primitive basis set functions and how their grouped into the contracted basis sets:
+::
+     
+     BASIS
+       0,'JKtau', Jrot 0
+       1,'numerov','linear', 'morse',   range 0, 9, resc 2.0, points 2000, borders -0.5,2.10
+       1,'numerov','linear', 'morse',   range 0, 9, resc 2.0, points 2000, borders -0.5,2.10
+       1,'numerov','linear', 'morse',   range 0, 9, resc 2.0, points 2000, borders -0.5,2.10
+       2,'numerov','linear', 'linear',  range 0,18, resc 1.0, points 2000, borders -1.6,1.30
+       2,'numerov','linear', 'linear',  range 0,18, resc 1.0, points 2000, borders -1.6,1.30
+       2,'numerov','linear', 'linear',  range 0,18, resc 1.0, points 2000, borders -1.6,1.30
+     END
+     
+- Equilibrium structure block:
+::
+     
+     EQUILIBRIUM
+     re          1       1.41182210
+     re          1       1.41182210
+     re          1       1.41182210
+     alphae      0      93.3685 deg
+     alphae      0      93.3685 deg
+     alphae      0      93.3685 deg
+     end
+     
+- "Special" parameters block, mostly used to define the Morse stretching parameters and in some cases harmonic frequencies or Laguerre structural parameter. 
+::
+     
+     SPECPARAM
+     beta        0        1.8000000
+     beta        0        1.8000000
+     beta        0        1.8000000
+     END
+     
+- Potential energy function block:
+:: 
+     
+     POTEN
+     NPARAM   109    (obsolete)
+     POT_TYPE  poten_xy3_morbid_10
+     COEFF  list  (powers or list)
+     VE           0  0.00000000000000E+00
+     FA1          1 -0.34350288027976E+03
+     FA2          1  0.28963515335650E+06
+     FA3          1 -0.66897678674464E+06
+     FA4          1  0.26097579162907E+07
+     ......
+     end
+     
+- Dipole moment function block 
+:: 
+     
+     DIPOLE
+     rank 3
+     NPARAM  127 0 0
+     DMS_TYPE  XY3_MB
+     COEFF   list  (powers or list)
+     COORDS  linear
+     Order   2 2 2
+     parameters
+     charge   0     0.00000000
+     order    0     4.00000000
+     alphae   0    93.40000000
+     re14     0     1.41200000
+     beta     0     1.00000000
+     gamma    0     0.00000000
+     delta    0     0.00000000
+     mu0      0     0.33369443
+     F1       0    -1.05840018
+     F3       0     0.13117597
+     F4       0     0.17351923
+     F5       0    -0.21359267
+     .....
+     end
+     
+
+
 H\ :sub:`3`\ :sup:`+`
 =====================
 
 This is another pyramid-type molecule but with a non-rigid umbrella degree of freedom treated using a non-rigid reference configuration and linearised coordinates to represent the KEO. The PEF is empirical from [20YuTeMi]_. The calculation steps are as in the example of PH\ :sub:`3`. 
-
-
 
 
 SiH\ :sub:`2` Refinement 
