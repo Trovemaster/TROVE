@@ -41,7 +41,7 @@ release = ''
 extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.imgmath',
-    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc'
     #'sphinx.ext.napoleon',
     #'sphinx.ext.autosectionlabel',
     #'sphinx.ext.coverage',
@@ -112,7 +112,7 @@ html_static_path = ['nstatic']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'duodoc'
+htmlhelp_basename = 'trovedoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
