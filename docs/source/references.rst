@@ -1,5 +1,11 @@
+How to cite TROVE
+*****************
+
+The main reference is [TROVE]_. For general usage of symmetries cite [17YuYaOv]_ and [21MeYuJe]_ for the artificial extended molecular symmetries (AEM). When using exact KEOs of (quasi-) linear triatomic molecules, cite [20YuMe]_.  If an application is based on a specific TROVE system, please cite the relevant publication (if applicable). For example, for a (quisi-) linear triatomic molecules, one use (and cite) [20YuMeFr]_ as a guide. 
+
+
 References
-==========
+**********
 
 .. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
 
@@ -9,7 +15,7 @@ References
 
 .. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
 
-.. [15YaYu] A. Yachmenev, S.N. Yurchenko, J. Chem. Phys. 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
+.. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
 
 .. [17YuYaOv] S.N. Yurchenko, A. Yachmenev, R.I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
 
@@ -43,7 +49,7 @@ References
 
 .. [15SoAlTe] C. Sousa-Silva, A.F. Al-Refaie, J. Tennyson, S.N. Yurchenko, Mon. Not. R. Astron. Soc. 446, 2337 (2015), ExoMol line lists - VII. the rotation-vibration spectrum of phosphine up to 1500 K.
 
-.. [16SoYuTe] C. Sousa-Silva, S.N. Yurchenko, J. Tennyson, J. Chem. Phys. 145, 091102 (2016), Tunelling splitting in the phosphine molecule.
+.. [16SoYuTe] C. Sousa-Silva, S.N. Yurchenko, J. Tennyson, *J. Chem. Phys.* 145, 091102 (2016), Tunelling splitting in the phosphine molecule.
 
 .. [15AlOvPo] A.F. Al-Refaie, R.I. Ovsyannikov, O.L. Polyansky, S.N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 318, 84 (2015), A variationally calculated room temperature line-list for H\ :sub:`2`\ CO.
 
@@ -51,7 +57,7 @@ References
 
 .. [18OwYaTe] A. Owens, A. Yachmenev, J. Tennyson, W. Thiel, S.N. Yurchenko, Mon. Not. R. Astron. Soc. 479, 3002 (2018), ExoMol Molecular line lists XXIX: The rotation-vibration spectrum of methyl chloride up to 1200 K.
 
-.. [15OwYuTa] A. Owens, S.N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, J. Chem. Phys. 142, 244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
+.. [15OwYuTa] A. Owens, S.N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, *J. Chem. Phys.* 142, 244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
 
 .. [18MaYaTe] B.P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`\ H\ :sub:`4`.
 
@@ -79,8 +85,16 @@ References
 
 .. [24YuMeTe] S. N. Yurchenko,  T. Mellor and J. Tennyson, MNRAS, in press (2024), ExoMol line lists - LIX. High-temperature line list for N\ :sub:`2`\ O.
 
+.. [20YuMe] S. N. Yurchenko and T.M. Mellor.  *J. of Chem. Phys.*, **153**, 154106 (2020). `doi:10.1063/5.001954 <https://doi.org/10.1063/5.0019546>`__
+
+.. [20YuMeFr] S. N. Yurchenko, Thomas M. Mellor, Richard S. Freedman, and J. Tennyson.  *MNRAS*, **496**, 5282 (2020), ExoMol line lists -- XXXIX. Ro-vibrational molecular line list for CO\ :sub:`2`. `doi:10.1063/5.0019546 <https://doi.org/10.1063/5.0019546>`__
+
 .. [24YuOwTe] S. N. Yurchenko, A. Owens, K. Kefala, and J. Tennyson. MNRAS, 528, 3719 (2024),  ExoMol line lists - LVII: High accuracy ro-vibrational line list for methane.  `doi:10.1093/mnras/stae148 <https://doi.org/10.1093/mnras/stae148>`__
 
-.. [97PaSc] H. Partridge and D. W. Schwenke, J. Chem. Phys. 106, 4618 (1997).
+.. [97PaSc] H. Partridge and D. W. Schwenke, *J. Chem. Phys.* 106, 4618 (1997).
 
 .. [16MaKyPo]  V. Y. Makhnev, A. A. Kyuberis, O. L. Polyansky, I. I. Mizus, J. Tennyson,  and N. F. Zobov, J.Mol. Spectrosc. 353, 40 (2018).
+
+.. [21SaYaZa] C. Saribal, G. Yang, E. Zak, Y. Saleh, J. Eggers, V. Sanjay, A. Yachmenev, and J. Küpper, Comput. Phys. Commun., in preparation (2021), Richmol: Python package for variational simulations of molecular nuclear motion dynamics in fields".
+
+.. [18OwYa] RichMol: A. Owens and A. Yachmenev, *J. Chem. Phys*, **148**, 124102 (2018),  A general variational approach for rovibrational molecular dynamics in external electric fields. `doi:10.1063/1.5023874  <https://doi.org/10.1063/1.5023874>`__
