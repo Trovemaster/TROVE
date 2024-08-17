@@ -32,7 +32,15 @@ where :math:`\Phi_{n,m}^{J,\Gamma}` is an eigenfunction and :math:`E_{n,m}^{J,\G
     \hbar \frac{\partial \Psi(t)}{\partial t} = \hat{H}\Psi(t). 
     
 
-Similarity, RichMol can be also used to solve a  general problem in a spectral representation of an unperturbed Hamiltonian. 
+Similarity, RichMol can be also used to solve a  general eigen-problem 
+.. math::
+     
+      (\hat{H}_0 + \epsilon F(\vec{r}) )\Psi_\lambda = E_\lambda \Psi_\lambda 
+
+in a spectral representation of an unperturbed Hamiltonian (Eq. :ref:`e-H0psi`):
+.. math:: 
+     
+     \langle \Phi_{n,m}^{J,\Gamma} |\hat{H}_0 + \epsilon F(\vec{r}) | \Phi_{n',m'}^{J',\Gamma'}  \rangle = \delta_{\lambda,\lambda'} E_\lambda .
 
 
 How to interface TROVE with RichMol
@@ -140,21 +148,18 @@ The keyword ``field_me`` is to switch on the "Field's Matrix Elements". The keyw
 
 Currently, the following properties are available in TROVE (see module :code:`extfield.f90`): 
 
-- ``ALPHA``
-- ``MU``
-
-as well as 
-
-- ``QUAD``
-- ``SPINROT``
-- ``SPINSPIN``
-- ``GTENS``
-- ``WIGNER``
-- ``COSTHETA``
-- ``J``
-- ``COS2THETA``
-- ``RICHMOL_LEVELS_FILE``
-- ``MF_TENSOR``
+- ``ALPHA``: polaizability tensor;
+- ``MU``: dipole moment vector;
+- ``QUAD``: quadrupole moment tensor;
+- ``SPINROT``: spin-rotation tensor;
+- ``SPINSPIN``: spin-spin tensor;
+- ``GTENS``: g-tensor;
+- ``WIGNER``: Wigner matrix
+- ``COSTHETA``: :math:`\cos\theta`;
+- ``J``: J-tensor; 
+- ``COS2THETA``: :math:`\cos2\theta`;
+- ``RICHMOL_LEVELS_FILE``: TBP;
+- ``MF_TENSOR``: TBP;. 
 
 
 
