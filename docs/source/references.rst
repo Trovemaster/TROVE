@@ -7,17 +7,17 @@ The main reference is [TROVE]_. For general usage of symmetries cite [17YuYaOv]_
 References
 **********
 
-.. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
+- .. [Sorensen] G.O. Sorensen, Large Amplitude Motion in Molecules II , M.J.S.D. et al., ed. (Springer Berlin Heidelberg, Heidelberg, 1979), vol. 82 of Topics in Current Chemistry, pp. 97-175.
 
-.. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.   `doi:10.1016/j.jms.2007.07.009 <http://dx.doi.org/10.1016/j.jms.2007.07.009>`__
+- .. [TROVE] S.N. Yurchenko, W. Thiel, P. Jensen, J. Mol. Spectrosc. 245, 126 (2007), Theoretical ROVibrational Energies (TROVE): A robust numerical approach to the calculation of rovibrational energies for polyatomic molecules.   `doi:10.1016/j.jms.2007.07.009 <http://dx.doi.org/10.1016/j.jms.2007.07.009>`__
 
-.. [98BuJe] P.R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition.
+- .. [98BuJe] P.R. Bunker, P. Jensen, Molecular Symmetry and Spectroscopy (NRC Research Press, Ottawa, 1998), second edition.
 
-.. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
+- .. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
 
-.. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
+- .. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
 
-.. [17YuYaOv] S.N. Yurchenko, A. Yachmenev, R.I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
+- .. [17YuYaOv] S.N. Yurchenko, A. Yachmenev, R.I. Ovsyannikov, J. Chem. Theory Comput. 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
 
 .. [GAIN] A.F. Al-Refaie, J. Tennyson, S.N. Yurchenko, Comput. Phys. Commun. 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
 

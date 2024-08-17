@@ -1,8 +1,5 @@
-Interfacing with other molecular codes
-**************************************
-
-RichMol
-=======
+RichMol: Interfacing with other molecular codes
+***********************************************
 
 `Richmol <https://github.com/CFEL-CMI/richmol>`__ is a package aimed at providing simple and efficient platform for simulations of ro-vibrational energies, spectra, and dynamics in the presence of external (laser) and induced internal (hyperfine) electromagnetic fields for general molecule [18OwYa]_, [21SaYaZa]_. Richmol can be interfaced with other variational codes, like TROVE and Duo.
 
