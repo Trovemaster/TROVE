@@ -45,7 +45,7 @@ References
 
 .. [16SoYuTe] C. Sousa-Silva, S.N. Yurchenko, J. Tennyson, J. Chem. Phys. 145, 091102 (2016), Tunelling splitting in the phosphine molecule.
 
-.. [15AlOvPo] A.F. Al-Refaie, R.I. Ovsyannikov, O.L. Polyansky, S.N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 318, 84 (2015), A variationally calculated room temperature line-list for H\ :sub:`2`CO.
+.. [15AlOvPo] A.F. Al-Refaie, R.I. Ovsyannikov, O.L. Polyansky, S.N. Yurchenko, J. Tennyson, J. Mol. Spectrosc. 318, 84 (2015), A variationally calculated room temperature line-list for H\ :sub:`2`\ CO.
 
 .. [17OwYuYa] A. Owens, S.N. Yurchenko, A. Yachmenev, W. Thiel, J. Tennyson, Mon. Not. R. Astron. Soc. 471, 5025 (2017), ExoMol molecular line lists XXII. The rotation-vibration spectrum of silane up to 1200K.
 
@@ -53,7 +53,7 @@ References
 
 .. [15OwYuTa] A. Owens, S.N. Yurchenko, A. Yachmenev, J. Tennyson, W. Thiel, J. Chem. Phys. 142, 244306 (2015), Accurate ab initio vibrational energies of methyl chloride.
 
-.. [18MaYaTe] B.P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`H\ :sub:`4`.
+.. [18MaYaTe] B.P. Mant, A. Yachmenev, J. Tennyson, S. N. Yurchenko, Mon. Not. R. Astron. Soc. 478, 3220 (2018), ExoMol molecular line lists - XXVII: spectra of C\ :sub:`2`\ H\ :sub:`4`.
 
 .. [19MaChYa] B.P. Mant, K.L. Chubb, A. Yachmenev, A. Tennyson, and S.N. Yurchenko, Mol. Phys., 118, e1581951 (2019), The infrared spectrum of PF\ :sub:`3` and analysis of rotational energy clustering effect.
 
@@ -63,7 +63,7 @@ References
 
 .. [10YuCaYa] S.N. Yurchenko, M. Carvajal, A. Yachmenev, W. Thiel, and Per Jensen.  J. Quant. Spectrosc. Radiat. Transf., 111, 2279, (2010), A theoretical-spectroscopy, ab initio-based study of the electronic ground state of :sup:`121`\ SbH\ :sub:`3`
 
-.. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub`3` simulated in variational calculations.
+.. [19AdJeYa] A.Y. Adam, Per Jensen, A. Yachmenev, and S. N. Yurchenko. J. Mol. Spectrosc., 362, 77, (2019), Nonresonant Raman spectra of the methyl radical :sup:`12`\ CH\ :sub:`3` simulated in variational calculations.
 
 .. [22OwMiYu] A. Owens, A. Mitrushchenkov, S.N. Yurchenko, and J. Tennyson. MNRAS, 516, 3995 (2022), ExoMol line lists - XLVII. Rovibronic molecular line list of the calcium monohydroxide radical (CaOH).
 

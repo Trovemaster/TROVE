@@ -238,7 +238,7 @@ This section is similar to the transition moment output. The symmetries, quantum
 Checkpoint File Outputs
 =======================
 
-See a detailed description in (see Chapter `Checkpoints  https://spectrove.readthedocs.io/en/latest/checkpoints.html`__. 
+See a detailed description in (see Chapter `Checkpoints  <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
 
 As well as the main TROVE output file, useful information is also contained in the descr checkpoint files. These will be described here.
 
