@@ -7,7 +7,7 @@ The role of TROVE is to provide the interacting molecular properties (dipole mom
 
 .. math:: 
     
-    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline(\alpha) \vec{F}) + \cdots 
+    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline{\alpha} \vec{F}) + \cdots 
     
 
 where :math:`\vec{\mu}` is a dipole moment vector and :math:`\underline{\alpha}` is a polarizability rank 2 tensor. In the spectral representation,  :math:`\hat{H}` is given by the matrix elements 
