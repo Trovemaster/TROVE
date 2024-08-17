@@ -4,6 +4,7 @@ RichMol: Interfacing with other molecular codes
 `Richmol <https://github.com/CFEL-CMI/richmol>`__ is a package aimed at providing simple and efficient platform for simulations of ro-vibrational energies, spectra, and dynamics in the presence of external (laser) and induced internal (hyperfine) electromagnetic fields for general molecule [18OwYa]_, [21SaYaZa]_. Richmol can be interfaced with other variational codes, like TROVE and Duo.
 
 The role of TROVE is to provide the interacting molecular properties (dipole moments, polarizabilities etc) in the so-called spectral representations, i.e.inthe representation of field-free ro-vibrational eigenfunctions. Consider, e.g., a Hamiltonian operator describing the molecule interacting with a general time-dependent electro-magnetic field :math:`\vec{F}(t)`:
+
 .. math:: 
     
     \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline(\alpha) \vec{F}) + \cdots 
