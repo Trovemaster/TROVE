@@ -4,15 +4,16 @@ RichMol: Interfacing with other molecular codes
 `Richmol <https://github.com/CFEL-CMI/richmol>`__ is a package aimed at providing simple and efficient platform for simulations of ro-vibrational energies, spectra, and dynamics in the presence of external (laser) and induced internal (hyperfine) electromagnetic fields for general molecule [18OwYa]_, [21SaYaZa]_. Richmol can be interfaced with other variational codes, like TROVE and Duo.
 
 The role of TROVE is to provide the interacting molecular properties (dipole moments, polarizabilities etc) in the so-called spectral representations, i.e.inthe representation of field-free ro-vibrational eigenfunctions. Consider, e.g., a Hamiltonian operator describing the molecule interacting with a general time-dependent electro-magnetic field :math:`\vec{F}(t)`:
-
 .. math:: 
     
-    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}}{} (\vec{F} \underline(\alpha) \vec{F}) + \cdots 
+    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline(\alpha) \vec{F}) + \cdots 
     
-where :math:`\vec{\mu}` is a dipole moment vector and :math:`\underline{\alpha}` is polarizability rank 2 tensor. In the spectral representation,  :math:`\hat{H}` is give by the matrix elements 
+
+where :math:`\vec{\mu}` is a dipole moment vector and :math:`\underline{\alpha}` is a polarizability rank 2 tensor. In the spectral representation,  :math:`\hat{H}` is given by the matrix elements 
 
 .. math:: 
     :label: e-Hpsi-matrix
+    
     \begin{split}
     \langle \Phi_{n,m}^{J,\Gamma} |\hat{H}| \Phi_{n',m'}^{J',\Gamma'}  \rangle  & = E_{n,m}^{J,\Gamma} \delta_{n,n'}\delta_{m,m'} \delta_{J,J'}\delta_{\Gamma,\Gamma'} + \\
             & \sum_{\beta=X,Y,Z} \langle \Phi_{n,m}^{J,\Gamma} |\vec{\mu}_{\beta}| \Phi_{n',m'}^{J',\Gamma'} F_{\beta} + \\
@@ -23,9 +24,10 @@ where :math:`\Phi_{n,m}^{J,\Gamma}` is an eigenfunction and :math:`E_{n,m}^{J,\G
   
 .. math:: 
       :label: e-H0psi
+      
       \hat{H}_0 \Phi_{n,m}^{J,\Gamma} = E_{n,m}^{J,\Gamma} \Phi_{n,m}^{J,\Gamma}
        
-:math:`J` is the rotational angular momentum, :math:`m` is its projection on the space-fixed axis :math:`Z`, :math:`\Gamma` is an irrep of the (field-free) molecule and :math:`n` is a general eigen-state counting number. Thus, this is  TROVE's role to solve Eq. :eq:`e-H0psi` and to compute the corresponding matrix elements of the properties in Eq. :math:`e-Hpsi-matrix`. It is then the role of RichMol to find the time dependent solution for the molecule interacting with :math:`\vec{F}(t)` and thus to solve for the molecular dynamics:
+:math:`J` is the rotational angular momentum, :math:`m` is its projection on the space-fixed axis :math:`Z`, :math:`\Gamma` is an irrep of the (field-free) molecule and :math:`n` is a general eigen-state counting number. Thus, this is  TROVE's role to solve Eq. :eq:`e-H0psi` and to compute the corresponding matrix elements of the properties in Eq. :eq:`e-Hpsi-matrix`. It is then the role of RichMol to find the time dependent solution for the molecule interacting with :math:`\vec{F}(t)` and thus to solve for the molecular dynamics:
 
 .. math:: 
     
