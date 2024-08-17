@@ -15,17 +15,18 @@ References
 
 - .. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
 
-- .. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), Automatic differentiation method for numerical construction of the rotational-vibrational Hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
+- .. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), 
+              Automatic differentiation method for numerical construction of the rotational-vibrational Hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
 
 - .. [17YuYaOv] S.N. Yurchenko, A. Yachmenev, R.I. Ovsyannikov, *J. Chem. Theory Comput.* 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
 
-- .. [GAIN] A.F. Al-Refaie, J. Tennyson, S.N. Yurchenko, Comput. Phys. Commun. 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
+- .. [GAIN] A.F. Al-Refaie, J. Tennyson, S.N. Yurchenko, *Comput. Phys. Commun.* 214, 216 (2017), GPU Accelerated INtensities MPI (GAIN-MPI): A new method of computing Einstein-A coefficients.
 
 - .. [ExoCross] S.N. Yurchenko, A. F. Al-Refaie, J. Tennyson, Astron. Astrophys. 614, A131 (2018), ExoCross: A general program for generating spectra from molecular line lists
 
-- .. [DVR3D] J. Tennyson, M.A. Kostin, P. Barletta, G.J. Harris, O.L. Polyansky, J. Ramanlal, N.F. Zobov, Comput. Phys. Commun. 163, 85 (2004), DVR3D: a program suite for the calculation of rotation-vibration spectra of triatomic molecules.
+- .. [DVR3D] J. Tennyson, M.A. Kostin, P. Barletta, G.J. Harris, O.L. Polyansky, J. Ramanlal, N.F. Zobov, *Comput. Phys. Commun.* 163, 85 (2004), DVR3D: a program suite for the calculation of rotation-vibration spectra of triatomic molecules.
 
-- .. [Duo] S.N. Yurchenko, L. Lodi, J. Tennyson, A.V. Stolyarov, Comput. Phys. Commun. 202, 262 (2016), Duo: A general program for calculating spectra of diatomic molecules.
+- .. [Duo] S.N. Yurchenko, L. Lodi, J. Tennyson, A.V. Stolyarov, *Comput. Phys. Commun.* 202, 262 (2016), Duo: A general program for calculating spectra of diatomic molecules.
 
 - .. [09YuBaYa] S.N. Yurchenko, R.J. Barber, A. Yachmenev, W. Thiel, P. Jensen, J. Tennyson, *J. Phys. Chem.* A 113, 11845 (2009), A variationally computed T=300 K line list for NH\ :sub:`3`.
 
@@ -95,6 +96,6 @@ References
 
 - .. [16MaKyPo]  V. Y. Makhnev, A. A. Kyuberis, O. L. Polyansky, I. I. Mizus, J. Tennyson,  and N. F. Zobov, J.Mol. Spectrosc. 353, 40 (2018).
 
-- .. [21SaYaZa] C. Saribal, G. Yang, E. Zak, Y. Saleh, J. Eggers, V. Sanjay, A. Yachmenev, and J. Küpper, Comput. Phys. Commun., in preparation (2021), Richmol: Python package for variational simulations of molecular nuclear motion dynamics in fields".
+- .. [21SaYaZa] C. Saribal, G. Yang, E. Zak, Y. Saleh, J. Eggers, V. Sanjay, A. Yachmenev, and J. Küpper, *Comput. Phys. Commun.*, in preparation (2021), Richmol: Python package for variational simulations of molecular nuclear motion dynamics in fields".
 
 - .. [18OwYa] RichMol: A. Owens and A. Yachmenev, *J. Chem. Phys*, **148**, 124102 (2018),  A general variational approach for rovibrational molecular dynamics in external electric fields. `doi:10.1063/1.5023874  <https://doi.org/10.1063/1.5023874>`__
