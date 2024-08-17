@@ -1,0 +1,5 @@
+sphinx>=4
+sphinx_rtd_theme>=0.5.1
+jupyter-sphinx>=0.3.2
+nbsphinx>=0.8.1
+readthedocs-sphinx-search>=0.1.0

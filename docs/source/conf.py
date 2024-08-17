@@ -41,7 +41,8 @@ release = ''
 extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.imgmath',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx_rtd_theme'
     #'sphinx.ext.napoleon',
     #'sphinx.ext.autosectionlabel',
     #'sphinx.ext.coverage',
