@@ -1,5 +1,5 @@
-TROVE Quickstart
-****************
+TROVE Quick start
+*****************
 
 .. _Quickstart:
 
