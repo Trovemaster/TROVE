@@ -238,36 +238,19 @@ A short description of the keywords, cards and sections used is as follows.
  - ``POTEN``: Potential block (see **Potential energy functions**).
  - ``DIPOLE``: Dipole moment block (or ``external`` field block).
 
-Methyl cation, CH\ :sub:`3`\ :sup:`+`
-=====================================
 
 
-Symmetry: :math:`D_{3h}`
+CO\ :sub:`2`
+============
 
-Coordinates: Linearized coordinates. :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3` for vibrational coordinates, two symmetrized bending variables :math:`\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 \alpha_1^l - \alpha_2^l - \alpha_3^l)` and :math:`\xi_5 = S_{4b} = \frac{1}{\sqrt{2}}(\alpha_2^l - \alpha_3^l)` and an out of plane vibration coordinate :math:`\xi_6 = \rho = \frac{\mathbf{r_1} \cdot (\mathbf{r_2} \times \mathbf{r_3} )} {r_{1}r_{2}r_{3}}`. See paper for details.
+**TBP**
+
+OCS 
+===
+
+**TBP**
 
 
-Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
-
-Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_n))` :math:`(n = 1, 3)` for stretching coordinates, :math:`f_4 = S_{4a}`, :math:`f_5 = S_{4b}` for two bending modes and :math:`f_6 = \rho`.
-
-Primitive basis set: Numerov generated for all coordinates.
-
-Kinetic energy expansion order: 6
-
-Potential expansion order: 6
-
-Polyad scheme: :math:`P = 1.5(v_1 + v_2 + v_3) + v_4 + v_5 + v_6 \leq 18`
-
-Potential energy function: Published potential.
-
-Dipole moment surface expansion: N/A
-
-Results: :math:`J = 0` vibrational energy levels up to 6000 cm\ :sup:`-1`.
-
-.. Note:: This was also used as a test example in the original TROVE paper. The coordinate scheme employed is similar to that for Ammonia (see below).
-
-Reference: [TROVE]_
 
 
 Ammonia, NH\ :sub:`3`
@@ -395,6 +378,39 @@ Dipole moment surface expansion: Same in BYTe.
 A sample input file defining the spectroscopic model can be found at  `CoYuTe spectroscopic model <https://exomol.com/models/NH3/14N-1H3/CoYuTe/>`__.
 
 
+
+
+
+Methyl cation, CH\ :sub:`3`\ :sup:`+`
+=====================================
+
+
+Symmetry: :math:`D_{3h}`
+
+Coordinates: Linearized coordinates. :math:`\xi_k = r_k^l - r_e` :math:`k = 1,2,3` for vibrational coordinates, two symmetrized bending variables :math:`\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 \alpha_1^l - \alpha_2^l - \alpha_3^l)` and :math:`\xi_5 = S_{4b} = \frac{1}{\sqrt{2}}(\alpha_2^l - \alpha_3^l)` and an out of plane vibration coordinate :math:`\xi_6 = \rho = \frac{\mathbf{r_1} \cdot (\mathbf{r_2} \times \mathbf{r_3} )} {r_{1}r_{2}r_{3}}`. See paper for details.
+
+
+Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
+
+Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_n))` :math:`(n = 1, 3)` for stretching coordinates, :math:`f_4 = S_{4a}`, :math:`f_5 = S_{4b}` for two bending modes and :math:`f_6 = \rho`.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 6
+
+Polyad scheme: :math:`P = 1.5(v_1 + v_2 + v_3) + v_4 + v_5 + v_6 \leq 18`
+
+Potential energy function: Published potential.
+
+Dipole moment surface expansion: N/A
+
+Results: :math:`J = 0` vibrational energy levels up to 6000 cm\ :sup:`-1`.
+
+.. Note:: This was also used as a test example in the original TROVE paper. The coordinate scheme employed is similar to that for Ammonia (see below).
+
+Reference: [TROVE]_
 
 
 Phosphine, PH\ :sub:`3` (rigid)
