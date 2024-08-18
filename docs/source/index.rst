@@ -19,6 +19,7 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
    :caption: TROVE elements
 
    frames.rst
+   zmatrix.rst
    symmetry.rst
    basissets.rst
    checkpoints.rst
