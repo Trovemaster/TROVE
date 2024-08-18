@@ -3,7 +3,7 @@ Z-matrix
 ========
 
 
-TROVE uses the standard Z-matrix scheme to define the molecular structure and introduce the basic internal coordinates, which are Z-matrix coordinates in TROVE. For, example, the hydrogen peroxide HOOH coordinate system is defined using the following Z-matrix:
+TROVE uses the standard Z-matrix scheme to define the molecular structure and introduce the basic internal coordinates, which are Z-matrix coordinates in TROVE. For, example, the hydrogen peroxide HOOH coordinate system is defined using the following Z-matrix defined with the ``ZMAT`` card: 
 ::
 
    ZMAT
@@ -57,4 +57,46 @@ Here, the Zmatrix coordinates are as follows.
 .. note: The order of the coordinates in TROVE is always: stretching, bending and dihedrals. 
 
 
-   
+
+Structure of the Zmatrix block
+------------------------------
+
+Let us consider the HOOH example above to describe the columns in the ``ZMAT`` block:
+
+
++---------+-------------+---------------+--------------+----------+------------+
+|      0  |   1         |     2         |       3      |    4     |       5    |  
++---------+-------------+---------------+--------------+----------+------------+
+|  atom   | connector 1 | connector  2  | connector  3 |  Type    | Mass       |
++---------+-------------+---------------+--------------+----------+------------+
+|      O1 |    0        |       0       |       0      |    0     | 15.99491463|
++---------+-------------+---------------+--------------+----------+------------+
+|      O2 |    1        |       0       |       0      |    0     | 15.99491463|
++---------+-------------+---------------+--------------+----------+------------+
+|      H1 |    1        |       2       |       0      |    0     |  1.00782505|
++---------+-------------+---------------+--------------+----------+------------+
+|      H2 |    2        |       1       |       3      |    2     |  1.00782505|
++---------+-------------+---------------+--------------+----------+------------+
+
+
+Here:
+
+- atom : A label for the name of the atom; it is not interpreted by the program and is currently only for clarity. 
+- connector 1: The 1st connecting atom to form a molecular bond.
+- connector 2: The 2nd connecting atom to form a bond angle.
+- connector 3: The 3rd connecting atom to form a dihedral angle or other type angle, depending on the value in column Type.
+- Type: A "Dihedral" angle type (see below).
+- Mass: The mass of the particle; usually an atomic but sometimes a nuclear mass.
+
+
+
+
+"Dihedral" types
+----------------
+
+The following "Dihedral" types are available: 
+
+- Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{01}}`  and  :math:`\vec{r_{03}}`. 
+- Type 1: it is defined as  a usual dihedral angle  between two planes. 
+
+**TBC**
