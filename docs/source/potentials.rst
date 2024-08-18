@@ -51,6 +51,8 @@ For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent
 
 See :download:`SiH2_XY2_MORSE_COS_step1.inp <../input/SiH2_XY2_MORSE_COS_step1.inp>`
 
+See :doc:`SiH2_XY2_MORSE_COS_step1.inp <../input/SiH2_XY2_MORSE_COS_step1.inp>`
+
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
 ::
@@ -648,7 +650,8 @@ In the TROVE input file, a user-defined  PEF will look as follows:
 Here, ``general`` is the generic PEF type associated with a module ``pot_user`` and ``pot_name`` is an optional name of the PEF as implemented in the ``pot_user``. The latter is a stand-along Fortran file with a unique name that must be included into the TROVE compilation set. There can be only one such file containing a ``pot_user`` module included. 
 
 A ``pot_user`` module must have the following structure:
-::
+.. code-block::
+   :caption:  module pot_user
        
        module pot_user
           use accuracy
