@@ -270,41 +270,6 @@ Results: :math:`J = 0` vibrational energy levels up to 6000 cm\ :sup:`-1`.
 Reference: [TROVE]_
 
 
-
-Carbon monoxide, CO
-===================
-
-
-
-Symmetry: :math:`C_{\infty V}`
-
-Coordinates: r, bond coordinate between C and O.
-
-
-Coordinate to expand kinetic energy: :math:`g_n = r`
-
-Coordinates to expand Potential energy: Analytical and Morse (See paper).
-
-Primitive basis set: Numerov generated for all coordinates.
-
-Kinetic energy expansion order:
-
-Potential expansion order:
-
-Polyad scheme:
-
-Potential energy function: Published empirical PEC. (REF)
-
-Dipole moment surface expansion: N/A
-
-Results: :math:`J = 0` vibrational energy levels up to 43000 cm\ :sup:`-1` (corresponding to :math:`v = 22`).
-
-.. Note:: This was also used as a test example in the original TROVE paper. For diatomic molecules specialist programs
-are of course recommended such as Duo [Duo]_. CO, like H\ :sub:`2`, CO is included only as a test case.
-
-Reference: [TROVE]_
-
-
 Ammonia, NH\ :sub:`3`
 =====================
 
@@ -326,10 +291,11 @@ Coordinates to expand Potential energy: Morse for stretching coordinates, angles
 
 Primitive basis set: Numerov generated for all coordinates.
 
+
 Kinetic energy expansion order: 6
 
 Spectroscopic Model BYTe
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. 
 
@@ -350,7 +316,7 @@ For BYTe, a sample input file can be found at exomol.com, see `BYTe spectroscopi
 
 
 Spectroscopic model CoYuTe
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Potential energy function: ``general`` as defined in a stand-alone ``pot-user`` module ``pot_NH3_Roman.f90``. PEF was expanded to the 8th order using the internal linearised coordinates. 
 
@@ -366,7 +332,7 @@ Methane, CH\ :sub:`4`
 =====================
 
 Spectroscopic Model 10to10
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The model is described in [14YuJe]_.
 
@@ -419,7 +385,7 @@ Model input files: `YT10to10 spectroscopic model <https://exomol.com/models/CH4/
 
 
 Spectroscopic Model **MM**
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The model is described in [24YuOwTe]_. 
 
@@ -536,32 +502,52 @@ Phosphine, PH\ :sub:`3`
 
 Symmetry: :math:`C_{3v}`
 
-Coordinates: As for ammonia
-
-Coordinate to expand kinetic energy: As for ammonia
-
-Coordinates to expand Potential energy: As for ammonia
+Coordinates type: ``R-ALPHA`` with the three stretching and three inter-bond bending coordinates.
 
 Primitive basis set: Numerov generated for all coordinates.
 
-Kinetic energy expansion order: 6
-
-Potential expansion order: 8
-
 Polyad scheme: :math:`P = 2(s_1 + s_2 + s_3) + b_1 + b_2 + b_3 \leq 16` plus some additions, see paper.
 
-Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) *ab initio* energies fitted to polynomial expansion.
-Refined using HITRAN data up to :math:`J = 4`.
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Frame: rigid with Eckart 
+
+KEO: non-exact based on linearised coordinates 
+
+Kinetic energy expansion order: 6
+
+Potential energy function
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PEF type (``POT_TYPE``): ``poten_xy3_morbid_10``.
+
+Potential expansion order: 8.
+
+Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) *ab initio* energies fitted to polynomial expansion and refined to the HITRAN energies up to :math:`J = 4`.
+
+Dipole moment function
+^^^^^^^^^^^^^^^^^^^^^^
+
+Dipole type (``DMS_TYPE``): ``XY3_MB``
 
 Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fitted to polynomial expansion.
 
+Result
+^^^^^^
 
-Results: SAlTY linelist, complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to :math:`J = 46`
+Line list: SAlTY, complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to :math:`J = 46`
 
-.. Note:: For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_.
+
+A sample input file can be found at `exomol.com <exomol.com>`__, see `SAlTY spectroscopic model <https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__.
 
 
 References: [13SoYuTe]_, [15SoAlTe]_.
+
+
+
+.. Note:: For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_.
 
 
 
