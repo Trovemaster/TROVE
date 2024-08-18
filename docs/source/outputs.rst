@@ -136,8 +136,19 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
         ....
 
 
-The non-rigourous quantum numbers :math:`K` and :math:`v_i` are defined using the largest eigen-coefficient  approach and are approximate. They represent the measure of how the given wavefunction is similar to a single selected basis set function selected as the largest contribution the corresponding expansion.  The quality of the assignment can be judged based on the expansion eigen-coefficients
-(column with numbers :math:`\le 1` and two decimal points): coefficients smaller than 0.7 indicate that the corresponding quantum number are less reliable. Due to this approximate nature of the TROVE quantum numbers, the TROVE assignment is usually not complete and unambiguous. It is common to find states with duplicate assignments as well as some missing combinations (see Quantum Numbers).
+The non-rigourous quantum numbers :math:`K` and :math:`v_i` are defined using the largest eigen-coefficient  approach and are approximate. They represent the measure of how the given wavefunction is similar to a single selected basis set function selected as the largest contribution the corresponding expansion.  The quality of the assignment can be judged based on the expansion eigen-coefficients (column with numbers :math:`\le 1` and two decimal points): coefficients smaller than 0.7 indicate that the corresponding quantum number are less reliable. Due to this approximate nature of the TROVE quantum numbers, the TROVE assignment is usually not complete and unambiguous. It is common to find states with duplicate assignments as well as some missing combinations (see Quantum Numbers).
+
+..note:: The largest coefficient approach start failing with increasing excitations leading to not-reliable and even wrong assignments. It is not uncommon to see different states with idealistical quantum numbers and therefore other legitimate assignments missing.
+
+It helps sometimes to print the second-largest coefficients in order to resolve duplicates, or even the 3rd one. This can be requested using the following ``print`` block:
+::
+
+     print
+       NASSIGNMENTS 2
+     end
+
+where the card ``NASSIGNMENTS`` (alias ``N_EIGEN-CONTRIBUTIONS``) defines the number of the assignments to generate. 
+
 
 
 This output section can be reached by searching for ``Zero-point-energy`` (continuing past the basis set sections). This gives the zero-point energy for the vibrational ground state of the molecule, an important quantity. Below this the rotational-vibrational energies for each symmetry are given in order of 'reducing' symmetry.
@@ -171,7 +182,7 @@ An example from a :math:`J=2` calculation on PF\ :sub:`3` is shown below.
       E 3 347.957388 (E; 2 1 0) (E ; 0 0 0 0 0 1) 1.00 (0 0 0 0 0 1 0) (2)
       E 4 348.255477 (E; 2 2 0) (E ; 0 0 0 0 0 1) 0.73 (0 0 0 0 0 1 0) (2)
 
-In this case the energies are from the doubly degenerate :math:`E` symmetry class. The first two rows are pure rotational states. The ``j k t`` section for these two states are ``2 2 0`` and ``2 1 0`` respectively. This means the total angular momentum is 2 and the projection of the angular momentum onto an axis (usually the :math:`z`-axis is chosen) is 2 and 1 respectively. The third and fourth row are ro-vibrational states with the same vibrational quantum numbers :math:`v_1, v_2,\ldots,`,  but different values of :math:`K`. For a more detailed explanation of the quantum number scheme in TROVE see 
+In this case the energies are from the doubly degenerate :math:`E` symmetry class. The first two rows are pure rotational states. The ``j k t`` section for these two states are ``2 2 0`` and ``2 1 0`` respectively. This means the total angular momentum is 2 and the projection of the angular momentum onto an axis (usually the :math:`z`-axis is chosen) is 2 and 1 respectively. The third and fourth row are ro-vibrational states with the same vibrational quantum numbers :math:`v_1, v_2,\ldots,`,  but different values of :math:`K`. For a more detailed explanation of the quantum number scheme in TROVE see
 Chapter `Quantum Numbers <https://spectrove.readthedocs.io/en/latest/quantumnumbers.html>`__).
 
 Transition Moment output
@@ -183,7 +194,7 @@ The output for a transition moment calculation (for :math:`J=0` only) is similar
      Linestrength S(f<-i) [Debye**2], Transition moments [Debye], ...
 
 
-A typical output has the following form 
+A typical output has the following form
 ::
 
         J' G'        J G     Type        E'            E            nu        Gr'   K'  Gv'   v1' v2' v3'      Gr   K    Gv     v1  v2  v3      mu             Int(Tref)         i     n1' n2' n3'         n1  n2  n3           mux             muy               muz                z
@@ -199,7 +210,7 @@ A typical output has the following form
         0 A1    <-   0 A1    D    4927.853585 <-      0.000000  4927.853585  (A1 ;  0) (A1 ;   1   0   2)  <- (A1 ;  0) (A1 ;   0   0   0)  5.50415352E-04  3.07955132E-26      10  (   1   0   2)  <-  (   0   0   0)       0.00000000       0.00000000      -0.00055042
 
 
-and provides the total vibrational transition dipole moment :math:`\bar\mu = \sqrt{\bar\mu_x^2+\bar\mu_y^2+\bar\mu_z^2}`, the individual components of the transition dipole :math:`\mu_\alpha` as well the vibrational band intensity computed for the reference temperature. 
+and provides the total vibrational transition dipole moment :math:`\bar\mu = \sqrt{\bar\mu_x^2+\bar\mu_y^2+\bar\mu_z^2}`, the individual components of the transition dipole :math:`\mu_\alpha` as well the vibrational band intensity computed for the reference temperature.
 
 
 A list of information on the transition moments between vibrational states is then given. Similar to the output of the rotational-vibrational energy levels, the symmetry and energy of the upper and lower vibrational states is given along with the corresponding vibrational quantum numbers and transition frequency between the states.
@@ -215,9 +226,9 @@ The intensity output section also starts after the line
 
       Linestrength S(f<-i) [Debye**2], Transition moments [Debye],...
 
-A typical intensity output is given by 
+A typical intensity output is given by
 ::
-     
+
       J' G'         J G     Type       E'            E          nu        Gr'   K'     Gv'   v1' v2' v3'       Gr    K      Gv    v1  v2  v3       S(f<-i)          A(if)            I(f<-i)             Ni        Nf        N               normal mode          normal mode    S(deg-component)
       1 B1     <-   1 B2     Q    1212.1915 <-     50.2853   1161.9063  ( B1    1 ) (  A1     0   0   1 ) <- ( B2    1 ) (  A1     0   0   0 )    6.87365073E-04   3.75716703E-02   1.06423096E-23        2 <-      1       30        2 (    0   0   1 ) <-  (    0   0   0 )    5.04558873E-03
       1 B1     <-   1 B2     Q    2375.0878 <-     50.2853   2324.8025  ( B1    1 ) (  A1     0   0   2 ) <- ( B2    1 ) (  A1     0   0   0 )    5.09854985E-05   2.23236209E-02   2.09790812E-24        3 <-      1       31        3 (    0   0   2 ) <-  (    0   0   0 )   -1.37417313E-03
@@ -228,9 +239,9 @@ A typical intensity output is given by
       1 B1     <-   1 B2     Q    4433.7691 <-     50.2853   4383.4838  ( A2    0 ) (  B2     0   1   1 ) <- ( B2    1 ) (  A1     0   0   0 )    8.72066094E-04   2.55957224E+00   7.46795222E-23        8 <-      1       36        8 (    1   0   1 ) <-  (    0   0   0 )    5.68319841E-03
       1 B1     <-   1 B2     Q    4717.4255 <-     50.2853   4667.1402  ( B1    1 ) (  A1     0   0   4 ) <- ( B2    1 ) (  A1     0   0   0 )    4.98410218E-08   1.76562816E-04   4.56074049E-27        9 <-      1       37        9 (    0   0   4 ) <-  (    0   0   0 )   -4.29646805E-05
       1 B1     <-   1 B2     Q    4967.4402 <-     50.2853   4917.1550  ( B1    1 ) (  A1     1   0   2 ) <- ( B2    1 ) (  A1     0   0   0 )    1.64999991E-06   6.83573742E-03   1.59462746E-25       10 <-      1       38       10 (    1   0   2 ) <-  (    0   0   0 )   -2.47206610E-04
-    
 
-It contains state energies, quantum numbers, linestrengths (D\ :sup:`2`), both total an per degenerate component (last column), Einstein A coefficients (1/S), absorption intensities (cm/molecule) for the reference input temperature. 
+
+It contains state energies, quantum numbers, linestrengths (D\ :sup:`2`), both total an per degenerate component (last column), Einstein A coefficients (1/S), absorption intensities (cm/molecule) for the reference input temperature.
 
 This section is similar to the transition moment output. The symmetries, quantum numbers and energies of the lower and upper states are given along with the transition frequency. The intensity is given for the transitions along with the line strength and the Einstein A coefficient (see Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__).
 
@@ -238,7 +249,7 @@ This section is similar to the transition moment output. The symmetries, quantum
 Checkpoint File Outputs
 =======================
 
-See a detailed description in (see Chapter `Checkpoints  <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
+See a detailed description in (see Chapter `Checkpoints  <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__.
 
 As well as the main TROVE output file, useful information is also contained in the descr checkpoint files. These will be described here.
 

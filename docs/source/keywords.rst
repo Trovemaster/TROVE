@@ -77,3 +77,8 @@ Expansion coefficients of  the field checkpoints ``kinetic.chk``, ``potential.ch
  
  - ``DIPOLE``: Dipole moment block (or ``external`` field block).
  
+ 
+- ``print``:  block with printing options, including: 
+   + ``NASSIGNMENTS`` (alias ``N_EIGEN-CONTRIBUTIONS``) defines the number of the assignments to generate.
+
+

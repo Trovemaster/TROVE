@@ -275,8 +275,13 @@ Similarity, the :math:`B_2` symmetry TROVE output is given by
 The non-rigourous quantum numbers :math:`K` and :math:`v_i` are defined using the largest eigen-coefficient  approach and are approximate. They represent the measure of how the given wavefunction is similar to a single selected basis set function selected as the largest contribution the corresponding expansion.  The quality of the assignment can be judged based on the expansion eigen-coefficients
 (column with numbers :math:`\le 1` and two decimal points): coefficients smaller than 0.7 indicate that the corresponding quantum number are less reliable. Due to this approximate nature of the TROVE quantum numbers, the TROVE assignment is usually not complete and unambiguous. It is common to find states with duplicate assignments as well as some missing combinations (see Quantum Numbers).
 
-In order to help resolve ensuing  ambiguity and degeneracies, the quantum numbers from the second largest contribution can be printed. This feature can be activated using the ``NASSIGNMENTS`` keyword as part of the ``PRINT`` section. The section can appear anywhere in main body of the input file, for example:
+
+Assignment using second and higher order largest coefficients
+--------------------------------------------------------------
+
+The largest coefficient approach start failing with increasing excitations leading to not-reliable and even wrong assignments. It is not uncommon to see different states with idealistical quantum numbers and therefore other legitimate assignments missing. In order to help resolve ensuing  ambiguity and degeneracies, the quantum numbers from the second, third etc largest contribution can be printed. This feature can be activated using the ``NASSIGNMENTS`` keyword as part of the ``PRINT`` section. The section can appear anywhere in main body of the input file, for example:
 ::
+
 
       DIAGONALIZER
        SYEV
@@ -287,6 +292,7 @@ In order to help resolve ensuing  ambiguity and degeneracies, the quantum number
        Nassignments  2
       end
 
+where the card ``NASSIGNMENTS`` (alias ``N_EIGEN-CONTRIBUTIONS``) defines the number of the largest coefficients assignments to generate.
 
 
 
@@ -326,6 +332,10 @@ where
 
 
 In fact, ``ivib`` is an unique vibrational ID and can be used to track the vibrational quantum numbers through the ro-vibrational calculations.
+
+
+
+
 
 
 'Normal mode' quantum numbers
