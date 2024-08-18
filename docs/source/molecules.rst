@@ -529,7 +529,7 @@ PEF: A refined PES of type ``poten_xy3_morbid_10``.
 
 Potential expansion order: 8
 
-Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18 `
+Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18`.
 
 Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs *ab initio* energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
 
@@ -570,13 +570,19 @@ Frame: Eckart.
 
 
 Coordinates: Type ``R-SYM``,  linearised coordinates obtained from the following valence coordinates: 
-:math:`\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)`
-:math:`i = 1,4` for stretching coordinates.
-:math:`\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}`),
-:math:`\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})`,
-:math:`\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23})`, :math:`\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})` and
-:math:`\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12})`.
-Where :math:`\alpha_{ij}` is the interbond angles. Also complimented by redundancy conditions (see [14YuJe]_).
+
+.. math::
+ 
+     \begin{split}
+        \xi_i &= (r_i - r_e) \exp(-\beta(r_i - r_e)^2), i = 1,4 \\
+        \xi_5 &= \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}), \\
+        \xi_6 &= \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24}), \\
+        \xi_7 &= \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23}),\\
+        \xi_8 &= \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14}), \\
+        \xi_9 &= \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12}).
+     \end{split}   
+
+where :math:`r_i` are the bond-lengths and :math:`\alpha_{ij}` are the interbond angles,  also complimented by redundancy conditions (see [14YuJe]_).
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-9)`, linearised coordinates.
 
@@ -585,7 +591,6 @@ Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a(\xi_i^l))` :mat
 Primitive basis set: Numerov generated for stretching coordinates, harmonic oscillator basis for bends.
 
 Kinetic energy expansion order: 6
-
 
 PEF: type  ``general`` implemented as a stand alone (pot_user) module ``pot_ch4.f90``. Original PEF CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections *ab initio* was refined to experimental  (:math:`J = 0, 4`) data from the HITRAN 2008 database.
 
