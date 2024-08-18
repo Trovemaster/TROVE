@@ -68,30 +68,42 @@ The TROVE input for step 1 is illustrated below.
       SYMGROUP C2v(M)
 
       verbose 5
-
+      
+::
+      
       dstep 2.0e-03
       COORDS linear
       FRAME  r-rho-z
       MOLTYPE XY2
       REFER-CONF NON-RIGID
-
+      
+      
+::
+      
       PRIMITIVES
         Npolyads     24
        END
-
+       
+::
+      
       CONTRACTION
         Npolyads        24
         sample_points   60
         sample_attempts 500
         symm_toler      1e-5
       END
+      
 
-
+::
+      
       DIAGONALIZER
        SYEV
        enermax 18000
       end
-
+      
+      
+::
+      
       ZMAT
           Si  0  0  0  0   27.97692654
           H   1  0  0  0   1.007825032
@@ -101,30 +113,37 @@ The TROVE input for step 1 is illustrated below.
       step 1
       external
       end
-
-
+      
+      
+::
+      
       BASIS
        0,'JKtau', Jrot 0
        1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
        1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
        2,'numerov','linear', 'linear', range 0, 24, r 8, resc 1.0, points 3000,borders 10.0,160.0 deg
       END
+      
+      
+::
 
-
-
+      
       EQUILIBRIUM
       re            9      1.5144017558
       re            9      1.5144017558
       alphae        9      92.00507388 DEG	
       end
-
-
+      
+::
+      
       SPECPARAM
       a-Morse           0      0.127050746200E+01
       a-Morse           0      0.127050746200E+01
       END
+      
 
-
+::
+            
       POTEN
       NPARAM  102
       compact
@@ -147,7 +166,9 @@ The TROVE input for step 1 is illustrated below.
       .....
       ....
       end
-
+      
+::
+      
       DIPOLE
       dimension 3
       NPARAM  72 99 0
