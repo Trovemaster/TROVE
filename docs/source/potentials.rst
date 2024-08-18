@@ -49,6 +49,8 @@ The ``Potential`` (``Poten``) block used to specify a PEF, has the following gen
 
 For an example, see `SiH2_XY2_MORSE_COS_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/SiH2_XY2_MORSE_COS_step1.inp>`_  where this PES is used.
 
+See :download:`SiH2_XY2_MORSE_COS_step1.inp <../input/SiH2_XY2_MORSE_COS_step1.inp>`
+
 
 Here ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90 file``. The keywords ``COEFF`` indicates if the potential contains a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), e.g. (for H\ :sub:`2`\ CO):
 ::
