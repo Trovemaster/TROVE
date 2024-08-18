@@ -273,32 +273,100 @@ Reference: [TROVE]_
 Ammonia, NH\ :sub:`3`
 =====================
 
-KEO: non-exact, constructed using the Sorensen procedure as an expansion about the non-rigid reference frame. 
+Ammonia is intrinsically a non-rigid system with a low barrier to the planarity and spectroscopically non-negligible tunneling splitting of about 0.78 cm\  :sup:`-1`. Therefore it must be treated using the non-rigid frame and an associated :math:`D_{3h}`\ (M) group symmetry.
+
 
 Molecular type (``MOLTYPE``): ``XY3``.
 
 Symmetry: :math:`D_{3h}`\ (M)
 
+Coordinates: linearised (``Linear``).
+
+Coordinates type (``TRANSFORM``):  ``r-s-delta``. It is based on seven internal coordinates defined using the following Z-matrix:
+::
+
+   ZMAT
+       N   0  0  0  0  14.00307401
+       H1  1  0  0  0   1.00782503223
+       H2  1  2  0  0   1.00782503223
+       H3  1  2  3  1   1.00782503223
+   end
+   
+As usual, it defines three stretching coordinates  :math:`r_{{\rm NH}_1}`,   :math:`r_{{\rm NH}_2}` and  :math:`r_{{\rm NH}_3}`. For the angles, note that atom 4 has the "dihedral" type 1. For this type, TROVE introduced four angles (one of which is redundant): the first two angles are valence between atoms  H2 and H1 (:math:`\alpha_3`), H3 and H1 (:math:`\alpha_2`). Angle 3 is also valence, between H3 and H2 (:math:`\alpha_1`). Angle 4 is dihedral between two planes: :math:`\vec{r}_3\times \vec{r}_1` and :math:`\vec{r}_1\times \vec{r}_2`. These 4 angles are then used to construct two degenerate non-redundant bending coordinates:
+
+.. math:: 
+    
+    \begin{split}
+      S_a &= \frac{1}{6} (2\alpha_1-\alpha_2-\alpha_3) \\
+      S_b &= \frac{1}{2} (\alpha_2-\alpha_3) 
+    \end{split}
+
+The last coordinates is an angle :math:`\delta` between the trisector and any of the bond vectors. 
+
+
+The valence coordinates are then used to define 5 linearised coordinates:
+
+.. math::
+
+    \begin{split}
+      \xi_1^{\rm lin} &= r_1^{\rm lin}-r_{\rm e} \\
+      \xi_2^{\rm lin} &= r_2^{\rm lin}-r_{\rm e} \\
+      \xi_3^{\rm lin} &= r_3^{\rm lin}-r_{\rm e} \\
+      \xi_4^{\rm lin} &= S_a^{\rm lin} \\
+      \xi_5^{\rm lin} &= S_b^{\rm lin} \\
+    \end{split}
+
+while the sixth coordinate is curvilinear :math:`\xi_6 = \delta`. 
+
+The ``Equilibrium`` block in the case of 7 coordinates is given by 7 equilibrium values: 
+::
+   
+   EQUILIBRIUM
+   re          0       1.0116
+   re          0       1.0116
+   re          0       1.0116
+   alphae      0      106.719 deg
+   alphae      0      106.719 deg
+   alphae      0      106.719 deg
+   taue        0      0.385722379
+   end
+   
+
+This seven internal coordinates scheme provide a better numerical stability. 
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+KEO: non-exact, constructed using the Sorensen procedure as an expansion about the non-rigid reference frame.
+
+
 Frame: Non-rigid, Eckart conditions, follows the umbrella motion for a rigid stretches and equal angles. 
 
-Coordinates: Linearised, similar to those for :math:`{\rm CH}_3^+` but for sixth coordinate, :math:`\xi_6 = \sin \rho_e - \sin \rho` where :math:`\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]`.
-
-Coordinates type (``TRANSFORM``):  ``r-s-delta``. 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
 
-Coordinates to expand Potential energy: Morse for stretching coordinates, angles themselves for bends.
-
-Primitive basis set: Numerov generated for all coordinates.
-
-
 Kinetic energy expansion order: 6
+
+Primitive basis set: Numerov generated for coordinates :math:`\xi_1`, :math:`\xi_2`, :math:`\xi_3` and :math:`\delta`m while for :math:`\xi_4` and :math:`\xi_5`, the Harmonic oscillator basis gives more stable symmetry adaptation: 
+::
+    
+   BASIS
+    0,'JKtau', Jrot 0
+    1,'numerov','linear', 'morse',  range 0, 8, r 8, resc 4.0, points 2000, borders -0.4,2.0
+    1,'numerov','linear', 'morse',  range 0, 8, r 8, resc 4.0, points 2000, borders -0.4,2.0
+    1,'numerov','linear', 'morse',  range 0, 8, r 8, resc 4.0, points 2000, borders -0.4,2.0
+    2,'harmonic','linear', 'linear', range 0,34, r 2, resc 2.0, points 9000, borders -1.90,1.91
+    2,'harmonic','linear', 'linear', range 0,34, r 2, resc 2.0, points 9000, borders -1.90,1.92
+    3,'numerov','linear', 'linear', range 0,34, r 8, resc 1.0, points 1000, borders -55.0, 55.0 deg
+   END
+   
 
 Spectroscopic Model BYTe
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. 
 
+Coordinates to expand Potential energy: Morse for stretching coordinates, angles themselves for bends.
 
 Basis set: Polyad scheme with  :math:`P = 2(v_1 + v_2 + v_3) + v_4 + v_5 + \frac{v_6}{2} \leq 14`.
 
@@ -325,6 +393,158 @@ Basis set: Polyad scheme with  :math:`P = 4(v_1 + v_2 + v_3) + 2(v_4 + v_5) + v_
 Dipole moment surface expansion: Same in BYTe. 
 
 A sample input file defining the spectroscopic model can be found at  `CoYuTe spectroscopic model <https://exomol.com/models/NH3/14N-1H3/CoYuTe/>`__.
+
+
+
+
+Phosphine, PH\ :sub:`3` (rigid)
+===============================
+
+We consider phosphine as a rigid molecule with the tunneling splitting ignored.
+
+Symmetry: :math:`C_{3v}`
+
+Coordinates type: ``R-ALPHA`` with the three stretching and three inter-bond bending coordinates.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Polyad scheme: :math:`P = 2(s_1 + s_2 + s_3) + b_1 + b_2 + b_3 \leq 16` plus some additions, see paper.
+
+
+Z-matrix
+^^^^^^^^
+
+The internal valence coordinates (required in construction of the linearised ones) are defined using the following Z-matrix:
+::
+
+   ZMAT
+       P   0  0  0  0   30.9737620
+       H1  1  0  0  0   1.00782505
+       H2  1  2  0  0   1.00782505
+       H3  1  2  3  0   1.00782505
+   end
+
+Here, atom 4 has the "dihedral" type 0, which is used for the interbond angles. In this case, the first two angles are between atoms  H2 and H1 (:math:`\alpha_3`), H3 and H1 (:math:`\alpha_2`) and the last angle is defined also as an interbond angle between H3 and H2 (:math:`\alpha_1`).
+
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Frame: rigid with Eckart
+
+KEO: non-exact based on linearised coordinates
+
+Kinetic energy expansion order: 6
+
+Potential energy function
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PEF type (``POT_TYPE``): ``poten_xy3_morbid_10``.
+
+Potential expansion order: 8.
+
+Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) *ab initio* energies fitted to polynomial expansion and refined to the HITRAN energies up to :math:`J = 4`.
+
+Dipole moment function
+^^^^^^^^^^^^^^^^^^^^^^
+
+Dipole type (``DMS_TYPE``): ``XY3_MB``
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fitted to polynomial expansion.
+
+Result
+^^^^^^
+
+Line list: SAlTY, complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to :math:`J = 46`
+
+
+A sample input file can be found at `exomol.com <exomol.com>`__, see `SAlTY spectroscopic model <https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__.
+
+
+References: [13SoYuTe]_, [15SoAlTe]_.
+
+
+
+Phosphine, PH\ :sub:`3` (non-rigid)
+===================================
+
+For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_. In order to treat phosphine as a non-rigid, the same setup as for NH\ :sub:`3` can used with the symmetry group :math:`D_{3h}`\ (M).
+
+KEO: non-exact, constructed using the Sorensen procedure as an expansion about the non-rigid reference frame.
+
+Molecular type (``MOLTYPE``): ``XY3``.
+
+Symmetry: :math:`D_{3h}`\ (M)
+
+Frame: Non-rigid, Eckart conditions, follows the umbrella motion for a rigid stretches and equal angles.
+
+Coordinates type (``TRANSFORM``):  ``r-s-delta``.
+
+Primitive basis set: Numerov generated for the stretched and the umbrella mode and the Harmonic basis for the two degenerate dihedral coordinates:
+::
+
+    BASIS
+      0,'JKtau', Jrot 0
+      1,'numerov' ,'linear', 'morse',  range 0, 7, r 8, resc 8.0, points 2000, borders -0.5,1.70
+      1,'numerov' ,'linear', 'morse',  range 0, 7, r 8, resc 8.0, points 2000, borders -0.5,1.70
+      1,'numerov' ,'linear', 'morse',  range 0, 7, r 8, resc 8.0, points 2000, borders -0.5,1.70
+      2,'harmonic','linear', 'linear', range 0,24, r 2, resc 4.0, points 12000, borders -3.00,3.01
+      2,'harmonic','linear', 'linear', range 0,24, r 2, resc 4.0, points 12000, borders -3.00,3.02
+      3,'numerov' ,'linear', 'linear', range 0,90, r 8, resc 0.6, points 10000, borders -80.0, 80.0 deg, period -2
+    END
+
+
+Here, the numerical grid of the umbrella mode ranges from negative to positive angles with a planer structure in the middle. The card ``period -2`` helps to build a symmetry adapted tunneling basis containing both the symmetric and asymmetric wavefunctions with a relatively large numerical grid of 5000 points.
+
+
+As in the case of Ammonia, the ``transform`` type ``r-s-delta`` uses internally seven coordinates, :math:`r_1`, :math:`r_2`, :math:`r_3`, :math:`\alpha_1`, :math:`\alpha_2`, :math:`\alpha_3`, and the umbrella coordinate :math:`\tau`. Accordingly, the ``Equilibrium`` requires seven values for the corresponding equilibrium values:
+::
+
+    EQUILIBRIUM
+    re          1       1.41182210
+    re          1       1.41182210
+    re          1       1.41182210
+    alphae      0      93.3685 deg
+    alphae      0      93.3685 deg
+    alphae      0      93.3685 deg
+    taue        0      0.573251573522
+    end
+
+
+
+
+
+Sulfur trioxide, SO\ :sub:`3`
+=============================
+
+The model is essentially the same as used for Ammonia (see above) and described in [13UnTeYu]_ and [16UnTeYu]_.
+
+Symmetry: :math:`D_{3h}`\ (M).
+
+Kinetic energy expansion order: 6
+
+Coordinates type: ``r-s-delta``
+
+PEF: A refined PES of type ``poten_xy3_morbid_10``.
+
+Potential expansion order: 8
+
+Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18 `
+
+Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs *ab initio* energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
+
+Dipole moment surface expansion: The same type as for Ammonia (``XY3_SYMMB``) based on *ab initio* calculations at the same levels as for PES. Fitted using the SMB representation.
+
+Results: Linelist complete up to 5000 cm\ :sup:`-1` for temperatures up to 800 K.
+
+.. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`\ s need to be included. Up to :math:`J = 130` was included for a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
+
+An example of the TROVE input file for the SO\ :sub:`3` calculations using the UYT2 model can be found at `UYT2 spectroscopic model <https://exomol.com/models/SO3/32S-16O3/UYT2/>`__.
+
+
+
+References: [13UnTeYu]_, [16UnTeYu]_.
+
 
 
 
@@ -408,38 +628,6 @@ Model input files: `MM spectroscopic model <https://exomol.com/models/CH4/12C-1H
 
 
 
-Sulfur trioxide, SO\ :sub:`3`
-=============================
-
-The model is essentially the same as used for Ammonia (see above) and described in [13UnTeYu]_ and [16UnTeYu]_. 
-
-Symmetry: :math:`D_{3h}`\ (M).
-
-Kinetic energy expansion order: 6
-
-Coordinates type: ``r-s-delta`` 
-
-PEF: A refined PES of type ``poten_xy3_morbid_10``. 
-
-Potential expansion order: 8
-
-Polyad scheme: :math:`P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18 `
-
-Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs *ab initio* energies fitted to polynomial expansion of symmetrised coordinates. Refined using :math:`J \leq 5` experimental energies.
-
-Dipole moment surface expansion: The same type as for Ammonia (``XY3_SYMMB``) based on *ab initio* calculations at the same levels as for PES. Fitted using the SMB representation.
-
-Results: Linelist complete up to 5000 cm\ :sup:`-1` for temperatures up to 800 K.
-
-.. Note:: As SO\ :sub:`3` has a large moment of inertia, many :math:`J`\ s need to be included. Up to :math:`J = 130` was included for a complete linelist at 800 K. For calculating :math:`J` this large, special procedures were used as discussed in the paper.
-
-An example of the TROVE input file for the SO\ :sub:`3` calculations using the UYT2 model can be found at `UYT2 spectroscopic model <https://exomol.com/models/SO3/32S-16O3/UYT2/>`__.
-
-
-
-References: [13UnTeYu]_, [16UnTeYu]_.
-
-
 Hydrogen peroxide, H\ :sub:`2`\ O\ :sub:`2`
 ===========================================
 
@@ -495,59 +683,6 @@ Examples of the TROVE input file for the HOOH calculations using the APTY model 
 
 Reference: [15AlOvYu]_, [16AlPoOv]_.
 
-
-
-Phosphine, PH\ :sub:`3`
-=======================
-
-Symmetry: :math:`C_{3v}`
-
-Coordinates type: ``R-ALPHA`` with the three stretching and three inter-bond bending coordinates.
-
-Primitive basis set: Numerov generated for all coordinates.
-
-Polyad scheme: :math:`P = 2(s_1 + s_2 + s_3) + b_1 + b_2 + b_3 \leq 16` plus some additions, see paper.
-
-
-Kinetic energy operator
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Frame: rigid with Eckart 
-
-KEO: non-exact based on linearised coordinates 
-
-Kinetic energy expansion order: 6
-
-Potential energy function
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-PEF type (``POT_TYPE``): ``poten_xy3_morbid_10``.
-
-Potential expansion order: 8.
-
-Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) *ab initio* energies fitted to polynomial expansion and refined to the HITRAN energies up to :math:`J = 4`.
-
-Dipole moment function
-^^^^^^^^^^^^^^^^^^^^^^
-
-Dipole type (``DMS_TYPE``): ``XY3_MB``
-
-Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fitted to polynomial expansion.
-
-Result
-^^^^^^
-
-Line list: SAlTY, complete for up to 1500 K. All states up to 18000 cm\ :sup:`-1` included, up to :math:`J = 46`
-
-
-A sample input file can be found at `exomol.com <exomol.com>`__, see `SAlTY spectroscopic model <https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__.
-
-
-References: [13SoYuTe]_, [15SoAlTe]_.
-
-
-
-.. Note:: For PH\ :sub:`3`, tunneling splitting via the umbrella motion may exist (as for NH\ :sub:`3`) may exist  but has yet to be detected [16SoYuTe]_.
 
 
 
