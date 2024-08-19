@@ -113,7 +113,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
-
+         
        Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
 
@@ -124,13 +124,27 @@ The following "Dihedral" types are available:
 
 .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
-
+       
        Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
 
 
 
 - Type 2: it is the standard dihedral angle as in the HOOH example above. 
 
+
+.. figure:: img/X2Y2_zmat_2.jpg
+       :alt: H2O2 Zmat
+       
+       Z-matrix coordinates with a dihedral angle of type 2 used for HOOH as in the example above.
+
+
+
+.. image:: img/X2Y2_zmat_2.jpg
+       :alt: H2O2 Zmat
+        
+
+
+- Type 202: it is the same dihedral angle :math:`\delta` as type 2, with the difference that the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates (required for the KEO construction) are evaluated using the finite differences, while for types 0, 1, 2, -2, 3-100 the 1st derivatives are evaluates using an analytic expression. Finite difference offer more stable evaluation at positions where the phases of the angles change (0, :math:`\pi`, :math:`2\pi`) which makes their definition ambiguous. 
 
 
 
@@ -139,8 +153,17 @@ The following "Dihedral" types are available:
 
 .. figure:: img/X2Y2_zmat-2.jpg
        :alt: H2O2 Zmat
-
+        
        Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
+
+
+- Type -202: same as type, but the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates  evaluated using the finite differences. 
+
+
+- Type 402: it is the same as type 202, but with :math:`\delta` defined in the extended range from 0 to 720. This type is useful for the systems with the extended molecular symmetries, such as non-rigid HOOH [15AlOvYu]_  or C\ :sub:`2`\ H\ :sub:`6` [19MeYuMa]_. 
+
+
+- Type -402: it is the same as type -202, but with :math:`\delta` defined in the extended range from 0 to 720.
 
 
 - Type 3-100: any number :math:`N` between 3 and 100 means that instead of a dihedral angle, another bond angle is introduced; the "type" card is treated as an additional connector in order to define the bond angle. As example, the following Z-matrix (see the figure) uses a dihedral angle free definition of the vibrational coordinates of CH\ :sub:`4`:
@@ -157,8 +180,7 @@ The following "Dihedral" types are available:
     
 
 
-
-.. figure:: img/CH4_zmat-4.jpg
+.. figure:: img/CH4_zmat-4_s.jpg
        :alt: CH4 Zmat
 
        Z-matrix coordinates with a "dihedral"type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`.

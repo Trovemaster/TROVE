@@ -1,7 +1,7 @@
 How to cite TROVE
 *****************
 
-The main reference is [TROVE]_. For general usage of symmetries cite [17YuYaOv]_ and [21MeYuJe]_ for the artificial extended molecular symmetries (AEM). When using exact KEOs of (quasi-) linear triatomic molecules, cite [20YuMe]_.  If an application is based on a specific TROVE system, please cite the relevant publication (if applicable). For example, for a (quisi-) linear triatomic molecules, one use (and cite) [20YuMeFr]_ as a guide. 
+The main reference is [TROVE]_. For general usage of symmetries cite [17YuYaOv]_ and [21MeYuJe]_ for the artificial extended molecular symmetries (AEM). When using exact KEOs of (quasi-) linear triatomic molecules, cite [20YuMe]_.  If an application is based on a specific TROVE system, please cite the relevant publication (if applicable). For example, for a (quisi-) linear triatomic molecules, one use (and cite) [20YuMeFr]_ as a guide.
 
 
 References
@@ -15,7 +15,7 @@ References
 
 - .. [88Zare] R.N. Zare, Angular Momentum: Understanding Spatial Aspects in Chemistry and Physics (Wiley, 1988), first edition.
 
-- .. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015), 
+- .. [15YaYu] A. Yachmenev, S.N. Yurchenko, *J. Chem. Phys.* 143, 014105 (2015),
               Automatic differentiation method for numerical construction of the rotational-vibrational Hamiltonian as a power series in the curvilinear internal coordinates using the Eckart frame.
 
 - .. [17YuYaOv] S.N. Yurchenko, A. Yachmenev, R.I. Ovsyannikov, *J. Chem. Theory Comput.* 13, 4368 (2017), Symmetry adapted ro-vibrational basis functions for variational nuclear motion: TROVE approach.
@@ -99,3 +99,5 @@ References
 - .. [21SaYaZa] C. Saribal, G. Yang, E. Zak, Y. Saleh, J. Eggers, V. Sanjay, A. Yachmenev, and J. Küpper, *Comput. Phys. Commun.*, in preparation (2021), Richmol: Python package for variational simulations of molecular nuclear motion dynamics in fields".
 
 - .. [18OwYa] RichMol: A. Owens and A. Yachmenev, *J. Chem. Phys*, **148**, 124102 (2018),  A general variational approach for rovibrational molecular dynamics in external electric fields. `doi:10.1063/1.5023874  <https://doi.org/10.1063/1.5023874>`__
+
+- .. [19MeYuMa] T. M. Mellor, S. N. Yurchenko, B. P. Mant, and Per Jensen.  *Symmetry*, **11**, 862 (2019), Transformation Properties under the Operations of the Molecular Symmetry Groups G36 and G36(EM) of Ethane H\ :sub:`3`\ CCH` :sub:`3`\. `doi:10.3390/sym1107086  <http://dx.doi.org/10.3390/sym11070862>`__
