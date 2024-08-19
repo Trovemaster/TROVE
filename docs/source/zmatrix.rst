@@ -107,15 +107,14 @@ Here:
 The following "Dihedral" types are available:
 
 
-.. sidebar::
 
-   .. figure:: img/XY3_zmat_0.jpg
+- Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
+
+
+.. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
 
        Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
-
-
-- Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
 
 
 
@@ -123,9 +122,7 @@ The following "Dihedral" types are available:
 
 
 
-.. sidebar::
-
-   .. figure:: img/XY3_zmat_1.jpg
+.. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
 
        Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
@@ -134,29 +131,16 @@ The following "Dihedral" types are available:
 
 - Type 2: it is the standard dihedral angle as in the HOOH example above. 
 
-.. sidebar::
-
-   .. figure:: img/X2Y2_zmat-2.jpg
-       :alt: H2O2 Zmat
-
-       Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
-
 
 
 
 - Type -2: it is the standard dihedral angle, but with the "backbone" vector inverted, see figure. 
 
 
+.. figure:: img/X2Y2_zmat-2.jpg
+       :alt: H2O2 Zmat
 
-
-.. sidebar::
-
-   .. figure:: img/CH4_zmat-4.jpg
-       :alt: CH4 Zmat
-
-       Z-matrix coordinates with a "dihedral"type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`. 
-
-
+       Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
 
 
 - Type 3-100: any number :math:`N` between 3 and 100 means that instead of a dihedral angle, another bond angle is introduced; the "type" card is treated as an additional connector in order to define the bond angle. As example, the following Z-matrix (see the figure) uses a dihedral angle free definition of the vibrational coordinates of CH\ :sub:`4`:
@@ -171,6 +155,13 @@ The following "Dihedral" types are available:
     end
     
     
+
+
+
+.. figure:: img/CH4_zmat-4.jpg
+       :alt: CH4 Zmat
+
+       Z-matrix coordinates with a "dihedral"type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`.
 
 
 
