@@ -126,6 +126,7 @@ The following "Dihedral" types are available:
 .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
        :width: 200 px
+       :align: center
        
        Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
 
