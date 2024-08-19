@@ -113,6 +113,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
+       :width: 200 px
          
        Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
@@ -124,6 +125,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
+       :width: 200 px
        
        Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
 
@@ -134,6 +136,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/X2Y2_zmat_2.jpg
        :alt: H2O2 Zmat
+       :width: 200 px
        
        Z-matrix coordinates with a dihedral angle of type 2 used for HOOH as in the example above.
 
@@ -141,6 +144,7 @@ The following "Dihedral" types are available:
 
 .. image:: img/X2Y2_zmat_2.jpg
        :alt: H2O2 Zmat
+       :width: 200 px
         
 
 
@@ -153,6 +157,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/X2Y2_zmat-2.jpg
        :alt: H2O2 Zmat
+       :width: 200 px
         
        Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
 
@@ -180,8 +185,9 @@ The following "Dihedral" types are available:
     
 
 
-.. figure:: img/CH4_zmat-4_s.jpg
+.. figure:: img/CH4_zmat-4.jpg
        :alt: CH4 Zmat
+       :width: 200 px
 
        Z-matrix coordinates with a "dihedral"type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`.
 
