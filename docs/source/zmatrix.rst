@@ -112,6 +112,7 @@ The following "Dihedral" types are available:
 
 .. sidebar::
     :height: 200 px
+    
      .. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
          
