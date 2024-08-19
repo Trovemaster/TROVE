@@ -110,19 +110,16 @@ The following "Dihedral" types are available:
 
 - Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
 
-    
 .. figure:: img/XY3_zmat_0.jpg
         :alt: XY3 Zmat
         :width: 200 px
         :align: center
        
-       Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
+        Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
 
 
 - Type 1: it is defined as  a usual dihedral angle  between two planes (4-1-2 and 3-1-2),  with important addition. One more bond angle :math:`\alpha_3` is introduced (see the figure and also Ammonia example in  `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__).
-
-
 
 .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
@@ -138,7 +135,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/X2Y2_zmat_2.jpg
        :alt: H2O2 Zmat
-       :width: 200 px
+       :width: 150 px
        :align: center
        
        Z-matrix coordinates with a dihedral angle of type 2 used for HOOH as in the example above.
@@ -155,7 +152,7 @@ The following "Dihedral" types are available:
 
 .. figure:: img/X2Y2_zmat-2.jpg
        :alt: H2O2 Zmat
-       :width: 200 px
+       :width: 150 px
        :align: center
         
        Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
