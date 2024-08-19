@@ -110,10 +110,10 @@ The following "Dihedral" types are available:
 
 - Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
 
-
-.. figure:: img/XY3_zmat_0.jpg
+.. sidebar::
+    :height: 200 px
+     .. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
-       :width: 200 px
          
        Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
