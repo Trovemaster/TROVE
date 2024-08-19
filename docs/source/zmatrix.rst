@@ -23,7 +23,7 @@ Here, the Zmatrix coordinates are as follows.
    .. figure:: img/HOOH_zmat.jpg
        :alt: HOOH
 
-       Valence coordinates used for HOOH.
+       Valence coordinates used for HOOH with a dihedtral angle of type 2.
 
 
 
@@ -52,7 +52,16 @@ Here, the Zmatrix coordinates are as follows.
 
 .. math::
 
-   \xi_6 = \delta_{{\rm H}_1{\rm O}_1 {\rm O}_2 {\rm H}_2} = \equiv \delta_{3124}.
+   \xi_6 = \delta_{{\rm H}_1{\rm O}_1 {\rm O}_2 {\rm H}_2} = \equiv \delta_{3124},  
+   
+which is defined as follows
+
+.. math::
+     
+        \delta_{ijkl} =  \arccos\left(\frac{[\vecb{r}_{ij} \times \vecb{r}_{jk}]\cdot[\vecb{r}_{jk} \times \vecb{r}_{kl}] }{|[\vecb{r}_{ij} \times \vecb{r}_{jk}]| | [\vecb{r}_{jk} \times \vecb{r}_{kl}]|}\right).
+
+
+
 
 .. note: The order of the coordinates in TROVE is always: stretching, bending and dihedrals.
 
@@ -103,7 +112,7 @@ The following "Dihedral" types are available:
    .. figure:: img/XY3_zmat_0.jpg
        :alt: XY3 Zmat
 
-       Z-matrix coordinates with a dihedral angle of type 1 used for rigid molecules like PH\ :sub:`3`.
+       Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
 
 - Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
@@ -119,13 +128,26 @@ The following "Dihedral" types are available:
    .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
 
-       Z-matrix coordinates with a "dihedral" angle of type  used for NH\ :sub:`3`.
+       Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
 
 
 
 - Type 2: it is the standard dihedral angle as in the HOOH example above. 
 
 
+
+
+- Type -2: it is the standard dihedral angle, but with the "backbone" vector inverted, see figure. 
+
+
+
+
+.. sidebar::
+
+   .. figure:: img/X2Y2_zmat-2.jpg
+       :alt: H2O2 Zmat
+
+       Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
 
 
 
