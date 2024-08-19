@@ -58,7 +58,7 @@ which is defined as follows
 
 .. math::
      
-        \delta_{ijkl} =  \arccos\left(\frac{[\vecb{r}_{ij} \times \vecb{r}_{jk}]\cdot[\vecb{r}_{jk} \times \vecb{r}_{kl}] }{|[\vecb{r}_{ij} \times \vecb{r}_{jk}]| | [\vecb{r}_{jk} \times \vecb{r}_{kl}]|}\right).
+        \delta_{ijkl} =  \arccos\left(\frac{[\vec{r}_{ij} \times \vec{r}_{jk}]\cdot[\vec{r}_{jk} \times \vec{r}_{kl}] }{|[\vec{r}_{ij} \times \vec{r}_{jk}]| | [\vec{r}_{jk} \times \vec{r}_{kl}]|}\right).
 
 
 
