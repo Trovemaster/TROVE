@@ -109,6 +109,11 @@ The following "Dihedral" types are available:
 - Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
 
 
+
+- Type 1: it is defined as  a usual dihedral angle  between two planes (4-1-2 and 3-1-2),  with important addition. One more bond angle :math:`\alpha_3` is introduced (see the figure and also Ammonia example in  `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__).
+
+
+
 .. sidebar::
 
    .. figure:: img/XY3_zmat_1.jpg
@@ -116,9 +121,6 @@ The following "Dihedral" types are available:
 
        Z-matrix coordinates with a "dihedral" angle of type  used for NH\ :sub:`3`.
 
-
-
-- Type 1: it is defined as  a usual dihedral angle  between two planes (4-1-2 and 3-1-2),  with important addition. One more bond angle :math:`\alpha_3` is introduced (see the figure and also Ammonia example in  `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__).
 
 
 - Type 2: it is the standard dihedral angle as in the HOOH example above. 
