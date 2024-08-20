@@ -57,8 +57,8 @@ Reference: [TROVE]_
 The TROVE input for step 1 is illustrated below.
 ::
 
-      mem 64 gb 
-      
+      mem 64 gb
+
       KinOrder  6
       PotOrder  8
 
@@ -68,42 +68,42 @@ The TROVE input for step 1 is illustrated below.
       SYMGROUP C2v(M)
 
       verbose 5
-      
+
 ::
-      
+
       dstep 2.0e-03
       COORDS linear
       FRAME  r-rho-z
       MOLTYPE XY2
       REFER-CONF NON-RIGID
-      
-      
+
+
 ::
-      
+
       PRIMITIVES
         Npolyads     24
        END
-       
+
 ::
-      
+
       CONTRACTION
         Npolyads        24
         sample_points   60
         sample_attempts 500
         symm_toler      1e-5
       END
-      
+
 
 ::
-      
+
       DIAGONALIZER
        SYEV
        enermax 18000
       end
-      
-      
+
+
 ::
-      
+
       ZMAT
           Si  0  0  0  0   27.97692654
           H   1  0  0  0   1.007825032
@@ -113,37 +113,37 @@ The TROVE input for step 1 is illustrated below.
       step 1
       external
       end
-      
-      
+
+
 ::
-      
+
       BASIS
        0,'JKtau', Jrot 0
        1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
        1,'numerov','linear', 'morse',  range 0, 12, r 8, resc 2.0, points 3000,borders -0.8,1.40
        2,'numerov','linear', 'linear', range 0, 24, r 8, resc 1.0, points 3000,borders 10.0,160.0 deg
       END
-      
-      
+
+
 ::
 
-      
+
       EQUILIBRIUM
       re            9      1.5144017558
       re            9      1.5144017558
       alphae        9      92.00507388 DEG	
       end
-      
+
 ::
-      
+
       SPECPARAM
       a-Morse           0      0.127050746200E+01
       a-Morse           0      0.127050746200E+01
       END
-      
+
 
 ::
-            
+
       POTEN
       NPARAM  102
       compact
@@ -166,9 +166,9 @@ The TROVE input for step 1 is illustrated below.
       .....
       ....
       end
-      
+
 ::
-      
+
       DIPOLE
       dimension 3
       NPARAM  72 99 0
@@ -208,7 +208,7 @@ The TROVE input for step 1 is illustrated below.
 
 A short description of the keywords, cards and sections used is as follows.
 
- - ``Mem``: Maximal memory value available for the job in ``gb``, ``mb`` or ``kb``. TROVE uses an internal book keeping of the memory usage and will stop if it is large than the ``mem`` value. 
+ - ``Mem``: Maximal memory value available for the job in ``gb``, ``mb`` or ``kb``. TROVE uses an internal book keeping of the memory usage and will stop if it is large than the ``mem`` value.
  - ``KinOrder``: Expansion order of the KEO.
  - ``PotOrder``: Expansion order of the PEF.
  - ``Natoms``: Number of atoms (nuclei) :math:`N`.
@@ -243,9 +243,137 @@ A short description of the keywords, cards and sections used is as follows.
 CO\ :sub:`2`
 ============
 
-**TBP**
+This is a linear triatomic molecule for which a number of exact KEOs implemented in TROVE. 
 
-OCS 
+
+Molecular type (``MOLTYPE``): ``XY2``.
+
+Symmetry: there are two types of symmetries available for symmetric quasi-linear triatomic molecules, molecular symmetry group  :math:`C_{2v}`\ (EM) and Artificial extended molecular symmetry  :math:`C_{\rm C2vn}`\ (AEM).
+
+Coordinates: curvilinear (``local``).
+
+.. sidebar::
+
+    .. figure:: img/XY2-r-rho-z.jpg
+       :alt: XY2 equilibrium structure
+
+       The bisector embedding with the ``R-RHO-Z`` coordinates/frame type: :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+
+
+
+Coordinates type (``TRANSFORM``):  ``r-rho-z``:  :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+
+Frame: :math:`z` axis is along the molecule at the linear configuration, with the :math:`x`-axis oriented in-plane as a bisector at any instantaneous bend configuration of nuclei. The definition of the frame in this case is directly linked to the coordinate type ``r-rho-z`` is therefore omitted from the input.
+
+
+It is based on seven internal coordinates defined using the following Z-matrix (using nuclear masses):
+::
+    
+    ZMAT
+        C   0  0  0  0   11.996709
+        O   1  0  0  0   15.9905256
+        O   1  2  0  0   15.9905256
+    end
+    
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+KEO: exact, constructed using the bisector frame and formally expanded in terms of :math:`1/r_1`, :math:`1/r_2` to the 2nd order about the non-rigid reference frame.
+
+KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT``
+
+Kinetic energy expansion order: 2
+
+Primitive basis set: ``Numerov``-generated for coordinates :math:`r_1` and :math:`r_2` and the ``Laguerre-k`` for :math:`\rho`:
+::
+    
+    BASIS
+      0,'JKtau', J 0, krot   40
+      1,'numerov','rational', 'morse',  range 0,36,  resc 1.0, points  1000, borders -0.40,1.0
+      1,'numerov','rational', 'morse',  range 0,36,  resc 1.0, points  1000, borders -0.40,1.0
+      2,'laguerre-k','linear','linear', range 0,64,  resc 1.0, points  3000, borders  0.,160.0 deg
+    END
+    
+
+Here the card ``krot 40`` indicates the highest vibrational angular momentum and the rotational quantum number :math:`k` (See Chapter about Basis sets). `rational` stands for the expansion in terms of :math:`1/r_1` or :math:`1/r_2`. Modes 1 and 2 are combined into sub-group 1.
+
+
+Basis set: Polyad scheme with  :math:`P = (v_1 + v_2 + v_3)  \leq 64`,  :math:` v_1 \leq 36`, :math:` v_2 \leq 36`, :math:` v_3 \leq 64`. 
+
+
+Spectroscopic Model UCL-4000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This model was used to produce the UCL-4000 line list for CO\ :math:`2` [23MeOwTe]_.
+
+PEF type (``POT_TYPE``): poten_co2_ames1. This is the PEF Ames1 by Huang et al. [17HuScFr]_.
+
+Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. Expansion order (``PotOrder``) is 12. 
+
+Coordinates to expand Potential energy: ``Morse`` (see ``basis`` ) for stretching coordinates while the angle is treated explicitly. 
+    
+Potential energy function: Refinement of published potential [09YuBaYa]_.
+
+Dipole moment surface expansion: ``TYPE`` ``DIPOLE_AMES1``, AMES1 DMS by Huang et al. [17HuScFr]_.
+
+
+For the spectroscopic model UCL-4000, a sample input file can be found at exomol.com, see `UCL-4000 spectroscopic model <https://exomol.com/models/CO2/12C-16O2/UCL-4000/>`__.
+
+
+Non-symmetric isotopologue  :sup:`18`\ CO\ :sup:`16` 
+====================================================
+
+The basic model is the same as for CO\ :sub:`2` with some differences. 
+
+Molecular type (``MOLTYPE``): ``XY2`` (same as before).
+
+Symmetry: there are two types of symmetries available for non-symmetric quasi-linear triatomic molecules, molecular symmetry group  :math:`C_{s}`\ (EM) and Artificial extended molecular symmetry  :math:`C_{\rm Cvn}`\ (AEM).
+
+Coordinates: curvilinear (``local``).
+
+
+Frame and associated coordinates type (``TRANSFORM``):  ``R-RHO-Z-M2-M3``. It uses the same valence coordinates as before, :math:`r_1`, :math:`r_2`, and :math:`\rho`. In the linear configuration, the frame is the :math:`z` axis along the molecule oriented from atom 1 to atom 2 (i.e. from mass 2 to mass 3, see Z-matrix), which is the same orientation as ``r-rho-z`` and also with the bisecting axis :math:`x`.
+
+
+The following Z-matrix (using nuclear masses) is used:
+::
+    
+    ZMAT
+        C   0  0  0  0   11.996709
+        O   1  0  0  0   17.99477097
+        O   1  2  0  0   15.99052598
+    end
+    
+
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+KEO: exact, constructed using the bisector frame and formally expanded in terms of :math:`1/r_1`, :math:`1/r_2` to the 2nd order about the non-rigid reference frame.
+
+KEO type (``kinetic_type``): ``KINETIC_XYZ_EKE_BISECT``. It is also a bisector-frame KEO but developed for a non-symmetric molecule XYZ
+
+Kinetic energy expansion order: 2
+
+Primitive basis set has the same structure as for the XY\ :math:`2`:
+
+   BASIS
+     0,'JKtau', Jrot 0, krot   16
+     1,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
+     2,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
+     3,'laguerre-k','linear','linear', range 0,56, resc 1.0, points  12000, borders  0.,150.0 deg
+   END
+       
+with the main difference that all three modes are treated independently. 
+
+
+Spectroscopic Model UCL-4000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The spectroscopic model (PEF and DMF) are the same used to produce the UCL-4000 line list for CO\ :math:`2` [23MeOwTe]_.
+
+
+OCS
 ===
 
 **TBP**
@@ -274,17 +402,17 @@ Coordinates type (``TRANSFORM``):  ``r-s-delta``. It is based on seven internal 
        H2  1  2  0  0   1.00782503223
        H3  1  2  3  1   1.00782503223
    end
-   
+
 As usual, it defines three stretching coordinates  :math:`r_{{\rm NH}_1}`,   :math:`r_{{\rm NH}_2}` and  :math:`r_{{\rm NH}_3}`. For the angles, note that atom 4 has the "dihedral" type 1. For this type, TROVE introduced four angles (one of which is redundant): the first two angles are valence between atoms  H2 and H1 (:math:`\alpha_3`), H3 and H1 (:math:`\alpha_2`). Angle 3 is also valence, between H3 and H2 (:math:`\alpha_1`). Angle 4 is dihedral between two planes: :math:`\vec{r}_3\times \vec{r}_1` and :math:`\vec{r}_1\times \vec{r}_2`. These 4 angles are then used to construct two degenerate non-redundant bending coordinates:
 
-.. math:: 
-    
+.. math::
+
     \begin{split}
       S_a &= \frac{1}{6} (2\alpha_1-\alpha_2-\alpha_3) \\
-      S_b &= \frac{1}{2} (\alpha_2-\alpha_3) 
+      S_b &= \frac{1}{2} (\alpha_2-\alpha_3)
     \end{split}
 
-The last coordinates is an angle :math:`\delta` between the trisector and any of the bond vectors. 
+The last coordinates is an angle :math:`\delta` between the trisector and any of the bond vectors.
 
 
 The valence coordinates are then used to define 5 linearised coordinates:
@@ -299,11 +427,11 @@ The valence coordinates are then used to define 5 linearised coordinates:
       \xi_5^{\rm lin} &= S_b^{\rm lin} \\
     \end{split}
 
-while the sixth coordinate is curvilinear :math:`\xi_6 = \delta`. 
+while the sixth coordinate is curvilinear :math:`\xi_6 = \delta`.
 
-The ``Equilibrium`` block in the case of 7 coordinates is given by 7 equilibrium values: 
+The ``Equilibrium`` block in the case of 7 coordinates is given by 7 equilibrium values:
 ::
-   
+
    EQUILIBRIUM
    re          0       1.0116
    re          0       1.0116
@@ -313,9 +441,9 @@ The ``Equilibrium`` block in the case of 7 coordinates is given by 7 equilibrium
    alphae      0      106.719 deg
    taue        0      0.385722379
    end
-   
 
-This seven internal coordinates scheme provide a better numerical stability. 
+
+This seven internal coordinates scheme provide a better numerical stability.
 
 Kinetic energy operator
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -323,16 +451,16 @@ Kinetic energy operator
 KEO: non-exact, constructed using the Sorensen procedure as an expansion about the non-rigid reference frame.
 
 
-Frame: Non-rigid, Eckart conditions, follows the umbrella motion for a rigid stretches and equal angles. 
+Frame: Non-rigid, Eckart conditions, follows the umbrella motion for a rigid stretches and equal angles.
 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`
 
 Kinetic energy expansion order: 6
 
-Primitive basis set: Numerov generated for coordinates :math:`\xi_1`, :math:`\xi_2`, :math:`\xi_3` and :math:`\delta`m while for :math:`\xi_4` and :math:`\xi_5`, the Harmonic oscillator basis gives more stable symmetry adaptation: 
+Primitive basis set: Numerov generated for coordinates :math:`\xi_1`, :math:`\xi_2`, :math:`\xi_3` and :math:`\delta`m while for :math:`\xi_4` and :math:`\xi_5`, the Harmonic oscillator basis gives more stable symmetry adaptation:
 ::
-    
+
    BASIS
     0,'JKtau', Jrot 0
     1,'numerov','linear', 'morse',  range 0, 8, r 8, resc 4.0, points 2000, borders -0.4,2.0
@@ -342,12 +470,12 @@ Primitive basis set: Numerov generated for coordinates :math:`\xi_1`, :math:`\xi
     2,'harmonic','linear', 'linear', range 0,34, r 2, resc 2.0, points 9000, borders -1.90,1.92
     3,'numerov','linear', 'linear', range 0,34, r 8, resc 1.0, points 1000, borders -55.0, 55.0 deg
    END
-   
+
 
 Spectroscopic Model BYTe
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. 
+Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``.
 
 Coordinates to expand Potential energy: Morse for stretching coordinates, angles themselves for bends.
 
@@ -369,11 +497,11 @@ For BYTe, a sample input file can be found at exomol.com, see `BYTe spectroscopi
 Spectroscopic model CoYuTe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Potential energy function: ``general`` as defined in a stand-alone ``pot-user`` module ``pot_NH3_Roman.f90``. PEF was expanded to the 8th order using the internal linearised coordinates. 
+Potential energy function: ``general`` as defined in a stand-alone ``pot-user`` module ``pot_NH3_Roman.f90``. PEF was expanded to the 8th order using the internal linearised coordinates.
 
 Basis set: Polyad scheme with  :math:`P = 4(v_1 + v_2 + v_3) + 2(v_4 + v_5) + v_6 \leq 32`.
 
-Dipole moment surface expansion: Same in BYTe. 
+Dipole moment surface expansion: Same in BYTe.
 
 A sample input file defining the spectroscopic model can be found at  `CoYuTe spectroscopic model <https://exomol.com/models/NH3/14N-1H3/CoYuTe/>`__.
 
@@ -574,21 +702,21 @@ The model is described in [14YuJe]_.
 
 
 
-KEO: non-exact, expanded in terms of linearised coordinates around a rigid reference geometry 
+KEO: non-exact, expanded in terms of linearised coordinates around a rigid reference geometry
 ::
 
    REFER-CONF RIGID
 
 
-Symmetry: :math:`{T}_d` 
+Symmetry: :math:`{T}_d`
 
-Frame: Eckart. 
+Frame: Eckart.
 
 
-Coordinates: Type ``R-SYM``,  linearised coordinates obtained from the following valence coordinates: 
+Coordinates: Type ``R-SYM``,  linearised coordinates obtained from the following valence coordinates:
 
 .. math::
- 
+
      \begin{split}
         \xi_i &= (r_i - r_e) \exp(-\beta(r_i - r_e)^2), i = 1,4 \\
         \xi_5 &= \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}), \\
@@ -596,7 +724,7 @@ Coordinates: Type ``R-SYM``,  linearised coordinates obtained from the following
         \xi_7 &= \frac{1}{\sqrt{2}}(\alpha_{24}  - \alpha_{23}),\\
         \xi_8 &= \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14}), \\
         \xi_9 &= \frac{1}{\sqrt{2}}(\alpha_{34}  - \alpha_{12}).
-     \end{split}   
+     \end{split}
 
 where :math:`r_i` are the bond-lengths and :math:`\alpha_{ij}` are the interbond angles,  also complimented by redundancy conditions (see [14YuJe]_).
 
@@ -622,28 +750,28 @@ Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm\ :
 
 Reference: [13YuTeBa]_, [14YuJe]_.
 
-Model input files: `YT10to10 spectroscopic model <https://exomol.com/models/CH4/12C-1H4/YT10to10/>`__. 
+Model input files: `YT10to10 spectroscopic model <https://exomol.com/models/CH4/12C-1H4/YT10to10/>`__.
 
 
 Spectroscopic Model **MM**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The model is described in [24YuOwTe]_. 
+The model is described in [24YuOwTe]_.
 
-KEO: Non-exact Taylor expansion around the equilibrium structure in terms of the valence (curvilinear) coordinates using the automatic differentiation (AD)  technique [15YaYu]_ up to 6th order. 
+KEO: Non-exact Taylor expansion around the equilibrium structure in terms of the valence (curvilinear) coordinates using the automatic differentiation (AD)  technique [15YaYu]_ up to 6th order.
 
 
-Coordinates: The choice of the valence coordinates is the same as used in 10to10, type  ``R-SYM``. 
+Coordinates: The choice of the valence coordinates is the same as used in 10to10, type  ``R-SYM``.
 
-Frame: Eckart. 
+Frame: Eckart.
 
-PEF: the same type  ``general`` from the module ``pot_ch4.f90``. A new *ab initio* PEF was refined to experimentally derived MARVEL energies of methane. 
+PEF: the same type  ``general`` from the module ``pot_ch4.f90``. A new *ab initio* PEF was refined to experimentally derived MARVEL energies of methane.
 
 Potential expansion order: 8
 
 Polyad scheme: :math:`P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 14` with caveats, see paper.
 
-DMF: A new accurate *ab initio* DMS of the QZ quality. 
+DMF: A new accurate *ab initio* DMS of the QZ quality.
 
 Model input files: `MM spectroscopic model <https://exomol.com/models/CH4/12C-1H4/MM/>`__.
 
@@ -654,32 +782,32 @@ Hydrogen peroxide, H\ :sub:`2`\ O\ :sub:`2`
 
 The model (APTY) is described in [15AlOvYu]_, [16AlPoOv]_.
 
-KEO: non-exact (linearised), expanded around a non-rigid reference configuration constructed to follow the torsion motion with all other valence coordinates fixed to their equilibrium values. 
-Symmetry: :math:`D_{2h}`\ (EM). 
+KEO: non-exact (linearised), expanded around a non-rigid reference configuration constructed to follow the torsion motion with all other valence coordinates fixed to their equilibrium values.
+Symmetry: :math:`D_{2h}`\ (EM).
 
 
-Frame: Eckart-Saywitz conditions with the x-axis in the plane bisecting the HOOH book-angle. The integration range for the torsional coordinate is extended to :math:`2\pi` in order to efficiently separate the torsional and rotational degrees of freedom. 
+Frame: Eckart-Saywitz conditions with the x-axis in the plane bisecting the HOOH book-angle. The integration range for the torsional coordinate is extended to :math:`2\pi` in order to efficiently separate the torsional and rotational degrees of freedom.
 
-Coordinates: type (``transform``) ``r-alpha-tau``. These are linearised except the torsional mode, based on the following valence-type coordinates, 
+Coordinates: type (``transform``) ``r-alpha-tau``. These are linearised except the torsional mode, based on the following valence-type coordinates,
 :math:`\xi_i = (x_i^l - x_i^e)` where :math:`i = 1, 6` are :math:`R`, :math:`r_1`, :math:`r_2`, :math:`\theta_1`, :math:`\theta
-_2` and :math:`\tau`. 
+_2` and :math:`\tau`.
 
-Molecular type (``MOLTYPE``):  ``ABCD``. This means that the coordinates, their symmetry properties and frame are defined in the module ``mol-ABCD.f90``. 
+Molecular type (``MOLTYPE``):  ``ABCD``. This means that the coordinates, their symmetry properties and frame are defined in the module ``mol-ABCD.f90``.
 
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n (n=1-6)`, linearised coordinates
 
 Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a_i(\xi_i^l))` :math:`(i = 1, 3)` for stretches and
-:math:`f_n = \xi_i^l` :math:`(i = 4, 6)` for bending coordinates. 
+:math:`f_n = \xi_i^l` :math:`(i = 4, 6)` for bending coordinates.
 
 Potential linearised expansion order: 8
 
 
-Primitive basis set: Numerov generated for all coordinates. 
+Primitive basis set: Numerov generated for all coordinates.
 
 Kinetic energy expansion order: 6
 
-PEF: One of the integrated functional forms into the main, default TROVE compilation, type ``POTEN_H2O2_KOPUT_UNIQUE``. 
+PEF: One of the integrated functional forms into the main, default TROVE compilation, type ``POTEN_H2O2_KOPUT_UNIQUE``.
 ::
 
    POT_TYPE  POTEN_H2O2_KOPUT_UNIQUE
@@ -688,7 +816,7 @@ The PEF used was obtained by refining an *ab initio* CCSD(T)-F12b/aug-cc-pVNZ  P
 
 Basis set: Constructed using the polyad scheme: :math:`P = 4n_1 + 8(n_2 + n_3 + n_4 + n_5) +n_6 \leq 42`.
 
-DMF type (DMS_TYPE):  ``HOOH_MB``. This dipole moment surface was computed using CCSD(T)-F12b/aug-cc-pV(T+d)Z and fitted to a polynomial. 
+DMF type (DMS_TYPE):  ``HOOH_MB``. This dipole moment surface was computed using CCSD(T)-F12b/aug-cc-pV(T+d)Z and fitted to a polynomial.
 
 
 Results:  Linelist complete up to 6000 cm\ :sup:`-1`. Extended linelist up to 8000 cm\ :sup:`-1` with reduced completeness

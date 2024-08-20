@@ -35,10 +35,22 @@ in the curvilinear KEO,  it is common in TROVE to use the bisector frame for the
 For quasi-linear triatomic molecules, it is also possible to use exact curvilinear KEO in implemented analytically, see below.
 
 
+
+
 ``R-RHO-Z``
 ^^^^^^^^^^^
 
-- ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). For the rigid reference frame (``REFER-CONF RIGID``), the actual internal coordinates are the displacements of :math:`r_1`, :math:`r_2` and :math:`\rho` from the corresponding equilibrium:
+.. sidebar::
+
+    .. figure:: img/XY2-r-rho-z.jpg
+       :alt: XY2 equilibrium structure
+
+       The bisector embedding with the ``R-RHO-Z`` coordinates/frame type: :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+
+
+
+- ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). The exact orientation of the frame relative to the instantaneous position of the nuclei is critical for representing the dipole moment vectors. 
+For the rigid reference frame (``REFER-CONF RIGID``), the actual internal coordinates are the displacements of :math:`r_1`, :math:`r_2` and :math:`\rho` from the corresponding equilibrium:
 
 .. math::
 
@@ -49,6 +61,8 @@ For quasi-linear triatomic molecules, it is also possible to use exact curviline
     \end{split}
 
 where :math:`r_{\rm e}` is the equilibrium bond length. If the non-rigid reference frame is used (``REFER-CONF NON-RIGID``), the bending mode is given on an equidistant grid, typically of 1000-2000 points, while the stretching modes are the displacements from the given :math:`\rho` point along the non-rigid reference frame, the latter is usually defined as the principal axes system with the bond length fixed to the equilibrium:
+
+
 
 .. math::
 
@@ -288,22 +302,22 @@ KINETIC_XYZ_EKE_BOND_SINRHO
 
 This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``, for example for :sup:`12`\ C\ :sup:`12`\ C\ :sup:`13`\ C, the corresponding TROVE input is as follows:
 ::
-    
+
     COORDS local (curvilinear)
     TRANSFORM   R-RHO-Z-M2-M3-BISECT (FRAME)
     MOLTYPE XY2
     REFER-CONF NON-RIGID
-    
+
     ZMAT
         C   0  0  0  0  12.000000
         C   1  0  0  0  13.003355
         C   1  2  0  0  12.000000
     end
-    
+
     KINETIC
       kinetic_type  KINETIC_XYZ_EKE_bisect
     END
-    
+
 The associated symmetry is either Cs(M) or C\ :sub:`ns`\ (M):
 ::
 
