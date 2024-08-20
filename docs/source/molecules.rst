@@ -357,13 +357,15 @@ KEO type (``kinetic_type``): ``KINETIC_XYZ_EKE_BISECT``. It is also a bisector-f
 Kinetic energy expansion order: 2
 
 Primitive basis set has the same structure as for the XY\ :math:`2`:
-
+:
+   
    BASIS
      0,'JKtau', Jrot 0, krot   16
      1,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      2,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      3,'laguerre-k','linear','linear', range 0,56, resc 1.0, points  12000, borders  0.,150.0 deg
    END
+   
        
 with the main difference that all three modes are treated independently. 
 
@@ -371,6 +373,82 @@ with the main difference that all three modes are treated independently.
 Spectroscopic Model UCL-4000
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The spectroscopic model (PEF and DMF) are the same used to produce the UCL-4000 line list for CO\ :math:`2` [23MeOwTe]_.
+
+
+KOH
+===
+
+This is a linear triatomic molecule for which a number of exact KEOs implemented in TROVE.
+
+
+Molecular type (``MOLTYPE``): ``XY2``.
+
+Symmetry:  :math:`C_{s}`\ (EM) and or  :math:`C_{\rm Cvn}`.
+
+Coordinates: curvilinear (``local``).
+
+.. sidebar::
+
+    .. figure:: img/XYZ_frame_R1-Z-R2-RHO.jpg
+       :alt: XYZ  structure
+
+       The  embedding with the ``R1-Z-R2-RHO`` coordinates/frame type: :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+
+
+
+Coordinates type (``TRANSFORM``):  ``R1-Z-R2-RHO``:  :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+
+Frame: :math:`z` axis is along atom 2 (vector :math:`r_1`),  with the :math:`x`-axis oriented in-plane  at any  bend configuration of nuclei and negative for atom 3.  The definition of the frame in this case is directly linked to the coordinate type ``R1-Z-R2-RHO`` is therefore omitted from the input.
+
+
+Z-matrix: 
+::
+   
+   ZMAT
+       O   0  0  0  0   15.99491463
+       K   1  0  0  0   38.9637074
+       H   1  2  0  0   1.007825035
+   end
+   
+
+Kinetic energy operator
+^^^^^^^^^^^^^^^^^^^^^^^
+
+KEO: exact, formally expanded in terms of :math:`1/r_1`, :math:`1/r_2` to the 2nd order about the non-rigid reference frame.
+
+KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT_sinrho``. It is linked to the basis set type ``sinrho-laguerre-k`` used for the bending mode. 
+
+::
+
+    BASIS
+      0,'JKtau', Jrot 0, krot 10
+      1,'numerov','rational', 'morse',  range 0,20,  resc 2.0, points  1000, borders -0.5 ,2.0
+      2,'numerov','rational', 'morse',  range 0,20,  resc 2.0, points  1000, borders -0.35,0.8
+      3,'sinrho-laguerre-k','linear','linear', range 0, 40, resc 1.0, points  3000, borders  0.,180.0 deg
+    END
+    
+
+Basis set: Polyad scheme with  :math:`P = 2(v_1 + v_2) + v_3  \leq 40`.
+
+
+Spectroscopic Model UCL-4000
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This model was used to produce the XXXXline list for KOH [23MeOwTe]_.
+
+PEF type (``POT_TYPE``): poten_xyz_tyuterev. 
+
+Potential expansion order: *ab initio*; expansion order = 8.
+
+Dipole moment surface expansion: ``TYPE`` ` DIPOLE_PQR_XYZ`` with parameters from *ab initio* calculations. 
+
+
+A sample input file can be found at `XXXX spectroscopic model <https://exomol.com/models/CO2/12C-16O2/UCL-4000/>`__.
+
+
+
+
+
 
 
 OCS
