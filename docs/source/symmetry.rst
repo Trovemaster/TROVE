@@ -414,7 +414,7 @@ Examples of character tables for :math:`n=4` are given in Table below
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 
 
-IN TROVE outputs, three-character labels :math:`A_1^l`, :math:`B_1^l`, :math:`A_2^l` and :math:`B_2^l` for :math:`l>0`  are replaced with the two-character shortcuts :math:`e`,  :math:`f`, :math:`g` and :math:`h`, respectively:
+IN TROVE outputs, three-character labels :math:`A_1^l`, :math:`B_2^l`, :math:`A_2^l` and :math:`B_1^l` for :math:`l>0`  are replaced with the two-character shortcuts :math:`e`,  :math:`f`, :math:`g` and :math:`h`, respectively:
 
 +---------------------+-------------+
 |C\ :sub:`2vn`\ (AEM) | TROVE output|
@@ -429,21 +429,21 @@ IN TROVE outputs, three-character labels :math:`A_1^l`, :math:`B_1^l`, :math:`A_
 +---------------------+-------------+
 |       :math:`A_1^1` | ``e1``      |
 +---------------------+-------------+
-|       :math:`B_1^1` | ``f1``      |
+|       :math:`B_2^1` | ``f1``      |
 +---------------------+-------------+
 |       :math:`A_2^1` | ``g1``      |
 +---------------------+-------------+
-|       :math:`B_2^1` | ``h1``      |
+|       :math:`B_1^1` | ``h1``      |
 +---------------------+-------------+
 |     ......          |  ...        |
 +---------------------+-------------+
 |       :math:`A_1^4` | ``e4``      |
 +---------------------+-------------+
-|       :math:`B_1^4` | ``f4``      |
+|       :math:`B_2^4` | ``f4``      |
 +---------------------+-------------+
 |       :math:`A_2^4` | ``g4``      |
 +---------------------+-------------+
-|       :math:`B_2^4` | ``h4``      |
+|       :math:`B_1^4` | ``h4``      |
 +---------------------+-------------+
 
 
@@ -495,6 +495,10 @@ The artificial symmetry group C\ :sub:`ns`\ (AEM) consists of one-dimensional, r
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
 |:math:`A''_3` |           |   1         |  -1             |      -1     |        1        |      -1      |        1        |          1  |  -1            |
 +--------------+-----------+-------------+-----------------+-------------+-----------------+--------------+-----------------+-------------+----------------+
+
+
+In TROVE outputs, :math:`A'_l` and :math:`A''_l` are replaced with :math:`e_l` and :math:`f_l` for compactness. 
+
 
 The  effects of the C\ :sub:`ns`\ (AEM) group operations on the coordinates is as follows: all operations leave the vibrational coordinates invariant; the  :math:`E^a` operations (in the notation of Table above leave the rotational functions invariant while the :math:`\sigma^a` operation has the same effect as the :math:`\sigma^0` operation.
 
