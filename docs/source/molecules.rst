@@ -391,6 +391,8 @@ Coordinates: curvilinear (``local``).
 
     .. figure:: img/XYZ-R2-Z-R1-RHO.jpg
        :alt: XYZ  structure
+       :width: 100 px
+       :align: center
 
        The  embedding with the ``R1-Z-R2-RHO`` coordinates/frame type: :math:`r_1`, :math:`r_2`, and :math:`\rho`.
 
