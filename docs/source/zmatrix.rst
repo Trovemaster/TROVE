@@ -178,9 +178,20 @@ A differen example of  type 2 of dihedrals is for H\ :sub:`2`\ CO with the Z-mat
        Z-matrix coordinates with a "dihedral" angle of type -2 used for H\ :sub:`2`\ CO with the "backbone" vector inverted.
 
 
+
+.. sidebar::
+     
+    .. figure:: img/C2H4_zmat.jpg
+       :alt: CH4 Zmat
+       :width: 150 px
+       :align: center
+
+       Z-matrix coordinates with a mix of "dihedral" types 2 and -2 used for CH\ :sub:`2` \ :sub:`4`.
+       
+
 Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2`` and ``-2``: 
 ::
-   
+    
    ZMAT
      C   0  0  0  0  12.00000000
      C   1  0  0  0  12.00000000
@@ -190,17 +201,8 @@ Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2
      H   2  1  5 -2   1.00782505
    end
    
-
-
-.. figure:: img/C2H4_zmat.jpg
-       :alt: CH4 Zmat
-       :width: 150 px
-       :align: center
-
-       Z-matrix coordinates with a mix of "dihedral" types 2 and -2 used for CH\ :sub:`2` \ :sub:`4`.
-
-The system was studied in [18MaYaTe]_. 
-
+The system was studied in [18MaYaTe]_.
+   
 
 - Type -202: same as type, but the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates  evaluated using the finite differences. 
 
