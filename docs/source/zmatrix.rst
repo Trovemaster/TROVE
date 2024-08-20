@@ -158,6 +158,50 @@ The following "Dihedral" types are available:
        Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
 
 
+A differen example of  type 2 of dihedrals is for H\ :sub:`2`\ CO with the Z-matrix given by 
+::
+    
+    ZMAT
+        C   0  0  0  0  12.00000000
+        O   1  0  0  0  15.99491463
+        H   1  2  0  0   1.00782505
+        H   1  2  3 -2   1.00782505
+    end
+    
+
+
+.. figure:: img/H2CO_zmat-2.jpg
+       :alt: H2CO Zmat
+       :width: 150 px
+       :align: center
+
+       Z-matrix coordinates with a "dihedral" angle of type -2 used for H\ :sub:`2`\ CO with the "backbone" vector inverted.
+
+
+Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2`` and ``-2``: 
+::
+   
+   ZMAT
+     C   0  0  0  0  12.00000000
+     C   1  0  0  0  12.00000000
+     H   1  2  0  0   1.00782505
+     H   1  2  3 -2   1.00782505
+     H   2  1  3  2   1.00782505
+     H   2  1  5 -2   1.00782505
+   end
+   
+
+
+.. figure:: img/C2H4_zmat.jpg
+       :alt: CH4 Zmat
+       :width: 150 px
+       :align: center
+
+       Z-matrix coordinates with a mix of "dihedral" types 2 and -2 used for CH\ :sub:`2` \ :sub:`4`.
+
+The system was studied in [18MaYaTe]_. 
+
+
 - Type -202: same as type, but the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates  evaluated using the finite differences. 
 
 
@@ -173,7 +217,7 @@ The following "Dihedral" types are available:
     .. figure:: img/CH4_zmat-4.jpg
        :alt: CH4 Zmat
 
-       Z-matrix coordinates with a "dihedral"type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`.
+       Z-matrix coordinates with a "dihedral" type angle of type 4 used for CH\ :sub:`4`, used to define an extra bond angle :math:`\alpha_4`.
 
 
 - Type 3-100: any number :math:`N` between 3 and 100 means that instead of a dihedral angle, another bond angle is introduced; the "type" card is treated as an additional connector in order to define the bond angle. As example, the following Z-matrix (see the figure) uses a dihedral angle free definition of the vibrational coordinates of CH\ :sub:`4`:
@@ -187,8 +231,5 @@ The following "Dihedral" types are available:
         H   1  2  3  4   1.007825035
     end
     
-
-
-
 
 

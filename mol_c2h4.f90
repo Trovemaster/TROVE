@@ -295,13 +295,18 @@ module mol_c2h4
       a0(:,n) = a0(:,n) - CM_shift
     enddo
     !
-    if (verbose>=3) then
-      do iatom=1, Natoms
-        write(out, '(1x,a,1x,3(1x,es16.8))') 'H', a0(iatom,1:3)
-      enddo
-    endif
-    !
     b0(:,:,0) = a0(:,:)
+    !
+    if (verbose>=3) then 
+      !
+      write(out,"(i6)") molec%natoms
+      !
+      write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,0) 
+      write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,0)
+      write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,0)
+      write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,0)
+      !
+    endif
     !
     if (Npoints/=0) then
       !
@@ -359,6 +364,17 @@ module mol_c2h4
         !
         if (verbose>=5) then
           write(out, '(1x,a,1x,i6,100(1x,es16.8))') 'b0', i, b0(:,:,i)
+        endif
+        !
+        if (verbose>=3) then 
+          !
+          write(out,"(i6)") molec%natoms
+          !
+          write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+          write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+          write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+          write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,i)
+          !
         endif
         !
       enddo
