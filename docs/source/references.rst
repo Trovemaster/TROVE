@@ -101,3 +101,5 @@ References
 - .. [18OwYa] RichMol: A. Owens and A. Yachmenev, *J. Chem. Phys*, **148**, 124102 (2018),  A general variational approach for rovibrational molecular dynamics in external electric fields. `doi:10.1063/1.5023874  <https://doi.org/10.1063/1.5023874>`__
 
 - .. [19MeYuMa] T. M. Mellor, S. N. Yurchenko, B. P. Mant, and Per Jensen.  *Symmetry*, **11**, 862 (2019), Transformation Properties under the Operations of the Molecular Symmetry Groups G36 and G36(EM) of Ethane H\ :sub:`3`\ CCH` :sub:`3`\. `doi:10.3390/sym1107086  <http://dx.doi.org/10.3390/sym11070862>`__
+
+- .. [21OwTeYu] A. Owens, J. Tennyson, and S. N. Yurchenko. *Mon. Not. R. Astron. Soc.*, **502**, 1128 (2021), ExoMol line lists - XLI. High-temperature molecular line lists for the alkali metal hydroxides KOH and NaOH.  `10.1093/mnras/staa4041  <http://dx.doi.org/10.1093/mnras/staa4041>`__

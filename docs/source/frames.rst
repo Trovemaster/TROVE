@@ -165,6 +165,14 @@ For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues
 ``R1-Z-R2-RHO``
 ^^^^^^^^^^^^^^^
 
+.. sidebar::
+
+    .. figure:: img/XYZ_frame_R1-Z-R2-RHO.jpg
+       :alt: XYZ equilibrium structure
+
+       Frame ``R1-Z-R2-RHO``: An XYZ type molecule and the :math:`z`  embedding along :math:`r_2` and :math:`r_3` with negative :math:`x`.
+
+
 This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis and :math:`r_2` in the negative direction of :math:`x`. The coordinates are given as above:
 
 .. math::

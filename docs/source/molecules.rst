@@ -389,16 +389,16 @@ Coordinates: curvilinear (``local``).
 
 .. sidebar::
 
-    .. figure:: img/XYZ_frame_R1-Z-R2-RHO.jpg
+    .. figure:: img/XYZ-R2-Z-R1-RHO.jpg
        :alt: XYZ  structure
 
        The  embedding with the ``R1-Z-R2-RHO`` coordinates/frame type: :math:`r_1`, :math:`r_2`, and :math:`\rho`.
 
 
 
-Coordinates type (``TRANSFORM``):  ``R1-Z-R2-RHO``:  :math:`r_1`, :math:`r_2`, and :math:`\rho`.
+Coordinates type (``TRANSFORM``):  ``R2-Z-R1-RHO``:  :math:`r_1`, :math:`r_2`, and :math:`\rho`.
 
-Frame: :math:`z` axis is along atom 2 (vector :math:`r_1`),  with the :math:`x`-axis oriented in-plane  at any  bend configuration of nuclei and negative for atom 3.  The definition of the frame in this case is directly linked to the coordinate type ``R1-Z-R2-RHO`` is therefore omitted from the input.
+Frame: :math:`z` axis is along atom 2 (vector :math:`r_1`),  with the :math:`x`-axis oriented in-plane  at any  bend configuration of nuclei and positive for atom 2 (:math:`\vec{r}_1`).  The definition of the frame in this case is directly linked to the coordinate type ``R2-Z-R1-RHO`` is therefore omitted from the input.
 
 
 Z-matrix: 
@@ -431,10 +431,10 @@ KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT_sinrho``. It is linked to 
 Basis set: Polyad scheme with  :math:`P = 2(v_1 + v_2) + v_3  \leq 40`.
 
 
-Spectroscopic Model UCL-4000
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Spectroscopic Model OYT4
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-This model was used to produce the XXXXline list for KOH [23MeOwTe]_.
+This model was used to produce the OYT4 line lists for KOH and NaOH [21OwTeYu]_.
 
 PEF type (``POT_TYPE``): poten_xyz_tyuterev. 
 
@@ -443,9 +443,7 @@ Potential expansion order: *ab initio*; expansion order = 8.
 Dipole moment surface expansion: ``TYPE`` ` DIPOLE_PQR_XYZ`` with parameters from *ab initio* calculations. 
 
 
-A sample input file can be found at `XXXX spectroscopic model <https://exomol.com/models/CO2/12C-16O2/UCL-4000/>`__.
-
-
+A sample input file can be found at :download:`KOH_OYT4_model_TROVE.inp <./input/KOH_OYT4_model_TROVE.inp>`, which uses a different coordinate type from the model used for OYT4, 
 
 
 
