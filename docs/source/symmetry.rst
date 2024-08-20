@@ -75,8 +75,8 @@ TROVE uses the symmetry properties of the vibrational coordinates, i.e. how they
 
 
 
-C3v(M)
-======
+C\ :sub:`3v`\ (M)
+=================
 
 ``C3v(M)`` is a molecular symmetry group consisting of 3 irreps: :math:`A_1`, :math:`A_2`, :math:`E` and 6 operations:
 
@@ -271,20 +271,20 @@ Numerical symmetry group D\ :sub:`nh`
 =====================================
 
 
-As a numerical application of linear-molecule symmetry properties, described by the D\ :math:`\infty h` point group, lower-order symmetry groups D\ :sub:`nh`\ (M) with finite :math:`n` can be used. Character tables and irreducible representation transformation matrices are implemented in TROVE for D\ :sub:`nh`\ (M) groups with arbitrary :math:`n` - values. These groups can subsequently be used in the construction of symmetry-adapted ro-vibrational basis functions for solving the Schrödinger equations of linear molecules.  HCCC is an example of a linear molecule of the D\ :math:`\infty h`  point group symmetry for which D\ :sub:`nh`\ (M) can be used in symmetrisations. 
+As a numerical application of linear-molecule symmetry properties, described by the D\ :math:`\infty h` point group, lower-order symmetry groups D\ :sub:`nh`\ (M) with finite :math:`n` can be used. Character tables and irreducible representation transformation matrices are implemented in TROVE for D\ :sub:`nh`\ (M) groups with arbitrary :math:`n` - values. These groups can subsequently be used in the construction of symmetry-adapted ro-vibrational basis functions for solving the Schrödinger equations of linear molecules.  HCCC is an example of a linear molecule of the D\ :math:`\infty h`  point group symmetry for which D\ :sub:`nh`\ (M) can be used in symmetrisations.
 
 
 
 .. sidebar::
 
     .. figure:: img/block_diag_small.png
-       :alt: Block diagram 
+       :alt: Block diagram
 
-       The block diagonal structure of a Hamiltonian matrix in the D\ :sub:`nh` irreducible representation. The empty (white) cells indicate blocks of vanishing matrix elements. 
+       The block diagonal structure of a Hamiltonian matrix in the D\ :sub:`nh` irreducible representation. The empty (white) cells indicate blocks of vanishing matrix elements.
 
 
 
-Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their characters under the generating operations :math:`R_+`,  :math:`R_+'` and :math:`R_-` (:math:`n` is even). 
+Table: Irreducible representations for the D\ :sub:`nh`\ (M)  groups and their characters under the generating operations :math:`R_+`,  :math:`R_+'` and :math:`R_-` (:math:`n` is even).
 
 +---------------------+-----------+------------------------------+--------------+----------------------+
 | D\ :sub:`nh`        | :math:`E` | :math:`R_+`                  | :math:`R_+'` | :math:`R_-`          |
@@ -412,6 +412,34 @@ Examples of character tables for :math:`n=4` are given in Table below
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
 |       :math:`B_2^3` |    1        |      -1      |      -1          |         1         |       -1    |     1        |        1         |     -1            |      -1     |     1        |         1        |     -1            |       1      |       -1     |     -1           |      1            |
 +---------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+-------------+--------------+------------------+-------------------+--------------+--------------+------------------+-------------------+
+
+
+IN TROVE outputs, three-character labels :math:`A_1^l`, :math:`B_1^l`, :math:`A_2^l` and :math:`B_2^l` for :math:`l>0`  are replaced with the two-character shortcuts :math:`e`,  :math:`f`, :math:`g` and :math:`h`, respectively:
+
++---------------------+-------------+
+|C\ :sub:`2vn`\ (AEM) | TROVE output|
++=====================+=============+
+|       :math:`A_1^0` | :math:`A_1` |
++---------------------+-------------+
+|       :math:`B_1^0` | :math:`B_1` |
++---------------------+-------------+
+|       :math:`A_2^0` | :math:`A_2` |
++---------------------+-------------+
+|       :math:`B_2^0` | :math:`B_2` |
++---------------------+-------------+
+|       :math:`A_1^l` | :math:`e^l` |
++------------------l--+-------------+
+|       :math:`B_1^l` | :math:`f^l` |
++---------------------+-------------+
+|       :math:`A_2^l` | :math:`g^l` |
++---------------------+-------------+
+|       :math:`B_2^l` | :math:`h^l` |
++---------------------+-------------+
+
+
+where :math:`l>0`. 
+
+
 
 How to use C\ :sub:`2vn`\ (AEM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
