@@ -176,14 +176,14 @@ For intensity calculations, it is also important to link these KEO to the approp
 How to use analytic KEOs
 ************************
 
-#. Define the KEO type using the ``kinetic`` block:
+1. Define the KEO type using the ``kinetic`` block:
 ::
 
     KINETIC
       kinetic_type  KINETIC_XYZ_EKE_bisect
     END
     
-#. Set the ``Coords`` type to ``local``, KEO expansion to 2,  choose the appropriate frame/and coordinates and molecule type, set the reference configuration to ``non-rigid``: 
+2. Set the ``Coords`` type to ``local``, KEO expansion to 2,  choose the appropriate frame/and coordinates and molecule type, set the reference configuration to ``non-rigid``: 
 ::
     
     KinOrder  2    
@@ -192,7 +192,7 @@ How to use analytic KEOs
     MOLTYPE XY2
     REFER-CONF NON-RIGID
     
-#. Choose appropriate basis set configuration, i.e. the KEO expansion type (e.g. ``rational``) and the non-rigid basis set type (e.g. ``laguerre-k``):
+3. Choose appropriate basis set configuration, i.e. the KEO expansion type (e.g. ``rational``) and the non-rigid basis set type (e.g. ``laguerre-k``):
 :: 
 
      BASIS
@@ -210,6 +210,13 @@ External Numerical Taylor-type KEO
 As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved. 
 
 Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in Chapter `Checkpoints <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
+
+.. sidebar::
+
+    .. figure:: img/H2CS_coords.jpg
+       :alt: H2CS coordinates
+
+       The curvilinear  coordinates used for H\ :sub:`2`\ CS [23MeOwTe]_ (type ``R-THETA-TAU``).
 
 An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
 .. math::
