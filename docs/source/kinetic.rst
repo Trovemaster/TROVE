@@ -72,6 +72,24 @@ For the XY\ :sub:`3` type (``MOLTYPE XY3``), the equilibrium structures are impl
 - The internal coordinates type needs to be set to `linear` (linearised).
 
 
+Consider a KEO in the general form:
+
+.. math::
+     :label: e-H
+
+    \begin{split}
+       \hat{T}
+         &= \frac{1}{2} \, \sum_{\a=x,y,z} \; \; \sum_{\a^\prime=x,y,z} \hat{J}_{\a}\, G_{\a,\a^\prime}(\bxi)\, \hat{J}_{\a^\prime}   \\
+         &+  \, \sum_{\a=x,y,z}\;\; \sum_{n=1}^{3N-6} \left[
+                \hat{J}_{\a}\, G_{\a,\lambda}(\bxi)\, \hat{p}_\lambda +
+               \hat{p}_\lambda  \, G_{\a,\lambda}(\bxi)\, \hat{J}_{\a} \right]  \\
+         &+  \, \sum_{\lambda=1}^{M}\; \sum_{\lambda^\prime=1}^{M}
+               \hat{p}_\lambda \, G_{\lambda,\lambda'}(\bxi)\,  \hat{p}_{\lambda'} + U(\bxi),
+    \end{split}
+
+
+
+
 Each term in the linearised KEO is represented by a Taylor expansion in terms of :math:`\xi_{i}^{\rm lin}` (or some 1D functions of them) around the (non-) rigid reference configuration, e.g.
 
 .. math::
@@ -219,6 +237,7 @@ Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion
        The curvilinear  coordinates used for H\ :sub:`2`\ CS [23MeOwTe]_ (type ``R-THETA-TAU``).
 
 An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
+
 .. math::
     :label:  e-G-H2CS
 
@@ -314,6 +333,118 @@ Other relevant input cards include:
 
 The corresponding numerical KEO of H\ :sub:`2`\ CS in the form of the checkpoint file ``kinetic.chk`` can be also found at  `MOTY spectroscopic model <https://exomol.com/models/H2CS/1H2-12C-32S/MOTY/>`__.
 
+Although efficient in interfacing TROVE with external KEO constructors, the latter scheme "External Numerical Taylor-type" has a few disadvantages:
+
+- The 1D basic expansion types must be implemented in TROVE, which reduces its flexibility.
+- When representing as sum-of-products, TROVE treats it as a Tylor-type expansion of a given order :math:`N_{\rm kin}` (defined with ``KinOrder``). The number of expansion terms grows very quickly with the varying of the expansion types. In the case of the H\ :sub:`2`\ CS , the formal expansion order of the KEO terms in Eq. :eq:`e-G-H2CS` (``KinOrder``) was 15 (i.e. :math:`n+l+m+o+p+q`). This was necessary to incorporate all the terms in the exact KEO of this molecule using the basic terms from the tables above. With this order, the number of the formal expansion terms in TROVE was 74613 (see card ``Ncoeff`` in ``kineti.chk``) fr each KEO term :math:`G_{\lambda,\lambda'}`  and TROVE needed to allocated all of them, even though the actual number of non-zero terms was much smaller, only 208. That is, it is expensive. It should be noted that once inputed into the TROVE pipeline, with the ``sparse`` representation, TROVE will only work with 208 terms, but initially it would need to assume all 74613. 
+
+Ideally, we would like to have a similar functionality of the "External Numerical Taylor-type", but with more flexibility in constructing KEO and also in the way it is inputed.  In response to these requirements, the ``BASIC-FUNCTION`` feature has been introduced. 
 
 
 
+
+
+BASIC-FUNCTION: External sum-of-products KEO of general type
+------------------------------------------------------------
+
+This feature allows user to build their KEO from the existing "basic-functions" using the ``BASIC-FUNCTION`` builder. 
+
+``BASIC-FUNCTION`` is a TROVE block defining the shape of the KEO expansions in Eq. :eq:`e-G-H2CS` as follows. Using the same example of H\ :sub:`2`\ CS, we now introduce the basic coordinates using the following constructor: 
+::
+     
+     BASIC-FUNCTION
+     Mode 1 2
+     1 1 -1 I 1 1
+     2 1 -2 I 1 1
+     Mode 2 2
+     1 1 -1 I 1 1
+     2 1 -2 I 1 1
+     Mode 3 2
+     1 1 -1 I 1 1
+     2 1 -2 I 1 1
+     Mode 4 7
+     1 1 1 Cos 1 1
+     2 1 1 Cot 1 1
+     3 1 1 Csc 1 1
+     4 1 1 Sin 1 1
+     5 1 2 Cot 1 1
+     6 2 1 Cot 1 1 1 Csc 1 1
+     7 1 2 Csc 1 1
+     Mode 5 7
+     1 1 1 Cos 1 1
+     2 1 1 Cot 1 1
+     3 1 1 Csc 1 1
+     4 1 1 Sin 1 1
+     5 1 2 Cot 1 1
+     6 2 1 Cot 1 1 1 Csc 1 1
+     7 1 2 Csc 1 1
+     Mode 6 5
+     1 1 1 Cos 0.5 1
+     2 1 1 Sin 0.5 1
+     3 1 2 Cos 0.5 1
+     4 2 1 Cos 0.5 1 1 Sin 0.5 1
+     5 1 2 Sin 0.5 1
+     END
+    
+    
+We assume that each   1D contributing term :math:`u_{l}{\xi_i} ` for a given mode :math:`\xi` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
+
+.. math::
+
+      u_{l}{\xi_i} = f_1( a_i \xi_i^k_1 )^{n_i} f_2( b_i \xi_i^l_1 )^{m_i} \ldots
+
+For example, for mode 1 (:math:``r_1), two expansion types are selected: :math:`f_1{(1)}(r_1) = \frac{1}{r_1}` and :math:`f_1{(1)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
+
++-------+-----------------------+-------------+--------------------+-------------+   
+|       |                       |        mode |:math:`N_{\rm func}`|             |
++-------+-----------------------+-------------+--------------------+-------------+
+|       |  ``Mode``             |           1 |     2              |             |
++-------+-----------------------+-------------+--------------------+-------------+
+|   #   |  :math:`N_{\rm contr} | :math:`n_i` | type  |:math:`a_i` | :math:`k_i` |   
++-------+-----------------------+-------------+-------+------------+-------------+
+|   1   |          1            |  -1         |  I    |  1         |     1       | 
++-------+-----------------------+-------------+-------+------------+-------------+
+|   2   |          1            |  -2         |  I    |  1         |     1       |
++-------+-----------------------+-------------+-------+------------+-------------+
+
+Here ``I`` indicates the inverse function of :math:`r_1`. 
+
+For mode 4 (:math:`\alpha_1`) however 7 basic functions are needed: 
+
+.. math:: 
+    
+    \begin{split}
+       f^{(1)} & = \cos\alpha_1 \\
+       f^{(2)} & = \cot\alpha_1 \\
+       f^{(3)} & = \csc\alpha_1 \\
+       f^{(4)} & = \sin\alpha_1 \\
+       f^{(5)} & = \cot^2\alpha_1 \\
+       f^{(6)} & = \cot\alpha_1\csc\alpha_1 \\
+       f^{(7)} & = \csc^2\alpha_1 
+    \end{split}
+
+which is summarised in the following table: 
+
++-------+-----------------------+-------------+--------------------+-------------+-------------+------+-----------+-------------+
+|   #   |  :math:`N_{\rm contr} | :math:`n_i` | type  |:math:`a_i` | :math:`k_i` | :math:`m_i` | type |:math:`b_i`| :math:`l_i` |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|       |  ``Mode``             |           4 |     7              |                                                            |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   1   |          1            |   1         |  Cos  |  1         |     1       |             |      |           |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   2   |          1            |   1         |  Cot  |  1         |     1       |             |      |           |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   3   |          1            |   1         |  Csc  |  1         |     1       |             |      |           |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   4   |          1            |   1         |  Sin  |  1         |     1       |             |      |           |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   5   |          1            |   2         |  Cot  |  1         |     1       |             |                  |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   6   |          1            |   2         |  Cot  |  1         |     1       |        1    | Csc  |    1      |     1       |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+|   7   |          1            |   2         |  Csc  |  1         |     1       |             |                  |             |
++-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
+
+
+
+And for the last mode 6 (:math:`\tau`) .....
