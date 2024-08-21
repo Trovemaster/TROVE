@@ -96,10 +96,15 @@ Here are the implemented KEOs (quasi-linear triatomic molecules):
 | ``MolType``    | ``kinetic_type``                    |  basis set          |                          |
 +----------------+-------------------------------------+---------------------+--------------------------+
 |    XY2         |   ``KINETIC_XY2_EKE_BISECT``        |``laguerre-k``       |  ``R-RHO-Z``             |
++----------------+-------------------------------------+---------------------+--------------------------+
 |    XY2         |   ``KINETIC_XY2_EKE_BISECT_SINRHO`` |``sinrho-laguerre-k``|  ``R-RHO-Z``             |
++----------------+-------------------------------------+---------------------+--------------------------+
 |    XYZ         |   ``KINETIC_XYZ_EKE_bisect``        |``laguerre-k``       |  ``R-RHO-Z-M2-M3-BISECT``|
++----------------+-------------------------------------+---------------------+--------------------------+
 |    XYZ         |   ``KINETIC_XYZ_EKE_BOND``          |``laguerre-k``       |  ``R1-Z-R2-RHO``         |
++----------------+-------------------------------------+---------------------+--------------------------+
 |    XYZ         |   ``KINETIC_XYZ_EKE_BOND_SINRHO``   |``sinrho-laguerre-k``|  ``R-RHO-Z-M2-M3-BISECT``|
++----------------+-------------------------------------+---------------------+--------------------------+
 |    XYZ         |   ``KINETIC_XYZ_EKE_BOND-R2``       |``laguerre-k``       |  ``R2-Z-R1-RHO``         |
 +----------------+-------------------------------------+---------------------+--------------------------+
 
@@ -190,5 +195,11 @@ How to use analytic KEOs
        3,'laguerre-k','linear','linear', range 0,48, r 8, resc 1.0, points  12000, borders  0.,120.0 deg
      END
 
+
+
+External Numerical Taylor-type KEO
+----------------------------------
+
+As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  
 
 
