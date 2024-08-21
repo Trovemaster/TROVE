@@ -912,7 +912,6 @@ Reference: [15AlOvYu]_, [16AlPoOv]_.
 
 
 
-
 Formaldehyde, H\ :sub:`2`\ CO
 =============================
 
@@ -921,6 +920,8 @@ Symmetry: :math:`C_{2v}`
 Coordinates: :math:`\xi_i = (x_i^l - x_i^e)` where :math:`i = 1, 6` are :math:`r_1^l`, :math:`r_2^l`, :math:`r_3^l`, :math:`\theta_1^l`, :math:`\theta_2^l` and :math:`\tau`.
 
 Coordinate to expand kinetic energy: :math:`g_n = \xi_n`, linearised.
+
+Coordinates type (``transform``):  ``R-THETA-TAU``
 
 Coordinates to expand Potential energy: :math:`f_n = 1 - \exp(-a_i(\xi_i^l))` :math:`(i = 1, 3)` for stretches, :math:`f_n = xi_i` :math:`(i = 4, 6)`
 for bends.
@@ -942,6 +943,11 @@ Results: Linelist for temperatures up to 1500 K for transitions up to 10,000 cm\
 
 
 Reference: [15AlOvPo]_.
+
+H\ :sub:`2`\ CS
+===============
+
+TBP 
 
 
 Silane, SiH\ :sub:`4`

@@ -107,17 +107,17 @@ List of checkpoints
 
 
 Examples of the split option include
-:
+::
 
      extmatelem  save split 1  1
 
 
-:
+::
 
      extmatelem  save split
 
 
-- eigen_descr*chk, eigen_vector*chk and eigen_quant*chk (``eigenfunc``) contain the  eigencoefficients and their descriptions.
+- ``eigen_descr*chk``, ``eigen_vector*chk`` and ``eigen_quant*chk`` (``eigenfunc``) contain the  eigen-coefficients and their descriptions.
 
   - eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk contain the eigenvalues (energy term values in cm\ :sup:`-1`\ ):
 
@@ -125,15 +125,15 @@ Examples of the split option include
 
 - eigen_vectors\ :math:`J`\ _\ :math:`\Gamma`\ .chk contain the eigencoefficients written in direct unformatted form.
 
-  For each eigen_descr*chk there is an eigen_vector*chk file.
+  For each ``eigen_descr*chk`` there is an eigen_vector*chk file.
 
 
-- eigen_quant\ :math:`J`\ .chk contain the bookkeeping information for the basis sets used:
+- ``eigen_quant``\ :math:`J`\ ``.chk`` contain the bookkeeping information for the basis sets used:
 
   the mapping between the multidimensional, multimode description of the product-form basis functions to a 1D basis set index.
 
 
-- j0_matelem.chk (``matelem``) is the :math:`J=0` representation of contr_matelem.chk generated at step 2.
+- ``j0_matelem.chk`` (``matelem``) is the :math:`J=0` representation of contr_matelem.chk generated at step 2.
 
   In order to switch to step 2 and thus distinguish from step 1, the following changes to the step 1 input file should be made:
 
@@ -302,7 +302,7 @@ contr_descr.chk contains the energies and quantum numbers of the contracted basi
             19   1       4   1   7223.358797674692   0   0   0   3     0   0   0   3        -0.99426327
             20   1       5   1   8404.773619941834   0   0   0   4     0   0   0   4         0.99669840
 
-etc. Here the TROVE ``sub-class`` stands for a symmetry independent sub-set. 
+etc. Here the TROVE ``sub-class`` stands for a symmetry independent sub-set.
 
 
 The structure of the columns is as follows:
@@ -388,7 +388,7 @@ The meaning of the state columns is as follows:
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ------ ---------------- ----- ------
       1       2       3       4         5                 6   7   8  9       10   11  12 13      14   15 16   17           18         19     20
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- - ---------------- ----- ------
-      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i       ivib1  ivib2 
+      n      Sym     m       deg   Energy (cm-1)          k  v1  v2  v3      imax s0  s1 s2       K   n1  n2  n3           C_i       ivib1  ivib2
       ---- ------- ------- ------ -------------------- ----- --- --- ----- ----- --- --- ----- ----- --- --- ---- ------------------ ----- ------
       1       1       1       1   3627.658022299023       0   0   0   0       1   1   1   1       0   0   0   0         0.99958266      1      1
       2       1       2       1   4800.325667905056       0   0   0   1       2   1   1   1       0   0   0   1        -0.99819947      1      2
@@ -419,6 +419,14 @@ Here
 ------------------------
 
 
-The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the :math:`J=0` representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The :math:`J=0` representation contains a single one-sub class with full vibrational (:math:`J=0`\ ) basis functions. 
+The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the :math:`J=0` representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The :math:`J=0` representation contains a single one-sub class with full vibrational (:math:`J=0`\ ) basis functions.
 
+
+potential.chk
+=============
+
+
+
+kinetic.chk
+============
 

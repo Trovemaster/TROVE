@@ -73,7 +73,9 @@ For the XY\ :sub:`3` type (``MOLTYPE XY3``), the equilibrium structures are impl
 
 
 Each term in the linearised KEO is represented by a Taylor expansion in terms of :math:`\xi_{i}^{\rm lin}` (or some 1D functions of them) around the (non-) rigid reference configuration, e.g.
+
 .. math::
+      :label: e-Taylor
 
       G_{n,n'} = \sum_{i,j,k,l,\ldots } G_{i,j,k,l,\ldots}^{(n,n')} \xi_1^i \xi_2^j \xi_3^k \xi_4^l \ldots
 
@@ -205,6 +207,106 @@ How to use analytic KEOs
 External Numerical Taylor-type KEO
 ----------------------------------
 
-As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  
+As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved. 
+
+Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in Chapter `Checkpoints <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
+
+An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
+.. math::
+    :label:  e-G-H2CS
+
+    G_{\lambda,\lambda'}(r_1,r_2,r_3,\alpha_1,\alpha_2,\tau) = \sum_{l,m} u_{l,m,n,o,p,q}\lambda,\lambda'   u_{l}(r_1) u_{m}(r_2) u_{n}(r_3) u_{o}(\alpha_1) u_{p}(\alpha_2) u_{o}(\tau).
+    
+
+This coordinates type (``TRANSFORM``) and associated frame is ``R-THETA-TAU`` (see `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__). 
+
+The Mathemtica script ``Supp_Info_kinetic_energy_generator_h2cs_paper.nb`` (see supplementary to [23MeOwTe]_) was used to produce the ``kinetic.chk`` in a numerical format using these coordinates in a rigid configuration. This can be best explained by a example, see the TROVE input at `MOTY spectroscopic model <https://exomol.com/models/H2CS/1H2-12C-32S/MOTY/>`__.
+
+Let us start with the ``basis`` set block: 
+::
+    
+   BASIS
+     0,'JKtau', Jrot 0
+     1,'numerov','BOND-LENGTH', 'morse',  range 0,17, resc 1.0, points 1000, borders -0.35,1.00
+     2,'numerov','BOND-LENGTH', 'morse',  range 0, 7, resc 2.0, points 1000, borders -0.5,0.9
+     2,'numerov','BOND-LENGTH', 'morse',  range 0, 7, resc 2.0, points 1000, borders -0.5,0.9
+     3,'numerov','ANGLE',       'linear', range 0,14, resc 1.0, points 1000, borders -1.2,1.2
+     3,'numerov','ANGLE',       'linear', range 0,14, resc 1.0, points 1000, borders -1.2,1.2
+     4,'numerov','DIHEDRAL',    'linear', range 0,14, resc 1.0, points 2000, borders -120.,  120.0 deg
+   END
+   
+Here, the expansion types ``BOND-LENGTH``, ``ANGLE`` and ``DIHEDRAL`` are implemented in TROVE and fully define the 1D expansion terms :math:`u_{l}(\xi_l)` in Eq. :eq:`e-G-H2CS`. In TROVE, the expansion index :math:`l` is used as an analogy for the exponent in the Taylor type expansion, Eq :eq:`e-Taylor`. The correlation between these  indices and their actual forms are as follows. 
+
+
+
+``BOND-LENGTH``
+^^^^^^^^^^^^^^^
+
++-------+-----------------+
+| Index | Term            |
++-------+-----------------+
+| 0     |   1             |
++-------+-----------------+
+| 1     |   :math:`1/r`   |
++-------+-----------------+
+| 2     |   :math:`1/r^2` |
++-------+-----------------+
+
+
+``ANGLE``
+^^^^^^^^^
+
++-------+-------------------------------------+
+| Index | Term                                |
++-------+-------------------------------------+
+| 0     |   1                                 |
++-------+-------------------------------------+
+| 1     |   :math:`\cos\alpha`                |
++-------+-------------------------------------+
+| 2     |   :math:`1/\tan\alpha`              |
++-------+-------------------------------------+
+| 3     |   :math:`1/\sin\alpha`              |
++-------+-------------------------------------+
+| 4     |   :math:`\sin\alpha`                |
++-------+-------------------------------------+
+| 5     |   :math:`1/\tan^2\alpha`            |
++-------+-------------------------------------+
+| 6     |   :math:`1/(\sin\alpha \tan\alpha)` |
++-------+-------------------------------------+
+| 5     |   :math:`1/\sin^2\alpha`            |
++-------+-------------------------------------+
+
+
+``DIHEDRAL``
+^^^^^^^^^^^^
+
++-------+------------------------------------+
+| Index | Term                               |
++-------+------------------------------------+
+| 0     |   1                                |
++-------+------------------------------------+
+| 1     |   :math:`\cos(\tau/2)`             |
++-------+------------------------------------+
+| 2     |   :math:`\sin(\tau/2)`             |
++-------+------------------------------------+
+| 3     |   :math:`\cos^2(\tau/2)`           |
++-------+------------------------------------+
+| 4     |   :math:`\cos(\tau/2)\sin(\tau/2)` |
++-------+------------------------------------+
+| 5     |   :math:`\sin^2(\tau/2)`           |
++-------+------------------------------------+
+
+Other relevant input cards include:
+::
+     
+     COORDS     local
+     TRANSFORM  R-THETA-TAU
+     MOLTYPE    zxy2
+     REFER-CONF RIGID 
+
+
+The corresponding numerical KEO of H\ :sub:`2`\ CS in the form of the checkpoint file ``kinetic.chk`` can be also found at  `MOTY spectroscopic model <https://exomol.com/models/H2CS/1H2-12C-32S/MOTY/>`__.
+
+
 
 
