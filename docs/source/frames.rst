@@ -49,7 +49,7 @@ For quasi-linear triatomic molecules, it is also possible to use exact curviline
 
 
 
-- ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). The exact orientation of the frame relative to the instantaneous position of the nuclei is critical for representing the dipole moment vectors. 
+- ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). The exact orientation of the frame relative to the instantaneous position of the nuclei is critical for representing the dipole moment vectors.
 For the rigid reference frame (``REFER-CONF RIGID``), the actual internal coordinates are the displacements of :math:`r_1`, :math:`r_2` and :math:`\rho` from the corresponding equilibrium:
 
 .. math::
@@ -165,7 +165,7 @@ For molecules XYZ with  comparable masses X and Z (e.g. in similar isotopologues
 ``R1-Z-R2-RHO``
 ^^^^^^^^^^^^^^^
 
-This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis and :math:`r_2` in the negative direction of :math:`x`. 
+This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z`` and :math:`r_1` along the :math:`z` axis and :math:`r_2` in the negative direction of :math:`x`.
 
 .. figure:: img/XYZ_frame_R1-Z-R2-RHO.jpg
        :alt: XYZ equilibrium structure
@@ -276,6 +276,36 @@ Here is an input example for this case for the C\ :sub:`3` molecule:
 
 
 
+
+KINETIC_XYZ_EKE_BOND_SINRHO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is a bond frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R1-Z-R2-RHO``, for example for :sup:`12`\ C\ :sup:`12`\ C\ :sup:`13`\ C, the corresponding TROVE input is as follows:
+::
+
+    COORDS local (curvilinear)
+    TRANSFORM   R-RHO-Z-M2-M3-BISECT (FRAME)
+    MOLTYPE XY2
+    REFER-CONF NON-RIGID
+
+    ZMAT
+        C   0  0  0  0  12.000000
+        C   1  0  0  0  13.003355
+        C   1  2  0  0  12.000000
+    end
+
+    KINETIC
+      kinetic_type  KINETIC_XYZ_EKE_bisect
+    END
+
+The associated symmetry is either Cs(M) or C\ :sub:`ns`\ (M):
+::
+
+   symmetry Cs(M)
+
+
+
+
 ``KINETIC_XY2_EKE_BISECT_SINRHO``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -310,12 +340,7 @@ For asymmetric triatomic molecules of type XYZ, there are several ways to orient
 
 In principle, the KEO should fully define the configuration of the problem to solve and the associated frame type should not matter for the solution of the Schroedniger equation. The point where the choice of the frame becomes critical is when the dipoles are involved, which need to be re-defined into the correct frame. The actual transformation of the dipole is performed in the subroutine ``MLloc2pqr_xyz``.
 
-
-
-KINETIC_XYZ_EKE_BOND_SINRHO
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This is a bisector frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R-RHO-Z-M2-M3-BISECT``, for example for :sup:`12`\ C\ :sup:`12`\ C\ :sup:`13`\ C, the corresponding TROVE input is as follows:
+For example for :sup:`12`\ C\ :sup:`12`\ C\ :sup:`13`\ C, the corresponding TROVE input is as follows:
 ::
 
     COORDS local (curvilinear)
@@ -337,6 +362,8 @@ The associated symmetry is either Cs(M) or C\ :sub:`ns`\ (M):
 ::
 
    symmetry Cs(M)
+
+
 
 
 
@@ -371,6 +398,36 @@ KINETIC_XYZ_EKE_BOND-R2
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 This is the case of the bond-frame with :math:`z` along the bong :math:`r_2` (Z nucleus). The associated frames and basis sets are ``R2-Z-R1-RHO`` and ``laguerre-k``, respectively. See the figure illustrating the ``R2-Z-R1-RHO`` frame above.
+
+
+
+
+
+KINETIC_XYZ_EKE_BOND_SINRHO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is a bond frame KEO constructed to work with the basis set type ``sinrho-laguerre-k``. The associated frame is ``R1-Z-R2-RHO``, for example for HCN, the corresponding TROVE input is as follows:
+::
+
+    COORDS local (curvilinear)
+    TRANSFORM   R1-Z-R2-RHO (FRAME)
+    MOLTYPE XY2
+    REFER-CONF NON-RIGID
+    
+    ZMAT
+        C   0  0  0  0   12.00000000
+        N   1  0  0  0   14.00307401
+        H   1  2  0  0   1.00782503224
+    end
+    
+    KINETIC
+      kinetic_type  KINETIC_XYZ_EKE_BOND_SINRHO
+    END
+
+The associated symmetry is either Cs(M) or C\ :sub:`ns`\ (M):
+::
+
+   symmetry Cs(M)
 
 
 
