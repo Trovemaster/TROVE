@@ -243,7 +243,7 @@ A short description of the keywords, cards and sections used is as follows.
 CO\ :sub:`2`
 ============
 
-This is a linear triatomic molecule for which a number of exact KEOs implemented in TROVE. 
+This is a linear triatomic molecule for which a number of exact KEOs implemented in TROVE.
 
 
 Molecular type (``MOLTYPE``): ``XY2``.
@@ -268,13 +268,13 @@ Frame: :math:`z` axis is along the molecule at the linear configuration, with th
 
 It is based on seven internal coordinates defined using the following Z-matrix (using nuclear masses):
 ::
-    
+
     ZMAT
         C   0  0  0  0   11.996709
         O   1  0  0  0   15.9905256
         O   1  2  0  0   15.9905256
     end
-    
+
 
 Kinetic energy operator
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -287,19 +287,19 @@ Kinetic energy expansion order: 2
 
 Primitive basis set: ``Numerov``-generated for coordinates :math:`r_1` and :math:`r_2` and the ``Laguerre-k`` for :math:`\rho`:
 ::
-    
+
     BASIS
       0,'JKtau', J 0, krot   40
       1,'numerov','rational', 'morse',  range 0,36,  resc 1.0, points  1000, borders -0.40,1.0
       1,'numerov','rational', 'morse',  range 0,36,  resc 1.0, points  1000, borders -0.40,1.0
       2,'laguerre-k','linear','linear', range 0,64,  resc 1.0, points  3000, borders  0.,160.0 deg
     END
-    
+
 
 Here the card ``krot 40`` indicates the highest vibrational angular momentum and the rotational quantum number :math:`k` (See Chapter about Basis sets). `rational` stands for the expansion in terms of :math:`1/r_1` or :math:`1/r_2`. Modes 1 and 2 are combined into sub-group 1.
 
 
-Basis set: Polyad scheme with  :math:`P = (v_1 + v_2 + v_3)  \leq 64`,  :math:` v_1 \leq 36`, :math:` v_2 \leq 36`, :math:` v_3 \leq 64`. 
+Basis set: Polyad scheme with  :math:`P = (v_1 + v_2 + v_3)  \leq 64`,  :math:` v_1 \leq 36`, :math:` v_2 \leq 36`, :math:` v_3 \leq 64`.
 
 
 Spectroscopic Model UCL-4000
@@ -309,10 +309,10 @@ This model was used to produce the UCL-4000 line list for CO\ :math:`2` [23MeOwT
 
 PEF type (``POT_TYPE``): poten_co2_ames1. This is the PEF Ames1 by Huang et al. [17HuScFr]_.
 
-Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. Expansion order (``PotOrder``) is 12. 
+Potential expansion order: 8 using the PEF ``poten_xy3_morbid_10``. Expansion order (``PotOrder``) is 12.
 
-Coordinates to expand Potential energy: ``Morse`` (see ``basis`` ) for stretching coordinates while the angle is treated explicitly. 
-    
+Coordinates to expand Potential energy: ``Morse`` (see ``basis`` ) for stretching coordinates while the angle is treated explicitly.
+
 Potential energy function: Refinement of published potential [09YuBaYa]_.
 
 Dipole moment surface expansion: ``TYPE`` ``DIPOLE_AMES1``, AMES1 DMS by Huang et al. [17HuScFr]_.
@@ -321,10 +321,10 @@ Dipole moment surface expansion: ``TYPE`` ``DIPOLE_AMES1``, AMES1 DMS by Huang e
 For the spectroscopic model UCL-4000, a sample input file can be found at exomol.com, see `UCL-4000 spectroscopic model <https://exomol.com/models/CO2/12C-16O2/UCL-4000/>`__.
 
 
-Non-symmetric isotopologue  :sup:`18`\ CO\ :sup:`16` 
+Non-symmetric isotopologue  :sup:`18`\ CO\ :sup:`16`
 ====================================================
 
-The basic model is the same as for CO\ :sub:`2` with some differences. 
+The basic model is the same as for CO\ :sub:`2` with some differences.
 
 Molecular type (``MOLTYPE``): ``XY2`` (same as before).
 
@@ -338,13 +338,13 @@ Frame and associated coordinates type (``TRANSFORM``):  ``R-RHO-Z-M2-M3``. It us
 
 The following Z-matrix (using nuclear masses) is used:
 ::
-    
+
     ZMAT
         C   0  0  0  0   11.996709
         O   1  0  0  0   17.99477097
         O   1  2  0  0   15.99052598
     end
-    
+
 
 
 Kinetic energy operator
@@ -358,16 +358,16 @@ Kinetic energy expansion order: 2
 
 Primitive basis set has the same structure as for the XY\ :math:`2`:
 :
-   
+
    BASIS
      0,'JKtau', Jrot 0, krot   16
      1,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      2,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      3,'laguerre-k','linear','linear', range 0,56, resc 1.0, points  12000, borders  0.,150.0 deg
    END
-   
-       
-with the main difference that all three modes are treated independently. 
+
+
+with the main difference that all three modes are treated independently.
 
 
 Spectroscopic Model UCL-4000
@@ -403,22 +403,22 @@ Coordinates type (``TRANSFORM``):  ``R2-Z-R1-RHO``:  :math:`r_1`, :math:`r_2`, a
 Frame: :math:`z` axis is along atom 2 (vector :math:`r_1`),  with the :math:`x`-axis oriented in-plane  at any  bend configuration of nuclei and positive for atom 2 (:math:`\vec{r}_1`).  The definition of the frame in this case is directly linked to the coordinate type ``R2-Z-R1-RHO`` is therefore omitted from the input.
 
 
-Z-matrix: 
+Z-matrix:
 ::
-   
+
    ZMAT
        O   0  0  0  0   15.99491463
        K   1  0  0  0   38.9637074
        H   1  2  0  0   1.007825035
    end
-   
+
 
 Kinetic energy operator
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 KEO: exact, formally expanded in terms of :math:`1/r_1`, :math:`1/r_2` to the 2nd order about the non-rigid reference frame.
 
-KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT_sinrho``. It is linked to the basis set type ``sinrho-laguerre-k`` used for the bending mode. 
+KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT_sinrho``. It is linked to the basis set type ``sinrho-laguerre-k`` used for the bending mode.
 
 ::
 
@@ -428,7 +428,7 @@ KEO type (``kinetic_type``): ``KINETIC_XY2_EKE_BISECT_sinrho``. It is linked to 
       2,'numerov','rational', 'morse',  range 0,20,  resc 2.0, points  1000, borders -0.35,0.8
       3,'sinrho-laguerre-k','linear','linear', range 0, 40, resc 1.0, points  3000, borders  0.,180.0 deg
     END
-    
+
 
 Basis set: Polyad scheme with  :math:`P = 2(v_1 + v_2) + v_3  \leq 40`.
 
@@ -438,14 +438,14 @@ Spectroscopic Model OYT4
 
 This model was used to produce the OYT4 line lists for KOH and NaOH [21OwTeYu]_.
 
-PEF type (``POT_TYPE``): poten_xyz_tyuterev. 
+PEF type (``POT_TYPE``): poten_xyz_tyuterev.
 
 Potential expansion order: *ab initio*; expansion order = 8.
 
-Dipole moment surface expansion: ``TYPE`` ` DIPOLE_PQR_XYZ`` with parameters from *ab initio* calculations. 
+Dipole moment surface expansion: ``TYPE`` ` DIPOLE_PQR_XYZ`` with parameters from *ab initio* calculations.
 
 
-A sample input file can be found at :download:`KOH_OYT4_model_TROVE.inp <./input/KOH_OYT4_model_TROVE.inp>`, which uses a different coordinate type from the model used for OYT4, 
+A sample input file can be found at :download:`KOH_OYT4_model_TROVE.inp <./input/KOH_OYT4_model_TROVE.inp>`, which uses a different coordinate type from the model used for OYT4,
 
 
 
