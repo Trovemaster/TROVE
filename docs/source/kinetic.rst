@@ -92,8 +92,12 @@ A number of analytic curvilinear KEOs are available (see Chapter `Frames <https:
 
 Here are the implemented KEOs (quasi-linear triatomic molecules):
 
+.. table:: t-KEOs
+ 
+     Kinetic energy types implemented with associated basis set and frame types. 
+
 +----------------+-------------------------------------+---------------------+--------------------------+
-| ``MolType``    | ``kinetic_type``                    |  basis set          |                          |
+| ``MolType``    | ``kinetic_type``                    |  basis set          |    frames                |
 +----------------+-------------------------------------+---------------------+--------------------------+
 |    XY2         |   ``KINETIC_XY2_EKE_BISECT``        |``laguerre-k``       |  ``R-RHO-Z``             |
 +----------------+-------------------------------------+---------------------+--------------------------+
@@ -118,9 +122,10 @@ All these analytic KEO are given in a sum-of-products of 1D terms, i.e. similar 
 
 for the KEO coordinates chosen as :math:`r_1`, :math:`r_2` and :math:`\rho`. Once all the matrix elements of :math:`f_{l}(r_1)`, :math:`f_{m}(r_2)` and :math:`f_{n}(\alpha)` are computed, the same TROVE pipeline can be used for any types of  coordinates, regardless of if they are linearised or curvilinear.
 
-In the case of analytic ``XYZ`` and ``XY2`` KEOs from the table above, the corresponding KEO terms :math:`G_{\lambda,\lambda'}` or pseudo-potential function :math:`U` depend on :math:`r_1` and :math:`r_2` as inverse expressions,  :math:`1/r_1`, :math:`1/r_1^2`, :math:`1/r_2`, :math:`1/r_2^2` and :math:`1/(r_1 r_2)`. We therefore represent them as sum-of-products expansions in terms of these 1D functions around the non-rigid configuration along the angle :math:`\rho`: 
+In the case of analytic ``XYZ`` and ``XY2`` KEOs from :numref:`Table %s <t-KEOs>` above, the corresponding KEO terms :math:`G_{\lambda,\lambda'}` or pseudo-potential function :math:`U` depend on :math:`r_1` and :math:`r_2` as inverse expressions,  :math:`1/r_1`, :math:`1/r_1^2`, :math:`1/r_2`, :math:`1/r_2^2` and :math:`1/(r_1 r_2)`. We therefore represent them as sum-of-products expansions in terms of these 1D functions around the non-rigid configuration along the angle :math:`\rho`:
+
 .. math::
-    :labe: e-G
+    :label: e-G
     
     G_{\lambda,\lambda'} = \sum_{l,m} u_{l,m}\lambda,\lambda'   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\rho)
     
@@ -169,14 +174,14 @@ For intensity calculations, it is also important to link these KEO to the approp
 How to use analytic KEOs
 ************************
 
-# Define the KEO type using the ``kinetic`` block:
+#. Define the KEO type using the ``kinetic`` block:
 ::
 
     KINETIC
       kinetic_type  KINETIC_XYZ_EKE_bisect
     END
     
-# Set the ``Coords`` type to ``local``, KEO expansion to 2,  choose the appropriate frame/and coordinates and molecule type, set the reference configuration to ``non-rigid``: 
+#. Set the ``Coords`` type to ``local``, KEO expansion to 2,  choose the appropriate frame/and coordinates and molecule type, set the reference configuration to ``non-rigid``: 
 ::
     
     KinOrder  2    
@@ -185,7 +190,7 @@ How to use analytic KEOs
     MOLTYPE XY2
     REFER-CONF NON-RIGID
     
-# Choose appropriate basis set configuration, i.e. the KEO expansion type (e.g. ``rational``) and the non-rigid basis set type (e.g. ``laguerre-k``):
+#. Choose appropriate basis set configuration, i.e. the KEO expansion type (e.g. ``rational``) and the non-rigid basis set type (e.g. ``laguerre-k``):
 :: 
 
      BASIS
