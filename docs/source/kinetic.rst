@@ -387,20 +387,21 @@ This feature allows user to build their KEO from the existing "basic-functions" 
      END
     
     
-We assume that each   1D contributing term :math:`u_{l}{\xi_i} ` for a given mode :math:`\xi` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
+We assume that each   1D contributing term :math:`u_{l}{\xi_i}` for a given mode :math:`\xi` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
 
 .. math::
-
+      
       u_{l}{\xi_i} = f_1( a_i \xi_i^k_1 )^{n_i} f_2( b_i \xi_i^l_1 )^{m_i} \ldots
+       
 
-For example, for mode 1 (:math:``r_1), two expansion types are selected: :math:`f_1{(1)}(r_1) = \frac{1}{r_1}` and :math:`f_1{(1)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
+For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f_1{(1)}(r_1) = \frac{1}{r_1}` and :math:`f_1{(1)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
 
 +-------+-----------------------+-------------+--------------------+-------------+   
 |       |                       |        mode |:math:`N_{\rm func}`|             |
 +-------+-----------------------+-------------+--------------------+-------------+
-|       |  ``Mode``             |           1 |     2              |             |
+|       |  ``Mode``             |           1 |     2 |            |             |
 +-------+-----------------------+-------------+--------------------+-------------+
-|   #   |  :math:`N_{\rm contr} | :math:`n_i` | type  |:math:`a_i` | :math:`k_i` |   
+|   #   |  :math:`N_{\rm contr}`| :math:`n_i` | type  |:math:`a_i` | :math:`k_i` |   
 +-------+-----------------------+-------------+-------+------------+-------------+
 |   1   |          1            |  -1         |  I    |  1         |     1       | 
 +-------+-----------------------+-------------+-------+------------+-------------+
@@ -426,9 +427,9 @@ For mode 4 (:math:`\alpha_1`) however 7 basic functions are needed:
 which is summarised in the following table: 
 
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------+-----------+-------------+
-|   #   |  :math:`N_{\rm contr} | :math:`n_i` | type  |:math:`a_i` | :math:`k_i` | :math:`m_i` | type |:math:`b_i`| :math:`l_i` |
+|   #   |  :math:`N_{\rm contr}`| :math:`n_i` | type  |:math:`a_i` | :math:`k_i` | :math:`m_i` | type |:math:`b_i`| :math:`l_i` |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
-|       |  ``Mode``             |           4 |     7              |                                                            |
+|       |  ``Mode``             |           4 |     7              |             |             |      |           |             |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
 |   1   |          1            |   1         |  Cos  |  1         |     1       |             |      |           |             |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
@@ -438,7 +439,7 @@ which is summarised in the following table:
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
 |   4   |          1            |   1         |  Sin  |  1         |     1       |             |      |           |             |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
-|   5   |          1            |   2         |  Cot  |  1         |     1       |             |                  |             |
+|   5   |          1            |   2         |  Cot  |  1         |     1       |             |      |           |             |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
 |   6   |          1            |   2         |  Cot  |  1         |     1       |        1    | Csc  |    1      |     1       |
 +-------+-----------------------+-------------+--------------------+-------------+-------------+------|-----------+-------------+
