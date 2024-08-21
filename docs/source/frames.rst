@@ -169,8 +169,8 @@ This is a 'bond'-embedding with the same vibrational coordinates as in ``R-RHO-Z
 
 .. figure:: img/XYZ_frame_R1-Z-R2-RHO.jpg
        :alt: XYZ equilibrium structure
-       :width: 250 px
-       :align: center
+       :width: 200 px
+       :align: left
 
        Frame ``R1-Z-R2-RHO``: An XYZ type molecule and the :math:`z`  embedding along :math:`r_2` and :math:`r_3` with negative :math:`x`.
 
