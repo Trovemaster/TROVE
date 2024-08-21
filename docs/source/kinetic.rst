@@ -76,17 +76,17 @@ Consider a KEO in the general form:
 
 .. math::
      :label: e-H
-
+     
     \begin{split}
        \hat{T}
-         &= \frac{1}{2} \, \sum_{\a=x,y,z} \; \; \sum_{\a^\prime=x,y,z} \hat{J}_{\a}\, G_{\a,\a^\prime}(\bxi)\, \hat{J}_{\a^\prime}   \\
+         &= \frac{1}{2} \, \sum_{\a=x,y,z} \; \; \sum_{\a^\prime=x,y,z} \hat{J}_{\a}\, G_{\a,\a^\prime}(\xi)\, \hat{J}_{\a^\prime}   \\
          &+  \, \sum_{\a=x,y,z}\;\; \sum_{n=1}^{3N-6} \left[
-                \hat{J}_{\a}\, G_{\a,\lambda}(\bxi)\, \hat{p}_\lambda +
-               \hat{p}_\lambda  \, G_{\a,\lambda}(\bxi)\, \hat{J}_{\a} \right]  \\
+                \hat{J}_{\a}\, G_{\a,\lambda}(\xi)\, \hat{p}_\lambda +
+               \hat{p}_\lambda  \, G_{\a,\lambda}(\xi)\, \hat{J}_{\a} \right]  \\
          &+  \, \sum_{\lambda=1}^{M}\; \sum_{\lambda^\prime=1}^{M}
-               \hat{p}_\lambda \, G_{\lambda,\lambda'}(\bxi)\,  \hat{p}_{\lambda'} + U(\bxi),
+               \hat{p}_\lambda \, G_{\lambda,\lambda'}(\xi)\,  \hat{p}_{\lambda'} + U(\xi),
     \end{split}
-
+     
 
 
 
