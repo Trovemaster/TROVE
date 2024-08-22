@@ -5,19 +5,19 @@ Line lists and Spectra
 This chapter will give details on how to use TROVE and associated programs to make production quality line lists and spectra. That is, large line lists involving millions or even billions of transitions between states. The programs involved are called GAIN and Exocross_. Both have been designed to interface with TROVE outputs and using them does not require much additional syntax.
 
 
-Intensity calculations are a part of step 4 (see Chapter Quickstart_ for the description of TROVE steps an Chapter Theory_ for theoretical details of the intensity calculations). 
+Intensity calculations are a part of step 4 (see Chapter Quickstart_ for the description of TROVE steps an Chapter Theory_ for theoretical details of the intensity calculations).
 
 
 Prerequisites of intensity calculations in TROVE
 ================================================
 
-We assume that all three initial steps have been accomplished. This includes: solution of the ro-vibrational problem by computing the ro-vibrational wavefunctions :math:`\Psi_{\rm rv}^{(i)}` and energy term values :math:`\tilde{E}_i`, steps 1-3. The wavefunction coefficients :math:`C_{v'' k'' }^{(i)}` are stored in the check points ``j0eigen_vectors*.chk``, while the energies are in the ascii files ``j0eigen_descr*.chk`` for a set of :math:`J` from 0 to :math:`J_{\rm max}`. We also assume that the DMS components have fully been processed in steps 1 and 2. At step 1 this incudes (i) definition of DMS in the step 1 input file, (ii) re-expansion in terms of the TROVE internal vibrational coordinates (``external.chk``) and (iii) calculation of the vibrational matrix elements of the DMS components (``extmatelem1.chk``, ``extmatelem2.chk`` and ``extmatelem3.chk``). At step, the DM matrix elements are converted to the :math:`J=0` representation (``j0_extmatelem1.chk``, ``j0_extmatelem2.chk`` and ``j0_extmatelem3.chk``). Providing that these ingredients are available, the intensities can be generated as follows. 
+We assume that all three initial steps have been accomplished. This includes: solution of the ro-vibrational problem by computing the ro-vibrational wavefunctions :math:`\Psi_{\rm rv}^{(i)}` and energy term values :math:`\tilde{E}_i`, steps 1-3. The wavefunction coefficients :math:`C_{v'' k'' }^{(i)}` are stored in the check points ``j0eigen_vectors*.chk``, while the energies are in the ascii files ``j0eigen_descr*.chk`` for a set of :math:`J` from 0 to :math:`J_{\rm max}`. We also assume that the DMS components have fully been processed in steps 1 and 2. At step 1 this incudes (i) definition of DMS in the step 1 input file, (ii) re-expansion in terms of the TROVE internal vibrational coordinates (``external.chk``) and (iii) calculation of the vibrational matrix elements of the DMS components (``extmatelem1.chk``, ``extmatelem2.chk`` and ``extmatelem3.chk``). At step, the DM matrix elements are converted to the :math:`J=0` representation (``j0_extmatelem1.chk``, ``j0_extmatelem2.chk`` and ``j0_extmatelem3.chk``). Providing that these ingredients are available, the intensities can be generated as follows.
 
 
 INTENSITY input file: step 4
 ============================
 
-In order to start the intensity calculations, the following changes in the input are required. In the ``CONTROL`` section, the keyword ``step`` has to be set to  4 and the range of the values of :math:`J` needs to be defined, e.g. 
+In order to start the intensity calculations, the following changes in the input are required. In the ``CONTROL`` section, the keyword ``step`` has to be set to  4 and the range of the values of :math:`J` needs to be defined, e.g.
 
 ::
 
@@ -26,7 +26,7 @@ In order to start the intensity calculations, the following changes in the input
     J 0 10
     end
 
-Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Quickstart_), e.g. 
+Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Quickstart_), e.g.
 ::
 
       INTENSITY
@@ -44,17 +44,17 @@ Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Qui
        energy low   -0.1,  2000.0, upper   -0.1, 6000.0
      END
 
-Here 
+Here
 ``absorption`` specifies that absorption intensities between states are to be calculated.
 
 
-``THRESH_INTES/LINE/COEFF`` are used to control the level of print out for intensities. Very large outputs can be produced if these are set very low (as needed for 'production' quality line lists) but for quicker checks higher values should be used. The intensities are evaluated and checked for the reference ``temperature`` value specified. 
+``THRESH_INTES/LINE/COEFF`` are used to control the level of print out for intensities. Very large outputs can be produced if these are set very low (as needed for 'production' quality line lists) but for quicker checks higher values should be used. The intensities are evaluated and checked for the reference ``temperature`` value specified.
 
 
-``TEMPERATURE`` is used to specify the reference temperature used to evaluate the intensities and also check them against the threshold value ``THRESH_INTES``. It should be noted that the main product of the 'Intensity' calculations are the temperature independent Einstein coefficients and therefore temperature does play any role. It is only used for (i) a quick intensity check when the intensities are printed out in the standard output file (not  ``exomol`` format) and a reference temperature is needed or (ii) to apply the intensity threshold. For the latter it can be seen as the maximal temperature in conjunction with the lower state energy threshold and :math:`J_{\rm max}`. Once the Einstein coefficients are produced, any temperature can be in principle used to simulate intensities using e.g. ExoCross. 
+``TEMPERATURE`` is used to specify the reference temperature used to evaluate the intensities and also check them against the threshold value ``THRESH_INTES``. It should be noted that the main product of the 'Intensity' calculations are the temperature independent Einstein coefficients and therefore temperature does play any role. It is only used for (i) a quick intensity check when the intensities are printed out in the standard output file (not  ``exomol`` format) and a reference temperature is needed or (ii) to apply the intensity threshold. For the latter it can be seen as the maximal temperature in conjunction with the lower state energy threshold and :math:`J_{\rm max}`. Once the Einstein coefficients are produced, any temperature can be in principle used to simulate intensities using e.g. ExoCross.
 
 
-``Partition`` is the reference value of the partition function :math:`Q(T)`. It is used to evaluate the intensities in connection with the reference ``temperature`` as explained above. Although in principle, TROVE's calculated values could be used to evaluate the value of :math:`Q(T)`, in practice the intensity calculations are split into sub-ranges of :math:`J` and therefore the full set of energies is not always known for accurate evaluation of :math:`Q(T)`. As reference values  needed for the intensity threshold purposes, even a very rough estimate is sufficient. For the transition moments ``TM``, this corresponds to the vibrational :math:`Q(T)`. 
+``Partition`` is the reference value of the partition function :math:`Q(T)`. It is used to evaluate the intensities in connection with the reference ``temperature`` as explained above. Although in principle, TROVE's calculated values could be used to evaluate the value of :math:`Q(T)`, in practice the intensity calculations are split into sub-ranges of :math:`J` and therefore the full set of energies is not always known for accurate evaluation of :math:`Q(T)`. As reference values  needed for the intensity threshold purposes, even a very rough estimate is sufficient. For the transition moments ``TM``, this corresponds to the vibrational :math:`Q(T)`.
 
 
 ``GNS`` is the state dependent  spin statistical weights :math:`g_{\rm ns}^{(i)}` for each symmetry (irrep). These can be looked up for many molecules or worked out from the procedure in Bunker and Jensen,  chapter 8 [98BuJe]_.  The :math:`g_{\rm ns}` value is used directly in the intensity calculations if required as well as to evaluate the total degeneracy for States file outputs, :math:`g_{\rm tot}^{(i)} = J(J+1) g_{\rm ns}^{(i)}`.
@@ -62,19 +62,19 @@ Here
 
 ``selection-rules`` is used to specify  selection rules, i.e. which symmetries can make up the initial and final states of a transition. The product of the upper and lower eigenfunctions must contain a component of the dipole itself [98BuJe]_. Let's consider a symmetry group spanning :math:`N_{irrep}` irreps :math:`\Gamma_1. \Gamma_2, \ldots` (which we denote in TROVE with integers 1,2,3,4...)  with the selection rules
 
-.. math:: 
+.. math::
     \Gamma \leftrightarrow \Gamma'
-    
-Here :math:`\Gamma'` is the allowed irrep partner for :math:`\Gamma`. 
+
+Here :math:`\Gamma'` is the allowed irrep partner for :math:`\Gamma`.
 
 
 
 ``selection-groups``  (``selection``) is an alternative way to specify the selection rules by defining  groups of allowed transitions they belong to. Thus for the PH\ :sub:`3` example, :math:`A_1` and :math:`A_2` are grouped together while :math:`E` can only go to :math:`E`. Integers are used to form groups, in this case 1 1 are for :math:`A_1` and :math:`A_2` and 2 is for E. The ``selection`` card is then given by
-:: 
-    
+::
+
     1 1 2
-    
-for :math:`A_1`, :math:`A_2` and :math:`E`, respectively. 
+
+for :math:`A_1`, :math:`A_2` and :math:`E`, respectively.
 
 
 The ``selection-rule``  'card'  has then the following format
@@ -85,18 +85,18 @@ The ``selection-rule``  'card'  has then the following format
 where :math:`i_{\Gamma'_1}` is the ID of the allowed irrep partner for the irrep 1, :math:`i_{\Gamma'_2}` is the ID of the allowed irrep partner for the irrep 2 etc. For example, for a C\ :sub:`3v` molecule like PH\ :sub:`3`, spanning :math:`A_1` (irrep 1), :math:`A_2` (irrep 2) and E (irrep 3) with the selection rules
 
 .. math::
-   
+
    \begin{split}
       A_1 &\leftrightarrow A_2 \\
       A_2 &\leftrightarrow A_1 \\
       E & \leftrightarrow E \\
    \end{split}
-      
+
 it is given by
 ::
-     
+
      2 1 3
-     
+
 
 ``J,  i,j`` specifies the rotational states to be included. In the example above 0 to 10 were used. It is often better to split a calculation into 0,1-1,2-2,3, etc to fit into time allocations on computers. The vibrational states to be included can also be specified by the ``v i, lower x, y, upper x', y'``
 where i is the number of a vibrational mode and x, x' and y, y' give the limits for the lower and upper states included. If this is not included then all vibrational states are considered.
@@ -114,18 +114,18 @@ To calculate absorption intensities the eigenfunctions and eigenvalue files of t
 
 ``states_only``  card is used to produce the States file only. It can be used to collect all the states into a single file.
 
-``symmetry reduced`` card in the ``Intensity`` section is to switch on the reduced treatment of the degenerate symmetry components of the ro-vibrational wavefunctions  when calculating the line strength and thus safe time. In particular, the ro-vibrational matrix elements of the dipole moments between degenerate symmetry components :math:`\Gamma_\alpha` have the following properties 
+``symmetry reduced`` card in the ``Intensity`` section is to switch on the reduced treatment of the degenerate symmetry components of the ro-vibrational wavefunctions  when calculating the line strength and thus safe time. In particular, the ro-vibrational matrix elements of the dipole moments between degenerate symmetry components :math:`\Gamma_\alpha` have the following properties
 
-.. math:: 
-      
+.. math::
+
       \begin{split}
       \langle \Psi_{i}^{\Gamma_\alpha} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\beta}  \rangle = 0, & \alpha = \beta \\
        \langle \Psi_{i}^{\Gamma_\alpha} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\beta}  \rangle = \pm  \langle \Psi_{i}^{\Gamma_\beta} |\mu_{\gamma}| \Psi_{j}^{\Gamma_\alpha}  \rangle
-      \end{split} 
-       
-therefore only one non-diagonal component is unique and needs to be computed. 
+      \end{split}
 
-.. Note:: When invoking this option, it is advised to check that the results are the same. 
+therefore only one non-diagonal component is unique and needs to be computed.
+
+.. Note:: When invoking this option, it is advised to check that the results are the same.
 
 
 Choosing threshold values
@@ -137,46 +137,46 @@ Values for ``freq-window`` and ``energy low`` and ``upper`` depend on the molecu
 Of course, the range which is included will also be limited by practical considerations such as computational time, memory, basis set convergence, etc.
 
 
-Restarting unfinished intensity jobs 
+Restarting unfinished intensity jobs
 ====================================
 
-The line intensity calculations are organised as follows. First, energies selected for a given run are combined, sorted and renumbered. Here is an example of such as selection: 
+The line intensity calculations are organised as follows. First, energies selected for a given run are combined, sorted and renumbered. Here is an example of such as selection:
 ::
 
     J, 20,      21
     freq-window  0,12000
     energy low   0,10000.0, upper  -0.00,18000.0
-    
 
-Then, the intensities are processed in batches divided by lower states: each batch corresponds to transitions from a given lower state to all upper states in a given selection. Within each batch, the calculations are OpenMP parallelised. In large projects, it is common that a given selection does not fit into the wall-clock limit of an HPC the job selection needs to be divided into sub-selection. The most natural way is to divide jobs by the lower states by energy ranges, e.g. 0 to 1000 1/cm, 1000.0001 to 2000, 2000.0001 to 3000 etc.  However such selection is uneven. The higher the range the more transitions it corresponds to. 
 
-A more efficient way to divide a selection into sub-selections is by the lower state count. Before introducing this concept, let first define the following useful card.  
+Then, the intensities are processed in batches divided by lower states: each batch corresponds to transitions from a given lower state to all upper states in a given selection. Within each batch, the calculations are OpenMP parallelised. In large projects, it is common that a given selection does not fit into the wall-clock limit of an HPC the job selection needs to be divided into sub-selection. The most natural way is to divide jobs by the lower states by energy ranges, e.g. 0 to 1000 1/cm, 1000.0001 to 2000, 2000.0001 to 3000 etc.  However such selection is uneven. The higher the range the more transitions it corresponds to.
+
+A more efficient way to divide a selection into sub-selections is by the lower state count. Before introducing this concept, let first define the following useful card.
 
 ``wallclock`` gives control of the calculation time and prevents crashing when running on an HPC scheduler with a time limit (wallclock time):
 ::
-    
-    wallclock 32.0 
-    
-    
- By setting ``wallclock`` to a value in hours which is less than the HPC wallclock, TROVE will do a control stop and report marks describing the calculation stage to be used in the restart. When time is close to wallclock, TROVE will let the current group (all transitions starting from the same lower state) of intensities to finish and provide the following report (e.g.): 
+
+    wallclock 32.0
+
+
+ By setting ``wallclock`` to a value in hours which is less than the HPC wallclock, TROVE will do a control stop and report marks describing the calculation stage to be used in the restart. When time is close to wallclock, TROVE will let the current group (all transitions starting from the same lower state) of intensities to finish and provide the following report (e.g.):
 ::
-      
+
         ... [wall-clock stop]: last lower-state     1189 out of            15462 (           15462), processed =     1189 states;
         ... last energy =     10140.830465
-        
+
         ...Intensities finished: From        1 to     1189 of    15462 lower states.
-        
-Here, 
 
- - *1* is the counting number of the 1st lower state selected for the current run; 
- - *1189* is the counting number of last lower state finished; 
- - *15462* is the total number of the lower states selected for the current run (and available); 
+Here,
+
+ - *1* is the counting number of the 1st lower state selected for the current run;
+ - *1189* is the counting number of last lower state finished;
+ - *15462* is the total number of the lower states selected for the current run (and available);
  - *1189* is the number of states prossed during the current run;
- - *10140.830465* is the value (1/cm) of the last lower state processed. 
+ - *10140.830465* is the value (1/cm) of the last lower state processed.
 
-One can assume that each line takes approximately the same time, for a given set of :math:`J'` and :math:`J''`. These numbers also tell how many lower states can fit into one wallclock limit and thus can help divide the intensity jobs into sub-groups, organised by the lower states. Here, e.g., it is 1189 states per one wallclock limit. We can therefore divide the intensity jobs e.g. by  1049 (smaller than 1189 just in case): 
+One can assume that each line takes approximately the same time, for a given set of :math:`J'` and :math:`J''`. These numbers also tell how many lower states can fit into one wallclock limit and thus can help divide the intensity jobs into sub-groups, organised by the lower states. Here, e.g., it is 1189 states per one wallclock limit. We can therefore divide the intensity jobs e.g. by  1049 (smaller than 1189 just in case):
 ::
-   
+
   1190-2239
   2240-3289
   3290-4339
@@ -191,35 +191,35 @@ One can assume that each line takes approximately the same time, for a given set
   12740-13789
   13790-14839
   14840-15462
-  
 
-For the restart the first batch, the following card needs to be used: 
+
+For the restart the first batch, the following card needs to be used:
 ::
-    
+
    count  1190 2239
-   
+
 
 If the jobs has fully completed, the following printout will appear at the end of the standard TROVE output file:
-:: 
-        
-   
-     ...Intensities finished: From     1190 to     2239 of    15462 lower states.
-     
+::
 
-Otherwise, the print out information can be used to restart this batch again. 
+
+     ...Intensities finished: From     1190 to     2239 of    15462 lower states.
+
+
+Otherwise, the print out information can be used to restart this batch again.
 
 
 Line list format
 ================
 
-States file 
+States file
 -----------
 
 A typical States file has the following format:
 ::
-       
+
        -----  ----------- ------- ------ ----  --- -- --- --   --- -- --  ------ --    ------- -- -- --  -------
-           1       2           3       4   5     6  7  8  9    10  11 12     13  14        15  16 17 18       19 
+           1       2           3       4   5     6  7  8  9    10  11 12     13  14        15  16 17 18       19
        -----  ----------- ------- ------ ----  --- -- --- --   --- -- --  ------ --    ------- -- -- --  -------
            1     0.000000      1       0  A1     0  0  0  A1    0   0 A1    1.00 ::         1   0  0  0        1
            2  1172.667646      1       0  A1     0  0  1  A1    0   0 A1    1.00 ::         2   0  0  1        2
@@ -231,7 +231,7 @@ A typical States file has the following format:
            8  4927.853585      1       0  A1     1  0  2  A1    0   0 A1    1.00 ::         8   1  0  2       10
            .......
            .......
-         
+
 
 where the designation of the columns is as follows
 
@@ -248,41 +248,41 @@ where the designation of the columns is as follows
   - Col 13: ``C_i`` is the largest eigen-coefficient used in the assignment.
   - Col 14: ``::`` label to indicate States, not repeated in other States file, can be used to grep unique entries;
   -         ``:;`` label to indicate States, that repeat in other States file. Only unique for the J=Jmax last calculation and can be used to grep and add to the fill set of State entries;
-  - Col 15: J-Symmetry-Block counting number 
-  - Cols 16-18: Normal mode quantum number n1, n2, n3 if introduced in contr_descr.chk at step 2. Otherwise can be ingored. 
+  - Col 15: J-Symmetry-Block counting number
+  - Cols 16-18: Normal mode quantum number n1, n2, n3 if introduced in contr_descr.chk at step 2. Otherwise can be ingored.
   - Col 19: Vibrational counting number as appear in the ``j0contr_descr.chk`` file.
-  
+
 
 
 The separator labels ``::`` and ``:;``  are introduced to avoid double counting when combining States file from intensity calculations covering different ranges of :math:`J`. As discussed above, a given calculation for :math:`J = [J_1,J_2]` does not include transitions between :math:`J''=J_1` and :math:`J' = J_1` (lower bound), but includes transitions between  :math:`J''=J_2` and :math:`J' = J_2` (upper bound). the next interval to be considered is for :math:`J = [J_2,J_3]`, which thus also produces a States file with the same states :math:`J=J_2`. When combining states multiple file, in order to avoid double counting, one can grep all state with the label ``::`` first
 ::
-   
-   grep -h "::" *.states > All.states 
-   
+
+   grep -h "::" *.states > All.states
+
 and then add states from the very last :math:`J = J_{\rm max}` by grepping ``:;``:
 ::
-     
-     grep ":;"  Last_Jmax.states >> All.states 
 
-Alternatively, one can simply run an intensity calculation with the ``states-only`` keyword for the entire range at once (here for :math:`J_{\rm max}=100` ): 
+     grep ":;"  Last_Jmax.states >> All.states
+
+Alternatively, one can simply run an intensity calculation with the ``states-only`` keyword for the entire range at once (here for :math:`J_{\rm max}=100` ):
 
 ::
 
     Control
     Step 4
-    J 0 100 
+    J 0 100
     end
 
 Besides, an ``INTENSITY`` section has to be added anywhere in the input (see Quickstart_), e.g.
 ::
 
       INTENSITY
-       absorption 
+       absorption
        states-only
        exomol
        linelist filename
        .....
-       freq-window  -0.1,   -1. 
+       freq-window  -0.1,   -1.
        energy low   -0.1,  2000.0, upper   -0.1, 6000.0
      END
 
@@ -292,7 +292,7 @@ Transition file
 
 A typical transition file has the following format:
 ::
-       
+
        ------- ------------ ---------------    --------------
           1             2           3                 4
        ------- ------------ ---------------    --------------
@@ -302,13 +302,13 @@ A typical transition file has the following format:
           52            1    2.24850939E-02      2626.439267
           53            1    1.70424762E+00      3318.238716
        ------- ------------ ---------------    --------------
-       
-where 
- 
+
+where
+
   - col 1: the upper state ID as in the States file(s);
   - col 2: the lower state ID;
   - col 3: Einstein A coefficient (1/s);
-  - col 4: Transition wavenumber(cm\ :sup:`-1`). 
+  - col 4: Transition wavenumber(cm\ :sup:`-1`).
 
 
 Different functionality of INTENSITY
@@ -319,13 +319,13 @@ The card ``PRUNING`` is for building an intensity (transition-moment, TM) list u
 
 ``TDM_REPLACE`` (``DIPOLE_REPLACE``, ``DIPOLE_SCALE``) is for scaling the vibrational transition dipole moments for individual bands in order to improve the agreement with experimental intensities. The scaling factors must be stored in the file ``j0_tdm.chk`` in the following format:
 ::
-   
-    i1 i2 factor 
-     
-where ``i1`` and ``i2`` are the vibrational state indexes as in ``j0contr_descr.chk`` for a given band and ``factor`` is the factor to scale. 
+
+    i1 i2 factor
+
+where ``i1`` and ``i2`` are the vibrational state indexes as in ``j0contr_descr.chk`` for a given band and ``factor`` is the factor to scale.
 
 
-``ZPE``: a ZPE can be specified directly in the ``INTENSITY`` block. 
+``ZPE``: a ZPE can be specified directly in the ``INTENSITY`` block.
 
 
 Intensities with GAIN
@@ -337,7 +337,7 @@ A more efficient way of calculating intensities is to make use of the GAIN progr
 
 GAIN uses the same input file as TROVE but only the ``intensity`` block is actually used to control the calculation. GAIN requires the eigenvectors, eigen description and eigen quanta files for the states of interest. It also requires the eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file for the dipole matrix elements (note that currently GAIN cannot accept split dipole files, these must be stitched together).
 
-GAIN can be found at gitGAIN_. 
+GAIN can be found at gitGAIN_.
 
 Using GAIN
 ----------
@@ -358,7 +358,7 @@ Currently the format for the intensities from GAIN is not compatible with Exocro
 
 The intensity format of MPI GAIN is as in the following example:
 ::
-    
+
     ------------  ------  ----  ---       ----- ---  ---  ---------------  --
           1          2      3    4           5    6    7          8        9
     ------------  ------  ----  ---       ----- ---  ---  ---------------  --
@@ -373,9 +373,9 @@ The intensity format of MPI GAIN is as in the following example:
     4738.559823     2479   37    5 <-        1   36    4  5.619855017E-08  ||
     3635.227725      826   37    5 <-        1   36    4  7.447377296E-09  ||
     6429.981779    12218   36    5 <-        1   36    4  2.205478079E-07  ||
-    ....    
-    
-where 
+    ....
+
+where
  - col 1: Transition wavenumber(cm\ :sup:`-1`);
  - col 2: upper state counting (:math:`J-\Gamma`-block) number;
  - col 3: upper state :math:`J`.
@@ -384,14 +384,14 @@ where
  - col 6: lower state :math:`J`.
  - col 7: lower state symmetry :math:`\Gamma`.
  - col 8: Einstein A coefficient (1/s);
- - col 9: "||" label to help extracting and combining intensity entries from the GAIN outputs. 
- 
+ - col 9: "||" label to help extracting and combining intensity entries from the GAIN outputs.
 
-The same format can be used in TROVE, which is invoked by the keyword ``GAIN`` in the step 4 ``INTENSITY`` as in the following card: 
-:: 
-    
+
+The same format can be used in TROVE, which is invoked by the keyword ``GAIN`` in the step 4 ``INTENSITY`` as in the following card:
+::
+
     GAIN
-    
+
 
 
 

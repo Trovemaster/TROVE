@@ -5,48 +5,48 @@ RichMol: Interfacing with other molecular codes
 
 The role of TROVE is to provide the interacting molecular properties (dipole moments, polarizabilities etc) in the so-called spectral representations, i.e.inthe representation of field-free ro-vibrational eigenfunctions. Consider, e.g., a Hamiltonian operator describing the molecule interacting with a general time-dependent electro-magnetic field :math:`\vec{F}(t)`:
 
-.. math:: 
-    
-    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline{\alpha} \vec{F}) + \cdots 
-    
+.. math::
 
-where :math:`\vec{\mu}` is a dipole moment vector and :math:`\underline{\alpha}` is a polarizability rank 2 tensor. In the spectral representation,  :math:`\hat{H}` is given by the matrix elements 
+    \hat{H} = \hat{H}_0 +  (\vec{\mu} \cdot \vec{F}) + \frac{1}{2} (\vec{F} \underline{\alpha} \vec{F}) + \cdots
 
-.. math:: 
+
+where :math:`\vec{\mu}` is a dipole moment vector and :math:`\underline{\alpha}` is a polarizability rank 2 tensor. In the spectral representation,  :math:`\hat{H}` is given by the matrix elements
+
+.. math::
     :label: e-Hpsi-matrix
-    
+
     \begin{split}
     \langle \Phi_{n,m}^{J,\Gamma} |\hat{H}| \Phi_{n',m'}^{J',\Gamma'}  \rangle  & = E_{n,m}^{J,\Gamma} \delta_{n,n'}\delta_{m,m'} \delta_{J,J'}\delta_{\Gamma,\Gamma'} + \\
             & \sum_{\beta=X,Y,Z} \langle \Phi_{n,m}^{J,\Gamma} |\vec{\mu}_{\beta}| \Phi_{n',m'}^{J',\Gamma'} F_{\beta} + \\
             & \sum_{\beta,\gamma=X,Y,Z}  F_{\gamma} \langle \Phi_{n,m}^{J,\Gamma} |\vec{\alpha}_{\beta}| \Phi_{n',m'}^{J',\Gamma'} F_{\beta} + \cdots
     \end{split}
-    
+
 where :math:`\Phi_{n,m}^{J,\Gamma}` is an eigenfunction and :math:`E_{n,m}^{J,\Gamma}` is an eigenvalue of the field free Hamiltonian:
-  
-.. math:: 
-      :label: e-H0psi
-      
-      \hat{H}_0 \Phi_{n,m}^{J,\Gamma} = E_{n,m}^{J,\Gamma} \Phi_{n,m}^{J,\Gamma}
-       
-:math:`J` is the rotational angular momentum, :math:`m` is its projection on the space-fixed axis :math:`Z`, :math:`\Gamma` is an irrep of the (field-free) molecule and :math:`n` is a general eigen-state counting number. Thus, this is  TROVE's role to solve Eq. :eq:`e-H0psi` and to compute the corresponding matrix elements of the properties in Eq. :eq:`e-Hpsi-matrix`. It is then the role of RichMol to find the time dependent solution for the molecule interacting with :math:`\vec{F}(t)` and thus to solve for the molecular dynamics:
-
-.. math:: 
-    
-    \hbar \frac{\partial \Psi(t)}{\partial t} = \hat{H}\Psi(t). 
-    
-
-Similarity, RichMol can be also used to solve a  general eigen-problem 
 
 .. math::
-      
-      (\hat{H}_0 + \epsilon F(\vec{r}) )\Psi_\lambda = E_\lambda \Psi_\lambda 
-      
+      :label: e-H0psi
+
+      \hat{H}_0 \Phi_{n,m}^{J,\Gamma} = E_{n,m}^{J,\Gamma} \Phi_{n,m}^{J,\Gamma}
+
+:math:`J` is the rotational angular momentum, :math:`m` is its projection on the space-fixed axis :math:`Z`, :math:`\Gamma` is an irrep of the (field-free) molecule and :math:`n` is a general eigen-state counting number. Thus, this is  TROVE's role to solve Eq. :eq:`e-H0psi` and to compute the corresponding matrix elements of the properties in Eq. :eq:`e-Hpsi-matrix`. It is then the role of RichMol to find the time dependent solution for the molecule interacting with :math:`\vec{F}(t)` and thus to solve for the molecular dynamics:
+
+.. math::
+
+    \hbar \frac{\partial \Psi(t)}{\partial t} = \hat{H}\Psi(t).
+
+
+Similarity, RichMol can be also used to solve a  general eigen-problem
+
+.. math::
+
+      (\hat{H}_0 + \epsilon F(\vec{r}) )\Psi_\lambda = E_\lambda \Psi_\lambda
+
 in a spectral representation of an unperturbed Hamiltonian (Eq. :eq:`e-H0psi`):
 
-.. math:: 
-     
+.. math::
+
      \langle \Phi_{n,m}^{J,\Gamma} |\hat{H}_0 + \epsilon F(\vec{r}) | \Phi_{n',m'}^{J',\Gamma'}  \rangle = \delta_{\lambda,\lambda'} E_\lambda .
-     
+
 
 How to interface TROVE with RichMol
 ===================================
@@ -64,9 +64,9 @@ Step 1
     end
 
 
-Follow the same general procedure described in `TROVE Quick start <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__ and use the ``external`` block to define the polarizability components, e.g.
+Follow the same general procedure described in :doc:`quickstart` and use the ``external`` block to define the polarizability components, e.g.
 ::
-      
+
       external
         dimension 6
         NPARAM  5 2 2 2 2 2
@@ -94,12 +94,12 @@ Follow the same general procedure described in `TROVE Quick start <https://spect
       end
 
 which represents a simplistic form of the polarizability tensor of C\ :sub:`2`\ H:sub:`6` using the TROVE function ``ALPHA_C2H6_ZERO``.Here, there are six independent components each of which is represented by a single  value (cards ``alpha***``) at the molecular equilibrium (cards ``re1``, ``re2`` and ``beta``).
- 
 
-Step 2 
+
+Step 2
 ------
 
-Business as usual: 
+Business as usual:
 ::
 
     Control
@@ -115,7 +115,7 @@ Business as usual, e.g.:
 
     Control
      Step 3
-     J 0 
+     J 0
     end
 
 
@@ -133,7 +133,7 @@ This is the main step of computing the matrix elements of :math:`\alpha_{\beta,\
 
 and then define the ``intensity`` block using the RichMol-related cards ``field_me`` in conjunction with ``oper_alpha``, e.g.
 ::
-   
+
    INTENSITY
      field_me
      oper alpha
@@ -148,9 +148,9 @@ and then define the ``intensity`` block using the RichMol-related cards ``field_
    END
 
 
-The keyword ``field_me`` is to switch on the "Field's Matrix Elements". The keyword ``oper`` is to specify which type of the property to process; in this case it is the polarizability (``alpha``). 
+The keyword ``field_me`` is to switch on the "Field's Matrix Elements". The keyword ``oper`` is to specify which type of the property to process; in this case it is the polarizability (``alpha``).
 
-Currently, the following properties are available in TROVE (see module :code:`extfield.f90`): 
+Currently, the following properties are available in TROVE (see module :code:`extfield.f90`):
 
 - ``ALPHA``: polaizability tensor;
 - ``MU``: dipole moment vector;
@@ -160,10 +160,10 @@ Currently, the following properties are available in TROVE (see module :code:`ex
 - ``GTENS``: g-tensor;
 - ``WIGNER``: Wigner matrix
 - ``COSTHETA``: :math:`\cos\theta`;
-- ``J``: J-tensor; 
+- ``J``: J-tensor;
 - ``COS2THETA``: :math:`\cos2\theta`;
 - ``RICHMOL_LEVELS_FILE``: TBP;
-- ``MF_TENSOR``: TBP. 
+- ``MF_TENSOR``: TBP.
 
 
 

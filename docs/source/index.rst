@@ -50,7 +50,6 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
    :caption: Summary
 
    glossary.rst
-   keywords.rst
    references
    license
 

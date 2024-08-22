@@ -11,7 +11,7 @@ from the start.
 Beginning Output
 ================
 
-The first part of the TROVE output file is a repeat of the input followed by statements about setting up the calculation. Details on the geometry of the molecule are given such as the number of angles, connectivity and Cartesian coordinates. When setting up a new molecule (see Chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__) this section is important as errors are often highlighted. Details of this will be given in that chapter.
+The first part of the TROVE output file is a repeat of the input followed by statements about setting up the calculation. Details on the geometry of the molecule are given such as the number of angles, connectivity and Cartesian coordinates. When setting up a new molecule (see :doc:`newmolecules`) this section is important as errors are often highlighted. Details of this will be given in that chapter.
 
 Details of the S-matrix calculation are also printed in the section (see Theory chapter).
 
@@ -50,7 +50,7 @@ At the end of the grid the outer most points where the one-dimensional vibration
 Contracted basis
 ----------------
 
-After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in [17YuYaOv]_ and here in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF\ :sub:`3`
+After the primitive basis functions haven been generated, often using the Numerov method, TROVE then builds contractions of these functions. This procedure has been discussed in detail in [17YuYaOv]_ and here in :doc:`theory`. TROVE diagonalises a reduced Hamiltonian and the energies and primitive functions are given in a list, for example for PF\ :sub:`3`
 ::
 
       Variational eigenvalues:
@@ -147,7 +147,7 @@ It helps sometimes to print the second-largest coefficients in order to resolve 
        NASSIGNMENTS 2
      end
 
-where the card ``NASSIGNMENTS`` (alias ``N_EIGEN-CONTRIBUTIONS``) defines the number of the assignments to generate. 
+where the card ``NASSIGNMENTS`` (alias ``N_EIGEN-CONTRIBUTIONS``) defines the number of the assignments to generate.
 
 
 
@@ -183,7 +183,7 @@ An example from a :math:`J=2` calculation on PF\ :sub:`3` is shown below.
       E 4 348.255477 (E; 2 2 0) (E ; 0 0 0 0 0 1) 0.73 (0 0 0 0 0 1 0) (2)
 
 In this case the energies are from the doubly degenerate :math:`E` symmetry class. The first two rows are pure rotational states. The ``j k t`` section for these two states are ``2 2 0`` and ``2 1 0`` respectively. This means the total angular momentum is 2 and the projection of the angular momentum onto an axis (usually the :math:`z`-axis is chosen) is 2 and 1 respectively. The third and fourth row are ro-vibrational states with the same vibrational quantum numbers :math:`v_1, v_2,\ldots,`,  but different values of :math:`K`. For a more detailed explanation of the quantum number scheme in TROVE see
-Chapter `Quantum Numbers <https://spectrove.readthedocs.io/en/latest/quantumnumbers.html>`__).
+:doc:`quantumnumbers`).
 
 Transition Moment output
 ========================
@@ -243,13 +243,13 @@ A typical intensity output is given by
 
 It contains state energies, quantum numbers, linestrengths (D\ :sup:`2`), both total an per degenerate component (last column), Einstein A coefficients (1/S), absorption intensities (cm/molecule) for the reference input temperature.
 
-This section is similar to the transition moment output. The symmetries, quantum numbers and energies of the lower and upper states are given along with the transition frequency. The intensity is given for the transitions along with the line strength and the Einstein A coefficient (see Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__).
+This section is similar to the transition moment output. The symmetries, quantum numbers and energies of the lower and upper states are given along with the transition frequency. The intensity is given for the transitions along with the line strength and the Einstein A coefficient (see :doc:`theory`).
 
 
 Checkpoint File Outputs
 =======================
 
-See a detailed description in (see Chapter `Checkpoints  <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__.
+See a detailed description in (see :doc:`checkpoints`.
 
 As well as the main TROVE output file, useful information is also contained in the descr checkpoint files. These will be described here.
 

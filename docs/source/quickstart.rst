@@ -220,10 +220,10 @@ Because the maximum energy of the contracted basis functions are set, it makes s
 Also given in the Contraction block are parameters relating to how TROVE works out the symmetry of contracted basis functions (``coeff_thresh``, ``degeneracy``). This will be described in later chapters and has been discussed in a recent publication [17YuYaOv]_.
 
 
-Other stand-alone keywords 
+Other stand-alone keywords
 --------------------------
 
-A number of stand-along control keywords exist that are to be used in the main body of the input, which are described in this section. 
+A number of stand-along control keywords exist that are to be used in the main body of the input, which are described in this section.
 
 
 Symmetry
@@ -235,10 +235,10 @@ The symmetry of the molecule is specified by the `SYMGROUP` keyword. The symmetr
      SYMGROUP C3v(M)
 
 
-Sparse representation of field checkpoints 
+Sparse representation of field checkpoints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is a relatively recent option which became default to use the sparse representation to store the field checkpoints ``kinetic.chk``, ``potential.chk`` and ``external.chk``. In conjunction with the threshold parameter defined by the card ``exp_coeff_thresh`` from the ``contraction`` section: expansion coefficients that are smaller by magnitude than this threshold are not included in the the corresponding checkpoint. 
+This is a relatively recent option which became default to use the sparse representation to store the field checkpoints ``kinetic.chk``, ``potential.chk`` and ``external.chk``. In conjunction with the threshold parameter defined by the card ``exp_coeff_thresh`` from the ``contraction`` section: expansion coefficients that are smaller by magnitude than this threshold are not included in the the corresponding checkpoint.
 
 
 
@@ -335,7 +335,7 @@ The ``Basis`` block specifies the type of basis functions used by TROVE and how 
      END
 
 The first line in this block, ``0, JKtau``, ``Jrot 0`` specifies the rotational functions. For :math:`J>0` calculations the value of ``Jrot`` is changed to :math:`J` of interest. PF\ :sub:`3` has :math:`3N - 6 = 3(4) - 6 = 6` internal degrees of freedom and thus 6 basis functions are required. Basis functions are grouped using an integer label. For this example, '1's are the P-F stretches and '2's are the P-F bends. The grouping is used for producing symmetric
-combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__ and in [17YuYaOv]_.
+combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in :doc:`theory` and in [17YuYaOv]_.
 
 For a given basis function row the options are as follows. The first keyword specifies what the one-dimensional basis functions are. In this example they are numerically generated using the Numerov-Cooley method. Other options are ``harmonic`` and ``morse`` where these analytical basis functions shall be used. The second keyword specifies how the kinetic energy operator is expanded. The third keyword gives the expansion coordinates for the potential. Here 'Morse coordinates' of the form  :math:`1 - e^{-\alpha(r-r_e)}` are used for the stretching coordinates while ``linear`` (the angles themselves) coordinates are used for the bends.
 
@@ -343,7 +343,7 @@ The numbers after ``range`` specify the range of vibrational quantum numbers of 
 
 ``points`` and   ``borders`` specify the number of points and the starting points for the Numerov-Cooley integration. Generating these one-dimensional functions is fast and so many points should be taken.  The borders should be set far enough into the classically forbidden region of the potential such that  the results are not sensitive to slightly larger or lower values. The units for ``borders`` are the same as those used that the potential was expanded in (Morse for stretches and angles in radians for bends in this example).
 
-The details of the primitive basis sets are given in the TROVE output file and will be discussed in Chapter `Outputs <https://spectrove.readthedocs.io/en/latest/output.html>`__.
+The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`output`.
 
 Checkpoint Block
 ----------------
@@ -458,7 +458,7 @@ Specparam Block
 ---------------
 
 
-The ``Specparam`` block is used to define "special" parameters. It is mostly used to define the Morse parameters :math:`\alpha` used in combination with the ``morse`` expansion type in the ``BASIS`` block:: 
+The ``Specparam`` block is used to define "special" parameters. It is mostly used to define the Morse parameters :math:`\alpha` used in combination with the ``morse`` expansion type in the ``BASIS`` block::
 ::
 
      SPECPARAM
@@ -467,7 +467,7 @@ The ``Specparam`` block is used to define "special" parameters. It is mostly use
      alpha        0        1.8000000
      END
 
-The second column is not used. It was originally introduced to be consistent with the ``potential`` function block, where it is used for fitting indexes. It will become obsolete in future versions.  
+The second column is not used. It was originally introduced to be consistent with the ``potential`` function block, where it is used for fitting indexes. It will become obsolete in future versions.
 
 
 Poten Block
@@ -491,7 +491,7 @@ The ``Poten`` block is used to specify the PES. For PF:math:`_3` the first few l
 
 ::
      POTEN
-     compact 
+     compact
      POT_TYPE  poten_xy3_morbid_10
      COEFF  list
      VE               0.000000000000
@@ -501,9 +501,9 @@ The ``Poten`` block is used to specify the PES. For PF:math:`_3` the first few l
      ...
      ...
      end
-     
-The ``NPARAM`` card is obsolete and can be omitted. 
- 
+
+The ``NPARAM`` card is obsolete and can be omitted.
+
 
 External (Dipole) Block
 -----------------------

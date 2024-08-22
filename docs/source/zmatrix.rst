@@ -52,12 +52,12 @@ Here, the Zmatrix coordinates are as follows.
 
 .. math::
 
-   \xi_6 = \delta_{{\rm H}_1{\rm O}_1 {\rm O}_2 {\rm H}_2} = \equiv \delta_{3124},  
-   
+   \xi_6 = \delta_{{\rm H}_1{\rm O}_1 {\rm O}_2 {\rm H}_2} = \equiv \delta_{3124},
+
 which is defined as follows
 
 .. math::
-     
+
         \delta_{ijkl} =  \arccos\left(\frac{[\vec{r}_{ij} \times \vec{r}_{jk}]\cdot[\vec{r}_{jk} \times \vec{r}_{kl}] }{|[\vec{r}_{ij} \times \vec{r}_{jk}]| | [\vec{r}_{jk} \times \vec{r}_{kl}]|}\right).
 
 
@@ -108,66 +108,66 @@ The following "Dihedral" types are available:
 
 
 
-- Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure. 
+- Type 0: the "Dihedral"  angle  is defined as  a valence angle between bonds :math:`\vec{r_{2}}`  and  :math:`\vec{r_{3}}` as shown in the figure.
 
 .. figure:: img/XY3_zmat_0.jpg
         :alt: XY3 Zmat
         :width: 200 px
         :align: center
-       
+
         Z-matrix coordinates with a dihedral angle of type 0 used for rigid molecules like PH\ :sub:`3`.
 
 
 
-- Type 1: it is defined as  a usual dihedral angle  between two planes (4-1-2 and 3-1-2),  with important addition. One more bond angle :math:`\alpha_3` is introduced (see the figure and also Ammonia example in  `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__).
+- Type 1: it is defined as  a usual dihedral angle  between two planes (4-1-2 and 3-1-2),  with important addition. One more bond angle :math:`\alpha_3` is introduced (see the figure and also Ammonia example in  :doc:`molecules`).
 
 .. figure:: img/XY3_zmat_1.jpg
        :alt: XY3 Zmat
        :width: 200 px
        :align: center
-       
+
        Z-matrix coordinates with a "dihedral" angle of type 1 used for NH\ :sub:`3`.
 
 
 
-- Type 2: it is the standard dihedral angle as in the HOOH example above. 
+- Type 2: it is the standard dihedral angle as in the HOOH example above.
 
 
 .. figure:: img/X2Y2_zmat_2.jpg
        :alt: H2O2 Zmat
        :width: 150 px
        :align: center
-       
+
        Z-matrix coordinates with a dihedral angle of type 2 used for HOOH as in the example above.
 
-        
-
-
-- Type 202: it is the same dihedral angle :math:`\delta` as type 2, with the difference that the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates (required for the KEO construction) are evaluated using the finite differences, while for types 0, 1, 2, -2, 3-100 the 1st derivatives are evaluates using an analytic expression. Finite difference offer more stable evaluation at positions where the phases of the angles change (0, :math:`\pi`, :math:`2\pi`) which makes their definition ambiguous. 
 
 
 
-- Type -2: it is the standard dihedral angle, but with the "backbone" vector inverted, see figure. 
+- Type 202: it is the same dihedral angle :math:`\delta` as type 2, with the difference that the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates (required for the KEO construction) are evaluated using the finite differences, while for types 0, 1, 2, -2, 3-100 the 1st derivatives are evaluates using an analytic expression. Finite difference offer more stable evaluation at positions where the phases of the angles change (0, :math:`\pi`, :math:`2\pi`) which makes their definition ambiguous.
+
+
+
+- Type -2: it is the standard dihedral angle, but with the "backbone" vector inverted, see figure.
 
 
 .. figure:: img/X2Y2_zmat-2.jpg
        :alt: H2O2 Zmat
        :width: 150 px
        :align: center
-        
+
        Z-matrix coordinates with a "dihedral" angle of type -2 used for HOOH with the "backbone" vector inverted.
 
 
-A differen example of  type 2 of dihedrals is for H\ :sub:`2`\ CO with the Z-matrix given by 
+A differen example of  type 2 of dihedrals is for H\ :sub:`2`\ CO with the Z-matrix given by
 ::
-    
+
     ZMAT
         C   0  0  0  0  12.00000000
         O   1  0  0  0  15.99491463
         H   1  2  0  0   1.00782505
         H   1  2  3 -2   1.00782505
     end
-    
+
 
 
 .. figure:: img/H2CO_zmat-2.jpg
@@ -180,18 +180,18 @@ A differen example of  type 2 of dihedrals is for H\ :sub:`2`\ CO with the Z-mat
 
 
 .. sidebar::
-     
+
     .. figure:: img/C2H4_zmat.jpg
        :alt: CH4 Zmat
        :width: 150 px
        :align: center
 
        Z-matrix coordinates with a mix of "dihedral" types 2 and -2 used for CH\ :sub:`2` \ :sub:`4`.
-       
 
-Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2`` and ``-2``: 
+
+Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2`` and ``-2``:
 ::
-    
+
    ZMAT
      C   0  0  0  0  12.00000000
      C   1  0  0  0  12.00000000
@@ -200,14 +200,14 @@ Here is a Z-matrix used for C\ :sub:`2`\ H\ :sub:`4` with a mixture of types ``2
      H   2  1  3  2   1.00782505
      H   2  1  5 -2   1.00782505
    end
-   
+
 The system was studied in [18MaYaTe]_.
-   
-
-- Type -202: same as type, but the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates  evaluated using the finite differences. 
 
 
-- Type 402: it is the same as type 202, but with :math:`\delta` defined in the extended range from 0 to 720. This type is useful for the systems with the extended molecular symmetries, such as non-rigid HOOH [15AlOvYu]_  or C\ :sub:`2`\ H\ :sub:`6` [19MeYuMa]_. 
+- Type -202: same as type, but the 1st derivative of :math:`\delta`  wrt the Cartesian coordinates  evaluated using the finite differences.
+
+
+- Type 402: it is the same as type 202, but with :math:`\delta` defined in the extended range from 0 to 720. This type is useful for the systems with the extended molecular symmetries, such as non-rigid HOOH [15AlOvYu]_  or C\ :sub:`2`\ H\ :sub:`6` [19MeYuMa]_.
 
 
 - Type -402: it is the same as type -202, but with :math:`\delta` defined in the extended range from 0 to 720.
@@ -224,7 +224,7 @@ The system was studied in [18MaYaTe]_.
 
 - Type 3-100: any number :math:`N` between 3 and 100 means that instead of a dihedral angle, another bond angle is introduced; the "type" card is treated as an additional connector in order to define the bond angle. As example, the following Z-matrix (see the figure) uses a dihedral angle free definition of the vibrational coordinates of CH\ :sub:`4`:
 ::
-    
+
     ZMAT
         C   0  0  0  0  12.000000000
         H   1  0  0  0   1.007825035
@@ -232,6 +232,6 @@ The system was studied in [18MaYaTe]_.
         H   1  2  3  0   1.007825035
         H   1  2  3  4   1.007825035
     end
-    
+
 
 

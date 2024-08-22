@@ -12,11 +12,11 @@ There are several options for kinetic energy operators (KEO) in TROVE:
 Linearised KEO
 --------------
 
-This is a standard KEO constructed using a general black-boxed algorithm applicable for an arbitrary polyatomic molecule. It has been introduced in the original TROVE paper [TROVE]_ and also explained in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__. For the following, it useful to recall that TROVE uses Z-matrix curvilinear coordinates to define the linearised coordinates for a given molecule and selected frame.
+This is a standard KEO constructed using a general black-boxed algorithm applicable for an arbitrary polyatomic molecule. It has been introduced in the original TROVE paper [TROVE]_ and also explained in :doc:`theory`. For the following, it useful to recall that TROVE uses Z-matrix curvilinear coordinates to define the linearised coordinates for a given molecule and selected frame.
 
 Linearised KEO is a default option in TROVE. It requires the following components to be present in the TROVE code:
 
-- Coordinate transformation (``TRANSFORM``) between the Z-matrix curvilinear coordinates :math:`\xi_{i}^{\rm Zmat}` and the target curvilinear coordinates :math:`\xi_i` used to generate the linearised coordinates :math:`\xi_i^{\rm lin}`. For example, for the Z-matrix used for NH\ :sub:`3` (see Chapter `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__):
+- Coordinate transformation (``TRANSFORM``) between the Z-matrix curvilinear coordinates :math:`\xi_{i}^{\rm Zmat}` and the target curvilinear coordinates :math:`\xi_i` used to generate the linearised coordinates :math:`\xi_i^{\rm lin}`. For example, for the Z-matrix used for NH\ :sub:`3` (see :doc:`molecules`):
 ::
 
 
@@ -103,7 +103,7 @@ where the subscript 'lin' is omitted for compactness. This is a sum-of-products 
 Analytic curvilinear KEO
 ------------------------
 
-A number of analytic curvilinear KEOs are available (see Chapter `Frames <https://spectrove.readthedocs.io/en/latest/frames.html>`__) and associated with the card ``kinetic_type`` as part of the ``KINETIC`` section, e.g.:
+A number of analytic curvilinear KEOs are available (see :doc:`frames`) and associated with the card ``kinetic_type`` as part of the ``KINETIC`` section, e.g.:
 ::
 
    KINETIC
@@ -227,7 +227,7 @@ External Numerical Taylor-type KEO
 
 As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved. 
 
-Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in Chapter `Checkpoints <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
+Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in :doc:`checkpoints`. 
 An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
 
 .. math::
@@ -244,7 +244,7 @@ An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule 
        The curvilinear  coordinates used for H\ :sub:`2`\ CS [23MeOwTe]_ (type ``R-THETA-TAU``).
 
 
-This coordinates type (``TRANSFORM``) and associated frame is ``R-THETA-TAU`` (see `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__). 
+This coordinates type (``TRANSFORM``) and associated frame is ``R-THETA-TAU`` (see :doc:`molecules`). 
 
 The Mathemtica script ``Supp_Info_kinetic_energy_generator_h2cs_paper.nb`` (see supplementary to [23MeOwTe]_) was used to produce the ``kinetic.chk`` in a numerical format using these coordinates in a rigid configuration. This can be best explained by a example, see the TROVE input at `MOTY spectroscopic model <https://exomol.com/models/H2CS/1H2-12C-32S/MOTY/>`__.
 
