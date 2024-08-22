@@ -45,7 +45,7 @@ module molecules
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
                        MLkinetic_xyz_Radau_EKE
 
-  use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_sparse_x2y2_bisect_EKE_sinrho
+  use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho
 
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
@@ -59,7 +59,7 @@ module molecules
          MLequilibrium_xyz_1d,diff_2d_4points,ML_diffs,MLsymmetry_transform_func
   public MLpotenfunc,MLrotsymmetry_func,ratint,polint,MLinvmat,diff_2d_4points_ark,diff_3d_6points,polintark,&
          MLextF_func,MLpotentialfunc,ML_MEPfunc,MLinvmatark,MLratintark,MLrotsymmetry_generate_CII,&
-         MLrotsymmetry_generate,MLkineticfunc,MLkineticfunc_sparse
+         MLrotsymmetry_generate,MLkineticfunc,MLkineticfunc_compact
   public MLdefine_potenfunc,MLcoordinate_transform_func_define,MLextF_func_define,MLdefine_kinetic_subroutine
          !
   public MOrepres_arkT,ddlmn_conj,dlmn,Phi_rot,calc_phirot
@@ -81,7 +81,7 @@ module molecules
    procedure (MLtemplate_symmetry_transformation),pointer :: MLsymmetry_transform_func => null()
    procedure (MLtemplate_rotsymmetry),pointer :: MLrotsymmetry_func => null()
    procedure (MLtemplate_kinetic),pointer :: MLkineticfunc => null()
-   procedure (MLtemplate_kinetic_sparse),pointer :: MLkineticfunc_sparse => null()
+   procedure (MLtemplate_kinetic_compact),pointer :: MLkineticfunc_compact => null()
    !
   contains
 
@@ -535,7 +535,7 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO') 
          !
          MLkineticfunc => MLkinetic_x2y2_bisect_EKE_sinrho
-         MLkineticfunc_sparse => MLkinetic_sparse_x2y2_bisect_EKE_sinrho
+         MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho
          !
     case('GENERAL') 
          !

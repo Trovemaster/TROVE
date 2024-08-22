@@ -647,7 +647,7 @@ Here, ``general`` is the generic PEF type associated with a module ``pot_user`` 
 
 A ``pot_user`` module must have the following structure:
 
-.. code-block::
+.. code-block:: guess 
    :caption:  module pot_user
        
        module pot_user

@@ -7,7 +7,7 @@ module kin_x2y2
 
   implicit none
 
-  public MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_sparse_x2y2_bisect_EKE_sinrho
+  public MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -204,7 +204,7 @@ module kin_x2y2
   ! removed singularity by combining U sin(theta1)sin(theta2) with dG/d theta_i and multiplying muzz and G66 by sin(theta1)^2 sin(theta2)^2 
   ! and muxz and muyz by U sin(theta1)sin(theta2. 
   !
-  subroutine MLkinetic_sparse_x2y2_bisect_EKE_sinrho(nmodes,rho,g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,&
+  subroutine MLkinetic_compact_x2y2_bisect_EKE_sinrho(nmodes,rho,g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,&
                                                      ng_vib,ng_rot,ng_cor,npseudo)
    !
    integer(ik),intent(in) ::  nmodes
@@ -501,7 +501,7 @@ module kin_x2y2
 
 
      !
-   end subroutine  MLkinetic_sparse_x2y2_bisect_EKE_sinrho
+   end subroutine  MLkinetic_compact_x2y2_bisect_EKE_sinrho
 
 
 

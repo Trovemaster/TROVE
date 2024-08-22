@@ -256,6 +256,7 @@ module fields
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       character(len=cl)        ::  potenname='GENERAL' ! name of the user type potential function (for control purposes)
+      logical             :: kinetic_compact = .false. ! compact or sparce representation of the KEO
       !
    end type JobT
    !
@@ -3602,7 +3603,11 @@ module fields
               !
               trove%kinetic_type = trim(w)
               !
-              case default
+           case("COMPACT","SPARSE")
+              !
+              trove%kinetic_compact = .true.
+              !
+           case default
                !
                call report ("Unrecognized unit name "//trim(w),.true.)
                !
@@ -6137,16 +6142,12 @@ end subroutine check_read_save_none
     ! r_na   vector = r_na - cartesian coordinates !
     !
     !
-    ! Calculate Ncoeff: number of elements in the kinetic fields for NkinOrder
-    !
-    Tcoeff  = trove%RangeOrder(trove%NKinOrder+2)
-    Tcoeff1 = trove%RangeOrder(trove%NKinOrder+1)
-    !do k1 = 1,size(s_rot)
-    !   fl => s_rot(k1)
-    !   call polynom_initialization(fl,trove%NKinOrder+2,Tcoeff,Npoints,'s_rot')
-    !enddo
-    !
     if (trove%internal_coords/='LOCAL') then
+      !
+      ! Calculate Ncoeff: number of elements in the kinetic fields for NkinOrder
+      !
+      Tcoeff  = trove%RangeOrder(trove%NKinOrder+2)
+      Tcoeff1 = trove%RangeOrder(trove%NKinOrder+1)
       !
       ! Allocation 
       !
@@ -6239,41 +6240,55 @@ end subroutine check_read_save_none
     !
     ! Calculate Ncoeff: number of elements in the kinetic fields 
     !
-    Tcoeff  = trove%RangeOrder(trove%NKinOrder)
-    !
-    do k1 = 1,Nmodes
-       do k2 = 1,Nmodes
-          fl => trove%g_vib(k1,k2)
-          call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
+    if (.not.trove%kinetic_compact) then 
+       !
+       Tcoeff  = trove%RangeOrder(trove%NKinOrder)
+       !
+       do k1 = 1,Nmodes
+          do k2 = 1,Nmodes
+             fl => trove%g_vib(k1,k2)
+             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
+          enddo
        enddo
-    enddo
-    !
-    ! Rotational part g_rot : 3 x 3 matrix 
-    !
-    do k1 = 1,3
-       do k2 = 1,3
-          fl => trove%g_rot(k1,k2)
-          call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
+       !
+       ! Rotational part g_rot : 3 x 3 matrix 
+       !
+       do k1 = 1,3
+          do k2 = 1,3
+             fl => trove%g_rot(k1,k2)
+             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
+          enddo
        enddo
-    enddo
-    !
-    ! Coriolis part g_cor : Nmodes x 3 matrix 
-    !
-    do k1 = 1,Nmodes
-       do k2 = 1,3
-          fl => trove%g_cor(k1,k2)
-          call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
+       !
+       ! Coriolis part g_cor : Nmodes x 3 matrix 
+       !
+       do k1 = 1,Nmodes
+          do k2 = 1,3
+             fl => trove%g_cor(k1,k2)
+             call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
+          enddo
        enddo
-    enddo
-    !
-    ! Pseudo-potential function field initialization 
-    !
-    fl => trove%pseudo
-    call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
+       !
+       ! Pseudo-potential function field initialization 
+       !
+       fl => trove%pseudo
+       call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
+       !
+    endif
     !
     if (trove%internal_coords=='LOCAL') then
        !
-       call compute_kinetic_on_rho_grid(Tcoeff)
+       ! standard representation of the KEO (not compact.sparse)
+       !
+       if (.not.trove%kinetic_compact) then 
+         !
+         call compute_kinetic_on_rho_grid(Tcoeff)
+         !
+       else
+         !
+         call compute_kinetic_on_rho_grid(Tcoeff)
+         !
+       endif
        !
     else
        !
@@ -6846,14 +6861,14 @@ end subroutine check_read_save_none
 
   !
   ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
-  ! Sparse version where only non zero elements are counted 
+  ! Compact (sparse) version where only non zero elements are counted 
   !
-  subroutine compute_kinetic_on_rho_grid_sparse(Nterms)
+  subroutine compute_kinetic_on_rho_grid_compact(Nterms)
     !
     integer(ik),intent(in) :: Nterms
     real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
     integer(ik),allocatable :: ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
-    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,Ng_vib,Ng_rot,Ng_cor,Npseudo
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo
     real(ark)    :: rho,factor
       !
       Nmodes = trove%Nmodes
@@ -6877,8 +6892,8 @@ end subroutine check_read_save_none
          !
          rho = trove%rho_i(irho)
          !
-         call MLkineticfunc_sparse(trove%nmodes,rho,g_vib,g_rot,g_cor,pseudo,&
-                                   ig_vib,ig_rot,ig_cor,ipseudo,Ng_vib,Ng_rot,Ng_cor,Npseudo)
+         call MLkineticfunc_compact(trove%nmodes,rho,g_vib,g_rot,g_cor,pseudo,&
+                                    ig_vib,ig_rot,ig_cor,ipseudo,Ng_vib,Ng_rot,Ng_cor,Npseudo)
          !
          do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -6906,7 +6921,7 @@ end subroutine check_read_save_none
       deallocate(g_vib,g_rot,g_cor,pseudo)
       call ArrayStop('kinetic_on_grid-fields')
       !
- end subroutine compute_kinetic_on_rho_grid_sparse
+ end subroutine compute_kinetic_on_rho_grid_compact
 
 
 
