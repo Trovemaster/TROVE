@@ -2,11 +2,28 @@ TROVE Keywords
 ==============
 
 
+. _glossary:
 
-
+Glossary
+========
 
 .. glossary::
 
+   builder
+      A class (inheriting from :class:`~sphinx.builders.Builder`) that takes
+      parsed documents and performs an action on them.  Normally, builders
+      translate the documents to an output format, but it is also possible to
+      use builders that e.g. check for broken links in the documentation, or
+      build coverage information.
+
+      See :doc:`/usage/builders/index` for an overview over Sphinx's built-in
+      builders.
+
+   configuration directory
+      The directory containing :file:`conf.py`.  By default, this is the same as
+      the :term:`source directory`, but can be set differently with the **-c**
+      command-line option.
+      
    Mem
       Maximal memory value available for the job in ``gb``, ``mb`` or ``kb``. TROVE uses an internal book keeping of the memory usage and will stop if it is large than the ``mem`` value.
 

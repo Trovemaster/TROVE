@@ -58,5 +58,4 @@ Please report issues at github_ or contact Sergey Yurchenko via s.yurchenko@ucl.
 
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
