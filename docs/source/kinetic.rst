@@ -228,6 +228,13 @@ External Numerical Taylor-type KEO
 As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved. 
 
 Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in Chapter `Checkpoints <https://spectrove.readthedocs.io/en/latest/checkpoints.html>`__. 
+An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
+
+.. math::
+    :label:  e-G-H2CS
+
+    G_{\lambda,\lambda'}(r_1,r_2,r_3,\alpha_1,\alpha_2,\tau) = \sum_{l,m} u_{l,m,n,o,p,q}\lambda,\lambda'   u_{l}(r_1) u_{m}(r_2) u_{n}(r_3) u_{o}(\alpha_1) u_{p}(\alpha_2) u_{o}(\tau).
+    
 
 .. sidebar::
 
@@ -236,13 +243,6 @@ Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion
 
        The curvilinear  coordinates used for H\ :sub:`2`\ CS [23MeOwTe]_ (type ``R-THETA-TAU``).
 
-An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
-
-.. math::
-    :label:  e-G-H2CS
-
-    G_{\lambda,\lambda'}(r_1,r_2,r_3,\alpha_1,\alpha_2,\tau) = \sum_{l,m} u_{l,m,n,o,p,q}\lambda,\lambda'   u_{l}(r_1) u_{m}(r_2) u_{n}(r_3) u_{o}(\alpha_1) u_{p}(\alpha_2) u_{o}(\tau).
-    
 
 This coordinates type (``TRANSFORM``) and associated frame is ``R-THETA-TAU`` (see `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__). 
 
@@ -391,7 +391,7 @@ We assume that each   1D contributing term :math:`u_{l}{\xi_i}` for a given mode
 
 .. math::   
             
-      u_{l}{\xi_i} = f_1( a_i \xi_i^{k_1} )^{n_i} f_2( b_i \xi_i^{l_1} )^{m_i} \ldots
+      u_{l}(\xi_i) = f_1( a_i \xi_i^{k_1} )^{n_i} f_2( b_i \xi_i^{l_1} )^{m_i} \ldots
        
 
 For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f_1{(1)}(r_1) = \frac{1}{r_1}` and :math:`f_1{(1)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
