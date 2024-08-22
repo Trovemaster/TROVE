@@ -451,11 +451,19 @@ where :math:`L[{\bf l}]` is a set of :math:`\{L,l_1,l_2,l_3,\ldots,l_M\}` constr
 The  expansion terms in Eq. :eq:`e-L[l]-form` are arranged according to their total power :math:`L`, which defines the perturbation orders :math:`O(\epsilon^L)` in the expansion of the KEO assuming that each  :math:`\xi_\lambda` is a small displacement from equilibrium of some order of magnitude :math:`\sim O(\epsilon)`.
 
 
-PEF expansion
--------------
+We then introduce a mapping of the expansion  coefficients  $f_{l_1,l_2,\ldots,l_M}^L$ for a polynomial of dimension $M$ and expansion order $L_{\rm max}$ to a vector $f[i]$  ($i=1,\ldots i_{\rm max}$)
 
-Rigid reference configuration
------------------------------
+.. math::
+
+    f_{l_1,l_2,\ldots,l_M} \to f[n],
+
+and control the multi-dimension field expansion via a single index $n$
+
+.. math:: 
+    :label: e-F-i 
+    
+       F(\xi) = \sum_i f[n]\, \xi_1^{i_1} \xi_1^{i_2} \ldots  \xi_{i_M}
+
 
 Let us a consider an example of an XY\ :sub:`2` molecule with a PEF given by a typical Taylor-type expansion around a rigid configuration (equilibrium):
 
@@ -583,6 +591,14 @@ The mapping 3D-to-1D is now as follows
 +--------------+-----------+------------+------------+
 |     ...      |    ...    |     ...    |    ...     |
 +--------------+-----------+------------+------------+
+|      6       |     2     |      0     |     0      |
++--------------+-----------+------------+------------+
+|      6       |     2     |      0     |     1      |
++--------------+-----------+------------+------------+
+|      6       |     2     |      0     |     2      |
++--------------+-----------+------------+------------+
+|      6       |     2     |      0     |     3      |
++--------------+-----------+------------+------------+
 
 where :math:`k=0\ldots N_{\rm points}`. 
 
@@ -657,10 +673,216 @@ Here:
 The input fields ``<- End`` and ``<- sparse threshold used`` are ignored by the TROVE read and only for clarity. 
 
 
+For a non-rigid XY\ :sub:`2` case with :math:`N_{\rm order}=2`, the structure of ``potential.chk`` is as follows (for :math:`N_{\rm points}^{\rm max} = 3`):
+::
+    
+               1       0      2.1950703863E+06
+               1       1      2.1950667601E+06
+               1       2      2.1950558811E+06
+               1       3      2.1950377475E+06
+               2       0      1.0824765910E+03
+               2       1      1.0822716655E+03
+               2       2      1.0816568852E+03
+               2       3      1.0806322393E+03
+               3       0      1.0824765910E+03
+               3       1      1.0822716655E+03
+               3       2      1.0816568852E+03
+               3       3      1.0806322393E+03
+               4       0     -3.9896888537E+06
+               4       1     -3.9896813769E+06
+               4       2     -3.9896589454E+06
+               4       3     -3.9896215557E+06
+               5       0      6.2738693377E+04
+               5       1      6.2739094227E+04
+               5       2      6.2740296812E+04
+               5       3      6.2742301244E+04
+               6       0     -3.9896888537E+06
+               6       1     -3.9896813769E+06
+               6       2     -3.9896589454E+06
+               6       3     -3.9896215557E+06
+
+
+Kinetic Energy Operator checkpoint
+==================================
+
+The KEO has the following general form:
+
+.. math::
+       :label: e-H-total
+
+       \begin{split}
+       \hat{T}
+         &= \frac{1}{2} \, \sum_{\alpha=x,y,z} \; \; \sum_{\alpha^\prime=x,y,z} \hat{J}_{\alpha}\, G_{\alpha,\alpha^\prime}^{\rm rot}(\xi)\, \hat{J}_{\alpha^\prime}   \\
+         &+  \, \sum_{\alpha=x,y,z}\;\; \sum_{n=1}^{3N-6} \left[
+                \hat{J}_{\alpha}\, G_{\alpha,\lambda}^{\rm Cor}(\xi)\, \hat{p}_\lambda +
+               \hat{p}_\lambda  \, G_{\alpha,\lambda}^{\rm Cor}(\xi)\, \hat{J}_{\alpha} \right]  \\
+         &+  \, \sum_{\lambda=1}^{M}\; \sum_{\lambda^\prime=1}^{M}
+               \hat{p}_\lambda \, G_{\lambda,\lambda'}^{\rm vib}(\xi)\,  \hat{p}_{\lambda'} + U(\xi),
+       \end{split}
+
+
+It consists of four main components,  rotational, Coriolis, vibrational and Pseudo-potential, represented by the corresponding KEO expansion terms :math:`G_{\alpha,\alpha^\prime}^{\rm rot}`, :math:`G_{\alpha,\lambda}^{\rm Cor}`, :math:`G_{\lambda,\lambda'}^{\rm vib}` and :math:`U`. Each of them is then represented by a Taylor-type expansion of Eq. :eq:`:label: e-L[l]-form`, either around a rigid configuration (:math:`N_{\rm points}=0`) or a non-rigid one. 
+
+The multi-dimension expansions  are mapped to a 1D array using the same structure as described for PEFs. The corresponding KEO parameters are saved in the checkpoint file ``kinetic.chk`` using the same format with additional specifiers for the KEO term indexes, e.g. :math:`\lambda,\lambda'` as in :math:`G_{\lambda,\lambda'}^{\rm vib}` as well as to indicate which expansion component they belong to. 
+
+The ``kinetic.chk`` file is organised into four parts, vibrational, rotational, Coriolis and pseudo-potential (in this order). 
+As an example t illustrate its structure , let us use the example of XY\ :sub:`2` again assuming the expansion order of :math:`N=0` (rigid rotor KE). Each par ends with a one footer line:
+::
+   
+     987654321     0        0        0  0.00000000E+00 <- End
+     
+as described for ``potential.chk``, and after the last section, the file ends with the footer:
+::
+
+    0.10000000E-23      <- sparse threshold used
+   End of kinetic
+
+.. note:: Here ``End of kinetic`` is a case sensitive obligatory string on the very last line, treated as three words ``End``, ``of`` and ``kinetic`` with spaces as decimeters. 
+
+
+Vibrational part
+^^^^^^^^^^^^^^^^
+
+The first part of ``kinetic.chk`` has the following format
+::
+      
+      0        2       1           <- g_vib Npoints,Norder,Ncoeff
+    ----- ------  ------- ------- -----------------------
+    col 1  col 2   col 3   col 4          col 5
+    ----- ------  ------- ------- -----------------------
+       1     1       1       0        3.45080007E+01
+       1     2       1       0       -4.16924395E-02
+       1     3       1       0        7.88754390E-01
+       2     1       1       0       -4.16924395E-02
+       2     2       1       0        3.45080007E+01
+       2     3       1       0        7.88754390E-01
+       3     1       1       0        7.88754390E-01
+       3     2       1       0        7.88754390E-01
+       3     3       1       0        3.87191518E+01
+       1     1       1       0        2.07473906E+01
+       2     2       1       0        9.64742256E+00
+       3     3       1       0        1.80323802E+01
+       0     0       1       0       -6.05339917E+00
+      ...............
+  987654321     0        0        0  0.00000000000E+00 <- End
+      
+- col 1: the value of the index :math:`\lambda` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 2: the value of the index :math:`\lambda'` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `. 
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`g_{\lambda,\lambda'}[n](\alpha_k)`. 
 
 
 
+Rotational part
+^^^^^^^^^^^^^^^^
 
-kinetic.chk
-============
+The vibrational part is followed by the rotational part using the same structure: 
+
+      0        2        0          <- g_rot Npoints,Norder,Ncoeff
+    ----- ------  ------- ------- -----------------------
+    col 1  col 2   col 3   col 4          col 5
+    ----- ------  ------- ------- -----------------------
+       1     1       1       0        2.07473906E+01
+       2     2       1       0        9.64742256E+00
+       3     3       1       0        1.80323802E+01
+      ...............
+  987654321     0        0        0  0.00000000000E+00 <- End
+
+- col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
+- col 2: the value of the index :math:`\alpha'` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
+- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`g_{\alpha,\alpha'}[n](\alpha_k)`.
+
+
+For the zero-order expansion, only the diagonal elements are present in the KEO of XY\ :sub:`2`.
+
+Coriolis part
+^^^^^^^^^^^^^
+
+The next part of ``kinetic.chk`` list the expansion parameters of :math:`G_{\alpha,\lambda}^{\rm Cor}`. Sice this part is absent for the zero order expansion case, let us increase :math:`N` to 1 for the sake of an illustration:  
+
+
+
+      0        1       4           <- g_cor Npoints,Norder,Ncoeff
+    ----- ------  ------- ------- -----------------------
+    col 1  col 2   col 3   col 4          col 5
+    ----- ------  ------- ------- -----------------------
+       1    2        2       0       -6.44399927E+00
+       1    2        3       0       -1.47113686E-01
+       1    2        4       0        1.47113686E-01
+       2    2        2       0        6.44399927E+00
+       2    2        3       0       -1.47113686E-01
+       2    2        4       0        1.47113686E-01
+       3    2        3       0       -7.22166143E+00
+       3    2        4       0        7.22166143E+00
+      ...............
+  987654321     0        0        0  0.00000000000E+00 <- End
+
+
+- col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\lambda}^{\rm Cor}`
+- col 2: the value of the index :math:`\lambda` in :math:`G_{\alpha,\lambda}^{\rm Cor}``
+- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`g_{\alpha,\lambda}[n](\alpha_k)`.
+
+
+Pseudo-potential part 
+^^^^^^^^^^^^^^^^^^^^^
+
+The last,  pseudo-potential part, contains expansion coefficient of :math:`U(\xi)`. For the :math:`N=1` case it is given by:
+::
+
+           0        1       4          <- pseudo Npoints,Norder,Ncoeff
+        0     0        1        0  -0.605339916936254152E+01
+        0     0        2        0   0.494666955682775800E+00
+        0     0        3        0   0.453132419899363814E+01
+        0     0        4        0   0.453132419899363725E+01
+      987654321     0        0        0  0.00000000000E+00 <- End
+ 
+
+- cols 1-2: two dummy zero values just to keep the same structure as above
+- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`u[n](\alpha_k)`.
+
+Final footer
+^^^^^^^^^^^^
+
+The  final part is the footer as examined above:
+::
+
+    0.10000000E-23      <- sparse threshold used
+   End of kinetic
+
+
+External field checkpoint
+=========================
+
+This is a genial purpose field, used for example to store the dipole moment, correction to the PEF in the refinement etc. It is assumed to be a 1D array of the dimensionality :math:`D` (:math:`D=3` for the dipole). 
+
+
+It follows the same structure as above, just with one index representing the field component. For example:
+::
+    
+     3000        6       28        3          <- Npoints,Norder,Ncoeff,Rank
+       1        1        0 -0.7458479825692242E+00
+       1        1        1 -0.7491358566222752E+00
+       1        1        2 -0.7524174492956430E+00
+       1        1        3 -0.7556927371155667E+00
+       1        1        4 -0.7589616967156357E+00
+       1        1        5 -0.7622243048371204E+00
+       1        1        6 -0.7654805383293001E+00
+     ............
+      
+In the first line here, the last number specifies the dimensionality of the field (here 3). 
+
+As before, the checkpoint file ends with the footer 
+::
+      
+      987654321     0        0  0.00000000000E+00 <- End
+     0.00000000E+00      <- no sparse was threshold used
+    End of external
+    
 
