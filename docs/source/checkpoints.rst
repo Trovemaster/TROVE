@@ -783,17 +783,19 @@ Rotational part
 ^^^^^^^^^^^^^^^^
 
 The vibrational part is followed by the rotational part using the same structure: 
-
-      0        2        0          <- g_rot Npoints,Norder,Ncoeff
-    ----- ------  ------- ------- -----------------------
-    col 1  col 2   col 3   col 4          col 5
-    ----- ------  ------- ------- -----------------------
-       1     1       1       0        2.07473906E+01
-       2     2       1       0        9.64742256E+00
-       3     3       1       0        1.80323802E+01
-      ...............
-  987654321     0        0        0  0.00000000000E+00 <- End
-
+::
+     
+        0        2        0          <- g_rot Npoints,Norder,Ncoeff
+      ----- ------  ------- ------- -----------------------
+      col 1  col 2   col 3   col 4          col 5
+      ----- ------  ------- ------- -----------------------
+         1     1       1       0        2.07473906E+01
+         2     2       1       0        9.64742256E+00
+         3     3       1       0        1.80323802E+01
+        ...............
+    987654321     0        0        0  0.00000000000E+00 <- End
+     
+     
 - col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
 - col 2: the value of the index :math:`\alpha'` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
 - col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`.

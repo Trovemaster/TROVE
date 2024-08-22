@@ -410,7 +410,7 @@ For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`
 
 Here ``I`` indicates the inverse function of :math:`r_1`. 
 
-For mode 4 (:math:`\alpha_1`) however 7 basic functions are needed: 
+For mode 4 (:math:`\alpha_1`) however 7 basic functions are used:
 
 .. math:: 
     
