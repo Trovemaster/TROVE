@@ -533,4 +533,21 @@ The first 5 columns are as before:
 - col 10: :math:`i_5`
 - col 11: :math:`i_6` (i.e. :math:`i_M`).
 
+Special Expansion ``Automatic`` type in the basis set block
+-----------------------------------------------------------
+
+Finally, the expansion basic functions now have to be specified in the kinetic part of the ``basis`` block as the ``automatic`` type as in the following example: 
+:: 
+
+     BASIS
+       0,'JKtau', Jrot 0
+       1,'numerov','AUTOMATIC', 'morse',  range 0, 8, resc 1.0, points 1000, borders -0.35,0.9
+       2,'numerov','AUTOMATIC', 'morse',  range 0, 4, resc 2.0, points 1000, borders -0.5,0.9
+       2,'numerov','AUTOMATIC', 'morse',  range 0, 4, resc 2.0, points 1000, borders -0.5,0.9
+       3,'numerov','AUTOMATIC', 'linear', range 0, 8, resc 1.0, points 1000, borders -1.0,1.0
+       3,'numerov','AUTOMATIC', 'linear', range 0, 8, resc 1.0, points 1000, borders -1.0,1.0
+       4,'numerov','AUTOMATIC', 'linear', range 0, 8, resc 1.0, points 2000, borders -120.,  120.0 deg
+     END
+ 
+This will make sure that the correct expansion functions are used when computing KEO matrix elements. 
 

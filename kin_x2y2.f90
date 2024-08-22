@@ -7,7 +7,7 @@ module kin_x2y2
 
   implicit none
 
-  public MLkinetic_x2y2_bisect_EKE_sinrho
+  public MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_sparse_x2y2_bisect_EKE_sinrho
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level

@@ -6852,8 +6852,8 @@ end subroutine check_read_save_none
     !
     integer(ik),intent(in) :: Nterms
     real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
-    real(ark),allocatable :: i_g_vib(:,:,:),i_g_rot(:,:,:),i_g_cor(:,:,:),i_pseudo(:)
-    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,N_g_vib,N_g_rot,N_g_cor,N_pseudo
+    integer(ik),allocatable :: ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,Ng_vib,Ng_rot,Ng_cor,Npseudo
     real(ark)    :: rho,factor
       !
       Nmodes = trove%Nmodes
