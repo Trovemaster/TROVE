@@ -724,7 +724,7 @@ The KEO has the following general form:
        \end{split}
 
 
-It consists of four main components,  rotational, Coriolis, vibrational and Pseudo-potential, represented by the corresponding KEO expansion terms :math:`G_{\alpha,\alpha^\prime}^{\rm rot}`, :math:`G_{\alpha,\lambda}^{\rm Cor}`, :math:`G_{\lambda,\lambda'}^{\rm vib}` and :math:`U`. Each of them is then represented by a Taylor-type expansion of Eq. :eq:`:label: e-L[l]-form`, either around a rigid configuration (:math:`N_{\rm points}=0`) or a non-rigid one. 
+It consists of four main components,  rotational, Coriolis, vibrational and Pseudo-potential, represented by the corresponding KEO expansion terms :math:`G_{\alpha,\alpha^\prime}^{\rm rot}`, :math:`G_{\alpha,\lambda}^{\rm Cor}`, :math:`G_{\lambda,\lambda'}^{\rm vib}` and :math:`U`. Each of them is then represented by a Taylor-type expansion of Eq. :eq:`e-L[l]-form`, either around a rigid configuration (:math:`N_{\rm points}=0`) or a non-rigid one. 
 
 The multi-dimension expansions  are mapped to a 1D array using the same structure as described for PEFs. The corresponding KEO parameters are saved in the checkpoint file ``kinetic.chk`` using the same format with additional specifiers for the KEO term indexes, e.g. :math:`\lambda,\lambda'` as in :math:`G_{\lambda,\lambda'}^{\rm vib}` as well as to indicate which expansion component they belong to. 
 
@@ -773,7 +773,7 @@ The first part of ``kinetic.chk`` has the following format
       
 - col 1: the value of the index :math:`\lambda` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
 - col 2: the value of the index :math:`\lambda'` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
-- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `. 
+- col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`. 
 - col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
 - col 5: Value of the expansion parameter :math:`g_{\lambda,\lambda'}[n](\alpha_k)`. 
 
@@ -796,7 +796,7 @@ The vibrational part is followed by the rotational part using the same structure
 
 - col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
 - col 2: the value of the index :math:`\alpha'` in :math:`G_{\alpha,\alpha'}^{\rm rot}`
-- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`.
 - col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
 - col 5: Value of the expansion parameter :math:`g_{\alpha,\alpha'}[n](\alpha_k)`.
 
@@ -827,7 +827,7 @@ The next part of ``kinetic.chk`` list the expansion parameters of :math:`G_{\alp
 
 - col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\lambda}^{\rm Cor}`
 - col 2: the value of the index :math:`\lambda` in :math:`G_{\alpha,\lambda}^{\rm Cor}``
-- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`.
 - col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
 - col 5: Value of the expansion parameter :math:`g_{\alpha,\lambda}[n](\alpha_k)`.
 
@@ -847,7 +847,7 @@ The last,  pseudo-potential part, contains expansion coefficient of :math:`U(\xi
       
 
 - cols 1-2: two dummy zero values just to keep the same structure as above
-- col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
+- col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`.
 - col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
 - col 5: Value of the expansion parameter :math:`u[n](\alpha_k)`.
 
