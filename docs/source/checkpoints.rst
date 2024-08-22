@@ -670,7 +670,7 @@ The footer of ``potential.chk`` (and of other fields) is used to (i) indicate th
 Here:
 
 - ``987654321`` is a signature card indicate the end of the main body section. The values in columns 2 and 3 are dummy and only used to maintain the structure when reading ``potential.chk`` line-by-line. 
-- 0.10000000E-23: the coefficient threshold value :math:`f_{\rm min}`
+- ``0.10000000E-23`` is the coefficient threshold value :math:`f_{\rm min}`
 - ``End of potential`` is an obligatory (case sensitive) signature at the end of the file. It is used to check the correctness of the input. 
 
 The input fields ``<- End`` and ``<- sparse threshold used`` are ignored by the TROVE read and only for clarity. 
