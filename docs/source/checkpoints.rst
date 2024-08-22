@@ -893,3 +893,33 @@ As before, the checkpoint file ends with the footer
     
 
 A ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`external.chk <./input/external.chk>`.
+
+A ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :doc:`external.chk <./input/external.chk>`.
+
+.. code::
+      
+     3000        6       28        3          <- Npoints,Norder,Ncoeff,Rank
+       1        1        0 -0.7458479825692242E+00
+       1        1        1 -0.7491358566222752E+00
+       1        1        2 -0.7524174492956430E+00
+       1        1        3 -0.7556927371155667E+00
+       1        1        4 -0.7589616967156357E+00
+       1        1        5 -0.7622243048371204E+00
+       1        1        6 -0.7654805383293001E+00
+     ............
+     
+   
+   
+.. code-block::
+     
+     3000        6       28        3          <- Npoints,Norder,Ncoeff,Rank
+       1        1        0 -0.7458479825692242E+00
+       1        1        1 -0.7491358566222752E+00
+       1        1        2 -0.7524174492956430E+00
+       1        1        3 -0.7556927371155667E+00
+       1        1        4 -0.7589616967156357E+00
+       1        1        5 -0.7622243048371204E+00
+       1        1        6 -0.7654805383293001E+00
+     ............
+
+     
