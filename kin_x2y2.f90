@@ -198,6 +198,312 @@ module kin_x2y2
 
 
 
+  !
+  ! Defining kinetic energy function: sparse representation. 
+  ! This is EKE generated using Maple for a bisecting frame with bond-length-angle and 
+  ! removed singularity by combining U sin(theta1)sin(theta2) with dG/d theta_i and multiplying muzz and G66 by sin(theta1)^2 sin(theta2)^2 
+  ! and muxz and muyz by U sin(theta1)sin(theta2. 
+  !
+  subroutine MLkinetic_sparse_x2y2_bisect_EKE_sinrho(nmodes,rho,g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,&
+                                                     ng_vib,ng_rot,ng_cor,npseudo)
+   !
+   integer(ik),intent(in) ::  nmodes
+   real(ark),intent(in)   ::  rho
+   real(ark),allocatable,intent(out)    ::  g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+   integer(ik),allocatable,intent(out)  ::  ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
+   integer(ik),intent(out)  ::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
+   !
+   !type(FLpolynomT),pointer ::  g_vib(:,:) 
+   !
+   real(ark)            :: mX,mY,rho_2
+   real(ark),parameter  :: rho_threshold = 0.01_rk
+   integer(ik) :: N_g_rot(3,3),N_g_cor(6,3),N_g_vib(6,6),N_pseudo,alloc,i1,i2,Nterms
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_x2y2_bisect_EKE_sinrho-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_x2y2_bisect_EKE_sinrho can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(3)
+     !
+     rho_2 = rho*0.5_ark
+     !
+     Ng_vib(1,1) = 1
+     Ng_vib(1,2) = 1
+     Ng_vib(1,3) = 1
+     Ng_vib(1,4) = 1
+     Ng_vib(1,5) = 1
+     Ng_vib(1,6) = 0
+     Ng_vib(2,1) = 1
+     Ng_vib(2,2) = 1
+     Ng_vib(2,3) = 0
+     Ng_vib(2,4) = 1
+     Ng_vib(2,5) = 1
+     Ng_vib(2,6) = 2
+     Ng_vib(3,1) = 1
+     Ng_vib(3,2) = 0
+     Ng_vib(3,3) = 1
+     Ng_vib(3,4) = 1
+     Ng_vib(3,5) = 1
+     Ng_vib(3,6) = 2
+     Ng_vib(4,1) = 1
+     Ng_vib(4,2) = 1
+     Ng_vib(4,3) = 1
+     Ng_vib(4,4) = 3
+     Ng_vib(4,5) = 3
+     Ng_vib(4,6) = 3
+     Ng_vib(5,1) = 1
+     Ng_vib(5,2) = 1
+     Ng_vib(5,3) = 1
+     Ng_vib(5,4) = 3
+     Ng_vib(5,5) = 3
+     Ng_vib(5,6) = 3
+     Ng_vib(6,1) = 0
+     Ng_vib(6,2) = 2
+     Ng_vib(6,3) = 2
+     Ng_vib(6,4) = 3
+     Ng_vib(6,5) = 3
+     Ng_vib(6,6) = 14
+     !
+     Ng_rot(1,1) = 1
+     Ng_rot(1,2) = 0
+     Ng_rot(1,3) = 4
+     Ng_rot(2,1) = 0
+     Ng_rot(2,2) = 1
+     Ng_rot(2,3) = 4
+     Ng_rot(3,1) = 4
+     Ng_rot(3,2) = 4
+     Ng_rot(3,3) = 14
+     !
+     Ng_cor(1,1) = 0
+     Ng_cor(1,2) = 0
+     Ng_cor(1,3) = 0
+     Ng_cor(2,1) = 1
+     Ng_cor(2,2) = 1
+     Ng_cor(2,3) = 2
+     Ng_cor(3,1) = 1
+     Ng_cor(3,2) = 1
+     Ng_cor(3,3) = 2
+     Ng_cor(4,1) = 2
+     Ng_cor(4,2) = 2
+     Ng_cor(4,3) = 3
+     Ng_cor(5,1) = 2
+     Ng_cor(5,2) = 2
+     Ng_cor(5,3) = 3
+     Ng_cor(6,1) = 4
+     Ng_cor(6,2) = 4
+     Ng_cor(6,3) = 10
+     !
+     Npseudo = 5
+     !
+     do i1 = 1,5
+       do i2 = 1,5
+         if (allocated(g_vib)) deallocate(g_vib)
+         if (allocated(ig_vib)) deallocate(ig_vib)
+         Nterms  = N_g_vib(i1,i2)
+         if (Nterms>0) then
+             allocate(g_vib(nmodes,nmodes,Nterms),stat=alloc)
+             allocate(ig_vib(nmodes,nmodes,Nterms),stat=alloc)
+           else
+             allocate(g_vib(nmodes,nmodes,0:0),stat=alloc)
+             allocate(ig_vib(nmodes,nmodes,0:0),stat=alloc)
+         endif
+       enddo
+     enddo
+     !
+     do i1 = 1,5
+       do i2 = 1,3
+         if (allocated(g_cor)) deallocate(g_cor)
+         if (allocated(ig_cor)) deallocate(ig_cor)
+         Nterms  = N_g_cor(i1,i2)
+         if (Nterms>0) then
+             allocate(g_cor(nmodes,3,Nterms),stat=alloc)
+             allocate(ig_cor(nmodes,3,Nterms),stat=alloc)
+           else
+             allocate(g_cor(nmodes,3,0:0),stat=alloc)
+             allocate(ig_cor(nmodes,3,0:0),stat=alloc)
+         endif
+       enddo
+     enddo     
+     !
+     do i1 = 1,3
+       do i2 = 1,3
+         if (allocated(g_rot)) deallocate(g_rot)
+         if (allocated(ig_rot)) deallocate(ig_rot)
+         Nterms  = N_g_rot(i1,i2)
+         if (Nterms>0) then
+             allocate(g_rot(3,3,Nterms),stat=alloc)
+             allocate(ig_rot(3,3,Nterms),stat=alloc)
+           else
+             allocate(g_rot(3,3,0:0),stat=alloc)
+             allocate(ig_rot(3,3,0:0),stat=alloc)
+         endif
+       enddo
+     enddo
+     !
+     if (allocated(pseudo)) deallocate(pseudo)
+     if (allocated(ipseudo)) deallocate(ipseudo)
+     Nterms  = N_pseudo
+     if (Nterms>0) then
+         allocate(pseudo(Nterms),stat=alloc)
+         allocate(ipseudo(Nterms),stat=alloc)
+       else
+         allocate(pseudo(0:0),stat=alloc)
+         allocate(ipseudo(0:0),stat=alloc)
+     endif
+     !
+     g_vib(1,1,1) =  2./mX
+     g_vib(1,2,1) =  -1./mX
+     g_vib(1,3,1) =  -1./mX
+     g_vib(1,4,1) =  1/mX
+     g_vib(1,5,1) =  1/mX
+     g_vib(2,1,1) =  -1./mX
+     g_vib(2,2,1) =  (mX+mY)/mY/mX
+     g_vib(2,4,1) =  1/mX
+     g_vib(2,5,1) =  -1.*cos(rho)/mX
+     g_vib(2,6,1) =  1/mX*sin(rho)
+     g_vib(2,6,2) =  -1./mX*sin(rho)
+     g_vib(3,1,1) =  -1./mX
+     g_vib(3,3,1) =  (10.*mX**2*mY+7.*mY**2*mX+4.*mX**3+mY**3)/(2.*mX+mY)**2/mX/mY
+     g_vib(3,4,1) =  -1.*cos(rho)/mX
+     g_vib(3,5,1) =  1/mX
+     g_vib(3,6,1) =  1/mX*sin(rho)
+     g_vib(3,6,2) =  -1./mX*sin(rho)
+     g_vib(4,1,1) =  1/mX
+     g_vib(4,2,1) =  1/mX
+     g_vib(4,3,1) =  -1.*cos(rho)/mX
+     g_vib(4,4,1) =  (mY+mX)/mX/mY
+     g_vib(4,4,2) =  2./mX
+     g_vib(4,4,3) =  2./mX
+     g_vib(4,5,1) =  -2.*cos(rho)/mX
+     g_vib(4,5,2) =  -1.*cos(rho)/mX
+     g_vib(4,5,3) =  -1.*cos(rho)/mX
+     g_vib(4,6,1) =  2./mX*sin(rho)
+     g_vib(4,6,2) =  1/mX*sin(rho)
+     g_vib(4,6,3) =  1/mX*sin(rho)
+     g_vib(5,1,1) =  1/mX
+     g_vib(5,2,1) =  -1.*cos(rho)/mX
+     g_vib(5,3,1) =  1/mX
+     g_vib(5,4,1) =  -2.*cos(rho)/mX
+     g_vib(5,4,2) =  -1.*cos(rho)/mX
+     g_vib(5,4,3) =  -1.*cos(rho)/mX
+     g_vib(5,5,1) =  (mY**3+4.*mX**3+7.*mY**2*mX+10.*mX**2*mY)/(2.*mX+mY)**2/mX/mY
+     g_vib(5,5,2) =  2./mX
+     g_vib(5,5,3) =  2./mX
+     g_vib(5,6,1) =  2./mX*sin(rho)
+     g_vib(5,6,2) =  1/mX*sin(rho)
+     g_vib(5,6,3) =  1/mX*sin(rho)
+     g_vib(6,2,1) =  1/mX*sin(rho)
+     g_vib(6,2,2) =  -1./mX*sin(rho)
+     g_vib(6,3,1) =  1/mX*sin(rho)
+     g_vib(6,3,2) =  -1./mX*sin(rho)
+     g_vib(6,4,1) =  2./mX*sin(rho)
+     g_vib(6,4,2) =  1/mX*sin(rho)
+     g_vib(6,4,3) =  1/mX*sin(rho)
+     g_vib(6,5,1) =  2./mX*sin(rho)
+     g_vib(6,5,2) =  1/mX*sin(rho)
+     g_vib(6,5,3) =  1/mX*sin(rho)
+     g_vib(6,6,1) =  (mY**3+4.*mX**3+7.*mY**2*mX+10.*mX**2*mY)/(2.*mX+mY)**2/mX/mY
+     g_vib(6,6,2) =  (mX+mY)/mY/mX
+     g_vib(6,6,3) =  -1.*(mY**3+4.*mX**3+7.*mY**2*mX+10.*mX**2*mY)/(2.*mX+mY)**2/mX/mY
+     g_vib(6,6,4) =  -1.*(mX+mY)/mY/mX
+     g_vib(6,6,5) =  2./mX
+     g_vib(6,6,6) =  2./mX
+     g_vib(6,6,7) =  2./mX
+     g_vib(6,6,8) =  2./mX
+     g_vib(6,6,9) =  -4./mX
+     g_vib(6,6,10) =  4.*cos(rho)/mX
+     g_vib(6,6,11) =  -2./mX
+     g_vib(6,6,12) =  2.*cos(rho)/mX
+     g_vib(6,6,13) =  2.*cos(rho)/mX
+     g_vib(6,6,14) =  -2./mX
+     !
+     g_rot(1,1,1) =  2./mX
+     g_rot(1,3,1) =  -1.*cos(rho_2)/mX
+     g_rot(1,3,2) =  cos(rho_2)/mX
+     g_rot(1,3,3) =  -.500*cos(rho_2)/mX
+     g_rot(1,3,4) =  .500*cos(rho_2)/mX
+     g_rot(2,2,1) =  2./mX
+     g_rot(2,3,1) =  sin(rho_2)/mX
+     g_rot(2,3,2) =  sin(rho_2)/mX
+     g_rot(2,3,3) =  .500*sin(rho_2)/mX
+     g_rot(2,3,4) =  .500*sin(rho_2)/mX
+     g_rot(3,1,1) =  -1.*cos(rho_2)/mX
+     g_rot(3,1,2) =  cos(rho_2)/mX
+     g_rot(3,1,3) =  -.500*cos(rho_2)/mX
+     g_rot(3,1,4) =  .500*cos(rho_2)/mX
+     g_rot(3,2,1) =  sin(rho_2)/mX
+     g_rot(3,2,2) =  sin(rho_2)/mX
+     g_rot(3,2,3) =  .500*sin(rho_2)/mX
+     g_rot(3,2,4) =  .500*sin(rho_2)/mX
+     g_rot(3,3,1) =  .250*(7.*mY**2*mX+10.*mX**2*mY+4.*mX**3+mY**3)/(2.*mX+mY)**2/mY/mX
+     g_rot(3,3,2) =  .250*(mX+mY)/mY/mX
+     g_rot(3,3,3) =  -.250*(7.*mY**2*mX+10.*mX**2*mY+4.*mX**3+mY**3)/(2.*mX+mY)**2/mX/mY
+     g_rot(3,3,4) =  -.250*(mX+mY)/mY/mX
+     g_rot(3,3,5) =  .500/mX
+     g_rot(3,3,6) =  .500/mX
+     g_rot(3,3,7) =  .500/mX
+     g_rot(3,3,8) =  .500/mX
+     g_rot(3,3,9) =  -1./mX
+     g_rot(3,3,10) =  -1.*cos(rho)/mX
+     g_rot(3,3,11) =  -.500/mX
+     g_rot(3,3,12) =  -.500*cos(rho)/mX
+     g_rot(3,3,13) =  -.500*cos(rho)/mX
+     g_rot(3,3,14) =  -.500/mX
+     !
+     g_cor(2,1,1) =  sin(rho_2)/mX
+     g_cor(2,2,1) =  -1.*cos(rho_2)/mX
+     g_cor(2,3,1) =  -.500/mX*sin(rho)
+     g_cor(2,3,2) =  .500/mX*sin(rho)
+     g_cor(3,1,1) =  sin(rho_2)/mX
+     g_cor(3,2,1) =  cos(rho_2)/mX
+     g_cor(3,3,1) =  .500/mX*sin(rho)
+     g_cor(3,3,2) =  -.500/mX*sin(rho)
+     g_cor(4,1,1) =  2.*sin(rho_2)/mX
+     g_cor(4,1,2) =  sin(rho_2)/mX
+     g_cor(4,2,1) =  -2.*cos(rho_2)/mX
+     g_cor(4,2,2) =  -1.*cos(rho_2)/mX
+     g_cor(4,3,1) =  -1./mX*sin(rho)
+     g_cor(4,3,2) =  -.500/mX*sin(rho)
+     g_cor(4,3,3) =  -.500/mX*sin(rho)
+     g_cor(5,1,1) =  2.*sin(rho_2)/mX
+     g_cor(5,1,2) =  sin(rho_2)/mX
+     g_cor(5,2,1) =  2.*cos(rho_2)/mX
+     g_cor(5,2,2) =  cos(rho_2)/mX
+     g_cor(5,3,1) =  1/mX*sin(rho)
+     g_cor(5,3,2) =  .500/mX*sin(rho)
+     g_cor(5,3,3) =  .500/mX*sin(rho)
+     g_cor(6,1,1) =  2.*cos(rho_2)/mX
+     g_cor(6,1,2) =  2.*cos(rho_2)/mX
+     g_cor(6,1,3) =  cos(rho_2)/mX
+     g_cor(6,1,4) =  cos(rho_2)/mX
+     g_cor(6,2,1) =  -2.*sin(rho_2)/mX
+     g_cor(6,2,2) =  2.*sin(rho_2)/mX
+     g_cor(6,2,3) =  -1.*sin(rho_2)/mX
+     g_cor(6,2,4) =  sin(rho_2)/mX
+     g_cor(6,3,1) =  -.500*(10.*mX**2*mY+7.*mY**2*mX+4.*mX**3+mY**3)/(2.*mX+mY)**2/mX/mY
+     g_cor(6,3,2) =  .500*(mX+mY)/mX/mY
+     g_cor(6,3,3) =  .500*(7.*mY**2*mX+10.*mX**2*mY+4.*mX**3+mY**3)/(2.*mX+mY)**2/mX/mY
+     g_cor(6,3,4) =  -.500*(mX+mY)/mY/mX
+     g_cor(6,3,5) =  -1./mX
+     g_cor(6,3,6) =  1/mX
+     g_cor(6,3,7) =  -1./mX
+     g_cor(6,3,8) =  1/mX
+     g_cor(6,3,9) =  1/mX
+     g_cor(6,3,10) =  -1./mX
+     pseudo(1) =  2.50*cos(rho)/mX
+     pseudo(2) =  1/mX
+     pseudo(3) =  1.25*cos(rho)/mX
+     pseudo(4) =  1.25*cos(rho)/mX
+     pseudo(5) =  1/mX
+     !
+
+
+     !
+   end subroutine  MLkinetic_sparse_x2y2_bisect_EKE_sinrho
+
+
 
 
 

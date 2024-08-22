@@ -59,7 +59,7 @@ module molecules
          MLequilibrium_xyz_1d,diff_2d_4points,ML_diffs,MLsymmetry_transform_func
   public MLpotenfunc,MLrotsymmetry_func,ratint,polint,MLinvmat,diff_2d_4points_ark,diff_3d_6points,polintark,&
          MLextF_func,MLpotentialfunc,ML_MEPfunc,MLinvmatark,MLratintark,MLrotsymmetry_generate_CII,&
-         MLrotsymmetry_generate,MLkineticfunc
+         MLrotsymmetry_generate,MLkineticfunc,MLkineticfunc_sparse
   public MLdefine_potenfunc,MLcoordinate_transform_func_define,MLextF_func_define,MLdefine_kinetic_subroutine
          !
   public MOrepres_arkT,ddlmn_conj,dlmn,Phi_rot,calc_phirot
@@ -81,6 +81,7 @@ module molecules
    procedure (MLtemplate_symmetry_transformation),pointer :: MLsymmetry_transform_func => null()
    procedure (MLtemplate_rotsymmetry),pointer :: MLrotsymmetry_func => null()
    procedure (MLtemplate_kinetic),pointer :: MLkineticfunc => null()
+   procedure (MLtemplate_kinetic_sparse),pointer :: MLkineticfunc_sparse => null()
    !
   contains
 

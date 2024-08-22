@@ -6781,7 +6781,7 @@ end subroutine check_read_save_none
 
 
   !
-  ! This procedure is to compute kinetic fields on the rho-grid
+  ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
   !
   subroutine compute_kinetic_on_rho_grid(Nterms)
     !
@@ -6841,6 +6841,72 @@ end subroutine check_read_save_none
       call ArrayStop('kinetic_on_grid-fields')
       !
  end subroutine compute_kinetic_on_rho_grid
+
+
+
+  !
+  ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
+  ! Sparse version where only non zero elements are counted 
+  !
+  subroutine compute_kinetic_on_rho_grid_sparse(Nterms)
+    !
+    integer(ik),intent(in) :: Nterms
+    real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+    real(ark),allocatable :: i_g_vib(:,:,:),i_g_rot(:,:,:),i_g_cor(:,:,:),i_pseudo(:)
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,N_g_vib,N_g_rot,N_g_cor,N_pseudo
+    real(ark)    :: rho,factor
+      !
+      Nmodes = trove%Nmodes
+      !
+      ! Conversion factor to the cm-1 units 
+      !
+      factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
+      !
+      allocate (g_vib(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+      allocate (g_cor(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+      allocate (g_rot(Nmodes,Nmodes,Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+      allocate (pseudo(Nterms),stat=info)
+      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+      !
+      npoints = trove%npoints 
+      !
+      do irho = 0, npoints
+         !
+         rho = trove%rho_i(irho)
+         !
+         call MLkineticfunc_sparse(trove%nmodes,rho,g_vib,g_rot,g_cor,pseudo,&
+                                   ig_vib,ig_rot,ig_cor,ipseudo,Ng_vib,Ng_rot,Ng_cor,Npseudo)
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+               trove%g_vib(k1,k2)%field(:,irho) = g_vib(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,Nmodes
+            do k2 = 1,3
+               trove%g_cor(k1,k2)%field(:,irho) = g_cor(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         do k1 = 1,3
+            do k2 = 1,3
+               trove%g_rot(k1,k2)%field(:,irho) = g_rot(k1,k2,:)*factor
+            enddo
+         enddo
+         !
+         trove%pseudo%field(:,irho) = pseudo(:)*factor
+        !
+      enddo
+      !
+      !
+      deallocate(g_vib,g_rot,g_cor,pseudo)
+      call ArrayStop('kinetic_on_grid-fields')
+      !
+ end subroutine compute_kinetic_on_rho_grid_sparse
 
 
 

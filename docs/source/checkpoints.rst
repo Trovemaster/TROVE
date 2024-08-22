@@ -863,6 +863,54 @@ The  final part is the footer as examined above:
    End of kinetic
 
 
+Extended format of kinetic.chk
+------------------------------
+
+In the case of the ``Basic-Function`` feature used, the kinetic.chk format is required to contain the individual exponents for all modes of each term explicitly. For details, see :doc:`kinetic`. The extended format has now the following form (example for the ``g_vib`` section):
+::
+
+       0   7   93    <--- Gvib Npoints,Norder,Ncoeff
+       1     1     1   0   3.86412653967     0    0    0    0    0    0
+       1     2     1   0   2.80960448197     0    0    0    1    0    0
+       1     3     1   0   2.80960448197     0    0    0    0    1    0
+       1     4     1   0  -2.80960448197     0    1    0    4    0    0
+       1     5     1   0  -2.80960448197     0    0    1    0    4    0
+       1     6     1   0               0     0    0    0    0    0    0
+       2     1     1   0   2.80960448197     0    0    0    1    0    0
+       2     2     1   0   36.2630831225     0    0    0    0    0    0
+      .....
+
+
+where the first three integer numbers ``Npoints,Norder,Ncoeff`` are as before, :math:`N_{\rm points}`, :math:`N_{\rm order}` and :math:`N_{\rm coeff}`, respectively with one important difference. :math:`N_{\rm coeff}` is the number of non-zero coefficients. The columns of the main body are as follows:
+::
+
+     ----- ----- ---- --- ---------------- ---- ---- ---- ---- ----- ----
+       1     2     3   4           5         6    7    8    9    10   11
+     ----- ----- ---- --- ---------------- ---- ---- ---- ---- ----- ----
+       1     1     1   0   3.86412653967     0    0    0    0    0    0
+       1     2     1   0   2.80960448197     0    0    0    1    0    0
+       1     3     1   0   2.80960448197     0    0    0    0    1    0
+       .....
+
+The first 5 columns are as before: 
+
+- col 1: the value of the index :math:`\lambda` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 2: the value of the index :math:`\lambda'` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 3: expansion index :math:`n` in Eq. :eq:`e-F-i`.
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`g_{\lambda,\lambda'}[n](\alpha_k)`.
+
+The rest 6 columns contain the corresponding exponents of each mode in Eq. :eq:`e-F-i`. 
+
+- col 6: :math:`i_1`
+- col 7: :math:`i_2`
+- col 8: :math:`i_3`
+- col 9: :math:`i_4`
+- col 10: :math:`i_5`
+- col 11: :math:`i_6` (i.e. :math:`i_M`). 
+
+
+
 External field checkpoint
 =========================
 
@@ -894,14 +942,10 @@ As before, the checkpoint file ends with the footer
 
 An ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`external.chk <./input/external.chk>`.
 
+
+
+
+
+
 .. literalinclude:: 
 
-
-
-:term:`KinOrder`
-
-:index:`checkpoints`
-
-:index:`kinetic.chk`
-
-:index:`potential.chk`

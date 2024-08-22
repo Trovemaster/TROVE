@@ -344,7 +344,7 @@ Ideally, we would like to have a similar functionality of the "External Numerica
 
 
 
-BASIC-FUNCTION: External sum-of-products KEO of general type
+Basic-Function: External sum-of-products KEO of general type
 ------------------------------------------------------------
 
 This feature allows user to build their KEO from the existing "basic-functions" using the ``BASIC-FUNCTION`` builder. 
@@ -482,4 +482,55 @@ which is summarised in the following table:
 +-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
 |   5   |          1            |   1         |  Sin  |  0.5       |     1       |             |      |           |             |
 +-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
+
+
+Structure of kinetic.chk
+------------------------
+
+For the Basic-Function feature,  we use the extended format of the checkpoint file kinetic.chk, see :doc:`checkpoints. It has the following form 
+::
+    
+       0   7   93    <--- Gvib Npoints,Norder,Ncoeff
+       1     1     1   0   3.86412653967     0    0    0    0    0    0
+       1     2     1   0   2.80960448197     0    0    0    1    0    0
+       1     3     1   0   2.80960448197     0    0    0    0    1    0
+       1     4     1   0  -2.80960448197     0    1    0    4    0    0
+       1     5     1   0  -2.80960448197     0    0    1    0    4    0
+       1     6     1   0               0     0    0    0    0    0    0
+       2     1     1   0   2.80960448197     0    0    0    1    0    0
+       2     2     1   0   36.2630831225     0    0    0    0    0    0
+      .....
+           
+
+where the first three integer numbers are  :math:`N_{\rm points}`, :math:`N_{\rm order}` and :math:`N_{\rm coeff}` with :math:`N_{\rm coeff}` is the number of non-zero coefficients. The columns of the main body are as follows:
+::
+
+     ----- ----- ---- --- ---------------- ---- ---- ---- ---- ----- ----
+       1     2     3   4           5         6    7    8    9    10   11
+     ----- ----- ---- --- ---------------- ---- ---- ---- ---- ----- ----
+       1     1     1   0   3.86412653967     0    0    0    0    0    0
+       1     2     1   0   2.80960448197     0    0    0    1    0    0
+       1     3     1   0   2.80960448197     0    0    0    0    1    0
+       .....
+       
+The first 5 columns are as before:
+
+- col 1: the value of the index :math:`\lambda` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 2: the value of the index :math:`\lambda'` in :math:`G_{\lambda,\lambda'}^{\rm vib}`
+- col 3: expansion index :math:`n`: 
+
+.. math::
+       
+       G_{\lambda,\lambda'}^{\rm vib}(\xi) = \sum_i g_{\lambda,\lambda'}[n]\, \xi_1^{i_1} \xi_1^{i_2} \ldots  \xi_{i_M}
+      
+
+- col 4: The non-rigid grid point :math:`k` (:math:`\alpha_k`), zero for the rigid and :math:`k=0\ldots N_{\rm ponits}`
+- col 5: Value of the expansion parameter :math:`g_{\lambda,\lambda'}[n](\alpha_k)`.
+- col 6: :math:`i_1`
+- col 7: :math:`i_2`
+- col 8: :math:`i_3`
+- col 9: :math:`i_4`
+- col 10: :math:`i_5`
+- col 11: :math:`i_6` (i.e. :math:`i_M`).
+
 

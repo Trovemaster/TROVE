@@ -11,6 +11,7 @@ module moltype
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
+  public MLtemplate_kinetic_sparse
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
   public MLorienting_a0_across_dadrho,manifold
          !
@@ -56,6 +57,18 @@ module moltype
       real(ark),intent(out)  ::  g_vib(nmodes,nmodes,nterms),g_rot(3,3,nterms),g_cor(nmodes,3,nterms),pseudo(Nterms)
       !
     end subroutine MLtemplate_kinetic
+    !
+    subroutine MLtemplate_kinetic_sparse(nmodes,rho,g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,&
+                                         Ng_vib,Ng_rot,Ng_cor,Npseudo)
+      use accuracy
+      !
+      integer(ik),intent(in) ::  nmodes
+      real(ark),intent(in)   ::  rho
+      real(ark),allocatable,intent(out)  ::  g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+      integer(ik),allocatable,intent(out)  ::  ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
+      integer(ik),intent(out)::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(6,3),npseudo
+      !
+    end subroutine MLtemplate_kinetic_sparse    
     !
     subroutine MLtemplate_symmetry_transformation(ioper,natoms,src,dst)
       use accuracy
