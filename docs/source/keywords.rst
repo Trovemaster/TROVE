@@ -7,7 +7,7 @@ TROVE Keywords
 
 .. glossary::
 
-   Mem: 
+   Mem
       Maximal memory value available for the job in ``gb``, ``mb`` or ``kb``. TROVE uses an internal book keeping of the memory usage and will stop if it is large than the ``mem`` value.
 
    KinOrder

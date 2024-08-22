@@ -895,3 +895,13 @@ As before, the checkpoint file ends with the footer
 An ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`external.chk <./input/external.chk>`.
 
 .. literalinclude:: 
+
+
+
+:term:`KinOrder`
+
+:index:`checkpoints`
+
+:index:`kinetic.chk`
+
+:index:`potential.chk`

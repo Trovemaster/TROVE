@@ -55,3 +55,8 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
 
 
 Please report issues at github_ or contact Sergey Yurchenko via s.yurchenko@ucl.ac.uk for any questions.
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
