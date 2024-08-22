@@ -430,16 +430,16 @@ As part of the recently introduced new form ``ascii``, the three fields Potentia
 In TROVE, a generic field :math:`f(\xi)` assumed the following the following compact multi-index representation for a Taylor-type expansion of order :math:`N`:
 
 .. math::
-       :label: e-L[l]-form
-     
-     \begin{split}
-       & \lefteqn{f(\xi) \approx  \sum_{L=0}^N \sum_{L[{\bf l}]} f_{L[{\bf l}]} (\xi)^{L[{\bf l}]}} \\ 
-       & \equiv 
-       \sum_{L=0}^N  \sum_{l_1=0}^{L}\sum_{l_2=0}^{(L-l_1)} \sum_{l_3=0}^{(L-l_1-l_2)} \\
-          \sum_{l_{M-1}=0}^{(L-l_1-l_2-\ldots l_{M-2})}
-         f_{ l_1 l_2 l_3 \ldots l_{M} }^{L} \prod_{i} \xi_{i}^{l_{i}} ,
-     \end{split}
-
+       :label:   e-L[l]-form
+       
+       \begin{split}
+         & \lefteqn{f(\xi) \approx  \sum_{L=0}^N \sum_{L[{\bf l}]} f_{L[{\bf l}]} (\xi)^{L[{\bf l}]}} \\ 
+         & \equiv 
+         \sum_{L=0}^N  \sum_{l_1=0}^{L}\sum_{l_2=0}^{(L-l_1)} \sum_{l_3=0}^{(L-l_1-l_2)} 
+            \sum_{l_{M-1}=0}^{(L-l_1-l_2-\ldots l_{M-2})}
+           f_{ l_1 l_2 l_3 \ldots l_{M} }^{L} \prod_{i} \xi_{i}^{l_{i}} ,
+       \end{split}
+       
 
 where :math:`L[{\bf l}]` is a set of :math:`\{L,l_1,l_2,l_3,\ldots,l_M\}` constrained with :math:`l_1+l_2+l_3+\cdots l_M=L` and  :math:`M=3N-6`. For each set of :math:`\{L, l_1,l_2,\ldots l_{M} \}`, the index :math:`l_{M}` given in this equation is redundant and set to 
 
@@ -613,6 +613,9 @@ The checkpoint file ``potential.chk`` containing the expansion parameters :math:
 - main body with the expansion values and indexes 
 - footer with a checkpoint "signature"
 
+A ``potential.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`potential.chk <./input/potential.chk>`.
+
+
 Header
 ^^^^^^
 
@@ -725,8 +728,10 @@ It consists of four main components,  rotational, Coriolis, vibrational and Pseu
 
 The multi-dimension expansions  are mapped to a 1D array using the same structure as described for PEFs. The corresponding KEO parameters are saved in the checkpoint file ``kinetic.chk`` using the same format with additional specifiers for the KEO term indexes, e.g. :math:`\lambda,\lambda'` as in :math:`G_{\lambda,\lambda'}^{\rm vib}` as well as to indicate which expansion component they belong to. 
 
-The ``kinetic.chk`` file is organised into four parts, vibrational, rotational, Coriolis and pseudo-potential (in this order). 
-As an example t illustrate its structure , let us use the example of XY\ :sub:`2` again assuming the expansion order of :math:`N=0` (rigid rotor KE). Each par ends with a one footer line:
+The ``kinetic.chk`` file is organised  into four parts, vibrational, rotational, Coriolis and pseudo-potential (in this order). A ``kinetic.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`kinetic.chk <./input/kinetic.chk>`.
+
+
+As an example to illustrate its structure , let us use the example of XY\ :sub:`2` again assuming the expansion order of :math:`N=0` (rigid rotor KE). Each par ends with a one footer line:
 ::
    
      987654321     0        0        0  0.00000000E+00 <- End
@@ -802,23 +807,22 @@ Coriolis part
 ^^^^^^^^^^^^^
 
 The next part of ``kinetic.chk`` list the expansion parameters of :math:`G_{\alpha,\lambda}^{\rm Cor}`. Sice this part is absent for the zero order expansion case, let us increase :math:`N` to 1 for the sake of an illustration:  
-
-
-
-      0        1       4           <- g_cor Npoints,Norder,Ncoeff
-    ----- ------  ------- ------- -----------------------
-    col 1  col 2   col 3   col 4          col 5
-    ----- ------  ------- ------- -----------------------
-       1    2        2       0       -6.44399927E+00
-       1    2        3       0       -1.47113686E-01
-       1    2        4       0        1.47113686E-01
-       2    2        2       0        6.44399927E+00
-       2    2        3       0       -1.47113686E-01
-       2    2        4       0        1.47113686E-01
-       3    2        3       0       -7.22166143E+00
-       3    2        4       0        7.22166143E+00
-      ...............
-  987654321     0        0        0  0.00000000000E+00 <- End
+::
+    
+        0        1       4           <- g_cor Npoints,Norder,Ncoeff
+      ----- ------  ------- ------- -----------------------
+      col 1  col 2   col 3   col 4          col 5
+      ----- ------  ------- ------- -----------------------
+         1    2        2       0       -6.44399927E+00
+         1    2        3       0       -1.47113686E-01
+         1    2        4       0        1.47113686E-01
+         2    2        2       0        6.44399927E+00
+         2    2        3       0       -1.47113686E-01
+         2    2        4       0        1.47113686E-01
+         3    2        3       0       -7.22166143E+00
+         3    2        4       0        7.22166143E+00
+        ...............
+    987654321     0        0        0  0.00000000000E+00 <- End
 
 
 - col 1: the value of the index :math:`\alpha` in :math:`G_{\alpha,\lambda}^{\rm Cor}`
@@ -833,14 +837,14 @@ Pseudo-potential part
 
 The last,  pseudo-potential part, contains expansion coefficient of :math:`U(\xi)`. For the :math:`N=1` case it is given by:
 ::
-
+       
            0        1       4          <- pseudo Npoints,Norder,Ncoeff
         0     0        1        0  -0.605339916936254152E+01
         0     0        2        0   0.494666955682775800E+00
         0     0        3        0   0.453132419899363814E+01
         0     0        4        0   0.453132419899363725E+01
       987654321     0        0        0  0.00000000000E+00 <- End
- 
+      
 
 - cols 1-2: two dummy zero values just to keep the same structure as above
 - col 3: expansion index :math:`n` in Eq. :eq:`:label: e-F-i `.
@@ -886,3 +890,4 @@ As before, the checkpoint file ends with the footer
     End of external
     
 
+A ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`external.chk <./input/external.chk>`.
