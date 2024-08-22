@@ -4,6 +4,7 @@ Glossary
 ========
 
 .. glossary::
+    :sorted:
 
    KinOrder
       Expansion order of the KEO

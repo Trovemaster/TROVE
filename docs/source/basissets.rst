@@ -30,7 +30,7 @@ Other cards of the mode 0 include ``KMAX`` (``Lmax``) defining the maximal value
 
 
 
-SiH\ :sub:`2` has :math:`3N - 6 = 3` internal degrees of freedom and thus 3 vibrational basis functions are required. For this example, the first group ``1`` combines the two stretches SiH` :sub:`1` and SiH\ :sub:`2` based on their symmetry equivalence: these two degrees of freedom transform through  each other when acted upon with the C\ :sub:`3v` (M) symmetry operations. The sub-group '2' is for the bending mode H-Si-H, which is a stand-alone degree of freedom that transforms independently from the sub-group 1. The grouping is used for producing symmetric combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__ and in [17YuYaOv]_.
+SiH\ :sub:`2` has :math:`3N - 6 = 3` internal degrees of freedom and thus 3 vibrational basis functions are required. For this example, the first group ``1`` combines the two stretches SiH` :sub:`1` and SiH\ :sub:`2` based on their symmetry equivalence: these two degrees of freedom transform through  each other when acted upon with the C\ :sub:`3v` (M) symmetry operations. The sub-group '2' is for the bending mode H-Si-H, which is a stand-alone degree of freedom that transforms independently from the sub-group 1. The grouping is used for producing symmetric combinations of basis functions and only coordinates symmetrically related should be grouped together. Details of this procedure are discussed in :doc:`theory` and in [17YuYaOv]_.
 
 
 2. Basis set method/type
@@ -99,7 +99,7 @@ The number after ``weight`` (aka ``resc``) gives the weighting :math:`a_i` of th
 
 The second use of the coordinate grids defined by these tow cards is in the symmetrisation sampling procedure. Therefore these cards must be defined even for non Numerov-Cooley integration method.
 
-The details of the primitive basis sets are given in the TROVE output file and will be discussed in Chapter `Outputs <https://spectrove.readthedocs.io/en/latest/output.html>`__.
+The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`output`.
 
 Other non-standard options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -181,13 +181,13 @@ CH\ :sub:`4`
        2,'numerov','linear',  'morse', r 8, range 0, 0, weight 2.0, points 1000, borders -0.45,0.9
        2,'numerov','linear',  'morse', r 8, range 0, 0, weight 2.0, points 1000, borders -0.45,0.9
        2,'numerov','linear',  'morse', r 8, range 0, 0, weight 2.0, points 1000, borders -0.45,0.9
-       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post 
-       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post 
-       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post  
-       4,'harmonic','linear', 'linear',r 2, range 0, 6, weight 1.0, points 4000, borders -2.20,2.20 post  
-       4,'harmonic','linear', 'linear',r 2, range 0, 6, weight 1.0, points 4000, borders -2.20,2.20 post 
-    END 
-    
+       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post
+       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post
+       3,'numerov','linear',  'linear',r 8, range 0, 0, weight 1.0, points 1000, borders -2.10,2.10 post
+       4,'harmonic','linear', 'linear',r 2, range 0, 6, weight 1.0, points 4000, borders -2.20,2.20 post
+       4,'harmonic','linear', 'linear',r 2, range 0, 6, weight 1.0, points 4000, borders -2.20,2.20 post
+    END
+
 
 Rotational basis set
 ====================
@@ -196,21 +196,21 @@ Rotational basis set
 For the rotational motion, the standard rigid rotor wavefunctions are used, which are then symmetrised via the Wang-combinations (all expect for some special cases of the Td symmetry) in the :math:`J-K-\tau` form as follows
 
 .. math::
-     
+
       \begin{split}
           &|J,0,\tau\rangle = |J,0\rangle, \quad \tau =  J\; {\rm mod}\; 2 , \\
           &|J,K,\tau=0\rangle = \frac{1}{\sqrt{2}} \left[ |J,K,m\rangle + (-1)^{J+K} |J,-K,m\rangle  \right],\\
           &|J,K,\tau=1\rangle = \frac{i (-1)^{\sigma} }{\sqrt{2}} \left[ |J,K,m\rangle - (-1)^{J+K} |J,-K,m\rangle  \right].
       \end{split}
-      
-       
+
+
 Here :math:`K=|k|`, :math:`\tau_{\rm rot}` is the value associated with the parity of :math:`\ket{J,K,\tau_{\rm rot}}`  and :math:`m` is omitted on the left-hand side for simplicity's sake.  :math:`K` is the rotational quantum number (:math:`K_a` or :math:`K_c`, depending on the orientation of the :math:`z` axis). The sign of :math:`k` is, however, not a physically meaningful quantity of a rotational eigen-state, but the parity :math:`\tau_{\rm rot}` is. :math:`\sigma_{\rm rot} = K\, {\rm mod}\, 3`. The symmetry classification must be implemented for each molecule/symmetry case as part of the subroutines ML_rotsymmetry_<MOLECULE> for each nodule mol_<MOLECULE>.f90. For example, such an implementation for the rotational basis functions :math:`|J,K,\tau\rangle`
 of C\ :sub:`3v`\ (M) are given by
 
 +----------------+---------------+---------------------------+
 | :math:`K`      |  :math:`\tau` |  :math:`\Gamma_{\rm rot}` |
 +----------------+---------------+---------------------------+
-|  :math:`3n`    |       0       |       :math:`A_1`         |    
+|  :math:`3n`    |       0       |       :math:`A_1`         |
 +----------------+---------------+---------------------------+
 |  :math:`3n`    |       1       |       :math:`A_2`         |
 +----------------+---------------+---------------------------+
@@ -226,25 +226,25 @@ Once implemented, there is nothing else to be specified in the input file as far
     BASIS
        0,'JKtau', Jrot 15
     .....
-    
+
 
 For a Td symmetry molecule like methane or silane, the symmetry-adapted rotational functions are obtained as linear combinations of :math:`\ket{J,k,m}` with :math:`k=-J\ldots J`, spanning multiple values of :math:`k`. Therefore, the rotational quantum number :math:`K` can no longer be used for classification of these symmetrised rigid-rotor combinations. Instead they can be labelled  as :math:`\ket{J,\Gamma,n}`, where :math:`\Gamma` is the symmetry and :math:`n` is a counting index:
 
 .. math::
-    
+
     |J,\Gamma,n\rangle = \sum_{k} T_{n,k}^{(J,\Gamma)} |J,k,m\rangle.
-     
+
 
 The coefficients :math:`T_{n,k}^{(J,\Gamma)}` are generated based on the symmetry properties of the transformations of  the Euler angles in :math:`|J,k,m\rangle`. All expansion coefficients required for this symmetry adaptation are generated automatically as part a numerical procedure. For this type of molecules, it is necessary to switch on by placing the card  ``rotsym euler`` inside the ``CONTRACTION`` block, e.g.
 ::
-      
+
      CONTRACTION
-        Npolyads      14   
+        Npolyads      14
         rotsym        euler
         model j=0
      END
-     
 
 
 
- 
+
+

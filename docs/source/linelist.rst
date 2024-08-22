@@ -314,7 +314,7 @@ where
 Different functionality of INTENSITY
 ====================================
 
-The card ``PRUNING`` is for building an intensity (transition-moment, TM) list used for intensity (TM) pruning (see  `Features <https://spectrove.readthedocs.io/en/latest/features.html>`__ about the basis set pruning).
+The card ``PRUNING`` is for building an intensity (transition-moment, TM) list used for intensity (TM) pruning (see  :doc:`features` about the basis set pruning).
 
 
 ``TDM_REPLACE`` (``DIPOLE_REPLACE``, ``DIPOLE_SCALE``) is for scaling the vibrational transition dipole moments for individual bands in order to improve the agreement with experimental intensities. The scaling factors must be stored in the file ``j0_tdm.chk`` in the following format:

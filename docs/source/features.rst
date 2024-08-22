@@ -10,7 +10,7 @@ Most of these  features are for dealing with larger molecules in TROVE.
 Splitting and Stitching
 =======================
 
-As discussed in Chapter `Quickstart <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, matrix elements between contracted basis functions are saved to a file, ``contr_matelem.chk``. This step is time consuming and for large molecules/basis sets it may not be possible to carry out this step within a computer's allocated time limit. The ``split`` command solves this problem by splitting the matrix into 12 'slices'. Each slice contains matrix elements of a component of the full Hamiltonian operator.
+As discussed in :doc:`quickstart`, matrix elements between contracted basis functions are saved to a file, ``contr_matelem.chk``. This step is time consuming and for large molecules/basis sets it may not be possible to carry out this step within a computer's allocated time limit. The ``split`` command solves this problem by splitting the matrix into 12 'slices'. Each slice contains matrix elements of a component of the full Hamiltonian operator.
 
 To use splitting, in the ``CHECK_POINT`` block the ``matelem`` should be set to
 ::
@@ -40,7 +40,7 @@ Matrix elements of the dipole are converted in the same way. For the dipole it m
 
       extmatelem convert stitch
 
-This will combine the split matelem files into a ``j0_extfield.chk`` files (which are produced if not splitting is carried out as specified in Chapter `Quickstart <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__). This can then be used with GAIN.
+This will combine the split matelem files into a ``j0_extfield.chk`` files (which are produced if not splitting is carried out as specified in :doc:`quickstart`). This can then be used with GAIN.
 
 
 

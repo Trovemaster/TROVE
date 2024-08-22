@@ -25,8 +25,8 @@ To carry out this decoupling, a more suitable coordinate system is required. Thi
 
 Defining a molecule-fixed axis system immediately introduces a problem however due to the variety of shapes and sizes of molecules. For each molecule type (e.g. trigonal pyramidal, tetrahedral, etc) there are different choices of coordinate system which lead to different kinetic energy operators (and different computer programs for their solution). Normal coordinates are an exception and can be defined in a general manner but are best suited for small amplitude vibrations near a molecule's equilibrium structure.
 
-TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system. This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule. This allows TROVE to be used for a wide variety of molecules as seen in chapter `Molecules <https://spectrove.readthedocs.io/en/latest/molecules.html>`__. The actual construction of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
-transforms and so on (see chapter `New molecule <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__ ).
+TROVE takes a different approach by numerically constructing the kinetic energy operator for a given molecule and axis system. This is achieved using a Taylor expansion of the Hamiltonian in terms of internal coordinates of the molecule. This allows TROVE to be used for a wide variety of molecules as seen in :doc:`molecules`. The actual construction of the Hamiltonian can be used in a rather *black box* manner, with the user only needing to define coordinate
+transforms and so on (see chapter :doc:`newmolecules` ).
 
 A particular strength of TROVE is the ability to calculate eigenfunctions and eigenvalues of high angular momentum quantum number :math:`J` by minimising the coupling of the vibrational and rotational motion. Access to high :math:`J` is crucial for the simulation of molecular spectra, especially at high temperatures where lots of states are populated.
 
@@ -254,7 +254,7 @@ The method TROVE uses to handle this case is the Hougen-Bunker-Johns or HBJ appr
 Expansion of the Potential Energy Function
 ==========================================
 
-The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised form. This function is required as an input to TROVE (see Chapter `New molecules <https://spectrove.readthedocs.io/en/latest/newmolecules.html>`__) but for computational efficiency, TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
+The potential energy function for a molecule is typically expressed in some suitable coordinates, ideally in a symmetrised form. This function is required as an input to TROVE (see :doc:`newmolecules`) but for computational efficiency, TROVE re-expresses the potential in terms of the chosen coordinates :math:`\xi` (:eq.v_exp_func:)
 
 
 .. math::
@@ -410,7 +410,7 @@ and eigenfunctions of :math:`\hat{H}` are also eigenfunctions of :math:`R` (as a
 
 The full rovibrational Hamiltonian :math:`H^{rv}` is not used to find symmetrised functions since this is exactly the process we are trying to simplify. Instead a set of reduced Hamiltonians :math:`\hat{H}^{(i)}` is introduced, similar to what was done for finding 1D basis functions in equation :eq:`1Dschrodinger`. The approach used in TROVE for this is as follows:
 
-  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF\ :sub:`3` example from chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
+  (i) All ro-vibrational degrees of freedom are divided into :math:`L` symmetrically independent subspaces which form subgroups of :math:`\mathbf{G}`. For example in the PF\ :sub:`3` example from :doc:`quickstart`, the basis block was divided into '1s' and '2s' for the stretches and bends respectively.
 
   (ii) For each subspace :math:`i = 1, \cdots, L`, a reduced Hamiltonian operator :math:`\hat{H}^{(i)}` is constructed by neglecting or integrating over the other degrees of freedom.
 
@@ -523,9 +523,9 @@ In terms of the line strength, the absorption ro-vibrational line intensities  i
 
 .. math::
        :label: e-intensityabsorption
-          
+
           I(f \leftarrow i)  = \frac{8 \pi^3  \nu_{\rm if}}{(4 \pi \epsilon_0)3h c} \, \frac{e^{-E_i/kT}}{Q} \, \big[1 - {\rm exp}(-h \nu_{fi}/kT)\big] \,  S(f \leftarrow i) ,
-                  
+
 
 where  :math:`\nu =  (E_f-E_i)` is the line position in Hz (s\ :sub:`-1`), :math:`h` is Planck's constant, :math:`c` is the speed of light in vacuum, :math:`k` is the Boltzmann constant, :math:`\epsilon_0` is the permittivity of free space, :math:`S(f \leftarrow i)` is the line strength. Finally, :math:`Q` is the partition function defined as
 
@@ -537,9 +537,9 @@ where :math:`g_j` is the total degeneracy of the ro-vibrational state with energ
 
 .. math::
       :label: e-gns
-        
+
         g_j = g_{\rm ns}^{(j)} J_j(J_j+1)
-        
+
 
 and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
 
@@ -561,7 +561,7 @@ The main ingredients to compute the ro-vibrational line strengths  :math:`S(f \l
          \right\vert
           \Psi_{\rm rv}^{(i)}
          \right\rangle \right\vert^2.
-         
+
 
 In TROVE, the variationally computed rovibration wavefunctions :math:`|\Psi_{\rm rv}^{(i)}\rangle` are given by expansions in terms of basis function:
 
@@ -594,18 +594,18 @@ are assumed to originate from electronic structure calculations as averages over
 
 .. math::
     :label: e-Sif-sigma
-    
+
     \begin{split}
         &S(f \leftarrow i) = g_{ns} \, (2 J' + 1) \, (2 J'' + 1) \\
         & \times  \left| \sum_{\sigma=-1,0,1}\sum_{v' k' v'' k'' }  \, C_{v' k' }^{(f)*}\,  C_{v'' k'' }^{(i)} \,  (-1)^{k'} \left(\begin{array}{ccc} J''&1&J'\\  k''&\sigma&-k'\end{array}\right) \langle v'| \bar\mu_{\rm m}^{(1),\sigma} | v''\rangle  \right|^2 ,
      \end{split}
-     
+
 where
 
 .. math::
-      
+
       \left(\begin{array}{ccc} J''&\phantom{-}1&J'\\ k''&\sigma&-k'      \end{array}\right)
-      
+
 
 is the standard 3j-symbol.
 

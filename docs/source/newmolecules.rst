@@ -12,7 +12,7 @@ Adding a Similar Symmetry Molecule
 
 Adding a molecule of similar symmetry is relatively straightforward. It is possible that no new TROVE files for defining the potential, etc will be required. An example of this is adding arsine (AsH\ :sub:`3`) when phosphine (PH\ :sub:`3`) is already set up in TROVE. Both molecules have trigonal pyramidal structure and belong to the :math:`C_{3v}` point group.
 
-In the TROVE input file the molecule is defined in various places as was discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__. If a new molecule of the same symmetry as a previously defined molecule is to be added, then the symmetry group defined by the keyword ``SYMGROUP`` should be kept the same.
+In the TROVE input file the molecule is defined in various places as was discussed in :doc:`quickstart`. If a new molecule of the same symmetry as a previously defined molecule is to be added, then the symmetry group defined by the keyword ``SYMGROUP`` should be kept the same.
 
 ``TRANSFORM``, which determines the subroutine to transform coordinates from Z-matrix to those for computations, should also be left the same. If a new type of coordinates is required then this needs to be changed either to another existing transform or a new one. Setting this up is described below.
 
@@ -34,7 +34,7 @@ Setting Up a New Molecule
 
 Setting up a new molecule for TROVE requires the user to modify or add new subroutines to TROVE which will be added to the list of files to be compiled with the main program. Before the specific details of these are provided a description of what is required will be given.
 
-As discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__, TROVE expands the Hamiltonian in terms of molecule-fixed internal coordinates. To do this, transformations between various coordinates are required. The molecule's geometry (including the equilibrium geometry) is defined in the input file via the Z-matrix. This gives a straightforward and intuitive way to define a molecule's geometry. Z-matrix coordinates are usually not used to expand the kinetic or potential energy however as they do not take into account symmetry, are not of Morse form, etc. Transformation to the working coordinates and potential is given in a mol and pot file, usually one of each is defined per molecule.
+As discussed in :doc:`theory`, TROVE expands the Hamiltonian in terms of molecule-fixed internal coordinates. To do this, transformations between various coordinates are required. The molecule's geometry (including the equilibrium geometry) is defined in the input file via the Z-matrix. This gives a straightforward and intuitive way to define a molecule's geometry. Z-matrix coordinates are usually not used to expand the kinetic or potential energy however as they do not take into account symmetry, are not of Morse form, etc. Transformation to the working coordinates and potential is given in a mol and pot file, usually one of each is defined per molecule.
 
 The mol file contains one or multiple subroutines for transforming from Z-matrix coordinates to `TROVE coordinates' (the coordinates used to expand the kinetic energy and re-expand the potential energy) and back again. Choosing which coordinates to use is part of the problem of setting up a new molecule. Various options are sometimes needed to assess the best choice. Criteria for choosing coordinates are: symmetry considerations, ease of use, numerical stability. etc.
 The mol file also contains a routine for expressing the molecules equilibrium geometry in Cartesian coordinates. Another important part of the mol file is a routine which expresses how the TROVE coordinates transform under the symmetry which has been chosen to work in.
@@ -75,7 +75,7 @@ The PF\ :sub:`3` molecule is of the generic type XY\ :sub:`3` and the mol file u
 
 This will print out the message if the ``verbose`` value is :math:`>5`. Next the value of ``direct`` is checked. If true then the molecule's equilibrium parameters (defined in a global vector from the input file) are subtracted from the ``src``. This is for Z-matrix to TROVE. Otherwise, the ``src`` vector is transferred to ``dsrc``.
 
-After this initial step many different choices of coordinates and transforms are defined. From Chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__ the PF\ :sub:`3` example was defined using
+After this initial step many different choices of coordinates and transforms are defined. From :doc:`quickstart` the PF\ :sub:`3` example was defined using
 ::
 
      dstep            0.01
@@ -199,7 +199,7 @@ In this case ``b0`` has been defined explicitly with respect to the centre of ma
 
 
 
-If the molecule contains a non-rigid degree of freedom (for example, the umbrella motion in NH\ :sub:`3`) then HBJ theory is used as discussed in Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__. In this case TROVE expands the Hamiltonian on a grid of geometries along the non-rigid degree of freedom. The other arguments to the subroutine then come into play. ``Npoints`` is the number of points the non-rigid degree of freedom is split into, chosen in the ``BASIS`` block of the input file. ``rho_i``
+If the molecule contains a non-rigid degree of freedom (for example, the umbrella motion in NH\ :sub:`3`) then HBJ theory is used as discussed in :doc:`theory`. In this case TROVE expands the Hamiltonian on a grid of geometries along the non-rigid degree of freedom. The other arguments to the subroutine then come into play. ``Npoints`` is the number of points the non-rigid degree of freedom is split into, chosen in the ``BASIS`` block of the input file. ``rho_i``
 is the value of the non-rigid coordinate for that ``npoint``. ``rho_ref`` and ``rho_borders`` are the reference geometry (usually at equilibrium) and the ends of the grid along the non-rigid coordinate.
 
 The array which contains the Cartesian coordinates, ``b0`` is of size ``(Natoms,3,Npoints)``. For rigid molecules, ``Npoints`` = 0 and only the equilibrium geometry is necessary. For non-rigid, the coordinates of each atom are required at each point along the non-rigid coordinate. A loop over  ``Npoints`` is required and the way the other rigid coordinates change at each ``rho_i`` is given. The mol file for NH\ :sub:`3` or H\ :SUB:`2`O\ :SUB:`2` shows examples of this.
@@ -212,7 +212,7 @@ A final part of the mol file which needs to be set up is the ``ML_rotsymmetry_XX
 The pot File
 ------------
 
-The pot file is used to define potential energy surfaces in TROVE. Although TROVE re-expands the PES in whichever coordinates have been chosen in the mol file (see Chapter `Theory <https://spectrove.readthedocs.io/en/latest/theory.html>`__, the program needs the potential energy function as part of this process. As with the mol file the pot file can make use of parameters defined in the input file.
+The pot file is used to define potential energy surfaces in TROVE. Although TROVE re-expands the PES in whichever coordinates have been chosen in the mol file (see :doc:`theory`, the program needs the potential energy function as part of this process. As with the mol file the pot file can make use of parameters defined in the input file.
 
 A typical pot file contains multiple PES functions which return the energy for a given geometry. For a given molecule class many functions may be implemented to test different PESs or compare against functions given in the literature. The choice of PES is defined in the input file.
 
@@ -272,7 +272,7 @@ Rather than explicitly give all the symmetrised expansion coordinates in a PES r
        f = f + term*force(i)
      end do
 
-This starts by calling a symmetry transform subroutine (similar to that in the mol file discussed above) for each symmetry operation (12 in this case). All permutations are stored in the ``chi`` matrix.  The parameters of the potential are then looped over. The power to which each coordinate is raise is extracted from the list given in the input file (recall that parameters can be given as a simple list or including the powers, see Chapter `Theory <https://spectrove.readthedocs.io/en/latest/quickstart.html>`__. The symmetries
+This starts by calling a symmetry transform subroutine (similar to that in the mol file discussed above) for each symmetry operation (12 in this case). All permutations are stored in the ``chi`` matrix.  The parameters of the potential are then looped over. The power to which each coordinate is raise is extracted from the list given in the input file (recall that parameters can be given as a simple list or including the powers, see :doc:`quickstart`. The symmetries
 are then looped over and each permutation raised by that power. The division by 12 is then applied to match how the PES was fit. Finally the relevant parameter multiplies the geometry term and then another loop over then next parameter is started.
 
 This approach guarantees that the symmetry of the molecule is taken into account. For example, if a C-H bond length was varied then all other permutations are taken into account so that all C-H stretches are equivalent.
