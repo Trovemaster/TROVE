@@ -82,10 +82,10 @@ Glossary
 
 
    control
-      Control block (see **Quick start**).
+      Control block (see :doc:`quickstart`).
 
    Basis
-      Basis set block (See **Basis sets**).
+      Basis set block (See :doc:`basissets`).
 
    EQUILIBRIUM
      Equilibrium values of the molecule geometries in terms of the Z-matrix coordinates.
@@ -94,7 +94,7 @@ Glossary
      Special parameters used to define the coordinate to expand PEF, e.g. the Morse parameter :math:`a`.
 
    POTEN
-      Potential block (see **Potential energy functions**).
+      Potential block (see :doc:`potentials`).
 
    DIPOLE
       Dipole moment block (or ``external`` field block)

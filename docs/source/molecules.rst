@@ -231,11 +231,11 @@ A short description of the keywords, cards and sections used is as follows.
  - ``SYEV``: LAPACK Eigensolver type DSYEV.
  - ``enermax``: Maximal energy (cm\ :sup:`-1`).
  - ``ZMAT``: Z-matrix block defining the Z-matrix coordinates and nuclear (atomic) masses.
- - ``control``: Control block (see **Quick start**).
- - ``Basis``: Basis set block (See **Basis sets**).
+ - ``control``: Control block (see :doc:`quickstart`).
+ - ``Basis``: Basis set block (See :doc:`basissets`).
  - ``EQUILIBRIUM``: Equilibrium values of the molecule geometries in terms of the Z-matrix coordinates.
  - ``SPECPARAM``: Special parameters used to define the coordinate to expand PEF, e.g. the Morse parameter :math:`a`.
- - ``POTEN``: Potential block (see **Potential energy functions**).
+ - ``POTEN``: Potential block (see :doc:`potentials`).
  - ``DIPOLE``: Dipole moment block (or ``external`` field block).
 
 
