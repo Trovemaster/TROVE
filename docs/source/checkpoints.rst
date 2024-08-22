@@ -422,8 +422,242 @@ Here
 The eigenvector j0eigen_descr\ :math:`J`\ _\ :math:`\Gamma`\ .chk are used to store information on the ro-vibrational states in the :math:`J=0` representation. Here :math:`J`  and \ :math:`\Gamma` are the rotational angular momentum and the symmetry, respectively. The general structure of the 'j0eigen_descr' checkpoint files is the same as for 'eigen_descr, a fingerprint section is followed by the description section with "Quantum numbers and energies". The latter in ``j0eigen_descr*_*.chk``  section is only slightly different from that from ``eigen_descr*_*.chk``. The :math:`J=0` representation contains a single one-sub class with full vibrational (:math:`J=0`\ ) basis functions.
 
 
+Potential, Kinetic and External (dipole) checkpoints
+====================================================
+
+As part of the recently introduced new form ``ascii``, the three fields Potential, Kinetic and External, once produced are stored (checkpointed) in three separate files through their expansion coefficient.
+
+In TROVE, a generic field :math:`f(\xi)` assumed the following the following compact multi-index representation for a Taylor-type expansion of order :math:`N`:
+
+.. math::
+       :label: e-L[l]-form
+     
+     \begin{split}
+       & \lefteqn{f(\xi) \approx  \sum_{L=0}^N \sum_{L[{\bf l}]} f_{L[{\bf l}]} (\xi)^{L[{\bf l}]}} \\ 
+       & \equiv 
+       \sum_{L=0}^N  \sum_{l_1=0}^{L}\sum_{l_2=0}^{(L-l_1)} \sum_{l_3=0}^{(L-l_1-l_2)} \\
+          \sum_{l_{M-1}=0}^{(L-l_1-l_2-\ldots l_{M-2})}
+         f_{ l_1 l_2 l_3 \ldots l_{M} }^{L} \prod_{i} \xi_{i}^{l_{i}} ,
+     \end{split}
+
+
+where :math:`L[{\bf l}]` is a set of :math:`\{L,l_1,l_2,l_3,\ldots,l_M\}` constrained with :math:`l_1+l_2+l_3+\cdots l_M=L` and  :math:`M=3N-6`. For each set of :math:`\{L, l_1,l_2,\ldots l_{M} \}`, the index :math:`l_{M}` given in this equation is redundant and set to 
+
+.. math:: 
+
+    l_M = L-l_1-l_2-\ldots-l_{M-1}.
+    
+    
+The  expansion terms in Eq. :eq:`e-L[l]-form` are arranged according to their total power :math:`L`, which defines the perturbation orders :math:`O(\epsilon^L)` in the expansion of the KEO assuming that each  :math:`\xi_\lambda` is a small displacement from equilibrium of some order of magnitude :math:`\sim O(\epsilon)`.
+
+
+PEF expansion
+-------------
+
+Rigid reference configuration
+-----------------------------
+
+Let us a consider an example of an XY\ :sub:`2` molecule with a PEF given by a typical Taylor-type expansion around a rigid configuration (equilibrium):
+
+.. math:: 
+
+    V(r_1,r_2,\alpha) = \sum_{i,j,k} f_{i,j,k} y_1^i y_2^j y_3^K
+    
+where 
+
+.. math:: 
+
+       \begin{split}
+          y_1 & 1-e^{-a \Delta r_1} \\
+          y_2 & 1-e^{-a \Delta r_2} \\
+          y_3  & \Delta \alpha
+       \end{split}
+
+We now organise this expansion in the form Eq. :eq:`e-L[l]-form` and present to the second order:
+
+.. math ::
+
+      \begin{split}
+         V(r_1,r_2,\alpha) &= f_{000}^{(0)} + \\
+           & f_{001}^{(1)} y_3 + f_{010}^{(1)} y_2 + f_{100}^{(1)} y_1   \\
+           & f_{002}^{(1)} y_3^2 + f_{011}^{(2)} y_2 y_3 + f_{101}^{(2)} y_1 y_3 +   \\
+           & f_{020}^{(1)} y_2^2 + f_{110}^{(2)} y_1 y_2 + f_{200}^{(2)} y_1^2  
+      \end{split}
+         
+.. note:: The expansion terms are arranged by (1) the total order :math:`L=i+j+k` and then by the increasing powers of :math:`y_1` for a given :math:`L`. 
+
+We now map parameter :math:`f_{ijk}^{(L)}` to a 1D array :math:`f[n]` with a single index :math:`n=1,n_{\rm max}` with 
+the total number of polynomial coefficients of 
+
+.. math:: 
+       :label: e-n-max
+  
+       n_{\rm max} = \frac{(N+1) (N+2) \ldots (N+M)}{M!}
+
+where :math:`M` is the number of the internal (expansion) degrees of freedom. 
+
+The mapping in our case is organised as follows:
+
++--------------+-----------+------------+------------+
+|  :math:`n`   | :math:`i` |  :math:`j` |  :math:`k` |   
++--------------+-----------+------------+------------+
+|      1       |     0     |      0     |     0      |
++--------------+-----------+------------+------------+
+|      2       |     0     |      0     |     1      |
++--------------+-----------+------------+------------+
+|      3       |     0     |      1     |     0      |
++--------------+-----------+------------+------------+
+|      4       |     1     |      0     |     0      |
++--------------+-----------+------------+------------+
+|      5       |     0     |      0     |     2      |
++--------------+-----------+------------+------------+
+|      6       |     0     |      1     |     1      |
++--------------+-----------+------------+------------+
+|      7       |     1     |      0     |     1      |
++--------------+-----------+------------+------------+
+|      8       |     0     |      2     |     0      |
++--------------+-----------+------------+------------+
+|      9       |     1     |      1     |     0      |
++--------------+-----------+------------+------------+
+|      10      |     2     |      0     |     0      |
++--------------+-----------+------------+------------+
+
+
+Non-rigid reference configuration
+---------------------------------
+
+For a non-rigid reference expansion  case, a PEF expansion is given by 
+
+.. math::
+
+    V(r_1,r_2,\alpha) = \sum_{i,j,k} f_{i,j}(y_3) y_1^i y_2^j
+
+around each value of :math:`\alpha` and :math:`f_{i,j}(y_3)` are now expansion 1D functions. 
+
+
+.. note:: Remember that the non-rigid coordinate corresponds always to the last mode, in this case :math:`y_3 = \alpha`. 
+
+The TROVE-form expansion to the second order is now given on a grid of :math:`\alpha_k = [\alpha_{\rm min} \ldots \alpha_{\rm max}]`:
+
+.. math ::
+
+      \begin{split}
+         V(r_1,r_2,\alpha_k) &= f_{00}^{(0)} + \\
+           &  f_{01}^{(1)}(\alpha_k) y_2 + f_{10}^{(1)}(\alpha_k) y_1   \\
+           &  f_{02}^{(2)}(\alpha_k) y_2^2 + f_{11}^{(2)}(\alpha_k) y_1 y_2 + f_{20}^{(2)}(\alpha_k) y_1^2
+      \end{split}
+
+The mapping 3D-to-1D is now as follows
+
+
++--------------+-----------+------------+------------+
+|  :math:`n`   | :math:`i` |  :math:`j` |  :math:`k` |
++--------------+-----------+------------+------------+
+|      1       |     0     |      0     |     0      |
++--------------+-----------+------------+------------+
+|      1       |     0     |      0     |     1      |
++--------------+-----------+------------+------------+
+|      1       |     0     |      0     |     2      |
++--------------+-----------+------------+------------+
+|      1       |     0     |      0     |     3      |
++--------------+-----------+------------+------------+
+|     ...      |    ...    |     ...    |    ...     |
++--------------+-----------+------------+------------+
+|      2       |     0     |      1     |     0      |
++--------------+-----------+------------+------------+
+|      2       |     0     |      1     |     1      |
++--------------+-----------+------------+------------+
+|      2       |     0     |      1     |     2      |
++--------------+-----------+------------+------------+
+|      2       |     0     |      1     |     3      |
++--------------+-----------+------------+------------+
+|     ...      |    ...    |     ...    |    ...     |
++--------------+-----------+------------+------------+
+|      3       |     1     |      0     |     0      |
++--------------+-----------+------------+------------+
+|      3       |     1     |      0     |     1      |
++--------------+-----------+------------+------------+
+|      3       |     1     |      0     |     2      |
++--------------+-----------+------------+------------+
+|      3       |     1     |      0     |     3      |
++--------------+-----------+------------+------------+
+|     ...      |    ...    |     ...    |    ...     |
++--------------+-----------+------------+------------+
+
+where :math:`k=0\ldots N_{\rm points}`. 
+
+This structure of the mapping is used in TROVE for any arbitrary system  of general dimension and also used in the fields' checkpoints. 
+
 potential.chk
-=============
+-------------
+
+The checkpoint file ``potential.chk`` containing the expansion parameters :math:`f_{n}(\alpha_k)` has three sections: 
+
+- header with a defining the dimensionality. 
+- main body with the expansion values and indexes 
+- footer with a checkpoint "signature"
+
+Header
+^^^^^^
+
+A typical ``potential.chk``  header has the following form:
+::
+     
+        0        2       10          <- Npoints,Norder,Ncoeff
+        
+with three integer parameters:
+
+- :math:`N_{\rm points}` defining the size of the grid of the non-rigid mode (0 for the rigid configuration).
+- :math:`N_{\rm order}`  is the maximal expansion order.
+- :math:`N_{\rm coeff}` is the total number of the expansion coefficients (the non-rigid mode excluded) as in Eq. :eq:`e-n-max`. 
+
+The field ``<- Npoints,Norder,Ncoeff`` is a comment, completely ignored by the TROVE read. 
+
+Main body
+^^^^^^^^^
+
+For the example of a 2nd order expansion, the body of ``potential.chk`` has the following structure:
+::
+    
+         1        0  0.1204141314001783E-03
+         2        0  0.2530099244534204E+01
+         3        0  0.7599034116321027E+01
+         4        0  0.7599034116321026E+01
+         5        0  0.1909437919650396E+05
+         6        0 -0.2632308040173431E+04
+         7        0  0.3714665204913049E+05
+         8        0 -0.2632308040173436E+04
+         9        0 -0.3464213699036532E+03
+        10        0  0.3714665204913049E+05
+   
+Where 
+
+- col 1: the 1D expansion index :math:`n`;
+- col 2: the non-rigid expansion index :max:`k = 0\ldots N_{\rm points}` (:math:`N_{\rm points} = 0` for the `Rigid` case);
+- col 3: the value of the expansion parameter :math:`f_{n}(\alpha_k)`. 
+
+.. note:: The format is not sensitive to the exact position of the columns the exact format of the values in the last column with spaces as separators between then.  The order of the column however is important, but the order of the rows is not!
+
+Footer
+^^^^^^
+
+The footer of ``potential.chk`` (and of other fields) is used to (i) indicate the end of the main body part and (ii) for a general control of the correctness of the file structure. It also reports the value of the coefficient threshold :math:`f_{\rm min}` used to prune the potential expansion from parameters wit very small values. It has the following generic format: 
+::
+    
+       987654321     0 0.00000000000E+00 <- End
+      0.10000000E-23      <- sparse threshold used
+     End of potential
+   
+Here:
+
+- ``987654321`` is a signature card indicate the end of the main body section. The values in columns 2 and 3 are dummy and only used to maintain the structure when reading ``potential.chk`` line-by-line. 
+- 0.10000000E-23: the coefficient threshold value :math:`f_{\rm min}`
+- ``End of potential`` is an obligatory (case sensitive) signature at the end of the file. It is used to check the correctness of the input. 
+
+The input fields ``<- End`` and ``<- sparse threshold used`` are ignored by the TROVE read and only for clarity. 
+
+
+
 
 
 
