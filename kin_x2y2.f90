@@ -8,7 +8,8 @@ module kin_x2y2
 
   implicit none
 
-  public MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+  public MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid,&
+         MLkinetic_compact_x2y2_EKE_sin_rigid_ML
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -629,6 +630,427 @@ module kin_x2y2
      !
    end subroutine  MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
 
+
+
+  subroutine MLkinetic_compact_x2y2_EKE_sin_rigid_ML(rho,nmodes,g_vib,g_rot,g_cor,pseudo)
+   !
+   use accuracy
+   !
+   real(ark),intent(in)   ::  rho
+   integer(ik),intent(in) ::  nmodes
+   type(MLpolynomT),intent(out) ::  g_vib(nmodes,nmodes),g_rot(3,3),g_cor(nmodes,3),pseudo
+   !
+   !type(FLpolynomT),pointer ::  g_vib(:,:) 
+   !
+   real(ark)            :: mX,mY
+   integer(ik) :: info,Nterms
+   logical :: check_sizes  = .false.
+     !
+     if (manifold==1) then
+       write(out,"('MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid-error: can be used with rigid case only')")
+       stop 'MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid can be used only with npoints=0'
+     endif
+     !
+     check_sizes  = .false.
+     !
+     !if (npseudo<0) check_sizes  = .true.
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(3)
+     !
+     !IndexQ
+     !Ncoeff
+     !field
+     !
+     !Ng_vib = 0
+     !Ng_rot = 0
+     !Ng_cor = 0
+     !
+     g_vib(1,1)%N= 1
+     g_vib(1,2)%N= 1
+     g_vib(1,3)%N= 1
+     g_vib(1,4)%N= 1
+     g_vib(1,5)%N= 1
+     g_vib(2,1)%N= 1
+     g_vib(2,2)%N= 1
+     g_vib(2,4)%N= 1
+     g_vib(2,5)%N= 2
+     g_vib(2,6)%N= 2
+     g_vib(3,1)%N= 1
+     g_vib(3,3)%N= 1
+     g_vib(3,4)%N= 2
+     g_vib(3,5)%N= 1
+     g_vib(3,6)%N= 2
+     g_vib(4,1)%N= 1
+     g_vib(4,2)%N= 1
+     g_vib(4,3)%N= 2
+     g_vib(4,4)%N= 3
+     g_vib(4,5)%N= 6
+     g_vib(4,6)%N= 3
+     g_vib(5,1)%N= 1
+     g_vib(5,2)%N= 2
+     g_vib(5,3)%N= 1
+     g_vib(5,4)%N= 6
+     g_vib(5,5)%N= 3
+     g_vib(5,6)%N= 3
+     g_vib(6,2)%N= 2
+     g_vib(6,3)%N= 2
+     g_vib(6,4)%N= 3
+     g_vib(6,5)%N= 3
+     g_vib(6,6)%N= 17
+     g_rot(1,1)%N= 1
+     g_rot(1,3)%N= 4
+     g_rot(2,2)%N= 1
+     g_rot(2,3)%N= 4
+     g_rot(3,1)%N= 4
+     g_rot(3,2)%N= 4
+     g_rot(3,3)%N= 17
+     g_cor(2,1)%N= 1
+     g_cor(2,2)%N= 1
+     g_cor(2,3)%N= 2
+     g_cor(3,1)%N= 1
+     g_cor(3,2)%N= 1
+     g_cor(3,3)%N= 2
+     g_cor(4,1)%N= 2
+     g_cor(4,2)%N= 2
+     g_cor(4,3)%N= 3
+     g_cor(5,1)%N= 2
+     g_cor(5,2)%N= 2
+     g_cor(5,3)%N= 3
+     g_cor(6,1)%N= 4
+     g_cor(6,2)%N= 4
+     g_cor(6,3)%N= 10
+     !
+     pseudo%N = 8
+     !
+     if (check_sizes) return 
+     !
+     g_vib(1,1)%iexp(1,:) = (/0,0,0,0,0,0/)
+     g_vib(1,1)%iexp(1,:) = (/0,0,0,0,0,0/)
+     g_vib(1,2)%iexp(1,:) = (/0,0,0,2,0,0/)
+     g_vib(1,3)%iexp(1,:) = (/0,0,0,0,2,0/)
+     g_vib(1,4)%iexp(1,:) = (/0,2,0,1,0,0/)
+     g_vib(1,5)%iexp(1,:) = (/0,0,2,0,1,0/)
+     g_vib(2,1)%iexp(1,:) = (/0,0,0,2,0,0/)
+     g_vib(2,2)%iexp(1,:) = (/0,0,0,0,0,0/)
+     g_vib(2,4)%iexp(1,:) = (/2,0,0,1,0,0/)
+     g_vib(2,5)%iexp(1,:) = (/2,0,0,1,0,0/)
+     g_vib(2,5)%iexp(2,:) = (/2,0,0,1,0,3/)
+     g_vib(2,6)%iexp(1,:) = (/2,0,0,0,2,4/)
+     g_vib(2,6)%iexp(2,:) = (/2,0,0,3,2,4/)
+     g_vib(3,1)%iexp(1,:) = (/0,0,0,0,2,0/)
+     g_vib(3,3)%iexp(1,:) = (/0,0,0,0,0,0/)
+     g_vib(3,4)%iexp(1,:) = (/2,0,0,0,1,0/)
+     g_vib(3,4)%iexp(2,:) = (/2,0,0,0,1,3/)
+     g_vib(3,5)%iexp(1,:) = (/2,0,0,0,1,0/)
+     g_vib(3,6)%iexp(1,:) = (/2,0,0,2,0,4/)
+     g_vib(3,6)%iexp(2,:) = (/2,0,0,2,3,4/)
+     g_vib(4,1)%iexp(1,:) = (/0,2,0,1,0,0/)
+     g_vib(4,2)%iexp(1,:) = (/2,0,0,1,0,0/)
+     g_vib(4,3)%iexp(1,:) = (/2,0,0,0,1,0/)
+     g_vib(4,3)%iexp(2,:) = (/2,0,0,0,1,3/)
+     g_vib(4,4)%iexp(1,:) = (/0,1,0,0,0,0/)
+     g_vib(4,4)%iexp(2,:) = (/1,0,0,0,0,0/)
+     g_vib(4,4)%iexp(3,:) = (/2,2,0,2,0,0/)
+     g_vib(4,5)%iexp(1,:) = (/1,0,0,0,0,0/)
+     g_vib(4,5)%iexp(2,:) = (/1,0,0,0,0,3/)
+     g_vib(4,5)%iexp(3,:) = (/2,0,2,0,2,0/)
+     g_vib(4,5)%iexp(4,:) = (/2,2,0,2,0,0/)
+     g_vib(4,5)%iexp(5,:) = (/2,0,2,0,2,3/)
+     g_vib(4,5)%iexp(6,:) = (/2,2,0,2,0,3/)
+     g_vib(4,6)%iexp(1,:) = (/1,0,0,1,2,4/)
+     g_vib(4,6)%iexp(2,:) = (/2,0,2,1,0,4/)
+     g_vib(4,6)%iexp(3,:) = (/2,2,0,4,2,4/)
+     g_vib(5,1)%iexp(1,:) = (/0,0,2,0,1,0/)
+     g_vib(5,2)%iexp(1,:) = (/2,0,0,1,0,0/)
+     g_vib(5,2)%iexp(2,:) = (/2,0,0,1,0,3/)
+     g_vib(5,3)%iexp(1,:) = (/2,0,0,0,1,0/)
+     g_vib(5,4)%iexp(1,:) = (/1,0,0,0,0,0/)
+     g_vib(5,4)%iexp(2,:) = (/1,0,0,0,0,3/)
+     g_vib(5,4)%iexp(3,:) = (/2,0,2,0,2,0/)
+     g_vib(5,4)%iexp(4,:) = (/2,2,0,2,0,0/)
+     g_vib(5,4)%iexp(5,:) = (/2,0,2,0,2,3/)
+     g_vib(5,4)%iexp(6,:) = (/2,2,0,2,0,3/)
+     g_vib(5,5)%iexp(1,:) = (/0,0,1,0,0,0/)
+     g_vib(5,5)%iexp(2,:) = (/1,0,0,0,0,0/)
+     g_vib(5,5)%iexp(3,:) = (/2,0,2,0,2,0/)
+     g_vib(5,6)%iexp(1,:) = (/1,0,0,2,1,4/)
+     g_vib(5,6)%iexp(2,:) = (/2,2,0,0,1,4/)
+     g_vib(5,6)%iexp(3,:) = (/2,0,2,2,4,4/)
+     g_vib(6,2)%iexp(1,:) = (/2,0,0,0,2,4/)
+     g_vib(6,2)%iexp(2,:) = (/2,0,0,3,2,4/)
+     g_vib(6,3)%iexp(1,:) = (/2,0,0,2,0,4/)
+     g_vib(6,3)%iexp(2,:) = (/2,0,0,2,3,4/)
+     g_vib(6,4)%iexp(1,:) = (/1,0,0,1,2,4/)
+     g_vib(6,4)%iexp(2,:) = (/2,0,2,1,0,4/)
+     g_vib(6,4)%iexp(3,:) = (/2,2,0,4,2,4/)
+     g_vib(6,5)%iexp(1,:) = (/1,0,0,2,1,4/)
+     g_vib(6,5)%iexp(2,:) = (/2,2,0,0,1,4/)
+     g_vib(6,5)%iexp(3,:) = (/2,0,2,2,4,4/)
+     g_vib(6,6)%iexp(1,:) = (/0,0,1,0,0,0/)
+     g_vib(6,6)%iexp(2,:) = (/0,1,0,0,0,0/)
+     g_vib(6,6)%iexp(3,:) = (/0,0,1,3,0,0/)
+     g_vib(6,6)%iexp(4,:) = (/0,1,0,0,3,0/)
+     g_vib(6,6)%iexp(5,:) = (/1,0,0,0,3,0/)
+     g_vib(6,6)%iexp(6,:) = (/1,0,0,3,0,0/)
+     g_vib(6,6)%iexp(7,:) = (/2,0,2,0,2,0/)
+     g_vib(6,6)%iexp(8,:) = (/2,2,0,2,0,0/)
+     g_vib(6,6)%iexp(9,:) = (/1,0,0,3,3,0/)
+     g_vib(6,6)%iexp(10,:) = (/1,0,0,4,4,0/)
+     g_vib(6,6)%iexp(11,:) = (/2,0,2,3,2,0/)
+     g_vib(6,6)%iexp(12,:) = (/2,0,2,4,1,0/)
+     g_vib(6,6)%iexp(13,:) = (/2,2,0,1,4,0/)
+     g_vib(6,6)%iexp(14,:) = (/2,2,0,2,3,0/)
+     g_vib(6,6)%iexp(15,:) = (/1,0,0,4,4,3/)
+     g_vib(6,6)%iexp(16,:) = (/2,0,2,4,1,3/)
+     g_vib(6,6)%iexp(17,:) = (/2,2,0,1,4,3/)
+     g_rot(1,1)%iexp(1,:) = (/1,0,0,0,0,0/)
+     g_rot(1,3)%iexp(1,:) = (/1,0,0,1,2,2/)
+     g_rot(1,3)%iexp(2,:) = (/1,0,0,2,1,2/)
+     g_rot(1,3)%iexp(3,:) = (/2,0,2,1,0,2/)
+     g_rot(1,3)%iexp(4,:) = (/2,2,0,0,1,2/)
+     g_rot(2,2)%iexp(1,:) = (/1,0,0,0,0,0/)
+     g_rot(2,3)%iexp(1,:) = (/1,0,0,1,2,1/)
+     g_rot(2,3)%iexp(2,:) = (/1,0,0,2,1,1/)
+     g_rot(2,3)%iexp(3,:) = (/2,0,2,1,0,1/)
+     g_rot(2,3)%iexp(4,:) = (/2,2,0,0,1,1/)
+     g_rot(3,1)%iexp(1,:) = (/1,0,0,1,2,2/)
+     g_rot(3,1)%iexp(2,:) = (/1,0,0,2,1,2/)
+     g_rot(3,1)%iexp(3,:) = (/2,0,2,1,0,2/)
+     g_rot(3,1)%iexp(4,:) = (/2,2,0,0,1,2/)
+     g_rot(3,2)%iexp(1,:) = (/1,0,0,1,2,1/)
+     g_rot(3,2)%iexp(2,:) = (/1,0,0,2,1,1/)
+     g_rot(3,2)%iexp(3,:) = (/2,0,2,1,0,1/)
+     g_rot(3,2)%iexp(4,:) = (/2,2,0,0,1,1/)
+     g_rot(3,3)%iexp(1,:) = (/0,0,1,0,0,0/)
+     g_rot(3,3)%iexp(2,:) = (/0,1,0,0,0,0/)
+     g_rot(3,3)%iexp(3,:) = (/0,0,1,3,0,0/)
+     g_rot(3,3)%iexp(4,:) = (/0,1,0,0,3,0/)
+     g_rot(3,3)%iexp(5,:) = (/1,0,0,0,3,0/)
+     g_rot(3,3)%iexp(6,:) = (/1,0,0,3,0,0/)
+     g_rot(3,3)%iexp(7,:) = (/2,0,2,0,2,0/)
+     g_rot(3,3)%iexp(8,:) = (/2,2,0,2,0,0/)
+     g_rot(3,3)%iexp(9,:) = (/1,0,0,3,3,0/)
+     g_rot(3,3)%iexp(10,:) = (/1,0,0,4,4,0/)
+     g_rot(3,3)%iexp(11,:) = (/2,0,2,3,2,0/)
+     g_rot(3,3)%iexp(12,:) = (/2,0,2,4,1,0/)
+     g_rot(3,3)%iexp(13,:) = (/2,2,0,1,4,0/)
+     g_rot(3,3)%iexp(14,:) = (/2,2,0,2,3,0/)
+     g_rot(3,3)%iexp(15,:) = (/1,0,0,4,4,3/)
+     g_rot(3,3)%iexp(16,:) = (/2,0,2,4,1,3/)
+     g_rot(3,3)%iexp(17,:) = (/2,2,0,1,4,3/)
+     g_cor(2,1)%iexp(1,:) = (/2,0,0,1,0,1/)
+     g_cor(2,2)%iexp(1,:) = (/2,0,0,1,0,2/)
+     g_cor(2,3)%iexp(1,:) = (/2,0,0,0,2,4/)
+     g_cor(2,3)%iexp(2,:) = (/2,0,0,3,2,4/)
+     g_cor(3,1)%iexp(1,:) = (/2,0,0,0,1,1/)
+     g_cor(3,2)%iexp(1,:) = (/2,0,0,0,1,2/)
+     g_cor(3,3)%iexp(1,:) = (/2,0,0,2,0,4/)
+     g_cor(3,3)%iexp(2,:) = (/2,0,0,2,3,4/)
+     g_cor(4,1)%iexp(1,:) = (/1,0,0,0,0,1/)
+     g_cor(4,1)%iexp(2,:) = (/2,2,0,2,0,1/)
+     g_cor(4,2)%iexp(1,:) = (/1,0,0,0,0,2/)
+     g_cor(4,2)%iexp(2,:) = (/2,2,0,2,0,2/)
+     g_cor(4,3)%iexp(1,:) = (/1,0,0,1,2,4/)
+     g_cor(4,3)%iexp(2,:) = (/2,0,2,1,0,4/)
+     g_cor(4,3)%iexp(3,:) = (/2,2,0,4,2,4/)
+     g_cor(5,1)%iexp(1,:) = (/1,0,0,0,0,1/)
+     g_cor(5,1)%iexp(2,:) = (/2,0,2,0,2,1/)
+     g_cor(5,2)%iexp(1,:) = (/1,0,0,0,0,2/)
+     g_cor(5,2)%iexp(2,:) = (/2,0,2,0,2,2/)
+     g_cor(5,3)%iexp(1,:) = (/1,0,0,2,1,4/)
+     g_cor(5,3)%iexp(2,:) = (/2,2,0,0,1,4/)
+     g_cor(5,3)%iexp(3,:) = (/2,0,2,2,4,4/)
+     g_cor(6,1)%iexp(1,:) = (/1,0,0,1,2,2/)
+     g_cor(6,1)%iexp(2,:) = (/1,0,0,2,1,2/)
+     g_cor(6,1)%iexp(3,:) = (/2,0,2,1,0,2/)
+     g_cor(6,1)%iexp(4,:) = (/2,2,0,0,1,2/)
+     g_cor(6,2)%iexp(1,:) = (/1,0,0,1,2,1/)
+     g_cor(6,2)%iexp(2,:) = (/1,0,0,2,1,1/)
+     g_cor(6,2)%iexp(3,:) = (/2,0,2,1,0,1/)
+     g_cor(6,2)%iexp(4,:) = (/2,2,0,0,1,1/)
+     g_cor(6,3)%iexp(1,:) = (/0,0,1,0,0,0/)
+     g_cor(6,3)%iexp(2,:) = (/0,1,0,0,0,0/)
+     g_cor(6,3)%iexp(3,:) = (/0,0,1,3,0,0/)
+     g_cor(6,3)%iexp(4,:) = (/0,1,0,0,3,0/)
+     g_cor(6,3)%iexp(5,:) = (/1,0,0,0,3,0/)
+     g_cor(6,3)%iexp(6,:) = (/1,0,0,3,0,0/)
+     g_cor(6,3)%iexp(7,:) = (/2,0,2,0,2,0/)
+     g_cor(6,3)%iexp(8,:) = (/2,2,0,2,0,0/)
+     g_cor(6,3)%iexp(9,:) = (/2,0,2,3,2,0/)
+     g_cor(6,3)%iexp(10,:) = (/2,2,0,2,3,0/)
+     pseudo%iexp(1,:) = (/1,0,0,2,2,0/)
+     pseudo%iexp(2,:) = (/1,0,0,2,2,3/)
+     pseudo%iexp(3,:) = (/2,0,2,1,4,0/)
+     pseudo%iexp(4,:) = (/2,0,2,2,3,0/)
+     pseudo%iexp(5,:) = (/2,2,0,3,2,0/)
+     pseudo%iexp(6,:) = (/2,2,0,4,1,0/)
+     pseudo%iexp(7,:) = (/2,0,2,2,3,3/)
+     pseudo%iexp(8,:) = (/2,2,0,3,2,3/)
+     !
+     g_vib(1,1)%val(1 ) =  2./mX
+     g_vib(1,2)%val(1 ) =  -1./mX
+     g_vib(1,3)%val(1 ) =  -1./mX
+     g_vib(1,4)%val(1 ) =  1/mX
+     g_vib(1,5)%val(1 ) =  1/mX
+     g_vib(2,1)%val(1 ) =  -1./mX
+     g_vib(2,2)%val(1 ) =  (mX+mY)/mY/mX
+     g_vib(2,4)%val(1 ) =  1/mX
+     g_vib(2,5)%val(1 ) =  1/mX
+     g_vib(2,5)%val(2 ) =  -2./mX
+     g_vib(2,6)%val(1 ) =  2./mX
+     g_vib(2,6)%val(2 ) =  -2./mX
+     g_vib(3,1)%val(1 ) =  -1./mX
+     g_vib(3,3)%val(1 ) =  (mY**3+10.*mX**2*mY+7.*mY**2*mX+4.*mX**3)/(2.*mX+mY)**2/mX/mY
+     g_vib(3,4)%val(1 ) =  1/mX
+     g_vib(3,4)%val(2 ) =  -2./mX
+     g_vib(3,5)%val(1 ) =  1/mX
+     g_vib(3,6)%val(1 ) =  2./mX
+     g_vib(3,6)%val(2 ) =  -2./mX
+     g_vib(4,1)%val(1 ) =  1/mX
+     g_vib(4,2)%val(1 ) =  1/mX
+     g_vib(4,3)%val(1 ) =  1/mX
+     g_vib(4,3)%val(2 ) =  -2./mX
+     g_vib(4,4)%val(1 ) =  (mY+mX)/mX/mY
+     g_vib(4,4)%val(2 ) =  2./mX
+     g_vib(4,4)%val(3 ) =  2./mX
+     g_vib(4,5)%val(1 ) =  2./mX
+     g_vib(4,5)%val(2 ) =  -4./mX
+     g_vib(4,5)%val(3 ) =  1/mX
+     g_vib(4,5)%val(4 ) =  1/mX
+     g_vib(4,5)%val(5 ) =  -2./mX
+     g_vib(4,5)%val(6 ) =  -2./mX
+     g_vib(4,6)%val(1 ) =  4./mX
+     g_vib(4,6)%val(2 ) =  2./mX
+     g_vib(4,6)%val(3 ) =  2./mX
+     g_vib(5,1)%val(1 ) =  1/mX
+     g_vib(5,2)%val(1 ) =  1/mX
+     g_vib(5,2)%val(2 ) =  -2./mX
+     g_vib(5,3)%val(1 ) =  1/mX
+     g_vib(5,4)%val(1 ) =  2./mX
+     g_vib(5,4)%val(2 ) =  -4./mX
+     g_vib(5,4)%val(3 ) =  1/mX
+     g_vib(5,4)%val(4 ) =  1/mX
+     g_vib(5,4)%val(5 ) =  -2./mX
+     g_vib(5,4)%val(6 ) =  -2./mX
+     g_vib(5,5)%val(1 ) =  (7.*mY**2*mX+10.*mX**2*mY+mY**3+4.*mX**3)/(2.*mX+mY)**2/mX/mY
+     g_vib(5,5)%val(2 ) =  2./mX
+     g_vib(5,5)%val(3 ) =  2./mX
+     g_vib(5,6)%val(1 ) =  4./mX
+     g_vib(5,6)%val(2 ) =  2./mX
+     g_vib(5,6)%val(3 ) =  2./mX
+     g_vib(6,2)%val(1 ) =  2./mX
+     g_vib(6,2)%val(2 ) =  -2./mX
+     g_vib(6,3)%val(1 ) =  2./mX
+     g_vib(6,3)%val(2 ) =  -2./mX
+     g_vib(6,4)%val(1 ) =  4./mX
+     g_vib(6,4)%val(2 ) =  2./mX
+     g_vib(6,4)%val(3 ) =  2./mX
+     g_vib(6,5)%val(1 ) =  4./mX
+     g_vib(6,5)%val(2 ) =  2./mX
+     g_vib(6,5)%val(3 ) =  2./mX
+     g_vib(6,6)%val(1 ) =  -1.*(-7.*mY**2*mX-10.*mX**2*mY-4.*mX**3-1.*mY**3)/(2.*mX+mY)**2/mY/mX
+     g_vib(6,6)%val(2 ) =  -1.*(-1.*mX-1.*mY)/mY/mX
+     g_vib(6,6)%val(3 ) =  -1.*(mY**3+4.*mX**3+7.*mY**2*mX+10.*mX**2*mY)/(2.*mX+mY)**2/mY/mX
+     g_vib(6,6)%val(4 ) =  -1.*(mX+mY)/mX/mY
+     g_vib(6,6)%val(5 ) =  2./mX
+     g_vib(6,6)%val(6 ) =  2./mX
+     g_vib(6,6)%val(7 ) =  2./mX
+     g_vib(6,6)%val(8 ) =  2./mX
+     g_vib(6,6)%val(9 ) =  -4./mX
+     g_vib(6,6)%val(10) =  -4./mX
+     g_vib(6,6)%val(11) =  -2./mX
+     g_vib(6,6)%val(12) =  -2./mX
+     g_vib(6,6)%val(13) =  -2./mX
+     g_vib(6,6)%val(14) =  -2./mX
+     g_vib(6,6)%val(15) =  8./mX
+     g_vib(6,6)%val(16) =  4./mX
+     g_vib(6,6)%val(17) =  4./mX
+     g_rot(1,1)%val(1 ) =  2./mX
+     g_rot(1,3)%val(1 ) =  -1./mX
+     g_rot(1,3)%val(2 ) =  1/mX
+     g_rot(1,3)%val(3 ) =  -.500/mX
+     g_rot(1,3)%val(4 ) =  .500/mX
+     g_rot(2,2)%val(1 ) =  2./mX
+     g_rot(2,3)%val(1 ) =  1/mX
+     g_rot(2,3)%val(2 ) =  1/mX
+     g_rot(2,3)%val(3 ) =  .500/mX
+     g_rot(2,3)%val(4 ) =  .500/mX
+     g_rot(3,1)%val(1 ) =  -1./mX
+     g_rot(3,1)%val(2 ) =  1/mX
+     g_rot(3,1)%val(3 ) =  -.500/mX
+     g_rot(3,1)%val(4 ) =  .500/mX
+     g_rot(3,2)%val(1 ) =  1/mX
+     g_rot(3,2)%val(2 ) =  1/mX
+     g_rot(3,2)%val(3 ) =  .500/mX
+     g_rot(3,2)%val(4 ) =  .500/mX
+     g_rot(3,3)%val(1 ) =  -.250*(-10.*mX**2*mY-7.*mY**2*mX-4.*mX**3-1.*mY**3)/(2.*mX+mY)**2/mX/mY
+     g_rot(3,3)%val(2 ) =  -.250*(-1.*mX-1.*mY)/mX/mY
+     g_rot(3,3)%val(3 ) =  -.250*(4.*mX**3+10.*mX**2*mY+7.*mY**2*mX+mY**3)/(2.*mX+mY)**2/mX/mY
+     g_rot(3,3)%val(4 ) =  -.250*(mX+mY)/mX/mY
+     g_rot(3,3)%val(5 ) =  .500/mX
+     g_rot(3,3)%val(6 ) =  .500/mX
+     g_rot(3,3)%val(7 ) =  .500/mX
+     g_rot(3,3)%val(8 ) =  .500/mX
+     g_rot(3,3)%val(9 ) =  -1./mX
+     g_rot(3,3)%val(10) =  1/mX
+     g_rot(3,3)%val(11) =  -.500/mX
+     g_rot(3,3)%val(12) =  .500/mX
+     g_rot(3,3)%val(13) =  .500/mX
+     g_rot(3,3)%val(14) =  -.500/mX
+     g_rot(3,3)%val(15) =  -2./mX
+     g_rot(3,3)%val(16) =  -1./mX
+     g_rot(3,3)%val(17) =  -1./mX
+     g_cor(2,1)%val(1 ) =  1/mX
+     g_cor(2,2)%val(1 ) =  -1./mX
+     g_cor(2,3)%val(1 ) =  -1./mX
+     g_cor(2,3)%val(2 ) =  1/mX
+     g_cor(3,1)%val(1 ) =  1/mX
+     g_cor(3,2)%val(1 ) =  1/mX
+     g_cor(3,3)%val(1 ) =  1/mX
+     g_cor(3,3)%val(2 ) =  -1./mX
+     g_cor(4,1)%val(1 ) =  2./mX
+     g_cor(4,1)%val(2 ) =  1/mX
+     g_cor(4,2)%val(1 ) =  -2./mX
+     g_cor(4,2)%val(2 ) =  -1./mX
+     g_cor(4,3)%val(1 ) =  -2./mX
+     g_cor(4,3)%val(2 ) =  -1./mX
+     g_cor(4,3)%val(3 ) =  -1./mX
+     g_cor(5,1)%val(1 ) =  2./mX
+     g_cor(5,1)%val(2 ) =  1/mX
+     g_cor(5,2)%val(1 ) =  2./mX
+     g_cor(5,2)%val(2 ) =  1/mX
+     g_cor(5,3)%val(1 ) =  2./mX
+     g_cor(5,3)%val(2 ) =  1/mX
+     g_cor(5,3)%val(3 ) =  1/mX
+     g_cor(6,1)%val(1 ) =  2./mX
+     g_cor(6,1)%val(2 ) =  2./mX
+     g_cor(6,1)%val(3 ) =  1/mX
+     g_cor(6,1)%val(4 ) =  1/mX
+     g_cor(6,2)%val(1 ) =  -2./mX
+     g_cor(6,2)%val(2 ) =  2./mX
+     g_cor(6,2)%val(3 ) =  -1./mX
+     g_cor(6,2)%val(4 ) =  1/mX
+     g_cor(6,3)%val(1 ) =  .500*(-7.*mY**2*mX-10.*mX**2*mY-1.*mY**3-4.*mX**3)/(2.*mX+mY)**2/mX/mY
+     g_cor(6,3)%val(2 ) =  -.500*(-1.*mX-1.*mY)/mX/mY
+     g_cor(6,3)%val(3 ) =  .500*(mY**3+4.*mX**3+10.*mX**2*mY+7.*mY**2*mX)/(2.*mX+mY)**2/mX/mY
+     g_cor(6,3)%val(4 ) =  -.500*(mX+mY)/mY/mX
+     g_cor(6,3)%val(5 ) =  -1./mX
+     g_cor(6,3)%val(6 ) =  1/mX
+     g_cor(6,3)%val(7 ) =  -1./mX
+     g_cor(6,3)%val(8 ) =  1/mX
+     g_cor(6,3)%val(9 ) =  1/mX
+     g_cor(6,3)%val(10) =  -1./mX
+     pseudo%val(1) =  -2.50/mX
+     pseudo%val(2) =  5./mX
+     pseudo%val(3) =  1/mX
+     pseudo%val(4) =  -1.25/mX
+     pseudo%val(5) =  -1.25/mX
+     pseudo%val(6) =  1/mX
+     pseudo%val(7) =  2.50/mX
+     pseudo%val(8) =  2.50/mX
+     !
+   end subroutine  MLkinetic_compact_x2y2_EKE_sin_rigid_ML
 
 
 

@@ -6869,13 +6869,15 @@ end subroutine check_read_save_none
   !
   subroutine compute_kinetic_on_rho_grid_compact
     !
-    real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+    !real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
     integer(ik),allocatable :: ig_vib(:,:,:,:),ig_rot(:,:,:,:),ig_cor(:,:,:,:),ipseudo(:,:)
     integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
                     Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
     real(ark)    :: rho,factor
     integer(ik)  :: Nterms,n
     type(FLpolynomT),pointer    :: fl
+    type(MLpolynomT),target     :: g_vib_(trove%Nmodes,trove%Nmodes),g_rot_(3,3),g_cor_(trove%Nmodes,3),pseudo_
+    type(MLpolynomT),pointer :: gl
       !
       Nmodes = trove%Nmodes
       !
@@ -6885,74 +6887,172 @@ end subroutine check_read_save_none
       !
       npoints = trove%npoints 
       !
-      allocate(g_vib(nmodes,nmodes,1),ig_vib(nmodes,nmodes,1,nmodes),stat=info)
-      allocate(g_cor(nmodes,3,1),ig_cor(nmodes,3,1,nmodes),stat=info)
-      allocate(g_rot(3,3,1),ig_rot(3,3,1,nmodes),stat=info)
-      allocate(pseudo(1),ipseudo(1,nmodes),stat=info)
+      !allocate(g_vib(nmodes,nmodes,1),ig_vib(nmodes,nmodes,1,nmodes),stat=info)
+      !allocate(g_cor(nmodes,3,1),ig_cor(nmodes,3,1,nmodes),stat=info)
+      !allocate(g_rot(3,3,1),ig_rot(3,3,1,nmodes),stat=info)
+      !allocate(pseudo(1),ipseudo(1,nmodes),stat=info)
       !
       ! check sizes
       !
       rho = 0
       !
-      Nterms = 1
+      Nterms = trove%NKinOrder
       !
       Npseudo = -1
       !
       !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
       !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
-      call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-                                 ig_vib,ig_rot,ig_cor,ipseudo)
+      !call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+      !                           ig_vib,ig_rot,ig_cor,ipseudo)
+
+
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,Nmodes
+            !
+            gl => g_vib_(k1,k2)
+            !
+            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
+            !
+         enddo
+      enddo
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,3
+            !
+            gl => g_cor_(k1,k2)
+            !
+            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
+            !
+         enddo
+      enddo
+      !
+      do k1 = 1,3
+         do k2 = 1,3
+            !
+            gl => g_rot_(k1,k2)
+            !
+            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
+            !
+         enddo
+      enddo
+      !
+      gl => pseudo_
+      !
+      allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
+
+
+      call MLkineticfunc_compact(rho,nmodes,g_vib_,g_rot_,g_cor_,pseudo_)
+
       !      
-      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
-      Nterms = max(maxval(Ng_vib),maxval(Ng_cor),maxval(Ng_rot),Npseudo)
+      !Nterms = max(maxval(Ng_vib),maxval(Ng_cor),maxval(Ng_rot),Npseudo)
       !
-      if (Nterms>0) then
-          allocate(g_vib(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms,nmodes),stat=info)
+      do k1 = 1,Nmodes
+         do k2 = 1,Nmodes
+            !
+            gl => g_vib_(k1,k2)
+            !
+            if (gl%N>0) then
+                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
+              else
+                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
+            endif
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
+            !
+         enddo
+      enddo
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,3
+            !
+            gl => g_cor_(k1,k2)
+            !
+            if (gl%N>0) then
+                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
+              else
+                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
+            endif
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
+            !
+         enddo
+      enddo
+      !
+      do k1 = 1,3
+         do k2 = 1,3
+            !
+            gl => g_rot_(k1,k2)
+            !
+            if (gl%N>0) then
+                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
+              else
+                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
+            endif
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
+            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
+            !
+         enddo
+      enddo
+      !
+      gl => pseudo_
+      !
+      if (gl%N>0) then
+          allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
         else
-          allocate(g_vib(nmodes,nmodes,0:0),ig_vib(nmodes,nmodes,0:0,nmodes),stat=info)
+          allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
       endif
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
-      call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
+      call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
+      call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
+      !
+      !if (Nterms>0) then
+      !    allocate(g_vib_(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms,nmodes),stat=info)
+      !  else
+      !    allocate(g_vib(nmodes,nmodes,0:0),ig_vib(nmodes,nmodes,0:0,nmodes),stat=info)
+      !endif
+      !call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
       !
       !Nterms = maxval(Ng_cor)
       !
-      if (Nterms>0) then
-          allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms,nmodes),stat=info)
-        else
-          allocate(g_cor(nmodes,3,0:0),ig_cor(nmodes,3,0:0,nmodes),stat=info)
-      endif
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
-      call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
+      !if (Nterms>0) then
+      !    allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms,nmodes),stat=info)
+      !  else
+      !    allocate(g_cor(nmodes,3,0:0),ig_cor(nmodes,3,0:0,nmodes),stat=info)
+      !endif
+      !call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
       !
       !Nterms = maxval(Ng_rot)
       !
-      if (Nterms>0) then
-          allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms,nmodes),stat=info)
-        else
-          allocate(g_rot(3,3,0:0),ig_rot(3,3,0:0,nmodes),stat=info)
-      endif
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
-      call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
+      !if (Nterms>0) then
+      !    allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms,nmodes),stat=info)
+      !  else
+      !    allocate(g_rot(3,3,0:0),ig_rot(3,3,0:0,nmodes),stat=info)
+      !endif
+      !call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
       !
       !Nterms  = Npseudo
       !
-      if (Nterms>0) then
-          allocate(pseudo(Nterms),ipseudo(Nterms,nmodes),stat=info)
-        else
-          allocate(pseudo(0:0),ipseudo(0:0,nmodes),stat=info)
-      endif
+      !if (Nterms>0) then
+      !    allocate(pseudo(Nterms),ipseudo(Nterms,nmodes),stat=info)
+      !  else
+      !    allocate(pseudo(0:0),ipseudo(0:0,nmodes),stat=info)
+      !endif
       !
-      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
-      call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
+      !call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+      !call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
       !
       do irho = 0, npoints
          !
          rho = trove%rho_i(irho)
          !
-         call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-                                    ig_vib,ig_rot,ig_cor,ipseudo)
+         !call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+         !                           ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !
@@ -6960,14 +7060,18 @@ end subroutine check_read_save_none
                do k2 = 1,Nmodes
                   !
                   fl => trove%g_vib(k1,k2) 
-                  fl%Ncoeff = Ng_vib(k1,k2) 
+                  gl => g_vib_(k1,k2)
+                  !
+                  fl%Ncoeff = gl%N
                   !
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  do i = 1,Ng_vib(k1,k2)
-                    fl%IndexQ(:,i) = ig_vib(k1,k2,i,:)
+                  !
+                  do i = 1,fl%Ncoeff
+                    fl%IndexQ(:,i) = gl%iexp(i,:)
                   enddo
+                  !
                   fl%sparse = .true.
                   !
                enddo
@@ -6977,11 +7081,18 @@ end subroutine check_read_save_none
                do k2 = 1,3
                   !
                   fl => trove%g_cor(k1,k2) 
-                  fl%Ncoeff = Ng_cor(k1,k2) 
+                  gl => g_cor_(k1,k2)
+                  !
+                  fl%Ncoeff = gl%N
                   !
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  !
+                  do i = 1,fl%Ncoeff
+                    fl%IndexQ(:,i) = gl%iexp(i,:)
+                  enddo
+                  !
                   fl%sparse = .true.
                   !
                enddo
@@ -6991,22 +7102,36 @@ end subroutine check_read_save_none
                do k2 = 1,3
                   !
                   fl => trove%g_rot(k1,k2) 
-                  fl%Ncoeff = Ng_rot(k1,k2) 
+                  gl => g_rot_(k1,k2)
+                  !
+                  fl%Ncoeff = gl%N
                   !
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  !
+                  do i = 1,fl%Ncoeff
+                    fl%IndexQ(:,i) = gl%iexp(i,:)
+                  enddo
+                  !
                   fl%sparse = .true.
                   !
                enddo
             enddo
             !
-            fl => trove%pseudo
-            fl%Ncoeff = Npseudo 
+            fl => trove%pseudo 
+            gl => pseudo_
+            !
+            fl%Ncoeff = gl%N
             !
             call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
             !
             forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+            !
+            do i = 1,fl%Ncoeff
+              fl%IndexQ(:,i) = gl%iexp(i,:)
+            enddo
+            !
             fl%sparse = .true.
             !
          endif
@@ -7014,32 +7139,58 @@ end subroutine check_read_save_none
          do k1 = 1,Nmodes
             do k2 = 1,Nmodes
                Nterms = trove%g_vib(k1,k2)%Ncoeff
-               trove%g_vib(k1,k2)%field(1:Nterms,irho) = g_vib(k1,k2,1:Nterms)*factor
+               trove%g_vib(k1,k2)%field(1:Nterms,irho) = g_vib_(k1,k2)%val(1:Nterms)*factor
             enddo
          enddo
          !
          do k1 = 1,Nmodes
             do k2 = 1,3
                Nterms = trove%g_cor(k1,k2)%Ncoeff
-               trove%g_cor(k1,k2)%field(1:Nterms,irho) = g_cor(k1,k2,1:Nterms)*factor
+               trove%g_cor(k1,k2)%field(1:Nterms,irho) = g_cor_(k1,k2)%val(1:Nterms)*factor
             enddo
          enddo
          !
          do k1 = 1,3
             do k2 = 1,3
                Nterms = trove%g_rot(k1,k2)%Ncoeff
-               trove%g_rot(k1,k2)%field(1:Nterms,irho) = g_rot(k1,k2,1:Nterms)*factor
+               trove%g_rot(k1,k2)%field(1:Nterms,irho) = g_rot_(k1,k2)%val(1:Nterms)*factor
             enddo
          enddo
          !
          Nterms = trove%pseudo%Ncoeff
-         trove%pseudo%field(1:Nterms,irho) = pseudo(1:Nterms)*factor
+         trove%pseudo%field(1:Nterms,irho) = pseudo_%val(1:Nterms)*factor
         !
       enddo
       !
+      ! clean up 
       !
-      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      do k1 = 1,Nmodes
+         do k2 = 1,Nmodes
+            gl => g_vib_(k1,k2)
+            deallocate(gl%val,gl%iexp)
+         enddo
+      enddo
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,3
+            gl => g_cor_(k1,k2)
+            deallocate(gl%val,gl%iexp)
+         enddo
+      enddo
+      !
+      do k1 = 1,3
+         do k2 = 1,3
+            gl => g_rot_(k1,k2)
+            deallocate(gl%val,gl%iexp)
+         enddo
+      enddo
+      !
+      gl => pseudo_
+      deallocate(gl%val,gl%iexp)
+      !
       call ArrayStop('kinetic_on_grid-fields')
+      !
+      !call ArrayStop('kinetic_on_grid-fields')
       !
  end subroutine compute_kinetic_on_rho_grid_compact
 

@@ -45,7 +45,7 @@ module molecules
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
                        MLkinetic_xyz_Radau_EKE
 
-  use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+  use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_EKE_sin_rigid_ML
 
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
@@ -71,6 +71,21 @@ module molecules
    type MOrepres_arkT
       real(ark),pointer     :: repres(:,:,:)  
    end type MOrepres_arkT
+   !
+   abstract interface
+      !
+      subroutine MLtemplate_kinetic_compact(rho,nmodes,g_vib,g_rot,g_cor,pseudo)
+       use accuracy
+       use moltype
+       !
+       real(ark),intent(in)   ::  rho
+       integer(ik),intent(in) ::  nmodes
+       class(MLpolynomT)       ::  g_vib(nmodes,nmodes),g_rot(3,3),g_cor(nmodes,3),pseudo
+       !
+      end subroutine MLtemplate_kinetic_compact 
+      !
+   end interface
+   
    !
    !procedure (MLtemplate_poten),pointer :: MLpotenfunc => null()
    !
@@ -538,7 +553,7 @@ end subroutine MLdefine_potenfunc
          !
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO_RIGID') 
          !
-         MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+         MLkineticfunc_compact => MLkinetic_compact_x2y2_EKE_sin_rigid_ML
          !
     case('GENERAL') 
          !
