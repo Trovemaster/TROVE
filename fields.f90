@@ -16,7 +16,7 @@ module fields
    use moltype
    use symmetry , only : SymmetryInitialize,sym
    
-   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+   !use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
 
    ! use perturbation
 
@@ -6896,15 +6896,17 @@ end subroutine check_read_save_none
       !
       Nterms = 1
       !
-      call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      Npseudo = -1
       !
-      !call MLkineticfunc_compact(Nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-      !                              ig_vib,ig_rot,ig_cor,ipseudo)
+      !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+                                 ig_vib,ig_rot,ig_cor,ipseudo)
       !      
       deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
-      Nterms = maxval(Ng_vib)
+      Nterms = max(maxval(Ng_vib),maxval(Ng_cor),maxval(Ng_rot),Npseudo)
       !
       if (Nterms>0) then
           allocate(g_vib(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms,nmodes),stat=info)
@@ -6914,7 +6916,7 @@ end subroutine check_read_save_none
       call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
       call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
       !
-      Nterms = maxval(Ng_cor)
+      !Nterms = maxval(Ng_cor)
       !
       if (Nterms>0) then
           allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms,nmodes),stat=info)
@@ -6924,7 +6926,7 @@ end subroutine check_read_save_none
       call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
       call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
       !
-      Nterms = maxval(Ng_rot)
+      !Nterms = maxval(Ng_rot)
       !
       if (Nterms>0) then
           allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms,nmodes),stat=info)
@@ -6934,13 +6936,14 @@ end subroutine check_read_save_none
       call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
       call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
       !
-      Nterms  = Npseudo
+      !Nterms  = Npseudo
       !
       if (Nterms>0) then
           allocate(pseudo(Nterms),ipseudo(Nterms,nmodes),stat=info)
         else
           allocate(pseudo(0:0),ipseudo(0:0,nmodes),stat=info)
       endif
+      !
       call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
       call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
       !
@@ -6948,8 +6951,8 @@ end subroutine check_read_save_none
          !
          rho = trove%rho_i(irho)
          !
-         !call MLkineticfunc_compact(trove%nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-         !                           ig_vib,ig_rot,ig_cor,ipseudo)
+         call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+                                    ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !

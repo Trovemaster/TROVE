@@ -538,7 +538,7 @@ end subroutine MLdefine_potenfunc
          !
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO_RIGID') 
          !
-         !MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+         MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
          !
     case('GENERAL') 
          !

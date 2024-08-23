@@ -207,28 +207,33 @@ module kin_x2y2
   ! removed singularity by combining U sin(theta1)sin(theta2) with dG/d theta_i and multiplying muzz and G66 by sin(theta1)^2 sin(theta2)^2 
   ! and muxz and muyz by U sin(theta1)sin(theta2. 
   !
-  subroutine MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(nmodes,rho,ntermmax,ng_vib,ng_rot,ng_cor,npseudo,&
+  subroutine MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(rho,nmodes,ntermmax,ng_vib,ng_rot,ng_cor,npseudo,&
                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
    !
    use accuracy
    !
-   integer(ik),intent(in) ::  nmodes
    real(ark),intent(in)   ::  rho
+   integer(ik),intent(in) ::  nmodes
    integer(ik),intent(in) ::  ntermmax
-   integer(ik),intent(inout) ::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
-   real(ark),intent(out)    ::  g_vib(nmodes,nmodes,ntermmax),g_rot(3,3,ntermmax),g_cor(nmodes,3,ntermmax),pseudo(ntermmax)
-   integer(ik),intent(out)  ::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
-                                ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
+   integer(ik),intent(out)::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,ntermmax),g_rot(3,3,ntermmax),g_cor(nmodes,3,ntermmax),pseudo(ntermmax)
+   integer(ik),intent(out)::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
+                              ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
    !
    !type(FLpolynomT),pointer ::  g_vib(:,:) 
    !
    real(ark)            :: mX,mY
    integer(ik) :: info,Nterms
+   logical :: check_sizes  = .false.
      !
      if (manifold==1) then
        write(out,"('MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid-error: can be used with rigid case only')")
        stop 'MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid can be used only with npoints=0'
      endif
+     !
+     check_sizes  = .false.
+     !
+     if (npseudo<0) check_sizes  = .true.
      !
      mX = molec%AtomMasses(1)
      mY = molec%AtomMasses(3)
@@ -294,7 +299,9 @@ module kin_x2y2
      Npseudo     = 8
      !
      Npseudo = 8
-
+     !
+     if (check_sizes) return 
+     !
      ig_vib(1,1,1,:) = (/0,0,0,0,0,0/)
      ig_vib(1,1,1,:) = (/0,0,0,0,0,0/)
      ig_vib(1,2,1,:) = (/0,0,0,2,0,0/)
