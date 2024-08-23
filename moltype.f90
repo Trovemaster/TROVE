@@ -11,9 +11,9 @@ module moltype
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
-
+  public MLtemplate_kinetic_compact
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho,manifold,MLpolynomT
+  public MLorienting_a0_across_dadrho,manifold
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -22,17 +22,10 @@ module moltype
      integer(ik)          :: connect(4)   ! z-matrix connections
   end type MLZmatrixT
 
-   type :: MLpolynomT
-      integer(ik)          :: N         ! Number of expansion coeffs.
-      real(ark),pointer    :: val(:)  ! Expansion parameters
-      integer(ik),pointer  :: iexp(:,:)  ! This is to store FLIndexQ for each object individually 
-   end type MLpolynomT
-  !
   !
   character(len=cl),parameter :: axis_system = 'Eckart'
 
   abstract interface
-
     real(ark) function MLtemplate_poten (local,xyz)
       use accuracy
       real(ark),intent(in) ::  local(:)
@@ -65,21 +58,19 @@ module moltype
       !
     end subroutine MLtemplate_kinetic
     !
-    subroutine MLtemplate_kinetic_compact0(rho,nmodes,ntermmax,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+    subroutine MLtemplate_kinetic_compact(nmodes,rho,ntermmax,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                           g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       use accuracy
       !
-      real(ark),intent(in)   ::  rho
       integer(ik),intent(in) ::  nmodes
+      real(ark),intent(in)   ::  rho
       integer(ik),intent(in) ::  ntermmax
-      integer(ik),intent(out)::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
-      real(ark),intent(out)  ::  g_vib(nmodes,nmodes,ntermmax),g_rot(3,3,ntermmax),g_cor(nmodes,3,ntermmax),pseudo(ntermmax)
-      integer(ik),intent(out)::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
-                                 ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
+      integer(ik),intent(inout) ::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
+      real(ark),intent(out)    ::  g_vib(nmodes,nmodes,ntermmax),g_rot(3,3,ntermmax),g_cor(nmodes,3,ntermmax),pseudo(ntermmax)
+      integer(ik),intent(out)  ::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
+                                ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
       !
-    end subroutine MLtemplate_kinetic_compact0  
-
-
+    end subroutine MLtemplate_kinetic_compact    
     !
     subroutine MLtemplate_symmetry_transformation(ioper,natoms,src,dst)
       use accuracy
@@ -2765,6 +2756,12 @@ module moltype
   end subroutine ML_splint_quint
   !
 end module moltype
+  
+  
+  
+  
+  
+  
   
   
   
