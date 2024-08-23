@@ -58,15 +58,15 @@ module moltype
       !
     end subroutine MLtemplate_kinetic
     !
-    subroutine MLtemplate_kinetic_compact(nmodes,rho,g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,&
-                                         Ng_vib,Ng_rot,Ng_cor,Npseudo)
+    subroutine MLtemplate_kinetic_compact(nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       use accuracy
       !
       integer(ik),intent(in) ::  nmodes
       real(ark),intent(in)   ::  rho
-      real(ark),allocatable,intent(out)  ::  g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
-      integer(ik),allocatable,intent(out)  ::  ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
-      integer(ik),intent(out)::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(6,3),npseudo
+      integer(ik),intent(inout)::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
+      real(ark),intent(out)  ::  g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+      integer(ik),intent(out)  ::  ig_vib(:,:,:,:),ig_rot(:,:,:,:),ig_cor(:,:,:,:),ipseudo(:,:)
       !
     end subroutine MLtemplate_kinetic_compact    
     !

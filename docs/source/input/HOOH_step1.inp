@@ -24,7 +24,6 @@ CONTRACTION
   sample_points   20
   sample_attempts 1000
   symm_toler      1e-4
-  cluster  1.0
 END
 
 
@@ -32,8 +31,6 @@ SYMGROUP D2h(M)
 
 DIAGONALIZER
  SYEV
- enermax 14000
- gamma 1 2 3 4
 end
 
 IRON-OUT
@@ -58,7 +55,7 @@ end
 
      (type        chi_kin     chi_pot)
 BASIS
-0,'JKtau', Jrot 34
+0,'JKtau', Jrot 0
 1, 'numerov', 'linear', 'morse', range  0,12 , resc 3.0,points 1000,borders -0.5, 1.0
 2, 'numerov', 'linear', 'morse', range  0, 7 , resc 5.6,points 1000,borders -0.4, 1.2
 2, 'numerov', 'linear', 'morse', range  0, 7 , resc 5.6,points 1000,borders -0.4, 1.2

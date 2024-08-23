@@ -14,7 +14,7 @@ module mol_x2y2
   !
   private
   !
-  integer(ik), parameter :: verbose = 4  ! Verbosity level
+  integer(ik), parameter :: verbose = 3  ! Verbosity level
   !
   contains
   !
@@ -216,9 +216,9 @@ module mol_x2y2
               b0(:,n,i) = b0(:,n,i) - CM_shift
             enddo 
             !
-            do n = 1,molec%Natoms
-               b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
-            enddo
+            !do n = 1,molec%Natoms
+            !   b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+            !enddo
             !
          enddo
          !
@@ -329,16 +329,17 @@ module mol_x2y2
          !
       endif
       !
-      if (verbose>=3) then
+      if (verbose>=4) then
         !
         do i = 0,npoints
            !
            write(out,"(i6)") molec%natoms
            !
-           write(out,"(/'C',3x,3f14.8)") b0(1,:,i)
-           write(out,"( 'C',3x,3f14.8)") b0(2,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
+           write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,i)
+           !
            !
         enddo 
         !

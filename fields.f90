@@ -15,6 +15,8 @@ module fields
    use timer
    use moltype
    use symmetry , only : SymmetryInitialize,sym
+   
+   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
 
    ! use perturbation
 
@@ -255,7 +257,7 @@ module fields
       logical             :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
-      character(len=cl)        ::  potenname='GENERAL' ! name of the user type potential function (for control purposes)
+      character(len=cl)   :: potenname='GENERAL' ! name of the user type potential function (for control purposes)
       logical             :: kinetic_compact = .false. ! compact or sparce representation of the KEO
       !
    end type JobT
@@ -1340,6 +1342,7 @@ module fields
        case ("AUTOMATIC_KINETIC")
          !
          job%mode_list_present = .true.
+         trove%kinetic_compact = .true.
          !
        case ("IRON-OUT","IRONOUT","IRON-FIELD-OUT")
          !
@@ -3606,6 +3609,7 @@ module fields
            case("COMPACT","SPARSE")
               !
               trove%kinetic_compact = .true.
+              trove%sparse = .true.
               !
            case default
                !
@@ -5469,7 +5473,7 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    if(job%mode_list_present) then  
+    if(trove%kinetic_compact) then  
       maxpower = max(trove%NpotOrder,trove%NExtOrder)
     else
       maxpower = trove%maxorder
@@ -6115,7 +6119,7 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
-        if (trove%sparse.and..not.job%mode_list_present) call compact_sparse_kinetic
+        if (trove%sparse.and..not.trove%kinetic_compact) call compact_sparse_kinetic
         !
         return 
         !
@@ -6225,6 +6229,12 @@ end subroutine check_read_save_none
     ! We come to the g-s fields definition 
     !-------------------------------------
     !
+    allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
+    if (alloc/=0) then
+        write (out,"(' Error ',i9,' trying to allocate g-fields')") alloc
+        stop 'FLinitilize_Kinetic, g-fields - out of memory'
+    end if
+    !
     ! Vibrational part g_vib : Nmodes x Nmodes matrix 
     !
     ! Calculate Ncoeff: number of elements in the kinetic fields 
@@ -6236,12 +6246,6 @@ end subroutine check_read_save_none
        if (job%verbose>=5) then
          write (out,"(' Kinetic operator fields need ',f9.3,' Mbytes of memory (plus a bit)')") &
                 real(rk*Tcoeff,kind=rk)*real(Nmodes**2+3*Nmodes+9+1,kind=rk)/(1024.0_rk**2)
-       end if
-       !
-       allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
-       if (alloc/=0) then
-           write (out,"(' Error ',i9,' trying to allocate g-fields')") alloc
-           stop 'FLinitilize_Kinetic, g-fields - out of memory'
        end if
        !
        do k1 = 1,Nmodes
@@ -6286,7 +6290,7 @@ end subroutine check_read_save_none
          !
        else
          !
-         call compute_kinetic_on_rho_grid(Tcoeff)
+         call compute_kinetic_on_rho_grid_compact
          !
        endif
        !
@@ -6417,8 +6421,8 @@ end subroutine check_read_save_none
     !
     call print_kinetic
     !
-    if (trove%sparse) call compact_sparse_kinetic
-
+    if (trove%sparse.and..not.trove%kinetic_compact) call compact_sparse_kinetic
+    !
     if (trim(trove%IO_kinetic)=='SAVE'.and.&
         trove%separate_store.and..not.trove%separate_convert) then
           !
@@ -6866,8 +6870,9 @@ end subroutine check_read_save_none
   subroutine compute_kinetic_on_rho_grid_compact
     !
     real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
-    integer(ik),allocatable :: ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
-    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo
+    integer(ik),allocatable :: ig_vib(:,:,:,:),ig_rot(:,:,:,:),ig_cor(:,:,:,:),ipseudo(:,:)
+    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
+                    Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
     real(ark)    :: rho,factor
     integer(ik)  :: Nterms,n
     type(FLpolynomT),pointer    :: fl
@@ -6880,12 +6885,71 @@ end subroutine check_read_save_none
       !
       npoints = trove%npoints 
       !
+      allocate(g_vib(nmodes,nmodes,1),ig_vib(nmodes,nmodes,1,nmodes),stat=info)
+      allocate(g_cor(nmodes,3,1),ig_cor(nmodes,3,1,nmodes),stat=info)
+      allocate(g_rot(3,3,1),ig_rot(3,3,1,nmodes),stat=info)
+      allocate(pseudo(1),ipseudo(1,nmodes),stat=info)
+      !
+      ! check sizes
+      !
+      rho = 0
+      !
+      Nterms = 1
+      !
+      call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      !call MLkineticfunc_compact(Nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+      !                              ig_vib,ig_rot,ig_cor,ipseudo)
+      !      
+      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      Nterms = maxval(Ng_vib)
+      !
+      if (Nterms>0) then
+          allocate(g_vib(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms,nmodes),stat=info)
+        else
+          allocate(g_vib(nmodes,nmodes,0:0),ig_vib(nmodes,nmodes,0:0,nmodes),stat=info)
+      endif
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+      call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
+      !
+      Nterms = maxval(Ng_cor)
+      !
+      if (Nterms>0) then
+          allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms,nmodes),stat=info)
+        else
+          allocate(g_cor(nmodes,3,0:0),ig_cor(nmodes,3,0:0,nmodes),stat=info)
+      endif
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+      call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
+      !
+      Nterms = maxval(Ng_rot)
+      !
+      if (Nterms>0) then
+          allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms,nmodes),stat=info)
+        else
+          allocate(g_rot(3,3,0:0),ig_rot(3,3,0:0,nmodes),stat=info)
+      endif
+      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+      call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
+      !
+      Nterms  = Npseudo
+      !
+      if (Nterms>0) then
+          allocate(pseudo(Nterms),ipseudo(Nterms,nmodes),stat=info)
+        else
+          allocate(pseudo(0:0),ipseudo(0:0,nmodes),stat=info)
+      endif
+      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+      call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
+      !
       do irho = 0, npoints
          !
          rho = trove%rho_i(irho)
          !
-         call MLkineticfunc_compact(trove%nmodes,rho,g_vib,g_rot,g_cor,pseudo,&
-                                    ig_vib,ig_rot,ig_cor,ipseudo,Ng_vib,Ng_rot,Ng_cor,Npseudo)
+         !call MLkineticfunc_compact(trove%nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
+         !                           ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !
@@ -6898,6 +6962,9 @@ end subroutine check_read_save_none
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  do i = 1,Ng_vib(k1,k2)
+                    fl%IndexQ(:,i) = ig_vib(k1,k2,i,:)
+                  enddo
                   fl%sparse = .true.
                   !
                enddo
@@ -13898,7 +13965,9 @@ end subroutine check_read_save_none
     enddo 
     !
     do imode = 1,trove%Nmodes
-       if (job%bset(imode)%type/='NUMEROV'.and.job%bset(imode)%type/='SINC') then 
+       select case(trim(job%bset(imode)%type))
+       !
+       case('LAGUERRE','NORMAL','MORSE','HARMONIC') 
          if ( job%bset(imode)%coord_kinet/=job%bset(imode)%coord_poten  ) then 
             write(out,"('FLbsetInit: Wrong definition of coordinates:')")
             write(out,"('the kinetic and potential parts must be the same for the non-numerical basis sets, while')")
@@ -13906,7 +13975,7 @@ end subroutine check_read_save_none
             write(out,"('The potential coordinate is :',a)") trim(job%bset(imode)%coord_poten)            
             stop 'FLbsetInit: Wrong defenition of coordinates'
          endif 
-       endif
+       end select 
     enddo
     !
     bset%n_bset1D_max = isubsp1D
@@ -14120,7 +14189,7 @@ end subroutine check_read_save_none
         if (trove%separate_convert.and..not.trove%separate_store) call KineticSave_ASCII
         !
         if (trove%separate_store) then
-          if (job%mode_list_present) then
+          if (trove%kinetic_compact) then
             call checkpointRestore_kinetic_ascii_with_modes
           else 
             call checkpointRestore_kinetic_ascii
@@ -20725,7 +20794,7 @@ end subroutine check_read_save_none
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
                    write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym.and..not.job%mode_list_present) then 
+                   if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                    endif
                 endif
