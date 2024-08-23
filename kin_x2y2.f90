@@ -4,6 +4,7 @@
 module kin_x2y2
   use accuracy
   use moltype
+  use timer
 
   implicit none
 
@@ -217,7 +218,7 @@ module kin_x2y2
    !
    real(ark)            :: mX,mY,rho_2
    real(ark),parameter  :: rho_threshold = 0.01_rk
-   integer(ik) :: N_g_rot(3,3),N_g_cor(6,3),N_g_vib(6,6),N_pseudo,alloc,i1,i2,Nterms
+   integer(ik) :: N_g_rot(3,3),N_g_cor(6,3),N_g_vib(6,6),N_pseudo,info,i1,i2,Nterms
      !
      if (manifold/=1) then
        write(out,"('MLkinetic_x2y2_bisect_EKE_sinrho-error: can be used with non-rigid case only')")
@@ -297,60 +298,48 @@ module kin_x2y2
      !
      Npseudo = 5
      !
-     do i1 = 1,5
-       do i2 = 1,5
-         if (allocated(g_vib)) deallocate(g_vib)
-         if (allocated(ig_vib)) deallocate(ig_vib)
-         Nterms  = N_g_vib(i1,i2)
-         if (Nterms>0) then
-             allocate(g_vib(nmodes,nmodes,Nterms),stat=alloc)
-             allocate(ig_vib(nmodes,nmodes,Nterms),stat=alloc)
-           else
-             allocate(g_vib(nmodes,nmodes,0:0),stat=alloc)
-             allocate(ig_vib(nmodes,nmodes,0:0),stat=alloc)
-         endif
-       enddo
-     enddo
+     Nterms = maxval(N_g_vib)
      !
-     do i1 = 1,5
-       do i2 = 1,3
-         if (allocated(g_cor)) deallocate(g_cor)
-         if (allocated(ig_cor)) deallocate(ig_cor)
-         Nterms  = N_g_cor(i1,i2)
-         if (Nterms>0) then
-             allocate(g_cor(nmodes,3,Nterms),stat=alloc)
-             allocate(ig_cor(nmodes,3,Nterms),stat=alloc)
-           else
-             allocate(g_cor(nmodes,3,0:0),stat=alloc)
-             allocate(ig_cor(nmodes,3,0:0),stat=alloc)
-         endif
-       enddo
-     enddo     
-     !
-     do i1 = 1,3
-       do i2 = 1,3
-         if (allocated(g_rot)) deallocate(g_rot)
-         if (allocated(ig_rot)) deallocate(ig_rot)
-         Nterms  = N_g_rot(i1,i2)
-         if (Nterms>0) then
-             allocate(g_rot(3,3,Nterms),stat=alloc)
-             allocate(ig_rot(3,3,Nterms),stat=alloc)
-           else
-             allocate(g_rot(3,3,0:0),stat=alloc)
-             allocate(ig_rot(3,3,0:0),stat=alloc)
-         endif
-       enddo
-     enddo
-     !
-     if (allocated(pseudo)) deallocate(pseudo)
-     if (allocated(ipseudo)) deallocate(ipseudo)
-     Nterms  = N_pseudo
-     if (Nterms>0) then
-         allocate(pseudo(Nterms),stat=alloc)
-         allocate(ipseudo(Nterms),stat=alloc)
-       else
-         allocate(pseudo(0:0),stat=alloc)
-         allocate(ipseudo(0:0),stat=alloc)
+     if (.not.allocated(g_vib)) then 
+        !
+        if (Nterms>0) then
+            allocate(g_vib(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms),stat=info)
+          else
+            allocate(g_vib(nmodes,nmodes,0:0),ig_vib(nmodes,nmodes,0:0),stat=info)
+        endif
+        call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
+        call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
+        !
+        Nterms = maxval(N_g_cor)
+        !
+        if (Nterms>0) then
+            allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms),stat=info)
+          else
+            allocate(g_cor(nmodes,3,0:0),ig_cor(nmodes,3,0:0),stat=info)
+        endif
+        call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
+        call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
+        !
+        Nterms = maxval(N_g_rot)
+        !
+        if (Nterms>0) then
+            allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms),stat=info)
+          else
+            allocate(g_rot(3,3,0:0),ig_rot(3,3,0:0),stat=info)
+        endif
+        call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
+        call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
+        !
+        Nterms  = N_pseudo
+        !
+        if (Nterms>0) then
+            allocate(pseudo(Nterms),ipseudo(Nterms),stat=info)
+          else
+            allocate(pseudo(0:0),ipseudo(0:0),stat=info)
+        endif
+        call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
+        call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
+        !
      endif
      !
      g_vib(1,1,1) =  2./mX
@@ -497,9 +486,6 @@ module kin_x2y2
      pseudo(3) =  1.25*cos(rho)/mX
      pseudo(4) =  1.25*cos(rho)/mX
      pseudo(5) =  1/mX
-     !
-
-
      !
    end subroutine  MLkinetic_compact_x2y2_bisect_EKE_sinrho
 

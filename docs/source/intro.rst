@@ -26,3 +26,18 @@ TROVE is very much a 'living' program with new capabilities being added all the 
 
 The 'Quick start' chapter following this one is aimed at new users, especially new PhD students and postdocs, to get  started doing calculations with TROVE assuming some set up has already been done for the molecule of interest. Later chapters describe the underlying theory behind TROVE, a detailed description of outputs, the refinement procedure, the calculation of line lists, a list of molecules already implemented in TROVE and summary of work on them, how to set up TROVE for a new molecule and finally, new features in TROVE.
 
+
+Main Contributors 
+=================
+
+Sergey Yurchenko
+Andrey Yachmenev
+Thomas Mellor 
+Oleksiy Smola
+Barry Mant 
+Roman Ovsyannikov
+Per Jensen 
+Walter Thiel 
+
+
+

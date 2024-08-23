@@ -6225,17 +6225,6 @@ end subroutine check_read_save_none
     ! We come to the g-s fields definition 
     !-------------------------------------
     !
-    if (job%verbose>=5) then
-      write (out,"(' Kinetic operator fields need ',f9.3,' Mbytes of memory (plus a bit)')") &
-             real(rk*Tcoeff,kind=rk)*real(Nmodes**2+3*Nmodes+9+1,kind=rk)/(1024.0_rk**2)
-    end if
-    !
-    allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
-    if (alloc/=0) then
-        write (out,"(' Error ',i9,' trying to allocate g-fields')") alloc
-        stop 'FLinitilize_Kinetic, g-fields - out of memory'
-    end if
-    !
     ! Vibrational part g_vib : Nmodes x Nmodes matrix 
     !
     ! Calculate Ncoeff: number of elements in the kinetic fields 
@@ -6243,6 +6232,17 @@ end subroutine check_read_save_none
     if (.not.trove%kinetic_compact) then 
        !
        Tcoeff  = trove%RangeOrder(trove%NKinOrder)
+       !
+       if (job%verbose>=5) then
+         write (out,"(' Kinetic operator fields need ',f9.3,' Mbytes of memory (plus a bit)')") &
+                real(rk*Tcoeff,kind=rk)*real(Nmodes**2+3*Nmodes+9+1,kind=rk)/(1024.0_rk**2)
+       end if
+       !
+       allocate (trove%g_vib(Nmodes,Nmodes),trove%g_rot(3,3),trove%g_cor(Nmodes,3),trove%pseudo,stat=alloc)
+       if (alloc/=0) then
+           write (out,"(' Error ',i9,' trying to allocate g-fields')") alloc
+           stop 'FLinitilize_Kinetic, g-fields - out of memory'
+       end if
        !
        do k1 = 1,Nmodes
           do k2 = 1,Nmodes
@@ -6863,28 +6863,20 @@ end subroutine check_read_save_none
   ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
   ! Compact (sparse) version where only non zero elements are counted 
   !
-  subroutine compute_kinetic_on_rho_grid_compact(Nterms)
+  subroutine compute_kinetic_on_rho_grid_compact
     !
-    integer(ik),intent(in) :: Nterms
     real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
     integer(ik),allocatable :: ig_vib(:,:,:),ig_rot(:,:,:),ig_cor(:,:,:),ipseudo(:)
     integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo
     real(ark)    :: rho,factor
+    integer(ik)  :: Nterms,n
+    type(FLpolynomT),pointer    :: fl
       !
       Nmodes = trove%Nmodes
       !
       ! Conversion factor to the cm-1 units 
       !
       factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
-      !
-      allocate (g_vib(Nmodes,Nmodes,Nterms),stat=info)
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
-      allocate (g_cor(Nmodes,Nmodes,Nterms),stat=info)
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
-      allocate (g_rot(Nmodes,Nmodes,Nterms),stat=info)
-      call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
-      allocate (pseudo(Nterms),stat=info)
-      call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
       !
       npoints = trove%npoints 
       !
@@ -6895,30 +6887,88 @@ end subroutine check_read_save_none
          call MLkineticfunc_compact(trove%nmodes,rho,g_vib,g_rot,g_cor,pseudo,&
                                     ig_vib,ig_rot,ig_cor,ipseudo,Ng_vib,Ng_rot,Ng_cor,Npseudo)
          !
+         if (irho==0) then 
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,Nmodes
+                  !
+                  fl => trove%g_vib(k1,k2) 
+                  fl%Ncoeff = Ng_vib(k1,k2) 
+                  !
+                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
+                  !
+                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  fl%sparse = .true.
+                  !
+               enddo
+            enddo
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,3
+                  !
+                  fl => trove%g_cor(k1,k2) 
+                  fl%Ncoeff = Ng_cor(k1,k2) 
+                  !
+                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
+                  !
+                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  fl%sparse = .true.
+                  !
+               enddo
+            enddo
+            !
+            do k1 = 1,3
+               do k2 = 1,3
+                  !
+                  fl => trove%g_rot(k1,k2) 
+                  fl%Ncoeff = Ng_rot(k1,k2) 
+                  !
+                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
+                  !
+                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  fl%sparse = .true.
+                  !
+               enddo
+            enddo
+            !
+            fl => trove%pseudo
+            fl%Ncoeff = Npseudo 
+            !
+            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
+            !
+            forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+            fl%sparse = .true.
+            !
+         endif
+         !
          do k1 = 1,Nmodes
             do k2 = 1,Nmodes
-               trove%g_vib(k1,k2)%field(:,irho) = g_vib(k1,k2,:)*factor
+               Nterms = trove%g_vib(k1,k2)%Ncoeff
+               trove%g_vib(k1,k2)%field(1:Nterms,irho) = g_vib(k1,k2,1:Nterms)*factor
             enddo
          enddo
          !
          do k1 = 1,Nmodes
             do k2 = 1,3
-               trove%g_cor(k1,k2)%field(:,irho) = g_cor(k1,k2,:)*factor
+               Nterms = trove%g_cor(k1,k2)%Ncoeff
+               trove%g_cor(k1,k2)%field(1:Nterms,irho) = g_cor(k1,k2,1:Nterms)*factor
             enddo
          enddo
          !
          do k1 = 1,3
             do k2 = 1,3
-               trove%g_rot(k1,k2)%field(:,irho) = g_rot(k1,k2,:)*factor
+               Nterms = trove%g_rot(k1,k2)%Ncoeff
+               trove%g_rot(k1,k2)%field(1:Nterms,irho) = g_rot(k1,k2,1:Nterms)*factor
             enddo
          enddo
          !
-         trove%pseudo%field(:,irho) = pseudo(:)*factor
+         Nterms = trove%pseudo%Ncoeff
+         trove%pseudo%field(1:Nterms,irho) = pseudo(1:Nterms)*factor
         !
       enddo
       !
       !
-      deallocate(g_vib,g_rot,g_cor,pseudo)
+      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
       !
  end subroutine compute_kinetic_on_rho_grid_compact

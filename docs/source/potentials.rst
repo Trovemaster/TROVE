@@ -351,12 +351,12 @@ The input file example is  `CaOH_Koput_step1.inp <https://raw.githubusercontent.
 This expansion is similar to ``POTEN_XY2_TYUTEREV`` but with the :math:`\sin\rho` instead of :math:`\cos\rho`:
 
 .. math::
-    
+
    \begin{split}
    V(r_1,r_2,\alpha) &= f_{000} + f_{001} y_3 + f_{100} [ y_1 + y_2 ] + f_{100} [ y_1 + y_2 ] + f_{002} y_3^2 + \ldots +  \\
                      & + b_1 e^{-g_1 r_{\rm HH}} + b_2 e^{-g_2 r_{\rm HH}^2} \\
    \end{split}
-    
+
 
 
 where
@@ -619,11 +619,11 @@ An extract from the potential block for this PEF form is given by
 .. note:: For the ``power`` form of the PEF expansion, the structural (non-expansion) parameters contain dummy zeros to keep the format.
 
 
-User-defined potentials 
+User-defined potentials
 =======================
 
 TROVE provide a functionality to add a new user-defined PEF without fully integrating them into the TROVE code. This is done using the ``general``
-``pot_user`` type of ``Potential`` objects and the modules ``pot_user``. 
+``pot_user`` type of ``Potential`` objects and the modules ``pot_user``.
 
 In the TROVE input file, a user-defined  PEF will look as follows:
 ::
@@ -641,15 +641,15 @@ In the TROVE input file, a user-defined  PEF will look as follows:
     .....
     .....
     end
-    
 
-Here, ``general`` is the generic PEF type associated with a module ``pot_user`` and ``pot_name`` is an optional name of the PEF as implemented in the ``pot_user``. The latter is a stand-along Fortran file with a unique name that must be included into the TROVE compilation set. There can be only one such file containing a ``pot_user`` module included. 
+
+Here, ``general`` is the generic PEF type associated with a module ``pot_user`` and ``pot_name`` is an optional name of the PEF as implemented in the ``pot_user``. The latter is a stand-along Fortran file with a unique name that must be included into the TROVE compilation set. There can be only one such file containing a ``pot_user`` module included.
 
 A ``pot_user`` module must have the following structure:
 
-.. code-block:: guess 
+.. code-block:: guess
    :caption:  module pot_user
-       
+
        module pot_user
           use accuracy
           use moltype
@@ -718,8 +718,8 @@ A ``pot_user`` module must have the following structure:
         .....
         ....
 
-       end module p
-              
+       end module pot_user
+
 
 Currently, the following  user-defined PEFs are available:
 
@@ -731,33 +731,33 @@ User-defined PEF for CH\ :sub:`4`
 pot_ch4.f90
 ^^^^^^^^^^^
 
-This PEF is implemented as a ``general`` (``user-type``) object provided in pot_ch4.f90, which is not included into the main installation and needs to be added to the TROVE compilation. 
+This PEF is implemented as a ``general`` (``user-type``) object provided in pot_ch4.f90, which is not included into the main installation and needs to be added to the TROVE compilation.
 
 It is given by the an analytic symmetrised (:math:`A_1`) representation used for CH\ :sub:`4` [14YuJe]_, [24YuOwTe]_  and SiH\ :sub:`3` [17OwYuYa]_:
 
-.. math:: 
-          
+.. math::
+
        V(\xi_{1},\xi_{2},\xi_{3},\xi_{4},\xi_{5},\xi_{6},\xi_{7},\xi_{8},\xi_{9})={\sum_{ijk\ldots}}{\,}\mathrm{f}_{ijk\ldots}V_{ijk\ldots}
-       
-      
-where 
+
+
+where
 
 .. math::
-         
+
          V_{ijk\ldots}=\lbrace\xi_{1}^{\,i}\xi_{2}^{\,j}\xi_{3}^{\,k}\xi_{4}^{\,l}\xi_{5}^{\,m}\xi_{6}^{\,n}\xi_{7}^{\,p}\xi_{8}^{\,q}\xi_{9}^{\,r}\rbrace^{\bm{T}_{\mathrm{d}}\mathrm{(M)}}
-         
+
 
 are expanded as sum-of-products in terms of the stretch coordinates,
 
-.. math :: 
-      
+.. math ::
+
        \xi_i=1-\exp\left(-a(r_i - r^{\mathrm{ref}})\right){\,};\hspace{2mm}i=1,2,3,4
-         
-               
-and symmetrized combinations of interbond angles, 
+
+
+and symmetrized combinations of interbond angles,
 
 .. math::
-    
+
     \begin{split}
        \xi_5 &= \frac{1}{\sqrt{12}}\left(2\alpha_{12}-\alpha_{13}-\alpha_{14}-\alpha_{23}-\alpha_{24}+2\alpha_{34}\right) \\
        \xi_6 &= \frac{1}{2}\left(\alpha_{13}-\alpha_{14}-\alpha_{23}+\alpha_{24}\right)  \\
@@ -765,7 +765,7 @@ and symmetrized combinations of interbond angles,
        \xi_8 &= \frac{1}{\sqrt{2}}\left(\alpha_{23}-\alpha_{14}\right)  \\
        \xi_9 &= \frac{1}{\sqrt{2}}\left(\alpha_{34}-\alpha_{12}\right)  \\
     \end{split}
-       
+
 
 where :math:a: (:math:`\mathrm{\AA}^{-1}`) is the Morse parameter and :math:`r^{\mathrm{ref}}` (:math:`\mathrm{\AA}`) is a reference equilibrium bond length value.
 
@@ -830,8 +830,8 @@ This is an Ames1 type PES by Xinchuan Huang  from `CS2 <https://huang.seti.org/C
     end
 
 
-- pot_DVR3D.f90: 
-- pot_ext_const.f90: 
+- pot_DVR3D.f90:
+- pot_ext_const.f90:
 - pot_H2O_Conway.f90:
 - pot_H2O_DMBE.f90:
 - pot_H2O_DVR3D_PES40K.f90:
@@ -839,9 +839,9 @@ This is an Ames1 type PES by Xinchuan Huang  from `CS2 <https://huang.seti.org/C
 - pot_H3p_MiZATeP.f90:
 - pot_HCN.f90:
 - pot_HCN_Harris.f90:
-- pot_N2O.f90: 
+- pot_N2O.f90:
 - pot_NH3_Egorov.f90
 - pot_NH3_Roman.f90
 - pot_so2.f90
 - pot_triatom.f90
- 
+
