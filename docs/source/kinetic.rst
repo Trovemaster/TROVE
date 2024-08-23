@@ -492,7 +492,7 @@ The following basic function types are currently available for the KEO ``BASIC-F
 |   #   | Keyword | Function         |
 +-------+---------+------------------+
 +-------+---------+------------------+
-|   1   |  I      |  :math:`1/x`     |
+|   1   |  I      |  :math:`x`       |
 +-------+---------+------------------+
 |   2   |  cos    |  :math:`\cos(x)` |
 +-------+---------+------------------+
