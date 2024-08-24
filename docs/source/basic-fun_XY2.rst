@@ -1,15 +1,5 @@
 Basic functions examples
-========================
-
-.. toctree::
-   :glob:
-   :maxdepth: 1
-   :caption: Basic functions feature of KEO
-
-   basic-fun_XY2.rst
-
-
-
+------------------------
 
 Rigid triatomic molecule XY\ :sub:`2`
 *************************************

@@ -648,8 +648,8 @@ Finally, the expansion basic functions now have to be specified in the kinetic p
 This will make sure that the correct expansion functions are used when computing KEO matrix elements.
 
 
+For more on the basic functions with examples see :doc:`basic_functions_example`. 
 
 
-:doc:`basic_functions_example`
 
 
