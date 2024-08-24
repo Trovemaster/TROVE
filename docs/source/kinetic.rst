@@ -650,6 +650,20 @@ This will make sure that the correct expansion functions are used when computing
 
 For more on the basic functions with examples see :doc:`basic_functions_example`. 
 
+For more on the basic functions with examples see below.
+
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Basic functions feature of KEO
+
+
+   basic_functions_example.rst
+
+
+
+
 
 
 
