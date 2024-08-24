@@ -650,6 +650,6 @@ This will make sure that the correct expansion functions are used when computing
 
 
 
-:doc:`basic_functions_example.rst`
+:doc:`basic_functions_example`
 
 
