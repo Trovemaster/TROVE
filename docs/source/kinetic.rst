@@ -222,13 +222,53 @@ How to use analytic KEOs
 
 
 
-External Numerical Taylor-type KEO
-----------------------------------
 
-As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipe line. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved.
+KEO using "basic-functions" 
+---------------------------
 
-Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in :doc:`checkpoints`.
-An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given in a sum-of-products form:
+:index:`basic-function`
+
+We now generalise the sum-of-products form of the KEO using the concept of "basic-functions". Let us assume the following generalise sum-of-products form for a given  KEO term  :math:`G_{\lambda,\lambda'}(\xi_1,\xi_2,\xi_3\ldots)` (or :math:`U(\xi_1,\xi_2,\xi_3\ldots)`) from Eq. :eq:`e-H-total`: 
+
+.. math::
+    :label:  e-G-sum-of-prod
+
+    G_{\lambda,\lambda'}(\xi_1,\xi_2,\xi_3\ldots) = \sum_{l,m} u_{l,m,n}^{\lambda,\lambda'}   u_{l}(\xi_1) u_{m}(\xi_2) u_{n}(\xi_3) \ldots 
+
+
+where :math:`u_{k}(\xi_i)` is a 1D generic function of a vibrational coordinate :math:`\xi_i`. For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions are
+
+.. math:: 
+       
+       \begin{split}
+          u_1(x) &= x \\
+          u_2(x) &= x^2 \\
+          u_3(x) &= x^3 \\
+          u_4(x) &= x^4 \\
+           & \ldots  \\
+       \end{split}
+
+In the example from the exact KEO of the quasi-linear molecule from Eq. :math:`e-G`, the basic functions are 
+
+.. math::
+
+       \begin{split}
+          u_1(r) &= \frac{1}{r} \\
+          u_2(r) &= \frac{1}{r^2} \\
+       \end{split}
+
+In the following, we use the concept of "basic-functions" to introduce externally generated KEOs into the TROVE pipeline. 
+
+
+External Numerical Taylor-type KEO using "basic-functions"
+----------------------------------------------------------
+
+
+As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipeline. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved.
+
+Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in :doc:`checkpoints`. 
+
+An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given using the "basic-functions" form as given by
 
 .. math::
     :label:  e-G-H2CS
@@ -336,9 +376,9 @@ The corresponding numerical KEO of H\ :sub:`2`\ CS in the form of the checkpoint
 Although efficient in interfacing TROVE with external KEO constructors, the latter scheme "External Numerical Taylor-type" has a few disadvantages:
 
 - The 1D basic expansion types must be implemented in TROVE, which reduces its flexibility.
-- When representing as sum-of-products, TROVE treats it as a Tylor-type expansion of a given order :math:`N_{\rm kin}` (defined with ``KinOrder``). The number of expansion terms grows very quickly with the varying of the expansion types. In the case of the H\ :sub:`2`\ CS , the formal expansion order of the KEO terms in Eq. :eq:`e-G-H2CS` (``KinOrder``) was 15 (i.e. :math:`n+l+m+o+p+q`). This was necessary to incorporate all the terms in the exact KEO of this molecule using the basic terms from the tables above. With this order, the number of the formal expansion terms in TROVE was 74613 (see card ``Ncoeff`` in ``kineti.chk``) fr each KEO term :math:`G_{\lambda,\lambda'}`  and TROVE needed to allocated all of them, even though the actual number of non-zero terms was much smaller, only 208. That is, it is expensive. It should be noted that once inputed into the TROVE pipeline, with the ``sparse`` representation, TROVE will only work with 208 terms, but initially it would need to assume all 74613.
+- When representing as sum-of-products, TROVE treats it as a Tylor-type expansion of a given order :math:`N_{\rm kin}` (defined with ``KinOrder``). The number of expansion terms grows very quickly with the varying of the expansion types. In the case of the H\ :sub:`2`\ CS , the formal expansion order of the KEO terms in Eq. :eq:`e-G-H2CS` (``KinOrder``) was 15 (i.e. :math:`n+l+m+o+p+q`). This was necessary to incorporate all the terms in the exact KEO of this molecule using the basic terms from the tables above. With this order, the number of the formal expansion terms in TROVE was 74613 (see card ``Ncoeff`` in ``kineti.chk``) fr each KEO term :math:`G_{\lambda,\lambda'}`  and TROVE needed to allocated all of them, even though the actual number of non-zero terms was much smaller, only 208. That is, it is expensive. It should be noted that once inputted into the TROVE pipeline, with the ``sparse`` representation, TROVE will only work with 208 terms, but initially it would need to assume all 74613.
 
-Ideally, we would like to have a similar functionality of the "External Numerical Taylor-type", but with more flexibility in constructing KEO and also in the way it is inputed.  In response to these requirements, the ``BASIC-FUNCTION`` feature has been introduced.
+Ideally, we would like to have a similar functionality of the "External Numerical Taylor-type", but with more flexibility in constructing KEO and also in the way it is inputted.  In response to these requirements, the ``BASIC-FUNCTION`` feature has been introduced.
 
 
 
@@ -347,7 +387,18 @@ Ideally, we would like to have a similar functionality of the "External Numerica
 Basic-Function: External sum-of-products KEO of general type
 ------------------------------------------------------------
 
-This feature allows user to build their KEO from the existing "basic-functions" using the ``BASIC-FUNCTION`` builder.
+
+
+Let us now formalise the "basic-functions" concept by representing the 1D basic functions :math:`u_{l}(\xi_i)` in Eq. :eq:`e-G-sum-of-prod`  in the following generic form:
+
+.. math::
+
+      u_{l}(\xi_i) = f^{(\lambda)}( a_i \xi^{k_i} )^{n_i}
+
+where :math:`f^{(\lambda)}(x)` is a predefined 1D analytic form implemented in TROVE. This form allows user to formalise a generic KEO by defining it in the input file and associated kinetic.chk. To this end, the ``BASIC-FUNCTION`` builder is used.
+
+As an illustration, let us consider the H\ :sub:`2`\ CS example and reconstruct its KEO using the ``BASIC-FUNCTION`` feature. 
+
 
 ``BASIC-FUNCTION`` is a TROVE block defining the shape of the KEO expansions in Eq. :eq:`e-G-H2CS` as follows. Using the same example of H\ :sub:`2`\ CS, we now introduce the basic coordinates using the following constructor:
 ::
@@ -391,10 +442,10 @@ We assume that each   1D contributing term :math:`u_{l}{\xi_i}` for a given mode
 
 .. math::
 
-      u_{l}(\xi_i) = f_1( a_i \xi_i^{k_1} )^{n_i} f_2( b_i \xi_i^{l_1} )^{m_i} \ldots
+      u_{}(\xi_1,\xi_2,\xi3,..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_2^{k_2} )^{n_2} \ldots
 
 
-For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f_1{(1)}(r_1) = \frac{1}{r_1}` and :math:`f_1{(1)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
+For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f^{(1)}(r_1) = \frac{1}{r_1}` and :math:`f^{(2)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
 
 +-------+-----------------------+-------------+-------+------------+-------------+
 |                               |        mode |:math:`N_{\rm func}`|             |
@@ -408,7 +459,12 @@ For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`
 |   2   |          1            |  -2         |  I    |  1         |     1       |
 +-------+-----------------------+-------------+-------+------------+-------------+
 
-Here ``I`` indicates the inverse function of :math:`r_1`.
+Here ``I`` indicates the simple "identity" function of :math:`r_1`, i.e. 
+
+.. math::
+    
+   f^{\rm (I)}(r) = r
+   
 
 For mode 4 (:math:`\alpha_1`) however 7 basic functions are used:
 
