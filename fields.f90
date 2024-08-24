@@ -2232,6 +2232,8 @@ module fields
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
                   case("COT")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+                  case("SEC")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
                   case default 
                 end select
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
@@ -6119,7 +6121,9 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
-        if (trove%sparse.and..not.trove%kinetic_compact) call compact_sparse_kinetic
+        call compact_sparse_kinetic
+        !
+        call combine_compacted_fields_sparse_kinetic_fields
         !
         return 
         !
@@ -6568,6 +6572,9 @@ end subroutine check_read_save_none
        integer(ik) :: k1,k2,i,irho,iatom,imode,Nmodes,Npoints
        type(FLpolynomT),pointer     :: fl,gl
        !
+       if (.not.trove%sparse) return 
+       if (trove%kinetic_compact) return
+       !
        if (job%verbose>=4) write(out,"('Compacting the kinetic energy matrices into a sparse representation ...')")
        !
        Nmodes = trove%Nmodes
@@ -6633,6 +6640,29 @@ end subroutine check_read_save_none
        if (job%verbose>=4) write(out,"('... done!')")
        !
     end subroutine compact_sparse_kinetic
+
+
+
+    subroutine combine_compacted_fields_sparse_kinetic_fields
+       !
+       implicit none
+       !
+       type(FLpolynomT),pointer     :: fl
+       integer(ik) :: Nmodes
+       !
+       if (.not.trove%kinetic_compact) return
+       !
+       if (job%verbose>=4) write(out,"('Combine gvib(N,N) with pseudo ...')")
+       !
+       Nmodes = trove%Nmodes
+       !
+       fl => trove%g_vib(Nmodes,Nmodes)
+       !
+       call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+       !
+       if (job%verbose>=4) write(out,"('... done!')")
+       !
+    end subroutine combine_compacted_fields_sparse_kinetic_fields
 
 
 
@@ -6867,346 +6897,6 @@ end subroutine check_read_save_none
   ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
   ! Compact (sparse) version where only non zero elements are counted 
   !
-  subroutine compute_kinetic_on_rho_grid_compact_II
-    !
-    type :: MLpolynomT
-       integer(ik)          :: N         ! Number of expansion coeffs.
-       real(ark),pointer    :: val(:)  ! Expansion parameters
-       integer(ik),pointer  :: iexp(:,:)  ! This is to store FLIndexQ for each object individually 
-    end type MLpolynomT
-    !
-    !real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
-    integer(ik),allocatable :: ig_vib(:,:,:,:),ig_rot(:,:,:,:),ig_cor(:,:,:,:),ipseudo(:,:)
-    integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
-                    Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
-    real(ark)    :: rho,factor
-    integer(ik)  :: Nterms,n
-    type(FLpolynomT),pointer    :: fl
-    type(MLpolynomT),target     :: g_vib_(trove%Nmodes,trove%Nmodes),g_rot_(3,3),g_cor_(trove%Nmodes,3),pseudo_
-    type(MLpolynomT),pointer :: gl
-      !
-      Nmodes = trove%Nmodes
-      !
-      ! Conversion factor to the cm-1 units 
-      !
-      factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
-      !
-      npoints = trove%npoints 
-      !
-      !allocate(g_vib(nmodes,nmodes,1),ig_vib(nmodes,nmodes,1,nmodes),stat=info)
-      !allocate(g_cor(nmodes,3,1),ig_cor(nmodes,3,1,nmodes),stat=info)
-      !allocate(g_rot(3,3,1),ig_rot(3,3,1,nmodes),stat=info)
-      !allocate(pseudo(1),ipseudo(1,nmodes),stat=info)
-      !
-      ! check sizes
-      !
-      rho = 0
-      !
-      Nterms = trove%NKinOrder
-      !
-      Npseudo = -1
-      !
-      !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-      !
-      !call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-      !                           ig_vib,ig_rot,ig_cor,ipseudo)
-
-
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,Nmodes
-            !
-            gl => g_vib_(k1,k2)
-            !
-            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
-            !
-         enddo
-      enddo
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,3
-            !
-            gl => g_cor_(k1,k2)
-            !
-            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
-            !
-         enddo
-      enddo
-      !
-      do k1 = 1,3
-         do k2 = 1,3
-            !
-            gl => g_rot_(k1,k2)
-            !
-            allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
-            !
-         enddo
-      enddo
-      !
-      gl => pseudo_
-      !
-      allocate(gl%val(Nterms),gl%iexp(Nterms,1:Nmodes),stat=info)
-
-
-      !call MLkineticfunc_compact(rho,nmodes,g_vib_,g_rot_,g_cor_,pseudo_)
-
-      !      
-      !deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-      !
-      !Nterms = max(maxval(Ng_vib),maxval(Ng_cor),maxval(Ng_rot),Npseudo)
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,Nmodes
-            !
-            gl => g_vib_(k1,k2)
-            !
-            if (gl%N>0) then
-                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
-              else
-                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
-            endif
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
-            !
-         enddo
-      enddo
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,3
-            !
-            gl => g_cor_(k1,k2)
-            !
-            if (gl%N>0) then
-                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
-              else
-                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
-            endif
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
-            !
-         enddo
-      enddo
-      !
-      do k1 = 1,3
-         do k2 = 1,3
-            !
-            gl => g_rot_(k1,k2)
-            !
-            if (gl%N>0) then
-                allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
-              else
-                allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
-            endif
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
-            call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
-            !
-         enddo
-      enddo
-      !
-      gl => pseudo_
-      !
-      if (gl%N>0) then
-          allocate(gl%val(gl%N),gl%iexp(gl%N,1:Nmodes),stat=info)
-        else
-          allocate(gl%val(0:0),gl%iexp(0:0,1:Nmodes),stat=info)
-      endif
-      call ArrayStart('kinetic_on_grid-fields',info,size(gl%val),kind(gl%val))
-      call ArrayStart('kinetic_on_grid-fields',info,size(gl%iexp),kind(gl%iexp))
-      !
-      !if (Nterms>0) then
-      !    allocate(g_vib_(nmodes,nmodes,Nterms),ig_vib(nmodes,nmodes,Nterms,nmodes),stat=info)
-      !  else
-      !    allocate(g_vib(nmodes,nmodes,0:0),ig_vib(nmodes,nmodes,0:0,nmodes),stat=info)
-      !endif
-      !call ArrayStart('kinetic_on_grid-fields',info,size(g_vib),kind(g_vib))
-      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_vib),kind(ig_vib))
-      !
-      !Nterms = maxval(Ng_cor)
-      !
-      !if (Nterms>0) then
-      !    allocate(g_cor(nmodes,3,Nterms),ig_cor(nmodes,3,Nterms,nmodes),stat=info)
-      !  else
-      !    allocate(g_cor(nmodes,3,0:0),ig_cor(nmodes,3,0:0,nmodes),stat=info)
-      !endif
-      !call ArrayStart('kinetic_on_grid-fields',info,size(g_cor),kind(g_cor))
-      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_cor),kind(ig_cor))
-      !
-      !Nterms = maxval(Ng_rot)
-      !
-      !if (Nterms>0) then
-      !    allocate(g_rot(3,3,Nterms),ig_rot(3,3,Nterms,nmodes),stat=info)
-      !  else
-      !    allocate(g_rot(3,3,0:0),ig_rot(3,3,0:0,nmodes),stat=info)
-      !endif
-      !call ArrayStart('kinetic_on_grid-fields',info,size(g_rot),kind(g_rot))
-      !call ArrayStart('kinetic_on_grid-fields',info,size(ig_rot),kind(ig_rot))
-      !
-      !Nterms  = Npseudo
-      !
-      !if (Nterms>0) then
-      !    allocate(pseudo(Nterms),ipseudo(Nterms,nmodes),stat=info)
-      !  else
-      !    allocate(pseudo(0:0),ipseudo(0:0,nmodes),stat=info)
-      !endif
-      !
-      !call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
-      !call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
-      !
-      do irho = 0, npoints
-         !
-         rho = trove%rho_i(irho)
-         !
-         !call MLkineticfunc_compact(rho,Nmodes,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-         !                           ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         if (irho==0) then 
-            !
-            do k1 = 1,Nmodes
-               do k2 = 1,Nmodes
-                  !
-                  fl => trove%g_vib(k1,k2) 
-                  gl => g_vib_(k1,k2)
-                  !
-                  fl%Ncoeff = gl%N
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  !
-                  do i = 1,fl%Ncoeff
-                    fl%IndexQ(:,i) = gl%iexp(i,:)
-                  enddo
-                  !
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
-            !
-            do k1 = 1,Nmodes
-               do k2 = 1,3
-                  !
-                  fl => trove%g_cor(k1,k2) 
-                  gl => g_cor_(k1,k2)
-                  !
-                  fl%Ncoeff = gl%N
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  !
-                  do i = 1,fl%Ncoeff
-                    fl%IndexQ(:,i) = gl%iexp(i,:)
-                  enddo
-                  !
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
-            !
-            do k1 = 1,3
-               do k2 = 1,3
-                  !
-                  fl => trove%g_rot(k1,k2) 
-                  gl => g_rot_(k1,k2)
-                  !
-                  fl%Ncoeff = gl%N
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  !
-                  do i = 1,fl%Ncoeff
-                    fl%IndexQ(:,i) = gl%iexp(i,:)
-                  enddo
-                  !
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
-            !
-            fl => trove%pseudo 
-            gl => pseudo_
-            !
-            fl%Ncoeff = gl%N
-            !
-            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
-            !
-            forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-            !
-            do i = 1,fl%Ncoeff
-              fl%IndexQ(:,i) = gl%iexp(i,:)
-            enddo
-            !
-            fl%sparse = .true.
-            !
-         endif
-         !
-         do k1 = 1,Nmodes
-            do k2 = 1,Nmodes
-               Nterms = trove%g_vib(k1,k2)%Ncoeff
-               trove%g_vib(k1,k2)%field(1:Nterms,irho) = g_vib_(k1,k2)%val(1:Nterms)*factor
-            enddo
-         enddo
-         !
-         do k1 = 1,Nmodes
-            do k2 = 1,3
-               Nterms = trove%g_cor(k1,k2)%Ncoeff
-               trove%g_cor(k1,k2)%field(1:Nterms,irho) = g_cor_(k1,k2)%val(1:Nterms)*factor
-            enddo
-         enddo
-         !
-         do k1 = 1,3
-            do k2 = 1,3
-               Nterms = trove%g_rot(k1,k2)%Ncoeff
-               trove%g_rot(k1,k2)%field(1:Nterms,irho) = g_rot_(k1,k2)%val(1:Nterms)*factor
-            enddo
-         enddo
-         !
-         Nterms = trove%pseudo%Ncoeff
-         trove%pseudo%field(1:Nterms,irho) = pseudo_%val(1:Nterms)*factor
-        !
-      enddo
-      !
-      ! clean up 
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,Nmodes
-            gl => g_vib_(k1,k2)
-            deallocate(gl%val,gl%iexp)
-         enddo
-      enddo
-      !
-      do k1 = 1,Nmodes
-         do k2 = 1,3
-            gl => g_cor_(k1,k2)
-            deallocate(gl%val,gl%iexp)
-         enddo
-      enddo
-      !
-      do k1 = 1,3
-         do k2 = 1,3
-            gl => g_rot_(k1,k2)
-            deallocate(gl%val,gl%iexp)
-         enddo
-      enddo
-      !
-      gl => pseudo_
-      deallocate(gl%val,gl%iexp)
-      !
-      call ArrayStop('kinetic_on_grid-fields')
-      !
-      !call ArrayStop('kinetic_on_grid-fields')
-      !
- end subroutine compute_kinetic_on_rho_grid_compact_II
-
-
-
-
-  !
-  ! This procedure is to generate kinetic fields on the rho-grid using an analytic expression 
-  ! Compact (sparse) version where only non zero elements are counted 
-  !
   subroutine compute_kinetic_on_rho_grid_compact
     !
     real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
@@ -7225,26 +6915,9 @@ end subroutine check_read_save_none
       !
       npoints = trove%npoints 
       !
-      !allocate(g_vib(nmodes,nmodes,1),ig_vib(nmodes,nmodes,1,nmodes),stat=info)
-      !allocate(g_cor(nmodes,3,1),ig_cor(nmodes,3,1,nmodes),stat=info)
-      !allocate(g_rot(3,3,1),ig_rot(3,3,1,nmodes),stat=info)
-      !allocate(pseudo(1),ipseudo(1,nmodes),stat=info)
-      !
-      ! check sizes
-      !
       rho = 0
       !
       Nterms = trove%NKinOrder
-      !
-      !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-      !
-      !call MLkineticfunc_compact(Nmodes,rho,Ng_vib,Ng_rot,Ng_cor,Npseudo,g_vib,g_rot,g_cor,pseudo,&
-      !                              ig_vib,ig_rot,ig_cor,ipseudo)
-      !      
-      !deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-      !
-      !Nterms = maxval(Ng_vib)
       !
       Nterms = trove%NKinOrder
       !
@@ -7290,11 +6963,11 @@ end subroutine check_read_save_none
          !
          rho = trove%rho_i(irho)
          !
-         call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
          !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+         call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !
@@ -7324,6 +6997,9 @@ end subroutine check_read_save_none
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  do i = 1,Ng_cor(k1,k2)
+                    fl%IndexQ(:,i) = ig_cor(k1,k2,i,:)
+                  enddo
                   fl%sparse = .true.
                   !
                enddo
@@ -7338,6 +7014,9 @@ end subroutine check_read_save_none
                   call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
                   !
                   forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+                  do i = 1,Ng_rot(k1,k2)
+                    fl%IndexQ(:,i) = ig_rot(k1,k2,i,:)
+                  enddo
                   fl%sparse = .true.
                   !
                enddo
@@ -7349,6 +7028,9 @@ end subroutine check_read_save_none
             call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
             !
             forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+            do i = 1,Npseudo
+              fl%IndexQ(:,i) = ipseudo(i,:)
+            enddo
             fl%sparse = .true.
             !
          endif
@@ -7379,6 +7061,11 @@ end subroutine check_read_save_none
         !
       enddo
       !
+      ! it is important that pseudo and g_vib(N,N) share the same grid. Here we combine gvib into the pseudo grid
+      !
+      fl => trove%g_vib(Nmodes,Nmodes)
+      !
+      call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
       !
       deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
@@ -15660,10 +15347,18 @@ end subroutine check_read_save_none
         integer(ik)        :: Nmodes,k1,k2,chkptIO_kin,i,iterm,npoints,Ncoeff
         type(FLpolynomT),pointer    :: fl
         logical     :: i_opened
+        character(len=cl)        :: fmt
+        integer(ik) :: IndexQ_dummy(trove%Nmodes)
         !
         if (job%verbose>=3) write(out,"(/'Store all objects as ASCII ...')")
         !
         if (trim(trove%IO_kinetic)/='SAVE') return
+        !
+        Nmodes = trove%Nmodes
+        !
+        IndexQ_dummy = 0
+        !
+        write(fmt,"(a,i3,a)") "(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,",trove%Nmodes,"i4,' <- End')"
         !
         unitfname ='Check point of the kinetic'
         call IOStart(trim(unitfname),chkptIO_kin)
@@ -15671,22 +15366,45 @@ end subroutine check_read_save_none
         if (i_opened) close(chkptIO_kin)
         open(chkptIO_kin,action='write',position='rewind',status='replace',file=trove%chk_kinet_fname)
         !
-        Ncoeff = trove%RangeOrder(trove%NKinOrder)
+        !Ncoeff = trove%RangeOrder(trove%NKinOrder)
+        !
+        ! find maximal number of Ncoeffs
+        !
+        Ncoeff =0
+        do k1 = 1,Nmodes
+          do k2 = 1,Nmodes
+            Ncoeff = max(Ncoeff,trove%g_vib(k1,k2)%Ncoeff)
+          enddo
+        enddo
         !
         write(chkptIO_kin,"(3i9,10x,a)") trove%g_vib(1,1)%Npoints,trove%g_vib(1,1)%orders,Ncoeff,"<- g_vib Npoints,Norder,Ncoeff"
-        Nmodes = trove%Nmodes
         !
         do k1 = 1,Nmodes
           do k2 = 1,Nmodes
             !
             fl => trove%g_vib(k1,k2) 
             !
-            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff==0) cycle 
+            !
+            call write_ascii_modes(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field,fl%indexQ)
             !
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+        if (trove%kinetic_compact) then 
+          write(chkptIO_kin,fmt) 987654321,0,0,0,0.0_ark,IndexQ_dummy
+        else 
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+        endif
+        !
+        ! find maximal number of Ncoeffs
+        !
+        Ncoeff =0
+        do k1 = 1,3
+          do k2 = 1,3
+            Ncoeff = max(Ncoeff,trove%g_rot(k1,k2)%Ncoeff)
+          enddo
+        enddo
         !
         write(chkptIO_kin,"(3i9,10x,a)") trove%g_rot(1,1)%Npoints,trove%g_rot(1,1)%orders,Ncoeff,"<- g_rot Npoints,Norder,Ncoeff"
         !
@@ -15695,12 +15413,27 @@ end subroutine check_read_save_none
             !
             fl => trove%g_rot(k1,k2) 
             !
-            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff==0) cycle 
+            !
+            call write_ascii_modes(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field,fl%indexQ)
             !
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
+        if (trove%kinetic_compact) then 
+          write(chkptIO_kin,fmt) 987654321,0,0,0,0.0_ark,IndexQ_dummy
+        else 
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+        endif
+        !
+        ! find maximal number of Ncoeffs
+        !
+        Ncoeff =0
+        do k1 = 1,Nmodes
+          do k2 = 1,3
+            Ncoeff = max(Ncoeff,trove%g_cor(k1,k2)%Ncoeff)
+          enddo
+        enddo
         !
         write(chkptIO_kin,"(3i9,10x,a)") trove%g_cor(1,1)%Npoints,trove%g_cor(1,1)%orders,Ncoeff,"<- g_cor Npoints,Norder,Ncoeff"
         !
@@ -15709,24 +15442,40 @@ end subroutine check_read_save_none
             !
             fl => trove%g_cor(k1,k2) 
             !
-            if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+            if (fl%Ncoeff==0) cycle 
+            !
+            call write_ascii_modes(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field,fl%indexQ)
             !
           enddo
         enddo
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
+        if (trove%kinetic_compact) then 
+          write(chkptIO_kin,fmt) 987654321,0,0,0,0.0_ark,IndexQ_dummy
+        else 
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+        endif
         !
         fl => trove%pseudo
+        Ncoeff = fl%Ncoeff
         !
         write(chkptIO_kin,"(3i9,10x,a)") trove%pseudo%Npoints,trove%pseudo%Orders,Ncoeff,"<- pseudo Npoints,Norder,Ncoeff"
         !
-        call write_ascii(0_ik,0_ik,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+        call write_ascii_modes(0_ik,0_ik,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field,fl%indexQ)
         !
-        write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
+        if (trove%kinetic_compact) then 
+          write(chkptIO_kin,fmt) 987654321,0,0,0,0.0_ark,IndexQ_dummy
+        else 
+          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+        endif
         !
         if (FLl2_coeffs) then
           !
-          Ncoeff = trove%RangeOrder(2)
+          Ncoeff =0
+          do k1 = 1,Nmodes
+            do k2 = 1,Nmodes
+              Ncoeff = max(Ncoeff,trove%L2_vib(k1,k2)%Ncoeff)
+            enddo
+          enddo
           !
           write(chkptIO_kin,"(3i9,10x,a)") trove%L2_vib(1,1)%Npoints,trove%L2_vib(1,1)%Orders,Ncoeff,&
                                            "<- L2_vib Npoints,Norder,Ncoeff"
@@ -15736,12 +15485,18 @@ end subroutine check_read_save_none
               !
               fl => trove%L2_vib(k1,k2) 
               !
-              if (fl%Ncoeff>0) call write_ascii(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field)
+              if (fl%Ncoeff==0) cycle 
+              !
+              call write_ascii_modes(k1,k2,fl%Ncoeff,fl%Npoints,chkptIO_kin,fl%ifromsparse,fl%field,fl%indexQ)
               !
             enddo
           enddo
           !
-          write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e18.11,' <- End')") 987654321,0,0,0,0.0_ark
+          if (trove%kinetic_compact) then 
+            write(chkptIO_kin,fmt) 987654321,0,0,0,0.0_ark,IndexQ_dummy
+          else 
+            write(chkptIO_kin,"(i11,1x,i5,1x,i8,1x,i8,1x,e15.8,' <- End')") 987654321,0,0,0,0.0_ark
+          endif
           !
         endif
         ! 
@@ -15887,6 +15642,50 @@ end subroutine check_read_save_none
           enddo
           !
       end subroutine write_ascii
+      !
+      subroutine write_ascii_modes(k1,k2,Ncoeff,Npoints,chkptIO_kin,ifromsparse,field,Qindex)
+        !
+        integer(ik),intent(in)   :: k1,k2,Ncoeff,Npoints,chkptIO_kin
+        real(ark),intent(in)     :: field(1:Ncoeff,0:Npoints)
+        integer(ik),intent(in)   :: ifromsparse(1:Ncoeff)
+        integer(ik),intent(in)   :: Qindex(1:trove%Nmodes,1:Ncoeff)
+        integer(ik) :: iterm,i
+        character(len=cl)        :: fmt
+          !
+          write(fmt,"(a,i3,a)") "(i5,1x,i5,1x,i8,1x,i8,1x,e26.18,",trove%Nmodes,"i4)"
+          !
+          if (trove%kinetic_compact) then 
+            !
+            do iterm = 1,Ncoeff
+              do i = 0,Npoints
+                !
+                if (abs(field(iterm,i))>job%exp_coeff_thresh) then 
+                  !
+                  write(chkptIO_kin,fmt) k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk),&
+                                         Qindex(1:trove%Nmodes,iterm) 
+                  !
+                endif
+                !
+               enddo
+            enddo
+            !
+          else
+            !
+            do iterm = 1,Ncoeff
+              do i = 0,Npoints
+                !
+                if (abs(field(iterm,i))>job%exp_coeff_thresh) then 
+                  !
+                  write(chkptIO_kin,fmt) k1,k2,ifromsparse(iterm),i,real(field(iterm,i),rk)
+                  !
+                endif
+                !
+               enddo
+            enddo
+            !
+          endif 
+          !
+      end subroutine write_ascii_modes
       !
       subroutine checkpointRestore_kinetic
 
@@ -17690,6 +17489,191 @@ end subroutine check_read_save_none
      call ArrayStop("Sfield")
      !
    end subroutine FLCompact_and_combine_three_fields_sparse
+
+
+
+   ! 
+   !
+   ! Combine compatced gvib(N,N) and pseudo in sparse representation
+   !
+   subroutine FLCombine_compacted_fields_sparse(fl1,name1,fl2,name2)
+
+     type(FLpolynomT),pointer  :: fl1,fl2
+     character(len=*),intent(in) :: name1,name2
+     integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
+     integer(ik)        :: icoeff1,icoeff2
+     real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
+     integer(ik),allocatable  :: siorder1(:),siorder2(:)      ! iorder in sparse
+     integer(ik),allocatable  :: SIndexQ(:,:)
+     integer(ik)   :: target_index(trove%Nmodes),ipowers1(trove%Nmodes),ipowers2(trove%Nmodes)
+     logical :: check = .true.
+     !
+     Ncoeff1 = fl1%Ncoeff
+     Ncoeff2 = fl2%Ncoeff
+     !
+     Npoints = fl1%Npoints
+     !
+     if (Npoints/=fl2%Npoints) then
+       write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") & 
+             fl1%Npoints,fl2%Npoints
+       stop 'FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields'
+     endif
+     !
+     !forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+     !do i = 1,Ng_rot(k1,k2)
+     !  fl%IndexQ(:,i) = ig_rot(k1,k2,i,:)
+     !enddo
+     !fl%sparse = .true.
+     !
+     ! count independent combinations 
+     !
+     nterms = Ncoeff1
+     !
+     loop_coeff : do icoeff2 = 1,Ncoeff2
+       !
+       ipowers2 = fl2%IndexQ(:,icoeff2)
+       !
+       do icoeff1 = 1,Ncoeff1
+          !
+          ipowers1 = fl1%IndexQ(:,icoeff1)
+          !
+          if (all(ipowers1==ipowers2)) then 
+             cycle loop_coeff
+          endif
+          !
+       enddo
+       ! 
+       nterms = nterms + 1
+       !
+     enddo loop_coeff
+     !
+     allocate(Sfield1(nterms,0:Npoints),Sfield2(nterms,0:Npoints),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Sfield1),kind(Sfield1))
+     call ArrayStart("Sfield",alloc,size(Sfield2),kind(Sfield2))
+     !
+     allocate(Siorder1(nterms),Siorder2(nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
+     call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
+     !
+     allocate(SIndexQ(1:trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart("Sfield",alloc,size(SIndexQ),kind(Siorder1))
+     !
+     Sfield1 = 0
+     Sfield2 = 0
+     siorder1  = 0
+     siorder2  = 0
+     !
+     ! merge 
+     !
+     ! copy field 1 and overlapping elements of field2 
+     loop_coeff1 : do iterm = 1,Ncoeff1
+       !
+       ipowers1 = fl1%IndexQ(:,iterm)
+       !
+       SIndexQ(:,iterm) = ipowers1(:)
+       !
+       Sfield1(iterm,:) = fl1%field(iterm,:)
+       siorder1(iterm)  = fl1%iorder(iterm)
+       !
+       do icoeff2 = 1,Ncoeff2
+          !
+          ipowers2 = fl2%IndexQ(:,icoeff2)
+          !
+          if (all(ipowers2==ipowers1)) then 
+             !
+             Sfield2(iterm,:) = fl2%field(icoeff2,:)
+             siorder2(iterm)  = fl2%iorder(icoeff2)
+             !
+             cycle loop_coeff1
+             !
+          endif
+          !
+       enddo
+       !
+     enddo loop_coeff1
+     !
+     iterm = Ncoeff1
+     !
+     ! extend to the second field 
+     !
+     loop_coeff2 : do icoeff2 = 1,Ncoeff2
+       !
+       ipowers2 = fl2%IndexQ(:,icoeff2)
+       !
+       do icoeff1 = 1,Ncoeff1
+          !
+          ipowers1 = fl1%IndexQ(:,icoeff1)
+          !
+          if (all(ipowers1==ipowers2)) then 
+             cycle loop_coeff2
+          endif
+          !
+       enddo
+       ! 
+       iterm = iterm + 1
+       !
+       SIndexQ(:,iterm) = ipowers2(:)
+       !
+       Sfield2(iterm,:) = fl2%field(iterm,:)
+       siorder2(iterm)  = fl2%iorder(iterm)
+       !
+     enddo loop_coeff2
+     !
+     deallocate(fl1%IndexQ,fl2%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     !
+     deallocate(fl1%ifromsparse,fl2%ifromsparse)
+     call ArrayStop(name1//"ifromsparse")
+     call ArrayStop(name2//"ifromsparse")
+     !
+     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
+     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
+     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     !
+     deallocate(fl1%iorder,fl2%iorder)
+     call ArrayStop(name1)
+     call ArrayStop(name2)
+     !
+     ! Create a field in a sparse representaion
+     !
+     allocate(fl1%iorder(nterms),fl2%iorder(nterms),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%iorder),kind(fl1%iorder))
+     call ArrayStart(name2,alloc,size(fl2%iorder),kind(fl2%iorder))
+     !
+     call ArrayMinus(name1,isize=size(fl1%field),ikind=kind(fl1%field))
+     call ArrayMinus(name2,isize=size(fl2%field),ikind=kind(fl2%field))
+     deallocate(fl1%field,fl2%field,stat=alloc)
+     !
+     allocate(fl1%field(nterms,0:Npoints),fl2%field(nterms,0:Npoints),stat=alloc)
+     call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
+     call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
+     !
+     fl1%field = Sfield1
+     fl1%Ncoeff = Nterms
+     fl1%iorder = Siorder1
+     fl1%IndexQ = SIndexQ
+     !
+     fl2%field = Sfield2
+     fl2%Ncoeff = Nterms
+     fl2%iorder = Siorder2
+     fl2%IndexQ = SIndexQ
+     !
+     do iterm = 1,nterms
+        !
+        fl1%ifromsparse(iterm) = iterm
+        fl2%ifromsparse(iterm) = iterm
+       !
+     enddo      
+     !
+     deallocate(Sfield1,Sfield2,siorder1,siorder2,SIndexQ)
+     !
+     call ArrayStop("Sfield")
+     !
+   end subroutine FLCombine_compacted_fields_sparse
 
 
    !
@@ -27659,6 +27643,13 @@ end subroutine check_read_save_none
     !type(basic_function) :: obj
     y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_csc
+  !
+  subroutine  calc_func_sec(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
+  end subroutine calc_func_sec
   !
   ! sanity check and deallocation of all existing arrays from this module 
   !

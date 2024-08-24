@@ -703,13 +703,13 @@ endif
     !
     f=v0+v1+v2+v3+v4+v5+v6+v7+v8+vhh
     !
-    q1 = local(1)/bohr ; q2 = local(2)/bohr ;  ycos = cos(alpha)
+    !q1 = local(1)/bohr ; q2 = local(2)/bohr ;  ycos = cos(alpha)
     !
-    v_t = 0
+    !v_t = 0
     !
     !call potv(v_t,q1,q2,ycos)
     !
-    f = f + v_t*219474.630670_ark
+    !f = f + v_t*219474.630670_ark
     !
     if (verbose>=6) write(out,"('MLpoten_xy2_tyuterev/end')")
 
@@ -3980,9 +3980,9 @@ endif
     !
     alpha_2 = r(3)*0.5_ark
     !
-    select case(trim(molec%coords_transform))
+    select case(trim(molec%frame))
        !
-    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
+    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT','BISECT-Z')
        !
        a0(2, 1) = -r(1) * cos(alpha_2)
        a0(2, 3) = -r(1) * sin(alpha_2)
@@ -4126,7 +4126,7 @@ endif
        a0(3,3) = -(sin(v)*R2*sin(alpha)*mX+sin(v)*R2*sin(alpha)*mY-cos(v)*R2*cos(alpha)*mX-cos(v)*R2*cos(alpha)*mY+&
                    cos(v)*mY*R1)/(mX+mY+mZ)
        !
-    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
+    case('R-RHO-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT','BISECT-Z')
        !
        alpha_2 = r(3)*0.5_ark
        !

@@ -81,6 +81,16 @@ module mol_xy2
           dst(3) = pi-src(3)
        endif
        !
+    case('R-ALPHA')
+       !
+       if (direct) then 
+          dst(1:2) = dsrc(1:2)
+          dst(3) =  dsrc(3)
+       else
+          dst(1:2) = src(1:2)+molec%local_eq(1:2)
+          dst(3) = src(3)+molec%local_eq(3)
+       endif
+       !
     case('R-RHO-HALF')
        !
        if (direct) then 
@@ -721,7 +731,7 @@ module mol_xy2
       select case(trim(molec%frame))
       case default
          !
-      case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF')
+      case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z')
          !
          if (Nangles>0) then
            alphaeq = molec%alphaeq(1)
@@ -1040,7 +1050,7 @@ module mol_xy2
             a02 = (m1/m)
             !
          case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z',&
-              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT')
+              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT','BISECT-Z')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1088,6 +1098,10 @@ module mol_xy2
                alpha = pi-rho
               case('R-RHO-HALF')
                alpha = pi-rho*2.0_ark
+              case ('R-ALPHA')
+                !
+                alpha = rho
+                !
             end select 
             !
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
@@ -1191,7 +1205,7 @@ module mol_xy2
             !
             select case(trim(molec%frame))
                !
-            case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF')
+            case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z')
                !
                b0(1,3,i) = 0.0_ark
                b0(1,2,i) = 0.0_ark
@@ -1530,7 +1544,7 @@ module mol_xy2
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
     case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF','R-RHO-Z-ECKART',&
-         'RADAU-R-ALPHA-Z')
+         'RADAU-R-ALPHA-Z','R-ALPHA')
        !
        select case(trim(molec%symmetry))
        case default
@@ -2948,7 +2962,7 @@ module mol_xy2
          return
     end select 
     !
-    select case(trim(molec%coords_transform))
+    select case(trim(molec%frame))
       !
     case default
       !
@@ -3219,7 +3233,7 @@ module mol_xy2
          !
       end select
       !
-    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z')
+    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z','R-BISECT')
       !
       select case(trim(molec%symmetry))
       case default

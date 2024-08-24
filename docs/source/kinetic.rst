@@ -228,15 +228,22 @@ KEO using "basic-functions"
 
 :index:`basic-function`
 
-We now generalise the sum-of-products form of the KEO using the concept of "basic-functions". Let us assume the following generalise sum-of-products form for a given  KEO term  :math:`G_{\lambda,\lambda'}(\xi_1,\xi_2,\xi_3\ldots)` (or :math:`U(\xi_1,\xi_2,\xi_3\ldots)`) from Eq. :eq:`e-H-total`: 
+We now generalise the sum-of-products form of the KEO using the concept of "basic-functions". Let us assume the following generalise sum-of-products form for a given  KEO term  :math:`G_{\lambda,\lambda'}(r_1,r_2,...\alpha_1,\alpha_2...\tau_1,\tau_2\ldots)` (or :math:`U`) from Eq. :eq:`e-H-total`:
 
 .. math::
     :label:  e-G-sum-of-prod
 
-    G_{\lambda,\lambda'}(\xi_1,\xi_2,\xi_3\ldots) = \sum_{l,m} u_{l,m,n}^{\lambda,\lambda'}   u_{l}(\xi_1) u_{m}(\xi_2) u_{n}(\xi_3) \ldots 
+    G_{\lambda,\lambda'}(q_1,q_2,\ldots) = \sum_{l,m} u_{l,m,n}^{\lambda,\lambda'}   u_{l}(q_1) u_{m}(q_2) u_{n}(q_3) \ldots 
 
 
-where :math:`u_{k}(\xi_i)` is a 1D generic function of a vibrational coordinate :math:`\xi_i`. For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions are
+where we introduced :math:`q_i` as a notation for the internal valence coordinates or their combinations used to represent an exact KEO. Here, :math:`u_{k}(q_i)` is a 1D generic function of a vibrational coordinate :math:`q_i`. It should be noted, that a typical internal coordinate :math:`\xi_i` in TROVE is a displacement from an equilibrium, e.g.
+
+.. math::
+        
+        q_1 =  r_1 = \xi_1 + r_{\rm e}
+        
+
+For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions are
 
 .. math:: 
        
@@ -301,7 +308,7 @@ Let us start with the ``basis`` set block:
      4,'numerov','DIHEDRAL',    'linear', range 0,14, resc 1.0, points 2000, borders -120.,  120.0 deg
    END
 
-Here, the expansion types ``BOND-LENGTH``, ``ANGLE`` and ``DIHEDRAL`` are implemented in TROVE and fully define the 1D expansion terms :math:`u_{l}(\xi_l)` in Eq. :eq:`e-G-H2CS`. In TROVE, the expansion index :math:`l` is used as an analogy for the exponent in the Taylor type expansion, Eq :eq:`e-Taylor`. The correlation between these  indices and their actual forms are as follows.
+Here, the expansion types ``BOND-LENGTH``, ``ANGLE`` and ``DIHEDRAL`` are implemented in TROVE and fully define the 1D expansion terms :math:`u_{l}(q_l)` in Eq. :eq:`e-G-H2CS`. In TROVE, the expansion index :math:`l` is used as an analogy for the exponent in the Taylor type expansion, Eq :eq:`e-Taylor`. The correlation between these  indices and their actual forms are as follows.
 
 
 
@@ -389,11 +396,11 @@ Basic-Function: External sum-of-products KEO of general type
 
 
 
-Let us now formalise the "basic-functions" concept by representing the 1D basic functions :math:`u_{l}(\xi_i)` in Eq. :eq:`e-G-sum-of-prod`  in the following generic form:
+Let us now formalise the "basic-functions" concept by representing the 1D basic functions :math:`u_{l}(q_i)` in Eq. :eq:`e-G-sum-of-prod`  in the following generic form:
 
 .. math::
 
-      u_{l}(\xi_i) = f^{(\lambda)}( a_i \xi^{k_i} )^{n_i}
+      u_{l}(q_i) = f^{(\lambda)}( a_i q^{k_i} )^{n_i}
 
 where :math:`f^{(\lambda)}(x)` is a predefined 1D analytic form implemented in TROVE. This form allows user to formalise a generic KEO by defining it in the input file and associated kinetic.chk. To this end, the ``BASIC-FUNCTION`` builder is used.
 
@@ -438,11 +445,18 @@ As an illustration, let us consider the H\ :sub:`2`\ CS example and reconstruct 
      END
 
 
-We assume that each   1D contributing term :math:`u_{l}{\xi_i}` for a given mode :math:`\xi` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
+We assume that each   1D contributing term :math:`u_{l}{q_i}` for a given mode :math:`q_i` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
 
 .. math::
 
-      u_{}(\xi_1,\xi_2,\xi3,..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_2^{k_2} )^{n_2} \ldots
+      u(q_1,q_2,q_3,..) = f^{(\lambda)}( a_1 q_1^{k_1} )^{n_1} f^{(\mu)}( a_2 q_2^{k_2} )^{n_2} \ldots
+      
+
+
+The basis functions can be combined together as a product to form a composed expansion type, e.g.
+.' math::
+
+      u_{1}(\xi_1..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_1^{k_2} )^{n_2} 
 
 
 For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f^{(1)}(r_1) = \frac{1}{r_1}` and :math:`f^{(2)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
@@ -542,7 +556,7 @@ which is summarised in the following table:
 Available basic function types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following basic function types are currently available for the KEO ``BASIC-FUNCTION`` constructor:
+The following basic function types are currently available for the KEO ``Automatic`` type to be used with the ``BASIC-FUNCTION`` constructor:
 
 +-------+---------+------------------+
 |   #   | Keyword | Function         |
@@ -559,6 +573,8 @@ The following basic function types are currently available for the KEO ``BASIC-F
 |   5   |  csc    |  :math:`\csc(x)` |
 +-------+---------+------------------+
 |   6   |  cot    | :math:`\cot(x)`  |
++-------+---------+------------------+
+|   7   |  csc    |  :math:`\sec(x)` |
 +-------+---------+------------------+
 
 These basic functions are associated with the  ``BASIS`` expansion type ``automatic``, see below. 
@@ -630,4 +646,10 @@ Finally, the expansion basic functions now have to be specified in the kinetic p
      END
 
 This will make sure that the correct expansion functions are used when computing KEO matrix elements.
+
+
+
+
+:doc:`basic_functions_example.rst`
+
 
