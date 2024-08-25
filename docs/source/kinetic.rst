@@ -217,7 +217,7 @@ The following sum-of-products expansion is assumed:
 .. math::
     :label: e-G-rigid
      
-    G_{\lambda,\lambda'} = \sum_{l,m} u_{l,m}\lambda,\lambda'(r_1,r_2,\alpha)   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\alpha)
+    G_{\lambda,\lambda'} = \sum_{l,m,n} u_{l,m,n}\lambda,\lambda'(r_1,r_2,\alpha)   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\alpha)
     
 where :math:`f_{n}(\alpha)` is one of the basic-functions types. 
 
