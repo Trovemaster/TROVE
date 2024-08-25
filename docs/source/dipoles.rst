@@ -1,7 +1,246 @@
-Dipole moment funcitons
+Dipole moment functions
 =======================
 
-**TBP**
+
+TROVE provides a larger number of dipole moment functions (DMFs) for different molecules already implemented. Most of these PEFs are in modules ``pot_*`` contained in  file ``pot_*.f90``.
+
+ - ``pot_xy2.f90``
+ - ``pot_xy3.f90``
+ - ``pot_zxy2.f90``
+ - ``pot_abcd.f90``
+ - ``pot_xy4.f90``
+ - ``pot_zxy3.f90``
+ - ........
+
+These are a part of the standard TROVE compilation set. Alternatively, a user-defined DMF can be included into the TROVE compilation as a generic 'user-defined' module ``pot_user``.
 
 
+
+Dipole (External)  Block
+========================
+
+The DMFs are defined in the TROVE input file using the ``Dipole`` block, which is just an alias for the ``external`` input structure. A typical ``Dipole`` input is as follows:
+::
+
+      DIPOLE
+      dimension 3
+      NPARAM  264 0 0
+      compact
+      DMS_TYPE  XY3_SYMMB
+      COEFF   list
+      COORDS  linear linear linear linear linear linear
+      Order   6  6  6
+      dstep 0.005
+      parameters
+      charge                0.00000000
+      nparamA              112.00000000
+      RhoE               90.00000000
+      RE14                1.01032000
+      beta                1.00000000
+      d0                  4.56621083
+      f1a                -9.36438932
+      f2a                32.96400671
+      ...
+      end
+
+For an example, see :download:`14N-1H3__BYTe__TROVE__step1.inp <./input/14N-1H3__BYTe__TROVE__step1.inp>`  where this DMF is used.
+
+- ``dimension`` (aliases ``rank``, ``dim``): This is the dimension of the external field.   An "external" is treated in TROVE as a vector of dimension :math:`D`, which in the case of dipole can be up to :math:`D=3`, but will depend on the implementation. This parameter is to help structure the input dipole parameters according to the dipole components, if necessary.
+- ``NPARAM`` is used to specify the number of parameters to define the DMF and should contain :math:`D` input values.
+- ``compact``: is recently implemented card which switches to the "compact" format with no "fitting-indexes" column  present.
+- ``DMS_TYPE`` (``TYPE``) is the name of the DMF as implemented in ``pot_*.f90 file`` and referenced in ``mlecules.f90``.
+``COEFF`` indicates if the DFM parameters are given as a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), see example below.
+- ``COORDS``: coordinate types used to re-expand the dipole field in terms of the internal TROVE coordinates.
+- ``Order``: The corresponding expansion order.
+- ``dstep``: finite difference step used in the re-expansion. The default value is 0.005 Ang.
+- ``parameters``: card indicating the section with the dipole parameters entries specific for the given ``DMS_TYPE``.
+
+The dipole moment parameters are listed after the keyword ``parameters`` and terminated with the keyword ``END``. The number of the entries should be equal exactly to the sum of  ``NPARAM`` values.
+
+
+For the ``COEFF  list`` option, the meaning of the columns is as follows:
+
+
++---------+-----------------------+
+| Label   | Value                 |
++---------+-----------------------+
+| charge  |        0.00000000     |
+| nparamA |       112.00000000    |
+| RhoE    |     90.00000000       |
+| RE14    |      1.01032000       |
+| beta    |      1.00000000       |
+| d0      |      4.56621083       |
+| f1a     |     -9.36438932       |
+| f2a     |     32.96400671       |
++---------+-----------------------+
+
+
+
+
+The first column with the name of the parameters, which is for clearness only. This field is only used for printing purposes and otherwise nor-referenced in the code in any way. The second column contains the actual value of the given parameter. The input is directly associated with the corresponding implementation and therefore the order is important.
+
+An alternative, legacy, format with no ``compact`` card assumes an additional column with the so-called "fitting-indexes" indicating if the parameter was varied in the fitting to the ab initio data. Here is an example:
+:
+
+    parameters
+    charge       0           0.00000000
+    nparamA      1          112.00000000
+    RhoE         0         90.00000000
+    RE14         0          1.01032000
+    beta         0          1.00000000
+    d0           4          4.56621083
+    f1a          8         -9.36438932
+    f2a          8         32.96400671
+    f3a          7        -80.82339377
+    ....
+
+where column 2 contains the "fitting-indexes". These indexes are not used by TROVE. They are kept in order to simplify the interfacing between the ab initio fitting and TROVE, but can be always omitted with the help of the card ``compact``.
+
+
+Here is an example of the input format using individual expansion "powers", ``COEFF powers`` (from CO\ :sub:`2`):
+::
+
+         DIPOLE
+         rank 3
+         NPARAM  971 0 0
+         compact
+         TYPE  DIPOLE_AMES1
+         COEFF   powers  (powers or list)
+         COORDS  linear linear linear
+         Orders   16 16 16
+         threshold   1e-8
+         Parameters
+         re    0 0 0 0  1.15958d0
+         ae    0 0 0 0  180.00
+         d000    0    0    0   0      -0.4801402388843266D+00
+         d001    0    0    1   0       0.1203598337496481D+00
+         d002    0    0    2   0      -0.5662267278952241D-01
+         d003    0    0    3   0      -0.2529381009630170D-01
+         d004    0    0    4   0      -0.1271678002798687D+00
+         d005    0    0    5   0       0.3033049145401118D+01
+         d006    0    0    6   0      -0.1754036600894653D+02
+     .....
+     end
+
+See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_step1.inp>`_.
+
+Assuming the DMF form as an expansion
+.. math::
+
+   \mu_\alpha(\xi_1,\xi_2,\xi_3) =  \sum_{k,j,k} d_{i,j,k} \xi_1^i \xi_2^j  \xi_3^k,
+
+the input card has the following format
+
+   +---------+-----------+----------+----------+-----+-------------------------+
+   | Label   | :math:`i` | :math:`j`| :math:`k`|Index| Value :math:`_{i,j,k} ` |
+   +---------+-----------+----------+----------+-----+-------------------------+
+   |  d000   |          0|    0     |    0     |    0|  -0.4801402388843266D+00|
+   +---------+-----------+----------+----------+-----+-------------------------+
+   |  d001   |          1|    0     |    0     |    0|  0.1203598337496481D+00 |
+   +---------+-----------+----------+----------+-----+-------------------------+
+   |  d002   |          0|    1     |    0     |    0|  -0.5662267278952241D-01|
+   +---------+-----------+----------+----------+-----+-------------------------+
+
+where
+
+ - 'Labels' are the parameter name,  for printing purposes only;
+ - :math:`i`, :math:`j`, :math:`k` are the 'powers' of an expansion term;
+  - 'Index' is a switch to indicate if the corresponding parameter was fitted or can be fitted, with no impact on any evaluations of the PEF values. It is not present in the ``compact`` form.
+  - 'Values' are the actual dipole parameters. For ``powers``, their order is not important.
+
+In case the definition of DMF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`, equilibrium inter-bond angles :math:`\alpha_{\rm e}`,  in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column, as in the example above, `re`` and ``ae`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using exactly column 6.
+
+
+
+Implemented DMFs
+================
+
+
+XY\ :sub:`2` type
+-----------------
+
+There are several PEFs available for this molecule type.
+
+
+``xy2_pq_coeff``
+^^^^^^^^^^^^^^^^
+
+``DIPOLE_PQR_XYZ_Z-FRAME``
+DIPOLE_PQR_XYZ_Z-FRAME_SINRHO
+XY2_PQ
+XY2_PQ_COEFF
+XY2_PQ_LINEAR
+DIPOLE_SO2_AMES1
+DIPOLE_AMES1
+DIPOLE_AMES1_XYZ
+XY2_C3_SCHROEDER
+XY2_SCHROEDER_XYZ_ECKART
+DIPOLE_XY2_LORENZO
+DIPOLE_H2O_LPT2011
+DIPOLE_PQR_XYZ
+DIPOLE_PQR_XYZ_Z-BOND
+DIPOLE_PQR_XYZ_BISECTING
+DIPOLE_BISECT_S1S2T_XYZ
+XY2_QMOM_SYM
+XY2_ALPHA_SYM
+XY2_QMOM_BISECT_FRAME
+TEST_XY2_QMOM_BISECT_FRAME
+XY2_SR-BISECT-NONLIN
+TEST_XY2_SR-BISECT-NONLIN
+
+
+XY3
+---
+
+
+XY3_MB
+XY3_MB4
+XY3_SYMMB
+XY3_NSS_MB
+
+ABCD
+-----
+
+HOOH_MB
+HPPH_MB
+HCCH_MB
+HCCH_DMS_7D
+HCCH_DMS_7D_7ORDER
+HCCH_DMS_7D_7ORDER_LINEAR
+HCCH_DMS_7D_LOCAL
+HCCH_ALPHA_ISO_7D_LINEAR
+
+
+ZXY2
+----
+
+ZXY2_SYMADAP
+
+
+ZXY3
+----
+
+ZXY3_SYM
+
+C2H4
+----
+
+DIPOLE_C2H4_4M
+
+
+
+
+XY2_SR-BISECT
+XY2_SS_DIPOLE_YY
+XY2_G-BISECT
+
+XY2_G-ROT-ELEC
+
+XY2_G-COR-ELEC
+
+XY2_G-TENS-RANK3
+
+XY2_G-TENS-NUC
+
+COORDINATES
 
