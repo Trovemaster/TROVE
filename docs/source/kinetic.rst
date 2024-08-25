@@ -110,27 +110,30 @@ A number of analytic curvilinear KEOs are available (see :doc:`frames`) and asso
      kinetic_type  KINETIC_XYZ_EKE_bisect
    END
 
-Here are the implemented KEOs (quasi-linear triatomic molecules):
+Non-rigid quasi-linear triatomic molecules's KEOs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The non-rigid quasi-linear KEOs for triatomic molecules implemented in TROVE include:
 
 .. table:: t-KEOs
 
-     Kinetic energy types implemented with associated basis set and frame types.
+     Kinetic energy types implemented with associated basis set and frame types: non-rigid quasi-linear triatomics.
 
-+----------------+-------------------------------------+---------------------+--------------------------+
-| ``MolType``    | ``kinetic_type``                    |  basis set          |    frames                |
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XY2         |   ``KINETIC_XY2_EKE_BISECT``        |``laguerre-k``       |  ``R-RHO-Z``             |
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XY2         |   ``KINETIC_XY2_EKE_BISECT_SINRHO`` |``sinrho-laguerre-k``|  ``R-RHO-Z``             |
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_bisect``        |``laguerre-k``       |  ``R-RHO-Z-M2-M3-BISECT``|
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND``          |``laguerre-k``       |  ``R1-Z-R2-RHO``         |
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND_SINRHO``   |``sinrho-laguerre-k``|  ``R-RHO-Z-M2-M3-BISECT``|
-+----------------+-------------------------------------+---------------------+--------------------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND-R2``       |``laguerre-k``       |  ``R2-Z-R1-RHO``         |
-+----------------+-------------------------------------+---------------------+--------------------------+
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+| ``MolType``    | ``kinetic_type``                    |  basis set          |    frames/``transrom``   | BASIS expansion |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XY2         |   ``KINETIC_XY2_EKE_BISECT``        |``laguerre-k``       |  ``R-RHO-Z``             | ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XY2         |   ``KINETIC_XY2_EKE_BISECT_SINRHO`` |``sinrho-laguerre-k``|  ``R-RHO-Z``             | ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XYZ         |   ``KINETIC_XYZ_EKE_bisect``        |``laguerre-k``       |  ``R-RHO-Z-M2-M3-BISECT``| ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XYZ         |   ``KINETIC_XYZ_EKE_BOND``          |``laguerre-k``       |  ``R1-Z-R2-RHO``         | ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XYZ         |   ``KINETIC_XYZ_EKE_BOND_SINRHO``   |``sinrho-laguerre-k``|  ``R-RHO-Z-M2-M3-BISECT``| ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+|    XYZ         |   ``KINETIC_XYZ_EKE_BOND-R2``       |``laguerre-k``       |  ``R2-Z-R1-RHO``         | ``rational``    |
++----------------+-------------------------------------+---------------------+--------------------------+-----------------+
 
 These are included in the module ``kin_xy2.f90``.
 
@@ -149,7 +152,7 @@ In the case of analytic ``XYZ`` and ``XY2`` KEOs from :numref:`Table %s <t-KEOs>
 
     G_{\lambda,\lambda'} = \sum_{l,m} u_{l,m}\lambda,\lambda'   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\rho)
 
-for example:
+For example:
 
 .. math::
 
@@ -190,6 +193,37 @@ where ``KinOrder 2`` tells TROVE to expand the KEO :math:`1/r_1` and :math:`1/r_
 
 
 For intensity calculations, it is also important to link these KEO to the appropriate frame. This is because the dipole moment vectors representations strongly depend on the molecular coordinate system. In the table above, the appropriate frames (``TRANSFORM``) are also listed.
+
+
+
+Analytic KEOs for rigid non-linear triatomic molecules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. table:: t-KEOs-rigid
+
+     Kinetic energy types with associated basis set and frame types: rigid triatomics: 
+
++----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
+| ``MolType``    | ``kinetic_type``                          |     basis set       |      frames      | ``TRANSFORM``  | ``BASIS``       |
++----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
+|    XY2         | ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID``  |   ``numerov``       |  ``BISECT-Z``    |  ``R-ALPHA``   | ``automatic``   |
++----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
+
+It is included in the module ``kin_xy2.f90``.
+
+The following sum-of-products expansion is assumed: 
+
+.. math::
+    :label: e-G-rigid
+     
+    G_{\lambda,\lambda'} = \sum_{l,m} u_{l,m}\lambda,\lambda'(r_1,r_2,\alpha)   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\alpha)
+    
+where :math:`f_{n}(\alpha)` is one of the basic-functions types. 
+
+The KEO type ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID`` is explained in detail in :doc:`basic_functions_example.rst`.
+
+
 
 How to use analytic KEOs
 ************************
@@ -648,15 +682,13 @@ Finally, the expansion basic functions now have to be specified in the kinetic p
 This will make sure that the correct expansion functions are used when computing KEO matrix elements.
 
 
-For more on the basic functions with examples see :doc:`basic_functions_example`. 
-
 For more on the basic functions with examples see below.
 
 
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Basic functions feature of KEO
+   :caption: Examples for KEO Basic-functions feature 
 
 
    basic_functions_example.rst
