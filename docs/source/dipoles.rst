@@ -32,8 +32,8 @@ The DMFs are defined in the TROVE input file using the ``Dipole`` block, which i
       Order   6  6  6
       dstep 0.005
       parameters
-      charge                0.00000000
-      nparamA              112.00000000
+      charge              0.00000000
+      nparamA           112.00000000
       RhoE               90.00000000
       RE14                1.01032000
       beta                1.00000000
@@ -65,12 +65,19 @@ For the ``COEFF  list`` option, the meaning of the columns is as follows:
 | Label   | Value                 |
 +---------+-----------------------+
 | charge  |        0.00000000     |
++---------+-----------------------+
 | nparamA |       112.00000000    |
++---------+-----------------------+
 | RhoE    |     90.00000000       |
++---------+-----------------------+
 | RE14    |      1.01032000       |
++---------+-----------------------+
 | beta    |      1.00000000       |
++---------+-----------------------+
 | d0      |      4.56621083       |
++---------+-----------------------+
 | f1a     |     -9.36438932       |
++---------+-----------------------+
 | f2a     |     32.96400671       |
 +---------+-----------------------+
 
@@ -80,7 +87,7 @@ For the ``COEFF  list`` option, the meaning of the columns is as follows:
 The first column with the name of the parameters, which is for clearness only. This field is only used for printing purposes and otherwise nor-referenced in the code in any way. The second column contains the actual value of the given parameter. The input is directly associated with the corresponding implementation and therefore the order is important.
 
 An alternative, legacy, format with no ``compact`` card assumes an additional column with the so-called "fitting-indexes" indicating if the parameter was varied in the fitting to the ab initio data. Here is an example:
-:
+::
 
     parameters
     charge       0           0.00000000
@@ -165,27 +172,49 @@ There are several PEFs available for this molecule type.
 ``xy2_pq_coeff``
 ^^^^^^^^^^^^^^^^
 
-``DIPOLE_PQR_XYZ_Z-FRAME``
-DIPOLE_PQR_XYZ_Z-FRAME_SINRHO
+-``DIPOLE_PQR_XYZ_Z-FRAME``
+
+-DIPOLE_PQR_XYZ_Z-FRAME_SINRHO
+
 XY2_PQ
+
 XY2_PQ_COEFF
+
 XY2_PQ_LINEAR
+
 DIPOLE_SO2_AMES1
+
+
 DIPOLE_AMES1
+
 DIPOLE_AMES1_XYZ
+
 XY2_C3_SCHROEDER
+
 XY2_SCHROEDER_XYZ_ECKART
+
 DIPOLE_XY2_LORENZO
+
 DIPOLE_H2O_LPT2011
+
 DIPOLE_PQR_XYZ
+
 DIPOLE_PQR_XYZ_Z-BOND
+
 DIPOLE_PQR_XYZ_BISECTING
+
 DIPOLE_BISECT_S1S2T_XYZ
+
 XY2_QMOM_SYM
+
 XY2_ALPHA_SYM
+
 XY2_QMOM_BISECT_FRAME
+
 TEST_XY2_QMOM_BISECT_FRAME
+
 XY2_SR-BISECT-NONLIN
+
 TEST_XY2_SR-BISECT-NONLIN
 
 
@@ -194,20 +223,30 @@ XY3
 
 
 XY3_MB
+
 XY3_MB4
+
 XY3_SYMMB
+
 XY3_NSS_MB
 
 ABCD
 -----
 
 HOOH_MB
+
 HPPH_MB
+
 HCCH_MB
+
 HCCH_DMS_7D
+
 HCCH_DMS_7D_7ORDER
+
 HCCH_DMS_7D_7ORDER_LINEAR
+
 HCCH_DMS_7D_LOCAL
+
 HCCH_ALPHA_ISO_7D_LINEAR
 
 
@@ -231,7 +270,9 @@ DIPOLE_C2H4_4M
 
 
 XY2_SR-BISECT
+
 XY2_SS_DIPOLE_YY
+
 XY2_G-BISECT
 
 XY2_G-ROT-ELEC

@@ -26,13 +26,12 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
    quantumnumbers.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: TROVE systems
 
    molecules.rst
    potentials.rst
    kinetic.rst
-      basic_functions_example.rst
    dipoles.rst
    newmolecules.rst
 
