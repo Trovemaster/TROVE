@@ -17,7 +17,7 @@ These are a part of the standard TROVE compilation set. Alternatively, a user-de
 
 
 Dipole (External)  Block
-========================
+------------------------
 
 The DMFs are defined in the TROVE input file using the ``Dipole`` block, which is just an alias for the ``external`` input structure. A typical ``Dipole`` input is as follows:
 ::
@@ -134,8 +134,9 @@ See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_
 Assuming the DMF form as an expansion
 
 .. math::
-    
+        
    \mu_\alpha(\xi_1,\xi_2,\xi_3) =  \sum_{k,j,k} d_{i,j,k} \xi_1^i \xi_2^j  \xi_3^k,
+    
     
 the input card has the following format
 
@@ -156,7 +157,7 @@ where
   - 'Index' is a switch to indicate if the corresponding parameter was fitted or can be fitted, with no impact on any evaluations of the PEF values. It is not present in the ``compact`` form.
   - 'Values' are the actual dipole parameters. For ``powers``, their order is not important.
 
-In case the definition of DMF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`, equilibrium inter-bond angles :math:`\alpha_{\rm e}`,  in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column, as in the example above, `re`` and ``ae`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using exactly column 6.
+In case the definition of DMF requires also structural parameters, such as equilibrium bond lengths :math:`r_{\rm e}`, equilibrium inter-bond angles :math:`\alpha_{\rm e}`,  in the ``COEFF  Powers`` form these parameters should be listed exactly in the order expected by the  implemented of the PEF (similar to the ``COEFF LIST`` form), but with dummy "powers" columns so that their 'values' appear in the right column, as in the example above, ``re`` and ``ae`` are two the equilibrium values and the three columns with ``0 0 0`` are given in order to parse their values using exactly column 6.
 
 
 
@@ -255,7 +256,7 @@ This DMF is of the AMES1 type represented using the point-charge molecular bond 
         \vec{\mu} = \mu_x \vec{i} + \mu_z \vec{k} =  \mu_1 \vec{r}_1 + \mu_2 \vec{r}_2
 
 
-where :math:`\mu_x:math:` and :math:`\mu_z` are the TROVE frame vectors and :math:`\mu_1:math:` and :math:`\mu_2`  are the *ab initio* dipoles in the molecular bond frame (the :math:`\mu_y:math:` component is always zero). The two point-charge dipole moment components  :math:`\mu_1` and :math:`\mu_2` are represented in terms of the vibrational coordinates as
+where :math:`\mu_x` and :math:`\mu_z` are the TROVE frame vectors and :math:`\mu_1` and :math:`\mu_2`  are the *ab initio* dipoles in the molecular bond frame (the :math:`\mu_y` component is always zero). The two point-charge dipole moment components  :math:`\mu_1` and :math:`\mu_2` are represented in terms of the vibrational coordinates as
 
 .. math::
        :label: eq:coords_dms
@@ -318,7 +319,7 @@ The corrsponding components :math:`\mu^{(q)}` and :math:`\mu^{(p)}` are expanded
 ``DIPOLE_PQR_XYZ_Z-FRAME_SINRHO``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The same as ``DIPOLE_PQR_XYZ_Z-FRAME`` but with :math:`\sin(\alpha_{\rm e}-\alpha)` as an expansion variable in Eq. :eq:`e-muQ-1` instead of :math:`\cos\alpha_{\rm e} - \cos\alpha `:
+The same as ``DIPOLE_PQR_XYZ_Z-FRAME`` but with :math:`\sin(\alpha_{\rm e}-\alpha)` as an expansion variable in Eq. :eq:`e-muQ-1` instead of :math:`\cos\alpha_{\rm e} - \cos\alpha`:
 
 .. math::
        :label: e-muQ-exp-3
