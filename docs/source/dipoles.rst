@@ -393,15 +393,16 @@ Subroutine: ``MLdms2pqr_xyz_z_bond``.
 
 This is a generalisation of ``DIPOLE_PQR_XYZ_Z-FRAME``, which does not make any assumtion on the frame of the original dipole, only on its expansion form given as in Eq. :eq:`e-muQ-exp-2`. The role of ``DIPOLE_PQR_XYZ_Z-BOND`` is to transform it to the TROVE frame, which in this case is the with the $z$ axis oriented along the  bond :math:`\vec{r}_1`: 
 
+
 .. math::
 
       \begin{split}
-      \vec{i} &= \frac{\vec{n}_1+\vec{n}_2}{|\vec{n}_1+\vec{n}_2|} \\
-      \vec{j} &= \vec{j}\times \vec{i} \\
-      \vec{k} &= \frac{\vec{r}_{12}}{r_{12}}
+      \vec{x} &= \frac{\vec{n}_1+\vec{n}_2}{|\vec{n}_1+\vec{n}_2|} \\
+      \vec{y} &= \vec{z}\times \vec{x} \\
+      \vec{z} &= \frac{\vec{r}_{12}}{r_{12}}
       \end{split}
 
-s
+
 
 ``DIPOLE_PQR_XYZ_BISECTING``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -685,29 +686,99 @@ HOOH_MB
        Bisecting DMF frame HOOH frame ``HOOH_MB``.
 
 
-
-
-
 Subroutine: :code:`MLdms_hooh_MB`. 
 
-The DMF frame :math:`xyz` is defined with the :math:`x` axis as a bisector between two planes, H\ :sub:`1`\ O\ :sub:`1`\ O\ :sub:`2` and  O\ :sub:`1`\ O\ :sub:`2`\ H\ :sub:`1` and :math:`z` axis along the O\ :sub:`1`\ O\ :sub:`2` bond. 
+The DMF frame :math:`xyz` is defined with the :math:`x` axis as a bisector between two planes, H\ :sub:`1`\ O\ :sub:`1`\ O\ :sub:`2` and  O\ :sub:`1`\ O\ :sub:`2`\ H\ :sub:`1` and :math:`z` axis along the O\ :sub:`1`\ O\ :sub:`2` bond. Thus, the unit vector :math:`k` is defined as a normalised vector :math:`\vec{r}_{12}`, the unit vector :math:`i` is defined as a bisector between the normal to the planes 3-1-2 and 1-2-3 and the unit vector is defined via the rand-hand rule:
 
 .. math::
 
-         \vec{\bf q}_{\rm N} =
-           (\vec{\bf e}_1 \times \vec{\bf e}_2)
-         + (\vec{\bf e}_2 \times \vec{\bf e}_3)
-         + (\vec{\bf e}_3 \times \vec{\bf e}_1).
-
-
-
-
-using the following vectors:
+      \begin{split}
+      \vec{k} &= \frac{\vec{r}_{12}}{r_{12}} \\
+      \vec{i} &= \frac{\vec{n}_1+\vec{n}_2}{|\vec{n}_1+\vec{n}_2|} \\
+      \vec{j} &= \vec{j}\times \vec{i} 
+      \end{split}
+ 
+where the plane normals are defined as follows: 
 
 .. math::
 
+      \begin{split}
+      \vec{n}_1 &= \frac{\vec{r}_{21}\times \vec{r}_{12}}{|\vec{r}_{21}\times \vec{r}_{12}|} \\
+      \vec{n}_2 &= \frac{\vec{r}_{12}\times \vec{r}_{32}}{|\vec{r}_{12}\times \vec{r}_{32}|}
+      \end{split}
 
 
+Here, the coordinate vectors :math:`\vec{r}_{21}`, :math:`\vec{r}_{31}` and :math:`\vec{r}_{42}` as well as :math:`\vec{i}`, :math:`\vec{j}` and :math:`\vec{k}`     are given in the representation of the  instantaneous TROVE frame :math:`xyz`. With this definition, the matrix constructed from these unit vecrtors :math:`\vec{i}`, :math:`\vec{j}` and :math:`\vec{k}` forms the rotation (unitary transformation) of the dipole vector between its original DMF frame and the instantaneous TROVE frame :math:`xyz`:
+
+.. math:: 
+
+     {\mathbf A} = \left( \vec{i}^T,\vec{j}^T,\vec{k}^T  \right)
+
+and 
+
+.. math::
+
+    \vec{\mu}^{\rm TROVE} = {\mathbf A}^T \vec{\mu}^{\rm DMF}
+
+
+The :math:`\mu_\alpha^{\rm DMF}` are expressed as Taylor-type expansion:
+
+.. math::
+    
+      \begin{split}
+      \mu_x^{\rm DMF} &= \cos\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(x)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
+      \mu_y^{\rm DMF} &= \sin\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(y)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
+      \mu_z^{\rm DMF} &=                          \mu_{ijklmn}^{(z)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
+      \end{split}
+
+where 
+
+.. math:: 
+     
+      \begin{split}
+         \xi_i &  r_i - r_{i}^{\rm e} e^{-\beta_i (r_i - r_{i}^{\rm e}) }, t=1,2,3 \\
+         \xi_4 & = \alpha_1 - \alpha_{\rm e} \\
+         \xi_5 & = \alpha_1 - \alpha_{\rm e} \\
+         \xi_6 & = \cos\delta 
+      \end{split}
+
+The expansion paramters are the subjetc to the permutation constraint: 
+
+.. math::
+ 
+ 
+     \begin{split}
+       \mu_{i(jk)(lm)n}^{(x)} = \mu_{i(kj)(mn)n}^{(x)}, \quad {\rm for} j\ne k \quad l\ne m \\
+       \mu_{i(jk)(lm)n}^{(y)} = -\mu_{i(kj)(mn)n}^{(y)}, \quad {\rm for} j\ne k \quad l\ne m \\
+       \mu_{i(jk)(lm)n}^{(z)} = -\mu_{i(kj)(mn)n}^{(z)}, \quad {\rm for} j\ne k \quad l\ne m 
+      \end{split}
+
+
+This DMF form was used to produce the APTY line list for HOOH [15AlOvYu]_. The TROVE input file describing this spectroscopic model can be found in `APTY spectroscopic model <https://exomol.com/models/H2O2/1H2-16O2/APTY/>`__. For this mode, the ``Dipole`` block is given by 
+::
+    
+    Dipole
+    dimension 3
+    NPARAM     136   96   98
+    DMS_TYPE  HOOH_MB
+    COEFF   powers  
+    COORDS  linear
+    Order   6 6 6
+    parameters
+    re1           0    0    0    0    0    0   0          1.45538654
+    re2           0    0    0    0    0    0   0          0.96257063
+    alphae        0    0    0    0    0    0   0        101.08307909
+    beta1         0    0    0    0    0    0   0          1.00000000
+    beta2         0    0    0    0    0    0   0          1.00000000
+    xxxxx         0    0    0    0    0    0   0          0.00000000
+    mu000000      0    0    0    0    0    0   7          3.11323258
+    mu000001      0    0    0    0    0    1   6         -0.05725254
+    mu000002      0    0    0    0    0    2   5         -0.00374176
+    mu000003      0    0    0    0    0    3   4         -0.0048
+    ....
+    
+
+where ``dimension`` is 3. 
 
 
 HPPH_MB
