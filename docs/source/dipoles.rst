@@ -49,7 +49,7 @@ For an example, see :download:`14N-1H3__BYTe__TROVE__step1.inp <./input/14N-1H3_
 - ``NPARAM`` is used to specify the number of parameters to define the DMF and should contain :math:`D` input values.
 - ``compact``: is recently implemented card which switches to the "compact" format with no "fitting-indexes" column  present.
 - ``DMS_TYPE`` (``TYPE``) is the name of the DMF as implemented in ``pot_*.f90 file`` and referenced in ``mlecules.f90``.
-``COEFF`` indicates if the DFM parameters are given as a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), see example below.
+- ``COEFF`` indicates if the DFM parameters are given as a list of parameter values (``LIST``) or  values with the corresponding expansion powers (``POWERS``), see example below.
 - ``COORDS``: coordinate types used to re-expand the dipole field in terms of the internal TROVE coordinates.
 - ``Order``: The corresponding expansion order.
 - ``dstep``: finite difference step used in the re-expansion. The default value is 0.005 Ang.
@@ -132,14 +132,15 @@ Here is an example of the input format using individual expansion "powers", ``CO
 See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_step1.inp>`.
 
 Assuming the DMF form as an expansion
+
 .. math::
-
+    
    \mu_\alpha(\xi_1,\xi_2,\xi_3) =  \sum_{k,j,k} d_{i,j,k} \xi_1^i \xi_2^j  \xi_3^k,
-
+    
 the input card has the following format
 
    +---------+-----------+----------+----------+-----+-------------------------+
-   | Label   | :math:`i` | :math:`j`| :math:`k`|Index| Value :math:`_{i,j,k} ` |
+   | Label   | :math:`i` | :math:`j`| :math:`k`|Index| Value :math:`_{i,j,k}`  |
    +---------+-----------+----------+----------+-----+-------------------------+
    |  d000   |          0|    0     |    0     |    0|  -0.4801402388843266D+00|
    +---------+-----------+----------+----------+-----+-------------------------+

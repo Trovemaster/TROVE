@@ -202,7 +202,7 @@ Analytic KEOs for rigid non-linear triatomic molecules
 
 .. table:: t-KEOs-rigid
 
-     Kinetic energy types with associated basis set and frame types: rigid triatomics: 
+     Kinetic energy types with associated basis set and frame types: rigid triatomics:
 
 +----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
 | ``MolType``    | ``kinetic_type``                          |     basis set       |      frames      | ``TRANSFORM``  | ``BASIS``       |
@@ -212,14 +212,14 @@ Analytic KEOs for rigid non-linear triatomic molecules
 
 It is included in the module ``kin_xy2.f90``.
 
-The following sum-of-products expansion is assumed: 
+The following sum-of-products expansion is assumed:
 
 .. math::
     :label: e-G-rigid
-     
+
     G_{\lambda,\lambda'} = \sum_{l,m,n} u_{l,m,n}\lambda,\lambda'(r_1,r_2,\alpha)   \frac{1}{r_1^l} \frac{1}{r_2^m} f_{n}(\alpha)
-    
-where :math:`f_{n}(\alpha)` is one of the basic-functions types. 
+
+where :math:`f_{n}(\alpha)` is one of the basic-functions types.
 
 The KEO type ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID`` is explained in detail in :doc:`basic_functions_example.rst`.
 
@@ -257,7 +257,7 @@ How to use analytic KEOs
 
 
 
-KEO using "basic-functions" 
+KEO using "basic-functions"
 ---------------------------
 
 :index:`basic-function`
@@ -267,20 +267,20 @@ We now generalise the sum-of-products form of the KEO using the concept of "basi
 .. math::
     :label:  e-G-sum-of-prod
 
-    G_{\lambda,\lambda'}(q_1,q_2,\ldots) = \sum_{l,m} u_{l,m,n}^{\lambda,\lambda'}   u_{l}(q_1) u_{m}(q_2) u_{n}(q_3) \ldots 
+    G_{\lambda,\lambda'}(q_1,q_2,\ldots) = \sum_{l,m} u_{l,m,n}^{\lambda,\lambda'}   u_{l}(q_1) u_{m}(q_2) u_{n}(q_3) \ldots
 
 
 where we introduced :math:`q_i` as a notation for the internal valence coordinates or their combinations used to represent an exact KEO. Here, :math:`u_{k}(q_i)` is a 1D generic function of a vibrational coordinate :math:`q_i`. It should be noted, that a typical internal coordinate :math:`\xi_i` in TROVE is a displacement from an equilibrium, e.g.
 
 .. math::
-        
+
         q_1 =  r_1 = \xi_1 + r_{\rm e}
-        
+
 
 For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions are
 
-.. math:: 
-       
+.. math::
+
        \begin{split}
           u_1(x) &= x \\
           u_2(x) &= x^2 \\
@@ -289,7 +289,7 @@ For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions
            & \ldots  \\
        \end{split}
 
-In the example from the exact KEO of the quasi-linear molecule from Eq. :math:`e-G`, the basic functions are 
+In the example from the exact KEO of the quasi-linear molecule from Eq. :math:`e-G`, the basic functions are
 
 .. math::
 
@@ -298,7 +298,7 @@ In the example from the exact KEO of the quasi-linear molecule from Eq. :math:`e
           u_2(r) &= \frac{1}{r^2} \\
        \end{split}
 
-In the following, we use the concept of "basic-functions" to introduce externally generated KEOs into the TROVE pipeline. 
+In the following, we use the concept of "basic-functions" to introduce externally generated KEOs into the TROVE pipeline.
 
 
 External Numerical Taylor-type KEO using "basic-functions"
@@ -307,7 +307,7 @@ External Numerical Taylor-type KEO using "basic-functions"
 
 As was mentioned above, TROVE can work with any ro-vibrational KEOs as long as they are represented as sum-of-products of 1D functions of vibrational coordinates. It is possible to input any externally constructed (non-singular) KEO and to be used with the TROVE pipeline. One of the most robust methods is to use the TROVE checkpoints functionality.  Therefore, ``kinetic.chk`` can be used to input externally constructed KEOs in a numerical form, providing that the format (line and column orders, numbering) is preserved.
 
-Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in :doc:`checkpoints`. 
+Once produced by TROVE, KEO can be saved in an ascii file in a form of expansion coefficients, which fully define it. The structure of the kinetic.chk is explained in :doc:`checkpoints`.
 
 An example of externally constructed exact KEO for the H\ :sub:`2`\ CS molecule using Mathematica can be found in [23MeOwTe]_ (both as analytic formulas and a Mathematica ``.nb`` script), where it was used with TROVE to compute an ExoMol line list. It is given using the "basic-functions" form as given by
 
@@ -438,7 +438,7 @@ Let us now formalise the "basic-functions" concept by representing the 1D basic 
 
 where :math:`f^{(\lambda)}(x)` is a predefined 1D analytic form implemented in TROVE. This form allows user to formalise a generic KEO by defining it in the input file and associated kinetic.chk. To this end, the ``BASIC-FUNCTION`` builder is used.
 
-As an illustration, let us consider the H\ :sub:`2`\ CS example and reconstruct its KEO using the ``BASIC-FUNCTION`` feature. 
+As an illustration, let us consider the H\ :sub:`2`\ CS example and reconstruct its KEO using the ``BASIC-FUNCTION`` feature.
 
 
 ``BASIC-FUNCTION`` is a TROVE block defining the shape of the KEO expansions in Eq. :eq:`e-G-H2CS` as follows. Using the same example of H\ :sub:`2`\ CS, we now introduce the basic coordinates using the following constructor:
@@ -484,13 +484,14 @@ We assume that each   1D contributing term :math:`u_{l}{q_i}` for a given mode :
 .. math::
 
       u(q_1,q_2,q_3,..) = f^{(\lambda)}( a_1 q_1^{k_1} )^{n_1} f^{(\mu)}( a_2 q_2^{k_2} )^{n_2} \ldots
-      
+
 
 
 The basis functions can be combined together as a product to form a composed expansion type, e.g.
-.' math::
 
-      u_{1}(\xi_1..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_1^{k_2} )^{n_2} 
+.. math::
+
+      u_{1}(\xi_1..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_1^{k_2} )^{n_2}
 
 
 For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f^{(1)}(r_1) = \frac{1}{r_1}` and :math:`f^{(2)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
@@ -507,12 +508,12 @@ For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`
 |   2   |          1            |  -2         |  I    |  1         |     1       |
 +-------+-----------------------+-------------+-------+------------+-------------+
 
-Here ``I`` indicates the simple "identity" function of :math:`r_1`, i.e. 
+Here ``I`` indicates the simple "identity" function of :math:`r_1`, i.e.
 
 .. math::
-    
+
    f^{\rm (I)}(r) = r
-   
+
 
 For mode 4 (:math:`\alpha_1`) however 7 basic functions are used:
 
@@ -611,9 +612,9 @@ The following basic function types are currently available for the KEO ``Automat
 |   7   |  csc    |  :math:`\sec(x)` |
 +-------+---------+------------------+
 
-These basic functions are associated with the  ``BASIS`` expansion type ``automatic``, see below. 
+These basic functions are associated with the  ``BASIS`` expansion type ``automatic``, see below.
 
- 
+
 Structure of kinetic.chk
 ------------------------
 
@@ -688,7 +689,7 @@ For more on the basic functions with examples see below.
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Examples for KEO Basic-functions feature 
+   :caption: Examples for KEO Basic-functions feature
 
 
    basic_functions_example.rst
