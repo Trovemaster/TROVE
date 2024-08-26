@@ -425,7 +425,7 @@ XY3_MB
     .. figure:: img/XY3_DMF_frame.jpg
        :alt: XY3 frame
 
-       Rigid XY\ :subs:`3` frame for ``XY3_MB``.
+       Rigid XY\ :subs:\ `3` frame for ``XY3_MB``.
 
 
 This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
@@ -450,8 +450,7 @@ where the three functions  :math:`\bar{\mu}_i^{\rm Bond}`, :math:`i` :math:`=` 1
        \vec{\bf e}_i = \frac{\vec{\bf r}_i-\vec{\bf r}_4}{|\vec{\bf r}_i-\vec{\bf r}_4|}
 
 
-with
-   :math:`\vec{\bf r}_i` (:math:`i` :math:`=` 1, 2, 3) as the position vector of proton  :math:`i` and   :math:`\vec{\bf r}_4` as the position vector of X. The representation of :math:`\bar{\bf \mu}` in Eq. :eq:`e-dm-bond-r` is "body-fixed" in the sense that it relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math:`\vec{\bf r}_i`).
+with :math:`\vec{\bf r}_i` (:math:`i` :math:`=` 1, 2, 3) as the position vector of proton  :math:`i` and   :math:`\vec{\bf r}_4` as the position vector of X. The representation of :math:`\bar{\bf \mu}` in Eq. :eq:`e-dm-bond-r` is "body-fixed" in the sense that it relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math:`\vec{\bf r}_i`).
 
 Following [06YuCaTh]_, we express the three functions :math:`\bar{\mu}_i^{\rm Bond}`, :math:`i` :math:`=` 1, 2, 3, as
 
@@ -616,16 +615,10 @@ Here
 and   :math:`\sin(\rho_{\rm e})` is the equilibrium value of :math:`\sin(\rho)`. The factor :math:`\cos\rho = \pm \sqrt{1-\sin^2 {\rho}}` ensures that the dipole moment function :math:`\mu_{A''_1}` changes sign when :math:`\rho = 0\ldots \pi` is changed to :math:`\pi - \rho`.  As in the rigid MB case, the factor :math:`\exp \left[ -\beta (r_k-r_{\rm e})^2 \right]` is used  in order to keep the expansion from diverging at  large :math:`r_i`.
 
 
-
-XY3_MB4
-^^^^^^^
-
-XY3_NSS_MB
-^^^^^^^^^^
+Chanin type ABCD-type molecules
+-------------------------------
 
 
-ABCD
------
 
 HOOH_MB
 
@@ -676,6 +669,11 @@ XY2_G-COR-ELEC
 XY2_G-TENS-RANK3
 
 XY2_G-TENS-NUC
+
+
+XY3_NSS_MB
+^^^^^^^^^^
+
 
 COORDINATES
 
