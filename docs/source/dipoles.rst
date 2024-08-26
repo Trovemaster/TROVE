@@ -212,7 +212,7 @@ where all indices :math:`j, k, m`, and :math:`n` assume the values 1 or 2,
 
 
 
-and the :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}` are molecular dipole parameters. The expansion coefficients in Eqs. :eq:`e-muQ-exp` are subject to the conditions that the functions :math:`\mu^{(q)}` are unchanged under the interchange of the identical protons, whereas the function :math:`\mu^{(p)}` is antisymmetric under this operation. There are 72 and 99 paramters :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}`, respectively. An example of ``xy2_pq_coeff`` is illustrated above and can be foound in :download:`H2S_EKE_basic-functions_step1.inp <./input/H2S_EKE_basic-functions_step1.inp`.
+and the :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}` are molecular dipole parameters. The expansion coefficients in Eqs. :eq:`e-muQ-exp` are subject to the conditions that the functions :math:`\mu^{(q)}` are unchanged under the interchange of the identical protons, whereas the function :math:`\mu^{(p)}` is antisymmetric under this operation. There are 72 and 99 paramters :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}`, respectively. An example of ``xy2_pq_coeff`` is illustrated above and can be foound in :download:`H2S_EKE_basic-functions_step1.inp <./input/H2S_EKE_basic-functions_step1.inp>`.
 
 The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the module pot_xy2.f90. The transformation between the TROVE frame and the frame of the specifc dipole of the XY\ :sub:`2` is perfomed in the :code:`subroutine MLloc2pqr_xy2`, e.g.:
 
@@ -602,7 +602,6 @@ A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near pla
 where an additional reference MB-vector :math:`\vec{\bf e}_{\rm N} = \vec{\bf q}_{\rm N}^{}/\vert \vec{\bf q}_{\rm N}^{}\vert` was introduced by means of the 'trisector'
 
 .. math::
-       :label:e:q-N
         
          \vec{\bf q}_{\rm N} =
            (\vec{\bf e}_1 \times \vec{\bf e}_2)
@@ -806,8 +805,7 @@ See :download:`./input/39K-16O-1H__OYT4_model_TROVE.inp`
 ZXY\ :sub:`2`
 ------------
 
-``ZXY2_SYMADAP``
-^^^^^^^^^^^^^^^^
+- ``ZXY2_SYMADAP``
 
 
 ZXY\ :sub:`3`
@@ -816,45 +814,36 @@ ZXY\ :sub:`3`
 ZXY3_SYM
 ^^^^^^^^
 
-
-C\ :sub:`2\ H\ :sub:`4`
+C\ :sub:`2`\ H\ :sub:`4`
 -----------------------
 
-DIPOLE_C2H4_4M
-^^^^^^^^^^^^^^
+- ``DIPOLE_C2H4_4M``
 
 
 Properties 
 ----------
 
-XY2_SR-BISECT
-^^^^^^^^^^^^^
+- ``XY2_SR-BISECT``
 
-XY2_SS_DIPOLE_YY
+- ``XY2_SS_DIPOLE_YY``
 ^^^^^^^^^^^^^^^^
 
-XY2_G-BISECT
-^^^^^^^^^^^^
+- ``XY2_G-BISECT``
 
 
-XY2_G-ROT-ELEC
-^^^^^^^^^^^^^^
+- ``XY2_G-ROT-ELEC``
 
 
-XY2_G-COR-ELEC
-^^^^^^^^^^^^^^
+- ``XY2_G-COR-ELEC``
 
 
-XY2_G-TENS-RANK3
-^^^^^^^^^^^^^^^^
+- ``XY2_G-TENS-RANK3``
 
-XY2_G-TENS-NUC
-^^^^^^^^^^^^^^
+- ``XY2_G-TENS-NUC``
 
-XY3_NSS_MB
-^^^^^^^^^^
+- ``XY3_NSS_MB``
 
 
-COORDINATES
------------
+- ``COORDINATES``
+
 
