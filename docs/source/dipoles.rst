@@ -477,7 +477,7 @@ XY3_MB
 
 .. sidebar::
 
-    .. figure:: img/XY3_DMF_frame.jpg
+    .. figure:: img/XY3_DMF_frame_rigid.jpg
        :alt: XY3 frame
 
        Rigid XY\ :sub:\ `3` frame for ``XY3_MB``.
