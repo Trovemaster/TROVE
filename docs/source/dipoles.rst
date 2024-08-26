@@ -304,8 +304,8 @@ This DMF is based on the DMF form reported by Schroeder et al. [16ScSe]_ for C\ 
 .. math::
 
      \begin{split}
-       \mu^{\parallel} &= D^{\parallel}_{ijk} \Delta r_{1}^i \,\Delta r_{2}^j \, \Delta \alpha^k ,  \\
-       \mu^{\perp} &= D^{\perp}_{ijk} \Delta r_{1}^i \,\Delta r_{2^j \, \Delta \alpha^k .
+       \mu^{\parallel} &= D^{\parallel}_{ijk} \Delta r_1^i \,\Delta r_2^j \, \Delta \alpha^k ,  \\
+       \mu^{\perp} &= D^{\perp}_{ijk} \Delta r_1^i \,\Delta r_2^j \, \Delta \alpha^k .
      \end{split}
 
 
