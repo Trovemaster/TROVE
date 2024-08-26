@@ -391,17 +391,17 @@ The exapnsion of the dipole moment components in terms of :math:`r_1`, :math:`r_
 
 Subroutine: ``MLdms2pqr_xyz_z_bond``. 
 
-This is a generalisation of ````, which does not make any assumtion on the frame of the original dipole, only on its expansion form given as in Eq. :eq:`e-muQ-exp-2`. The role of ``DIPOLE_PQR_XYZ_Z-BOND`` is to transform it to the TROVE frame, which in this case is the with the $z$ axis oriented along the  bond :math:`\vec{r}_1`: 
+This is a generalisation of ``DIPOLE_PQR_XYZ_Z-FRAME``, which does not make any assumtion on the frame of the original dipole, only on its expansion form given as in Eq. :eq:`e-muQ-exp-2`. The role of ``DIPOLE_PQR_XYZ_Z-BOND`` is to transform it to the TROVE frame, which in this case is the with the $z$ axis oriented along the  bond :math:`\vec{r}_1`: 
 
 .. math::
 
       \begin{split}
-      \vec{p} &= \frac{\vec{r}_1}{r_1} \\
-      \vec{y} &= \frac{\vec{r}_1 \times \vec{r}_2 }{|\vec{r}_1 \times \vec{r}_2|} \\
-      \vec{q} &= \vec{y}\times \vec{p}
+      \vec{i} &= \frac{\vec{n}_1+\vec{n}_2}{|\vec{n}_1+\vec{n}_2|} \\
+      \vec{j} &= \vec{j}\times \vec{i} \\
+      \vec{k} &= \frac{\vec{r}_{12}}{r_{12}}
       \end{split}
 
-
+s
 
 ``DIPOLE_PQR_XYZ_BISECTING``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -676,6 +676,39 @@ Chain type ABCD-type molecules
 
 HOOH_MB
 ^^^^^^^
+
+.. sidebar::
+
+    .. figure:: img/HOOH_frame_DMF.jpg
+       :alt: Bisecting DMF frame HOOH
+
+       Bisecting DMF frame HOOH frame ``HOOH_MB``.
+
+
+
+
+
+Subroutine: :code:`MLdms_hooh_MB`. 
+
+The DMF frame :math:`xyz` is defined with the :math:`x` axis as a bisector between two planes, H\ :sub:`1`\ O\ :sub:`1`\ O\ :sub:`2` and  O\ :sub:`1`\ O\ :sub:`2`\ H\ :sub:`1` and :math:`z` axis along the O\ :sub:`1`\ O\ :sub:`2` bond. 
+
+.. math::
+
+         \vec{\bf q}_{\rm N} =
+           (\vec{\bf e}_1 \times \vec{\bf e}_2)
+         + (\vec{\bf e}_2 \times \vec{\bf e}_3)
+         + (\vec{\bf e}_3 \times \vec{\bf e}_1).
+
+
+
+
+using the following vectors:
+
+.. math::
+
+
+
+
 
 HPPH_MB
 ^^^^^^^

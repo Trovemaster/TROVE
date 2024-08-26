@@ -839,7 +839,7 @@ module mol_ch3oh
               !
               b0(3,1) = reOH*cos(tau_)*sin(beta)
               !
-              ! sign has changed to make it rota
+              ! sign has changed to make it rotate clockwise
               b0(3,2) =-reOH*sin(tau_)*sin(beta) 
               b0(3,3) =-reOH*cos(beta)+reCO
               !
