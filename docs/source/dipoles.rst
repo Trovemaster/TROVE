@@ -299,7 +299,7 @@ This form is essentially the same as ``DIPOLE_AMES1`` but some specific characte
        Transfromation from tje Eckart to any other frames for XY\ :sub:`2` in the :math:`xz` plane.
 
 
-This DMF is based on the DMF form reported by Schroeder et al. [16ScSe]_ for C\ :sub:`3`. This DMF is in the Ecakrt frmame expressed in terms of two in-plane components, :math:`\mu^{\parallel}` and :math:`\mu^{\perpl}`,  as Taylor expansions around the equilibrium geometry:
+This DMF is based on the DMF form reported by Schroeder et al. [16ScSe]_ for C\ :sub:`3`. This DMF is in the Ecakrt frmame expressed in terms of two in-plane components, :math:`\mu^{\parallel}` and :math:`\mu^{\perp}`,  as Taylor expansions around the equilibrium geometry:
 
 .. math::
 
