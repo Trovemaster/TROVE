@@ -226,6 +226,64 @@ The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the mod
     case ...
     
 
+
+``XY2_PQ_LINEAR``
+^^^^^^^^^^^^^^^^^
+
+This is similar to ``xy2_pq_coeff``, but with the bending expansion in Eq. :eq:` e-muQ-exp` in terms of the displacement :math:`\alpha-\alpha_{\rm e}`: 
+
+.. math::
+       :label: e-muQ-exp-2
+
+       \begin{split}
+         \mu_{jk\ldots}^{(q)}(\alpha)  =&  \sum_{i=0}^{N} Q_{ij\ldots}^{(i)} (\alpha - \alpha_{\rm e} )^i, \\
+         \mu_{jk\ldots}^{(p)}(\alpha)  =&  \sum_{i=0}^{N} P_{ij\ldots}^{(i)} (\alpha - \alpha_{\rm e} )^i,
+       \end{split}
+
+
+
+
+
+``DIPOLE_AMES1``
+^^^^^^^^^^^^^^^^
+
+This DMF is of the AMES1 type represented using the point-charge molecular bond frame [14HuScLe]_ given by projections on the molecular bond vectors $\vec{r}_1$ and $\vec{r}_2$:
+
+..math ::
+
+        \vec{\mu} = \mu_x \vec{i} + \mu_z \vec{k} =  \mu_1 \vec{r}_1 + \mu_2 \vec{r}_2
+
+
+where $\mu_x$ and $\mu_z$ are the TROVE frame vectors and $\mu_1$ and $\mu_2$  are the *ab initio* dipoles in the molecular bond frame (the $\mu_y$ component is always zero). The two point-charge dipole moment components  $\mu_1$ and $\mu_2$ are represented in terms of the vibrational coordinates as
+
+.. math::
+    \begin{split}
+       :label: eq:coords_dms
+
+         \zeta_1 &= r_1-r^{\rm ref}_1, \\
+         \zeta_2 &= r_2-r^{\rm ref}_2, \\
+         \zeta_3 &= \cos\alpha-1.
+       \end{split}
+
+with the following analytic Taylor-type expansions used  (see e.g. [14HuScLe]_):
+
+.. math::
+
+       \begin{split}
+        \mu_1 &=  \sum_{ijk} F^{(1)}_{ijk} \zeta_1^{i} \zeta_2^{j} \zeta_3^{k} ,
+        \mu_2 &=  \sum_{ijk} F^{(2)}_{ijk} \zeta_1^{j} \zeta_2^{i} \zeta_3^{k} ,
+       \end{split}
+
+
+As an example can be found of a system where this form was used, see :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_step1.inp>`.
+
+
+``DIPOLE_SO2_AMES1``
+^^^^^^^^^^^^^^^^^^^^
+
+This form is essentially the same as ``DIPOLE_AMES1`` but some specific characteristic used for the SO\ :sub:`2` molecule in [14HuScLe]_. 
+
+
 ``DIPOLE_PQR_XYZ_Z-FRAME``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -260,7 +318,7 @@ The corrsponding components :math:`\mu^{(q)}` and :math:`\mu^{(p)}` are expanded
 The same as ``DIPOLE_PQR_XYZ_Z-FRAME`` but with :math:`\sin(\alpha_{\rm e}-\alpha)` as an expansion variable in Eq. :eq:`e-muQ-1` instead of :math:`\cos\alpha_{\rm e} - \cos\alpha `:
 
 .. math::
-       :label: e-muQ-exp
+       :label: e-muQ-exp-3
 
        \begin{split}
          \mu_{jk\ldots}^{(q)}(\alpha)  =&  \sum_{i=0}^{N} Q_{ij\ldots}^{(i)} (\sin(\alpha_{\rm e}-\alpha))^i, \\
@@ -272,16 +330,16 @@ When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha)
 
 
 
-XY2_PQ
+``DIPOLE_AMES1_XYZ``
+^^^^^^^^^^^^^^^^^^^^
 
-XY2_PQ_LINEAR
+This form is a modification of ``DIPOLE_AMES1`` for non-symmetric molecules. 
 
-DIPOLE_SO2_AMES1
+As an example can be found of a system where this form was used, see :download:`16O-12C-32S__OYT8__TROVE.model <./input/16O-12C-32S__OYT8__TROVE.model>` as well in `OYT8 spectroscopic model <https://exomol.com/models/OCS/16O-12C-32S/OYT8/>`__, where it was used to compute an ExoMol line list for OCS [24OwYuTe]_.
 
 
-DIPOLE_AMES1
+:doc:`https://exomol.com/models/OCS/16O-12C-32S/OYT8/`
 
-DIPOLE_AMES1_XYZ
 
 XY2_C3_SCHROEDER
 
