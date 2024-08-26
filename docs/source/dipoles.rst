@@ -226,7 +226,8 @@ The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the mod
     case ...
     
 
--``DIPOLE_PQR_XYZ_Z-FRAME``
+``DIPOLE_PQR_XYZ_Z-FRAME``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. sidebar::
 
@@ -243,7 +244,7 @@ This is frame used to represent DMF of XYZ non-symmetri molecules with the :math
       \begin{split}
       \vec{p} &= \frac{\vec{r}_1}{r_1} \\
       \vec{y} &= \frac{\vec{r}_1 \times \vec{r}_2 }{|\vec{r}_1 \times \vec{r}_2|} \\
-      \vec{q} &= \vec{y}\times \vec{p} }
+      \vec{q} &= \vec{y}\times \vec{p}
       \end{split}
 
 
@@ -253,7 +254,23 @@ The corrsponding components :math:`\mu^{(q)}` and :math:`\mu^{(p)}` are expanded
 
 
 
--DIPOLE_PQR_XYZ_Z-FRAME_SINRHO
+``DIPOLE_PQR_XYZ_Z-FRAME_SINRHO``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same as ``DIPOLE_PQR_XYZ_Z-FRAME`` but with :math:`\sin(\alpha_{\rm e}-\alpha)` as an expansion variable in Eq. :eq:`e-muQ-1` instead of :math:`\cos\alpha_{\rm e} - \cos\alpha `:
+
+.. math::
+       :label: e-muQ-exp
+
+       \begin{split}
+         \mu_{jk\ldots}^{(q)}(\alpha)  =&  \sum_{i=0}^{N} Q_{ij\ldots}^{(i)} (\sin(\alpha_{\rm e}-\alpha))^i, \\
+         \mu_{jk\ldots}^{(p)}(\alpha)  =&  \sum_{i=0}^{N} P_{ij\ldots}^{(i)} (\sin(\alpha_{\rm e}-\alpha))^i,
+       \end{split}
+
+When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha) = \sin\rho`, which explanes the suffix ``_sinrho`` in the name of thi DMF, wich is aimed at linear molecules. 
+
+
+
 
 XY2_PQ
 
