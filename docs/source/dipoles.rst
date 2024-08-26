@@ -481,7 +481,7 @@ XY3_MB
     .. figure:: img/XY3_DMF_frame_rigid.jpg
        :alt: XY3 frame
 
-       Rigid XY\ :sub:\ `3` frame for ``XY3_MB``.
+       Rigid XY\ :sub:`3` frame for ``XY3_MB``.
 
 
 This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
