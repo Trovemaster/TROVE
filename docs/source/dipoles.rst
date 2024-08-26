@@ -247,30 +247,32 @@ This is similar to ``xy2_pq_coeff``, but with the bending expansion in Eq. :eq:`
 ``DIPOLE_AMES1``
 ^^^^^^^^^^^^^^^^
 
-This DMF is of the AMES1 type represented using the point-charge molecular bond frame [14HuScLe]_ given by projections on the molecular bond vectors $\vec{r}_1$ and $\vec{r}_2$:
+This DMF is of the AMES1 type represented using the point-charge molecular bond frame [14HuScLe]_ given by projections on the molecular bond vectors :math:`\vec{r}_1` and :math:`\vec{r}_2`:
 
-..math ::
+.. math::
 
         \vec{\mu} = \mu_x \vec{i} + \mu_z \vec{k} =  \mu_1 \vec{r}_1 + \mu_2 \vec{r}_2
 
 
-where $\mu_x$ and $\mu_z$ are the TROVE frame vectors and $\mu_1$ and $\mu_2$  are the *ab initio* dipoles in the molecular bond frame (the $\mu_y$ component is always zero). The two point-charge dipole moment components  $\mu_1$ and $\mu_2$ are represented in terms of the vibrational coordinates as
+where :math:`\mu_x:math:` and :math:`\mu_z` are the TROVE frame vectors and :math:`\mu_1:math:` and :math:`\mu_2`  are the *ab initio* dipoles in the molecular bond frame (the :math:`\mu_y:math:` component is always zero). The two point-charge dipole moment components  :math:`\mu_1` and :math:`\mu_2` are represented in terms of the vibrational coordinates as
 
 .. math::
-    \begin{split}
        :label: eq:coords_dms
+       
+       \begin{split}
 
          \zeta_1 &= r_1-r^{\rm ref}_1, \\
          \zeta_2 &= r_2-r^{\rm ref}_2, \\
          \zeta_3 &= \cos\alpha-1.
        \end{split}
-
+       
+       
 with the following analytic Taylor-type expansions used  (see e.g. [14HuScLe]_):
 
 .. math::
-
+       
        \begin{split}
-        \mu_1 &=  \sum_{ijk} F^{(1)}_{ijk} \zeta_1^{i} \zeta_2^{j} \zeta_3^{k} ,
+        \mu_1 &=  \sum_{ijk} F^{(1)}_{ijk} \zeta_1^{i} \zeta_2^{j} \zeta_3^{k} , \\
         \mu_2 &=  \sum_{ijk} F^{(2)}_{ijk} \zeta_1^{j} \zeta_2^{i} \zeta_3^{k} ,
        \end{split}
 
@@ -338,7 +340,6 @@ This form is a modification of ``DIPOLE_AMES1`` for non-symmetric molecules.
 As an example can be found of a system where this form was used, see :download:`16O-12C-32S__OYT8__TROVE.model <./input/16O-12C-32S__OYT8__TROVE.model>` as well in `OYT8 spectroscopic model <https://exomol.com/models/OCS/16O-12C-32S/OYT8/>`__, where it was used to compute an ExoMol line list for OCS [24OwYuTe]_.
 
 
-:doc:`https://exomol.com/models/OCS/16O-12C-32S/OYT8/`
 
 
 XY2_C3_SCHROEDER
