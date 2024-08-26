@@ -129,7 +129,7 @@ Here is an example of the input format using individual expansion "powers", ``CO
      .....
      end
 
-See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_step1.inp>`_.
+See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_step1.inp>`.
 
 Assuming the DMF form as an expansion
 .. math::
@@ -171,6 +171,46 @@ There are several PEFs available for this molecule type.
 
 ``xy2_pq_coeff``
 ^^^^^^^^^^^^^^^^
+
+.. sidebar::
+
+    .. figure:: img/XY2_dm-pq.jpg
+       :alt: PQ frame 
+
+       The :math:`pq` bisector frame ``xy2_pq_coeff`` used for for XY\ :sub:`2`.
+
+
+
+This is a bisector-frame DMF, given by two components, :math:`\mu^{(q)}` and :math:`\mu^{(p)}` with the :math:`q` axis being the bisector. The following expansions in terms of the coordinate displacements :math:`\Delta r_1 = r_{\rm 1} - r_{\rm e}`, :math:`\Delta r_2 = r_2 - r_{\rm e}`, and :math:`\cos\rho_{\rm e} - \cos\bar\rho`, where :math:`\bar\rho = \pi - \theta` are used, with :math:`\theta` is the bond angle, and :math:`r_1` and :math:`r_2` are the bond lengths:
+
+.. math::
+  :label: e-muQ-1
+
+      \begin{split}
+        \mu^{(q)} (\Delta r_1, \Delta r_2, \Delta \bar{\rho} ) &=  \sin\bar\rho \left[ \mu_0^{(q)}(\bar\rho) + \sum_{j} \mu_{j}^{(q)}(\bar\rho)  \Delta r_j + \sum_{j\le k} \mu_{jk}^{(q)}(\bar\rho)   \Delta r_j \Delta r_k \right.   \\
+        &  \left . + \sum_{j\le k \le m} \mu_{jkm}^{(q)}(\bar\rho) \Delta r_j \Delta r_k \Delta r_m  + \sum_{j\le k \le m \le n} \mu_{jkmn}^{(q)}(\bar\rho)  \Delta r_j \Delta r_k \Delta r_m  \Delta r_n  + \ldots \right], \\
+        \mu^{(p)} (\Delta r_1, \Delta r_2, \Delta \bar{\rho} ) &=  \mu_0^{(p)}(\bar\rho) + \sum_{j}^{(p)} \mu_{j}^{(p)} (\bar\rho) \Delta r_j   + \sum_{j\le k}  \mu_{jk}^{(p)}(\bar\rho) \Delta r_j \Delta r_k   \\
+        &    + \sum_{j\le k \le m} \mu_{jkm}^{(p)}(\bar\rho)  \Delta r_j \Delta r_k \Delta r_m  + \sum_{j\le k \le m \le n} \mu_{jkmn}^{(p)}(\bar\rho) \Delta r_j \Delta r_k \Delta r_m  \Delta r_n  + \ldots ,
+      \end{split}
+      
+      
+where all indices :math:`j, k, m`, and :math:`n` assume the values 1 or 2,
+
+.. math::
+         :label: e-muQ-exp
+
+       \begin{split}
+         \mu_{jk\ldots}^{(q)}(\bar\rho)  =&  \sum_{i=0}^{N} Q_{ij\ldots}^{(i)} (\cos\rho_{\rm e} - \cos\bar\rho )^i, \\
+         \mu_{jk\ldots}^{(p)}(\bar\rho)  =&  \sum_{i=0}^{N} P_{ij\ldots}^{(i)} (\cos\rho_{\rm e} - \cos\bar\rho )^i,
+       \end{split}
+       
+and the :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}` are molecular dipole parameters. The expansion coefficients in Eqs.~(\ref{e:muQ:MORBID:exp}) and
+(\ref{e:muP:MORBID:exp}) are subject to the conditions that the functions :math:`\mu^{(q)}` are unchanged under the interchange of the identical protons,
+whereas the function :math:`\mu^{(p)}` is antisymmetric under this operation. There are 72 and 99 paramters :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}`, respectively. An example of ``xy2_pq_coeff`` is illustrated above and can be foound in :download:`H2S_EKE_basic-functions_step1.inp <./input/H2S_EKE_basic-functions_step1.inp`.
+
+
+
+
 
 -``DIPOLE_PQR_XYZ_Z-FRAME``
 
