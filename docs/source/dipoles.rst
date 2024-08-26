@@ -675,8 +675,8 @@ Chain type ABCD-type molecules
 ------------------------------
 
 
-HOOH_MB
-^^^^^^^
+``HOOH_MB``
+^^^^^^^^^^^
 
 .. sidebar::
 
@@ -726,9 +726,9 @@ The :math:`\mu_\alpha^{\rm DMF}` are expressed as Taylor-type expansion:
 .. math::
     
       \begin{split}
-      \mu_x^{\rm DMF} &= \cos\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(x)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
-      \mu_y^{\rm DMF} &= \sin\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(y)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
-      \mu_z^{\rm DMF} &=                          \mu_{ijklmn}^{(z)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \x6_^n \\
+      \mu_x^{\rm DMF} &= \cos\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(x)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n \\
+      \mu_y^{\rm DMF} &= \sin\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(y)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n \\
+      \mu_z^{\rm DMF} &=                          \mu_{ijklmn}^{(z)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n 
       \end{split}
 
 where 
@@ -781,26 +781,26 @@ This DMF form was used to produce the APTY line list for HOOH [15AlOvYu]_. The T
 where ``dimension`` is 3. 
 
 
-HPPH_MB
-^^^^^^^
-
-HCCH_MB
-^^^^^^^
-
-HCCH_DMS_7D
+``HPPH_MB``
 ^^^^^^^^^^^
 
-HCCH_DMS_7D_7ORDER
-^^^^^^^^^^^^^^^^^^
+Subroutine: MLdms_hpph_MB
 
-HCCH_DMS_7D_7ORDER_LINEAR
-^^^^^^^^^^^^^^^^^^^^^^^^^
+See :download:`./input/39K-16O-1H__OYT4_model_TROVE.inp`
 
-HCCH_DMS_7D_LOCAL
-^^^^^^^^^^^^^^^^^
 
-HCCH_ALPHA_ISO_7D_LINEAR
-^^^^^^^^^^^^^^^^^^^^^^^^
+- ``HCCH_MB``
+
+- ``HCCH_DMS_7D``
+
+- ``HCCH_DMS_7D_7ORDER``
+
+- ``HCCH_DMS_7D_7ORDER_LINEAR``
+
+
+- ``HCCH_DMS_7D_LOCAL``
+
+- ``HCCH_ALPHA_ISO_7D_LINEAR``
 
 
 ZXY\ :sub:`2`
