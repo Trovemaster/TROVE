@@ -162,7 +162,7 @@ In case the definition of DMF requires also structural parameters, such as equil
 
 
 Implemented DMFs
-================
+----------------
 
 
 XY\ :sub:`2` type
@@ -374,10 +374,10 @@ DIPOLE_PQR_XYZ
 This a bisector dipole frame for the XYZ type molecules. It is defined by 
 
 .. math::
-
+      
       \begin{split}
-      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2}|} \\
-      \vec{y} &= \frac{\vec{r}_1 \times \vec{q} }{|\vec{r}_1 \times \vec{q}|} \\
+      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2|}        \\
+      \vec{y} &= \frac{\vec{r}_1 \times \vec{q}}{|\vec{r}_1 \times \vec{q}|} \\
       \vec{p} &= \vec{q}\times \vec{y}
       \end{split}
 
@@ -413,7 +413,7 @@ This is a generalisation of ``DIPOLE_PQR_XYZ``, which does not make any assumtio
 .. math::
 
       \begin{split}
-      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2}|} \\
+      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2|} \\
       \vec{y} &= \frac{\vec{r}_1 \times \vec{q} }{|\vec{r}_1 \times \vec{q}|} \\
       \vec{p} &= \vec{q}\times \vec{y}
       \end{split}
@@ -587,7 +587,7 @@ XY3_SYMMB
 This form is a non-rigid analogy of ``XY3_MB`` allowing the pyrimidal molecule XY\ :sub:`3` to go through the planar configuration and was introduced in [09YuBaYa]_.   It is implemented in :code:`subroutine MLdms2xyz_xy3_symmb` in pot_xy3.f90. This form has been used in several studies of non-rigid pyrimidal molecules including NH\ :sub:`3`, CH\ :sub:`3`, OH\ :sub:`3`\ :sup:`+`.
 
 
-A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near planar geometries when the three vectors :math`\vec{\bf e}_i` become linearly dependent, or nearly linearly dependent, and singularities appear in the determination of the  :math` \bar{\mu}_i^{\rm Bond}` functions. This is overcome by reformulating the :math`\bar{\mu}_i^{\rm Bond}` functions in terms  of symmetry-adapted combinations of the MB projections :math:`\left(\bar{\bf \mu}\cdot \vec{\bf e}_j \right)`
+A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near planar geometries when the three vectors :math:`\vec{\bf e}_i` become linearly dependent, or nearly linearly dependent, and singularities appear in the determination of the  :math:`\bar{\mu}_i^{\rm Bond}` functions. This is overcome by reformulating the :math:`\bar{\mu}_i^{\rm Bond}` functions in terms  of symmetry-adapted combinations of the MB projections :math:`\left(\bar{\bf \mu}\cdot \vec{\bf e}_j \right)`
 
 .. math:: 
 
