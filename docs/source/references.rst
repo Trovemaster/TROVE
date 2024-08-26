@@ -104,9 +104,9 @@ References
 
 - .. [21OwTeYu] A. Owens, J. Tennyson, and S. N. Yurchenko. *Mon. Not. R. Astron. Soc.*, **502**, 1128 (2021), ExoMol line lists - XLI. High-temperature molecular line lists for the alkali metal hydroxides KOH and NaOH.  `doi:10.1093/mnras/staa4041  <http://dx.doi.org/10.1093/mnras/staa4041>`__
 
-- .. [14HuScLe] .. X. Huang X., D.W. Schwenke, T.J. Lee, *J. Chem. Phys.*, **140**, 114311 (2014)
+- .. [14HuScLe] X. Huang X., D.W. Schwenke, T.J. Lee, *J. Chem. Phys.*, **140**, 114311 (2014)
 
 - .. [24OwYuTe] A. Owens, S.N. Yurchenko and J. Tennyson, *Mon. Not. R. Astron. Soc.*, **530**, 4004 (2024), ExoMol line lists - LVIII. High-temperature molecular line list of carbonyl sulphide (OCS). `doi:10.1093/mnras/stae1110  <http://dx.doi.org/10.1093/mnras/stae1110>`__
 
 
-
+- .. [16ScSe] B. Schröder, P. Sebald, *J. Chem. Phys.*, **144**, 044307 (2016).

@@ -288,6 +288,36 @@ As an example can be found of a system where this form was used, see :download:`
 This form is essentially the same as ``DIPOLE_AMES1`` but some specific characteristic used for the SO\ :sub:`2` molecule in [14HuScLe]_. 
 
 
+``XY2_C3_SCHROEDER``
+--------------------
+
+.. sidebar::
+
+    .. figure:: img/XY2_rot_from_Eckart.jpg
+       :alt: Eckart frame
+
+       Transfromation from tje Eckart to any other frames for XY\ :sub:`2` in the :math:`xz` plane.
+
+
+This DMF is based on the DMF form reported by Schroeder et al. [16ScSe]_ for C\ :sub:`3`. This DMF is in the Ecakrt frmame expressed in terms of two in-plane components, :math:`\mu^{\parallel}` and :math:`\mu^{\perpl}`,  as Taylor expansions around the equilibrium geometry:
+
+.. math::
+
+     \begin{split}
+       \mu^{\parallel} &= D^{\parallel}_{ijk} \Delta r_{1}^i \,\Delta r_{2}^j \, \Delta \alpha^k ,  \\
+       \mu^{\perp} &= D^{\perp}_{ijk} \Delta r_{1}^i \,\Delta r_{2^j \, \Delta \alpha^k .
+     \end{split}
+
+
+Since TROVE's frame is usually different from the DMF frame (e.g. bisector) in the  ro-vibrational calculations, this dipole moments functions needs to be rotated.  This is done using the rotation angle :math:`\phi`  from an equilibrium bysector frame :math:`r_{n\alpha}^0` to the instantaneous frame  :math:`r_{n\alpha}` (:math:`n=1,2,3` and :math:`\alpha=x,y,z`) in the in the :math:`xz` plane  as given by 
+
+.. math::
+    
+    \tan\phi = \frac{m_{\rm X} ( r^0_{1,z} r_{1,x}-r^0_{1,x} r_{1,z} )+m_{{\rm Y}_1} (r^0_{2,z}r_{2,x}-r^0_{2,x}r_{2,z} )+m_{{\rm Y}_2}(r^0_{3,z}r_{3,x}-r^0_{3,x}r_{3,z}) }{ m_{\rm X} (r^0_{1,z} r_{1,z}+r^0_{1,x}r_{1,x})+m_{{\rm Y}_1}(r^0_{2,z}r_{2,z}+r^0_{2,x}r_{2,x})+m_{{\rm Y}_2}(r^0_{3,z}r_{3,z}+r^0_{3,x}r_{3,x}) }
+
+
+
+
 ``DIPOLE_PQR_XYZ_Z-FRAME``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -301,7 +331,7 @@ This form is essentially the same as ``DIPOLE_AMES1`` but some specific characte
 
 This is frame used to represent DMF of XYZ non-symmetri molecules with the :math:`z` (:math:`p`) axis along the vecror :math:`r_1` and other two axes defined using the following conditions:
 
-.. math:: 
+.. math::
 
       \begin{split}
       \vec{p} &= \frac{\vec{r}_1}{r_1} \\
@@ -311,7 +341,8 @@ This is frame used to represent DMF of XYZ non-symmetri molecules with the :math
 
 
 
-The corrsponding components :math:`\mu^{(q)}` and :math:`\mu^{(p)}` are expanded using the same form as in Eq. :eq:`e-muQ-1` but with no constraints on the permutations of the atoms. 
+The corrsponding components :math:`\mu^{(q)}` and :math:`\mu^{(p)}` are expanded using the same form as in Eq. :eq:`e-muQ-1` but with no constraints on the permutations of the atoms.
+
 
 
 
@@ -344,9 +375,12 @@ As an example can be found of a system where this form was used, see :download:`
 
 
 
-XY2_C3_SCHROEDER
 
-XY2_SCHROEDER_XYZ_ECKART
+``XY2_SCHROEDER_XYZ_ECKART``
+----------------------------
+
+This is an XYZ version of the ``XY2_C3_SCHROEDER`` type. 
+
 
 DIPOLE_XY2_LORENZO
 
