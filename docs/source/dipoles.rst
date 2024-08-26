@@ -431,10 +431,10 @@ XY3_MB
 This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
 
 
-Consider the :math:`r_i` as the instantaneous value of the distance between X and Y:math:`_i`, where Y:math:`_i` is the nucleus labeled :math:`i` (:math:`=` 1, 2, or 3); :math:`\alpha_i` denotes the bond angle :math:`\angle`(Y:math:`_j`XY:math:`_k`) where :math:`(i,j,k)` is a permutation of the numbers (1,2,3).
+Consider the :math:`r_i` as the instantaneous value of the distance between X and Y\ :math:`_i`, where Y\ :math:`_i` is the nucleus labeled :math:`i` (= 1, 2, or 3); :math:`\alpha_i` denotes the bond angle :math:`\angle` (Y\ :math:`_j`\ XY\ :math:`_k`) where :math:`(i,j,k)` is a permutation of the numbers (1,2,3).
 
-We utilize the so-called Molecular-Bond (MB) representation  to describe the :math:`r_i`- and :math:`\alpha_j`-dependence of the electronically averaged
-dipole moment vector :math:`\bar{\bf \mu}` for PH\3. In the MB representation it is given by
+We utilize the so-called Molecular-Bond (MB) representation  to describe the :math:`r_i`  and :math:`\alpha_j` dependence of the electronically averaged
+dipole moment vector :math:`\bar{\bf \mu}` for XY\ :sub:`3`. In the MB representation it is given by
 
 .. math::
        :label: e-dm-bond-r
@@ -476,6 +476,8 @@ where :math:`({\mathbf A}^{-1} )_{ij}` is an element of the non-orthogonal :math
 
 For symmetry reasons, all three projections can be expressed in terms of a single function     :math:`\bar\mu_0(r_1,r_2,r_3,\alpha_1,\alpha_2,\alpha_3)`:
 
+.. math:: 
+       
       \begin{split}
       \bar{\bf \mu} \cdot \vec{\bf e}_1
            &= \bar\mu_0(r_1,r_2,r_3,\alpha_1,\alpha_2,\alpha_3) = \bar\mu_0(r_1,r_3,r_2,\alpha_1,\alpha_3,\alpha_2), \\
@@ -513,7 +515,7 @@ in the variables
 
 where :math:`r_{\rm e}` and :math:`\alpha_{\rm e}` are the equilibrium values of the bond lengths and bond angles, respectively. We include the factor :math:`\exp \left( -\beta^2 (r_k-r_{\rm e})^2 \right)` in order to keep the expansion from diverging at large :math:`r_k`.
 
-The expansion coefficients :math:`\mu_{k,l,m,\ldots}^{(0)}` in Eq. :eq:`e:mu:es:r` are pairwise equal. We have
+The expansion coefficients :math:`\mu_{k,l,m,\ldots}^{(0)}` are pairwise equal. We have
 
 .. math::
 
@@ -531,7 +533,7 @@ XY3_SYMMB
 This form is a non-rigid analogy of ``XY3_MB`` allowing the pyrimidal molecule XY\ :sub:`3` to go through the planar configuration and was introduced in [09YuBaYa]_.   It is implemented in :code:`subroutine MLdms2xyz_xy3_symmb` in pot_xy3.f90. This form has been used in several studies of non-rigid pyrimidal molecules including NH\ :sub:`3`, CH\ :sub:`3`, OH\ :sub:`3`\ :sup:`+`.
 
 
-A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near planar geometries when the three vectors :math`\vec{\bf e}_i` become linearly dependent, or nearly linearly dependent, and singularities appear in the determination of the  :math` \bar{\mu}_i^{\rm Bond}` functions. This is overcome by reformulating the :math` \bar{\mu}_i^{\rm Bond}` functions in terms  of symmetry-adapted combinations of the MB projections :math`\left( \bar{\bf \mu} \cdot \vec{\bf e}_j \right)`
+A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near planar geometries when the three vectors :math`\vec{\bf e}_i` become linearly dependent, or nearly linearly dependent, and singularities appear in the determination of the  :math` \bar{\mu}_i^{\rm Bond}` functions. This is overcome by reformulating the :math`\bar{\mu}_i^{\rm Bond}` functions in terms  of symmetry-adapted combinations of the MB projections :math:`\left(\bar{\bf \mu}\cdot \vec{\bf e}_j \right)`
 
 .. math:: 
 
@@ -542,7 +544,7 @@ A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near pla
       \end{split}
 
 
-where an additional reference MB-vector :math`\vec{\bf e}_{\rm N} = \vec{\bf q}_{\rm N}^{}/\vert \vec{\bf q}_{\rm N}^{}\vert` was introduced by means of the `trisector'
+where an additional reference MB-vector :math:`\vec{\bf e}_{\rm N} = \vec{\bf q}_{\rm N}^{}/\vert \vec{\bf q}_{\rm N}^{}\vert` was introduced by means of the `trisector'
 
 .. math::
      :label:e:q-N
@@ -553,8 +555,8 @@ where an additional reference MB-vector :math`\vec{\bf e}_{\rm N} = \vec{\bf q}_
      \end{equation}
 
 
-This symmetrized molecular bond representation is denoted as "SMB". The subscripts of the :math`\bar\mu_{\Gamma}^{\rm SMB}` functions (:math`\Gamma =
-A''_1,E'_a, E'_b`)  refer to irreducible representations of D\ :sub:`3h`\ (M); :math`\bar\mu_{A''_1}^{\rm SMB}` has :math`A''` symmetry in D\ :sub:`3h`\ (M), and :math`(\bar\mu_{E_a\p}^{\rm SMB}, \bar\mu_{E'_b}^{\rm SMB})` transform as the :math`E'` irreducible representation. The symmetrized vectors
+This symmetrized molecular bond representation is denoted as "SMB". The subscripts of the :math:`\bar\mu_{\Gamma}^{\rm SMB}` functions (:math:`\Gamma =
+A''_1,E'_a, E'_b`)  refer to irreducible representations of D\ :sub:`3h`\ (M); :math:`\bar\mu_{A''_1}^{\rm SMB}` has :math:`A''` symmetry in D\ :sub:`3h`\ (M), and :math:`(\bar\mu_{E_a\p}^{\rm SMB}, \bar\mu_{E'_b}^{\rm SMB})` transform as the :math:`E'` irreducible representation. The symmetrized vectors
 
 .. math::
 
@@ -564,11 +566,11 @@ A''_1,E'_a, E'_b`)  refer to irreducible representations of D\ :sub:`3h`\ (M); :
          \vec{\bf e}_{E''_b} &= \frac{1}{\sqrt{2}} \left(                \vec{\bf e}_2 - \vec{\bf e}_3 \right)
      \end{split}
 
-have :math`A'_1` and :math`E''` symmetry in the same manner.
+have :math:`A'_1` and :math:`E''` symmetry in the same manner.
 
-The dipole moment vector :math`\bar{\bf \mu}` vanishes at symmetric, planar configurations of D\ :sub:`3h`\  geometrical symmetry. Also, the :math`\bar\mu_{A'_1}^{\rm SMB}` component is antisymmetric under  the inversion operation :math`E^*` and vanishes at planarity, which leaves only two independent components of :math`\bar{\bf \mu}` at planarity.
+The dipole moment vector :math:`\bar{\bf \mu}` vanishes at symmetric, planar configurations of D\ :sub:`3h`\  geometrical symmetry. Also, the :math:`\bar\mu_{A'_1}^{\rm SMB}` component is antisymmetric under  the inversion operation :math:`E^*` and vanishes at planarity, which leaves only two independent components of :math:`\bar{\bf \mu}` at planarity.
 
-The advantage of having a DMS representation in terms of the projections :math`\left( \bar{\bf \mu} \cdot \vec{\bf e}_j \right)` is that it is "body-fixed". It relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math`\vec{\bf r}_i`). These projections are well suited to being represented as analytical functions of the vibrational coordinates. For intensity simulations, however, we require the Cartesian components :math`\bar\mu_{\alpha}`, :math`\alpha=x,y,z` of the dipole moment along the molecule-fixed :math`xyz` axes. These are obtained by inverting the linear equations
+The advantage of having a DMS representation in terms of the projections :math:`\left( \bar{\bf \mu} \cdot \vec{\bf e}_j \right)` is that it is "body-fixed". It relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math:`\vec{\bf r}_i`). These projections are well suited to being represented as analytical functions of the vibrational coordinates. For intensity simulations, however, we require the Cartesian components :math:`\bar\mu_{\alpha}`, :math:`\alpha=x,y,z` of the dipole moment along the molecule-fixed :math:`xyz` axes. These are obtained by inverting the linear equations
 
 .. math:: 
      :label: e-dipol-cartesian-from-MB
@@ -576,10 +578,10 @@ The advantage of having a DMS representation in terms of the projections :math`\
     \bar\mu_{\Gamma}^{\rm SMB} = \sum_{\alpha=x,y,z} A_{\Gamma,\alpha} \bar\mu_{\alpha},
 
 
-where  :math`A_{\Gamma,\alpha}`, is the :math`\alpha`-coordinate (:math`\alpha=x,y,z`) of the vector   :math`\vec{\bf e}_{\Gamma}`  (:math`\Gamma=A',E_a,E_b`). When the molecule is planar, :math`\bar\mu_{A''_1}^{\rm SMB}` is zero, as is the corresponding right-hand side in Eq. :eq:`e-dipol-cartesian-from-M`. Thus, at planar configurations the  system of linear equations in :math`\bar\mu_{\alpha}` contains two non-trivial equations only. At near-planar configurations :math`\bar\mu_{A''_1}^{\rm SMB}` is not exactly zero and cannot be neglected, and so Eq. :eq:`e-dipol-cartesian-from-M` becomes  near-linear-dependent. The symmetry-adapted representation of :math`\bar\mu^{\rm SMB}` appears to be well defined  even for these geometries.
+where  :math:`A_{\Gamma,\alpha}`, is the :math:`\alpha`-coordinate (:math:`\alpha=x,y,z`) of the vector   :math:`\vec{\bf e}_{\Gamma}`  (:math:`\Gamma=A',E_a,E_b`). When the molecule is planar, :math:`\bar\mu_{A''_1}^{\rm SMB}` is zero, as is the corresponding right-hand side in Eq. :eq:`e-dipol-cartesian-from-M`. Thus, at planar configurations the  system of linear equations in :math:`\bar\mu_{\alpha}` contains two non-trivial equations only. At near-planar configurations :math:`\bar\mu_{A''_1}^{\rm SMB}` is not exactly zero and cannot be neglected, and so Eq. :eq:`e-dipol-cartesian-from-M` becomes  near-linear-dependent. The symmetry-adapted representation of :math:`\bar\mu^{\rm SMB}` appears to be well defined  even for these geometries.
 
 
-The functions :math`\bar\mu_{\Gamma}^{\rm SMB}`  (henceforth referred to as :math`\bar\mu_{\Gamma}`) are now  represented as
+The functions :math:`\bar\mu_{\Gamma}^{\rm SMB}`  (henceforth referred to as :math:`\bar\mu_{\Gamma}`) are now  represented as
 expansions:
 
 .. math::
@@ -611,7 +613,7 @@ Here
      \sin {\rho} \, = \, \frac{2}{\sqrt{3}} \, \sin [ (\alpha_1 + \alpha_2 + \alpha_3) /6],
      
      
-and   :math`\sin(\rho_{\rm e})` is the equilibrium value of :math`\sin(\rho)`. The factor :math`\cos\rho = \pm \sqrt{1-\sin^2 {\rho}}` ensures that the dipole moment function :math`\bar\mu_{A''_1}` changes sign when :math`\rho = 0\ldots \pi` is changed to :math`\pi - \rho`.  As in the rigid MB case, the factor :math`\exp \left[ -\beta (r_k-r_{\rm e})^2 \right]` is used  in order to keep the expansion from diverging at  large :math`r_i`.
+and   :math:`\sin(\rho_{\rm e})` is the equilibrium value of :math:`\sin(\rho)`. The factor :math:`\cos\rho = \pm \sqrt{1-\sin^2 {\rho}}` ensures that the dipole moment function :math:`\bar\mu_{A''_1}` changes sign when :math:`\rho = 0\ldots \pi` is changed to :math:`\pi - \rho`.  As in the rigid MB case, the factor :math:`\exp \left[ -\beta (r_k-r_{\rm e})^2 \right]` is used  in order to keep the expansion from diverging at  large :math:`r_i`.
 
 
 
