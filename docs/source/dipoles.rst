@@ -726,9 +726,9 @@ The :math:`\mu_\alpha^{\rm DMF}` are expressed as Taylor-type expansion:
 .. math::
     
       \begin{split}
-      \mu_x^{\rm DMF} &= \cos\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(x)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n \\
-      \mu_y^{\rm DMF} &= \sin\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(y)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n \\
-      \mu_z^{\rm DMF} &=                          \mu_{ijklmn}^{(z)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6_^n 
+      \mu_x^{\rm DMF} &= \cos\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(x)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6^n \\
+      \mu_y^{\rm DMF} &= \sin\tau/2 \sum_{ijklmn} \mu_{ijklmn}^{(y)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6^n \\
+      \mu_z^{\rm DMF} &=                          \mu_{ijklmn}^{(z)} \xi_1^i  \xi_2^j \xi_3^k  \xi_4^l \xi_5^m \xi_6^n 
       \end{split}
 
 where 
