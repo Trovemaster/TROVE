@@ -368,6 +368,59 @@ When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha)
 
 
 
+DIPOLE_PQR_XYZ
+^^^^^^^^^^^^^^
+
+This a bisector dipole frame for the XYZ type molecules. It is defined by 
+
+.. math::
+
+      \begin{split}
+      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2}|} \\
+      \vec{y} &= \frac{\vec{r}_1 \times \vec{q} }{|\vec{r}_1 \times \vec{q}|} \\
+      \vec{p} &= \vec{q}\times \vec{y}
+      \end{split}
+
+The exapnsion of the dipole moment components in terms of :math:`r_1`, :math:`r_2` and :math:`\alpha` as in Eq. :eq:`e-muQ-exp-2`. See :download:`7Li-16O-1H__OYT7__TROVE.model` for an example of a TROVE input. 
+
+
+
+
+``DIPOLE_PQR_XYZ_Z-BOND``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Subroutine: ``MLdms2pqr_xyz_z_bond``. 
+
+This is a generalisation of ````, which does not make any assumtion on the frame of the original dipole, only on its expansion form given as in Eq. :eq:`e-muQ-exp-2`. The role of ``DIPOLE_PQR_XYZ_Z-BOND`` is to transform it to the TROVE frame, which in this case is the with the $z$ axis oriented along the  bond :math:`\vec{r}_1`: 
+
+.. math::
+
+      \begin{split}
+      \vec{p} &= \frac{\vec{r}_1}{r_1} \\
+      \vec{y} &= \frac{\vec{r}_1 \times \vec{r}_2 }{|\vec{r}_1 \times \vec{r}_2|} \\
+      \vec{q} &= \vec{y}\times \vec{p}
+      \end{split}
+
+
+
+``DIPOLE_PQR_XYZ_BISECTING``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Subroutine: ``MLdms2pqr_xyz_bisecting``.
+
+This is a generalisation of ``DIPOLE_PQR_XYZ``, which does not make any assumtion on the frame of the original dipole, only on its expansion form given as in Eq. :eq:`e-muQ-exp-2`. The role of ``DIPOLE_PQR_XYZ_BISECTING`` is to transform it to the TROVE frame, which in this case is the with the $x$ axis oriented along the  bisector:
+
+.. math::
+
+      \begin{split}
+      \vec{q} &= \frac{\vec{r}_1+\vec{r}_2}{|\vec{r}_1+\vec{r}_2}|} \\
+      \vec{y} &= \frac{\vec{r}_1 \times \vec{q} }{|\vec{r}_1 \times \vec{q}|} \\
+      \vec{p} &= \vec{q}\times \vec{y}
+      \end{split}
+      
+      
+
+
 ``DIPOLE_AMES1_XYZ``
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -380,20 +433,22 @@ As an example can be found of a system where this form was used, see :download:`
 
 
 ``XY2_SCHROEDER_XYZ_ECKART``
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is an XYZ version of the ``XY2_C3_SCHROEDER`` type.
 
 
-DIPOLE_XY2_LORENZO
-
 DIPOLE_H2O_LPT2011
+^^^^^^^^^^^^^^^^^^
 
-DIPOLE_PQR_XYZ
+DMF from [11LoTePo]_. It is included into :code:`subroutine MLdipole_h2o_lpt2011` in prop_xy2.f90. 
+
+
+
 
 DIPOLE_PQR_XYZ_Z-BOND
 
-DIPOLE_PQR_XYZ_BISECTING
+DIPOLE_PQR_XYZ_BISECTING`
 
 DIPOLE_BISECT_S1S2T_XYZ
 
@@ -425,7 +480,7 @@ XY3_MB
     .. figure:: img/XY3_DMF_frame.jpg
        :alt: XY3 frame
 
-       Rigid XY\ :subs:\ `3` frame for ``XY3_MB``.
+       Rigid XY\ :sub:\ `3` frame for ``XY3_MB``.
 
 
 This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
@@ -546,8 +601,8 @@ A disadvantage of the ``XY3_MB`` representation is the ambiguity at and near pla
 where an additional reference MB-vector :math:`\vec{\bf e}_{\rm N} = \vec{\bf q}_{\rm N}^{}/\vert \vec{\bf q}_{\rm N}^{}\vert` was introduced by means of the 'trisector'
 
 .. math::
-     :label:e:q-N
-
+       :label:e:q-N
+        
          \vec{\bf q}_{\rm N} =
            (\vec{\bf e}_1 \times \vec{\bf e}_2)
          + (\vec{\bf e}_2 \times \vec{\bf e}_3)
@@ -572,12 +627,12 @@ The dipole moment vector :math:`\bar{\bf \mu}` vanishes at symmetric, planar con
 The advantage of having a DMS representation in terms of the projections :math:`\left( \bar{\bf \mu} \cdot \vec{\bf e}_j \right)` is that it is "body-fixed". It relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math:`\vec{\bf r}_i`). These projections are well suited to being represented as analytical functions of the vibrational coordinates. For intensity simulations, however, we require the Cartesian components :math:`\mu_{\alpha}`, :math:`\alpha=x,y,z` of the dipole moment along the molecule-fixed :math:`xyz` axes. These are obtained by inverting the linear equations
 
 .. math:: 
-       :label: e-dipol-cartesian-from-MB
+       :label: e-dipol-car
        
        \mu_{\Gamma}^{\rm SMB} = \sum_{\alpha=x,y,z} A_{\Gamma,\alpha} \mu_{\alpha},
+        
 
-
-where  :math:`A_{\Gamma,\alpha}`, is the :math:`\alpha`-coordinate (:math:`\alpha=x,y,z`) of the vector   :math:`\vec{\bf e}_{\Gamma}`  (:math:`\Gamma=A',E_a,E_b`). When the molecule is planar, :math:`\mu_{A''_1}^{\rm SMB}` is zero, as is the corresponding right-hand side in Eq. :eq:`e-dipol-cartesian-from-M`. Thus, at planar configurations the  system of linear equations in :math:`\mu_{\alpha}` contains two non-trivial equations only. At near-planar configurations :math:`\mu_{A''_1}^{\rm SMB}` is not exactly zero and cannot be neglected, and so Eq. :eq:`e-dipol-cartesian-from-M` becomes  near-linear-dependent. The symmetry-adapted representation of :math:`\mu^{\rm SMB}` appears to be well defined  even for these geometries.
+where  :math:`A_{\Gamma,\alpha}`, is the :math:`\alpha`-coordinate (:math:`\alpha=x,y,z`) of the vector   :math:`\vec{\bf e}_{\Gamma}`  (:math:`\Gamma=A',E_a,E_b`). When the molecule is planar, :math:`\mu_{A''_1}^{\rm SMB}` is zero, as is the corresponding right-hand side in Eq. :eq:`e-dipol-car`. Thus, at planar configurations the  system of linear equations in :math:`\mu_{\alpha}` contains two non-trivial equations only. At near-planar configurations :math:`\mu_{A''_1}^{\rm SMB}` is not exactly zero and cannot be neglected, and so Eq. :eq:`e-dipol-car` becomes  near-linear-dependent. The symmetry-adapted representation of :math:`\mu^{\rm SMB}` appears to be well defined  even for these geometries.
 
 
 The functions :math:`\mu_{\Gamma}^{\rm SMB}`  (henceforth referred to as :math:`\mu_{\Gamma}`) are now  represented as
@@ -615,65 +670,87 @@ Here
 and   :math:`\sin(\rho_{\rm e})` is the equilibrium value of :math:`\sin(\rho)`. The factor :math:`\cos\rho = \pm \sqrt{1-\sin^2 {\rho}}` ensures that the dipole moment function :math:`\mu_{A''_1}` changes sign when :math:`\rho = 0\ldots \pi` is changed to :math:`\pi - \rho`.  As in the rigid MB case, the factor :math:`\exp \left[ -\beta (r_k-r_{\rm e})^2 \right]` is used  in order to keep the expansion from diverging at  large :math:`r_i`.
 
 
-Chanin type ABCD-type molecules
--------------------------------
-
+Chain type ABCD-type molecules
+------------------------------
 
 
 HOOH_MB
+^^^^^^^
 
 HPPH_MB
+^^^^^^^
 
 HCCH_MB
+^^^^^^^
 
 HCCH_DMS_7D
+^^^^^^^^^^^
 
 HCCH_DMS_7D_7ORDER
+^^^^^^^^^^^^^^^^^^
 
 HCCH_DMS_7D_7ORDER_LINEAR
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HCCH_DMS_7D_LOCAL
+^^^^^^^^^^^^^^^^^
 
 HCCH_ALPHA_ISO_7D_LINEAR
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-ZXY2
-----
+ZXY\ :sub:`2`
+------------
 
-ZXY2_SYMADAP
+``ZXY2_SYMADAP``
+^^^^^^^^^^^^^^^^
 
 
-ZXY3
-----
+ZXY\ :sub:`3`
+-------------
 
 ZXY3_SYM
+^^^^^^^^
 
-C2H4
-----
+
+C\ :sub:`2\ H\ :sub:`4`
+-----------------------
 
 DIPOLE_C2H4_4M
+^^^^^^^^^^^^^^
 
 
-
+Properties 
+----------
 
 XY2_SR-BISECT
+^^^^^^^^^^^^^
 
 XY2_SS_DIPOLE_YY
+^^^^^^^^^^^^^^^^
 
 XY2_G-BISECT
+^^^^^^^^^^^^
+
 
 XY2_G-ROT-ELEC
+^^^^^^^^^^^^^^
+
 
 XY2_G-COR-ELEC
+^^^^^^^^^^^^^^
+
 
 XY2_G-TENS-RANK3
+^^^^^^^^^^^^^^^^
 
 XY2_G-TENS-NUC
-
+^^^^^^^^^^^^^^
 
 XY3_NSS_MB
 ^^^^^^^^^^
 
 
 COORDINATES
+-----------
 

@@ -112,3 +112,5 @@ References
 - .. [16ScSe] B. Schröder, P. Sebald, *J. Chem. Phys.*, **144**, 044307 (2016).
 
 - .. [06YuCaTh] S.N. Yurchenko, M. Carvajal, W. Thiel, and Per Jensen. *J. Mol. Spectrosc.*, **239**, 71 (2006), Ab initio dipole moment and theoretical rovibrational intensities in the electronic ground state of PH\ :sub:`3`.  `doi:10.1016/j.jms.2006.06.001  <http://dx.doi.org/10.1016/j.jms.2006.06.001>`__.
+
+- .. [11LoTePo]  L. Lodi, J. Tennyson and O.L Polyansky, *J. Chem. Phys*, **135**, 034113 (2011), A global, high accuracy ab initio dipole moment surface for the electronic ground state of the water molecule 
