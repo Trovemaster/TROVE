@@ -134,10 +134,10 @@ See the TROVE input :download:`CO2_bisect_xyz_step1.inp <./input/CO2_bisect_xyz_
 Assuming the DMF form as an expansion
 
 .. math::
-        
+
    \mu_\alpha(\xi_1,\xi_2,\xi_3) =  \sum_{k,j,k} d_{i,j,k} \xi_1^i \xi_2^j  \xi_3^k,
-    
-    
+
+
 the input card has the following format
 
    +---------+-----------+----------+----------+-----+-------------------------+
@@ -168,6 +168,9 @@ Implemented DMFs
 XY\ :sub:`2` type
 -----------------
 
+See module pot_xy2.f90.
+
+
 There are several PEFs available for this molecule type.
 
 
@@ -177,7 +180,7 @@ There are several PEFs available for this molecule type.
 .. sidebar::
 
     .. figure:: img/XY2_dm-pq.jpg
-       :alt: PQ frame 
+       :alt: PQ frame
 
        The :math:`pq` bisector frame ``xy2_pq_coeff`` used for for XY\ :sub:`2`.
 
@@ -187,7 +190,7 @@ This is a bisector-frame DMF, given by two components, :math:`\mu^{(q)}` and :ma
 
 .. math::
        :label: e-muQ-1
-       
+
       \begin{split}
         \mu^{(q)} (\Delta r_1, \Delta r_2, \Delta \alpha ) &=  \sin\alpha \left[ \mu_0^{(q)}(\alpha) + \sum_{j} \mu_{j}^{(q)}(\alpha)  \Delta r_j + \sum_{j\le k} \mu_{jk}^{(q)}(\alpha)   \Delta r_j \Delta r_k \right.   \\
         &  \left . + \sum_{j\le k \le m} \mu_{jkm}^{(q)}(\alpha) \Delta r_j \Delta r_k \Delta r_m  + \sum_{j\le k \le m \le n} \mu_{jkmn}^{(q)}(\alpha)  \Delta r_j \Delta r_k \Delta r_m  \Delta r_n  + \ldots \right], \\
@@ -200,21 +203,21 @@ where all indices :math:`j, k, m`, and :math:`n` assume the values 1 or 2,
 
 .. math::
        :label: e-muQ-exp
-       
+
        \begin{split}
          \mu_{jk\ldots}^{(q)}(\alpha)  =&  \sum_{i=0}^{N} Q_{ij\ldots}^{(i)} (\cos\alpha_{\rm e} - \cos\alpha )^i, \\
          \mu_{jk\ldots}^{(p)}(\alpha)  =&  \sum_{i=0}^{N} P_{ij\ldots}^{(i)} (\cos\alpha_{\rm e} - \cos\alpha )^i,
        \end{split}
-        
 
 
-       
+
+
 and the :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}` are molecular dipole parameters. The expansion coefficients in Eqs. :eq:`e-muQ-exp` are subject to the conditions that the functions :math:`\mu^{(q)}` are unchanged under the interchange of the identical protons, whereas the function :math:`\mu^{(p)}` is antisymmetric under this operation. There are 72 and 99 paramters :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}`, respectively. An example of ``xy2_pq_coeff`` is illustrated above and can be foound in :download:`H2S_EKE_basic-functions_step1.inp <./input/H2S_EKE_basic-functions_step1.inp`.
 
 The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the module pot_xy2.f90. The transformation between the TROVE frame and the frame of the specifc dipole of the XY\ :sub:`2` is perfomed in the :code:`subroutine MLloc2pqr_xy2`, e.g.:
 
 .. code:: c
-    
+
     !
     select case(trim(molec%frame))
        !
@@ -226,13 +229,13 @@ The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the mod
        a0(3, 1) = -r(2) * cos(alpha_2)
        a0(3, 3) =  r(2) * sin(alpha_2)
     case ...
-    
+
 
 
 ``XY2_PQ_LINEAR``
 ^^^^^^^^^^^^^^^^^
 
-This is similar to ``xy2_pq_coeff``, but with the bending expansion in Eq. :eq:` e-muQ-exp` in terms of the displacement :math:`\alpha-\alpha_{\rm e}`: 
+This is similar to ``xy2_pq_coeff``, but with the bending expansion in Eq. :eq:` e-muQ-exp` in terms of the displacement :math:`\alpha-\alpha_{\rm e}`:
 
 .. math::
        :label: e-muQ-exp-2
@@ -260,19 +263,19 @@ where :math:`\mu_x` and :math:`\mu_z` are the TROVE frame vectors and :math:`\mu
 
 .. math::
        :label: eq:coords_dms
-       
+
        \begin{split}
 
          \zeta_1 &= r_1-r^{\rm ref}_1, \\
          \zeta_2 &= r_2-r^{\rm ref}_2, \\
          \zeta_3 &= \cos\alpha-1.
        \end{split}
-       
-       
+
+
 with the following analytic Taylor-type expansions used  (see e.g. [14HuScLe]_):
 
 .. math::
-       
+
        \begin{split}
         \mu_1 &=  \sum_{ijk} F^{(1)}_{ijk} \zeta_1^{i} \zeta_2^{j} \zeta_3^{k} , \\
         \mu_2 &=  \sum_{ijk} F^{(2)}_{ijk} \zeta_1^{j} \zeta_2^{i} \zeta_3^{k} ,
@@ -285,7 +288,7 @@ As an example can be found of a system where this form was used, see :download:`
 ``DIPOLE_SO2_AMES1``
 ^^^^^^^^^^^^^^^^^^^^
 
-This form is essentially the same as ``DIPOLE_AMES1`` but some specific characteristic used for the SO\ :sub:`2` molecule in [14HuScLe]_. 
+This form is essentially the same as ``DIPOLE_AMES1`` but some specific characteristic used for the SO\ :sub:`2` molecule in [14HuScLe]_.
 
 
 ``XY2_C3_SCHROEDER``
@@ -309,10 +312,10 @@ This DMF is based on the DMF form reported by Schroeder et al. [16ScSe]_ for C\ 
      \end{split}
 
 
-Since TROVE's frame is usually different from the DMF frame (e.g. bisector) in the  ro-vibrational calculations, this dipole moments functions needs to be rotated.  This is done using the rotation angle :math:`\phi`  from an equilibrium bysector frame :math:`r_{n\alpha}^0` to the instantaneous frame  :math:`r_{n\alpha}` (:math:`n=1,2,3` and :math:`\alpha=x,y,z`) in the in the :math:`xz` plane  as given by 
+Since TROVE's frame is usually different from the DMF frame (e.g. bisector) in the  ro-vibrational calculations, this dipole moments functions needs to be rotated.  This is done using the rotation angle :math:`\phi`  from an equilibrium bysector frame :math:`r_{n\alpha}^0` to the instantaneous frame  :math:`r_{n\alpha}` (:math:`n=1,2,3` and :math:`\alpha=x,y,z`) in the in the :math:`xz` plane  as given by
 
 .. math::
-    
+
     \tan\phi = \frac{m_{\rm X} ( r^0_{1,z} r_{1,x}-r^0_{1,x} r_{1,z} )+m_{{\rm Y}_1} (r^0_{2,z}r_{2,x}-r^0_{2,x}r_{2,z} )+m_{{\rm Y}_2}(r^0_{3,z}r_{3,x}-r^0_{3,x}r_{3,z}) }{ m_{\rm X} (r^0_{1,z} r_{1,z}+r^0_{1,x}r_{1,x})+m_{{\rm Y}_1}(r^0_{2,z}r_{2,z}+r^0_{2,x}r_{2,x})+m_{{\rm Y}_2}(r^0_{3,z}r_{3,z}+r^0_{3,x}r_{3,x}) }
 
 
@@ -360,7 +363,7 @@ The same as ``DIPOLE_PQR_XYZ_Z-FRAME`` but with :math:`\sin(\alpha_{\rm e}-\alph
          \mu_{jk\ldots}^{(p)}(\alpha)  =&  \sum_{i=0}^{N} P_{ij\ldots}^{(i)} (\sin(\alpha_{\rm e}-\alpha))^i,
        \end{split}
 
-When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha) = \sin\rho`, which explanes the suffix ``_sinrho`` in the name of thi DMF, wich is aimed at linear molecules. 
+When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha) = \sin\rho`, which explanes the suffix ``_sinrho`` in the name of thi DMF, wich is aimed at linear molecules.
 
 
 
@@ -368,7 +371,7 @@ When :math:`\alpha_{\rm e} = \pi` (linear molecules),    :math:`\sin(\pi-\alpha)
 ``DIPOLE_AMES1_XYZ``
 ^^^^^^^^^^^^^^^^^^^^
 
-This form is a modification of ``DIPOLE_AMES1`` for non-symmetric molecules. 
+This form is a modification of ``DIPOLE_AMES1`` for non-symmetric molecules.
 
 As an example can be found of a system where this form was used, see :download:`16O-12C-32S__OYT8__TROVE.model <./input/16O-12C-32S__OYT8__TROVE.model>` as well in `OYT8 spectroscopic model <https://exomol.com/models/OCS/16O-12C-32S/OYT8/>`__, where it was used to compute an ExoMol line list for OCS [24OwYuTe]_.
 
@@ -379,7 +382,7 @@ As an example can be found of a system where this form was used, see :download:`
 ``XY2_SCHROEDER_XYZ_ECKART``
 ----------------------------
 
-This is an XYZ version of the ``XY2_C3_SCHROEDER`` type. 
+This is an XYZ version of the ``XY2_C3_SCHROEDER`` type.
 
 
 DIPOLE_XY2_LORENZO
@@ -410,8 +413,118 @@ TEST_XY2_SR-BISECT-NONLIN
 XY3
 ---
 
+See module pot_xy3.f90.
+
+
 
 XY3_MB
+^^^^^^
+
+.. sidebar::
+
+    .. figure:: img/XY3_DMF_frame.jpg
+       :alt: XY3 frame
+
+       Rigid XY\ :subs:`3` frame for ``XY3_MB``.
+
+
+This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
+
+
+Consider the :math:`r_i` as the instantaneous value of the distance between X and Y:math:`_i`, where Y:math:`_i` is the nucleus labeled :math:`i` (:math:`=` 1, 2, or 3); :math:`\alpha_i` denotes the bond angle :math:`\angle`(Y:math:`_j`XY:math:`_k`) where :math:`(i,j,k)` is a permutation of the numbers (1,2,3).
+
+We utilize the so-called Molecular-Bond (MB) representation  to describe the :math:`r_i`- and :math:`\alpha_j`-dependence of the electronically averaged
+dipole moment vector :math:`\bar{\bmu}` for PH\3. In the MB representation it is given by
+
+.. math::
+       :label: e-dm-bond-r
+
+         \bar{\bmu}  = \bar{\mu}_1^{\rm Bond}\, \vecb{e_1} +
+                      \bar{\mu}_2^{\rm Bond}\, \vecb{e_2} +
+                      \bar{\mu}_3^{\rm Bond}\, \vecb{e_3}
+
+where the three functions  :math:`\bar{\mu}_i^{\rm Bond}`, :math:`i` :math:`=` 1, 2, 3, depend on the vibrational coordinates, and :math:`\vecb{e}_i` is the unit vector along bond :math:`i`,
+
+.. math::
+
+       \vecb{e}_i = \frac{\vecb{r}_i-\vecb{r}_4}{|\vecb{r}_i-\vecb{r}_4|}
+
+
+with
+   :math:`\vecb{r}_i` (:math:`i` :math:`=` 1, 2, 3) as the position vector of proton  :math:`i` and   :math:`\vecb{r}_4` as the position vector of X. The representation of :math:`\bar{\bmu}` in Eq. :eq:`e-dm-bond-r` is "body-fixed" in the sense that it relates the dipole moment vector directly to the instantaneous positions of the nuclei (i.e., to the vectors :math:`\vecb{r}_i`).
+
+Following [06YuCaTh]_, we express the three functions :math:`\bar{\mu}_i^{\rm Bond}`, :math:`i` :math:`=` 1, 2, 3, as
+
+.. math::
+       :label: e-mu-bnd-mubond
+        
+           \bar{\mu}_i^{\rm Bond} =  \sum_{j=1}^3 \left({\mathbf A}^{-1} \right)_{ij} \,  \left( \bar{\bmu} \cdot \vecb{e}_j \right)
+           
+          
+where :math:`({\mathbf A}^{-1} )_{ij}` is an element of the non-orthogonal :math:`3 \times 3` matrix :math:`{\mathbf A}^{-1}` obtained as the inverse\footnote%
+{When the molecule is planar, the determinant :math:`\vert \mathbf A \vert` :math:`=` 0 and :math:`\mathbf A` cannot be inverted. In this case we set :math:`\bar{\mu}_3^{\rm Bond}` :math:`=` 0 in Eq. :eq:`e-dm-bond-r` and express  :math:`\bar{\bmu}` in terms of :math:`\vecb{e}_1` and :math:`\vecb{e}_2` only, i.e., we determine :math:`\bar{\mu}_1^{\rm Bond}` and :math:`\bar{\mu}_2^{\rm Bond}`  in terms of :math:`\bar{\bmu} \cdot \vecb{e}_1` and :math:`\bar{\bmu} \cdot \vecb{e}_2`.} of
+
+.. math::
+
+     {\mathbf A} = \left(
+      \begin{array}{ccc}
+        1            & \cos\alpha_3 & \cos\alpha_2 \\
+        \cos\alpha_3 &     1        & \cos\alpha_1 \\
+        \cos\alpha_2 & \cos\alpha_1 & 1
+      \end{array}
+      \right)\hbox{.}
+
+For symmetry reasons, all three projections can be expressed in terms of a single function     :math:`\bar\mu_0(r_1,r_2,r_3,\alpha_1,\alpha_2,\alpha_3)`:
+
+      \begin{split}
+      \bar{\bmu} \cdot \vecb{e}_1
+           &= \bar\mu_0(r_1,r_2,r_3,\alpha_1,\alpha_2,\alpha_3) = \bar\mu_0(r_1,r_3,r_2,\alpha_1,\alpha_3,\alpha_2), \\
+      \bar{\bmu} \cdot \vecb{e}_2
+           &= \bar\mu_0(r_2,r_3,r_1,\alpha_2,\alpha_3,\alpha_1) = \bar\mu_0(r_2,r_1,r_3,\alpha_2,\alpha_1,\alpha_3), \\
+      \bar{\bmu} \cdot \vecb{e}_3
+           &= \bar\mu_0(r_3,r_1,r_2,\alpha_3,\alpha_1,\alpha_2) = \bar\mu_0(r_3,r_2,r_1,\alpha_3,\alpha_2,\alpha_1),
+      \end{split}
+      
+      
+and this function  is chosen    as an expansion
+
+.. math:: 
+        :label: e-mu-es-r
+         
+         \begin{split}
+            \bar\mu_0   =
+                                \mu_{0      }^{(0)} 
+               + \sum_{k}       \mu_{k      }^{(0)} \xi_k
+               + \sum_{k,l}     \mu_{k l    }^{(0)} \xi_k \xi_l
+               & + \sum_{k,l,m}   \mu_{k l m  }^{(0)} \xi_k \xi_l \xi_m \nonumber\\
+               & +  \sum_{k,l,m,n} \mu_{k l m n}^{(0)} \xi_k \xi_l \xi_m \xi_n +  \ldots
+         \end{split}
+
+
+in the variables
+
+.. math::
+     
+     \begin{split}
+         \xi_k &= (r_k-r_{\rm e}) \exp \left( -\beta^2 \, (r_k-r_{\rm e})^2 \right), \;\; k=1,2,3, \\
+         \xi_l &= \cos \left(\alpha_{l-3}\right) - \cos  \left(\alpha_{\rm e}\right)  \hbox{,} \;\; l=4,5,6 \hbox{,}
+     \end{split}
+
+
+where :math:`r_{\rm e}` and :math:`\alpha_{\rm e}` are the equilibrium values of the bond lengths and bond angles, respectively. We include the factor :math:`\exp \left( -\beta^2 (r_k-r_{\rm e})^2 \right)` in order to keep the expansion from diverging at large :math:`r_k`.
+
+The expansion coefficients :math:`\mu_{k,l,m,\ldots}^{(0)}` in Eq. :eq:`e:mu:es:r` are pairwise equal. We have
+
+.. math::
+
+      \mu_{k',l',m', \ldots}^{(0)} = \mu_{k,l,m, \ldots}^{(0)}
+       
+
+when the indices :math:`k',l',m', \ldots` are obtained from :math:`k,l,m, \ldots` by replacing all indices 2 by 3, all indices 3 by 2, all indices 5 by 6, and all indices 6 by 5.
+
+
+
+
 
 XY3_MB4
 
