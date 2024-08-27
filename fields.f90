@@ -6904,7 +6904,7 @@ end subroutine check_read_save_none
     integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
                     Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
     real(ark)    :: rho,factor
-    integer(ik)  :: Nterms,n
+    integer(ik)  :: Nterms,n,maxpower
     type(FLpolynomT),pointer    :: fl
       !
       Nmodes = trove%Nmodes
@@ -6963,11 +6963,11 @@ end subroutine check_read_save_none
          !
          rho = trove%rho_i(irho)
          !
-         !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                                              g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+         !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !
@@ -7066,6 +7066,16 @@ end subroutine check_read_save_none
       fl => trove%g_vib(Nmodes,Nmodes)
       !
       call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+      !
+      maxpower = trove%pseudo%Ncoeff
+      !
+      ! check if trove%NKinOrder is consistent with the combined and possibly extended gvib/pseudo fields 
+      ! and increase it if necessary 
+      !
+      if (trove%NKinOrder<maxpower) then 
+        trove%NKinOrder = maxpower
+        trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+      endif
       !
       deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
@@ -16424,8 +16434,10 @@ end subroutine check_read_save_none
              fl%sparse = .true.
              exit do_pseudo_pre
            endif
-           total_terms = total_terms + 1
-          !
+           !total_terms = total_terms + 1
+           !
+           total_terms = max(iterm,total_terms)
+           !
         enddo do_pseudo_pre 
         !
         close(chkptIO_preread,status='keep')
@@ -17614,8 +17626,8 @@ end subroutine check_read_save_none
        !
        SIndexQ(:,iterm) = ipowers2(:)
        !
-       Sfield2(iterm,:) = fl2%field(iterm,:)
-       siorder2(iterm)  = fl2%iorder(iterm)
+       Sfield2(iterm,:) = fl2%field(icoeff2,:)
+       siorder2(iterm)  = fl2%iorder(icoeff2)
        !
      enddo loop_coeff2
      !
@@ -24111,7 +24123,7 @@ end subroutine check_read_save_none
      !
      call FLfromcartesian2local(r_na,r_)
      !
-     if ( any( abs( r(:)-r_(:) )>sqrt(small_) ).and..true. ) then
+     if ( any( abs( r(:)-r_(:) )>sqrt(small_) ).and..false. ) then
        !
        do i = 1,trove%Nmodes
           if( abs( r(i)-r_(i) )>sqrt(small_).and.sin(abs( r(i)-r_(i) ))>sqrt(small_)) then

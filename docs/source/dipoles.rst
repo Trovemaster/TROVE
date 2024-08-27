@@ -1,4 +1,4 @@
-Dipole moment functions
+fDipole moment functions
 =======================
 
 
@@ -190,14 +190,14 @@ This is a bisector-frame DMF, given by two components, :math:`\mu^{(q)}` and :ma
 
 .. math::
        :label: e-muQ-1
-
-      \begin{split}
+       
+       \begin{split}
         \mu^{(q)} (\Delta r_1, \Delta r_2, \Delta \alpha ) &=  \sin\alpha \left[ \mu_0^{(q)}(\alpha) + \sum_{j} \mu_{j}^{(q)}(\alpha)  \Delta r_j + \sum_{j\le k} \mu_{jk}^{(q)}(\alpha)   \Delta r_j \Delta r_k \right.   \\
         &  \left . + \sum_{j\le k \le m} \mu_{jkm}^{(q)}(\alpha) \Delta r_j \Delta r_k \Delta r_m  + \sum_{j\le k \le m \le n} \mu_{jkmn}^{(q)}(\alpha)  \Delta r_j \Delta r_k \Delta r_m  \Delta r_n  + \ldots \right], \\
         \mu^{(p)} (\Delta r_1, \Delta r_2, \Delta \alpha ) &=  \mu_0^{(p)}(\alpha) + \sum_{j}^{(p)} \mu_{j}^{(p)} (\alpha) \Delta r_j   + \sum_{j\le k}  \mu_{jk}^{(p)}(\alpha) \Delta r_j \Delta r_k   \\
         &    + \sum_{j\le k \le m} \mu_{jkm}^{(p)}(\alpha)  \Delta r_j \Delta r_k \Delta r_m  + \sum_{j\le k \le m \le n} \mu_{jkmn}^{(p)}(\alpha) \Delta r_j \Delta r_k \Delta r_m  \Delta r_n  + \ldots ,
-      \end{split}
-
+       \end{split}
+ 
 
 where all indices :math:`j, k, m`, and :math:`n` assume the values 1 or 2,
 
@@ -682,7 +682,7 @@ Chain type ABCD-type molecules
     .. figure:: img/HOOH_frame_DMF.jpg
        :alt: Bisecting DMF frame HOOH
 
-       Bisecting DMF frame HOOH frame ``HOOH_MB``.
+       Bisecting DMF HOOH frame ``HOOH_MB``.
 
 
 Subroutine: :code:`MLdms_hooh_MB`. 
