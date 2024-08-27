@@ -307,10 +307,26 @@ The first part contains some structural parameters with 'powers' indexes filled 
 
 
 
+ ``POTEN_XYZ_MORSE_COS_MEP``
+
+``POTEN_XYZ_MORSE_FOURIER_MEP``
+
+``POTEN_XY2_DMBE``
+
+``POTEN_H2O_BUBUKINA``
 
 
-**Examples** and **References**
+``POTEN_SO2_PES_8D``
 
+``POTEN_XY2_TYUTEREV_DAMP``
+
+``POTEN_C3_MLADENOVIC``
+
+``POTEN_C3_R_THETA``
+
+``POTEN_O3_OLEG``
+
+``POTEN_XY2_MLT_CO2``
 
 
 
@@ -493,6 +509,21 @@ The Fortran function is ``MLpoten_xy3_morbid_11``, which can found in ``mol_xy3.
 
 
 
+``POTEN_XY3_MLT``
+
+``POTEN_XY3_HSL``
+
+``POTEN_XY3_D3H``
+
+
+``POTEN_XY3_SEARS``
+
+
+``POTEN_OH3P_MEP``
+
+
+
+
 A chain molecule of HOOH type
 -----------------------------
 
@@ -550,10 +581,42 @@ This a ``powers`` type:
 The Fortran function is ``MLpoten_h2o2_koput_unique``, which can found in ``mol_abcd.f90``.  A TROVE input example  for HOOH is  `HOOH_step1.inp <https://raw.githubusercontent.com/Trovemaster/TROVE/develop/docs/source/input/HOOH_step1.inpp>`_ from [15AlOvYu]_ , where it was used to compute an ExoMol line list for this molecule.
 
 
+``POTEN_H2O2_KOPUT_MORSE``
+
+``POTEN_H2O2_KOPUT``
+
+``POTEN_C2H2_MORSE``
+
+``POTEN_C2H2_STREYMILLS``
+
+``POTEN_P2H2_MORSE_COS``
+
+``POTEN_SOHF``
 
 
-A CH3Cl type system
--------------------
+
+ZXY\ :sub:`2`
+-------------
+
+
+``POTEN_ZXY2_MLT``
+
+``POTEN_ZXY2_ANDREY_01``
+
+``POTEN_ZXY2_MEP_R_ALPHA_RHO_COEFF``
+
+``POTEN_ZXY2_MORSE_COS``
+
+``POTEN_H2CS_TZ1``
+
+``POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS``
+
+
+
+
+
+A CH\ :sub:`3`\ Cl type system
+------------------------------
 
 ``poten_zxy3_sym``
 ^^^^^^^^^^^^^^^^^^
@@ -617,6 +680,53 @@ An extract from the potential block for this PEF form is given by
 
 
 .. note:: For the ``power`` form of the PEF expansion, the structural (non-expansion) parameters contain dummy zeros to keep the format.
+
+
+
+XY\ :sub:`4`
+------------
+
+``POTEN_XY4_ZZZ``
+
+``POTEN_XY4_NIKITIN``
+
+``POTEN_XY4_BOWMAN2000``
+
+
+CH\ :sub`2`\ OH
+---------------
+
+``POTEN_CH3OH_REF``
+
+``POTEN_CH3OH_SYM``
+
+
+
+C\ :sub:`2`\ H\ :sub:`4`
+------------------------
+
+``POTEN_C2H4_88``
+
+``POTEN_C2H4_886666``
+
+
+
+C\ :sub:`2`\ H\ :sub:`6`
+------------------------
+
+
+``POTEN_C2H6_88``
+
+``POTEN_C2H6_88_COS3TAU``
+
+
+
+C\ :sub:`3`\ H\ :sub:`6`
+------------------------
+
+``POTEN_C3H6_SYM``
+
+
 
 
 User-defined potentials
