@@ -1,4 +1,4 @@
-fDipole moment functions
+Dipole moment functions
 =======================
 
 
