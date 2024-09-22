@@ -132,6 +132,7 @@ module moltype
   !
   type basic_function
       procedure(calc_func), pointer, nopass  :: func_pointer
+      character(len=cl) :: name
       real(ark) :: coeff
       real(ark) :: inner_expon
       real(ark) :: outer_expon
@@ -190,10 +191,9 @@ module moltype
      character(len=cl)         :: chk_primitive_fname  ! filename to store primitive functions on a grid
      character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
-     !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
-     !
      type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
-     logical  :: basic_function_set = .false.
+     logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     !
   end type MoleculeT
   !
   type xyT

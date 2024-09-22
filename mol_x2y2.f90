@@ -75,6 +75,22 @@ module mol_x2y2
           dst(6) = src(6)
           !
       endif
+       !
+    case('R-RHO-TAU')
+       !
+       if (direct) then
+          ! 
+          dst(1:3) = dsrc(1:3)
+          dst(4:5) = mod(pi-src(4:5),pi)
+          dst(6) = src(6)
+          !
+      else ! not direct
+          !
+          dst(1:3) = dsrc(1:3)+molec%local_eq(1:3)
+          dst(4:5) = mod(pi-src(4:5),pi)
+          dst(6) = src(6)
+          !
+      endif
       !
     end select
     !
@@ -96,7 +112,7 @@ module mol_x2y2
      real(ark),   intent(out),optional :: rho_ref
      real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
      !
-     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz
+     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz,tau
      integer(ik)  ::  n,i,ix,jx,i0,in,i1,ipar,istep,j0,Nangles,Nbonds
      !
      real(ark)    :: Inert0(3),Inert(3),Inert1(3),a(3,3),b(3,1),x(5),a0_tt,a0_t(molec%Natoms,3)
@@ -121,14 +137,14 @@ module mol_x2y2
       re2   = abs(molec%req(2))
       re3   = abs(molec%req(3))
       !
-      rho = 0 
+      tau = 0 
       !
       if (Nangles==2.and.molec%Ndihedrals==1) then
         !
         ae1   = molec%alphaeq(1)
         ae2   = molec%alphaeq(2)
         !
-        rho = molec%taueq(1)
+        tau = molec%taueq(1)
         !
       else
         write(out,"('Error ML_b0_X2Y2: wrong number of angles')")
@@ -140,7 +156,6 @@ module mol_x2y2
             stop 'ML_b0_X2Y2: rho_borders or rho_ref not specified '
       endif
       !
-      !
       select case(trim(molec%coords_transform))
          !
       case default
@@ -148,7 +163,7 @@ module mol_x2y2
          write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
          stop 'MLcoordinate_transform_func - bad coord. type'
          !
-      case('R-ALPHA-TAU','NORMAL')
+      case('R-ALPHA-TAU','NORMAL','R-RHO-TAU')
         !
         a0(1,1) = 0.0_ark
         a0(1,2) = 0.0_ark
@@ -158,12 +173,12 @@ module mol_x2y2
         a0(2,2) = 0.0_ark
         a0(2,3) = re1
         !
-        a0(3,1) = re2*sin(ae2)*cos(rho*0.5_ark)
-        a0(3,2) = re2*sin(ae1)*sin(rho*0.5_ark)
+        a0(3,1) = re2*sin(ae2)*cos(tau*0.5_ark)
+        a0(3,2) = re2*sin(ae1)*sin(tau*0.5_ark)
         a0(3,3) = re2*cos(ae1)
         !
-        a0(4,1) = re3*sin(ae2)*cos(rho*0.5_ark)
-        a0(4,2) =-re3*sin(ae2)*sin(rho*0.5_ark)
+        a0(4,1) = re3*sin(ae2)*cos(tau*0.5_ark)
+        a0(4,2) =-re3*sin(ae2)*sin(tau*0.5_ark)
         a0(4,3) = re1-re3*cos(ae2)        
         !
         do n = 1,3 
@@ -183,42 +198,49 @@ module mol_x2y2
          !
          do i = 0,npoints
             !
-            rho = rho_i(i)
-            !
-            re1   = molec%req(1)
-            re2   = molec%req(2)
-            re3   = molec%req(3)
-            ae1   = molec%alphaeq(1)
-            ae2   = molec%alphaeq(2)
-            !
-            i0 = npoints/2
-            !
-            b0(3,2,i) = re2*sin(ae1)
-            b0(3,1,i) = 0.0_ark
-            b0(3,3,i) = re2*cos(ae1)
-            !
-            b0(1,2,i) = 0.0_ark
-            b0(1,1,i) = 0.0_ark
-            b0(1,3,i) = 0.0_ark
-            !
-            b0(2,2,i) = 0.0_ark
-            b0(2,1,i) = 0.0_ark
-            b0(2,3,i) = re1
-            !
-            b0(4,2,i) = re3*sin(ae2)*cos(rho)
-            b0(4,1,i) = re3*sin(ae2)*sin(rho)
-            b0(4,3,i) = re1-re3*cos(ae2)
-            !
-            ! Find center of mass
-            !
-            do n = 1,3 
-              CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-              b0(:,n,i) = b0(:,n,i) - CM_shift
-            enddo 
-            !
-            !do n = 1,molec%Natoms
-            !   b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
-            !enddo
+            select case(trim(molec%coords_transform))
+               !
+            case default
+               !
+               write (out,"('MLcoordinate_transform_func: coord. type ',a,' unknown')") trim(molec%coords_transform)
+               stop 'MLcoordinate_transform_func - bad coord. type'
+               !
+            case('R-ALPHA-TAU','NORMAL','R-RHO-TAU')
+               !
+               tau = rho_i(i)
+               !
+               re1   = molec%req(1)
+               re2   = molec%req(2)
+               re3   = molec%req(3)
+               ae1   = molec%alphaeq(1)
+               ae2   = molec%alphaeq(2)
+               !
+               i0 = npoints/2
+               !
+               b0(3,2,i) = re2*sin(ae1)
+               b0(3,1,i) = 0.0_ark
+               b0(3,3,i) = re2*cos(ae1)
+               !
+               b0(1,2,i) = 0.0_ark
+               b0(1,1,i) = 0.0_ark
+               b0(1,3,i) = 0.0_ark
+               !
+               b0(2,2,i) = 0.0_ark
+               b0(2,1,i) = 0.0_ark
+               b0(2,3,i) = re1
+               !
+               b0(4,2,i) = re3*sin(ae2)*cos(tau)
+               b0(4,1,i) = re3*sin(ae2)*sin(tau)
+               b0(4,3,i) = re1-re3*cos(ae2)
+               !
+               ! Find center of mass
+               !
+               do n = 1,3 
+                 CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,n,i) = b0(:,n,i) - CM_shift
+               enddo 
+               !
+            end select 
             !
          enddo
          !
@@ -500,7 +522,7 @@ module mol_x2y2
          !
        end select
         !
-    case('R-ALPHA-TAU')
+    case('R-ALPHA-TAU','R-RHO-TAU')
        !
        select case(trim(molec%symmetry))
        !

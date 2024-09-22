@@ -218,6 +218,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_morse
          !
+     case('POTEN_C2H2_MORSE_SINALPHA_COSNTAU') 
+         !
+         MLpotentialfunc => poten_c2h2_morse_sinalpha_cosntau
+         !
      case('POTEN_C2H2_7') 
          !
          MLpotentialfunc => MLpoten_c2h2_7
@@ -3521,19 +3525,22 @@ end subroutine polintark
             !
           end select 
           !
-          case('AUTOMATIC')
-            if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
-            v = 1.0_ark
-            if(iorder == 0)  return
-            if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
-            y = 1.0_ark
-            do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
-              !
-              z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
-                  (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
-              call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
-              v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
-            end do      
+       case('AUTOMATIC')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          if(iorder == 0)  return
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          !
+          y = 1.0_ark
+          do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+            !
+            z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
+                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+            call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+          end do      
           !
         case('BOND-LENGTH')
           !

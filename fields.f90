@@ -2143,16 +2143,20 @@ module fields
          !
          ! special case of Assoc Legendre or SINRHO-polynomials 
          !
-         if (any(trim(job%bset(Nmodes)%type)==[character(19) :: 'LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K',&
-                                                'SINRHO-2XLAGUERRE-K'] ) ) then 
+         do i=1,Nmodes
             !
-            if (.not.trove%triatom_sing_resolve ) then
-              write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
-            endif
+            if (any(trim(job%bset(i)%type)==[character(19) :: 'LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K',&
+                                                   'SINRHO-2XLAGUERRE-K'] ) ) then 
+               !
+               if (.not.trove%triatom_sing_resolve ) then
+                 write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
+               endif
+               !
+               job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
+               job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
+            endif 
             !
-            job%bset(Nmodes)%range(2) = (job%bset(Nmodes)%range(2)+1)*(job%bset(0)%range(2)+1)-1
-            job%bset(Nmodes)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
-         endif 
+         enddo
          !
          call readu(w)
          !
@@ -2201,6 +2205,9 @@ module fields
          !
          imode = 0
          ifunc = 0
+         !
+         molec%mode_list_present = .true.
+         !
          allocate(molec%basic_function_list(Nmodes))
          call read_line(eof,iut) ; if (eof) exit 
          do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
@@ -2230,12 +2237,13 @@ module fields
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
                   case("CSC")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                  case("COT")
+                  case("COT","COT2")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-                  case("SEC")
+                  case("SEC","SEC2")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
                   case default 
                 end select
+                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
@@ -15383,7 +15391,9 @@ end subroutine check_read_save_none
         Ncoeff =0
         do k1 = 1,Nmodes
           do k2 = 1,Nmodes
-            Ncoeff = max(Ncoeff,trove%g_vib(k1,k2)%Ncoeff)
+            fl => trove%g_vib(k1,k2)
+            if (fl%Ncoeff==0) cycle 
+            Ncoeff = max(Ncoeff,maxval(fl%ifromsparse))
           enddo
         enddo
         !
@@ -15412,7 +15422,9 @@ end subroutine check_read_save_none
         Ncoeff =0
         do k1 = 1,3
           do k2 = 1,3
-            Ncoeff = max(Ncoeff,trove%g_rot(k1,k2)%Ncoeff)
+            fl => trove%g_rot(k1,k2)
+            if (fl%Ncoeff==0) cycle 
+            Ncoeff = max(Ncoeff,maxval(fl%ifromsparse))
           enddo
         enddo
         !
@@ -15441,7 +15453,9 @@ end subroutine check_read_save_none
         Ncoeff =0
         do k1 = 1,Nmodes
           do k2 = 1,3
-            Ncoeff = max(Ncoeff,trove%g_cor(k1,k2)%Ncoeff)
+            fl => trove%g_cor(k1,k2)
+            if (fl%Ncoeff==0) cycle 
+            Ncoeff = max(Ncoeff,maxval(fl%ifromsparse))
           enddo
         enddo
         !
@@ -15466,7 +15480,7 @@ end subroutine check_read_save_none
         endif
         !
         fl => trove%pseudo
-        Ncoeff = fl%Ncoeff
+        Ncoeff = maxval(fl%ifromsparse)
         !
         write(chkptIO_kin,"(3i9,10x,a)") trove%pseudo%Npoints,trove%pseudo%Orders,Ncoeff,"<- pseudo Npoints,Norder,Ncoeff"
         !
@@ -15483,7 +15497,9 @@ end subroutine check_read_save_none
           Ncoeff =0
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
-              Ncoeff = max(Ncoeff,trove%L2_vib(k1,k2)%Ncoeff)
+              fl => trove%L2_vib(k1,k2)
+              if (fl%Ncoeff==0) cycle 
+              Ncoeff = max(Ncoeff,maxval(fl%ifromsparse))
             enddo
           enddo
           !
@@ -19107,7 +19123,7 @@ end subroutine check_read_save_none
              endif
              !
              ! Associated Legendre 
-             call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             call ME_sinrho_polynomial_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
@@ -20794,7 +20810,8 @@ end subroutine check_read_save_none
            step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
            !rho_ref = molec%chi_eq(nu_i)
            !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),stat=alloc)
+           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),&
+                     pseudo(0:Npoints),muzz(0:Npoints),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
@@ -20814,419 +20831,9 @@ end subroutine check_read_save_none
            !
            if (.not.trove%DVR.or.reduced_model) then
              !
-             f1d = 0 
+             call generate_potential_1d_field(irho_eq,rho_b,npoints,f1drho)
              !
-             do ipower = 0,min(trove%NPotOrder,max(bset%dscr(nu_i)%model,2))
-                !
-                f2 = 0 
-                !
-                do imode = 1,bs%imodes
-                  !
-                  nu_i = bs%mode(imode)
-                  powers = 0 ; powers(nu_i) = ipower
-                  k = FLQindex(trove%Nmodes_e,powers)
-                  !
-                  ! shift the minimum by the period of the last mode if present
-                  if (periodic_model) then 
-                    !
-                    rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                    irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                    !
-                  endif
-                  !
-                  if (trove%sparse) then
-                    !
-                    call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
-                    !
-                    f2(imode) = 0 
-                    if (i/=0) f2(imode) = trove%poten%field(i,irho_eq)
-                    !
-                    if (ipower==2.and.abs(f2(imode))<sqrt(small_)) then
-                      write(out,"('FLbset1DNew: f2=0 in the poten sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                      stop 'FLbset1DNew: f2=0 in the poten sparse-field'
-                    endif
-                    !
-                    if (periodic_model) then 
-                      !
-                      do jmode = 1,bs%imodes
-                        !
-                        rho_ref_ = trove%rho_ref+period*real(jmode-1,ark)
-                        irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                        call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
-                        !
-                        f_period(imode,jmode) = 0 
-                        if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq)
-                        !
-                      enddo
-                      !
-                    endif
-                    !
-                  else
-                    !
-                    f2(imode) = trove%poten%field(k,irho_eq)
-                    !
-                  endif
-                  !
-                enddo
-                !
-                ! Check if all potential parameters are equal for every considered mode
-                !
-                f_t= f2(1) 
-                if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
-                    any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
-                   write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
-                   write(out,"('pot-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym ) then 
-                     stop 'FLbset1DNew: not all numerov parameters are equal'
-                   endif
-                endif
-                !
-                f1d(ipower) = f2(1)
-                !
-             enddo 
-             !
-             p1d = 0 
-             !
-             if(job%mode_list_present) then
-                maxpower = 0 
-                do imode = 1, trove%Nmodes
-                   maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
-                enddo
-             else
-               maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-             endif
-             !
-             do ipower = 0,maxpower
-                !
-                f2 = 0 
-                !
-                do imode = 1,bs%imodes
-                  !
-                  nu_i = bs%mode(imode)
-                  !
-                  select case(job%bset(nu_i)%coord_kinet)
-                     !
-                  case( 'AUTOMATIC', 'BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
-                     !
-                     f2(imode) = 0
-                     !
-                     do j = 1, size(trove%pseudo%ifromsparse)
-                       !
-                       f2_term = 0
-                       !
-                       powers(1:Nmodes) = trove%pseudo%IndexQ(1:Nmodes,trove%pseudo%ifromsparse(j))
-                       !
-                       if (periodic_model) then 
-                         !
-                         rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                         irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                         !
-                       endif
-                       if (powers(nu_i)/= ipower) cycle
-                       f2_term  =  trove%pseudo%field(trove%pseudo%ifromsparse(j),irho_eq)
-                       !
-                       do i = 1, trove%Nmodes_e 
-                         if(i == nu_i) cycle
-                         !
-                         f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                         !
-                       enddo
-                       !
-                       f2(imode) = f2(imode) + f2_term
-                       !
-                     enddo
-                     !
-                  case('AUTO-HARMON')
-                     !
-                     f2(imode) = 0
-                     if(ipower > 0) cycle
-                     !
-                     do j = 1, size(trove%pseudo%ifromsparse)
-                       !
-                       f2_term = 0
-                       !
-                       powers(1:Nmodes) = trove%pseudo%IndexQ(1:Nmodes,trove%pseudo%ifromsparse(j))
-                       !
-                       if (periodic_model) then 
-                         !
-                         rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                         irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                         !
-                       endif
-                       f2_term  =  trove%pseudo%field(trove%pseudo%ifromsparse(j),irho_eq)
-                       !
-                       do i = 1, trove%Nmodes_e 
-                         !
-                         f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                         !
-                       enddo
-                       !
-                       f2(imode) = f2(imode) + f2_term
-                       !
-                     enddo
-                     !
-                  case default    
-                     ! 
-                     powers = 0 ; powers(nu_i) = ipower
-                     k = FLQindex(trove%Nmodes_e,powers)
-                     !
-                     ! shift the minimum by the period of the last mode if present
-                     if (periodic_model) then 
-                       !
-                       rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                       irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                       !
-                     endif
-                     !
-                     if (trove%sparse) then
-                       !
-                       call find_isparse_from_ifull(trove%pseudo%Ncoeff,trove%pseudo%ifromsparse,k,i)
-                       !
-                       f2(imode) = 0
-                       if (i/=0) f2(imode) = trove%pseudo%field(i,irho_eq)
-                       !
-                     else
-                       !
-                       f2(imode) = trove%pseudo%field(k,irho_eq)
-                       !
-                     endif
-                     !
-                  end select
-                  !
-                enddo
-                !
-                ! Check if all potential parameters are equal for every considered mode
-                !
-                f_t= f2(1) 
-                if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
-                    any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
-                   write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
-                   write(out,"('pseudo-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym ) then 
-                     stop 'FLbset1DNew: not all numerov parameters are equal'
-                   endif
-                endif
-                !
-                p1d(ipower) = f2(1)
-                !
-             enddo 
-             !
-             ! for the kinetic part it is simpler - we just take the correspoinding diagonal member of the g_vib%coeffs
-             !
-             g1d = 0 
-             !
-             if(job%mode_list_present) then
-               maxpower = 0 
-               do imode = 1, trove%Nmodes
-                  if( size(molec%basic_function_list(imode)%mode_set) > maxpower) then
-                    maxpower = size(molec%basic_function_list(imode)%mode_set) 
-                  endif
-               enddo
-             else
-               maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-             endif
-             !
-             do ipower = 0,maxpower
-                !
-                do imode = 1,bs%imodes
-                  !             
-                  nu_i = bs%mode(imode)
-                  fl => trove%g_vib(nu_i,nu_i) 
-                  !
-                  select case(job%bset(nu_i)%coord_kinet)
-                      !
-                  case('AUTOMATIC', 'BOND-LENGTH', 'ANGLE', 'DIHEDRAL')
-                      !
-                      g2(imode) = 0
-                      !
-                      do j = 1, size(fl%ifromsparse)
-                        !
-                        g2_term = 0
-                        !
-                        !powers = powers_from_index(Nmodes, fl%ifromsparse(j))
-                        !
-                        powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
-                        !
-                        if (powers(nu_i)/= ipower) cycle
-                        g2_term  =  fl%field(j,irho_eq)
-                        !
-                        do i = 1, size(powers)
-                          if(i == nu_i) cycle
-                          !
-                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                          !
-                        enddo
-                        !
-                        g2(imode) = g2(imode) + g2_term
-                        !
-                      enddo
-                      !
-                    case('AUTO-HARMON')
-                      !
-                      g2(imode) = 0
-                      if(ipower > 0) cycle  
-                      !
-                      do j = 1, size(fl%ifromsparse)
-                        !
-                        g2_term = 0
-                        !
-                        !powers = powers_from_index(Nmodes, fl%ifromsparse(j))
-                        powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
-                        !
-                        if (periodic_model) then 
-                          !
-                          rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                          irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                          !
-                        endif
-                        !
-                        if (powers(nu_i)/= ipower) cycle
-                        !
-                        g2_term  =  fl%field(j,irho_eq)
-                        !
-                        do i = 1, trove%Nmodes_e 
-                          !
-                          g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
-                          !
-                        enddo
-                        !
-                        g2(imode) = g2(imode) + g2_term
-                        !
-                      enddo  
-                      !
-                  case default 
-                      !
-                      powers = 0 ; powers(nu_i) = ipower
-                      k = FLQindex(trove%Nmodes_e,powers)
-                      !
-                      ! shift the minimum by the period of the last mode if present
-                      if (periodic_model) then 
-                        !
-                        rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                        irho_eq = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                        !
-                      endif
-                      !
-                      if (trove%sparse) then
-                        !
-                        call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
-                        !
-                        g2(imode) = 0
-                        !
-                        if (i/=0) g2(imode) = fl%field(i,irho_eq)
-                        !
-                        if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
-                          write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                          stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
-                        endif
-                        !
-                      else
-                        !
-                        g2(imode) = fl%field(k,irho_eq)
-                        !
-                      endif
-                      !
-                  end select 
-                  !
-                enddo
-                ! 
-                !
-                ! The same check for all g2 kinetic parameters to be equal for every considered mode
-                !
-                f_t= g2(1) 
-                if (any(abs(g2(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
-                   write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
-                   write(out,"('gvib-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
-                     stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
-                   endif
-                endif
-                !
-                g1d(ipower) = g2(1)
-                !
-             enddo
-             !
-             if (trim(molec%coords_transform)=='R-RHO'.and..false.) then 
-                !
-                rho_t = sum( trove%mass(:)*( trove%b0(:,2,irho_eq)**2+ trove%b0(:,3,irho_eq)**2 ) )/&
-                                            (planck*avogno*real(1.0d+16,kind=rk)/(4.0_ark*pi*pi*vellgt))
-                !
-                f1d(:) = f1d(:)*rho_t
-                !
-             endif
-             !
-             ! Check if defined f2 and g2 parameters are not zero 
-             !
-             f_t = maxval(f1d,dim=1)
-             !
-             if (all(abs(f1d(:))<1e-5*abs(f_t)) ) then
-                write(out,"('FLbset1DNew: all f1d  are zero ',f18.8)") f1d(:)
-                stop 'FLbset1DNew: f1d are all zero'
-             endif
-             !
-             f_t = maxval(g1d,dim=1)
-             !
-             if (all(abs(g1d(:))<1e-5*abs(f_t)) ) then
-                write(out,"('FLbset1DNew: all g1d  are zero ',f18.8)") g1d(:)
-                stop 'FLbset1DNew: g1d are all zero'
-             endif
-             !
-             ! generating 1d tables
-             ! for basis sets we will need 1d potential and kinetic enrgy part 
-             ! in terms of the corresponding coordinate 
-             !
-             f1drho = 0 ; g1drho = 0 
-             !
-             nu_i = bs%mode(1)
-             !
-             rho =  trove%chi_eq(nu_i)
-             !
-             rho_kin0 = MLcoord_direct(rho,1,nu_i)
-             rho_pot0 = MLcoord_direct(rho,2,nu_i)
-             rho_ext0 = MLcoord_direct(rho,3,nu_i)
-             !
-             do i = 0,npoints
-                !
-                rho =  rho_b(1)+real(i,kind=ark)*step
-                !
-                rho_kin = MLcoord_direct(rho,1,nu_i)-rho_kin0
-                rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
-                rho_ext = MLcoord_direct(rho,3,nu_i)-rho_ext0
-                !
-                drho(i,1) = rho_kin
-                drho(i,2) = rho_pot
-                drho(i,3) = rho_ext
-                !
-                do ipower = 0,trove%NPotorder 
-                   !
-                   f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
-                   !
-                enddo 
-                !
-                if(job%mode_list_present) then
-                  maxpower = size(molec%basic_function_list(nu_i)%mode_set)
-                else 
-                  maxpower = trove%NKinorder
-                endif 
-                !
-                do ipower = 0, maxpower 
-                   xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
-                enddo
-                !
-                do ipower = 0,maxpower
-                   !
-                   !f1drho(i) = f1drho(i) + p1d(ipower)*rho_kin**ipower
-                   !g1drho(i) = g1drho(i) + g1d(ipower)*rho_kin**ipower
-                   !
-                   f1drho(i) = f1drho(i) + p1d(ipower)*xton(i,ipower)
-                   g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
-                   !
-                enddo 
-                !
-             enddo
+             call generate_1D_kinetic_fields(irho_eq,rho_b,npoints,g1drho,pseudo,xton,drho,muzz)
              !
            else 
              !
@@ -21280,15 +20887,21 @@ end subroutine check_read_save_none
              !
            case ('NUMEROV')
              !
+             f1drho = f1drho + pseudo
+             !
              call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('BOX')
              !
+             f1drho = f1drho + pseudo
+             !
              call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements,bs%ener0)
              !
            case ('FOURIER')
+             !
+             f1drho = f1drho + pseudo
              !
              call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
@@ -21296,6 +20909,8 @@ end subroutine check_read_save_none
            case ('SINC')
              !
              numerpoints = npoints
+             !
+             f1drho = f1drho + pseudo
              !
              call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
@@ -21308,65 +20923,32 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
+             allocate (sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),stat=alloc)
              if (alloc/=0) then
                 write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
                 stop 'FLbset1DNew, muzz - out of memory'
              end if
              !
-             muzz = trove%g_rot(3,3)%field(1,0:npoints)
-             pseudo = trove%pseudo%field(1,0:npoints)
+             !if (ipower==0.and.abs(gz(imode))<sqrt(small_)) then
+             !  write(out,"('FLbset1DNew: gz=0 in the gzz sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+             !  stop 'FLbset1DNew: gz=0 in the gzz sparse-field'
+             !endif
              !
-             fl => trove%g_rot(3,3)
-             gl => trove%pseudo
+             !muzz = trove%g_rot(3,3)%field(1,0:npoints)
+             !pseudo = trove%pseudo%field(1,0:npoints)
              !
-             if (trove%sparse) then
-               !
-               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
-               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
-               !
-               if (i1==0.or.i2==0) then
-                  !
-                  muzz = 0
-                  pseudo = 0
-                  !
-                  do icoeff = 1, fl%Ncoeff
-                     f_t = 1.0_ark
-                     do imode  = 1,Nmodes
-                       rho =  trove%chi_eq(imode)
-                       ipower = fl%IndexQ(imode,icoeff)
-                       rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                       f_t = f_t*rho_kin0
-                    enddo
-                    muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                    pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
-                    !
-                  enddo
-                  !
-               endif
-               !
-             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(pseudo(trove%ipotmin))<small_) then
-               !
-               muzz = 0
-               pseudo = 0
-               !
-               do icoeff = 1, fl%Ncoeff
-                  f_t = 1.0_ark
-                  do imode  = 1,Nmodes
-                    rho =  trove%chi_eq(imode)
-                    ipower = fl%IndexQ(imode,icoeff)
-                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                    f_t = f_t*rho_kin0
-                 enddo
-                 muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                 pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
-                 !
-               enddo
-               !
+             !
+             if(job%mode_list_present) then
+                maxpower = 0 
+                do imode = 1, trove%Nmodes
+                   maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
+                enddo
+             else
+               maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
              !
              ! Associated Legendre 
-             call ME_sinrho_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             call ME_sinrho_polynomial_k(nu_i,bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
@@ -21379,8 +20961,6 @@ end subroutine check_read_save_none
                 mrho(i) = sin(rho)
              enddo
              !
-             deallocate(muzz,pseudo)
-             !
            case default
              !
              write(out,"('FLbset1DNew: illegal type for RIGID case ',a)") trim(bs%type)
@@ -21388,7 +20968,7 @@ end subroutine check_read_save_none
             !
            end select
            !
-           deallocate (f1drho,g1drho,drho,xton)
+           deallocate (f1drho,g1drho,drho,xton,pseudo,muzz)
            !
         endif 
         !
@@ -21686,6 +21266,506 @@ end subroutine check_read_save_none
        !endif
        !
      end subroutine find_isparse_from_ifull
+     !
+    
+    
+    
+     subroutine generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1drho,pseudo,xton,drho,muzz)
+       !
+       implicit none
+       !
+       integer(ik),intent(in) :: irho_eq,npoints
+       !
+       real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%MaxOrder)
+       real(ark),intent(out)  :: rho_b(2),drho(0:Npoints,3)
+       real(ark),intent(out),optional :: muzz(0:Npoints)
+       !
+       real(ark) :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
+       real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
+       real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext
+       integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes)
+       integer(ik) :: jmode,i,k,j,irho_eq_,nu_
+       type(FLpolynomT),pointer    :: fl,gl,gzl
+       !
+       p1d = 0 
+       g1d = 0 
+       !
+       irho_eq_ = irho_eq
+       !
+       step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
+       nu_ = bs%mode(1)  
+       !
+       if(job%mode_list_present) then
+          maxpower = 0 
+          do imode = 1, trove%Nmodes
+             maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
+          enddo
+       else
+         maxpower = min(trove%NKinOrder,max(bset%dscr(nu_)%model-2,0))
+       endif
+       !
+       fl => trove%pseudo
+       gzl => trove%g_rot(3,3)
+       !
+       if (trove%kinetic_compact) then 
+          !
+          do ipower = 0,maxpower
+             !
+             f2 = 0 
+             !
+             do imode = 1,bs%imodes
+               !
+               nu_i = bs%mode(imode)
+               !
+               f2(imode) = 0
+               g2(imode) = 0
+               gz(imode) = 0
+               !
+               gl => trove%g_vib(nu_i,nu_i) 
+               !
+               do j = 1, size(fl%ifromsparse)
+                 !
+                 f2_term = 0
+                 !
+                 powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                 !
+                 if (periodic_model) then 
+                   !
+                   rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                   irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                   !
+                 endif
+                 !
+                 if (powers(nu_i)/= ipower) cycle
+                 f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
+                 !
+                 do i = 1, trove%Nmodes_e 
+                   if(i == nu_i) cycle
+                   !
+                   f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                   !
+                 enddo
+                 !
+                 f2(imode) = f2(imode) + f2_term
+                 !
+               enddo
+               !
+               ! g-term
+               !
+               do j = 1, size(gl%ifromsparse)
+                 !
+                 g2_term = 0
+                 !
+                 !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
+                 !
+                 powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+                 !
+                 if (powers(nu_i)/= ipower) cycle
+                 g2_term  =  gl%field(j,irho_eq_)
+                 !
+                 do i = 1, size(powers)
+                   if(i == nu_i) cycle
+                   !
+                   g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                   !
+                 enddo
+                 !
+                 g2(imode) = g2(imode) + g2_term
+                 !
+               enddo
+               !
+               ! gzz-term
+               !
+               if (present(muzz)) then 
+                  !
+                  do j = 1, size(gzl%ifromsparse)
+                    !
+                    gz_term = 0
+                    !
+                    !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
+                    !
+                    powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
+                    !
+                    if (powers(nu_i)/= ipower) cycle
+                    gz_term  =  gzl%field(j,irho_eq_)
+                    !
+                    do i = 1, size(powers)
+                      if(i == nu_i) cycle
+                      !
+                      gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
+                      !
+                    enddo
+                    !
+                    gz(imode) = gz(imode) + gz_term
+                    !
+                  enddo
+                  !
+               endif
+               !
+             enddo
+             !
+             ! Check if all pseudo-potential parameters are equal for every considered mode
+             !
+             f_t= f2(1) 
+             !
+             if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+                write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
+                write(out,"('pseudo-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym ) then 
+                  stop 'FLbset1DNew: not all numerov parameters are equal'
+                endif
+             endif
+             !
+             p1d(ipower) = f2(1)
+             !
+             ! The same check for all g2 kinetic parameters to be equal for every considered mode
+             !
+             f_t= g2(1) 
+             if (any(abs(g2(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                write(out,"('gvib-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                  stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                endif
+             endif
+             !
+             g1d(ipower) = g2(1)
+             !
+             if (present(muzz)) then
+                !
+                f_t= gz(1) 
+                if (any(abs(gz(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                   write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                   write(out,"('gvib-ipower=',i6)") ipower
+                   write(out,"(30f18.8)") (gz(imode),imode=1,min(bs%imodes,30)) 
+                   if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                     stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                   endif
+                endif
+                !
+                g1z(ipower) = gz(1)
+                !
+             endif
+             !
+          enddo 
+          !
+          f_t = maxval(g1d,dim=1)
+          !
+          if (all(abs(g1d(:))<1e-5*abs(f_t)) ) then
+             write(out,"('FLbset1DNew: all g1d  are zero ',f18.8)") g1d(:)
+             stop 'FLbset1DNew: g1d are all zero'
+          endif
+          !
+          if (present(muzz)) then
+             !
+             f_t = maxval(g1z,dim=1)
+             !
+             if (all(abs(g1z(:))<1e-5*abs(f_t)) ) then
+                write(out,"('FLbset1DNew: all gz are zero ',f18.8)") g1z(:)
+                stop 'FLbset1DNew: gz are all zero'
+             endif
+             !
+          endif
+          !
+        else
+          !
+          do ipower = 0,maxpower
+             !
+             f2 = 0 
+             g2 = 0
+             gz = 0
+             !
+             do imode = 1,bs%imodes
+               !
+               nu_i = bs%mode(imode)
+               !
+               gl => trove%g_vib(nu_i,nu_i) 
+               ! 
+               powers = 0 ; powers(nu_i) = ipower
+               k = FLQindex(trove%Nmodes_e,powers)
+               !
+               ! shift the minimum by the period of the last mode if present
+               if (periodic_model) then 
+                 !
+                 rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                 irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                 !
+               endif
+               !
+               if (trove%sparse) then
+                 !
+                 call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,k,i)
+                 !
+                 f2(imode) = 0
+                 if (i/=0) f2(imode) = fl%field(i,irho_eq_)
+                 !
+                 call find_isparse_from_ifull(gl%Ncoeff,gl%ifromsparse,k,i)
+                 !
+                 g2(imode) = 0
+                 !
+                 if (i/=0) g2(imode) = gl%field(i,irho_eq_)
+                 !
+                 if (ipower==0.and.abs(g2(imode))<sqrt(small_)) then
+                   write(out,"('FLbset1DNew: g2=0 in the gvib sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                   stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
+                 endif
+                 !
+                 if (present(muzz)) then
+                   !
+                   call find_isparse_from_ifull(gzl%Ncoeff,gzl%ifromsparse,k,i)
+                   !
+                   gz(imode) = 0
+                   !
+                   if (i/=0) gz(imode) = gzl%field(i,irho_eq_)
+                   !
+                   !if (ipower==0.and.abs(gz(imode))<sqrt(small_)) then
+                   !  write(out,"('FLbset1DNew: gz=0 in the gzz sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                   !  stop 'FLbset1DNew: gz=0 in the gzz sparse-field'
+                   !endif
+                   !
+                 endif
+                 !
+               else
+                 !
+                 f2(imode) = fl%field(k,irho_eq_)
+                 g2(imode) = gl%field(k,irho_eq_)
+                 !
+                 if (present(muzz)) then
+                    gz(imode) = gzl%field(k,irho_eq_)
+                 endif
+                 !
+               endif
+               !
+             enddo
+             !
+             ! Check if all potential parameters are equal for every considered mode
+             !
+             f_t= f2(1) 
+             !
+             if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+                write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
+                write(out,"('pseudo-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym ) then 
+                  stop 'FLbset1DNew: not all numerov parameters are equal'
+                endif
+             endif
+             !
+             p1d(ipower) = f2(1)
+              !
+              ! The same check for all g2 kinetic parameters to be equal for every considered mode
+              !
+              f_t= g2(1) 
+              if (any(abs(g2(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                 write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                 write(out,"('gvib-ipower=',i6)") ipower
+                 write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
+                 if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                   stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                 endif
+              endif
+              !
+              g1d(ipower) = g2(1)
+              !
+              if (present(muzz)) then
+                 f_t= gz(1) 
+                 if (any(abs(gz(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                    write(out,"('gvib-ipower=',i6)") ipower
+                    write(out,"(30f18.8)") (gz(imode),imode=1,min(bs%imodes,30)) 
+                    if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
+                    endif
+                 endif
+                 !
+                 g1z(ipower) = gz(1)
+                 !
+              endif
+              !  
+          enddo
+          !
+        endif    
+        !
+        ! generating 1d tables
+        ! for basis sets we will need 1d potential and kinetic enrgy part 
+        ! in terms of the corresponding coordinate 
+        !
+        pseudo = 0 ; g1drho = 0 
+        if (present(muzz)) then
+           muzz = 0
+        endif
+        !
+        nu_i = bs%mode(1)
+        !
+        rho =  trove%chi_eq(nu_i)
+        !
+        rho_kin0 = MLcoord_direct(rho,1,nu_i)
+        rho_pot0 = MLcoord_direct(rho,2,nu_i)
+        rho_ext0 = MLcoord_direct(rho,3,nu_i)
+        !
+        do i = 0,npoints
+           !
+           rho =  rho_b(1)+real(i,kind=ark)*step
+           rho_kin = MLcoord_direct(rho,1,nu_i)-rho_kin0
+           rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
+           rho_ext = MLcoord_direct(rho,3,nu_i)-rho_ext0
+           !
+           drho(i,1) = rho_kin
+           drho(i,2) = rho_pot
+           drho(i,3) = rho_ext
+           !
+           do ipower = 0, maxpower 
+              xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+           enddo
+           !
+           do ipower = 0,maxpower
+              !
+              pseudo(i) = pseudo(i) + p1d(ipower)*xton(i,ipower)
+              g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
+              !
+              if (present(muzz)) then
+                 muzz(i) = muzz(i) + g1z(ipower)*xton(i,ipower)
+              endif
+              !
+           enddo 
+           !
+        enddo  
+        !     
+     end subroutine generate_1D_kinetic_fields
+    
+     !
+     subroutine generate_potential_1d_field(irho_eq,rho_b,npoints,f1drho)
+       !
+       integer(ik),intent(in) :: irho_eq,npoints
+       real(ark),intent(in)  :: rho_b(2)
+       real(ark),intent(out)  :: f1drho(0:Npoints )
+       !
+       real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
+       real(ark) :: f1d(0:trove%MaxOrder),rho_pot0,rho_pot,step
+       !
+       integer(ik) :: ipower,imode,jmode,nu_i,i,k,powers(trove%Nmodes),nu_,maxpower,irho_eq_
+       !
+       f1d = 0 
+       !
+       irho_eq_ = irho_eq
+       step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
+       nu_ = bs%mode(1)
+       maxpower =min(trove%NPotOrder,max(bset%dscr(nu_)%model,2))
+       !
+       do ipower = 0,maxpower
+          !
+          f2 = 0 
+          !
+          do imode = 1,bs%imodes
+            !
+            nu_i = bs%mode(imode)
+            powers = 0 ; powers(nu_i) = ipower
+            k = FLQindex(trove%Nmodes_e,powers)
+            !
+            ! shift the minimum by the period of the last mode if present
+            if (periodic_model) then 
+              !
+              if (npoints/=trove%npoints) stop 'generate_potential_1d_field: npoints/=trove%npoints'
+              !
+              rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+              irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+              !
+            endif
+            !
+            if (trove%sparse) then
+              !
+              call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+              !
+              f2(imode) = 0 
+              if (i/=0) f2(imode) = trove%poten%field(i,irho_eq_)
+              !
+              if (ipower==2.and.abs(f2(imode))<sqrt(small_)) then
+                write(out,"('FLbset1DNew: f2=0 in the poten sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                stop 'FLbset1DNew: f2=0 in the poten sparse-field'
+              endif
+              !
+              if (periodic_model) then 
+                !
+                do jmode = 1,bs%imodes
+                  !
+                  rho_ref_ = trove%rho_ref+period*real(jmode-1,ark)
+                  irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                  call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+                  !
+                  f_period(imode,jmode) = 0 
+                  if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq_)
+                  !
+                enddo
+                !
+              endif
+              !
+            else
+              !
+              f2(imode) = trove%poten%field(k,irho_eq_)
+              !
+            endif
+            !
+          enddo
+          !
+          ! Check if all potential parameters are equal for every considered mode
+          !
+          f_t= f2(1) 
+          !
+          if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
+              any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+             write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
+             write(out,"('pot-ipower=',i6)") ipower
+             write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+             if ( job%bset(nu_i)%check_sym ) then 
+               stop 'FLbset1DNew: not all numerov parameters are equal'
+             endif
+          endif
+          !
+          f1d(ipower) = f2(1)
+          !
+       enddo 
+       !
+       ! Check if defined f2 and g2 parameters are not zero 
+       !
+       f_t = maxval(f1d,dim=1)
+       !
+       if (all(abs(f1d(:))<1e-5*abs(f_t)) ) then
+          write(out,"('FLbset1DNew: all f1d  are zero ',f18.8)") f1d(:)
+          stop 'FLbset1DNew: f1d are all zero'
+       endif
+       !
+       ! generating 1d tables
+       ! for basis sets we will need 1d potential and kinetic enrgy part 
+       ! in terms of the corresponding coordinate 
+       !
+       f1drho = 0
+       !
+       nu_i = bs%mode(1)
+       rho =  trove%chi_eq(nu_i)
+       rho_pot0 = MLcoord_direct(rho,2,nu_i)
+       !
+       do i = 0,npoints
+          !
+          rho =  rho_b(1)+real(i,kind=ark)*step
+          !
+          rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
+          !
+          do ipower = 0,trove%NPotorder 
+             !
+             f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
+             !
+          enddo 
+          !
+       enddo
+       !
+     end subroutine generate_potential_1d_field
+     
      !
   end subroutine FLbset1DNew
 

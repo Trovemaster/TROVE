@@ -1538,12 +1538,6 @@ contains
     isave = 0
     ilevelsG = 0
     !
- !cdimenmax = 0
- !cfactor = 0
- !
- !dimenmax_ram = max(min(int(matsize),nsizemax),1)
-    !
-    !
     if (Ntransit==0) then 
          write(out,"('dm_intensity_symmvec: the transition filters are too tight: no entry')") 
          write(out,"(' window = ',2f12.4,'; Elow = ',2f12.4,'; Eupp = ',2f12.4,' cm-1')") &
@@ -2474,8 +2468,8 @@ contains
               !
             endif
             !
-         end select
-         !
+          end select
+          !
       end do Flevels_loop
       !$omp enddo
       !

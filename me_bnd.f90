@@ -4,7 +4,7 @@ module me_bnd
   use molecules
   use timer
   use lapack
-  use moltype,only : MLdiag_ulen_ark
+  use moltype,only : MLdiag_ulen_ark,MoleculeT,molec
   !
   implicit none
 
@@ -2717,7 +2717,7 @@ module me_bnd
                                   g_numerov,energy)
    !
    implicit none
-   integer(ik),intent(in) :: vmax,kmax,maxorder,npoints,isingular
+   integer(ik),intent(in)   :: vmax,kmax,maxorder,npoints,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
@@ -3315,11 +3315,11 @@ module me_bnd
   !
   ! Matrix elements with sinrho-k basis 
   !
-  subroutine ME_sinrho_polynomial_k(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,pseudo,icoord,verbose,&
+  subroutine ME_sinrho_polynomial_k(imode,vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,pseudo,icoord,verbose,&
                                   g_numerov,energy)
    !
    implicit none
-   integer(ik),intent(in) :: vmax,kmax,maxorder,npoints,isingular
+   integer(ik),intent(in)   :: imode,vmax,kmax,maxorder,npoints,isingular
    real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
@@ -3328,18 +3328,21 @@ module me_bnd
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
-   real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe,ener_t
-   real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t,ps_t
+   real(ark)   :: rho_,rhostep,potmin,C_l,C_r,zpe,ener_t,U_t
+   real(ark)   :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t,ps_t
    !
-   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect
+   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,ipower,&
+                  xton(0:Npoints,0:maxorder),b_func_outer_expon
    !
-   real(ark),allocatable :: psil(:),psir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
+   real(ark),allocatable :: psil(:),psir(:),dpsil(:),dpsir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
    real(ark),allocatable :: phil_s(:),phir_s(:),vect_(:),phi(:)
+   real(ark),allocatable :: psil_sin(:),psir_sin(:),phil(:),phir(:),dphil(:),dphir(:)
    real(ark),allocatable :: chi(:,:),dPhi(:,:),x(:),sinrho(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
                             phi_rho(:),dphi_rho(:),rho_m(:)
    real(ark),allocatable  :: h(:,:),ener(:)
    !
-   character(len=cl)    :: unitfname 
+   character(len=cl)    :: unitfname,b_func_type
+   logical              :: Is_it_one_over_sin2,Is_it_one_over_sin
      !
      if (verbose>=3) write (out,"(/20('*'),' Pseudo Associate sinrho functions primitive matrix elements calculations')")
      !
@@ -3350,10 +3353,11 @@ module me_bnd
      nmax = (vmax+1)/(kmax+1)-1
      lmax = kmax + nmax
      !
-     allocate(psil(0:npoints),psir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
+     allocate(psil(0:npoints),psir(0:npoints),dpsil(0:npoints),dpsir(0:npoints), &
               phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),&
               x(0:npoints),rho_m(0:npoints),sinrho(0:npoints),cosrho(0:npoints),rho(0:npoints),&
-              phil_s(0:npoints),phir_s(0:npoints),phi(0:npoints),stat=alloc)
+              phil_s(0:npoints),phir_s(0:npoints),phi(0:npoints),psil_sin(0:npoints),psir_sin(0:npoints),phil(0:npoints),&
+              phir(0:npoints),dphil(0:npoints),dphir(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -3416,7 +3420,7 @@ module me_bnd
      rho_poten(:) = drho(:,2)
      rho_extF(:)  = drho(:,3)
      !
-     inquire(iolength=rec_len) psil(:),dphil(:)
+     inquire(iolength=rec_len) psil(:),dpsil(:)
      !
      write(unitfname,"('Numerov basis set # ',i6)") icoord
      call IOStart(trim(unitfname),io_slot)
@@ -3542,15 +3546,15 @@ module me_bnd
           phil_s(:)= chi(:,vl)*rho_m(:)
           !
           ! derivative of phi = sinrho x chi
-          dphil(:) = dPhi(:,vl)
-          !if (k>0) dphil(:) = dphil(:) + chi(:,vl)*cosrho(:)
+          dpsil(:) = dPhi(:,vl)
+          !if (k>0) dpsil(:) = dpsil(:) + chi(:,vl)*cosrho(:)
           !
           do vr = vl,nmax
               !
               psir(:)  = chi(:,vr)*sqrt(sinrho(:))*rho_m(:)
               phir_s(:)= chi(:,vr)*rho_m(:)
               !
-              dphir(:) = dPhi(:,vr)
+              dpsir(:) = dPhi(:,vr)
               !if (k>0) dphir(:) = dphir(:) + chi(:,vr)*cosrho(:)
               !
               ! check orthagonality and normalisation
@@ -3575,10 +3579,10 @@ module me_bnd
               !
               ! momenta-quadratic part 
               !
-              phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)*sinrho(:)
+              phivphi(:) =-dpsil(:)*mu_rr(:)*dpsir(:)*sinrho(:)
               !
-              !phivphi(:) =-mu_rr(:)*( dphil(:)*dphir(:)*rho_m(:)- &
-              !                        cosrho(:)*real(k,ark)*( dphil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
+              !phivphi(:) =-mu_rr(:)*( dpsil(:)*dphir(:)*rho_m(:)- &
+              !                        cosrho(:)*real(k,ark)*( dpsil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
               !
               mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
@@ -3665,16 +3669,22 @@ module me_bnd
           il = vl*(kmax+1)+k
           !
           psil(:)  =  Psi(vl+1,:)
-          dphil(:) = dPsi(vl+1,:)
+          dpsil(:) = dPsi(vl+1,:)
+          psil_sin(:) = psil(:)*rho_m(:)
+          phil(:) = psil_sin(:)*sqrt( sinrho(:) )
+          dphil(:) = rho_m(:)*psil(:)+cosrho(:)*0.5_ark*psil_sin(:)
           !
-          write (io_slot,rec=il+1) (psil(i),i=0,npoints),(dphil(i),i=0,npoints)
+          write (io_slot,rec=il+1) (psil(i),i=0,npoints),(dpsil(i),i=0,npoints)
           !
           do vr = vl,nmax
               !
               ir = vr*(kmax+1)+k
               !
               psir = Psi(vr+1,:)
-              dphir = dPsi(vr+1,:)
+              dpsir = dPsi(vr+1,:)
+              psir_sin(:) = psir(:)*rho_m(:)
+              phir(:) = psir_sin(:)*sqrt( sinrho(:) )
+              dphir(:) = rho_m(:)*psir(:)+cosrho(:)*0.5_ark*psir_sin(:)
               !
               ! check orthagonality and normalisation
               !
@@ -3696,7 +3706,7 @@ module me_bnd
               !
               ! momenta-quadratic part 
               !
-              phivphi(:) =-mu_rr(:)*dphil(:)*dphir(:)*sinrho(:)
+              phivphi(:) =-mu_rr(:)*dpsil(:)*dpsir(:)*sinrho(:)
               !
               mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
@@ -3749,14 +3759,21 @@ module me_bnd
               !
               psipsi_t = 0 
               !
+              !
+              do ipower = 0, maxorder 
+                 do i = 0 ,npoints
+                    xton(i,ipower) = MLcoord_direct(rho(i),1,imode,ipower)
+                 enddo
+              enddo
+              !
               do lambda = 0,maxorder
                  !
                  ! momenta-free part in potential part
                  !
                  if (lambda==0) then 
-                    phivphi(:) = psil(:)*psir(:)
+                    phivphi(:) = phil(:)*phir(:)
                  else
-                    phivphi(:) = psil(:)*rho_poten(:)**lambda*psir(:)
+                    phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
                  endif
                  !
                  g_numerov(0,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3764,9 +3781,9 @@ module me_bnd
                  ! external field expansion
                  !
                  if (lambda==0) then 
-                    phivphi(:) = psil(:)*psir(:)
+                    phivphi(:) = phil(:)*phir(:)
                  else
-                    phivphi(:) = psil(:)*rho_extF(:)**lambda*psir(:)
+                    phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
                  endif
                  !
                  g_numerov(3,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3774,40 +3791,85 @@ module me_bnd
                  !
                  ! momenta-free in kinetic part 
                  !
-                 if (lambda==0) then 
-                    phivphi(:) = psil(:)*psir(:)
+                 Is_it_one_over_sin2 = .false.
+                 Is_it_one_over_sin = .false.
+                 !
+                 if(molec%mode_list_present.and.lambda>0) then
+                    !
+                    do i = 1, molec%basic_function_list(imode)%mode_set(lambda)%num_terms
+                      !
+                      b_func_type = molec%basic_function_list(imode)%mode_set(lambda)%func_set(i)%name
+                      b_func_outer_expon = molec%basic_function_list(imode)%mode_set(lambda)%func_set(i)%outer_expon
+                      !
+                      select  case (b_func_type)
+                        !
+                      case ("SEC2","COT2")
+                        !
+                        ! set the flag indicating that we need to multiply by sin(rho)^2 
+                        !
+                        Is_it_one_over_sin = .true.
+                        !
+                      case ("SEC","COT")
+                        !
+                        if (b_func_outer_expon==1) then 
+                          Is_it_one_over_sin = .true.
+                        elseif(b_func_outer_expon==2) then
+                          Is_it_one_over_sin2 = .true.
+                        elseif(b_func_outer_expon>2) then
+                          write(out,"('ME_sinrho_polynomial_k error: basic_function 1/sin^n n must be <=2, not n =',i4)") &
+                                      b_func_outer_expon
+                          stop 'ME_sinrho_polynomial_k error: basic_function 1/sin^n n must be <=2'
+                        endif
+                        !
+                      end select 
+                      !
+                    end do
+                    !
+                 endif
+                 !
+                 if (Is_it_one_over_sin2) then 
+                    phivphi(:) = phil(:)*xton(:,lambda)*phir(:)*sinrho(:)**2
+                 elseif(Is_it_one_over_sin2) then
+                    phivphi(:) = phil(:)*xton(:,lambda)*phir(:)*sinrho(:)
                  else
-                    phivphi(:) = psil(:)*rho_kinet(:)**lambda*psir(:)
+                    phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
                  endif
                  !
                  g_numerov(-1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                  !
-                 ! We also control the orthogonality of the basis set 
-                 !
-                 if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
+                 ! We also control the symmetry of the non-diagonal matrix elements 
                  !
                  if (il/=ir) g_numerov(-1:0,lambda,ir,il) = g_numerov(-1:0,lambda,il,ir)
                  !
                  ! momenta-quadratic part 
                  !
                  if (lambda==0) then 
-                    phivphi(:) =-dphil(:)*dphir(:)
+                    phivphi(:) =-dpsil(:)*dpsir(:)
                  else
-                    phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
+                    phivphi(:) =-dpsil(:)*xton(:,lambda)*dpsir(:)
                  endif
                  !
                  g_numerov(2,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 !
+                 ! The gvib term can be combined with the pseudopotential part.
+                 ! It will allow us to spare additional array and i.e. memory
+                 ! and it is also necessary in case of the singular solution to do so.
+                 !
+                 !phivphi(:) =-2.0_ark*psil_sin(:)*rho_kinet(:)**lambda*psir_sin(:)
+                 !
+                 !U_t =  integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                 !
+                 !g_numerov(2,lambda,il,ir) = g_numerov(2,lambda,il,ir) + U_t
                  !
                  if (vl/=vr) g_numerov(2,lambda,ir,il) = g_numerov(2,lambda,il,ir)
                  !
                  ! momenta-linear part:
                  ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                  !
-                 !
                  if (lambda==0) then 
-                    phivphi(:) = psil(:)*dphir(:)
+                    phivphi(:) = psil_sin(:)*dphir(:)
                  else
-                    phivphi(:) = psil(:)*rho_kinet(:)**lambda*dphir(:)
+                    phivphi(:) = psil_sin(:)*xton(:,lambda)*dphir(:)
                  endif
                  !
                  g_numerov(1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3815,9 +3877,9 @@ module me_bnd
                  if (vl/=vr) then
                     !
                     if (lambda==0) then 
-                       phivphi(:) = dphil(:)*psir(:)
+                       phivphi(:) = -dphil(:)*psir_sin(:)
                     else
-                       phivphi(:) = dphil(:)*rho_kinet(:)**lambda*psir(:)
+                       phivphi(:) = -dphil(:)*xton(:,lambda)*psir_sin(:)
                     endif
                     !
                     g_numerov(1,lambda,ir,il) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -3846,7 +3908,7 @@ module me_bnd
              !write (out,"('v = ',i8,f18.8)") vl,h(vl+1,vl+1)-h(1,1)
              !$omp critical
              do i=0,npoints 
-                write(out,"(i8,2f18.8,' || ',1x,2i8)") i,psil(i),dphil(i),vl,k
+                write(out,"(i8,2f18.8,' || ',1x,2i8)") i,psil(i),dpsil(i),vl,k
              enddo
              !$omp end critical
              !
@@ -3866,7 +3928,8 @@ module me_bnd
      deallocate(psi,dpsi,phi_rho,dphi_rho,phi)
      call ArrayStop('psi-sinrho')
      !
-     deallocate(psil,psir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,rho_m,sinrho,cosrho,rho)
+     deallocate(psil,psir,phil_s,phir_s,dpsil,dpsir,phivphi,rho_kinet,rho_poten,rho_extF,x,rho_m,sinrho,cosrho,rho,&
+                psil_sin,psir_sin,phil,phir,dphil,dphir)
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
