@@ -46,6 +46,8 @@ module molecules
                        MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+  !
+  use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
 
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
@@ -543,6 +545,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO') 
          !
          MLkineticfunc => MLkinetic_x2y2_bisect_EKE_sinrho
+         !
+    case('KINETIC_ZXY2_EKE_BISECT_SINRHO_RIGID') 
+         !
+         MLkineticfunc_compact => MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
          !
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO_RIGID') 
          !
