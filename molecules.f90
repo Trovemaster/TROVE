@@ -200,6 +200,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_zxy2_morse_cos
          !
+    case('POTEN_ZXY2_MORSE_SIN')
+         !
+         MLpotentialfunc => MLpoten_zxy2_morse_sin
+         !
     case('POTEN_ABCD') 
          !
          MLpotentialfunc => MLpoten_hsoh

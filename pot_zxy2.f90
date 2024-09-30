@@ -10,7 +10,7 @@ module pot_zxy2
   public MLpoten_sohf,MLpoten_zxy2_andrey_01,MLpoten_zxy2_mep_r_alpha_rho_powers
   public MLdms2xyz_zxy2_symadap_powers,ML_MEP_zxy2_R_rho,MLpoten_zxy2_andrey_coeff,ML_MEP_zxy2_rho_coeff,MLpoten_h2cs_tz_damp1
   public MLpoten_h2cs_damp,MLpoten_zxy2_mlt,MLpoten_h2cs_damp_scaling,MLpoten_zxy2_morse_cos,&
-         MLpoten_zxy2_mep_r_alpha_rho_powers_iso
+         MLpoten_zxy2_mep_r_alpha_rho_powers_iso,MLpoten_zxy2_morse_sin
   private
  
   integer(ik), parameter :: verbose     = 3                          ! Verbosity level
@@ -287,6 +287,65 @@ function MLpoten_zxy2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
  !
 end function MLpoten_zxy2_morse_cos
 
+
+function MLpoten_zxy2_morse_sin(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+ !
+ integer(ik)          :: iterm,k_ind(6)
+ real(ark)            :: y(6),xi(6),v
+ real(ark)            :: re1,re2,ae,De1,De2,De3,a1,a2
+ !
+ !
+ re1   = force(1)
+ re2   = force(2)
+ ae    = force(3)*pi/180.0_ark
+ a1 = force(4)
+ a2 = force(5)
+ !
+ ! transformation to the standard form 
+ !
+ y(1) = 1.0_ark-exp(-a1*(local(1)-re1)) 
+ y(2) = 1.0_ark-exp(-a2*(local(2)-re2))
+ y(3) = 1.0_ark-exp(-a2*(local(3)-re2))
+ y(4) = local(4)-ae
+ y(5) = local(5)-ae
+ y(6) = sin(local(6))**2
+ !
+ v = 0.0_ark
+ !
+ do iterm = 6, molec%parmax
+  !
+  if (abs(force(iterm))<small_) cycle
+  !
+  xi(1:6) = y(1:6)**molec%pot_ind(1:6,iterm)
+  !
+  v = v + force(iterm)*product(xi(1:6))
+  !
+  if (molec%pot_ind(2,iterm)/=molec%pot_ind(3,iterm).or.molec%pot_ind(4,iterm)/=molec%pot_ind(5,iterm)) then
+    !
+    k_ind(1) = molec%pot_ind(1,iterm)
+    k_ind(2) = molec%pot_ind(3,iterm)
+    k_ind(3) = molec%pot_ind(2,iterm)
+    k_ind(4) = molec%pot_ind(5,iterm)
+    k_ind(5) = molec%pot_ind(4,iterm)
+    k_ind(6) = molec%pot_ind(6,iterm)
+    !
+    xi(1:6) = y(1:6)**k_ind(1:6)
+    !
+    v = v + force(iterm)*product(xi(1:6))
+    !
+  endif
+  !
+ enddo
+ !
+ f = v
+ !
+end function MLpoten_zxy2_morse_sin
 
 
   function from_local_to_r1r2r3a1a2tau(src,ndst) result (dst)
