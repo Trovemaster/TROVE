@@ -21286,6 +21286,8 @@ end subroutine check_read_save_none
        real(ark),intent(out),optional :: muzz(0:Npoints)
        !
        real(ark) :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
+       real(ark) :: ps(1:trove%Nmodes,0:trove%MaxOrder),gvib(1:trove%Nmodes,0:trove%MaxOrder),&
+                    grot(1:trove%Nmodes,0:trove%MaxOrder)
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
        real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext
        integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes)
@@ -21315,168 +21317,195 @@ end subroutine check_read_save_none
        !
        if (trove%kinetic_compact) then 
           !
-          do ipower = 0,maxpower
-             !
-             f2 = 0 
-             !
-             do imode = 1,bs%imodes
+          !do ipower = 0,maxpower
+          !
+          f2 = 0
+          ps=0
+          gvib = 0
+          grot = 0 
+          !
+          do imode = 1,bs%imodes
+            !
+            nu_i = bs%mode(imode)
+            !
+            f2(imode) = 0
+            g2(imode) = 0
+            gz(imode) = 0
+            !
+            gl => trove%g_vib(nu_i,nu_i) 
+            !
+            if (periodic_model) then 
+              !
+              rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+              irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+              !
+            endif
+            !
+            do j = 1, size(fl%ifromsparse)
+              !
+              f2_term = 0
+              !
+              powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+              !
+              ipower = powers(nu_i)
+              !
+              f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
+              !
+              do i = 1, trove%Nmodes_e
+                ! 
+                if(i == nu_i) cycle
+                !
+                f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                !
+              enddo
+              !
+              ps(imode,j) = ps(imode,j) + f2_term
+              !
+            enddo
+            !
+            ! g-term
+            !
+            do j = 1, size(gl%ifromsparse)
+              !
+              g2_term = 0
+              !
+              !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
+              !
+              powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+              !
+              ipower = powers(nu_i)
+              !
+              g2_term  =  gl%field(j,irho_eq_)
+              !
+              do i = 1, size(powers)
+                if(i == nu_i) cycle
+                !
+                g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                !
+              enddo
+              !
+              !g2(imode) = g2(imode) + g2_term
+              !
+              gvib(imode,j) = gvib(imode,j) + g2_term
+              !
+            enddo
+            !
+            ! gzz-term
+            !
+            if (present(muzz)) then 
                !
-               nu_i = bs%mode(imode)
-               !
-               f2(imode) = 0
-               g2(imode) = 0
-               gz(imode) = 0
-               !
-               gl => trove%g_vib(nu_i,nu_i) 
-               !
-               do j = 1, size(fl%ifromsparse)
+               do j = 1, size(gzl%ifromsparse)
                  !
-                 f2_term = 0
-                 !
-                 powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
-                 !
-                 if (periodic_model) then 
-                   !
-                   rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
-                   irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                   !
-                 endif
-                 !
-                 if (powers(nu_i)/= ipower) cycle
-                 f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
-                 !
-                 do i = 1, trove%Nmodes_e 
-                   if(i == nu_i) cycle
-                   !
-                   f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
-                   !
-                 enddo
-                 !
-                 f2(imode) = f2(imode) + f2_term
-                 !
-               enddo
-               !
-               ! g-term
-               !
-               do j = 1, size(gl%ifromsparse)
-                 !
-                 g2_term = 0
+                 gz_term = 0
                  !
                  !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
                  !
-                 powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+                 powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
                  !
-                 if (powers(nu_i)/= ipower) cycle
-                 g2_term  =  gl%field(j,irho_eq_)
+                 ipower = powers(nu_i)
+                 !
+                 gz_term  =  gzl%field(j,irho_eq_)
                  !
                  do i = 1, size(powers)
                    if(i == nu_i) cycle
                    !
-                   g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                   gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
                    !
                  enddo
                  !
-                 g2(imode) = g2(imode) + g2_term
+                 !gz(imode) = gz(imode) + gz_term
+                 !
+                 grot(imode,j) = grot(imode,j) + gz_term
                  !
                enddo
                !
-               ! gzz-term
-               !
-               if (present(muzz)) then 
-                  !
-                  do j = 1, size(gzl%ifromsparse)
-                    !
-                    gz_term = 0
-                    !
-                    !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
-                    !
-                    powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
-                    !
-                    if (powers(nu_i)/= ipower) cycle
-                    gz_term  =  gzl%field(j,irho_eq_)
-                    !
-                    do i = 1, size(powers)
-                      if(i == nu_i) cycle
-                      !
-                      gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
-                      !
-                    enddo
-                    !
-                    gz(imode) = gz(imode) + gz_term
-                    !
-                  enddo
-                  !
-               endif
-               !
-             enddo
+            endif
+            !
+          enddo
+          !
+          ! Check if all pseudo-potential parameters are equal for every considered mode
+          !
+          do j = 1,size(fl%ifromsparse)
              !
-             ! Check if all pseudo-potential parameters are equal for every considered mode
+             ipower = fl%IndexQ(nu_i,fl%ifromsparse(j))
              !
-             f_t= f2(1) 
+             f_t = ps(1,j)
              !
-             if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
-                 any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+             if (any(abs(ps(1:bs%imodes,j)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(ps(1:bs%imodes,j)-f_t)>1e6*sqrt(small_))) then
                 write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
                 write(out,"('pseudo-ipower=',i6)") ipower
-                write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+                write(out,"(30f18.8)") (ps(imode,j),imode=1,min(bs%imodes,30)) 
                 if ( job%bset(nu_i)%check_sym ) then 
                   stop 'FLbset1DNew: not all numerov parameters are equal'
                 endif
              endif
              !
-             p1d(ipower) = f2(1)
+             p1d(j) = ps(1,j)
              !
-             ! The same check for all g2 kinetic parameters to be equal for every considered mode
+          enddo
+          !
+          ! The same check for all g2 kinetic parameters to be equal for every considered mode
+          !
+          do j = 1,size(gl%ifromsparse)
              !
-             f_t= g2(1) 
-             if (any(abs(g2(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+             ipower = gl%IndexQ(nu_i,fl%ifromsparse(j))
+             !
+             f_t = gvib(1,j)
+             ! 
+             if (any(abs(gvib(1:bs%imodes,j)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
+                         abs(f_t)>1000.0_rk*sqrt(small_)) then
                 write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                 write(out,"('gvib-ipower=',i6)") ipower
-                write(out,"(30f18.8)") (g2(imode),imode=1,min(bs%imodes,30)) 
+                write(out,"(30f18.8)") (gvib(imode,j),imode=1,min(bs%imodes,30)) 
                 if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
                   stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                 endif
              endif
              !
-             g1d(ipower) = g2(1)
+             g1d(j) = gvib(1,j)
              !
-             if (present(muzz)) then
+             f_t = maxval( gvib(:,j) ,dim=1)
+             !
+             if (all(abs(gvib(:,j))<1e-5*abs(f_t)) ) then
+                write(out,"('FLbset1DNew: all g1d  are zero ',20f18.8)") gvib(:,j)
+                stop 'FLbset1DNew: g1d are all zero'
+             endif
+             !
+          enddo
+          !
+          if (present(muzz)) then
+             !
+             do j = 1,size(gzl%ifromsparse)
                 !
-                f_t= gz(1) 
-                if (any(abs(gz(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                ipower = gzl%IndexQ(nu_i,fl%ifromsparse(j))
+                !
+                f_t= grot(1,j)
+                !
+                if (any(abs(grot(1:bs%imodes,j)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
+                   abs(f_t)>1000.0_rk*sqrt(small_)) then
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (gz(imode),imode=1,min(bs%imodes,30)) 
+                   write(out,"(30f18.8)") (grot(imode,j),imode=1,min(bs%imodes,30)) 
                    if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                    endif
                 endif
                 !
-                g1z(ipower) = gz(1)
+                g1z(j) = grot(nu_,j)
                 !
-             endif
-             !
-          enddo 
-          !
-          f_t = maxval(g1d,dim=1)
-          !
-          if (all(abs(g1d(:))<1e-5*abs(f_t)) ) then
-             write(out,"('FLbset1DNew: all g1d  are zero ',f18.8)") g1d(:)
-             stop 'FLbset1DNew: g1d are all zero'
-          endif
-          !
-          if (present(muzz)) then
-             !
-             f_t = maxval(g1z,dim=1)
-             !
-             if (all(abs(g1z(:))<1e-5*abs(f_t)) ) then
-                write(out,"('FLbset1DNew: all gz are zero ',f18.8)") g1z(:)
-                stop 'FLbset1DNew: gz are all zero'
-             endif
+                f_t = maxval(grot(:,j),dim=1)
+                !
+                if (all(abs(grot(:,j))<1e-5*abs(f_t)) ) then
+                   write(out,"('FLbset1DNew: all gz are zero ',20f18.8)") grot(:,j)
+                   stop 'FLbset1DNew: gz are all zero'
+                endif
+                !
+             enddo
              !
           endif
           !
-        else
+       else
           !
           do ipower = 0,maxpower
              !
@@ -21594,53 +21623,53 @@ end subroutine check_read_save_none
               !  
           enddo
           !
-        endif    
-        !
-        ! generating 1d tables
-        ! for basis sets we will need 1d potential and kinetic enrgy part 
-        ! in terms of the corresponding coordinate 
-        !
-        pseudo = 0 ; g1drho = 0 
-        if (present(muzz)) then
-           muzz = 0
-        endif
-        !
-        nu_i = bs%mode(1)
-        !
-        rho =  trove%chi_eq(nu_i)
-        !
-        rho_kin0 = MLcoord_direct(rho,1,nu_i)
-        rho_pot0 = MLcoord_direct(rho,2,nu_i)
-        rho_ext0 = MLcoord_direct(rho,3,nu_i)
-        !
-        do i = 0,npoints
-           !
-           rho =  rho_b(1)+real(i,kind=ark)*step
-           rho_kin = MLcoord_direct(rho,1,nu_i)-rho_kin0
-           rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
-           rho_ext = MLcoord_direct(rho,3,nu_i)-rho_ext0
-           !
-           drho(i,1) = rho_kin
-           drho(i,2) = rho_pot
-           drho(i,3) = rho_ext
-           !
-           do ipower = 0, maxpower 
-              xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
-           enddo
-           !
-           do ipower = 0,maxpower
-              !
-              pseudo(i) = pseudo(i) + p1d(ipower)*xton(i,ipower)
-              g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
-              !
-              if (present(muzz)) then
-                 muzz(i) = muzz(i) + g1z(ipower)*xton(i,ipower)
-              endif
-              !
-           enddo 
-           !
-        enddo  
-        !     
+       endif    
+       !
+       ! generating 1d tables
+       ! for basis sets we will need 1d potential and kinetic enrgy part 
+       ! in terms of the corresponding coordinate 
+       !
+       pseudo = 0 ; g1drho = 0 
+       if (present(muzz)) then
+          muzz = 0
+       endif
+       !
+       nu_i = bs%mode(1)
+       !
+       rho =  trove%chi_eq(nu_i)
+       !
+       rho_kin0 = MLcoord_direct(rho,1,nu_i)
+       rho_pot0 = MLcoord_direct(rho,2,nu_i)
+       rho_ext0 = MLcoord_direct(rho,3,nu_i)
+       !
+       do i = 0,npoints
+          !
+          rho =  rho_b(1)+real(i,kind=ark)*step
+          rho_kin = MLcoord_direct(rho,1,nu_i)-rho_kin0
+          rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
+          rho_ext = MLcoord_direct(rho,3,nu_i)-rho_ext0
+          !
+          drho(i,1) = rho_kin
+          drho(i,2) = rho_pot
+          drho(i,3) = rho_ext
+          !
+          do ipower = 1, maxpower 
+             xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+          enddo
+          !
+          do ipower = 1,maxpower
+             !
+             pseudo(i) = pseudo(i) + p1d(ipower)*xton(i,ipower)
+             g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
+             !
+             if (present(muzz)) then
+                muzz(i) = muzz(i) + g1z(ipower)*xton(i,ipower)
+             endif
+             !
+          enddo 
+          !
+       enddo  
+       !     
      end subroutine generate_1D_kinetic_fields
     
      !
