@@ -21359,7 +21359,7 @@ end subroutine check_read_save_none
                 !
               enddo
               !
-              ps(imode,j) = ps(imode,j) + f2_term
+              ps(imode,ipower) = ps(imode,ipower) + f2_term
               !
             enddo
             !
@@ -21386,7 +21386,7 @@ end subroutine check_read_save_none
               !
               !g2(imode) = g2(imode) + g2_term
               !
-              gvib(imode,j) = gvib(imode,j) + g2_term
+              gvib(imode,ipower) = gvib(imode,ipower) + g2_term
               !
             enddo
             !
@@ -21415,7 +21415,7 @@ end subroutine check_read_save_none
                  !
                  !gz(imode) = gz(imode) + gz_term
                  !
-                 grot(imode,j) = grot(imode,j) + gz_term
+                 grot(imode,ipower) = grot(imode,ipower) + gz_term
                  !
                enddo
                !
@@ -21425,85 +21425,75 @@ end subroutine check_read_save_none
           !
           ! Check if all pseudo-potential parameters are equal for every considered mode
           !
-          do j = 1,size(fl%ifromsparse)
+          do ipower = 0,maxpower
              !
-             ipower = fl%IndexQ(nu_i,fl%ifromsparse(j))
+             f_t = ps(1,ipower)
              !
-             f_t = ps(1,j)
-             !
-             if (any(abs(ps(1:bs%imodes,j)-f_t)>1e-5*abs(f_t)).and.&
-                 any(abs(ps(1:bs%imodes,j)-f_t)>1e6*sqrt(small_))) then
+             if (any(abs(ps(1:bs%imodes,ipower)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(ps(1:bs%imodes,ipower)-f_t)>1e6*sqrt(small_))) then
                 write(out,"('FLbset1DNew: not all numerov-pseudo parameters are equal')")
                 write(out,"('pseudo-ipower=',i6)") ipower
-                write(out,"(30f18.8)") (ps(imode,j),imode=1,min(bs%imodes,30)) 
+                write(out,"(30f18.8)") (ps(1,ipower),imode=1,min(bs%imodes,30)) 
                 if ( job%bset(nu_i)%check_sym ) then 
                   stop 'FLbset1DNew: not all numerov parameters are equal'
                 endif
              endif
              !
-             p1d(j) = ps(1,j)
+             p1d(ipower) = ps(1,ipower)
              !
-          enddo
-          !
-          ! The same check for all g2 kinetic parameters to be equal for every considered mode
-          !
-          do j = 1,size(gl%ifromsparse)
+             ! The same check for all g2 kinetic parameters to be equal for every considered mode
              !
-             ipower = gl%IndexQ(nu_i,fl%ifromsparse(j))
-             !
-             f_t = gvib(1,j)
+             f_t = gvib(1,ipower)
              ! 
-             if (any(abs(gvib(1:bs%imodes,j)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
+             if (any(abs(gvib(1:bs%imodes,ipower)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
                          abs(f_t)>1000.0_rk*sqrt(small_)) then
                 write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                 write(out,"('gvib-ipower=',i6)") ipower
-                write(out,"(30f18.8)") (gvib(imode,j),imode=1,min(bs%imodes,30)) 
+                write(out,"(30f18.8)") (gvib(1,ipower),imode=1,min(bs%imodes,30)) 
                 if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
                   stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                 endif
              endif
              !
-             g1d(j) = gvib(1,j)
+             g1d(ipower) = gvib(1,ipower)
              !
-             f_t = maxval( gvib(:,j) ,dim=1)
+             f_t = maxval( gvib(:,ipower) ,dim=1)
              !
-             if (all(abs(gvib(:,j))<1e-5*abs(f_t)) ) then
-                write(out,"('FLbset1DNew: all g1d  are zero ',20f18.8)") gvib(:,j)
+             if (all(abs(gvib(:,ipower))<1e-5*abs(f_t)) ) then
+                write(out,"('FLbset1DNew: all g1d  are zero ',20f18.8)") gvib(:,ipower)
                 stop 'FLbset1DNew: g1d are all zero'
              endif
              !
-          enddo
-          !
-          if (present(muzz)) then
-             !
-             do j = 1,size(gzl%ifromsparse)
+             if (present(muzz)) then
                 !
-                ipower = gzl%IndexQ(nu_i,fl%ifromsparse(j))
+                f_t= grot(1,ipower)
                 !
-                f_t= grot(1,j)
-                !
-                if (any(abs(grot(1:bs%imodes,j)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
+                if (any(abs(grot(1:bs%imodes,ipower)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
                    abs(f_t)>1000.0_rk*sqrt(small_)) then
                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
                    write(out,"('gvib-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (grot(imode,j),imode=1,min(bs%imodes,30)) 
+                   write(out,"(30f18.8)") (grot(1,ipower),imode=1,min(bs%imodes,30)) 
                    if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                    endif
                 endif
                 !
-                g1z(j) = grot(nu_,j)
+                g1z(ipower) = grot(nu_,ipower)
                 !
-                f_t = maxval(grot(:,j),dim=1)
+             endif
+             !
+             if (present(muzz)) then
                 !
-                if (all(abs(grot(:,j))<1e-5*abs(f_t)) ) then
-                   write(out,"('FLbset1DNew: all gz are zero ',20f18.8)") grot(:,j)
+                f_t = maxval(grot(:,ipower),dim=1)
+                !
+                if (all(abs(grot(:,ipower))<1e-5*abs(f_t)) ) then
+                   write(out,"('FLbset1DNew: all gz are zero ',20f18.8)") grot(:,ipower)
                    stop 'FLbset1DNew: gz are all zero'
                 endif
                 !
-             enddo
+             endif
              !
-          endif
+          enddo
           !
        else
           !
@@ -21653,11 +21643,11 @@ end subroutine check_read_save_none
           drho(i,2) = rho_pot
           drho(i,3) = rho_ext
           !
-          do ipower = 1, maxpower 
+          do ipower = 0, maxpower 
              xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
           enddo
           !
-          do ipower = 1,maxpower
+          do ipower = 0,maxpower
              !
              pseudo(i) = pseudo(i) + p1d(ipower)*xton(i,ipower)
              g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
