@@ -25,7 +25,7 @@ module molecules
   use pot_zxy2
   use pot_zxy3
   use pot_xy4
-  use pot_ch3oh,only : MLpoten_ch3oh_sym,MLpoten_ch3oh_ref
+  use pot_ch3oh,only : MLpoten_ch3oh_sym,MLpoten_ch3oh_ref,MLpoten_ch3oh_sym_IV
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
@@ -48,7 +48,8 @@ module molecules
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
   !
   use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
-
+  !
+  use kin_abcd, only  : MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
   !
@@ -428,6 +429,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_ch3oh_sym
          !
+    case('POTEN_CH3OH_SYM_IV') 
+         !
+         MLpotentialfunc => MLpoten_ch3oh_sym_IV
+         !
     case('POTEN_SOHF') 
          !
          MLpotentialfunc => MLpoten_sohf
@@ -561,6 +566,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO_RIGID') 
          !
          MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
+         !
+    case('KINETIC_ABCD_EKE_X2Y2_Z_ALPHA1_SINGULAR') 
+         !
+         MLkineticfunc_compact => MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
          !
     case('GENERAL') 
          !

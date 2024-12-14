@@ -19,6 +19,7 @@ module fields
    use kin_x2y2, only  : MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
    !
    use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
+   use kin_abcd, only  : MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
 
    ! use perturbation
 
@@ -6973,14 +6974,17 @@ end subroutine check_read_save_none
          !
          rho = trove%rho_i(irho)
          !
-         call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
          !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
          !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
          !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
          !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+         call MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
          if (irho==0) then 
             !

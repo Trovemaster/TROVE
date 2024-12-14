@@ -8,7 +8,7 @@ module pot_ch3oh
   !
   implicit none
   !
-  public MLpoten_ch3oh_ref,ML_CH3OH_MEP_geometry,MLpoten_ch3oh_sym
+  public MLpoten_ch3oh_ref,ML_CH3OH_MEP_geometry,MLpoten_ch3oh_sym,MLpoten_ch3oh_sym_IV
   !
   private
   !
@@ -564,6 +564,257 @@ function MLpoten_ch3oh_sym(ncoords, natoms, local, xyz, force) result(f)
 end function  MLpoten_ch3oh_sym
  
  
+ function MLpoten_ch3oh_sym_IV(ncoords, natoms, local, xyz, force) result(f)
+
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+
+  real(ark) :: xi(12),y(12)
+  real(ark) :: chi(12,6),term,deg
+  integer(ik) :: ioper,ipower(12),i,nparam_eq,iparam,parmax,itau
+  integer,parameter :: Nsym = 6, Ndeg = 12
+  logical :: do_cos
+  !
+  real(ark) :: rCO,ROH,RCOe,ROHe,alpha_COHe,alpha_OCHe,deltae,RH1,RH2,RH3,RH1E
+  real(ark) :: b1,b3,b4,b5,theta1,theta2,theta3,theta12,theta23,theta13,a1,a2,tau
+  !
+  nparam_eq = 8
+  deg = pi/180.0_ark
+  !
+  parmax = size(force)
+  !
+  f = 0
+  !
+  select case(trim(molec%coords_transform))
+    !
+  case default
+    !
+    write(out, '(/a,1x,a,1x,a)') &
+    'MLpoten_ch3oh_sym error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_ch3oh_sym error error: bad coordinate type'
+    !
+  case('R-ALPHA-THETA-TAU')
+    !
+    rCOe      = force(1)
+    rOHe      = force(2)
+    rH1e      = force(3)
+    !
+    alpha_COHe = force(4)*deg
+    alpha_OCHe = force(5)*deg
+    deltae = 2.0_ark*pi/3.0_ark
+    !
+    a1       = force(6)
+    a2       = force(7)
+    b1       = force(8)
+    !
+    rCO      = local(1)
+    rOH      = local(2)
+    rH1      = local(3)
+    rH2      = local(4)
+    rH3      = local(5)
+    !
+    ! C-O
+    xi(1)=1.0_ark-exp(-a1*(rCO-rCOe))
+    xi(2)=1.0_ark-exp(-a2*(rOH-rOHe))
+    !CH3
+    xi(3)=1.0_ark-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0_ark-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
+    !
+    !OCH
+    xi(6) = local(6)- alpha_COHe
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(7) = local(7)- alpha_OCHe
+    xi(8) = local(8)- alpha_OCHe
+    xi(9) = local(9)- alpha_OCHe
+    !
+    theta1 = local(10)
+    theta1 = mod(theta1+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta2 = local(11)
+    theta3 = local(12)
+    !
+    if (theta2-theta1<small_) theta2 = theta2 + 2.0_ark*pi
+    if (theta3-theta2<small_) theta3 = theta3 + 2.0_ark*pi
+    !
+    theta12 = mod(theta2-theta1+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(theta3-theta2+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(theta1-theta3+2.0_ark*pi,2.0_ark*pi)
+    !
+    !theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(10)   = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(11)   = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    if (theta1<-sqrt(small_)) then
+      theta1 = theta1 + 2.0_ark*pi
+    endif
+    if (theta1>2.0_ark*pi+sqrt(small_)) then
+      theta1 = theta1 - 2.0_ark*pi
+    endif
+    !
+    tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
+    !
+    xi(12) = tau
+    !
+  case('R-ALPHA-BETA-TAU-THETA')
+    !
+    rCOe      = force(1)
+    rOHe      = force(2)
+    rH1e      = force(3)
+    !
+    alpha_COHe = force(4)*deg
+    alpha_OCHe = force(5)*deg
+    deltae = 2.0_ark*pi/3.0_ark
+    !
+    a1       = force(6)
+    a2       = force(7)
+    b1       = force(8)
+    !
+    rCO      = local(1)
+    rOH      = local(2)
+    rH1      = local(3)
+    rH2      = local(4)
+    rH3      = local(5)
+    !
+    ! C-O
+    xi(1)=1.0_ark-exp(-a1*(rCO-rCOe))
+    xi(2)=1.0_ark-exp(-a2*(rOH-rOHe))
+    !CH3
+    xi(3)=1.0_ark-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0_ark-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
+    !
+    !OCH
+    xi(6) = local(6)- alpha_COHe
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(7) = local(7)- alpha_OCHe
+    xi(8) = local(8)- alpha_OCHe
+    xi(9) = local(9)- alpha_OCHe
+    !
+    theta1 = local(10)
+    theta1 = mod(theta1+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = local(11)
+    theta12 = mod(theta12+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta23 = local(12)
+    theta23 = mod(theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(2.0_ark*pi-theta12-theta23,2.0_ark*pi)
+    !
+    theta2 = theta1 + theta12
+    theta3 = theta2 + theta23
+    !
+    xi(10)   = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(11)   = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
+    !
+    xi(12) = tau
+    !
+  case('R-ALPHA-BETA-THETA-TAU')
+    !
+    rCOe      = force(1)
+    rOHe      = force(2)
+    rH1e      = force(3)
+    !
+    alpha_COHe = force(4)*deg
+    alpha_OCHe = force(5)*deg
+    deltae = 2.0_ark*pi/3.0_ark
+    !
+    a1       = force(6)
+    a2       = force(7)
+    b1       = force(8)
+    !
+    rCO      = local(1)
+    rH1      = local(2)
+    rH2      = local(3)
+    rH3      = local(4)
+    rOH      = local(5)
+    !
+    ! C-O
+    xi(1)=1.0_ark-exp(-a1*(rCO-rCOe))
+    xi(2)=1.0_ark-exp(-a2*(rOH-rOHe))
+    !CH3
+    xi(3)=1.0_ark-exp(-b1*(rH1-rH1e))
+    xi(4)=1.0_ark-exp(-b1*(rH2-rH1e))
+    xi(5)=1.0_ark-exp(-b1*(rH3-rH1e))
+    !
+    ! alphas
+    !H2-C-H3,H1-C-H2,H1-C-H3
+    xi(7) = local(6)- alpha_OCHe
+    xi(8) = local(7)- alpha_OCHe
+    xi(9) = local(8)- alpha_OCHe
+    !
+    !OCH
+    xi(6) = local(9)- alpha_COHe
+    !
+    theta1 = local(12)
+    theta1 = mod(theta1+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = local(10)
+    theta12 = mod(theta12+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta23 = local(11)
+    theta23 = mod(theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(2.0_ark*pi-theta12-theta23,2.0_ark*pi)
+    !
+    theta2 = theta1 + theta12
+    theta3 = theta2 + theta23
+    !
+    xi(10)   = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(11)   = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    tau = (theta1 + theta2 + theta3-2.0_ark*pi)/3.0_ark
+    !
+    xi(12) = tau    
+    !
+  end select 
+  !
+  call ML_symmetry_transformation_CH3OH_IV(nsym,xi,chi,ndeg)
+  !
+  do iparam = nparam_eq+1,parmax
+    !
+    do_cos = .true.
+    !      
+    itau = molec%pot_ind(12,iparam)
+    !    
+    if (itau<0) then
+      do_cos = .false.
+      itau = abs(itau)
+    endif
+    !
+    term = 0
+    !
+    do ioper =1,Nsym
+      !
+      y(1:11) = chi(1:11,ioper)**molec%pot_ind(1:11,iparam)
+      if (do_cos) then
+        !print*,itau,chi(21,ioper)
+        y(12) = cos(real(itau,8)*chi(12,ioper))
+      else
+        y(12) = sin(real(itau,8)*chi(12,ioper))
+      endif
+      !
+      term = term + product(y(:))
+      !
+    enddo
+    !
+    f = f + term*force(iparam)/6.0_ark
+    !
+  enddo   
+  !
+end function  MLpoten_ch3oh_sym_IV
+ 
  
  subroutine ML_symmetry_transformation_CH3OH(nsym,src,dst,ndeg)
     implicit none
@@ -926,6 +1177,128 @@ subroutine ML_symmetry_transformation_CH3OH_III(nsym,src,dst,ndeg)
     if (verbose>=6) write(out,"('ML_symmetry_transformation_CH3OH_III/end')")
     !
   end subroutine ML_symmetry_transformation_CH3OH_III
+
+
+subroutine ML_symmetry_transformation_CH3OH_IV(nsym,src,dst,ndeg)
+    implicit none
+    !
+    integer(ik),intent(in)    :: nsym,ndeg  ! group operation  
+    real(ark),intent(in)      :: src(1:ndeg)
+    real(ark),intent(out)     :: dst(1:ndeg,6)
+    !
+    real(ark)         :: repres(nsym,ndeg,ndeg),a,b,e,o
+    integer(rk)       :: ioper
+    !
+    if (verbose>=6) write(out,"('ML_symmetry_transformation_CH3OH_II/start')")
+    !
+    a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
+    !
+    repres = 0
+    !
+    repres(:,1,1) = 1.0_ark
+    repres(:,2,2) = 1.0_ark
+    !
+    repres(:,6,6) = 1.0_ark
+    !
+    repres(:,12,12) = 1.0_ark
+    !
+    ! E
+    ! r123
+    repres(1,3,3) = 1.0_ark
+    repres(1,4,4) = 1.0_ark
+    repres(1,5,5) = 1.0_ark
+    ! a123
+    repres(1,7,7) = 1.0_ark
+    repres(1,8,8) = 1.0_ark
+    repres(1,9,9) = 1.0_ark
+    !d9
+    repres(1,10,10) = 1.0_ark
+    repres(1,11,11) = 1.0_ark
+    !
+    !C3+/(132)
+    repres(2,3,5) = 1.0_ark
+    repres(2,4,3) = 1.0_ark
+    repres(2,5,4) = 1.0_ark
+    !
+    repres(2,7,9) = 1.0_ark
+    repres(2,8,7) = 1.0_ark
+    repres(2,9,8) = 1.0_ark
+    !
+    repres(2,10,10) = -a
+    repres(2,10,11) = -b
+    repres(2,11,10) =  b
+    repres(2,11,11) = -a
+    !
+    !C3-/(93)
+    !
+    repres(3,3,4) = 1.0_ark
+    repres(3,4,5) = 1.0_ark
+    repres(3,5,3) = 1.0_ark
+    !
+    repres(3,7,8) = 1.0_ark
+    repres(3,8,9) = 1.0_ark
+    repres(3,9,7) = 1.0_ark
+    !
+    repres(3,10,10) = -a
+    repres(3,10,11) =  b
+    repres(3,11,10) = -b
+    repres(3,11,11) = -a
+    !
+    !C2/(23)->(45)
+    !
+    repres(4,3,3) = 1.0_ark
+    repres(4,4,5) = 1.0_ark
+    repres(4,5,4) = 1.0_ark
+    !
+    repres(4,7,7) = 1.0_ark
+    repres(4,8,9) = 1.0_ark
+    repres(4,9,8) = 1.0_ark
+    !
+    repres(4,10,10) =  1.0_ark
+    repres(4,11,11) = -1.0_ark
+    !
+    !C2'/(9)->(34)
+    repres(5,3,4) = 1.0_ark
+    repres(5,4,3) = 1.0_ark
+    repres(5,5,5) = 1.0_ark
+    !
+    repres(5,7,8)  = 1.0_ark
+    repres(5,8,7)  = 1.0_ark
+    repres(5,9,9)  = 1.0_ark
+    !
+    repres(5,10,10) = -a
+    repres(5,10,11) =  b
+    repres(5,11,10) =  b
+    repres(5,11,11) =  a
+    !
+    !(13)->(35)
+    repres(6,3,5) = 1.0_ark
+    repres(6,4,4) = 1.0_ark
+    repres(6,5,3) = 1.0_ark
+    !
+    repres(6,7,9) = 1.0_ark
+    repres(6,8,8) = 1.0_ark
+    repres(6,9,7) = 1.0_ark
+    !
+    repres(6,10,10) = -a
+    repres(6,10,11) = -b
+    repres(6,11,10) = -b
+    repres(6,11,11) =  a
+    !
+    do ioper = 1,nsym
+      dst(:,ioper) = matmul(repres(ioper,:,:),src) 
+    enddo
+    !
+    dst(12,1) = src(12)
+    dst(12,2) = src(12)+2.0_ark*pi/3.0_ark
+    dst(12,3) = src(12)-2.0_ark*pi/3.0_ark
+    dst(12,4) =-src(12)
+    dst(12,5) =-src(12)-2.0_ark*pi/3.0_ark
+    dst(12,6) =-src(12)+2.0_ark*pi/3.0_ark
+    !
+    if (verbose>=6) write(out,"('ML_symmetry_transformation_CH3OH_II/end')")
+    !
+  end subroutine ML_symmetry_transformation_CH3OH_IV
 
 
  !
