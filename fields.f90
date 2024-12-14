@@ -14680,7 +14680,7 @@ end subroutine check_read_save_none
                 !
                 if (fl%Ncoeff/= Tcoeff) then 
                   write (out,"(' Checkpoint file ',a,':  Ncoeff (basis) in g_vib disagree with ncoeff of field',2i4,1x,2I8)") &
-                              k1,k2,fl%Ncoeff,Tcoeff
+                              trim(trove%chk_fname),k1,k2,fl%Ncoeff,Tcoeff
                   write (out,"('Consider switching BASIS_SET SAVE')")
                   stop 'check_point_Hamiltonian - Ncoeff (basis) in g_vib disagree with ncoeff of field'
                 end if 

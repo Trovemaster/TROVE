@@ -17,7 +17,7 @@ module pot_xy2
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
          MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz,&
-         MLpoten_xyz_morse_fourier_mep
+         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_sinrho_half
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -5219,6 +5219,549 @@ endif
     if (verbose>=6) write(out,"('MLpoten_xyz_tyuterev_rho/end')")
 
  end function MLpoten_xyz_tyuterev_rho
+
+
+
+
+  !
+  ! Defining potential energy function
+  !
+  function MLpoten_xyz_polynom_sinrho_half(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   real(ark)            :: r1,r2,alpha,xcos,v,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12
+
+   real(ark)            :: aa1,aa2,re1,re2,alphae,xst,y1,y2,y3,xs1,xs2,v0,vp1,vp2,vp3
+   real(ark)            :: g1,g2,b1,b2,rhh,vhh
+   integer(ik)          :: N
+   real(ark)            :: ycos,v_t,q1,q2,rho,rhoe
+   real(ark)            :: a1(3),a2(3),t1,t2,w(3),cosalpha
+   character(len=cl)    :: txt
+   !
+   r1  = local(1) ;  r2    = local(2) ;  alpha = local(3)
+   !
+   if (molec%Nangles>0) then
+     alphae  = molec%alphaeq(1)
+   else
+     !
+     a1(:) = xyz(2,:) - xyz(1,:)
+     a2(:) = xyz(3,:) - xyz(1,:)
+     !
+     t1 =  sqrt(sum(a1(:)**2))
+     t2 =  sqrt(sum(a2(:)**2))
+     !
+     a1 =  a1(:)/t1
+     a2 =  a2(:)/t2
+     !
+     w(:) = MLvector_product(a1,a2)
+     !
+     cosalpha = sum(a1(:)*a2(:))
+     !
+     txt = "pot_xyz"
+     !
+     alpha = aacos(cosalpha,txt)
+     !
+     if (alpha<sqrt(small_)) alpha = pi-asin( sqrt( sin(local(3))**2+sin(local(4))**2 ))
+     !
+   endif 
+   !
+   re1    = force(1)
+   re2    = force(2)
+   alphae = force(3)*pi/180.0_ark
+   !
+   rhoe = (pi-alphae)!*0.5_ark
+   ! 
+   aa1  = force(4)
+   aa2  = force(5)
+   !
+   b1   = force(6)
+   b2   = force(7)
+   g1   = force(8)
+   g2   = force(9)
+   !
+   rhh=sqrt(r1**2+r2**2-2._ark*r1*r2*cos(alpha))
+   vhh=b1*exp(-g1*rhh)+b2*exp(-g2*rhh**2)
+   !
+   ! calculate potential energy function values
+   !
+   y1=1.0_ark-exp(-aa1*(r1-re1))
+   y2=1.0_ark-exp(-aa2*(r2-re2))
+   !
+   rho = pi-alpha
+   !
+   !y3=sin(rho)-sin(rhoe)
+   !
+   y3=-cos(alphae)+cos(alpha)
+   !
+   N = size(force)
+   !
+   v0=force(  10)*y1**0*y2**0*y3**0  
+   v1=force(  11)*y1**0*y2**0*y3**1& 
+     +force(  12)*y1**0*y2**1*y3**0& 
+     +force(  13)*y1**1*y2**0*y3**0 
+   v2=force(  14)*y1**0*y2**0*y3**2& 
+     +force(  15)*y1**0*y2**1*y3**1& 
+     +force(  16)*y1**0*y2**2*y3**0& 
+     +force(  17)*y1**1*y2**0*y3**1& 
+     +force(  18)*y1**1*y2**1*y3**0& 
+     +force(  19)*y1**2*y2**0*y3**0 
+   v3=force(  20)*y1**0*y2**0*y3**3& 
+     +force(  21)*y1**0*y2**1*y3**2& 
+     +force(  22)*y1**0*y2**2*y3**1& 
+     +force(  23)*y1**0*y2**3*y3**0& 
+     +force(  24)*y1**1*y2**0*y3**2& 
+     +force(  25)*y1**1*y2**1*y3**1& 
+     +force(  26)*y1**1*y2**2*y3**0& 
+     +force(  27)*y1**2*y2**0*y3**1& 
+     +force(  28)*y1**2*y2**1*y3**0& 
+     +force(  29)*y1**3*y2**0*y3**0 
+   v4=force(  30)*y1**0*y2**0*y3**4& 
+     +force(  31)*y1**0*y2**1*y3**3& 
+     +force(  32)*y1**0*y2**2*y3**2& 
+     +force(  33)*y1**0*y2**3*y3**1& 
+     +force(  34)*y1**0*y2**4*y3**0& 
+     +force(  35)*y1**1*y2**0*y3**3& 
+     +force(  36)*y1**1*y2**1*y3**2& 
+     +force(  37)*y1**1*y2**2*y3**1& 
+     +force(  38)*y1**1*y2**3*y3**0& 
+     +force(  39)*y1**2*y2**0*y3**2& 
+     +force(  40)*y1**2*y2**1*y3**1& 
+     +force(  41)*y1**2*y2**2*y3**0& 
+     +force(  42)*y1**3*y2**0*y3**1& 
+     +force(  43)*y1**3*y2**1*y3**0& 
+     +force(  44)*y1**4*y2**0*y3**0 
+   v5=force(  45)*y1**0*y2**0*y3**5& 
+     +force(  46)*y1**0*y2**1*y3**4& 
+     +force(  47)*y1**0*y2**2*y3**3& 
+     +force(  48)*y1**0*y2**3*y3**2& 
+     +force(  49)*y1**0*y2**4*y3**1& 
+     +force(  50)*y1**0*y2**5*y3**0& 
+     +force(  51)*y1**1*y2**0*y3**4& 
+     +force(  52)*y1**1*y2**1*y3**3& 
+     +force(  53)*y1**1*y2**2*y3**2& 
+     +force(  54)*y1**1*y2**3*y3**1& 
+     +force(  55)*y1**1*y2**4*y3**0& 
+     +force(  56)*y1**2*y2**0*y3**3& 
+     +force(  57)*y1**2*y2**1*y3**2& 
+     +force(  58)*y1**2*y2**2*y3**1& 
+     +force(  59)*y1**2*y2**3*y3**0& 
+     +force(  60)*y1**3*y2**0*y3**2& 
+     +force(  61)*y1**3*y2**1*y3**1& 
+     +force(  62)*y1**3*y2**2*y3**0& 
+     +force(  63)*y1**4*y2**0*y3**1& 
+     +force(  64)*y1**4*y2**1*y3**0& 
+     +force(  65)*y1**5*y2**0*y3**0 
+   v6=force(  66)*y1**0*y2**0*y3**6& 
+     +force(  67)*y1**0*y2**1*y3**5& 
+     +force(  68)*y1**0*y2**2*y3**4& 
+     +force(  69)*y1**0*y2**3*y3**3& 
+     +force(  70)*y1**0*y2**4*y3**2& 
+     +force(  71)*y1**0*y2**5*y3**1& 
+     +force(  72)*y1**0*y2**6*y3**0& 
+     +force(  73)*y1**1*y2**0*y3**5& 
+     +force(  74)*y1**1*y2**1*y3**4& 
+     +force(  75)*y1**1*y2**2*y3**3& 
+     +force(  76)*y1**1*y2**3*y3**2& 
+     +force(  77)*y1**1*y2**4*y3**1& 
+     +force(  78)*y1**1*y2**5*y3**0& 
+     +force(  79)*y1**2*y2**0*y3**4& 
+     +force(  80)*y1**2*y2**1*y3**3& 
+     +force(  81)*y1**2*y2**2*y3**2& 
+     +force(  82)*y1**2*y2**3*y3**1& 
+     +force(  83)*y1**2*y2**4*y3**0& 
+     +force(  84)*y1**3*y2**0*y3**3& 
+     +force(  85)*y1**3*y2**1*y3**2& 
+     +force(  86)*y1**3*y2**2*y3**1& 
+     +force(  87)*y1**3*y2**3*y3**0& 
+     +force(  88)*y1**4*y2**0*y3**2& 
+     +force(  89)*y1**4*y2**1*y3**1& 
+     +force(  90)*y1**4*y2**2*y3**0& 
+     +force(  91)*y1**5*y2**0*y3**1& 
+     +force(  92)*y1**5*y2**1*y3**0& 
+     +force(  93)*y1**6*y2**0*y3**0 
+   v7=force(  94)*y1**0*y2**0*y3**7& 
+     +force(  95)*y1**0*y2**1*y3**6& 
+     +force(  96)*y1**0*y2**2*y3**5& 
+     +force(  97)*y1**0*y2**3*y3**4& 
+     +force(  98)*y1**0*y2**4*y3**3& 
+     +force(  99)*y1**0*y2**5*y3**2& 
+     +force( 100)*y1**0*y2**6*y3**1& 
+     +force( 101)*y1**0*y2**7*y3**0& 
+     +force( 102)*y1**1*y2**0*y3**6& 
+     +force( 103)*y1**1*y2**1*y3**5& 
+     +force( 104)*y1**1*y2**2*y3**4& 
+     +force( 105)*y1**1*y2**3*y3**3& 
+     +force( 106)*y1**1*y2**4*y3**2& 
+     +force( 107)*y1**1*y2**5*y3**1& 
+     +force( 108)*y1**1*y2**6*y3**0& 
+     +force( 109)*y1**2*y2**0*y3**5& 
+     +force( 110)*y1**2*y2**1*y3**4& 
+     +force( 111)*y1**2*y2**2*y3**3& 
+     +force( 112)*y1**2*y2**3*y3**2& 
+     +force( 113)*y1**2*y2**4*y3**1& 
+     +force( 114)*y1**2*y2**5*y3**0& 
+     +force( 115)*y1**3*y2**0*y3**4& 
+     +force( 116)*y1**3*y2**1*y3**3& 
+     +force( 117)*y1**3*y2**2*y3**2& 
+     +force( 118)*y1**3*y2**3*y3**1& 
+     +force( 119)*y1**3*y2**4*y3**0& 
+     +force( 120)*y1**4*y2**0*y3**3& 
+     +force( 121)*y1**4*y2**1*y3**2& 
+     +force( 122)*y1**4*y2**2*y3**1& 
+     +force( 123)*y1**4*y2**3*y3**0& 
+     +force( 124)*y1**5*y2**0*y3**2& 
+     +force( 125)*y1**5*y2**1*y3**1& 
+     +force( 126)*y1**5*y2**2*y3**0& 
+     +force( 127)*y1**6*y2**0*y3**1& 
+     +force( 128)*y1**6*y2**1*y3**0& 
+     +force( 129)*y1**7*y2**0*y3**0 
+   v8=force( 130)*y1**0*y2**0*y3**8& 
+     +force( 131)*y1**0*y2**1*y3**7& 
+     +force( 132)*y1**0*y2**2*y3**6& 
+     +force( 133)*y1**0*y2**3*y3**5& 
+     +force( 134)*y1**0*y2**4*y3**4& 
+     +force( 135)*y1**0*y2**5*y3**3& 
+     +force( 136)*y1**0*y2**6*y3**2& 
+     +force( 137)*y1**0*y2**7*y3**1& 
+     +force( 138)*y1**0*y2**8*y3**0& 
+     +force( 139)*y1**1*y2**0*y3**7& 
+     +force( 140)*y1**1*y2**1*y3**6& 
+     +force( 141)*y1**1*y2**2*y3**5& 
+     +force( 142)*y1**1*y2**3*y3**4& 
+     +force( 143)*y1**1*y2**4*y3**3& 
+     +force( 144)*y1**1*y2**5*y3**2& 
+     +force( 145)*y1**1*y2**6*y3**1& 
+     +force( 146)*y1**1*y2**7*y3**0& 
+     +force( 147)*y1**2*y2**0*y3**6& 
+     +force( 148)*y1**2*y2**1*y3**5& 
+     +force( 149)*y1**2*y2**2*y3**4& 
+     +force( 150)*y1**2*y2**3*y3**3& 
+     +force( 151)*y1**2*y2**4*y3**2& 
+     +force( 152)*y1**2*y2**5*y3**1& 
+     +force( 153)*y1**2*y2**6*y3**0& 
+     +force( 154)*y1**3*y2**0*y3**5& 
+     +force( 155)*y1**3*y2**1*y3**4& 
+     +force( 156)*y1**3*y2**2*y3**3& 
+     +force( 157)*y1**3*y2**3*y3**2& 
+     +force( 158)*y1**3*y2**4*y3**1& 
+     +force( 159)*y1**3*y2**5*y3**0& 
+     +force( 160)*y1**4*y2**0*y3**4& 
+     +force( 161)*y1**4*y2**1*y3**3& 
+     +force( 162)*y1**4*y2**2*y3**2& 
+     +force( 163)*y1**4*y2**3*y3**1& 
+     +force( 164)*y1**4*y2**4*y3**0& 
+     +force( 165)*y1**5*y2**0*y3**3& 
+     +force( 166)*y1**5*y2**1*y3**2& 
+     +force( 167)*y1**5*y2**2*y3**1& 
+     +force( 168)*y1**5*y2**3*y3**0& 
+     +force( 169)*y1**6*y2**0*y3**2& 
+     +force( 170)*y1**6*y2**1*y3**1& 
+     +force( 171)*y1**6*y2**2*y3**0& 
+     +force( 172)*y1**7*y2**0*y3**1& 
+     +force( 173)*y1**7*y2**1*y3**0& 
+     +force( 174)*y1**8*y2**0*y3**0 
+   v9=force( 175)*y1**0*y2**0*y3**9& 
+     +force( 176)*y1**0*y2**1*y3**8& 
+     +force( 177)*y1**0*y2**2*y3**7& 
+     +force( 178)*y1**0*y2**3*y3**6& 
+     +force( 179)*y1**0*y2**4*y3**5& 
+     +force( 180)*y1**0*y2**5*y3**4& 
+     +force( 181)*y1**0*y2**6*y3**3& 
+     +force( 182)*y1**0*y2**7*y3**2& 
+     +force( 183)*y1**0*y2**8*y3**1& 
+     +force( 184)*y1**0*y2**9*y3**0& 
+     +force( 185)*y1**1*y2**0*y3**8& 
+     +force( 186)*y1**1*y2**1*y3**7& 
+     +force( 187)*y1**1*y2**2*y3**6& 
+     +force( 188)*y1**1*y2**3*y3**5& 
+     +force( 189)*y1**1*y2**4*y3**4& 
+     +force( 190)*y1**1*y2**5*y3**3& 
+     +force( 191)*y1**1*y2**6*y3**2& 
+     +force( 192)*y1**1*y2**7*y3**1& 
+     +force( 193)*y1**1*y2**8*y3**0& 
+     +force( 194)*y1**2*y2**0*y3**7& 
+     +force( 195)*y1**2*y2**1*y3**6& 
+     +force( 196)*y1**2*y2**2*y3**5& 
+     +force( 197)*y1**2*y2**3*y3**4& 
+     +force( 198)*y1**2*y2**4*y3**3& 
+     +force( 199)*y1**2*y2**5*y3**2& 
+     +force( 200)*y1**2*y2**6*y3**1& 
+     +force( 201)*y1**2*y2**7*y3**0& 
+     +force( 202)*y1**3*y2**0*y3**6& 
+     +force( 203)*y1**3*y2**1*y3**5& 
+     +force( 204)*y1**3*y2**2*y3**4& 
+     +force( 205)*y1**3*y2**3*y3**3& 
+     +force( 206)*y1**3*y2**4*y3**2& 
+     +force( 207)*y1**3*y2**5*y3**1& 
+     +force( 208)*y1**3*y2**6*y3**0& 
+     +force( 209)*y1**4*y2**0*y3**5& 
+     +force( 210)*y1**4*y2**1*y3**4& 
+     +force( 211)*y1**4*y2**2*y3**3& 
+     +force( 212)*y1**4*y2**3*y3**2& 
+     +force( 213)*y1**4*y2**4*y3**1& 
+     +force( 214)*y1**4*y2**5*y3**0& 
+     +force( 215)*y1**5*y2**0*y3**4& 
+     +force( 216)*y1**5*y2**1*y3**3& 
+     +force( 217)*y1**5*y2**2*y3**2& 
+     +force( 218)*y1**5*y2**3*y3**1& 
+     +force( 219)*y1**5*y2**4*y3**0& 
+     +force( 220)*y1**6*y2**0*y3**3& 
+     +force( 221)*y1**6*y2**1*y3**2& 
+     +force( 222)*y1**6*y2**2*y3**1& 
+     +force( 223)*y1**6*y2**3*y3**0& 
+     +force( 224)*y1**7*y2**0*y3**2& 
+     +force( 225)*y1**7*y2**1*y3**1& 
+     +force( 226)*y1**7*y2**2*y3**0& 
+     +force( 227)*y1**8*y2**0*y3**1& 
+     +force( 228)*y1**8*y2**1*y3**0& 
+     +force( 229)*y1**9*y2**0*y3**0 
+   v10=force( 230)*y1**0*y2**0*y3**10& 
+     +force( 231)*y1**0*y2**1*y3**9& 
+     +force( 232)*y1**0*y2**2*y3**8& 
+     +force( 233)*y1**0*y2**3*y3**7& 
+     +force( 234)*y1**0*y2**4*y3**6& 
+     +force( 235)*y1**0*y2**5*y3**5& 
+     +force( 236)*y1**0*y2**6*y3**4& 
+     +force( 237)*y1**0*y2**7*y3**3& 
+     +force( 238)*y1**0*y2**8*y3**2& 
+     +force( 239)*y1**0*y2**9*y3**1& 
+     +force( 240)*y1**0*y2**10*y3**0& 
+     +force( 241)*y1**1*y2**0*y3**9& 
+     +force( 242)*y1**1*y2**1*y3**8& 
+     +force( 243)*y1**1*y2**2*y3**7& 
+     +force( 244)*y1**1*y2**3*y3**6& 
+     +force( 245)*y1**1*y2**4*y3**5& 
+     +force( 246)*y1**1*y2**5*y3**4& 
+     +force( 247)*y1**1*y2**6*y3**3& 
+     +force( 248)*y1**1*y2**7*y3**2& 
+     +force( 249)*y1**1*y2**8*y3**1& 
+     +force( 250)*y1**1*y2**9*y3**0& 
+     +force( 251)*y1**2*y2**0*y3**8& 
+     +force( 252)*y1**2*y2**1*y3**7& 
+     +force( 253)*y1**2*y2**2*y3**6& 
+     +force( 254)*y1**2*y2**3*y3**5& 
+     +force( 255)*y1**2*y2**4*y3**4& 
+     +force( 256)*y1**2*y2**5*y3**3& 
+     +force( 257)*y1**2*y2**6*y3**2& 
+     +force( 258)*y1**2*y2**7*y3**1& 
+     +force( 259)*y1**2*y2**8*y3**0& 
+     +force( 260)*y1**3*y2**0*y3**7& 
+     +force( 261)*y1**3*y2**1*y3**6& 
+     +force( 262)*y1**3*y2**2*y3**5& 
+     +force( 263)*y1**3*y2**3*y3**4& 
+     +force( 264)*y1**3*y2**4*y3**3& 
+     +force( 265)*y1**3*y2**5*y3**2& 
+     +force( 266)*y1**3*y2**6*y3**1& 
+     +force( 267)*y1**3*y2**7*y3**0& 
+     +force( 268)*y1**4*y2**0*y3**6& 
+     +force( 269)*y1**4*y2**1*y3**5& 
+     +force( 270)*y1**4*y2**2*y3**4& 
+     +force( 271)*y1**4*y2**3*y3**3& 
+     +force( 272)*y1**4*y2**4*y3**2& 
+     +force( 273)*y1**4*y2**5*y3**1& 
+     +force( 274)*y1**4*y2**6*y3**0& 
+     +force( 275)*y1**5*y2**0*y3**5& 
+     +force( 276)*y1**5*y2**1*y3**4& 
+     +force( 277)*y1**5*y2**2*y3**3& 
+     +force( 278)*y1**5*y2**3*y3**2& 
+     +force( 279)*y1**5*y2**4*y3**1& 
+     +force( 280)*y1**5*y2**5*y3**0& 
+     +force( 281)*y1**6*y2**0*y3**4& 
+     +force( 282)*y1**6*y2**1*y3**3& 
+     +force( 283)*y1**6*y2**2*y3**2& 
+     +force( 284)*y1**6*y2**3*y3**1& 
+     +force( 285)*y1**6*y2**4*y3**0& 
+     +force( 286)*y1**7*y2**0*y3**3& 
+     +force( 287)*y1**7*y2**1*y3**2& 
+     +force( 288)*y1**7*y2**2*y3**1& 
+     +force( 289)*y1**7*y2**3*y3**0& 
+     +force( 290)*y1**8*y2**0*y3**2& 
+     +force( 291)*y1**8*y2**1*y3**1& 
+     +force( 292)*y1**8*y2**2*y3**0& 
+     +force( 293)*y1**9*y2**0*y3**1& 
+     +force( 294)*y1**9*y2**1*y3**0& 
+     +force( 295)*y1**10*y2**0*y3**0 
+   v11=force( 296)*y1**0*y2**0*y3**11& 
+     +force( 297)*y1**0*y2**1*y3**10& 
+     +force( 298)*y1**0*y2**2*y3**9& 
+     +force( 299)*y1**0*y2**3*y3**8& 
+     +force( 300)*y1**0*y2**4*y3**7& 
+     +force( 301)*y1**0*y2**5*y3**6& 
+     +force( 302)*y1**0*y2**6*y3**5& 
+     +force( 303)*y1**0*y2**7*y3**4& 
+     +force( 304)*y1**0*y2**8*y3**3& 
+     +force( 305)*y1**0*y2**9*y3**2& 
+     +force( 306)*y1**0*y2**10*y3**1& 
+     +force( 307)*y1**0*y2**11*y3**0& 
+     +force( 308)*y1**1*y2**0*y3**10& 
+     +force( 309)*y1**1*y2**1*y3**9& 
+     +force( 310)*y1**1*y2**2*y3**8& 
+     +force( 311)*y1**1*y2**3*y3**7& 
+     +force( 312)*y1**1*y2**4*y3**6& 
+     +force( 313)*y1**1*y2**5*y3**5& 
+     +force( 314)*y1**1*y2**6*y3**4& 
+     +force( 315)*y1**1*y2**7*y3**3& 
+     +force( 316)*y1**1*y2**8*y3**2& 
+     +force( 317)*y1**1*y2**9*y3**1& 
+     +force( 318)*y1**1*y2**10*y3**0& 
+     +force( 319)*y1**2*y2**0*y3**9& 
+     +force( 320)*y1**2*y2**1*y3**8& 
+     +force( 321)*y1**2*y2**2*y3**7& 
+     +force( 322)*y1**2*y2**3*y3**6& 
+     +force( 323)*y1**2*y2**4*y3**5& 
+     +force( 324)*y1**2*y2**5*y3**4& 
+     +force( 325)*y1**2*y2**6*y3**3& 
+     +force( 326)*y1**2*y2**7*y3**2& 
+     +force( 327)*y1**2*y2**8*y3**1& 
+     +force( 328)*y1**2*y2**9*y3**0& 
+     +force( 329)*y1**3*y2**0*y3**8& 
+     +force( 330)*y1**3*y2**1*y3**7& 
+     +force( 331)*y1**3*y2**2*y3**6& 
+     +force( 332)*y1**3*y2**3*y3**5& 
+     +force( 333)*y1**3*y2**4*y3**4& 
+     +force( 334)*y1**3*y2**5*y3**3& 
+     +force( 335)*y1**3*y2**6*y3**2& 
+     +force( 336)*y1**3*y2**7*y3**1& 
+     +force( 337)*y1**3*y2**8*y3**0& 
+     +force( 338)*y1**4*y2**0*y3**7& 
+     +force( 339)*y1**4*y2**1*y3**6& 
+     +force( 340)*y1**4*y2**2*y3**5& 
+     +force( 341)*y1**4*y2**3*y3**4& 
+     +force( 342)*y1**4*y2**4*y3**3& 
+     +force( 343)*y1**4*y2**5*y3**2& 
+     +force( 344)*y1**4*y2**6*y3**1& 
+     +force( 345)*y1**4*y2**7*y3**0& 
+     +force( 346)*y1**5*y2**0*y3**6& 
+     +force( 347)*y1**5*y2**1*y3**5& 
+     +force( 348)*y1**5*y2**2*y3**4& 
+     +force( 349)*y1**5*y2**3*y3**3& 
+     +force( 350)*y1**5*y2**4*y3**2& 
+     +force( 351)*y1**5*y2**5*y3**1& 
+     +force( 352)*y1**5*y2**6*y3**0& 
+     +force( 353)*y1**6*y2**0*y3**5& 
+     +force( 354)*y1**6*y2**1*y3**4& 
+     +force( 355)*y1**6*y2**2*y3**3& 
+     +force( 356)*y1**6*y2**3*y3**2& 
+     +force( 357)*y1**6*y2**4*y3**1& 
+     +force( 358)*y1**6*y2**5*y3**0& 
+     +force( 359)*y1**7*y2**0*y3**4& 
+     +force( 360)*y1**7*y2**1*y3**3& 
+     +force( 361)*y1**7*y2**2*y3**2& 
+     +force( 362)*y1**7*y2**3*y3**1& 
+     +force( 363)*y1**7*y2**4*y3**0& 
+     +force( 364)*y1**8*y2**0*y3**3& 
+     +force( 365)*y1**8*y2**1*y3**2& 
+     +force( 366)*y1**8*y2**2*y3**1& 
+     +force( 367)*y1**8*y2**3*y3**0& 
+     +force( 368)*y1**9*y2**0*y3**2& 
+     +force( 369)*y1**9*y2**1*y3**1& 
+     +force( 370)*y1**9*y2**2*y3**0& 
+     +force( 371)*y1**10*y2**0*y3**1& 
+     +force( 372)*y1**10*y2**1*y3**0& 
+     +force( 373)*y1**11*y2**0*y3**0 
+   v12=force( 374)*y1**0*y2**0*y3**12& 
+     +force( 375)*y1**0*y2**1*y3**11& 
+     +force( 376)*y1**0*y2**2*y3**10& 
+     +force( 377)*y1**0*y2**3*y3**9& 
+     +force( 378)*y1**0*y2**4*y3**8& 
+     +force( 379)*y1**0*y2**5*y3**7& 
+     +force( 380)*y1**0*y2**6*y3**6& 
+     +force( 381)*y1**0*y2**7*y3**5& 
+     +force( 382)*y1**0*y2**8*y3**4& 
+     +force( 383)*y1**0*y2**9*y3**3& 
+     +force( 384)*y1**0*y2**10*y3**2& 
+     +force( 385)*y1**0*y2**11*y3**1& 
+     +force( 386)*y1**0*y2**12*y3**0& 
+     +force( 387)*y1**1*y2**0*y3**11& 
+     +force( 388)*y1**1*y2**1*y3**10& 
+     +force( 389)*y1**1*y2**2*y3**9& 
+     +force( 390)*y1**1*y2**3*y3**8& 
+     +force( 391)*y1**1*y2**4*y3**7& 
+     +force( 392)*y1**1*y2**5*y3**6& 
+     +force( 393)*y1**1*y2**6*y3**5& 
+     +force( 394)*y1**1*y2**7*y3**4& 
+     +force( 395)*y1**1*y2**8*y3**3& 
+     +force( 396)*y1**1*y2**9*y3**2& 
+     +force( 397)*y1**1*y2**10*y3**1& 
+     +force( 398)*y1**1*y2**11*y3**0& 
+     +force( 399)*y1**2*y2**0*y3**10& 
+     +force( 400)*y1**2*y2**1*y3**9& 
+     +force( 401)*y1**2*y2**2*y3**8& 
+     +force( 402)*y1**2*y2**3*y3**7& 
+     +force( 403)*y1**2*y2**4*y3**6& 
+     +force( 404)*y1**2*y2**5*y3**5& 
+     +force( 405)*y1**2*y2**6*y3**4& 
+     +force( 406)*y1**2*y2**7*y3**3& 
+     +force( 407)*y1**2*y2**8*y3**2& 
+     +force( 408)*y1**2*y2**9*y3**1& 
+     +force( 409)*y1**2*y2**10*y3**0& 
+     +force( 410)*y1**3*y2**0*y3**9& 
+     +force( 411)*y1**3*y2**1*y3**8& 
+     +force( 412)*y1**3*y2**2*y3**7& 
+     +force( 413)*y1**3*y2**3*y3**6& 
+     +force( 414)*y1**3*y2**4*y3**5& 
+     +force( 415)*y1**3*y2**5*y3**4& 
+     +force( 416)*y1**3*y2**6*y3**3& 
+     +force( 417)*y1**3*y2**7*y3**2& 
+     +force( 418)*y1**3*y2**8*y3**1& 
+     +force( 419)*y1**3*y2**9*y3**0& 
+     +force( 420)*y1**4*y2**0*y3**8& 
+     +force( 421)*y1**4*y2**1*y3**7& 
+     +force( 422)*y1**4*y2**2*y3**6& 
+     +force( 423)*y1**4*y2**3*y3**5& 
+     +force( 424)*y1**4*y2**4*y3**4& 
+     +force( 425)*y1**4*y2**5*y3**3& 
+     +force( 426)*y1**4*y2**6*y3**2& 
+     +force( 427)*y1**4*y2**7*y3**1& 
+     +force( 428)*y1**4*y2**8*y3**0& 
+     +force( 429)*y1**5*y2**0*y3**7& 
+     +force( 430)*y1**5*y2**1*y3**6& 
+     +force( 431)*y1**5*y2**2*y3**5& 
+     +force( 432)*y1**5*y2**3*y3**4& 
+     +force( 433)*y1**5*y2**4*y3**3& 
+     +force( 434)*y1**5*y2**5*y3**2& 
+     +force( 435)*y1**5*y2**6*y3**1& 
+     +force( 436)*y1**5*y2**7*y3**0& 
+     +force( 437)*y1**6*y2**0*y3**6& 
+     +force( 438)*y1**6*y2**1*y3**5& 
+     +force( 439)*y1**6*y2**2*y3**4& 
+     +force( 440)*y1**6*y2**3*y3**3& 
+     +force( 441)*y1**6*y2**4*y3**2& 
+     +force( 442)*y1**6*y2**5*y3**1& 
+     +force( 443)*y1**6*y2**6*y3**0& 
+     +force( 444)*y1**7*y2**0*y3**5& 
+     +force( 445)*y1**7*y2**1*y3**4& 
+     +force( 446)*y1**7*y2**2*y3**3& 
+     +force( 447)*y1**7*y2**3*y3**2& 
+     +force( 448)*y1**7*y2**4*y3**1& 
+     +force( 449)*y1**7*y2**5*y3**0& 
+     +force( 450)*y1**8*y2**0*y3**4& 
+     +force( 451)*y1**8*y2**1*y3**3& 
+     +force( 452)*y1**8*y2**2*y3**2& 
+     +force( 453)*y1**8*y2**3*y3**1& 
+     +force( 454)*y1**8*y2**4*y3**0& 
+     +force( 455)*y1**9*y2**0*y3**3& 
+     +force( 456)*y1**9*y2**1*y3**2& 
+     +force( 457)*y1**9*y2**2*y3**1& 
+     +force( 458)*y1**9*y2**3*y3**0& 
+     +force( 459)*y1**10*y2**0*y3**2& 
+     +force( 460)*y1**10*y2**1*y3**1& 
+     +force( 461)*y1**10*y2**2*y3**0& 
+     +force( 462)*y1**11*y2**0*y3**1& 
+     +force( 463)*y1**11*y2**1*y3**0& 
+     +force( 464)*y1**12*y2**0*y3**0 
+
+     f=v0+v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12+vhh
+
+ end function MLpoten_xyz_polynom_sinrho_half
+
+
+
 
 
  !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified

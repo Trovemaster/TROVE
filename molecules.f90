@@ -332,6 +332,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xyz_tyuterev_rho
          !
+    case('POTEN_XYZ_POLYNOM_SINRHO_HALF') 
+         !
+         MLpotentialfunc => MLpoten_xyz_polynom_sinrho_half
+         !
     case('POTEN_SO2_PES_8D') 
          !
          MLpotentialfunc => MLpoten_SO2_pes_8d
