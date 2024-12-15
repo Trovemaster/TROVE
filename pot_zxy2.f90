@@ -3155,5 +3155,6 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
 
 
 
+
   !
 end module pot_zxy2
