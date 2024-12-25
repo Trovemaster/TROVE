@@ -6920,12 +6920,13 @@ end subroutine check_read_save_none
   !
   subroutine compute_kinetic_on_rho_grid_compact
     !
-    real(ark),allocatable :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
+    real(ark),allocatable   :: g_vib(:,:,:),g_rot(:,:,:),g_cor(:,:,:),pseudo(:)
     integer(ik),allocatable :: ig_vib(:,:,:,:),ig_rot(:,:,:,:),ig_cor(:,:,:,:),ipseudo(:,:)
+    real(ark),allocatable   :: f(:)
     integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
                     Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
     real(ark)    :: rho,factor
-    integer(ik)  :: Nterms,n,maxpower
+    integer(ik)  :: Nterms,n,maxpower,ipower,imode,iterm
     type(FLpolynomT),pointer    :: fl
       !
       Nmodes = trove%Nmodes
@@ -6980,97 +6981,87 @@ end subroutine check_read_save_none
       call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
       call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
       !
-      do irho = 0, npoints
-         !
-         rho = trove%rho_i(irho)
-         !
-         !call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-         !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-         !
-         call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
 
-         !call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-         !                                                 g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-
-
-         !
-         if (irho==0) then 
+      !call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+      !                                                 g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,Nmodes
             !
-            do k1 = 1,Nmodes
-               do k2 = 1,Nmodes
-                  !
-                  fl => trove%g_vib(k1,k2) 
-                  fl%Ncoeff = Ng_vib(k1,k2) 
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  do i = 1,Ng_vib(k1,k2)
-                    fl%IndexQ(:,i) = ig_vib(k1,k2,i,:)
-                  enddo
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
+            fl => trove%g_vib(k1,k2) 
+            fl%Ncoeff = Ng_vib(k1,k2) 
             !
-            do k1 = 1,Nmodes
-               do k2 = 1,3
-                  !
-                  fl => trove%g_cor(k1,k2) 
-                  fl%Ncoeff = Ng_cor(k1,k2) 
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  do i = 1,Ng_cor(k1,k2)
-                    fl%IndexQ(:,i) = ig_cor(k1,k2,i,:)
-                  enddo
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
-            !
-            do k1 = 1,3
-               do k2 = 1,3
-                  !
-                  fl => trove%g_rot(k1,k2) 
-                  fl%Ncoeff = Ng_rot(k1,k2) 
-                  !
-                  call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
-                  !
-                  forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-                  do i = 1,Ng_rot(k1,k2)
-                    fl%IndexQ(:,i) = ig_rot(k1,k2,i,:)
-                  enddo
-                  fl%sparse = .true.
-                  !
-               enddo
-            enddo
-            !
-            fl => trove%pseudo
-            fl%Ncoeff = Npseudo 
-            !
-            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
+            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_vib')
             !
             forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
-            do i = 1,Npseudo
-              fl%IndexQ(:,i) = ipseudo(i,:)
+            do i = 1,Ng_vib(k1,k2)
+              fl%IndexQ(:,i) = ig_vib(k1,k2,i,:)
             enddo
             fl%sparse = .true.
             !
-            !else
+         enddo
+      enddo
+      !
+      do k1 = 1,Nmodes
+         do k2 = 1,3
             !
-            !write(out,"('compute_kinetic_on_rho_grid_compact-error: non-rigid case has not been implemented')")
-            !stop 'compute_kinetic_on_rho_grid_compact-error: non-rigid case has not been implemented'
+            fl => trove%g_cor(k1,k2) 
+            fl%Ncoeff = Ng_cor(k1,k2) 
             !
-         endif
+            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_cor')
+            !
+            forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+            do i = 1,Ng_cor(k1,k2)
+              fl%IndexQ(:,i) = ig_cor(k1,k2,i,:)
+            enddo
+            fl%sparse = .true.
+            !
+         enddo
+      enddo
+      !
+      do k1 = 1,3
+         do k2 = 1,3
+            !
+            fl => trove%g_rot(k1,k2) 
+            fl%Ncoeff = Ng_rot(k1,k2) 
+            !
+            call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'g_rot')
+            !
+            forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+            do i = 1,Ng_rot(k1,k2)
+              fl%IndexQ(:,i) = ig_rot(k1,k2,i,:)
+            enddo
+            fl%sparse = .true.
+            !
+         enddo
+      enddo
+      !
+      fl => trove%pseudo
+      fl%Ncoeff = Npseudo 
+      !
+      call polynom_initialization(fl,trove%NKinOrder,fl%Ncoeff,Npoints,'pseudo')
+      !
+      forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n
+      do i = 1,Npseudo
+        fl%IndexQ(:,i) = ipseudo(i,:)
+      enddo
+      fl%sparse = .true.
+      !
+      ! As usual we treat the rigid (manifold==0) and non-rigid (manifold==1) cases differently, starting from RIGID
+      if (manifold==0) then 
+         !
+         irho = 0
          !
          do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -7095,8 +7086,113 @@ end subroutine check_read_save_none
          !
          Nterms = trove%pseudo%Ncoeff
          trove%pseudo%field(1:Nterms,irho) = pseudo(1:Nterms)*factor
-        !
-      enddo
+         !
+      else
+         !
+         ! reconstruct the maximal expansion "power" for the non-rigid mode i=Nmodes
+         maxpower = 0 
+         do imode = 1, trove%Nmodes
+             maxpower = max(maxpower,size(molec%basic_function_list(trove%Nmodes)%mode_set)) 
+         enddo
+         !
+         ! expansion terms xi = f(n)(rho)
+         allocate (f(0:maxpower),stat=info)
+         call ArrayStart('kinetic_on_grid-fields_f',info,size(f),kind(f))
+         !
+         do irho = 0, npoints
+            !
+            rho = trove%rho_i(irho)
+            !
+            ! calculate all the expansion terms for the last non-rigid mode 
+            do ipower = 0, maxpower 
+               f(ipower) = MLcoord_direct(rho,1,trove%Nmodes,ipower)
+            enddo
+            !
+            ! combine the expansion coeffs with expansion terms to form the rho-dependent non-rigid KE coefficients
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,Nmodes
+                  !
+                  fl => trove%g_vib(k1,k2)
+                  Nterms = fl%Ncoeff
+                  !
+                  fl%field(:,irho) = 0
+                  !
+                  ! By applying the non-rigid configuration, the dimension of the expansion modes is reduced by 1 
+                  ! therefore potentially different terms can be summed into single terms of the same power for all modes of 1..Nmodes-1  
+                  ! Let's introduce a new counting of the expanstion terms "n" 
+                  n = 0 
+                  do iterm = 1,Nterms
+                     n = n + 1
+                     ipower = ig_vib(k1,k2,iterm,Nmodes) 
+                     fl%field(n,irho) = fl%field(n,irho) + g_vib(k1,k2,iterm)*f(ipower)
+                  enddo
+                  !
+                  fl%Ncoeff = n
+                  !
+                  fl%field(:,irho) = fl%field(:,irho)*factor
+                  !
+               enddo
+            enddo
+            !
+            do k1 = 1,Nmodes
+               do k2 = 1,3
+                  !
+                  fl => trove%g_cor(k1,k2)
+                  Nterms = fl%Ncoeff
+                  !
+                  fl%field(:,irho) = 0
+                  n = 0 
+                  do iterm = 1,Nterms
+                     n = n + 1
+                     ipower = ig_cor(k1,k2,iterm,Nmodes) 
+                     fl%field(n,irho) = fl%field(n,irho) + g_cor(k1,k2,iterm)*f(ipower)
+                  enddo
+                  !
+                  fl%Ncoeff = n
+                  !
+                  fl%field(:,irho) = fl%field(:,irho)*factor
+                  ! 
+               enddo
+            enddo
+            !
+            do k1 = 1,3
+               do k2 = 1,3
+                  !
+                  fl => trove%g_rot(k1,k2)
+                  Nterms = fl%Ncoeff
+                  !
+                  fl%field(:,irho) = 0
+                  n = 0 
+                  do iterm = 1,Nterms
+                     n = n + 1
+                     ipower = ig_rot(k1,k2,iterm,Nmodes) 
+                     fl%field(n,irho) = fl%field(n,irho) + g_rot(k1,k2,iterm)*f(ipower)
+                  enddo
+                  !
+                  fl%Ncoeff = n
+                  !
+                  fl%field(:,irho) = fl%field(:,irho)*factor
+                  !
+               enddo
+            enddo
+            !
+            fl => trove%pseudo
+            Nterms = fl%Ncoeff
+            fl%field(:,irho) = 0
+            n = 0 
+            do iterm = 1,Nterms
+               n = n + 1
+               ipower = ipseudo(iterm,Nmodes) 
+               fl%field(n,irho) = fl%field(n,irho) + pseudo(iterm)*f(ipower)
+            enddo
+            fl%Ncoeff = n
+            !
+            fl%field(:,irho) = fl%field(:,irho)*factor
+            !
+         enddo
+         !
+      endif
       !
       ! it is important that pseudo and g_vib(N,N) share the same grid. Here we combine gvib into the pseudo grid
       !
@@ -7114,8 +7210,9 @@ end subroutine check_read_save_none
         trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
       endif
       !
-      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,f)
       call ArrayStop('kinetic_on_grid-fields')
+      call ArrayStop('kinetic_on_grid-fields_f')
       !
  end subroutine compute_kinetic_on_rho_grid_compact
 
