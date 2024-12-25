@@ -646,7 +646,7 @@ module mol_abcd
      real(ark),   intent(out),optional :: rho_ref
      real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
      !
-     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz
+     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz,tau1,tau2
      integer(ik)  ::  n,i,ix,jx,i0,in,i1,ipar,istep,j0,Nangles,Nbonds
      !
      real(ark)    :: Inert0(3),Inert(3),Inert1(3),a(3,3),b(3,1),x(5),a0_tt,a0_t(molec%Natoms,3)
@@ -712,72 +712,23 @@ module mol_abcd
            write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
          endif
          !
-      endif 
+      endif
       !
-      if (molec%AtomMasses(1)==molec%AtomMasses(2).and.molec%AtomMasses(3)==molec%AtomMasses(4).and..false.) then
+      select case(trim(molec%frame))
         !
-        phi = rho*0.5_ark
-
+      case ('R-ALPHA-TAU')
+        !
         a0(1,1) = 0.0_ark
         a0(1,2) = 0.0_ark
-        a0(1,3) = re1*0.5_ark
-        !
-        a0(2,1) = 0.0_ark
-        a0(2,2) = 0.0_ark
-        a0(2,3) = -re1*0.5_ark
-        !
-        a0(3,1) = re2*sin(ae1)*cos(phi)
-        a0(3,2) =-re2*sin(ae1)*sin(phi)
-        a0(3,3) =-re2*cos(ae1)+re1*0.5_ark
-        !
-        a0(4,1) = re2*sin(ae1)*cos(phi)
-        a0(4,2) = re2*sin(ae1)*sin(phi)
-        a0(4,3) = re2*cos(ae1)-re1*0.5_ark
-        !
-        do n = 1,3 
-          CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-          a0(:,n) = a0(:,n) - CM_shift
-        enddo
-        !
-        ayz =-sum(molec%AtomMasses(:)*a0(:,2)*a0(:,3) )
-        ayy = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
-        azz = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
-        !
-        phi = atan2(2.0_ark*ayz,ayy-azz)
-        !
-        !phi = atan(ayz/(ayy-azz))
-        !
-        transform = 0 
-        !
-        transform(1,1) = 1.0_ark
-        transform(2,2) = cos(phi)
-        transform(3,3) = cos(phi)
-        transform(2,3) = sin(phi)
-        transform(3,2) =-sin(phi)
-        !
-        do n = 1,molec%Natoms
-           b0(n,:,0) = matmul(transpose(transform),a0(n,:))
-        enddo
-        !
-        ayz =-sum(molec%AtomMasses(:)*b0(:,2,0)*b0(:,3,0) )
-        ayy = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,3,0)**2) )
-        azz = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,2,0)**2) )
-        !
-        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
-        !
-      else 
-        !
-        a0(3,2) = re2*sin(ae1)
-        a0(3,1) = 0.0_ark
-        a0(3,3) = re2*cos(ae1)
-        !
-        a0(1,2) = 0.0_ark
-        a0(1,1) = 0.0_ark
         a0(1,3) = 0.0_ark
         !
-        a0(2,2) = 0.0_ark
         a0(2,1) = 0.0_ark
+        a0(2,2) = 0.0_ark
         a0(2,3) = re1
+        !
+        a0(3,1) = 0.0_ark
+        a0(3,2) = re2*sin(ae1)
+        a0(3,3) = re2*cos(ae1)
         !
         a0(4,2) = re3*sin(ae2)*cos(rho)
         a0(4,1) = re3*sin(ae2)*sin(rho)
@@ -804,9 +755,35 @@ module mol_abcd
         do n = 1,3 
           CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
           a0(:,n) = a0(:,n) - CM_shift
-        enddo 
-        !        
-      endif 
+        enddo         
+        !
+      case ('BC-Z-CD-X')
+        !
+        tau1 = rho
+        tau2 = 0
+        !
+        a0(1,1) = 0.0_ark
+        a0(1,2) = 0.0_ark
+        a0(1,3) = 0.0_ark
+        !
+        a0(2,1) = 0.0_ark
+        a0(2,2) = 0.0_ark
+        a0(2,3) = re1
+        !
+        a0(3,1) = re2*sin(ae1)*cos(tau1)
+        a0(3,2) = re2*sin(ae1)*sin(tau1)
+        a0(3,3) = re2*cos(ae1)
+        !
+        a0(4,1) = re3*sin(ae2)*cos(tau2)
+        a0(4,2) = re3*sin(ae2)*sin(tau2)
+        a0(4,3) = re1-re3*cos(ae2)
+        !
+        do n = 1,3 
+          CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+          a0(:,n) = a0(:,n) - CM_shift
+        enddo     
+        !
+      end select
       !
       b0(:,:,0) = a0(:,:)
       !
@@ -1063,20 +1040,21 @@ module mol_abcd
            !
            write(out,"(i6)") molec%natoms
            !
-           write(out,"(/'C',3x,3f14.8)") b0(1,:,i)
-           write(out,"( 'C',3x,3f14.8)") b0(2,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
+           write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,i)
            !
         enddo 
         !
-        write(out,"('Coordinates:')")
+        !write(out,"('Coordinates:')")
         !
-        do i = 0,npoints
-          !
-          write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
-          !
-        enddo 
+        !do i = 0,npoints
+        !  !
+        !  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+        !  !
+        !enddo
+        !
       endif
       !
       if (verbose>=4) write(out,"('ML_b0_ABCD/end')") 

@@ -49,7 +49,7 @@ module molecules
   !
   use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
   !
-  use kin_abcd, only  : MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
+  use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha1_singular
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
   !
@@ -205,6 +205,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_zxy2_morse_sin
          !
+    case('POTEN_ABCD_MORSE_COSALPHA_ALPHA_COSNTAU') 
+         !
+         MLpotentialfunc => MLpoten_abcd_morse_cos_angle_cosntau
+         !
     case('POTEN_ABCD') 
          !
          MLpotentialfunc => MLpoten_hsoh
@@ -333,9 +337,9 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xyz_tyuterev_rho
          !
-    case('POTEN_XYZ_POLYNOM_SINRHO_HALF') 
+    case('POTEN_XYZ_POLYNOM_COSRHO') 
          !
-         MLpotentialfunc => MLpoten_xyz_polynom_sinrho_half
+         MLpotentialfunc => MLpoten_xyz_polynom_cosrho
          !
     case('POTEN_SO2_PES_8D') 
          !
@@ -567,9 +571,9 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
          !
-    case('KINETIC_ABCD_EKE_X2Y2_Z_ALPHA1_SINGULAR') 
+    case('KINETIC_ABCD_EKE_Z_ALPHA1_SINGULAR') 
          !
-         MLkineticfunc_compact => MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
+         MLkineticfunc_compact => MLkinetic_abcd_EKE_z_alpha1_singular
          !
     case('GENERAL') 
          !

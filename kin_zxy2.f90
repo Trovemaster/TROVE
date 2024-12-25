@@ -54,6 +54,11 @@ module kin_zxy2
      Ng_rot = 0
      Ng_cor = 0
      !
+     g_vib = 0
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
      Ng_vib(1,1) = 1
      Ng_vib(1,2) = 1
      Ng_vib(1,3) = 1

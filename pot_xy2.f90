@@ -17,7 +17,7 @@ module pot_xy2
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
          MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz,&
-         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_sinrho_half
+         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_cosrho
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -5226,7 +5226,7 @@ endif
   !
   ! Defining potential energy function
   !
-  function MLpoten_xyz_polynom_sinrho_half(ncoords,natoms,local,xyz,force) result(f) 
+  function MLpoten_xyz_polynom_cosrho(ncoords,natoms,local,xyz,force) result(f) 
    !
    integer(ik),intent(in) ::  ncoords,natoms
    real(ark),intent(in)   ::  local(ncoords)
@@ -5758,7 +5758,7 @@ endif
 
      f=v0+v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12+vhh
 
- end function MLpoten_xyz_polynom_sinrho_half
+ end function MLpoten_xyz_polynom_cosrho
 
 
 

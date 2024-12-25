@@ -611,7 +611,7 @@ module mol_xy2
           dst(3) = pi-src(3)
        endif
        !
-    case('R1-Z-R2-ALPHA')
+    case('R1-Z-R2-ALPHA','R2-Z-R1-ALPHA')
        !
        if (direct) then 
           dst(1:2) = dsrc(1:2)
@@ -2924,7 +2924,7 @@ module mol_xy2
        end select       
        !
     case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-         'R2-Z-R1-RHO')
+         'R2-Z-R1-RHO','R2-Z-R1-ALPHA')
        !
        select case(trim(molec%symmetry))
        case default

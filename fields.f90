@@ -16,10 +16,12 @@ module fields
    use moltype
    use symmetry , only : SymmetryInitialize,sym
    
+   use kin_xy2, only   : MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
+
    use kin_x2y2, only  : MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
    !
    use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
-   use kin_abcd, only  : MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular
+   use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha1_singular
 
    ! use perturbation
 
@@ -5001,7 +5003,6 @@ module fields
       !
    endif 
    !
-   !
    if (.not.equil_defined) then 
       !
       write (out,"('FLinput: EQUIL is not defined')") 
@@ -5088,6 +5089,15 @@ module fields
    if ( trove%tetraatom_sing_resolve .and. (trove%Natoms/=4 .or. trove%Nmodes/=6 ) ) then
      write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Natoms=3 or 4')") 
      stop 'Illegal usage of LEGENDRE or SINRHO'
+   endif
+   !
+   ! For the compact form of the pre-defined KEO, the "READ" option is not supported. It must be
+   ! always re-computed 
+   if (trove%kinetic_compact) then
+      if (trove%IO_kinetic /= 'SAVE') then
+         write(out,"(' Warning: For the compact form of the pre-defined KEO, KINETIC READ is not supported, changed to SAVE')")
+      endif
+      trove%IO_kinetic = 'SAVE'
    endif
    !
    trove%jmax = jrot 
@@ -6983,8 +6993,13 @@ end subroutine check_read_save_none
          !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
          !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
-         call MLkinetic_abcd_EKE_X2Y2_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                                              g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+
+         !call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         !                                                 g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+
+
          !
          if (irho==0) then 
             !
@@ -7049,6 +7064,11 @@ end subroutine check_read_save_none
               fl%IndexQ(:,i) = ipseudo(i,:)
             enddo
             fl%sparse = .true.
+            !
+            !else
+            !
+            !write(out,"('compute_kinetic_on_rho_grid_compact-error: non-rigid case has not been implemented')")
+            !stop 'compute_kinetic_on_rho_grid_compact-error: non-rigid case has not been implemented'
             !
          endif
          !

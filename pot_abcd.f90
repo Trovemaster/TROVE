@@ -16,7 +16,7 @@ module pot_abcd
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
          MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB,poten_c2h2_morse_sinalpha_cosntau
-  public MLalpha_iso_c2h2_7_q2q1q4q3
+  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau
   !
   private
 
@@ -7754,5 +7754,44 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     !
   end subroutine MLalpha_hooh_MB
   !
+  ! the ABCD type, three Morse, cos(alpha)-cos(ae), alpha-ae and cos(n*tau)
+  !
+  function MLpoten_abcd_morse_cos_angle_cosntau(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)          ::  i,k(6),i1
+   real(ark)    :: xi(6),y(6),beta(3),tau,req(6)
+
+   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/start')")
+   !
+   beta(1:3) = molec%specparam(1:3)
+   !
+   tau = local(6)
+   !
+   req(1:3) = molec%req(1:3)
+   req(4:5) = molec%alphaeq(1:2)
+   !
+   y(1:3)=1.0_ark-exp(-beta(1:3)*(local(1:3)-req(1:3)))
+   y(4)= cos(local(4))-cos(req(4))
+   y(5)= local(5)-req(5)
+   !
+   f = 0
+   do i = 1,molec%parmax
+      k(:) = molec%pot_ind(:,i)
+      xi(1:5) = y(1:5)**k(1:5)
+      xi(6)=cos(real(k(6),ik)*tau)
+      !
+      f = f + force(i)*product(xi(:))
+      !
+   enddo
+   !
+   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/end')")
+   !
+  end function MLpoten_abcd_morse_cos_angle_cosntau
   !
 end module pot_abcd
