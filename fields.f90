@@ -2153,9 +2153,9 @@ module fields
             if (any(trim(job%bset(i)%type)==[character(19) :: 'LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K',&
                                                    'SINRHO-2XLAGUERRE-K'] ) ) then 
                !
-               if (.not.trove%triatom_sing_resolve ) then
-                 write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
-               endif
+               !if (.not.trove%triatom_sing_resolve ) then
+               !  write(out,"(a)") '   LEGEDRE or SINRHO or LAGUERRE-K types assume a singular triatomic molecule with 3 modes.'
+               !endif
                !
                job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
                job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
@@ -2242,11 +2242,17 @@ module fields
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
                   case("CSC")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                  case("COT","COT2")
+                  case("COT")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-                  case("SEC","SEC2")
+                  case("SEC")
                     molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
+                  case("COT_")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                  case("CSC_")
+                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
                   case default 
+                    write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
+                    stop 'read_basic_function_constructor-error: unkown basic function'
                 end select
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
@@ -6981,20 +6987,37 @@ end subroutine check_read_save_none
       call ArrayStart('kinetic_on_grid-fields',info,size(pseudo),kind(pseudo))
       call ArrayStart('kinetic_on_grid-fields',info,size(ipseudo),kind(ipseudo))
       !
-      !call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-      !
-      !call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      select case(trim(molec%kinetic_type))
+      case default
+         !
+         write (out,"('compute_kinetic_on_rho_grid_compact: kinetic type ',a,' unknown')") trim(molec%kinetic_type)
+         stop 'compute_kinetic_on_rho_grid_compact - bad kinetic'
+         !
+      case('KINETIC_ABCD_EKE_Z_ALPHA1_SINGULAR') 
+         !
+         call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_ZXY2_EKE_BISECT_SINRHO_RIGID') 
+         !
+         call MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_X2Y2_EKE_BISECT_SINRHO_RIGID') 
+         !
+         call MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_XYZ_EKE_RIGID_ALPHA_BOND2') 
+         !
+         call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      end select
       !
       !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
       !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
-      call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
-
-      !call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                 g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
       do k1 = 1,Nmodes
          do k2 = 1,Nmodes
@@ -7191,6 +7214,8 @@ end subroutine check_read_save_none
             fl%field(:,irho) = fl%field(:,irho)*factor
             !
          enddo
+         deallocate(f)
+         call ArrayStop('kinetic_on_grid-fields_f')
          !
       endif
       !
@@ -7210,9 +7235,8 @@ end subroutine check_read_save_none
         trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
       endif
       !
-      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo,f)
+      deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
-      call ArrayStop('kinetic_on_grid-fields_f')
       !
  end subroutine compute_kinetic_on_rho_grid_compact
 
@@ -18820,7 +18844,7 @@ end subroutine check_read_save_none
            ! standard case of a non-singular pseudo-function
            !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
-           ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
+           ! singular case is reconstructed assuming the stored pseudo is pseudo*rho**2
            if (isingular>=0) then 
              !        
              rho_switch = trove%specparam(nu_i)
@@ -21073,6 +21097,9 @@ end subroutine check_read_save_none
                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
              !
+             !drho  = drho  + trove%local_eq(nu_i)
+             rho_b = rho_b + trove%local_eq(nu_i)
+             !
              ! Associated Legendre 
              call ME_sinrho_polynomial_k(nu_i,bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
@@ -21401,16 +21428,17 @@ end subroutine check_read_save_none
        implicit none
        !
        integer(ik),intent(in) :: irho_eq,npoints
+       real(ark),intent(in)   :: rho_b(2)
        !
        real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%MaxOrder)
-       real(ark),intent(out)  :: rho_b(2),drho(0:Npoints,3)
+       real(ark),intent(out)  :: drho(0:Npoints,3)
        real(ark),intent(out),optional :: muzz(0:Npoints)
        !
        real(ark) :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
        real(ark) :: ps(1:trove%Nmodes,0:trove%MaxOrder),gvib(1:trove%Nmodes,0:trove%MaxOrder),&
                     grot(1:trove%Nmodes,0:trove%MaxOrder)
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
-       real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext
+       real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f
        integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes)
        integer(ik) :: jmode,i,k,j,irho_eq_,nu_
        type(FLpolynomT),pointer    :: fl,gl,gzl
@@ -21599,7 +21627,7 @@ end subroutine check_read_save_none
                    endif
                 endif
                 !
-                g1z(ipower) = grot(nu_,ipower)
+                g1z(ipower) = grot(1,ipower)
                 !
              endif
              !
@@ -21770,11 +21798,21 @@ end subroutine check_read_save_none
           !
           do ipower = 0,maxpower
              !
-             pseudo(i) = pseudo(i) + p1d(ipower)*xton(i,ipower)
-             g1drho(i) = g1drho(i) + g1d(ipower)*xton(i,ipower)
+             if (abs(p1d(ipower))>small_) then 
+               f = MLcoord_direct(rho,1,nu_i,ipower)
+               pseudo(i) = pseudo(i) + p1d(ipower)*f
+             endif
+             !
+             if (abs(g1d(ipower))>small_) then 
+               f = MLcoord_direct(rho,1,nu_i,ipower)
+               g1drho(i) = g1drho(i) + g1d(ipower)*f
+             endif
              !
              if (present(muzz)) then
-                muzz(i) = muzz(i) + g1z(ipower)*xton(i,ipower)
+                if (abs(g1d(ipower))>small_) then 
+                  f = MLcoord_direct(rho,1,nu_i,ipower)
+                  muzz(i) = muzz(i) + g1z(ipower)*f
+                endif
              endif
              !
           enddo 

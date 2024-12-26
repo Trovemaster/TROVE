@@ -43,7 +43,7 @@ module molecules
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
-                       MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid
+                       MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
   !
@@ -574,6 +574,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_ABCD_EKE_Z_ALPHA1_SINGULAR') 
          !
          MLkineticfunc_compact => MLkinetic_abcd_EKE_z_alpha1_singular
+         !
+    case('KINETIC_XYZ_EKE_RIGID_ALPHA_BOND2') 
+         !
+         MLkineticfunc_compact => MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
          !
     case('GENERAL') 
          !

@@ -868,7 +868,7 @@ module kin_xy2
   ! The KEO was generated using Maple using the 2nd bond-length-angle frame, see XYZ_KEO_analytic_v1.mws
   !
   subroutine MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(nmodes,rho,ntermmax,ng_vib,ng_rot,ng_cor,npseudo,&
-                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+                                                         g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
    !
    use accuracy
    !

@@ -2830,11 +2830,17 @@ module moltype
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
              case("CSC")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-             case("COT","COT2")
+             case("COT")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-             case("SEC","SEC2")
+             case("SEC")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
-             case default 
+             case("COT_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+             case("CSC_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+             case default
+               write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
+               stop 'read_basic_function_constructor-error: unkown basic function'
            end select
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef

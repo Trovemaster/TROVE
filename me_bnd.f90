@@ -3329,10 +3329,11 @@ module me_bnd
    integer(ik),intent(in) :: verbose   ! Verbosity level
    !
    real(ark)   :: rho_,rhostep,potmin,C_l,C_r,zpe,ener_t,U_t
-   real(ark)   :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t,ps_t
+   real(ark)   :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,factor,mu_zz_t,mu_rr_t,ps_t,&
+                  xton(0:Npoints,0:maxorder)
    !
    integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,ipower,&
-                  xton(0:Npoints,0:maxorder),b_func_outer_expon
+                  b_func_outer_expon
    !
    real(ark),allocatable :: psil(:),psir(:),dpsil(:),dpsir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
    real(ark),allocatable :: phil_s(:),phir_s(:),vect_(:),phi(:)
@@ -3762,7 +3763,7 @@ module me_bnd
               !
               do ipower = 0, maxorder 
                  do i = 0 ,npoints
-                    xton(i,ipower) = MLcoord_direct(rho(i),1,imode,ipower)
+                    xton(i,ipower) = MLcoord_direct(rho_kinet(i),1,imode,ipower)
                  enddo
               enddo
               !

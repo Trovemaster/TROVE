@@ -759,8 +759,8 @@ module mol_abcd
         !
       case ('BC-Z-CD-X')
         !
-        tau1 = rho
-        tau2 = 0
+        tau1 = 0
+        tau2 = rho
         !
         a0(1,1) = 0.0_ark
         a0(1,2) = 0.0_ark
@@ -798,127 +798,147 @@ module mol_abcd
          !
          rho_ref = molec%taueq(1)
          !
-         do i = 0,npoints
-            !
-            rho = rho_i(i)
-            !
-            re1   = molec%req(1)
-            re2   = molec%req(2)
-            re3   = molec%req(3)
-            ae1   = molec%alphaeq(1)
-            ae2   = molec%alphaeq(2)
-            !
-            if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.&
-                trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
-               !
-               rho_ark = rho
-               !
-               r_eq(1:6) = ML_MEP_ABCD_tau_ref(rho_ark)
-               !
-               re1   = r_eq(1)
-               re2   = r_eq(2)
-               re3   = r_eq(3)
-               ae1   = r_eq(4)
-               ae2   = r_eq(5)
-               !
-               if (verbose>=5) then 
-                 write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
-               endif
-               !
-            endif 
-            !
-            b0(3,2,i) = re2*sin(ae1)
-            b0(3,1,i) = 0.0_ark
-            b0(3,3,i) = re2*cos(ae1)
-            !
-            b0(1,2,i) = 0.0_ark
-            b0(1,1,i) = 0.0_ark
-            b0(1,3,i) = 0.0_ark
-            !
-            b0(2,2,i) = 0.0_ark
-            b0(2,1,i) = 0.0_ark
-            b0(2,3,i) = re1
-            !
-            b0(4,2,i) = re3*sin(ae2)*cos(rho)
-            b0(4,1,i) = re3*sin(ae2)*sin(rho)
-            b0(4,3,i) = re1-re3*cos(ae2)
-            !
-            ! Find center of mass
-            !
-            do n = 1,3 
-              CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-              b0(:,n,i) = b0(:,n,i) - CM_shift
-            enddo 
-            !
-            do n = 1,molec%Natoms
-               b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
-            enddo
-            !
-            if (verbose>=8) then 
-              write(out,"('b0',i8,12f12.8)") i,b0(:,:,i)
-            endif
-            !
-         enddo
-         !
-         if (molec%AtomMasses(1)==molec%AtomMasses(2).and.molec%AtomMasses(3)==molec%AtomMasses(4).and..false.) then
-            !
-            do i = 0,npoints
-               !
-               rho = rho_i(i)
-               !
-               re1   = molec%req(1)
-               re2   = molec%req(2)
-               re3   = molec%req(3)
-               ae1   = molec%alphaeq(1)
-               ae2   = molec%alphaeq(2)
-               !
-               phi = rho*0.5_ark
-
-               b0(1,1,i) = 0.0_ark
-               b0(1,2,i) = 0.0_ark
-               b0(1,3,i) = re1*0.5_ark
-
-               b0(2,1,i) = 0.0_ark
-               b0(2,2,i) = 0.0_ark
-               b0(2,3,i) = -re1*0.5_ark
-
-               b0(3,1,i) = re2*sin(ae1)*cos(phi)
-               b0(3,2,i) =-re2*sin(ae1)*sin(phi)
-               b0(3,3,i) =-re2*cos(ae1)+re1*0.5_ark
-
-               b0(4,1,i) = re2*sin(ae1)*cos(phi)
-               b0(4,2,i) = re2*sin(ae1)*sin(phi)
-               b0(4,3,i) = re2*cos(ae1)-re1*0.5_ark
-               !
-               do n = 1,3 
-                 CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-                 b0(:,n,i) = b0(:,n,i) - CM_shift
-               enddo 
-               !
-            enddo
-            !
-            !do i = 0,npoints
-            !   !
-            !   rho = rho_i(i)
-            !   !
-            !   phi = rho*0.5_ark+pi*0.5_ark
-            !   !
-            !   transform = 0 
-            !   !
-            !   transform(3,3) = 1.0_ark
-            !   !
-            !   transform(1,1) = cos(phi)
-            !   transform(1,2) = sin(phi)
-            !   transform(2,1) =-sin(phi)
-            !   transform(2,2) = cos(phi)
-            !   !
-            !   forall(ix=1:4) b0(ix,:,i) = matmul(transpose(transform),b0(ix,:,i))
-            !   !
-            !   continue
-            !   !
-            !enddo
-            !
-         else 
+         select case(trim(molec%frame))
+           !
+         case ('R-ALPHA-TAU-REF')
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF') then 
+                 !
+                 rho_ark = rho
+                 !
+                 r_eq(1:6) = ML_MEP_ABCD_tau_ref(rho_ark)
+                 !
+                 re1   = r_eq(1)
+                 re2   = r_eq(2)
+                 re3   = r_eq(3)
+                 ae1   = r_eq(4)
+                 ae2   = r_eq(5)
+                 !
+                 if (verbose>=5) then 
+                   write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
+                 endif
+                 !
+              endif 
+              !
+              b0(3,2,i) = re2*sin(ae1)
+              b0(3,1,i) = 0.0_ark
+              b0(3,3,i) = re2*cos(ae1)
+              !
+              b0(1,2,i) = 0.0_ark
+              b0(1,1,i) = 0.0_ark
+              b0(1,3,i) = 0.0_ark
+              !
+              b0(2,2,i) = 0.0_ark
+              b0(2,1,i) = 0.0_ark
+              b0(2,3,i) = re1
+              !
+              b0(4,2,i) = re3*sin(ae2)*cos(rho)
+              b0(4,1,i) = re3*sin(ae2)*sin(rho)
+              b0(4,3,i) = re1-re3*cos(ae2)
+              !
+              ! Find center of mass
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = b0(:,n,i) - CM_shift
+              enddo 
+              !
+              do n = 1,molec%Natoms
+                 b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+              enddo
+              !
+           enddo   
+           !
+         case ('BC-Z-CD-X')
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              tau1 = 0
+              tau2 = rho
+              !
+              a0(1,1) = 0.0_ark
+              a0(1,2) = 0.0_ark
+              a0(1,3) = 0.0_ark
+              !
+              a0(2,1) = 0.0_ark
+              a0(2,2) = 0.0_ark
+              a0(2,3) = re1
+              !
+              a0(3,1) = re2*sin(ae1)*cos(tau1)
+              a0(3,2) = re2*sin(ae1)*sin(tau1)
+              a0(3,3) = re2*cos(ae1)
+              !
+              a0(4,1) = re3*sin(ae2)*cos(tau2)
+              a0(4,2) = re3*sin(ae2)*sin(tau2)
+              a0(4,3) = re1-re3*cos(ae2)
+              !
+              do n = 1,3 
+                CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = a0(:,n) - CM_shift
+              enddo
+              !
+           enddo
+           !
+         case ('R-ALPHA-TAU')
+           ! 
+           ! non-rigid Frame with the x-axis at the half-angle (bisect) 
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              b0(3,2,i) = re2*sin(ae1)
+              b0(3,1,i) = 0.0_ark
+              b0(3,3,i) = re2*cos(ae1)
+              !
+              b0(1,2,i) = 0.0_ark
+              b0(1,1,i) = 0.0_ark
+              b0(1,3,i) = 0.0_ark
+              !
+              b0(2,2,i) = 0.0_ark
+              b0(2,1,i) = 0.0_ark
+              b0(2,3,i) = re1
+              !
+              b0(4,2,i) = re3*sin(ae2)*cos(rho)
+              b0(4,1,i) = re3*sin(ae2)*sin(rho)
+              b0(4,3,i) = re1-re3*cos(ae2)
+              !
+              ! Find center of mass
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = b0(:,n,i) - CM_shift
+              enddo 
+              !
+              do n = 1,molec%Natoms
+                 b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+              enddo
+              !
+           enddo
            !
            i0 = npoints/2
            !
@@ -927,7 +947,7 @@ module mol_abcd
              istep = (-1)**(ipar+2)
              !
              i = npoints/2
-
+         
              a0(:,:) = b0(:,:,i)
              !
              call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
@@ -1016,23 +1036,17 @@ module mol_abcd
                   cycle 
                 endif 
                 !
-                if (verbose>=4) then 
-                  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
-                endif
+                !if (verbose>=4) then 
+                !  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+                !endif
                 !
              enddo
              !    
            enddo
            !
-         endif
+         end select 
          !
       endif
-      !
-      !
-      !b0 = cshift(b0(:,:,:),1,dim=2)
-      !
-      !b0(:,3,:) = -b0(:,3,:)
-
       !
       if (verbose>=3) then
         !
