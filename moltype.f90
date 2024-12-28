@@ -145,6 +145,7 @@ module moltype
   !
   type ragged_array_lvl_2
       type(ragged_array_lvl_1), allocatable :: mode_set(:)
+      integer(ik) :: numfunc
   end type ragged_array_lvl_2
   !
   abstract interface
@@ -2807,6 +2808,7 @@ module moltype
        call readu(w)
        call readi(imode)
        call readi(numfunc)     
+       molec%basic_function_list(imode)%numfunc = numfunc
        allocate(molec%basic_function_list(imode)%mode_set(numfunc))
        do i = 1, numfunc
          call read_line(eof,iut); if (eof) exit

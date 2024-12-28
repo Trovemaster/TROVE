@@ -2218,7 +2218,8 @@ module fields
          do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
             call readu(w)
             call readi(imode)
-            call readi(numfunc)     
+            call readi(numfunc)    
+            molec%basic_function_list(imode)%numfunc = numfunc
             allocate(molec%basic_function_list(imode)%mode_set(numfunc))
             do i = 1, numfunc
               call read_line(eof,iut); if (eof) exit
@@ -19021,8 +19022,8 @@ end subroutine check_read_save_none
            !
            ! These are grid-based coordinates 
            !
-           if(job%mode_list_present) then
-              maxpower = size(molec%basic_function_list(nu_i)%mode_set)
+           if(molec%mode_list_present) then
+              maxpower = molec%basic_function_list(nu_i)%numfunc
            else 
               maxpower = trove%NKinorder
            endif
@@ -19497,7 +19498,7 @@ end subroutine check_read_save_none
              !
            case ('FOURIER_PURE')
              !
-             call ME_Fourier_pure(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Fourier_pure(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('FOURIER')
@@ -21088,11 +21089,8 @@ end subroutine check_read_save_none
              !pseudo = trove%pseudo%field(1,0:npoints)
              !
              !
-             if(job%mode_list_present) then
-                maxpower = 0 
-                do imode = 1, trove%Nmodes
-                   maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
-                enddo
+             if(molec%mode_list_present) then
+                maxpower = molec%basic_function_list(nu_i)%numfunc
              else
                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
@@ -21452,13 +21450,10 @@ end subroutine check_read_save_none
        !
        nu_ = bs%mode(1)  
        !
-       if(job%mode_list_present) then
-          maxpower = 0 
-          do imode = 1, trove%Nmodes
-             maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
-          enddo
+       if(molec%mode_list_present) then
+          maxpower = molec%basic_function_list(nu_)%numfunc
        else
-         maxpower = min(trove%NKinOrder,max(bset%dscr(nu_)%model-2,0))
+          maxpower = min(trove%NKinOrder,max(bset%dscr(nu_)%model-2,0))
        endif
        !
        fl => trove%pseudo
@@ -21852,7 +21847,7 @@ end subroutine check_read_save_none
             k = FLQindex(trove%Nmodes_e,powers)
             !
             ! shift the minimum by the period of the last mode if present
-            if (periodic_model) then 
+            if (imode==trove%Nmodes.and.periodic_model) then 
               !
               if (npoints/=trove%npoints) stop 'generate_potential_1d_field: npoints/=trove%npoints'
               !
@@ -21873,7 +21868,7 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew: f2=0 in the poten sparse-field'
               endif
               !
-              if (periodic_model) then 
+              if (imode==trove%Nmodes.and.periodic_model) then 
                 !
                 do jmode = 1,bs%imodes
                   !
