@@ -63,7 +63,7 @@ module mol_abcd
            !dst(:) = dst(:) +  molec%local_eq(:)
        endif
        !
-    case('R-ALPHA-TAU')
+    case('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
        !
        if (direct) then
           ! 
@@ -716,7 +716,7 @@ module mol_abcd
       !
       select case(trim(molec%frame))
         !
-      case ('R-ALPHA-TAU')
+      case ('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
         !
         a0(1,1) = 0.0_ark
         a0(1,2) = 0.0_ark
@@ -897,7 +897,7 @@ module mol_abcd
               !
            enddo
            !
-         case ('R-ALPHA-TAU')
+         case ('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
            ! 
            ! non-rigid Frame with the x-axis at the half-angle (bisect) 
            !
@@ -1342,6 +1342,67 @@ module mol_abcd
          !
        end select
         !
+    case('R1-R2-R3-A1-A2-TAU')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_abcd - bad symm. type'
+          !
+       case('C','C(M)')
+         !
+         dst = src
+         !
+       case('CS','CS(M)')
+         !
+         select case(ioper)
+         !
+         case (1) ! identity 
+
+           dst = src
+
+         case (2) ! (E*)
+
+           dst = src
+           dst(6) = 2.0_ark*pi-src(6)
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+           !
+       case('C2V','C2V(M)')
+         !
+         dst = src
+         select case(ioper)
+           !
+         case (1) ! E 
+           !
+           dst(6) = src(6)
+           !
+         case (2) ! (12)(34)
+           !
+           dst(6) = src(6)
+           !
+         case (3) ! (E*)
+           !
+           dst(6) = 2.0_ark*pi-src(6)
+           !
+         case (4) ! (12)(34)*
+           !
+           dst(6) = 2.0_ark*pi-src(6)
+           !
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+         !
+       end select
+       !
     case('R-ALPHA-TAU-REF','R-ALPHA-TAU')
        !
        select case(trim(molec%symmetry))
@@ -1784,7 +1845,8 @@ module mol_abcd
          end select 
          !
        end select
-        !
+
+
         !
     case('R-ALPHA-R-TAU')
        !

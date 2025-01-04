@@ -2972,16 +2972,7 @@ module perturbation
            !
            ispecies = PT%Mspecies(imode)
            !
-           if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
-               trim(bs_t(imode)%type)=='BOX'.or.&
-               trim(bs_t(imode)%type)=='MORSE'.or.&
-               trim(bs_t(imode)%type)=='FOURIER'.or.&
-               trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
-               trim(bs_t(imode)%type)=='SINRHO'.or.&
-               trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
-               trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
-               trim(bs_t(imode)%type)=='SINC'.or.&
-               trim(bs_t(imode)%type)=='LEGENDRE') then 
+           if (job%bset_prop(imode)%numerical) then
              !
              allocate (bs_funct(ispecies)%coeffs(0:bs_size,0:npoints),stat=alloc)
              call ArrayStart('bs_funct(ispecies)%coeffs' ,alloc,size( bs_funct(ispecies)%coeffs ),&
@@ -3303,17 +3294,8 @@ module perturbation
                     !
                     xval = chi_t(imode,ioper,jpoint) 
                     !
-                    if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
-                        trim(bs_t(imode)%type)=='BOX'.or.&
-                        trim(bs_t(imode)%type)=='MORSE'.or.&
-                        trim(bs_t(imode)%type)=='FOURIER'.or.&
-                        trim(bs_t(imode)%type)=='FOURIER_PURE'.or.&
-                        trim(bs_t(imode)%type)=='SINRHO'.or.&
-                        trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
-                        trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
-                        trim(bs_t(imode)%type)=='SINC'.or.&
-                        trim(bs_t(imode)%type)=='LEGENDRE') then
-                        !
+                    if (job%bset_prop(imode)%numerical) then
+                      !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
                       !
                       if (ipoint_t>npoints.or.ipoint_t<0) then 
@@ -3912,15 +3894,7 @@ module perturbation
          !
          imode = PT%mode_class(iclasses,i)
          !
-         if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
-             trim(bs_t(imode)%type)=='BOX'.or.&
-             trim(bs_t(imode)%type)=='MORSE'.or.&
-             trim(bs_t(imode)%type)=='FOURIER'.or.&
-             trim(bs_t(imode)%type)=='SINRHO'.or.&
-             trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
-             trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
-             trim(bs_t(imode)%type)=='SINC'.or.&
-             trim(bs_t(imode)%type)=='LEGENDRE') then
+         if (job%bset_prop(imode)%numerical) then
            !
            if (PT%Mspecies(imode)/=ispecies) then 
              ispecies = PT%Mspecies(imode)
@@ -3930,15 +3904,7 @@ module perturbation
          endif
        enddo
        !
-       if (trim(bs_t(imode)%type)=='NUMEROV'.or.&
-           trim(bs_t(imode)%type)=='BOX'.or.&
-           trim(bs_t(imode)%type)=='MORSE'.or.&
-           trim(bs_t(imode)%type)=='FOURIER'.or.&
-           trim(bs_t(imode)%type)=='SINRHO'.or.&
-           trim(bs_t(imode)%type)=='LAGUERRE-K'.or.&
-           trim(bs_t(imode)%type)=='SINRHO-LAGUERRE-K'.or.&
-           trim(bs_t(imode)%type)=='SINC'.or.&
-           trim(bs_t(imode)%type)=='LEGENDRE') then
+       if (job%bset_prop(imode)%numerical) then
            !
            call ArrayStop('bs_funct(ispecies)%coeffs')
            !

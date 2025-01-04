@@ -10,7 +10,7 @@ module me_bnd
 
   public ik, rk, out
   public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,&
-         ME_sinrho_polynomial_k,ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
+         ME_sinrho_Legendre_k,ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
   public ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,ME_Fourier_pure
   !
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
@@ -3181,9 +3181,9 @@ module me_bnd
 
 
   !
-  ! Matrix elements with sinrho-k basis 
+  ! Matrix elements with sinrho-Legendre basis (sin(rho)^n L where n=0 or 1 ) 
   !
-  subroutine ME_sinrho_polynomial_k(imode,vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,pseudo,icoord,verbose,&
+  subroutine ME_sinrho_Legendre_k(imode,vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,pseudo,icoord,verbose,&
                                   g_numerov,energy)
    !
    implicit none
@@ -3604,14 +3604,14 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-                 stop 'ME_sinrho_polynomial_k: bad solution'
+                 write(out,"('ME_sinrho_Legendre_k: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 stop 'ME_sinrho_Legendre_k: bad solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_sinrho_polynomial_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')")&
+                 write(out,"('ME_sinrho_Legendre_k: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')")&
                            vl,vr,h_t,ener(vl+1)
-                 stop 'ME_sinrho_polynomial_k: bad solution'
+                 stop 'ME_sinrho_Legendre_k: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -3679,9 +3679,9 @@ module me_bnd
                         elseif(b_func_outer_expon==2) then
                           Is_it_one_over_sin2 = .true.
                         elseif(b_func_outer_expon>2) then
-                          write(out,"('ME_sinrho_polynomial_k error: basic_function 1/sin^n n must be <=2, not n =',i4)") &
+                          write(out,"('ME_sinrho_Legendre_k error: basic_function 1/sin^n n must be <=2, not n =',i4)") &
                                       b_func_outer_expon
-                          stop 'ME_sinrho_polynomial_k error: basic_function 1/sin^n n must be <=2'
+                          stop 'ME_sinrho_Legendre_k error: basic_function 1/sin^n n must be <=2'
                         endif
                         !
                       end select 
@@ -3796,7 +3796,7 @@ module me_bnd
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
-  end subroutine ME_sinrho_polynomial_k
+  end subroutine ME_sinrho_Legendre_k
 
 
 
