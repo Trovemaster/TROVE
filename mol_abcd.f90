@@ -79,6 +79,24 @@ module mol_abcd
           !
       endif
        !
+    case('R1-R2-R3-A1-RHO2-TAU')
+       !
+       if (direct) then
+          ! 
+          dst(1:4) = dsrc(1:4)
+          dst(5) = molec%local_eq(5)-src(5)
+          dst(6) = src(6)
+          !
+          !dst(6) = mod(dst(6)+2.0_ark*pi,2.0_ark*pi)
+          !
+      else ! not direct
+          !
+          dst(1:4) = src(1:4)+molec%local_eq(1:4)
+          dst(5) = -src(5)+molec%local_eq(5)
+          dst(6) = src(6)
+          !
+      endif
+       !
     case('R-ALPHA-R-TAU')
        !
        if (direct) then
@@ -1342,7 +1360,7 @@ module mol_abcd
          !
        end select
         !
-    case('R1-R2-R3-A1-A2-TAU')
+    case('R1-R2-R3-A1-A2-TAU','R1-R2-R3-A1-RHO2-TAU')
        !
        select case(trim(molec%symmetry))
        case default

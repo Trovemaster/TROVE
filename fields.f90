@@ -21,7 +21,7 @@ module fields
    use kin_x2y2, only  : MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
    !
    use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
-   use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha1_singular
+   use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha2_singular,MLkinetic_abcd_EKE_z_rho2_singular
 
    ! use perturbation
 
@@ -1041,7 +1041,7 @@ module fields
          !
          ! Default values 
          !
-         do i=0,Nmodes
+         do i=1,Nmodes
             job%bset(i)%species = i
             job%bset_prop(i)%numerical = .false.
             job%bset_prop(i)%singular = .false.
@@ -7010,9 +7010,14 @@ end subroutine check_read_save_none
          write (out,"('compute_kinetic_on_rho_grid_compact: kinetic type ',a,' unknown')") trim(molec%kinetic_type)
          stop 'compute_kinetic_on_rho_grid_compact - bad kinetic'
          !
-      case('KINETIC_ABCD_EKE_Z_ALPHA1_SINGULAR') 
+      case('KINETIC_ABCD_EKE_Z_ALPHA2_SINGULAR') 
          !
-         call MLkinetic_abcd_EKE_z_alpha1_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+         call MLkinetic_abcd_EKE_z_alpha2_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_ABCD_EKE_Z_RHO2_SINGULAR') 
+         !
+         call MLkinetic_abcd_EKE_z_rho2_singular(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                                              g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
       case('KINETIC_ZXY2_EKE_BISECT_SINRHO_RIGID') 
@@ -18384,7 +18389,7 @@ end subroutine check_read_save_none
     !
     logical              :: reduced_model,periodic_model ,bs_numerical
     real(ark)            :: poten_t,gvib_t(trove%Nmodes,trove%Nmodes),grot_t(3,3),gcor_t(trove%Nmodes,3),extF_t(extF%rank)
-    real(ark)            :: rho_ref_,period
+    real(ark)            :: rho_ref_,period,r_(trove%Nmodes),chi_b(2),chi_(trove%Nmodes)
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
@@ -18954,7 +18959,7 @@ end subroutine check_read_save_none
         !
         ! the default case is assumed to be of the numerical type
         !
-        if (job%bset_prop(nu_i)%numerical) then
+        if (.not.job%bset_prop(nu_i)%numerical) then
            write(out,"('FLbset1DNew error: this basis set is assumed to be of numerical type ',a)") trim(bs%type)
            stop 'FLbset1DNew error: a non-numerical basis set type is illegal here'
         endif
@@ -19846,15 +19851,29 @@ end subroutine check_read_save_none
              if(molec%mode_list_present) then
                 maxpower = molec%basic_function_list(nu_i)%numfunc
              else
-               maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
              !
              !drho  = drho  + trove%local_eq(nu_i)
-             rho_b = rho_b + trove%local_eq(nu_i)
+             !rho_b = rho_b + trove%local_eq(nu_i)
+             !
+             !r_ = trove%local_eq 
+             !r_(nu_i) = rho_b(1)+trove%local_eq(nu_i)
+             !
+             !chi_b = rho_b
+             !
+             !chi_ = MLcoordinate_transform_func(r_,size(r_),.true.)
+             chi_b(:) = rho_b(:) - rho_b(1)
+             !r_(nu_i) = rho_b(2)+trove%local_eq(nu_i) 
+             !chi_ = MLcoordinate_transform_func(r_,size(r_),.true.)
+             !chi_b(2) = chi_(nu_i)
+             !drho = drho - rho_b(1)
+             !
+             bs%matelements = 0 
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
-                                       job%verbose,bs%matelements,bs%ener0)
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+                                       job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
@@ -20354,9 +20373,13 @@ end subroutine check_read_save_none
             k = FLQindex(trove%Nmodes_e,powers)
             !
             ! shift the minimum by the period of the last mode if present
-            if (imode==trove%Nmodes.and.periodic_model) then 
+            if (nu_i==trove%Nmodes.and.periodic_model) then 
               !
-              if (npoints/=trove%npoints) stop 'generate_potential_1d_field: npoints/=trove%npoints'
+              if (npoints/=trove%npoints) then 
+                write(out,"('generate_potential_1d_field error: (periodic) mode= ',i8,' npoints/=trove%npoint =',2i8)") & 
+                   nu_i,npoints,trove%npoints
+                stop 'generate_potential_1d_field: npoints/=trove%npoints'
+              endif
               !
               rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
               irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
@@ -21839,6 +21862,8 @@ end subroutine check_read_save_none
          !
          !
          Nmodes = trove%Nmodes
+         imode = trove%Nmodes
+         bs => bset%bs1D(ibs)
          !
          ! Potential energy part
          !

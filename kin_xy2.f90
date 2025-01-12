@@ -950,7 +950,6 @@ module kin_xy2
      Ng_cor(1,2) = 1
      Ng_cor(3,2) = 2
      Npseudo = 8
-
      !
      ig_vib(1,1,1,:) = (/0,0,3/)
      ig_vib(1,1,2,:) = (/0,0,4/)
@@ -989,38 +988,37 @@ module kin_xy2
      !
      g_vib(1,1,1) =  (mX+mY)/mY/mX
      g_vib(1,1,2) =  (mX+mY)/mY/mX
-     g_vib(1,2,1) =  1._ark/mX
-     g_vib(1,3,1) =  -1._ark/mX
-     g_vib(2,1,1) =  1._ark/mX
+     g_vib(1,2,1) =  1.0_ark/mX
+     g_vib(1,3,1) =  -1.0_ark/mX
+     g_vib(2,1,1) =  1.0_ark/mX
      g_vib(2,2,1) =  (mX+mZ)/mX/mZ
-     g_vib(2,3,1) =  -1._ark/mX
-     g_vib(3,1,1) =  -1._ark/mX
-     g_vib(3,2,1) =  -1._ark/mX
+     g_vib(2,3,1) =  -1.0_ark/mX
+     g_vib(3,1,1) =  -1.0_ark/mX
+     g_vib(3,2,1) =  -1.0_ark/mX
      g_vib(3,3,1) =  (mX+mZ)/mX/mZ
      g_vib(3,3,2) =  (mX+mY)/mX/mY
      g_vib(3,3,3) =  (mX+mY)/mX/mY
-     g_vib(3,3,4) =  -2._ark/mX
+     g_vib(3,3,4) =  -2.0_ark/mX
      g_rot(1,1,1) =  (mX+mZ)/mX/mZ
-     g_rot(1,3,1) =  -1.*(mX+mZ)/mX/mZ
-     g_rot(1,3,2) =  1._ark/mX
+     g_rot(1,3,1) =  -1.0_ark*(mX+mZ)/mX/mZ
+     g_rot(1,3,2) =  1.0_ark/mX
      g_rot(2,2,1) =  (mX+mZ)/mX/mZ
-     g_rot(3,1,1) =  -1._ark*(mX+mZ)/mX/mZ
-     g_rot(3,1,2) =  1._ark/mX
+     g_rot(3,1,1) =  -1.0_ark*(mX+mZ)/mX/mZ
+     g_rot(3,1,2) =  1.0_ark/mX
      g_rot(3,3,1) =  (mX+mY)/mY/mX
-     g_rot(3,3,2) =  (mX+mZ)/mZ/mX
-     g_rot(3,3,3) =  -2._ark/mX
-     g_cor(1,2,1) =  -1._ark/mX
+     g_rot(3,3,2) =  (mX+mZ)/mX/mZ
+     g_rot(3,3,3) =  -2.0_ark/mX
+     g_cor(1,2,1) =  -1.0_ark/mX
      g_cor(3,2,1) =  (mX+mZ)/mX/mZ
-     g_cor(3,2,2) =  -1._ark/mX
-     pseudo(1) =  -.125_ark*(2.*mZ+2.*mX)/mX/mZ
-     pseudo(2) =  .125_ark*(-2.*mX-2.*mY)/mY/mX
+     g_cor(3,2,2) =  -1.0_ark/mX
+     pseudo(1) =  -.125_ark*(2.*mX+2.*mZ)/mX/mZ
+     pseudo(2) =  -.125_ark*(2.*mX+2.*mY)/mY/mX
      pseudo(3) =  -.125_ark*(mX+mY)/mY/mX
      pseudo(4) =  -.125_ark*(mX+mY)/mY/mX
      pseudo(5) =  .125_ark*(mX+mY)/mY/mX
      pseudo(6) =  -.125_ark*(mX+mZ)/mX/mZ
-     pseudo(7) =  -.250_ark*(mX+mY)/mY/mX
-     pseudo(8) =  .250_ark/mX
-
+     pseudo(7) =  -.25_ark*(mX+mY)/mY/mX
+     pseudo(8) =  .25_ark/mX
      !
      call read_basic_function_constructor(nlines,constructor)
      !

@@ -3247,6 +3247,14 @@ module me_bnd
          write (out,"('icoord = ',i4)") icoord
          write (out,"('rho_b (x) = ',2f12.4)") rho_b(1:2)*180.0_ark/pi
          write (out,"('rhostep (x) = ',2f12.4)") rhostep  !*180.0_ark/pi
+     endif
+     !
+     if (verbose>=3) then 
+        write(out,"('grid values (i,rho,poten, mu_rr, mu_zz, pseudo): ')") 
+        do i=0,npoints
+          rho_ = rho_b(1)+real(i,kind=ark)*rhostep
+          write(out,"(i8,f14.6,4g14.6)") i,rho_,poten(i),mu_rr(i),mu_zz(i),pseudo(i)
+        enddo 
      endif 
      !
      if (kmax>lmax) then
@@ -3288,6 +3296,10 @@ module me_bnd
      rho_kinet(:) = drho(:,1)
      rho_poten(:) = drho(:,2)
      rho_extF(:)  = drho(:,3)
+     !
+     if (molec%mode_list_present) then 
+        rho_kinet(:) = rho(:)
+     endif
      !
      inquire(iolength=rec_len) psil(:),dpsil(:)
      !

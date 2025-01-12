@@ -49,7 +49,7 @@ module molecules
   !
   use kin_zxy2, only  : MLkinetic_compact_zxy2_bisect_EKE_sinrho_rigid
   !
-  use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha1_singular
+  use kin_abcd, only  : MLkinetic_abcd_EKE_z_alpha2_singular,MLkinetic_abcd_EKE_z_rho2_singular
   !
   use pot_user, only : MLdipole,MLpoten,ML_MEP,MLpoten_name
   !
@@ -571,9 +571,13 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc_compact => MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
          !
-    case('KINETIC_ABCD_EKE_Z_ALPHA1_SINGULAR') 
+    case('KINETIC_ABCD_EKE_Z_ALPHA2_SINGULAR') 
          !
-         MLkineticfunc_compact => MLkinetic_abcd_EKE_z_alpha1_singular
+         MLkineticfunc_compact => MLkinetic_abcd_EKE_z_alpha2_singular
+         !
+    case('KINETIC_ABCD_EKE_Z_RHO2_SINGULAR') 
+         !
+         MLkineticfunc_compact => MLkinetic_abcd_EKE_z_rho2_singular
          !
     case('KINETIC_XYZ_EKE_RIGID_ALPHA_BOND2') 
          !
