@@ -1,0 +1,225 @@
+KinOrder  2  (Max order in the kinetic energy expansion)
+PotOrder  4   (Max order in the potential energy expansion)
+
+Natoms 6       (Number of atoms)
+Nmodes 12      (Number of modes = 3*Natoms-6)
+
+(ACTIVE SPACE CUTOFFS:)
+PRIMITIVES
+  Npolyads    6      (how many polyads we calculate)
+  enercut    80000.   (energy cut in the primitive matrix for the diagonalization)
+END
+
+CONTRACTION
+  Npolyads   6       (how many polyads we calculate)
+  enercut    80000.   (energy cut in the primitive matrix for the diagonalization)
+  coeff_thresh    1.0d-12
+  degeneracy      1d-02
+  sample_points   40
+  sample_attempts 500
+  symm_toler      1.0d-8
+END
+
+SYMGROUP C3v(M)
+
+iron-out
+
+DIAGONALIZER 
+  SYEVR     (syev-default, syevr - optional, nroots or uplimit can be given)
+end
+
+
+dstep 1.e-3   (finite difference element for each mode )
+COORDS linear (type of the internal coordinates: linear or local)
+
+TRANSFORM  R-ALPHA-THETA-TAU 
+frame      R-ALPHA-THETA-TAU-OH-CLOCKWISE
+
+MOLTYPE ch3oh 
+MOLECULE CH3OH 
+REFER-CONF NON-RIGID 
+
+
+ZMAT          
+ C  0  0  0   0  12.00000000
+ O  1  0  0   0  15.99491463
+ H  2  1  0   0   1.00782505
+ H  1  2  3   202   1.00782505
+ H  1  2  3   202   1.00782505
+ H  1  2  3   202   1.00782505
+end
+
+
+
+     (type        chi_kin     chi_pot)
+BASIS                                                                         
+  0,'JKtau', Jrot  0
+  1, 'numerov', 'linear', 'morse', range  0, 6 , resc 1.0,points 2000,borders -0.5,  2.21
+  2, 'numerov', 'linear', 'morse', range  0, 6 , resc 1.0,points 2000,borders -0.5,  2.22
+  3, 'numerov', 'linear', 'morse', range  0, 6 , resc 1.0,points 2000,borders -0.4,  2.23 nocheck
+  3, 'numerov', 'linear', 'morse', range  0, 6 , resc 1.0,points 2000,borders -0.4,  2.23 nocheck
+  3, 'numerov', 'linear', 'morse', range  0, 6 , resc 1.0,points 2000,borders -0.4,  2.23 nocheck
+  4, 'numerov', 'linear', 'linear',range  0, 6 , resc 1.0,points 2000,borders -1.2,  1.3
+  5, 'numerov', 'linear', 'linear',range  0, 6 , resc 1.0,points 2000,borders -1.2,  2.3 nocheck
+  5, 'numerov', 'linear', 'linear',range  0, 6 , resc 1.0,points 2000,borders -1.2,  2.3 nocheck
+  5, 'numerov', 'linear', 'linear',range  0, 6 , resc 1.0,points 2000,borders -1.2,  2.3 nocheck
+  6, 'harmonic', 'linear', 'linear',range 0, 6 , r 2,  resc 1.0,points 2000,borders -0.84,  0.84 nocheck
+  6, 'harmonic', 'linear', 'linear',range 0, 6 , r 2, resc 1.0,points 2000,borders -0.84,  0.84 nocheck
+  7, 'Fourier', 'linear', 'linear',range  0, 8, r, 8, resc 1.0,points 3000,borders  0.0,  360.0 deg, period 1
+END                                                           
+
+verbose 4
+
+
+CHECK_POINT
+ascii
+kinetic     read
+potential   read
+BASIS_SET   save   
+CONTRACT    save   
+matelem     save split   
+EIGENFUNC   save
+END
+
+sparse
+
+EQUILIBRIUM
+re1          0    1.42214934
+re2          0    0.95552007
+re3          0    1.09109223
+re4          0    1.09109223
+re5          0    1.09109223
+alphae1      0    111.8369258  DEG
+alphae2      0    109.4922432  DEG
+alphae3      0    109.4922432  DEG
+alphae4      0    109.4922432  DEG
+taue1        0       0.0000      DEG
+taue2        0     120.0000      DEG
+taue3        0     240.0000      DEG
+end
+
+
+
+SPECPARAM 
+beta1        0          2.00000000
+beta2        0          2.00000000
+beta3        0          2.00000000
+beta4        0          2.00000000
+beta5        0          2.00000000
+END
+
+POTEN
+NPARAM  110
+POT_TYPE  poten_ch3oh_sym_IV
+COEFF  powers  (powers or list) 
+rCOe  0  0  0  0  0  0  0  0  0  0  0  0   1          1.42214934
+rOHe  0  0  0  0  0  0  0  0  0  0  0  0   1          0.95552007
+rH1e  0  0  0  0  0  0  0  0  0  0  0  0   1          1.09109223
+aHOC  0  0  0  0  0  0  0  0  0  0  0  0   1        108.20603169
+aHCO  0  0  0  0  0  0  0  0  0  0  0  0   1        112.68916948
+a1    0  0  0  0  0  0  0  0  0  0  0  0   1          1.86914479
+a2    0  0  0  0  0  0  0  0  0  0  0  0   1          2.28541638
+b1    0  0  0  0  0  0  0  0  0  0  0  0   1          1.90474151
+ f  0  0  0  0  0  0  0  0  0  0  0  0   1 0.0000
+ f  0  0  0  0  0  0  0  0  0  0  0  3   1        121.25318941
+ f  0  0  0  0  0  0  0  0  0  0  0  6   1          0.51262051
+ f  0  0  0  0  0  0  0  0  0  0  0  9   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  0  0 12   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  0  0 15   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  0  0 18   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  0  0 21   1          0.00000000
+ f  1  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  2  0  0  0  0  0  0  0  0  0  0  0   1         -9.86491724
+ f  3  0  0  0  0  0  0  0  0  0  0  0   1       -790.28785443
+ f  4  0  0  0  0  0  0  0  0  0  0  0   1       2605.36075854
+ f  5  0  0  0  0  0  0  0  0  0  0  0   1       1210.67480736
+ f  6  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  7  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  8  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  1  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  2  0  0  0  0  0  0  0  0  0  0   1         -4.79316694
+ f  0  3  0  0  0  0  0  0  0  0  0  0   1      -1068.61390220
+ f  0  4  0  0  0  0  0  0  0  0  0  0   1       3130.58330425
+ f  0  5  0  0  0  0  0  0  0  0  0  0   1       1411.73252866
+ f  0  6  0  0  0  0  0  0  0  0  0  0   1        557.94111988
+ f  0  7  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  8  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  1  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  2  0  0  0  0  0  0  0  0  0  0  0   1      40159.59890756
+ f  3  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  4  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  5  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  6  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  7  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  8  0  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  1  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  2  0  0  0  0  0  0  0  0  0  0   1      41095.96286190
+ f  0  3  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  4  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  5  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  6  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  7  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  8  0  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  0  1  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  0  0  1  0  0  0  0  0  0  0  1   1        363.35445705
+ f  0  0  2  0  0  0  0  0  0  0  0  0   1     108898.47620718
+ f  0  0  1  1  0  0  0  0  0  0  0  0   1      49438.63624913
+ f  0  0  0  2  0  0  0  0  0  0  0  1   1         69.77180155
+ f  0  0  3  0  0  0  0  0  0  0  0  0   1      -2522.78536105
+ f  0  0  2  1  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  0  2  1  0  0  0  0  0  0  0  1   1          0.00000000
+ h  0  0  2  1  0  0  0  0  0  0  0 -1   1          0.00000000
+ f  0  0  0  3  0  0  0  0  0  0  0  1   1       -652.74593457
+ f  0  0  4  0  0  0  0  0  0  0  0  0   1       7998.45183641
+ f  0  0  5  0  0  0  0  0  0  0  0  0   1       4432.08803316
+ f  0  0  6  0  0  0  0  0  0  0  0  0   1       4536.27778454
+ f  0  0  7  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  0  8  0  0  0  0  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  1  0  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  2  0  0  0  0  0  0   1      22121.09793353
+ f  0  0  0  0  0  3  0  0  0  0  0  0   1       1171.95798937
+ f  0  0  0  0  0  4  0  0  0  0  0  0   1       5067.14218287
+ f  0  0  0  0  0  5  0  0  0  0  0  0   1       -748.15985196
+ f  0  0  0  0  0  6  0  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  7  0  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  8  0  0  0  0  0  0   1       3368.24714093
+ f  0  0  0  0  0  0  1  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  0  1  0  0  0  1   1       7529.89961068
+ f  0  0  0  0  0  0  2  0  0  0  0  0   1      83768.69923048
+ f  0  0  0  0  0  0  1  1  0  0  0  0   1    -105500.78640432
+ f  0  0  0  0  0  0  0  2  0  0  0  1   1      -2988.29247063
+ f  0  0  0  0  0  0  3  0  0  0  0  0   1     -11241.07465659
+ f  0  0  0  0  0  0  2  1  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  2  1  0  0  0  1   1          0.00000000
+ h  0  0  0  0  0  0  2  1  0  0  0 -1   1          0.00000000
+ f  0  0  0  0  0  0  0  3  0  0  0  1   1       7047.25780331
+ f  0  0  0  0  0  0  4  0  0  0  0  0   1       7628.40482914
+ f  0  0  0  0  0  0  0  4  0  0  0  1   1      -6182.84795034
+ f  0  0  0  0  0  0  3  1  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  2  2  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  3  1  0  0  0  1   1          0.00000000
+ f  0  0  0  0  0  0  2  2  0  0  0  1   1          0.00000000
+ f  0  0  0  0  0  0  5  0  0  0  0  0   1       -956.59400906
+ f  0  0  0  0  0  0  4  1  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  3  2  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  6  0  0  0  0  0   1      -4171.13709071
+ f  0  0  0  0  0  0  7  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  8  0  0  0  0  0   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  1  0  1   1       -113.74684327
+ f  0  0  0  0  0  0  0  0  0  2  0  0   1      19559.39255517
+ f  0  0  0  0  0  0  0  0  0  2  0  1   1        784.70654911
+ f  0  0  0  0  0  0  0  0  0  1  2  0   1          0.00000000
+ h  0  0  0  0  0  0  0  0  0  2  1 -1   1      25140.58617666
+ h  0  0  0  0  0  0  0  0  0  2  1 -3   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  1  2  3   1       6265.35410486
+ f  0  0  0  0  0  0  0  0  0  4  0  0   1      11553.74696666
+ f  0  0  0  0  0  0  0  0  0  4  0  1   1         96.68932601
+ f  0  0  0  0  0  0  0  0  0  2  2  1   1      69141.38591515
+ f  0  0  0  0  0  0  0  0  0  5  0  0   1       -272.03610399
+ f  0  0  0  0  0  0  0  0  0  5  0  1   1          0.00000000
+ h  0  0  0  0  0  0  0  0  0  4  1 -1   1      71841.30186065
+ f  0  0  0  0  0  0  0  0  0  4  2  0   1      12233.71698806
+ f  0  0  0  0  0  0  0  0  0  4  2  1   1      25023.00888135
+ f  0  0  0  0  0  0  0  0  0  7  0  0   1          0.00000000
+ f  0  0  0  0  0  0  0  0  0  8  0  0   1          0.00000000
+end
