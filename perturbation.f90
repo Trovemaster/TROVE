@@ -32468,7 +32468,7 @@ end subroutine read_contr_matelem_expansion_classN
     integer(ik)        :: icount,ideg,jdeg,jroot,iroot_in,iroot,Ndeg,Ncount
     real(rk)           :: largest_coeff
     logical            :: postprocess
-    integer(ik)        :: kmax, nmax,n_i,n_j,v_i,v_j,k_i,k_j
+    integer(ik)        :: kmax, nmax,n_i,n_j,v_i,v_j,k_i,k_j,imode,jmode
     character(len=cl)  :: my_fmt1,my_fmt2 !format for I/O specification
     !
     Nmodes = PT%Nmodes
@@ -32537,7 +32537,7 @@ end subroutine read_contr_matelem_expansion_classN
        write(out,"(/'Primitive matrix elements calculations...')")
     endif
     !
-    !$omp parallel do private(i,j,nu_i,nu_j,v_i,k_i,n_i,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
+    !$omp parallel do private(i,j,nu_i,nu_j,imdoe,v_i,k_i,n_i,jmode,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
     do i = 1,dimen
       !
       if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i8)"), i
@@ -32557,9 +32557,30 @@ end subroutine read_contr_matelem_expansion_classN
         !nu_i(nmodes) = n_i
       endif
       !
+      do imode = 1,Nmodes
+        if (job%bset_prop(imode)%singular) then 
+          v_i = nu_i(imode)
+          k_i = mod(v_i,kmax+1)
+          n_i = (v_i-k_i)/(kmax+1)
+          !
+        endif 
+      enddo
+      !
       do j = i,dimen
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
+        !
+        do jmode = 1,Nmodes
+          if (job%bset_prop(jmode)%singular) then 
+            !
+            v_j = nu_j(jmode)
+            k_j = mod(v_j,kmax+1)
+            n_j = (v_j-k_j)/(kmax+1)
+            !
+            if (k_i/=k_j) cycle
+            !
+          endif 
+        enddo
         !
         if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)

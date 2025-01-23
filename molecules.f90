@@ -3488,6 +3488,14 @@ end subroutine polintark
         !
         v = sin(rhoe)-sin(x)
         !
+     case('COSX-COSX0') 
+        !
+        !rhoe = molec%specparam(imode)
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe)-cos(rhoe + x)
+        !
      case('LINCOSRHO') 
         !
         !rhoe = molec%specparam(imode)
@@ -3522,7 +3530,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX')
         !
         v = x
         !
@@ -3651,6 +3659,12 @@ end subroutine polintark
               !
            end select
            !
+       case('COSNX') 
+           !
+           if (iorder<0) stop 'MLcoord_direct error: negative iorder'
+           !
+           v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           !
         case('ANGLE-X2Y2')
            !
            if(iorder < 0) then 
@@ -3771,6 +3785,10 @@ end subroutine polintark
      case('SINRHO') 
         !
         dxi_dchi = cos(chi)
+        !
+     case('COSX-COSX0') 
+        !
+        dxi_dchi = -sin(chi)
         !
      case('LINCOSRHO') 
         !
@@ -3920,6 +3938,25 @@ end subroutine polintark
         endif 
         !
         chi = asin( sin(rhoe)-xi(imode))
+        !
+        if (rhoe>0.5_ark*pi.and.chi<0.5_ark*pi) chi = pi - chi
+        !
+     case('COSX-COSX0')
+        !
+        write(out,"('MLcoord_invert error: COSX-COSX0 case has not been tested')")
+        stop 'MLcoord_invert error: COSX-COSX0 case has not been tested'
+        !
+        rhoe = molec%chi_eq(imode)
+        !
+        if (abs(cos(rhoe)-xi(imode))>1.0_ark) then 
+            !
+            write (out,"('MLcoord_invert: |sin x| = sin rhoe -xi  > 1: ',f18.8)") cos(rhoe)-xi(imode)
+            write (out,"('Consider change difftype ')")
+            stop 'MLcoord_invert - bad sin x'
+            !
+        endif 
+        !
+        chi = acos( cos(rhoe)-xi(imode))
         !
         if (rhoe>0.5_ark*pi.and.chi<0.5_ark*pi) chi = pi - chi
         !

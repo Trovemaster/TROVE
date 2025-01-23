@@ -272,6 +272,7 @@ module fields
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       character(len=cl)   :: potenname='GENERAL' ! name of the user type potential function (for control purposes)
       logical             :: kinetic_compact = .false. ! compact or sparce representation of the KEO
+      logical             :: potential_with_modes = .false. ! potential.chk with modes
       !
    end type JobT
    !
@@ -2479,6 +2480,25 @@ module fields
              if (trim(w)=='SEPARATE') then
                 trove%separate_store = .true.
              endif 
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               select case(trim(w))
+               !
+               case('WITH-MODES','WITH_MODES')
+                 !
+                 trove%potential_with_modes = .true.
+                 !
+               case default 
+                 !
+                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CHECK_POINT'
+                 stop 'FLinput - illegal key CHECK_POINT'
+                 !
+               end select 
+               !
+             endif
              !
              !if (trim(trove%IO_potential)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
@@ -6502,21 +6522,37 @@ end subroutine check_read_save_none
        Npoints = trove%Npoints
        !
        if (job%verbose>=6.or.(job%verbose>=6.and.manifold==0)) then
-           write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib             g_cor            g_rot:')")
+           write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_vib:')")
            !
            do k1 = 1,Nmodes
               do k2 = 1,Nmodes
                  do i = 1,trove%g_vib(k1,k2)%Ncoeff
                     do irho = 0,Npoints
-                      if (k2<=3.and.k1<=3) then 
-                        write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho), &
-                                                      trove%g_cor(k1,k2)%field(i,irho),trove%g_rot(k1,k2)%field(i,irho)
-                      elseif (k2<=3) then
-                        write(out,"(20x,3i5,1x,i7,2e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho),&
-                                   trove%g_cor(k1,k2)%field(i,irho)
-                      else 
                         write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_vib(k1,k2)%field(i,irho)
-                      endif
+                    enddo
+                 enddo
+              enddo
+           enddo
+           !
+           write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_cor:')")
+           !
+           do k1 = 1,Nmodes
+              do k2 = 1,3
+                 do i = 1,trove%g_cor(k1,k2)%Ncoeff
+                    do irho = 0,Npoints
+                       write(out,"(20x,3i5,1x,i7,e18.8)") irho,k1,k2,i,trove%g_cor(k1,k2)%field(i,irho)
+                    enddo
+                 enddo
+              enddo
+           enddo
+           !
+           write(out,"(/'Kinetic parameteres    irho  k1    k2   i    g_rot:')")
+           !
+           do k1 = 1,3
+              do k2 = 1,3
+                 do i = 1,trove%g_rot(k1,k2)%Ncoeff
+                    do irho = 0,Npoints
+                        write(out,"(20x,3i5,1x,i7,3e18.8)") irho,k1,k2,i,trove%g_rot(k1,k2)%field(i,irho)
                     enddo
                  enddo
               enddo
@@ -8827,7 +8863,7 @@ end subroutine check_read_save_none
            call print_poten
         endif 
         !
-        if (trove%sparse) then
+        if (trove%sparse.and..not.trove%potential_with_modes) then
            !
           call FLCompact_a_field_sparse(trove%poten,"poten")
           !
@@ -14429,8 +14465,12 @@ end subroutine check_read_save_none
         call checkpointSkip_kinetic
       case ('POTENTIAL_READ')
         !
-        if (trove%separate_store) then 
-          call checkpointRestore_potential_ascii
+        if (trove%separate_store) then
+          if (trove%potential_with_modes) then 
+             call checkpointRestore_potential_ascii_with_modes
+          else
+             call checkpointRestore_potential_ascii
+          endif
         else
           call checkpointRestore_potential
         endif
@@ -17134,6 +17174,160 @@ end subroutine check_read_save_none
 
 
 
+      !
+      ! read KEO from potential.chk using the sparse representation for individual modes 
+      !
+      subroutine checkpointRestore_potential_ascii_with_modes
+
+        character(len=16) :: buf
+        character(len=25) :: buf25
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
+        type(FLpolynomT),pointer    :: fl 
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k
+        integer(ik), allocatable :: mode_list(:) 
+        real(rk)             :: factor
+        real(ark)            :: field_, rho
+        real(rk)             :: exp_coeff_thresh
+        type(FLpolynomT)     :: pot
+        !
+        integer(ik) :: i, j,  iterm, total_terms, cur_term
+        !
+        unitfname ='Check point of the potential'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_poten_fname)
+        !
+        if (.not.associated(trove%poten)) then 
+           !
+           allocate (trove%poten,stat=alloc) 
+           if (alloc/=0) then
+               write (out,"('chk_Restore_pot_ascii-Error ',i9,' trying to allocate poten-field')") alloc
+               stop 'chk_Restore_pot_ascii, poten-field - out of memory'
+           end if
+           !
+        endif
+        !
+        Natoms = trove%Natoms
+        Nmodes = trove%Nmodes
+        Npoints = trove%Npoints
+        !
+        allocate(mode_list(Nmodes))
+        !
+        ! start reading 
+        !
+        read(chkptIO,*) Npoints,Norder,Ncoeff
+        !
+        if (Npoints/=trove%Npoints) then
+          write(out,"('poten-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
+          stop "poten-ASCII-chk npoints is wrong"
+        endif
+        !
+        if (Norder/=trove%NPotOrder) then 
+          write(out,"('poten-ASCII-chk Norder is wrong:',2i8)") Norder,trove%NPotOrder
+          stop "poten-ASCII-chk Norder is wrong"
+        endif
+        !
+        n = 0
+        total_terms = 0 
+        do_poten_pre: do 
+           !
+           read(chkptIO,*) iterm,i,field_, mode_list(1:Nmodes) 
+           !
+           if (iterm==987654321) then
+             !
+             allocate (pot%field(total_terms,0:Npoints),pot%IndexQ(trove%Nmodes,total_terms),stat=alloc)
+             call ArrayStart("pot%field",alloc,size(pot%field),kind(pot%field))
+             call ArrayStart("pot%field",alloc,size(pot%IndexQ),kind(pot%IndexQ))
+             !
+             pot%field  = 0 
+             !
+             exit do_poten_pre
+           endif
+           !total_terms = total_terms + 1
+           !
+           total_terms = max(iterm,total_terms)
+           !
+        enddo do_poten_pre 
+        !
+        rewind(chkptIO)
+        !         
+        read(chkptIO,*) Npoints,Norder,Ncoeff
+        !
+        n = 0; cur_term = 0;
+        do_pot : do 
+          !
+          read(chkptIO,*) iterm,i,field_,mode_list(1:Nmodes) 
+          !
+          if (iterm==987654321) exit do_pot
+          !
+          n = n + 1
+          !
+          cur_term = n
+          !
+          pot%IndexQ(1:Nmodes, n) = mode_list(1:Nmodes)
+          !
+          if (Npoints > 0) then
+            do_k_find_match : do k=1,n-1
+               if ( all( mode_list(1:Nmodes-1) == pot%IndexQ( 1:Nmodes-1,k ) ) ) then 
+                 cur_term = k
+                 n = n - 1
+                 exit do_k_find_match
+               endif
+            enddo do_k_find_match
+            !
+            do j = 0, Npoints 
+              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
+              pot%field(cur_term,j) = pot%field(cur_term,j) +  field_*MLcoord_direct(rho,2, Nmodes, mode_list(Nmodes))
+            enddo
+            !
+          else
+            !
+            pot%field(cur_term,i) = field_
+            !pot%IndexQ(iterm,1:Ncoeff) = FLIndexQ(iterm,1:Ncoeff)
+            !
+          endif
+          !
+        enddo do_pot
+        !
+        total_terms = n
+        !
+        fl => trove%poten
+        fl%Ncoeff = total_terms 
+        call polynom_initialization(trove%poten,trove%NPotOrder,fl%Ncoeff ,trove%Npoints,'poten')
+        !
+        forall(n=1:total_terms) fl%ifromsparse(n) = n
+        fl%sparse = .true.
+
+        do k=1,total_terms
+           fl%field(k,:) =  pot%field(k,:)
+           fl%IndexQ(1:Nmodes,k) = pot%IndexQ(1:Nmodes,k)
+        enddo
+        !
+        read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+           !
+           write(out,"('WARNING: in potential.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") &
+                     job%exp_coeff_thresh,exp_coeff_thresh
+           !
+        endif
+        !
+        read(chkptIO,"(a16)") buf
+        !
+        if (buf/='End of potential') then
+          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
+        end if
+        !
+        deallocate(pot%field,pot%IndexQ)
+        !
+        call ArrayStop("pot%field")
+        !
+        call MemoryReport
+        !
+      end subroutine checkpointRestore_potential_ascii_with_modes
+
+
 
 
       !
@@ -19644,7 +19838,13 @@ end subroutine check_read_save_none
              !
            case ('FOURIER_PURE')
              !
-             call ME_Fourier_pure(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,&
+             if(molec%mode_list_present) then
+                maxpower = molec%basic_function_list(nu_i)%numfunc
+             else
+                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+             endif
+             !
+             call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('FOURIER')
@@ -20351,6 +20551,7 @@ end subroutine check_read_save_none
        !
        real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
        real(ark) :: f1d(0:trove%MaxOrder),rho_pot0,rho_pot,step
+       real(ark) :: pot(1:trove%Nmodes,0:trove%MaxOrder)
        !
        integer(ik) :: ipower,imode,jmode,nu_i,i,k,powers(trove%Nmodes),nu_,maxpower,irho_eq_
        !
@@ -20362,82 +20563,150 @@ end subroutine check_read_save_none
        nu_ = bs%mode(1)
        maxpower =min(trove%NPotOrder,max(bset%dscr(nu_)%model,2))
        !
-       do ipower = 0,maxpower
+       if (trove%potential_with_modes) then 
           !
-          f2 = 0 
+          f2 = 0
+          f1d = 0
+          pot = 0
           !
           do imode = 1,bs%imodes
             !
             nu_i = bs%mode(imode)
-            powers = 0 ; powers(nu_i) = ipower
-            k = FLQindex(trove%Nmodes_e,powers)
             !
-            ! shift the minimum by the period of the last mode if present
-            if (nu_i==trove%Nmodes.and.periodic_model) then 
-              !
-              if (npoints/=trove%npoints) then 
-                write(out,"('generate_potential_1d_field error: (periodic) mode= ',i8,' npoints/=trove%npoint =',2i8)") & 
-                   nu_i,npoints,trove%npoints
-                stop 'generate_potential_1d_field: npoints/=trove%npoints'
-              endif
+            f2(imode) = 0
+            fl => trove%poten
+            !
+            if (periodic_model) then 
               !
               rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
               irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
               !
             endif
             !
-            if (trove%sparse) then
+            do j = 1, size(fl%ifromsparse)
               !
-              call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+              f2_term = 0
               !
-              f2(imode) = 0 
-              if (i/=0) f2(imode) = trove%poten%field(i,irho_eq_)
+              powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
               !
-              if (ipower==2.and.abs(f2(imode))<sqrt(small_)) then
-                write(out,"('FLbset1DNew: f2=0 in the poten sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                stop 'FLbset1DNew: f2=0 in the poten sparse-field'
-              endif
+              ipower = powers(nu_i)
               !
-              if (imode==trove%Nmodes.and.periodic_model) then 
+              f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
+              !
+              do i = 1, trove%Nmodes_e
+                ! 
+                if(i == nu_i) cycle
                 !
-                do jmode = 1,bs%imodes
-                  !
-                  rho_ref_ = trove%rho_ref+period*real(jmode-1,ark)
-                  irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
-                  call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
-                  !
-                  f_period(imode,jmode) = 0 
-                  if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq_)
-                  !
-                enddo
+                f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 2, i, powers(i)) 
                 !
-              endif
+              enddo
               !
-            else
+              pot(imode,ipower) = pot(imode,ipower) + f2_term
               !
-              f2(imode) = trove%poten%field(k,irho_eq_)
-              !
-            endif
+            enddo
             !
           enddo
           !
-          ! Check if all potential parameters are equal for every considered mode
+          ! Check if all pseudo-potential parameters are equal for every considered mode
           !
-          f_t= f2(1) 
-          !
-          if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
-              any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
-             write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
-             write(out,"('pot-ipower=',i6)") ipower
-             write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
-             if ( job%bset(nu_i)%check_sym ) then 
-               stop 'FLbset1DNew: not all numerov parameters are equal'
+          do ipower = 0,maxpower
+             !
+             f_t = pot(1,ipower)
+             !
+             if (any(abs(pot(1:bs%imodes,ipower)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(pot(1:bs%imodes,ipower)-f_t)>1e6*sqrt(small_))) then
+                write(out,"('FLbset1DNew: not all numerov-poten parameters are equal')")
+                write(out,"('poten-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (pot(1,ipower),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym ) then 
+                  stop 'FLbset1DNew: not all numerov parameters are equal'
+                endif
              endif
-          endif
+             !
+             f1d(ipower) = pot(1,ipower)
+             !
+          enddo
           !
-          f1d(ipower) = f2(1)
+       else
           !
-       enddo 
+          do ipower = 0,maxpower
+             !
+             f2 = 0 
+             !
+             do imode = 1,bs%imodes
+               !
+               nu_i = bs%mode(imode)
+               powers = 0 ; powers(nu_i) = ipower
+               k = FLQindex(trove%Nmodes_e,powers)
+               !
+               ! shift the minimum by the period of the last mode if present
+               if (nu_i==trove%Nmodes.and.periodic_model) then 
+                 !
+                 if (npoints/=trove%npoints) then 
+                   write(out,"('generate_potential_1d_field error: (periodic) mode= ',i8,' npoints/=trove%npoint =',2i8)") & 
+                      nu_i,npoints,trove%npoints
+                   stop 'generate_potential_1d_field: npoints/=trove%npoints'
+                 endif
+                 !
+                 rho_ref_ = trove%rho_ref+period*real(imode-1,ark)
+                 irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                 !
+               endif
+               !
+               if (trove%sparse) then
+                 !
+                 call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+                 !
+                 f2(imode) = 0 
+                 if (i/=0) f2(imode) = trove%poten%field(i,irho_eq_)
+                 !
+                 if (ipower==2.and.abs(f2(imode))<sqrt(small_)) then
+                   write(out,"('FLbset1DNew: f2=0 in the poten sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
+                   stop 'FLbset1DNew: f2=0 in the poten sparse-field'
+                 endif
+                 !
+                 if (imode==trove%Nmodes.and.periodic_model) then 
+                   !
+                   do jmode = 1,bs%imodes
+                     !
+                     rho_ref_ = trove%rho_ref+period*real(jmode-1,ark)
+                     irho_eq_ = mod(nint( ( rho_ref_-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
+                     call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
+                     !
+                     f_period(imode,jmode) = 0 
+                     if (i/=0) f_period(imode,jmode)= trove%poten%field(i,irho_eq_)
+                     !
+                   enddo
+                   !
+                 endif
+                 !
+               else
+                 !
+                 f2(imode) = trove%poten%field(k,irho_eq_)
+                 !
+               endif
+               !
+             enddo
+             !
+             ! Check if all potential parameters are equal for every considered mode
+             !
+             f_t= f2(1) 
+             !
+             if (any(abs(f2(1:bs%imodes)-f_t)>1e-5*abs(f_t)).and.&
+                 any(abs(f2(1:bs%imodes)-f_t)>1e6*sqrt(small_))) then
+                write(out,"('FLbset1DNew: not all numerov-pot parameters are equal')")
+                write(out,"('pot-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (f2(imode),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym ) then 
+                  stop 'FLbset1DNew: not all numerov parameters are equal'
+                endif
+             endif
+             !
+             f1d(ipower) = f2(1)
+             !
+          enddo 
+          !
+       endif
        !
        ! Check if defined f2 and g2 parameters are not zero 
        !
