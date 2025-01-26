@@ -32537,7 +32537,7 @@ end subroutine read_contr_matelem_expansion_classN
        write(out,"(/'Primitive matrix elements calculations...')")
     endif
     !
-    !$omp parallel do private(i,j,nu_i,nu_j,imdoe,v_i,k_i,n_i,jmode,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
+    !$omp parallel do private(i,j,nu_i,nu_j,imode,v_i,k_i,n_i,jmode,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
     do i = 1,dimen
       !
       if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i8)"), i
