@@ -273,6 +273,7 @@ module fields
       character(len=cl)   :: potenname='GENERAL' ! name of the user type potential function (for control purposes)
       logical             :: kinetic_compact = .false. ! compact or sparce representation of the KEO
       logical             :: potential_with_modes = .false. ! potential.chk with modes
+      logical             :: kinetic_with_modes = .false.   ! kinetic.chk with modes
       !
    end type JobT
    !
@@ -2229,6 +2230,7 @@ module fields
          ifunc = 0
          !
          molec%mode_list_present = .true.
+         trove%kinetic_with_modes = .true.
          !
          allocate(molec%basic_function_list(Nmodes))
          call read_line(eof,iut) ; if (eof) exit 
@@ -2512,7 +2514,25 @@ module fields
                 trove%separate_store = .true.
              endif 
              !
-             !if (trim(trove%IO_kinetic)=='SAVE') trove%IO_hamiltonian = 'SAVE'
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               select case(trim(w))
+               !
+               case('WITH-MODES','WITH_MODES')
+                 !
+                 trove%kinetic_with_modes = .true.
+                 !
+               case default 
+                 !
+                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CHECK_POINT'
+                 stop 'FLinput - illegal key CHECK_POINT'
+                 !
+               end select 
+               !
+             endif
              !
              if (trim(trove%IO_kinetic)=='SAVE'.and.trove%separate_store) then
                 trove%IO_hamiltonian = 'SAVE'
@@ -5539,11 +5559,14 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    if(trove%kinetic_compact) then  
+    if (trove%potential_with_modes.or.trove%kinetic_with_modes) then
+      maxpower =trove%NExtOrder
+    elseif (trove%kinetic_with_modes) then  
       maxpower = max(trove%NpotOrder,trove%NExtOrder)
     else
       maxpower = trove%maxorder
     endif
+    !
     do io = 0, maxpower + 2
       !
       Kindex = 0 
@@ -5578,91 +5601,6 @@ end subroutine check_read_save_none
     io = FLQindex(Nmodes_e,Kindex,FLIndexQ)
     !
     call TimerStop('FLQindex-2')
-    !
-    ! Defining FLindexQ_legatee
-    !
-    !FLindexQ_legatee(:,:) = -1 ! no inheritance
-    !
-    !dm2 = size(FLIndexQ,dim=2)
-    !
-    ! Searching inheritance with maximum initial coincidence 
-    !
-    !do imode=trove%Nmodes-1,1,-1
-    !  !
-    !  do iterm=1,dm2-1
-    !    !
-    !    do jterm=iterm+1,dm2
-    !      !
-    !      if(FLindexQ_legatee(1,jterm)==-1.and.all(FLIndexQ(1:imode,iterm)==FLIndexQ(1:imode,jterm))) then
-    !          !
-    !          FLindexQ_legatee(1:imode,jterm)=0 ! We do not need to calculate corresponding part in mat_element
-    !          FLindexQ_legatee(imode+1,jterm)=iterm ! The point of starting calculation from another stream
-    !          FLindexQ_legatee(imode+2:trove%Nmodes,jterm)=jterm ! Calculate in an ordinar stream
-    !          !
-    !      endif
-    !    enddo ! jterm
-    !    !
-    !  enddo ! iterm
-    !  !
-    !enddo ! imode
-    !
-    !do jterm=1,dm2
-    !  !
-    !  if (FLindexQ_legatee(1,jterm)==-1) then 
-    !     !
-    !     FLindexQ_legatee(2:trove%Nmodes,jterm)=jterm
-    !     FLindexQ_legatee(1,jterm) = 1
-    !     !
-    !  elseif (FLindexQ_legatee(1,jterm)==0) then 
-    !     !
-    !     FLindexQ_legatee(1,jterm) = 1
-    !     !
-    !     do imode=2,trove%Nmodes
-    !       !
-    !       if (FLindexQ_legatee(imode,jterm)/=0) then
-    !          FLindexQ_legatee(1,jterm) = imode
-    !          exit
-    !       endif 
-    !       !
-    !     enddo
-    !     !
-    !  endif 
-    !  !
-    !enddo
-    !
-    !do jterm=1,dm2
-    !  !
-    !  imode = 1
-    !  !
-    !  do while(imode<trove%Nmodes.and.FLindexQ_legatee(imode,jterm)==0)
-    !    !
-    !    imode = imode + 1
-    !    !
-    !  enddo
-    !  !
-    !  FLindexQ_legatee(1,jterm)=imode
-    !  !
-    !enddo
-    !
-    !if (job%verbose>=7) then
-    !  !
-    !  write(out,"(/'Inheritance matrix')")
-    !  do iterm = 1,dm2 
-    !    write(out,"(2i8,30i8)") io,iterm,(FLindexQ_legatee(io,iterm),io=1,min(30,trove%Nmodes))
-    !    !
-    !  enddo
-    !  !
-    !endif 
-    !
-    !
-    ! be verbose
-    ! 
-    !if (job%verbose>=1) then
-    !  !
-    !  !write(out,"(/'RangeOrder vs order ',30i8 )") (io               ,io=0,min(30,trove%MaxOrder))
-    !  !write(out,"( 'RangeOrder:         ',30i8/)") (trove%RangeOrder(io),io=0,min(30,trove%MaxOrder))
-    !  !
-    !endif
     !
     if (job%verbose>=7) then
       !
@@ -6185,9 +6123,13 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
-        call compact_sparse_kinetic
-        !
-        call combine_compacted_fields_sparse_kinetic_fields
+        if (.not.trove%kinetic_with_modes) then
+           !
+           call compact_sparse_kinetic
+           !
+           call combine_compacted_fields_sparse_kinetic_fields
+           !
+        endif
         !
         return 
         !
@@ -7288,10 +7230,12 @@ end subroutine check_read_save_none
       ! check if trove%NKinOrder is consistent with the combined and possibly extended gvib/pseudo fields 
       ! and increase it if necessary 
       !
-      if (trove%NKinOrder<maxpower) then 
-        trove%NKinOrder = maxpower
-        trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
-      endif
+      !if (trove%NKinOrder<maxpower) then 
+      !  trove%NKinOrder = maxpower
+      !  trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+      !endif
+      !
+      trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
       !
       deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
@@ -14447,7 +14391,7 @@ end subroutine check_read_save_none
         if (trove%separate_convert.and..not.trove%separate_store) call KineticSave_ASCII
         !
         if (trove%separate_store) then
-          if (trove%kinetic_compact) then
+          if (trove%kinetic_compact.or.trove%kinetic_with_modes) then
             call checkpointRestore_kinetic_ascii_with_modes
           else 
             call checkpointRestore_kinetic_ascii
@@ -16449,7 +16393,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder,maxpower
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -16491,16 +16435,18 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
+        read(chkptIO_preread,"(a14)") buf
         !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
+        !read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
+        !
+        !if (Tpoints/=Npoints) then
+        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+        !  stop "Kinetic-ASCII-chk npoints is wrong"
+        !endif
+        !if (Torder/=KinOrder) then 
+        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+        !  stop "Kinetic-ASCII-chk Norder is wrong"
+        !endif
         !
         ! 
         call IOStart(trim(unitfname),chkptIO)
@@ -16540,17 +16486,19 @@ end subroutine check_read_save_none
            !
         enddo do_gvib_pre
         !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
+        read(chkptIO_preread,"(a14)") buf
         !
-        if (Tpoints/=Npoints) then 
-           print*,"grot-ASCII-chk npoints is wrong"
-           stop "grot-ASCII-chk npoints is wrong"
-        endif
+        !read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
         !
-        if (Torder/=KinOrder) then
-          print*,"grot-ASCII-chk Order is wrong"
-          stop "grot-ASCII-chk Order is wrong"
-        endif
+        !if (Tpoints/=Npoints) then 
+        !   print*,"grot-ASCII-chk npoints is wrong"
+        !   stop "grot-ASCII-chk npoints is wrong"
+        !endif
+        !
+        !if (Torder/=KinOrder) then
+        !  print*,"grot-ASCII-chk Order is wrong"
+        !  stop "grot-ASCII-chk Order is wrong"
+        !endif
         !
         k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
         do_grot_pre : do 
@@ -16586,18 +16534,20 @@ end subroutine check_read_save_none
            total_terms = total_terms + 1
           !
         enddo do_grot_pre
+        !
+        read(chkptIO_preread,"(a14)") buf
         !   
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
+        !read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) then 
-           print*,"grot-ASCII-chk npoints is wrong"
-           stop "grot-ASCII-chk npoints is wrong"
-        endif
+        !if (Tpoints/=Npoints) then 
+        !   print*,"grot-ASCII-chk npoints is wrong"
+        !   stop "grot-ASCII-chk npoints is wrong"
+        !endif
         !
-        if (Torder/=KinOrder) then
-          print*,"grot-ASCII-chk Order is wrong"
-          stop "grot-ASCII-chk Order is wrong"
-        endif
+        !if (Torder/=KinOrder) then
+        !  print*,"grot-ASCII-chk Order is wrong"
+        !  stop "grot-ASCII-chk Order is wrong"
+        !endif
         !
         k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
         do_gcor_pre : do 
@@ -16633,11 +16583,12 @@ end subroutine check_read_save_none
           !
         enddo do_gcor_pre
         !
+        read(chkptIO_preread,"(a14)") buf
         !
-        read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
+        !read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
+        !if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
+        !if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
         !
         n = 0
         total_terms = 0 
@@ -16664,17 +16615,20 @@ end subroutine check_read_save_none
         ! 
         call IOStart(trim(unitfname),chkptIO)
         open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
-         
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
+        read(chkptIO,"(a14)") buf
+        ! 
+        !read(chkptIO,*) Tpoints,Torder,Tcoeff
+        !
+        !if (Tpoints/=Npoints) then
+        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+        !  stop "Kinetic-ASCII-chk npoints is wrong"
+        !endif
+        !if (Torder/=KinOrder) then 
+        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+        !  stop "Kinetic-ASCII-chk Norder is wrong"
+        !endif
+        !
         k1_= 0 ; k2_= 0 ; n = 0; cur_term=0; 
         do_gvib : do 
           !
@@ -16699,16 +16653,20 @@ end subroutine check_read_save_none
           trove%g_vib(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
           !  
         enddo do_gvib 
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
+        read(chkptIO,"(a14)") buf
+        !
+        !read(chkptIO,*) Tpoints,Torder,Tcoeff
+        !
+        !if (Tpoints/=Npoints) then
+        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+        !  stop "Kinetic-ASCII-chk npoints is wrong"
+        !endif
+        !
+        !if (Torder/=KinOrder) then 
+        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+        !  stop "Kinetic-ASCII-chk Norder is wrong"
+        !endif
         !
         k1_= 0 ; k2_= 0 ; n = 0 ; cur_term = 0;
         do_grot : do 
@@ -16732,19 +16690,23 @@ end subroutine check_read_save_none
           else   
             trove%g_rot(k1,k2)%field(cur_term,i) = field_
           endif
+          !
           trove%g_rot(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
           !
         enddo do_grot
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) then
-          write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-          stop "Kinetic-ASCII-chk npoints is wrong"
-        endif
-        if (Torder/=KinOrder) then 
-          write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-          stop "Kinetic-ASCII-chk Norder is wrong"
-        endif
+        read(chkptIO,"(a14)") buf
+        !
+        !read(chkptIO,*) Tpoints,Torder,Tcoeff
+        !
+        !if (Tpoints/=Npoints) then
+        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
+        !  stop "Kinetic-ASCII-chk npoints is wrong"
+        !endif
+        !if (Torder/=KinOrder) then 
+        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
+        !  stop "Kinetic-ASCII-chk Norder is wrong"
+        !endif
         !
         k1_ =0; k2_ = 0; n = 0; cur_term = 0;
         do_gcor : do 
@@ -16772,11 +16734,12 @@ end subroutine check_read_save_none
           !
         enddo do_gcor
         !
+        read(chkptIO,"(a14)") buf
         !
-        read(chkptIO,*) Tpoints,Torder,Tcoeff
+        !read(chkptIO,*) Tpoints,Torder,Tcoeff
         !
-        if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
+        !if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
+        !if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
         !
         n = 0; cur_term = 1;
         do_pseu : do 
@@ -16801,13 +16764,15 @@ end subroutine check_read_save_none
         !
         if (FLl2_coeffs) then 
           !
-          read(chkptIO,*) Tpoints,Torder,Tcoeff
+          read(chkptIO,"(a14)") buf
           !
-          if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
-          if (Torder/=2) then 
-            write (out,"('L2vib-ASCII-chk Order is not 2',i8)") Torder
-            stop "L2vib-ASCII-chk Order is wrong"
-          endif
+          !read(chkptIO,*) Tpoints,Torder,Tcoeff
+          !
+          !if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
+          !if (Torder/=2) then 
+          !  write (out,"('L2vib-ASCII-chk Order is not 2',i8)") Torder
+          !  stop "L2vib-ASCII-chk Order is wrong"
+          !endif
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -16855,6 +16820,22 @@ end subroutine check_read_save_none
           write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
           stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
         end if
+        !
+        ! it is important that pseudo and g_vib(N,N) share the same grid. Here we combine gvib into the pseudo grid
+        !
+        fl => trove%g_vib(Nmodes,Nmodes)
+        !
+        call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
+        !
+        !maxpower = trove%pseudo%Ncoeff
+        !
+        ! check if trove%NKinOrder is consistent with the combined and possibly extended gvib/pseudo fields 
+        ! and increase it if necessary 
+        !
+        !if (trove%NKinOrder<maxpower) then 
+        !  trove%NKinOrder = maxpower
+        !trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+        !endif
         !
         call MemoryReport
         !
@@ -17215,17 +17196,19 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO,*) Npoints,Norder,Ncoeff
+        read(chkptIO,"(a14)") buf
         !
-        if (Npoints/=trove%Npoints) then
-          write(out,"('poten-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
-          stop "poten-ASCII-chk npoints is wrong"
-        endif
+        !read(chkptIO,*) Npoints,Norder,Ncoeff
         !
-        if (Norder/=trove%NPotOrder) then 
-          write(out,"('poten-ASCII-chk Norder is wrong:',2i8)") Norder,trove%NPotOrder
-          stop "poten-ASCII-chk Norder is wrong"
-        endif
+        !if (Npoints/=trove%Npoints) then
+        !  write(out,"('poten-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
+        !  stop "poten-ASCII-chk npoints is wrong"
+        !endif
+        !
+        !if (Norder/=trove%NPotOrder) then 
+        !  write(out,"('poten-ASCII-chk Norder is wrong:',2i8)") Norder,trove%NPotOrder
+        !  stop "poten-ASCII-chk Norder is wrong"
+        !endif
         !
         n = 0
         total_terms = 0 
@@ -17250,8 +17233,10 @@ end subroutine check_read_save_none
         enddo do_poten_pre 
         !
         rewind(chkptIO)
+        !
+        read(chkptIO,"(a14)") buf
         !         
-        read(chkptIO,*) Npoints,Norder,Ncoeff
+        !read(chkptIO,*) Npoints,Norder,Ncoeff
         !
         n = 0; cur_term = 0;
         do_pot : do 
@@ -17322,6 +17307,15 @@ end subroutine check_read_save_none
         deallocate(pot%field,pot%IndexQ)
         !
         call ArrayStop("pot%field")
+        !
+        ! check if trove%NPotOrder is consistent with the combined and possibly extended gvib/pseudo fields 
+        ! and increase it if necessary 
+        !
+        !if (trove%NPotOrder<trove%poten%Ncoeff) then 
+        !  trove%NPotOrder = trove%poten%Ncoeff
+        !endif
+        !
+        trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
         !
         call MemoryReport
         !
@@ -18561,8 +18555,8 @@ end subroutine check_read_save_none
     type(FLpolynomT),pointer    :: fl,gl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m,f_t1,f_t2,g_t1,g_t2,f_m1,f_m2
-    real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),chi(trove%Nmodes)
-    real(ark)                   :: rho,rho_pot,rho_kin,rho_kin0,rho_pot0,rho_ext,rho_ext0
+    real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
+    real(ark)                   :: rho,rho_pot,rho_kin,rho_kin0,rho_pot0,rho_ext,rho_ext0,chi(trove%Nmodes)
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
@@ -18824,96 +18818,15 @@ end subroutine check_read_save_none
            stop 'FLbset1DNew:  equilibrium is ill defined'
         endif
         !
-        f2 = 0 
-        do imode = 1,bs%imodes
-           nu_i = bs%mode(imode)
-           powers = 0 ; powers(nu_i) = 2
-           k = FLQindex(trove%Nmodes_e,powers)
-           !
-           if (trove%sparse) then
-             !
-             call find_isparse_from_ifull(trove%poten%Ncoeff,trove%poten%ifromsparse,k,i)
-             !
-             f2(imode) = 0 
-             !
-             if (i/=0) f2(imode) = trove%poten%field(i,irho_eq)
-             !
-           else
-             !
-             f2(imode) = fl%field(k,irho_eq)
-             !
-           endif
-           !
-        enddo 
+        call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
         !
-        ! Check if all quadratic parameters are equal for every considered mode
+        call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
         !
-        f_t= f2(1)
-        if (any(abs(f2(1:bs%imodes)-f_t)>1e-7*abs(f_t))) then
-           write(out,"('FLbset1DNew: not all quadratic parameters are equal')")
-           if (bs%imodes<30) then
-             write(out,"(30f18.8)") f2(1:bs%imodes)
-           endif 
-           if ( job%bset(nu_i)%check_sym ) then
-             stop 'FLbset1DNew: not all quadratic parameters are equal'
-           endif
-        endif
+        f2(1) = f1d(2)
+        g2(1) = g1d(0)
         !
-        ! for the kinetic part it is simpler - we just take the first member of the g_vib%coeffs
-        !
-        g2 = 0
-        do imode =1,bs%imodes  
-          nu_i = bs%mode(imode)
-          fl => trove%g_vib(nu_i,nu_i)
-          g2(imode) = fl%field(1,irho_eq)
-          !
-          if (trove%sparse) then
-            !
-            g2(imode) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
-            !
-            if (abs(g2(1))<sqrt(small_).or.trove%g_vib(nu_i,nu_i)%ifromsparse(1)/=1) then 
-              write(out,"('FLbset1DNew: g(2)=0 in the sparse-field or inconsistent sparse-recored/=1',i8)") &
-                    trove%g_vib(nu_i,nu_i)%ifromsparse(1)
-              stop 'FLbset1DNew: g(2)=0 in the sparse-field'
-            endif
-            !
-          endif
-          !
-        enddo 
-        !
-        ! The same check for all g_0 kinetic parameters to be equal for every considered mode
-        !
-        f_t= g2(1) 
-        if (any(abs(g2(1:bs%imodes)-f_t)>10000.0_rk*sqrt(small_)*abs(f_t))) then
-           write(out,"('FLbset1DNew: not all zero-order kinetic parameters are equal')")
-           if (bs%imodes<30) then
-             write(out,"(30f18.8)") g2(1:bs%imodes)
-             write(out,"('difference somewhat greater than ',f18.8)") 10000.0_rk*sqrt(small_)*abs(f_t)
-           endif 
-           if ( job%bset(nu_i)%check_sym ) then 
-             stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
-           endif
-        endif
-        !
-        ! Define the conditional basis set parameters   
-        !
-        ! Check if defined f2 and g2 parameters are positive
-        !
-        if (g2(1)<=0.0_rk ) then
-           write(out,"('FLbset1DNew: g2 is not positive ',f18.8)") g2(1)
-           stop 'FLbset1DNew: g2 is not positive'
-        endif
-
-        if (f2(1)<=0.0_rk ) then
-           write(out,"('FLbset1DNew: f2 is not positive ',f18.8,' use specparam')") f2(1)
-           f2(1) = trove%specparam(bs%mode(1))**2*0.5_ark/g2(1)
-           !stop 'FLbset1DNew: f2 or g2 are not positive'
-        endif
-
-
         ! Here we define the difference between harmonic, normal, and morse bsets
         if (trim(bs%type)=='HARMONIC'.or.trim(bs%type)=='NORMAL') then 
-
           !
           ! use specparam if given
           !
@@ -19956,9 +19869,13 @@ end subroutine check_read_save_none
            !
            if (.not.trove%DVR.or.reduced_model) then
              !
-             call generate_potential_1d_field(irho_eq,rho_b,npoints,f1drho)
+             call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
              !
-             call generate_1D_kinetic_fields(irho_eq,rho_b,npoints,g1drho,pseudo,xton,drho,muzz)
+             call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
+             !
+             call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
+             !
+             call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,pseudo,muzz)
              !
            else 
              !
@@ -20145,20 +20062,17 @@ end subroutine check_read_save_none
      end subroutine find_isparse_from_ifull
      !
     
-    
-    
-     subroutine generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1drho,pseudo,xton,drho,muzz)
+
+     subroutine generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
        !
        implicit none
        !
        integer(ik),intent(in) :: irho_eq,npoints
        real(ark),intent(in)   :: rho_b(2)
        !
-       real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%MaxOrder)
-       real(ark),intent(out)  :: drho(0:Npoints,3)
-       real(ark),intent(out),optional :: muzz(0:Npoints)
+       real(ark),intent(out)  :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder)
+       real(ark),intent(out)  :: g1z(0:trove%MaxOrder)
        !
-       real(ark) :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
        real(ark) :: ps(1:trove%Nmodes,0:trove%MaxOrder),gvib(1:trove%Nmodes,0:trove%MaxOrder),&
                     grot(1:trove%Nmodes,0:trove%MaxOrder)
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
@@ -20169,6 +20083,7 @@ end subroutine check_read_save_none
        !
        p1d = 0 
        g1d = 0 
+       g1z = 0
        !
        irho_eq_ = irho_eq
        !
@@ -20185,7 +20100,7 @@ end subroutine check_read_save_none
        fl => trove%pseudo
        gzl => trove%g_rot(3,3)
        !
-       if (trove%kinetic_compact) then 
+       if (trove%kinetic_compact.or.trove%kinetic_with_modes) then 
           !
           !do ipower = 0,maxpower
           !
@@ -20262,34 +20177,30 @@ end subroutine check_read_save_none
             !
             ! gzz-term
             !
-            if (present(muzz)) then 
-               !
-               do j = 1, size(gzl%ifromsparse)
-                 !
-                 gz_term = 0
-                 !
-                 !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
-                 !
-                 powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
-                 !
-                 ipower = powers(nu_i)
-                 !
-                 gz_term  =  gzl%field(j,irho_eq_)
-                 !
-                 do i = 1, size(powers)
-                   if(i == nu_i) cycle
-                   !
-                   gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
-                   !
-                 enddo
-                 !
-                 !gz(imode) = gz(imode) + gz_term
-                 !
-                 grot(imode,ipower) = grot(imode,ipower) + gz_term
-                 !
-               enddo
-               !
-            endif
+            do j = 1, size(gzl%ifromsparse)
+              !
+              gz_term = 0
+              !
+              !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
+              !
+              powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
+              !
+              ipower = powers(nu_i)
+              !
+              gz_term  =  gzl%field(j,irho_eq_)
+              !
+              do i = 1, size(powers)
+                if(i == nu_i) cycle
+                !
+                gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
+                !
+              enddo
+              !
+              !gz(imode) = gz(imode) + gz_term
+              !
+              grot(imode,ipower) = grot(imode,ipower) + gz_term
+              !
+            enddo
             !
           enddo
           !
@@ -20334,33 +20245,25 @@ end subroutine check_read_save_none
                 stop 'FLbset1DNew: g1d are all zero'
              endif
              !
-             if (present(muzz)) then
-                !
-                f_t= grot(1,ipower)
-                !
-                if (any(abs(grot(1:bs%imodes,ipower)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
-                   abs(f_t)>1000.0_rk*sqrt(small_)) then
-                   write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
-                   write(out,"('gvib-ipower=',i6)") ipower
-                   write(out,"(30f18.8)") (grot(1,ipower),imode=1,min(bs%imodes,30)) 
-                   if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
-                     stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
-                   endif
+             f_t= grot(1,ipower)
+             !
+             if (any(abs(grot(1:bs%imodes,ipower)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.&
+                abs(f_t)>1000.0_rk*sqrt(small_)) then
+                write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                write(out,"('gvib-ipower=',i6)") ipower
+                write(out,"(30f18.8)") (grot(1,ipower),imode=1,min(bs%imodes,30)) 
+                if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                  stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                 endif
-                !
-                g1z(ipower) = grot(1,ipower)
-                !
              endif
              !
-             if (present(muzz)) then
-                !
-                f_t = maxval(grot(:,ipower),dim=1)
-                !
-                if (all(abs(grot(:,ipower))<1e-5*abs(f_t)) ) then
-                   write(out,"('FLbset1DNew: all gz are zero ',20f18.8)") grot(:,ipower)
-                   stop 'FLbset1DNew: gz are all zero'
-                endif
-                !
+             g1z(ipower) = grot(1,ipower)
+             !
+             f_t = maxval(grot(:,ipower),dim=1)
+             !
+             if (all(abs(grot(:,ipower))<1e-5*abs(f_t)) ) then
+                write(out,"('FLbset1DNew: all gz are zero ',20f18.8)") grot(:,ipower)
+                stop 'FLbset1DNew: gz are all zero'
              endif
              !
           enddo
@@ -20408,29 +20311,18 @@ end subroutine check_read_save_none
                    stop 'FLbset1DNew: g2=0 in the gvib sparse-field'
                  endif
                  !
-                 if (present(muzz)) then
-                   !
-                   call find_isparse_from_ifull(gzl%Ncoeff,gzl%ifromsparse,k,i)
-                   !
-                   gz(imode) = 0
-                   !
-                   if (i/=0) gz(imode) = gzl%field(i,irho_eq_)
-                   !
-                   !if (ipower==0.and.abs(gz(imode))<sqrt(small_)) then
-                   !  write(out,"('FLbset1DNew: gz=0 in the gzz sparse-field for imode = ',i5,' ipower',i5)") imode,ipower
-                   !  stop 'FLbset1DNew: gz=0 in the gzz sparse-field'
-                   !endif
-                   !
-                 endif
+                 call find_isparse_from_ifull(gzl%Ncoeff,gzl%ifromsparse,k,i)
+                 !
+                 gz(imode) = 0
+                 !
+                 if (i/=0) gz(imode) = gzl%field(i,irho_eq_)
                  !
                else
                  !
                  f2(imode) = fl%field(k,irho_eq_)
                  g2(imode) = gl%field(k,irho_eq_)
                  !
-                 if (present(muzz)) then
-                    gz(imode) = gzl%field(k,irho_eq_)
-                 endif
+                 gz(imode) = gzl%field(k,irho_eq_)
                  !
                endif
                !
@@ -20466,24 +20358,53 @@ end subroutine check_read_save_none
               !
               g1d(ipower) = g2(1)
               !
-              if (present(muzz)) then
-                 f_t= gz(1) 
-                 if (any(abs(gz(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
-                    write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
-                    write(out,"('gvib-ipower=',i6)") ipower
-                    write(out,"(30f18.8)") (gz(imode),imode=1,min(bs%imodes,30)) 
-                    if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
-                      stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
-                    endif
+              f_t= gz(1) 
+              if (any(abs(gz(1:bs%imodes)-f_t)>100000.0_rk*sqrt(small_)*abs(f_t)).and.abs(f_t)>1000.0_rk*sqrt(small_)) then
+                 write(out,"('FLbset1DNew-numerov: not all gvib-zero-order kinetic parameters are equal')")
+                 write(out,"('gvib-ipower=',i6)") ipower
+                 write(out,"(30f18.8)") (gz(imode),imode=1,min(bs%imodes,30)) 
+                 if ( job%bset(nu_i)%check_sym) then !.and..not.job%mode_list_present
+                   stop 'FLbset1DNew: not all zero-order kinetic parameters are equal'
                  endif
-                 !
-                 g1z(ipower) = gz(1)
-                 !
               endif
+              !
+              g1z(ipower) = gz(1)
               !  
           enddo
           !
        endif    
+       !     
+     end subroutine generate_1D_kinetic_expansions
+
+    
+    
+     subroutine generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,pseudo,muzz)
+       !
+       implicit none
+       !
+       integer(ik),intent(in) :: irho_eq,npoints
+       real(ark),intent(in)   :: rho_b(2)
+       !
+       real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%MaxOrder)
+       real(ark),intent(in)   :: g1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
+       real(ark),intent(out)  :: drho(0:Npoints,3)
+       real(ark),optional,intent(out)  :: muzz(0:Npoints)
+       !
+       real(ark) :: step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f
+       integer(ik) :: ipower,nu_i,maxpower
+       integer(ik) :: i,k,j,irho_eq_,nu_
+       !
+       irho_eq_ = irho_eq
+       !
+       step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
+       nu_ = bs%mode(1)  
+       !
+       if(molec%mode_list_present) then
+          maxpower = molec%basic_function_list(nu_)%numfunc
+       else
+          maxpower = min(trove%NKinOrder,max(bset%dscr(nu_)%model-2,0))
+       endif
        !
        ! generating 1d tables
        ! for basis sets we will need 1d potential and kinetic enrgy part 
@@ -20530,10 +20451,12 @@ end subroutine check_read_save_none
              endif
              !
              if (present(muzz)) then
-                if (abs(g1d(ipower))>small_) then 
-                  f = MLcoord_direct(rho,1,nu_i,ipower)
-                  muzz(i) = muzz(i) + g1z(ipower)*f
-                endif
+               !
+               if (abs(g1d(ipower))>small_) then 
+                 f = MLcoord_direct(rho,1,nu_i,ipower)
+                 muzz(i) = muzz(i) + g1z(ipower)*f
+               endif
+               !
              endif
              !
           enddo 
@@ -20543,14 +20466,14 @@ end subroutine check_read_save_none
      end subroutine generate_1D_kinetic_fields
     
      !
-     subroutine generate_potential_1d_field(irho_eq,rho_b,npoints,f1drho)
+     subroutine generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
        !
        integer(ik),intent(in) :: irho_eq,npoints
-       real(ark),intent(in)  :: rho_b(2)
-       real(ark),intent(out)  :: f1drho(0:Npoints )
+       real(ark),intent(in)   :: rho_b(2)
+       real(ark),intent(out)  :: f1d(0:trove%MaxOrder)
        !
        real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
-       real(ark) :: f1d(0:trove%MaxOrder),rho_pot0,rho_pot,step
+       real(ark) :: rho_pot0,rho_pot,step
        real(ark) :: pot(1:trove%Nmodes,0:trove%MaxOrder)
        !
        integer(ik) :: ipower,imode,jmode,nu_i,i,k,powers(trove%Nmodes),nu_,maxpower,irho_eq_
@@ -20717,6 +20640,26 @@ end subroutine check_read_save_none
           stop 'FLbset1DNew: f1d are all zero'
        endif
        !
+     end subroutine generate_potential_1d_expansion
+
+
+
+     subroutine generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
+       !
+       integer(ik),intent(in) :: irho_eq,npoints
+       real(ark),intent(in)  ::  rho_b(2)
+       real(ark),intent(in)  :: f1d(0:trove%MaxOrder)
+       real(ark),intent(out) :: f1drho(0:Npoints)
+       !
+       real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
+       real(ark) :: rho_pot0,rho_pot,step
+       real(ark) :: pot(1:trove%Nmodes,0:trove%MaxOrder)
+       !
+       integer(ik) :: ipower,nu_i,i,irho_eq_
+       !
+       irho_eq_ = irho_eq
+       step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
        ! generating 1d tables
        ! for basis sets we will need 1d potential and kinetic enrgy part 
        ! in terms of the corresponding coordinate 
@@ -20742,6 +20685,7 @@ end subroutine check_read_save_none
        enddo
        !
      end subroutine generate_potential_1d_field
+
      
      !
   end subroutine FLbset1DNew

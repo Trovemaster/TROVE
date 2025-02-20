@@ -1011,8 +1011,8 @@ module kin_xy2
      g_cor(1,2,1) =  -1._ark/mX
      g_cor(3,2,1) =  (mX+mZ)/mX/mZ
      g_cor(3,2,2) =  -1._ark/mX
-     pseudo(1) =  -.1250_ark*(2.*mX+2.*mZ)/mX/mZ
-     pseudo(2) =  .1250_ark*(-2.*mX-2.*mY)/mY/mX
+     pseudo(1) =  -.1250_ark*(2._ark*mX+2._ark*mZ)/mX/mZ
+     pseudo(2) =  .1250_ark*(-2._ark*mX-2._ark*mY)/mY/mX
      pseudo(3) =  -.1250_ark*(mX+mY)/mY/mX
      pseudo(4) =  -.1250_ark*(mX+mY)/mY/mX
      pseudo(5) =  .1250_ark*(mX+mY)/mY/mX

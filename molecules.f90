@@ -3530,7 +3530,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER')
         !
         v = x
         !
@@ -3664,6 +3664,14 @@ end subroutine polintark
            if (iorder<0) stop 'MLcoord_direct error: negative iorder'
            !
            v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           !
+       case('FOURIER') 
+           !
+           if (iorder<0) then 
+             v = sin( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           else
+             v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           endif
            !
         case('ANGLE-X2Y2')
            !
