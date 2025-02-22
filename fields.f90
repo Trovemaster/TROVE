@@ -19178,13 +19178,61 @@ end subroutine check_read_save_none
            !
            nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
            !
-           g1drho(0:npoints) = fl%field(1,0:npoints)
-           !
-           if (trove%sparse) then
-             !
-             call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
-             !
-             if (i==0) then 
+           if (trove%kinetic_compact.or.trove%kinetic_with_modes) then 
+              !
+              gl => trove%g_vib(nu_i,nu_i) 
+              !
+              ! g-term
+              !
+              g1drho = 0
+              !
+              do j = 1, size(gl%ifromsparse)
+                !
+                powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+                !
+                ipower = powers(nu_i)
+                !
+                g2_term = 1.0_ark
+                !
+                do i = 1, size(powers)
+                  !
+                  if(i == nu_i) cycle
+                  !
+                  g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                  !
+                enddo
+                !
+                g1drho(:) = g1drho(:) + g2_term*gl%field(j,:)
+                !
+              enddo
+              !
+           else
+              !
+              g1drho(0:npoints) = fl%field(1,0:npoints)
+              !
+              if (trove%sparse) then
+                !
+                call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i)
+                !
+                if (i==0) then 
+                   !
+                   g1drho = 0 
+                   !
+                   do icoeff = 1, fl%Ncoeff 
+                      f_t = 1.0_ark
+                      do imode  = 1,Nmodes
+                        rho =  trove%chi_eq(imode)
+                        ipower = fl%IndexQ(imode,icoeff)
+                        rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                        f_t = f_t*rho_kin0
+                     enddo
+                     g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                     !
+                   enddo
+                   !
+                endif
+                !
+              elseif (abs(g1drho(trove%ipotmin))<small_) then 
                 !
                 g1drho = 0 
                 !
@@ -19200,24 +19248,8 @@ end subroutine check_read_save_none
                   !
                 enddo
                 !
-             endif
-             !
-           elseif (abs(g1drho(trove%ipotmin))<small_) then 
-             !
-             g1drho = 0 
-             !
-             do icoeff = 1, fl%Ncoeff 
-                f_t = 1.0_ark
-                do imode  = 1,Nmodes
-                  rho =  trove%chi_eq(imode)
-                  ipower = fl%IndexQ(imode,icoeff)
-                  rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                  f_t = f_t*rho_kin0
-               enddo
-               g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
-               !
-             enddo
-             !
+              endif
+              !
            endif
            !
            reduced_model = .false.
@@ -19286,11 +19318,17 @@ end subroutine check_read_save_none
            !
            if (trove%numerpoints<0) numerpoints = npoints
            !
+           if(molec%mode_list_present) then
+              maxpower = molec%basic_function_list(nu_i)%numfunc
+           else
+              maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+           endif
+           !
            select case(trim(bs%type))
            
            case ('NUMEROV')
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
              if (job%bset(nu_i)%iperiod/=0) then
@@ -19453,7 +19491,7 @@ end subroutine check_read_save_none
              !
            case ('BOX')
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xton,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
                          job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
              !
@@ -19475,7 +19513,7 @@ end subroutine check_read_save_none
              !
              !call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
              !
-             call ME_Associate_Legendre(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
+             call ME_Associate_Legendre(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
                                         job%verbose,bs%matelements,bs%ener0)
              !
              !call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
@@ -19699,11 +19737,17 @@ end subroutine check_read_save_none
              !
              f_m = sqrt(f_t/g_t)
              !
-             select case (trim(bs%type))
+             if(molec%mode_list_present) then
+                maxpower = molec%basic_function_list(nu_i)%numfunc
+             else
+                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+             endif
              !
+             select case (trim(bs%type))
+               !
              case ('LAGUERRE-K')
                !
-               call ME_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+               call ME_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
                                          job%verbose,bs%matelements,bs%ener0)
                !
                do i = 0,npoints
@@ -19713,7 +19757,7 @@ end subroutine check_read_save_none
                !
              case ('SINRHO-LAGUERRE-K')
                !
-               call ME_sinrho_laguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+               call ME_sinrho_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
                                          job%verbose,bs%matelements,bs%ener0)
                !
              case ('SINRHO-2XLAGUERRE-K')
@@ -19739,7 +19783,7 @@ end subroutine check_read_save_none
                f_m1 = sqrt(f_t1/g_t1)
                f_m2 = sqrt(f_t2/g_t2)
                !
-               call ME_sinrho_2xlaguerre_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
+               call ME_sinrho_2xlaguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
                                            f_m1,f_m2,pseudo,nu_i,job%verbose,bs%matelements,bs%ener0)
                !
              end select 
@@ -19751,23 +19795,17 @@ end subroutine check_read_save_none
              !
            case ('FOURIER_PURE')
              !
-             if(molec%mode_list_present) then
-                maxpower = molec%basic_function_list(nu_i)%numfunc
-             else
-                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-             endif
-             !
              call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('FOURIER')
              !
-             call ME_Fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINC')
              !
-             call ME_Sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            end select
