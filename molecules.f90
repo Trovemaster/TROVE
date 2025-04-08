@@ -43,7 +43,8 @@ module molecules
   !
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
-                       MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
+                       MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,&
+                       MLkinetic_xyz_Jacobi_bisect_EKE
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
   !
@@ -535,6 +536,10 @@ end subroutine MLdefine_potenfunc
          !
          MLkineticfunc => MLkinetic_xyz_Radau_EKE
          !
+    case('KINETIC_XY2_XYZ_JACOBI_BISECT_EKE') 
+         !
+         MLkineticfunc => MLkinetic_xyz_Jacobi_bisect_EKE
+         !
     case('KINETIC_XY2_EKE_BISECT_SINRHO') 
          !
          MLkineticfunc => MLkinetic_xy2_bisect_EKE_sinrho
@@ -814,6 +819,10 @@ end function ML_MEPfunc
     case('ABCD')
        !
        MLextF_func => MLdms2xyz_abcd
+       !
+    case('ABCD_R_ALPHA_RHO_TAU')
+       !
+       MLextF_func => MLdms2xyz_abcd_r_alpha_rho_tau
        !
        ! Molecular Bond representaion of the DMS of HOOH
        !
@@ -3442,7 +3451,7 @@ end subroutine polintark
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    integer(ik),optional   :: iorder
-   integer(ik)            :: i 
+   integer(ik)            :: i,jorder
    real(ark)              :: rhoe,v,amorse
    real(ark)              :: y,z
      !
@@ -3490,11 +3499,33 @@ end subroutine polintark
         !
      case('COSX-COSX0') 
         !
-        !rhoe = molec%specparam(imode)
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe+x)-cos(rhoe)
+        !
+     case('SIN(X)-SIN(X0)') 
         !
         rhoe =  molec%local_eq(imode)
         !
-        v = cos(rhoe)-cos(rhoe + x)
+        v = sin(rhoe+x)-sin(rhoe)
+        !
+     case('SIN(X-X0)') 
+        !
+        v = sin(x)
+        !
+     case('SIN(X0-X)') 
+        !
+        v = -sin(x)
+        !
+     case('COS(TAU/2)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(0.5_ark*(x+rhoe))
+        !
+     case('COS(RHO/2)') 
+        !
+        v = cos(0.5_ark*x)
         !
      case('LINCOSRHO') 
         !
@@ -3530,7 +3561,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER','AUTO-SINGULAR')
         !
         v = x
         !
@@ -3583,6 +3614,31 @@ end subroutine polintark
                 (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
             call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
             v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+          end do      
+          !
+          ! The following version is the same as "automatic" but with the singular which we distinguish using negative values of "iorder"
+       case('AUTO-SINGULAR')
+          ! 
+          v = 1.0_ark
+          if(iorder == 0)  return
+          !
+          jorder = abs(iorder)
+          !
+          if(jorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          !
+          y = 1.0_ark
+          do i = 1, molec%basic_function_list(imode)%mode_set(jorder)%num_terms
+            !
+            z = molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%coeff*&
+                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%inner_expon
+                !
+            if (iorder>0) then 
+               call molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%func_pointer(z, y)
+            else
+               call molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%func_singular_pointer(z, y)
+            endif
+            !
+            v = v*y**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%outer_expon
           end do      
           !
         case('BOND-LENGTH')
@@ -3664,6 +3720,8 @@ end subroutine polintark
            if (iorder<0) stop 'MLcoord_direct error: negative iorder'
            !
            v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           !
+           stop 'Error: COSNX is not working with 1D integrals  - check!'
            !
        case('FOURIER') 
            !

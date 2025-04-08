@@ -9,7 +9,7 @@ module fields
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_Legendre_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
                       ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
-                      ME_Fourier_pure
+                      ME_Fourier_pure,ME_sinrho_Legendre_k1
    use me_numer
    use me_rot
    use timer
@@ -274,6 +274,7 @@ module fields
       logical             :: kinetic_compact = .false. ! compact or sparce representation of the KEO
       logical             :: potential_with_modes = .false. ! potential.chk with modes
       logical             :: kinetic_with_modes = .false.   ! kinetic.chk with modes
+      logical             :: extF_with_modes = .false.      ! external.chk with modes
       !
    end type JobT
    !
@@ -1009,7 +1010,7 @@ module fields
          !
          ! Allocation of bset
          !
-         allocate (job%bset(0:Nmodes),trove%fdstep(Nmodes),job%bset_prop(Nmodes),stat=alloc)
+         allocate (job%bset(0:Nmodes),trove%fdstep(Nmodes),job%bset_prop(0:Nmodes),stat=alloc)
          if (alloc/=0) then
              write (out,"(' Error ',i9,' trying to allocate bs and fdstep')") alloc
              stop 'FLinput, bs and fdstep - out of memory'
@@ -1043,7 +1044,7 @@ module fields
          !
          ! Default values 
          !
-         do i=1,Nmodes
+         do i=0,Nmodes
             job%bset(i)%species = i
             job%bset_prop(i)%numerical = .false.
             job%bset_prop(i)%singular = .false.
@@ -1996,7 +1997,7 @@ module fields
               select case (trim(job%bset(imode)%type)) 
                  !
               case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC',&
-                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
+                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
                  !
                  job%bset_prop(imode)%numerical = .true.
                  !
@@ -2011,7 +2012,7 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
+              case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
                  !
                  job%bset_prop(imode)%singular = .true.
                  !
@@ -2923,6 +2924,25 @@ module fields
              if (trove%separate_convert.and.trove%separate_store ) then
                   trove%IO_ext_coeff   = 'READ'
              endif 
+             !
+             if (nitems>=3) then
+               !
+               call readu(w)
+               !
+               select case(trim(w))
+               !
+               case('WITH-MODES','WITH_MODES')
+                 !
+                 trove%extF_with_modes = .true.
+                 !
+               case default 
+                 !
+                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CHECK_POINT'
+                 stop 'FLinput - illegal key CHECK_POINT'
+                 !
+               end select 
+               !
+             endif
              !
            case('EXTMATELEM')
              !
@@ -5329,7 +5349,9 @@ end subroutine check_read_save_none
     endif 
     !
     ! define maximal value of NPotOrder and NKinOrder
-    trove%MaxOrder = max(NPotOrder,NKinOrder,trove%NExtOrder)
+    !
+    trove%MaxOrder = max(trove%NKinOrder,trove%NPotOrder,trove%NExtOrder)
+    !    
     !trove%NPotOrder = trove%MaxOrder
     ! 
     ! Allocation of the molecular structure parameters matrixes:
@@ -5559,10 +5581,20 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    if (trove%potential_with_modes.or.trove%kinetic_with_modes) then
+    maxpower = max(trove%NKinOrder,trove%NExtOrder,trove%NpotOrder)
+    !
+    if (trove%potential_with_modes.and.trove%kinetic_with_modes) then
       maxpower =trove%NExtOrder
+    elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
+      maxpower = trove%NpotOrder
+    elseif (trove%extF_with_modes.and.trove%potential_with_modes) then
+      maxpower = trove%NKinOrder
     elseif (trove%kinetic_with_modes) then  
       maxpower = max(trove%NpotOrder,trove%NExtOrder)
+    elseif (trove%potential_with_modes) then  
+      maxpower = max(trove%NKinOrder,trove%NExtOrder)
+    elseif (trove%extF_with_modes) then  
+      maxpower = max(trove%NKinOrder,trove%NpotOrder)
     else
       maxpower = trove%maxorder
     endif
@@ -8783,7 +8815,7 @@ end subroutine check_read_save_none
     real(ark)                    :: df,factor
     real(ark)                    :: step(2,trove%Nmodes),rhostep
     real(ark)                    :: astep(2),xi_t(trove%Nmodes),aq_et(trove%Nmodes)
-    integer(ik)                  :: istep(2,trove%Nmodes),jpar
+    integer(ik)                  :: istep(2,trove%Nmodes),jpar,maxorder
     integer(ik),allocatable      :: ipoint_address(:,:)
     real(ark),allocatable        :: pot_points(:),poten_t(:)
     integer(ik)                  :: par(0:trove%Nmodes+1) ! Parity of each mode in derivatives calculation
@@ -8929,7 +8961,9 @@ end subroutine check_read_save_none
       !
       ! 1. Estimate total number of all points required for a current parity
       !
-      call FLdiffsadresses_roman(kindex,istep,N_potpoint,par)
+      maxorder = trove%NPotOrder+2
+      !
+      call FLdiffsadresses_roman(kindex,istep,N_potpoint,maxorder,par)
       !
       if (N_potpoint/=0) then
         !
@@ -8939,7 +8973,7 @@ end subroutine check_read_save_none
            stop 'FLinitilize_Potential, ipoint_address  - out of memory'
         end if
         !
-        call FLdiffsadresses_roman(kindex,istep,N_potpoint,par,ipoint_address)
+        call FLdiffsadresses_roman(kindex,istep,N_potpoint,maxorder,par,ipoint_address)
         !
         !$omp parallel private(pot_points,poten_t,alloc_p)
         allocate (pot_points(N_potpoint),poten_t(trove%RangeOrder(trove%NPotOrder)),stat=alloc_p)
@@ -9158,9 +9192,12 @@ end subroutine check_read_save_none
            !
            do irho=0,trove%Npoints,1
               !
-              write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(trove%pseudo%IndexQ(imode,i),&
-                    imode=1,min(30,trove%Nmodes))
-              !
+              if (abs(trove%pseudo%field(i,irho))>1e-8) then 
+                 !
+                 write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)") irho,i,trove%pseudo%field(i,irho),(trove%pseudo%IndexQ(imode,i),&
+                       imode=1,min(30,trove%Nmodes))
+                 !
+              endif
            enddo
            !
         enddo
@@ -9170,8 +9207,11 @@ end subroutine check_read_save_none
         do i = 1,trove%poten%Ncoeff
            !
            do irho=0,trove%Npoints,1
-              write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)")  irho,i,trove%poten%field(i,irho),&
-                                                         (trove%poten%IndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+              !
+              if (abs(trove%poten%field(i,irho))>1e-8) then
+                  write(out,"(20x,i5,1x,i7,f24.8,18x,30i4)")  irho,i,trove%poten%field(i,irho),&
+                                                             (trove%poten%IndexQ(imode,i),imode=1,min(30,trove%Nmodes))
+              endif
            enddo
            !
         enddo
@@ -9195,7 +9235,7 @@ end subroutine check_read_save_none
     logical                      :: par_i,outliers
     integer(ik),parameter        :: Ni = 10, Nattempt = 100
     real(ark)                    :: rho_(1:Ni),func_(1:Ni),rho,fval,foutlier,fcorr
-    integer(ik)                  :: iattempt,ioutlier_max
+    integer(ik)                  :: iattempt,ioutlier_max,maxorder
     character(len=4)             :: txt
     character(len=cl)            :: my_fmt !format for I/O specification
     !
@@ -9340,13 +9380,15 @@ end subroutine check_read_save_none
         !
         kindex(imode) = min(trove%NExtOrder,maxval(FLIndexQ(imode,:),dim=1))
         !
-      enddo 
+      enddo
+      !
+      maxorder = trove%NExtOrder+2
       !
       ! Obtain adresses of all points needed for the finite derivatives
       !
       ! 1. Estimate total number of all points required for a current parity
       !
-      call FLdiffsadresses_roman(kindex,istep,N_extFpoint,par)
+      call FLdiffsadresses_roman(kindex,istep,N_extFpoint,maxorder,par)
       !
       if (N_extFpoint/=0) then
         !
@@ -9356,7 +9398,7 @@ end subroutine check_read_save_none
            stop 'FLinit_External_field, ipoint_address  - out of memory'
         end if
         !
-        call FLdiffsadresses_roman(kindex,istep,N_extFpoint,par,ipoint_address)
+        call FLdiffsadresses_roman(kindex,istep,N_extFpoint,maxorder,par,ipoint_address)
         !
         !$omp parallel private(extF_points,extF_t,alloc_p)
         allocate (extF_points(N_extFpoint,rank),extF_t(nterms_max),stat=alloc_p)
@@ -9541,6 +9583,8 @@ end subroutine check_read_save_none
        !
        integer(ik) :: imu
        type(FLpolynomT),pointer     :: fl
+       !
+       if (.not.trove%extF_with_modes) return
        !
        do imu = 1, extF%rank
           !
@@ -14424,7 +14468,13 @@ end subroutine check_read_save_none
       case ('EXTERNAL_READ')
         !
         if (trove%separate_store) then
-          call checkpointRestore_external_ascii
+          !
+          if (trove%extF_with_modes) then 
+             call checkpointRestore_extF_ascii_with_modes
+          else
+             call checkpointRestore_external_ascii
+          endif
+          !
         else
           call checkpointRestore_external
         endif
@@ -16585,10 +16635,6 @@ end subroutine check_read_save_none
         !
         read(chkptIO_preread,"(a14)") buf
         !
-        !read(chkptIO_preread,*) Tpoints,Torder,Tcoeff
-        !
-        !if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        !if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
         !
         n = 0
         total_terms = 0 
@@ -16612,22 +16658,15 @@ end subroutine check_read_save_none
         enddo do_pseudo_pre 
         !
         close(chkptIO_preread,status='keep')
-        ! 
+        !
+        ! Now we can properlt read all the fields
+        !
+        maxpower = 0 
+        !
         call IOStart(trim(unitfname),chkptIO)
         open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
         !
         read(chkptIO,"(a14)") buf
-        ! 
-        !read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        !if (Tpoints/=Npoints) then
-        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-        !  stop "Kinetic-ASCII-chk npoints is wrong"
-        !endif
-        !if (Torder/=KinOrder) then 
-        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-        !  stop "Kinetic-ASCII-chk Norder is wrong"
-        !endif
         !
         k1_= 0 ; k2_= 0 ; n = 0; cur_term=0; 
         do_gvib : do 
@@ -16651,22 +16690,12 @@ end subroutine check_read_save_none
             trove%g_vib(k1,k2)%field(cur_term,i) = field_
           endif
           trove%g_vib(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
+          !
+          maxpower = max(maxval(trove%g_vib(k1,k2)%IndexQ),maxpower)
           !  
         enddo do_gvib 
         !
         read(chkptIO,"(a14)") buf
-        !
-        !read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        !if (Tpoints/=Npoints) then
-        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-        !  stop "Kinetic-ASCII-chk npoints is wrong"
-        !endif
-        !
-        !if (Torder/=KinOrder) then 
-        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-        !  stop "Kinetic-ASCII-chk Norder is wrong"
-        !endif
         !
         k1_= 0 ; k2_= 0 ; n = 0 ; cur_term = 0;
         do_grot : do 
@@ -16693,20 +16722,11 @@ end subroutine check_read_save_none
           !
           trove%g_rot(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
           !
+          maxpower = max(maxval(trove%g_rot(k1,k2)%IndexQ),maxpower)
+          !
         enddo do_grot
         !
         read(chkptIO,"(a14)") buf
-        !
-        !read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        !if (Tpoints/=Npoints) then
-        !  write(out,"('Kinetic-ASCII-chk npoints is wrong:',2i8)") Tpoints,Npoints
-        !  stop "Kinetic-ASCII-chk npoints is wrong"
-        !endif
-        !if (Torder/=KinOrder) then 
-        !  write(out,"('Kinetic-ASCII-chk Norder is wrong:',2i8)") Torder,KinOrder
-        !  stop "Kinetic-ASCII-chk Norder is wrong"
-        !endif
         !
         k1_ =0; k2_ = 0; n = 0; cur_term = 0;
         do_gcor : do 
@@ -16732,14 +16752,11 @@ end subroutine check_read_save_none
           endif
           trove%g_cor(k1,k2)%IndexQ(1:Nmodes, cur_term) = mode_list(1:Nmodes)
           !
+          maxpower = max(maxval(trove%g_cor(k1,k2)%IndexQ),maxpower)
+          !
         enddo do_gcor
         !
         read(chkptIO,"(a14)") buf
-        !
-        !read(chkptIO,*) Tpoints,Torder,Tcoeff
-        !
-        !if (Tpoints/=Npoints) stop "pseudo-ASCII-chk npoints is wrong"
-        !if (Torder/=KinOrder) stop "pseudo-ASCII-chk Order is wrong"
         !
         n = 0; cur_term = 1;
         do_pseu : do 
@@ -16762,17 +16779,11 @@ end subroutine check_read_save_none
           !
         enddo do_pseu
         !
+        maxpower = max(maxval(fl%IndexQ),maxpower)
+        !
         if (FLl2_coeffs) then 
           !
           read(chkptIO,"(a14)") buf
-          !
-          !read(chkptIO,*) Tpoints,Torder,Tcoeff
-          !
-          !if (Tpoints/=Npoints) stop "L2vib-ASCII-chk npoints is wrong"
-          !if (Torder/=2) then 
-          !  write (out,"('L2vib-ASCII-chk Order is not 2',i8)") Torder
-          !  stop "L2vib-ASCII-chk Order is wrong"
-          !endif
           !
           do k1 = 1,Nmodes
             do k2 = 1,Nmodes
@@ -16801,6 +16812,8 @@ end subroutine check_read_save_none
              !
              trove%L2_vib(k1,k2)%field(iterm,i) = field_
              !
+             maxpower = max(maxval(trove%L2_vib(k1,k2)%IndexQ),maxpower)             
+             !
           enddo do_L2vib
           !
         endif
@@ -16821,21 +16834,15 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
         end if
         !
-        ! it is important that pseudo and g_vib(N,N) share the same grid. Here we combine gvib into the pseudo grid
-        !
         fl => trove%g_vib(Nmodes,Nmodes)
         !
         call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
         !
-        !maxpower = trove%pseudo%Ncoeff
+        if (trove%NKinOrder<maxpower) then 
+           trove%NKinOrder = maxpower
+        endif
         !
-        ! check if trove%NKinOrder is consistent with the combined and possibly extended gvib/pseudo fields 
-        ! and increase it if necessary 
-        !
-        !if (trove%NKinOrder<maxpower) then 
-        !  trove%NKinOrder = maxpower
-        !trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
-        !endif
+        trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
         !
         call MemoryReport
         !
@@ -17156,7 +17163,7 @@ end subroutine check_read_save_none
 
 
       !
-      ! read KEO from potential.chk using the sparse representation for individual modes 
+      ! read PES from potential.chk using the sparse representation for individual modes 
       !
       subroutine checkpointRestore_potential_ascii_with_modes
 
@@ -17165,7 +17172,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl 
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -17315,6 +17322,10 @@ end subroutine check_read_save_none
         !  trove%NPotOrder = trove%poten%Ncoeff
         !endif
         !
+        maxpower = maxval(fl%IndexQ)
+        !
+        trove%NPotOrder = maxpower
+        !
         trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
         !
         call MemoryReport
@@ -17322,8 +17333,167 @@ end subroutine check_read_save_none
       end subroutine checkpointRestore_potential_ascii_with_modes
 
 
+      !
+      ! read extF from extrernal.chk using the sparse representation for individual modes 
+      !
+      subroutine checkpointRestore_extF_ascii_with_modes
 
-
+        character(len=16) :: buf
+        character(len=25) :: buf25
+        character(len=cl)  :: unitfname
+        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
+        type(FLpolynomT),pointer    :: fl 
+        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
+        integer(ik), allocatable :: mode_list(:) 
+        real(rk)             :: factor
+        real(ark)            :: field_, rho
+        real(rk)             :: exp_coeff_thresh
+        type(FLpolynomT)     :: extF_(1:extF%rank)
+        !
+        integer(ik) :: i, j,  iterm, total_terms(extF%rank), cur_term,imu,nn(extF%rank)
+        !
+        unitfname ='Check point of the external'
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_fname)
+        !
+        if (.not.associated(trove%extF)) then 
+           !
+           allocate (trove%extF(extF%rank),stat=alloc) 
+           if (alloc/=0) then
+               write (out,"('chk_Restore_extF_ascii-Error ',i9,' trying to allocate extF-field')") alloc
+               stop 'chk_Restore_extF_ascii, extF-field - out of memory'
+           end if
+           !
+        endif
+        !
+        Natoms = trove%Natoms
+        Nmodes = trove%Nmodes
+        Npoints = trove%Npoints
+        !
+        allocate(mode_list(Nmodes))
+        !
+        ! start reading 
+        !
+        read(chkptIO,"(a14)") buf
+        !
+        n = 0
+        total_terms = 0 
+        do_extF_pre: do 
+           !
+           read(chkptIO,*) imu,iterm,i,field_,mode_list(1:Nmodes) 
+           !
+           if (imu==987654321) then
+             !
+             do imu = 1,extF%rank
+               !
+               allocate (extF_(imu)%field(total_terms(imu),0:Npoints),extF_(imu)%IndexQ(trove%Nmodes,total_terms(imu)),stat=alloc)
+               call ArrayStart("extF%field",alloc,size(extF_(imu)%field),kind(extF_(imu)%field))
+               call ArrayStart("extF%field",alloc,size(extF_(imu)%IndexQ),kind(extF_(imu)%IndexQ))
+               !
+               extF_(imu)%field  = 0
+               !
+             enddo
+             !
+             exit do_extF_pre
+           endif
+           !
+           total_terms(imu) = max(iterm,total_terms(imu))
+           !
+        enddo do_extF_pre 
+        !
+        rewind(chkptIO)
+        !
+        read(chkptIO,"(a14)") buf
+        !         
+        !read(chkptIO,*) Npoints,Norder,Ncoeff
+        !
+        nn = 0; cur_term = 0;
+        do_extF : do 
+          !
+          read(chkptIO,*) imu,iterm,i,field_,mode_list(1:Nmodes) 
+          !
+          if (imu==987654321) exit do_extF
+          !
+          nn(imu) = nn(imu) + 1
+          !
+          cur_term = nn(imu)
+          !
+          extF_(imu)%IndexQ(1:Nmodes, nn(imu)) = mode_list(1:Nmodes)
+          !
+          if (Npoints > 0) then
+            do_k_find_match : do k=1,n-1
+               if ( all( mode_list(1:Nmodes-1) == extF_(imu)%IndexQ( 1:Nmodes-1,k ) ) ) then 
+                 cur_term = k
+                 nn(imu) = nn(imu) - 1
+                 exit do_k_find_match
+               endif
+            enddo do_k_find_match
+            !
+            do j = 0, Npoints 
+              rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
+              extF_(imu)%field(cur_term,j) = extF_(imu)%field(cur_term,j) +  field_*MLcoord_direct(rho,2, Nmodes, mode_list(Nmodes))
+            enddo
+            !
+          else
+            !
+            extF_(imu)%field(cur_term,i) = field_
+            !
+          endif
+          !
+        enddo do_extF
+        !
+        total_terms = nn
+        !
+        maxpower = 0 
+        !
+        do imu = 1,extF%rank
+          !
+          fl => trove%extF(imu)
+          fl%Ncoeff = total_terms(imu)
+          call polynom_initialization(fl,trove%NExtOrder,fl%Ncoeff,trove%Npoints,'extF')
+          !
+          forall(n=1:total_terms(imu)) fl%ifromsparse(n) = n
+          fl%sparse = .true.
+          !
+          do k=1,total_terms(imu)
+             fl%field(k,:) =  extF_(imu)%field(k,:)
+             fl%IndexQ(1:Nmodes,k) = extF_(imu)%IndexQ(1:Nmodes,k)
+          enddo
+          !
+          maxpower = max(maxval(fl%IndexQ),maxpower)
+          !
+        enddo
+        !
+        read(chkptIO,*) exp_coeff_thresh
+        !
+        if ( abs(exp_coeff_thresh-job%exp_coeff_thresh)>small_ ) then
+           !
+           write(out,"('WARNING: in external.chk exp_coeff_thresh is inconsistent with used: ',2e18.10)") &
+                     job%exp_coeff_thresh,exp_coeff_thresh
+           !
+        endif
+        !
+        read(chkptIO,"(a16)") buf
+        !
+        if (buf/='End of external') then
+          write (out,"(' Checkpoint file ',a,' has bogus label extF-ascii',a)") trove%chk_fname, buf
+          stop 'check_point_Hamiltonian - bogus file format extF-ASCII'
+        end if
+        !
+        do imu = 1,extF%rank
+          deallocate(extF_(imu)%field,extF_(imu)%IndexQ)
+        enddo
+        !
+        call ArrayStop("extF%field")
+        !
+        trove%NExtOrder = maxpower
+        !
+        trove%MaxOrder = max(trove%MaxOrder,trove%NExtOrder)
+        !
+        call MemoryReport
+        !
+      end subroutine checkpointRestore_extF_ascii_with_modes
+      !
       !
       subroutine checkpointRestore_external
 
@@ -17377,10 +17547,9 @@ end subroutine check_read_save_none
         !
       end subroutine checkpointRestore_external
       !      
-
+      !
       subroutine checkpointRestore_external_ascii
-      
-
+        !
         character(len=15) :: buf
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,alloc
@@ -18548,7 +18717,7 @@ end subroutine check_read_save_none
     integer(ik),intent(in)      :: ibs         ! Index for the new 1D basis   
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
-    integer(ik)                 :: MatrixSize,imode,k,ipower, maxpower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
+    integer(ik)                 :: MatrixSize,imode,k,ipower,jpower,maxpower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
                                    kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
@@ -18560,7 +18729,7 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:),xton(:,:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:),xton(:,:),xi_n(:,:,:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -18581,7 +18750,7 @@ end subroutine check_read_save_none
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
-    real(ark)   :: g2_term,f2_term
+    real(ark)   :: g2_term,f2_term,coeff_term
     real(ark)   :: fd_step =0.005_ark,f_1,f_2,f_3 ! step for finite differences  
     !
     ! substitute for easier reference 
@@ -19062,7 +19231,7 @@ end subroutine check_read_save_none
         endif
         !
      case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
-           'FOURIER_PURE')
+           'FOURIER_PURE','SINRHO-LEGENDRE-K1')
         !
         ! the default case is assumed to be of the numerical type
         !
@@ -19071,16 +19240,8 @@ end subroutine check_read_save_none
            stop 'FLbset1DNew error: a non-numerical basis set type is illegal here'
         endif
         ! 
-        ! numerov bset
+        ! Non-rigid mode
         if (trove%manifold_rank(bs%mode(1))/=0) then
-           !
-           !if (trove%sparse) then 
-           !  !
-           !  write(out,"('FLbset1DNew: NON-RIGID was not tested in combinatiion for SPARSE, try either RIGID or NO-SPARSE ')") 
-           !  !stop 'FLbset1DNew: NON-RIGID is not working for SPARSE yet'
-           !  !
-           !endif
-           !
            !
            ! Allocation of the potential and kinetic 1d matrixes
            !
@@ -19127,7 +19288,8 @@ end subroutine check_read_save_none
            !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
            !
-           if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K')) then 
+           if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
+                                 trim(bs%type)=='SINRHO-LEGENDRE-K1')) then 
                f1drho(0:npoints) = trove%poten%field(1,0:npoints)
            endif
            !
@@ -19154,7 +19316,7 @@ end subroutine check_read_save_none
               maxpower = trove%NKinorder
            endif
            !
-           allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),stat=alloc)
+           allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,0:maxpower,3),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate drho')") alloc
               stop 'FLbset1DNew, drho - out of memory'
@@ -19170,6 +19332,15 @@ end subroutine check_read_save_none
               !
               do ipower = 0, maxpower
                  xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+                 xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,ipower)
+              enddo
+              !
+              do ipower = 0, trove%NPotOrder
+                 xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
+              enddo
+              !
+              do ipower = 0, trove%NExtOrder
+                 xi_n(i,ipower,3) = MLcoord_direct(rho,3,nu_i,ipower)
               enddo
               !
            enddo
@@ -19198,7 +19369,15 @@ end subroutine check_read_save_none
                   !
                   if(i == nu_i) cycle
                   !
-                  g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                  coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
+                  !
+                  if (job%bset_prop(i)%singular) then
+                    !
+                    continue
+                    !
+                  endif
+                  !
+                  g2_term = g2_term*coeff_term 
                   !
                 enddo
                 !
@@ -19328,7 +19507,7 @@ end subroutine check_read_save_none
            
            case ('NUMEROV')
              !
-             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
              if (job%bset(nu_i)%iperiod/=0) then
@@ -19593,7 +19772,7 @@ end subroutine check_read_save_none
              endif
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
@@ -19795,12 +19974,12 @@ end subroutine check_read_save_none
              !
            case ('FOURIER_PURE')
              !
-             call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('FOURIER')
              !
-             call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINC')
@@ -19859,7 +20038,9 @@ end subroutine check_read_save_none
              !
              ! altenatively try to put equilibrimum at the minimum of the potential
              !
-             irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
+             if (.not.trove%potential_with_modes) then
+               irho_eq = minloc(trove%poten%field(1,:),dim=1)-1
+             endif
              !
              ! for periodic case we need to choose the equilibrium at the 
              ! reference geometry; we apply this rule only if the periodicity is the same 
@@ -19887,7 +20068,7 @@ end subroutine check_read_save_none
            !rho_ref = molec%chi_eq(nu_i)
            !
            allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),&
-                     pseudo(0:Npoints),muzz(0:Npoints),stat=alloc)
+                     xi_n(0:Npoints,0:trove%MaxOrder,3),pseudo(0:Npoints),muzz(0:Npoints),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
               stop 'FLbset1DNew, f1drho and g1drho - out of memory'
@@ -19905,15 +20086,25 @@ end subroutine check_read_save_none
              !
            endif 
            !
-           if (.not.trove%DVR.or.reduced_model) then
+           if (.not.trove%DVR) then
              !
              call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
              !
              call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
              !
+             do ipower = 0, trove%NPotOrder 
+               xi_n(:,:,2) = MLcoord_direct(rho,2,nu_i,ipower)
+             enddo
+             !
+             do ipower = 0, trove%NExtOrder 
+               xi_n(:,:,3) = MLcoord_direct(rho,3,nu_i,ipower)
+             enddo
+             !
              call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
              !
              call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,pseudo,muzz)
+             !
+             xi_n(:,:,1) = xton(:,:)
              !
            else 
              !
@@ -19969,7 +20160,7 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + pseudo
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('BOX')
@@ -19983,7 +20174,7 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + pseudo
              !
-             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINC')
@@ -20009,30 +20200,35 @@ end subroutine check_read_save_none
                 maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
              !
-             !drho  = drho  + trove%local_eq(nu_i)
-             !rho_b = rho_b + trove%local_eq(nu_i)
-             !
-             !r_ = trove%local_eq 
-             !r_(nu_i) = rho_b(1)+trove%local_eq(nu_i)
-             !
-             !chi_b = rho_b
-             !
-             !chi_ = MLcoordinate_transform_func(r_,size(r_),.true.)
              chi_b(:) = rho_b(:) - rho_b(1)
-             !r_(nu_i) = rho_b(2)+trove%local_eq(nu_i) 
-             !chi_ = MLcoordinate_transform_func(r_,size(r_),.true.)
-             !chi_b(2) = chi_(nu_i)
-             !drho = drho - rho_b(1)
              !
              bs%matelements = 0 
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
-                                       job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,&
+                                       nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
              !
+           case ('SINRHO-LEGENDRE-K1')
+             !
+             kmax = job%bset(0)%range(2)
+             nmax = bs%Size
+             !
+             if(molec%mode_list_present) then
+                maxpower = molec%basic_function_list(nu_i)%numfunc
+             else
+                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+             endif
+             !
+             chi_b(:) = rho_b(:) - rho_b(1)
+             !
+             bs%matelements = 0 
+             !
+             ! Associated Legendre for k=1 only
+             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,nu_i,&
+                                       job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case default
              !
@@ -20108,13 +20304,13 @@ end subroutine check_read_save_none
        integer(ik),intent(in) :: irho_eq,npoints
        real(ark),intent(in)   :: rho_b(2)
        !
-       real(ark),intent(out)  :: p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder)
-       real(ark),intent(out)  :: g1z(0:trove%MaxOrder)
+       real(ark),intent(out)  :: p1d(0:trove%NKinOrder),g1d(0:trove%NKinOrder)
+       real(ark),intent(out)  :: g1z(0:trove%NKinOrder)
        !
-       real(ark) :: ps(1:trove%Nmodes,0:trove%MaxOrder),gvib(1:trove%Nmodes,0:trove%MaxOrder),&
-                    grot(1:trove%Nmodes,0:trove%MaxOrder)
+       real(ark) :: ps(1:trove%Nmodes,0:trove%NKinOrder),gvib(1:trove%Nmodes,0:trove%NKinOrder),&
+                    grot(1:trove%Nmodes,0:trove%NKinOrder)
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
-       real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f
+       real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f,g_term
        integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes)
        integer(ik) :: jmode,i,k,j,irho_eq_,nu_
        type(FLpolynomT),pointer    :: fl,gl,gzl
@@ -20178,7 +20374,9 @@ end subroutine check_read_save_none
                 ! 
                 if(i == nu_i) cycle
                 !
-                f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                g_term = MLcoord_direct(trove%chi_eq(i), 1, i, ipower) 
+                !
+                f2_term = f2_term*g_term
                 !
               enddo
               !
@@ -20423,13 +20621,13 @@ end subroutine check_read_save_none
        integer(ik),intent(in) :: irho_eq,npoints
        real(ark),intent(in)   :: rho_b(2)
        !
-       real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%MaxOrder)
-       real(ark),intent(in)   :: g1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
+       real(ark),intent(out)  :: pseudo(0:Npoints),g1drho(0:Npoints),xton(0:Npoints,0:trove%NKinOrder)
+       real(ark),intent(in)   :: g1d(0:trove%NKinOrder),p1d(0:trove%NKinOrder),g1z(0:trove%NKinOrder)
        real(ark),intent(out)  :: drho(0:Npoints,3)
        real(ark),optional,intent(out)  :: muzz(0:Npoints)
        !
        real(ark) :: step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f
-       integer(ik) :: ipower,nu_i,maxpower
+       integer(ik) :: ipower,jpower,nu_i,maxpower
        integer(ik) :: i,k,j,irho_eq_,nu_
        !
        irho_eq_ = irho_eq
@@ -20473,25 +20671,26 @@ end subroutine check_read_save_none
           drho(i,3) = rho_ext
           !
           do ipower = 0, maxpower 
-             xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
-          enddo
-          !
-          do ipower = 0,maxpower
+             !
+             jpower = ipower
+             if (job%bset_prop(nu_i)%singular) jpower = -ipower
+             !
+             xton(i,ipower) = MLcoord_direct(rho,1,nu_i,jpower)
              !
              if (abs(p1d(ipower))>small_) then 
-               f = MLcoord_direct(rho,1,nu_i,ipower)
+               f = MLcoord_direct(rho,1,nu_i,jpower)
                pseudo(i) = pseudo(i) + p1d(ipower)*f
              endif
              !
              if (abs(g1d(ipower))>small_) then 
-               f = MLcoord_direct(rho,1,nu_i,ipower)
+               f = MLcoord_direct(rho,1,nu_i,jpower)
                g1drho(i) = g1drho(i) + g1d(ipower)*f
              endif
              !
              if (present(muzz)) then
                !
                if (abs(g1d(ipower))>small_) then 
-                 f = MLcoord_direct(rho,1,nu_i,ipower)
+                 f = MLcoord_direct(rho,1,nu_i,jpower)
                  muzz(i) = muzz(i) + g1z(ipower)*f
                endif
                !
@@ -20508,11 +20707,11 @@ end subroutine check_read_save_none
        !
        integer(ik),intent(in) :: irho_eq,npoints
        real(ark),intent(in)   :: rho_b(2)
-       real(ark),intent(out)  :: f1d(0:trove%MaxOrder)
+       real(ark),intent(out)  :: f1d(0:trove%NPotOrder)
        !
        real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
        real(ark) :: rho_pot0,rho_pot,step
-       real(ark) :: pot(1:trove%Nmodes,0:trove%MaxOrder)
+       real(ark) :: pot(1:trove%Nmodes,0:trove%NPotOrder)
        !
        integer(ik) :: ipower,imode,jmode,nu_i,i,k,powers(trove%Nmodes),nu_,maxpower,irho_eq_
        !
@@ -20578,7 +20777,7 @@ end subroutine check_read_save_none
                  any(abs(pot(1:bs%imodes,ipower)-f_t)>1e6*sqrt(small_))) then
                 write(out,"('FLbset1DNew: not all numerov-poten parameters are equal')")
                 write(out,"('poten-ipower=',i6)") ipower
-                write(out,"(30f18.8)") (pot(1,ipower),imode=1,min(bs%imodes,30)) 
+                write(out,"(30f18.8)") (pot(imode,ipower),imode=1,min(bs%imodes,30)) 
                 if ( job%bset(nu_i)%check_sym ) then 
                   stop 'FLbset1DNew: not all numerov parameters are equal'
                 endif
@@ -20686,17 +20885,20 @@ end subroutine check_read_save_none
        !
        integer(ik),intent(in) :: irho_eq,npoints
        real(ark),intent(in)  ::  rho_b(2)
-       real(ark),intent(in)  :: f1d(0:trove%MaxOrder)
+       real(ark),intent(in)  :: f1d(0:trove%NPotOrder)
        real(ark),intent(out) :: f1drho(0:Npoints)
        !
        real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
        real(ark) :: rho_pot0,rho_pot,step
-       real(ark) :: pot(1:trove%Nmodes,0:trove%MaxOrder)
+       real(ark) :: pot(1:trove%Nmodes,0:trove%NPotOrder)
        !
-       integer(ik) :: ipower,nu_i,i,irho_eq_
+       integer(ik) :: ipower,nu_i,i,irho_eq_,maxpower
        !
        irho_eq_ = irho_eq
        step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
+       nu_i = bs%mode(1)
+       maxpower = trove%NPotOrder
        !
        ! generating 1d tables
        ! for basis sets we will need 1d potential and kinetic enrgy part 
@@ -20704,7 +20906,6 @@ end subroutine check_read_save_none
        !
        f1drho = 0
        !
-       nu_i = bs%mode(1)
        rho =  trove%chi_eq(nu_i)
        rho_pot0 = MLcoord_direct(rho,2,nu_i)
        !
@@ -20718,13 +20919,11 @@ end subroutine check_read_save_none
              !
              f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
              !
-          enddo 
+          enddo
           !
        enddo
        !
      end subroutine generate_potential_1d_field
-
-     
      !
   end subroutine FLbset1DNew
 
@@ -24229,12 +24428,13 @@ end subroutine check_read_save_none
    !
    ! Collect all  points needed for the difference derivatives  
    !
-   subroutine FLdiffsadresses_roman(itarget,istep,ipoint,par,ipointaddress)
+   subroutine FLdiffsadresses_roman(itarget,istep,ipoint,maxorder,par,ipointaddress)
 
       integer(ik),intent(in)     :: itarget(trove%Nmodes)
       integer(ik),intent(in)     :: istep(2,trove%Nmodes)
       integer(ik),intent(out)    :: ipoint
-      integer(ik),intent(in)         :: par(0:trove%Nmodes+1) ! Parity of each mode in derivatives calculation
+      integer(ik),intent(in)     :: maxorder
+      integer(ik),intent(in)     :: par(0:trove%Nmodes+1) ! Parity of each mode in derivatives calculation
       integer(ik),optional       :: ipointaddress(:,:)
 
       integer(ik)                :: iaddr(trove%Nmodes)
@@ -24309,7 +24509,7 @@ end subroutine check_read_save_none
         !
         N_t = sum(abs(isearch))
         !
-        if (N_t<=trove%MaxOrder) then 
+        if (N_t<=maxorder) then 
           !
           if (imode==trove%Nmodes) then 
             !

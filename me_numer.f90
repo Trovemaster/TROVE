@@ -72,7 +72,7 @@ module me_numer
   !
   ! Matrix elements with Numerov-eigenfunctions 
   !
-  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,iperiod_,&
+  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xi_n_,poten_,mu_rr_,icoord,iperiod_,&
                         verbose_,g_numerov,energy)
    !
    integer(ik),intent(in)   :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
@@ -80,17 +80,17 @@ module me_numer
    real(ark),intent(out)    :: energy(0:vmax_)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder_)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xi_n_(0:npoints_,0:maxorder_,3)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose_   ! Verbosity level
    !
    real(ark)            :: rho,cross_prod,factor
    real(ark)            :: h_t,sigma,sigma_t,rms,psipsi_t,characvalue,rhostep_,step_scale,fval,df_t
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2,itype
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
-   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xton(:,:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:)
+   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xi_n(:,:,:)
    character(len=cl)     :: unitfname 
    real(ark),allocatable :: enerslot(:),enerslot_(:)
    real(ark),allocatable :: psi(:,:),dpsi(:,:)
@@ -113,9 +113,9 @@ module me_numer
      if (iperiod>0) periodic = .true.
      !
      allocate(phil(0:npoints_),phir(0:npoints_),dphil(0:npoints_),dphir(0:npoints_), &
-              phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),enerslot(0:maxslots), &
+              phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),enerslot(0:maxslots), &
               f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),&
-              xton(0:npoints,0:maxorder_),stat=alloc)
+              xi_n(0:npoints,0:maxorder_,3),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
@@ -134,7 +134,6 @@ module me_numer
      !
      rho_kinet(:) = drho_(:,1)
      rho_poten(:) = drho_(:,2)
-     rho_extF(:)  = drho_(:,3)
      !
      step_scale = rhostep/rhostep_
      !
@@ -147,7 +146,7 @@ module me_numer
        !
        do lambda  = 0,maxorder_
          !
-         xton(:,lambda) = xton_(:,lambda)
+         xi_n(:,lambda,1:3) = xi_n_(:,lambda,1:3)
          !
        enddo
        !
@@ -174,9 +173,12 @@ module me_numer
           !
           do lambda = 0,maxorder
             !
-            call polintark(rho_(i1:i2),xton_(i1:i2,lambda),rho,fval,df_t)
-            xton(i,lambda) = fval
-            !
+            do itype = 1,3
+             !
+             call polintark(rho_(i1:i2),xi_n_(i1:i2,lambda,itype),rho,fval,df_t)
+             xi_n(i,lambda,itype) = fval
+             !
+            enddo
           enddo
           !
        enddo
@@ -359,7 +361,7 @@ module me_numer
                if (lambda==0) then 
                   phivphi(:) = phil(:)*phir(:)
                else
-                  phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
+                  phivphi(:) = phil(:)*xi_n(:,lambda,2)**lambda*phir(:)
                endif
                !
                g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
@@ -369,7 +371,7 @@ module me_numer
                if (lambda==0) then 
                   phivphi(:) = phil(:)*phir(:)
                else
-                  phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
+                  phivphi(:) = phil(:)*xi_n(:,lambda,3)*phir(:)
                endif
                !
                g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
@@ -383,7 +385,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
                endif
                !
-               phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
                !
                g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
@@ -401,7 +403,7 @@ module me_numer
                   phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
+               phivphi(:) =-dphil(:)*xi_n(:,lambda,1)*dphir(:)
                !
                g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
@@ -417,7 +419,7 @@ module me_numer
                   phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
                endif
                !
-               phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*dphir(:)
                !
                g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
@@ -429,7 +431,7 @@ module me_numer
                      phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
                   endif
                   !
-                  phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
+                  phivphi(:) = dphil(:)*xi_n(:,lambda,1)*phir(:)
                   !
                   g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
@@ -509,7 +511,7 @@ module me_numer
         write(out,"('rms deviation is ',f18.8)") sqrt(rms)
      endif 
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,enerslot,f,poten,mu_rr,d2fdr2,dfdr,xton)
+     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,enerslot,f,poten,mu_rr,d2fdr2,dfdr,xi_n)
      !
      !
   end subroutine ME_numerov

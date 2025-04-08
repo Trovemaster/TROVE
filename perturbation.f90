@@ -1425,7 +1425,7 @@ module perturbation
      integer(ik),intent(inout), optional  :: Index_nu(:,:)
 
      integer(ik)            :: nu_search(size(nu_target))
-     integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2
+     integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2,l
      logical     :: flag_go
 
       if (present(Index_nu)) then 
@@ -1451,18 +1451,22 @@ module perturbation
       nu_search = 0 
       flag_go = .true.
       !
+      ! l is the vibrational quantum number in case it is needed; l = -1, it is not needed
+      l = -1
       isum = 0 
-      call gsum(Nmodes,npol,imodes,nu_search,isum) 
+      call gsum(Nmodes,npol,imodes,nu_search,l,isum) 
       !
   contains
    ! 
-   recursive subroutine gsum(Nmodes,Npol,imodes,nu_search,isum)
-     integer(ik),intent(in) :: Nmodes
+   recursive subroutine gsum(Nmodes,Npol,imodes,nu_search,l,isum)
+     integer(ik),intent(in)    :: Nmodes
      integer(ik),intent(in)    :: Npol,imodes
-     integer(ik) :: nu_t,Npol_t,isum
+     integer(ik),intent(inout) :: l
+     integer(ik) :: nu_t,Npol_t,isum,v,lmax,k
      !
      integer(ik)            :: nu_search(size(nu_target))
-     real(rk)    :: ener0
+     real(rk)  :: ener0
+     logical   :: do_count = .false.
 
      ! start cycle for the current-level nu-mode from 0 and untill npol_t<Npol
      nu_t = 0
@@ -1470,16 +1474,37 @@ module perturbation
      !
      do while (npol_t<=Npol.and.flag_go.and.nu_search(imodes)<=nu_target(imodes))
         !
+        if (job%bset_prop(imodes-1)%singular) then
+          lmax = job%bset(0)%range(2)
+          v = nu_search(imodes)
+          l = mod(v,lmax+1)
+        endif
+        !
         if (imodes == Nmodes) then
            if (npol_t==Npol) then
              !
              ener0 = FLenergy_zero(nu_search(:))
              !
-             ! .and.mod(nu_search(Nmodes),2)==1 ! odd or even
+             do_count = .false.
              !
-             if (ener0<=job%enercut)  then 
+             if (ener0<=job%enercut) do_count = .true.
+             !
+             ! Here we combine the ith-mode basis with the nmode basis using k(nmode) = l(ith)
+             if (l/=-1) then
+               if (job%bset(imodes-1)%type=='FOURIER_PURE') then
+                 !
+                 k = (nu_search(Nmodes)+1)/2
+                 if (k/=l) do_count = .false.
+                 !
+               endif
+             endif
+             !
+             if (do_count) then 
+                !
                 isum = isum +1
+                !
                 !write(out,"('isum,-> nu_search',20i4)") isum,nu_search(:)
+                !
                 if (present(index_nu)) then 
                    if (isum>dm2) then 
                       write(out,"('PTnu_index: isum > size of Index_nu:',2i8)") isum,dm2
@@ -1488,13 +1513,15 @@ module perturbation
                    index_nu(:,isum) = nu_search(:)
                 endif
               endif 
-           endif 
+           endif
+           !
            if (all(nu_target(:)==nu_search(:))) flag_go = .false.
+           !
         else
            !
            ! go to the next mode (imodes+1)
            !
-           call gsum(Nmodes,Npol,imodes+1_ik,nu_search,isum)
+           call gsum(Nmodes,Npol,imodes+1_ik,nu_search,l,isum)
         endif 
         nu_t = nu_t +1 
         !
@@ -1565,8 +1592,6 @@ module perturbation
         if (imodes == Nmodes) then
           !
           ener0 = FLenergy_zero(nu_search(:))
-          !
-          ! .and.mod(nu_search(Nmodes),2)==1 ! odd or even
           !
           if (ener0<=job%enercut)  then 
              isum = isum +1
@@ -3738,7 +3763,8 @@ module perturbation
        !
        Ncount = ilevel
        !
-       if (bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs) then
+       if ((bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2.and.FLl2_coeffs).or.&
+            bs_t(kmode)%type=='FOURIER_PURE') then
          !
          ! Sort according the energy increasing 
          !
@@ -32557,30 +32583,30 @@ end subroutine read_contr_matelem_expansion_classN
         !nu_i(nmodes) = n_i
       endif
       !
-      do imode = 1,Nmodes
-        if (job%bset_prop(imode)%singular) then 
-          v_i = nu_i(imode)
-          k_i = mod(v_i,kmax+1)
-          n_i = (v_i-k_i)/(kmax+1)
-          !
-        endif 
-      enddo
+      !do imode = 1,Nmodes
+      !  if (job%bset_prop(imode)%singular) then 
+      !    v_i = nu_i(imode)
+      !    k_i = mod(v_i,kmax+1)
+      !    n_i = (v_i-k_i)/(kmax+1)
+      !    !
+      !  endif 
+      !enddo
       !
       do j = i,dimen
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
         !
-        do jmode = 1,Nmodes
-          if (job%bset_prop(jmode)%singular) then 
-            !
-            v_j = nu_j(jmode)
-            k_j = mod(v_j,kmax+1)
-            n_j = (v_j-k_j)/(kmax+1)
-            !
-            if (k_i/=k_j) cycle
-            !
-          endif 
-        enddo
+        !do jmode = 1,Nmodes
+        !  if (job%bset_prop(jmode)%singular) then 
+        !    !
+        !    v_j = nu_j(jmode)
+        !    k_j = mod(v_j,kmax+1)
+        !    n_j = (v_j-k_j)/(kmax+1)
+        !    !
+        !    !if (k_i/=k_j) cycle
+        !    !
+        !  endif 
+        !enddo
         !
         if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)
@@ -32838,6 +32864,27 @@ end subroutine read_contr_matelem_expansion_classN
             PT%lquant%icoeffs(ib,1)=k_i
             PT%quanta%icoeffs(ib,Nmodes) = n_i
           endif
+          !
+          do imode = 1,Nmodes
+            if (job%bset_prop(imode)%singular) then 
+              v_i = nu_i(imode)
+              k_i = mod(v_i,kmax+1)
+              n_i = (v_i-k_i)/(kmax+1)
+              PT%lquant%icoeffs(ib,1)=k_i
+              PT%quanta%icoeffs(ib,Nmodes) = n_i
+            endif 
+            !
+            if (job%bset(imode)%type=='FOURIER_PURE') then
+              !
+              v_i = nu_i(Nmodes)
+              k_i = (v_i+1)/2
+              !
+              PT%lquant%icoeffs(ib,1)=k_i
+              PT%quanta%icoeffs(ib,Nmodes) = k_i
+              !
+            endif
+            !
+          enddo
           !
           termvalue = b(ib)-ZPE
           !

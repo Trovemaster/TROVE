@@ -16,7 +16,7 @@ module pot_abcd
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
          MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB,poten_c2h2_morse_sinalpha_cosntau
-  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau
+  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau,MLdms2xyz_abcd_r_alpha_rho_tau
   !
   private
 
@@ -7793,5 +7793,81 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
    !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/end')")
    !
   end function MLpoten_abcd_morse_cos_angle_cosntau
+  !
+  !
+  recursive subroutine MLdms2xyz_abcd_r_alpha_rho_tau(rank,ncoords,natoms,r,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: imu, iterm
+    real(ark)             :: r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),u(3),v(3),w(3),v12(3),v31(3)
+    real(ark)             :: re1(1:3),re2(1:3),re3(1:3),alphae1(1:3),alphae2(1:3),taue(1:3),rho2,rho2e(3), &
+                             beta1(1:3),beta2(1:3),beta3(1:3), y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_
+    !
+    v(:) = xyz(2,:)-xyz(1,:)
+    u(:) = xyz(3,:)-xyz(1,:)
+    w(:) = xyz(4,:)-xyz(2,:)
+    !
+    v12(:) = MLvector_product(v(:),u(:))
+    v12(:) = v12(:)/sqrt(sum(v12(:)**2))
+    v31(:) = MLvector_product(w(:),v(:))
+    v31(:) = v31(:)/sqrt(sum(v31(:)**2))
+    !
+    e3(:) = v(:)/sqrt(sum(v(:)**2))
+    e2(:) = v12(:)/sqrt(sum(v12(:)**2))
+    e1(:) =  MLvector_product(e2(:),e3(:))
+    !
+    tmat(:,1) = e1
+    tmat(:,2) = e2
+    tmat(:,3) = e3
+    !
+    r1     = r(1)
+    r2     = r(2)
+    r3     = r(3)
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau    = r(6)
+    !
+    rho2 = pi-alpha2
+    !
+    tau = mod(tau+2.0_ark*pi,2.0_ark*pi)
+    !
+    re1(1:3)     = extF%coef(1,1:3)
+    re2(1:3)     = extF%coef(2,1:3)
+    re3(1:3)     = extF%coef(3,1:3)
+    alphae1(1:3) = extF%coef(4,1:3)/rad
+    alphae2(1:3) = extF%coef(5,1:3)/rad
+    rho2e(1:3)   = pi - alphae2(1:3)
+    taue(1:3)    = extF%coef(6,1:3)/rad
+    !
+    y(1,:) = r1 - re1(:) 
+    y(2,:) = r2 - re2(:) 
+    y(3,:) = r3 - re3(:) 
+    y(4,:) = alpha1 - alphae1(:)
+    y(5,:) = rho2-rho2e(:)
+    y(6,:) = tau
+    !
+    mu = 0
+    !
+    do imu = 1, 3
+       !
+       do iterm = 6, extF%nterms(imu)
+          !
+          xi(1:5) = y(1:5,imu) ** extF%term(1:5, iterm, imu)
+          xi(6)=cos(real(extF%term(6, iterm, imu),ark)*tau)
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu) * product(xi(1:molec%ncoords))
+          !
+       end do
+       !
+    end do
+    !
+    mu(2) = mu(2)*sin(tau)
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+  end subroutine MLdms2xyz_abcd_r_alpha_rho_tau
   !
 end module pot_abcd

@@ -131,7 +131,8 @@ module moltype
 !END INTERFACE
   !
   type basic_function
-      procedure(calc_func), pointer, nopass  :: func_pointer
+      procedure(calc_func), pointer, nopass  :: func_pointer     ! basic functions as generic procedures
+      procedure(calc_func), pointer, nopass  :: func_singular_pointer ! a special case of basic funcitons for singular modes which are resolved
       character(len=cl) :: name
       real(ark) :: coeff
       real(ark) :: inner_expon
@@ -2837,13 +2838,24 @@ module moltype
              case("SEC")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
              case("COT_")
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
              case("CSC_")
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
              case default
                write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
                stop 'read_basic_function_constructor-error: unkown basic function'
            end select
+           !
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer => &
+                         molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer
+           !
+           select case(trim(func_name))
+             case("COT_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_cos
+             case("CSC_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_I
+           end select
+           !
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 

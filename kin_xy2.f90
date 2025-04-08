@@ -9,7 +9,8 @@ module kin_xy2
 
   public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
          MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
-         MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
+         MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,&
+         MLkinetic_xyz_Jacobi_bisect_EKE
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -1025,6 +1026,105 @@ module kin_xy2
      !
    end subroutine  MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
    
+
+
+
+  ! Defining kinetic energy function: Jacobi-bisect XYZ
+  ! This is EKE generated using Maple for a bond frame with Jacbi bond-length-angle and 
+  ! removed singularity by combining U rho with dG/drho and multiplying muzz by rho^2
+  ! and muxz and muyz by rho. The vecinity of zero (singularity) is expanded wrt rho, up to the 7th order 
+  !
+  subroutine MLkinetic_xyz_Jacobi_bisect_EKE(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY1,mY2,rho_2
+   real(ark),parameter  :: rho_threshold = 0.02_rk
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xyz_bond_EKE-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_bond_EKE can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY1 = molec%AtomMasses(2)
+     mY2 = molec%AtomMasses(3)
+     !
+     rho_2 = 0.5_ark*rho
+     !
+     g_vib = 0 
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     g_vib(1,1,1) =  (mX+mY2)/mY1/(mX+mY1+mY2) 
+     g_vib(1,2,1) =  cos(rho)/(mX+mY1+mY2) 
+     g_vib(1,3,2) =  -2.0_ark*sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_vib(2,1,1) =  cos(rho)/(mX+mY1+mY2) 
+     g_vib(2,2,1) =  (mX+mY1)/mY2/(mX+mY1+mY2) 
+     g_vib(2,3,3) =  -2.0_ark*sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_vib(3,1,2) =  -2.0_ark*sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_vib(3,2,3) =  -2.0_ark*sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_vib(3,3,4) =  (mX+mY1)/mY2/(mX+mY1+mY2) 
+     g_vib(3,3,5) =  -2.0_ark*cos(rho)/(mX+mY1+mY2) 
+     g_vib(3,3,6) =  (mX+mY2)/mY1/(mX+mY1+mY2) 
+     g_rot(1,1,4) =  .25000_ark*(mX+mY1)/mY2/cos(rho_2)**2/(mX+mY1+mY2) 
+     g_rot(1,1,5) =  .50000_ark/cos(rho_2)**2/(mX+mY1+mY2) 
+     g_rot(1,1,6) =  .25000_ark*(mX+mY2)/mY1/cos(rho_2)**2/(mX+mY1+mY2) 
+     g_rot(2,2,4) =  .25000_ark*(mX+mY1)/mY2/(mX+mY1+mY2) 
+     g_rot(2,2,5) =  .50000_ark*cos(rho)/(mX+mY1+mY2) 
+     g_rot(2,2,6) =  .25000_ark*(mX+mY2)/mY1/(mX+mY1+mY2) 
+     !
+     g_cor(1,2,2) =  -1.0_ark*sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_cor(2,2,3) =  sin(rho_2)*cos(rho_2)/(mX+mY1+mY2) 
+     g_cor(3,2,4) =  .50000_ark*(mX+mY1)/mY2/(mX+mY1+mY2) 
+     g_cor(3,2,6) =  -.50000_ark*(mX+mY2)/mY1/(mX+mY1+mY2) 
+     !
+     if (rho>rho_threshold) then
+        !
+        g_rot(1,3,4) =  -.25000_ark*(mX+mY1)*rho/mY2/sin(rho_2)/cos(rho_2)/(mX+mY1+mY2) 
+        g_rot(1,3,6) =  .25000_ark*(mX+mY2)*rho/mY1/sin(rho_2)/cos(rho_2)/(mX+mY1+mY2) 
+        g_rot(3,1,4) =  -.25000_ark*(mX+mY1)*rho/mY2/sin(rho_2)/cos(rho_2)/(mX+mY1+mY2) 
+        g_rot(3,1,6) =  .25000_ark*(mX+mY2)*rho/mY1/sin(rho_2)/cos(rho_2)/(mX+mY1+mY2) 
+        g_rot(3,3,4) =  .25000_ark*(mX+mY1)*rho**2/mY2/sin(rho_2)**2/(mX+mY1+mY2) 
+        g_rot(3,3,5) =  -.50000_ark*rho**2/sin(rho_2)**2/(mX+mY1+mY2) 
+        g_rot(3,3,6) =  .25000_ark*(mX+mY2)*rho**2/mY1/sin(rho_2)**2/(mX+mY1+mY2) 
+        !
+        pseudo(4) =  .031250_ark*(4.0_ark*cos(rho_2)**2*mX+4.0_ark*mY1*cos(rho_2)**2-4.0_ark*rho**2*mY1*cos(rho_2)**2-4.0_ark*rho**2*mX*cos(rho_2)**2-4.0_ark*mY1*cos(rho_2)**4-4.0_ark*cos(rho_2)**4*mX-1.0_ark*rho**2*mX-1.0_ark*rho**2*mY1+4.0_ark*cos(rho_2)**4*rho**2*mY1+4.0_ark*cos(rho_2)**4*rho**2*mX)/sin(rho_2)**2/rho/mY2/(mX+mY1+mY2)/cos(rho_2)**2 
+        pseudo(5) =  .062500_ark*(4.0_ark*cos(rho_2)**2+6.0_ark*rho**2*cos(rho_2)**2-1.0_ark*rho**2-12.0_ark*cos(rho_2)**4+8.0_ark*cos(rho_2)**6-16.0_ark*cos(rho_2)**3*sin(rho_2)*rho+16.0_ark*cos(rho_2)**5*sin(rho_2)*rho+8.0_ark*cos(rho_2)**6*rho**2-12.0_ark*cos(rho_2)**4*rho**2)/sin(rho_2)**2/rho/(mX+mY1+mY2)/cos(rho_2)**2 
+        pseudo(6) =  .031250_ark*(-1.0_ark*rho**2*mY2-1.0_ark*rho**2*mX-4.0_ark*mY2*cos(rho_2)**4-4.0_ark*rho**2*mY2*cos(rho_2)**2-4.0_ark*rho**2*mX*cos(rho_2)**2-4.0_ark*cos(rho_2)**4*mX+4.0_ark*mY2*cos(rho_2)**2+4.0_ark*cos(rho_2)**2*mX+4.0_ark*cos(rho_2)**4*rho**2*mY2+4.0_ark*cos(rho_2)**4*rho**2*mX)/cos(rho_2)**2/sin(rho_2)**2/mY1/(mX+mY1+mY2)/rho 
+        !
+     else
+        !
+        ! expansion around rho=0
+        !
+        g_rot(1,3,4) =  -(mX+mY1)/mY2/(mX+mY1+mY2)/2.0_ark-(mX+mY1)/mY2/(mX+mY1+mY2)*rho**2/12.0_ark-&
+                        7.0_ark/720.0_ark*(mX+mY1)/mY2/(mX+mY1+mY2)*rho**4-31.0_ark/30240.0_ark*(mX+mY1)/mY2/(mX+mY1+mY2)*rho**6
+        g_rot(1,3,6) =  (mX+mY2)/mY1/(mX+mY1+mY2)/2.0_ark+(mX+mY2)/mY1/(mX+mY1+mY2)*rho**2/12.0_ark+&
+                        7.0_ark/720.0_ark*(mX+mY2)/mY1/(mX+mY1+mY2)*rho**4+31.0_ark/30240.0_ark*(mX+mY2)/mY1/(mX+mY1+mY2)*rho**6
+        g_rot(3,1,4) =  -(mX+mY1)/mY2/(mX+mY1+mY2)/2.0_ark-(mX+mY1)/mY2/(mX+mY1+mY2)*rho**2/12.0_ark-&
+                        7.0_ark/720.0_ark*(mX+mY1)/mY2/(mX+mY1+mY2)*rho**4-31.0_ark/30240.0_ark*(mX+mY1)/mY2/(mX+mY1+mY2)*rho**6
+        g_rot(3,1,6) =  (mX+mY2)/mY1/(mX+mY1+mY2)/2.0_ark+(mX+mY2)/mY1/(mX+mY1+mY2)*rho**2/12.0_ark+&
+                        7.0_ark/720.0_ark*(mX+mY2)/mY1/(mX+mY1+mY2)*rho**4+31.0_ark/30240.0_ark*(mX+mY2)/mY1/(mX+mY1+mY2)*rho**6
+        g_rot(3,3,4) =  (mX+mY1)/mY2/(mX+mY1+mY2)+(mX+mY1)/mY2/(mX+mY1+mY2)*rho**2/12.0_ark+&
+                        (mX+mY1)/mY2/(mX+mY1+mY2)*rho**4/240.0_ark
+        g_rot(3,3,5) =  -2.0_ark/(mX+mY1+mY2)-1.0_ark/(mX+mY1+mY2)*rho**2/6.0_ark-1.0_ark/(mX+mY1+mY2)*rho**4/120.0_ark
+        g_rot(3,3,6) =  (mX+mY2)/mY1/(mX+mY1+mY2)+(mX+mY2)/mY1/(mX+mY1+mY2)*rho**2/12.0_ark+&
+                        (mX+mY2)/mY1/(mX+mY1+mY2)*rho**4/240.0_ark
+        pseudo(4) =  -(16.0_ark/3.0_ark*mX+16.0_ark/3.0_ark*mY1)/mY2/(mX+mY1+mY2)*rho/32.0_ark+(-(16.0_ark/3.0_ark*mX+&
+                       16.0_ark/3.0_ark*mY1)/mY2/(mX+mY1+mY2)/128.0_ark-(-16.0_ark/15.0_ark*mX-&
+                       16.0_ark/15.0_ark*mY1)/mY2/(mX+mY1+mY2)/32.0_ark)*rho**3
+        pseudo(5) =  -2.0_ark/3.0_ark/(mX+mY1+mY2)*rho+11.0_ark/60.0_ark/(mX+mY1+mY2)*rho**3
+        pseudo(6) =  -(16.0_ark/3.0_ark*mX+16.0_ark/3.0_ark*mY2)/mY1/(mX+mY1+mY2)*rho/32.0_ark-(4.0_ark/15.0_ark*mX+&
+                       4.0_ark/15.0_ark*mY2)/mY1/(mX+mY1+mY2)*rho**3/32.0_ark
+        !
+     endif
+
+     !
+   end subroutine  MLkinetic_xyz_Jacobi_bisect_EKE
+
    
 
 end module kin_xy2

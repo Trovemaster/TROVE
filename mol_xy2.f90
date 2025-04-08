@@ -32,7 +32,7 @@ module mol_xy2
     real(ark)                 :: c_t(3,3),dsrc(size(src)),r_e1(2),r_e2(2),radau_e1(2),radau_e2(2),radau_e(2)
     real(ark)                 :: m1,m2,m3,a0,r_t1(2),r_t2(2),radau_t1(2),radau_t2(2),cosalpha,rho,alpha,sinalpha
     real(ark)                 :: r1,r2,r3,R,r12,r12e,r13e,alpha1,alpha2,theta,sintheta,q0,q,q1,q2,alpha0
-    real(ark)                 :: mX,mY,M,salpha,s1,s2,t1,t2
+    real(ark)                 :: mX,mY,M,salpha,s1,s2,s3,t1,t2,beta,my1,my2,cs3,s1e,s2e,csb
     !
     !
     integer(ik) :: nsrc
@@ -419,6 +419,70 @@ module mol_xy2
           !
        endif
        !
+    case('JACOBI-BISECT_R1_R2_RHO')
+       !
+       mX = molec%AtomMasses(1) ; mY1 = molec%AtomMasses(2) ; mY2 = molec%AtomMasses(3)
+       M = mX+mY1+mY2
+       !
+       if (direct) then 
+          !
+          r1 = src(1) ; r2 = src(2) ;  beta = src(3)
+          !
+          csb = cos(beta)
+          !
+          s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
+          s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          !
+          cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
+          !
+          if (cs3<-1.0_ark) cs3 = -1.0_ark
+          !
+          s3 = acos(cs3)
+          !
+          r1 = molec%local_eq(1) ; r2 = molec%local_eq(2) ;  beta = molec%local_eq(3)
+          !
+          csb = cos(beta)
+          !
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          !
+          !cs3 = (-cos(beta)*r1*r2*mX*mY2+mY2*mY1*r2**2+mY2*r1**2*mY1+mY2*r2**2*mX-2*mY2*cos(beta)*r1*r2*mY1-cos(beta)*r1*r2*mX**2-cos(beta)*r1*r2*mX*mY1+r1**2*mX*mY1)/(s1*s2*M**2);
+          !s3e = acos(cs3)
+          !
+          dst(1) = s1-s1e
+          dst(2) = s2-s2e
+          !
+          dst(3) =  pi-src(3)
+          !
+       else
+          !
+          r1 = molec%local_eq(1) ; r2 = molec%local_eq(2) ;  beta = molec%local_eq(3)
+          !
+          csb = cos(beta)
+          !
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          !
+          s1 = src(1)+molec%chi_eq(1)+s1e
+          s2 = src(2)+molec%chi_eq(2)+s2e
+          !
+          s3 = pi-src(3)
+          cs3 = cos(s3)
+          !
+          r1=sqrt(2.0_ark*s1*mY2*s2*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX**2+2.0_ark*s1**2*mX*mY1+mY1**2*s1**2+mY2**2*s2**2)/mX
+          r2=sqrt(2.0_ark*s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s2**2*mX**2+2.0_ark*s2**2*mX*mY2+mY1**2*s1**2+mY2**2*s2**2)/mX
+          cosalpha=(s1*s2*cs3*mX**2+s1*mY2*s2*cs3*mX+s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX*mY1+mY1**2*s1**2+s2**2*mX*mY2+mY2**2*s2**2)/(R1*R2*mX**2)
+          !
+          if (cosalpha<-1.0_ark) cosalpha = -1.0_ark
+          !
+          alpha = acos(cosalpha)
+          !
+          dst(1) = r1
+          dst(2) = r2
+          dst(3) = alpha
+          !
+       endif
+       !
     case('RADAU-R-ALPHA-Z')
        !
        mX = molec%AtomMasses(1) ; mY = molec%AtomMasses(2)
@@ -647,6 +711,7 @@ module mol_xy2
      real(ark)                :: alpha,alphae_h,a02,cosa,a,b,g1,g2,rot(3,3),alphaeq
      real(ark)               :: rho_ark,alpha_ark,transform(3,3),CM_shift,a_t,a0(molec%Natoms,3),phi
      real(ark)               :: tmat(3,3),transform0(3,3),transform1(3,3),sinrho,hx,hy,unit(3),tanphi,Inert(3),tau
+     real(ark)               :: r1,r2,beta,mx,my1,my2,s1,s2,s3,cs3,t1,t2,theta,csb
      integer(ik)             :: i,Nbonds,ix,jx
      integer(ik)             :: ijk(3,2),ioper,Nangles,iatom
      character(cl)           :: method
@@ -972,6 +1037,47 @@ module mol_xy2
            b0(:,i,0) = b0(:,i,0) - CM_shift
          enddo 
          !
+       case('JACOBI-BISECT_R1_R2_RHO')
+         !
+         r1 = re13
+         r2 = re23
+         !
+         beta = alphaeq
+         !
+         mX = molec%AtomMasses(1) ; mY1 = molec%AtomMasses(2) ; mY2 = molec%AtomMasses(3)
+         !
+         csb = cos(beta)
+         !
+         s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
+         s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+         !
+         cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
+         !
+         if (cs3<-1.0_ark) cs3 = -1.0_ark
+         !
+         s3 = acos(cs3)
+         !
+         t1 = cos(0.5_ark*s3)*(mY1*s1+mY2*s2)/mX
+         t2 = -sin(0.5_ark*s3)*(mY1*s1-mY2*s2)/mX
+         !
+         theta = 0.5_ark*s3
+         b0(1,1,0) = t1
+         b0(1,2,0) = 0
+         b0(1,3,0) = t2
+         !
+         b0(2,1,0) =-s2*cos(theta)
+         b0(2,2,0) = 0
+         b0(2,3,0) = s1*sin(theta)
+         !
+         b0(3,1,0) = -s2*cos(theta)
+         b0(3,2,0) =  0
+         b0(3,3,0) = -s1*sin(theta)
+         !
+         do i = 1,3
+           CM_shift = sum(b0(:,i,0)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+           b0(:,i,0) = b0(:,i,0) - CM_shift
+         enddo          
+         !
        case('R1-R2-ALPHA-Z')
          !
          if (all(molec%AtomMasses(2:3)==m2).and.re13==re23) then
@@ -1026,16 +1132,12 @@ module mol_xy2
       ! We can also simulate the reference structure at each point of rho, if npoints presented
       !
       if (Npoints/=0) then
-         ! 
-         !if (.not.present(rho_borders).or..not.present(rho_ref)) then  
-         !   write(out,"('ML_b0_XY2: rho_borders and rho_ref must be presented if Npoints ne 0 ')") 
-         !   stop 'ML_b0_XY2: rho_borders or rho_ref not specified '
-         !endif
+         !
+         rho_ref = 0.0_ark
+         rho0 = 0.0_ark
+         a02 = (m1/m)
          !
          select case(trim(molec%frame))
-         case default
-            write (out,"('ML_b0_XY2: coord. type ',a,' unknown')") trim(molec%frame)
-            stop 'ML_b0_XY2 - bad coord. type'
             !
          case('LINEAR')
             !
@@ -1047,19 +1149,6 @@ module mol_xy2
             !
             rho_ref = alphaeq
             rho0 = 0.0
-            a02 = (m1/m)
-            !
-         case('R-RHO','R-EXPRHO','R-RHO-Z','R12-R','R12-RHO','R13-RHO','R-PHI-RHO','R-PHI-RHO-Z','R-PHI1-PHI2-Z','R-PHI1-Z',&
-              'R-S1-S2-Z','R-ALPHA-THETA-Z','R-RHO-Z-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT','BISECT-Z')
-            !
-            rho_ref = 0.0_ark
-            rho0 = 0.0_ark
-            a02 = (m1/m)
-            !
-         case('R-RHO-HALF')
-            !
-            rho_ref = 0.0_ark
-            rho0 = 0.0_ark
             a02 = (m1/m)
             !
          case('RADAU','RADAU-R-ALPHA-Z')
@@ -1084,7 +1173,7 @@ module mol_xy2
             write(out,"('ML_b0_XY2: rho_borders exceed the [0,pi] interval: ',2f12.4)") (rho0+rho_borders(1:2))*rad
             !stop 'ML_b0_XY2: rho_borders exceed 0..pi '
          endif
-
+         !
          do i = 0,npoints
             !
             rho = rho0+rho_i(i)
@@ -1092,39 +1181,22 @@ module mol_xy2
             alpha = rho
             !
             select case(trim(molec%coords_transform))
-              case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
-                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-                   'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP')
-               alpha = pi-rho
-              case('R-RHO-HALF')
-               alpha = pi-rho*2.0_ark
-              case ('R-ALPHA')
-                !
-                alpha = rho
-                !
+                  !
+            case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
+                  'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
+                  'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP','JACOBI-BISECT_R1_R2_RHO')
+                  !
+                  alpha = pi-rho
+                  !
+            case('R-RHO-HALF')
+                  !
+                  alpha = pi-rho*2.0_ark
+                  !
             end select 
             !
             if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-exp(rho)
             !
-            !if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-log(rho)
-            !
-            !if(trim(molec%coords_transform)=='R-EXPRHO') alpha = pi-(1.0_ark+rho**2)/(max(rho,small_))
-            !
             if(trim(molec%frame)=='RADAU') then 
-              !
-              !
-              !f1= 1.0_ark/g1
-              !f2= 1.0_ark/g2
-              !f12= 1.0_ark - f1*f2
-              !p1= r1*(1.0_ark-f1)/(g2*f12)
-              !p2= r2*(1.0_ark-f2)/(g1*f12)
-              !s1= r1-p1
-              !s2= r2-p2
-              !q1= sqrt(p1*p1 + s2*s2 + 2.0_ark*p1*s2*xcos)/(1.0_ark-g1)
-              !q2= sqrt(p2*p2 + s1*s1 + 2.0_ark*p2*s1*xcos)/(1.0_ark-g2)
-              !q3= sqrt(p1*p1 + p2*p2 - 2.0_ark*p1*p2*xcos)
-              !cost = (q1*q1 + q2*q2 - q3*q3)/(2.0_ark*q1*q2)
-              !theta = acos(cost)
               !
               if ( abs(rho-1.0_rk)>1.0_ark+sqrt(small_) ) then 
                  !
@@ -1428,7 +1500,49 @@ module mol_xy2
                  CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
                  b0(:,ix,i) = b0(:,ix,i) - CM_shift
                enddo 
-                 !
+               !
+             case('JACOBI-BISECT_R1_R2_RHO')
+               !
+               r1 = re13
+               r2 = re23
+               !
+               beta = alpha
+               !
+               mX = molec%AtomMasses(1) ; mY1 = molec%AtomMasses(2) ; mY2 = molec%AtomMasses(3)
+               !
+               csb = cos(beta)
+               !
+               s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
+               s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+               !
+               cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
+               !
+               if (cs3<-1.0_ark) cs3 = -1.0_ark
+               !
+               s3 = acos(cs3)
+               !
+               t1 =  cos(0.5_ark*s3)*(mY1*s1+mY2*s2)/mX
+               t2 = -sin(0.5_ark*s3)*(mY1*s1-mY2*s2)/mX
+               !
+               theta = 0.5_ark*s3
+               !
+               b0(1,1,i) = t1
+               b0(1,2,i) = 0
+               b0(1,3,i) = t2
+               !
+               b0(2,1,i) =-s2*cos(theta)
+               b0(2,2,i) = 0
+               b0(2,3,i) = s1*sin(theta)
+               !
+               b0(3,1,i) = -s2*cos(theta)
+               b0(3,2,i) =  0
+               b0(3,3,i) = -s1*sin(theta)
+               !
+               do ix = 1,3
+                 CM_shift = sum(b0(:,ix,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,ix,i) = b0(:,ix,i) - CM_shift
+               enddo 
+               !
              case('R1-R2-ALPHA-Z')
                !
                b0(1,1,i) = 0
@@ -1544,7 +1658,7 @@ module mol_xy2
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
     case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF','R-RHO-Z-ECKART',&
-         'RADAU-R-ALPHA-Z','R-ALPHA')
+         'RADAU-R-ALPHA-Z','R-ALPHA','JACOBI-BISECT_R1_R2_RHO')
        !
        select case(trim(molec%symmetry))
        case default
