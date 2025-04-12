@@ -3721,7 +3721,7 @@ end subroutine polintark
            !
            v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
            !
-           stop 'Error: COSNX is not working with 1D integrals  - check!'
+           !stop 'Error: COSNX is not working with 1D integrals  - check!'
            !
        case('FOURIER') 
            !

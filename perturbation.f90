@@ -25208,6 +25208,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       Ncoeffs = max(poten_N,gvib_N,grot_N,gcor_N,L2vib_N)
       MaxExpOrder= max(potorder,kinorder,extForder)
+      MaxExpOrder= trove%MaxOrder
       PT%Nterms%maximal = Ncoeffs
       !
       if (job%verbose>=5) write(out,"('  Allocating and reading me%vibmode objects with primitive matrix elements ...')") 

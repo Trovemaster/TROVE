@@ -186,7 +186,6 @@ module fields
       real(ark),pointer   ::  rho_i(:)     ! Integration points for the Gaussian/Simson integration rules
       real(ark)           ::  rho_ref
       integer(ik)        ::  iPotmin      ! Point of the minimum in the Numerov-integration representation
-      !real(rk),pointer   ::  weight_i(:) ! Integration weightd
       !
       real(ark),pointer ::  Amatrho(:,:,:,:) ! A-matrix: x_Na = a0_Na + \sum_l A_Nal xi_l,  for the rank=1 case
       real(ark),pointer ::  dAmatrho(:,:,:,:,:)! dA-matrix: derivatives of Amat wrt rho
@@ -5581,8 +5580,6 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    maxpower = max(trove%NKinOrder,trove%NExtOrder,trove%NpotOrder)
-    !
     if (trove%potential_with_modes.and.trove%kinetic_with_modes) then
       maxpower =trove%NExtOrder
     elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
@@ -7142,12 +7139,18 @@ end subroutine check_read_save_none
          Nterms = trove%pseudo%Ncoeff
          trove%pseudo%field(1:Nterms,irho) = pseudo(1:Nterms)*factor
          !
+         do imode = 1, trove%Nmodes
+             maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
+         enddo
+         !
       else
          !
          ! reconstruct the maximal expansion "power" for the non-rigid mode i=Nmodes
-         maxpower = 0 
+         !
+         maxpower = max(trove%NpotOrder,trove%NExtOrder)
+         !
          do imode = 1, trove%Nmodes
-             maxpower = max(maxpower,size(molec%basic_function_list(trove%Nmodes)%mode_set)) 
+             maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
          enddo
          !
          ! expansion terms xi = f(n)(rho)
@@ -7257,7 +7260,7 @@ end subroutine check_read_save_none
       !
       call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
       !
-      maxpower = trove%pseudo%Ncoeff
+      !maxpower = trove%pseudo%Ncoeff
       !
       ! check if trove%NKinOrder is consistent with the combined and possibly extended gvib/pseudo fields 
       ! and increase it if necessary 
@@ -7267,7 +7270,9 @@ end subroutine check_read_save_none
       !  trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
       !endif
       !
-      trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+      !trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+      !
+      trove%MaxOrder = maxpower
       !
       deallocate(g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       call ArrayStop('kinetic_on_grid-fields')
@@ -18729,12 +18734,13 @@ end subroutine check_read_save_none
     real(ark)    :: ar_t(1:molec%ncoords)
     character(len=cl)     :: dir
     !
-    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),pseudo(:),mrho(:),xton(:,:),xi_n(:,:,:)
+    real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),p1drho(:),&
+                                    mrho(:),xton(:,:),xi_n(:,:,:)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
     !
-    real(ark),allocatable       :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),phivphi_t(:),weight(:)
+    real(ark),allocatable       :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),phivphi_t(:)
     real(ark),allocatable       :: phil_leg(:),phir_leg(:),dphil_leg(:),dphir_leg(:),phil_sin(:),phir_sin(:)
     real(ark),allocatable       :: dfunc(:,:),func(:,:)
     !
@@ -18954,6 +18960,59 @@ end subroutine check_read_save_none
        !
     enddo 
     !
+    ! These are grid-based coordinates 
+    !
+    if(molec%mode_list_present) then
+       maxpower = molec%basic_function_list(nu_i)%numfunc
+    else 
+       maxpower = trove%NKinorder
+    endif
+    !
+    maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
+    !
+    nu_i = bs%mode(1)
+    !
+    npoints = bset%dscr(nu_i)%npoints
+    !
+    allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,0:maxpower,3),stat=alloc)
+    call ArrayStart('drho',alloc,size(drho),kind(drho))
+    call ArrayStart('xton',alloc,size(xton),kind(xton))
+    call ArrayStart('xi_n',alloc,size(xi_n),kind(xi_n))
+    !
+    allocate (f1drho(0:Npoints),g1drho(0:Npoints),p1drho(0:Npoints),muzz(0:Npoints),stat=alloc)
+    call ArrayStart('f1drho',alloc,size(f1drho),kind(f1drho))
+    call ArrayStart('g1drho',alloc,size(g1drho),kind(g1drho))
+    call ArrayStart('p1drho',alloc,size(p1drho),kind(p1drho))
+    call ArrayStart('muzz',alloc,size(muzz),kind(muzz))
+    !
+    xi_n = 0 
+    !
+    do i = 0,npoints
+       !
+       rho_b(1:2)=bset%dscr(nu_i)%borders(1:2)
+       step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
+       !
+       rho =  rho_b(1)+real(i,kind=ark)*step
+       !
+       drho(i,1) = MLcoord_direct(rho,1,nu_i)
+       drho(i,2) = MLcoord_direct(rho,2,nu_i)
+       drho(i,3) = MLcoord_direct(rho,3,nu_i)
+       !
+       do ipower = 0, maxpower
+          xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
+          xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,ipower)
+       enddo
+       !
+       do ipower = 0, trove%NPotOrder
+          xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
+       enddo
+       !
+       do ipower = 0, trove%NExtOrder
+          xi_n(i,ipower,3) = MLcoord_direct(rho,3,nu_i,ipower)
+       enddo
+       !
+    enddo
+    !
     ! Here we generate the 1D basis set matrix elements 
     ! the type of the basis set will define the type of the matrix elements generator 
     !
@@ -19091,20 +19150,14 @@ end subroutine check_read_save_none
            if (job%bset(nu_i)%iperiod>0.and.trim(bs%type)=='NUMEROV') then
              iperiod = job%bset(nu_i)%iperiod
              rho_b(2) = rho_b(2)/real(iperiod,ark)
-             npoints = npoints/iperiod
+             npoints = trove%npoints/iperiod
            endif
            !
            if (job%bset(nu_i)%iperiod==-2.and.trim(bs%type)=='NUMEROV') then
              iperiod = abs(job%bset(nu_i)%iperiod)
              rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
-             npoints = npoints/iperiod
+             npoints = trove%npoints/iperiod
            endif
-           !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),weight(0:Npoints),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
-              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
-           end if
            !
            if (trove%periodic.and.job%bset(Nmodes)%iperiod>Nperiod_max) then
               stop 'FLbset1DNew: Nperiod_max is too small'
@@ -19115,7 +19168,7 @@ end subroutine check_read_save_none
            if (bs%imodes/=1.or.bs%mode(bs%imodes)/=trove%Nmodes) then
               write (out,"(' FLbset1DNew-Numerov: it has to be 1d and the last bs,')") 
               write (out,"('                      you have bs%imodes, bs%mode: ',30i8)") bs%imodes,bs%mode(:)
-              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
+              stop 'FLbset1DNew, it has to be 1d and the last bs'
            end if
            !
            ! for basis sets we will need 1d potential and kinetic enrgy part 
@@ -19215,8 +19268,6 @@ end subroutine check_read_save_none
               !
            enddo
            !
-           weight = 1.0_ark
-           !
            numerpoints = trove%numerpoints
            !
            if (trove%numerpoints<0) numerpoints = npoints
@@ -19256,12 +19307,6 @@ end subroutine check_read_save_none
              rho_b(2) = rho_b(1)+(rho_b(2)-rho_b(1))/real(iperiod,ark)
              npoints = npoints/iperiod
            endif
-           !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),weight(0:Npoints),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
-              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
-           end if
            !    
            ! Double check:
            !
@@ -19293,7 +19338,7 @@ end subroutine check_read_save_none
                f1drho(0:npoints) = trove%poten%field(1,0:npoints)
            endif
            !
-           ! singular case is reconstrcuted assuming the stored pseudo is pseudo*rho**2
+           ! singular case is reconstructed assuming the stored pseudo is pseudo*rho**2
            if (isingular>=0.and.( .not.job%bset_prop(nu_i)%singular ) ) then 
              !        
              rho_switch = trove%specparam(nu_i)
@@ -19307,43 +19352,6 @@ end subroutine check_read_save_none
              enddo
              !
            endif 
-           !
-           ! These are grid-based coordinates 
-           !
-           if(molec%mode_list_present) then
-              maxpower = molec%basic_function_list(nu_i)%numfunc
-           else 
-              maxpower = trove%NKinorder
-           endif
-           !
-           allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,0:maxpower,3),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate drho')") alloc
-              stop 'FLbset1DNew, drho - out of memory'
-           end if
-           !
-           do i = 0,npoints
-              !
-              rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-              !
-              drho(i,1) = MLcoord_direct(rho,1,nu_i)
-              drho(i,2) = MLcoord_direct(rho,2,nu_i)
-              drho(i,3) = MLcoord_direct(rho,3,nu_i)
-              !
-              do ipower = 0, maxpower
-                 xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
-                 xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,ipower)
-              enddo
-              !
-              do ipower = 0, trove%NPotOrder
-                 xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
-              enddo
-              !
-              do ipower = 0, trove%NExtOrder
-                 xi_n(i,ipower,3) = MLcoord_direct(rho,3,nu_i,ipower)
-              enddo
-              !
-           enddo
            !
            ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
            !
@@ -19367,15 +19375,15 @@ end subroutine check_read_save_none
                 !
                 do i = 1, size(powers)
                   !
-                  if(i == nu_i) cycle
+                  if (i == nu_i) cycle
                   !
                   coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
                   !
-                  if (job%bset_prop(i)%singular) then
-                    !
-                    continue
-                    !
-                  endif
+                  !if (job%bset_prop(i)%singular) then
+                  !  !
+                  !  continue
+                  !  !
+                  !endif
                   !
                   g2_term = g2_term*coeff_term 
                   !
@@ -19491,17 +19499,15 @@ end subroutine check_read_save_none
            ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
            ! now we need them:
            !
-           weight = 1.0_ark
-           !
            numerpoints = trove%numerpoints
            !
            if (trove%numerpoints<0) numerpoints = npoints
            !
-           if(molec%mode_list_present) then
-              maxpower = molec%basic_function_list(nu_i)%numfunc
-           else
-              maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-           endif
+           !if(molec%mode_list_present) then
+           !   maxpower = molec%basic_function_list(nu_i)%numfunc
+           !else
+           !   maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+           !endif
            !
            select case(trim(bs%type))
            
@@ -19670,7 +19676,7 @@ end subroutine check_read_save_none
              !
            case ('BOX')
              !
-             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xton,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
                          job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
              !
@@ -19714,14 +19720,14 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
+             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),p1drho(0:Npoints),stat=alloc)
              if (alloc/=0) then
                 write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
                 stop 'FLbset1DNew, muzz - out of memory'
              end if
              !
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
-             pseudo = trove%pseudo%field(1,0:npoints)
+             p1drho = trove%pseudo%field(1,0:npoints)
              !
              fl => trove%g_rot(3,3)
              gl => trove%pseudo
@@ -19734,7 +19740,7 @@ end subroutine check_read_save_none
                if (i1==0.or.i2==0) then
                   !
                   muzz = 0
-                  pseudo = 0
+                  p1drho = 0
                   !
                   do icoeff = 1, fl%Ncoeff
                      f_t = 1.0_ark
@@ -19745,16 +19751,16 @@ end subroutine check_read_save_none
                        f_t = f_t*rho_kin0
                     enddo
                     muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                    pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                    p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                     !
                   enddo
                   !
                endif
                !
-             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(pseudo(trove%ipotmin))<small_) then
+             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(p1drho(trove%ipotmin))<small_) then
                !
                muzz = 0
-               pseudo = 0
+               p1drho = 0
                !
                do icoeff = 1, fl%Ncoeff
                   f_t = 1.0_ark
@@ -19765,17 +19771,17 @@ end subroutine check_read_save_none
                     f_t = f_t*rho_kin0
                  enddo
                  muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                 pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                 p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                  !
                enddo
                !
              endif
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,nu_i,&
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,nu_i,&
                                        job%verbose,bs%matelements,bs%ener0)
                                        !
-             !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
              !
              do i = 0,npoints
@@ -19785,7 +19791,7 @@ end subroutine check_read_save_none
                 mrho(i) = sin(rho)
              enddo
              !
-             deallocate(muzz,pseudo)
+             deallocate(muzz,p1drho)
              !
            case ('LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
              !
@@ -19795,14 +19801,14 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),mrho(0:Npoints),pseudo(0:Npoints),stat=alloc)
+             allocate (mrho(0:Npoints),stat=alloc)
              if (alloc/=0) then
                 write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
                 stop 'FLbset1DNew, muzz - out of memory'
              end if
              !
              muzz = trove%g_rot(3,3)%field(1,0:npoints)
-             pseudo = trove%pseudo%field(1,0:npoints)
+             p1drho = trove%pseudo%field(1,0:npoints)
              !
              fl => trove%g_rot(3,3)
              gl => trove%pseudo
@@ -19814,7 +19820,7 @@ end subroutine check_read_save_none
                if (i1==0.or.i2==0) then 
                   !
                   muzz = 0 
-                  pseudo = 0
+                  p1drho = 0
                   !
                   do icoeff = 1, fl%Ncoeff 
                      f_t = 1.0_ark
@@ -19825,16 +19831,16 @@ end subroutine check_read_save_none
                        f_t = f_t*rho_kin0
                     enddo
                     muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                    pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                    p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                     !
                   enddo
                   !
                endif
                !
-             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(pseudo(trove%ipotmin))<small_) then
+             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(p1drho(trove%ipotmin))<small_) then
                !
                muzz = 0 
-               pseudo = 0
+               p1drho = 0
                !
                do icoeff = 1, fl%Ncoeff 
                   f_t = 1.0_ark
@@ -19845,7 +19851,7 @@ end subroutine check_read_save_none
                     f_t = f_t*rho_kin0
                  enddo
                  muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                 pseudo = pseudo + f_t*gl%field(icoeff,0:npoints)
+                 p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                  !
                enddo
                !
@@ -19926,7 +19932,7 @@ end subroutine check_read_save_none
                !
              case ('LAGUERRE-K')
                !
-               call ME_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+               call ME_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,p1drho,nu_i,&
                                          job%verbose,bs%matelements,bs%ener0)
                !
                do i = 0,npoints
@@ -19936,7 +19942,7 @@ end subroutine check_read_save_none
                !
              case ('SINRHO-LAGUERRE-K')
                !
-               call ME_sinrho_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+               call ME_sinrho_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,p1drho,nu_i,&
                                          job%verbose,bs%matelements,bs%ener0)
                !
              case ('SINRHO-2XLAGUERRE-K')
@@ -19963,15 +19969,12 @@ end subroutine check_read_save_none
                f_m2 = sqrt(f_t2/g_t2)
                !
                call ME_sinrho_2xlaguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
-                                           f_m1,f_m2,pseudo,nu_i,job%verbose,bs%matelements,bs%ener0)
+                                           f_m1,f_m2,p1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
                !
              end select 
              !
-             !call ME_laguerre_simple_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,pseudo,nu_i,&
+             !call ME_laguerre_simple_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,p1drho,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
-             !
-             deallocate(muzz,pseudo)             
-             !
            case ('FOURIER_PURE')
              !
              call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
@@ -19984,7 +19987,7 @@ end subroutine check_read_save_none
              !
            case ('SINC')
              !
-             call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            end select
@@ -20016,8 +20019,6 @@ end subroutine check_read_save_none
            call TimerStop('Primitive matrix elements')
            !
            if (job%verbose>=3) call TimerReport
-           !
-           deallocate (f1drho,g1drho,weight)
            !
         else
            !
@@ -20059,20 +20060,9 @@ end subroutine check_read_save_none
               write(out,"('irho_eq is ',i6)") irho_eq
               stop 'FLbset1DNew:  equilibrium is ill defined'
            endif
-           !
-           nu_i = bs%mode(1)
-           !
-           npoints = bset%dscr(nu_i)%npoints
            rho_b(1:2)=bset%dscr(nu_i)%borders(1:2)
            step = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
            !rho_ref = molec%chi_eq(nu_i)
-           !
-           allocate (f1drho(0:Npoints),g1drho(0:Npoints),drho(0:Npoints,3),xton(0:Npoints,0:trove%MaxOrder),&
-                     xi_n(0:Npoints,0:trove%MaxOrder,3),pseudo(0:Npoints),muzz(0:Npoints),stat=alloc)
-           if (alloc/=0) then
-              write (out,"(' Error ',i9,' trying to allocate f1drho and g1drho')") alloc
-              stop 'FLbset1DNew, f1drho and g1drho - out of memory'
-           end if
            !
            xton = 0
            !
@@ -20092,17 +20082,9 @@ end subroutine check_read_save_none
              !
              call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
              !
-             do ipower = 0, trove%NPotOrder 
-               xi_n(:,:,2) = MLcoord_direct(rho,2,nu_i,ipower)
-             enddo
-             !
-             do ipower = 0, trove%NExtOrder 
-               xi_n(:,:,3) = MLcoord_direct(rho,3,nu_i,ipower)
-             enddo
-             !
              call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
              !
-             call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,pseudo,muzz)
+             call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,p1drho,muzz)
              !
              xi_n(:,:,1) = xton(:,:)
              !
@@ -20158,21 +20140,21 @@ end subroutine check_read_save_none
              !
            case ('NUMEROV')
              !
-             f1drho = f1drho + pseudo
+             f1drho = f1drho + p1drho
              !
              call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('BOX')
              !
-             f1drho = f1drho + pseudo
+             f1drho = f1drho + p1drho
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xton,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
+             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements,bs%ener0)
              !
            case ('FOURIER')
              !
-             f1drho = f1drho + pseudo
+             f1drho = f1drho + p1drho
              !
              call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
@@ -20181,9 +20163,9 @@ end subroutine check_read_save_none
              !
              numerpoints = npoints
              !
-             f1drho = f1drho + pseudo
+             f1drho = f1drho + p1drho
              !
-             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xton,f1drho,g1drho,nu_i,&
+             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINRHO-LEGENDRE')
@@ -20205,10 +20187,10 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,&
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,&
                                        nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
-             !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,pseudo,nu_i,&
+             !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
              !
            case ('SINRHO-LEGENDRE-K1')
@@ -20227,7 +20209,7 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre for k=1 only
-             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,pseudo,nu_i,&
+             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,nu_i,&
                                        job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case default
@@ -20237,12 +20219,21 @@ end subroutine check_read_save_none
             !
            end select
            !
-           deallocate (f1drho,g1drho,drho,xton,pseudo,muzz)
-           !
         endif 
         !
      end select   
      !
+     !
+     deallocate (drho,xton,xi_n)
+     call ArrayStop('drho')
+     call ArrayStop('xton')
+     call ArrayStop('xi_n')
+     !
+     deallocate (f1drho,g1drho,p1drho,muzz)
+     call ArrayStop('f1drho')
+     call ArrayStop('g1drho')
+     call ArrayStop('p1drho')
+     call ArrayStop('muzz')
      !
      ! For the rigid molecule (manifold=0) the potential and kinetic expansion are included 
      ! in the last-mode matrix elements, e.g.:

@@ -361,7 +361,7 @@ module me_numer
                if (lambda==0) then 
                   phivphi(:) = phil(:)*phir(:)
                else
-                  phivphi(:) = phil(:)*xi_n(:,lambda,2)**lambda*phir(:)
+                  phivphi(:) = phil(:)*xi_n(:,lambda,2)*phir(:)
                endif
                !
                g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
@@ -379,12 +379,6 @@ module me_numer
                !
                ! momenta-free in kinetic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
-               endif
-               !
                phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
                !
                g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
@@ -397,12 +391,6 @@ module me_numer
                !
                ! momenta-quadratic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) =-dphil(:)*dphir(:)
-               else
-                  phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
-               !
                phivphi(:) =-dphil(:)*xi_n(:,lambda,1)*dphir(:)
                !
                g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
@@ -412,24 +400,11 @@ module me_numer
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
-               !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*dphir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
-               !
                phivphi(:) = phil(:)*xi_n(:,lambda,1)*dphir(:)
                !
                g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
-                  !
-                  if (lambda==0) then 
-                     phivphi(:) = dphil(:)*phir(:)
-                  else
-                     phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
-                  endif
                   !
                   phivphi(:) = dphil(:)*xi_n(:,lambda,1)*phir(:)
                   !
