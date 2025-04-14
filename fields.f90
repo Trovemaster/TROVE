@@ -21338,7 +21338,7 @@ end subroutine check_read_save_none
          !
          do i = 0,npoints
             rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-            frho(i) = sin(rho)
+            frho(i) = (rho)
          enddo
          !
          if (job%verbose>=4) then 

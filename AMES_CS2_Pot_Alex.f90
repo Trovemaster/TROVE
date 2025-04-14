@@ -1,3 +1,74 @@
+!
+!  This unit is for a user defined potential of CH3OH from Bowman (2007)
+!
+module pot_user
+  use accuracy
+  use moltype
+
+  implicit none
+
+  public MLdipole,MLpoten,ML_MEP,MLpoten_name
+
+  private
+ 
+  integer(ik), parameter :: verbose     = 4                          ! Verbosity level
+  !
+ contains
+ !
+ !
+ function ML_MEP(dim,rho)  result(f)
+
+  integer(ik),intent(in) ::  dim
+  real(ark),intent(in)   ::  rho
+  real(ark)              ::  f(dim)
+  !
+  if (dim/=3) stop 'Illegal size of the function - must be 3'
+  !
+  f(:) = molec%local_eq(:)
+  f(molec%Ncoords) = rho
+
+ end function ML_MEP
+ !
+ !
+ recursive subroutine MLdipole(rank,ncoords,natoms,local,xyz,f)
+   !
+   integer(ik),intent(in) ::  rank,ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+   real(ark),intent(out)  ::  f(rank)
+   !
+   !f = MLdipole_xy4_dF(xyz)
+   !
+ end subroutine MLdipole
+ !
+ ! Check the potential name 
+ subroutine MLpoten_name(name)
+   !
+   character(len=cl),intent(in) ::  name
+   character(len=cl),parameter ::  poten_name = 'CS2_AMES1'
+   ! 
+   if (poten_name/=trim(name)) then
+     write(out,"(a,a,a,a)") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
+   endif
+   !
+   write(out,"(a,a)") '  Using USER-type PES ',trim(poten_name)
+   !
+ end subroutine MLpoten_name
+ !
+ ! Defining potential energy function)
+ function MLpoten(ncoords,natoms,local,xyz,force) result(f) 
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   f = MLpoten_cs2_ames1(ncoords,natoms,local,xyz,force)
+   !
+ end function MLpoten
+
+ 
+
   function MLpoten_cs2_ames1(ncoords,natoms,local,xyz,force) result(f)
    !
    implicit none
@@ -124,3 +195,6 @@
       !   write(*, '(A, F20.10, F20.10, F20.10, F20.10)') "grep ", local(1), local(2), local(3), f
         !
   end function MLpoten_cs2_ames1
+
+
+end module pot_user
