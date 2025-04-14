@@ -1474,11 +1474,11 @@ module perturbation
      !
      do while (npol_t<=Npol.and.flag_go.and.nu_search(imodes)<=nu_target(imodes))
         !
-        if (job%bset_prop(imodes-1)%singular) then
-          lmax = job%bset(0)%range(2)
-          v = nu_search(imodes)
-          l = mod(v,lmax+1)
-        endif
+        !if (job%bset_prop(imodes-1)%singular) then
+        !  lmax = job%bset(0)%range(2)
+        !  v = nu_search(imodes)
+        !  l = mod(v,lmax+1)
+        !endif
         !
         if (imodes == Nmodes) then
            if (npol_t==Npol) then
@@ -32867,13 +32867,13 @@ end subroutine read_contr_matelem_expansion_classN
           endif
           !
           do imode = 1,Nmodes
-            if (job%bset_prop(imode)%singular) then 
-              v_i = nu_i(imode)
-              k_i = mod(v_i,kmax+1)
-              n_i = (v_i-k_i)/(kmax+1)
-              PT%lquant%icoeffs(ib,1)=k_i
-              PT%quanta%icoeffs(ib,Nmodes) = n_i
-            endif 
+            !if (job%bset_prop(imode)%singular) then 
+            !  v_i = nu_i(imode)
+            !  k_i = mod(v_i,kmax+1)
+            !  n_i = (v_i-k_i)/(kmax+1)
+            !  PT%lquant%icoeffs(ib,1)=k_i
+            !  PT%quanta%icoeffs(ib,Nmodes) = n_i
+            !endif 
             !
             if (job%bset(imode)%type=='FOURIER_PURE') then
               !

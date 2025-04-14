@@ -2853,7 +2853,7 @@ module moltype
              case("COT_")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_cos
              case("CSC_")
-               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_I
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_1
            end select
            !
            molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
@@ -2918,6 +2918,12 @@ module moltype
     y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_sec
 
+  subroutine  calc_func_1(x, y)
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function), intent(in) :: obj
+    y = 1.0_ark !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
+  end subroutine  calc_func_1  
 
 
   !

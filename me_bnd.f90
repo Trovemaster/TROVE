@@ -4341,9 +4341,9 @@ module me_bnd
                  endif
                  !
                  if (Is_it_one_over_sin2) then 
-                    phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)
+                    phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)*rho_m(:)
                  elseif(Is_it_one_over_sin) then
-                    phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)
+                    phivphi(:) = psil_sin(:)*xi_n(:,lambda,1)*psir_sin(:)
                  else
                     phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
                  endif
