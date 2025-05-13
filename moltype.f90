@@ -11,8 +11,9 @@ module moltype
          intensity,MLIntensityT,MLthresholdsT,extF,MLext_locexp,MLvector_product,ML_sym_rotat,ML_euler_rotait,MLdiag_ulen_ark,&
          aacos,MLlinurark,MLlinur,faclog,aasin
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
+  public MLtemplate_kinetic_compact
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho,manifold
+  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -57,6 +58,20 @@ module moltype
       !
     end subroutine MLtemplate_kinetic
     !
+    subroutine MLtemplate_kinetic_compact(nmodes,rho,ntermmax,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+      use accuracy
+      !
+      integer(ik),intent(in) ::  nmodes
+      real(ark),intent(in)   ::  rho
+      integer(ik),intent(in) ::  ntermmax
+      integer(ik),intent(inout) ::  ng_vib(nmodes,nmodes),ng_rot(3,3),ng_cor(nmodes,3),npseudo
+      real(ark),intent(out)    ::  g_vib(nmodes,nmodes,ntermmax),g_rot(3,3,ntermmax),g_cor(nmodes,3,ntermmax),pseudo(ntermmax)
+      integer(ik),intent(out)  ::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
+                                ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
+      !
+    end subroutine MLtemplate_kinetic_compact    
+    !
     subroutine MLtemplate_symmetry_transformation(ioper,natoms,src,dst)
       use accuracy
       !
@@ -96,7 +111,7 @@ module moltype
       real(ark),intent(in)   :: src(:)
       logical,intent(in)     :: direct
       !
-      real(ark),dimension(ndst) :: dst
+      real(ark) :: dst(ndst)
       !
     end function MLtemplate_coord_transform
   end interface 
@@ -114,7 +129,34 @@ module moltype
 !        real,         intent(in)  :: a
 !    END function interface1
 !END INTERFACE
-
+  !
+  type basic_function
+      procedure(calc_func), pointer, nopass  :: func_pointer     ! basic functions as generic procedures
+      procedure(calc_func), pointer, nopass  :: func_singular_pointer ! a special case of basic funcitons for singular modes which are resolved
+      character(len=cl) :: name
+      real(ark) :: coeff
+      real(ark) :: inner_expon
+      real(ark) :: outer_expon
+  end type 
+  !
+  type ragged_array_lvl_1
+      type(basic_function), allocatable :: func_set(:)
+      integer :: num_terms
+  end type ragged_array_lvl_1
+  !
+  type ragged_array_lvl_2
+      type(ragged_array_lvl_1), allocatable :: mode_set(:)
+      integer(ik) :: numfunc
+  end type ragged_array_lvl_2
+  !
+  abstract interface
+      subroutine calc_func(x, y)
+        use accuracy
+        implicit none
+        real(ark) , intent(in) :: x 
+        real(ark) , intent(inout) :: y
+      end subroutine 
+  end interface
   !
   type MoleculeT
      !
@@ -131,6 +173,7 @@ module moltype
      type(MLZmatrixT),pointer  :: zmatrix(:)       ! 
      !
      character(len=cl)         :: coords_transform ! type of the coordinate transformation 
+     character(len=cl)         :: frame            ! body fixed frame
      integer(ik),pointer       :: dihedtype(:)   ! dihedral type 
      character(len=cl),pointer :: coordinates(:,:)  ! Identifying the coordinate system, e.g. 'Cartesian', 'Bond-Angle'
      integer(ik)               :: Nmodes,Ndihedrals,Natoms,Nbonds,Nangles,Ncoords
@@ -146,8 +189,12 @@ module moltype
      integer(ik),pointer       :: pot_ind(:,:)  ! indexes with the powers for every expansion term
      integer(ik),pointer       :: ifit(:)       ! varying indexes to control fitting
      character(len=cl)         :: symmetry      ! molecular symmetry
+     character(len=cl)         :: IO_primitive  ! control writing/reading of primitive basis sets 
+     character(len=cl)         :: chk_primitive_fname  ! filename to store primitive functions on a grid
+     character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
-     !procedure(MLtemplate_poten),pointer :: potenfunc => null ()
+     type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
+     logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      !
   end type MoleculeT
   !
@@ -175,7 +222,8 @@ module moltype
      real(ark), pointer     :: geom_ref(:)
      integer(ik)            :: irho_ref
      character(cl)          :: ftype = 'GENERAL'  ! field type 
-     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, required to reduce numerical noice in overtone intensities
+     real(rk)               :: matelem_threshold = -1e0   ! threshold to set the primitive matrix elements to zero, 
+                                                          !required to reduce numerical noice in overtone intensities
   end type MLext_locexp
 
   !
@@ -222,11 +270,12 @@ module moltype
      real(rk)            :: ZPE              ! zero point energy
      type(MLthresholdsT) :: threshold        ! different thresholds
      real(rk),pointer    :: gns(:)           ! nuclear stat. weights
+     integer(ik),pointer :: isym_groups(:)   ! groups defining symmetry pairs with allowed transitions, analogous to gns
      integer(ik),pointer :: isym_pairs(:)    ! numbers defining symmetry pairs with allowed transitions, analogous to gns
      real(rk)            :: freq_window(1:2) ! frequency window (1/cm)
      real(rk)            :: erange_low(1:2)  ! energy range for the lower state
      real(rk)            :: erange_upp(1:2)  ! energy range for the upper state
-     integer(ik)         :: J(1:2)           ! range of J-values, from..to; in order to avoid double counting of transitions
+     integer(ik)         :: J(1:2)=0         ! range of J-values, from..to; in order to avoid double counting of transitions
                                              ! in the calculations it is always assumed that 
                                              ! J1<=J_lower<=J2 and J1<=J_upper<J2;
                                              !
@@ -235,16 +284,21 @@ module moltype
                                              ! in intensity calculations; (imode,1:2), 
                                              ! where 1 stands for the beginning and 2 for the end. 
      !
+     integer(ik)         :: istate_count(2) = (/1,2147483647/)     ! filter based on the lower state count 
+     !
      integer(ik)         :: swap_size    = 0 ! the number of vectors to keep in memory
      character(cl)       :: swap = "NONE"    ! whether save the compacted vectors or read
      character(cl)       :: swap_file  ="compress"   ! where swap the compacted eigenvectors to
      integer(ik)         :: int_increm = 1e9 ! used to print out the lower energies needed to select int_increm intensities
+     integer(ik)         :: Ncache = 10000 ! used to cache intensities before prinout  to speed up 
      real(rk)         :: factor = 1.0d0   ! factor <1 to be applied the maxsize of the vector adn thus to be shrunk 
-     real(rk)         :: wallclock          ! wallclock limit, needed to estmate how many transitions can be processed within one job
-     logical          :: reduced            ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
+     real(rk)         :: wallclock=10000000.0d0    ! wallclock limit in h, needed to estmate how many transitions can be processed within one job
+     logical          :: reduced      ! process intensity in a reduced symmetry adapted approach, only the (1,2) degenerate component
      logical          :: pruning = .false.    ! for the TM-based basis set pruning compute and store the max vib. intensity for each state
      logical          :: output_short = .false.    ! Long output is with all quantum numbers and energies; short is with indeces, energies and A-coef-s only
      logical          :: tdm_replace = .false.     ! Replace vibrational trandipole moments with experimental values
+     character(cl)    :: linelist_file="NONE"   ! filename for the line list (filename.states and filename.trans)
+     logical          :: states_only = .false.  ! Only .states file is generated while .trans is skipped. Equivalent to setting negative freq-window 
      !
      ! variables used in extfield module
      integer(ik)   :: tens_rank = 1
@@ -279,8 +333,9 @@ module moltype
   subroutine MLinitialize_molec(Moltype,Coordinates,coords_transform,&
                                   Nbonds,Nangles,Ndihedrals,dihedtype_,&
                                   AtomMasses,local_eq, &
-                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,kinetic_type,&
-                                  symmetry_,rho_border,zmatrix_)
+                                  force_,forcename_,ifit_,pot_ind_,specparam,potentype,potenname,kinetic_type,&
+                                  IO_primitive,chk_numerov_fname,&
+                                  symmetry_,rho_border,zmatrix_,frame)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -297,10 +352,12 @@ module moltype
   character(len=16),intent(in) :: forcename_(:)
   real(ark),   intent(in)      :: specparam(:)
   !
-  character(len=cl),intent(in)  :: potentype,kinetic_type
+  character(len=cl),intent(in)  :: potentype,kinetic_type,potenname
   character(len=cl),intent(in)  :: symmetry_
+  character(len=cl),intent(in)  :: IO_primitive,chk_numerov_fname
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
+  character(len=cl),intent(in)  :: frame   ! coordinate transformation type
   !
   integer(ik)              :: alloc,Ncoords
     !
@@ -308,6 +365,7 @@ module moltype
     !
     molec%moltype = Moltype
     molec%coords_transform = coords_transform
+    molec%frame = frame
     !
     molec%Natoms = size(AtomMasses)
     molec%Ndihedrals = Ndihedrals
@@ -356,11 +414,14 @@ module moltype
     !
     molec%local_eq = local_eq
     molec%potentype = potentype
+    molec%potenname = potenname
     molec%kinetic_type = kinetic_type
     molec%atomMasses = AtomMasses
     molec%specparam = specparam
     molec%dihedtype = dihedtype_
     molec%symmetry = symmetry_
+    molec%IO_primitive = IO_primitive
+    molec%chk_primitive_fname = chk_numerov_fname
     !
     !molec%potenfunc => MLpoten_xy2_morbid
     !
@@ -373,8 +434,6 @@ module moltype
     ! define the integration borders for each mode
     !
     molec%rho_border(:) = rho_border(:)
-    !
-    !call xy2_initialize(xy2)
     !
     if (verbose>=4) write(out,"('MLinitialize_molec/end')") 
 
@@ -1298,7 +1357,7 @@ module moltype
                                       + sin(alpha)*cos(phi)*n1(:) &
                                       - sin(alpha)*sin(phi)*n3(:) )
            !
-        case(-2,2,-202,202,-302,302,-402,402)
+        case(-2,2,-202,202,-302,302,-402,402,-502,502,-602,602)
            !
            idihedral = idihedral + 1
            !
@@ -1676,7 +1735,7 @@ module moltype
      !
      if (abs(coeff(1,1))<small_) then
         !write(out,"(i,'-th parameter is wrong, small a0(i,i) =  ',g18.8)") i,coeff(i,i)
-        error=i
+        error=1
         return
      endif
      !
@@ -1910,25 +1969,27 @@ module moltype
 
 
  101  format(5e14.5)
-      do 10 p=1,n
-      do 10 q=1,n
-      ve(p,q)=0.0_rk
-      if(p.eq.q) ve(p,q)=1.0_rk
-  10  continue
-      do 99 p=1,n
-      z(p)=0.0_rk
-      d(p)=a(p,p)
-      b(p)=d(p)
- 99   continue
+      do p=1,n
+        do q=1,n
+          ve(p,q)=0.0_rk
+          if(p.eq.q) ve(p,q)=1.0_rk
+        enddo
+      enddo
+      do p=1,n
+        z(p)=0.0_rk
+        d(p)=a(p,p)
+        b(p)=d(p)
+      enddo
       irot=0
       do 50 i=1,50
       sm=0.0_rk
       n2=n-1
-      do 30 p=1,n2
-      kp=p+1
-      do 30 q=kp,n
-      sm=sm+dabs(a(p,q))
-  30  continue
+      do p=1,n2
+        kp=p+1
+        do q=kp,n
+          sm=sm+dabs(a(p,q))
+        enddo
+      enddo
       if(sm.le.err) goto 50
       tresh=0.0_rk
       if(i-4) 3,4,4
@@ -1964,12 +2025,12 @@ module moltype
       d(q1)=d(q1)+h
       a(p1,q1)=0.0_rk
       ip1=p1-1
-        do 20 j=1,ip1
-        g=a(j,p1)
-        h=a(j,q1)
-        a(j,p1)=g-s*(h+g*tau)
-        a(j,q1)=h+s*(g-h*tau)
-  20      continue
+        do j=1,ip1
+          g=a(j,p1)
+          h=a(j,q1)
+          a(j,p1)=g-s*(h+g*tau)
+          a(j,q1)=h+s*(g-h*tau)
+        enddo
         iq1=q1-1
         do 21 j=kp1,iq1
         g=a(p1,j)
@@ -2124,7 +2185,7 @@ module moltype
 
   function three_j0(j1,j2,j3,k1,k2,k3)
 
-	  real(rk) :: three_j0
+      real(rk) :: three_j0
       !
       integer(ik) :: j1,j2,j3,k1,k2,k3,newmin,newmax,new,iphase
       real(rk)   :: a,b,c,al,be,ga,delta,clebsh,minus
@@ -2311,7 +2372,7 @@ module moltype
       if(abs(ax)<1.d-24) return
       f=.1d0
       if(ax.lt.0.d0) then 
-         write (*,"(1h0,' fkt.err  negative argument for functi on fakt. argument = ',e12.5)") ax
+         write (*,"(' fkt.err  negative argument for functi on fakt. argument = ',e12.5)") ax
          stop 'fkt.err  negative argument'
       endif 
       !
@@ -2451,8 +2512,6 @@ module moltype
     if (verbose>=5) then
       write(out,"('ML_rjacobi_fit_ark start ')") 
     endif
-    !
-    rjacob = 0 
     iter = 0
     stadev_old = 2.e10
     stability =  1.e10
@@ -2464,6 +2523,8 @@ module moltype
     !
     allocate(rjacob(n,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(rjacob,kind=hik))
+    rjacob = 0 
+    !
     allocate(am(m,m),stat=alloc)
     call ArrayStart('ML_rjacobi_fit_ark',alloc,1_ik,ark,size(am,kind=hik))
     allocate(bm(m),stat=alloc)
@@ -2695,6 +2756,176 @@ module moltype
   
   return
   end subroutine ML_splint_quint
+
+
+  subroutine read_basic_function_constructor(N,constructor)
+    !
+    use input
+    !
+    integer(ik),intent(in)  :: N
+    character(len=wl) :: constructor(N)
+    integer(ik)       :: iut,i,j
+    character(len=wl) :: large_fmt
+    character(len=wl) :: line_buffer
+    logical :: eof
+    character(len=wl) :: ioname,w
+    integer(ik)       :: ic,imode,ifunc,numfunc,numterms,out_expo,in_expo
+    character(len=4)  :: func_name
+    real(rk)          :: func_coef
+    !
+    ! only needed if basic_function_list has not been defined and allocated yet 
+    if (allocated(molec%basic_function_list)) return 
+    !
+    write(ioname, '(a, i4)') 'write constructor to a temporary (scratch) file'
+    call IOstart(trim(ioname), iut)
+    !
+    open(unit=iut, status='scratch', action='readwrite')
+    write(large_fmt, '(A,i0,A)') '(A', wl, ')'
+    do i=1, N
+      line_buffer = constructor(i)
+      write(iut, '(a)') trim(line_buffer)
+  
+      ! This is a hack; I need to know if to echo the input or not before processing it
+      ! The option 'do_not_echo_input' is dealt with here as a special case
+      line_buffer = adjustl(line_buffer) ! remove leading spaces
+  
+      do j=1, len(trim(line_buffer)) ! convert to uppercase
+       ic = ichar( line_buffer(j:j))
+       if( ic >= 97) line_buffer(j:j) = achar(ic-32)
+      enddo
+      !
+    enddo
+    !
+    rewind(iut)
+    !
+    imode = 0
+    ifunc = 0
+    molec%mode_list_present = .true.
+    allocate(molec%basic_function_list(molec%Nmodes))
+    call read_line(eof,iut) ; if (eof) return
+    call input_options(echo_lines=.false.,error_flag=1)
+    !
+    do while (trim(w)/="".and.imode<molec%Ncoords.and.trim(w)/="END")
+       call readu(w)
+       call readi(imode)
+       call readi(numfunc)     
+       molec%basic_function_list(imode)%numfunc = numfunc
+       allocate(molec%basic_function_list(imode)%mode_set(numfunc))
+       do i = 1, numfunc
+         call read_line(eof,iut); if (eof) exit
+         call readi(ifunc)
+         call readi(numterms)
+         molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
+         allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
+         do j = 1, numterms
+           call readi(out_expo)
+           call readu(func_name)
+           call readf(func_coef)
+           call readi(in_expo)
+           select case(trim(func_name))
+             case("I") 
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+             case("SIN")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
+             case("COS")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+             case("TAN")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
+             case("CSC")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+             case("COT")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+             case("SEC")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
+             case("COT_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+             case("CSC_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+             case default
+               write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
+               stop 'read_basic_function_constructor-error: unkown basic function'
+           end select
+           !
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer => &
+                         molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer
+           !
+           select case(trim(func_name))
+             case("COT_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_cos
+             case("CSC_")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_1
+           end select
+           !
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
+           molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
+         enddo 
+       enddo
+       call read_line(eof,iut); if (eof) exit
+    enddo 
+
+  end subroutine read_basic_function_constructor
+
+
+
+  subroutine  calc_func_I(x, y)
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function), intent(in) :: obj
+    y = x !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
+  end subroutine  calc_func_I  
+  !
+  subroutine calc_func_sin(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = sin(x) !(obj%coeff*(sin(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_sin
+  !
+  subroutine calc_func_cos(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = cos(x) !(obj%coeff*(cos(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_cos
+  !
+  subroutine calc_func_tan(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = tan(x) !(obj%coeff*(tan(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_tan
+  !
+  subroutine calc_func_cot(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y =1.0_ark/tan(x)! (obj%coeff*(1.0/tan(x)**obj%inner_expon))**obj%outer_expon
+  end subroutine calc_func_cot
+  !
+  subroutine  calc_func_csc(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = 1.0_ark/sin(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
+  end subroutine calc_func_csc
+  !
+  subroutine  calc_func_sec(x, y) 
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function) :: obj
+    y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
+  end subroutine calc_func_sec
+
+  subroutine  calc_func_1(x, y)
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    !type(basic_function), intent(in) :: obj
+    y = 1.0_ark !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
+  end subroutine  calc_func_1  
+
+
   !
 end module moltype
   

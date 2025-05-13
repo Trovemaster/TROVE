@@ -72,7 +72,7 @@
          if (job%rotsym_do) call PT_conctracted_rotational_bset(j)
          !
          if (trim(intensity%action)=='FIELD_ME') then
-           call emf2_matelem
+           call emf_matelem
          else
            call dm_tranint
          endif
@@ -171,7 +171,7 @@
         !
       endif 
       !
-      ! The rotational part of the contracted basis set to finish its constraction:
+      ! The rotational part of the contracted basis set to finish its construction:
       !
       call PT_conctracted_rotational_bset(j)
       !
@@ -199,7 +199,9 @@
         !
       else
         !
-        call PTcontracted_matelem_class(j)
+        call PTcontracted_matelem_class_basis_loops_outside(j)
+        !
+        !call PTcontracted_matelem_class(j)
         !
       endif
       !

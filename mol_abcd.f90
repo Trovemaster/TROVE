@@ -63,7 +63,7 @@ module mol_abcd
            !dst(:) = dst(:) +  molec%local_eq(:)
        endif
        !
-    case('R-ALPHA-TAU')
+    case('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
        !
        if (direct) then
           ! 
@@ -75,6 +75,24 @@ module mol_abcd
       else ! not direct
           !
           dst(1:5) = dsrc(1:5)+molec%local_eq(1:5)
+          dst(6) = src(6)
+          !
+      endif
+       !
+    case('R1-R2-R3-A1-RHO2-TAU')
+       !
+       if (direct) then
+          ! 
+          dst(1:4) = dsrc(1:4)
+          dst(5) = molec%local_eq(5)-src(5)
+          dst(6) = src(6)
+          !
+          !dst(6) = mod(dst(6)+2.0_ark*pi,2.0_ark*pi)
+          !
+      else ! not direct
+          !
+          dst(1:4) = src(1:4)+molec%local_eq(1:4)
+          dst(5) = -src(5)+molec%local_eq(5)
           dst(6) = src(6)
           !
       endif
@@ -646,7 +664,7 @@ module mol_abcd
      real(ark),   intent(out),optional :: rho_ref
      real(ark),intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
      !
-     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz
+     real(ark)    ::  rho,transform(3,3),c(3,3),a0(molec%Natoms,3),CM_shift,re1,re2,re3,ae1,ae2,r_eq(6),phi,ayz,ayy,azz,tau1,tau2
      integer(ik)  ::  n,i,ix,jx,i0,in,i1,ipar,istep,j0,Nangles,Nbonds
      !
      real(ark)    :: Inert0(3),Inert(3),Inert1(3),a(3,3),b(3,1),x(5),a0_tt,a0_t(molec%Natoms,3)
@@ -712,72 +730,23 @@ module mol_abcd
            write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
          endif
          !
-      endif 
+      endif
       !
-      if (molec%AtomMasses(1)==molec%AtomMasses(2).and.molec%AtomMasses(3)==molec%AtomMasses(4).and..false.) then
+      select case(trim(molec%frame))
         !
-        phi = rho*0.5_ark
-
+      case ('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
+        !
         a0(1,1) = 0.0_ark
         a0(1,2) = 0.0_ark
-        a0(1,3) = re1*0.5_ark
-        !
-        a0(2,1) = 0.0_ark
-        a0(2,2) = 0.0_ark
-        a0(2,3) = -re1*0.5_ark
-        !
-        a0(3,1) = re2*sin(ae1)*cos(phi)
-        a0(3,2) =-re2*sin(ae1)*sin(phi)
-        a0(3,3) =-re2*cos(ae1)+re1*0.5_ark
-        !
-        a0(4,1) = re2*sin(ae1)*cos(phi)
-        a0(4,2) = re2*sin(ae1)*sin(phi)
-        a0(4,3) = re2*cos(ae1)-re1*0.5_ark
-        !
-        do n = 1,3 
-          CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-          a0(:,n) = a0(:,n) - CM_shift
-        enddo
-        !
-        ayz =-sum(molec%AtomMasses(:)*a0(:,2)*a0(:,3) )
-        ayy = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,3)**2) )
-        azz = sum(molec%AtomMasses(:)*( a0(:,1)**2+ a0(:,2)**2) )
-        !
-        phi = atan2(2.0_ark*ayz,ayy-azz)
-        !
-        !phi = atan(ayz/(ayy-azz))
-        !
-        transform = 0 
-        !
-        transform(1,1) = 1.0_ark
-        transform(2,2) = cos(phi)
-        transform(3,3) = cos(phi)
-        transform(2,3) = sin(phi)
-        transform(3,2) =-sin(phi)
-        !
-        do n = 1,molec%Natoms
-           b0(n,:,0) = matmul(transpose(transform),a0(n,:))
-        enddo
-        !
-        ayz =-sum(molec%AtomMasses(:)*b0(:,2,0)*b0(:,3,0) )
-        ayy = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,3,0)**2) )
-        azz = sum(molec%AtomMasses(:)*( b0(:,1,0)**2+ b0(:,2,0)**2) )
-        !
-        call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,0),transform)
-        !
-      else 
-        !
-        a0(3,2) = re2*sin(ae1)
-        a0(3,1) = 0.0_ark
-        a0(3,3) = re2*cos(ae1)
-        !
-        a0(1,2) = 0.0_ark
-        a0(1,1) = 0.0_ark
         a0(1,3) = 0.0_ark
         !
-        a0(2,2) = 0.0_ark
         a0(2,1) = 0.0_ark
+        a0(2,2) = 0.0_ark
         a0(2,3) = re1
+        !
+        a0(3,1) = 0.0_ark
+        a0(3,2) = re2*sin(ae1)
+        a0(3,3) = re2*cos(ae1)
         !
         a0(4,2) = re3*sin(ae2)*cos(rho)
         a0(4,1) = re3*sin(ae2)*sin(rho)
@@ -804,9 +773,35 @@ module mol_abcd
         do n = 1,3 
           CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
           a0(:,n) = a0(:,n) - CM_shift
-        enddo 
-        !        
-      endif 
+        enddo         
+        !
+      case ('BC-Z-CD-X')
+        !
+        tau1 = 0
+        tau2 = rho
+        !
+        a0(1,1) = 0.0_ark
+        a0(1,2) = 0.0_ark
+        a0(1,3) = 0.0_ark
+        !
+        a0(2,1) = 0.0_ark
+        a0(2,2) = 0.0_ark
+        a0(2,3) = re1
+        !
+        a0(3,1) = re2*sin(ae1)*cos(tau1)
+        a0(3,2) = re2*sin(ae1)*sin(tau1)
+        a0(3,3) = re2*cos(ae1)
+        !
+        a0(4,1) = re3*sin(ae2)*cos(tau2)
+        a0(4,2) = re3*sin(ae2)*sin(tau2)
+        a0(4,3) = re1-re3*cos(ae2)
+        !
+        do n = 1,3 
+          CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+          a0(:,n) = a0(:,n) - CM_shift
+        enddo     
+        !
+      end select
       !
       b0(:,:,0) = a0(:,:)
       !
@@ -821,127 +816,147 @@ module mol_abcd
          !
          rho_ref = molec%taueq(1)
          !
-         do i = 0,npoints
-            !
-            rho = rho_i(i)
-            !
-            re1   = molec%req(1)
-            re2   = molec%req(2)
-            re3   = molec%req(3)
-            ae1   = molec%alphaeq(1)
-            ae2   = molec%alphaeq(2)
-            !
-            if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF'.or.trim(molec%coords_transform)=='R-S-TAU-REF'.or.&
-                trim(molec%coords_transform)=='R-PHI-TAU-REF') then 
-               !
-               rho_ark = rho
-               !
-               r_eq(1:6) = ML_MEP_ABCD_tau_ref(rho_ark)
-               !
-               re1   = r_eq(1)
-               re2   = r_eq(2)
-               re3   = r_eq(3)
-               ae1   = r_eq(4)
-               ae2   = r_eq(5)
-               !
-               if (verbose>=5) then 
-                 write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
-               endif
-               !
-            endif 
-            !
-            b0(3,2,i) = re2*sin(ae1)
-            b0(3,1,i) = 0.0_ark
-            b0(3,3,i) = re2*cos(ae1)
-            !
-            b0(1,2,i) = 0.0_ark
-            b0(1,1,i) = 0.0_ark
-            b0(1,3,i) = 0.0_ark
-            !
-            b0(2,2,i) = 0.0_ark
-            b0(2,1,i) = 0.0_ark
-            b0(2,3,i) = re1
-            !
-            b0(4,2,i) = re3*sin(ae2)*cos(rho)
-            b0(4,1,i) = re3*sin(ae2)*sin(rho)
-            b0(4,3,i) = re1-re3*cos(ae2)
-            !
-            ! Find center of mass
-            !
-            do n = 1,3 
-              CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-              b0(:,n,i) = b0(:,n,i) - CM_shift
-            enddo 
-            !
-            do n = 1,molec%Natoms
-               b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
-            enddo
-            !
-            if (verbose>=8) then 
-              write(out,"('b0',i8,12f12.8)") i,b0(:,:,i)
-            endif
-            !
-         enddo
-         !
-         if (molec%AtomMasses(1)==molec%AtomMasses(2).and.molec%AtomMasses(3)==molec%AtomMasses(4).and..false.) then
-            !
-            do i = 0,npoints
-               !
-               rho = rho_i(i)
-               !
-               re1   = molec%req(1)
-               re2   = molec%req(2)
-               re3   = molec%req(3)
-               ae1   = molec%alphaeq(1)
-               ae2   = molec%alphaeq(2)
-               !
-               phi = rho*0.5_ark
-
-               b0(1,1,i) = 0.0_ark
-               b0(1,2,i) = 0.0_ark
-               b0(1,3,i) = re1*0.5_ark
-
-               b0(2,1,i) = 0.0_ark
-               b0(2,2,i) = 0.0_ark
-               b0(2,3,i) = -re1*0.5_ark
-
-               b0(3,1,i) = re2*sin(ae1)*cos(phi)
-               b0(3,2,i) =-re2*sin(ae1)*sin(phi)
-               b0(3,3,i) =-re2*cos(ae1)+re1*0.5_ark
-
-               b0(4,1,i) = re2*sin(ae1)*cos(phi)
-               b0(4,2,i) = re2*sin(ae1)*sin(phi)
-               b0(4,3,i) = re2*cos(ae1)-re1*0.5_ark
-               !
-               do n = 1,3 
-                 CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-                 b0(:,n,i) = b0(:,n,i) - CM_shift
-               enddo 
-               !
-            enddo
-            !
-            !do i = 0,npoints
-            !   !
-            !   rho = rho_i(i)
-            !   !
-            !   phi = rho*0.5_ark+pi*0.5_ark
-            !   !
-            !   transform = 0 
-            !   !
-            !   transform(3,3) = 1.0_ark
-            !   !
-            !   transform(1,1) = cos(phi)
-            !   transform(1,2) = sin(phi)
-            !   transform(2,1) =-sin(phi)
-            !   transform(2,2) = cos(phi)
-            !   !
-            !   forall(ix=1:4) b0(ix,:,i) = matmul(transpose(transform),b0(ix,:,i))
-            !   !
-            !   continue
-            !   !
-            !enddo
-            !
-         else 
+         select case(trim(molec%frame))
+           !
+         case ('R-ALPHA-TAU-REF')
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              if (trim(molec%coords_transform)=='R-ALPHA-TAU-REF') then 
+                 !
+                 rho_ark = rho
+                 !
+                 r_eq(1:6) = ML_MEP_ABCD_tau_ref(rho_ark)
+                 !
+                 re1   = r_eq(1)
+                 re2   = r_eq(2)
+                 re3   = r_eq(3)
+                 ae1   = r_eq(4)
+                 ae2   = r_eq(5)
+                 !
+                 if (verbose>=5) then 
+                   write(out,"(i8,f18.8,' r1 r2 r3 a1 a2 ',5f16.8)") i,rho*180./pi,re1,re2,re3,ae1,ae2
+                 endif
+                 !
+              endif 
+              !
+              b0(3,2,i) = re2*sin(ae1)
+              b0(3,1,i) = 0.0_ark
+              b0(3,3,i) = re2*cos(ae1)
+              !
+              b0(1,2,i) = 0.0_ark
+              b0(1,1,i) = 0.0_ark
+              b0(1,3,i) = 0.0_ark
+              !
+              b0(2,2,i) = 0.0_ark
+              b0(2,1,i) = 0.0_ark
+              b0(2,3,i) = re1
+              !
+              b0(4,2,i) = re3*sin(ae2)*cos(rho)
+              b0(4,1,i) = re3*sin(ae2)*sin(rho)
+              b0(4,3,i) = re1-re3*cos(ae2)
+              !
+              ! Find center of mass
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = b0(:,n,i) - CM_shift
+              enddo 
+              !
+              do n = 1,molec%Natoms
+                 b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+              enddo
+              !
+           enddo   
+           !
+         case ('BC-Z-CD-X')
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              tau1 = 0
+              tau2 = rho
+              !
+              a0(1,1) = 0.0_ark
+              a0(1,2) = 0.0_ark
+              a0(1,3) = 0.0_ark
+              !
+              a0(2,1) = 0.0_ark
+              a0(2,2) = 0.0_ark
+              a0(2,3) = re1
+              !
+              a0(3,1) = re2*sin(ae1)*cos(tau1)
+              a0(3,2) = re2*sin(ae1)*sin(tau1)
+              a0(3,3) = re2*cos(ae1)
+              !
+              a0(4,1) = re3*sin(ae2)*cos(tau2)
+              a0(4,2) = re3*sin(ae2)*sin(tau2)
+              a0(4,3) = re1-re3*cos(ae2)
+              !
+              do n = 1,3 
+                CM_shift = sum(a0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = a0(:,n) - CM_shift
+              enddo
+              !
+           enddo
+           !
+         case ('R-ALPHA-TAU','R1-R2-R3-A1-A2-TAU')
+           ! 
+           ! non-rigid Frame with the x-axis at the half-angle (bisect) 
+           !
+           do i = 0,npoints
+              !
+              rho = rho_i(i)
+              !
+              re1   = molec%req(1)
+              re2   = molec%req(2)
+              re3   = molec%req(3)
+              ae1   = molec%alphaeq(1)
+              ae2   = molec%alphaeq(2)
+              !
+              b0(3,2,i) = re2*sin(ae1)
+              b0(3,1,i) = 0.0_ark
+              b0(3,3,i) = re2*cos(ae1)
+              !
+              b0(1,2,i) = 0.0_ark
+              b0(1,1,i) = 0.0_ark
+              b0(1,3,i) = 0.0_ark
+              !
+              b0(2,2,i) = 0.0_ark
+              b0(2,1,i) = 0.0_ark
+              b0(2,3,i) = re1
+              !
+              b0(4,2,i) = re3*sin(ae2)*cos(rho)
+              b0(4,1,i) = re3*sin(ae2)*sin(rho)
+              b0(4,3,i) = re1-re3*cos(ae2)
+              !
+              ! Find center of mass
+              !
+              do n = 1,3 
+                CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                b0(:,n,i) = b0(:,n,i) - CM_shift
+              enddo 
+              !
+              do n = 1,molec%Natoms
+                 b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
+              enddo
+              !
+           enddo
            !
            i0 = npoints/2
            !
@@ -950,7 +965,7 @@ module mol_abcd
              istep = (-1)**(ipar+2)
              !
              i = npoints/2
-
+         
              a0(:,:) = b0(:,:,i)
              !
              call MLorienting_a0(molec%Natoms,molec%AtomMasses,a0,transform)
@@ -1039,23 +1054,17 @@ module mol_abcd
                   cycle 
                 endif 
                 !
-                if (verbose>=4) then 
-                  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
-                endif
+                !if (verbose>=4) then 
+                !  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+                !endif
                 !
              enddo
              !    
            enddo
            !
-         endif
+         end select 
          !
       endif
-      !
-      !
-      !b0 = cshift(b0(:,:,:),1,dim=2)
-      !
-      !b0(:,3,:) = -b0(:,3,:)
-
       !
       if (verbose>=3) then
         !
@@ -1063,20 +1072,21 @@ module mol_abcd
            !
            write(out,"(i6)") molec%natoms
            !
-           write(out,"(/'C',3x,3f14.8)") b0(1,:,i)
-           write(out,"( 'C',3x,3f14.8)") b0(2,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
-           write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
+           write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,i) 
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,i)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,i)
            !
         enddo 
         !
-        write(out,"('Coordinates:')")
+        !write(out,"('Coordinates:')")
         !
-        do i = 0,npoints
-          !
-          write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
-          !
-        enddo 
+        !do i = 0,npoints
+        !  !
+        !  write(out,"('b0',i4,12f12.8)") i,b0(:,:,i)
+        !  !
+        !enddo
+        !
       endif
       !
       if (verbose>=4) write(out,"('ML_b0_ABCD/end')") 
@@ -1087,11 +1097,11 @@ module mol_abcd
      !
      subroutine extrapolate(N,x,src,dst)
      !
-     integer,intent(in)   :: N
+     integer(ik),intent(in)   :: N
      real(ark),intent(inout)  :: src(1:N),x(1:N+1)
      real(ark),intent(out)    :: dst
 
-     integer            :: i1,i2
+     integer(ik)        :: i1,i2
      real(rk)           :: a(N,N),b(N,1)
         !
         !
@@ -1350,6 +1360,67 @@ module mol_abcd
          !
        end select
         !
+    case('R1-R2-R3-A1-A2-TAU','R1-R2-R3-A1-RHO2-TAU')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_abcd - bad symm. type'
+          !
+       case('C','C(M)')
+         !
+         dst = src
+         !
+       case('CS','CS(M)')
+         !
+         select case(ioper)
+         !
+         case (1) ! identity 
+
+           dst = src
+
+         case (2) ! (E*)
+
+           dst = src
+           dst(6) = 2.0_ark*pi-src(6)
+
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+           !
+       case('C2V','C2V(M)')
+         !
+         dst = src
+         select case(ioper)
+           !
+         case (1) ! E 
+           !
+           dst(6) = src(6)
+           !
+         case (2) ! (12)(34)
+           !
+           dst(6) = src(6)
+           !
+         case (3) ! (E*)
+           !
+           dst(6) = 2.0_ark*pi-src(6)
+           !
+         case (4) ! (12)(34)*
+           !
+           dst(6) = 2.0_ark*pi-src(6)
+           !
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+         !
+       end select
+       !
     case('R-ALPHA-TAU-REF','R-ALPHA-TAU')
        !
        select case(trim(molec%symmetry))
@@ -1792,7 +1863,8 @@ module mol_abcd
          end select 
          !
        end select
-        !
+
+
         !
     case('R-ALPHA-R-TAU')
        !
@@ -2118,6 +2190,9 @@ module mol_abcd
        case('CS','CS(M)')
           !
           dst = src
+          !
+          N_Cn = sym%N/2
+          Nrot = sym%N
           !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !
@@ -2535,6 +2610,8 @@ module mol_abcd
        case('CS','CS(M)')
           !
           dst = src
+          N_Cn = sym%N/2
+          Nrot = sym%N
           !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !
@@ -3193,6 +3270,9 @@ module mol_abcd
           !
           dst = src
           !
+          N_Cn = sym%N/2
+          Nrot = sym%N
+          !
           if (ioper>=1+2*N_Cn+Nrot+1) then
             !
             dst(1) = src(1)
@@ -3461,162 +3541,198 @@ module mol_abcd
     if (verbose>=7) write(out,"('ML_rotsymmetry_abcd/start')") 
     !
     !
-    select case(trim(molec%symmetry))
+    select case(trim(molec%frame))
+      !
+    case ('BC-Z-CD-X')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_rotsymmetry_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_rotsymmetry_abcd - bad symm. type'
+          !
+       case('C','C(M)')
+          !
+          gamma = 1
+          ideg = 1 
+          !
+       case('CS','CS(M)')
+          !
+          gamma = 0 
+          ideg = 1 
+          !
+          if (mod(tau+2,2)==0) gamma = 1 !; return
+          if (mod(tau+2,2)/=0) gamma = 2 !; return
+          !
+       case('C2V','C2V(M)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 !1 ; return
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !4 !3 !3 !2 ; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !4 !3 !2 !4 !2 !3 ; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !3 !2 !3 !2 !4 !4 ; return
+          !
+       end select
+       !
     case default
-       write (out,"('ML_rotsymmetry_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
-       stop 'ML_rotsymmetry_abcd - bad symm. type'
        !
-    case('C','C(M)')
-       !
-       gamma = 1
-       ideg = 1 
-       !
-    case('CS','CS(M)')
-       !
-       gamma = 0 
-       ideg = 1 
-       !
-       if (mod(K+tau+2,2)==0) gamma = 1 !; return
-       if (mod(K+tau+2,2)/=0) gamma = 2 !; return
-       !
-    case('G4','G4(M)')
-       !
-       gamma = 0
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !; return
-       !
-    case('C2H(M)','C2H')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma =3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma =3 !4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma =1 !2 !; return
-       !
-    case('CS(EM)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma =2 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma =4 !4 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma =3 !2 !; return
-       !
-    case('C2V','C2V(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 !1 ; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !4 !3 !3 !2 ; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !4 !3 !2 !4 !2 !3 ; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !3 !2 !3 !2 !4 !4 ; return
-       !
-    case('G4(EM)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
-       !
-       !if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
-       !if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
-       !if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
-       !if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
-       !
-    case('D2H(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !; return
-       if (mod(K+2,2)==0.and.tau==1) gamma = 3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
-       !
-    case('DNH','DNH(M)')
-       !
-       gamma = 0 
-       ideg = 1
-       !
-       N = sym%N
-       N_Cn = sym%N/2
-       k_ = mod(K+N_Cn,N_Cn)
-       l = k_ ; if (k_>N_Cn) l = sym%N-k_
-       !
-       if (mod(sym%N,2)==1) then
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_rotsymmetry_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_rotsymmetry_abcd - bad symm. type'
           !
-          if (mod(K+N_Cn,N_Cn)==0) then
+       case('C','C(M)')
+          !
+          gamma = 1
+          ideg = 1 
+          !
+       case('CS','CS(M)')
+          !
+          gamma = 0 
+          ideg = 1 
+          !
+          if (mod(K+tau+2,2)==0) gamma = 1 !; return
+          if (mod(K+tau+2,2)/=0) gamma = 2 !; return
+          !
+       case('G4','G4(M)')
+          !
+          gamma = 0
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !; return
+          !
+       case('C2H(M)','C2H')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
+          if (mod(K+2,2)==0.and.tau==1) gamma =3 !3 !; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma =3 !4 !; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma =1 !2 !; return
+          !
+       case('CS(EM)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma =1 !1 !; return
+          if (mod(K+2,2)==0.and.tau==1) gamma =2 !3 !; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma =4 !4 !; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma =3 !2 !; return
+          !
+       case('C2V','C2V(M)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !1 !1 !1 !1 !1 ; return
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !2 !4 !4 !3 !3 !2 ; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !4 !3 !2 !4 !2 !3 ; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !3 !2 !3 !2 !4 !4 ; return
+          !
+       case('G4(EM)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+          if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+          !
+          !if (mod(K+2,2)==0.and.tau==0) gamma = 1 !; return
+          !if (mod(K+2,2)==0.and.tau==1) gamma = 2 !; return
+          !if (mod(K+2,2)/=0.and.tau==0) gamma = 3 !; return
+          !if (mod(K+2,2)/=0.and.tau==1) gamma = 4 !; return
+          !
+       case('D2H(M)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !; return
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3 !3 !; return
+          if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
+          if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
+          !
+       case('DNH','DNH(M)')
+          !
+          gamma = 0 
+          ideg = 1
+          !
+          N = sym%N
+          N_Cn = sym%N/2
+          k_ = mod(K+N_Cn,N_Cn)
+          l = k_ ; if (k_>N_Cn) l = sym%N-k_
+          !
+          if (mod(sym%N,2)==1) then
              !
-             if     (tau==0.and.mod(k+2,2)==0) then 
-                gamma = 1 
-             elseif (tau==1.and.mod(k+2,2)==0) then 
-                gamma = 2
-             elseif (tau==0.and.mod(k+2,2)/=0) then 
-                gamma = 4
-             elseif (tau==1.and.mod(k+2,2)/=0) then 
-                gamma = 3
+             if (mod(K+N_Cn,N_Cn)==0) then
+                !
+                if     (tau==0.and.mod(k+2,2)==0) then 
+                   gamma = 1 
+                elseif (tau==1.and.mod(k+2,2)==0) then 
+                   gamma = 2
+                elseif (tau==0.and.mod(k+2,2)/=0) then 
+                   gamma = 4
+                elseif (tau==1.and.mod(k+2,2)/=0) then 
+                   gamma = 3
+                else
+                   stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+                endif
+                !
+             elseif (tau<=1.and.k<=j) then
+                !
+                ideg = 1 ! tau +1
+                if (mod(k+tau,2)/=0) ideg = 2
+                !
+                if     (mod(k+2,2)==0) then 
+                    gamma = 4+2*l-1
+                else
+                   gamma = 4+2*l
+                endif
+                !
              else
-                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
              endif
              !
-          elseif (tau<=1.and.k<=j) then
+          else ! even Dnh
              !
-             ideg = 1 ! tau +1
-             if (mod(k+tau,2)/=0) ideg = 2
-             !
-             if     (mod(k+2,2)==0) then 
-                 gamma = 4+2*l-1
+             if (mod(K+N_Cn,N_Cn)==0) then
+                !
+                if     (tau==0.and.mod(k+2,2)==0) then 
+                   gamma = 1 
+                elseif (tau==1.and.mod(k+2,2)==0) then 
+                   gamma = 2
+                elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                   gamma = 4
+                elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
+                   gamma = 3
+                else
+                   stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
+                endif
+                !
+             elseif (tau<=1.and.k<=j) then
+                !
+                !ideg = tau +1
+                !
+                ideg = 1
+                !
+                if (mod(k+tau,2)/=0) ideg = 2
+                !
+                gamma = 8+2*l-1
+                !
+                !if     (mod(k+2,2)==0) then 
+                !    gamma = 8+2*l
+                !else
+                !    gamma = 8+2*l-1
+                !endif
+                !
              else
-                gamma = 4+2*l
+                  stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
              endif
              !
-          else
-               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
           endif
           !
-       else ! even Dnh
-          !
-          if (mod(K+N_Cn,N_Cn)==0) then
-             !
-             if     (tau==0.and.mod(k+2,2)==0) then 
-                gamma = 1 
-             elseif (tau==1.and.mod(k+2,2)==0) then 
-                gamma = 2
-             elseif (tau==0.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
-                gamma = 4
-             elseif (tau==1.and.mod(k+2,2)/=0.and.mod(N_Cn,2)/=0) then 
-                gamma = 3
-             else
-                stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  = 0)'
-             endif
-             !
-          elseif (tau<=1.and.k<=j) then
-             !
-             !ideg = tau +1
-             !
-             ideg = 1
-             !
-             if (mod(k+tau,2)/=0) ideg = 2
-             !
-             gamma = 8+2*l-1
-             !
-             !if     (mod(k+2,2)==0) then 
-             !    gamma = 8+2*l
-             !else
-             !    gamma = 8+2*l-1
-             !endif
-             !
-          else
-               stop 'ML_rotsymmetry_abcd-Dnh: illegal k,tau (K mod N  /= 0)'
-          endif
-          !
-       endif
-       !
+       end select
     end select
     !
     !

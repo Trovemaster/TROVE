@@ -447,11 +447,14 @@ module mol_zxy2
      real(ark),   intent(in),optional  :: rho_i(0:Npoints)
      real(ark),   intent(out),optional :: rho_ref
      real(ark),   intent(in),optional :: rho_borders(2)  ! rhomim, rhomax - borders
-
-     real(ark)               :: a0(molec%Natoms,3),CM_shift,tau,cosalpha_2,costau,delta,cosrho,req(1:3),alphaeq(1:2),tau_
-     real(ark)               :: xieq(6),rho,theta,sint_2,theta12,beta
-     integer(ik)             :: Nbonds,i,n
-
+     !
+     real(ark)     :: a0(molec%Natoms,3),CM_shift,tau,cosalpha_2,costau,delta,cosrho,req(1:3),alphaeq(1:2),tau_
+     real(ark)     :: xieq(6),rho,theta,sint_2,theta12,beta,m1,m2,m3,m4,ax,ay
+     integer(ik)   :: Nbonds,i,n
+     !
+     integer(ik)   :: ijk(3,2),ix,ioper
+     real(ark)     :: phi,tmat(3,3),transform(3,3),transform1(3,3),transform0(3,3),unit(3)
+     character(cl) :: method
 
       if (verbose>=4) write(out,"('ML_b0_ZXY2/start')") 
 
@@ -486,13 +489,12 @@ module mol_zxy2
          !
       end select 
       !
+      m1 = molec%AtomMasses(1) 
+      m2 = molec%AtomMasses(2) 
+      m3 = molec%AtomMasses(3) 
+      m4 = molec%AtomMasses(4)
+      !
       if (trim(molec%coords_transform)=='R-THETA-TAU-MEP') then 
-         !
-         !if (trim(molec%potentype)/='POTEN_ZXY2_MEP_R_ALPHA_RHO_POWERS') then
-         ! write (out,"('ML_b0_ZXY2: potential function',a,' cannot be used with coord type ',a)") trim(molec%potentype),trim(molec%coords_transform)
-         ! stop 'ML_b0_ZXY2 - bad PES type'
-         !endif 
-         !
          !
          rho = tau
          !
@@ -535,6 +537,10 @@ module mol_zxy2
          endif
          !
          rho_ref = 0 ! pi
+         !
+         transform0 = 0 
+         !
+         forall (ix=1:3) transform0(ix,ix) = 1.0_ark
          !
          do i = 0,npoints
             !
@@ -608,41 +614,88 @@ module mol_zxy2
                req(1:3)     = xieq(1:3)
                alphaeq(1:2) = xieq(1:2)
                !
-               !cosrho = cos(tau) + 1.0_ark
+            endif
+            !
+            if ( abs(req(1)-req(2))<sqrt(small_).and.abs(req(1)-req(3))<sqrt(small_) ) then 
                !
-               !req(1)     = molec%req(1)+sum(molec%force(2:5 )*cosrho**molec%pot_ind(1,2:5 ))
-               !req(2)     = molec%req(2)+sum(molec%force(7:10)*cosrho**molec%pot_ind(2,7:10))
-               !req(3)     = req(2)
-               !alphaeq(1) = molec%alphaeq(1)+sum(molec%force(12:15)*cosrho**molec%pot_ind(4,12:15))
-               !alphaeq(2) = alphaeq(1)
+               !if (tau<pi/3.0+small_.or.tau>pi*5.0/3.0-small_) then
+               !  write(out,"('ML_b0_ZXY2 error: R-THETA-TAU, illegal tau+pi is outside (60..300)',f15.8)") tau*180.0/pi
+               !  stop 'ML_b0_ZXY2 error: R-THETA-TAU, illegal tau+pi is outside (60..300)'
+               !endif
                !
+               call generate_structure(theta,tau,b0(:,:,i))
+               !
+               !theta = acos( cos(tau)/(1.0_ark-cos(tau)) )
+               !
+               ijk(1,1) = 2 ; ijk(1,2) = 3
+               ijk(2,1) = 3 ; ijk(2,2) = 1
+               ijk(3,1) = 1 ; ijk(3,2) = 2
+               !
+               method = 'ULEN'
+               !
+               a0 = b0(:,:,i)
+               !
+               call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i),transform,method=method)
+               !
+               loop_xyz : do ix =1,3
+                 !
+                 do ioper = 1,4
+                   !
+                   phi = real(ioper-1,ark)*pi*0.5_ark
+                   !
+                   tmat(:,:) = 0 
+                   !
+                   tmat(ix,ix) = 1.0_ark
+                   !
+                   tmat(ijk(ix,1),ijk(ix,1)) = cos(phi)
+                   tmat(ijk(ix,1),ijk(ix,2)) = sin(phi)
+                   tmat(ijk(ix,2),ijk(ix,1)) =-sin(phi)
+                   tmat(ijk(ix,2),ijk(ix,2)) = cos(phi)
+                   !
+                   transform1 = matmul(tmat,transform)
+                   !
+                   forall(ix=1:3) unit(ix) = dot_product(transform0(ix,:),transform1(ix,:))
+                   !
+                   unit = unit - 1.0_ark
+                   !
+                   if ( all( abs( unit(:) )<1.0e-1  ) ) exit loop_xyz
+                   !
+                 enddo
+                 !
+               enddo loop_xyz
+               !
+               transform0 = matmul(tmat,transform)
+               !
+               forall(ix=1:4) b0(ix,:,i) = matmul(transpose(tmat),b0(ix,:,i))
+               !
+            else
+               !
+               b0(1,1,i) = 0.0_ark
+               b0(1,2,i) = 0.0_ark
+               b0(1,3,i) = 0.0_ark
+               !
+               b0(2,1,i) = 0.0_ark
+               b0(2,2,i) = 0.0_ark
+               b0(2,3,i) = molec%req(1)
+               !
+               b0(3,1,i) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
+               b0(3,2,i) =-molec%req(2)*sin(theta)*sin(tau*0.5_ark)
+               b0(3,3,i) = molec%req(2)*cos(theta)
+               !
+               b0(4,1,i) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
+               b0(4,2,i) = molec%req(2)*sin(theta)*sin(tau*0.5_ark)
+               b0(4,3,i) = molec%req(2)*cos(theta)
+               !
+               call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
+               !
+               ! Find center of mass
+               !
+               do n = 1,3 
+                 CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+                 b0(:,n,i) = b0(:,n,i) - CM_shift
+               enddo 
                !
             endif 
-            !
-            b0(1,1,i) = 0.0_ark
-            b0(1,2,i) = 0.0_ark
-            b0(1,3,i) = 0.0_ark
-            !
-            b0(2,1,i) = 0.0_ark
-            b0(2,2,i) = 0.0_ark
-            b0(2,3,i) = molec%req(1)
-            !
-            b0(3,1,i) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
-            b0(3,2,i) =-molec%req(2)*sin(theta)*sin(tau*0.5_ark)
-            b0(3,3,i) = molec%req(2)*cos(theta)
-            !
-            b0(4,1,i) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
-            b0(4,2,i) = molec%req(2)*sin(theta)*sin(tau*0.5_ark)
-            b0(4,3,i) = molec%req(2)*cos(theta)
-            !
-            call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:,i))
-            !
-            ! Find center of mass
-            !
-            do n = 1,3 
-              CM_shift = sum(b0(:,n,i)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
-              b0(:,n,i) = b0(:,n,i) - CM_shift
-            enddo 
             !
             !do n = 1,molec%Natoms
             !   b0(n,:,i) = matmul(transpose(transform),b0(n,:,i))
@@ -667,6 +720,38 @@ module mol_zxy2
       endif
       !
       if (verbose>=4) write(out,"('ML_b0_ZXY2/end')") 
+      !
+      contains 
+      !
+      subroutine generate_structure(theta,tau,b0)
+ 
+        real(ark),intent(in)  :: theta,tau
+        real(ark),intent(out) :: b0(4,3)
+        real(ark) :: sinr,cosr,CM_shift
+            !
+            b0(1,1) = 0.0_ark
+            b0(1,2) = 0.0_ark
+            b0(1,3) = 0.0_ark
+            !
+            b0(2,1) = 0.0_ark
+            b0(2,2) = 0.0_ark
+            b0(2,3) = molec%req(1)
+            !
+            b0(3,1) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
+            b0(3,2) =-molec%req(2)*sin(theta)*sin(tau*0.5_ark)
+            b0(3,3) = molec%req(2)*cos(theta)
+            !
+            b0(4,1) = molec%req(2)*sin(theta)*cos(tau*0.5_ark)
+            b0(4,2) = molec%req(2)*sin(theta)*sin(tau*0.5_ark)
+            b0(4,3) = molec%req(2)*cos(theta)            
+            !
+            do n = 1,3 
+              CM_shift = sum(b0(:,n)*molec%AtomMasses(:))/sum(molec%AtomMasses(:))
+              b0(:,n) = b0(:,n) - CM_shift
+            enddo 
+            !
+      end subroutine
+
 
   end subroutine ML_b0_ZXY2
 

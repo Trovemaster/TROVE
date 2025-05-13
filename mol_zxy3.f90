@@ -278,34 +278,23 @@ module mol_zxy3
               b0(:,ix,i) = b0(:,ix,i) - CM_shift
             enddo 
             !
-            if (verbose>=5) then 
-              write(out,"(i6)") molec%natoms
-              !
-              write(out,"(/'C',3x,3f14.8)") b0(1,:,i)
-              write(out,"( 'O',3x,3f14.8)") b0(2,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(3,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(4,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(5,:,i)
-              write(out,"( 'H',3x,3f14.8)") b0(6,:,i)
-            endif
-            !
          enddo
          !
          !
       endif
       !
       !
-      if (verbose>=5) then 
+      if (verbose>=3) then 
         !
         do i = 0,npoints
            !
            write(out,"(i6)") molec%natoms
            !
-           write(out,"(/'C ',3x,3f14.8)") b0(1,:,i)
-           write(out,"( 'Cl',3x,3f14.8)") b0(2,:,i)
-           write(out,"( 'H ',3x,3f14.8)") b0(3,:,i)
-           write(out,"( 'H ',3x,3f14.8)") b0(4,:,i)
-           write(out,"( 'H ',3x,3f14.8)") b0(5,:,i)
+           write(out,"(/a,3x,3f14.8)") trim(molec%zmatrix(1)%name),b0(1,:,0) 
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(2)%name),b0(2,:,0)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(3)%name),b0(3,:,0)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(4)%name),b0(4,:,0)
+           write(out,"( a,3x,3f14.8)") trim(molec%zmatrix(5)%name),b0(5,:,0)
            !
         enddo
         !
@@ -348,7 +337,7 @@ module mol_zxy3
           stop 'ML_symmetry_transformation_ZXY3 - bad symm. type'
           !
        case('C3V','C3V(M)')
-         !
+           !
          select case(ioper)
            !
          case (1) ! identity 
@@ -452,7 +441,6 @@ module mol_zxy3
     integer(ik),intent(out) :: gamma,ideg
     !
     if (verbose>=5) write(out,"('ML_rotsymmetry_ZXY3/start')") 
-    !
     !
     select case(trim(molec%symmetry))
     case default

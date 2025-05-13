@@ -69,109 +69,141 @@ contains
 !###################################################################################################
 
 
-subroutine rotme_vzz_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+! Transformation matrix for Cartesian components of rank-1 tensor into the spherical-tensor form
+!
+! Dipole moment
+!  0 {0: 0}
+!  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
+! number of elements: 3
+! order of Cartesian components: [x, y, z]
+! order of spherical components: [[1, -1], [1, 0], [1, 1]]
 
-  integer(ik), intent(in) :: q1(:), q2(:)
-  character(cl), intent(out) :: name
-  integer(ik), intent(inout) :: nelem, nirrep
-  complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
-  character(cl), intent(out), optional :: sirrep(:), selem(:)
+subroutine cart_to_spher_rank1(tmat_s)
 
-  integer(ik) :: rank(2), isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s
-  complex(rk) :: tmat_s(6,6), tmat_x(6,6)
+  complex(rk), intent(out) :: tmat_s(3,3)
 
-  j1 = q1(1)
-  k1 = q1(2)
-  m1 = q1(3)
-  j2 = q2(1)
-  k2 = q2(2)
-  m2 = q2(3)
+  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
+  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
+  tmat_s( 1 , 3 )= 0
+  tmat_s( 2 , 1 )= 0
+  tmat_s( 2 , 2 )= 0
+  tmat_s( 2 , 3 )= 1
+  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
+  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
+  tmat_s( 3 , 3 )= 0
 
-  name = 'Vzz'
-  nelem = 6
-  nirrep = 1
-  nelem_s = 5
-  rank(1:nirrep) = (/2/)
-
-  if (present(sirrep)) then
-    sirrep(1:nirrep) = (/'T(2)'/)
-  endif
-
-  if (present(selem)) then
-    selem(1:nelem) = (/'xx','xy','xz','yy','yz','zz'/)
-  endif
-
-
-  ! sigma = -2
-  tmat_s(1,1:nelem) = (/ cmplx( 0.5_rk/sqrt(6.0_rk), 0.0_rk ), &!    xx
-                         cmplx( 0.0_rk, -1.0_rk/sqrt(6.0_rk) ), &!   xy
-                         cmplx( 0.0_rk, 0.0_rk), &!                  xz
-                         cmplx( -0.5_rk/sqrt(6.0_rk), 0.0_rk ), &!   yy
-                         cmplx( 0.0_rk, 0.0_rk), &!                  yz
-                         cmplx( 0.0_rk, 0.0_rk) /) !                 zz
-  ! sigma = -1
-  tmat_s(2,1:nelem) = (/ cmplx(0.0_rk, 0.0_rk), &!                   xx
-                         cmplx(0.0_rk, 0.0_rk), &!                   xy
-                         cmplx(1.0_rk/sqrt(6.0_rk), 0.0_rk), &!      xz
-                         cmplx(0.0_rk, 0.0_rk), &!                   yy
-                         cmplx(0.0_rk, -1.0_rk/sqrt(6.0_rk)), &!     yz
-                         cmplx(0.0_rk, 0.0_rk) /) !                  zz
-
-  ! sigma = 0
-  tmat_s(3,1:nelem) = (/ cmplx(0.0_rk, 0.0_rk), &!                   xx
-                         cmplx(0.0_rk, 0.0_rk), &!                   xy
-                         cmplx(0.0_rk, 0.0_rk), &!                   xz
-                         cmplx(0.0_rk, 0.0_rk), &!                   yy
-                         cmplx(0.0_rk, 0.0_rk), &!                   yz
-                         cmplx(0.5_rk, 0.0_rk) /) !                  zz
-
-  ! sigma = +1
-  tmat_s(4,1:nelem) = (/ cmplx(0.0_rk, 0.0_rk), &!                   xx
-                         cmplx(0.0_rk, 0.0_rk), &!                   xy
-                         cmplx(-1.0_rk/sqrt(6.0_rk), 0.0_rk), &!     xz
-                         cmplx(0.0_rk, 0.0_rk), &!                   yy
-                         cmplx(0.0_rk, -1.0_rk/sqrt(6.0_rk)), &!     yz
-                         cmplx(0.0_rk, 0.0_rk) /) !                  zz
-
-  ! sigma = +2
-  tmat_s(5,1:nelem) = (/ cmplx( 0.5_rk/sqrt(6.0_rk), 0.0_rk ), &!    xx
-                         cmplx( 0.0_rk, 1.0_rk/sqrt(6.0_rk) ), &!    xy
-                         cmplx( 0.0_rk, 0.0_rk), &!                  xz
-                         cmplx( -0.5_rk/sqrt(6.0_rk), 0.0_rk ), &!   yy
-                         cmplx(0.0_rk, 0.0_rk), &!                   yz
-                         cmplx(0.0_rk, 0.0_rk) /) !                  zz
-
-  if (present(mf)) then
-    mf(:,:) = 0.0
-    isigma = 0
-    do irrep=1, nirrep
-      do sigma=-rank(irrep), rank(irrep)
-        isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
-      enddo
-    enddo
-  endif
-
-  if (present(lf)) then
-    call pseudoinverse(nelem_s, nelem, tmat_s(1:nelem_s,1:nelem), tmat_x(1:nelem,1:nelem_s))
-    lf(:,:) = 0.0
-    isigma = 0
-    do irrep=1, nirrep
-      do sigma=-rank(irrep), rank(irrep)
-        isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
-      enddo
-    enddo
-    lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
-  endif
-
-end subroutine rotme_vzz_trace0
+end subroutine cart_to_spher_rank1
 
 
 !###################################################################################################
 
 
-subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+! Transformation matrix for Cartesian components of rank-2 tensor into the spherical-tensor form
+!
+! Non-symmetric rank-2 tensor
+!  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
+!  1 {0: sqrt(2)*I*xy/2 - sqrt(2)*I*yx/2, 1: -xz/2 - I*yz/2 + zx/2 + I*zy/2, -1: -xz/2 + I*yz/2 + zx/2 - I*zy/2}
+!  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz/2 - I*yz/2 - zx/2 - I*zy/2, 
+! 2: xx/2 + I*xy/2 + I*yx/2 - yy/2, -1: xz/2 - I*yz/2 + zx/2 - I*zy/2, -2: xx/2 - I*xy/2 - I*yx/2 - yy/2}
+! number of elements: 9
+! order of Cartesian components: [xx, xy, xz, yx, yy, yz, zx, zy, zz]
+! order of spherical components: [[0, 0], [1, -1], [1, 0], [1, 1], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
+
+subroutine cart_to_spher_rank2(tmat_s)
+
+  complex(rk), intent(out) :: tmat_s(9,9)
+
+  tmat_s( 1 , 1 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
+  tmat_s( 1 , 2 )= 0
+  tmat_s( 1 , 3 )= 0
+  tmat_s( 1 , 4 )= 0
+  tmat_s( 1 , 5 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
+  tmat_s( 1 , 6 )= 0
+  tmat_s( 1 , 7 )= 0
+  tmat_s( 1 , 8 )= 0
+  tmat_s( 1 , 9 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
+  tmat_s( 2 , 1 )= 0
+  tmat_s( 2 , 2 )= 0
+  tmat_s( 2 , 3 )= -1.0_rk/2.0_rk
+  tmat_s( 2 , 4 )= 0
+  tmat_s( 2 , 5 )= 0
+  tmat_s( 2 , 6 )= cmplx(0,1.0_rk/2.0_rk)
+  tmat_s( 2 , 7 )= 1.0_rk/2.0_rk
+  tmat_s( 2 , 8 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 2 , 9 )= 0
+  tmat_s( 3 , 1 )= 0
+  tmat_s( 3 , 2 )= cmplx(0,(1.0_rk/2.0_rk)*sqrt(2.0_rk))
+  tmat_s( 3 , 3 )= 0
+  tmat_s( 3 , 4 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
+  tmat_s( 3 , 5 )= 0
+  tmat_s( 3 , 6 )= 0
+  tmat_s( 3 , 7 )= 0
+  tmat_s( 3 , 8 )= 0
+  tmat_s( 3 , 9 )= 0
+  tmat_s( 4 , 1 )= 0
+  tmat_s( 4 , 2 )= 0
+  tmat_s( 4 , 3 )= -1.0_rk/2.0_rk
+  tmat_s( 4 , 4 )= 0
+  tmat_s( 4 , 5 )= 0
+  tmat_s( 4 , 6 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 4 , 7 )= 1.0_rk/2.0_rk
+  tmat_s( 4 , 8 )= cmplx(0,1.0_rk/2.0_rk)
+  tmat_s( 4 , 9 )= 0
+  tmat_s( 5 , 1 )= 1.0_rk/2.0_rk
+  tmat_s( 5 , 2 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 5 , 3 )= 0
+  tmat_s( 5 , 4 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 5 , 5 )= -1.0_rk/2.0_rk
+  tmat_s( 5 , 6 )= 0
+  tmat_s( 5 , 7 )= 0
+  tmat_s( 5 , 8 )= 0
+  tmat_s( 5 , 9 )= 0
+  tmat_s( 6 , 1 )= 0
+  tmat_s( 6 , 2 )= 0
+  tmat_s( 6 , 3 )= 1.0_rk/2.0_rk
+  tmat_s( 6 , 4 )= 0
+  tmat_s( 6 , 5 )= 0
+  tmat_s( 6 , 6 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 6 , 7 )= 1.0_rk/2.0_rk
+  tmat_s( 6 , 8 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 6 , 9 )= 0
+  tmat_s( 7 , 1 )= -1.0_rk/6.0_rk*sqrt(6.0_rk)
+  tmat_s( 7 , 2 )= 0
+  tmat_s( 7 , 3 )= 0
+  tmat_s( 7 , 4 )= 0
+  tmat_s( 7 , 5 )= -1.0_rk/6.0_rk*sqrt(6.0_rk)
+  tmat_s( 7 , 6 )= 0
+  tmat_s( 7 , 7 )= 0
+  tmat_s( 7 , 8 )= 0
+  tmat_s( 7 , 9 )= (1.0_rk/3.0_rk)*sqrt(6.0_rk)
+  tmat_s( 8 , 1 )= 0
+  tmat_s( 8 , 2 )= 0
+  tmat_s( 8 , 3 )= -1.0_rk/2.0_rk
+  tmat_s( 8 , 4 )= 0
+  tmat_s( 8 , 5 )= 0
+  tmat_s( 8 , 6 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 8 , 7 )= -1.0_rk/2.0_rk
+  tmat_s( 8 , 8 )= cmplx(0,-1.0_rk/2.0_rk)
+  tmat_s( 8 , 9 )= 0
+  tmat_s( 9 , 1 )= 1.0_rk/2.0_rk
+  tmat_s( 9 , 2 )= cmplx(0,1.0_rk/2.0_rk)
+  tmat_s( 9 , 3 )= 0
+  tmat_s( 9 , 4 )= cmplx(0,1.0_rk/2.0_rk)
+  tmat_s( 9 , 5 )= -1.0_rk/2.0_rk
+  tmat_s( 9 , 6 )= 0
+  tmat_s( 9 , 7 )= 0
+  tmat_s( 9 , 8 )= 0
+  tmat_s( 9 , 9 )= 0
+
+end subroutine cart_to_spher_rank2
+
+
+!###################################################################################################
+
+
+! Traceless symmetric quadrupole moment rank-2 tensor
+
+subroutine rotme_quad(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
   integer(ik), intent(in) :: q1(:), q2(:)
   character(cl), intent(out) :: name
@@ -179,8 +211,8 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
   character(cl), intent(out), optional :: sirrep(:), selem(:)
 
-  integer(ik) :: rank(2), isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s
-  complex(rk) :: tmat_s(6,6), tmat_x(6,6)
+  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, rank(1)
+  complex(rk) :: tmat_s(9,9), tmat_x(9,9)
 
   j1 = q1(1)
   k1 = q1(2)
@@ -190,58 +222,87 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   m2 = q2(3)
 
   name = 'QUAD'
-  nelem = 6
+  nelem = 9
   nirrep = 1
-  nelem_s = 5
-  rank(1:nirrep) = (/2/)
+  rank(1:nirrep) = (/2/) ! traceless symmetric tensor, T(0) and T(1) are zero
 
   if (present(sirrep)) then
     sirrep(1:nirrep) = (/'T(2)'/)
   endif
 
   if (present(selem)) then
-    selem(1:nelem) = (/'xx','xy','xz','yy','yz','zz'/)
+    selem(1:nelem) = (/'xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   endif
 
-  ! sigma = -2
-  tmat_s(1,1:nelem) = (/ cmplx(  0.5_rk,  0.0_rk ), &!             xx
-                         cmplx(  0.0_rk, -1.0_rk ), &!             xy
-                         cmplx(  0.0_rk,  0.0_rk ), &!             xz
-                         cmplx( -0.5_rk,  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk,  0.0_rk ), &!             yz
-                         cmplx(  0.0_rk,  0.0_rk ) /) !            zz
+  call cart_to_spher_rank2(tmat_s)
 
-  ! sigma = -1
-  tmat_s(2,1:nelem) = (/ cmplx(  0.0_rk,  0.0_rk ), &!             xx
-                         cmplx(  0.0_rk,  0.0_rk ), &!             xy
-                         cmplx(  1.0_rk,  0.0_rk ), &!             xz
-                         cmplx(  0.0_rk,  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk, -1.0_rk ), &!             yz
-                         cmplx(  0.0_rk,  0.0_rk ) /) !            zz
+  if (present(mf)) then
+    mf(:,:) = 0.0
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+    do irrep=1, nirrep
+      do sigma=-rank(irrep), rank(irrep)
+        isigma = isigma + 1
+        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
+      enddo
+    enddo
+  endif
 
-  ! sigma = 0
-  tmat_s(3,1:nelem) = (/ cmplx(  0.0_rk,  0.0_rk ), &!                    xx
-                         cmplx(  0.0_rk,  0.0_rk ), &!                    xy
-                         cmplx(  0.0_rk,  0.0_rk ), &!                    xz
-                         cmplx(  0.0_rk,  0.0_rk ), &!                    yy
-                         cmplx(  0.0_rk,  0.0_rk ), &!                    yz
-                         cmplx(  3.0_rk/sqrt(6.0_rk),  0.0_rk ) /) !      zz
+  if (present(lf)) then
+    call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
+    lf(:,:) = 0.0
+    isigma = 4 !!! we skip (omega,sigma) = (0,0), (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+    do irrep=1, nirrep
+      do sigma=-rank(irrep), rank(irrep)
+        isigma = isigma + 1
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+      enddo
+    enddo
+    lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
+  endif
 
-  ! sigma = 1
-  tmat_s(4,1:nelem) = (/ cmplx(  0.0_rk,  0.0_rk ), &!             xx
-                         cmplx(  0.0_rk,  0.0_rk ), &!             xy
-                         cmplx( -1.0_rk,  0.0_rk ), &!             xz
-                         cmplx(  0.0_rk,  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk, -1.0_rk ), &!             yz
-                         cmplx(  0.0_rk,  0.0_rk ) /) !            zz
+end subroutine rotme_quad
 
-  ! sigma = 2
-  tmat_s(5,1:nelem) = (/ cmplx(  0.5_rk,  0.0_rk ), &!             xx
-                         cmplx(  0.0_rk,  1.0_rk ), &!             xy
-                         cmplx(  0.0_rk,  0.0_rk ), &!             xz
-                         cmplx( -0.5_rk,  0.0_rk ), &!             yy
-                         cmplx(  0.0_rk,  0.0_rk ), &!             yz
-                         cmplx(  0.0_rk,  0.0_rk ) /) !            zz
+
+!###################################################################################################
+
+
+! Non-symmetric spin-rotation rank-2 tensor
+
+subroutine rotme_spinrot(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+
+  integer(ik), intent(in) :: q1(:), q2(:)
+  character(cl), intent(out) :: name
+  integer(ik), intent(inout) :: nelem, nirrep
+  complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
+  character(cl), intent(out), optional :: sirrep(:), selem(:)
+
+  integer(ik) :: rank(3), isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s
+  complex(rk) :: tmat_s(9,9), tmat_x(9,9)
+
+  j1 = q1(1)
+  k1 = q1(2)
+  m1 = q1(3)
+  j2 = q2(1)
+  k2 = q2(2)
+  m2 = q2(3)
+
+  name = 'SR'
+  nelem = 9
+  nirrep = 3
+  nelem_s = 9
+  rank(1:nirrep) = (/0,1,2/)
+
+  if (present(sirrep)) then
+    sirrep(1:nirrep) = (/'T(0)','T(1)','T(2)'/)
+  endif
+
+  if (present(selem)) then
+    selem(1:nelem) = (/'xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
+  endif
+
+  call cart_to_spher_rank2(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
@@ -250,7 +311,7 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
-            * (-1)**(k2) * tmat_s(isigma,1:nelem)
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -263,17 +324,19 @@ subroutine rotme_quad_trace0(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
         lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
-            * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
   endif
 
-end subroutine rotme_quad_trace0
+end subroutine rotme_spinrot
 
 
 !###################################################################################################
 
+
+! Electric polarizability symmetric rank-2 tensor
 
 subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -283,8 +346,8 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
   character(cl), intent(out), optional :: sirrep(:), selem(:)
 
-  integer(ik) :: rank(2), isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s
-  complex(rk) :: tmat_s(6,6), tmat_x(6,6)
+  integer(ik) :: isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, rank(3)
+  complex(rk) :: tmat_s(9,9), tmat_x(9,9)
 
   j1 = q1(1)
   k1 = q1(2)
@@ -294,9 +357,8 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   m2 = q2(3)
 
   name = 'ALPHA'
-  nelem = 6
+  nelem = 9
   nirrep = 2
-  nelem_s = 6
   rank(1:nirrep) = (/0,2/)
 
   if (present(sirrep)) then
@@ -304,74 +366,36 @@ subroutine rotme_alpha(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   endif
 
   if (present(selem)) then
-    selem(1:nelem) = (/'xx','xy','xz','yy','yz','zz'/)
+    selem(1:nelem) = (/'xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   endif
 
-  ! Polarizability
-  !  0 {0: -sqrt(3)*xx/3 - sqrt(3)*yy/3 - sqrt(3)*zz/3}
-  !  1 {0: 0, 1: 0, -1: 0}
-  !  2 {0: -sqrt(6)*xx/6 - sqrt(6)*yy/6 + sqrt(6)*zz/3, 1: -xz - I*yz, 2: xx/2 + I*xy - yy/2, -1: xz - I*yz, -2: xx/2 - I*xy - yy/2}
-  ! number of elements: 6
-  ! order of Cartesian components: [xx, xy, xz, yy, yz, zz]
-  ! order of spherical components: [[0, 0], [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
-  tmat_s( 1 , 2 )= 0
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 1 , 4 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
-  tmat_s( 1 , 5 )= 0
-  tmat_s( 1 , 6 )= -1.0_rk/3.0_rk*sqrt(3.0_rk)
-  tmat_s( 2 , 1 )= 1.0_rk/2.0_rk
-  tmat_s( 2 , 2 )= cmplx(0,-1)
-  tmat_s( 2 , 3 )= 0
-  tmat_s( 2 , 4 )= -1.0_rk/2.0_rk
-  tmat_s( 2 , 5 )= 0
-  tmat_s( 2 , 6 )= 0
-  tmat_s( 3 , 1 )= 0
-  tmat_s( 3 , 2 )= 0
-  tmat_s( 3 , 3 )= 1
-  tmat_s( 3 , 4 )= 0
-  tmat_s( 3 , 5 )= cmplx(0,-1)
-  tmat_s( 3 , 6 )= 0
-  tmat_s( 4 , 1 )= -1.0_rk/6.0_rk*sqrt(6.0_rk)
-  tmat_s( 4 , 2 )= 0
-  tmat_s( 4 , 3 )= 0
-  tmat_s( 4 , 4 )= -1.0_rk/6.0_rk*sqrt(6.0_rk)
-  tmat_s( 4 , 5 )= 0
-  tmat_s( 4 , 6 )= (1.0_rk/3.0_rk)*sqrt(6.0_rk)
-  tmat_s( 5 , 1 )= 0
-  tmat_s( 5 , 2 )= 0
-  tmat_s( 5 , 3 )= -1
-  tmat_s( 5 , 4 )= 0
-  tmat_s( 5 , 5 )= cmplx(0,-1)
-  tmat_s( 5 , 6 )= 0
-  tmat_s( 6 , 1 )= 1.0_rk/2.0_rk
-  tmat_s( 6 , 2 )= cmplx(0,1)
-  tmat_s( 6 , 3 )= 0
-  tmat_s( 6 , 4 )= -1.0_rk/2.0_rk
-  tmat_s( 6 , 5 )= 0
-  tmat_s( 6 , 6 )= 0
-
+  call cart_to_spher_rank2(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
+      ! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      if (irrep==2) isigma = isigma + 3 
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
+        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
 
   if (present(lf)) then
-    call pseudoinverse(nelem_s, nelem, tmat_s(1:nelem_s,1:nelem), tmat_x(1:nelem,1:nelem_s))
+    call pseudoinverse(nelem, nelem, tmat_s(1:nelem,1:nelem), tmat_x(1:nelem,1:nelem))
     lf(:,:) = 0.0
     isigma = 0
     do irrep=1, nirrep
+      ! we skip (omega,sigma) = (1,-1), (1,0), and (1,1), see cart_to_spher for the order of elements
+      if (irrep==2) isigma = isigma + 3 
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -383,177 +407,7 @@ end subroutine rotme_alpha
 !###################################################################################################
 
 
-subroutine rotme_beta(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
-
-  integer(ik), intent(in) :: q1(:), q2(:)
-  character(cl), intent(out) :: name
-  integer(ik), intent(inout) :: nelem, nirrep
-  complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
-  character(cl), intent(out), optional :: sirrep(:), selem(:)
-
-  integer(ik) :: rank(2), isigma, sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s
-  complex(rk) :: tmat_s(10,10), tmat_x(10,10)
-
-  j1 = q1(1)
-  k1 = q1(2)
-  m1 = q1(3)
-  j2 = q2(1)
-  k2 = q2(2)
-  m2 = q2(3)
-
-  name = 'BETA'
-  nelem = 10
-  nirrep = 2
-  nelem_s = 10
-  rank(1:nirrep) = (/1, 3/)
-
-  if (present(sirrep)) then
-    sirrep(1:nirrep) = (/'T(1)','T(3)'/)
-  endif
-
-  if (present(selem)) then
-    selem(1:nelem) = (/'xxx', 'xxy', 'xxz', 'xyy', 'xyz', 'xzz', 'yyy', 'yyz', 'yzz', 'zzz'/)
-  endif
-
-  ! Hyperpolarizability
-  !  0 {0: 0}
-  !  1 {0: -2*sqrt(15)*xxz/15 - 2*sqrt(15)*yyz/15 - 2*sqrt(15)*zzz/15, 1: sqrt(30)*xxx/15 + sqrt(30)*I*xxy/15 + sqrt(30)*xyy/15 + sqrt(30)*xzz/15 + sqrt(30)*I*yyy/15 + sqrt(30)*I*yzz/15, -1: -sqrt(30)*xxx/15 + sqrt(30)*I*xxy/15 - sqrt(30)*xyy/15 - sqrt(30)*xzz/15 + sqrt(30)*I*yyy/15 + sqrt(30)*I*yzz/15}
-  !  2 {0: 0, 1: 0, 2: 0, -1: 0, -2: 0}
-  !  3 {0: -3*sqrt(10)*xxz/10 - 3*sqrt(10)*yyz/10 + sqrt(10)*zzz/5, 1: sqrt(30)*xxx/20 + sqrt(30)*I*xxy/20 + sqrt(30)*xyy/20 - sqrt(30)*xzz/5 + sqrt(30)*I*yyy/20 - sqrt(30)*I*yzz/5, 2: sqrt(3)*xxz/2 + sqrt(3)*I*xyz - sqrt(3)*yyz/2, 3: -sqrt(2)*xxx/4 - 3*sqrt(2)*I*xxy/4 + 3*sqrt(2)*xyy/4 + sqrt(2)*I*yyy/4, -2: sqrt(3)*xxz/2 - sqrt(3)*I*xyz - sqrt(3)*yyz/2, -3: sqrt(2)*xxx/4 - 3*sqrt(2)*I*xxy/4 - 3*sqrt(2)*xyy/4 + sqrt(2)*I*yyy/4, -1: -sqrt(30)*xxx/20 + sqrt(30)*I*xxy/20 - sqrt(30)*xyy/20 + sqrt(30)*xzz/5 + sqrt(30)*I*yyy/20 - sqrt(30)*I*yzz/5}
-  ! number of elements: 10
-  ! order of Cartesian components: [xxx, xxy, xxz, xyy, xyz, xzz, yyy, yyz, yzz, zzz]
-  ! order of spherical components: [[1, -1], [1, 0], [1, 1], [3, -3], [3, -2], [3, -1], [3, 0], [3, 1], [3, 2], [3, 3]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= -1.0_rk/15.0_rk*sqrt(30.0_rk)
-  tmat_s( 1 , 2 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 1 , 4 )= -1.0_rk/15.0_rk*sqrt(30.0_rk)
-  tmat_s( 1 , 5 )= 0
-  tmat_s( 1 , 6 )= -1.0_rk/15.0_rk*sqrt(30.0_rk)
-  tmat_s( 1 , 7 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 1 , 8 )= 0
-  tmat_s( 1 , 9 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 1 , 10 )= 0
-  tmat_s( 2 , 1 )= 0
-  tmat_s( 2 , 2 )= 0
-  tmat_s( 2 , 3 )= -2.0_rk/15.0_rk*sqrt(15.0_rk)
-  tmat_s( 2 , 4 )= 0
-  tmat_s( 2 , 5 )= 0
-  tmat_s( 2 , 6 )= 0
-  tmat_s( 2 , 7 )= 0
-  tmat_s( 2 , 8 )= -2.0_rk/15.0_rk*sqrt(15.0_rk)
-  tmat_s( 2 , 9 )= 0
-  tmat_s( 2 , 10 )= -2.0_rk/15.0_rk*sqrt(15.0_rk)
-  tmat_s( 3 , 1 )= (1.0_rk/15.0_rk)*sqrt(30.0_rk)
-  tmat_s( 3 , 2 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 3 , 3 )= 0
-  tmat_s( 3 , 4 )= (1.0_rk/15.0_rk)*sqrt(30.0_rk)
-  tmat_s( 3 , 5 )= 0
-  tmat_s( 3 , 6 )= (1.0_rk/15.0_rk)*sqrt(30.0_rk)
-  tmat_s( 3 , 7 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 3 , 8 )= 0
-  tmat_s( 3 , 9 )= cmplx(0,(1.0_rk/15.0_rk)*sqrt(30.0_rk))
-  tmat_s( 3 , 10 )= 0
-  tmat_s( 4 , 1 )= (1.0_rk/4.0_rk)*sqrt(2.0_rk)
-  tmat_s( 4 , 2 )= cmplx(0,-3.0_rk/4.0_rk*sqrt(2.0_rk))
-  tmat_s( 4 , 3 )= 0
-  tmat_s( 4 , 4 )= -3.0_rk/4.0_rk*sqrt(2.0_rk)
-  tmat_s( 4 , 5 )= 0
-  tmat_s( 4 , 6 )= 0
-  tmat_s( 4 , 7 )= cmplx(0,(1.0_rk/4.0_rk)*sqrt(2.0_rk))
-  tmat_s( 4 , 8 )= 0
-  tmat_s( 4 , 9 )= 0
-  tmat_s( 4 , 10 )= 0
-  tmat_s( 5 , 1 )= 0
-  tmat_s( 5 , 2 )= 0
-  tmat_s( 5 , 3 )= (1.0_rk/2.0_rk)*sqrt(3.0_rk)
-  tmat_s( 5 , 4 )= 0
-  tmat_s( 5 , 5 )= cmplx(0,-sqrt(3.0_rk))
-  tmat_s( 5 , 6 )= 0
-  tmat_s( 5 , 7 )= 0
-  tmat_s( 5 , 8 )= -1.0_rk/2.0_rk*sqrt(3.0_rk)
-  tmat_s( 5 , 9 )= 0
-  tmat_s( 5 , 10 )= 0
-  tmat_s( 6 , 1 )= -1.0_rk/20.0_rk*sqrt(30.0_rk)
-  tmat_s( 6 , 2 )= cmplx(0,(1.0_rk/20.0_rk)*sqrt(30.0_rk))
-  tmat_s( 6 , 3 )= 0
-  tmat_s( 6 , 4 )= -1.0_rk/20.0_rk*sqrt(30.0_rk)
-  tmat_s( 6 , 5 )= 0
-  tmat_s( 6 , 6 )= (1.0_rk/5.0_rk)*sqrt(30.0_rk)
-  tmat_s( 6 , 7 )= cmplx(0,(1.0_rk/20.0_rk)*sqrt(30.0_rk))
-  tmat_s( 6 , 8 )= 0
-  tmat_s( 6 , 9 )= cmplx(0,-1.0_rk/5.0_rk*sqrt(30.0_rk))
-  tmat_s( 6 , 10 )= 0
-  tmat_s( 7 , 1 )= 0
-  tmat_s( 7 , 2 )= 0
-  tmat_s( 7 , 3 )= -3.0_rk/10.0_rk*sqrt(10.0_rk)
-  tmat_s( 7 , 4 )= 0
-  tmat_s( 7 , 5 )= 0
-  tmat_s( 7 , 6 )= 0
-  tmat_s( 7 , 7 )= 0
-  tmat_s( 7 , 8 )= -3.0_rk/10.0_rk*sqrt(10.0_rk)
-  tmat_s( 7 , 9 )= 0
-  tmat_s( 7 , 10 )= (1.0_rk/5.0_rk)*sqrt(10.0_rk)
-  tmat_s( 8 , 1 )= (1.0_rk/20.0_rk)*sqrt(30.0_rk)
-  tmat_s( 8 , 2 )= cmplx(0,(1.0_rk/20.0_rk)*sqrt(30.0_rk))
-  tmat_s( 8 , 3 )= 0
-  tmat_s( 8 , 4 )= (1.0_rk/20.0_rk)*sqrt(30.0_rk)
-  tmat_s( 8 , 5 )= 0
-  tmat_s( 8 , 6 )= -1.0_rk/5.0_rk*sqrt(30.0_rk)
-  tmat_s( 8 , 7 )= cmplx(0,(1.0_rk/20.0_rk)*sqrt(30.0_rk))
-  tmat_s( 8 , 8 )= 0
-  tmat_s( 8 , 9 )= cmplx(0,-1.0_rk/5.0_rk*sqrt(30.0_rk))
-  tmat_s( 8 , 10 )= 0
-  tmat_s( 9 , 1 )= 0
-  tmat_s( 9 , 2 )= 0
-  tmat_s( 9 , 3 )= (1.0_rk/2.0_rk)*sqrt(3.0_rk)
-  tmat_s( 9 , 4 )= 0
-  tmat_s( 9 , 5 )= cmplx(0,sqrt(3.0_rk))
-  tmat_s( 9 , 6 )= 0
-  tmat_s( 9 , 7 )= 0
-  tmat_s( 9 , 8 )= -1.0_rk/2.0_rk*sqrt(3.0_rk)
-  tmat_s( 9 , 9 )= 0
-  tmat_s( 9 , 10 )= 0
-  tmat_s( 10 , 1 )= -1.0_rk/4.0_rk*sqrt(2.0_rk)
-  tmat_s( 10 , 2 )= cmplx(0,-3.0_rk/4.0_rk*sqrt(2.0_rk))
-  tmat_s( 10 , 3 )= 0
-  tmat_s( 10 , 4 )= (3.0_rk/4.0_rk)*sqrt(2.0_rk)
-  tmat_s( 10 , 5 )= 0
-  tmat_s( 10 , 6 )= 0
-  tmat_s( 10 , 7 )= cmplx(0,(1.0_rk/4.0_rk)*sqrt(2.0_rk))
-  tmat_s( 10 , 8 )= 0
-  tmat_s( 10 , 9 )= 0
-  tmat_s( 10 , 10 )= 0
-
-  if (present(mf)) then
-    mf(:,:) = 0.0
-    isigma = 0
-    do irrep=1, nirrep
-      do sigma=-rank(irrep), rank(irrep)
-        isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
-      enddo
-    enddo
-  endif
-
-  if (present(lf)) then
-    call pseudoinverse(nelem_s, nelem, tmat_s(1:nelem_s,1:nelem), tmat_x(1:nelem,1:nelem_s))
-    lf(:,:) = 0.0
-    isigma = 0
-    do irrep=1, nirrep
-      do sigma=-rank(irrep), rank(irrep)
-        isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
-      enddo
-    enddo
-    lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
-  endif
-
-end subroutine rotme_beta
-
-
-!###################################################################################################
-
+! Electric dipole moment
 
 subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
 
@@ -587,23 +441,7 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     selem(1:nelem) = (/'x','y','z'/)
   endif
 
-  ! Dipole moment
-  !  0 {0: 0}
-  !  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
-  ! number of elements: 3
-  ! order of Cartesian components: [x, y, z]
-  ! order of spherical components: [[1, -1], [1, 0], [1, 1]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
-  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 2 , 1 )= 0
-  tmat_s( 2 , 2 )= 0
-  tmat_s( 2 , 3 )= 1
-  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
-  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 3 , 3 )= 0
-
+  call cart_to_spher_rank1(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
@@ -611,7 +449,8 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) * (-1)**(k2) * tmat_s(isigma,1:nelem)
+        mf(1:nelem,irrep) = mf(1:nelem,irrep) + threej_symbol(j1,rank(irrep),j2,k1,sigma,-k2) &
+                          * (-1)**(k2) * tmat_s(isigma,1:nelem)
       enddo
     enddo
   endif
@@ -623,7 +462,8 @@ subroutine rotme_mu(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
@@ -841,23 +681,7 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
   coef(1:2,2) = (/cy1,cy2/);  kval(1:2,2) = (/-1,1/)
   coef(1:1,3) = (/cz1/);      kval(1:1,3) = (/0/)
 
-
-  !  0 {0: 0}
-  !  1 {0: z, 1: sqrt(2)*(-x - I*y)/2, -1: sqrt(2)*(x - I*y)/2}
-  ! number of elements: 3
-  ! order of Cartesian components: [x, y, z]
-  ! order of spherical components: [[1, -1], [1, 0], [1, 1]]
-  ! Cartesian to spherical transformation matrix:
-  tmat_s( 1 , 1 )= (1.0_rk/2.0_rk)*sqrt(2.0_rk)
-  tmat_s( 1 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 1 , 3 )= 0
-  tmat_s( 2 , 1 )= 0
-  tmat_s( 2 , 2 )= 0
-  tmat_s( 2 , 3 )= 1
-  tmat_s( 3 , 1 )= -1.0_rk/2.0_rk*sqrt(2.0_rk)
-  tmat_s( 3 , 2 )= cmplx(0,-1.0_rk/2.0_rk*sqrt(2.0_rk))
-  tmat_s( 3 , 3 )= 0
-
+  call cart_to_spher_rank1(tmat_s)
 
   if (present(mf)) then
     mf(:,:) = 0.0
@@ -869,7 +693,8 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
         res = 0
         do ialpha=1, nelem
           do icoef=1, ncoef(ialpha)
-            res(ialpha) = res(ialpha) + coef(icoef,ialpha) * threej_symbol(j1,rank(irrep),j2,k1-kval(icoef,ialpha),sigma,-k2)
+            res(ialpha) = res(ialpha) + coef(icoef,ialpha) &
+                        * threej_symbol(j1,rank(irrep),j2,k1-kval(icoef,ialpha),sigma,-k2)
           enddo
         enddo
 
@@ -885,13 +710,100 @@ subroutine rotme_j(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
     do irrep=1, nirrep
       do sigma=-rank(irrep), rank(irrep)
         isigma = isigma + 1
-        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
+        lf(1:nelem,irrep) = lf(1:nelem,irrep) + tmat_x(1:nelem,isigma) &
+                          * threej_symbol(j1,rank(irrep),j2,m1,sigma,-m2)
       enddo
     enddo
     lf = lf * (-1)**m2 * sqrt(real((2*j1+1)*(2*j2+1),rk))
   endif
 
 end subroutine rotme_j
+
+
+!###################################################################################################
+
+subroutine rotme_Wigner(q1, q2, name, nelem, nirrep, mf, lf, sirrep, selem)
+
+    ! would be better to work with spherical stuff in MFF, but probably too many changes to make
+  
+    integer(ik), intent(in) :: q1(:), q2(:)
+    character(cl), intent(out) :: name
+    integer(ik), intent(inout) :: nelem, nirrep
+    complex(rk), intent(out), optional :: mf(:,:), lf(:,:)
+    character(cl), intent(out), optional :: sirrep(:), selem(:)
+    logical :: first_lf=.true.
+  
+    integer(ik) :: sigma, irrep, j1, j2, k1, k2, m1, m2, nelem_s, i, l, lmin, lmax, index
+    integer(ik), allocatable :: rank(:), component(:)
+  
+    j1 = q1(1)
+    k1 = q1(2)
+    m1 = q1(3)
+    j2 = q2(1)
+    k2 = q2(2)
+    m2 = q2(3)
+  
+    ! [[-l,l] for l in lmin:lmax] ISTs, each with 1 component
+    name = 'Wigner'
+    lmin = 0
+    lmax = 2
+
+    nirrep = 0
+    do l=lmin,lmax !but do I need 0? -- for perturbers prob yes
+        nirrep = nirrep + 2*l+1
+    enddo
+
+    ! 0 -1  0  1 -2 -1  0  1  2 -3 -2 -1  0  1  2  3 ...
+    allocate(rank(nirrep), component(nirrep))
+    do l=lmin,lmax
+      index = l*l - lmin*lmin
+      rank     (index+1 : index + 2*l+1) = l
+      component(index+1 : index + 2*l+1) = [(i,i=-l,l)]
+    enddo
+    !
+    nelem = 1  
+    nelem_s = 1
+    !                                               (/'D^0_{*0}',&
+                                        ! 'D^1_{*-1}','D^1_{*0}','D^1_{*1}',&
+                            ! 'D^2_{*-2}','D^2_{*-1}','D^2_{*0}','D^2_{*1}','D^2_{*2}',&
+                ! 'D^3_{*-3}','D^3_{*-2}','D^3_{*-1}','D^3_{*0}','D^3_{*1}','D^3_{*2}','D^3_{*3}',&
+    ! 'D^4_{*-4}','D^4_{*-3}','D^4_{*-2}','D^4_{*-1}','D^4_{*0}','D^4_{*1}','D^4_{*2}','D^4_{*3}','D^4_{*4}'/)
+
+    ! tens%sirrep(tens%nirrep)
+    if (present(sirrep)) then
+      do i=1, size(sirrep)
+        write(sirrep(i), "(A,I1,A,I0,A)") "D^", rank(i), "_{*",component(i),"}"
+      enddo
+    endif
+  
+    ! tens%selem(tens%nelem)
+    if (present(selem)) then
+      do i=1, size(selem)
+        write(selem(i), "(A)") "D^l_{*m}"
+      enddo
+    endif
+
+    if (present(mf)) then
+      mf(:,:) = 0.0
+      ! now with only 1 component, and my components are "irreps" now
+      do irrep=1, nirrep
+        mf(1,irrep) = threej_symbol(j1,rank(irrep),j2,k1,component(irrep),-k2) * (-1)**(k2) 
+      enddo
+    endif
+  
+    if (present(lf)) then
+      if (first_lf) then
+        write(out,"(/A/)") 'M-tensor is not required in MCRB.'
+        first_lf = .false.
+      endif
+      lf(:,:) = 0.0
+    endif
+
+    deallocate(rank, component)
+
+  end subroutine rotme_Wigner
+
+!###################################################################################################
 
 
 !###################################################################################################
@@ -903,8 +815,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   integer(ik), intent(in) :: jmin, jmax, dj
   logical, optional, intent(in) :: verbose
 
-  integer(ik) :: info, j, ktau, tau_range(2), tau, nimg_j, j1, j2, nktau1, nktau2, nimg_k, ktau1, ktau2, ncoefs1, ncoefs2, icoef, jcoef, nimg_elem, &!
-                 irrep, ielem, dk_max, dj_max, k, k1, k2, tau1, tau2, nelem, nirrep, dm_max, m1, m2, m1min, m1max, m2min, m2max, mmin, mmax, &!
+  integer(ik) :: info, j, ktau, tau_range(2), tau, nimg_j, j1, j2, nktau1, nktau2, nimg_k, ktau1, ktau2, ncoefs1,&
+                 ncoefs2, icoef, jcoef, nimg_elem, irrep, ielem, dk_max, dj_max, k, k1, k2, tau1, tau2, nelem, &
+                 nirrep, dm_max, m1, m2, m1min, m1max, m2min, m2max, mmin, mmax, &!
                  nimg_elem_lf(maxnelem), nimg_k_lf(maxnelem), nimg_j_lf(maxnelem)
   real(rk) :: zero_tol
   complex(rk) :: coefs1(2), coefs2(2), me(maxnelem,maxnelem), dens, res(maxnelem,maxnelem)
@@ -912,7 +825,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
              img_k_lf((2*jmax+1)**2,maxnelem), img_j_lf((jmax+1)**2,maxnelem)
   character(cl) :: name
 
-  write(out, '(///a)') 'Compute rotational matrix elements of Cartesian tensor operator (rotme_cart_tens/init_rotme_cart_tens_type)'
+  write(out, '(///a,a)') 'Compute rotational matrix elements of Cartesian tensor operator',&
+                       ' (rotme_cart_tens/init_rotme_cart_tens_type)'
 
   verbose_ = .false.
   if (present(verbose)) verbose_ = verbose
@@ -928,13 +842,15 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   tens%nelem = nelem
   tens%nirrep = nirrep
 
-  write(out, '(/1x,a,1x,a/1x,a,1x,i4/1x,a,1x,i4)') 'tensor:', tens%name, 'no. Cartesian components:', tens%nelem, 'no. irreps:', tens%nirrep
+  write(out, '(/1x,a,1x,a/1x,a,1x,i4/1x,a,1x,i4)') 'tensor:', tens%name, 'no. Cartesian components:', tens%nelem, &
+             'no. irreps:', tens%nirrep
 
   if (allocated(tens%sirrep)) deallocate(tens%sirrep)
   if (allocated(tens%selem)) deallocate(tens%selem)
   allocate(tens%sirrep(tens%nirrep),tens%selem(tens%nelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%sirrep(tens%nirrep),tens%selem(tens%nelem)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate',&
+               ' tens%sirrep(tens%nirrep),tens%selem(tens%nelem)', &!
     'tens%nelem, tens%nirrep =', tens%nelem, tens%nirrep
     stop 'STOP'
   endif
@@ -952,7 +868,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%ktau_ind)) deallocate(tens%ktau_ind)
   allocate( tens%nktau(jmin:jmax), tens%ktau(2,2*jmax+1,jmin:jmax), tens%ktau_ind(0:jmax,0:1), stat=info )
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%nktau(jmin:jmax), tens%ktau(2,2*jmax+1,jmin:jmax), , tens%ktau_ind(0:jmax,0:1)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%nktau(jmin:jmax),',&
+    ' tens%ktau(2,2*jmax+1,jmin:jmax), , tens%ktau_ind(0:jmax,0:1)', &!
     'jmin, jmax =', jmin, jmax
     stop 'STOP'
   endif
@@ -993,7 +910,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%kmat)) deallocate(tens%kmat)
   allocate(tens%kmat(jmin:jmax,jmin:jmax), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%kmat(jmin:jmax,jmin:jmax)', &!
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate',&
+    ' tens%kmat(jmin:jmax,jmin:jmax)', &!
     'jmin, jmax =', jmin, jmax
     stop 'STOP'
   endif
@@ -1017,7 +935,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
       if (allocated(tens%kmat(j1,j2)%me)) deallocate(tens%kmat(j1,j2)%me)
       allocate(tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2), stat=info)
       if (info/=0) then
-        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2)', &!
+        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+                   'tens%kmat(j1,j2)%me(tens%nelem,tens%nirrep,nktau1,nktau2)', &!
         'j1, j2, tens%nelem, tens%nirrep, nktau1, nktau2 =', j1, j2, tens%nelem, tens%nirrep, nktau1, nktau2
         stop 'STOP'
       endif
@@ -1065,8 +984,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif ( abs(real(me(ielem,irrep),rk))<=zero_tol .and. abs(aimag(me(ielem,irrep)))<=zero_tol ) then
                 cycle
               else
-                write(out, '(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of K-tensor is a complex-valued number'
-                write(out, '(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
+                write(out,'(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of K-tensor is a complex-valued number'
+                write(out,'(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
                 stop 'STOP'
               endif
 
@@ -1092,7 +1011,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
             elseif (all(.not.img_elem(1:nimg_elem))) then
               img_k(nimg_k) = .false.
             else
-              write(out, '(/a/a,6(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements', &!
+              write(out, '(/a/a,6(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has ',&
+                         'mixed real- and imaginary-valued elements', &!
               'j1,k1,tau1/j2,k2,tau2 =', j1,k1,tau1, j2,k2,tau2
               stop 'STOP'
             endif
@@ -1113,8 +1033,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
         elseif (all(.not.img_k(1:nimg_k))) then
           img_j(nimg_j) = .false.
         else
-          write(out, '(/a/a,2(1x,i3))') &!
-          'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements for different pairs of k,tau-quanta', &!
+          write(out, '(/a,a/a,2(1x,i3))') &!
+          'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&
+          ' for different pairs of k,tau-quanta', &!
           ' j1/j2 =', j1, j2
           stop 'STOP'
         endif
@@ -1128,8 +1049,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   elseif (all(.not.img_j(1:nimg_j))) then
     tens%kmat_cmplx = 0 ! real numbers
   else
-    write(out, '(/a)') &!
-    'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements for different pairs of J-quanta'
+    write(out, '(/a,a)') &!
+    'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&
+    ' for different pairs of J-quanta'
     stop 'STOP'
   endif
 
@@ -1143,8 +1065,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
   if (allocated(tens%mmat_cmplx)) deallocate(tens%mmat_cmplx)
   allocate(tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem)', &!
-    'jmin, jmax, tens%nelem =', jmin, jmax, tens%nelem
+    write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+               'tens%mmat(jmin:jmax,jmin:jmax), tens%mmat_cmplx(tens%nelem)', &!
+               'jmin, jmax, tens%nelem =', jmin, jmax, tens%nelem
     stop 'STOP'
   endif
 
@@ -1169,7 +1092,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
       if (allocated(tens%mmat(j1,j2)%me)) deallocate(tens%mmat(j1,j2)%me)
       allocate(tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max), stat=info)
       if (info/=0) then
-        write(out, '(/a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max)', &!
+        write(out, '(/a,a/a,10(1x,i6))') 'rotme_cart_tens/init_rotme_cart_tens_type error: failed to allocate ',&
+                   'tens%mmat(j1,j2)%me(tens%nirrep,tens%nelem,m1min:m1max,m2min:m2max)', &!
         'j1, j2, tens%nirrep, tens%nelem, m1min, m1max, m2min, m2max =', j1, j2, tens%nirrep, tens%nelem, m1min, m1max, m2min, m2max
         stop 'STOP'
       endif
@@ -1203,7 +1127,7 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif ( abs(real(me(ielem,irrep),rk))<=zero_tol .and. abs(aimag(me(ielem,irrep)))<=zero_tol ) then
                 cycle
               else
-                write(out, '(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of M-tensor is a complex-valued number'
+                write(out,'(/a)') 'rotme_cart_tens/init_rotme_cart_tens_type error: element of M-tensor is a complex-valued number'
                 write(out, '(1x,a,2(1x,i3),1x,a,2(1x,es16.8),1x,a)') 'ielem/irrep/value:', ielem,irrep,'(', me(ielem,irrep), 'i)'
                 stop 'STOP'
               endif
@@ -1229,8 +1153,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               elseif (all(.not.img_elem_lf(1:nimg_elem_lf(ielem),ielem))) then
                 img_k_lf(nimg_k_lf(ielem),ielem) = .false.
               else
-                write(out, '(/a/a,4(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements', &!
-                'j1,m1/j2,m2 =', j1,m1, j2,m2
+                write(out, '(/a,a/a,4(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- ',&
+                      'and imaginary-valued elements', &!
+                      'j1,m1/j2,m2 =', j1,m1, j2,m2
                 stop 'STOP'
               endif
             endif
@@ -1253,8 +1178,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
           elseif (all(.not.img_k_lf(1:nimg_k_lf(ielem),ielem))) then
             img_j_lf(nimg_j_lf(ielem),ielem) = .false.
           else
-            write(out, '(/a/a,2(1x,i3))') &!
-            'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements for different pairs of m-quanta', &!
+            write(out, '(/a,a/a,2(1x,i3))') &!
+            'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements ',&
+            'for different pairs of m-quanta', &!
             'j1/j2 =', j1, j2
             stop 'STOP'
           endif
@@ -1270,8 +1196,9 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
     elseif (all(.not.img_j_lf(1:nimg_j_lf(ielem),ielem))) then
       tens%mmat_cmplx(ielem) = 0
     else
-      write(out, '(/a)') &!
-      'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued elements for different pairs of J-quanta'
+      write(out, '(/a,a)') &!
+      'rotme_cart_tens/init_rotme_cart_tens_type error: M-tensor has mixed real- and imaginary-valued ',&
+      'elements for different pairs of J-quanta'
       stop 'STOP'
     endif
   enddo
@@ -1316,7 +1243,8 @@ subroutine wang_jktau_coefs(tens, j, k, tau, ncoefs, coefs)
       ncoefs = 2
       if (present(coefs)) coefs = (/ cmplx(fac1,0.0_rk,kind=rk), cmplx(fac2,0.0_rk,kind=rk) /)
     else
-      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, 'is less than zero (expected >=0)'
+      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k,&
+                 'is less than zero (expected >=0)'
       stop 'STOP'
     endif
 
@@ -1329,13 +1257,15 @@ subroutine wang_jktau_coefs(tens, j, k, tau, ncoefs, coefs)
       ncoefs = 2
       if (present(coefs)) coefs = (/ cmplx(0.0_rk,fac1,kind=rk), cmplx(0.0_rk,-fac2,kind=rk) /)
     else
-      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, 'is less than zero (expected >=0)'
+      write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "k" =', k, &
+                 'is less than zero (expected >=0)'
       stop 'STOP'
     endif
 
   else
 
-    write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "tau" =', tau, '(expected 0 or 1)'
+    write(out, '(/a,1x,i3,1x,a)') 'rotme_cart_tens/wang_jktau_coefs error: rotational quantum number "tau" =', tau,&
+               '(expected 0 or 1)'
     stop 'STOP'
 
   endif
@@ -1367,8 +1297,9 @@ subroutine pseudoinverse(nrows, ncols, mat, invmat, tol_)
 
   allocate(matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows), matvt(ncols,ncols), mat_d(ncols,nrows), stat=info)
   if (info/=0) then
-    write(out, '(/a/a,10(1x,i6))') &!
-    'rotbas/pseudoinverse error: failed to allocate matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows), matvt(ncols,ncols), mat_d(ncols,nrows)', &!
+    write(out, '(/a,a/a,10(1x,i6))') &!
+    'rotbas/pseudoinverse error: failed to allocate matt(nrows,ncols), sv(min(ncols,nrows)), matu(nrows,nrows),',&
+    ' matvt(ncols,ncols), mat_d(ncols,nrows)', &!
     'ncols, nrows =', ncols, nrows
     stop 'STOP'
   endif
@@ -1452,6 +1383,5 @@ function threej_symbol(j1,j2,j3, m1,m2,m3) result(f)
 #endif
 
 end function threej_symbol
-
 
 end module rotme_cart_tens

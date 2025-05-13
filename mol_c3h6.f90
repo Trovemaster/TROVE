@@ -1366,7 +1366,7 @@ module mol_c3h6
         !
         write(out, '(/a,1x,a,1x,a)') &
         'ML_rotsymmetry_C2H6 error: symmetry =', trim(molec%symmetry), 'is unknown'
-        stop 'ML_rotsymmetry_C2H6 error: bad symmetry type'
+        stop 'ML_rotsymmetry_C3H6 error: bad symmetry type'
         !
       case('C','C(M)')
         !
@@ -1385,7 +1385,7 @@ module mol_c3h6
       !
     end select
     !
-    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C2H6/end'
+    if (verbose>=5) write(out, '(/a)') 'ML_rotsymmetry_C3H6/end'
     !
   end subroutine ML_rotsymmetry_C3H6
 

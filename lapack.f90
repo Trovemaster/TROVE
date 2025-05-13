@@ -87,12 +87,12 @@ module lapack
   end subroutine lapack_cgelss
 
   subroutine lapack_zgelss(a,b)
-    double complex, intent(inout) :: a(:,:)
-    double complex, intent(inout) :: b(:,:)
+    complex(rk), intent(inout) :: a(:,:)
+    complex(rk), intent(inout) :: b(:,:)
 
     external zgelss
     double precision       :: s    (   min(size(a,dim=1),size(a,dim=2)))
-    double complex         :: work (50*max(size(a,dim=1),size(a,dim=2)))
+    complex(rk)            :: work (50*max(size(a,dim=1),size(a,dim=2)))
     double precision       :: rwork( 5*min(size(a,dim=1),size(a,dim=2)))
     integer                :: rank, info
     integer                :: na1, na2, nb1, nb2
@@ -168,8 +168,7 @@ module lapack
     !
     tol = singtol
     !
-    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s,singtol, rank, work, -1, info)
+    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s,singtol, rank, work, -1, info)
     !
     iw = int(work(1))
     !
@@ -280,11 +279,11 @@ module lapack
   end subroutine lapack_cheev
 
   subroutine lapack_zheev(h,e)
-    double complex, intent(inout) :: h(:,:)  ! In:  Hermitian matrix to be diagonalized
+    complex(rk), intent(inout) :: h(:,:)  ! In:  Hermitian matrix to be diagonalized
                                              ! Out: Eigenvectors
     double precision, intent(out)   :: e(:)  ! Out: Eigenvalues
 
-    double complex   :: work(50*size(h,dim=1))
+    complex(rk)      :: work(50*size(h,dim=1))
     double precision :: rwork(3*size(h,dim=1))
     integer          :: info
     integer          :: nh1, nh2
@@ -531,26 +530,43 @@ module lapack
                                                ! Out: Eigenvectors
     double precision, intent(out)   :: e(:)    ! Out: Eigenvalues
 
-    integer          :: info
-    integer          :: nh1, nh2,liwork,lwork
+    integer(ik)          :: info
+    integer(ik)          :: nh1, nh2,liwork,lwork
+    integer(hik)         :: lwork_hik
     double precision,allocatable :: work(:)
+    real(rk) :: safe_max
     integer,allocatable :: iwork(:)
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
     !
-    lwork  = 2*nh1**2+6*nh1+10
+    safe_max = huge(1_4)*0.9_rk
+    !
+    lwork_hik  = 2*nh1**2+6*nh1+10
+    !
+    if (lwork_hik>safe_max) then 
+       write(out,"('lapack_dsyevd: the size of work= ',i22,' is too big for syevd, use dsyevd_ilp')") lwork_hik
+       stop 'lapack_dsyevd: the size of work= is too big for syevd, use dsyevd_ilp' 
+    endif
+    !
+    lwork = lwork_hik
+    !
     liwork = 3*nh1+10
     !
     allocate(work(lwork),stat=info)
-    call ArrayStart('lapack_ssyevd-arrays-work',info,size(work),kind(work))
+    call ArrayStart('lapack_syevd-arrays-work',info,size(work),kind(work))
     allocate(iwork(liwork),stat=info)
-    call ArrayStart('lapack_ssyevd-arrays-work',info,size(iwork),kind(iwork))
+    call ArrayStart('lapack_syevd-arrays-work',info,size(iwork),kind(iwork))
     !
     if (info/=0) then
       write (out,"(' dsyevd returned allocation work failed',i8)") info
       stop 'lapack_dsyevd - allocation work failed'
     end if
     call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,iwork,-1,info)
+    !
+    if (info/=0) then
+      write (out,"(' dsyevd-1 returned ',i8)") info
+      stop 'lapack_dsyevd-1 - dsyev failed'
+    end if
     !
     if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
       !
@@ -559,15 +575,16 @@ module lapack
       !
       deallocate(work,iwork)
       !
-      allocate(work(lwork),iwork(liwork))
+      call ArrayStop('lapack_syevd-arrays-work')
       !
-      call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
+      allocate(work(lwork),iwork(liwork),stat=info)
       !
-    else
-      !
-      call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
+      call ArrayStart('lapack_syevd-arrays-work',info,size(work),kind(work))
+      call ArrayStart('lapack_syevd-arrays-work',info,size(iwork),kind(iwork))
       !
     endif 
+    !
+    call dsyevd('V','L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,iwork,liwork,info)
     !
     if (info/=0) then
       write (out,"(' dsyevd returned ',i8)") info
@@ -575,7 +592,7 @@ module lapack
     end if
     !
     deallocate(work,iwork)
-    call ArrayStop('lapack_ssyevd-arrays-work')
+    call ArrayStop('lapack_syevd-arrays-work')
     !
   end subroutine lapack_dsyevd
 
@@ -1535,9 +1552,9 @@ module lapack
       integer               :: k,istart,iend,dimen,m,kend,iprev,inext,nx
       double precision,external    :: ddot
       integer,parameter  :: MPI_DOUBLE_PRECISION = 17
-	  !
-	  myid = 1
-	  nprow = 1
+      !
+      myid = 1
+      nprow = 1
       !
 #if (blacs_ > 0)
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
@@ -1769,7 +1786,8 @@ module lapack
 !     | Executable Statements |
 !     %-----------------------%
 !
-
+       nprocs = 1
+       !
 #if (blacs_ > 0)
         call BLACS_PINFO( iam, nprocs )
         blacs_or_mpi = 'BLACS'
@@ -1885,7 +1903,7 @@ module lapack
 !     Get default system context, and define grid
 !
       !
-	  myprow = 1 ; mypcol = 1 ; myid = 1
+      myprow = 1 ; mypcol = 1 ; myid = 1
 #if (blacs_ > 0)
         call BLACS_GET( 0, 0, comm )
         call BLACS_GRIDINIT( comm, 'Row', nprow, npcol )
@@ -1963,7 +1981,7 @@ module lapack
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-#elseif (arpack_>0)
+#elif (arpack_>0)
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &

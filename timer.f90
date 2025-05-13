@@ -23,7 +23,7 @@ module timer
   private
   public TimerStart, TimerStop, TimerReport, TimerProbe, IOStart, IOStop , ArrayStart, ArrayStop, ArrayMinus, MemoryReport
   public memory_limit,maxmemory,memory_now
-  public to_upper, to_lower, tokenize
+  public to_upper, to_lower, tokenize, get_real_time
   !
   integer, parameter :: trk        = selected_real_kind(12)
   integer, parameter :: table_size = 10000 ! Max number of entries to track
@@ -587,7 +587,9 @@ module timer
       !
       if (memory_now>memory_limit) then 
         !
-        write(out,"('Run out of memory: check your input memory')")
+        write(out,"(/'Run out of memory: check your input memory')")
+        write(out,"('Trying to allocate array ',a)") name
+        write(out,"('Array dimension = ',i0,' array size =  ',f20.2,' Gb')") hsize_,size_
         call MemoryReport
         stop 'Run out of memory'
         !

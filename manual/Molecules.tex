@@ -1,0 +1,446 @@
+
+\chapter{Molecules}
+\label{chap:molecules}
+
+In this chapter a list is given of all of the molecules which have been studied using TROVE. 
+This serves two purposes: as a
+summary of the development of TROVE over the years and as a reference for adding further molecules. As discussed in Chapter 
+\ref{chap:newmol}, setting up a new molecule in TROVE is fairly straightforward if a molecule of the same symmetry and 
+structure has already been implemented. 
+
+The list of molecules are given in roughly chronological order with the relevant references. Details are given of the 
+symmetry, basis sets used, coordinates used, the analytical forms of the PES and DMS and the frequency ranges of 
+linelists if they were calculated.
+
+
+
+\section{Hydrogen sulfide, H$_2$S}
+
+Symmetry: C$_{2V}$
+
+Coordinates: Linearized coordinates. $\xi_1 = r_1^l - r_e$, $\xi_2 = r_2^l - r_e$ and $\xi = \alpha^l - \alpha_e$
+
+Coordinate to expand kinetic energy: $g_n = \xi_n (n=1,2,3)$
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a(r_1^l - r_e))$ $(n = 1, 2)$, $f_3 = \cos(\alpha^l) - \cos(\alpha_e)$
+
+Primitive basis set: Numerov generated for all coordinates
+
+Kinetic energy expansion order: 8
+
+Potential expansion order: 10
+
+Polyad scheme: $P = 2(v_1 + v_2) + v_3 \leq 20$
+
+Potential energy function: Morbid expansion of published potential.
+
+Dipole moment surface expansion: N/A
+
+Results: $J = 0$ vibrational energy levels up to 8000 cm$^-1$. 
+
+Notes: Usually TROVE would not be used for a triatomic molecule as programs exist which have the `exact' triatomic 
+Hamiltonian (DVR3D for example \cite{DVR3D} ). This molecule was used as a test case to demonstrate TROVE's capabilities in the
+original TROVE paper. The calculation was also repeated using HBJ theory, taking the bending coordinate to be the
+large amplitude coordinate and using normal coordinates.
+
+Reference: \cite{TROVE}
+
+
+\section{Methyl cation, CH$_3^+$}
+
+
+Symmetry: D$_{3H}$
+
+Coordinates: Linearized coordinates. $\xi_k = r_k^l - r_e$ $k = 1,2,3$ for vibrational coordinates,
+two symmetrized bending variables $\xi_4 = S_{4a} = \frac{1}{\sqrt{6}} (2 \alpha_1^l - \alpha_2^l - \alpha_3^l)$ and 
+$\xi_5 = S_{4b} = \frac{1}{\sqrt{2}}(\alpha_2^l - \alpha_3^l)$ and an out of plane vibration coordinate
+$\xi_6 = \rho = \frac{\mathbf{r_1} \cdot (\mathbf{r_2} \times \mathbf{r_3} )} {r_{1}r_{2}r_{3}} $. See paper for details.
+
+
+Coordinate to expand kinetic energy: $g_n = \xi_n (n=1-6)$
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a(\xi_n))$ $(n = 1, 3)$ for stretching coordinates, 
+$f_4 = S_{4a}$, $f_5 = S_{4b}$ for two bending modes and $f_6 = \rho$. 
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 6
+
+Polyad scheme: $P = 1.5(v_1 + v_2 + v_3) + v_4 + v_5 + v_6 \leq 18$
+
+Potential energy function: Published potential.
+
+Dipole moment surface expansion: N/A
+
+Results: $J = 0$ vibrational energy levels up to 6000 cm$^-1$. 
+
+Notes: This was also used as a test example in the original TROVE paper.
+The coordinate scheme employed is similar to that for Ammonia (see below).
+
+Reference: \cite{TROVE}
+
+
+
+\section{Carbon monoxide, CO}
+
+
+Symmetry: C$_{\infty V}$
+
+Coordinates: r, bond coordinate between C and O.
+
+
+Coordinate to expand kinetic energy: $g_n = r$
+
+Coordinates to expand Potential energy: Analytical and Morse (See paper). 
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 
+
+Potential expansion order: 
+
+Polyad scheme: 
+
+Potential energy function: Published empirical PEC. (REF)
+
+Dipole moment surface expansion: N/A
+
+Results: $J = 0$ vibrational energy levels up to 43000 cm$^-1$ (corresponding to $v = 22$). 
+
+Notes: This was also used as a test example in the original TROVE paper. For diatomic molecules specialist programs
+are of course recommended such as LEVEL \cite{Level} or Duo \cite{Duo}. CO, like H$_2$, CO is included only as a test case.
+
+Reference: \cite{TROVE}
+
+
+\section{Ammonia, NH$_3$}
+
+Symmetry: C$_{3V}$
+
+Coordinates: Similar to those for CH$_3^+$ but for sixth coordinate, $xi_6 = \sin \rho_e - \sin \rho$ where 
+$\sin \rho = \frac{2}{\sqrt{3}} \sin\left[ (\alpha_1 + \alpha_2 + \alpha_3)/6) \right]$. 
+
+Coordinate to expand kinetic energy: $g_n = \xi_n (n=1-6)$
+
+Coordinates to expand Potential energy: Morse for stretching coordinates, angles themselves for bends.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: For BYTe line list it is $P = 2(v_1 + v_2 + v_3) + v_4 + v_5 + \frac{v_6}{2} \leq 14$
+
+Potential energy function: Refinement of published potential \cite{jt466}.
+
+Dipole moment surface expansion: For BYTe line list, an \textit{ab initio} DMS was computed at the CCSD(T)/aug-cc-pVQZ level of
+ theory \cite{jt466}.
+
+Results:  Hot line list called BYTe. BYTe is applicable for temperatures up to
+1500 K. It Comprises of 1138 323 351 transitions in the frequency range from 0 to 12 000 wavenumbers,
+constructed from 1373 897 energy levels below 18 000 wavenumbers having J values $\le$ 36. 
+
+Notes: Apart from BYTe, ammonia was used to develop TROVE itself, specifically for the J=0 contraction and refinement methods.
+The BYTe line list remains important for astronomical applications but will also soon be joined by an even more accurate
+line list from the work of Coles \textit{et al.} \cite{jtNH3PES,jtNH3DMS}
+
+Reference: \cite{jt466,jt500,jt503}
+
+
+\section{Methane, CH$_4$}
+
+Symmetry: T$_d$
+
+Coordinates: Linearised coordinates. $\xi_i = (r_i - r_e) \exp(-\beta(r_i - r_e)^2)$ $i = 1,4$ for stretching coordinates.
+ $\xi_5 = \frac{1}{12}(2\alpha_{12} - \alpha_{13} - \alpha_{14} - \alpha_{23} - \alpha_{24} + 2\alpha_{34}$),
+ $\xi_6 = \frac{1}{2}(\alpha_{13} - \alpha_{14} - \alpha_{24} + \alpha_{24})$, $\xi_7 = \frac{1}{\sqrt{2}}(\alpha_{24} 
+ - \alpha_{23})$, $\xi_8 = \frac{1}{\sqrt{2}}(\alpha_{23} - \alpha_{14})$ and $\xi_9 = \frac{1}{\sqrt{2}}(\alpha_{34}
+ - \alpha_{12})$. Where $\alpha_{ij}$ is the interbond angles. Also complimented by redundancy conditions (see paper).   
+
+Coordinate to expand kinetic energy: $g_n = \xi_n (n=1-9)$, linearised coordinates.
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a(\xi_i^l))$ $(i = 1, 4)$ for stretching coordinates and
+$f_n = \xi_i^l$ $(i = 5, 9)$ for bending coordinates.
+
+Primitive basis set: Numerov generated for stretching coordinates, harmonic oscillator basis for bends.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(v_1 + v_2 + v_3 + v_4) + v_5 + v_6 + v_7 + v_8 + v_9 \leq 20$ with caveats, see paper.
+
+Potential energy function:  CCSD(T)-F12c/aug-cc-pVQZ-F12 + DK relativistic corrections \textit{ab initio} data fit using 
+polynomial of symmetrised coordinates given above. Refined using experimental $J = 0, 4$ data from HITRAN 2008 database.
+
+Dipole moment surface expansion: CCSD(T)-F12c/aug-cc-pVTZ-F12 \textit{ab initio} points fit using polynomial of 
+symmetrised coordinates which is then expressed in symmetrised molecular bond (SMB) representation. 
+
+Results: 10to10 linelist complete for up to 1500 K. All states up to 18000 cm$^{-1}$ included, up to $J = 39$.
+
+Notes: This describes the 10to10 calculation which was based on a previous calculation for lower frequencies. The high
+symmetry of methane meant special symmetry considerations are required. Details of this are given in the papers. 
+
+Reference: \cite{jt555,jt564}
+
+\section{Sulfur trioxide, SO$_3$}
+
+Symmetry: D$_{3h}$
+
+Coordinates: As for ammonia.
+
+Coordinate to expand kinetic energy: As for ammonia.
+
+Coordinates to expand Potential energy: As for ammonia.
+
+Primitive basis set: As for ammonia.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + \frac{n_6}{2} \leq 18 $
+
+Potential energy function: CCSD(T)-F12b/aug-cc-pVTZ-F12 + scalar relativistic corrections and DBOCs \textit{ab initio}
+energies fitted to polynomial expansion of symmetrised coordinates. Refined using $J \leq 5$ experimental energies.
+
+Dipole moment surface expansion: \textit{Ab initio} calculations at the same levels as for PES. Fitted using SMB 
+representation.
+
+Results: Linelist complete up to 5000 cm$^{-1}$ for temperatures up to 800 K.
+
+Notes: As SO$_3$ has a large moment of inertia, many $J$s need to be included. Up to $J = 130$ was included for 
+a complete linelist at 800 K. For calculating $J$ this large, special procedures were used as discussed in the paper.
+
+Reference: \cite{jt554,jt641}
+
+
+\section{Hydrogen peroxide, H$_2$O$_2$}
+
+Symmetry: D$_{2h}$. This is not the same as the point group of the molecule which is C$_2$.
+
+Coordinates: $\xi_i = (x_i^l - x_i^e)$ where $i = 1, 6$ are $R$, $r_1$, $r_2$, $\theta_1$, $\theta
+_2$ and $\tau$. 
+
+Coordinate to expand kinetic energy: $g_n = \xi_n (n=1-6)$, linearised coordinates
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a_i(\xi_i^l))$ $(i = 1, 3)$ for stretches and 
+$f_n = \xi_i^l$ $(i = 4, 6)$ for bending coordinates. 
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 4n_1 + 8(n_2 + n_3 + n_4 + n_5) +n_6 \leq 42$
+
+Potential energy function: \textit{Ab initio} energies using CCSD(T)-F12b/aug-cc-pVNZ for N up to 7 
+for different parts of surface including DBO, relativistic, core-valence corrections fit to polynomial function 
+of coordinates. Refined to experimental energies for $J \leq 4$.
+
+Dipole moment surface expansion:  CCSD(T)-F12b/aug-cc-pV(T+d)Z fittied to polynomial function.
+
+
+Results:  Linelist complete up to 6000 cm$^{-1}$. Extended linelist up to 8000 cm$^{-1}$ with reduced completeness
+at high temperatures.
+
+Notes: The $\tau$ coordinate for this molecule adds complications to expansion of dipole, etc. See papers for details.
+
+Reference: \cite{jt553,jt620,jt638}
+
+
+
+\section{Phosphine, PH$_3$}
+
+Symmetry: C$_{3V}$
+
+Coordinates: As for ammonia
+
+Coordinate to expand kinetic energy: As for ammonia
+
+Coordinates to expand Potential energy: As for ammonia
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(s_1 + s_2 + s_3) + b_1 + b_2 + b_3 \leq 16$ plus some additions, see paper.
+
+Potential energy function:  CCSD(T)/aug-cc-pV(Q+d)Z) \textit{ab initio} energies fitted to polynomial expansion. 
+Refined using HITRAN data up to $J = 4$.
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ \textit{ab initio} dipole data fitted to polynomial expansion.
+
+
+Results: SAlTY linelist, complete for up to 1500 K. All states up to 18000 cm$^{-1}$ included, up to $J = 46$
+
+Notes: For PH$_3$, tunneling splitting via the umbrella motion may exist (as for NH$_3$) may exist \cite{jt658} but has
+yet to be detected. 
+
+Reference: \cite{jt556,jt592}
+
+
+
+\section{Formaldehyde, H$_2$CO}
+
+Symmetry: C$_{2V}$
+
+Coordinates: $\xi_i = (x_i^l - x_i^e)$ where $i = 1, 6$ are $r_1^l$, $r_2^l$, $r_3^l$, $\theta_1^l$, $\theta_2^l$ and $\tau$.
+
+Coordinate to expand kinetic energy: $g_n = \xi_n$, linearised.
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a_i(\xi_i^l))$ $(i = 1, 3)$ for stretches, $f_n = xi_i$ $(i = 4, 6)$
+for bends.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(n_2 + n_3) + n_1 + n_4 + n_5 \leq 16$ plus some additions, see paper.
+
+Potential energy function:  CCSD(T)/aug-cc-pVQZ) \textit{ab initio} energies fitted to polynomial expansion. 
+Refined using HITRAN data up to $J = 5$.
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ \textit{ab initio} dipole data fitted to polynomial expansion.
+
+Results: Linelist for temperatures up to 1500 K for transitions up to 10,000 cm$^{-1}$ and $J = 70$.
+
+Notes: 
+
+Reference: \cite{jt597}
+
+
+\section{Silane, SiH$_4$}
+
+Symmetry: T$_d$
+
+Coordinates: Linearised coordinates. As for methane.
+
+Coordinate to expand kinetic energy: As for methane but with curvilinear coordinates.
+
+Coordinates to expand Potential energy: As for methane.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(n_1 + n_2 n_3 + n_4) + n_5 + n_6 + n_7 + n_8 + n_9 \leq 12$ plus some additions, see paper.
+
+Potential energy function: CBS-F12 PES including extensive corrections, see paper. Fitted to polynomial expansion. 
+Refined using 1452 experimental energies up to $J = 6$.
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVT(+d for Si)Z \textit{ab initio} dipole data fitted to polynomial expansion.
+
+Results: Linelist for temperatures up to 1200 K for transitions up to 5000 cm$^{-1}$ and $J = 42$.
+
+Notes: 
+
+Reference: \cite{jt701}
+
+
+
+\section{Methyl chloride, CH$_3$Cl}
+
+Symmetry: C$_{3V}$
+
+Coordinates:  $\xi_k = r_k^l - r_e$ $k = 1,2,3,4$ for vibrational coordinates, 
+$\xi_i = \beta_i - \beta_e$ $i = 5,6,7$ for bending coordinates, $\xi_8 = \frac{1}{\sqrt{6}} (2 \tau_{23} -
+ \tau_{13} - \tau_{12})$ and $\xi_9 = \frac{1}{2}(\tau_{13} - \tau_{12})$.
+
+Coordinate to expand kinetic energy: $g_n = \xi_n$, curvilinear coordinates used.
+
+Coordinates to expand Potential energy: $f_n = 1 - \exp(-a_i(\xi_i^l))$ $(i = 1, 4)$ for stretches and 
+$f_n = \xi_i^l$ $(i = 4, 9)$ for bending coordinates.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = n_1 + 2(n_2 + n_3 + n_4) + n_5 + n_6 + n_7 + n_8 + n_9 \leq 14$ plus some additions, see paper.
+
+Potential energy function: CBS-F12 PES including extensive corrections, see paper. Fitted to polynomial form.
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVQZ(+d for Cl) level of theory. Fitted to polynomial form.
+
+Results: Line list applicable up to 1200 K.
+
+Notes: Data for $^{35}$Cl and $^{37}$Cl isotopologues. 
+
+Reference: \cite{jt612,jt649,jt733}
+
+
+\section{Ethylene, C$_2$H$_4$}
+
+Symmetry: D$_2h$
+
+Coordinates: $\xi_n = r_i-r_e$ $i=1,5$ for stretches, $\xi_n = \theta_i - \theta_e$  $i = 1, 4$ for bends, 
+$\xi_10 = \pi - \beta_1$, $\xi_11 = \beta_2 - \pi$ for two $\beta$ H-C-H `book type' angles and 
+$\xi_12 = 2 \tau - \beta_1 + \beta_2$ where $\tau$ is H-C-C-H dihedral angle.
+
+Coordinate to expand kinetic energy: $g_n = \xi_n$. Curvilinear coordinates.
+
+Coordinates to expand Potential energy: Morse coordinates for stretches, other coordinates expanded as $\xi$ themselves.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = n_1 + 2(n_2 + n_3 + n_4 + n_5) + n_6 + n_7 + n_8 + n_9 + n_{10} + n_{11} + n_{12} \leq 10$ plus additions, 
+see paper.
+
+Potential energy function: \textit{ab initio} PES calculated at  CCSD(T)-F12b/cc-pVTZ-F12 level of theory. Fit to polynomial 
+form. Refined PES using HITRAN data for $J=1-4$ and other sources for vibrational band centres.
+
+Dipole moment surface expansion: DMS calculated at CCSD(T)-F12b/aug-cc-pVTZ level of theory and fit to polynomial form with
+appropriate axis system.
+
+Results: Line list for 0-7000 cm$^{-1}$ up to $J=78$. Applicable up to 700 K. 
+
+Notes: Largest molecule in TROVE so far. Special techniques developed to cope with such a large molecule.
+
+Reference: \cite{jt729}
+
+
+\section{Phosphorus trifluoride, PF$_3$}
+
+Symmetry: C$_{3V}$
+
+Coordinates: $\xi_n = r_i - r_e$ $i=1,3$ for stretching coordinates and $\xi_n = \alpha_i - \alpha_e$ $i=1,3$ for bends.
+
+Coordinate to expand kinetic energy: $g_n = \xi_n$. Linearised expansion.
+
+Coordinates to expand Potential energy: Morse coordinates for stretches, bends expanded as $\xi$ themselves.
+
+Primitive basis set: Numerov generated for all coordinates.
+
+Kinetic energy expansion order: 6
+
+Potential expansion order: 8
+
+Polyad scheme: $P = 2(n_1 + n_2 + n_3) + n_4 + n_5 + n_6 \leq 14$.
+
+Potential energy function:  \textit{Ab initio} PES calculated at CCSD(T)-F12b/cc-pVTZ-f12 level of theory fitted using
+polynomial expansion of symmetrized coordinates.
+
+Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ \textit{ab initio} dipole data fitted to polynomial expansion.
+
+Results: Room temperature line list for up to $J = 60$.
+
+Notes: The room temperature line list for this molecule is not complete but could be easily extended using the methods applied
+to SO$_3$ and C$_2$H$_6$.
+
+Reference: (Being Prepared).

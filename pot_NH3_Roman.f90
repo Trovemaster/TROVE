@@ -7,7 +7,7 @@ module pot_user
 
   implicit none
 
-  public MLdipole,MLpoten,ML_MEP
+  public MLdipole,MLpoten,ML_MEP,MLpoten_name
 
   private
  
@@ -29,6 +29,20 @@ module pot_user
 
   end function ML_MEP
 
+ ! Check the potential name 
+ subroutine MLpoten_name(name)
+   !
+   character(len=cl),intent(in) ::  name
+   character(len=cl),parameter ::  poten_name = 'GENERAL'
+   ! 
+   if (poten_name/=trim(name)) then
+     write(out,"(a,a,a,a)") 'Wrong Potential ',trim(name),'; should be ',trim(poten_name)
+   endif
+   !
+   write(out,"(a,a)") '  Using USER-type PES ',trim(poten_name)
+   !
+ end subroutine MLpoten_name
+ !
 
  recursive subroutine MLdipole(rank,ncoords,natoms,local,xyz,f)
    !
@@ -146,7 +160,7 @@ module pot_user
             sinphi = sin(alpha3*0.5_ark)/cos(delta)
             phi3 = asin(sinphi)*2.0_ark
             phi3 = mod(phi3+2.0_ark*pi,2.0_ark*pi)
-            phi1 = 2.0_ark-phi2-phi3
+            phi1 = 2.0_ark*pi-phi2-phi3
             !     
             cosalpha = cos( delta )**2+sin(delta)**2*cos(phi1)
             !
@@ -161,7 +175,7 @@ module pot_user
                alpha1 = acos(cosalpha)
             endif
             !
-         case('R-A2-A3-TAU')
+         case('R-A2-A3-TAU','R-THETA-TAU')
             !
             !
             alpha2 = local(4)

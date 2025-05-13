@@ -72,7 +72,7 @@ module me_numer
   !
   ! Matrix elements with Numerov-eigenfunctions 
   !
-  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xton_,poten_,mu_rr_,icoord,iperiod_,&
+  subroutine ME_numerov(vmax_,maxorder_,rho_b_,isingular_,npoints_,numerpoints_,drho_,xi_n_,poten_,mu_rr_,icoord,iperiod_,&
                         verbose_,g_numerov,energy)
    !
    integer(ik),intent(in)   :: vmax_,maxorder_,npoints_,isingular_,numerpoints_,iperiod_
@@ -80,19 +80,20 @@ module me_numer
    real(ark),intent(out)    :: energy(0:vmax_)
    !
    real(ark),intent(in) :: rho_b_(2)
-   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xton_(0:npoints_,0:maxorder_)
+   real(ark),intent(in) :: poten_(0:npoints_),mu_rr_(0:npoints_),drho_(0:npoints_,3),xi_n_(0:npoints_,0:maxorder_,3)
    integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
    integer(ik),intent(in) :: verbose_   ! Verbosity level
    !
-   real(ark)            :: rho 
+   real(ark)            :: rho,cross_prod,factor
    real(ark)            :: h_t,sigma,sigma_t,rms,psipsi_t,characvalue,rhostep_,step_scale,fval,df_t
    !
-   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,k,i_,i1,i2,itype
    !
-   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:)
-   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xton(:,:)
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:)
+   real(ark),allocatable :: f(:),poten(:),mu_rr(:),d2fdr2(:),dfdr(:),rho_(:),xi_n(:,:,:)
    character(len=cl)     :: unitfname 
    real(ark),allocatable :: enerslot(:),enerslot_(:)
+   real(ark),allocatable :: psi(:,:),dpsi(:,:)
     !
     if (verbose>=1) write (out,"(/'Numerov matrix elements calculations')")
      !
@@ -112,13 +113,16 @@ module me_numer
      if (iperiod>0) periodic = .true.
      !
      allocate(phil(0:npoints_),phir(0:npoints_),dphil(0:npoints_),dphir(0:npoints_), &
-              phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),rho_extF(0:npoints_),enerslot(0:maxslots), &
+              phivphi(0:npoints_),rho_kinet(0:npoints_),rho_poten(0:npoints_),enerslot(0:maxslots), &
               f(0:npoints),dfdr(0:npoints),d2fdr2(0:npoints),poten(0:npoints),mu_rr(0:npoints),&
-              xton(0:npoints,0:maxorder_),stat=alloc)
+              xi_n(0:npoints,0:maxorder_,3),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
      endif 
+     !
+     enerslot = 0 
+     characvalue = 50000.0
      !
      ! numerov step size 
      rhostep = (rho_b(2)-rho_b(1))/real(npoints,kind=ark)
@@ -130,7 +134,6 @@ module me_numer
      !
      rho_kinet(:) = drho_(:,1)
      rho_poten(:) = drho_(:,2)
-     rho_extF(:)  = drho_(:,3)
      !
      step_scale = rhostep/rhostep_
      !
@@ -143,7 +146,7 @@ module me_numer
        !
        do lambda  = 0,maxorder_
          !
-         xton(:,lambda) = xton_(:,lambda)
+         xi_n(:,lambda,1:3) = xi_n_(:,lambda,1:3)
          !
        enddo
        !
@@ -170,9 +173,12 @@ module me_numer
           !
           do lambda = 0,maxorder
             !
-            call polintark(rho_(i1:i2),xton_(i1:i2,lambda),rho,fval,df_t)
-            xton(i,lambda) = fval
-            !
+            do itype = 1,3
+             !
+             call polintark(rho_(i1:i2),xi_n_(i1:i2,lambda,itype),rho,fval,df_t)
+             xi_n(i,lambda,itype) = fval
+             !
+            enddo
           enddo
           !
        enddo
@@ -226,7 +232,9 @@ module me_numer
      !
      if (iperiod/=0) vmax = vmax/2
      !
-     call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot)
+     if ( trim(molec%IO_primitive)/='READ') then
+       call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot)
+     endif
      !
      if (iperiod/=0) then
        allocate(enerslot_(0:maxslots),stat=alloc)
@@ -234,10 +242,13 @@ module me_numer
          write (out,"('phi - out of memory')")
          stop 'phi - out of memory'
        endif 
+       enerslot_ =0
        ! 
        iparity = 1
        !
-       call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot_)
+       if ( trim(molec%IO_primitive)/='READ') then
+          call numerov(npoints,npoints_,step_scale,poten,mu_rr,f,enerslot_)
+       endif
        !
        do vl = vmax,0,-1
          !
@@ -252,12 +263,61 @@ module me_numer
        !
      endif
      !
+     ! renormalising-re-orthogonalasing the basis set 
+     !
+     allocate(psi(0:npoints_,0:vmax),dpsi(0:npoints_,0:vmax),stat=alloc)
+     if (alloc/=0) then 
+       write (out,"('psi - out of memory')")
+       stop 'psi - out of memory'
+     endif 
+     !
+     do vl = 0,vmax
+       !
+       read (io_slot,rec=vl+1) (psi(i,vl),i=0,npoints_),(dpsi(i,vl),i=0,npoints_)
+       !
+     enddo
+     !
+     !omp parallel do private(vl,cross_prod,factor,vr) shared(psi,dpsi) schedule(dynamic)
+     do vl =  0,vmax
+       !
+       phivphi(:) = psi(:,vl)*psi(:,vl)
+       cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+       !
+       factor = 1.0_ark/sqrt(cross_prod)
+       !
+       psi(:,vl) = psi(:,vl)*factor
+       dpsi(:,vl) = dpsi(:,vl)*factor
+       !
+       do vr = 0,vl-1
+         !
+         phivphi(:) = psi(:,vl)*psi(:,vr)
+         cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+         !
+         psi(:,vl) = psi(:,vl)-cross_prod*psi(:,vr)
+         dpsi(:,vl) = dpsi(:,vl)-cross_prod*dpsi(:,vr)
+         !
+         phivphi(:) = psi(:,vl)*psi(:,vl)
+         cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+         !
+         factor = 1.0_ark/sqrt(cross_prod)
+         !
+         psi(:,vl) = psi(:,vl)*factor
+         dpsi(:,vl) = dpsi(:,vl)*factor
+         ! 
+       enddo
+       !
+       write (io_slot,rec=vl+1) (psi(i,vl),i=0,npoints_),(dpsi(i,vl),i=0,npoints_)
+       !
+     enddo
+     !omp end parallel do
+     !
+     deallocate(psi,dpsi)
+     !
      ! Matrix elements 
      !
      sigma = 0.0_ark 
      rms   = 0.0_ark 
-     characvalue = maxval(enerslot(0:vmax))
-     energy(0:vmax) = enerslot(0:vmax)-enerslot(0)
+     characvalue = max(maxval(enerslot(0:vmax)),characvalue)
      !
      do vl = 0,vmax
         !
@@ -280,13 +340,13 @@ module me_numer
             !
             phivphi(:) = phil(:)*poten_(:)*phir(:)
             !
-            h_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            h_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! momenta-quadratic part 
             !
             phivphi(:) =-dphil(:)*mu_rr_(:)*dphir(:)
             !
-            psipsi_t = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+            psipsi_t = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
             !
             ! Add the diagonal kinetic part to the tested mat. elem-s
             !
@@ -301,33 +361,27 @@ module me_numer
                if (lambda==0) then 
                   phivphi(:) = phil(:)*phir(:)
                else
-                  phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
+                  phivphi(:) = phil(:)*xi_n(:,lambda,2)*phir(:)
                endif
                !
-               g_numerov(0,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(0,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! external field expansion
                !
                if (lambda==0) then 
                   phivphi(:) = phil(:)*phir(:)
                else
-                  phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
+                  phivphi(:) = phil(:)*xi_n(:,lambda,3)*phir(:)
                endif
                !
-               g_numerov(3,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(3,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                if (vl/=vr) g_numerov(3,lambda,vr,vl) = g_numerov(3,lambda,vl,vr)
                !
                ! momenta-free in kinetic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*phir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
-               endif
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
                !
-               phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
-               !
-               g_numerov(-1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(-1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                ! We also control the orthogonality of the basis set 
                !
@@ -337,45 +391,33 @@ module me_numer
                !
                ! momenta-quadratic part 
                !
-               if (lambda==0) then 
-                  phivphi(:) =-dphil(:)*dphir(:)
-               else
-                  phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
+               phivphi(:) =-dphil(:)*xi_n(:,lambda,1)*dphir(:)
                !
-               phivphi(:) =-dphil(:)*xton(:,lambda)*dphir(:)
-               !
-               g_numerov(2,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(2,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) g_numerov(2,lambda,vr,vl) = g_numerov(2,lambda,vl,vr)
                !
                ! momenta-linear part:
                ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                !
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*dphir(:)
                !
-               if (lambda==0) then 
-                  phivphi(:) = phil(:)*dphir(:)
-               else
-                  phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
-               endif
-               !
-               phivphi(:) = phil(:)*xton(:,lambda)*dphir(:)
-               !
-               g_numerov(1,lambda,vl,vr) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+               g_numerov(1,lambda,vl,vr) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                !
                if (vl/=vr) then
                   !
-                  if (lambda==0) then 
-                     phivphi(:) = dphil(:)*phir(:)
-                  else
-                     phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
-                  endif
+                  phivphi(:) = dphil(:)*xi_n(:,lambda,1)*phir(:)
                   !
-                  phivphi(:) = dphil(:)*xton(:,lambda)*phir(:)
-                  !
-                  g_numerov(1,lambda,vr,vl) = simpsonintegral_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
+                  g_numerov(1,lambda,vr,vl) = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
                   !
                endif 
+               !
+               if(trim(extF%ftype)=='XY2_G-COR-ELEC'.or.trim(extF%ftype)=='XY2_G-TENS-RANK3') then
+                  !
+                  g_numerov(3,lambda,vl,vr) = g_numerov(1,lambda,vl,vr)
+                  g_numerov(3,lambda,vr,vl) = g_numerov(1,lambda,vr,vl)
+                  !
+               endif               
                !
                !
                if (verbose>=7) then 
@@ -396,7 +438,10 @@ module me_numer
             ! Count the error, as a maximal deviation sigma =  | <i|H|j>-E delta_ij |
             !
             sigma_t =  abs(h_t)
-            if (vl==vr) sigma_t =  abs(h_t-enerslot(vl))
+            if (vl==vr) then 
+              enerslot(vl) = h_t
+              sigma_t =  abs(h_t-enerslot(vl))
+            endif
             !
             sigma = max(sigma,sigma_t)
             rms = rms + sigma_t**2
@@ -404,12 +449,16 @@ module me_numer
             ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
             ! the Schroedinger all right
             if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-               write(out,"('ME_numerov: wrong Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
-               stop 'ME_numerov: bad Numerov solution'
+               write(out,"('ME_numerov: Integration differs from Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+               write(out,"('            Try increasing the integration range.')")
+               if ( trim(molec%IO_primitive)/='READ') then
+                 stop 'ME_numerov: bad Numerov solution'
+               endif
             endif 
             !
             if (vl==vr.and.abs(h_t-enerslot(vl))>sqrt(small_)*abs(characvalue)*1e4) then 
                write(out,"('ME_numerov: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,enerslot(vl)
+               write(out,"('            Try increasing the integration range.')")
                stop 'ME_numerov: bad Numerov solution'
             endif 
             !
@@ -428,6 +477,8 @@ module me_numer
         enddo
      enddo
      !
+     energy(0:vmax) = enerslot(0:vmax)-enerslot(0)
+     !
      rms = sqrt(rms/real((vmax+1)*(vmax+2)/2,kind=ark))
      !
      if (verbose>=1) then 
@@ -435,7 +486,7 @@ module me_numer
         write(out,"('rms deviation is ',f18.8)") sqrt(rms)
      endif 
      !
-     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,enerslot,f,poten,mu_rr,d2fdr2,dfdr,xton)
+     deallocate(phil,phir,dphil,dphir,phivphi,rho_kinet,rho_poten,enerslot,f,poten,mu_rr,d2fdr2,dfdr,xi_n)
      !
      !
   end subroutine ME_numerov
@@ -581,9 +632,10 @@ module me_numer
    !
    do v=0,vmax+1
      !
-     if (v/=0) enerlow = enerslot(v-1)
+     if (v/=0) then 
+       enerlow = enerslot(v-1)
+     endif
      !
-
      ! Determine the highest undefined energy slot 
      i = v
      do while (enerslot(i)<poten(imin).and.i<maxslots)
@@ -868,7 +920,7 @@ module me_numer
              ! 
              ! Are we still at the begining?
              !
-             if (v.eq.0) then
+             if (v==0) then
                 enerlow=poten(imin)
              else
                 enerlow=enerslot(v-1) 
@@ -1023,7 +1075,7 @@ module me_numer
         !
         do i=0,npoints 
            !
-           write(out,"(i8,2f18.8)") i,phi_f(i),phi_t(i)
+           write(out,"(i8,2f18.8,' || ',1x,i8)") i,phi_f(i),phi_t(i),v
            !
         enddo
         !
@@ -1687,7 +1739,7 @@ module me_numer
     !
     real(ark),intent(in) :: xmax,f(0:npoints)
     !
-    real(ark) :: si
+    real(ark) :: si,st
     !
     integer(ik) :: i
     !
@@ -1699,361 +1751,13 @@ module me_numer
      !
      si = sum(f)*h
      !
-     !si  = simpsonintegral_ark(npoints,xmax,f)
+     !st  = simpsonintegral_ark(npoints,xmax,f)
+     !
+     !if (abs(si-st)>0.1) then 
+     !   continue
+     !endif
      !
   end function  integral_rect_ark
-
-
-
-      subroutine d04aaf(ifun, nder, hbase, der, erest, fun, ifail , maxpts)
-!
-!      integer(ik) :: gmatrix( k1,k2 ),mbasp1,leniw
-!
-!     ***   purpose   ***
-!
-!     a subroutine for numerical differentiation at a point.  it
-!     returns a set of approximations to the j-th order derivative
-!     (j=1,2,...14) of fun(x) evaluated at x = xval  and, for each
-!     derivative, an error estimate ( which includes the effect of
-!     amplification of round- off errors).
-!
-!
-!     ***   input  parameters   ***
-!
-!     (1) xval   real.  the abscissa at which the set of
-!     derivatives is required.
-!     (2) nder   integer(ik) ::. the highest order derivative required.
-!     if(nder.gt.0)  all derivatives up to min(nder,14) are
-!     calculated.
-!     if(nder.lt.0 and nder even)  even order derivatives
-!     up to min(-nder,14) are calculated.
-!     if(nder.lt.0 and nder odd )  odd  order derivatives
-!     up to min(-nder,13) are calculated.
-!     (3) hbase  real.  a step length.
-!     (6) fun    the name of a real*8 function subprogramme,
-!     which is required by the routine as a subprogramme
-!     and which represents the function being differentiated
-!     the routine requires 21 function evaluations fun(x)
-!     located at    x = xval    and at
-!     x = xval + (2*j-1)*hbase,  j=-9,-8, .... +9,+10.
-!     the function value at  x = xval is disregarded when
-!     only odd order derivatives are required.
-!
-!     ***   output parameters   ***
-!
-!     (4) der(j)   j=1,2,...14.  real. a vector of
-!     approximations to the j-th derivative of fun(x)
-!     evaluated at x = xval.
-!     (5) erest(j) j=1,2,...14.  real. a vector of
-!     estimates of the dabsolute accuracy of der(j).  these
-!     are negative when erest(j).gt.abs(der(j)), or when,
-!     for some other reason the routine is doubtful about
-!     the validity of the result.
-!
-!     ***   important warning   ***
-!
-!     erest is an estimate of the overall error.  it is essential
-!     for
-!     proper use that the user checks each value of der
-!     subsequently
-!     used to see that it is accurate enough for his purposes.
-!     failure to do this may result in the contamination of all
-!     subsequent results.
-!     it is to be expected that in nearly all cases  der(14) will
-!     be
-!     unusable.( 14 represents a limit in which for the easiest
-!     function likely to be encountered this routine might just
-!     obtain
-!     an approximation of the correct sign.)
-!
-!     ***   note on calculation   ***
-!
-!     the calculation is based on the extended t-table (t sub
-!     k,p,s)
-!     described in lyness and moler, num. math., 8, 458-464,(1966).
-!     references in comment cards to ttab(nk,np,ns) refer to
-!     t-table
-!     with nk=k+1,  np=p+1,  ns=s+1.   since only part of the
-!     extended
-!     t-table is needed at one time, that part is stored in
-!     rtab(10,7)
-!     and is subsequently overwritten.  here
-!     rtab(nk,np-ns+1)  =  ttab(nk,np,ns).
-!
-!     nag copyright 1976
-!     mark 5 release
-!     mark 6b revised  ier-116 (mar 1978)
-!     mark 7 revised ier-139 (dec 1978)
-!     mark 8 revised. ier-219 (mar 1980)
-!     mark 8d revised. ier-271 (dec 1980).
-      real(rk),intent(in) ::  hbase
-      integer(ik) ::  nderp, nder, ndpar, ifail, n, nn1, nsq, npar, nsmax,j, &
-                     neger, ns, npmin, np, nktop, npr, nk, ntop, nmax, nmin,nup, nlo, & 
-                     ntopm2, jns, nst2,ii,ifun
-      real(rk) ::  der(4), erest(4), fact, &
-       acof(10),fz, h, hfact, hsq, a, b, trange(7), ranmin, temp, term, &
-       rtab(10,7), tzerom(10), erprev, ernow, xjns, xmax, xmin,xnum, &
-       thron2, zero, one, two, big, small, htest, ftest
-      
-      integer(ik) :: maxpts
-
-      real(rk) ::  fun(maxpts)
-      data zero, one, two, thron2 /0.0_rk,1.0_rk,2.0_rk,1.5_rk/
-!
-!     to alter the precision of the whole routine,alter the
-!     precision
-!     in the above declaration and data statements
-!
-!     quit on zero hbase and zero nder.  set control parameter
-!     ndpar.
-!     ndpar = +1  odd-order derivatives only.
-!     ndpar =  0  all derivatives
-!     ndpar = -1  even-order derivatives only.
-      big=safe_max
-      small=safe_min
-      if (hbase.eq.zero) go to 20
-      nderp = nder
-      ndpar = 0
-      if (nder) 40, 20, 60
-20    ifail=1
-      return
-40    ndpar = 4*(nder/2) - 2*nder - 1
-      nderp = -nder
-60    continue
-      if (nderp.gt.4) nderp = 4
-!
-!     next, evaluate 21 function values , set acof(n), and set
-!     first
-!     column of rtab for odd order derivatives and store in tzerom
-!     the
-!     first column of rtab for even order derivatives.
-!     fz = fun(xval)
-!
-      fz=fun(ifun)
-      nst2=maxpts+maxpts
-!
-      do 80 n=1,10
-       nn1 = 2*n - 1
-       nsq = nn1*nn1
-       acof(n) = nsq
-       xnum = nn1
-       h = hbase*xnum
-!
-       ii=ifun+nn1
-       if (ii.gt.maxpts) temp=zero
-!
-       if (ii.le.maxpts) temp=fun(ii)
-!
-       ii=ifun-nn1
-       if (ii.eq.0) term=zero
-!
-       if (ii.lt.0) term=-fun(iabs(ii))
-!
-       if (ii.gt.0) term=fun(ii)
-!
-       rtab(n,1) = (temp-term)/(two*h)
-       tzerom(n) = (temp-fz-fz+term)/(two*h**2)
-80    continue
-!
-!     set up for odd-order derivatives.
-      if (ndpar.eq.-1) go to 100
-      npar = 1
-      nsmax = (nderp+1)/2
-      if (nsmax.le.0) go to 380
-      go to 140
-!
-!     set up for even-order derivatives.
-100   continue
-      npar = -1
-      if (ndpar.eq.+1) go to 460
-      nsmax = nderp/2
-      if (nsmax.le.0) go to 460
-!
-!     set the first column of the t-table for even order
-!     derivatives.
-      do 120 j=1,10
-       rtab(j,1) = tzerom(j)
-120   continue
-140   continue
-!
-!     odd-order and even order paths join up here.
-!
-      neger = 0
-      hsq = hbase*hbase
-      fact = one
-      hfact = one
-      do 360 ns=1,nsmax
-!
-!     from here on to   statement 360 (near end)  we are dealing
-!     with a
-!     specified value of ns.
-!
-!     for each value of np we calculate range(np)  which is the
-!     differe
-!     between the greatest and the least of the elements
-!     ttab(nk,np,ns)
-!     as we go along we determine also the minimum of range(np)
-!     which i
-!     ranmin = range(npmin).
-!     we retain nup and nlo which are the values  of nk giving the
-!     extreme values of ttab(nk,npmin,ns).
-!     this part of ns loop concludes at statement number 280.
-!
-!
-!     first calculate elements of t-table  for current ns value.
-       npmin = ns
-       if (ns.eq.1) npmin = 2
-       do 180 np=npmin,7
-          nktop = 10 - np + 1
-          npr = np - ns + 1
-          do 160 nk=1,nktop
-             j = np + nk - 1
-             a = acof(j)
-             b = acof(nk)
-             term = zero
-             temp = zero
-             if (np.ne.ns) temp = a*rtab(nk,npr-1) -b*rtab(nk+1,npr-1)
-             if (ns.ne.1) term = -rtab(nk,npr) + rtab(nk+1,npr)
-             rtab(nk,npr) = (term+temp)/(a-b)
-160         continue
-180      continue
-!
-!     now calculate nup,nlo and ranmin.
-       do 280 np=ns,7
-          ntop = 11 - np
-          npr = np - ns + 1
-          xmax = rtab(1,npr)
-          xmin = rtab(1,npr)
-          nmax = 1
-          nmin = 1
-!
-          do 200 nk=2,ntop
-             temp = rtab(nk,npr)
-             if (temp.gt.xmax) nmax = nk
-             if (temp.gt.xmax) xmax = temp
-             if (temp.lt.xmin) nmin = nk
-             if (temp.lt.xmin) xmin = temp
-200         continue
-!
-          trange(np) = xmax - xmin
-          if (np.ne.ns) go to 220
-          ranmin = trange(np)
-          go to 240
-220         continue
-          if (trange(np).ge.ranmin) go to 260
-          ranmin = trange(np)
-240         continue
-          npmin = np
-          nup = nmax
-          nlo = nmin
-          if (nlo.eq.nup) nlo = nlo + 1
-260         continue
-280      continue
-!
-!     next we take the average of all except the extreme values of
-!     ttab(nk,npmin,ns) as the result and ranmin as the error
-!     estimate.
-       term = zero
-       ntop = 11 - npmin
-       ntopm2 = ntop - 2
-       xnum = ntopm2
-       j = npmin - ns + 1
-       do 320 nk=1,ntop
-          if (nk.eq.nup) go to 300
-          if (nk.eq.nlo) go to 300
-          term = term + rtab(nk,j)
-300         continue
-320      continue
-       term = term/xnum
-! 
-!     the above result and error estimate refer to taylor
-!     coefficient.
-!     next we do scaling to obtain derivative results instead.
-!     jns and xjns are actual order of derivative being treated.
-!     safety factors 1.5,1.5,2.0,2.0 and 2.0 are multiplied into
-!     the
-!     error estimates for j = 10,11,12,13 and 14 respectively.
-!     these
-!     have been chosen by inspection of performance statistics.
-!     there
-!     is no analytic justification for these particular factors.
-       jns = 2*ns - 1
-       if (npar.lt.0) jns = 2*ns
-       xjns = jns
-       fact = fact*xjns
-!     test for underflow of hfact
-       if (hfact.ge.1.0e0) go to 330
-       htest = hfact*big
-       ftest = term*fact
-       if ((two*ranmin*fact).gt.ftest) ftest = two*ranmin*fact
-       if (htest.gt.ftest) go to 330
-       der(jns) = big
-       erest(jns) = -der(jns)
-       neger = neger + 1
-       go to 340
-!     end of code to handle zero hfact
-330      continue
-       der(jns) = term*fact/hfact
-       if (jns.eq.10) ranmin = thron2*ranmin
-       if (jns.eq.11) ranmin = thron2*ranmin
-       if (jns.ge.12) ranmin = two*ranmin
-       erest(jns) = ranmin*fact/(hfact)
-!
-!     set sign of erest.  erest negative either if it swamps der,
-!     or if
-!     two previous consecutive erests of this parity are negative.
-!     it may also be set negative at end (750).
-       if (neger.ge.2) erest(jns) = -erest(jns)
-       if (neger.ge.2) go to 340
-       if (term.lt.ranmin) erest(jns) = -erest(jns)
-       if (-term.ge.ranmin) erest(jns) = -erest(jns)
-       if (erest(jns).lt.zero) neger = neger + 1
-       if (erest(jns).ge.zero) neger = 0
-340      continue
-!
-!     second test for underflow of hfact
-       if (hfact.ge.1.0e0) go to 346
-       if (hfact.eq.0.0e0) go to 352
-       if (hsq.ge.small/hfact) go to 346
-       hfact = 0.0e0
-       go to 352
-346      hfact = hsq*hfact
-352      fact = fact*(xjns+one)
-360   continue
-!
-380   continue
-      if (npar.gt.0) go to 100
-!
-!     set sign of erest negative if two previous consecutive erests
-!     are negative.
-      if (ndpar.ne.0) go to 460
-      if (nderp.le.2) go to 460
-      neger = 0
-      erprev = erest(1)
-      do 440 j=2,nderp
-       ernow = erest(j)
-       if (neger.eq.2) go to 400
-       if (erprev.ge.zero) go to 420
-       if (ernow.ge.zero) go to 420
-400      neger = 2
-       if (ernow.gt.zero) erest(j) = -ernow
-420      erprev = ernow
-440   continue
-!
-460   continue
-      ifail = 0
-!
-!     do 500 i=1,nderp
-!     erest(i)=erest(i)/der(i)
-! 500 continue
-!
-      return
-!     end of d04aaf   ***   ***   ***   ***   ***
-      end subroutine d04aaf
-
-!
-
-
 
 
      !

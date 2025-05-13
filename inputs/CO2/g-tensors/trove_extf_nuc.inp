@@ -1,0 +1,17 @@
+EXTERNAL     (nuclear contribution to g-tensor of CO2)
+rank         5
+NPARAM       3 1 1 1 1
+DMS_TYPE     XY2_G-TENS-NUC
+COEFF        list
+dstep        0.005
+COORDS       linear
+Order        6
+parameters
+ singularity             0                   0               (singularity of gxx)
+ C_charge                0                   6.0
+ O_charge                0                   8.0
+ singularity             0                  -1               (singularity of gxz)
+ singularity             0                   0               (singularity of gyy)
+ singularity             0                   0               (singularity of gzx)
+ singularity             0                   0               (singularity of gzz)
+end

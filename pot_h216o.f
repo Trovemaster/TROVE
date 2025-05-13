@@ -82,7 +82,7 @@
       v1=(xmaso18*xmaso16*(v16-v18)/(xmaso18-xmaso16))/xmaso16+
      *(2*xmash*(xmaso18*v18-xmaso16*v16)/(2*(xmaso18-xmaso16)))/xmash
 
-       CALL rel(Vr,Q1,Q2,THETA)	
+       CALL rel(Vr,Q1,Q2,THETA)
        CALL cvps(Vcvps,Q1,Q2,THETA)
 
       att1=Q1*0.5291772d0

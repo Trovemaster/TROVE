@@ -9,7 +9,7 @@ module prop_xy2
 
   implicit none
 
-  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_sr, prop_xy2_spin_rotation_bisector
+  public prop_xy2_qmom_sym, MLdipole_h2o_lpt2011, prop_xy2_spin_rotation_bisector, prop_xy2_alpha_sym
 
   private
  
@@ -87,7 +87,8 @@ recursive subroutine prop_xy2_sr(rank, ncoords, natoms, local, xyz, f)
   ! compute spin-rotation tensor in molecular-bond frame
 
   c_mb = 0
-  c_mb(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  ! first parameter defines centre on Y1 or Y2, see above
+  c_mb(1,1) = fit_xy2_nosym(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) 
   c_mb(2,2) = fit_xy2_nosym(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
   c_mb(3,3) = fit_xy2_nosym(extF%nterms(3), extF%coef(1:extF%nterms(3),3), coords)
   c_mb(1,2) = fit_xy2_nosym(extF%nterms(4), extF%coef(1:extF%nterms(4),4), coords)
@@ -275,7 +276,8 @@ recursive subroutine xy2_dipole_sym(rank, ncoords, natoms, local, xyz, f)
   real(ark),intent(out)  ::  f(rank)
 
   integer(ik) :: iatom,ierr
-  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), n1(3), n2(3), n3(3), tmat(3,3), coords(3), mu_mb(3), tmat_inv(3,3)
+  real(ark) :: xyz0(3), xyz_(natoms,3), r1, r2, alpha1, e1(3), e2(3), n1(3), n2(3), n3(3), tmat(3,3), coords(3)
+  real(ark) :: mu_mb(3), tmat_inv(3,3)
 
   if (rank/=3) then
     write(out, '(/a,1x,i3,1x,a)') 'xy2_dipole_sym error: rank of the dipole moment vector =', rank, ', expected 3'
@@ -350,12 +352,9 @@ end subroutine xy2_dipole_sym
       do i=2,dimen
         q=ai(i,1)
         !
-        if (abs(p)<small_a) then 
-          !
+        if (abs(p)<small_) then 
           ierr = i
-          !
           return
-          !
         endif 
         !
         h(i)=q/p
@@ -521,8 +520,8 @@ recursive subroutine xy2_efg_y(rank, ncoords, natoms, local, xyz, f)
 
   efg_mb1 = 0
   efg_mb2 = 0
-
-  efg_A1 = fit_xy2_dipole_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords) ! first parameter defines centre on Y1 or Y2, see above
+  ! first parameter defines centre on Y1 or Y2, see above
+  efg_A1 = fit_xy2_dipole_A1(extF%nterms(1)-1, extF%coef(2:extF%nterms(1),1), coords)
   efg_B2 = fit_xy2_dipole_B2(extF%nterms(2), extF%coef(1:extF%nterms(2),2), coords)
 
   efg_mb1(1,1) = (efg_A1 + efg_B2)*0.5_ark
@@ -815,7 +814,7 @@ end subroutine TEST_xy2_qmom_sym
 !###################################################################################################################################
 
 
-recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
+recursive subroutine prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
@@ -826,7 +825,7 @@ recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
                coords(3), alpha_mb(3,3), alpha_xyz(3,3), alpha_xyz_(3,3), tmat_inv(3,3)
 
   if (rank/=6) then
-    write(out, '(/a,1x,i3,1x,a)') 'xy2_alpha_sym error: rank of the dipole moment vector =', rank, ', expected 6'
+    write(out, '(/a,1x,i3,1x,a)') 'prop_xy2_alpha_sym error: rank of the dipole moment vector =', rank, ', expected 6'
     stop
   endif
 
@@ -883,12 +882,12 @@ recursive subroutine xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
     v(3) = v1(1)*v2(2)-v1(2)*v2(1)
   end function vector_product
 
-end subroutine xy2_alpha_sym
+end subroutine prop_xy2_alpha_sym
 
 
-! Subroutine to test xy2_alpha_sym if it is able to reproduce the original ab initio Cartesian components
+! Subroutine to test prop_xy2_alpha_sym if it is able to reproduce the original ab initio Cartesian components
 
-subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
+subroutine TEST_prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   integer(ik),intent(in) ::  rank, ncoords, natoms
   real(ark),intent(in)   ::  local(ncoords), xyz(natoms,3)
@@ -904,7 +903,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   if (ithread==0) then
 
-  write(out, '(/a)') 'TEST_xy2_alpha_sym/start: test polarizability tensor transformation'
+  write(out, '(/a)') 'TEST_prop_xy2_alpha_sym/start: test polarizability tensor transformation'
 
   angs = 0.529177209_ark
   fname = 'ALPHA.dat'
@@ -913,7 +912,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   open(iounit,form='formatted',file=fname,iostat=info)
   if (info/=0) then
-    write(out, '(/a,a,a)') 'TEST_xy2_alpha_sym error: file "', trim(fname), '" not found'
+    write(out, '(/a,a,a)') 'TEST_prop_xy2_alpha_sym error: file "', trim(fname), '" not found'
     stop
   endif
 
@@ -924,7 +923,7 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
     read(iounit,*,iostat=info) (xyz_(iatom,1:3), iatom=1, natoms), (mu_xyz0(i,1:3), i=1, 3)
     if (info/=0) exit
     xyz_ = xyz_ * angs
-    call xy2_alpha_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
+    call prop_xy2_alpha_sym(rank, ncoords, natoms, local, xyz_, mu_xyz(1:6))
     ii = 0
     dmu = 0
     do i=1, 3
@@ -943,14 +942,14 @@ subroutine TEST_xy2_alpha_sym(rank, ncoords, natoms, local, xyz, f)
 
   write(out, '(/1x,a,6(1x,f12.4))') 'rms =', rms
 
-  write(out, '(/a)') 'TEST_xy2_alpha_sym/done'
+  write(out, '(/a)') 'TEST_prop_xy2_alpha_sym/done'
 
   endif
 
   !$omp barrier
   stop
 
-end subroutine TEST_xy2_alpha_sym
+end subroutine TEST_prop_xy2_alpha_sym
 
 
 !###################################################################################################################################
@@ -1207,9 +1206,10 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
   real(ark), intent(out) :: invmat(n,m)
   integer(ik), intent(out), optional :: info
 
-  integer(ik) lwork, info_, i, j
-  double precision work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
+  integer(ik) :: lwork, info_, i, j
+  double precision :: work1(1), matd(m,n), matu(m,m), matvt(n,n), invmatd(n,m), mat_d(n,m), sv(n), tmat(n,m), tol
   double precision, allocatable :: work(:)
+  character(len=cl) :: my_fmt
 
   tol = 1.0d-08 !epsilon(1.0d0)
 
@@ -1246,11 +1246,12 @@ subroutine matrix_pseudoinverse_ark(m, n, mat, invmat, info)
         write(out, '(/a)') 'matrix_pseudoinverse_ark error: matrix is singular'
         write(out, '(a)') 'matrix:'
         do j=1, m
-          write(out, '(<n>(1x,f10.6))') mat(j,1:n)
+          write(my_fmt, '("(", I0, "(1x,f10.6))")') n
+          write(out, my_fmt) mat(j,1:n)
         enddo
         write(out, '(a)') 'singular elements:'
         do j=1, n
-          write(out, '(1x,f)') sv(j)
+          write(out, '(1x,f10.6)') sv(j)
         enddo
         stop 'STOP'
       endif

@@ -45,9 +45,12 @@ module plasma
     real(rk) :: real_end,real_start,cpu_end,cpu_start,real_time,cpu_time
     !
     double precision q(1),d(1),e(1)
-    pointer (pq,q), (pd,d),  (pe,e)
     !
-    integer*8 lena, len
+#if (plasma_ > 0)
+    pointer (pq,q), (pd,d),  (pe,e)
+#endif
+    !
+    integer(8) ::  lena, len
     !
     if (verbose>=4) call TimerStart('plasma_sytrdx: diagonalization')
     !
@@ -147,6 +150,7 @@ module plasma
     len = 8
     !
     lena = len * N * LDQ
+#if (plasma_ > 0)    
     pq = malloc(lena)
     if (pq .eq. 0) then
       print*,'cannot allocate matrix Q',N,N
@@ -165,6 +169,7 @@ module plasma
       print*,'cannot allocate matrix e',N
       stop
     end if
+#endif
     !
     alloc = 0
     !
@@ -267,9 +272,11 @@ module plasma
     !
     !deallocate(a,d,w)
     !
+#if (plasma_ > 0)    
     call free(pq)
     call free(pd)
     call free(pe)
+#endif    
     !
     call ArrayStop('plasma_sytrdx-all-plasma')
     !
@@ -375,27 +382,27 @@ module plasma
    end function get_cpu_time
 
 
-  function get_real_time() result(t)
-    real(rk) :: t
-    !
-    integer         :: count, count_rate, count_max
-    real(rk), save :: overflow   =  0
-    integer, save   :: last_count = -1
-    !
-    call system_clock(count,count_rate,count_max)
-    !
-    ! Try to detect a rollover
-    !
-    if (count<last_count) then
-      overflow = overflow + count_max
-    end if
-    last_count = count
-    !
-    ! Convert to seconds
-    !
-    t = (overflow+count)/count_rate
-    !
-  end function get_real_time
+  !function get_real_time() result(t)
+  !  real(rk) :: t
+  !  !
+  !  integer         :: count, count_rate, count_max
+  !  real(rk), save :: overflow   =  0
+  !  integer, save   :: last_count = -1
+  !  !
+  !  call system_clock(count,count_rate,count_max)
+  !  !
+  !  ! Try to detect a rollover
+  !  !
+  !  if (count<last_count) then
+  !    overflow = overflow + count_max
+  !  end if
+  !  last_count = count
+  !  !
+  !  ! Convert to seconds
+  !  !
+  !  t = (overflow+count)/count_rate
+  !  !
+  !end function get_real_time
 
 
 end module plasma

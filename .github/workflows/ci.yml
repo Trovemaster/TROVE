@@ -1,0 +1,52 @@
+name: Regression Test
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+
+jobs:
+  test:
+    name: TROVE ${{ matrix.os }} - ${{ matrix.arch }} - ${{ matrix.compiler }}
+    env:
+      OMP_NUM_THREADS: 1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-20.04 # Required for intel-mkl
+        arch:
+          - x64
+        compiler:
+          - gfortran
+    steps:
+      - uses: actions/checkout@v2
+
+      #- name: Cache benchmark data
+        #uses: actions/cache@v2
+        #env:
+          #cache-name: benchmark-data
+        #with:
+          #path: test/benchmarks
+          #key: benchmark-data
+
+      - name: Setup python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: x64
+
+      - name: Install Intel MKL
+        run: sudo apt-get install -y intel-mkl
+
+      - name: Install pipenv environment
+        run: cd test && pip install pipenv && pipenv install
+
+      - name: Build
+        run: |
+          gfortran --version
+          make COMPILER=gfortran MODE=ci
+
+      - name: Test
+        run: make test

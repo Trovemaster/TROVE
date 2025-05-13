@@ -5,6 +5,7 @@ module diag
 #define mpi_     0
 #define omparpack_  0
 #define propack_  0
+#define ilp_  0
 !
 !
 !  Simplistic type-agnostic LAPACK interface
@@ -22,6 +23,12 @@ module diag
   integer(hik),allocatable,save   :: hikparm(:)
   real(rk),allocatable,save       :: hmat_(:,:)
   !
+#if (ilp_ > 0)
+  integer,parameter :: hik_ = hik
+#else 
+  integer,parameter :: hik_ = ik
+#endif
+
   
   contains
 
@@ -61,7 +68,7 @@ module diag
        jobz_ = jobz
     endif
     !
-    nb = ilaenv( 1, 'DSYTRD','U',n, -1, -1, -1 )
+    nb = ilaenv( 1, 'DSYTRD','L',n, -1, -1, -1 )
     !
     if (verbose>=3) write(out,"('The optional block size  = ',i9)") nb
     !
@@ -75,7 +82,7 @@ module diag
     !
     if (verbose>=2) call TimerStart('diag_dsytrd')
     !
-    call dsytrd('U',n,h,n,d,offd,tau,work,-1,info)
+    call dsytrd('L',n,h,n,d,offd,tau,work,-1,info)
     !
     if (info/=0) then
       write (out,"(' dsytrd-1 returned ',i9)") info
@@ -98,9 +105,9 @@ module diag
       !
     endif 
     !
-    !call dsytrd('U',n,h,n,d,offd,tau,work,lwork,info)
+    !call dsytrd('L',n,h,n,d,offd,tau,work,lwork,info)
     !
-    call diag_dsytrd('U',n,h,d,offd,tau,info)
+    call diag_dsytrd('L',n,h,d,offd,tau,info)
     !
     if (info/=0) then
       write (out,"(' dsytrd returned ',i9)") info
@@ -264,7 +271,7 @@ module diag
     !
     if (verbose>=3) write(out,"('Unitary transformation to the original representation...')") 
     !
-    call dormtr('L','U','N',n,m,h,n,tau,a,n,work,-1,info )
+    call dormtr('L','L','N',n,m,h,n,tau,a,n,work,-1,info )
     !
     if (int(work(1))>size(work)) then 
       !
@@ -278,7 +285,7 @@ module diag
       !
     endif 
     !
-    call dormtr('L','U','N',n,m,h,n,tau,a(1:n,1:msize),n,work,lwork,info )
+    call dormtr('L','L','N',n,m,h,n,tau,a(1:n,1:msize),n,work,lwork,info )
     !
     if (verbose>=3) write(out,"('...done!')") 
     !
@@ -382,15 +389,15 @@ module diag
     !
     if (verbose>=2) call TimerStart('diag_dsptrd')
     !
-    nb = ilaenv( 1, 'DSYTRD','U',n, -1, -1, -1 )
+    nb = ilaenv( 1, 'DSYTRD','L',n, -1, -1, -1 )
     !
     if (verbose>=3) write(out,"('The optional block size  = ',i9)") nb
     !
-    !call dsptrd('U',n,ap,d,offd,tau,info)
+    !call dsptrd('L',n,ap,d,offd,tau,info)
     !
-    call diag_dsptrd('U',n,ap,d,offd,tau,info)
+    call diag_dsptrd('L',n,ap,d,offd,tau,info)
     !
-    !call diag_dsptrd_omp('U',n,ap,d,offd,tau,info)
+    !call diag_dsptrd_omp('L',n,ap,d,offd,tau,info)
     !
     if (info/=0) then
       write (out,"(' dsptrd returned ',i9)") info
@@ -556,7 +563,7 @@ module diag
     !
     call ArrayStart('diag_tridiag-arrays',alloc,lwork,rk)
     !
-    call dopmtr('L','U','N',n,m,ap,tau,h(1:n,1:msize),n,work,info)
+    call dopmtr('L','L','N',n,m,ap,tau,h(1:n,1:msize),n,work,info)
     !
     if (info/=0) then
       write (out,"(' dopmtr returned ',i9)") info
@@ -594,9 +601,9 @@ module diag
     character(len=1) :: jobz_
 
     double precision,allocatable    :: work(:)
-    integer(hik)      :: info
-    integer(hik)      :: nh1, nh2
-    integer(hik)      :: lwork
+    integer(hik_)      :: info
+    integer(hik_)      :: nh1, nh2
+    integer(hik_)      :: lwork
     !
     !if (verbose>=2) call TimerStart('lapack_dsyev: diagonalization')
     !
@@ -613,7 +620,7 @@ module diag
     allocate(work(lwork))
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
-    call dsyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
+    call dsyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
     !
     if (int(work(1))>size(work)) then
       !
@@ -625,11 +632,11 @@ module diag
       !
       allocate(work(lwork))
       !
-      call dsyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
+      call dsyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
       !
     else
       !
-      call dsyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
+      call dsyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
       !
     endif
     !
@@ -653,9 +660,9 @@ module diag
     character(len=1) :: jobz_
 
     real(4),allocatable    :: work(:)
-    integer(hik)      :: info
-    integer(hik)      :: nh1, nh2
-    integer(hik)      :: lwork
+    integer(hik_)      :: info
+    integer(hik_)      :: nh1, nh2
+    integer(hik_)      :: lwork
     !
     !if (verbose>=2) call TimerStart('lapack_dsyev: diagonalization')
     !
@@ -672,7 +679,7 @@ module diag
     allocate(work(lwork))
     !
     nh1 = size(h,dim=1) ; nh2 = size(h,dim=2)
-    call ssyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
+    call ssyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,-1,info)
     !
     if (int(work(1))>size(work)) then
       !
@@ -684,11 +691,11 @@ module diag
       !
       allocate(work(lwork))
       !
-      call ssyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
+      call ssyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
       !
     else
       !
-      call ssyev(jobz_,'U',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
+      call ssyev(jobz_,'L',nh1,h(1:nh1,1:nh2),nh1,e,work,lwork,info)
       !
     endif
     !
@@ -716,8 +723,8 @@ module diag
     double precision,allocatable  :: work_t (:),h(:,:)
 
     integer(ik)           :: info1,iw,info2
-    integer(hik)          :: rank,info
-    integer(hik)          :: na1, na2, nb1, nb2
+    integer(ik)          :: rank,info
+    integer(ik)          :: na1, na2, nb1, nb2
     !   
     na1 = size(a,dim=1) ; na2 = size(a,dim=2)
     nb1 = size(b,dim=1) ; nb2 = size(b,dim=2)
@@ -728,14 +735,12 @@ module diag
     !
     tol = -1.0d-12
     !
-    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s, tol, rank, work, -1, info)
+    call dgelss(na1,na2,nb2,a(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s, tol, rank, work, -1, info)
     !
     iw = int(work(1))
     allocate(work_t(iw),stat=info2)
     !
-    call dgelss(na1,na2,nb2,h(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1, &
-                s, tol, rank, work_t, iw, info)
+    call dgelss(na1,na2,nb2,h(1:na1,1:na2),na1,b(1:nb1,1:nb2),nb1,s, tol, rank, work_t, iw, info)
     !
     a = h 
     !
@@ -770,12 +775,12 @@ module diag
     integer,allocatable :: iwork(:),ifail(:)
     integer,allocatable :: isuppz(:)
     !
-    integer(hik)      :: info,n,lwork,il,ir,m,niwork
+    integer(hik_)      :: info,n,lwork,il,ir,m,niwork,iflag
     integer(ik)       :: iksize,alloc,k,msize
     !
     double precision :: vl,vu,abstol
     character(len=1) :: rng_,jobz_
-    integer(hik) ::  matsize
+    integer(hik) ::  matsize,lwork_hik
     !
     if (verbose>=2) call TimerStart('diag_syev_i8')
     !
@@ -788,14 +793,20 @@ module diag
     if (present(jobz)) then
        jobz_ = jobz
     endif
-    
+    !
     lwork = 50*size(h,dim=1)
+    !
+    lwork = 1+6*n+2*n**2
+    !
+    niwork = 5*n+10
     !
     allocate(work(lwork),stat=alloc)
     !
     iksize = lwork
     !
-    call ArrayStart('diag_tridiag-arrays',alloc,iksize,rk)
+    lwork_hik = lwork
+    !
+    call ArrayStart('diag_tridiag-arrays',alloc,1,rk,lwork_hik)
     !
     if (verbose>=2) call TimerStart('diag_dsyev')
     !
@@ -817,7 +828,7 @@ module diag
     endif
     !
     abstol =(small_)
-    if (present(tol)) then
+    if (present(tol).and.tol>0) then
        abstol = tol
     endif
     !
@@ -842,17 +853,17 @@ module diag
     iksize = size(ifail)
     call ArrayStart('diag_tridiag-arrays',alloc,iksize,ik)
     !
-    if (verbose>=4) write(out,"(/'abstol = ',e18.8)") abstol
-    !
     select case (trim(solver))
       !
     case('DSYEV-ILP')
       !
-      call dsyev(jobz_,'U',n,h,n,e,work,-1,info)
+      iflag = -1
       !
-      if (int(work(1),hik)>lwork) then 
+      call dsyev(jobz_,'L',n,h,n,e,work,iflag,info)
+      !
+      if (int(work(1),hik_)>lwork) then 
         !
-        lwork = int(work(1),hik)
+        lwork = int(work(1),hik_)
         deallocate(work)
         allocate(work(lwork),stat=alloc)
         !
@@ -860,16 +871,16 @@ module diag
         !
       endif
       !
-      call dsyev(jobz_,'U',n,h,n,e,work,lwork,info)
+      call dsyev(jobz_,'L',n,h,n,e,work,lwork,info)
       !
     case('DSYEVX-ILP')
-      !
-      niwork = 5*n
       !
       allocate(iwork(niwork),stat=alloc)
       call ArrayStart('diag_tridiag-arrays',alloc,int(niwork,ik),ik)
       !
-      call dsyevx('V',rng,'U',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,work,-1,iwork,ifail,info) 
+    if (verbose>=4) write(out,"(/'abstol = ',e18.8)") abstol
+      !
+      call dsyevx('V',rng,'L',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,work,-1,iwork,ifail,info) 
       !
       if (int(work(1))>size(work)) then 
         !
@@ -887,7 +898,7 @@ module diag
         !
       endif
       !
-      call dsyevx('V',rng,'U',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,work,lwork,iwork,ifail,info) 
+      call dsyevx('V',rng,'L',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,work,lwork,iwork,ifail,info) 
       !
       if (verbose>=2) call TimerStart('diag_copy')
       !
@@ -912,7 +923,9 @@ module diag
       iksize = 2*m
       call ArrayStart('diag_tridiag-arrays',alloc,iksize,ik)
       !
-      call dsyevr(jobz_,rng_,'U',n,h,n,vl,vu,il,ir,abstol,m,e,h,n,isuppz,work,-1,iwork,-1,info)
+      if (verbose>=4) write(out,"(/'abstol = ',e18.8)") abstol
+      !
+      call dsyevr(jobz_,rng_,'L',n,h,n,vl,vu,il,ir,abstol,m,e,h,n,isuppz,work,-1,iwork,-1,info)
       !
       if (int(work(1))>size(work)) then 
         !
@@ -930,7 +943,7 @@ module diag
         !
       endif
       !
-      call dsyevr(jobz_,rng_,'U',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,isuppz,work,lwork,iwork,niwork,info)
+      call dsyevr(jobz_,rng_,'L',n,h,n,vl,vu,il,ir,abstol,m,e,a,n,isuppz,work,lwork,iwork,niwork,info)
       !
       if (verbose>=2) call TimerStart('diag_copy')
       !
@@ -946,12 +959,14 @@ module diag
       !
     case('DSYEVD-ILP')
       !
-      niwork = 50*n
+      !niwork = 50*n
       !
       allocate(iwork(niwork),stat=alloc)
       call ArrayStart('diag_tridiag-arrays',alloc,int(niwork,ik),ik)
       !
-      call dsyevd('V','U',n,h,n,e,work,-1,iwork,-1,info)
+      iflag = -1
+      !
+      call dsyevd('V','L',n,h,n,e,work,iflag,iwork,iflag,info)
       !
       if (int(work(1))>size(work)) then 
         !
@@ -969,7 +984,7 @@ module diag
         !
       endif
       !
-      call dsyevd('V','U',n,h,n,e,work,lwork,iwork,niwork,info)
+      call dsyevd('V','L',n,h,n,e,work,lwork,iwork,niwork,info)
       !
     end select
     !
@@ -985,10 +1000,10 @@ module diag
     if (allocated(isuppz)) deallocate(isuppz)
     if (allocated(ifail)) deallocate(ifail)
     if (allocated(iwork)) deallocate(iwork)
+    if (allocated(work)) deallocate(work)
+    if (allocated(a)) deallocate(a)
     !
     if (present(iroots))  iroots = m
-    !
-    deallocate(work)
     !
     call ArrayStop('diag_tridiag-arrays')
     !
@@ -1069,9 +1084,9 @@ module diag
             !
             if (verbose>=3) write(out,"('  dlatrd...')") 
             !
-            !call dlatrd('U', i+nb-1, nb, a, lda, e, tau, w, ldw )
+            !call dlatrd('L', i+nb-1, nb, a, lda, e, tau, w, ldw )
             !
-            call diag_dlatrd('U', i+nb-1, nb, a, lda, e, tau, w, ldw )
+            call diag_dlatrd('L', i+nb-1, nb, a, lda, e, tau, w, ldw )
             !
             if (verbose>=3) write(out,"('  ...done!')") 
             !
@@ -1084,7 +1099,7 @@ module diag
             !
             if (verbose>=3) write(out,"('  dsyr2k...')") 
             !
-            call dsyr2k('U','N',i-1,nb,-one,a(1,i),lda,w,ldw,one,a,lda )
+            call dsyr2k('L','N',i-1,nb,-one,a(1,i),lda,w,ldw,one,a,lda )
             !
             if (verbose>=3) write(out,"('  ...done!')") 
             !
@@ -1108,7 +1123,7 @@ module diag
          !
          if (verbose>=3) write(out,"('  dsyr2k...')") 
          !
-         call dsytd2('U',kk,a,lda,d,e,tau,info)
+         call dsytd2('L',kk,a,lda,d,e,tau,info)
          !
          !
          if (verbose>=3) write(out,"('  ...done!')") 
@@ -1199,7 +1214,7 @@ module diag
             !
             if (verbose>=3) write(out,"('    dsymv...')")
             !
-            call diag_dsymv('U', i-1, one, a, lda, a( 1, i ), 1,zero, w( 1, iw ), 1 )
+            call diag_dsymv('L', i-1, one, a, lda, a( 1, i ), 1,zero, w( 1, iw ), 1 )
             !
             if (verbose>=3) write(out,"('    ...done!')")
             !
@@ -1279,7 +1294,7 @@ module diag
       !test the input parameters.
       !
       info = 0
-      if (.not.lsame(uplo,'u') .and. .not.lsame(uplo,'l')) then
+      if (.not.lsame(uplo,'l') .and. .not.lsame(uplo,'l')) then
           info = 1
       else if (n.lt.0) then
           info = 2
@@ -1324,7 +1339,7 @@ module diag
       !
       if (alpha.eq.zero) return
       !
-      if (lsame(uplo,'u')) then
+      if (lsame(uplo,'l')) then
           !
           !   form  y  when a is stored in upper triangle.
           !
@@ -1646,7 +1661,7 @@ module diag
                !
                ! compute  w := y - 1/2 * tau * (y'*v) * v
                !
-               alpha = -half*taui*ddot( i, tau, 1, ap( i1 ), 1 )
+               alpha = -half*taui*ddot( i, tau, 1, ap( i1: ), 1 )
                !
                !call daxpy( i, alpha, ap( i1 ), 1, tau, 1 )
                !
@@ -1825,13 +1840,13 @@ module diag
                  !
                  ! compute  y := tau * a * v  storing y in tau(1:i)
                  !
-                 call dspmv(uplo,j,taui,ap,ap(i1),1,zero,tau_(:,ip),1 )
+                 call dspmv(uplo,j,taui,ap,ap(i1:),1,zero,tau_(:,ip),1 )
                  !
                  ! compute  w := y - 1/2 * tau * (y'*v) * v
                  !
-                 alpha = -half*taui*ddot( j, tau_(:,ip), 1, ap( i1 ), 1 )
+                 alpha = -half*taui*ddot( j, tau_(:,ip), 1, ap( i1: ), 1 )
                  !
-                 call daxpy( j, alpha, ap( i1 ), 1, tau_(:,ip), 1 )
+                 call daxpy( j, alpha, ap( i1: ), 1, tau_(:,ip), 1 )
                  !
               end if
               !
@@ -1909,13 +1924,13 @@ module diag
                !
                if (verbose>=3) write(out,"('  daxpy...')") 
                !
-               call dspmv(uplo,i,taui,ap,ap(i1),1,zero,tau,1 )
+               call dspmv(uplo,i,taui,ap,ap(i1:),1,zero,tau,1 )
                !
                ! compute  w := y - 1/2 * tau * (y'*v) * v
                !
-               alpha = -half*taui*ddot( i, tau, 1, ap( i1 ), 1 )
+               alpha = -half*taui*ddot( i, tau, 1, ap( i1: ), 1 )
                !
-               call daxpy( i, alpha, ap( i1 ), 1, tau, 1 )
+               call daxpy( i, alpha, ap( i1: ), 1, tau, 1 )
                !
                if (verbose>=3) write(out,"('  ...done!')") 
                !
@@ -2305,7 +2320,7 @@ module diag
     allocate(work(lwork))
     !
     n = size(h,dim=1) 
-    call dsyev(jobz_,'U',n,h(1:n,1:n),n,e,work,-1,info)
+    call dsyev(jobz_,'L',n,h(1:n,1:n),n,e,work,-1,info)
     !
     asize = int(n,hik)*int(n,hik)
     !
@@ -2328,11 +2343,11 @@ module diag
       !
       allocate(work(lwork))
       !
-      call dsyev(jobz_,'U',n,h(1:n,1:n),n,e,work,lwork,info)
+      call dsyev(jobz_,'L',n,h(1:n,1:n),n,e,work,lwork,info)
       !
     else
       !
-      call dsyev(jobz_,'U',n,h(1:n,1:n),n,e,work,lwork,info)
+      call dsyev(jobz_,'L',n,h(1:n,1:n),n,e,work,lwork,info)
       !
     endif
     !
@@ -2436,9 +2451,9 @@ module diag
       integer               :: k,istart,iend,dimen,m,kend,iprev,inext,nx
       double precision,external    :: ddot
       integer,parameter  :: MPI_DOUBLE_PRECISION = 17
-	  !
-	  myid = 1
-	  nprow = 1
+      !
+      myid = 1
+      nprow = 1
       !
 #if (blacs_ > 0)
         call BLACS_GRIDINFO( comm, nprow, npcol, myprow, mypcol )
@@ -2714,9 +2729,9 @@ module diag
 #if (blacs_ > 0)
            call BLACS_SETUP( iam, nprocs )
 #endif
-	 !
-	 print *,nprocs
-	 !
+         !
+         print *,nprocs
+         !
       endif
       if (nprocs >maxnprocs) stop 'nprocs > maxnprocs'
       !
@@ -2884,7 +2899,7 @@ module diag
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
         !
-#elseif (arpack_>0)
+#elif (arpack_>0)
             !
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &

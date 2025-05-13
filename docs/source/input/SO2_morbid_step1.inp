@@ -1,0 +1,110 @@
+
+PTorder   0   (Max Perturbation order )
+KinOrder  6   (Max order in the kinetic energy expansion)
+PotOrder  8   (Max order in the potential energy expansion)
+
+Natoms 3      (Number of atoms)
+Nmodes 3      (Number of modes = 3*Natoms-6)
+
+(ACTIVE SPACE CUTOFFS:)
+PRIMITIVES
+  Npolyads       28          (how many polyads we calculate)
+  enercut        30000.      (energy cut in the primitive matrix for the diagonalization)
+END
+
+CONTRACTION
+  Npolyads        28      (how many polyads we calculate)
+  enercut        30000.   (energy cut in the primitive matrix for the diagonalization)
+END
+
+
+control 
+step 1
+end
+
+
+DIAGONALIZER 
+ SYEV     
+end
+
+SYMGROUP C2V(M)
+
+dstep 1.e-3
+COORDS linear 
+TRANSFORM  r-rho 
+MOLTYPE XY2   
+MOLECULE H2S  
+
+REFER-CONF RIGID 
+
+ZMAT
+    S   0  0  0  0  31.97207070
+    O   1  0  0  0   15.99491463
+    O   1  2  0  0   15.99491463
+end
+
+     (type     chi_kin   chi_pot)
+BASIS
+  0,'JKtau', Jrot 0
+  1,'numerov','linear', 'morse',  range 0,14, resc 2.0, points 1000,borders -0.5,1.8
+  1,'numerov','linear', 'morse',  range 0,14, resc 2.0, points 1000,borders -0.5,1.8
+  1,'numerov','linear', 'linear', range 0,28, resc 1.0, points 1000, borders  -0.8,1.4
+END
+
+
+
+verbose 5
+
+
+EQUILIBRIUM
+re13       1         1.43289
+re13       1         1.43289
+alphae     0        119.313      DEG
+end
+
+
+
+SPECPARAM
+aa         0         2.30156389243
+aa         0         2.30156389243
+END
+
+POTEN
+NPARAM  33
+POT_TYPE  poten_xy2_morbid
+COEFF  list  (powers or list)
+VE            5      0.000000000000E+00
+FA1           0      0.000000000000E+00
+FA2           7      0.554889398440E+05
+FA3           6     -0.683097594507E+04
+FA4           5      0.370824530280E+05
+FA5           4     -0.365623009600E+05
+FA6           3      0.924273250811E+05
+FA7           0      0.000000000000E+00
+FA8           0      0.000000000000E+00
+F1A1          6     -0.627170731711E+04
+F2A1          5     -0.265087554312E+05
+F3A1          4     -0.368296856599E+04
+F4A1          0      0.000000000000E+00
+F11           8      0.495418395524E+05
+F1A11         7      0.207997370803E+04
+F2A11         6     -0.151210307450E+05
+F3A11         5      0.243816565198E+04
+F13           5      0.734183677005E+02
+F1A13         4      0.776043904601E+04
+F2A13         3      0.156897590566E+05
+F3A13         2      0.145349441911E+05
+F111          6      0.123746852275E+04
+F1A111        5      0.156649410978E+04
+F2A111        0      0.000000000000E+00
+F113          4     -0.130167899162E+04
+F1A113        3     -0.207170214717E+04
+F2A113        2      0.140490323672E+05
+F1111         4      0.181852607268E+04
+F1A1111       4     -0.216559573725E+04
+F1113         3     -0.110090551180E+04
+F1A1113       2     -0.428649004354E+04
+F1133         3      0.581978238852E+03
+F1A1133       2     -0.450959865681E+04
+end
+

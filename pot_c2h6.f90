@@ -9,7 +9,8 @@ implicit none
 
 public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,&
        MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
-public MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order
+public MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36,&
+       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36
 
 private
 
@@ -574,7 +575,7 @@ function MLpoten_c2h6_88_cos3tau(ncoords, natoms, local, xyz, force) result(f)
     xi(17) = ( 2.0_ark*local(17) - 2.0_ark*pi + local(18))/sqrt(2.0_ark)
     xi(18) = ( ( 3.0_ark*local(16) + local(14) - local(15) + local(17) - local(18))/3.0_ark ) - pi
     !
-  case('R-R16-BETA16-THETA-TAU-3')
+  case('R-R16-BETA16-THETA-TAU-33')
     !
     tau14 = local(14)
     tau24 = local(15)
@@ -1167,8 +1168,8 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6',&
-       'R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9','R-R16-BETA16-THETA-TAU-10')
+  case('R-R16-BETA16-THETA-TAU-4','R-R16-BETA16-THETA-TAU-5','R-R16-BETA16-THETA-TAU-6',&
+       'R-R16-BETA16-THETA-TAU-7','R-R16-BETA16-THETA-TAU-8','R-R16-BETA16-THETA-TAU-9')
       !
       tau14 = local(14)
       tau24 = local(15)
@@ -1217,7 +1218,8 @@ function MLpoten_c2h6_88_cos3tau_sym(ncoords, natoms, local, xyz, force) result(
       !
       xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
       !
-  case('R-R16-BETA16-THETA-TAU-11')
+  case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3',&
+       'R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-17')
       !
       r1 = local(1)
       r2 = local(2)
@@ -2049,7 +2051,7 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
 
 
 
-   recursive subroutine ML_symmetry_transformation_C2H6_G36(ioper, nmodes, src, dst)
+   recursive subroutine ML_symmetry_transformation_C2H6_G36(ioper, nmodes, src, dst, s18, d18)
     !
     ! Symmetry transformation rules of coordinates
     !
@@ -2057,8 +2059,161 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
     integer(ik), intent(in)  ::  nmodes
     real(ark), intent(in)    ::  src(1:nmodes)
     real(ark), intent(out)   ::  dst(1:nmodes)
+    real(ark), optional,intent(in)    ::  s18
+    real(ark), optional,intent(out)   ::  d18
+    !
     real(ark) :: a,b,e,o,g(1:4,1:4),c123(2,2),c132(2,2),a123(3,3),a132(3,3),sxy(2,2),i(3,3),i2(3,3)
- !
+    real(ark) :: s18_,d18_
+    !
+    real(ark),dimension(size(src)) :: tmp
+    !
+    integer(ik)  :: tn(72,2), temp(144)
+    integer(ik) :: nsrc
+    !
+    temp(1:36)   = (/0, 0, 2, 0, 6, 4, 0, 7, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 0,21,19, 2, 3, 2, 3, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6/)
+    temp(73:108) = (/0, 0, 2, 0, 2, 2, 0, 7, 7, 7, 8, 8, 7, 7, 7, 8, 8, 8, 0, 7, 7,19,19,20,20,21,21,19,19,19,20,20,20,21,21,21/)
+    !
+    tn = reshape( temp, (/ 72, 2/))
+    !
+    s18_ = 0 ; d18_ = 0
+    !
+    if (present(s18)) then 
+       s18_ = s18
+    endif 
+    !
+    a = 0.5_ark
+    b = 0.5_ark*sqrt(3.0_ark)
+    !
+    e = 1.0_ark
+    o = 0.0_ark
+    !!
+    c123 = transpose(reshape( (/ -a, -b, &
+                                  b, -a/), (/ 2, 2/)))
+    c132  = matmul(c123,c123)
+    !
+    a123 = transpose(reshape( (/ o, o, e,&
+                                 e, o, o,&
+                                 o, e, o/), (/ 3, 3/)))
+    a132  = matmul(a123,a123)
+    !
+    i = transpose(reshape( (/ e, o, o,&
+                              o, e, o,&
+                              o, o, e/), (/ 3, 3/)))
+    !
+    i2= transpose(reshape( (/ e, o, o,&
+                              o, o, e,&
+                              o, e, o/), (/ 3, 3/)))
+    !
+    sxy = transpose(reshape( (/ e,  o, &
+                                o, -e /), (/ 2, 2/)))
+    !
+    select case(ioper)
+      !
+    case (1) ! E
+      !
+      dst(1:18) = src(1:18)
+      !
+    case (2) !C(+)/(123)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a123,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a123,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c123,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      !!!! remember that 
+      !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
+      !!!! src(18) = 1 + cos(3 tau)
+      !
+      dst(18) = src(18)
+      !    
+    case (4) !sxy(+)/(14)(26)(35)(ab)* 
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i2,src(5:7))
+      dst(5:7) = matmul(i2,src(2:4))
+      !
+      dst(8:10) = matmul(i2,src(11:13))
+      dst(11:13) = matmul(i2,src(8:10))
+      !
+      !!
+      dst(14:15) = matmul(sxy,src(16:17))
+      dst(16:17) = matmul(sxy,src(14:15))
+      !
+      !!!!!
+      !dst(18) =  4.0_ark*pi - src(18)
+      !!!!!
+      dst(18) = src(18)
+      !
+      d18_ = -s18_
+      !
+    case (7) ! C(-)/(132)(456)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(a132,src(2:4))
+      dst(5:7) = matmul(a123,src(5:7))
+      !
+      dst(8:10) = matmul(a132,src(8:10))
+      dst(11:13) = matmul(a123,src(11:13))
+      !!
+      dst(14:15) = matmul(c132,src(14:15))
+      dst(16:17) = matmul(c123,src(16:17))
+      !
+      !!
+      dst(18) = src(18)
+      !
+    case (19) !sxy(-)/(14)(25)(36)(ab)
+      !
+      dst(1) = src(1)
+      !
+      dst(2:4) = matmul(i,src(5:7))
+      dst(5:7) = matmul(i,src(2:4))
+      !
+      dst(8:10) = matmul(i,src(11:13))
+      dst(11:13) = matmul(i,src(8:10))
+      !!
+      dst(14:15) = src(16:17)
+      dst(16:17) = src(14:15)
+      !!
+      dst(18) = src(18)
+      !
+    case(37) !E'
+      !
+      dst(1:18) = src(1:18)
+      !dst(18) = src(18) + 2.0_ark*pi
+      !
+    end select
+    !
+    if (all(tn(ioper,:)/=0)) then
+        call ML_symmetry_transformation_C2H6_G36(tn(ioper,1),nmodes,src,tmp,s18_,d18_)
+        call ML_symmetry_transformation_C2H6_G36(tn(ioper,2),nmodes,tmp,dst,s18_,d18_)
+    endif 
+    !
+    if (present(d18)) then 
+       d18 = d18_
+    endif 
+    !
+  end subroutine ML_symmetry_transformation_C2H6_G36
+
+
+   recursive subroutine ML_symmetry_transformation_C2H6_G36_full(ioper, nmodes, src, dst)
+    !
+    ! Symmetry transformation rules of coordinates
+    !
+    integer(ik), intent(in)  ::  ioper
+    integer(ik), intent(in)  ::  nmodes
+    real(ark), intent(in)    ::  src(1:nmodes)
+    real(ark), intent(out)   ::  dst(1:nmodes)
+    !
+    real(ark) :: a,b,e,o,g(1:4,1:4),c123(2,2),c132(2,2),a123(3,3),a132(3,3),sxy(2,2),i(3,3),i2(3,3)
+    !
     real(ark),dimension(size(src)) :: tmp
     !
     integer(ik)  :: tn(72,2), temp(144)
@@ -2114,8 +2269,7 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(c123,src(14:15))
       dst(16:17) = matmul(c123,src(16:17))
       !
-      !dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
-      dst(18) = src(18)
+      dst(18) = src(18)  - 4.0_ark/3.0_ark*pi
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi
@@ -2138,10 +2292,8 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       !!
       dst(14:15) = matmul(sxy,src(16:17))
       dst(16:17) = matmul(sxy,src(14:15))
-      !!
-      !dst(18) =  2.0_ark*pi - src(18)
       !
-      dst(18) = src(18)
+      dst(18) =  4.0_ark*pi - src(18)
       !
       do while(dst(18) < 0.0_ark) 
             dst(18) = dst(18) + 4.0_ark*pi
@@ -2149,7 +2301,7 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       do while(dst(18) > 4.0_ark*pi) 
             dst(18) = dst(18) - 4.0_ark*pi
       enddo
-     !
+      !
     case (7) ! C(-)/(132)(456)
       !
       dst(1) = src(1)
@@ -2163,7 +2315,6 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       dst(14:15) = matmul(c132,src(14:15))
       dst(16:17) = matmul(c123,src(16:17))
       !
-      !!
       dst(18) = src(18)
       !
     case (19) !sxy(-)/(14)(25)(36)(ab)
@@ -2181,25 +2332,25 @@ subroutine ML_symmetry_transformation_XY3_IV(ioper,src,dst,NDEG)
       !!
       dst(18) = src(18)
       !
-    case(37) !E'
-       dst(1:17) = src(1:17)
-       dst(18) = src(18) + 2.0_ark*pi
-       do while(dst(18) < 0.0_ark) 
-            dst(18) = dst(18) + 4.0_ark*pi
-       enddo
-       do while(dst(18) > 4.0_ark*pi) 
-            dst(18) = dst(18) - 4.0_ark*pi
-       enddo
-       !
+   case(37) !E'
+      !
+      dst(1:17) = src(1:17)
+      dst(18) = src(18) + 2.0_ark*pi
+      do while(dst(18) < 0.0_ark) 
+           dst(18) = dst(18) + 4.0_ark*pi
+      enddo
+      do while(dst(18) > 4.0_ark*pi) 
+           dst(18) = dst(18) - 4.0_ark*pi
+      enddo
+      !
     end select
     !
     if (all(tn(ioper,:)/=0)) then
-        call ML_symmetry_transformation_C2H6_G36(tn(ioper,1),nmodes,src,tmp)
-        call ML_symmetry_transformation_C2H6_G36(tn(ioper,2),nmodes,tmp,dst)
+        call ML_symmetry_transformation_C2H6_G36_full(tn(ioper,1),nmodes,src,tmp)
+        call ML_symmetry_transformation_C2H6_G36_full(tn(ioper,2),nmodes,tmp,dst)
     endif 
     !
-  end subroutine ML_symmetry_transformation_C2H6_G36
-
+  end subroutine ML_symmetry_transformation_C2H6_G36_full
 
 
 function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(f)
@@ -2216,6 +2367,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   integer(ik) :: ioper,ipower(18),i
 
   real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,xi_A,xi_B,xi_C,xi_D
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53,tau34,tau26
   !
   rad = pi/180.0_ark
   !
@@ -2241,7 +2393,134 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_c2h6_88 error error: bad coordinate type'
     !
-  case('R-R16-BETA16-THETA-TAU-11')
+  case('R-R16-BETA16-THETA-TAU-1')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(6)
+    r4 = local(4)
+    r5 = local(3)
+    r6 = local(5)
+    r7 = local(7)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(12) - betae
+    xi(10) = local(10) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
+
+
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau34 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+    !
+    tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+    tau34 = mod(tau34+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(tau26+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+  case('R-R16-BETA16-THETA-TAU-2')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(6)
+    r4 = local(4)
+    r5 = local(3)
+    r6 = local(5)
+    r7 = local(7)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(12) - betae
+    xi(10) = local(10) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
+
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau34 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    ! for oher dihedral modes the extension is not needed and removed by mod(2 pi)
+    !
+    tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+    tau34 = mod(tau34+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(tau26+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta12 - theta13 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta12 - theta13 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+  case('R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
     !
     r1 = local(1)
     r2 = local(2)
@@ -2277,7 +2556,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
        tau36 = tau36 + 2.0_ark*pi
     endif
     !
-    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
     !
     tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -2300,8 +2579,70 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     !
     rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !
-    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)    !
+  case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14',&
+       'R-R16-BETA16-THETA-TAU-16','R-R16-BETA16-THETA-TAU-19')
     !
+    r1 = local(1)
+    r2 = local(3)
+    r3 = local(5)
+    r4 = local(7)
+    r5 = local(2)
+    r6 = local(6)
+    r7 = local(4)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(9)  - betae
+    xi(9)  = local(11) - betae
+    xi(10) = local(13) - betae
+    xi(11) = local(8)  - betae
+    xi(12) = local(12) - betae
+    xi(13) = local(10) - betae
+    !
+    tau41 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau16 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau62 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau53 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+    if (tau41>2.0_ark*pi) then 
+       tau53 = tau53 + 2.0_ark*pi
+       tau62 = tau62 + 2.0_ark*pi
+    endif
+    !
+    rhobar  = ( tau41+tau53+tau62)/(3.0_ark)
+    !
+    !
+    tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+    tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+    tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+    theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+    theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !  
   case('R-R16-BETA16-THETA-TAU')
     !
     r1 = local(1)
@@ -2368,6 +2709,9 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   !
   do ioper = 1,36
     !
+    ! for xi(18) = 1.0_ark + cos(3.0_ark*rhobar) 
+    ! all operations on xi18->xi18
+    !
     call ML_symmetry_transformation_C2H6_G36(ioper,18,xi,chi(:,ioper))
     !
   enddo
@@ -2392,6 +2736,281 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
   !  
 end function MLpoten_c2h6_88_cos3tau_G36
 
+
+function MLpoten_c2h6_Morse_displace_fourier_G36(ncoords, natoms, local, xyz, force) result(f)
+  !
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+  !
+  real(ark) :: xi(18),x(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
+  real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
+  real(ark) :: chi(18,36),term,rad,rhobar
+  integer(ik) :: ioper,ipower(18),i,nmodes,Nsin,Ncos
+  !
+  real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53
+  !
+  rad = pi/180.0_ark
+  !
+  r1e = force(1)
+  r2e = force(2)
+  betae = force(3)*rad
+  a = force(4)
+  b = force(5)
+  Ncos = force(6)
+  Nsin = force(6+Ncos+1)
+  !
+  nmodes = 18
+  !
+  call coordinate_transformation(ncoords,nmodes,local,xi)
+  !
+  do ioper = 1,36
+    !
+    call ML_symmetry_transformation_C2H6_G36_full(ioper,18,xi,chi(:,ioper))
+    !
+  enddo
+  !
+  f = 0
+  ! 
+  do i = 7, 7+Ncos
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    do ioper = 1,36
+      x( 1   )= 1.0_ark   - exp(-a*(chi(1,ioper)-r1e))
+      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7,ioper)-r2e))
+      x( 8:13)= chi( 8:13,ioper) - betae
+      x(14:18)= chi(14:18,ioper)
+      term = term + product(x(1:17)**ipower(1:17))*cos(ipower(18)*x(18))
+      !
+    end do
+    !
+    term = term/36.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  ! 
+  do i =7+Ncos+1,7+Ncos+Nsin
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    do ioper = 1,36
+      x( 1   )= 1.0_ark   - exp(-a*(chi(1,ioper)-r1e))
+      x( 2: 7)= 1.0_ark   - exp(-b*(chi(2:7,ioper)-r2e))
+      x( 8:13)= chi( 8:13,ioper) - betae
+      x(14:18)= chi(14:18,ioper)
+      term = term + product(x(1:17)**ipower(1:17))*sin(ipower(18)*x(18))
+      !
+    end do
+    !
+    term = term/36.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  !  
+end function MLpoten_c2h6_Morse_displace_fourier_G36
+
+
+
+function MLpoten_c2h6_explct_M2_P6(ncoords, natoms, local, xyz, force) result(f)
+  !
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+  !
+  real(ark) :: xi(18),r1e,r2e,betae,a,b,y1,y2,y3,y4,y5,y6,y7,y8,y9,y10,y11,y12,y13,y14,y15,y16,y17,y18,s1
+  real(ark) :: rad,g(molec%parmax)
+  integer(ik) :: i,nmodes
+  !
+  rad = pi/180.0_ark
+  !
+  !r1      = local(1)
+  !r2      = local(2)
+  !r3      = local(4)
+  !r4      = local(6)
+  !r5      = local(3)
+  !r6      = local(5)
+  !r7      = local(7)
+  !
+  r1e = force(1)
+  r2e = force(2)
+  betae = force(3)*rad
+  a = force(4)
+  b = force(5)
+  !
+  nmodes = 18
+  !
+  call coordinate_transformation(ncoords,nmodes,local,xi)
+  !
+  y1  = 1.0_ark-exp(-a*(xi( 1)-r1e))
+  y2  = 1.0_ark-exp(-b*(xi( 2)-r2e))
+  y3  = 1.0_ark-exp(-b*(xi( 3)-r2e))
+  y4  = 1.0_ark-exp(-b*(xi( 4)-r2e))
+  y5  = 1.0_ark-exp(-b*(xi( 5)-r2e))
+  y6  = 1.0_ark-exp(-b*(xi( 6)-r2e))
+  y7  = 1.0_ark-exp(-b*(xi( 7)-r2e))
+  
+  
+  y8  = xi( 8) - betae
+  y9  = xi( 9) - betae
+  y10 = xi(10) - betae
+  y11 = xi(11) - betae
+  y12 = xi(12) - betae
+  y13 = xi(13) - betae
+  y14 = xi(14)
+  y15 = xi(15)
+  y16 = xi(16)
+  y17 = xi(17)
+  y18 = xi(18)
+
+  g = 0
+  !
+  g(9) = 1._ark
+  g(10) = cos(3._ark*y18)
+  g(11) = cos(6.0_ark*y18)
+  g(12) = cos(9.0_ark*y18)
+  g(13) = cos(12.0_ark*y18)
+
+
+  g(14) = cos(9.0_ark*y18)*(y12+y13+y11+y10+y9+y8)
+  g(15) = y12+y13+y11+y10+y9+y8
+  g(16) = cos(3.0_ark*y18)*(y12+y13+y11+y10+y9+y8)
+  g(17) = cos(6.0_ark*y18)*(y12+y13+y11+y10+y9+y8)
+  g(18) = cos(12.0_ark*y18)*(y12+y13+y11+y10+y9+y8)
+  g(19) = cos(3.0_ark*y18)*(y7+y5+y6+y4+y3+y2)
+  g(20) = cos(9.0_ark*y18)*(y7+y5+y6+y4+y3+y2)
+  g(21) = y7+y5+y6+y4+y3+y2
+  g(22) = cos(6.0_ark*y18)*(y7+y5+y6+y4+y3+y2)
+  g(23) = cos(12.0_ark*y18)*(y7+y5+y6+y4+y3+y2)
+  g(24) = y1
+  g(25) = y1*cos(3.0_ark*y18)
+  g(26) = y1*cos(6.0_ark*y18)
+  g(27) = y1*cos(9.0_ark*y18)
+  g(28) = y1*cos(12.0_ark*y18)
+  g(29) = cos(3.0_ark*y18)*(y17**2+y15**2+y16**2+y14**2)
+  g(30) = cos(6.0_ark*y18)*(y17**2+y15**2+y16**2+y14**2)
+  g(31) = y17**2+y15**2+y16**2+y14**2
+  g(32) = y15*y17*cos(y18)+y15*y16*sin(y18)-y14*y16*cos(y18)+y14*y17*sin(y18)
+  g(33) = y15*y17*cos(2.0_ark*y18)-y15*y16*sin(2.0_ark*y18)-y14*y16*cos(2.0_ark*y18)-y14*y17*sin(2.0_ark*y18)
+  g(34) = y15*y16*sin(4.0_ark*y18)+y14*y17*sin(4.0_ark*y18)+y15*y17*cos(4.0_ark*y18)-y14*y16*cos(4.0_ark*y18)
+  g(35) = y15*y16*sin(5.0_ark*y18)+y14*y16*cos(5.0_ark*y18)+y14*y17*sin(5.0_ark*y18)-y15*y17*cos(5.0_ark*y18)
+  g(36) = cos(6.0_ark*y18)*(y11**2+y12**2+y10**2+y9**2+y8**2+y13**2)
+  g(37) = y11**2+y12**2+y10**2+y9**2+y8**2+y13**2
+  g(38) = cos(3.0_ark*y18)*(y11**2+y12**2+y10**2+y9**2+y8**2+y13**2)
+  g(39) = y7**2+y6**2+y2**2+y5**2+y4**2+y3**2
+  g(40) = cos(3.0_ark*y18)*(y7**2+y6**2+y2**2+y5**2+y4**2+y3**2)
+  g(41) = cos(6.0_ark*y18)*(y7**2+y6**2+y2**2+y5**2+y4**2+y3**2)
+  g(42) = y1**2
+  g(43) = y1**2*cos(3.0_ark*y18)
+  g(44) = y1**2*cos(6.0_ark*y18)
+  g(45) = -y15*y17**2*sin(y18)-y14**2*y16*cos(y18)-y14*y16**2*cos(y18)-y15**2*y17*sin(y18)+y15*y16**2*sin(y18)-&
+          2.0_ark*y15*y16*y17*cos(y18)-2.0_ark*y14*y15*y17*cos(y18)-2.0_ark*y14*y15*y16*sin(y18)+y14*y17**2*cos(y18)-&
+          2.0_ark*y14*y16*y17*sin(y18)+y15**2*y16*cos(y18)+y14**2*y17*sin(y18)
+  g(46) = -y16**3/3.0_ark-y14**3/3.0_ark+y16*y17**2+y14*y15**2
+  g(47) = y9**3+y8**3+y12**3+y13**3+y11**3+y10**3
+  g(48) = y4**3+y6**3+y7**3+y2**3+y5**3+y3**3
+  g(49) = y1**3
+  g(50) = y14*y15**2*y17*sin(y18)+y15**3*y16*sin(y18)+y15**3*y17*cos(y18)+y14**3*y17*sin(y18)+y14**2*y15*y16*sin(y18)-&
+  y14*y16*y17**2*cos(y18)-y14*y16**3*cos(y18)-y14*y15**2*y16*cos(y18)-y14**3*y16*cos(y18)+y15*y16**2*y17*cos(y18)+&
+  y15*y16**3*sin(y18)+y15*y16*y17**2*sin(y18)+y15*y17**3*cos(y18)+y14*y17**3*sin(y18)+y14*y16**2*y17*sin(y18)+&
+     y14**2*y15*y17*cos(y18)
+  g(51) = -y15**2*y17**2*cos(y18)+y14**2*y17**2*cos(y18)+2.0_ark*y15**2*y16*y17*sin(y18)+4.0_ark*y14*y15*y16*y17*cos(y18)+&
+        2.0_ark*y14*y15*y17**2*sin(y18)-y14**2*y16**2*cos(y18)+y15**2*y16**2*cos(y18)-2.0_ark*y14*y15*y16**2*sin(y18)-&
+        2.0_ark*y14**2*y16*y17*sin(y18)
+  g(52) = y14**2*y16**2+y15**2*y17**2+y15**2*y16**2+y14**2*y17**2
+  g(53) = 2.0_ark*y16**2*y17**2+y15**4+y17**4+2.0_ark*y14**2*y15**2+y16**4+y14**4
+  g(54) = y8**4+y9**4+y11**4+y10**4+y13**4+y12**4
+  g(55) = y6**4+y7**4+y2**4+y3**4+y5**4+y4**4
+  g(56) = y1**4
+  g(57) = -y14**2*y16**2*y17*sin(y18)-y14**2*y17**3*sin(y18)-y14**3*y17**2*cos(y18)+2.0_ark*y14**2*y15*y16*y17*cos(y18)+&
+        y14**3*y16**2*cos(y18)+2.0_ark*y14**3*y16*y17*sin(y18)+y14**2*y15*y17**2*sin(y18)+y14**2*y16**3*cos(y18)+&
+        y15**2*y17**3*sin(y18)+y14*y15**2*y16**2*cos(y18)-y15**2*y16**3*cos(y18)-y15**2*y16*y17**2*cos(y18)-&
+        y15**3*y16**2*sin(y18)+2.0_ark*y15**3*y16*y17*cos(y18)+2.0_ark*y14*y15*y17**3*cos(y18)+2.0_ark*y14*y15*y16**2*y17*cos(y18)+&
+        2.0_ark*y14*y15*y16*y17**2*sin(y18)+2.0_ark*y14*y15*y16**3*sin(y18)+y14**2*y16*y17**2*cos(y18)-y14*y15**2*y17**2*cos(y18)+&
+        2.0_ark*y14*y15**2*y16*y17*sin(y18)-y14**2*y15*y16**2*sin(y18)+y15**2*y16**2*y17*sin(y18)+y15**3*y17**2*sin(y18)
+  g(58) = -3.0_ark*y14**3*y15*y16*sin(y18)+y15*y16*y17**3*cos(y18)+y14*y16*y17**3*sin(y18)+y14*y17**4*cos(y18)+y15**4*y16*cos(y18)-&
+        y15**4*y17*sin(y18)+y14*y15**3*y16*sin(y18)+3.0_ark*y14**2*y15**2*y17*sin(y18)-3.0_ark*y14**2*y15**2*y16*cos(y18)-&
+        3.0_ark*y14**3*y15*y17*cos(y18)-3.0_ark*y15*y16**3*y17*cos(y18)+3.0_ark*y15*y16**2*y17**2*sin(y18)-y15*y17**4*sin(y18)-&
+        3.0_ark*y14*y16**2*y17**2*cos(y18)-3.0_ark*y14*y16**3*y17*sin(y18)+y14*y15**3*y17*cos(y18)
+  g(59) = -y14**2*y16**3/3.0_ark-y14**3*y17**2/3.0_ark+y14**2*y16*y17**2+y14*y15**2*y17**2+y15**2*y16*y17**2-y14**3*y16**2/3.0_ark-&
+          y15**2*y16**3/3.0_ark+y14*y15**2*y16**2
+  g(60) = y14**3*y15**2-y14**5/2.0_ark-y16**5/2.0_ark+y16**3*y17**2+3.0_ark/2.0_ark*y14*y15**4+3.0_ark/2.0_ark*y16*y17**4
+  g(61) = -y14**4*y17*sin(y18)+8.0_ark*y14**3*y15*y16*sin(y18)+y14**4*y16*cos(y18)+y14*y16**4*cos(y18)-3.0_ark*y14*y17**4*cos(y18)-&
+           3.0_ark*y15**4*y16*cos(y18)+3.0_ark*y15**4*y17*sin(y18)-6.0_ark*y14**2*y15**2*y17*sin(y18)+&
+           6.0_ark*y14**2*y15**2*y16*cos(y18)+8.0_ark*y14**3*y15*y17*cos(y18)-y15*y16**4*sin(y18)+8.0_ark*y15*y16**3*y17*cos(y18)-&
+           6.0_ark*y15*y16**2*y17**2*sin(y18)+3.0_ark*y15*y17**4*sin(y18)+6.0_ark*y14*y16**2*y17**2*cos(y18)+&
+           8.0_ark*y14*y16**3*y17*sin(y18)
+  g(62) = y8**5+y9**5+y11**5+y13**5+y10**5+y12**5
+  g(63) = y7**5+y2**5+y3**5+y4**5+y6**5+y5**5
+  g(64) = y1**5
+  g(65) = -6.0_ark*y14**2*y15**4+9.0_ark*y14**4*y15**2-6.0_ark*y16**2*y17**4+y15**6+9.0_ark*y16**4*y17**2+y17**6
+  g(66) = 9.0_ark*y14**2*y15**4-6.0_ark*y14**4*y15**2+9.0_ark*y16**2*y17**4+y16**6-6.0_ark*y16**4*y17**2+y14**6
+  g(67) = -4.0_ark*y14**2*y15**3*y16*sin(y18)+3.0_ark*y14**4*y15*y16*sin(y18)-6.0_ark*y14**3*y15**2*y16*cos(y18)+&
+          2.0_ark*y14*y16*y17**4*cos(y18)+y14*y17**5*sin(y18)+y15**5*y17*cos(y18)+3.0_ark*y15*y16**4*y17*cos(y18)+&
+          6.0_ark*y15*y16**3*y17**2*sin(y18)+2.0_ark*y14*y15**4*y16*cos(y18)-4.0_ark*y14**2*y15**3*y17*cos(y18)+&
+          6.0_ark*y14**3*y15**2*y17*sin(y18)+3.0_ark*y14**4*y15*y17*cos(y18)+y15*y17**5*cos(y18)- &
+          2.0_ark*y15*y16*y17**4*sin(y18)-4.0_ark*y15*y16**2*y17**3*cos(y18)+y15**5*y16*sin(y18)-&
+          6.0_ark*y14*y16**3*y17**2*cos(y18)-4.0_ark*y14*y16**2*y17**3*sin(y18)+3.0_ark*y14*y16**4*y17*sin(y18)-&
+          2.0_ark*y14*y15**4*y17*sin(y18)
+  g(68) = 6.0_ark*y14**2*y15**3*y16*sin(y18)-y14**5*y16*cos(y18)-2.0_ark*y14**4*y15*y16*sin(y18)+&
+          4.0_ark*y14**3*y15**2*y16*cos(y18)-3.0_ark*y14*y16*y17**4*cos(y18)-2.0_ark*y15*y16**4*y17*cos(y18)-&
+          4.0_ark*y15*y16**3*y17**2*sin(y18)-3.0_ark*y14*y15**4*y16*cos(y18)+ &
+          6.0_ark*y14**2*y15**3*y17*cos(y18)-y14*y16**5*cos(y18)-4.0_ark*y14**3*y15**2*y17*sin(y18)-&
+          2.0_ark*y14**4*y15*y17*cos(y18)+3.0_ark*y15*y16*y17**4*sin(y18)+6.0_ark*y15*y16**2*y17**3*cos(y18)+&
+          y15*y16**5*sin(y18)+y14**5*y17*sin(y18)+ &
+          4.0_ark*y14*y16**3*y17**2*cos(y18)+6.0_ark*y14*y16**2*y17**3*sin(y18)-2.0_ark*y14*y16**4*y17*sin(y18)+&
+          3.0_ark*y14*y15**4*y17*sin(y18)
+  g(69) = -y14**3*y15*y16**2*sin(y18)+2.0_ark*y14**3*y15*y16*y17*cos(y18)+y15**4*y16**2*cos(y18)/3.0_ark+&
+          y15**2*y16**2*y17**2*cos(y18)- y15**2*y16*y17**3*sin(y18)/3.0_ark-y14*y15**3*y17**2*sin(y18)/3.0_ark-&
+          2.0_ark/3.0_ark*y14*y15*y16*y17**3*cos(y18)+ 2.0_ark/3.0_ark*y14*y15*y17**4*sin(y18)-y14**2*y16**2*y17**2*cos(y18)+&
+          y14**2*y16*y17**3*sin(y18)/3.0_ark+y14**2*y17**4*cos(y18)/3.0_ark+2.0_ark*y14*y15*y16**3*y17*cos(y18)- &
+          y14**2*y16**3*y17*sin(y18)+y14**3*y15*y17**2*sin(y18)-y15**2*y17**4*cos(y18)/3.0_ark+y15**2*y16**3*y17*sin(y18)- &
+          y15**4*y17**2*cos(y18)/3.0_ark+2.0_ark/3.0_ark*y15**4*y16*y17*sin(y18)-2.0_ark*y14*y15*y16**2*y17**2*sin(y18)+&
+          y14*y15**3*y16**2*sin(y18)/3.0_ark-&
+          2.0_ark/3.0_ark*y14*y15**3*y16*y17*cos(y18)+y14**2*y15**2*y17**2*cos(y18)-2.0_ark*y14**2*y15**2*y16*y17*sin(y18)-&
+          y14**2*y15**2*y16**2*cos(y18)
+  g(70) = 2.0_ark*y15**2*y16**2*y17**2+y14**4*y17**2+y15**4*y16**2+y15**2*y17**4+y14**2*y17**4+y14**2*y16**4+&
+          2.0_ark*y14**2*y16**2*y17**2+2.0_ark*y14**2*y15**2*y17**2+2.0_ark*y14**2*y15**2*y16**2+y14**4*y16**2+&
+          y15**2*y16**4+y15**4*y17**2
+  g(71) = -y14**4*y16**2*cos(y18)-2.0_ark*y14**4*y16*y17*sin(y18)+y15**4*y16**2*cos(y18)/3.0_ark-&
+          2.0_ark*y15**2*y16**2*y17**2*cos(y18)+8.0_ark/3.0_ark*y15**2*y16*y17**3*sin(y18)+&
+          8.0_ark/3.0_ark*y14*y15**3*y17**2*sin(y18)+16.0_ark/3.0_ark*y14*y15*y16*y17**3*cos(y18)+&
+          2.0_ark/3.0_ark*y14*y15*y17**4*sin(y18)+2.0_ark*y14**2*y16**2*y17**2*cos(y18)- &
+          8.0_ark/3.0_ark*y14**2*y16*y17**3*sin(y18)+y14**2*y17**4*cos(y18)/3.0_ark-y14**2*y16**4*cos(y18)+&
+          y14**4*y17**2*cos(y18)-y15**2*y17**4*cos(y18)/3.0_ark+y15**2*y16**4*cos(y18)-y15**4*y17**2*cos(y18)/3.0_ark+&
+          2.0_ark/3.0_ark*y15**4*y16*y17*sin(y18)+ 4.0_ark*y14*y15*y16**2*y17**2*sin(y18)-2.0_ark*y14*y15*y16**4*sin(y18)-&
+          8.0_ark/3.0_ark*y14*y15**3*y16**2*sin(y18)+16.0_ark/3.0_ark*y14*y15**3*y16*y17*cos(y18)-&
+          2.0_ark*y14**2*y15**2*y17**2*cos(y18)+4.0_ark*y14**2*y15**2*y16*y17*sin(y18)+2.0_ark*y14**2*y15**2*y16**2*cos(y18)
+  g(72) = -3.0_ark*y15**3*y16**2*y17-3.0_ark*y14**2*y15*y17**3+9.0_ark*y14**2*y15*y16**2*y17+y15**3*y17**3
+  g(73) = -y14**3*y16*y17**2*cos(y18)+y15**3*y16**3*sin(y18)+y15**3*y16*y17**2*sin(y18)+y14*y15**2*y16**2*y17*sin(y18)+ &
+           y14**2*y15*y16*y17**2*sin(y18)-y14*y15**2*y16**3*cos(y18)-y14*y15**2*y16*y17**2*cos(y18)+y14**3*y17**3*sin(y18)&
+          -y14**3*y16**3*cos(y18)+y14**3*y16**2*y17*sin(y18)+y15**3*y17**3*cos(y18)+y15**3*y16**2*y17*cos(y18)+&
+          y14*y15**2*y17**3*sin(y18)+y14**2*y15*y17**3*cos(y18)+y14**2*y15*y16**2*y17*cos(y18)+y14**2*y15*y16**3*sin(y18)
+  g(74) = -3.0_ark*y14**3*y16*y17**2-3.0_ark*y14*y15**2*y16**3+9.0_ark*y14*y15**2*y16*y17**2+y14**3*y16**3
+  g(75) = y9**6+y10**6+y12**6+y8**6+y13**6+y11**6
+  g(76) = y5**6+y7**6+y6**6+y3**6+y4**6+y2**6
+  g(77) = y1**6
+  !
+  f = 0 
+  ! 
+  !do i = 9,molec%parmax
+  !  !
+  !  f = f + g(i)*force(i)
+  !  !
+  !enddo
+  !
+  f = sum(g(9:)*force(9:))
+  !  
+end function MLpoten_c2h6_explct_M2_P6
 
 
 recursive subroutine ML_dipole_c2h6_4m_dummy(rank,ncoords,natoms,local,xyz0,f)
@@ -2442,7 +3061,8 @@ end subroutine ML_dipole_c2h6_4m_dummy
       'ML_alpha_C2H6_zero_order error', trim(molec%coords_transform), 'is unknown'
       stop 'ML_alpha_C2H6_zero_order error: bad coordinate type'
       !
-    case('R-R16-BETA16-THETA-TAU-11')
+    case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-3',&
+         'R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
       !
       r1 = local(1)
       r2 = local(2)
@@ -2515,6 +3135,436 @@ end subroutine ML_dipole_c2h6_4m_dummy
   end subroutine ML_alpha_C2H6_zero_order
 
 
+function MLpoten_c2h6_88_cos3tau_sin3tau_G36(ncoords, natoms, local, xyz, force) result(f)
+  !
+  integer(ik),intent(in) :: ncoords, natoms
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(in)   :: xyz(natoms,3)
+  real(ark),intent(in)   :: force(:)
+  real(ark)              :: f
+  !
+  real(ark) :: xi(18),r1,r2,r3,r4,r5,r6,r7,r1e,r2e,betae,a,b
+  real(ark) :: beta1,beta2,beta3,beta4,beta5,beta6
+  real(ark) :: chi(18,36),term,rad,rhobar,d18,s18
+  integer(ik) :: ioper,ipower(18),i
+
+  real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46,xi_A,xi_B,xi_C,xi_D
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53
+  !
+  rad = pi/180.0_ark
+  !
+  !r1      = local(1)
+  !r2      = local(2)
+  !r3      = local(4)
+  !r4      = local(6)
+  !r5      = local(3)
+  !r6      = local(5)
+  !r7      = local(7)
+  !
+  r1e = force(1)
+  r2e = force(2)
+  betae = force(3)*rad
+  a = force(4)
+  b = force(5)
+  !
+  select case(trim(molec%coords_transform))
+    !
+  case default
+    !
+    write(out, '(/a,1x,a,1x,a)') &
+    'ML_alpha_C2H6_zero_order error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_c2h6_88 error error: bad coordinate type'
+    !
+  case('R-R16-BETA16-THETA-TAU-1','R-R16-BETA16-THETA-TAU-2','R-R16-BETA16-THETA-TAU-11',&
+       'R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18','R-R16-BETA16-THETA-TAU-3')
+    !
+    r1 = local(1)
+    r2 = local(2)
+    r3 = local(4)
+    r4 = local(6)
+    r5 = local(3)
+    r6 = local(7)
+    r7 = local(5)
+    !
+    xi(1)=1.0_ark-exp(-a*(r1-r1e))
+    xi(2)=1.0_ark-exp(-b*(r2-r2e))
+    xi(3)=1.0_ark-exp(-b*(r3-r2e))
+    xi(4)=1.0_ark-exp(-b*(r4-r2e))
+    xi(5)=1.0_ark-exp(-b*(r5-r2e))
+    xi(6)=1.0_ark-exp(-b*(r6-r2e))
+    xi(7)=1.0_ark-exp(-b*(r7-r2e))
+    !
+    xi(8)  = local(8)  - betae
+    xi(9)  = local(10) - betae
+    xi(10) = local(12) - betae
+    xi(11) = local(9)  - betae
+    xi(12) = local(13) - betae
+    xi(13) = local(11) - betae
+    !
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !
+    tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = 1.0_ark + cos(3.0_ark*rhobar)
+    !
+    s18 = sin(3.0_ark*rhobar)
+    !
+  end select
+  !
+  f = 0
+  !
+  do ioper = 1,36
+    !
+    ! for xi(18) = 1.0_ark + cos(3.0_ark*rhobar) 
+    ! all operations on xi18->xi18
+    !
+    call ML_symmetry_transformation_C2H6_G36(ioper,18,xi,chi(:,ioper),s18,d18)
+    !
+  enddo
+  ! 
+  do i = 7, molec%parmax
+    !
+    ipower(1:18) = molec%pot_ind(1:18,i)
+    !
+    term = 0 
+    !
+    do ioper = 1,36
+      !
+      term = term + product(chi(1:18,ioper)**ipower(1:18))
+      !
+    end do
+    !
+    ! parameter 6 contains the number of even expansion terms. All parameters after are odd. 
+    !
+    if (i>int(force(6))+6) term = term*d18
+    !
+    term = term/36.0_ark
+    !
+    f = f + term*force(i)
+    !
+  enddo
+  !  
+end function MLpoten_c2h6_88_cos3tau_sin3tau_G36
+
+
+
+subroutine coordinate_transformation(ncoords,nmodes,local,xi)
+
+  integer(ik),intent(in) :: ncoords,nmodes 
+  real(ark),intent(in)   :: local(ncoords)
+  real(ark),intent(out)   :: xi(nmodes)
+  !
+  real(ark) :: rhobar
+  real(ark) :: tau14,tau24,tau25,tau35,tau36,theta12,theta23,theta13,theta56,theta45,theta46
+  real(ark) :: tau41,tau51,tau52,tau62,tau63,theta31,theta64,tau16,tau53,tau34,tau26
+  !
+  select case(trim(molec%coords_transform))
+    !
+  case default
+    !
+    write(out, '(/a,1x,a,1x,a)') &
+    'MLpoten_c2h6_88 error', trim(molec%coords_transform), 'is unknown'
+    stop 'MLpoten_c2h6_88 error error: bad coordinate type'
+    !
+  case('R-R16-BETA16-THETA-TAU-3','R-R16-BETA16-THETA-TAU-11','R-R16-BETA16-THETA-TAU-17','R-R16-BETA16-THETA-TAU-18')
+    !
+    xi(1)=local(1)
+    xi(2)=local(2)
+    xi(3)=local(4)
+    xi(4)=local(6)
+    xi(5)=local(3)
+    xi(6)=local(7)
+    xi(7)=local(5)
+    !
+    xi(8)  = local(8) 
+    xi(9)  = local(10)
+    xi(10) = local(12)
+    xi(11) = local(9) 
+    xi(12) = local(13)
+    xi(13) = local(11)
+    !
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !
+    tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = rhobar
+    !
+  case('R-R16-BETA16-THETA-TAU-1')
+    !
+    xi(1)=local(1)
+    xi(2)=local(2)
+    xi(3)=local(6)
+    xi(4)=local(4)
+    xi(5)=local(3)
+    xi(6)=local(5)
+    xi(7)=local(7)
+    !
+    xi(8)  = local(8) 
+    xi(9)  = local(12)
+    xi(10) = local(10)
+    xi(11) = local(9) 
+    xi(12) = local(11)
+    xi(13) = local(13)
+    !
+    tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !
+    tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+    tau34 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = rhobar
+    !
+  case('R-R16-BETA16-THETA-TAU-2')
+    !
+    xi(1)=local(1)
+    xi(2)=local(2)
+    xi(3)=local(6)
+    xi(4)=local(4)
+    xi(5)=local(3)
+    xi(6)=local(5)
+    xi(7)=local(7)
+    !
+    xi(8)  = local(8) 
+    xi(9)  = local(12)
+    xi(10) = local(10)
+    xi(11) = local(9) 
+    xi(12) = local(11)
+    xi(13) = local(13)
+    !
+    tau14 = mod( local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod( local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod( local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod( local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod( local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    if (tau14>2.0_ark*pi) then 
+       tau25 = tau25 + 2.0_ark*pi
+       tau36 = tau36 + 2.0_ark*pi
+    endif
+    !
+    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    !
+    tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
+    tau34 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau26 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta13 = mod(tau14-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau36-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta12 = mod(2.0_ark*pi-theta13-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta46 = mod(tau36-tau34+2.0_ark*pi,2.0_ark*pi)
+    theta56 = mod(tau25-tau26+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta46-theta56+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta12 - theta13 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta12 - theta13 )/sqrt(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
+    !
+    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !
+    xi(18) = rhobar
+    !
+  case('R-R16-BETA16-THETA-TAU-12','R-R16-BETA16-THETA-TAU-13','R-R16-BETA16-THETA-TAU-14',&
+       'R-R16-BETA16-THETA-TAU-16','R-R16-BETA16-THETA-TAU-19')
+    !
+    xi(1)=local(1)
+    xi(2)=local(3)
+    xi(3)=local(5)
+    xi(4)=local(7)
+    xi(5)=local(2)
+    xi(6)=local(6)
+    xi(7)=local(4)
+    !
+    xi(8)  = local(9)  
+    xi(9)  = local(11) 
+    xi(10) = local(13) 
+    xi(11) = local(8)  
+    xi(12) = local(12) 
+    xi(13) = local(10) 
+    !
+    tau41 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
+    tau16 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
+    tau62 = mod(local(16)+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(local(17)+2.0_ark*pi,2.0_ark*pi)
+    tau53 = mod(local(18)+2.0_ark*pi,2.0_ark*pi)
+    !
+    ! assuming this is the 404-type (0..720) for tau14, tau25 and tau36 are extended to 0-720 as well
+    if (tau41>2.0_ark*pi) then 
+       tau53 = tau53 + 2.0_ark*pi
+       tau62 = tau62 + 2.0_ark*pi
+    endif
+    !
+    rhobar  = ( tau41+tau53+tau62)/(3.0_ark)
+    !
+    !
+    tau41 = mod(tau41+2.0_ark*pi,2.0_ark*pi)
+    tau16 = mod(tau16+2.0_ark*pi,2.0_ark*pi)
+    tau62 = mod(tau62+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    tau53 = mod(tau53+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau62-tau16+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau53-tau25+2.0_ark*pi,2.0_ark*pi)
+    theta31 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau25-tau62+2.0_ark*pi,2.0_ark*pi)
+    theta64 = mod(tau16-tau41+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(2.0_ark*pi-theta56-theta64+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta31 - theta12 )/sqrt(6.0_ark)
+    xi(15)  = (                   theta31 - theta12 )/sqrt(2.0_ark)
+    !
+    xi(16)  = ( 2.0_ark*theta56 - theta64 - theta45 )/sqrt(6.0_ark)
+    xi(17)  = (                   theta64 - theta45 )/sqrt(2.0_ark)
+    !
+    xi(18) = rhobar
+    !  
+  case('R-R16-BETA16-THETA-TAU')
+    !
+    xi(1)=local(1)
+    xi(2)=local(2)
+    xi(3)=local(4)
+    xi(4)=local(6)
+    xi(5)=local(3)
+    xi(6)=local(5)
+    xi(7)=local(7)
+    !
+    tau14 = local(14)
+    tau24 = local(15)
+    tau25 = local(16)
+    tau35 = local(17)
+    tau36 = local(18)
+    !
+    tau14 = mod(tau14+4.0_ark*pi,4.0_ark*pi)
+    tau24 = mod(tau24+4.0_ark*pi,4.0_ark*pi)
+    tau25 = mod(tau25+4.0_ark*pi,4.0_ark*pi)
+    tau35 = mod(tau35+4.0_ark*pi,4.0_ark*pi)
+    tau36 = mod(tau36+4.0_ark*pi,4.0_ark*pi)
+    !
+    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)-pi
+    !
+    tau14 = mod(tau14+2.0_ark*pi,2.0_ark*pi)
+    tau24 = mod(tau24+2.0_ark*pi,2.0_ark*pi)
+    tau25 = mod(tau25+2.0_ark*pi,2.0_ark*pi)
+    tau35 = mod(tau35+2.0_ark*pi,2.0_ark*pi)
+    tau36 = mod(tau36+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta12 = mod(tau14-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta23 = mod(tau25-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta13 = mod(2.0_ark*pi-theta12-theta23+2.0_ark*pi,2.0_ark*pi)
+    !
+    theta56 = mod(tau36-tau35+2.0_ark*pi,2.0_ark*pi)
+    theta45 = mod(tau25-tau24+2.0_ark*pi,2.0_ark*pi)
+    theta46 = mod(2.0_ark*pi-theta56-theta45+2.0_ark*pi,2.0_ark*pi)
+    !
+    xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(12.0_ark)
+    xi(15)  = (                   theta13 - theta12 )/(2.0_ark)
+    xi(16)  = ( 2.0_ark*theta56 - theta46 - theta45 )/sqrt(12.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/(2.0_ark)
+    !
+    xi(18) = rhobar
+
+    xi(8)  = local(8) 
+    xi(9)  = local(10)
+    xi(10) = local(12)
+    xi(11) = local(9) 
+    xi(12) = local(11)
+    xi(13) = local(13)
+    !
+  end select
+  !
+  end subroutine coordinate_transformation
 
 
 end module pot_c2h6
