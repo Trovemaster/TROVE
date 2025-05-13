@@ -3347,7 +3347,7 @@ module mol_xy2
          !
       end select
       !
-    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z','R-BISECT')
+    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z','R-BISECT','BISECT-Z')
       !
       select case(trim(molec%symmetry))
       case default

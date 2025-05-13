@@ -7802,13 +7802,24 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     real(ark),intent(out)  ::  f(rank)
     !
     integer(ik)           :: imu, iterm
-    real(ark)             :: r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),u(3),v(3),w(3),v12(3),v31(3)
+    real(ark)             :: r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),u(3),v(3),w(3),v12(3),v31(3),xyz0(natoms,3)
     real(ark)             :: re1(1:3),re2(1:3),re3(1:3),alphae1(1:3),alphae2(1:3),taue(1:3),rho2,rho2e(3), &
                              beta1(1:3),beta2(1:3),beta3(1:3), y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_
+
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2xyz_abcd(r)
+      !
+    else
+      !
+      xyz0(:,:) = xyz(:,:)
+      !
+    endif
     !
-    v(:) = xyz(2,:)-xyz(1,:)
-    u(:) = xyz(3,:)-xyz(1,:)
-    w(:) = xyz(4,:)-xyz(2,:)
+    v(:) = xyz0(2,:)-xyz0(1,:)
+    u(:) = xyz0(3,:)-xyz0(1,:)
+    w(:) = xyz0(4,:)-xyz0(2,:)
     !
     v12(:) = MLvector_product(v(:),u(:))
     v12(:) = v12(:)/sqrt(sum(v12(:)**2))
@@ -7869,5 +7880,62 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     f(1:3) = matmul(tmat,mu)
     !
   end subroutine MLdms2xyz_abcd_r_alpha_rho_tau
+  !
+
+ function MLloc2xyz_abcd(local) result(f)
+
+ !return cartesian coordinates of atoms in the user-defined frame for locals specified
+
+    real(ark), intent(in) :: local(molec%ncoords)
+    real(ark)             :: f(molec%natoms, 3)
+
+    integer(ik)           :: icart
+    real(ark)             :: xyz(molec%natoms, 3), cm,r1,r2,r3,a1,a2,tau1,tau2
+    !
+    xyz = 0
+    !
+    select case(trim(molec%frame))
+       !
+    case('BC-Z-CD-X')
+       !
+       r1   = local(1)
+       r2   = local(2)
+       r3   = local(3)
+       a1   = local(4)
+       a2   = local(5)
+       !
+       tau1 = 0
+       tau2 = local(6)
+       !
+       xyz(1,1) = 0.0_ark
+       xyz(1,2) = 0.0_ark
+       xyz(1,3) = 0.0_ark
+       !
+       xyz(2,1) = 0.0_ark
+       xyz(2,2) = 0.0_ark
+       xyz(2,3) = r1
+       !
+       xyz(3,1) = r2*sin(a1)*cos(tau1)
+       xyz(3,2) = r2*sin(a1)*sin(tau1)
+       xyz(3,3) = r2*cos(a1)
+       !
+       xyz(4,1) = r3*sin(a2)*cos(tau2)
+       xyz(4,2) = r3*sin(a2)*sin(tau2)
+       xyz(4,3) = r1-r3*cos(a2)
+       !
+    case default 
+       write(out,"('MLloc2xyz_abcd: illegal coordinate type ',a)") trim(molec%coords_transform)
+       stop 'MLloc2xyz_abcd: illegal coordinate type'
+    end select
+    
+    do icart = 1, 3
+       cm = sum(xyz(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
+       xyz(1:molec%natoms, icart) = xyz(1:molec%natoms, icart) - cm
+    end do
+
+    f(1:molec%natoms, 1:3) = xyz(1:molec%natoms, 1:3)
+
+ end function MLloc2xyz_abcd
+
   !
 end module pot_abcd

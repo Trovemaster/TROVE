@@ -7014,8 +7014,11 @@ end subroutine check_read_save_none
       select case(trim(molec%kinetic_type))
       case default
          !
-         write (out,"('compute_kinetic_on_rho_grid_compact: kinetic type ',a,' unknown')") trim(molec%kinetic_type)
-         stop 'compute_kinetic_on_rho_grid_compact - bad kinetic'
+         call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                             g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+         !write (out,"('compute_kinetic_on_rho_grid_compact: kinetic type ',a,' unknown')") trim(molec%kinetic_type)
+         !stop 'compute_kinetic_on_rho_grid_compact - bad kinetic'
          !
       case('KINETIC_ABCD_EKE_Z_ALPHA2_SINGULAR') 
          !
@@ -7043,9 +7046,6 @@ end subroutine check_read_save_none
                                                           g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
       end select
-      !
-      !call MLkineticfunc_compact(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
-      !                                                    g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
       !
       !
       do k1 = 1,Nmodes
@@ -7110,6 +7110,10 @@ end subroutine check_read_save_none
       enddo
       fl%sparse = .true.
       !
+      ! reconstruct the maximal expansion "power" for the non-rigid mode i=Nmodes
+      !
+      maxpower = max(trove%NpotOrder,trove%NExtOrder)
+      !
       ! As usual we treat the rigid (manifold==0) and non-rigid (manifold==1) cases differently, starting from RIGID
       if (manifold==0) then 
          !
@@ -7144,10 +7148,6 @@ end subroutine check_read_save_none
          enddo
          !
       else
-         !
-         ! reconstruct the maximal expansion "power" for the non-rigid mode i=Nmodes
-         !
-         maxpower = max(trove%NpotOrder,trove%NExtOrder)
          !
          do imode = 1, trove%Nmodes
              maxpower = max(maxpower,size(molec%basic_function_list(imode)%mode_set)) 
