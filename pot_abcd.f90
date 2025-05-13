@@ -15,9 +15,9 @@ module pot_abcd
          MLpoten_c2h2_7_r_rr_nnnn,MLpoten_c2h2_7_r_zz_nnnn,MLpoten_c2h2_7_r_rr_xy,MLpoten_c2h2_7_q1q2q3q4,&
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
-         MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB
-  public MLalpha_iso_c2h2_7_q2q1q4q3
-
+         MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB,poten_c2h2_morse_sinalpha_cosntau
+  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau,MLdms2xyz_abcd_r_alpha_rho_tau
+  !
   private
 
   integer(ik), parameter :: verbose     = 4                        ! Verbosity level
@@ -150,8 +150,8 @@ module pot_abcd
    y(1)=1.0_ark-exp(-beta(1)*(local(1)-re(1)))
    y(2)=1.0_ark-exp(-beta(2)*(local(2)-re(2)))
    y(3)=1.0_ark-exp(-beta(3)*(local(3)-re(3)))
-   y(4)= local(4)-(4)
-   y(5)= local(5)-(5)
+   y(4)= local(4)-re(4)
+   y(5)= local(5)-re(5)
    !
    y(6) = cos(rho) - cos(molec%taueq(1))
 
@@ -737,6 +737,128 @@ function MLpoten_c2h2_morse_costau(ncoords,natoms,local,xyz,force) result(f)
       !
   end function MLpoten_c2h2_morse_costau
 
+function poten_c2h2_morse_sinalpha_cosntau(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+      !
+      integer(ik)          ::  i,i1,i2,i3,i4,i5,i6,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,x6,e1,e2,e4,e6,vpot,cphi,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,&
+                      costau,cosalpha1,cosalpha2
+      character(len=cl)  :: txt = 'MLpoten_c2h2_morse'
+      !
+      integer(ik)  :: Nangles
+      !
+      Nangles = molec%Nangles
+      !
+      pd=pi/180.0_ark
+      e1=force(1)
+      e2=force(2)
+      e4=force(3)*pd
+      e6=force(4)*pd
+      !
+      a1 = force(5)
+      a2 = force(6)
+      !
+      rc1c2    = local(1)
+      rc1h1    = local(2)
+      rc2h2    = local(3)
+      !
+      v1(:) = xyz(2,:)-xyz(1,:)
+      v2(:) = xyz(3,:)-xyz(1,:)
+      v3(:) = xyz(4,:)-xyz(2,:)
+      !
+      x1 = sqrt(sum(v1(:)**2))
+      x2 = sqrt(sum(v2(:)**2))
+      x3 = sqrt(sum(v3(:)**2))
+      !
+      cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+      cosalpha2 = sum(-v1(:)*v3(:))/(x1*x3)
+      !
+      x4 = aacos(cosalpha1,txt)
+      x5 = aacos(cosalpha2,txt)
+      !
+      v12(:) = MLvector_product(v2(:),v1(:))
+      v31(:) = MLvector_product(v3(:),v1(:))
+      !
+      v12(:) = v12(:)/(x1*x2)
+      v31(:) = v31(:)/(x1*x3)
+      !
+      x6 = sum(v12*v31)
+      !
+      r21 = sqrt(sum(v12(:)**2))
+      r31 = sqrt(sum(v31(:)**2))
+      !
+      tau = 0
+      !
+      x6 = 0
+      !
+      if (r21>sqrt(small_).and.r31>sqrt(small_)) then
+        !
+        v12(:) = v12(:)/r21
+        v31(:) = v31(:)/r31
+        !
+        n3(:) = MLvector_product(v12(:),v31(:))
+        !
+        sintau =  sqrt( sum( n3(:)**2 ) )
+        costau =  sum( v12(:)*v31(:) )
+        !
+        tau = atan2(sintau,costau)
+        tau = aacos(costau,txt)
+        !
+        x6 = sin(tau)
+        !
+      endif
+      !
+      q(1)=1.0_ark-exp(-a1*(x1-e1))
+      q(2)=1.0_ark-exp(-a2*(x2-e2))
+      q(3)=1.0_ark-exp(-a2*(x3-e2))
+      !
+      q(4)=sin(pi-x4)
+      q(5)=sin(pi-x5)
+      q(6)=x6
+      !
+      f = 0
+      !
+      vpot=0.0_ark
+      !
+      do i=7,molec%parmax
+        !
+        !if ((molec%pot_ind(4,i)==0.or.molec%pot_ind(5,i)==0).and.molec%pot_ind(6,i)/=0) return
+        !
+        y(1:5) = q(1:5)**molec%pot_ind(1:5,i)
+        !
+        y(6) = 1.0_ark
+        !
+        !if (molec%pot_ind(4,i)/=0.and.molec%pot_ind(5,i)/=0) y(6)=cos(real(molec%pot_ind(6,i),ark)*q(6))
+        !
+        y(6)=cos(real(molec%pot_ind(6,i))*q(6))
+        !
+        vpot=vpot+force(i)*product(y(1:6))
+        !
+        if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
+          !
+          k_ind(2) = molec%pot_ind(3,i)
+          k_ind(3) = molec%pot_ind(2,i)
+          k_ind(4) = molec%pot_ind(5,i)
+          k_ind(5) = molec%pot_ind(4,i)
+          !
+          y(2:5) = q(2:5)**k_ind(2:5)
+          !
+          vpot=vpot+force(i)*product(y(1:6))
+          !
+        endif
+        !
+      enddo
+      !
+      f = vpot
+      !
+  end function poten_c2h2_morse_sinalpha_cosntau
 
 
 
@@ -1176,12 +1298,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     end do
     !
     mu(1) = mu(1)*sin(tau)
-    !
-    !if (tau > pi) then
-    !   mu(1) = -mu(1)
-    !end if
-	!
-	!write(out,"('mu = ',3f18.8)") mu(1:3)
     !
     f(1:3) = matmul((tmat),mu)
     !
@@ -1741,20 +1857,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     !
     txt = 'Error: MLdms_HCCH_MB'
-    !
-    !xyz_(1,1)=-0.017734242
-    !xyz_(1,2)=-0.0183397
-    !xyz_(1,3)=-1.134903609
-    !xyz_(2,1)=0.041027921
-    !xyz_(2,2)=0.006163171
-    !xyz_(2,3)=1.13187384
-    !xyz_(3,1)=-0.013711712
-    !xyz_(3,2)=0.125514884
-    !xyz_(3,3)=-3.132837078
-    !xyz_(4,1)=-0.263864708
-    !xyz_(4,2)=0.019585304
-    !xyz_(4,3)=3.168940968
-    !-0.06208661    0.03255714    0.00256929     -77.209450006   334.7231997638  0.9999997247    14576   1.2     1.06    1.09    175     170     110
     !
     x1(:) = xyz(1,:)-xyz(2,:)
     x2(:) = xyz(3,:)-xyz(1,:)
@@ -2482,9 +2584,8 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     end subroutine MLdms_HCCH_7D_7ORDER_linear
 
+
  ! isotropic part of the polarisability of C2H2 (same symmetry as PES)
-
-
  recursive subroutine MLalpha_iso_c2h2_7_q2q1q4q3(rank,ncoords,natoms,local,xyz,f)
    !
    integer(ik),intent(in) ::  rank,ncoords,natoms
@@ -2565,10 +2666,6 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
       !
  end subroutine MLalpha_iso_c2h2_7_q2q1q4q3
 
-
-
-
-
  recursive subroutine MLdms_HCCH_7D_local(rank,ncoords,natoms,r,xyz,f)
     !
     implicit none
@@ -2634,7 +2731,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
     !
     f(1:3) = mu(1:3)
     !
- end subroutine MLdms_HCCH_7D_local
+    end subroutine MLdms_HCCH_7D_local
 
 
 
@@ -2833,19 +2930,12 @@ function MLpoten_v_c2h2_katy(ncoords,natoms,local,xyz,force) result(f)
 
 !c2h2
           v_c2h2 = 0
-    !     v_c2h2 = (1.0_ark-tanh(gamma1*s1*0.25_ark) )*(1.0_ark-tanh(gamma2*s2*0.5_ark))*(1.0_ark-tanh(gamma3*s3*0.5_ark))* &
-    !      vi*(1+(a1*s1)+(a2*s2)+(a3*s3)+(a11*s1*s1)+(a22*s2*s2)+(a33*s3*s3)+(a44*s4*s4)+(a55*s5*s5)+(a66*s6*s6)+ &
-    !      (a12*s1*s2)+(a13*s1*s3)+(a23*s2*s3)+(a166*s1*s6*s6)+(a266*s2*s6*s6)+(a344*s3*s4*s4)+(a355*s3*s5*s5)+(a366*s3*s6*s6)+(a6666*s6**6))
 
 !ch2
           v_ch2 = 0
-    !     v_ch2 = (1.0_ark-tanh(gamma1_ch2*s1_ch2*0.5_ark))*(1.0_ark-tanh(gamma2_ch2*s2_ch2*0.5_ark))*(1.0_ark-tanh(gamma3_ch2*s3_ch2*0.5_ark))* &
-    !      vi_ch2*(1+(a1_ch2*s1_ch2)+(a2_ch2*s2_ch2)+(a3_ch2*s3_ch2)+(a11_ch2*s1_ch2*s1_ch2)+(a22_ch2*s2_ch2*s2_ch2)+(a33_ch2*s3_ch2*s3_ch2)+(a12_ch2*s1_ch2*s2_ch2)+(a13_ch2*s1_ch2*s3_ch2)+(a23_ch2*a2_ch2*a3_ch2))
-
 !c2h
           v_c2h= 0
-    !     v_c2h = vi_c2h*(1.0_ark+(a1_c2h*s1_c2h)+(a2_c2h*s2_c2h)+(a3_c2h*s3_c2h)+(a11_c2h*s1_c2h*s1_c2h)+(a22_c2h*s2_c2h*s2_c2h)+(a33_c2h*s3_c2h*s3_c2h)+(a12_c2h*s1_c2h*s2_c2h)+(a13_c2h*s1_c2h*s3_c2h)+(a23_c2h*s2_c2h*s3_c2h))*(1.0_ark-tanh(gamma1_c2h*(s1_c2h+s2_c2h+s3_c2h)*0.5_ark/sqrt3))
-
+!
 !h2
          v_h2 = (-de_h2*(1.0_ark+(a1_h2*s1_h2)+(a2_h2*s1_h2**2)+(a3_h2*s1_h2**3)*exp(-a1_h2*s1_h2)))
 
@@ -7480,8 +7570,6 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     !xyz0(4,1) =       -0.5046923676      
     !xyz0(4,2) =       0.8741528230      
     !xyz0(4,3) =       1.4910257717    
-    !   
-    !-12.417804814646    -14.143922118848     -18.564111151420      0.628758089150      0.426967879719      0.158786980009   0.99997000     3574.645636    -151.357983308233          1.455780        0.962530        1.010000      101.081950       92.000000       30.000000  
     !
     e1(:) = xyz(1,:)-xyz(2,:)
     e2(:) = xyz(3,:)-xyz(1,:)
@@ -7666,5 +7754,188 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     !
   end subroutine MLalpha_hooh_MB
   !
+  ! the ABCD type, three Morse, cos(alpha)-cos(ae), alpha-ae and cos(n*tau)
+  !
+  function MLpoten_abcd_morse_cos_angle_cosntau(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)          ::  i,k(6),i1
+   real(ark)    :: xi(6),y(6),beta(3),tau,req(6)
+
+   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/start')")
+   !
+   beta(1:3) = molec%specparam(1:3)
+   !
+   tau = local(6)
+   !
+   req(1:3) = molec%req(1:3)
+   req(4:5) = molec%alphaeq(1:2)
+   !
+   y(1:3)=1.0_ark-exp(-beta(1:3)*(local(1:3)-req(1:3)))
+   y(4)= cos(local(4))-cos(req(4))
+   y(5)= local(5)-req(5)
+   !
+   f = 0
+   do i = 1,molec%parmax
+      k(:) = molec%pot_ind(:,i)
+      xi(1:5) = y(1:5)**k(1:5)
+      xi(6)=cos(real(k(6),ik)*tau)
+      !
+      f = f + force(i)*product(xi(:))
+      !
+   enddo
+   !
+   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/end')")
+   !
+  end function MLpoten_abcd_morse_cos_angle_cosntau
+  !
+  !
+  recursive subroutine MLdms2xyz_abcd_r_alpha_rho_tau(rank,ncoords,natoms,r,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  r(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: imu, iterm
+    real(ark)             :: r1, r2, r3, alpha1, alpha2, tau, e1(3),e2(3),e3(3),tmat(3,3),u(3),v(3),w(3),v12(3),v31(3),xyz0(natoms,3)
+    real(ark)             :: re1(1:3),re2(1:3),re3(1:3),alphae1(1:3),alphae2(1:3),taue(1:3),rho2,rho2e(3), &
+                             beta1(1:3),beta2(1:3),beta3(1:3), y(molec%ncoords,1:3), mu(3), xi(molec%ncoords), tau_
+
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2xyz_abcd(r)
+      !
+    else
+      !
+      xyz0(:,:) = xyz(:,:)
+      !
+    endif
+    !
+    v(:) = xyz0(2,:)-xyz0(1,:)
+    u(:) = xyz0(3,:)-xyz0(1,:)
+    w(:) = xyz0(4,:)-xyz0(2,:)
+    !
+    v12(:) = MLvector_product(v(:),u(:))
+    v12(:) = v12(:)/sqrt(sum(v12(:)**2))
+    v31(:) = MLvector_product(w(:),v(:))
+    v31(:) = v31(:)/sqrt(sum(v31(:)**2))
+    !
+    e3(:) = v(:)/sqrt(sum(v(:)**2))
+    e2(:) = v12(:)/sqrt(sum(v12(:)**2))
+    e1(:) =  MLvector_product(e2(:),e3(:))
+    !
+    tmat(:,1) = e1
+    tmat(:,2) = e2
+    tmat(:,3) = e3
+    !
+    r1     = r(1)
+    r2     = r(2)
+    r3     = r(3)
+    alpha1 = r(4)
+    alpha2 = r(5)
+    tau    = r(6)
+    !
+    rho2 = pi-alpha2
+    !
+    tau = mod(tau+2.0_ark*pi,2.0_ark*pi)
+    !
+    re1(1:3)     = extF%coef(1,1:3)
+    re2(1:3)     = extF%coef(2,1:3)
+    re3(1:3)     = extF%coef(3,1:3)
+    alphae1(1:3) = extF%coef(4,1:3)/rad
+    alphae2(1:3) = extF%coef(5,1:3)/rad
+    rho2e(1:3)   = pi - alphae2(1:3)
+    taue(1:3)    = extF%coef(6,1:3)/rad
+    !
+    y(1,:) = r1 - re1(:) 
+    y(2,:) = r2 - re2(:) 
+    y(3,:) = r3 - re3(:) 
+    y(4,:) = alpha1 - alphae1(:)
+    y(5,:) = rho2-rho2e(:)
+    y(6,:) = tau
+    !
+    mu = 0
+    !
+    do imu = 1, 3
+       !
+       do iterm = 6, extF%nterms(imu)
+          !
+          xi(1:5) = y(1:5,imu) ** extF%term(1:5, iterm, imu)
+          xi(6)=cos(real(extF%term(6, iterm, imu),ark)*tau)
+          !
+          mu(imu) = mu(imu) + extF%coef(iterm, imu) * product(xi(1:molec%ncoords))
+          !
+       end do
+       !
+    end do
+    !
+    mu(2) = mu(2)*sin(tau)
+    !
+    f(1:3) = matmul(tmat,mu)
+    !
+  end subroutine MLdms2xyz_abcd_r_alpha_rho_tau
+  !
+
+ function MLloc2xyz_abcd(local) result(f)
+
+ !return cartesian coordinates of atoms in the user-defined frame for locals specified
+
+    real(ark), intent(in) :: local(molec%ncoords)
+    real(ark)             :: f(molec%natoms, 3)
+
+    integer(ik)           :: icart
+    real(ark)             :: xyz(molec%natoms, 3), cm,r1,r2,r3,a1,a2,tau1,tau2
+    !
+    xyz = 0
+    !
+    select case(trim(molec%frame))
+       !
+    case('BC-Z-CD-X')
+       !
+       r1   = local(1)
+       r2   = local(2)
+       r3   = local(3)
+       a1   = local(4)
+       a2   = local(5)
+       !
+       tau1 = 0
+       tau2 = local(6)
+       !
+       xyz(1,1) = 0.0_ark
+       xyz(1,2) = 0.0_ark
+       xyz(1,3) = 0.0_ark
+       !
+       xyz(2,1) = 0.0_ark
+       xyz(2,2) = 0.0_ark
+       xyz(2,3) = r1
+       !
+       xyz(3,1) = r2*sin(a1)*cos(tau1)
+       xyz(3,2) = r2*sin(a1)*sin(tau1)
+       xyz(3,3) = r2*cos(a1)
+       !
+       xyz(4,1) = r3*sin(a2)*cos(tau2)
+       xyz(4,2) = r3*sin(a2)*sin(tau2)
+       xyz(4,3) = r1-r3*cos(a2)
+       !
+    case default 
+       write(out,"('MLloc2xyz_abcd: illegal coordinate type ',a)") trim(molec%coords_transform)
+       stop 'MLloc2xyz_abcd: illegal coordinate type'
+    end select
+    
+    do icart = 1, 3
+       cm = sum(xyz(1:molec%natoms, icart) * molec%atommasses(1:molec%natoms)) / sum(molec%atommasses(1:molec%natoms))
+       xyz(1:molec%natoms, icart) = xyz(1:molec%natoms, icart) - cm
+    end do
+
+    f(1:molec%natoms, 1:3) = xyz(1:molec%natoms, 1:3)
+
+ end function MLloc2xyz_abcd
+
   !
 end module pot_abcd
