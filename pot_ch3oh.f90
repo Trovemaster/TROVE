@@ -596,7 +596,7 @@ end function  MLpoten_ch3oh_sym
     'MLpoten_ch3oh_sym error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_ch3oh_sym error error: bad coordinate type'
     !
-  case('R-ALPHA-THETA-TAU')
+  case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU')
     !
     rCOe      = force(1)
     rOHe      = force(2)

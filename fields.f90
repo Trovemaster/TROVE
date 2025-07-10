@@ -2169,19 +2169,22 @@ module fields
            !
          end do
          !
+         call readu(w)
+         !
          ! special case of Assoc Legendre or SINRHO-polynomials 
          !
          do i=1,Nmodes
             !
-            if ( job%bset_prop(i)%singular ) then 
+            select case (trim(job%bset(i)%type)) 
+               !
+            case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
                !
                job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
                job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
-            endif 
+               !
+            end select
             !
          enddo
-         !
-         call readu(w)
          !
          if (imode/=Nmodes.or.(trim(w)/="".and.trim(w)/="END")) then 
             !
@@ -8840,7 +8843,7 @@ end subroutine check_read_save_none
         !
         call FLcheck_point_Hamiltonian('POTENTIAL_READ')
         !
-        if (job%verbose>=6.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=5.and.trove%sparse)) then
+        if (job%verbose>=7.or.(job%verbose>=2.and.manifold==0).or.(job%verbose>=6.and.trove%sparse)) then
            call print_poten
         endif 
         !
@@ -17247,8 +17250,8 @@ end subroutine check_read_save_none
         rewind(chkptIO)
         !
         read(chkptIO,"(a14)") buf
-        !         
-        !read(chkptIO,*) Npoints,Norder,Ncoeff
+        !
+        pot%IndexQ = 0
         !
         n = 0; cur_term = 0;
         do_pot : do 
@@ -17261,7 +17264,7 @@ end subroutine check_read_save_none
           !
           cur_term = n
           !
-          pot%IndexQ(1:Nmodes, n) = mode_list(1:Nmodes)
+          pot%IndexQ(1:Nmodes-1, n) = mode_list(1:Nmodes-1)
           !
           if (Npoints > 0) then
             do_k_find_match : do k=1,n-1

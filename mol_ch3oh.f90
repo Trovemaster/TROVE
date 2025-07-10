@@ -105,6 +105,58 @@ module mol_ch3oh
         !
       endif
       !
+    case('R-ALPHA-THETA-S-TAU')
+      !
+      if (direct) then 
+        !
+        !for stretches and 'alpha' bends just subtract equilibrium coordinates
+        dst(1:12) = src(1:12)-molec%local_eq(1:12)
+        !
+        t1 = src(10)
+        t2 = src(11)
+        t3 = src(12)
+        !
+        ! subtract equilbrium theta values to make a1/a2 zero at equilibrium
+        ! and ensure consistent transfroms
+        !
+        if (t2-t1<small_) t2 = t2 + 2.0_ark*pi
+        if (t3-t2<small_) t3 = t3 + 2.0_ark*pi
+        !
+        theta12 = mod(t2-t1+2.0_ark*pi,2.0_ark*pi)
+        theta23 = mod(t3-t2+2.0_ark*pi,2.0_ark*pi)
+        theta13 = mod(t1-t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        !theta13 = mod(2.0_ark*pi-(theta12+theta23),2.0_ark*pi)
+        !
+        a1  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
+        a2  = (                   theta13 - theta12 )/sqrt(2.0_ark)
+        !
+        tbar = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+        !
+        dst(10) = a1
+        dst(11) = a2
+        dst(12) = tbar 
+        !
+      else !  transform from TROVE coords to Z-matrix coords
+        !
+        dst(1:12) = src(1:12)+molec%local_eq(1:12)
+        !
+        A1 = src(10) 
+        A2 = src(11) 
+        tbar = src(12)
+        !
+        t1 =                    tbar+sqrt(2.0_ark)/3.0_ark*A2 
+        t2 = 2.0_ark/3.0_ark*Pi+tbar-sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        t3 = 4.0_ark/3.0_ark*Pi+tbar+sqrt(6.0_ark)/6.0_ark*A1-sqrt(2.0_ark)/6.0_ark*A2
+        !
+        dst(10) =  mod(t1+2.0_ark*pi,2.0_ark*pi)
+        dst(11) =  mod(t2+2.0_ark*pi,2.0_ark*pi)
+        dst(12) =  mod(t3+2.0_ark*pi,2.0_ark*pi)
+        !
+        continue
+        !
+      endif
+      !
     case('R-ALPHA-BETA-THETA-TAU')
       !
       if (direct) then 
@@ -878,7 +930,7 @@ module mol_ch3oh
               !
               call MLorienting_a0(molec%Natoms,molec%AtomMasses,b0(:,:),transform)
               !
-           case('R-ALPHA-THETA-TAU')
+           case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU')
               !
               r_at = r_eq
               !
@@ -1252,10 +1304,15 @@ module mol_ch3oh
           dst(8) = src(9)
           dst(9) = src(7)
           !
-          dst(10) = -a*src(10) + b*src(11)
-          dst(11) = -b*src(10) - a*src(11)
+          !dst(10) = -a*src(10) + b*src(11)
+          !dst(11) = -b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = +b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
           !
         case (2) !(132)
           !
@@ -1271,10 +1328,15 @@ module mol_ch3oh
           dst(8) = src(7)
           dst(9) = src(8)
           !
-          dst(10) = -a*src(10) - b*src(11)
-          dst(11) = +b*src(10) - a*src(11)
+          !dst(10) = -a*src(10) - b*src(11)
+          !dst(11) = +b*src(10) - a*src(11)
           !
-          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = -b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
           !
         case (4) ! (32)
           !
@@ -1308,11 +1370,141 @@ module mol_ch3oh
           dst(8) = src(7)
           dst(9) = src(9)
           !
+          !dst(10) = -a*src(10) + b*src(11)
+          !dst(11) = +b*src(10) + a*src(11)
+          !dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = -b*src(10) + a*src(11)
+          !
+          dst(12) = 2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
+          !
+        case (5) ! (13)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(4)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(8)
+          dst(9) = src(7)
+          !
+          !dst(10) = -a*src(10) - b*src(11)
+          !dst(11) = -b*src(10) + a*src(11)
+          !
+          !dst(12) = 2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
+          !
           dst(10) = -a*src(10) + b*src(11)
           dst(11) = +b*src(10) + a*src(11)
           dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
           !
-        case (5) ! (13)
+        end select
+        !
+      end select
+      !
+    case('R-ALPHA-THETA-S-TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_CH3OH error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop
+        !
+      case('C3V(M)-2','C3V(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_CH3OH error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (2) ! (123)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(5)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(9)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = -b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !
+        case (3) !(132)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(3)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(7)
+          dst(9) = src(8)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = +b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !
+        case (4) ! (32)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(3)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(7)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          !
+          dst(10) = src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)+2.0_ark*pi
+          !
+        case (5) ! (12)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(9)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = +b*src(10) + a*src(11)
+          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+          !
+        case (6) ! (13)
           !
           dst(1:2) = src(1:2)
           !
@@ -1329,7 +1521,7 @@ module mol_ch3oh
           dst(10) = -a*src(10) - b*src(11)
           dst(11) = -b*src(10) + a*src(11)
           !
-          dst(12) = 2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
+          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
           !
         end select
         !
@@ -1480,7 +1672,7 @@ module mol_ch3oh
       'ML_rotsymmetry_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_rotsymmetry_CH3OH error: bad coordinate type'
       !
-    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU')
+    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU','R-ALPHA-THETA-S-TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -1495,7 +1687,7 @@ module mol_ch3oh
         gamma = 1
         ideg = 1
         !
-      case('C3V','C3V(M)')
+      case('C3V','C3V(M)','C3V-2','C3V(M)-2')
          !
          gamma = 0 
          ideg = 1 

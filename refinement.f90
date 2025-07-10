@@ -3143,7 +3143,6 @@ contains
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,irec,idimen,nsize,ncontr_t
      integer(hik)       :: rootsize2,rootsize
      integer(ik)        :: ilist,nlist,ideg,iroot,num
-     real(rk),allocatable       :: pot_matrix(:,:)
      real(rk),allocatable       :: poten_(:,:),eigenval(:),eigenvec(:,:)
      logical            :: do_calc = .true.
      real(rk),allocatable     :: vec(:)
@@ -3283,12 +3282,15 @@ contains
      !
      do i=1,parmax
        !
-       if (job%verbose>=6) write (out,"('iparam = ',i0)") i
-       !
-       !write (out,"(' ')")
+       if (job%verbose>=5) write (out,"('iparam = ',i0)") i
        !
        read(chkptIO) imu_t
        read(chkptIO) poten_
+       !
+       if (imu_t/=i) then
+         write (out,"(' calc_exp_values ',a,' has bogus imu/=i component: ',2i8)") i,imu_t
+         stop 'calc_exp_values - bogus imu/=i component'
+       end if
        !
        if (job%verbose>=4) write (out,"(/'Transformation to eigensolution presentaion...'/)")
        !
@@ -3306,9 +3308,6 @@ contains
             if (Nentries<1) cycle
             !
             matsize = Nentries*(Nentries+1)/2
-            !
-            allocate(pot_matrix(Nentries,Nentries),stat=alloc)
-            call ArrayStart('pot_matrix',alloc,size(pot_matrix),kind(pot_matrix))
             !
             allocate(tmat(Nentries),stat=alloc)
             !
@@ -3381,34 +3380,6 @@ contains
             !
             if (job%verbose>=5) call TimerStop('Prepare tmat for J0-convertion')
             !
-            !pot_matrix = 0
-            !
-            !do k = 0,Jrot
-            !  !
-            !  do itau = 0,1
-            !     !
-            !     !if (k==0.and.mod(jrot,2)/=itau) cycle
-            !     !
-            !     ktau = 2*k+itau
-            !     !
-            !     mat_t = 0
-            !     !
-            !     call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-            !                 poten_,ncontr_t,beta0,mat_t,Nentries)
-            !     call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-            !                 psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
-            !     !
-            !     !
-            !  enddo
-            !enddo
-            !
-            !allocate (eigenval(Nentries),eigenvec(Nentries,Nentries),stat=alloc)
-            !call ArrayStart('eigenval',alloc,size(eigenval),kind(eigenval))
-            !
-            !call MLdiag_ulen(Nentries,pot_matrix,eigenval,eigenvec)
-            !
-            !write (out,"(' ')")
-            !
             do ientry = 1, Nentries
               !
               !call dgemv('N',Nentries,Nentries,1.0d0,dmat,Nentries,mat(:,ientry),1,0.0d0,vector,1)
@@ -3436,7 +3407,7 @@ contains
               ilevel = fit(isym,jind)%ilevel(ientry)
               irec = eigen(ilevel)%irec(1)
               !
-              write (out,"('||',i3,1x,a3,1x,i7,f18.6,2x,2es18.9)") Jrot,sym%label(isym),irec,&
+              write (out,"('||',i4,i3,1x,a3,1x,i7,f18.6,2x,2es18.9)") i,Jrot,sym%label(isym),irec,&
                                                           eigen(ilevel)%energy-eigen(1)%energy,mat_
               !
             enddo
@@ -3444,24 +3415,11 @@ contains
             !deallocate(eigenval,eigenvec)
             !call ArrayStop('eigenval')
             !
-            if (jind==1.and.isym==1) then 
-              !
-              read(chkptIO) buf20(1:18)
-              if (buf20(1:18)/='End external field') then
-                write (out,"(' calc_exp_values ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
-                stop 'calc_exp_values - bogus file format'
-              end if
-              !
-            endif
-            !
             deallocate(mat_t,vector)
             call ArrayStop('mat_t')
             !
             deallocate(psi)
             call ArrayStop('psi')
-            !
-            deallocate(pot_matrix,stat=alloc)
-            call ArrayStop('pot_matrix')
             !
             if (job%verbose>=5) call TimerReport
             !
@@ -3470,6 +3428,12 @@ contains
        end do
        !
      enddo
+     !
+     read(chkptIO) buf20(1:18)
+     if (buf20(1:18)/='End external field') then
+       write (out,"(' calc_exp_values ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
+       stop 'calc_exp_values - bogus file format'
+     end if
      !
      rewind(chkptIO)
      !

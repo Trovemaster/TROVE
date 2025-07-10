@@ -3503,6 +3503,12 @@ end subroutine polintark
         !
         v = cos(rhoe+x)-cos(rhoe)
         !
+     case('COSX0-COSX') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe)-cos(rhoe+x)
+        !
      case('SIN(X)-SIN(X0)') 
         !
         rhoe =  molec%local_eq(imode)
@@ -3856,6 +3862,10 @@ end subroutine polintark
         !
         dxi_dchi = -sin(chi)
         !
+     case('COSX0-COSX') 
+        !
+        dxi_dchi = sin(chi)
+        !
      case('LINCOSRHO') 
         !
         rhoe = molec%chi_eq(imode)
@@ -4007,16 +4017,16 @@ end subroutine polintark
         !
         if (rhoe>0.5_ark*pi.and.chi<0.5_ark*pi) chi = pi - chi
         !
-     case('COSX-COSX0')
+     case('COSX-COSX0','COSX0-COSX')
         !
-        write(out,"('MLcoord_invert error: COSX-COSX0 case has not been tested')")
-        stop 'MLcoord_invert error: COSX-COSX0 case has not been tested'
+        write(out,"('MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested')")
+        stop 'MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested'
         !
         rhoe = molec%chi_eq(imode)
         !
         if (abs(cos(rhoe)-xi(imode))>1.0_ark) then 
             !
-            write (out,"('MLcoord_invert: |sin x| = sin rhoe -xi  > 1: ',f18.8)") cos(rhoe)-xi(imode)
+            write (out,"('MLcoord_invert: |cos x| = cos rhoe -xi  > 1: ',f18.8)") cos(rhoe)-xi(imode)
             write (out,"('Consider change difftype ')")
             stop 'MLcoord_invert - bad sin x'
             !
@@ -4095,6 +4105,10 @@ end subroutine polintark
             fstep(1) = 0.0_ark
             !
         endif 
+        !
+     case('COSX-COSX0','COSX0-COSX') 
+        !
+        fstep(1:2) = 1.0_ark
         !
      case('COSTAU') 
         !

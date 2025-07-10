@@ -845,6 +845,58 @@ contains
        !
        sym%irr(3,6)%repres = reshape((/-0.5_ark,              -0.5_ark*sqrt(3.0_ark),&
                                        -0.5_ark*sqrt(3.0_ark), 0.5_ark             /),(/2,2/))
+    !
+  case("C3V(M)-2","C3V-2")
+    !
+    sym%Nrepresen=3
+    sym%Noper=6
+    sym%Nclasses=3
+    sym%CII%Noper = 0
+    !
+    call simple_arrays_allocation
+
+
+    sym%characters= reshape( &      !A1 A2 E
+                                  (/ 1, 1, 2, &  
+                                     1, 1,-1, &  
+                                     1,-1, 0 /),(/3,3/)) 
+    sym%degen=(/1,1,2/)
+    sym%Nelements=(/1,2,3/)
+    sym%label=(/'A1','A2','E '/)
+    !
+    o  = 0.0_ark
+    p2 = 0.5_ark*pi
+    p3 = 2.0_ark/3.0_ark*pi
+    p4 = 4.0_ark/3.0_ark*pi
+    !
+    sym%euler( 1,:) = 0
+    sym%euler( 3,:) = (/p4,o ,o /)
+    sym%euler( 2,:) = (/p3,o ,o /)
+    sym%euler( 5,:) = (/o ,pi,o /)
+    sym%euler( 4,:) = (/p3,pi,o /)
+    sym%euler( 6,:) = (/p4,pi,o /)
+    !
+    sym%lquant(3) = 1
+    !
+    call irr_allocation
+       !
+       sym%irr(3,1)%repres = reshape((/1.0_ark,               0.0_ark, &
+                                       0.0_ark,               1.0_ark/),(/2,2/))
+       !
+       sym%irr(3,3)%repres = reshape((/-0.5_ark,              -0.5_ark*sqrt(3.0_ark),&
+                                        0.5_ark*sqrt(3.0_ark),-0.5_ark           /),(/2,2/))
+       !
+       sym%irr(3,2)%repres = reshape((/-0.5_ark,               0.5_ark*sqrt(3.0_ark),&
+                                       -0.5_ark*sqrt(3.0_ark),-0.5_ark           /),(/2,2/))
+       !
+       sym%irr(3,4)%repres = reshape((/ 1.0_ark,               0.0_ark, &
+                                        0.0_ark,              -1.0_ark/),(/2,2/))
+       !
+       sym%irr(3,6)%repres = reshape((/-0.5_ark,               0.5_ark*sqrt(3.0_ark),&
+                                        0.5_ark*sqrt(3.0_ark), 0.5_ark            /),(/2,2/))
+       !
+       sym%irr(3,5)%repres = reshape((/-0.5_ark,              -0.5_ark*sqrt(3.0_ark),&
+                                       -0.5_ark*sqrt(3.0_ark), 0.5_ark             /),(/2,2/))
        !
   case("D3H(M)","D3H")
 

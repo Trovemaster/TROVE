@@ -7851,7 +7851,7 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
     alphae1(1:3) = extF%coef(4,1:3)/rad
     alphae2(1:3) = extF%coef(5,1:3)/rad
     rho2e(1:3)   = pi - alphae2(1:3)
-    taue(1:3)    = extF%coef(6,1:3)/rad
+    taue(1:3)    = 0
     !
     y(1,:) = r1 - re1(:) 
     y(2,:) = r2 - re2(:) 
