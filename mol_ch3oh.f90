@@ -110,7 +110,7 @@ module mol_ch3oh
       if (direct) then 
         !
         !for stretches and 'alpha' bends just subtract equilibrium coordinates
-        dst(1:12) = src(1:12)-molec%local_eq(1:12)
+        dst(1:12) = src(1:12)
         !
         t1 = src(10)
         t2 = src(11)
@@ -139,7 +139,7 @@ module mol_ch3oh
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
-        dst(1:12) = src(1:12)+molec%local_eq(1:12)
+        dst(1:12) = src(1:12)
         !
         A1 = src(10) 
         A2 = src(11) 

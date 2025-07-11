@@ -858,6 +858,14 @@ module me_bnd
          write (out,"('periodicity = ',i8)") p
      endif 
      !
+     if (verbose>=3) then 
+        write(out,"('grid values (i,rho,poten, mu_rr): ')") 
+        do i=0,npoints
+          rho = rho_b(1)+real(i,kind=ark)*rhostep
+          write(out,"(i8,f14.6,2g14.6)") i,rho,poten(i),mu_rr(i)
+        enddo 
+     endif 
+     !
      potmin = huge(1.0_ark)
      !
      do i=0,npoints

@@ -3453,7 +3453,7 @@ end subroutine polintark
    integer(ik),optional   :: iorder
    integer(ik)            :: i,jorder
    real(ark)              :: rhoe,v,amorse
-   real(ark)              :: y,z
+   real(ark)              :: y,z,xe
      !
      if (verbose>=6) write(out,"(/'MLcoord_direct/start')") 
      !
@@ -3563,6 +3563,14 @@ end subroutine polintark
         !
         v = 1.0_ark-exp( -amorse*( x ) )
         !
+     case('MORSE(X-XE)') 
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        v = 1.0_ark-exp( -amorse*( x-xe ) )
+        !
      case('RATIONAL') 
         !
         v = x
@@ -3617,7 +3625,7 @@ end subroutine polintark
           do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
             !
             z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
-                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+                (x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
             call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
             v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
           end do      
@@ -3636,7 +3644,7 @@ end subroutine polintark
           do i = 1, molec%basic_function_list(imode)%mode_set(jorder)%num_terms
             !
             z = molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%coeff*&
-                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%inner_expon
+                (x)**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%inner_expon
                 !
             if (iorder>0) then 
                call molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%func_pointer(z, y)
@@ -3732,9 +3740,9 @@ end subroutine polintark
        case('FOURIER') 
            !
            if (iorder<0) then 
-             v = sin( real(iorder,4)*( molec%local_eq(imode) + x ) )
+             v = sin( real(iorder,4)*( x ) )
            else
-             v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+             v = cos( real(iorder,4)*( x ) )
            endif
            !
         case('ANGLE-X2Y2')
@@ -3828,7 +3836,7 @@ end subroutine polintark
    integer(ik),intent(in)  :: imode
 
    integer(ik)            :: itype
-   real(ark)            ::  rhoe,dxi_dchi,amorse,chi
+   real(ark)            ::  rhoe,dxi_dchi,amorse,chi,xe
 
      if (verbose>=6) write(out,"(/'MLcoord_firstderiv/start')") 
      !
@@ -3888,6 +3896,17 @@ end subroutine polintark
         !
         dxi_dchi = amorse*exp( -amorse*( chi ) )
         !
+     case('MORSE(X-XE)')
+        !
+        write (out,"(a)") 'error: MLcoord_firstderiv:MORSE(X-XE): check before using'
+        stop 'error: MLcoord_firstderiv:MORSE(X-XE): check before using'
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        dxi_dchi = exp( -amorse*( chi-xe ) )
+        !
      end select 
      !
      if (verbose>=6) write(out,"('MLcoord_firstderiv/end')") 
@@ -3907,7 +3926,7 @@ end subroutine polintark
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    
-   real(ark) :: chi,amorse,rhoe
+   real(ark) :: chi,amorse,rhoe,xe
 
    if (verbose>=6) write(out,"(/'MLcoord_invert/start')")
     
@@ -3915,8 +3934,10 @@ end subroutine polintark
 
    select case(trim(molec%coordinates(itype,imode)))
    case default
+        !
         write (out,"('MLcoord_invert: coordinate type ',a,' unknown')") trim(molec%coordinates(itype,imode))
         stop 'MLcoord_invert - bad coordinate-type'
+        !
    case('MORSE') 
         !
         ! xi(i) = 1/( i*amorse )
@@ -3924,6 +3945,14 @@ end subroutine polintark
         amorse = molec%specparam(imode)
         !
         chi = -log(1.0_ark-xi(imode))/amorse
+        !
+     case('MORSE(X-XE)') 
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        chi =xe-log(1.0_ark-xi(imode))/amorse
         !
     case('HARMONIC','NORMAL','LINEAR','SAME') 
         !
@@ -4083,7 +4112,7 @@ end subroutine polintark
    case default
         write (out,"('ML_check_steps4coordinvert: coordinate type ',a,' unknown')") trim(molec%coordinates(itype,imode))
         stop 'ML_check_steps4coordinvert - bad coordinate-type'
-   case('MORSE') 
+   case('MORSE','MORSE(X-XE)') 
         !
         fstep(1:2) = 1.0_ark
         !

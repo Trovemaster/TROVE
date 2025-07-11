@@ -20882,7 +20882,7 @@ end subroutine check_read_save_none
        real(ark),intent(in)  :: f1d(0:trove%NPotOrder)
        real(ark),intent(out) :: f1drho(0:Npoints)
        !
-       real(ark) :: f2(1:trove%Nmodes),f_t,rho_ref_
+       real(ark) :: f2(1:trove%Nmodes),f,rho_ref_
        real(ark) :: rho_pot0,rho_pot,step
        real(ark) :: pot(1:trove%Nmodes,0:trove%NPotOrder)
        !
@@ -20907,11 +20907,18 @@ end subroutine check_read_save_none
           !
           rho =  rho_b(1)+real(i,kind=ark)*step
           !
-          rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
+          !rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
           !
           do ipower = 0,trove%NPotorder 
              !
-             f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
+             !f1drho(i) = f1drho(i) + f1d(ipower)*rho_pot**ipower
+             !
+             !f = f1d(ipower)*rho_pot**ipower
+             !
+             if (abs(f1d(ipower))>small_) then 
+               f = MLcoord_direct(rho,2,nu_i,ipower)
+               f1drho(i) = f1drho(i) + f1d(ipower)*f
+             endif
              !
           enddo
           !
