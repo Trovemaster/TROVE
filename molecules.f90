@@ -3509,6 +3509,18 @@ end subroutine polintark
         !
         v = cos(rhoe)-cos(rhoe+x)
         !
+     case('COS(X)-COS(X0)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(x)-cos(rhoe)
+        !
+     case('COS(X0)-COS(X)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe)-cos(x)
+        !
      case('SIN(X)-SIN(X0)') 
         !
         rhoe =  molec%local_eq(imode)
@@ -3866,11 +3878,11 @@ end subroutine polintark
         !
         dxi_dchi = cos(chi)
         !
-     case('COSX-COSX0') 
+     case('COSX-COSX0','COS(X)-COS(X0)') 
         !
         dxi_dchi = -sin(chi)
         !
-     case('COSX0-COSX') 
+     case('COSX0-COSX','COS(X0)-COS(X)') 
         !
         dxi_dchi = sin(chi)
         !
@@ -4046,7 +4058,7 @@ end subroutine polintark
         !
         if (rhoe>0.5_ark*pi.and.chi<0.5_ark*pi) chi = pi - chi
         !
-     case('COSX-COSX0','COSX0-COSX')
+     case('COSX-COSX0','COSX0-COSX','COS(X)-COS(X0)','COS(X0)-COS(X)')
         !
         write(out,"('MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested')")
         stop 'MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested'
@@ -4135,7 +4147,7 @@ end subroutine polintark
             !
         endif 
         !
-     case('COSX-COSX0','COSX0-COSX') 
+     case('COSX-COSX0','COSX0-COSX','COS(X)-COS(X0)','COS(X0)-COS(X)') 
         !
         fstep(1:2) = 1.0_ark
         !
