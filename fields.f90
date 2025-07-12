@@ -20139,28 +20139,34 @@ end subroutine check_read_save_none
            ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
            ! now we need them:
            !
+           if(molec%mode_list_present) then
+              maxpower = molec%basic_function_list(nu_i)%numfunc
+           else
+              maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+           endif
+           !
            select case (trim(bs%type))
              !
            case ('NUMEROV')
              !
              f1drho = f1drho + p1drho
              !
-             call ME_numerov(bs%Size,bs%order,rho_b,isingular,npoints,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('BOX')
              !
              f1drho = f1drho + p1drho
              !
-             call ME_box(bs%Size,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
-                         bs%matelements,bs%ener0)
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
+                         bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('FOURIER')
              !
              f1drho = f1drho + p1drho
              !
-             call ME_fourier(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('SINC')
              !
@@ -20168,8 +20174,8 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + p1drho
              !
-             call ME_sinc(bs%Size,bs%order,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('SINRHO-LEGENDRE')
              !
@@ -20177,12 +20183,6 @@ end subroutine check_read_save_none
              nmax = bs%Size
              if ( kmax/=0 ) then
                nmax = (bs%Size+1)/(kmax+1)-1
-             endif
-             !
-             if(molec%mode_list_present) then
-                maxpower = molec%basic_function_list(nu_i)%numfunc
-             else
-                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
              !
              chi_b(:) = rho_b(:) - rho_b(1)
@@ -20200,12 +20200,6 @@ end subroutine check_read_save_none
              !
              kmax = job%bset(0)%range(2)
              nmax = bs%Size
-             !
-             if(molec%mode_list_present) then
-                maxpower = molec%basic_function_list(nu_i)%numfunc
-             else
-                maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-             endif
              !
              chi_b(:) = rho_b(:) - rho_b(1)
              !
