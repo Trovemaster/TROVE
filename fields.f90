@@ -19382,12 +19382,6 @@ end subroutine check_read_save_none
                   !
                   coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
                   !
-                  !if (job%bset_prop(i)%singular) then
-                  !  !
-                  !  continue
-                  !  !
-                  !endif
-                  !
                   g2_term = g2_term*coeff_term 
                   !
                 enddo
@@ -19395,6 +19389,36 @@ end subroutine check_read_save_none
                 g1drho(:) = g1drho(:) + g2_term*gl%field(j,:)
                 !
               enddo
+              !
+              fl => trove%pseudo
+              !
+              ! pseudo-term
+              !
+              p1drho = 0
+              !
+              do j = 1, size(fl%ifromsparse)
+                !
+                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                !
+                ipower = powers(nu_i)
+                !
+                f2_term = 1.0_ark
+                !
+                do i = 1, size(powers)
+                  !
+                  if (i == nu_i) cycle
+                  !
+                  coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
+                  !
+                  f2_term = f2_term*coeff_term 
+                  !
+                enddo
+                !
+                p1drho(:) = p1drho(:) + f2_term*fl%field(j,:)
+                !
+              enddo
+              !
+              f1drho(0:npoints) = trove%poten%field(1,0:npoints)+p1drho(0:npoints)
               !
            else
               !
