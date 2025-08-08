@@ -750,6 +750,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdipole_bisect_s1s2theta_xy2
         !
+    case('DIPOLE_PQR_XY2_SYM_EXP')
+        !
+        MLextF_func => MLdms2pqr_xy2_sym_expansion
+       !
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym
@@ -3752,7 +3756,7 @@ end subroutine polintark
        case('FOURIER') 
            !
            if (iorder<0) then 
-             v = sin( real(iorder,4)*( x ) )
+             v = sin( real(-iorder,4)*( x ) )
            else
              v = cos( real(iorder,4)*( x ) )
            endif

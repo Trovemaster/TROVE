@@ -17,7 +17,7 @@ module pot_xy2
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
          MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz,&
-         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_cosrho
+         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_cosrho,MLdms2pqr_xy2_sym_expansion
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -8759,6 +8759,580 @@ endif
     f = mu*2.541765_ark
 
    end subroutine MLdipole_ames1_xyz
+
+
+ !returns electric dipole moment cartesian coordinates in the user-defined frame for locals specified
+ !
+ recursive subroutine MLdms2pqr_xy2_sym_expansion(rank,ncoords,natoms,local,xyz,f)
+
+    integer(ik),intent(in) ::  rank,ncoords,natoms
+    real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+    real(ark),intent(out)  ::  f(rank)
+    !
+    integer(ik)           :: k
+    real(ark)             :: xs1,xs2,xst, mu(3),u1(3),u2(3),u3(3),tmat(3,3),n1(3),n2(3),x(2,3),r1,r2,alpha,re,ae,b0
+    real(ark)             :: p(1:extF%nterms(1)),q(1:extF%nterms(2)),d0,dp1,dp2,dp3,xyz0(natoms,3)
+    !
+    ! xyz are undefined for the local case
+    if (all(abs(xyz)<small_)) then 
+      !
+      xyz0 = MLloc2pqr_xy2(local)
+      !
+      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(2,:) = xyz0(3,:) - xyz0(1,:)
+      !
+    else
+      !
+      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(2,:) = xyz(3,:) - xyz(1,:)
+      !
+    endif
+    !
+    r1 = sqrt(sum(x(1,:)**2))
+    r2 = sqrt(sum(x(2,:)**2))
+    !
+    n1 = x(1,:) / r1
+    n2 = x(2,:) / r2
+    !
+    alpha = acos(sum(n1*n2))
+    !
+    u1 = n1 + n2
+    u2 = n2 - n1
+    !
+    u1 = u1 / sqrt(sum(u1(:)**2))
+    u2 = u2 / sqrt(sum(u2(:)**2))
+    !
+    u3 = MLvector_product(u1,u2)
+    !
+    tmat(1, :) = u1
+    tmat(2, :) = u2
+    tmat(3, :) = u3
+    !
+    re = extF%coef(1,1)
+    ae = extF%coef(2,1)*pi/180.0_ark
+    !
+    xs1=(r1+r2)*0.5_ark-re
+    xs2=(r1-r2)*0.5_ark
+    xst=ae - alpha
+    !
+    k = extF%nterms(1)
+    !
+    p(1:k-2) = extF%coef(3:k,1)
+    !
+     d0 = p(  1)  *xs1**0 *xs2**0 *xst**0
+     dp1=+p(  2)  *xs1**0 *xs2**0 *xst**1  & 
+         +p(  3)  *xs1**1 *xs2**0 *xst**0  & 
+         +p(  4)  *xs1**0 *xs2**0 *xst**2  & 
+         +p(  5)  *xs1**0 *xs2**2 *xst**0  & 
+         +p(  6)  *xs1**1 *xs2**0 *xst**1  & 
+         +p(  7)  *xs1**2 *xs2**0 *xst**0  & 
+         +p(  8)  *xs1**0 *xs2**0 *xst**3  & 
+         +p(  9)  *xs1**0 *xs2**2 *xst**1  & 
+         +p( 10)  *xs1**1 *xs2**0 *xst**2  & 
+         +p( 11)  *xs1**1 *xs2**2 *xst**0  & 
+         +p( 12)  *xs1**2 *xs2**0 *xst**1  & 
+         +p( 13)  *xs1**3 *xs2**0 *xst**0  & 
+         +p( 14)  *xs1**0 *xs2**0 *xst**4  & 
+         +p( 15)  *xs1**0 *xs2**2 *xst**2  & 
+         +p( 16)  *xs1**0 *xs2**4 *xst**0  & 
+         +p( 17)  *xs1**1 *xs2**0 *xst**3  & 
+         +p( 18)  *xs1**1 *xs2**2 *xst**1  & 
+         +p( 19)  *xs1**2 *xs2**0 *xst**2  & 
+         +p( 20)  *xs1**2 *xs2**2 *xst**0  & 
+         +p( 21)  *xs1**3 *xs2**0 *xst**1  & 
+         +p( 22)  *xs1**4 *xs2**0 *xst**0  & 
+         +p( 23)  *xs1**0 *xs2**0 *xst**5  & 
+         +p( 24)  *xs1**0 *xs2**2 *xst**3  & 
+         +p( 25)  *xs1**0 *xs2**4 *xst**1  & 
+         +p( 26)  *xs1**1 *xs2**0 *xst**4  & 
+         +p( 27)  *xs1**1 *xs2**2 *xst**2  & 
+         +p( 28)  *xs1**1 *xs2**4 *xst**0  & 
+         +p( 29)  *xs1**2 *xs2**0 *xst**3  & 
+         +p( 30)  *xs1**2 *xs2**2 *xst**1  & 
+         +p( 31)  *xs1**3 *xs2**0 *xst**2  & 
+         +p( 32)  *xs1**3 *xs2**2 *xst**0  & 
+         +p( 33)  *xs1**4 *xs2**0 *xst**1  & 
+         +p( 34)  *xs1**5 *xs2**0 *xst**0  & 
+         +p( 35)  *xs1**0 *xs2**0 *xst**6  & 
+         +p( 36)  *xs1**0 *xs2**2 *xst**4  & 
+         +p( 37)  *xs1**0 *xs2**4 *xst**2  & 
+         +p( 38)  *xs1**0 *xs2**6 *xst**0  & 
+         +p( 39)  *xs1**1 *xs2**0 *xst**5  & 
+         +p( 40)  *xs1**1 *xs2**2 *xst**3  & 
+         +p( 41)  *xs1**1 *xs2**4 *xst**1  & 
+         +p( 42)  *xs1**2 *xs2**0 *xst**4  & 
+         +p( 43)  *xs1**2 *xs2**2 *xst**2  & 
+         +p( 44)  *xs1**2 *xs2**4 *xst**0  & 
+         +p( 45)  *xs1**3 *xs2**0 *xst**3  & 
+         +p( 46)  *xs1**3 *xs2**2 *xst**1  & 
+         +p( 47)  *xs1**4 *xs2**0 *xst**2  & 
+         +p( 48)  *xs1**4 *xs2**2 *xst**0  & 
+         +p( 49)  *xs1**5 *xs2**0 *xst**1  & 
+         +p( 50)  *xs1**6 *xs2**0 *xst**0  & 
+         +p( 51)  *xs1**0 *xs2**0 *xst**7  & 
+         +p( 52)  *xs1**0 *xs2**2 *xst**5  & 
+         +p( 53)  *xs1**0 *xs2**4 *xst**3  & 
+         +p( 54)  *xs1**0 *xs2**6 *xst**1  & 
+         +p( 55)  *xs1**1 *xs2**0 *xst**6  & 
+         +p( 56)  *xs1**1 *xs2**2 *xst**4  & 
+         +p( 57)  *xs1**1 *xs2**4 *xst**2  & 
+         +p( 58)  *xs1**1 *xs2**6 *xst**0  & 
+         +p( 59)  *xs1**2 *xs2**0 *xst**5  & 
+         +p( 60)  *xs1**2 *xs2**2 *xst**3  & 
+         +p( 61)  *xs1**2 *xs2**4 *xst**1  & 
+         +p( 62)  *xs1**3 *xs2**0 *xst**4  & 
+         +p( 63)  *xs1**3 *xs2**2 *xst**2  & 
+         +p( 64)  *xs1**3 *xs2**4 *xst**0  & 
+         +p( 65)  *xs1**4 *xs2**0 *xst**3  & 
+         +p( 66)  *xs1**4 *xs2**2 *xst**1  & 
+         +p( 67)  *xs1**5 *xs2**0 *xst**2  & 
+         +p( 68)  *xs1**5 *xs2**2 *xst**0  & 
+         +p( 69)  *xs1**6 *xs2**0 *xst**1  & 
+         +p( 70)  *xs1**7 *xs2**0 *xst**0  & 
+         +p( 71)  *xs1**0 *xs2**0 *xst**8  & 
+         +p( 72)  *xs1**0 *xs2**2 *xst**6  & 
+         +p( 73)  *xs1**0 *xs2**4 *xst**4  & 
+         +p( 74)  *xs1**0 *xs2**6 *xst**2  & 
+         +p( 75)  *xs1**0 *xs2**8 *xst**0  & 
+         +p( 76)  *xs1**1 *xs2**0 *xst**7  & 
+         +p( 77)  *xs1**1 *xs2**2 *xst**5  & 
+         +p( 78)  *xs1**1 *xs2**4 *xst**3  & 
+         +p( 79)  *xs1**1 *xs2**6 *xst**1  & 
+         +p( 80)  *xs1**2 *xs2**0 *xst**6  & 
+         +p( 81)  *xs1**2 *xs2**2 *xst**4  & 
+         +p( 82)  *xs1**2 *xs2**4 *xst**2  & 
+         +p( 83)  *xs1**2 *xs2**6 *xst**0  & 
+         +p( 84)  *xs1**3 *xs2**0 *xst**5  & 
+         +p( 85)  *xs1**3 *xs2**2 *xst**3  & 
+         +p( 86)  *xs1**3 *xs2**4 *xst**1  & 
+         +p( 87)  *xs1**4 *xs2**0 *xst**4  & 
+         +p( 88)  *xs1**4 *xs2**2 *xst**2  & 
+         +p( 89)  *xs1**4 *xs2**4 *xst**0  & 
+         +p( 90)  *xs1**5 *xs2**0 *xst**3  & 
+         +p( 91)  *xs1**5 *xs2**2 *xst**1  & 
+         +p( 92)  *xs1**6 *xs2**0 *xst**2 
+     dp2=+p( 93)  *xs1**6 *xs2**2 *xst**0  & 
+         +p( 94)  *xs1**7 *xs2**0 *xst**1  & 
+         +p( 95)  *xs1**8 *xs2**0 *xst**0  & 
+         +p( 96)  *xs1**0 *xs2**0 *xst**9  & 
+         +p( 97)  *xs1**0 *xs2**2 *xst**7  & 
+         +p( 98)  *xs1**0 *xs2**4 *xst**5  & 
+         +p( 99)  *xs1**0 *xs2**6 *xst**3  & 
+         +p(100)  *xs1**0 *xs2**8 *xst**1  & 
+         +p(101)  *xs1**1 *xs2**0 *xst**8  & 
+         +p(102)  *xs1**1 *xs2**2 *xst**6  & 
+         +p(103)  *xs1**1 *xs2**4 *xst**4  & 
+         +p(104)  *xs1**1 *xs2**6 *xst**2  & 
+         +p(105)  *xs1**1 *xs2**8 *xst**0  & 
+         +p(106)  *xs1**2 *xs2**0 *xst**7  & 
+         +p(107)  *xs1**2 *xs2**2 *xst**5  & 
+         +p(108)  *xs1**2 *xs2**4 *xst**3  & 
+         +p(109)  *xs1**2 *xs2**6 *xst**1  & 
+         +p(110)  *xs1**3 *xs2**0 *xst**6  & 
+         +p(111)  *xs1**3 *xs2**2 *xst**4  & 
+         +p(112)  *xs1**3 *xs2**4 *xst**2  & 
+         +p(113)  *xs1**3 *xs2**6 *xst**0  & 
+         +p(114)  *xs1**4 *xs2**0 *xst**5  & 
+         +p(115)  *xs1**4 *xs2**2 *xst**3  & 
+         +p(116)  *xs1**4 *xs2**4 *xst**1  & 
+         +p(117)  *xs1**5 *xs2**0 *xst**4  & 
+         +p(118)  *xs1**5 *xs2**2 *xst**2  & 
+         +p(119)  *xs1**5 *xs2**4 *xst**0  & 
+         +p(120)  *xs1**6 *xs2**0 *xst**3  & 
+         +p(121)  *xs1**6 *xs2**2 *xst**1  & 
+         +p(122)  *xs1**7 *xs2**0 *xst**2  & 
+         +p(123)  *xs1**7 *xs2**2 *xst**0  & 
+         +p(124)  *xs1**8 *xs2**0 *xst**1  & 
+         +p(125)  *xs1**9 *xs2**0 *xst**0  & 
+         +p(126)  *xs1**0 *xs2**2 *xst**8  & 
+         +p(127)  *xs1**0 *xs2**4 *xst**6  & 
+         +p(128)  *xs1**0 *xs2**6 *xst**4  & 
+         +p(129)  *xs1**0 *xs2**8 *xst**2  & 
+         +p(130)  *xs1**1 *xs2**0 *xst**9  & 
+         +p(131)  *xs1**1 *xs2**2 *xst**7  & 
+         +p(132)  *xs1**1 *xs2**4 *xst**5  & 
+         +p(133)  *xs1**1 *xs2**6 *xst**3  & 
+         +p(134)  *xs1**1 *xs2**8 *xst**1  & 
+         +p(135)  *xs1**2 *xs2**0 *xst**8  & 
+         +p(136)  *xs1**2 *xs2**2 *xst**6  & 
+         +p(137)  *xs1**2 *xs2**4 *xst**4  & 
+         +p(138)  *xs1**2 *xs2**6 *xst**2  & 
+         +p(139)  *xs1**3 *xs2**0 *xst**7  & 
+         +p(140)  *xs1**3 *xs2**2 *xst**5  & 
+         +p(141)  *xs1**3 *xs2**4 *xst**3  & 
+         +p(142)  *xs1**3 *xs2**6 *xst**1  & 
+         +p(143)  *xs1**4 *xs2**0 *xst**6  & 
+         +p(144)  *xs1**4 *xs2**2 *xst**4  & 
+         +p(145)  *xs1**4 *xs2**4 *xst**2  & 
+         +p(146)  *xs1**5 *xs2**0 *xst**5  & 
+         +p(147)  *xs1**5 *xs2**2 *xst**3  & 
+         +p(148)  *xs1**5 *xs2**4 *xst**1  & 
+         +p(149)  *xs1**6 *xs2**0 *xst**4  & 
+         +p(150)  *xs1**6 *xs2**2 *xst**2  & 
+         +p(151)  *xs1**6 *xs2**4 *xst**0  & 
+         +p(152)  *xs1**7 *xs2**0 *xst**3  & 
+         +p(153)  *xs1**7 *xs2**2 *xst**1  & 
+         +p(154)  *xs1**8 *xs2**0 *xst**2  & 
+         +p(155)  *xs1**8 *xs2**2 *xst**0  & 
+         +p(156)  *xs1**9 *xs2**0 *xst**1  & 
+         +p(157)  *xs1**10*xs2**0 *xst**0  & 
+         +p(158)  *xs1**0 *xs2**2 *xst**9  & 
+         +p(159)  *xs1**0 *xs2**4 *xst**7  & 
+         +p(160)  *xs1**0 *xs2**6 *xst**5  & 
+         +p(161)  *xs1**0 *xs2**8 *xst**3  & 
+         +p(162)  *xs1**0 *xs2**10*xst**1  & 
+         +p(163)  *xs1**1 *xs2**0 *xst**10 & 
+         +p(164)  *xs1**1 *xs2**2 *xst**8  & 
+         +p(165)  *xs1**1 *xs2**4 *xst**6  & 
+         +p(166)  *xs1**1 *xs2**6 *xst**4  & 
+         +p(167)  *xs1**1 *xs2**8 *xst**2  & 
+         +p(168)  *xs1**1 *xs2**10*xst**0  & 
+         +p(169)  *xs1**2 *xs2**0 *xst**9  & 
+         +p(170)  *xs1**2 *xs2**2 *xst**7  & 
+         +p(171)  *xs1**2 *xs2**4 *xst**5  & 
+         +p(172)  *xs1**2 *xs2**6 *xst**3  & 
+         +p(173)  *xs1**2 *xs2**8 *xst**1  & 
+         +p(174)  *xs1**3 *xs2**0 *xst**8 
+     dp3=+p(175)  *xs1**3 *xs2**2 *xst**6  & 
+         +p(176)  *xs1**3 *xs2**4 *xst**4  & 
+         +p(177)  *xs1**3 *xs2**6 *xst**2  & 
+         +p(178)  *xs1**3 *xs2**8 *xst**0  & 
+         +p(179)  *xs1**4 *xs2**0 *xst**7  & 
+         +p(180)  *xs1**4 *xs2**2 *xst**5  & 
+         +p(181)  *xs1**4 *xs2**4 *xst**3  & 
+         +p(182)  *xs1**4 *xs2**6 *xst**1  & 
+         +p(183)  *xs1**5 *xs2**0 *xst**6  & 
+         +p(184)  *xs1**5 *xs2**2 *xst**4  & 
+         +p(185)  *xs1**5 *xs2**4 *xst**2  & 
+         +p(186)  *xs1**5 *xs2**6 *xst**0  & 
+         +p(187)  *xs1**6 *xs2**0 *xst**5  & 
+         +p(188)  *xs1**6 *xs2**2 *xst**3  & 
+         +p(189)  *xs1**6 *xs2**4 *xst**1  & 
+         +p(190)  *xs1**7 *xs2**0 *xst**4  & 
+         +p(191)  *xs1**7 *xs2**2 *xst**2  & 
+         +p(192)  *xs1**8 *xs2**0 *xst**3  & 
+         +p(193)  *xs1**8 *xs2**2 *xst**1  & 
+         +p(194)  *xs1**9 *xs2**0 *xst**2  & 
+         +p(195)  *xs1**9 *xs2**2 *xst**0  & 
+         +p(196)  *xs1**10*xs2**0 *xst**1  & 
+         +p(197)  *xs1**11*xs2**0 *xst**0  & 
+         +p(198)  *xs1**0 *xs2**0 *xst**2  & 
+         +p(199)  *xs1**0 *xs2**2 *xst**0  & 
+         +p(200)  *xs1**0 *xs2**4 *xst**8  & 
+         +p(201)  *xs1**0 *xs2**6 *xst**6  & 
+         +p(202)  *xs1**0 *xs2**8 *xst**4  & 
+         +p(203)  *xs1**0 *xs2**10*xst**2  & 
+         +p(204)  *xs1**0 *xs2**12*xst**0  & 
+         +p(205)  *xs1**1 *xs2**0 *xst**11 & 
+         +p(206)  *xs1**1 *xs2**2 *xst**9  & 
+         +p(207)  *xs1**1 *xs2**4 *xst**7  & 
+         +p(208)  *xs1**1 *xs2**6 *xst**5  & 
+         +p(209)  *xs1**1 *xs2**8 *xst**3  & 
+         +p(210)  *xs1**1 *xs2**10*xst**1  & 
+         +p(211)  *xs1**2 *xs2**0 *xst**10 & 
+         +p(212)  *xs1**2 *xs2**2 *xst**8  & 
+         +p(213)  *xs1**2 *xs2**4 *xst**6  & 
+         +p(214)  *xs1**2 *xs2**6 *xst**4  & 
+         +p(215)  *xs1**2 *xs2**8 *xst**2  & 
+         +p(216)  *xs1**2 *xs2**10*xst**0  & 
+         +p(217)  *xs1**3 *xs2**0 *xst**9  & 
+         +p(218)  *xs1**3 *xs2**2 *xst**7  & 
+         +p(219)  *xs1**3 *xs2**4 *xst**5  & 
+         +p(220)  *xs1**3 *xs2**6 *xst**3  & 
+         +p(221)  *xs1**3 *xs2**8 *xst**1  & 
+         +p(222)  *xs1**4 *xs2**0 *xst**8  & 
+         +p(223)  *xs1**4 *xs2**2 *xst**6  & 
+         +p(224)  *xs1**4 *xs2**4 *xst**4  & 
+         +p(225)  *xs1**4 *xs2**6 *xst**2  & 
+         +p(226)  *xs1**4 *xs2**8 *xst**0  & 
+         +p(227)  *xs1**5 *xs2**0 *xst**7  & 
+         +p(228)  *xs1**5 *xs2**2 *xst**5  & 
+         +p(229)  *xs1**5 *xs2**4 *xst**3  & 
+         +p(230)  *xs1**5 *xs2**6 *xst**1  & 
+         +p(231)  *xs1**6 *xs2**0 *xst**6  & 
+         +p(232)  *xs1**6 *xs2**2 *xst**4  & 
+         +p(233)  *xs1**6 *xs2**4 *xst**2  & 
+         +p(234)  *xs1**6 *xs2**6 *xst**0  & 
+         +p(235)  *xs1**7 *xs2**0 *xst**5  & 
+         +p(236)  *xs1**7 *xs2**2 *xst**3  & 
+         +p(237)  *xs1**7 *xs2**4 *xst**1  & 
+         +p(238)  *xs1**8 *xs2**0 *xst**4  & 
+         +p(239)  *xs1**8 *xs2**2 *xst**2  & 
+         +p(240)  *xs1**8 *xs2**4 *xst**0  & 
+         +p(241)  *xs1**9 *xs2**0 *xst**3  & 
+         +p(242)  *xs1**9 *xs2**2 *xst**1  & 
+         +p(243)  *xs1**10*xs2**0 *xst**2  & 
+         +p(244)  *xs1**10*xs2**2 *xst**0  & 
+         +p(245)  *xs1**11*xs2**0 *xst**1  & 
+         +p(246)  *xs1**12*xs2**0 *xst**0 
+    
+    mu(1)=d0+dp1+dp2+dp3
+    !
+    re = extF%coef(1,2)
+    ae = extF%coef(2,2)*pi/180.0_ark
+    !
+    xs1=(r1+r2)*0.5_ark-re
+    xs2=(r1-r2)*0.5_ark
+    xst=ae - alpha
+    !
+    k = extF%nterms(2) 
+    !
+    q(1:k-2) = extF%coef(3:k,2)
+    !
+     d0 = q(  1)  *xs1**0 *xs2**1 *xst**0
+     dp1=+q(  2)  *xs1**0 *xs2**1 *xst**1  & 
+         +q(  3)  *xs1**1 *xs2**1 *xst**0  & 
+         +q(  4)  *xs1**0 *xs2**1 *xst**2  & 
+         +q(  5)  *xs1**0 *xs2**3 *xst**0  & 
+         +q(  6)  *xs1**1 *xs2**1 *xst**1  & 
+         +q(  7)  *xs1**2 *xs2**1 *xst**0  & 
+         +q(  8)  *xs1**0 *xs2**1 *xst**3  & 
+         +q(  9)  *xs1**0 *xs2**3 *xst**1  & 
+         +q( 10)  *xs1**1 *xs2**1 *xst**2  & 
+         +q( 11)  *xs1**1 *xs2**3 *xst**0  & 
+         +q( 12)  *xs1**2 *xs2**1 *xst**1  & 
+         +q( 13)  *xs1**3 *xs2**1 *xst**0  & 
+         +q( 14)  *xs1**0 *xs2**1 *xst**4  & 
+         +q( 15)  *xs1**0 *xs2**3 *xst**2  & 
+         +q( 16)  *xs1**0 *xs2**5 *xst**0  & 
+         +q( 17)  *xs1**1 *xs2**1 *xst**3  & 
+         +q( 18)  *xs1**1 *xs2**3 *xst**1  & 
+         +q( 19)  *xs1**2 *xs2**1 *xst**2  & 
+         +q( 20)  *xs1**2 *xs2**3 *xst**0  & 
+         +q( 21)  *xs1**3 *xs2**1 *xst**1  & 
+         +q( 22)  *xs1**4 *xs2**1 *xst**0  & 
+         +q( 23)  *xs1**0 *xs2**1 *xst**5  & 
+         +q( 24)  *xs1**0 *xs2**3 *xst**3  & 
+         +q( 25)  *xs1**0 *xs2**5 *xst**1  & 
+         +q( 26)  *xs1**1 *xs2**1 *xst**4  & 
+         +q( 27)  *xs1**1 *xs2**3 *xst**2  & 
+         +q( 28)  *xs1**1 *xs2**5 *xst**0  & 
+         +q( 29)  *xs1**2 *xs2**1 *xst**3  & 
+         +q( 30)  *xs1**2 *xs2**3 *xst**1  & 
+         +q( 31)  *xs1**3 *xs2**1 *xst**2  & 
+         +q( 32)  *xs1**3 *xs2**3 *xst**0  & 
+         +q( 33)  *xs1**4 *xs2**1 *xst**1  & 
+         +q( 34)  *xs1**5 *xs2**1 *xst**0  & 
+         +q( 35)  *xs1**0 *xs2**1 *xst**6  & 
+         +q( 36)  *xs1**0 *xs2**3 *xst**4  & 
+         +q( 37)  *xs1**0 *xs2**5 *xst**2  & 
+         +q( 38)  *xs1**0 *xs2**7 *xst**0  & 
+         +q( 39)  *xs1**1 *xs2**1 *xst**5  & 
+         +q( 40)  *xs1**1 *xs2**3 *xst**3  & 
+         +q( 41)  *xs1**1 *xs2**5 *xst**1  & 
+         +q( 42)  *xs1**2 *xs2**1 *xst**4  & 
+         +q( 43)  *xs1**2 *xs2**3 *xst**2  & 
+         +q( 44)  *xs1**2 *xs2**5 *xst**0  & 
+         +q( 45)  *xs1**3 *xs2**1 *xst**3  & 
+         +q( 46)  *xs1**3 *xs2**3 *xst**1  & 
+         +q( 47)  *xs1**4 *xs2**1 *xst**2  & 
+         +q( 48)  *xs1**4 *xs2**3 *xst**0  & 
+         +q( 49)  *xs1**5 *xs2**1 *xst**1  & 
+         +q( 50)  *xs1**6 *xs2**1 *xst**0  & 
+         +q( 51)  *xs1**0 *xs2**1 *xst**7  & 
+         +q( 52)  *xs1**0 *xs2**3 *xst**5  & 
+         +q( 53)  *xs1**0 *xs2**5 *xst**3  & 
+         +q( 54)  *xs1**0 *xs2**7 *xst**1  & 
+         +q( 55)  *xs1**1 *xs2**1 *xst**6  & 
+         +q( 56)  *xs1**1 *xs2**3 *xst**4  & 
+         +q( 57)  *xs1**1 *xs2**5 *xst**2  & 
+         +q( 58)  *xs1**1 *xs2**7 *xst**0  & 
+         +q( 59)  *xs1**2 *xs2**1 *xst**5  & 
+         +q( 60)  *xs1**2 *xs2**3 *xst**3  & 
+         +q( 61)  *xs1**2 *xs2**5 *xst**1  & 
+         +q( 62)  *xs1**3 *xs2**1 *xst**4  & 
+         +q( 63)  *xs1**3 *xs2**3 *xst**2  & 
+         +q( 64)  *xs1**3 *xs2**5 *xst**0  & 
+         +q( 65)  *xs1**4 *xs2**1 *xst**3  & 
+         +q( 66)  *xs1**4 *xs2**3 *xst**1  & 
+         +q( 67)  *xs1**5 *xs2**1 *xst**2  & 
+         +q( 68)  *xs1**5 *xs2**3 *xst**0  & 
+         +q( 69)  *xs1**6 *xs2**1 *xst**1  & 
+         +q( 70)  *xs1**7 *xs2**1 *xst**0  & 
+         +q( 71)  *xs1**0 *xs2**1 *xst**8  & 
+         +q( 72)  *xs1**0 *xs2**3 *xst**6  & 
+         +q( 73)  *xs1**0 *xs2**5 *xst**4  & 
+         +q( 74)  *xs1**0 *xs2**7 *xst**2  &    ! end odd powers
+         +q( 75)  *xs1**0 *xs2**8 *xst**0  & 
+         +q( 76)  *xs1**1 *xs2**0 *xst**7  & 
+         +q( 77)  *xs1**1 *xs2**2 *xst**5  & 
+         +q( 78)  *xs1**1 *xs2**4 *xst**3  & 
+         +q( 79)  *xs1**1 *xs2**6 *xst**1  & 
+         +q( 80)  *xs1**2 *xs2**0 *xst**6  & 
+         +q( 81)  *xs1**2 *xs2**2 *xst**4  & 
+         +q( 82)  *xs1**2 *xs2**4 *xst**2  & 
+         +q( 83)  *xs1**2 *xs2**6 *xst**0  & 
+         +q( 84)  *xs1**3 *xs2**0 *xst**5  & 
+         +q( 85)  *xs1**3 *xs2**2 *xst**3  & 
+         +q( 86)  *xs1**3 *xs2**4 *xst**1  & 
+         +q( 87)  *xs1**4 *xs2**0 *xst**4  & 
+         +q( 88)  *xs1**4 *xs2**2 *xst**2  & 
+         +q( 89)  *xs1**4 *xs2**4 *xst**0  & 
+         +q( 90)  *xs1**5 *xs2**0 *xst**3  & 
+         +q( 91)  *xs1**5 *xs2**2 *xst**1  & 
+         +q( 92)  *xs1**6 *xs2**0 *xst**2 
+     dp2=+q( 93)  *xs1**6 *xs2**2 *xst**0  & 
+         +q( 94)  *xs1**7 *xs2**0 *xst**1  & 
+         +q( 95)  *xs1**8 *xs2**0 *xst**0  & 
+         +q( 96)  *xs1**0 *xs2**0 *xst**9  & 
+         +q( 97)  *xs1**0 *xs2**2 *xst**7  & 
+         +q( 98)  *xs1**0 *xs2**4 *xst**5  & 
+         +q( 99)  *xs1**0 *xs2**6 *xst**3  & 
+         +q(100)  *xs1**0 *xs2**8 *xst**1  & 
+         +q(101)  *xs1**1 *xs2**0 *xst**8  & 
+         +q(102)  *xs1**1 *xs2**2 *xst**6  & 
+         +q(103)  *xs1**1 *xs2**4 *xst**4  & 
+         +q(104)  *xs1**1 *xs2**6 *xst**2  & 
+         +q(105)  *xs1**1 *xs2**8 *xst**0  & 
+         +q(106)  *xs1**2 *xs2**0 *xst**7  & 
+         +q(107)  *xs1**2 *xs2**2 *xst**5  & 
+         +q(108)  *xs1**2 *xs2**4 *xst**3  & 
+         +q(109)  *xs1**2 *xs2**6 *xst**1  & 
+         +q(110)  *xs1**3 *xs2**0 *xst**6  & 
+         +q(111)  *xs1**3 *xs2**2 *xst**4  & 
+         +q(112)  *xs1**3 *xs2**4 *xst**2  & 
+         +q(113)  *xs1**3 *xs2**6 *xst**0  & 
+         +q(114)  *xs1**4 *xs2**0 *xst**5  & 
+         +q(115)  *xs1**4 *xs2**2 *xst**3  & 
+         +q(116)  *xs1**4 *xs2**4 *xst**1  & 
+         +q(117)  *xs1**5 *xs2**0 *xst**4  & 
+         +q(118)  *xs1**5 *xs2**2 *xst**2  & 
+         +q(119)  *xs1**5 *xs2**4 *xst**0  & 
+         +q(120)  *xs1**6 *xs2**0 *xst**3  & 
+         +q(121)  *xs1**6 *xs2**2 *xst**1  & 
+         +q(122)  *xs1**7 *xs2**0 *xst**2  & 
+         +q(123)  *xs1**7 *xs2**2 *xst**0  & 
+         +q(124)  *xs1**8 *xs2**0 *xst**1  & 
+         +q(125)  *xs1**9 *xs2**0 *xst**0  & 
+         +q(126)  *xs1**0 *xs2**2 *xst**8  & 
+         +q(127)  *xs1**0 *xs2**4 *xst**6  & 
+         +q(128)  *xs1**0 *xs2**6 *xst**4  & 
+         +q(129)  *xs1**0 *xs2**8 *xst**2  & 
+         +q(130)  *xs1**1 *xs2**0 *xst**9  & 
+         +q(131)  *xs1**1 *xs2**2 *xst**7  & 
+         +q(132)  *xs1**1 *xs2**4 *xst**5  & 
+         +q(133)  *xs1**1 *xs2**6 *xst**3  & 
+         +q(134)  *xs1**1 *xs2**8 *xst**1  & 
+         +q(135)  *xs1**2 *xs2**0 *xst**8  & 
+         +q(136)  *xs1**2 *xs2**2 *xst**6  & 
+         +q(137)  *xs1**2 *xs2**4 *xst**4  & 
+         +q(138)  *xs1**2 *xs2**6 *xst**2  & 
+         +q(139)  *xs1**3 *xs2**0 *xst**7  & 
+         +q(140)  *xs1**3 *xs2**2 *xst**5  & 
+         +q(141)  *xs1**3 *xs2**4 *xst**3  & 
+         +q(142)  *xs1**3 *xs2**6 *xst**1  & 
+         +q(143)  *xs1**4 *xs2**0 *xst**6  & 
+         +q(144)  *xs1**4 *xs2**2 *xst**4  & 
+         +q(145)  *xs1**4 *xs2**4 *xst**2  & 
+         +q(146)  *xs1**5 *xs2**0 *xst**5  & 
+         +q(147)  *xs1**5 *xs2**2 *xst**3  & 
+         +q(148)  *xs1**5 *xs2**4 *xst**1  & 
+         +q(149)  *xs1**6 *xs2**0 *xst**4  & 
+         +q(150)  *xs1**6 *xs2**2 *xst**2  & 
+         +q(151)  *xs1**6 *xs2**4 *xst**0  & 
+         +q(152)  *xs1**7 *xs2**0 *xst**3  & 
+         +q(153)  *xs1**7 *xs2**2 *xst**1  & 
+         +q(154)  *xs1**8 *xs2**0 *xst**2  & 
+         +q(155)  *xs1**8 *xs2**2 *xst**0  & 
+         +q(156)  *xs1**9 *xs2**0 *xst**1  & 
+         +q(157)  *xs1**10*xs2**0 *xst**0  & 
+         +q(158)  *xs1**0 *xs2**2 *xst**9  & 
+         +q(159)  *xs1**0 *xs2**4 *xst**7  & 
+         +q(160)  *xs1**0 *xs2**6 *xst**5  & 
+         +q(161)  *xs1**0 *xs2**8 *xst**3  & 
+         +q(162)  *xs1**0 *xs2**10*xst**1  & 
+         +q(163)  *xs1**1 *xs2**0 *xst**10 & 
+         +q(164)  *xs1**1 *xs2**2 *xst**8  & 
+         +q(165)  *xs1**1 *xs2**4 *xst**6  & 
+         +q(166)  *xs1**1 *xs2**6 *xst**4  & 
+         +q(167)  *xs1**1 *xs2**8 *xst**2  & 
+         +q(168)  *xs1**1 *xs2**10*xst**0  & 
+         +q(169)  *xs1**2 *xs2**0 *xst**9  & 
+         +q(170)  *xs1**2 *xs2**2 *xst**7  & 
+         +q(171)  *xs1**2 *xs2**4 *xst**5  & 
+         +q(172)  *xs1**2 *xs2**6 *xst**3  & 
+         +q(173)  *xs1**2 *xs2**8 *xst**1  & 
+         +q(174)  *xs1**3 *xs2**0 *xst**8 
+     dp3=+q(175)  *xs1**3 *xs2**2 *xst**6  & 
+         +q(176)  *xs1**3 *xs2**4 *xst**4  & 
+         +q(177)  *xs1**3 *xs2**6 *xst**2  & 
+         +q(178)  *xs1**3 *xs2**8 *xst**0  & 
+         +q(179)  *xs1**4 *xs2**0 *xst**7  & 
+         +q(180)  *xs1**4 *xs2**2 *xst**5  & 
+         +q(181)  *xs1**4 *xs2**4 *xst**3  & 
+         +q(182)  *xs1**4 *xs2**6 *xst**1  & 
+         +q(183)  *xs1**5 *xs2**0 *xst**6  & 
+         +q(184)  *xs1**5 *xs2**2 *xst**4  & 
+         +q(185)  *xs1**5 *xs2**4 *xst**2  & 
+         +q(186)  *xs1**5 *xs2**6 *xst**0  & 
+         +q(187)  *xs1**6 *xs2**0 *xst**5  & 
+         +q(188)  *xs1**6 *xs2**2 *xst**3  & 
+         +q(189)  *xs1**6 *xs2**4 *xst**1  & 
+         +q(190)  *xs1**7 *xs2**0 *xst**4  & 
+         +q(191)  *xs1**7 *xs2**2 *xst**2  & 
+         +q(192)  *xs1**8 *xs2**0 *xst**3  & 
+         +q(193)  *xs1**8 *xs2**2 *xst**1  & 
+         +q(194)  *xs1**9 *xs2**0 *xst**2  & 
+         +q(195)  *xs1**9 *xs2**2 *xst**0  & 
+         +q(196)  *xs1**10*xs2**0 *xst**1  & 
+         +q(197)  *xs1**11*xs2**0 *xst**0  & 
+         +q(198)  *xs1**0 *xs2**0 *xst**2  & 
+         +q(199)  *xs1**0 *xs2**2 *xst**0  & 
+         +q(200)  *xs1**0 *xs2**4 *xst**8  & 
+         +q(201)  *xs1**0 *xs2**6 *xst**6  & 
+         +q(202)  *xs1**0 *xs2**8 *xst**4  & 
+         +q(203)  *xs1**0 *xs2**10*xst**2  & 
+         +q(204)  *xs1**0 *xs2**12*xst**0  & 
+         +q(205)  *xs1**1 *xs2**0 *xst**11 & 
+         +q(206)  *xs1**1 *xs2**2 *xst**9  & 
+         +q(207)  *xs1**1 *xs2**4 *xst**7  & 
+         +q(208)  *xs1**1 *xs2**6 *xst**5  & 
+         +q(209)  *xs1**1 *xs2**8 *xst**3  & 
+         +q(210)  *xs1**1 *xs2**10*xst**1  & 
+         +q(211)  *xs1**2 *xs2**0 *xst**10 & 
+         +q(212)  *xs1**2 *xs2**2 *xst**8  & 
+         +q(213)  *xs1**2 *xs2**4 *xst**6  & 
+         +q(214)  *xs1**2 *xs2**6 *xst**4  & 
+         +q(215)  *xs1**2 *xs2**8 *xst**2  & 
+         +q(216)  *xs1**2 *xs2**10*xst**0  & 
+         +q(217)  *xs1**3 *xs2**0 *xst**9  & 
+         +q(218)  *xs1**3 *xs2**2 *xst**7  & 
+         +q(219)  *xs1**3 *xs2**4 *xst**5  & 
+         +q(220)  *xs1**3 *xs2**6 *xst**3  & 
+         +q(221)  *xs1**3 *xs2**8 *xst**1  & 
+         +q(222)  *xs1**4 *xs2**0 *xst**8  & 
+         +q(223)  *xs1**4 *xs2**2 *xst**6  & 
+         +q(224)  *xs1**4 *xs2**4 *xst**4  & 
+         +q(225)  *xs1**4 *xs2**6 *xst**2  & 
+         +q(226)  *xs1**4 *xs2**8 *xst**0  & 
+         +q(227)  *xs1**5 *xs2**0 *xst**7  & 
+         +q(228)  *xs1**5 *xs2**2 *xst**5  & 
+         +q(229)  *xs1**5 *xs2**4 *xst**3  & 
+         +q(230)  *xs1**5 *xs2**6 *xst**1  & 
+         +q(231)  *xs1**6 *xs2**0 *xst**6  & 
+         +q(232)  *xs1**6 *xs2**2 *xst**4  & 
+         +q(233)  *xs1**6 *xs2**4 *xst**2  & 
+         +q(234)  *xs1**6 *xs2**6 *xst**0  & 
+         +q(235)  *xs1**7 *xs2**0 *xst**5  & 
+         +q(236)  *xs1**7 *xs2**2 *xst**3  & 
+         +q(237)  *xs1**7 *xs2**4 *xst**1  & 
+         +q(238)  *xs1**8 *xs2**0 *xst**4  & 
+         +q(239)  *xs1**8 *xs2**2 *xst**2  & 
+         +q(240)  *xs1**8 *xs2**4 *xst**0  & 
+         +q(241)  *xs1**9 *xs2**0 *xst**3  & 
+         +q(242)  *xs1**9 *xs2**2 *xst**1  &  
+         +q(243)  *xs1**10*xs2**0 *xst**2  & 
+         +q(244)  *xs1**10*xs2**2 *xst**0  & 
+         +q(245)  *xs1**11*xs2**0 *xst**1  & 
+         +q(246)  *xs1**12*xs2**0 *xst**0
+
+    mu(2)=d0+dp1+dp2+dp3
+    !
+    mu(3) = 0
+    !
+    f(1:3) = matmul(mu,tmat)
+    !
+ end subroutine MLdms2pqr_xy2_sym_expansion
 
 
 
