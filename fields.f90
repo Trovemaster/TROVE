@@ -16839,10 +16839,20 @@ end subroutine check_read_save_none
         !
         if (buf/='End of kinetic') then
           write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
-          stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
+          stop 'checkpointRestore_kinetic_ascii_with_modes - bogus file format kinetic-ASCII'
         end if
         !
         fl => trove%g_vib(Nmodes,Nmodes)
+        !
+        if (.not.associated(fl)) then 
+          write(out,"(a,a)") 'checkpointRestore_kinetic_ascii_with_modes-err','gvib(N,N) has not been initialised'
+          stop 'checkpointRestore_kinetic_ascii_with_modes-error: gvib(N,N) has not been initialised'
+        endif
+        !
+        if (.not.associated(trove%pseudo)) then 
+          write(out,"(a,a)") 'checkpointRestore_kinetic_ascii_with_modes-err','pseudo has not been initialised'
+          stop 'checkpointRestore_kinetic_ascii_with_modes-error: pseudo has not been initialised'
+        endif 
         !
         call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
         !
@@ -18071,9 +18081,9 @@ end subroutine check_read_save_none
      Npoints = fl1%Npoints
      !
      if (Npoints/=fl2%Npoints) then
-       write(out,"('FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") & 
+       write(out,"('FLCombine_compacted_fields_sparse: Illegal Npoints in two fields, should be the same',2i8)") & 
              fl1%Npoints,fl2%Npoints
-       stop 'FLCompact_and_combine_fields_sparse: Illegal Npoints in two fields'
+       stop 'FLCombine_compacted_fields_sparse: Illegal Npoints in two fields'
      endif
      !
      !forall(n=1:fl%Ncoeff) fl%ifromsparse(n) = n

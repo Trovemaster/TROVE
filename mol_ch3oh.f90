@@ -1167,7 +1167,7 @@ module mol_ch3oh
           !
         end select
         !
-      case('C3V(M)')
+      case('C3V(M)-1')
         !
         select case(ioper)
           !
@@ -1277,6 +1277,115 @@ module mol_ch3oh
         end select
         !
       case('C3V(M)-2')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_CH3OH error: symmetry operation ', ioper, 'is unknown'
+          stop
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (3) ! (123)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(5)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(9)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = -b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + 2.0_ark*p,2.0_ark*pi)
+          !
+        case (2) !(132)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(3)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(7)
+          dst(9) = src(8)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = +b*src(10) - a*src(11)
+          !
+          dst(12) = mod(src(12) + p,2.0_ark*pi)
+          !
+        case (4) ! (32)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(3)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(7)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          !
+          dst(10) = src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)+2.0_ark*pi
+          !
+        case (6) ! (12)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(5)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(9)
+          !
+          dst(10) = -a*src(10) + b*src(11)
+          dst(11) = +b*src(10) + a*src(11)
+          dst(12) = 2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+          !
+        case (5) ! (13)
+          !
+          dst(1:2) = src(1:2)
+          !
+          dst(3) = src(5)
+          dst(4) = src(4)
+          dst(5) = src(3)
+          !
+          dst(6) = src(6)
+          !
+          dst(7) = src(9)
+          dst(8) = src(8)
+          dst(9) = src(7)
+          !
+          dst(10) = -a*src(10) - b*src(11)
+          dst(11) = -b*src(10) + a*src(11)
+          !
+          dst(12) = 2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
+          !
+        end select
+        !
+      case('C3V(M)')
         !
         select case(ioper)
           !
