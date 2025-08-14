@@ -8797,7 +8797,7 @@ endif
     alpha = acos(sum(n1*n2))
     !
     u1 = n1 + n2
-    u2 = n2 - n1
+    u2 = n1 - n2
     !
     u1 = u1 / sqrt(sum(u1(:)**2))
     u2 = u2 / sqrt(sum(u2(:)**2))
@@ -9331,6 +9331,8 @@ endif
     mu(3) = 0
     !
     f(1:3) = matmul(mu,tmat)
+    !
+    f = f/0.393430307_ark
     !
  end subroutine MLdms2pqr_xy2_sym_expansion
 
