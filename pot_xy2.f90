@@ -8809,7 +8809,7 @@ endif
     tmat(3, :) = u3
     !
     re = extF%coef(1,1)
-    ae = extF%coef(2,1)*pi/180.0_ark
+    ae = 3.141592_ark ! extF%coef(2,1)*pi/180.0_ark
     !
     xs1=(r1+r2)*0.5_ark-re
     xs2=(r1-r2)*0.5_ark
@@ -9069,7 +9069,7 @@ endif
     mu(1)=d0+dp1+dp2+dp3
     !
     re = extF%coef(1,2)
-    ae = extF%coef(2,2)*pi/180.0_ark
+    ae = 3.141592d0 ! extF%coef(2,2)*pi/180.0_ark
     !
     xs1=(r1+r2)*0.5_ark-re
     xs2=(r1-r2)*0.5_ark
