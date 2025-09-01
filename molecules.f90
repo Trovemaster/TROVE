@@ -3595,7 +3595,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER','AUTO-SINGULAR')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','AUTO','COSNX','FOURIER','AUTO-SINGULAR')
         !
         v = x
         !
@@ -3645,12 +3645,29 @@ end subroutine polintark
           do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
             !
             z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
+                (x+molec%local_eq(imode))**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+            call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+          end do      
+          !
+       case('AUTO')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          if(iorder == 0)  return
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          !
+          y = 1.0_ark
+          do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+            !
+            z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
                 (x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
             call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
             v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
           end do      
           !
-          ! The following version is the same as "automatic" but with the singular which we distinguish using negative values of "iorder"
+          ! The following version is the same as "auto" but with the singular which we distinguish using negative values of "iorder"
        case('AUTO-SINGULAR')
           ! 
           v = 1.0_ark

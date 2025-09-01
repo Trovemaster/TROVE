@@ -596,7 +596,7 @@ end function  MLpoten_ch3oh_sym
     'MLpoten_ch3oh_sym error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_ch3oh_sym error error: bad coordinate type'
     !
-  case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU')
+  case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU','DR-DALPHA-S-TAU')
     !
     rCOe      = force(1)
     rOHe      = force(2)
@@ -848,7 +848,7 @@ end function  MLpoten_ch3oh_sym_IV
     'MLpoten_ch3oh_sym error', trim(molec%coords_transform), 'is unknown'
     stop 'MLpoten_ch3oh_sym error error: bad coordinate type'
     !
-  case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU')
+  case('R-ALPHA-THETA-TAU','R-ALPHA-THETA-S-TAU','DR-DALPHA-S-TAU')
     !
     rCOe      = force(1)
     rOHe      = force(2)
@@ -912,7 +912,9 @@ end function  MLpoten_ch3oh_sym_IV
       t1 = t1 - 2.0_ark*pi
     endif
     !
-    tau = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+    !tau = (t1 + t2 + t3-2.0_ark*pi)/3.0_ark
+    !
+    tau = (t1+t1+theta12+t1+theta12+theta23-2.0_ark*pi)/3.0_ark
     !
     xi(12) = tau
     !
@@ -1509,7 +1511,7 @@ subroutine ML_symmetry_transformation_CH3OH_IV(nsym,src,dst,ndeg)
     !C2'/(9)->(34)
     repres(6,3,4) = 1.0_ark
     repres(6,4,3) = 1.0_ark
-    repres(5,5,5) = 1.0_ark
+    repres(6,5,5) = 1.0_ark
     !
     repres(6,7,8)  = 1.0_ark
     repres(6,8,7)  = 1.0_ark
@@ -1632,7 +1634,7 @@ subroutine ML_symmetry_transformation_CH3OH_IV(nsym,src,dst,ndeg)
     !C2'/(9)->(34)
     repres(6,3,4) = 1.0_ark
     repres(6,4,3) = 1.0_ark
-    repres(5,5,5) = 1.0_ark
+    repres(6,5,5) = 1.0_ark
     !
     repres(6,7,8)  = 1.0_ark
     repres(6,8,7)  = 1.0_ark
@@ -1662,11 +1664,11 @@ subroutine ML_symmetry_transformation_CH3OH_IV(nsym,src,dst,ndeg)
     enddo
     !
     dst(12,1) = src(12)
-    dst(12,2) = src(12)+p
-    dst(12,3) = src(12)+2.0_ark*p
+    dst(12,2) = src(12)+2.0_ark*p
+    dst(12,3) = src(12)+p
     dst(12,4) =2.0_ark*pi-src(12)
-    dst(12,5) =2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
-    dst(12,6) =2.0_ark*pi-mod(src(12)-p,2.0_ark*pi)
+    dst(12,5) =2.0_ark*pi-mod(src(12)+2.0_ark*p,2.0_ark*pi)
+    dst(12,6) =2.0_ark*pi-mod(src(12)+p,2.0_ark*pi)
     !
     dst(12,:) = mod(dst(12,:),2.0_ark*pi)
     !

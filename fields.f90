@@ -8753,7 +8753,7 @@ end subroutine check_read_save_none
                                                  (FLIndexQ(imode,i),imode=1,min(30,Nmodes))
              enddo
              !
-          elseif (i<trove%pseudo%Ncoeff) then 
+          elseif (i<=trove%pseudo%Ncoeff) then 
              !
              do irho=0,Npoints,1
                 !
