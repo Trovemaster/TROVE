@@ -2237,7 +2237,7 @@ module fields
          !
          allocate(molec%basic_function_list(Nmodes))
          call read_line(eof,iut) ; if (eof) exit 
-         do while (trim(w)/="".and.imode<trove%Ncoords.and.trim(w)/="END")
+         do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
             call readu(w)
             call readi(imode)
             call readi(numfunc)    
@@ -5599,6 +5599,12 @@ end subroutine check_read_save_none
       maxpower = trove%maxorder
     endif
     !
+    if (molec%mode_list_present) then
+      do imode=1,trove%Nmodes
+         trove%NKinOrder = max(trove%NKinOrder,molec%basic_function_list(imode)%numfunc)
+      enddo
+    endif
+    !
     do io = 0, maxpower + 2
       !
       Kindex = 0 
@@ -6936,7 +6942,7 @@ end subroutine check_read_save_none
          enddo
          !
          trove%pseudo%field(:,irho) = pseudo(:)*factor
-        !
+         !
       enddo
       !
       !
@@ -17133,7 +17139,7 @@ end subroutine check_read_save_none
         read(chkptIO,*) Npoints,Norder,Ncoeff
         !
         if (Npoints/=trove%Npoints) then
-          write(out,"('poten-ASCII-chk npoints is wrong:',2i8)") Npoints,Npoints
+          write(out,"('poten-ASCII-chk input npoints is wrong:',2i8)") Npoints,trove%Npoints
           stop "poten-ASCII-chk npoints is wrong"
         endif
         !
@@ -18998,7 +19004,7 @@ end subroutine check_read_save_none
     call ArrayStart('p1drho',alloc,size(p1drho),kind(p1drho))
     call ArrayStart('muzz',alloc,size(muzz),kind(muzz))
     !
-    xi_n = 0 
+    xi_n     = 0 
     !
     do i = 0,npoints
        !
@@ -19550,8 +19556,8 @@ end subroutine check_read_save_none
            
            case ('NUMEROV')
              !
-             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
              if (job%bset(nu_i)%iperiod/=0) then
                !
@@ -19713,9 +19719,9 @@ end subroutine check_read_save_none
              !
            case ('BOX')
              !
-             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho(0:npoints),g1drho(0:npoints),nu_i,&
-                         job%bset(nu_i)%periodic,job%verbose,&
-                         bs%matelements(-1:3,0:trove%MaxOrder,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho(0:npoints),g1drho(0:npoints),&
+                         nu_i,job%bset(nu_i)%periodic,job%verbose,&
+                         bs%matelements(-1:3,0:maxpower,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
              !
            case ('LEGENDRE')
              !
@@ -19736,7 +19742,7 @@ end subroutine check_read_save_none
              !call ME_Legendre(bs%Size,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
              !
              call ME_Associate_Legendre(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
-                                        job%verbose,bs%matelements,bs%ener0)
+                                        job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
              !call ME_sinrho_polynomial(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,nu_i,&
              !                          job%verbose,bs%matelements,bs%ener0)
@@ -19815,8 +19821,8 @@ end subroutine check_read_save_none
              endif
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,nu_i,&
-                                       job%verbose,bs%matelements,bs%ener0)
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,&
+                                       g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
@@ -19970,7 +19976,7 @@ end subroutine check_read_save_none
              case ('LAGUERRE-K')
                !
                call ME_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,p1drho,nu_i,&
-                                         job%verbose,bs%matelements,bs%ener0)
+                                         job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                !
                do i = 0,npoints
                   rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
@@ -19980,7 +19986,7 @@ end subroutine check_read_save_none
              case ('SINRHO-LAGUERRE-K')
                !
                call ME_sinrho_laguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,f_m,p1drho,nu_i,&
-                                         job%verbose,bs%matelements,bs%ener0)
+                                         job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                !
              case ('SINRHO-2XLAGUERRE-K')
                !
@@ -20006,7 +20012,7 @@ end subroutine check_read_save_none
                f_m2 = sqrt(f_t2/g_t2)
                !
                call ME_sinrho_2xlaguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
-                                           f_m1,f_m2,p1drho,nu_i,job%verbose,bs%matelements,bs%ener0)
+                                           f_m1,f_m2,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                !
              end select 
              !
@@ -20014,18 +20020,18 @@ end subroutine check_read_save_none
              !                          job%verbose,bs%matelements,bs%ener0)
            case ('FOURIER_PURE')
              !
-             call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_Fourier_pure(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('FOURIER')
              !
-             call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('SINC')
              !
-             call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
-                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements,bs%ener0)
+             call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            end select
            !
@@ -20123,7 +20129,7 @@ end subroutine check_read_save_none
              !
              call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,p1drho,muzz)
              !
-             xi_n(:,:,1) = xton(:,:)
+             !xi_n(:,:,1) = xton(:,:)
              !
            else 
              !
@@ -20173,11 +20179,11 @@ end subroutine check_read_save_none
            ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
            ! now we need them:
            !
-           if(molec%mode_list_present) then
-              maxpower = molec%basic_function_list(nu_i)%numfunc
-           else
-              maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-           endif
+           !if(molec%mode_list_present) then
+           !   maxpower = molec%basic_function_list(nu_i)%numfunc
+           !else
+           !   maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+           !endif
            !
            select case (trim(bs%type))
              !
@@ -20185,21 +20191,21 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + p1drho
              !
-             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,npoints,drho,xi_n,f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('BOX')
              !
              f1drho = f1drho + p1drho
              !
-             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n,f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('FOURIER')
              !
              f1drho = f1drho + p1drho
              !
-             call ME_fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
+             call ME_fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('SINC')
@@ -20208,7 +20214,7 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + p1drho
              !
-             call ME_sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n,f1drho,g1drho,nu_i,&
+             call ME_sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('SINRHO-LEGENDRE')
@@ -20224,7 +20230,7 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,&
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,muzz,p1drho,&
                                        nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&

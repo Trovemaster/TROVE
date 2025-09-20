@@ -846,7 +846,7 @@ contains
        sym%irr(3,6)%repres = reshape((/-0.5_ark,              -0.5_ark*sqrt(3.0_ark),&
                                        -0.5_ark*sqrt(3.0_ark), 0.5_ark             /),(/2,2/))
     !
-  case("C3V(M)-2","C3V-2")
+  case("C3V(M)-2","C3V-2","C3V(M)-3")
     !
     sym%Nrepresen=3
     sym%Noper=6

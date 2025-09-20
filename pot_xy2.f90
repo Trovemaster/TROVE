@@ -4039,7 +4039,7 @@ endif
        a0(3,1) =  -r(2)*cos(alpha_2)
        a0(3,3) =  -r(2)*sin(alpha_2)
        !
-    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ABS')
        !
        a0(2, 1) =  0
        a0(2, 3) =  r(1)
@@ -4084,7 +4084,7 @@ endif
     !
     select case(trim(molec%coords_transform))
        !
-    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO')
+    case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ABS')
        !
        a0(2, 1) =  0
        a0(2, 3) =  r(1)
