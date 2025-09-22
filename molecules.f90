@@ -318,6 +318,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev
          !
+    case('POTEN_XY2_MORSE_POWERS') 
+         !
+         MLpotentialfunc => MLpoten_xy2_morse_powers 
+         !
     case('POTEN_XY2_TYUTEREV_ALPHA') 
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev_alpha
