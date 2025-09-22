@@ -591,7 +591,7 @@ contains
 
        write(my_fmt_pot1,'(a,i0,a)') "(",ncoords,"(20x),4x,a,9x,a,8x,a,5x,a)"
 
-       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g12.5),1x,f12.5,1x,e12.4)"
+       write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g16.9),1x,f12.5,1x,e12.4)"
        write(my_fmt_par1,   '(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14)"
        write(my_fmt_par_fit,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14,4x,a3)"
        !
