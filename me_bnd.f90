@@ -11,7 +11,8 @@ module me_bnd
   public ik, rk, out
   public degener_harm_q,ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,&
          ME_sinrho_Legendre_k,ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,ME_laguerre_k
-  public ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,ME_Fourier_pure,ME_sinrho_Legendre_k1
+  public ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,ME_Fourier_pure,ME_sinrho_Legendre_k1,&
+         ME_Harmonic_Numeric
   !
   integer(ik), parameter :: verbose     = 1                       ! Verbosity level
   integer(ik) :: Nr = 4                          ! 2*Nr+1 is the number of interpolation points
@@ -712,6 +713,186 @@ module me_bnd
      !
      !
   end subroutine ME_box
+
+
+
+
+  !
+  ! Matrix elements with box-eigenfunctions 
+  !
+  subroutine ME_Harmonic_Numeric(vmax,maxorder,x_b,coeff_norm,omega,npoints,xi_n,icoord,periodic,verbose,matelements,energy)
+   !
+   integer(ik),intent(in) :: vmax,maxorder,npoints
+   real(ark),intent(out)    :: matelements(-1:3,0:maxorder,0:vmax,0:vmax)
+   real(ark),intent(out)    :: energy(0:vmax)
+   !
+   real(ark),intent(in) :: x_b(2)
+   real(ark),   intent(in)          ::  coeff_norm,omega
+   real(ark),intent(in) :: xi_n(0:npoints,0:maxorder,3)
+   integer(ik),intent(in) :: icoord ! coordinate number for which the numerov is employed
+   integer(ik),intent(in) :: verbose   ! Verbosity level
+   logical,intent(in)     :: periodic
+
+   real(ark)            :: x,L,xstep,potmin,xstep_,rn,xi,pi4,p1
+   real(ark)            :: psipsi_t,characvalue
+   !
+   integer(ik) :: vl,vr,lambda,alloc,i,rec_len,n,imin,io_slot
+   !
+   real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),x_kinet(:),x_poten(:),x_extF(:),&
+                            psi(:,:),dpsi(:,:)
+
+   character(len=cl)    :: unitfname 
+    !
+    if (verbose>=1) write (out,"(/20('*'),' Harmonic oscillator in numerical representation')")
+     !
+     ! global variables 
+     !
+     allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
+              phivphi(0:npoints),psi(0:vmax,0:npoints),dpsi(0:vmax,0:npoints),stat=alloc)
+     if (alloc/=0) then 
+       write (out,"('phi - out of memory')")
+       stop 'phi - out of memory'
+     endif 
+     !
+     ! step size 
+     xstep = (x_b(2)-x_b(1))/real(npoints,kind=ark)
+     !
+     if (periodic) then
+       stop 'Harmonic numerical cannot be used for periodic solutions'
+     endif
+     !
+     if (verbose>=3) then 
+         write (out,"('vmax = ',i8)") vmax
+         write (out,"('maxorder = ',i8)") maxorder
+         write (out,"('icoord = ',i4)") icoord
+         write (out,"('x_b (x) = ',2f12.4)") x_b(1:2)
+         write (out,"('xstep (x) = ',2f12.4)") xstep 
+     endif 
+     !
+     do vl = 0,vmax
+        energy(vl) = omega*vl
+     enddo
+     !
+     !
+     do i=0,npoints
+        !
+        x = x_b(1)+real(i,kind=ark)*xstep
+        !
+        call Hermite_funcitons(x,coeff_norm,vmax,psi(0:vmax,i),dpsi(0:vmax,i))
+        !
+        !do n = 1,vmax
+        !  !
+        !  rn= real(n,ark)
+        !  !
+        !  dpsi(n,i) = sqrt(rn/2.0_ark)*psi(n-1,i)-sqrt((rn+1.0_ark)/2.0_ark)*psi(n+1,i)
+        !  dpsi(n,i) = 2.0_ark*rn*psi(n-1,i)
+        !  !
+        !enddo
+        !
+        xi  = x/coeff_norm
+        !
+        pi4 = 1.0_ark/sqrt(sqrt(pi))
+        !
+        p1 = pi4/sqrt(coeff_norm)*exp(-xi**2*0.5_ark)
+        !
+        psi(:,i) = p1*psi(:,i)
+        dpsi(:,i) = p1*dpsi(:,i)-x*psi(:,i)/coeff_norm**2
+        !
+     enddo
+     !
+     do vl = 0,vmax
+        !
+        phil(:) = psi(vl,:)
+        dphil(:) = dpsi(vl,:)
+        !
+        do vr = vl,vmax
+            !
+            phir(:) = psi(vr,:)
+            dphir(:) = dpsi(vr,:)
+            !
+            psipsi_t = 0 
+            !
+            do lambda = 0,maxorder
+               !
+               ! momenta-free part in potential part
+               !
+               if (lambda==0) then 
+                  phivphi(:) = phil(:)*phir(:)
+               else
+                  phivphi(:) = phil(:)*xi_n(:,lambda,2)*phir(:)
+               endif
+               !
+               matelements(0,lambda,vl,vr) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+               !
+               ! external field expansion
+               !
+               if (lambda==0) then 
+                  phivphi(:) = phil(:)*phir(:)
+               else
+                  phivphi(:) = phil(:)*xi_n(:,lambda,3)*phir(:)
+               endif
+               !
+               matelements(3,lambda,vl,vr) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+               if (vl/=vr) matelements(3,lambda,vr,vl) = matelements(3,lambda,vl,vr)
+               !
+               !
+               ! momenta-free in kinetic part 
+               !
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
+               !
+               matelements(-1,lambda,vl,vr) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+               !
+               ! We also control the orthogonality of the basis set 
+               !
+               if (lambda==0) psipsi_t = matelements(0,lambda,vl,vr)
+               !
+               if (vl/=vr) matelements(-1:0,lambda,vr,vl) = matelements(-1:0,lambda,vl,vr)
+               !
+               ! momenta-quadratic part 
+               !
+               phivphi(:) =-dphil(:)*xi_n(:,lambda,1)*dphir(:)
+               !
+               matelements(2,lambda,vl,vr) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+               !
+               if (vl/=vr) matelements(2,lambda,vr,vl) = matelements(2,lambda,vl,vr)
+               !
+               ! momenta-linear part:
+               ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
+               !
+               phivphi(:) = phil(:)*xi_n(:,lambda,1)*dphir(:)
+               !
+               matelements(1,lambda,vl,vr) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+               !
+               if (vl/=vr) then
+                  !
+                  phivphi(:) = dphil(:)*xi_n(:,lambda,1)*phir(:)
+                  !
+                  matelements(1,lambda,vr,vl) = simpsonintegral_ark(npoints,x_b(2)-x_b(1),phivphi)
+                  !
+               endif
+               !
+               if (verbose>=7) then 
+                   write(out,"('matelements(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,matelements(0,lambda,vl,vr)
+                   write(out,"('matelements(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,matelements(1,lambda,vl,vr)
+                   write(out,"('matelements(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,matelements(2,lambda,vl,vr)
+                   write(out,"('matelements(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,matelements(3,lambda,vl,vr)
+                   if (vl/=vr) then 
+                     write(out,"('matelements(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,matelements(0,lambda,vr,vl)
+                     write(out,"('matelements(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,matelements(1,lambda,vr,vl)
+                     write(out,"('matelements(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,matelements(2,lambda,vr,vl)
+                     write(out,"('matelements(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,matelements(3,lambda,vr,vl)
+                   endif 
+               endif 
+               !
+            enddo 
+            !
+        enddo
+     enddo
+     !
+     deallocate(phil,phir,dphil,dphir,phivphi,psi,dpsi)
+     !
+     !
+  end subroutine ME_Harmonic_Numeric
 
 
 
@@ -9665,6 +9846,84 @@ end function ark_factorial
     
   end function faclog
 
+
+  function Harmonic_oscillator(xval,coeff,nu)  result (fval)
+
+    real(ark),intent(in)   :: xval,coeff
+    integer(ik),intent(in) :: nu
+    real(ark)              :: fval,c_t,xi,p1,p2,p3,v,vm1,pi4
+    integer(ik)            :: n
+       !
+       !c_t = 1.0_rk
+       !
+       !if (bs_t(imode)%range(2)>0) c_t = me%vib(ispecies,0)%coeff(1,1,0)
+       !
+       c_t = coeff
+       !
+       xi  = xval/c_t
+       !
+       !p1 = 0.751125444649425_ark*exp(-xi**2*0.5_ark)/sqrt(c_t)  ! 1/pi^(1/4)
+       !
+       pi4 = 1.0_ark/sqrt(sqrt(pi))
+       !
+       !p1 = .75112554446494248285870300477622_ark/sqrt(c_t)*exp(-xi**2*0.5_ark)
+       !
+       p1 = pi4/sqrt(c_t)*exp(-xi**2*0.5_ark)
+       !
+       p2 = 0
+       !
+       do n = 1,nu
+         !
+         v = real(n,ark)
+         vm1 = real(n-1,ark)
+         !
+         p3 = p2
+         p2 = p1
+         p1 = xi*sqrt(2.0_ark/v)*p2-sqrt(vm1/v)*p3
+         !
+       enddo
+       !
+       fval = p1
+       !
+  end function Harmonic_oscillator
+
+
+  subroutine Hermite_funcitons(xval,coeff,vmax,psi,dpsi)
+
+    real(ark),intent(in)   :: xval,coeff
+    integer(ik),intent(in) :: vmax
+    real(ark),intent(out)  :: psi(0:vmax),dpsi(0:vmax)
+    real(ark)              :: c_t,xi,p1,p2,p3,v,vm1,pi4
+    integer(ik)            :: n
+       !
+       c_t = coeff
+       !
+       xi  = xval/c_t
+       !
+       p1 = 1.0_ark
+       !
+       p2 = 0
+       !
+       psi(0) = p1
+       dpsi(0)= 0
+       !
+       do n = 1,vmax
+         !
+         v = real(n,ark)
+         vm1 = real(n-1,ark)
+         !
+         p3 = p2
+         p2 = p1
+         p1 = xi*sqrt(2.0_ark/v)*p2-sqrt(vm1/v)*p3
+         !
+         psi(n) = p1
+         dpsi(n) = real(n,ark)*psi(n-1)
+         !
+       enddo
+       !
+       dpsi(:) = dpsi(:)/c_t
+       !
+  end subroutine Hermite_funcitons
 
   ! 
 end module me_bnd

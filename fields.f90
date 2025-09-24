@@ -9,7 +9,7 @@ module fields
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_Legendre_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
                       ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
-                      ME_Fourier_pure,ME_sinrho_Legendre_k1
+                      ME_Fourier_pure,ME_sinrho_Legendre_k1,ME_harmonic_numeric
    use me_numer
    use me_rot
    use timer
@@ -690,7 +690,8 @@ module fields
    logical :: krot_defined = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w,ioname,w_t
-   real(rk)    :: lfact,f_t, func_coef
+   real(rk)    :: lfact,f_t
+   real(ark)   :: func_coef
    integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
    character(len=4) :: char_j, func_name
@@ -18763,7 +18764,7 @@ end subroutine check_read_save_none
     real(ark),allocatable       :: phil_leg(:),phir_leg(:),dphil_leg(:),dphir_leg(:),phil_sin(:),phir_sin(:)
     real(ark),allocatable       :: dfunc(:,:),func(:,:)
     !
-    real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L
+    real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L,omega_t,coeff_norm
     real(ark)                   :: rho_range,rho_t
     integer(ik)                 :: io_slot       ! unit numeber to store the numerov eigenvectors and their derivatives
     integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints
@@ -19018,7 +19019,6 @@ end subroutine check_read_save_none
        drho(i,3) = MLcoord_direct(rho,3,nu_i)
        !
        do ipower = 0, maxpower
-          xton(i,ipower) = MLcoord_direct(rho,1,nu_i,ipower)
           xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,ipower)
        enddo
        !
@@ -19031,6 +19031,8 @@ end subroutine check_read_save_none
        enddo
        !
     enddo
+    !
+    xton(:,:) = xi_n(:,:,1)
     !
     ! Here we generate the 1D basis set matrix elements 
     ! the type of the basis set will define the type of the matrix elements generator 
@@ -19093,12 +19095,22 @@ end subroutine check_read_save_none
           bs%params(2) =       sqrt( 2.0_ark*g2(1)*f2(1)  )       ! omega (harmonic parameter)
           !
           f_t=bs%params(1)
+          omega_t = bs%params(2)
           !
-          call ME_harmonic(bs%Size,bs%order,f_t,bs%matelements,bs%ener0) 
-          !
-          ! energies have been found for a normalized Morse oscilator, here we compute the actual energies
-          !
-          bs%ener0 = 0.5_ark*g2(1)*bs%ener0
+          if (molec%mode_list_present) then
+             !
+             call ME_harmonic_numeric(bs%Size,maxpower,rho_b,f_t,omega_t,npoints,xi_n(:,0:maxpower,1:3),nu_i,&
+                         job%bset(nu_i)%periodic,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             !
+          else
+             !
+             call ME_harmonic(bs%Size,bs%order,f_t,bs%matelements,bs%ener0) 
+             !
+             ! energies have been found for a normalized Morse oscilator, here we compute the actual energies
+             !
+             bs%ener0 = 0.5_ark*g2(1)*bs%ener0
+             !
+          endif
           !
           if (job%verbose>=2) then
              !
@@ -20402,7 +20414,7 @@ end subroutine check_read_save_none
                 ! 
                 if(i == nu_i) cycle
                 !
-                g_term = MLcoord_direct(trove%chi_eq(i), 1, i, ipower) 
+                g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
                 !
                 f2_term = f2_term*g_term
                 !
@@ -27196,7 +27208,7 @@ end subroutine check_read_save_none
        !   write (out,"(' Error ',i9,' trying to allocate fields of polynom ',a)") alloc,trim(name)
        !   stop 'polynom_initialization, polynom - out of memory'
        !end if
-       polynom%field  = 0 
+       polynom%field  = 0   
        polynom%iorder = 0
        polynom%IndexQ(:,1:Ncoeff) = FLIndexQ(:,1:Ncoeff)
        forall(i = 1:Ncoeff) polynom%ifromsparse(i) = i 
