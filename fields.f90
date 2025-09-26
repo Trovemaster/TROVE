@@ -2236,6 +2236,8 @@ module fields
          molec%mode_list_present = .true.
          trove%kinetic_with_modes = .true.
          !
+         trove%sparse = .true.
+         !
          allocate(molec%basic_function_list(Nmodes))
          call read_line(eof,iut) ; if (eof) exit 
          do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
@@ -23232,7 +23234,7 @@ end subroutine check_read_save_none
           !
         case('gvib')
           !
-          Ncoeff = trove%g_vib (k1,k2)%Ncoeff
+          Ncoeff = trove%g_vib(k1,k2)%Ncoeff
           !
         case('grot')
           !

@@ -3643,7 +3643,12 @@ end subroutine polintark
           !
           v = 1.0_ark
           if(iorder == 0)  return
-          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          !
+          ! if the order does not exist set the term to zero 
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
           !
           y = 1.0_ark
           do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
@@ -3660,7 +3665,10 @@ end subroutine polintark
           !
           v = 1.0_ark
           if(iorder == 0)  return
-          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
           !
           y = 1.0_ark
           do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
@@ -3679,7 +3687,10 @@ end subroutine polintark
           !
           jorder = abs(iorder)
           !
-          if(jorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          if(jorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
           !
           y = 1.0_ark
           do i = 1, molec%basic_function_list(imode)%mode_set(jorder)%num_terms
