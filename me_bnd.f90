@@ -794,6 +794,7 @@ module me_bnd
         pi4 = 1.0_ark/sqrt(sqrt(pi))
         !
         p1 = pi4/sqrt(coeff_norm)*exp(-xi**2*0.5_ark)
+        p1 = exp(-xi**2*0.5_ark)
         !
         psi(:,i) = p1*psi(:,i)
         dpsi(:,i) = p1*dpsi(:,i)-x*psi(:,i)/coeff_norm**2
@@ -9893,14 +9894,12 @@ end function ark_factorial
     real(ark),intent(in)   :: xval,coeff
     integer(ik),intent(in) :: vmax
     real(ark),intent(out)  :: psi(0:vmax),dpsi(0:vmax)
-    real(ark)              :: c_t,xi,p1,p2,p3,v,vm1,pi4
+    real(ark)              :: c_t,xi,p1,p2,p3,v,vm1,pi4,dfval
     integer(ik)            :: n
        !
-       c_t = coeff
+       xi  = xval/coeff
        !
-       xi  = xval/c_t
-       !
-       p1 = 1.0_ark
+       p1 = .75112554446494248285870300477622_ark/sqrt(coeff)  ! 1/pi^(1/4) *exp(-xi**2)
        !
        p2 = 0
        !
@@ -9917,11 +9916,12 @@ end function ark_factorial
          p1 = xi*sqrt(2.0_ark/v)*p2-sqrt(vm1/v)*p3
          !
          psi(n) = p1
-         dpsi(n) = real(n,ark)*psi(n-1)
+         !
+         dfval = real(n,ark)*psi(n-1)/coeff
+         !
+         dpsi(n) = p2*sqrt(2.0_ark*real(n,ark))/coeff
          !
        enddo
-       !
-       dpsi(:) = dpsi(:)/c_t
        !
   end subroutine Hermite_funcitons
 
