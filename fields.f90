@@ -19021,7 +19021,10 @@ end subroutine check_read_save_none
        drho(i,3) = MLcoord_direct(rho,3,nu_i)
        !
        do ipower = 0, maxpower
-          xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,ipower)
+          jpower = ipower
+          ! for the singular case we change the  sign of ipower in order to distinguish with a non-singilar case
+          if (job%bset_prop(nu_i)%singular) jpower = -ipower
+          xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,jpower)
        enddo
        !
        do ipower = 0, trove%NPotOrder
