@@ -274,6 +274,7 @@ module fields
       logical             :: potential_with_modes = .false. ! potential.chk with modes
       logical             :: kinetic_with_modes = .false.   ! kinetic.chk with modes
       logical             :: extF_with_modes = .false.      ! external.chk with modes
+      integer(ik)         :: NMultimode = 1000   ! Defines the coupling between different modes/classes in the expansion 
       !
    end type JobT
    !
@@ -367,8 +368,7 @@ module fields
       character(len=cl)   :: matelem_suffix   = 'matelem'  ! filename suffix  for storing matrix elements of the Hamiltonian
       character(len=cl)   :: j0matelem_suffix  = 'j0_matelem'  ! filename suffix  for storing j=0 matrix elements of the Hamiltonian
       character(len=cl)   :: tdm_file          = 'j0_tdm'      ! filename name for vibrational j=0 transition dipole moments for replacement 
-
-       
+      !
       real(rk)            :: TMcutoff = epsilon(1.0_rk )   ! threshold to select basis set based on the TM or vibrational intensities
       real(rk)            :: TMenermin  = 0     ! Minimal energy to apply the TMcutoff for 
       logical             :: TMpruning = .false. ! TM-prune if TMcutoff > 0
@@ -3769,6 +3769,10 @@ module fields
             case("NPARAM")
               !
               call readi(Nparam)
+              !
+            case ("MULTIMODE")
+              !
+              call readi(trove%NMultimode)
               !
             case default
               !
@@ -14129,8 +14133,8 @@ end subroutine check_read_save_none
         integer(ik),intent(in) :: Itarget(nsize)
         integer(ik),intent(inout) :: isum
         integer(ik),intent(out), optional  :: FLIndexQ_(:,:)
-        integer(ik)            :: Isearch(nsize),dm2
-        integer(ik) :: i0 
+        integer(ik) :: Isearch(nsize),dm2
+        integer(ik) :: i0,imulti(trove%Nmodes),nmulti
         !
         i0 = 0 
         do while (i0<=N.and.flag_go)
@@ -14139,7 +14143,13 @@ end subroutine check_read_save_none
            if (imodes == Nmodes-1) then
               Isearch(imodes+1) = Norder-sum(Isearch(1:Nmodes-1))
               !
-              if (sum(nint(Isearch(1:Nmodes)*trove%PotPolyad(1:Nmodes)))<=Norder) then
+              imulti = 0 
+              where(isearch /= 0)  imulti = 1
+              nmulti = sum(imulti)
+              !
+              ! we combine the max-order and max-multimode conditions 
+              !
+              if (sum(nint(Isearch(1:Nmodes)*trove%PotPolyad(1:Nmodes)))<=Norder.and.nmulti<=trove%NMultimode) then
                  !
                  isum = isum +1
                  !
@@ -24557,7 +24567,7 @@ end subroutine check_read_save_none
        !
        do iterm = iterm1,iterm2,step_iterm
         !
-        isearch(imode) = iterm 
+        isearch(imode) = iterm
         !
         N_t = sum(abs(isearch))
         !
