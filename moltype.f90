@@ -181,6 +181,7 @@ module moltype
      integer(ik)               :: N_meppars     ! number of MEP. parameters 
      character(len=cl)         :: potentype     ! type of potential function 
      character(len=cl)         :: kinetic_type  ! type of the kinetic function 
+     logical                   :: kinetic_compact = .false. ! compact or sparce representation of the KEO
      character(len=cl)         :: meptype       ! type of MEP function
      real(ark),pointer         :: force(:)      ! force field
      real(ark),pointer         :: mep_params(:) ! MEP parameters
@@ -335,7 +336,7 @@ module moltype
                                   AtomMasses,local_eq, &
                                   force_,forcename_,ifit_,pot_ind_,specparam,potentype,potenname,kinetic_type,&
                                   IO_primitive,chk_numerov_fname,&
-                                  symmetry_,rho_border,zmatrix_,frame)
+                                  symmetry_,rho_border,zmatrix_,frame,kinetic_compact)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -358,6 +359,7 @@ module moltype
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
   character(len=cl),intent(in)  :: frame   ! coordinate transformation type
+  logical,intent(in)            :: kinetic_compact
   !
   integer(ik)              :: alloc,Ncoords
     !
@@ -416,6 +418,7 @@ module moltype
     molec%potentype = potentype
     molec%potenname = potenname
     molec%kinetic_type = kinetic_type
+    molec%kinetic_compact = kinetic_compact
     molec%atomMasses = AtomMasses
     molec%specparam = specparam
     molec%dihedtype = dihedtype_

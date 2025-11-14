@@ -526,6 +526,9 @@ end subroutine MLdefine_potenfunc
    !
    if (verbose>=6) write(out,"(/'MLdefine_kinetic_subroutine/start')") 
     !
+    ! The compact cases are treated directly in fields.f90
+    if (molec%kinetic_compact) return
+    !
     select case(trim(molec%kinetic_type))
     case default
          !
