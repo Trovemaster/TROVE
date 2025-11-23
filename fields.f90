@@ -2908,6 +2908,8 @@ module fields
              endif 
              trove%IO_ext_coeff = trim(w)
              !
+             call check_read_save_none(trove%IO_ext_coeff,w)
+             !
              if (trim(trove%IO_hamiltonian)=='READ'.and.trim(w)=='SAVE'.and..not.trove%separate_convert) then 
                trove%IO_hamiltonian = 'NONE'
                trove%IO_potential   = 'READ'
@@ -2919,9 +2921,9 @@ module fields
                 trove%IO_primitive = 'SAVE'
              endif
              !
-             if (trim(trove%IO_hamiltonian)=='SAVE'.and.trim(w)/='NONE') then 
-               trove%IO_ext_coeff   = 'SAVE'
-             endif
+             !if (trim(trove%IO_hamiltonian)=='SAVE'.and.trim(w)/='NONE') then 
+             !  trove%IO_ext_coeff   = 'SAVE'
+             !endif
              !
              !if (trim(trove%IO_ext_coeff)=='SAVE') trove%IO_hamiltonian = 'SAVE'
              !
@@ -5596,7 +5598,7 @@ end subroutine check_read_save_none
     elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
       maxpower = trove%NpotOrder
     elseif (trove%extF_with_modes.and.trove%potential_with_modes) then
-      maxpower = trove%NKinOrder
+      maxpower = max(trove%NKinOrder,trove%NExtOrder)
     elseif (trove%kinetic_with_modes) then  
       maxpower = max(trove%NpotOrder,trove%NExtOrder)
     elseif (trove%potential_with_modes) then  
@@ -17394,7 +17396,7 @@ end subroutine check_read_save_none
         !
         unitfname ='Check point of the external'
         call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_fname)
+        open(chkptIO,action='read',status='old',file=trove%chk_external_fname)
         !
         if (.not.associated(trove%extF)) then 
            !

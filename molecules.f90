@@ -3536,6 +3536,12 @@ end subroutine polintark
         !
         v = cos(rhoe)-cos(x)
         !
+     case('-COS(X0)-COS(X)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = -cos(rhoe)-cos(x)
+        !
      case('SIN(X)-SIN(X0)') 
         !
         rhoe =  molec%local_eq(imode)
