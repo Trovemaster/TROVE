@@ -3313,6 +3313,27 @@ module fields
              !
              call readu(w)
              !
+           case('POTENTIAL','POTEN')
+             !
+             if (nitems>=2) then
+               !
+               call readu(w)
+               !
+               select case(trim(w))
+               !
+               case('WITH-MODES','WITH_MODES')
+                 !
+                 trove%potential_with_modes = .true.
+                 !
+               case default 
+                 !
+                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CONTROL/POTEN'
+                 stop 'FLinput - illegal key CONTROL/POTEN'
+                 !
+               end select 
+               !
+             endif
+             !
            case('EXTERNAL','DIPOLE')
              ! 
              select case(controlstep)
@@ -3346,6 +3367,25 @@ module fields
                endif
                !
              end select
+             !
+             if (nitems>=2) then
+               !
+               call readu(w)
+               !
+               select case(trim(w))
+               !
+               case('WITH-MODES','WITH_MODES')
+                 !
+                 trove%extF_with_modes = .true.
+                 !
+               case default 
+                 !
+                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CONTROL/EXTERNAL'
+                 stop 'FLinput - illegal key CONTROL/EXTERNAL'
+                 !
+               end select 
+               !
+             endif
              !
            case('JROT','J')
              !
