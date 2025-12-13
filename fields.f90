@@ -17214,7 +17214,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl 
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
+        integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -17239,6 +17239,7 @@ end subroutine check_read_save_none
         !
         Natoms = trove%Natoms
         Nmodes = trove%Nmodes
+        Nmodes_e = trove%Nmodes_e
         Npoints = trove%Npoints
         !
         allocate(mode_list(Nmodes))
@@ -17298,11 +17299,11 @@ end subroutine check_read_save_none
           !
           cur_term = n
           !
-          pot%IndexQ(1:Nmodes-1, n) = mode_list(1:Nmodes-1)
+          pot%IndexQ(1:Nmodes_e, n) = mode_list(1:Nmodes_e)
           !
           if (Npoints > 0) then
             do_k_find_match : do k=1,n-1
-               if ( all( mode_list(1:Nmodes-1) == pot%IndexQ( 1:Nmodes-1,k ) ) ) then 
+               if ( all( mode_list(1:Nmodes_e) == pot%IndexQ( 1:Nmodes_e,k ) ) ) then 
                  cur_term = k
                  n = n - 1
                  exit do_k_find_match
@@ -17385,7 +17386,7 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl 
-        integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
+        integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -17410,6 +17411,7 @@ end subroutine check_read_save_none
         !
         Natoms = trove%Natoms
         Nmodes = trove%Nmodes
+        Nmodes_e = trove%Nmodes_e
         Npoints = trove%Npoints
         !
         allocate(mode_list(Nmodes))
@@ -17460,7 +17462,7 @@ end subroutine check_read_save_none
           !
           cur_term = nn(imu)
           !
-          extF_(imu)%IndexQ(1:Nmodes, nn(imu)) = mode_list(1:Nmodes)
+          extF_(imu)%IndexQ(1:Nmodes_e, nn(imu)) = mode_list(1:Nmodes_e)
           !
           if (Npoints > 0) then
             do_k_find_match : do k=1,n-1
@@ -19037,7 +19039,7 @@ end subroutine check_read_save_none
        !
        do ipower = 0, maxpower
           jpower = ipower
-          ! for the singular case we change the  sign of ipower in order to distinguish with a non-singilar case
+          ! for the singular case we change the  sign of ipower in order to distinguish from a non-singilar case
           if (job%bset_prop(nu_i)%singular) jpower = -ipower
           xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,jpower)
        enddo

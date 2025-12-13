@@ -4047,7 +4047,7 @@ endif
        a0(3, 1) = -r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
        !
-    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
        !
        a0(2, 1) =  r(1) * sin(pi-r(3))
        a0(2, 3) =  r(1) * cos(pi-r(3))
@@ -4092,7 +4092,7 @@ endif
        a0(3, 1) =  r(2) * sin(r(3))
        a0(3, 3) =  r(2) * cos(r(3))
        !
-    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+    case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
        !
        a0(2, 1) =  r(1) * sin(pi-r(3))
        a0(2, 3) =  r(1) * cos(pi-r(3))

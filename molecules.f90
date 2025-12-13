@@ -3536,6 +3536,18 @@ end subroutine polintark
         !
         v = cos(rhoe)-cos(x)
         !
+     case('COS(RHOE)-COS(RHO)','COS(ALPHAE)-COS(ALPHA)') 
+        !
+        xe =  molec%chi_eq(imode)
+        !
+        v = cos(xe)-cos(x)
+        !
+     case('COS(RHO)-COS(RHOE)','COS(ALPHA)-COS(ALPHAE)') 
+        !
+        xe =  molec%chi_eq(imode)
+        !
+        v = cos(x)-cos(xe)
+        !
      case('-COS(X0)-COS(X)') 
         !
         rhoe =  molec%local_eq(imode)

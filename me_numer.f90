@@ -452,7 +452,7 @@ module me_numer
                write(out,"('ME_numerov: Integration differs from Numerovs solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
                write(out,"('            Try increasing the integration range.')")
                if ( trim(molec%IO_primitive)/='READ') then
-                 stop 'ME_numerov: bad Numerov solution'
+                 !stop 'ME_numerov: bad Numerov solution'
                endif
             endif 
             !

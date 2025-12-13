@@ -56,6 +56,16 @@ module mol_xy2
        write (out,"('ML_coordinate_transform_XY2: coord. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
+    case('R1-Z-R2-ALPHA-ABS','R2-Z-R1-ALPHA-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = src(3)
+       endif
+       !
     case('C2V-SYMMETRY')
        !
        c_t =  reshape( &
@@ -1028,7 +1038,7 @@ module mol_xy2
            b0(:,i,0) = b0(:,i,0) - CM_shift
          enddo 
          !
-       case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+       case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
          !
          b0(1,1,0) = 0
          b0(1,2,0) = 0
@@ -1481,7 +1491,7 @@ module mol_xy2
                  b0(:,ix,i) = b0(:,ix,i) - CM_shift
                enddo 
                !
-             case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+             case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
                !
                if (Nangles>0) then
                  alphaeq = molec%alphaeq(1)
@@ -3049,7 +3059,7 @@ module mol_xy2
        end select       
        !
     case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-         'R2-Z-R1-RHO','R2-Z-R1-ALPHA','R1-Z-R2-RHO-ABS')
+         'R2-Z-R1-RHO','R2-Z-R1-ALPHA','R1-Z-R2-RHO-ABS','R2-Z-R1-ALPHA-ABS')
        !
        select case(trim(molec%symmetry))
        case default
