@@ -101,6 +101,16 @@ module mol_xy2
           dst(3) = src(3)+molec%local_eq(3)
        endif
        !
+    case('R-ALPHA-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = src(3)
+       endif
+       !
     case('R-RHO-HALF')
        !
        if (direct) then 

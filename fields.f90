@@ -16,7 +16,7 @@ module fields
    use moltype
    use symmetry , only : SymmetryInitialize,sym
    
-   use kin_xy2, only   : MLkinetic_compact_xyz_alpha_bond2_EKE_rigid
+   use kin_xy2, only   : MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,MLkinetic_compact_xy2_bisect_EKE_rigid
 
    use kin_x2y2, only  : MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
    !
@@ -7105,6 +7105,11 @@ end subroutine check_read_save_none
          !
          call MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                                           g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_XY2_EKE_BISECT_COMPACT_RIGID') 
+         !
+         call MLkinetic_compact_xy2_bisect_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                     g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
       end select
       !

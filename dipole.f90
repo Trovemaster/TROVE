@@ -1995,24 +1995,7 @@ contains
               !
               if (job%rotsym_do) then 
                 !
-                !
                 call TimerStart('Pre-screening')
-                !
-                !vec_mask = abs(vec) .ge.intensity%threshold%coeff
-                !
-                !omp parallel sections 
-                !omp section
-                !  icontrI_pack = pack(bset_contr(indI)%iroot_correlat_j0,mask=vec_mask)
-                !omp section
-                !  irlevelI_pack = pack(bset_contr(indI)%ktau,mask=vec_mask)
-                !omp section
-                !  irdegI_pack = pack(bset_contr(indI)%k,mask=vec_mask)
-                !omp section
-                !  vecPack = pack(vec,mask=vec_mask)
-                !omp section
-                !  cdimenI = count(mask=vec_mask)
-                !omp end parallel sections 
-                !
                 !
                 cdimenI = 0
                 !
