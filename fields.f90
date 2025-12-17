@@ -17503,14 +17503,18 @@ end subroutine check_read_save_none
           !
           if (imu==987654321) exit do_extF
           !
-          nn(imu) = nn(imu) + 1
+          !nn(imu) = nn(imu) + 1
           !
-          cur_term = nn(imu)
+          cur_term = iterm
+          !
+          nn(imu) = cur_term
           !
           extF_(imu)%IndexQ(1:Nmodes_e, nn(imu)) = mode_list(1:Nmodes_e)
           !
           if (Npoints > 0) then
-            do_k_find_match : do k=1,n-1
+            write(out,"(a,a)") 'checkpointRestore_extF_ascii_with_modes has not been tested for Npoints>1. Exit!'
+            stop 'checkpointRestore_extF_ascii_with_modes has not been tested for Npoints>1'
+            do_k_find_match : do k=1,nn(imu)-1
                if ( all( mode_list(1:Nmodes-1) == extF_(imu)%IndexQ( 1:Nmodes-1,k ) ) ) then 
                  cur_term = k
                  nn(imu) = nn(imu) - 1

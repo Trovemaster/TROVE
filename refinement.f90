@@ -4440,17 +4440,17 @@ contains
      !
      if (do_calc) then 
        !
-       if (job%verbose>=4) write (out,"(/'Transformation to eigensolution presentaion...')")
+       if (job%verbose>=4) then 
+          write (out,"(/'Transformation to eigensolution presentaion...')")
           !
-          if (job%verbose>=4) then 
-             select case (trim(fitting%method))
-             case default
-               write (out,"(/'Transformation to eigensolution presentaion (fast)...')")
-             case ('SLOW')
-               write (out,"(/'Transformation to eigensolution presentaion (slow)...')")
-             end select
-          end if
-          !
+          select case (trim(fitting%method))
+          case default
+            write (out,"(/'Transformation to eigensolution presentaion (fast)...')")
+          case ('SLOW')
+            write (out,"(/'Transformation to eigensolution presentaion (slow)...')")
+          end select
+       endif
+       !
        do jind = 1, nJ
           !
           if (jind==1.and.fitting%J_list(1)/=0) cycle
