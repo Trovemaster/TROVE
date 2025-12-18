@@ -3867,6 +3867,7 @@ module me_bnd
                  Is_it_one_over_sin2 = .false.
                  Is_it_one_over_sin = .false.
                  !
+                 !
                  if(molec%mode_list_present.and.lambda>0) then
                     !
                     do i = 1, molec%basic_function_list(imode)%mode_set(lambda)%num_terms
@@ -3883,9 +3884,9 @@ module me_bnd
                         elseif(b_func_outer_expon==2) then
                           Is_it_one_over_sin2 = .true.
                         elseif(b_func_outer_expon>2) then
-                          write(out,"('ME_sinrho_Legendre_k error: basic_function 1/sin^n n must be <=2, not n =',i4)") &
+                          write(out,"('ME_sinrho_Legendre_k1 error: basic_function 1/sin^n n must be <=2, not n =',i4)") &
                                       b_func_outer_expon
-                          stop 'ME_sinrho_Legendre_k error: basic_function 1/sin^n n must be <=2'
+                          stop 'ME_sinrho_Legendre_k1 error: basic_function 1/sin^n n must be <=2'
                         endif
                         !
                       end select 
@@ -3895,11 +3896,11 @@ module me_bnd
                  endif
                  !
                  if (Is_it_one_over_sin2) then 
-                    phivphi(:) = psil(:)*xton(:,lambda)*psir(:)
+                    phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)*rho_m(:)
                  elseif(Is_it_one_over_sin) then
-                    phivphi(:) = psil(:)*xton(:,lambda)*psir(:)
+                    phivphi(:) = psil_sin(:)*xi_n(:,lambda,1)*psir_sin(:)
                  else
-                    phivphi(:) = phil(:)*xton(:,lambda)*phir(:)
+                    phivphi(:) = phil(:)*xi_n(:,lambda,1)*phir(:)
                  endif
                  !
                  g_numerov(-1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)

@@ -16,7 +16,8 @@ module fields
    use moltype
    use symmetry , only : SymmetryInitialize,sym
    
-   use kin_xy2, only   : MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,MLkinetic_compact_xy2_bisect_EKE_rigid
+   use kin_xy2, only   : MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,MLkinetic_compact_xy2_bisect_EKE_rigid,&
+                         MLkinetic_compact_xy2_bisect_EKE_rigid_singular_rho
 
    use kin_x2y2, only  : MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
    !
@@ -7012,7 +7013,7 @@ end subroutine check_read_save_none
     integer(ik)  :: k1,k2,irho,npoints,info,Nmodes,&
                     Ng_vib(trove%Nmodes,trove%Nmodes),Ng_rot(3,3),Ng_cor(trove%Nmodes,3),Npseudo,i
     real(ark)    :: rho,factor
-    integer(ik)  :: Nterms,n,maxpower,ipower,imode,iterm
+    integer(ik)  :: Nterms,n,maxpower,ipower,imode,iterm,jpower
     type(FLpolynomT),pointer    :: fl
       !
       Nmodes = trove%Nmodes
@@ -7109,6 +7110,11 @@ end subroutine check_read_save_none
       case('KINETIC_XY2_EKE_BISECT_COMPACT_RIGID') 
          !
          call MLkinetic_compact_xy2_bisect_EKE_rigid(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
+                                                     g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
+         !
+      case('KINETIC_XY2_EKE_BISECT_COMPACT_RIGID_SING_RHO') 
+         !
+         call MLkinetic_compact_xy2_bisect_EKE_rigid_singular_rho(Nmodes,rho,Nterms,Ng_vib,Ng_rot,Ng_cor,Npseudo,&
                                                      g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
          !
       end select
@@ -7229,7 +7235,11 @@ end subroutine check_read_save_none
             !
             ! calculate all the expansion terms for the last non-rigid mode 
             do ipower = 0, maxpower 
-               f(ipower) = MLcoord_direct(rho,1,trove%Nmodes,ipower)
+               !
+               jpower = ipower
+               if (job%bset_prop(Nmodes)%singular) jpower = -ipower
+               !
+               f(ipower) = MLcoord_direct(rho,1,trove%Nmodes,jpower)
             enddo
             !
             ! combine the expansion coeffs with expansion terms to form the rho-dependent non-rigid KE coefficients
@@ -7291,6 +7301,7 @@ end subroutine check_read_save_none
                   do iterm = 1,Nterms
                      n = n + 1
                      ipower = ig_rot(k1,k2,iterm,Nmodes) 
+                     !
                      fl%field(n,irho) = fl%field(n,irho) + g_rot(k1,k2,iterm)*f(ipower)
                   enddo
                   !
@@ -17466,7 +17477,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a14)") buf
         !
         n = 0
-        total_terms = 0 
+        total_terms = 1
         do_extF_pre: do 
            !
            read(chkptIO,*) imu,iterm,i,field_,mode_list(1:Nmodes) 
@@ -17480,6 +17491,7 @@ end subroutine check_read_save_none
                call ArrayStart("extF%field",alloc,size(extF_(imu)%IndexQ),kind(extF_(imu)%IndexQ))
                !
                extF_(imu)%field  = 0
+               extF_(imu)%IndexQ = 0
                !
              enddo
              !
@@ -17496,7 +17508,7 @@ end subroutine check_read_save_none
         !         
         !read(chkptIO,*) Npoints,Norder,Ncoeff
         !
-        nn = 0; cur_term = 0;
+        nn = 1; cur_term = 0;
         do_extF : do 
           !
           read(chkptIO,*) imu,iterm,i,field_,mode_list(1:Nmodes) 
@@ -18814,7 +18826,7 @@ end subroutine check_read_save_none
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
                                    kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
-    type(FLpolynomT),pointer    :: fl,gl
+    type(FLpolynomT),pointer    :: fl,gl,gzl
     type(Basis1DT), pointer     :: bs           ! 1D bset
     real(ark)                    :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),f_t,g_t,rmk,amorse,f_m,f_t1,f_t2,g_t1,g_t2,f_m1,f_m2
     real(ark)                    :: f1d(0:trove%MaxOrder),p1d(0:trove%MaxOrder),g1d(0:trove%MaxOrder),g1z(0:trove%MaxOrder)
@@ -18844,7 +18856,7 @@ end subroutine check_read_save_none
     !
     real(ark)   ::  rho_switch  = .0174532925199432957692369_ark       ! the value of abcisse rho of the switch between regions (1 deg)
     integer(ik) ::  iswitch                                 ! the grid point of switch
-    real(ark)   :: g2_term,f2_term,coeff_term
+    real(ark)   :: g2_term,f2_term,coeff_term,gz_term
     real(ark)   :: fd_step =0.005_ark,f_1,f_2,f_3 ! step for finite differences  
     !
     ! substitute for easier reference 
@@ -19475,7 +19487,7 @@ end subroutine check_read_save_none
                 !
                 g2_term = 1.0_ark
                 !
-                do i = 1, size(powers)
+                do i = 1, trove%Nmodes_e
                   !
                   if (i == nu_i) cycle
                   !
@@ -19503,7 +19515,7 @@ end subroutine check_read_save_none
                 !
                 f2_term = 1.0_ark
                 !
-                do i = 1, size(powers)
+                do i = 1, trove%Nmodes_e
                   !
                   if (i == nu_i) cycle
                   !
@@ -19518,6 +19530,33 @@ end subroutine check_read_save_none
               enddo
               !
               f1drho(0:npoints) = trove%poten%field(1,0:npoints)+p1drho(0:npoints)
+              !
+              ! muzz-term
+              !
+              muzz = 0
+              gzl => trove%g_rot(3,3)
+              !
+              do j = 1, size(gzl%ifromsparse)
+                !
+                powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
+                !
+                ipower = powers(nu_i)
+                !
+                gz_term = 1.0_ark
+                !
+                do i = 1, trove%Nmodes_e
+                  !
+                  if (i == nu_i) cycle
+                  !
+                  coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
+                  !
+                  gz_term = gz_term*coeff_term 
+                  !
+                enddo
+                !
+                muzz(:) = muzz(:) + g2_term*gzl%field(j,:)
+                !
+              enddo
               !
            else
               !
@@ -19805,7 +19844,20 @@ end subroutine check_read_save_none
              call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho(0:npoints),g1drho(0:npoints),&
                          nu_i,job%bset(nu_i)%periodic,job%verbose,&
                          bs%matelements(-1:3,0:maxpower,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size))
+                         !
+           case ('SINRHO-LEGENDRE-K1')
              !
+             kmax = job%bset(0)%range(2)
+             nmax = bs%Size
+             !
+             chi_b(:) = rho_b(:) - rho_b(1)
+             !
+             bs%matelements = 0 
+             !
+             ! Associated Legendre for k=1 only
+             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                                       f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+                                       !
            case ('LEGENDRE')
              !
              kmax = job%bset(0)%range(2)
@@ -19846,78 +19898,13 @@ end subroutine check_read_save_none
                nmax = (bs%Size+1)/(kmax+1)-1
              endif
              !
-             allocate (muzz(0:Npoints),sinrho(0:Npoints),cosrho(0:Npoints),mrho(0:Npoints),p1drho(0:Npoints),stat=alloc)
-             if (alloc/=0) then
-                write (out,"(' Error ',i9,' trying to allocate muzz')") alloc
-                stop 'FLbset1DNew, muzz - out of memory'
-             end if
+             chi_b(:) = rho_b(:) - rho_b(1)
              !
-             muzz = trove%g_rot(3,3)%field(1,0:npoints)
-             p1drho = trove%pseudo%field(1,0:npoints)
-             !
-             fl => trove%g_rot(3,3)
-             gl => trove%pseudo
-             !
-             if (trove%sparse) then
-               !
-               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
-               call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i2)
-               !
-               if (i1==0.or.i2==0) then
-                  !
-                  muzz = 0
-                  p1drho = 0
-                  !
-                  do icoeff = 1, fl%Ncoeff
-                     f_t = 1.0_ark
-                     do imode  = 1,Nmodes
-                       rho =  trove%chi_eq(imode)
-                       ipower = fl%IndexQ(imode,icoeff)
-                       rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                       f_t = f_t*rho_kin0
-                    enddo
-                    muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                    p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
-                    !
-                  enddo
-                  !
-               endif
-               !
-             elseif(abs(muzz(trove%ipotmin))<small_.or.abs(p1drho(trove%ipotmin))<small_) then
-               !
-               muzz = 0
-               p1drho = 0
-               !
-               do icoeff = 1, fl%Ncoeff
-                  f_t = 1.0_ark
-                  do imode  = 1,Nmodes
-                    rho =  trove%chi_eq(imode)
-                    ipower = fl%IndexQ(imode,icoeff)
-                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
-                    f_t = f_t*rho_kin0
-                 enddo
-                 muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
-                 p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
-                 !
-               enddo
-               !
-             endif
+             bs%matelements = 0 
              !
              ! Associated Legendre 
              call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,&
                                        g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
-                                       !
-             !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&
-             !                             job%verbose,bs%matelements,bs%ener0)
-             !
-             do i = 0,npoints
-                rho =  rho_b(1)+real(i,kind=ark)*trove%rhostep
-                sinrho(i) = sin(rho)
-                cosrho(i) = cos(rho)
-                mrho(i) = sin(rho)
-             enddo
-             !
-             deallocate(muzz,p1drho)
              !
            case ('LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
              !
@@ -20124,7 +20111,7 @@ end subroutine check_read_save_none
            !
            select case (trim(bs%type))
              !
-           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
+           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
              !
              call calc_rho_1d_matrix_elements_sinrho_polynomials(ibs,nu_i)
              !
@@ -20281,8 +20268,8 @@ end subroutine check_read_save_none
              !
              f1drho = f1drho + p1drho
              !
-             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,&
-                         bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             call ME_box(bs%Size,maxpower,rho_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                         f1drho,g1drho,nu_i,job%bset(nu_i)%periodic,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('FOURIER')
              !
@@ -20313,8 +20300,8 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre 
-             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,muzz,p1drho,&
-                                       nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             call ME_sinrho_Legendre_k(nu_i,bs%Size,kmax,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                                       f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
              !call ME_legendre_polynomial_k(bs%Size,kmax,bs%order,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,p1drho,nu_i,&
              !                             job%verbose,bs%matelements,bs%ener0)
@@ -20329,8 +20316,8 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre for k=1 only
-             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n,f1drho,g1drho,muzz,p1drho,nu_i,&
-                                       job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                                       f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case default
              !
