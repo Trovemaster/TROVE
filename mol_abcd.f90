@@ -1378,7 +1378,7 @@ module mol_abcd
          !
        end select
         !
-    case('R1-R2-R3-A1-A2-TAU','R1-R2-R3-A1-RHO2-TAU','R1-R2-R3-A1-RHO2-TAU-ABS')
+    case('R1-R2-R3-A1-A2-TAU','R1-R2-R3-A1-RHO2-TAU')
        !
        select case(trim(molec%symmetry))
        case default
@@ -1430,6 +1430,39 @@ module mol_abcd
            !
            dst(6) = 2.0_ark*pi-src(6)
            !
+         case default
+
+           write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
+           stop 'ML_symmetry_transformation_abcd - bad operation. type'
+ 
+         end select 
+         !
+       end select
+        !
+    case('R1-R2-R3-A1-RHO2-TAU-ABS')
+       !
+       select case(trim(molec%symmetry))
+       case default
+          write (out,"('ML_symmetry_transformation_abcd: symmetry ',a,' unknown')") trim(molec%symmetry)
+          stop 'ML_symmetry_transformation_abcd - bad symm. type'
+          !
+       case('C','C(M)')
+         !
+         dst = src
+         !
+       case('CS','CS(M)')
+         !
+         select case(ioper)
+         !
+         case (1) ! identity 
+
+           dst = src
+
+         case (2) ! (E*)
+
+           dst = src
+           dst(6) = -src(6)
+
          case default
 
            write (out,"('ML_symmetry_transformation_abcd: operation ',i8,' unknown')") ioper
