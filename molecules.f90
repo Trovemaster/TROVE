@@ -3624,7 +3624,8 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','AUTO','COSNX','FOURIER','AUTO-SINGULAR')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','AUTO','COSNX','FOURIER','AUTO-SINGULAR',&
+         '(COS(A0)-COS(A))*SINA','(COS(A)-COS(A0))*SINA')
         !
         v = x
         !
@@ -3820,6 +3821,26 @@ end subroutine polintark
              v = sin( real(-iorder,4)*( x ) )
            else
              v = cos( real(iorder,4)*( x ) )
+           endif
+           !
+       case('(COS(A0)-COS(A))*SINA') 
+           !
+           xe =  molec%chi_eq(imode)
+           !
+           if (iorder<0) then 
+             v = sin(x)*( cos(xe)-cos(x) )**iorder
+           else
+             v = (cos(xe)-cos(x))**iorder
+           endif
+           !
+       case('(COS(A)-COS(A0))*SINA') 
+           !
+           xe =  molec%chi_eq(imode)
+           !
+           if (iorder<0) then 
+             v = sin(x)*( cos(x)-cos(xe) )**iorder
+           else
+             v = (cos(x)-cos(xe))**iorder
            endif
            !
         case('ANGLE-X2Y2')
