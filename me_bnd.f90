@@ -4384,7 +4384,14 @@ module me_bnd
           phil(:) = psil_sin(:)*sqrt( sinrho(:) )
           dphil(:) = rho_m(:)*psil(:)+cosrho(:)*0.5_ark*psil_sin(:)
           !
-          write (io_slot,rec=il+1) (psil(i),i=0,npoints),(dpsil(i),i=0,npoints)
+          !write (io_slot,rec=il+1) (psil(i),i=0,npoints),(dpsil(i),i=0,npoints)
+          !
+          ! Here we save the complete basis functions phi but incomplte derivatives
+          ! dphil = (d psi/ d rho) 1/sqrt(sin(rho))
+          ! We assume all matrix elements have been computed here and the 
+          ! wavefunctions are not to be used for matrix elements.
+          ! That is, it cannot be used for the mode = Nmodes
+          write (io_slot,rec=il+1) (phil(i),i=0,npoints),(dphil(i),i=0,npoints)
           !
           do vr = vl,nmax
               !
@@ -4571,9 +4578,9 @@ module me_bnd
                  ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                  !
                  if (lambda==0) then 
-                    phivphi(:) = psil_sin(:)*dphir(:)
+                    phivphi(:) = psil_sin(:)*dphir(:)*sinrho(:)
                  else
-                    phivphi(:) = psil_sin(:)*xi_n(:,lambda,1)*dphir(:)
+                    phivphi(:) = psil_sin(:)*xi_n(:,lambda,1)*dphir(:)*sinrho(:)
                  endif
                  !
                  g_numerov(1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -4581,9 +4588,9 @@ module me_bnd
                  if (vl/=vr) then
                     !
                     if (lambda==0) then 
-                       phivphi(:) = -dphil(:)*psir_sin(:)
+                       phivphi(:) = -dphil(:)*psir_sin(:)*sinrho(:)
                     else
-                       phivphi(:) = -dphil(:)*xi_n(:,lambda,1)*psir_sin(:)
+                       phivphi(:) = -dphil(:)*xi_n(:,lambda,1)*psir_sin(:)*sinrho(:)
                     endif
                     !
                     g_numerov(1,lambda,ir,il) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)

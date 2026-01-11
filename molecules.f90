@@ -210,6 +210,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_abcd_morse_cos_angle_cosntau
          !
+    case('POTEN_ABCD_MORSE_COSALPHA_ALPHA_COSNTAU-SIN-SIN') 
+         !
+         MLpotentialfunc => MLpoten_abcd_morse_cos_angle_cosntau_sin_sin
+         !
     case('POTEN_ABCD') 
          !
          MLpotentialfunc => MLpoten_hsoh

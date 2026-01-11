@@ -724,7 +724,7 @@ module kin_abcd
    !
    real(ark)            :: mX1,mX2,mY1,mY2
    integer(ik) :: info,Nterms
-   integer(ik),parameter :: nlines = 35
+   integer(ik),parameter :: nlines = 34
    character(len=wl) :: constructor(nlines) = (/&
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
@@ -742,24 +742,23 @@ module kin_abcd
       ' 4 1 2 csc 1.0 1',&
       ' 5 1 1 cot 1.0 1',&
       ' 6 1 2 cot 1.0 1',&
-      ' 7 2 1 cos 1.0 1  2 csc 1.0 1',& 
+      ' 7 2 1 cos 1.0 1 2 csc 1.0 1',& 
       ' 8 1 1 sin 2.0 1',&
       ' 9 1 2 cos 1.0 1',&
-      'Mode 5 9',&
-      ' 1 1 1 sin 1 1',&
-      ' 2 1 1 cos 1 1',&
+      'Mode 5 8',&
+      ' 1 1 1 sin  1.0 1',&
+      ' 2 1 1 cos  1.0 1',&
       ' 3 1 1 csc_ 1.0 1',&
-      ' 4 1 2 csc_ 1.0 1',&
-      ' 5 1 1 cot_ 1.0 1',&
-      ' 6 1 2 cot_ 1.0 1',&
-      ' 7 2 1 cos 1.0 1  2 csc_ 1.0 1',& 
-      ' 8 1 1 sin 2.0 1',&
-      ' 9 1 2 cos 1.0 1',&
+      ' 4 1 1 cot_ 1.0 1',&
+      ' 5 1 1 sin  2.0 1',&
+      ' 6 1 2 cos  1.0 1',&
+      ' 7 1 3 sin  1.0 1',&      
+      ' 8 2 2 cos  1.0 1 1 sin 1.0 1',& 
       'Mode 6 4',&
-      ' 1 1 1 sin 1 1',&
-      ' 2 1 1 cos 1 1',&
-      ' 3 1 2 cos 1 1',&
-      ' 4 1 1 sin 2 1',&
+      ' 1 1 1 sin 1.0 1',&
+      ' 2 1 1 cos 1.0 1',&
+      ' 3 1 2 cos 1.0 1',&
+      ' 4 1 1 sin 2.0 1',&
       'end'/)
       !
       ! here csc_ and cot_ are singular terms turned into 1 and cos, respectively 
@@ -791,7 +790,7 @@ module kin_abcd
      Ng_vib(2,5) = 1
      Ng_vib(2,6) = 1
      Ng_vib(3,1) = 1
-     Ng_vib(3,3) = 1
+     Ng_vib(3,3) = 2
      Ng_vib(3,4) = 2
      Ng_vib(3,5) = 1
      Ng_vib(3,6) = 2
@@ -829,7 +828,6 @@ module kin_abcd
      Ng_cor(6,2) = 2
      Ng_cor(6,3) = 6
      Npseudo = 12
-
      !
      if (Npseudo>ntermmax) then 
        write(out,"(a,i8)") 'MLkinetic_abcd_EKE_z_alpha2_non_singular-error: KinOrder too small, must be at least',21
@@ -838,7 +836,7 @@ module kin_abcd
      !
      ig_vib(1,1,1,:) = (/0,0,0,0,1,0/)
      ig_vib(1,2,1,:) = (/0,0,0,2,1,0/)
-     ig_vib(1,3,1,:) = (/0,0,0,0,8,0/)
+     ig_vib(1,3,1,:) = (/0,0,0,0,5,0/)
      ig_vib(1,4,1,:) = (/0,1,0,1,1,0/)
      ig_vib(1,5,1,:) = (/0,0,1,0,1,0/)
      ig_vib(2,1,1,:) = (/0,0,0,2,1,0/)
@@ -846,17 +844,18 @@ module kin_abcd
      ig_vib(2,4,1,:) = (/1,0,0,1,1,0/)
      ig_vib(2,5,1,:) = (/1,0,0,1,0,2/)
      ig_vib(2,6,1,:) = (/1,0,0,1,2,1/)
-     ig_vib(3,1,1,:) = (/0,0,0,0,8,0/)
-     ig_vib(3,3,1,:) = (/0,0,0,0,1,0/)
+     ig_vib(3,1,1,:) = (/0,0,0,0,5,0/)
+     ig_vib(3,3,1,:) = (/0,0,0,0,7,0/)
+     ig_vib(3,3,2,:) = (/0,0,0,0,8,0/)
      ig_vib(3,4,1,:) = (/1,0,0,0,0,2/)
-     ig_vib(3,4,2,:) = (/1,0,0,0,9,2/)
+     ig_vib(3,4,2,:) = (/1,0,0,0,6,2/)
      ig_vib(3,5,1,:) = (/1,0,0,0,1,0/)
      ig_vib(3,6,1,:) = (/1,0,0,5,0,1/)
-     ig_vib(3,6,2,:) = (/1,0,0,5,9,1/)
+     ig_vib(3,6,2,:) = (/1,0,0,5,6,1/)
      ig_vib(4,1,1,:) = (/0,1,0,1,1,0/)
      ig_vib(4,2,1,:) = (/1,0,0,1,1,0/)
      ig_vib(4,3,1,:) = (/1,0,0,0,0,2/)
-     ig_vib(4,3,2,:) = (/1,0,0,0,9,2/)
+     ig_vib(4,3,2,:) = (/1,0,0,0,6,2/)
      ig_vib(4,4,1,:) = (/0,2,0,0,1,0/)
      ig_vib(4,4,2,:) = (/2,0,0,0,1,0/)
      ig_vib(4,4,3,:) = (/1,1,0,2,1,0/)
@@ -880,7 +879,7 @@ module kin_abcd
      ig_vib(5,6,3,:) = (/1,0,1,5,2,1/)
      ig_vib(6,2,1,:) = (/1,0,0,1,2,1/)
      ig_vib(6,3,1,:) = (/1,0,0,5,0,1/)
-     ig_vib(6,3,2,:) = (/1,0,0,5,9,1/)
+     ig_vib(6,3,2,:) = (/1,0,0,5,6,1/)
      ig_vib(6,4,1,:) = (/1,0,1,0,0,1/)
      ig_vib(6,4,2,:) = (/2,0,0,0,2,1/)
      ig_vib(6,4,3,:) = (/1,1,0,2,2,1/)
@@ -888,8 +887,8 @@ module kin_abcd
      ig_vib(6,5,2,:) = (/2,0,0,5,0,1/)
      ig_vib(6,5,3,:) = (/1,0,1,5,2,1/)
      ig_vib(6,6,1,:) = (/0,0,2,0,3,0/)
-     ig_vib(6,6,2,:) = (/0,2,0,4,1,0/)
-     ig_vib(6,6,3,:) = (/1,0,1,0,5,0/)
+     ig_vib(6,6,2,:) = (/1,0,1,0,4,0/)
+     ig_vib(6,6,3,:) = (/0,2,0,4,1,0/)
      ig_vib(6,6,4,:) = (/1,0,1,5,0,2/)
      ig_vib(6,6,5,:) = (/1,1,0,3,2,2/)
      ig_vib(6,6,6,:) = (/2,0,0,6,1,0/)
@@ -906,20 +905,20 @@ module kin_abcd
      ig_rot(3,3,3,:) = (/1,1,0,7,1,0/)
      ig_cor(2,2,1,:) = (/1,0,0,1,1,0/)
      ig_cor(3,1,1,:) = (/1,0,0,0,0,1/)
-     ig_cor(3,1,2,:) = (/1,0,0,0,9,1/)
+     ig_cor(3,1,2,:) = (/1,0,0,0,6,1/)
      ig_cor(3,2,1,:) = (/1,0,0,0,0,2/)
-     ig_cor(3,2,2,:) = (/1,0,0,0,9,2/)
+     ig_cor(3,2,2,:) = (/1,0,0,0,6,2/)
      ig_cor(3,3,1,:) = (/1,0,0,5,0,1/)
-     ig_cor(3,3,2,:) = (/1,0,0,5,9,1/)
+     ig_cor(3,3,2,:) = (/1,0,0,5,6,1/)
      ig_cor(4,2,1,:) = (/2,0,0,0,1,0/)
      ig_cor(4,2,2,:) = (/1,1,0,2,1,0/)
      ig_cor(5,1,1,:) = (/2,0,0,0,1,1/)
-     ig_cor(5,1,2,:) = (/1,0,1,0,8,1/)
+     ig_cor(5,1,2,:) = (/1,0,1,0,5,1/)
      ig_cor(5,2,1,:) = (/2,0,0,0,1,2/)
-     ig_cor(5,2,2,:) = (/1,0,1,0,8,2/)
+     ig_cor(5,2,2,:) = (/1,0,1,0,5,2/)
      ig_cor(5,3,1,:) = (/1,1,0,3,1,1/)
      ig_cor(5,3,2,:) = (/2,0,0,5,1,1/)
-     ig_cor(5,3,3,:) = (/1,0,1,5,8,1/)
+     ig_cor(5,3,3,:) = (/1,0,1,5,5,1/)
      ig_cor(6,1,1,:) = (/1,0,1,0,0,2/)
      ig_cor(6,1,2,:) = (/1,1,0,3,1,0/)
      ig_cor(6,1,3,:) = (/2,0,0,0,2,2/)
@@ -932,127 +931,129 @@ module kin_abcd
      ig_cor(6,3,4,:) = (/2,0,0,6,1,0/)
      ig_cor(6,3,5,:) = (/1,1,0,7,1,0/)
      ig_cor(6,3,6,:) = (/2,0,0,5,2,2/)
+     !
      ipseudo(1,:) = (/0,2,0,0,1,0/)
      ipseudo(2,:) = (/2,0,0,0,1,0/)
      ipseudo(3,:) = (/1,1,0,2,1,0/)
      ipseudo(4,:) = (/0,2,0,4,1,0/)
-     ipseudo(5,:) = (/1,1,0,1,2,2/)
-     ipseudo(6,:) = (/2,0,0,4,1,0/)
-     ipseudo(7,:) = (/1,0,1,5,0,2/)
-     ipseudo(8,:) = (/1,1,0,3,2,2/)
-     ipseudo(9,:) = (/1,0,1,0,8,0/)
+     ipseudo(5,:) = (/1,0,1,0,5,0/)
+     ipseudo(6,:) = (/1,1,0,1,2,2/)
+     ipseudo(7,:) = (/2,0,0,4,1,0/)
+     ipseudo(8,:) = (/1,0,1,5,0,2/)
+     ipseudo(9,:) = (/1,1,0,3,2,2/)
      ipseudo(10,:) = (/1,1,0,7,1,0/)
      ipseudo(11,:) = (/2,0,0,5,2,2/)
-     ipseudo(12,:) = (/1,0,1,5,9,2/)
+     ipseudo(12,:) = (/1,0,1,5,6,2/)
      !
-     g_vib(1,1,1) =  (mX1+mX2)/mX1/mX2
-     g_vib(1,2,1) =  1.0_ark/mX1
-     g_vib(1,3,1) =  -.5_ark/mX2
-     g_vib(1,4,1) =  -1.0_ark/mX1
-     g_vib(1,5,1) =  1.0_ark/mX2
-     g_vib(2,1,1) =  1.0_ark/mX1
+     g_vib(1,1,1) =  (mX1+mX2)/mX2/mX1
+     g_vib(1,2,1) =  1/mX1
+     g_vib(1,3,1) =  -.5000/mX2
+     g_vib(1,4,1) =  -1./mX1
+     g_vib(1,5,1) =  1/mX2
+     g_vib(2,1,1) =  1/mX1
      g_vib(2,2,1) =  (mX1+mY1)/mX1/mY1
-     g_vib(2,4,1) =  -1.0_ark/mX1
-     g_vib(2,5,1) =  -1.0_ark/mX1
-     g_vib(2,6,1) =  1.0_ark/mX1
-     g_vib(3,1,1) =  -.5_ark/mX2
-     g_vib(3,3,1) =  -(-mX2-mY2)/mY2/mX2
-     g_vib(3,4,1) =  1.0_ark/mX2
-     g_vib(3,4,2) =  -1.0_ark/mX2
-     g_vib(3,5,1) =  1.0_ark/mX2
-     g_vib(3,6,1) =  -1.0_ark/mX2
-     g_vib(3,6,2) =  1.0_ark/mX2
-     g_vib(4,1,1) =  -1.0_ark/mX1
-     g_vib(4,2,1) =  -1.0_ark/mX1
-     g_vib(4,3,1) =  1.0_ark/mX2
-     g_vib(4,3,2) =  -1.0_ark/mX2
+     g_vib(2,4,1) =  -1./mX1
+     g_vib(2,5,1) =  -1./mX1
+     g_vib(2,6,1) =  1/mX1
+     g_vib(3,1,1) =  -.5000/mX2
+     g_vib(3,3,1) =  (mX2+mY2)/mX2/mY2
+     g_vib(3,3,2) =  (mX2+mY2)/mX2/mY2
+     g_vib(3,4,1) =  1/mX2
+     g_vib(3,4,2) =  -1./mX2
+     g_vib(3,5,1) =  1/mX2
+     g_vib(3,6,1) =  -1./mX2
+     g_vib(3,6,2) =  1/mX2
+     g_vib(4,1,1) =  -1./mX1
+     g_vib(4,2,1) =  -1./mX1
+     g_vib(4,3,1) =  1/mX2
+     g_vib(4,3,2) =  -1./mX2
      g_vib(4,4,1) =  (mX1+mY1)/mX1/mY1
      g_vib(4,4,2) =  (mX1+mX2)/mX1/mX2
-     g_vib(4,4,3) =  -2.0_ark/mX1
+     g_vib(4,4,3) =  -2./mX1
      g_vib(4,5,1) =  (mX1+mX2)/mX1/mX2
-     g_vib(4,5,2) =  1.0_ark/mX2
-     g_vib(4,5,3) =  -1.0_ark/mX1
-     g_vib(4,6,1) =  -1.0_ark/mX2
-     g_vib(4,6,2) =  -(mX1+mX2)/mX1/mX2
-     g_vib(4,6,3) =  1.0_ark/mX1
-     g_vib(5,1,1) =  1.0_ark/mX2
-     g_vib(5,2,1) =  -1.0_ark/mX1
-     g_vib(5,3,1) =  1.0_ark/mX2
+     g_vib(4,5,2) =  1/mX2
+     g_vib(4,5,3) =  -1./mX1
+     g_vib(4,6,1) =  -1./mX2
+     g_vib(4,6,2) =  -1.*(mX1+mX2)/mX1/mX2
+     g_vib(4,6,3) =  1/mX1
+     g_vib(5,1,1) =  1/mX2
+     g_vib(5,2,1) =  -1./mX1
+     g_vib(5,3,1) =  1/mX2
      g_vib(5,4,1) =  (mX1+mX2)/mX1/mX2
-     g_vib(5,4,2) =  1.0_ark/mX2
-     g_vib(5,4,3) =  -1.0_ark/mX1
-     g_vib(5,5,1) =  (mX2+mY2)/mY2/mX2
-     g_vib(5,5,2) =  (mX1+mX2)/mX2/mX1
-     g_vib(5,5,3) =  2.0_ark/mX2
-     g_vib(5,6,1) =  1.0_ark/mX1
-     g_vib(5,6,2) =  -(mX1+mX2)/mX2/mX1
-     g_vib(5,6,3) =  -1.0_ark/mX2
-     g_vib(6,2,1) =  1.0_ark/mX1
-     g_vib(6,3,1) =  -1.0_ark/mX2
-     g_vib(6,3,2) =  1.0_ark/mX2
-     g_vib(6,4,1) =  -1.0_ark/mX2
-     g_vib(6,4,2) =  -(mX1+mX2)/mX1/mX2
-     g_vib(6,4,3) =  1.0_ark/mX1
-     g_vib(6,5,1) =  1.0_ark/mX1
-     g_vib(6,5,2) =  -(mX1+mX2)/mX2/mX1
-     g_vib(6,5,3) =  -1.0_ark/mX2
-     g_vib(6,6,1) =  (mX2+mY2)/mY2/mX2
-     g_vib(6,6,2) =  (mX1+mY1)/mX1/mY1
-     g_vib(6,6,3) =  2.0_ark/mX2
-     g_vib(6,6,4) =  -2.0_ark/mX2
-     g_vib(6,6,5) =  2.0_ark/mX1
-     g_vib(6,6,6) =  (mX1+mX2)/mX1/mX2
-     g_vib(6,6,7) =  -2.0_ark/mX1
-     g_vib(6,6,8) =  -2.*(mX1+mX2)/mX1/mX2
-     g_rot(1,1,1) =  (mX1+mX2)/mX1/mX2
-     g_rot(1,3,1) =  -1.0_ark/mX1
-     g_rot(1,3,2) =  (mX1+mX2)/mX1/mX2
-     g_rot(2,2,1) =  (mX1+mX2)/mX1/mX2
-     g_rot(3,1,1) =  -1.0_ark/mX1
-     g_rot(3,1,2) =  (mX1+mX2)/mX1/mX2
+     g_vib(5,4,2) =  1/mX2
+     g_vib(5,4,3) =  -1./mX1
+     g_vib(5,5,1) =  (mX2+mY2)/mX2/mY2
+     g_vib(5,5,2) =  (mX1+mX2)/mX1/mX2
+     g_vib(5,5,3) =  2./mX2
+     g_vib(5,6,1) =  1/mX1
+     g_vib(5,6,2) =  -1.*(mX1+mX2)/mX2/mX1
+     g_vib(5,6,3) =  -1./mX2
+     g_vib(6,2,1) =  1/mX1
+     g_vib(6,3,1) =  -1./mX2
+     g_vib(6,3,2) =  1/mX2
+     g_vib(6,4,1) =  -1./mX2
+     g_vib(6,4,2) =  -1.*(mX1+mX2)/mX1/mX2
+     g_vib(6,4,3) =  1/mX1
+     g_vib(6,5,1) =  1/mX1
+     g_vib(6,5,2) =  -1.*(mX1+mX2)/mX2/mX1
+     g_vib(6,5,3) =  -1./mX2
+     g_vib(6,6,1) =  (mX2+mY2)/mX2/mY2
+     g_vib(6,6,2) =  2./mX2
+     g_vib(6,6,3) =  (mX1+mY1)/mY1/mX1
+     g_vib(6,6,4) =  -2./mX2
+     g_vib(6,6,5) =  2./mX1
+     g_vib(6,6,6) =  (mX1+mX2)/mX2/mX1
+     g_vib(6,6,7) =  -2./mX1
+     g_vib(6,6,8) =  -2.*(mX1+mX2)/mX2/mX1
+     g_rot(1,1,1) =  (mX1+mX2)/mX2/mX1
+     g_rot(1,3,1) =  -1./mX1
+     g_rot(1,3,2) =  (mX1+mX2)/mX2/mX1
+     g_rot(2,2,1) =  (mX1+mX2)/mX2/mX1
+     g_rot(3,1,1) =  -1./mX1
+     g_rot(3,1,2) =  (mX1+mX2)/mX2/mX1
      g_rot(3,3,1) =  (mX1+mY1)/mX1/mY1
      g_rot(3,3,2) =  (mX1+mX2)/mX1/mX2
-     g_rot(3,3,3) =  -2.0_ark/mX1
-     g_cor(2,2,1) =  1.0_ark/mX1
-     g_cor(3,1,1) =  1.0_ark/mX2
-     g_cor(3,1,2) =  -1.0_ark/mX2
-     g_cor(3,2,1) =  -1.0_ark/mX2
-     g_cor(3,2,2) =  1.0_ark/mX2
-     g_cor(3,3,1) =  1.0_ark/mX2
-     g_cor(3,3,2) =  -1.0_ark/mX2
-     g_cor(4,2,1) =  -(mX1+mX2)/mX1/mX2
-     g_cor(4,2,2) =  1.0_ark/mX1
+     g_rot(3,3,3) =  -2./mX1
+     g_cor(2,2,1) =  1/mX1
+     g_cor(3,1,1) =  1/mX2
+     g_cor(3,1,2) =  -1./mX2
+     g_cor(3,2,1) =  -1./mX2
+     g_cor(3,2,2) =  1/mX2
+     g_cor(3,3,1) =  1/mX2
+     g_cor(3,3,2) =  -1./mX2
+     g_cor(4,2,1) =  -1.*(mX1+mX2)/mX1/mX2
+     g_cor(4,2,2) =  1/mX1
      g_cor(5,1,1) =  (mX1+mX2)/mX1/mX2
-     g_cor(5,1,2) =  0.5_ark/mX2
-     g_cor(5,2,1) =  -(mX1+mX2)/mX1/mX2
-     g_cor(5,2,2) =  -.5_ark/mX2
-     g_cor(5,3,1) =  -1.0_ark/mX1
+     g_cor(5,1,2) =  .5000/mX2
+     g_cor(5,2,1) =  -1.*(mX1+mX2)/mX1/mX2
+     g_cor(5,2,2) =  -.5000/mX2
+     g_cor(5,3,1) =  -1./mX1
      g_cor(5,3,2) =  (mX1+mX2)/mX1/mX2
-     g_cor(5,3,3) =  0.5_ark/mX2
-     g_cor(6,1,1) =  1.0_ark/mX2
-     g_cor(6,1,2) =  1.0_ark/mX1
+     g_cor(5,3,3) =  .5000/mX2
+     g_cor(6,1,1) =  1/mX2
+     g_cor(6,1,2) =  1/mX1
      g_cor(6,1,3) =  (mX1+mX2)/mX2/mX1
-     g_cor(6,1,4) =  -(mX1+mX2)/mX1/mX2
-     g_cor(6,2,1) =  1.0_ark/mX2
+     g_cor(6,1,4) =  -1.*(mX1+mX2)/mX1/mX2
+     g_cor(6,2,1) =  1/mX2
      g_cor(6,2,2) =  (mX1+mX2)/mX1/mX2
-     g_cor(6,3,1) =  -(mX1+mY1)/mY1/mX1
-     g_cor(6,3,2) =  1.0_ark/mX2
-     g_cor(6,3,3) =  -1.0_ark/mX1
-     g_cor(6,3,4) =  -(mX1+mX2)/mX1/mX2
-     g_cor(6,3,5) =  2.0_ark/mX1
+     g_cor(6,3,1) =  -1.*(mX1+mY1)/mY1/mX1
+     g_cor(6,3,2) =  1/mX2
+     g_cor(6,3,3) =  -1./mX1
+     g_cor(6,3,4) =  -1.*(mX1+mX2)/mX1/mX2
+     g_cor(6,3,5) =  2./mX1
      g_cor(6,3,6) =  (mX1+mX2)/mX1/mX2
-     pseudo(1) =  -.125_ark*(mX1+mY1)/mX1/mY1
-     pseudo(2) =  -.125_ark*(mX1+mX2)/mX1/mX2
-     pseudo(3) =  -.25_ark/mX1
-     pseudo(4) =  -.125_ark*(mX1+mY1)/mX1/mY1
-     pseudo(5) =  .25_ark/mX1
-     pseudo(6) =  -.125_ark*(mX1+mX2)/mX1/mX2
-     pseudo(7) =  -.5_ark/mX2
-     pseudo(8) =  .25_ark/mX1
-     pseudo(9) =  .5_ark/mX2
-     pseudo(10) =  .25_ark/mX1
-     pseudo(11) =  -.25_ark*(mX1+mX2)/mX1/mX2
-     pseudo(12) =  .25_ark/mX2
+     pseudo(1) =  -.1250*(mX1+mY1)/mY1/mX1
+     pseudo(2) =  -.1250*(mX1+mX2)/mX2/mX1
+     pseudo(3) =  -.2500/mX1
+     pseudo(4) =  -.1250*(mX1+mY1)/mX1/mY1
+     pseudo(5) =  .5000/mX2
+     pseudo(6) =  .2500/mX1
+     pseudo(7) =  -.1250*(mX1+mX2)/mX2/mX1
+     pseudo(8) =  -.5000/mX2
+     pseudo(9) =  .2500/mX1
+     pseudo(10) =  .2500/mX1
+     pseudo(11) =  -.2500*(mX1+mX2)/mX2/mX1
+     pseudo(12) =  .2500/mX2
      !
      call read_basic_function_constructor(nlines,constructor)
      !

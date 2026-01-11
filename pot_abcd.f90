@@ -16,7 +16,8 @@ module pot_abcd
          MLpoten_c2h2_7_q2q1q4q3,MLpoten_c2h2_7_415,MLpoten_c2h2_morse_costau,MLpoten_p2h2_morse_cos,MLdms_hpph_MB,&
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
          MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB,poten_c2h2_morse_sinalpha_cosntau
-  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau,MLdms2xyz_abcd_r_alpha_rho_tau
+  public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau,MLdms2xyz_abcd_r_alpha_rho_tau,&
+         MLpoten_abcd_morse_cos_angle_cosntau_sin_sin
   !
   private
 
@@ -7765,23 +7766,28 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
    real(ark)              ::  f
    !
    integer(ik)          ::  i,k(6),i1
-   real(ark)    :: xi(6),y(6),beta(3),tau,req(6)
+   real(ark)    :: xi(6),y(6),beta(3),tau,req(6),alpha1,alpha2,rho2,rho2e
 
-   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/start')")
    !
-   beta(1:3) = molec%specparam(1:3)
+   req(1:5) = force(1:5)
+   !
+   beta(1:3) = force(6:8)
+   !
+   y(1:3)=1.0_ark-exp(-beta(1:3)*(local(1:3)-req(1:3)))
+   !
+   alpha1 = local(4)
+   y(4)= cos(alpha1)-cos(req(4))
+   !
+   alpha2 = local(5)
+   rho2  = pi-alpha2
+   rho2e = pi-req(5)
+   !
+   y(5) = cos(rho2e)-cos(rho2)
    !
    tau = local(6)
    !
-   req(1:3) = molec%req(1:3)
-   req(4:5) = molec%alphaeq(1:2)
-   !
-   y(1:3)=1.0_ark-exp(-beta(1:3)*(local(1:3)-req(1:3)))
-   y(4)= cos(local(4))-cos(req(4))
-   y(5)= local(5)-req(5)
-   !
    f = 0
-   do i = 1,molec%parmax
+   do i = 9,molec%parmax
       k(:) = molec%pot_ind(:,i)
       xi(1:5) = y(1:5)**k(1:5)
       xi(6)=cos(real(k(6),ik)*tau)
@@ -7793,6 +7799,54 @@ function MLpoten_p2h2_morse_cos(ncoords,natoms,local,xyz,force) result(f)
    !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/end')")
    !
   end function MLpoten_abcd_morse_cos_angle_cosntau
+  !
+  !
+  ! the ABCD type, three Morse, cos(alpha)-cos(ae), alpha-ae and cos(n*tau) with sin(alpha2)*sin(alpha3) for k6/=0 terms 
+  ! in order to avoid unphysical behaviour the linear geometry 
+  !
+  function MLpoten_abcd_morse_cos_angle_cosntau_sin_sin(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)          ::  i,k(6),i1
+   real(ark)    :: xi(6),y(6),beta(3),tau,req(6),alpha1,alpha2,rho2,rho2e,alpha2e
+   !
+   req(1:5) = force(1:5)
+   !
+   beta(1:3) = force(6:8)
+   !
+   y(1:3)=1.0_ark-exp(-beta(1:3)*(local(1:3)-req(1:3)))
+   !
+   alpha1 = local(4)
+   y(4)= cos(alpha1)-cos(req(4))
+   !
+   alpha2 = local(5)
+   rho2  = pi-alpha2
+   rho2e = pi-req(5)
+   !
+   y(5) = cos(rho2e)-cos(rho2)
+   !
+   tau = local(6)
+   !
+   f = 0
+   do i = 9,molec%parmax
+      k(:) = molec%pot_ind(:,i)
+      xi(1:5) = y(1:5)**k(1:5)
+      xi(6)=cos(real(k(6),ik)*tau)
+      !
+      if (k(6)/=0) xi(6)=xi(6)*sin(alpha1)*sin(alpha2)
+      !
+      f = f + force(i)*product(xi(:))
+      !
+   enddo
+   !
+   !if (verbose>=6) write(out,"('MLpoten_abcd_morse_cos_angle_tau/end')")
+   !
+  end function MLpoten_abcd_morse_cos_angle_cosntau_sin_sin
   !
   !
   recursive subroutine MLdms2xyz_abcd_r_alpha_rho_tau(rank,ncoords,natoms,r,xyz,f)
