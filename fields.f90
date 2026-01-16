@@ -208,6 +208,7 @@ module fields
       integer(ik):: NKinOrder     ! Max order in the kinetic   energy expansion
       integer(ik):: NPotOrder     ! Max order in the potential energy expansion
       integer(ik):: NExtOrder     ! Max order in the external function expansion
+      integer(ik),pointer :: NPotOrder_modes(:,:)  ! An array for Min/Max orders per each mode
 
       real(rk),pointer:: PotPolyad(:)  ! polyad coefficients for the the potential energy expansion
 
@@ -1057,6 +1058,9 @@ module fields
          allocate (trove%PotPolyad(1:Nmodes),stat=alloc)
          !
          trove%PotPolyad = 1.0_rk
+         !
+         allocate (trove%NPotOrder_modes(1:Nmodes,2),stat=alloc)
+         call ArrayStart('trove%NPotOrder_modes',alloc,size(trove%NPotOrder_modes),kind(trove%NPotOrder_modes))
          !
        case ("ENERCUT")
          !
@@ -5243,6 +5247,9 @@ module fields
    job%eigenfile%dscr       = trim(job%eigenfile%dscr)//trim(adjustl(char_j))       !//'.chk'
    job%eigenfile%primitives = trim(job%eigenfile%primitives)//trim(adjustl(char_j)) !//'.chk'
    job%eigenfile%vectors    = trim(job%eigenfile%vectors)//trim(adjustl(char_j))    !//'.chk'
+   !
+   trove%NPotOrder_modes(:,1) = 0 
+   trove%NPotOrder_modes(:,2) = trove%NPotOrder
    !
    ! Check if everything defined 
    !
@@ -17274,7 +17281,8 @@ end subroutine check_read_save_none
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl 
-        integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
+        integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,&
+                                maxpower,minpower,imode
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -17418,16 +17426,15 @@ end subroutine check_read_save_none
         !
         call ArrayStop("pot%field")
         !
-        ! check if trove%NPotOrder is consistent with the combined and possibly extended gvib/pseudo fields 
-        ! and increase it if necessary 
-        !
-        !if (trove%NPotOrder<trove%poten%Ncoeff) then 
-        !  trove%NPotOrder = trove%poten%Ncoeff
-        !endif
-        !
+        minpower = minval(fl%IndexQ)
         maxpower = maxval(fl%IndexQ)
         !
         trove%NPotOrder = maxpower
+        !
+        do imode = 1,Nmodes_e
+          trove%NPotOrder_modes(imode,1) =  minval(fl%IndexQ(imode,:))
+          trove%NPotOrder_modes(imode,2) =  maxval(fl%IndexQ(imode,:))
+        enddo
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
         !
@@ -18826,7 +18833,7 @@ end subroutine check_read_save_none
     integer(ik),intent(in)      :: ibs         ! Index for the new 1D basis   
     integer(ik),intent(inout)   :: BSsize       ! Size of the 1D basis set 
 
-    integer(ik)                 :: MatrixSize,imode,k,ipower,jpower,maxpower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
+    integer(ik)                 :: MatrixSize,imode,k,ipower,jpower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
                                    kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
     integer(ik)                 :: nl,nr,irho
@@ -18851,7 +18858,7 @@ end subroutine check_read_save_none
     real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L,omega_t,coeff_norm
     real(ark)                   :: rho_range,rho_t
     integer(ik)                 :: io_slot       ! unit numeber to store the numerov eigenvectors and their derivatives
-    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints
+    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints,minpower,maxpower
     character(len=cl)    :: unitfname,char_
     !
     logical              :: reduced_model,periodic_model ,bs_numerical
@@ -19078,7 +19085,9 @@ end subroutine check_read_save_none
     !
     npoints = bset%dscr(nu_i)%npoints
     !
-    allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,0:maxpower,3),stat=alloc)
+    minpower = min(trove%NPotOrder_modes(nu_i,1),0)
+    !
+    allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,minpower:maxpower,3),stat=alloc)
     call ArrayStart('drho',alloc,size(drho),kind(drho))
     call ArrayStart('xton',alloc,size(xton),kind(xton))
     call ArrayStart('xi_n',alloc,size(xi_n),kind(xi_n))
@@ -19109,7 +19118,8 @@ end subroutine check_read_save_none
           xi_n(i,ipower,1) = MLcoord_direct(rho,1,nu_i,jpower)
        enddo
        !
-       do ipower = 0, trove%NPotOrder
+       ! for the potential field (with modes), the powers are allowed to be negative 
+       do ipower = trove%NPotOrder_modes(nu_i,1),trove%NPotOrder_modes(nu_i,2)
           xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
        enddo
        !
@@ -19119,7 +19129,7 @@ end subroutine check_read_save_none
        !
     enddo
     !
-    xton(:,:) = xi_n(:,:,1)
+    xton(:,:) = xi_n(:,0:,1)
     !
     ! Here we generate the 1D basis set matrix elements 
     ! the type of the basis set will define the type of the matrix elements generator 
@@ -20859,7 +20869,9 @@ end subroutine check_read_save_none
                 ! 
                 if(i == nu_i) cycle
                 !
-                f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 2, i, powers(i)) 
+                f2_term = f2_term*MLcoord_direct(trove%chi_eq(i), 2, i, powers(i))
+                !
+                if (abs(f2_term)<small_) exit
                 !
               enddo
               !

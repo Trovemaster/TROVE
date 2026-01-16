@@ -3827,20 +3827,24 @@ end subroutine polintark
            !
            xe =  molec%chi_eq(imode)
            !
+           jorder = abs(iorder)
+           !
            if (iorder<0) then 
-             v = sin(x)*( cos(xe)-cos(x) )**iorder
+             v = sin(x)*( cos(xe)-cos(x) )**jorder
            else
-             v = (cos(xe)-cos(x))**iorder
+             v = (cos(xe)-cos(x))**jorder
            endif
            !
        case('(COS(A)-COS(A0))*SINA') 
            !
            xe =  molec%chi_eq(imode)
            !
+           jorder = abs(iorder)
+           !
            if (iorder<0) then 
-             v = sin(x)*( cos(x)-cos(xe) )**iorder
+             v = sin(x)*( cos(x)-cos(xe) )**jorder
            else
-             v = (cos(x)-cos(xe))**iorder
+             v = (cos(x)-cos(xe))**jorder
            endif
            !
         case('ANGLE-X2Y2')
