@@ -136,8 +136,8 @@ module moltype
       procedure(calc_func_exp), pointer, nopass  :: func_pointer_exp     ! basic functions as generic procedures
       character(len=cl) :: name
       real(ark) :: coeff
-      real(ark) :: inner_expon
-      real(ark) :: outer_expon
+      integer(ik) :: inner_expon
+      integer(ik) :: outer_expon
   end type 
   !
   type ragged_array_lvl_1

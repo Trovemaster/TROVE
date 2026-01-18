@@ -14681,7 +14681,7 @@ end subroutine check_read_save_none
         if (trove%separate_store) then
           if (trove%kinetic_compact.or.trove%kinetic_with_modes) then
             if (trove%kinetic_with_modes_masses) then
-               call checkpointRestore_kinetic_ascii_with_modes_inverse_mass
+               call checkpointRestore_kinetic_ascii_with_modes_mass
             else
                call checkpointRestore_kinetic_ascii_with_modes
             endif
@@ -17141,7 +17141,7 @@ end subroutine check_read_save_none
       ! read KEO from kinetic.chk using the sparse representation for individual modes as expansion in 
       ! inverse masses which are treated as basi functions of mode 0 and appear after the KE coefficients and before 
       ! the expansion indeces
-      subroutine checkpointRestore_kinetic_ascii_with_modes_inverse_mass
+      subroutine checkpointRestore_kinetic_ascii_with_modes_mass
 
         character(len=14) :: buf
         character(len=25) :: buf25
@@ -17582,19 +17582,19 @@ end subroutine check_read_save_none
         !
         if (buf/='End of kinetic') then
           write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
-          stop 'checkpointRestore_kinetic_ascii_with_modes_inverse_mass - bogus file format kinetic-ASCII'
+          stop 'checkpointRestore_kinetic_ascii_with_modes_mass - bogus file format kinetic-ASCII'
         end if
         !
         fl => trove%g_vib(Nmodes,Nmodes)
         !
         if (.not.associated(fl)) then 
           write(out,"(a,a)") 'checkpointRestore_kinetic_ascii_with_modes-mass err','gvib(N,N) has not been initialised'
-          stop 'checkpointRestore_kinetic_ascii_with_modes_inverse_mass: gvib(N,N) has not been initialised'
+          stop 'checkpointRestore_kinetic_ascii_with_modes_mass: gvib(N,N) has not been initialised'
         endif
         !
         if (.not.associated(trove%pseudo)) then 
           write(out,"(a,a)") 'checkpointRestore_kinetic_ascii_with_modes_mass-err','pseudo has not been initialised'
-          stop 'checkpointRestore_kinetic_ascii_with_modes_inverse_mass: pseudo has not been initialised'
+          stop 'checkpointRestore_kinetic_ascii_with_modes_mass: pseudo has not been initialised'
         endif 
         !
         call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
@@ -17607,7 +17607,7 @@ end subroutine check_read_save_none
         !
         call MemoryReport
         !
-      end subroutine checkpointRestore_kinetic_ascii_with_modes_inverse_mass
+      end subroutine checkpointRestore_kinetic_ascii_with_modes_mass
       !
       !
       subroutine checkpointSkip_kinetic
@@ -20114,11 +20114,12 @@ end subroutine check_read_save_none
            !
            ! standard case of a non-singular pseudo-function
            !
-           f1drho(0:npoints) = trove%poten%field(1,0:npoints)+trove%pseudo%field(1,0:npoints)
+           f1drho(0:npoints) = trove%poten%field(1,0:npoints)
+           p1drho = trove%pseudo%field(1,0:npoints)
            !
            if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
                                  trim(bs%type)=='SINRHO-LEGENDRE-K1')) then 
-               f1drho(0:npoints) = trove%poten%field(1,0:npoints)
+               p1drho = 0
            endif
            !
            ! singular case is reconstructed assuming the stored pseudo is pseudo*rho**2
@@ -20136,7 +20137,37 @@ end subroutine check_read_save_none
              !
            endif 
            !
-           ! for the kinetic part - we just take the corresoinding diagonal member of the g_vib%field
+           if (trove%potential_with_modes) then 
+              !
+              fl => trove%poten
+              !
+              f1drho = 0
+              !
+              do j = 1, size(fl%ifromsparse)
+                !
+                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                !
+                ipower = powers(nu_i)
+                !
+                f2_term = 1.0_ark
+                !
+                do i = 1, trove%Nmodes_e
+                  !
+                  if (i == nu_i) cycle
+                  !
+                  coeff_term = MLcoord_direct(trove%chi_eq(i), 2, i, powers(i))
+                  !
+                  f2_term = f2_term*coeff_term 
+                  !
+                enddo
+                !
+                f1drho(:) = f1drho(:) + f2_term*fl%field(j,:)
+                !
+              enddo
+              !
+           endif
+           !
+           ! for the kinetic part - we just take the corresponding diagonal member of the g_vib%field
            !
            nu_i = trove%Nmodes ; fl => trove%g_vib(nu_i,nu_i)
            !
@@ -20197,8 +20228,6 @@ end subroutine check_read_save_none
                 p1drho(:) = p1drho(:) + f2_term*fl%field(j,:)
                 !
               enddo
-              !
-              f1drho(0:npoints) = trove%poten%field(1,0:npoints)+p1drho(0:npoints)
               !
               ! muzz-term
               !
@@ -20299,6 +20328,8 @@ end subroutine check_read_save_none
              enddo
              !
            endif
+           !
+           f1drho(0:npoints) = f1drho(0:npoints)+p1drho(0:npoints)
            !
            if ( .not.job%bset_prop(nu_i)%singular.and..not.trove%DVR.or.reduced_model ) then
              !
