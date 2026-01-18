@@ -3470,7 +3470,7 @@ end subroutine polintark
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    integer(ik),optional   :: iorder
-   integer(ik)            :: i,jorder
+   integer(ik)            :: i,jorder,nexpon,icount
    real(ark)              :: rhoe,v,amorse
    real(ark)              :: y,z,xe
      !
@@ -3624,7 +3624,7 @@ end subroutine polintark
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','AUTO','COSNX','FOURIER','AUTO-SINGULAR',&
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','AUTO','POT-AUTO','COSNX','FOURIER','AUTO-SINGULAR',&
          '(COS(A0)-COS(A))*SINA','(COS(A)-COS(A0))*SINA')
         !
         v = x
@@ -3731,6 +3731,33 @@ end subroutine polintark
             endif
             !
             v = v*y**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%outer_expon
+          end do      
+          !
+       case('POT-AUTO')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          !
+          if(iorder > size(molec%basic_function_pot_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif
+          !
+          ! for potential the power = iorder is related to the count as 
+          !
+          icount = iorder + 1
+          !
+          nexpon = molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%outer_expon
+          !
+          call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,nexpon,imode,v)
+          !
+          do i = 2, molec%basic_function_pot_list(imode)%mode_set(icount)%num_terms
+            !
+            z = molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%coeff*&
+                (x)**molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%inner_expon
+            call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%outer_expon
           end do      
           !
         case('BOND-LENGTH')

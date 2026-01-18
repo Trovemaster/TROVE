@@ -133,6 +133,7 @@ module moltype
   type basic_function
       procedure(calc_func), pointer, nopass  :: func_pointer     ! basic functions as generic procedures
       procedure(calc_func), pointer, nopass  :: func_singular_pointer ! a special case of basic funcitons for singular modes which are resolved
+      procedure(calc_func_exp), pointer, nopass  :: func_pointer_exp     ! basic functions as generic procedures
       character(len=cl) :: name
       real(ark) :: coeff
       real(ark) :: inner_expon
@@ -154,6 +155,16 @@ module moltype
         use accuracy
         implicit none
         real(ark) , intent(in) :: x 
+        real(ark) , intent(inout) :: y
+      end subroutine 
+  end interface
+  !
+  abstract interface
+      subroutine calc_func_exp(x,n,imode,y)
+        use accuracy
+        implicit none
+        real(ark) , intent(in) :: x
+        integer(ik), intent(in) :: n,imode
         real(ark) , intent(inout) :: y
       end subroutine 
   end interface
@@ -195,7 +206,9 @@ module moltype
      character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
      type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
+     type(ragged_array_lvl_2), allocatable :: basic_function_pot_list(:)
      logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     logical  :: mode_poten_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      !
   end type MoleculeT
   !
@@ -2927,7 +2940,6 @@ module moltype
     !type(basic_function), intent(in) :: obj
     y = 1.0_ark !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
   end subroutine  calc_func_1  
-
 
   !
 end module moltype

@@ -4511,7 +4511,7 @@ module me_bnd
                  Is_it_one_over_sin2 = .false.
                  Is_it_one_over_sin = .false.
                  !
-                 if(molec%mode_list_present.and.lambda>0) then
+                 if (molec%mode_list_present.and.lambda>0.and.lambda<=molec%basic_function_list(imode)%numfunc) then
                     !
                     do i = 1, molec%basic_function_list(imode)%mode_set(lambda)%num_terms
                       !

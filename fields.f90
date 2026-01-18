@@ -208,7 +208,7 @@ module fields
       integer(ik):: NKinOrder     ! Max order in the kinetic   energy expansion
       integer(ik):: NPotOrder     ! Max order in the potential energy expansion
       integer(ik):: NExtOrder     ! Max order in the external function expansion
-      integer(ik),pointer :: NPotOrder_modes(:,:)  ! An array for Min/Max orders per each mode
+      integer(ik),pointer :: NPotOrder_modes(:)  ! An array for Min/Max orders per each mode
 
       real(rk),pointer:: PotPolyad(:)  ! polyad coefficients for the the potential energy expansion
 
@@ -270,6 +270,7 @@ module fields
       logical             :: triatom_sing_resolve = .false.
       logical             :: tetraatom_sing_resolve = .false.
       logical             :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+      logical             :: mode_poten_list_present = .false.    ! Whether the potential file has the list of modes for expansion term   
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       character(len=cl)   :: potenname='GENERAL' ! name of the user type potential function (for control purposes)
@@ -389,6 +390,7 @@ module fields
                                               !  where K is the first index and the matrix is build as K-blocks. 
       logical             :: sparse = .false. ! to switch on sparse matrix processing
       logical             :: mode_list_present = .false. ! kinetic.chk is with the powers for each mode specified 
+      logical             :: mode_poten_list_present = .false. ! potential.chk is with the powers for each mode specified 
       !
       type(FLbasissetT),pointer  :: bset(:)  => null()  ! Basis set specifications: range and type
       type(FLbasis_descriptionT),pointer  :: bset_prop(:)  => null()
@@ -695,9 +697,10 @@ module fields
    character(len=wl) :: w,ioname,w_t
    real(rk)    :: lfact,f_t
    real(ark)   :: func_coef
-   integer(ik) :: i,iatom,imode, ifunc,numterms,  numfunc, in_expo, out_expo ,natoms,alloc,Nparam,iparam,i_t,i_tt
-   integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
+   integer(ik) :: i,iatom,imode,jmode,ifunc,jfunc,iexpo,numterms,numfunc,in_expo,out_expo,Nexpo,Nexpo_min
+   integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords,natoms,alloc,Nparam,iparam,i_t,i_tt
    character(len=4) :: char_j, func_name
+   character(len=cl) :: func_name_pot
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
    !
@@ -1059,7 +1062,7 @@ module fields
          !
          trove%PotPolyad = 1.0_rk
          !
-         allocate (trove%NPotOrder_modes(1:Nmodes,2),stat=alloc)
+         allocate (trove%NPotOrder_modes(1:Nmodes),stat=alloc)
          call ArrayStart('trove%NPotOrder_modes',alloc,size(trove%NPotOrder_modes),kind(trove%NPotOrder_modes))
          !
        case ("ENERCUT")
@@ -2236,64 +2239,203 @@ module fields
             !
          endif
          !
-         imode = 0
-         ifunc = 0
+         w = 'KINETIC'
          !
-         molec%mode_list_present = .true.
-         trove%kinetic_with_modes = .true.
-         !
-         trove%sparse = .true.
-         !
-         allocate(molec%basic_function_list(Nmodes))
-         call read_line(eof,iut) ; if (eof) exit 
-         do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
+         if (Nitems>1) then 
             call readu(w)
-            call readi(imode)
-            call readi(numfunc)    
-            molec%basic_function_list(imode)%numfunc = numfunc
-            allocate(molec%basic_function_list(imode)%mode_set(numfunc))
-            do i = 1, numfunc
-              call read_line(eof,iut); if (eof) exit
-              call readi(ifunc)
-              call readi(numterms)
-              molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
-              allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
-              do j = 1, numterms
-                call readi(out_expo)
-                call readu(func_name)
-                call readf(func_coef)
-                call readi(in_expo)
-                select case(trim(func_name))
-                  case("I") 
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
-                  case("SIN")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
-                  case("COS")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
-                  case("TAN")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
-                  case("CSC")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                  case("COT")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
-                  case("SEC")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
-                  case("COT_")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
-                  case("CSC_")
-                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
-                  case default 
-                    write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
-                    stop 'read_basic_function_constructor-error: unkown basic function'
-                end select
-                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
-                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
-                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
-                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
-              enddo 
+         endif
+         !
+         select case(trim(w))
+           !
+         case default
+            !
+            imode = 0
+            ifunc = 0
+            !
+            molec%mode_list_present = .true.
+            trove%kinetic_with_modes = .true.
+            !
+            trove%sparse = .true.
+            jmode = 0 
+            !
+            allocate(molec%basic_function_list(Nmodes))
+            call read_line(eof,iut) ; if (eof) exit 
+            do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
+               call readu(w)
+               call readi(imode)
+               call readi(numfunc)    
+               molec%basic_function_list(imode)%numfunc = numfunc
+               jmode  = jmode + 1
+               if (imode/=jmode) then 
+                   write(out, "('read_basic_function_constructor-pot-error: mode number is inconsistent with mode count:',2i8)") imode,jmode
+                   stop 'read_basic_function_constructor-pot-error: mode number is inconsistent with mode count'
+               endif
+               !
+               allocate(molec%basic_function_list(imode)%mode_set(numfunc))
+               do i = 1, numfunc
+                 call read_line(eof,iut); if (eof) exit
+                 call readi(ifunc)
+                 call readi(numterms)
+                 molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
+                 allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
+                 do j = 1, numterms
+                   call readi(out_expo)
+                   call readu(func_name)
+                   call readf(func_coef)
+                   call readi(in_expo)
+                   select case(trim(func_name))
+                     case("I") 
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+                     case("SIN")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
+                     case("COS")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                     case("TAN")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
+                     case("CSC")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+                     case("COT")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
+                     case("SEC")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
+                     case("COT_")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
+                     case("CSC_")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
+                     case default 
+                       write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
+                       stop 'read_basic_function_constructor-error: unkown basic function'
+                   end select
+                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
+                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
+                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
+                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%outer_expon = out_expo
+                 enddo 
+               enddo
+               call read_line(eof,iut); if (eof) exit
             enddo
-            call read_line(eof,iut); if (eof) exit
-         enddo 
+            !
+         case ('POTENTIAL','POTEN')
+            !
+            imode = 0
+            ifunc = 0
+            !
+            molec%mode_poten_list_present = .true.
+            trove%potential_with_modes = .true.
+            !
+            trove%sparse = .true.
+            !
+            allocate(molec%basic_function_pot_list(Nmodes))
+            call read_line(eof,iut) ; if (eof) exit
+            jmode  = 0
+            do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
+               call readu(w)
+               call readi(imode)
+               jmode  = jmode + 1
+               if (imode/=jmode) then 
+                   write(out, "('read_basic_function_constructor-pot-error: mode number is inconsistent with mode count:',2i8)") imode,jmode
+                   stop 'read_basic_function_constructor-pot-error: mode number is inconsistent with mode count'
+               endif
+               !
+               call readi(numfunc)    
+               molec%basic_function_pot_list(imode)%numfunc = numfunc
+               allocate(molec%basic_function_pot_list(imode)%mode_set(numfunc))
+               !
+               ifunc = 0
+               do while (ifunc<numfunc)
+                 call read_line(eof,iut); if (eof) exit
+                 call readi(numterms)
+                 !
+                 call readi(Nexpo_min)
+                 call readi(Nexpo)
+                 call readu(func_name_pot)
+                 ! other paramaters only appy to additional terms
+                 !
+                 do iexpo = Nexpo_min, Nexpo
+                   !
+                   jfunc = ifunc + iexpo + 1
+                   !
+                   if (jfunc>numfunc) then 
+                     write(out, "(a,2i8)") 'read_basic_func_constructor-pot-error: N of functions is smaller than N entries:',&
+                                            numfunc,jfunc
+                     stop 'read_basic_function_constructor-pot-error: N of functions is smaller than N entries'
+                   endif
+                   !
+                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%num_terms = numterms
+                   allocate(molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(numterms))
+                   !
+                   select case(trim(func_name_pot))
+                   case("MORSE(X-XE)") 
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_morse_x_xe
+                   case("COS(A)-COS(A0)")
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx_cosx0
+                   case("COS(A0)-COS(A)")
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx0_cosx
+                   case("COSNX")
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosnx
+                   case default 
+                     write(out,"('read_basic_function_constructor-pot-error-1: unkown basic function',a)") func_name
+                     stop 'read_basic_function_constructor-pot-error-1: unkown basic function'
+                   end select
+                   !
+                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%name = func_name_pot
+                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%outer_expon = iexpo
+                   !
+                 enddo
+                 !
+                 do j = 2, numterms
+                   !
+                   call readi(out_expo)
+                   call readu(func_name)
+                   call readf(func_coef)
+                   call readi(in_expo)
+                   !
+                   do iexpo = Nexpo_min, Nexpo
+                     !
+                     jfunc = ifunc + iexpo + 1
+                     !
+                     select case(trim(func_name))
+                       !
+                     case("SIN")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sin
+                     case("COS")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cos
+                     case("TAN")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_tan
+                     case("CSC")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_csc
+                     case("COT")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cot
+                     case("SEC")
+                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sec
+                     case default 
+                       write(out,"('read_basic_function_constructor-pot-error: unkown basic function',a)") func_name
+                       stop 'read_basic_function_constructor-pot-error: unkown basic function'
+                     end select
+                     !
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%coeff = func_coef
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%inner_expon = in_expo 
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%outer_expon = out_expo
+                     !
+                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%name = func_name
+                     !
+                   enddo
+                   !
+                 enddo
+                 !
+                 ifunc = ifunc + (Nexpo-Nexpo_min+1)
+                 !
+               enddo
+               !
+               if (numfunc/=ifunc) then 
+                 write(out, "('read_basic_function_constructor-pot-error: N of functions does not agree with N entries:',2i8)") numfunc,ifunc
+                 stop 'read_basic_function_constructor-pot-error: N of functions does not agree with N entries'
+               endif
+               !
+               call read_line(eof,iut); if (eof) exit
+            enddo
+            !
+         end select 
          !
       case("EQUIL","EQUILIBRIUM")
          !
@@ -5248,8 +5390,8 @@ module fields
    job%eigenfile%primitives = trim(job%eigenfile%primitives)//trim(adjustl(char_j)) !//'.chk'
    job%eigenfile%vectors    = trim(job%eigenfile%vectors)//trim(adjustl(char_j))    !//'.chk'
    !
-   trove%NPotOrder_modes(:,1) = 0 
-   trove%NPotOrder_modes(:,2) = trove%NPotOrder
+   trove%NPotOrder_modes(:) = 0 
+   trove%NPotOrder_modes(:) = trove%NPotOrder
    !
    ! Check if everything defined 
    !
@@ -17282,7 +17424,7 @@ end subroutine check_read_save_none
         integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl 
         integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,&
-                                maxpower,minpower,imode
+                                maxpower,imode
         integer(ik), allocatable :: mode_list(:) 
         real(rk)             :: factor
         real(ark)            :: field_, rho
@@ -17426,14 +17568,12 @@ end subroutine check_read_save_none
         !
         call ArrayStop("pot%field")
         !
-        minpower = minval(fl%IndexQ)
         maxpower = maxval(fl%IndexQ)
         !
         trove%NPotOrder = maxpower
         !
-        do imode = 1,Nmodes_e
-          trove%NPotOrder_modes(imode,1) =  minval(fl%IndexQ(imode,:))
-          trove%NPotOrder_modes(imode,2) =  maxval(fl%IndexQ(imode,:))
+        do imode = 1,Nmodes
+          trove%NPotOrder_modes(imode) =  maxval(fl%IndexQ(imode,:))
         enddo
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
@@ -18858,7 +18998,7 @@ end subroutine check_read_save_none
     real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L,omega_t,coeff_norm
     real(ark)                   :: rho_range,rho_t
     integer(ik)                 :: io_slot       ! unit numeber to store the numerov eigenvectors and their derivatives
-    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints,minpower,maxpower
+    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints,maxpower
     character(len=cl)    :: unitfname,char_
     !
     logical              :: reduced_model,periodic_model ,bs_numerical
@@ -19079,15 +19219,19 @@ end subroutine check_read_save_none
        maxpower = trove%NKinorder
     endif
     !
+    !if(molec%mode_poten_list_present) then
+    !   maxpower = molec%basic_function_pot_list(nu_i)%numfunc
+    !else 
+    !   maxpower = trove%NPotOrder
+    !endif
+    !
     maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
     !
     nu_i = bs%mode(1)
     !
     npoints = bset%dscr(nu_i)%npoints
     !
-    minpower = min(trove%NPotOrder_modes(nu_i,1),0)
-    !
-    allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,minpower:maxpower,3),stat=alloc)
+    allocate (drho(0:Npoints,3),xton(0:Npoints,0:maxpower),xi_n(0:Npoints,0:maxpower,3),stat=alloc)
     call ArrayStart('drho',alloc,size(drho),kind(drho))
     call ArrayStart('xton',alloc,size(xton),kind(xton))
     call ArrayStart('xi_n',alloc,size(xi_n),kind(xi_n))
@@ -19119,7 +19263,7 @@ end subroutine check_read_save_none
        enddo
        !
        ! for the potential field (with modes), the powers are allowed to be negative 
-       do ipower = trove%NPotOrder_modes(nu_i,1),trove%NPotOrder_modes(nu_i,2)
+       do ipower = 0,trove%NPotOrder_modes(nu_i)
           xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
        enddo
        !
@@ -20051,6 +20195,12 @@ end subroutine check_read_save_none
              !
              if(molec%mode_list_present) then
                 maxpower = molec%basic_function_list(nu_i)%numfunc
+             else
+                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+             endif
+             !
+             if(molec%mode_poten_list_present) then
+                maxpower = molec%basic_function_pot_list(nu_i)%numfunc
              else
                 maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
              endif
@@ -28739,6 +28889,62 @@ end subroutine check_read_save_none
     !type(basic_function) :: obj
     y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_sec
+
+  subroutine calc_func_morse_x_xe(x,n,imode,y) 
+    real(ark), intent(in) :: x 
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    real(rk) :: amorse,xe
+    !
+    amorse = molec%specparam(imode)
+    !
+    xe = molec%chi_eq(imode)
+    !
+    y = (1.0_ark-exp( -amorse*( x-xe ) ))**n
+    !
+  end subroutine calc_func_morse_x_xe
+  !
+  subroutine calc_func_cosx_cosx0(x,n,imode,y) 
+    real(ark), intent(in) :: x 
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    real(rk) :: x0,xi
+    !
+    x0 = molec%chi_eq(imode)
+    !
+    xi = cos(x)-cos(x0)
+    !
+    y = xi**n
+    !
+  end subroutine calc_func_cosx_cosx0
+  !
+  subroutine calc_func_cosx0_cosx(x,n,imode,y) 
+    real(ark), intent(in) :: x 
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    real(rk) :: x0,xi
+    !
+    x0 = molec%chi_eq(imode)
+    !
+    xi = cos(x0)-cos(x)
+    !
+    y = xi**n
+    !
+  end subroutine calc_func_cosx0_cosx
+  !
+  subroutine calc_func_cosnx(x,n,imode,y) 
+    real(ark), intent(in) :: x 
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    y = cos(real(n,rk)*x)
+    !
+  end subroutine calc_func_cosnx
+
+
   !
   ! sanity check and deallocation of all existing arrays from this module 
   !
