@@ -9,7 +9,7 @@ module fields
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_Legendre_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
                       ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
-                      ME_Fourier_pure,ME_sinrho_Legendre_k1,ME_harmonic_numeric
+                      ME_Fourier_pure,ME_sinrho_Legendre_k1,ME_harmonic_numeric,ME_sqrt_sinrho_sinnrho_Legendre_k1
    use me_numer
    use me_rot
    use timer
@@ -2295,20 +2295,27 @@ module fields
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
                      case("TAN")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_tan
-                     case("CSC")
+                     case("CSC","CSC_")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
-                     case("COT")
+                     case("COT","COT_")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
                      case("SEC")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
-                     case("COT_")
-                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cos
-                     case("CSC_")
-                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
                      case default 
                        write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
                        stop 'read_basic_function_constructor-error: unkown basic function'
                    end select
+                   !
+                   molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer => &
+                                 molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer
+                   !
+                   select case(trim(func_name))
+                     case("COT_")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_cos
+                     case("CSC_")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_singular_pointer=> calc_func_1
+                   end select
+                   !
                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%name = func_name
                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%coeff = func_coef
                    molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%inner_expon = in_expo 
@@ -21022,8 +21029,13 @@ end subroutine check_read_save_none
              bs%matelements = 0 
              !
              ! Associated Legendre for k=1 only
-             call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+             !call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+             !                          f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+
+             call ME_sqrt_sinrho_sinnrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+
+                                       
              !
            case default
              !
@@ -21174,17 +21186,21 @@ end subroutine check_read_save_none
               !
               f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
               !
-              do i = 1, trove%Nmodes_e
-                ! 
-                if(i == nu_i) cycle
+              if (abs(f2_term>small_)) then 
                 !
-                g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
+                do i = 1, trove%Nmodes_e
+                  ! 
+                  if(i == nu_i) cycle
+                  !
+                  g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
+                  !
+                  f2_term = f2_term*g_term
+                  !
+                enddo
                 !
-                f2_term = f2_term*g_term
+                ps(imode,ipower) = ps(imode,ipower) + f2_term
                 !
-              enddo
-              !
-              ps(imode,ipower) = ps(imode,ipower) + f2_term
+              endif
               !
             enddo
             !
@@ -21202,16 +21218,18 @@ end subroutine check_read_save_none
               !
               g2_term  =  gl%field(j,irho_eq_)
               !
-              do i = 1, size(powers)
-                if(i == nu_i) cycle
+              if (abs(g2_term>small_)) then 
                 !
-                g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                do i = 1, size(powers)
+                  if(i == nu_i) cycle
+                  !
+                  g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
+                  !
+                enddo
                 !
-              enddo
-              !
-              !g2(imode) = g2(imode) + g2_term
-              !
-              gvib(imode,ipower) = gvib(imode,ipower) + g2_term
+                gvib(imode,ipower) = gvib(imode,ipower) + g2_term
+                !
+              endif
               !
             enddo
             !
@@ -21229,16 +21247,18 @@ end subroutine check_read_save_none
               !
               gz_term  =  gzl%field(j,irho_eq_)
               !
-              do i = 1, size(powers)
-                if(i == nu_i) cycle
+              if (abs(gz_term>small_)) then 
                 !
-                gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
+                do i = 1, size(powers)
+                  if(i == nu_i) cycle
+                  !
+                  gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
+                  !
+                enddo
                 !
-              enddo
-              !
-              !gz(imode) = gz(imode) + gz_term
-              !
-              grot(imode,ipower) = grot(imode,ipower) + gz_term
+                grot(imode,ipower) = grot(imode,ipower) + gz_term
+                !
+              endif
               !
             enddo
             !
@@ -29431,6 +29451,13 @@ end subroutine check_read_save_none
     !type(basic_function) :: obj
     y = 1.0_ark/cos(x) !(obj%coeff*1.0/sin(x)**obj%inner_expon)**obj%outer_expon
   end subroutine calc_func_sec
+  
+  subroutine  calc_func_1(x, y)
+    real(ark), intent(in) :: x 
+    real(ark), intent(inout) :: y
+    y = 1.0_ark
+  end subroutine  calc_func_1  
+
 
   subroutine calc_func_morse_x_xe(x,n,imode,y) 
     real(ark), intent(in) :: x 

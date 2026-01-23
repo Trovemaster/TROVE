@@ -1025,6 +1025,7 @@ module kin_xy2
   ! Defining kinetic energy function: sparse representation, rigid congiguration for XYZ (away from singularity)
   ! with z as the second bond and alpha as the angle cordinate 
   ! The KEO was generated using Maple using the 2nd bond-length-angle frame, see XYZ_KEO_analytic_v1.mws
+  ! Y has negatice z and X is positive in X and Z.
   !
   subroutine MLkinetic_compact_xyz_alpha_bond2_EKE_rigid(nmodes,rho,ntermmax,ng_vib,ng_rot,ng_cor,npseudo,&
                                                          g_vib,g_rot,g_cor,pseudo,ig_vib,ig_rot,ig_cor,ipseudo)
