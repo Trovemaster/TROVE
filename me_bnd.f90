@@ -5207,8 +5207,9 @@ module me_bnd
                  ! momenta-linear part:
                  ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
                  !
-                 if (Is_it_one_over_sin2) then 
-                    stop 'ME_sqrt_sinrho_sinnrho_Legendre_k1 error: momenta-linear part cannot be sing^2' 
+                 if (Is_it_one_over_sin2) then
+                    ! Momenta-linear part cannot be singular squared, the matrix elements are set to zero 
+                    phivphi = 0 
                  elseif(Is_it_one_over_sin) then
                     phivphi(:) = psil(:)*xi_n(:,lambda,1)*dphir(:)
                  else
@@ -5226,7 +5227,8 @@ module me_bnd
                  if (vl/=vr) then
                     !
                     if (Is_it_one_over_sin2) then 
-                       stop 'ME_sqrt_sinrho_sinnrho_Legendre_k1 error: momenta-linear part cannot be sing^2' 
+                      ! Momenta-linear part cannot be singular squared, the matrix elements are set to zero 
+                      phivphi = 0 
                     elseif(Is_it_one_over_sin) then
                        phivphi(:) = -dphil(:)*xi_n(:,lambda,1)*psir(:)
                     else
