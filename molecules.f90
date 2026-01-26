@@ -3739,7 +3739,7 @@ end subroutine polintark
           !
           v = 1.0_ark
           !
-          if(iorder > size(molec%basic_function_pot_list(imode)%mode_set(:))) then
+          if(iorder+1 > size(molec%basic_function_pot_list(imode)%mode_set(:))) then
             v = 0
             return
           endif

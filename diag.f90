@@ -3319,7 +3319,7 @@ module diag
       if (iverbose>=2) call TimerStart('diag_propack: diagonalization')
       !
       !
-#if (propack_ < 1)
+#if (propack_ > 0)
         !
         write(out,'("PROPACK is not activated!")')
         stop 'PROPACK is not activated!'
@@ -3435,8 +3435,10 @@ module diag
           !
           u = 0 ; v = 0 
           k0 = 0
+#if (propack_ > 0 )
           !
           call dlanbpro( n, n, k0, k, daprod, U, ldu, V, ldv, B, ldb,rnorm, doption, ioption, work, iwork, h, iparm, info)
+#endif    
           !
           !  Either we have convergence or there is  an error. 
           !
@@ -3481,7 +3483,9 @@ module diag
           !
           S = 0
           !
+#if (propack_ > 0)
           call dritzvec(which,jobu,jobv,n,n,nev,dim,B(1:dim,1),B(1:dim,2),S,U,ldu,V,ldv,work,lwork,iwork)
+#endif
           !
           nroots = min(nroots,nev)
           !
