@@ -209,15 +209,16 @@ module fields
       integer(ik):: NPotOrder     ! Max order in the potential energy expansion
       integer(ik):: NExtOrder     ! Max order in the external function expansion
       integer(ik),pointer :: NPotOrder_modes(:)  ! An array for Min/Max orders per each mode
-
+      integer(ik),pointer :: NExtOrder_modes(:)  ! An array for Min/Max orders per each mode
+      !
       real(rk),pointer:: PotPolyad(:)  ! polyad coefficients for the the potential energy expansion
-
+      !
       logical :: DVR = .false.    ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
       logical :: FBR = .true.     ! Process the matrix elements by the DVR (Gaussian Quadtrature) grid-integration 
-
+      !
       logical :: smolyak = .false.  ! Smolyak Gaussian Quadtratures
       character(len=cl) :: smolyak_rule = 'LG'
-
+      !
       integer(ik) ::  Ncoeff             ! Number of parameters in fields-arrays (determined from MaxOrder)
       integer(ik) ::  MaxOrder           ! Max(NKinOrder,NPotOrder)
       integer(ik),pointer ::  RangeOrder(:)      ! polynomials ranges at different orders: fields(RangeOrder(N-1)..RangeOrder(N))
@@ -269,8 +270,6 @@ module fields
       logical             :: sparse  = .false.                    ! A sparse representation of fields 
       logical             :: triatom_sing_resolve = .false.
       logical             :: tetraatom_sing_resolve = .false.
-      logical             :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
-      logical             :: mode_poten_list_present = .false.    ! Whether the potential file has the list of modes for expansion term   
       integer(ik)         :: krot = 0  ! The value of the krot quantum number (reference or maximal) to generate non-rigid basis sets
       integer(ik)         :: kmax = 0  ! The value of the kmax quantum number (maximal) to generate non-rigid basis sets
       character(len=cl)   :: potenname='GENERAL' ! name of the user type potential function (for control purposes)
@@ -391,7 +390,6 @@ module fields
                                               !  where K is the first index and the matrix is build as K-blocks. 
       logical             :: sparse = .false. ! to switch on sparse matrix processing
       logical             :: mode_list_present = .false. ! kinetic.chk is with the powers for each mode specified 
-      logical             :: mode_poten_list_present = .false. ! potential.chk is with the powers for each mode specified 
       !
       type(FLbasissetT),pointer  :: bset(:)  => null()  ! Basis set specifications: range and type
       type(FLbasis_descriptionT),pointer  :: bset_prop(:)  => null()
@@ -701,9 +699,11 @@ module fields
    integer(ik) :: i,iatom,imode,jmode,ifunc,jfunc,iexpo,numterms,numfunc,in_expo,out_expo,Nexpo,Nexpo_min
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords,natoms,alloc,Nparam,iparam,i_t,i_tt
    character(len=4) :: char_j, func_name
+   character(len=3) :: basic_type
    character(len=cl) :: func_name_pot
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
+   type(ragged_array_lvl_2),pointer :: basic_func
    !
    character(len=cl) :: my_fmt !format for I/O specification
    integer(ik)       :: iut !  iut is a unit number. 
@@ -1065,6 +1065,9 @@ module fields
          !
          allocate (trove%NPotOrder_modes(1:Nmodes),stat=alloc)
          call ArrayStart('trove%NPotOrder_modes',alloc,size(trove%NPotOrder_modes),kind(trove%NPotOrder_modes))
+         !
+         allocate (trove%NExtOrder_modes(1:Nmodes),stat=alloc)
+         call ArrayStart('trove%NExtOrder_modes',alloc,size(trove%NExtOrder_modes),kind(trove%NExtOrder_modes))
          !
        case ("ENERCUT")
          !
@@ -2325,17 +2328,31 @@ module fields
                call read_line(eof,iut); if (eof) exit
             enddo
             !
-         case ('POTENTIAL','POTEN')
+         case ('POTENTIAL','POTEN','EXTERNAL','EXT')
             !
             imode = 0
             ifunc = 0
             !
-            molec%mode_poten_list_present = .true.
-            trove%potential_with_modes = .true.
+            basic_type = w(1:3)
+            !
+            select case (trim(basic_type))
+              !
+            case ('POT')
+              !
+              molec%mode_poten_list_present = .true.
+              trove%potential_with_modes = .true.
+              allocate(molec%basic_function_pot_list(Nmodes))
+              !
+            case ('EXT')
+              !
+              molec%mode_extf_list_present = .true.
+              trove%extF_with_modes = .true.
+              allocate(molec%basic_function_ext_list(Nmodes))
+              !
+            end select
             !
             trove%sparse = .true.
             !
-            allocate(molec%basic_function_pot_list(Nmodes))
             call read_line(eof,iut) ; if (eof) exit
             jmode  = 0
             do while (trim(w)/="".and.imode<trove%Nmodes.and.trim(w)/="END")
@@ -2347,9 +2364,16 @@ module fields
                    stop 'read_basic_function_constructor-pot-error: mode number is inconsistent with mode count'
                endif
                !
+               select case (trim(basic_type))
+               case ('POT')
+                 basic_func => molec%basic_function_pot_list(imode)
+               case ('EXT')
+                 basic_func => molec%basic_function_ext_list(imode)
+               end select
+               !
                call readi(numfunc)    
-               molec%basic_function_pot_list(imode)%numfunc = numfunc
-               allocate(molec%basic_function_pot_list(imode)%mode_set(numfunc))
+               basic_func%numfunc = numfunc
+               allocate(basic_func%mode_set(numfunc))
                !
                ifunc = 0
                do while (ifunc<numfunc)
@@ -2371,25 +2395,28 @@ module fields
                      stop 'read_basic_function_constructor-pot-error: N of functions is smaller than N entries'
                    endif
                    !
-                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%num_terms = numterms
-                   allocate(molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(numterms))
+                   basic_func%mode_set(jfunc)%num_terms = numterms
+                   allocate(basic_func%mode_set(jfunc)%func_set(numterms))
                    !
                    select case(trim(func_name_pot))
+                     !
+                   case("X-XE","(X-XE)","X-X0") 
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_x_minus_xe
                    case("MORSE(X-XE)") 
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_morse_x_xe
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_morse_x_xe
                    case("COS(A)-COS(A0)")
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx_cosx0
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx_cosx0
                    case("COS(A0)-COS(A)")
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx0_cosx
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx0_cosx
                    case("COSNX")
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosnx
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosnx
                    case default 
-                     write(out,"('read_basic_function_constructor-pot-error-1: unkown basic function',a)") func_name
-                     stop 'read_basic_function_constructor-pot-error-1: unkown basic function'
+                     write(out,"('read_basic_function_constructor-pot-ext-error-1: unkown basic function',a)") func_name
+                     stop 'read_basic_function_constructor-pot-ext-error-1: unkown basic function'
                    end select
                    !
-                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%name = func_name_pot
-                   molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(1)%outer_expon = iexpo
+                   basic_func%mode_set(jfunc)%func_set(1)%name = func_name_pot
+                   basic_func%mode_set(jfunc)%func_set(1)%outer_expon = iexpo
                    !
                  enddo
                  !
@@ -2407,27 +2434,27 @@ module fields
                      select case(trim(func_name))
                        !
                      case("SIN")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sin
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sin
                      case("COS")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cos
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cos
                      case("TAN")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_tan
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_tan
                      case("CSC")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_csc
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_csc
                      case("COT")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cot
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_cot
                      case("SEC")
-                       molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sec
+                       basic_func%mode_set(jfunc)%func_set(j)%func_pointer=> calc_func_sec
                      case default 
                        write(out,"('read_basic_function_constructor-pot-error: unkown basic function',a)") func_name
                        stop 'read_basic_function_constructor-pot-error: unkown basic function'
                      end select
                      !
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%coeff = func_coef
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%inner_expon = in_expo 
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%outer_expon = out_expo
+                     basic_func%mode_set(jfunc)%func_set(j)%coeff = func_coef
+                     basic_func%mode_set(jfunc)%func_set(j)%inner_expon = in_expo 
+                     basic_func%mode_set(jfunc)%func_set(j)%outer_expon = out_expo
                      !
-                     molec%basic_function_pot_list(imode)%mode_set(jfunc)%func_set(j)%name = func_name
+                     basic_func%mode_set(jfunc)%func_set(j)%name = func_name
                      !
                    enddo
                    !
@@ -5400,8 +5427,8 @@ module fields
    job%eigenfile%primitives = trim(job%eigenfile%primitives)//trim(adjustl(char_j)) !//'.chk'
    job%eigenfile%vectors    = trim(job%eigenfile%vectors)//trim(adjustl(char_j))    !//'.chk'
    !
-   trove%NPotOrder_modes(:) = 0 
    trove%NPotOrder_modes(:) = trove%NPotOrder
+   trove%NExtOrder_modes(:) = trove%NExtOrder
    !
    ! Check if everything defined 
    !
@@ -18109,7 +18136,7 @@ end subroutine check_read_save_none
         character(len=16) :: buf
         character(len=25) :: buf25
         character(len=cl)  :: unitfname
-        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
+        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff,imode
         type(FLpolynomT),pointer    :: fl 
         integer(ik)          :: Natoms,Nmodes,Nmodes_e,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,Norder,Ncoeff,k,maxpower
         integer(ik), allocatable :: mode_list(:) 
@@ -18193,10 +18220,9 @@ end subroutine check_read_save_none
           extF_(imu)%IndexQ(1:Nmodes_e, nn(imu)) = mode_list(1:Nmodes_e)
           !
           if (Npoints > 0) then
-            write(out,"(a,a)") 'checkpointRestore_extF_ascii_with_modes has not been tested for Npoints>1. Exit!'
-            stop 'checkpointRestore_extF_ascii_with_modes has not been tested for Npoints>1'
+            !
             do_k_find_match : do k=1,nn(imu)-1
-               if ( all( mode_list(1:Nmodes-1) == extF_(imu)%IndexQ( 1:Nmodes-1,k ) ) ) then 
+               if ( all( mode_list(1:Nmodes_e) == extF_(imu)%IndexQ( 1:Nmodes_e,k ) ) ) then 
                  cur_term = k
                  nn(imu) = nn(imu) - 1
                  exit do_k_find_match
@@ -18205,7 +18231,7 @@ end subroutine check_read_save_none
             !
             do j = 0, Npoints 
               rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              extF_(imu)%field(cur_term,j) = extF_(imu)%field(cur_term,j) +  field_*MLcoord_direct(rho,2, Nmodes, mode_list(Nmodes))
+              extF_(imu)%field(cur_term,j) = extF_(imu)%field(cur_term,j) +  field_*MLcoord_direct(rho,3, Nmodes, mode_list(Nmodes))
             enddo
             !
           else
@@ -18261,6 +18287,16 @@ end subroutine check_read_save_none
         call ArrayStop("extF%field")
         !
         trove%NExtOrder = maxpower
+        !
+        do imode = 1,Nmodes
+          trove%NExtOrder_modes(imode) = 0
+          do imu = 1,extF%rank
+            !
+            fl => trove%extF(imu)
+            trove%NExtOrder_modes(imode) =  max(maxval(fl%IndexQ(imode,:)),trove%NExtOrder_modes(imode))
+            !
+          enddo
+        enddo
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NExtOrder)
         !
@@ -19737,12 +19773,6 @@ end subroutine check_read_save_none
        maxpower = trove%NKinorder
     endif
     !
-    !if(molec%mode_poten_list_present) then
-    !   maxpower = molec%basic_function_pot_list(nu_i)%numfunc
-    !else 
-    !   maxpower = trove%NPotOrder
-    !endif
-    !
     maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
     !
     nu_i = bs%mode(1)
@@ -19785,7 +19815,7 @@ end subroutine check_read_save_none
           xi_n(i,ipower,2) = MLcoord_direct(rho,2,nu_i,ipower)
        enddo
        !
-       do ipower = 0, trove%NExtOrder
+       do ipower = 0, trove%NExtOrder_modes(nu_i)
           xi_n(i,ipower,3) = MLcoord_direct(rho,3,nu_i,ipower)
        enddo
        !
@@ -20751,7 +20781,13 @@ end subroutine check_read_save_none
              if(molec%mode_poten_list_present) then
                 maxpower = molec%basic_function_pot_list(nu_i)%numfunc
              else
-                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+                maxpower = bs%order 
+             endif
+             !
+             if(molec%mode_ExtF_list_present) then
+                maxpower = molec%basic_function_ext_list(nu_i)%numfunc
+             else
+                maxpower = bs%order 
              endif
              !
              select case (trim(bs%type))
@@ -29457,6 +29493,19 @@ end subroutine check_read_save_none
     real(ark), intent(inout) :: y
     y = 1.0_ark
   end subroutine  calc_func_1  
+
+  subroutine calc_func_x_minus_xe(x,n,imode,y) 
+    real(ark), intent(in) :: x 
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    real(rk) :: xe
+    !
+    xe = molec%chi_eq(imode)
+    !
+    y = (x-xe)**n
+    !
+  end subroutine calc_func_x_minus_xe
 
 
   subroutine calc_func_morse_x_xe(x,n,imode,y) 

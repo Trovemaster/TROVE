@@ -13,7 +13,7 @@ module moltype
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
   public MLtemplate_kinetic_compact
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor
+  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor,ragged_array_lvl_2
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -206,9 +206,11 @@ module moltype
      character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
      type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
-     type(ragged_array_lvl_2), allocatable :: basic_function_pot_list(:)
+     type(ragged_array_lvl_2), pointer :: basic_function_pot_list(:)
+     type(ragged_array_lvl_2), pointer :: basic_function_ext_list(:)
      logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      logical  :: mode_poten_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     logical  :: mode_extF_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      !
   end type MoleculeT
   !
