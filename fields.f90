@@ -16707,7 +16707,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a14)") buf
         !
         if (buf/='End of kinetic') then
-          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_kinet_fname, buf
           stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
         end if
         !
@@ -17143,7 +17143,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a14)") buf
         !
         if (buf/='End of kinetic') then
-          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_kinet_fname, buf
           stop 'checkpointRestore_kinetic_ascii_with_modes - bogus file format kinetic-ASCII'
         end if
         !
@@ -17615,7 +17615,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a14)") buf
         !
         if (buf/='End of kinetic') then
-          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label kinetic-ascii',a)") trove%chk_kinet_fname, buf
           stop 'checkpointRestore_kinetic_ascii_with_modes_mass - bogus file format kinetic-ASCII'
         end if
         !
@@ -17679,7 +17679,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:7)
         if (buf(1:7)/='Amatrho') then
-          write (out,"(' Checkpoint file ',a,' has bogus label Amatrho ',a)") trove%chk_fname, buf(1:7)
+          write (out,"(' Checkpoint file ',a,' has bogus label Amatrho ',a)") trove%chk_kinet_fname, buf(1:7)
           stop 'check_point_Hamiltonian - bogus file format Amatrho'
         end if
         !
@@ -17690,7 +17690,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:8)
         if (buf(1:8)/='dAmatrho') then
-          write (out,"(' Checkpoint file ',a,' has bogus label dAmatrho ',a)") trove%chk_fname, buf(1:8)
+          write (out,"(' Checkpoint file ',a,' has bogus label dAmatrho ',a)") trove%chk_kinet_fname, buf(1:8)
           stop 'check_point_Hamiltonian - bogus file format dAmatrho'
         end if
         !
@@ -17701,7 +17701,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:7)
         if (buf(1:7)/='Bmatrho') then
-          write (out,"(' Checkpoint file ',a,' has bogus label Bmatrho ',a)") trove%chk_fname, buf(1:7)
+          write (out,"(' Checkpoint file ',a,' has bogus label Bmatrho ',a)") trove%chk_kinet_fname, buf(1:7)
           stop 'check_point_Hamiltonian - bogus file format Bmatrho'
         end if
         !
@@ -17712,7 +17712,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:8)
         if (buf(1:8)/='dBmatrho') then
-          write (out,"(' Checkpoint file ',a,' has bogus label dBmatrho ',a)") trove%chk_fname, buf(1:8)
+          write (out,"(' Checkpoint file ',a,' has bogus label dBmatrho ',a)") trove%chk_kinet_fname, buf(1:8)
           stop 'check_point_Hamiltonian - bogus file format dBmatrho'
         end if
         !
@@ -17723,7 +17723,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='g_vib') then
-          write (out,"(' Checkpoint file ',a,' has bogus label g_vib ',a)") trove%chk_fname, buf(1:5)
+          write (out,"(' Checkpoint file ',a,' has bogus label g_vib ',a)") trove%chk_kinet_fname, buf(1:5)
           stop 'check_point_Hamiltonian - bogus file format g_vib'
         end if
         !
@@ -17746,7 +17746,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='g_rot') then
-          write (out,"(' Checkpoint file ',a,' has bogus label g_rot ',a)") trove%chk_fname, buf(1:5)
+          write (out,"(' Checkpoint file ',a,' has bogus label g_rot ',a)") trove%chk_kinet_fname, buf(1:5)
           stop 'check_point_Hamiltonian - bogus file format g_rot'
         end if
         !
@@ -17763,7 +17763,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='g_cor') then
-          write (out,"(' Checkpoint file ',a,' has bogus label g_cor ',a)") trove%chk_fname, buf(1:6)
+          write (out,"(' Checkpoint file ',a,' has bogus label g_cor ',a)") trove%chk_kinet_fname, buf(1:6)
           stop 'check_point_Hamiltonian - bogus file format g_cor'
         end if
         !
@@ -17780,7 +17780,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:6)
         if (buf(1:6)/='pseudo') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_fname, buf(1:6)
+          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_kinet_fname, buf(1:6)
           stop 'check_point_Hamiltonian - bogus file format poten'
         end if
         !
@@ -17799,7 +17799,7 @@ end subroutine check_read_save_none
             !
             if (trove%lincoord==0.or.trove%Nmodes/=7) then 
               !
-              write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+              write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_kinet_fname, buf(1:6)
               stop 'check_point_Hamiltonian - bogus file format L2_vib'
               !
             endif
@@ -17810,7 +17810,7 @@ end subroutine check_read_save_none
             !
             if (buf(1:6)/='L2_vib') then
                !
-               write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_fname, buf(1:6)
+               write (out,"(' Checkpoint file ',a,' has bogus label L2_vib ',a)") trove%chk_kinet_fname, buf(1:6)
                stop 'check_point_Hamiltonian - bogus file format L2_vib'
                !
             endif
@@ -17853,7 +17853,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:5)
         if (buf(1:5)/='poten') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_fname, buf(1:5)
+          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_poten_fname, buf(1:5)
           stop 'check_point_Hamiltonian - bogus file format poten'
         end if
         !
@@ -17871,7 +17871,7 @@ end subroutine check_read_save_none
         read(chkptIO) buf
         !
         if (buf/='End Hamiltonian objects') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label poten ',a)") trove%chk_poten_fname, buf
           stop 'check_point_Hamiltonian - bogus file format poten'
         end if
         !
@@ -17950,7 +17950,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a16)") buf
         !
         if (buf/='End of potential') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_poten_fname, buf
           stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
         end if
         !
@@ -18105,7 +18105,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a16)") buf
         !
         if (buf/='End of potential') then
-          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label poten-ascii',a)") trove%chk_poten_fname, buf
           stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
         end if
         !
@@ -18204,18 +18204,16 @@ end subroutine check_read_save_none
         !         
         !read(chkptIO,*) Npoints,Norder,Ncoeff
         !
-        nn = 1; cur_term = 0;
+        nn = 0; cur_term = 0;
         do_extF : do 
           !
           read(chkptIO,*) imu,iterm,i,field_,mode_list(1:Nmodes) 
           !
           if (imu==987654321) exit do_extF
           !
-          !nn(imu) = nn(imu) + 1
+          nn(imu) = nn(imu) + 1
           !
-          cur_term = iterm
-          !
-          nn(imu) = cur_term
+          cur_term = nn(imu)
           !
           extF_(imu)%IndexQ(1:Nmodes_e, nn(imu)) = mode_list(1:Nmodes_e)
           !
@@ -18276,7 +18274,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a16)") buf
         !
         if (buf/='End of external') then
-          write (out,"(' Checkpoint file ',a,' has bogus label extF-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label extF-ascii',a)") trove%chk_external_fname, buf
           stop 'check_point_Hamiltonian - bogus file format extF-ASCII'
         end if
         !
@@ -18319,7 +18317,7 @@ end subroutine check_read_save_none
         !
         read(chkptIO) buf(1:4)
         if (buf(1:4)/='extF') then
-          write (out,"(' Checkpoint file ',a,' has bogus label extF ',a)") trove%chk_fname, buf(1:4)
+          write (out,"(' Checkpoint file ',a,' has bogus label extF ',a)") trove%chk_external_fname, buf(1:4)
           stop 'check_point_Hamiltonian - bogus file format extF'
         end if
         !
@@ -18349,7 +18347,7 @@ end subroutine check_read_save_none
         read(chkptIO) buf
         !
         if (buf/='End External object') then
-          write (out,"(' Checkpoint file ',a,' has bogus label extF ',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label extF ',a)") trove%chk_external_fname, buf
           stop 'check_point_Hamiltonian - bogus file format extF'
         end if
         !
@@ -18446,7 +18444,7 @@ end subroutine check_read_save_none
         read(chkptIO,"(a15)") buf
         !
         if (buf/='End of external') then
-          write (out,"(' Checkpoint file ',a,' has bogus label external-ascii',a)") trove%chk_fname, buf
+          write (out,"(' Checkpoint file ',a,' has bogus label external-ascii',a)") trove%chk_external_fname, buf
           stop 'check_point_Hamiltonian - bogus file format ext-ASCII'
         end if
         !
