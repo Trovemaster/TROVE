@@ -160,10 +160,10 @@ module moltype
   end interface
   !
   abstract interface
-      subroutine calc_func_exp(x,n,imode,y)
+      subroutine calc_func_exp(x,x0,n,imode,y)
         use accuracy
         implicit none
-        real(ark) , intent(in) :: x
+        real(ark) , intent(in) :: x,x0
         integer(ik), intent(in) :: n,imode
         real(ark) , intent(inout) :: y
       end subroutine 
@@ -179,6 +179,7 @@ module moltype
      real(ark),pointer  :: local_eq(:)
      real(ark),pointer  :: chi_eq(:)
      real(ark),pointer  :: specparam(:)
+     real(ark),pointer  :: Ext_chi_eq(:)
      real(ark)          :: rho_ref  
      real(ark)          :: rho_border(2)
      type(MLZmatrixT),pointer  :: zmatrix(:)       ! 
@@ -463,17 +464,18 @@ module moltype
 ! Here we define chi_eq - 
 ! equilibrium values of the internal coordinates chi
 !
-  subroutine MLequilibrium_chi(chi_eq)
+  subroutine MLequilibrium_chi(chi_eq,chi_ext_ref)
 
-     real(ark),intent(in)     ::  chi_eq(:)    ! Equilibrium values for the internal coordinates chi 
+     real(ark),intent(in)     ::  chi_eq(:),chi_ext_ref(:)    ! Equilibrium values for the internal coordinates chi 
      integer(ik)  :: alloc
-
 
     if (verbose>=5) write(out,"(/'MLequilibrium_chi/start: chi_eq')") 
 
     allocate (molec%chi_eq(size(chi_eq)),stat=alloc)
+    allocate (molec%Ext_chi_eq(size(chi_eq)),stat=alloc)
     !
     molec%chi_eq = chi_eq
+    molec%Ext_chi_eq = chi_ext_ref
     !
     if (verbose>=5) write(out,"('MLequilibrium_chi/end')") 
 

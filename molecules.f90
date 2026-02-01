@@ -3472,7 +3472,7 @@ end subroutine polintark
    integer(ik),optional   :: iorder
    integer(ik)            :: i,jorder,nexpon,icount
    real(ark)              :: rhoe,v,amorse
-   real(ark)              :: y,z,xe
+   real(ark)              :: y,z,xe,x0
      !
      if (verbose>=6) write(out,"(/'MLcoord_direct/start')") 
      !
@@ -3750,7 +3750,9 @@ end subroutine polintark
           !
           nexpon = molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%outer_expon
           !
-          call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,nexpon,imode,v)
+          x0 = molec%chi_eq(imode)
+          !
+          call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,x0,nexpon,imode,v)
           !
           do i = 2, molec%basic_function_pot_list(imode)%mode_set(icount)%num_terms
             !
@@ -3777,7 +3779,9 @@ end subroutine polintark
           !
           nexpon = molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(1)%outer_expon
           !
-          call molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,nexpon,imode,v)
+          x0 = molec%Ext_chi_eq(imode)
+          !
+          call molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,x0,nexpon,imode,v)
           !
           do i = 2, molec%basic_function_ext_list(imode)%mode_set(icount)%num_terms
             !

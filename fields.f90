@@ -4966,7 +4966,7 @@ module fields
                  call readu(extF%intcoords(imode))
               enddo
               !
-            case("REF_GEOM","GEOM_REF")
+            case("REF_GEOM","GEOM_REF","GEOMETRY")
               !
               if (nitems<Ncoords+1) then
                  write (out,"('wrong number of records in  GEOM_REF for trove%Ncoords = ',i5)") trove%Ncoords
@@ -5820,27 +5820,41 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
-    if (trove%potential_with_modes.and.trove%kinetic_with_modes) then
-      maxpower =trove%NExtOrder
-    elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
-      maxpower = trove%NpotOrder
-    elseif (trove%extF_with_modes.and.trove%potential_with_modes) then
-      maxpower = max(trove%NKinOrder,trove%NExtOrder)
-    elseif (trove%kinetic_with_modes) then  
-      maxpower = max(trove%NpotOrder,trove%NExtOrder)
-    elseif (trove%potential_with_modes) then  
-      maxpower = max(trove%NKinOrder,trove%NExtOrder)
-    elseif (trove%extF_with_modes) then  
-      maxpower = max(trove%NKinOrder,trove%NpotOrder)
-    else
-      maxpower = trove%maxorder
-    endif
+    !if (trove%potential_with_modes.and.trove%kinetic_with_modes) then
+    !  maxpower =trove%NExtOrder
+    !elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
+    !  maxpower = trove%NpotOrder
+    !elseif (trove%extF_with_modes.and.trove%potential_with_modes) then
+    !  maxpower = max(trove%NKinOrder,trove%NExtOrder)
+    !elseif (trove%kinetic_with_modes) then  
+    !  maxpower = max(trove%NpotOrder,trove%NExtOrder)
+    !elseif (trove%potential_with_modes) then  
+    !  maxpower = max(trove%NKinOrder,trove%NExtOrder)
+    !elseif (trove%extF_with_modes) then  
+    !  maxpower = max(trove%NKinOrder,trove%NpotOrder)
+    !else
+    !  maxpower = trove%maxorder
+    !endif
     !
     if (molec%mode_list_present) then
       do imode=1,trove%Nmodes
          trove%NKinOrder = max(trove%NKinOrder,molec%basic_function_list(imode)%numfunc)
       enddo
     endif
+    !
+    if (molec%mode_poten_list_present) then
+      do imode=1,trove%Nmodes
+         trove%NpotOrder = max(trove%NpotOrder,molec%basic_function_pot_list(imode)%numfunc)
+      enddo
+    endif
+    !
+    if (molec%mode_extF_list_present) then
+      do imode=1,trove%Nmodes
+         trove%NExtOrder = max(trove%NExtOrder,molec%basic_function_ext_list(imode)%numfunc)
+      enddo
+    endif
+    !
+    maxpower = max(trove%NKinOrder,trove%NExtOrder,trove%NpotOrder)
     !
     do io = 0, maxpower + 2
       !
@@ -5948,7 +5962,6 @@ end subroutine check_read_save_none
     ! masses for the internal use 
     !
     masses = trove%mass
-
     !
     ! define the equilibrium chi parameters 
     !
@@ -5958,7 +5971,10 @@ end subroutine check_read_save_none
     !
     trove%chi_eq(:) = MLcoordinate_transform_func(ar_t,Nmodes,dir)
     !
-    call MLequilibrium_chi(trove%chi_eq(:))
+    ar_t = extF%geom_ref
+    chi(:) = MLcoordinate_transform_func(ar_t,trove%Nmodes,dir)
+    !
+    call MLequilibrium_chi(trove%chi_eq,chi)
     !
     trove%chi_ref(:,0) = trove%chi_eq(:)
     !
@@ -16711,6 +16727,9 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format kinetic-ASCII'
         end if
         !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
+        !
         call MemoryReport
         !
       end subroutine checkpointRestore_kinetic_ascii
@@ -17166,6 +17185,9 @@ end subroutine check_read_save_none
         endif
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+        !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
         !
         call MemoryReport
         !
@@ -17639,6 +17661,9 @@ end subroutine check_read_save_none
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
         !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
+        !
         call MemoryReport
         !
       end subroutine checkpointRestore_kinetic_ascii_with_modes_mass
@@ -17954,6 +17979,9 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format poten-ASCII'
         end if
         !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
+        !
       end subroutine checkpointRestore_potential_ascii
 
 
@@ -18122,6 +18150,9 @@ end subroutine check_read_save_none
         enddo
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
+        !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
         !
         call MemoryReport
         !
@@ -18297,6 +18328,9 @@ end subroutine check_read_save_none
         enddo
         !
         trove%MaxOrder = max(trove%MaxOrder,trove%NExtOrder)
+        !
+        close(chkptIO,status='keep')
+        call IOStop(trim(unitfname))
         !
         call MemoryReport
         !
@@ -19550,7 +19584,7 @@ end subroutine check_read_save_none
     real(ark)                   :: rho_b(2),step,rho_ref,mat_t,sqrt2,L,omega_t,coeff_norm
     real(ark)                   :: rho_range,rho_t
     integer(ik)                 :: io_slot       ! unit numeber to store the numerov eigenvectors and their derivatives
-    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints,maxpower
+    integer(ik)                 :: iperiod=0,rec_len,iparity,numerpoints,maxpower,maxpower_
     character(len=cl)    :: unitfname,char_
     !
     logical              :: reduced_model,periodic_model ,bs_numerical
@@ -20403,12 +20437,6 @@ end subroutine check_read_save_none
            !
            if (trove%numerpoints<0) numerpoints = npoints
            !
-           !if(molec%mode_list_present) then
-           !   maxpower = molec%basic_function_list(nu_i)%numfunc
-           !else
-           !   maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-           !endif
-           !
            select case(trim(bs%type))
            
            case ('NUMEROV')
@@ -20770,23 +20798,24 @@ end subroutine check_read_save_none
              !
              f_m = sqrt(f_t/g_t)
              !
+             maxpower  = bs%order
+             maxpower_ = 0
+             !
              if(molec%mode_list_present) then
-                maxpower = molec%basic_function_list(nu_i)%numfunc
-             else
-                maxpower = bs%order ! min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
+                maxpower_ = max(molec%basic_function_list(nu_i)%numfunc,maxpower_)
              endif
              !
              if(molec%mode_poten_list_present) then
-                maxpower = molec%basic_function_pot_list(nu_i)%numfunc
-             else
-                maxpower = bs%order 
+                maxpower_ = max(molec%basic_function_pot_list(nu_i)%numfunc,maxpower_)
              endif
              !
              if(molec%mode_ExtF_list_present) then
-                maxpower = molec%basic_function_ext_list(nu_i)%numfunc
-             else
-                maxpower = bs%order 
+                maxpower_ = max(molec%basic_function_ext_list(nu_i)%numfunc,maxpower_)
              endif
+             !
+             if (molec%mode_list_present.or.molec%mode_poten_list_present.or.molec%mode_ExtF_list_present) then 
+                maxpower = min(maxpower,maxpower_)
+             endif 
              !
              select case (trim(bs%type))
                !
@@ -20992,15 +21021,6 @@ end subroutine check_read_save_none
            bs%params    = 0
            bs%params(1) = 0
            bs%params(2) = 0
-           !
-           ! We have stored the numeber of points, rhomax, and rhomin as optional parameters of  "bset%dscr"
-           ! now we need them:
-           !
-           !if(molec%mode_list_present) then
-           !   maxpower = molec%basic_function_list(nu_i)%numfunc
-           !else
-           !   maxpower = min(trove%NKinOrder,max(bset%dscr(nu_i)%model-2,0))
-           !endif
            !
            select case (trim(bs%type))
              !
@@ -29492,43 +29512,35 @@ end subroutine check_read_save_none
     y = 1.0_ark
   end subroutine  calc_func_1  
 
-  subroutine calc_func_x_minus_xe(x,n,imode,y) 
-    real(ark), intent(in) :: x 
+  subroutine calc_func_x_minus_xe(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
     integer(ik), intent(in) :: n,imode
     real(ark), intent(inout) :: y
     !
-    real(rk) :: xe
-    !
-    xe = molec%chi_eq(imode)
-    !
-    y = (x-xe)**n
+    y = (x-x0)**n
     !
   end subroutine calc_func_x_minus_xe
 
 
-  subroutine calc_func_morse_x_xe(x,n,imode,y) 
-    real(ark), intent(in) :: x 
+  subroutine calc_func_morse_x_xe(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
     integer(ik), intent(in) :: n,imode
     real(ark), intent(inout) :: y
     !
-    real(rk) :: amorse,xe
+    real(rk) :: amorse
     !
     amorse = molec%specparam(imode)
     !
-    xe = molec%chi_eq(imode)
-    !
-    y = (1.0_ark-exp( -amorse*( x-xe ) ))**n
+    y = (1.0_ark-exp( -amorse*( x-x0 ) ))**n
     !
   end subroutine calc_func_morse_x_xe
   !
-  subroutine calc_func_cosx_cosx0(x,n,imode,y) 
-    real(ark), intent(in) :: x 
+  subroutine calc_func_cosx_cosx0(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
     integer(ik), intent(in) :: n,imode
     real(ark), intent(inout) :: y
     !
-    real(rk) :: x0,xi
-    !
-    x0 = molec%chi_eq(imode)
+    real(rk) :: xi
     !
     xi = cos(x)-cos(x0)
     !
@@ -29536,14 +29548,12 @@ end subroutine check_read_save_none
     !
   end subroutine calc_func_cosx_cosx0
   !
-  subroutine calc_func_cosx0_cosx(x,n,imode,y) 
-    real(ark), intent(in) :: x 
+  subroutine calc_func_cosx0_cosx(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
     integer(ik), intent(in) :: n,imode
     real(ark), intent(inout) :: y
     !
-    real(rk) :: x0,xi
-    !
-    x0 = molec%chi_eq(imode)
+    real(rk) :: xi
     !
     xi = cos(x0)-cos(x)
     !
@@ -29551,8 +29561,8 @@ end subroutine check_read_save_none
     !
   end subroutine calc_func_cosx0_cosx
   !
-  subroutine calc_func_cosnx(x,n,imode,y) 
-    real(ark), intent(in) :: x 
+  subroutine calc_func_cosnx(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
     integer(ik), intent(in) :: n,imode
     real(ark), intent(inout) :: y
     !
