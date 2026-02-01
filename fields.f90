@@ -18500,6 +18500,7 @@ end subroutine check_read_save_none
      integer(ik)        :: Npoints,Ncoeff,iterm,i,icoeff,Nterms,alloc
      real(ark),allocatable    :: sfield(:,:)  ! Expansion parameters in the sparse representation
      integer(ik),allocatable  :: siorder(:)  ! iorder in sparse
+     integer(ik),allocatable  :: SIndexQ(:,:) 
      logical :: check = .true.
      !
      Ncoeff = fl%Ncoeff
@@ -18519,11 +18520,6 @@ end subroutine check_read_save_none
      !
      ! Create a field in a sparse representaion
      !
-     if (associated(fl%IndexQ)) then 
-       call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
-       deallocate(fl%IndexQ)
-     endif
-     !
      call ArrayMinus(name//'ifromsparse',isize=size(fl%ifromsparse),ikind=kind(fl%ifromsparse))
      deallocate(fl%ifromsparse)
      !
@@ -18541,9 +18537,8 @@ end subroutine check_read_save_none
        !
      endif 
      !
-     allocate(Sfield(Nterms,0:Npoints),fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     allocate(Sfield(Nterms,0:Npoints),stat=alloc)
      call ArrayStart("Sfield",alloc,size(Sfield),kind(Sfield))
-     call ArrayStart(name//'IndexQ',alloc,size(fl%IndexQ),kind(fl%IndexQ))
      !
      allocate(fl%ifromsparse(Nterms),stat=alloc)
      call ArrayStart(name//'ifromsparse',alloc,size(fl%ifromsparse),kind(fl%ifromsparse))
@@ -18551,9 +18546,13 @@ end subroutine check_read_save_none
      allocate(siorder(Nterms),stat=alloc)
      call ArrayStart("Sfield",alloc,size(siorder),kind(siorder))
      !
+     allocate(SIndexQ(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ",alloc,size(SIndexQ),kind(SIndexQ))
+     !
      iterm = 0
      Sfield = 0
      siorder = 0
+     SIndexQ = 0
      fl%ifromsparse = 0
      !
      do icoeff = 1,Ncoeff
@@ -18562,7 +18561,7 @@ end subroutine check_read_save_none
           iterm = iterm + 1
           !
           Sfield(iterm,:) = fl%field(icoeff,:)
-          fl%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          SIndexQ(:,iterm) = fl%IndexQ(:,icoeff)
           Siorder(iterm) = fl%iorder(icoeff)
           fl%ifromsparse(iterm) = icoeff
           !
@@ -18581,11 +18580,20 @@ end subroutine check_read_save_none
      allocate(fl%iorder(Nterms),stat=alloc)
      call ArrayStart(name,alloc,size(fl%iorder),kind(fl%iorder))
      !
+     if (associated(fl%IndexQ)) then 
+       call ArrayMinus(name//'IndexQ',isize=size(fl%IndexQ),ikind=kind(fl%IndexQ))
+       deallocate(fl%IndexQ)
+     endif
+     !
+     allocate(fl%IndexQ(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart(name//'IndexQ',alloc,size(fl%IndexQ),kind(fl%IndexQ))
+     !
      fl%field = Sfield
      fl%Ncoeff = Nterms
      fl%iorder = Siorder
+     fl%IndexQ = SIndexQ
      !
-     deallocate(Sfield,siorder)
+     deallocate(Sfield,siorder,SIndexQ)
      !
      call ArrayStop("Sfield")
      !
@@ -18600,6 +18608,8 @@ end subroutine check_read_save_none
      character(len=*),intent(in) :: name1,name2
      integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
      real(ark),allocatable    :: sfield1(:,:),sfield2(:,:)  ! Expansion parameters in the sparse representation
+     integer(ik),allocatable  :: SIndexQ1(:,:)
+     integer(ik),allocatable  :: SIndexQ2(:,:)  
      integer(ik),allocatable  :: siorder1(:),siorder2(:)      ! iorder in sparse
      integer(ik)   :: target_index(trove%Nmodes)
      logical :: check = .true.
@@ -18655,20 +18665,19 @@ end subroutine check_read_save_none
      call ArrayStart("Sfield",alloc,size(Siorder1),kind(Siorder1))
      call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
      !
-     deallocate(fl1%IndexQ,fl2%IndexQ)
-     call ArrayStop(name1//'IndexQ')
-     call ArrayStop(name2//'IndexQ')
-     !
      deallocate(fl1%ifromsparse,fl2%ifromsparse)
      call ArrayStop(name1//"ifromsparse")
      call ArrayStop(name2//"ifromsparse")
      !
-     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl1%ifromsparse(nterms),stat=alloc)
      call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
-     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     allocate(fl2%ifromsparse(nterms),stat=alloc)
      call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
-     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     !
+     allocate(SIndexQ1(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ1",alloc,size(SIndexQ1),kind(SIndexQ1))
+     allocate(SIndexQ2(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ2",alloc,size(SIndexQ2),kind(SIndexQ2))
      !
      iterm = 0
      !
@@ -18682,11 +18691,11 @@ end subroutine check_read_save_none
           siorder1(iterm) = fl1%iorder(icoeff)
           siorder2(iterm) = fl2%iorder(icoeff)
           !
-          fl1%ifromsparse(iterm) = icoeff
-          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          SIndexQ1(:,iterm) = fl1%IndexQ(:,icoeff)
+          SIndexQ2(:,iterm) = fl2%IndexQ(:,icoeff)
           !
           fl2%ifromsparse(iterm) = icoeff
-          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
+          fl1%ifromsparse(iterm) = icoeff
           !
        endif
      enddo
@@ -18709,15 +18718,26 @@ end subroutine check_read_save_none
      call ArrayStart(name1,alloc,size(fl1%field),kind(fl1%field))
      call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
      !
+     deallocate(fl1%IndexQ,fl2%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     !
+     allocate(fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     !
      fl1%field = Sfield1
      fl1%Ncoeff = Nterms
      fl1%iorder = Siorder1
+     fl1%IndexQ = SIndexQ1
      !
      fl2%field = Sfield2
      fl2%Ncoeff = Nterms
      fl2%iorder = Siorder2
+     fl2%IndexQ = SIndexQ2
      !
-     deallocate(Sfield1,Sfield2,siorder1,siorder2)
+     deallocate(Sfield1,Sfield2,siorder1,siorder2,SIndexQ1,SIndexQ2)
      !
      call ArrayStop("Sfield")
      !
@@ -18731,6 +18751,9 @@ end subroutine check_read_save_none
      integer(ik)        :: Npoints,Ncoeff1,Ncoeff2,Ncoeff3,iterm,i,icoeff,Nterms,alloc,Nterm1,Nterm2,Ncoeffmax
      real(ark),allocatable    :: sfield1(:,:),sfield2(:,:),sfield3(:,:)    ! Expansion parameters in the sparse representation
      integer(ik),allocatable  :: siorder1(:),siorder2(:),siorder3(:)       ! iorder in sparse
+     integer(ik),allocatable  :: SIndexQ1(:,:)
+     integer(ik),allocatable  :: SIndexQ2(:,:)  
+     integer(ik),allocatable  :: SIndexQ3(:,:)       
      integer(ik)   :: target_index(trove%Nmodes)
      logical :: check = .true.
      !
@@ -18792,6 +18815,13 @@ end subroutine check_read_save_none
      call ArrayStart("Sfield",alloc,size(Siorder2),kind(Siorder2))
      call ArrayStart("Sfield",alloc,size(Siorder3),kind(Siorder3))
      !
+     allocate(SIndexQ1(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ1",alloc,size(SIndexQ1),kind(SIndexQ1))
+     allocate(SIndexQ2(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ2",alloc,size(SIndexQ2),kind(SIndexQ2))
+     allocate(SIndexQ3(trove%Nmodes,Nterms),stat=alloc)
+     call ArrayStart("SIndexQ3",alloc,size(SIndexQ3),kind(SIndexQ3))
+     !
      deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
      call ArrayStop(name1//'IndexQ')
      call ArrayStop(name2//'IndexQ')
@@ -18802,15 +18832,12 @@ end subroutine check_read_save_none
      call ArrayStop(name2//"ifromsparse")
      call ArrayStop(name3//"ifromsparse")
      !
-     allocate(fl1%ifromsparse(nterms),fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     allocate(fl2%ifromsparse(nterms),fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
-     allocate(fl3%ifromsparse(nterms),fl3%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl1%ifromsparse(nterms),stat=alloc)
+     allocate(fl2%ifromsparse(nterms),stat=alloc)
+     allocate(fl3%ifromsparse(nterms),stat=alloc)
      call ArrayStart(name1//"ifromsparse",alloc,size(fl1%ifromsparse),kind(fl1%ifromsparse))
-     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
      call ArrayStart(name2//"ifromsparse",alloc,size(fl2%ifromsparse),kind(fl2%ifromsparse))
-     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
      call ArrayStart(name3//"ifromsparse",alloc,size(fl3%ifromsparse),kind(fl3%ifromsparse))
-     call ArrayStart(name3//"IndexQ",alloc,size(fl3%IndexQ),kind(fl3%IndexQ))
      !
      iterm = 0
      !
@@ -18829,14 +18856,13 @@ end subroutine check_read_save_none
           siorder2(iterm) = fl2%iorder(icoeff)
           siorder3(iterm) = fl3%iorder(icoeff)
           !
+          SIndexQ1(:,iterm) = fl1%IndexQ(:,icoeff)
+          SIndexQ2(:,iterm) = fl2%IndexQ(:,icoeff)
+          SIndexQ3(:,iterm) = fl3%IndexQ(:,icoeff)
+          !
           fl1%ifromsparse(iterm) = icoeff
-          fl1%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
           fl2%ifromsparse(iterm) = icoeff
-          fl2%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
-          !
           fl3%ifromsparse(iterm) = icoeff
-          fl3%IndexQ(:,iterm) = FLIndexQ(:,icoeff)
           !
        endif
      enddo
@@ -18863,19 +18889,29 @@ end subroutine check_read_save_none
      call ArrayStart(name2,alloc,size(fl2%field),kind(fl2%field))
      call ArrayStart(name3,alloc,size(fl3%field),kind(fl3%field))
      !
+     allocate(fl1%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl2%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     allocate(fl3%IndexQ(trove%Nmodes,nterms),stat=alloc)
+     call ArrayStart(name1//"IndexQ",alloc,size(fl1%IndexQ),kind(fl1%IndexQ))
+     call ArrayStart(name2//"IndexQ",alloc,size(fl2%IndexQ),kind(fl2%IndexQ))
+     call ArrayStart(name3//"IndexQ",alloc,size(fl3%IndexQ),kind(fl3%IndexQ))
+     !
      fl1%field = Sfield1
      fl1%Ncoeff = Nterms
      fl1%iorder = Siorder1
+     fl1%IndexQ = SIndexQ1
      !
      fl2%field = Sfield2
      fl2%Ncoeff = Nterms
      fl2%iorder = Siorder2
+     fl2%IndexQ = SIndexQ2
      !
      fl3%field = Sfield3
      fl3%Ncoeff = Nterms
      fl3%iorder = Siorder3
+     fl3%IndexQ = SIndexQ3
      !
-     deallocate(Sfield1,siorder1,Sfield2,siorder2,Sfield3,siorder3)
+     deallocate(Sfield1,siorder1,Sfield2,siorder2,Sfield3,siorder3,SIndexQ1,SIndexQ2,SIndexQ3)
      !
      call ArrayStop("Sfield")
      !
