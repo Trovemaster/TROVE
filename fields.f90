@@ -18822,11 +18822,6 @@ end subroutine check_read_save_none
      allocate(SIndexQ3(trove%Nmodes,Nterms),stat=alloc)
      call ArrayStart("SIndexQ3",alloc,size(SIndexQ3),kind(SIndexQ3))
      !
-     deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
-     call ArrayStop(name1//'IndexQ')
-     call ArrayStop(name2//'IndexQ')
-     call ArrayStop(name3//'IndexQ')
-     !
      deallocate(fl1%ifromsparse,fl2%ifromsparse,fl3%ifromsparse)
      call ArrayStop(name1//"ifromsparse")
      call ArrayStop(name2//"ifromsparse")
@@ -18866,6 +18861,11 @@ end subroutine check_read_save_none
           !
        endif
      enddo
+     !
+     deallocate(fl1%IndexQ,fl2%IndexQ,fl3%IndexQ)
+     call ArrayStop(name1//'IndexQ')
+     call ArrayStop(name2//'IndexQ')
+     call ArrayStop(name3//'IndexQ')
      !
      deallocate(fl1%iorder,fl2%iorder,fl3%iorder)
      call ArrayStop(name1)
