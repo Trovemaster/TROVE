@@ -17478,7 +17478,7 @@ end subroutine check_read_save_none
           if(Npoints > 0) then
             do j = 0, Npoints 
               rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
-              mass_inverse = mass_inverse/trove%mass(mode_list(0))
+              mass_inverse = factor/trove%mass(mode_list(0))
               fl%field(cur_term,j) = fl%field(cur_term,j) + &
                                               mass_inverse*field_*MLcoord_direct(rho, 1, Nmodes, mode_list(Nmodes))
             enddo
