@@ -460,10 +460,13 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+               /(mX+mY1+mY2)
+          s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+              /(mX+mY1+mY2)
           !
-          cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
+          cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+&
+                 2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
           !
           if (cs3<-1.0_ark) cs3 = -1.0_ark
           !
@@ -473,8 +476,10 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+                /(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+                /(mX+mY1+mY2)
           !
           !cs3 = (-cos(beta)*r1*r2*mX*mY2+mY2*mY1*r2**2+mY2*r1**2*mY1+mY2*r2**2*mX-2*mY2*cos(beta)*r1*r2*mY1-cos(beta)*r1*r2*mX**2-cos(beta)*r1*r2*mX*mY1+r1**2*mX*mY1)/(s1*s2*M**2);
           !s3e = acos(cs3)
@@ -490,8 +495,10 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+                /(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+                /(mX+mY1+mY2)
           !
           s1 = src(1)+molec%chi_eq(1)+s1e
           s2 = src(2)+molec%chi_eq(2)+s2e
@@ -501,7 +508,8 @@ module mol_xy2
           !
           r1=sqrt(2.0_ark*s1*mY2*s2*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX**2+2.0_ark*s1**2*mX*mY1+mY1**2*s1**2+mY2**2*s2**2)/mX
           r2=sqrt(2.0_ark*s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s2**2*mX**2+2.0_ark*s2**2*mX*mY2+mY1**2*s1**2+mY2**2*s2**2)/mX
-          cosalpha=(s1*s2*cs3*mX**2+s1*mY2*s2*cs3*mX+s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX*mY1+mY1**2*s1**2+s2**2*mX*mY2+mY2**2*s2**2)/(R1*R2*mX**2)
+          cosalpha=(s1*s2*cs3*mX**2+s1*mY2*s2*cs3*mX+s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX*mY1+mY1**2*s1**2+&
+                    s2**2*mX*mY2+mY2**2*s2**2)/(R1*R2*mX**2)
           !
           if (cosalpha<-1.0_ark) cosalpha = -1.0_ark
           !

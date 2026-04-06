@@ -2282,15 +2282,21 @@ module fields
                  call read_line(eof,iut); if (eof) exit
                  call readi(ifunc)
                  call readi(numterms)
+                 ! check if this is not a legacy format
+                 if (nitems>2+numterms*3) then
+                    write(out,"('Input Error: The number of entries indicate in BASIC-FUNC usage of old format. Check manual!')")
+                    call report("The number of entries in BASIC-FUNC indicate usage of old format",.true.)
+                 endif
                  molec%basic_function_list(imode)%mode_set(ifunc)%num_terms = numterms
                  allocate(molec%basic_function_list(imode)%mode_set(ifunc)%func_set(numterms))
                  do j = 1, numterms
-                   call readi(out_expo)
                    call readu(func_name)
+                   call readi(out_expo)
                    call readf(func_coef)
-                   call readi(in_expo)
+                   in_expo = 1
+                   !call readi(in_expo)
                    select case(trim(func_name))
-                     case("I") 
+                     case("I","R","A") 
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_I
                      case("SIN")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sin
@@ -2381,6 +2387,14 @@ module fields
                  call readi(numterms)
                  !
                  call readi(Nexpo_min)
+                 call readu(w)
+                 !
+                 if (trim(w)/="-".and.trim(w)/=":") then
+                   !
+                   call report ("Unrecognized separator in POT/EXT. expected : or - with spaces around"//trim(w),.true.)
+                   !
+                 endif
+                 !
                  call readi(Nexpo)
                  call readu(func_name_pot)
                  ! other paramaters only appy to additional terms
