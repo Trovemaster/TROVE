@@ -2387,6 +2387,13 @@ module fields
                  call readi(numterms)
                  !
                  call readi(Nexpo_min)
+                 !
+                 if (Nexpo_min/=0) then
+                     write(out,"(a,i8,a,i4)") &
+                          'Input-error in bacic-func-pot: the min value of powers must be zero, not ',Nexpo_min,' mode = ',imode
+                     stop 'Input-error in bacic-func-pot: illegal min value of powers'
+                 endif
+                 !
                  call readu(w)
                  !
                  if (trim(w)/="-".and.trim(w)/=":") then
@@ -2401,7 +2408,7 @@ module fields
                  !
                  do iexpo = Nexpo_min, Nexpo
                    !
-                   jfunc = ifunc + iexpo + 1
+                   jfunc = ifunc + (iexpo-Nexpo_min) + 1
                    !
                    if (jfunc>numfunc) then 
                      write(out, "(a,2i8)") 'read_basic_func_constructor-pot-error: N of functions is smaller than N entries:',&
@@ -2424,6 +2431,8 @@ module fields
                      basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx0_cosx
                    case("COSNX")
                      basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosnx
+                   case("SINNX")
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_sinnx
                    case default 
                      write(out,"('read_basic_function_constructor-pot-ext-error-1: unkown basic function',a)") func_name
                      stop 'read_basic_function_constructor-pot-ext-error-1: unkown basic function'
@@ -3384,6 +3393,11 @@ module fields
          !
          call read_line(eof,iut) ; if (eof) exit
          call readu(w)
+         !
+         if (chk_defined) then
+            write(out,"('Error-control-input: control cannot be used with checkpoint blocks')")
+            stop 'Error-control-input: control cannot be used with checkpoint blocks'
+         endif
          !
          chk_defined = .true.
          !
@@ -5063,7 +5077,8 @@ module fields
             case("DIPORDER","ORDER","ORDERS")
               !
               if (nitems/=extF%rank+1.and.nitems/=2) then
-                 write (out,"('wrong number of records in  EXTF-ORDER for rank = ',i5)") extF%rank
+                 write (out,"('Input-exp: wrong number of records in  EXTF-ORDER for rank = ',2i5)") extF%rank,nitems-1
+                 write (out,"('TROVE expects single entry or dimension-entries')")
                  stop 'FLinput - wrong number of records in  EXTF-ORDER'
               end if
               !
@@ -5834,6 +5849,52 @@ end subroutine check_read_save_none
     !
     call TimerStart('FLQindex-1')
     !
+    !
+    do io = 0, trove%MaxOrder+2
+      !
+      Kindex = 0 
+      Kindex(1) = io 
+      trove%RangeOrder(io) = FLQindex(Nmodes_e,Kindex)
+      !
+    enddo
+    !
+    call TimerStop('FLQindex-1')
+    !
+    trove%Ncoeff = trove%RangeOrder(trove%MaxOrder)
+    io = trove%RangeOrder(trove%MaxOrder+2)
+    !
+    ! Definition of the indexing: relations between the Nmode-D and 1D arrays 
+    ! are stored in FLIndexQ (forward) and deifned by Qindex routine (backward)
+    ! for start polynomial distribution
+    !
+    allocate (FLIndexQ(trove%Nmodes,io),stat=alloc)
+    call ArrayStart('FLIndexQ',alloc,size(FLIndexQ),kind(FLIndexQ))
+    !
+    !allocate (FLIndexQ_legatee(trove%Nmodes,io),stat=alloc)
+    !call ArrayStart('FLIndexQ_legatee',alloc,size(FLIndexQ_legatee),kind(FLIndexQ_legatee))
+
+    !allocate (mat_legatee(trove%Nmodes,io),stat=alloc)
+    !call ArrayStart('mat_legatee',alloc,size(mat_legatee),kind(mat_legatee))
+    !
+    ! Final call: defining the matrix FLIndexQ
+    !
+    Kindex = 0 ; Kindex(1) = trove%MaxOrder+2
+    !
+    call TimerStart('FLQindex-2')
+    !
+    io = FLQindex(Nmodes_e,Kindex,FLIndexQ)
+    !
+    call TimerStop('FLQindex-2')
+    !
+    if (job%verbose>=7) then
+      !
+      write(out,"(/'FLIndexQ:')")
+      do k1=1,size(FLIndexQ,dim=2)
+         write(out,"(30i8)") (FLIndexQ(io,k1),io=1,min(30,trove%Nmodes))
+      enddo
+      !
+    endif
+    !
     !if (trove%potential_with_modes.and.trove%kinetic_with_modes) then
     !  maxpower =trove%NExtOrder
     !elseif (trove%extF_with_modes.and.trove%kinetic_with_modes) then
@@ -5870,49 +5931,8 @@ end subroutine check_read_save_none
     !
     maxpower = max(trove%NKinOrder,trove%NExtOrder,trove%NpotOrder)
     !
-    do io = 0, maxpower + 2
-      !
-      Kindex = 0 
-      Kindex(1) = io 
-      trove%RangeOrder(io) = FLQindex(Nmodes_e,Kindex)
-      !
-    enddo
-    !
-    call TimerStop('FLQindex-1')
-    !
-    trove%Ncoeff = trove%RangeOrder(maxpower)
-    io = trove%RangeOrder(maxpower+2)
-    !
-    ! Definition of the indexing: relations between the Nmode-D and 1D arrays 
-    ! are stored in FLIndexQ (forward) and deifned by Qindex routine (backward)
-    !
-    allocate (FLIndexQ(trove%Nmodes,io),stat=alloc)
-    call ArrayStart('FLIndexQ',alloc,size(FLIndexQ),kind(FLIndexQ))
-    !
-    !allocate (FLIndexQ_legatee(trove%Nmodes,io),stat=alloc)
-    !call ArrayStart('FLIndexQ_legatee',alloc,size(FLIndexQ_legatee),kind(FLIndexQ_legatee))
-
-    !allocate (mat_legatee(trove%Nmodes,io),stat=alloc)
-    !call ArrayStart('mat_legatee',alloc,size(mat_legatee),kind(mat_legatee))
-    !
-    ! Final call: defining the matrix FLIndexQ
-    !
-    Kindex = 0 ; Kindex(1) = Maxpower+2
-    !
-    call TimerStart('FLQindex-2')
-    !
-    io = FLQindex(Nmodes_e,Kindex,FLIndexQ)
-    !
-    call TimerStop('FLQindex-2')
-    !
-    if (job%verbose>=7) then
-      !
-      write(out,"(/'FLIndexQ:')")
-      do k1=1,size(FLIndexQ,dim=2)
-         write(out,"(30i8)") (FLIndexQ(io,k1),io=1,min(30,trove%Nmodes))
-      enddo
-      !
-    endif
+    ! maxpower is the counter of the real non-standard distribution defined 
+    ! in potential.chk with modes
     !
     ! Allocation of the quadratic force constants matrix qwforce 
     !
@@ -16756,10 +16776,10 @@ end subroutine check_read_save_none
         character(len=14) :: buf
         character(len=25) :: buf25
         character(len=cl)  :: unitfname
-        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
+        integer(ik)        :: chkptIO, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder,maxpower,l,Nmodes_e
-        integer(ik), allocatable :: mode_list(:) 
+        integer(ik), allocatable :: mode_list(:),IndexQ_list(:,:)
         real(rk)             :: factor
         real(ark)            :: field_, rho
         real(rk)             :: exp_coeff_thresh
@@ -16768,8 +16788,28 @@ end subroutine check_read_save_none
         !
         unitfname ='Check point of the kinetic'
         ! 
-        call IOStart(trim(unitfname),chkptIO_preread)
-        open(chkptIO_preread,action='read',status='old',file=trove%chk_kinet_fname) 
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname) 
+        !
+        ! We need to pre-read to find the highest number of terms for all functions
+        !
+        read(chkptIO,"(a14)") buf
+        !
+        cycle_object : do n = 1,4
+           do
+             read(chkptIO,*) k1,k2,iterm 
+             if (k1==987654321) then
+                read(chkptIO,"(a14)") buf
+                cycle cycle_object
+             endif
+             total_terms = max(total_terms,iterm)
+           enddo
+        enddo cycle_object
+        !
+        rewind(chkptIO)
+        !
+        allocate (IndexQ_list(trove%Nmodes,total_terms),stat=alloc)
+        call ArrayStart("IndexQ_list",alloc,size(IndexQ_list),kind(IndexQ_list))
         !
         Natoms = trove%Natoms
         Nmodes = trove%Nmodes
@@ -16801,30 +16841,17 @@ end subroutine check_read_save_none
         !
         ! start reading 
         !
-        read(chkptIO_preread,"(a14)") buf
+        read(chkptIO,"(a14)") buf
         !
-        ! 
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; 
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
         do_gvib_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
            !
-           if (k1==987654321) then 
-             fl => trove%g_vib(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_vib')
-             !
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_gvib_pre
-           endif
-           !    
            if(k1_ == 0 .and. k2_ == 0) then
              k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
+             !
              fl => trove%g_vib(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -16832,23 +16859,39 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
+             if (k1==987654321) exit do_gvib_pre
              !
              k1_ = k1 ; k2_ = k2
-             n = 0
              total_terms = 0 
+             !
            endif
+           !
            total_terms = total_terms + 1
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_gvib_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_gvib_
+              endif
+           enddo do_l_find_match_gvib_
            !
         enddo do_gvib_pre
         !
-        read(chkptIO_preread,"(a14)") buf
+        read(chkptIO,"(a14)") buf
         !
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
         do_grot_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
            !
-           if (k1==987654321) then 
+           if(k1_ == 0 .and. k2_ == 0) then
+             k1_ = k1; k2_ = k2;
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
+             !
              fl => trove%g_rot(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -16856,36 +16899,39 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_grot_pre
+             if (k1==987654321) exit do_grot_pre
+             !
+             k1_ = k1 ; k2_ = k2
+             total_terms = 0 
+             !
            endif
+           !
+           total_terms = total_terms + 1
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_grot_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_grot_
+              endif
+           enddo do_l_find_match_grot_
+           !
+        enddo do_grot_pre
+        !
+        read(chkptIO,"(a14)") buf
+        !
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
+        do_gcor_pre : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
            !
            if(k1_ == 0 .and. k2_ == 0) then
              k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_rot(k1_,k2_) 
-             fl%Ncoeff = total_terms 
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
              !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_rot')                        
-             !
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             !
-             k1_ = k1 ; k2_ = k2
-             n = 0
-             total_terms = 0 
-           endif
-           total_terms = total_terms + 1
-          !
-        enddo do_grot_pre
-        !
-        read(chkptIO_preread,"(a14)") buf
-        !
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
-        do_gcor_pre : do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
-           !
-           if (k1==987654321) then 
              fl => trove%g_cor(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -16893,59 +16939,72 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_gcor_pre
-           endif
-           !
-           if(k1_ == 0 .and. k2_ == 0) then
-             k1_ = k1; k2_ = k2; 
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_cor(k1_,k2_) 
-             fl%Ncoeff = total_terms
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_cor')
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
+             if (k1==987654321) exit do_gcor_pre
              !
              k1_ = k1 ; k2_ = k2
-             n = 0
              total_terms = 0 
+             !
            endif
+           !
            total_terms = total_terms + 1
-          !
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_gcor_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_gcor_
+              endif
+           enddo do_l_find_match_gcor_
+           !
         enddo do_gcor_pre
         !
-        read(chkptIO_preread,"(a14)") buf
-        !
-        !
-        n = 0
-        total_terms = 0 
-        do_pseudo_pre: do 
+        read(chkptIO,"(a14)") buf
+
+        n = 0 ; total_terms = 0; cur_term=0
+        do_pse_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(1:Nmodes) 
            !
            if (k1==987654321) then
+             !
              fl => trove%pseudo 
              fl%Ncoeff = total_terms 
              !
              call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'pseudo')
+             !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_pseudo_pre
+             if (k1==987654321) exit do_pse_pre
+             total_terms = 0 
+             !
            endif
-           !total_terms = total_terms + 1
            !
-           total_terms = max(iterm,total_terms)
+           total_terms = total_terms + 1
+           cur_term = total_terms
            !
-        enddo do_pseudo_pre 
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_pseu_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_pseu_
+              endif
+           enddo do_l_find_match_pseu_
+           !
+        enddo do_pse_pre        
         !
-        close(chkptIO_preread,status='keep')
+        rewind(chkptIO)
+        !
+        deallocate(IndexQ_list)
+        call ArrayStop('IndexQ_list')
         !
         ! Now we can properlt read all the fields
         !
         maxpower = 0 
-        !
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
         !
         read(chkptIO,"(a14)") buf
         !
@@ -17216,10 +17275,10 @@ end subroutine check_read_save_none
         character(len=14) :: buf
         character(len=25) :: buf25
         character(len=cl)  :: unitfname
-        integer(ik)        :: chkptIO, chkptIO_preread, alloc,Tcoeff
+        integer(ik)        :: chkptIO, alloc,Tcoeff
         type(FLpolynomT),pointer    :: fl
         integer(ik)          :: Natoms,Nmodes,Npoints,k1,k2,Tpoints,k1_,k2_,n,Torder,KinOrder,maxpower,Nmodes_e,l
-        integer(ik), allocatable :: mode_list(:) 
+        integer(ik), allocatable :: mode_list(:),IndexQ_list(:,:)
         real(rk)             :: factor
         real(ark)            :: field_, rho, mass_inverse
         real(rk)             :: exp_coeff_thresh
@@ -17228,8 +17287,8 @@ end subroutine check_read_save_none
         !
         unitfname ='Check point of the kinetic'
         ! 
-        call IOStart(trim(unitfname),chkptIO_preread)
-        open(chkptIO_preread,action='read',status='old',file=trove%chk_kinet_fname) 
+        call IOStart(trim(unitfname),chkptIO)
+        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname) 
         !
         Natoms = trove%Natoms
         Nmodes = trove%Nmodes
@@ -17263,31 +17322,37 @@ end subroutine check_read_save_none
            !
         endif
         !
+        read(chkptIO,"(a14)") buf
+        !
+        cycle_object : do n = 1,4
+           do
+             read(chkptIO,*) k1,k2,iterm 
+             if (k1==987654321) then
+                read(chkptIO,"(a14)") buf
+                cycle cycle_object
+             endif
+             total_terms = max(total_terms,iterm)
+           enddo
+        enddo cycle_object
+        !
+        rewind(chkptIO)
+        !
+        allocate (IndexQ_list(1:trove%Nmodes,total_terms),stat=alloc)
+        call ArrayStart("IndexQ_list",alloc,size(IndexQ_list),kind(IndexQ_list))
+        !
         ! start reading 
         !
-        read(chkptIO_preread,"(a14)") buf
+        read(chkptIO,"(a14)") buf
         !
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; 
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
         do_gvib_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
            !
-           if (k1==987654321) then 
-             fl => trove%g_vib(k1_,k2_) 
-             fl%Ncoeff = total_terms 
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_vib')
-             !
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             exit do_gvib_pre
-           endif
-           !    
            if(k1_ == 0 .and. k2_ == 0) then
              k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
+             !
              fl => trove%g_vib(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -17295,23 +17360,39 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
+             if (k1==987654321) exit do_gvib_pre
              !
              k1_ = k1 ; k2_ = k2
-             n = 0
              total_terms = 0 
+             !
            endif
+           !
            total_terms = total_terms + 1
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_gvib_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_gvib_
+              endif
+           enddo do_l_find_match_gvib_
            !
         enddo do_gvib_pre
         !
-        read(chkptIO_preread,"(a14)") buf
+        read(chkptIO,"(a14)") buf
         !
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
         do_grot_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
            !
-           if (k1==987654321) then 
+           if(k1_ == 0 .and. k2_ == 0) then
+             k1_ = k1; k2_ = k2;
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
+             !
              fl => trove%g_rot(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -17319,36 +17400,39 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_grot_pre
+             if (k1==987654321) exit do_grot_pre
+             !
+             k1_ = k1 ; k2_ = k2
+             total_terms = 0 
+             !
            endif
+           !
+           total_terms = total_terms + 1
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_grot_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_grot_
+              endif
+           enddo do_l_find_match_grot_
+           !
+        enddo do_grot_pre
+        !
+        read(chkptIO,"(a14)") buf
+        !
+        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0; cur_term=0
+        do_gcor_pre : do 
+           !
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
            !
            if(k1_ == 0 .and. k2_ == 0) then
              k1_ = k1; k2_ = k2;
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_rot(k1_,k2_) 
-             fl%Ncoeff = total_terms 
+           elseif (k1==987654321.or.k1_/=k1.or.k2_/=k2) then
              !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_rot')                        
-             !
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
-             !
-             k1_ = k1 ; k2_ = k2
-             n = 0
-             total_terms = 0 
-           endif
-           total_terms = total_terms + 1
-          !
-        enddo do_grot_pre
-        !
-        read(chkptIO_preread,"(a14)") buf
-        !   
-        k1_= 0 ; k2_= 0 ; n = 0 ; total_terms = 0;
-        do_gcor_pre : do 
-           !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
-           !
-           if (k1==987654321) then 
              fl => trove%g_cor(k1_,k2_) 
              fl%Ncoeff = total_terms 
              !
@@ -17356,59 +17440,72 @@ end subroutine check_read_save_none
              !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_gcor_pre
-           endif
-           !
-           if(k1_ == 0 .and. k2_ == 0) then
-             k1_ = k1; k2_ = k2; 
-           elseif (k1_/=k1.or.k2_/=k2) then
-             fl => trove%g_cor(k1_,k2_) 
-             fl%Ncoeff = total_terms
-             !
-             call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'g_cor')
-             forall(n=1:total_terms) fl%ifromsparse(n) = n
-             fl%sparse = .true.
+             if (k1==987654321) exit do_gcor_pre
              !
              k1_ = k1 ; k2_ = k2
-             n = 0
              total_terms = 0 
+             !
            endif
+           !
            total_terms = total_terms + 1
-          !
+           cur_term = total_terms
+           !
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_gcor_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_gcor_
+              endif
+           enddo do_l_find_match_gcor_
+           !
         enddo do_gcor_pre
         !
-        read(chkptIO_preread,"(a14)") buf
-        !
-        !
-        n = 0
-        total_terms = 0 
-        do_pseudo_pre: do 
+        read(chkptIO,"(a14)") buf
+
+        n = 0 ; total_terms = 0; cur_term=0
+        do_pse_pre : do 
            !
-           read(chkptIO_preread,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
+           read(chkptIO,*) k1,k2,iterm,i,field_, mode_list(0:Nmodes) 
            !
            if (k1==987654321) then
+             !
              fl => trove%pseudo 
              fl%Ncoeff = total_terms 
              !
              call polynom_initialization(fl,trove%NKinOrder,total_terms,Npoints,'pseudo')
+             !
              forall(n=1:total_terms) fl%ifromsparse(n) = n
              fl%sparse = .true.
-             exit do_pseudo_pre
+             if (k1==987654321) exit do_pse_pre
+             total_terms = 0 
+             !
            endif
-           !total_terms = total_terms + 1
            !
-           total_terms = max(iterm,total_terms)
+           total_terms = total_terms + 1
+           cur_term = total_terms
            !
-        enddo do_pseudo_pre 
+           IndexQ_list(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+           !
+           do_l_find_match_pseu_ : do l=1,total_terms-1
+              if ( all( mode_list(1:Nmodes_e) == IndexQ_list( 1:Nmodes_e,l ) ) ) then 
+                cur_term = l
+                total_terms = total_terms - 1
+                exit do_l_find_match_pseu_
+              endif
+           enddo do_l_find_match_pseu_
+           !
+        enddo do_pse_pre        
         !
-        close(chkptIO_preread,status='keep')
+        rewind(chkptIO)
         !
-        ! Now we can properly read all the fields
+        deallocate(IndexQ_list)
+        call ArrayStop('IndexQ_list')
+        !
+        ! Now we can properlt read all the fields
         !
         maxpower = 0 
-        !
-        call IOStart(trim(unitfname),chkptIO)
-        open(chkptIO,action='read',status='old',file=trove%chk_kinet_fname)
         !
         read(chkptIO,"(a14)") buf
         !
@@ -29619,8 +29716,15 @@ end subroutine check_read_save_none
     y = cos(real(n,rk)*x)
     !
   end subroutine calc_func_cosnx
-
-
+  !
+  subroutine calc_func_sinnx(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    y = sin(real(n,rk)*x)
+    !
+  end subroutine calc_func_sinnx
   !
   ! sanity check and deallocation of all existing arrays from this module 
   !
