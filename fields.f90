@@ -17300,6 +17300,8 @@ end subroutine check_read_save_none
         !
         factor = real(planck,ark)*real(avogno,ark)*real(1.0d+16,kind=ark)/(4.0_ark*pi*pi*real(vellgt,ark))
         !
+        total_terms = 0
+        !
         allocate(mode_list(0:Nmodes))
         if (.not.associated(trove%g_vib).or..not.associated(trove%g_rot).or. &
             .not.associated(trove%g_cor)) then 
