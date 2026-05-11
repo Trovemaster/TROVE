@@ -690,7 +690,7 @@ module fields
    real(rk),parameter    :: coeff_thresh_= -tiny(1.0_rk) ! primitve bs-function threshold to exclude quantum witn small coeffs
    !
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
-   logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.
+   logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.,ext_refer_defined = .false.
    logical :: krot_defined = .false.
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w,ioname,w_t
@@ -5042,6 +5042,8 @@ module fields
                 !
               enddo
               !
+              ext_refer_defined = .true.
+              !
             case ("DSTEP_BMAT")
               !
               call readf(fd_step_Bmat)
@@ -5307,6 +5309,10 @@ module fields
       !
       trove%local_ref = trove%local_eq
       !
+   endif
+   !
+   if (.not.ext_refer_defined) then
+      extF%geom_ref = trove%local_eq
    endif
    !
    if (.not.basis_defined) then 
