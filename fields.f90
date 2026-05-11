@@ -18361,15 +18361,15 @@ end subroutine check_read_save_none
           !
           extF_(imu)%IndexQ(1:Nmodes_e, nn(imu)) = mode_list(1:Nmodes_e)
           !
+          do_k_find_match : do k=1,nn(imu)-1
+             if ( all( mode_list(1:Nmodes_e) == extF_(imu)%IndexQ( 1:Nmodes_e,k ) ) ) then 
+               cur_term = k
+               nn(imu) = nn(imu) - 1
+               exit do_k_find_match
+             endif
+          enddo do_k_find_match
+          !
           if (Npoints > 0) then
-            !
-            do_k_find_match : do k=1,nn(imu)-1
-               if ( all( mode_list(1:Nmodes_e) == extF_(imu)%IndexQ( 1:Nmodes_e,k ) ) ) then 
-                 cur_term = k
-                 nn(imu) = nn(imu) - 1
-                 exit do_k_find_match
-               endif
-            enddo do_k_find_match
             !
             do j = 0, Npoints 
               rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
