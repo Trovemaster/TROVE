@@ -757,6 +757,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xyz_z_bond
         !
+    case('DIPOLE_PQR_XYZ_Z-BOND_PP')
+        !
+        MLextF_func => MLdms2pqr_xyz_z_bond_pp
+        !
     case('DIPOLE_PQR_XYZ_BISECTING')
         !
         MLextF_func => MLdms2pqr_xyz_bisecting
