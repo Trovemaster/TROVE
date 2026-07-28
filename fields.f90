@@ -9,7 +9,8 @@ module fields
    use me_bnd, only : ME_box,ME_Fourier,ME_Legendre,ME_Associate_Legendre,ME_sinrho_polynomial,ME_sinrho_Legendre_k,&
                       ME_sinrho_polynomial_k_switch,ME_sinrho_polynomial_muzz,ME_legendre_polynomial_k,&
                       ME_laguerre_k,ME_laguerre_simple_k,ME_sinc,ME_sinrho_laguerre_k,ME_sinrho_2xlaguerre_k,&
-                      ME_Fourier_pure,ME_sinrho_Legendre_k1,ME_harmonic_numeric,ME_sqrt_sinrho_sinnrho_Legendre_k1
+                      ME_Fourier_pure,ME_sinrho_Legendre_k1,ME_harmonic_numeric,ME_sqrt_sinrho_sinnrho_Legendre_k1,&
+                      ME_sqrt_sinrho_sinnrho_Legendre_k,ME_Fourier_unoptimised
    use me_numer
    use me_rot
    use timer
@@ -2010,7 +2011,7 @@ module fields
               select case (trim(job%bset(imode)%type)) 
                  !
               case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC',&
-                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
+                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED')
                  !
                  job%bset_prop(imode)%numerical = .true.
                  !
@@ -2025,7 +2026,8 @@ module fields
               !
               select case (trim(job%bset(imode)%type)) 
                  !
-              case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
+              case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
+                    'SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K')
                  !
                  job%bset_prop(imode)%singular = .true.
                  !
@@ -20289,7 +20291,7 @@ end subroutine check_read_save_none
         endif
         !
      case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
-           'FOURIER_PURE','SINRHO-LEGENDRE-K1')
+           'FOURIER_PURE','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED')
         !
         ! the default case is assumed to be of the numerical type
         !
@@ -20342,7 +20344,7 @@ end subroutine check_read_save_none
            p1drho = trove%pseudo%field(1,0:npoints)
            !
            if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
-                                 trim(bs%type)=='SINRHO-LEGENDRE-K1')) then 
+                                 trim(bs%type)=='SINRHO-LEGENDRE-K1'.or.trim(bs%type)=='SINRHO-LEGENDRE-K')) then 
                p1drho = 0
            endif
            !
@@ -20776,6 +20778,19 @@ end subroutine check_read_save_none
              call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
                                        !
+                         !
+           case ('SINRHO-LEGENDRE-K')
+             !
+             kmax = job%bset(0)%range(2)
+             nmax = bs%Size
+             !
+             chi_b(:) = rho_b(:) - rho_b(1)
+             !
+             bs%matelements = 0 
+             !
+             call ME_sinrho_Legendre_k(nu_i,kmax,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                                       f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+                                       !
            case ('LEGENDRE')
              !
              kmax = job%bset(0)%range(2)
@@ -21029,6 +21044,11 @@ end subroutine check_read_save_none
              call ME_Fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
+           case ('FOURIER-UNOPTIMISED')
+             !
+             call ME_Fourier_unoptimised(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             !
            case ('SINC')
              !
              call ME_Sinc(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
@@ -21042,7 +21062,7 @@ end subroutine check_read_save_none
            !
            select case (trim(bs%type))
              !
-           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1')
+           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K')
              !
              call calc_rho_1d_matrix_elements_sinrho_polynomials(ibs,nu_i)
              !
@@ -21200,6 +21220,13 @@ end subroutine check_read_save_none
              call ME_fourier(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
+           case ('FOURIER-UNOPTIMISED')
+             !
+             f1drho = f1drho + p1drho
+             !
+             call ME_fourier_unoptimised(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+                             job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             !
            case ('SINC')
              !
              numerpoints = npoints
@@ -21237,11 +21264,19 @@ end subroutine check_read_save_none
              !
              bs%matelements = 0 
              !
-             ! Associated Legendre for k=1 only
-             !call ME_sinrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
-             !                          f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
-
              call ME_sqrt_sinrho_sinnrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
+                                       f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
+             !
+           case ('SINRHO-LEGENDRE-K')
+             !
+             kmax = job%bset(0)%range(2)
+             nmax = bs%Size
+             !
+             chi_b(:) = rho_b(:) - rho_b(1)
+             !
+             bs%matelements = 0 
+             !
+             call ME_sqrt_sinrho_sinnrho_Legendre_k(nu_i,kmax,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
 
                                        
