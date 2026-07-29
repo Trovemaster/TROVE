@@ -1795,8 +1795,8 @@ module me_bnd
            !
         enddo
         !
-        Psi (1:vmax+1,i)  = phi(1:fmax+1)
-        DPsi(1:vmax+1,i)  = dphi(1:fmax+1)
+        Psi (1:vmax+1,i)  = phi(1:vmax+1)
+        DPsi(1:vmax+1,i)  = dphi(1:vmax+1)
         !
         ! We skip the transformation for this type of the Fourier basis
         !
@@ -6136,20 +6136,17 @@ module me_bnd
               !
               phivphi(:) =-dpsil(:)*mu_rr(:)*dpsir(:)*sinrho(:)
               !
-              !phivphi(:) =-mu_rr(:)*( dpsil(:)*dphir(:)*rho_m(:)- &
-              !                        cosrho(:)*real(k,ark)*( dpsil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
-              !
               mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
-              !mu_zz_t = 0
+              mu_zz_t = 0
               !
-              !if (k>0) then 
-              !  !
-              !  phivphi = real(k*k,ark)*mu_zz(:)*chi(:,vl)*chi(:,vr)*sinrho(:)
-              !  !
-              !  mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-              !  !
-              !endif
+              if (k>0) then 
+                !
+                phivphi = real(k*k,ark)*mu_zz(:)*chi(:,vl)*chi(:,vr)*sinrho(:)
+                !
+                mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                !
+              endif
               !
               ! correction due to the derivatives at rho=0 and rho = Pi
               !
@@ -6157,7 +6154,7 @@ module me_bnd
               !
               ! Add the diagonal kinetic part to the tested mat. elem-s
               !
-              h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*mu_rr_t ! +0.5_ark*mu_zz_t
+              h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*mu_rr_t - 0.5_ark*mu_zz_t
               !
               h(vr+1,vl+1) = h(vl+1,vr+1)
               !
@@ -6274,7 +6271,17 @@ module me_bnd
               !
               ! Add the diagonal kinetic part to the tested mat. elem-s
               !
-              h_t = h_t - 0.5_ark*mu_rr_t + ps_t !+0.5_ark*mu_zz_t
+              mu_zz_t = 0
+              !
+              if (k>0) then 
+                !
+                phivphi = real(k*k,ark)*mu_zz(:)*psil(:)*psir(:)*sinrho(:)
+                !
+                mu_zz_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+                !
+              endif
+              !
+              h_t = h_t - 0.5_ark*mu_rr_t + ps_t -0.5_ark*mu_zz_t
               !
               ! check the solution
               !

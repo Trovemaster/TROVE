@@ -2011,7 +2011,8 @@ module fields
               select case (trim(job%bset(imode)%type)) 
                  !
               case ('NUMEROV','BOX','LAGUERRE','FOURIER','FOURIER_PURE','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC',&
-                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED')
+                    'SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED',&
+                    'SINRHO-LEGENDRE-K-SING')
                  !
                  job%bset_prop(imode)%numerical = .true.
                  !
@@ -2027,7 +2028,7 @@ module fields
               select case (trim(job%bset(imode)%type)) 
                  !
               case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
-                    'SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K')
+                    'SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','SINRHO-LEGENDRE-K-SING')
                  !
                  job%bset_prop(imode)%singular = .true.
                  !
@@ -19752,6 +19753,7 @@ end subroutine check_read_save_none
     integer(ik) ::  iswitch                                 ! the grid point of switch
     real(ark)   :: g2_term,f2_term,coeff_term,gz_term
     real(ark)   :: fd_step =0.005_ark,f_1,f_2,f_3 ! step for finite differences  
+    logical     :: singular_2D  = .false. ! flag to indicate if it is a 2D basis vibrational with one of the modes being singular 
     !
     ! substitute for easier reference 
     !
@@ -19771,6 +19773,20 @@ end subroutine check_read_save_none
     isingular = -1    !
     periodic_model = .false.
     period = 0
+    !
+    select case (trim(bs%type))
+         !
+    case ('SINRHO-LEGENDRE-K-SING')
+         !
+         if (trim(job%bset(trove%Nmodes)%type)/='FOURIER-UNOPTIMISED') then 
+             write(out,"(a,a,a)") 'FLbset1DNew: illegal Nmodes-basis set type for SINRHO-LEGENDRE-K-SING;'& 
+                                    ' it can only be FOURIER-UNOPTIMISED, not',trim(job%bset(trove%Nmodes)%type)
+             stop 'FLbset1DNew: illegal Nmodes-basis set type for SINRHO-LEGENDRE-K-SING'
+         endif
+         !
+         singular_2D = .true.
+         !
+    end select     
     !
     if (job%verbose>=6) then
       write (out,"(' Basis type ',a,' needs ',f12.5,' Mbytes of memory (plus a bit)')") &
@@ -20291,7 +20307,7 @@ end subroutine check_read_save_none
         endif
         !
      case('NUMEROV','BOX','FOURIER','LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K',&
-           'FOURIER_PURE','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED')
+           'FOURIER_PURE','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K','FOURIER-UNOPTIMISED','SINRHO-LEGENDRE-K-SING')
         !
         ! the default case is assumed to be of the numerical type
         !
@@ -20344,7 +20360,8 @@ end subroutine check_read_save_none
            p1drho = trove%pseudo%field(1,0:npoints)
            !
            if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
-                                 trim(bs%type)=='SINRHO-LEGENDRE-K1'.or.trim(bs%type)=='SINRHO-LEGENDRE-K')) then 
+                                 trim(bs%type)=='SINRHO-LEGENDRE-K1'.or.trim(bs%type)=='SINRHO-LEGENDRE-K'.or.&
+                                 trim(bs%type)=='SINRHO-LEGENDRE-K-SING')) then 
                p1drho = 0
            endif
            !
@@ -21062,7 +21079,8 @@ end subroutine check_read_save_none
            !
            select case (trim(bs%type))
              !
-           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K')
+           case ('SINRHO-LEGENDRE','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K','SINRHO-LEGENDRE-K1','SINRHO-LEGENDRE-K',&
+                 'SINRHO-LEGENDRE-K-SING')
              !
              call calc_rho_1d_matrix_elements_sinrho_polynomials(ibs,nu_i)
              !
@@ -21197,6 +21215,8 @@ end subroutine check_read_save_none
            bs%params(1) = 0
            bs%params(2) = 0
            !
+           ! These options are for imode<Nmode, i.e. not for the last-mode non-rigid degree of freedom
+           !
            select case (trim(bs%type))
              !
            case ('NUMEROV')
@@ -21267,9 +21287,16 @@ end subroutine check_read_save_none
              call ME_sqrt_sinrho_sinnrho_Legendre_k1(nu_i,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
-           case ('SINRHO-LEGENDRE-K')
+           case ('SINRHO-LEGENDRE-K-SING')
              !
-             kmax = job%bset(0)%range(2)
+             if (.not.singular_2D) then 
+                 write(out,"(a,a,a)") 'FLbset1DNew: illegal Nmodes-basis set type for SINRHO-LEGENDRE-K-SING;'& 
+                                        ' it can only be FOURIER-UNOPTIMISED, not',trim(job%bset(trove%Nmodes)%type)
+                 stop 'FLbset1DNew: illegal Nmodes-basis set type for SINRHO-LEGENDRE-K-SING'
+             endif
+             !
+             !  we will constrain l in the associated Legendre to kmax = vmax of the Fourier last mode, imode = Nmodes
+             kmax = job%bset(trove%Nmodes)%range(2)
              nmax = bs%Size
              !
              chi_b(:) = rho_b(:) - rho_b(1)
@@ -21278,8 +21305,6 @@ end subroutine check_read_save_none
              !
              call ME_sqrt_sinrho_sinnrho_Legendre_k(nu_i,kmax,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
-
-                                       
              !
            case default
              !
@@ -21371,13 +21396,15 @@ end subroutine check_read_save_none
                     grot(1:trove%Nmodes,0:trove%NKinOrder)
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
        real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f,g_term
-       integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes)
+       integer(ik) :: ipower,imode,nu_i,maxpower,powers(trove%Nmodes),nmodes
        integer(ik) :: jmode,i,k,j,irho_eq_,nu_
        type(FLpolynomT),pointer    :: fl,gl,gzl
        !
        p1d = 0 
        g1d = 0 
        g1z = 0
+       !
+       nmodes = trove%Nmodes
        !
        irho_eq_ = irho_eq
        !
@@ -21393,6 +21420,11 @@ end subroutine check_read_save_none
        !
        fl => trove%pseudo
        gzl => trove%g_rot(3,3)
+       !
+       if (singular_2D) then
+           ! This is a special case of the singular basis which is coupled to the torsion mode = Nmodes as an internal rotation  
+           gzl => trove%g_vib(Nmodes,Nmodes)
+       endif
        !
        if (trove%kinetic_compact.or.trove%kinetic_with_modes) then 
           !
@@ -21491,7 +21523,7 @@ end subroutine check_read_save_none
               !
               gz_term  =  gzl%field(j,irho_eq_)
               !
-              if (abs(gz_term>small_)) then 
+              if (abs(gz_term)>small_) then 
                 !
                 do i = 1, size(powers)
                   if(i == nu_i) cycle

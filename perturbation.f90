@@ -2694,7 +2694,7 @@ module perturbation
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
     integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
-    logical           ::  reduced_model,diagonal,singual_2D
+    logical           ::  reduced_model,diagonal,singular_2D
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
     !
@@ -2751,7 +2751,7 @@ module perturbation
        res_min = huge(1)
        !
        reduced_model = .false.
-       singual_2D = .false.
+       singular_2D = .false.
        !
        do i = 1,PT%mode_iclass(iclasses)
          !
@@ -2784,7 +2784,7 @@ module perturbation
          ! special case of a 2D basis with a singularity
          if (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==2) then 
            !
-           singual_2D = .true.
+           singular_2D = .true.
            !
          endif 
          !
@@ -2930,7 +2930,7 @@ module perturbation
          ! 2D signularity: e.g. Fourier basis cos(k*tau) and sin(k*tau) and Associated Legendre(l,n)
          ! with the l=k contraint 
          !
-       elseif (singual_2D) then 
+       elseif (singular_2D) then 
          !
          diagonal = .false.
          !
@@ -26359,7 +26359,8 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','FOURIER-UNOPTIMISED')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','FOURIER-UNOPTIMISED',&
+            'SINRHO-LEGENDRE-K-SING')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
@@ -33397,30 +33398,30 @@ end subroutine read_contr_matelem_expansion_classN
         !nu_i(nmodes) = n_i
       endif
       !
-      !do imode = 1,Nmodes
-      !  if (job%bset_prop(imode)%singular) then 
-      !    v_i = nu_i(imode)
-      !    k_i = mod(v_i,kmax+1)
-      !    n_i = (v_i-k_i)/(kmax+1)
-      !    !
-      !  endif 
-      !enddo
+      do imode = 1,Nmodes
+        if (job%bset_prop(imode)%singular) then 
+          v_i = nu_i(imode)
+          k_i = mod(v_i,kmax+1)
+          n_i = (v_i-k_i)/(kmax+1)
+          !
+        endif 
+      enddo
       !
       do j = i,dimen
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
         !
-        !do jmode = 1,Nmodes
-        !  if (job%bset_prop(jmode)%singular) then 
-        !    !
-        !    v_j = nu_j(jmode)
-        !    k_j = mod(v_j,kmax+1)
-        !    n_j = (v_j-k_j)/(kmax+1)
-        !    !
-        !    !if (k_i/=k_j) cycle
-        !    !
-        !  endif 
-        !enddo
+        do jmode = 1,Nmodes
+          if (job%bset_prop(jmode)%singular) then 
+            !
+            v_j = nu_j(jmode)
+            k_j = mod(v_j,kmax+1)
+            n_j = (v_j-k_j)/(kmax+1)
+            !
+            !if (k_i/=k_j) cycle
+            !
+          endif 
+        enddo
         !
         if (trove%triatom_sing_resolve) then
           v_j = nu_j(Nmodes)
