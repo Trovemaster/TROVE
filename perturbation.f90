@@ -33368,7 +33368,7 @@ end subroutine read_contr_matelem_expansion_classN
      call ArrayStart('PThamiltonianMat_singular_c',alloc,size(c),kind(c))
     endif
     !
-    kmax = job%bset(0)%range(2)
+    kmax = job%bset(trove%Nmodes)%range(2)
     nmax = job%bset(Nmodes)%range(2)
     if ( kmax/=0 ) then 
       nmax = (job%bset(Nmodes)%range(2)+1)/(kmax+1)-1

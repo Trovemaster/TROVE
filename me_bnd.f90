@@ -5893,7 +5893,8 @@ module me_bnd
      !
      kmin = 0
      !
-     nmax = vmax
+     nmax = (vmax+1)/(kmax+1)-1
+     !
      lmax = kmax + nmax
      !
      allocate(psil(0:npoints),psir(0:npoints),dpsil(0:npoints),dpsir(0:npoints), &
@@ -6127,7 +6128,7 @@ module me_bnd
               !
               ! pseudo-part
               !
-              phivphi(:) = psil(:)*pseudo(:)*psir(:)
+              phivphi(:) = phil_s(:)*pseudo(:)*phir_s(:)
               ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               h(vl+1,vr+1) = h(vl+1,vr+1) + ps_t
@@ -6154,7 +6155,7 @@ module me_bnd
               !
               ! Add the diagonal kinetic part to the tested mat. elem-s
               !
-              h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*mu_rr_t - 0.5_ark*mu_zz_t
+              h(vl+1,vr+1) = h(vl+1,vr+1) - 0.5_ark*mu_rr_t + 0.5_ark*mu_zz_t
               !
               h(vr+1,vl+1) = h(vl+1,vr+1)
               !
@@ -6218,7 +6219,7 @@ module me_bnd
        !
        do vl = 0,nmax
           !
-          il = vl
+          il = vl*(kmax+1)+k
           !
           psil(:)  =  Psi(vl+1,:)
           dpsil(:) = dPsi(vl+1,:)
@@ -6237,7 +6238,7 @@ module me_bnd
           !
           do vr = vl,nmax
               !
-              ir = vr
+              ir = vr*(kmax+1)+k
               !
               psir = Psi(vr+1,:)
               dpsir = dPsi(vr+1,:)
@@ -6260,7 +6261,7 @@ module me_bnd
               !
               ! pseudo-part
               !
-              phivphi(:) = phil(:)*pseudo(:)*phir(:)
+              phivphi(:) = psil_sin(:)*pseudo(:)*psir_sin(:)
               ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! momenta-quadratic part 
@@ -6281,7 +6282,7 @@ module me_bnd
                 !
               endif
               !
-              h_t = h_t - 0.5_ark*mu_rr_t + ps_t -0.5_ark*mu_zz_t
+              h_t = h_t - 0.5_ark*mu_rr_t + ps_t + 0.5_ark*mu_zz_t
               !
               ! check the solution
               !

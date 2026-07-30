@@ -2199,6 +2199,11 @@ module fields
                job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
                job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
                !
+            case ('SINRHO-LEGENDRE-K-SING')
+               !
+               job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(trove%Nmodes)%range(2)+1)-1
+               job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(trove%Nmodes)%range(2)+1),ark)
+               !
             end select
             !
          enddo
@@ -14693,7 +14698,6 @@ end subroutine check_read_save_none
          maxnumax = 0
          do i = 1,bset%bs1D(itype)%imodes
             imode = bset%bs1D(itype)%mode(i)
-            !call PTgetsizeandorder(imode,nu_t)
             maxnumax = max(numax(imode),maxnumax)
          enddo 
          !
@@ -21298,8 +21302,19 @@ end subroutine check_read_save_none
              !  we will constrain l in the associated Legendre to kmax = vmax of the Fourier last mode, imode = Nmodes
              kmax = job%bset(trove%Nmodes)%range(2)
              nmax = bs%Size
+             if ( kmax/=0 ) then
+               nmax = (bs%Size+1)/(kmax+1)-1
+             endif
              !
              chi_b(:) = rho_b(:) - rho_b(1)
+             !
+             deallocate (bs%matelements,bs%ener0)
+             call ArrayStop('bs%matelements')
+             call ArrayStop('bs%ener0')
+             !
+             allocate (bs%matelements(-1:3,0:maxpower,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size),stat=alloc)
+             call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
+             call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
              !
              bs%matelements = 0 
              !
@@ -24517,7 +24532,8 @@ end subroutine check_read_save_none
      !
      character(len=cl),intent(in) :: job_str
      integer(ik),intent(in)       :: k1,k2 
-     real(rk),intent(out)         :: field(:,:,:) !
+     real(rk),intent(out)         :: field(:,:,:)
+     integer(ik)                  :: nsize1
       !
       !if (size(field,dim=1)/=size(bset%rot%matelements,dim=2)) 
       !
@@ -24549,7 +24565,8 @@ end subroutine check_read_save_none
           !
         case('vib')
           !
-          field(:,:,:) = bset%bs1D(k1)%matelements(k2,:,:,:)
+          nsize1 = size(bset%bs1D(k1)%matelements,dim=2)
+          field(1:nsize1,:,:) = bset%bs1D(k1)%matelements(k2,0:nsize1-1,:,:)
           !
         case('L2_vib')
           !
