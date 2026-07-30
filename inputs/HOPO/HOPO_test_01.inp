@@ -146,7 +146,7 @@ BASIS
   2,'numerov','auto', 'pot-auto',  range 0, 0, resc 4.0, points 1000, borders 1.04,2.5
   3,'numerov','auto', 'pot-auto',  range 0, 0, resc 4.0, points 1000, borders 0.45,1.9
   4,'numerov','auto', 'pot-auto', range 0, 0, resc 3.0, points 1000, borders 50,162 deg
-  5,'sinrho-legendre-k-sing','auto-singular','pot-auto', range 0,8, resc 1.0, points 2000, borders 0,170 deg
+  5,'sinrho-legendre-k-sing','auto-singular','pot-auto', range 0,4, resc 1.0, points 2000, borders 0,170 deg
   5,'fourier-unoptimised','auto', 'pot-auto', range 0, 2,  resc 1.0, points 2000, borders 0., 360.0 deg, periodic 1
 END
 

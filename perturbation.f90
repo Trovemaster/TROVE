@@ -33483,6 +33483,11 @@ end subroutine read_contr_matelem_expansion_classN
     !
     Nmodes = PT%Nmodes
     !
+    if (Jrot>0) then 
+        write(out,"('PThamiltonianMat_singular error: illegal usage for J>0',i8)") Jrot
+        stop 'PThamiltonianMat_singular error: illegal usage for J>0'
+    endif
+    !
     if (job%verbose>=4) write(out,"(/'PThamiltonianMat_singular/start: variational solution '/)") 
     !
     if (present(diagonalizer_)) then 
@@ -33543,62 +33548,16 @@ end subroutine read_contr_matelem_expansion_classN
        write(out,"(/'Primitive matrix elements calculations...')")
     endif
     !
-    !$omp parallel do private(i,j,nu_i,nu_j,imode,v_i,k_i,n_i,jmode,v_j,k_j,n_j,mat_elem) shared(a,b) schedule(dynamic)
+    !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a,b) schedule(dynamic)
     do i = 1,dimen
       !
       if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i8)"), i
       !
       nu_i(:) = PT%active_space%icoeffs(:,i)
       !
-      ! singularity resolved by Associated Legendres
-      if (trove%triatom_sing_resolve) then
-        v_i = nu_i(Nmodes)
-        !
-        !n_i = mod(v_i,nmax+1)
-        !k_i = (v_i-n_i)/(nmax+1)
-        !
-        k_i = mod(v_i,kmax+1)
-        n_i = (v_i-k_i)/(kmax+1)
-        !
-        !nu_i(nmodes) = n_i
-      endif
-      !
-      do imode = 1,Nmodes
-        if (job%bset_prop(imode)%singular) then 
-          v_i = nu_i(imode)
-          k_i = mod(v_i,kmax+1)
-          n_i = (v_i-k_i)/(kmax+1)
-          !
-        endif 
-      enddo
-      !
       do j = i,dimen
         !
         nu_j(:) = PT%active_space%icoeffs(:,j)
-        !
-        do jmode = 1,Nmodes
-          if (job%bset_prop(jmode)%singular) then 
-            !
-            v_j = nu_j(jmode)
-            k_j = mod(v_j,kmax+1)
-            n_j = (v_j-k_j)/(kmax+1)
-            !
-            !if (k_i/=k_j) cycle
-            !
-          endif 
-        enddo
-        !
-        if (trove%triatom_sing_resolve) then
-          v_j = nu_j(Nmodes)
-          !n_j = mod(v_j,nmax+1)
-          !k_j = (v_j-n_j)/(nmax+1)
-          !
-          k_j = mod(v_j,kmax+1)
-          n_j = (v_j-k_j)/(kmax+1)
-          !
-          !nu_j(nmodes) = n_j
-          if (k_i/=k_j) cycle
-        endif
         !
         ! Matrix elements 
         !
@@ -33607,18 +33566,10 @@ end subroutine read_contr_matelem_expansion_classN
         if (all( nu_i(1:)>=PT%range(1,1:) ).and. all( nu_i(1:)<=PT%range(2,1:) ).and. & 
           !
           all( nu_j(1:)>=PT%range(1,1:) ).and. all( nu_j(1:)<=PT%range(2,1:) ) ) then
-          !
-          if (FLrotation.and.Jrot>0) then
-            !
-            mat_elem = PTmatrixelements(0,nu_i,nu_j,jrot)
-            !
-          else
             !
             ! J-free calculations
             mat_elem = PTmatrixelements(0,nu_i,nu_j) 
-            !
-          endif 
-          ! 
+            ! 
         endif
         !
         a(i,j) =mat_elem
@@ -33786,37 +33737,6 @@ end subroutine read_contr_matelem_expansion_classN
        !
        nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
        PT%quanta%icoeffs(ib,:) = nu_i(:)
-       !
-       if (trove%triatom_sing_resolve) then
-         v_i = nu_i(Nmodes)
-         k_i = mod(v_i,kmax+1)
-         n_i = (v_i-k_i)/(kmax+1)
-         !n_i = mod(v_i,nmax+1)
-         !k_i = (v_i-n_i)/(nmax+1)
-         PT%lquant%icoeffs(ib,1)=k_i
-         PT%quanta%icoeffs(ib,Nmodes) = n_i
-       endif
-       !
-       do imode = 1,Nmodes
-         !if (job%bset_prop(imode)%singular) then 
-         !  v_i = nu_i(imode)
-         !  k_i = mod(v_i,kmax+1)
-         !  n_i = (v_i-k_i)/(kmax+1)
-         !  PT%lquant%icoeffs(ib,1)=k_i
-         !  PT%quanta%icoeffs(ib,Nmodes) = n_i
-         !endif 
-         !
-         if (job%bset(imode)%type=='FOURIER_PURE') then
-           !
-           v_i = nu_i(Nmodes)
-           k_i = (v_i+1)/2
-           !
-           PT%lquant%icoeffs(ib,1)=k_i
-           PT%quanta%icoeffs(ib,Nmodes) = k_i
-           !
-         endif
-         !
-       enddo
        !
        termvalue = b(ib)-ZPE
        !

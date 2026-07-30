@@ -1717,12 +1717,18 @@ module me_bnd
      deallocate (phil,phir,dphil,dphir,phivphi)
      !$omp end parallel 
      !
+     do vl =  1,vmax+1
+       energy(vl-1) = h(vl,vl)
+     enddo
+     !
+     energy(0:vmax) = energy(0:vmax) - minval(energy(0:vmax))
+     !
      if (verbose>=4) write(out,"('   Diagonalize the 1D primitive Hamiltonian ...')")
      call lapack_syev(h,ener)
      !
      if (verbose>=4) write(out,"('ZPE = ',f16.6)") ener(1)
      !
-     energy(0:vmax) = ener(1:vmax+1)-ener(1)
+     !energy(0:vmax) = ener(1:vmax+1)-ener(1)
      !
      ! Schmidt orthogonalization to make eigenvectors orthogonal in ark
      !
@@ -1762,7 +1768,7 @@ module me_bnd
        write (out,"(/' Fourier-optimized energies are:')") 
        !
        do vl=0,vmax   
-         write (out,"(i8,f18.8)") vl,energy(vl)
+         write (out,"(i8,2f18.8)") vl,energy(vl),ener(vl+1)-ener(1)
        enddo
      endif
      !
@@ -6193,9 +6199,9 @@ module me_bnd
        if (k==kmin) zpe = ener(1)
        !
        do vl=0,nmax
-         !i = vl*(kmax+1)+k
-         energy(vl) = ener(vl+1)-zpe
-         write (out,"(2i8,f18.8)") k,vl,energy(vl)
+         i = vl*(kmax+1)+k
+         energy(i) = ener(vl+1)-zpe
+         write (out,"(2i8,f18.8)") k,vl,energy(i)
        enddo
        !
        do i=0,npoints
