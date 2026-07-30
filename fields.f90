@@ -697,7 +697,7 @@ module fields
    character(len=wl) :: w,ioname,w_t
    real(rk)    :: lfact,f_t
    real(ark)   :: func_coef
-   integer(ik) :: i,iatom,imode,jmode,ifunc,jfunc,iexpo,numterms,numfunc,in_expo,out_expo,Nexpo,Nexpo_min
+   integer(ik) :: i,iatom,imode,jmode,ifunc,jfunc,iexpo,numterms,numfunc,in_expo,out_expo,Nexpo,Nexpo_min,kmax
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords,natoms,alloc,Nparam,iparam,i_t,i_tt
    character(len=4) :: char_j, func_name
    character(len=3) :: basic_type
@@ -2201,7 +2201,14 @@ module fields
                !
             case ('SINRHO-LEGENDRE-K-SING')
                !
-               job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(trove%Nmodes)%range(2)+1)-1
+               ! here we assume the real Fourier basis for imode=Nmode defined following 
+               kmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+               ! k is transformed to n as
+               ! n = 0: cos(0*tau); k=0
+               ! n = 1: sin(1*tau); k=1 
+               ! n = 2: cos(1*tau); k=1
+               ! I.e. n=(k+1)/2; now for v of tje sing-mode assuming l=k:
+               job%bset(i)%range(2) = ( job%bset(i)%range(2)+1 )*( kmax+1 )-1
                job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(trove%Nmodes)%range(2)+1),ark)
                !
             end select
@@ -21300,7 +21307,12 @@ end subroutine check_read_save_none
              endif
              !
              !  we will constrain l in the associated Legendre to kmax = vmax of the Fourier last mode, imode = Nmodes
-             kmax = job%bset(trove%Nmodes)%range(2)
+             ! For n = job%bset(trove%Nmodes)%range(2)and 
+             ! n = 0: cos(0*tau) 
+             ! n = 1: sin(1*tau); k=1 
+             ! n = 2: cos(1*tau); k=1
+             ! Therefore k = (n+1)/2 and
+             kmax = (job%bset(trove%Nmodes)%range(2)+1)/2
              nmax = bs%Size
              if ( kmax/=0 ) then
                nmax = (bs%Size+1)/(kmax+1)-1

@@ -1427,7 +1427,18 @@ module perturbation
      integer(ik)            :: nu_search(size(nu_target))
      integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2,l
      logical     :: flag_go
-
+      !
+      ! For singular case call the 2D singular version if PTnu_index
+      !
+      if (trim(job%bset(trove%Nmodes-1)%type)=='SINRHO-LEGENDRE-K-SING'.and.&
+           trim(job%bset(trove%Nmodes)%type)=='FOURIER-UNOPTIMISED') then
+        !
+        isum = PTnu_index_with_singularity(nu_target,npol,Index_nu)
+        !
+        return 
+        !       
+      endif     
+      !         
       if (present(Index_nu)) then 
         dm1 = size(Index_nu,dim=1)
         dm2 = size(Index_nu,dim=2)
@@ -1437,15 +1448,15 @@ module perturbation
             stop 'number of modes in Index_nu /= Nmodes'
         endif 
       endif 
-
-
+      !
       ipol = PTpolyadRules(nu_target)
       if (ipol<npol) then 
           write(out,"('PTnu_index: ipol<npol:',2i8)") ipol,npol
           stop 'PTnu_index: ipol<npol'
       endif 
-
+      !
       imodes = 1
+      !
       Nmodes = size(nu_target)
       !
       nu_search = 0 
@@ -1537,6 +1548,160 @@ module perturbation
    !
    !
   end function PTnu_index
+
+
+
+
+!
+! We transform the Nmodes-dimension nu-quanta object 
+! into a 1D array 
+! By default PTnu_index computes the number of (nu1,nu2,nu3...) quanta in the 1D array 
+! Index_nu(i,j) is optional, it gives the nu(i) quantum corresponding to the j-number in the 1D quanta-array 
+! This version is with 2D singularit, i.e. a 2D coupled class, with imode= nmodes-1 singular 
+!
+  function PTnu_index_with_singularity(nu_target,npol,Index_nu) result (isum)
+
+     integer(ik),intent(in) :: nu_target(:)
+     integer(ik),intent(in) :: npol
+     integer(ik),intent(inout), optional  :: Index_nu(:,:)
+
+     integer(ik)            :: nu_search(size(nu_target))
+     integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2,l
+     logical     :: flag_go
+
+      if (present(Index_nu)) then 
+        dm1 = size(Index_nu,dim=1)
+        dm2 = size(Index_nu,dim=2)
+        ! Must explode if wrong 
+        if (size(nu_target)/=dm1) then 
+            write(out,"('PTnu_index_with_singularity: number of modes in Index_nu /= Nmodes:',2i8)") dm1,size(nu_target)
+            stop 'number of modes in Index_nu /= Nmodes'
+        endif 
+      endif 
+
+
+      ipol = PTpolyadRules(nu_target)
+      if (ipol<npol) then 
+          write(out,"('PTnu_index_with_singularity: ipol<npol:',2i8)") ipol,npol
+          stop 'PTnu_index_with_singularity: ipol<npol'
+      endif 
+
+      imodes = 1
+      Nmodes = size(nu_target)
+      !
+      nu_search = 0 
+      flag_go = .true.
+      !
+      ! l is the vibrational quantum number in case it is needed; l = -1, it is not needed
+      l = -1
+      isum = 0 
+      call gsum(Nmodes,npol,imodes,nu_search,l,isum) 
+      !
+  contains
+   ! 
+   recursive subroutine gsum(Nmodes,Npol,imodes,nu_search,l,isum)
+     integer(ik),intent(in)    :: Nmodes
+     integer(ik),intent(in)    :: Npol,imodes
+     integer(ik),intent(inout) :: l
+     integer(ik) :: nu_t,Npol_t,isum,v,lmax,k
+     !
+     integer(ik)            :: nu_search(size(nu_target))
+     real(rk)  :: ener0
+     logical   :: do_count = .false.
+
+     ! start cycle for the current-level nu-mode from 0 and untill npol_t<Npol
+     nu_t = 0
+     Npol_t   = PTpolyadRules(nu_search)
+     !
+     do while (npol_t<=Npol.and.flag_go.and.nu_search(imodes)<=nu_target(imodes))
+        !
+        !if (job%bset_prop(imodes-1)%singular) then
+        !  lmax = job%bset(0)%range(2)
+        !  v = nu_search(imodes)
+        !  l = mod(v,lmax+1)
+        !endif
+        !
+        if (imodes == Nmodes) then
+           if (npol_t==Npol) then
+             !
+             ! This is a 2D singular case
+             if (job%bset_prop(imodes-2)%singular .and.job%bset(imodes-1)%class==job%bset(imodes-2)%class) then 
+               !
+               ! here we assume the real Fourier basis for imode=Nmode defined following 
+               lmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+               v = nu_search(imodes-1)
+               l = mod(v,lmax+1)
+               !n = (v-l)/(lmax+1)
+               !
+             endif 
+             !
+             ener0 = FLenergy_zero(nu_search(:))
+             !
+             do_count = .false.
+             !
+             if (ener0<=job%enercut) do_count = .true.
+             !
+             ! Here we combine the ith-mode basis with the nmode basis using k(nmode) = l(ith)
+             if (l/=-1) then
+               !if (trim(job%bset(imodes-1)%type)=='SINRHO-LEGENDRE-K-SING'.and.&
+               !    trim(job%bset(imodes)%type)=='FOURIER-UNOPTIMISED') then
+               !
+               ! here we assume that the Fourier basis as 
+               ! n = 0: cos(0*tau) 
+               ! n = 1: sin(1*tau); k=1 
+               ! n = 2: cos(1*tau); k=1
+               ! Therefore k = (n+1)/2
+               k = (nu_search(Nmodes)+1)/2
+               if (k/=l) do_count = .false.
+               !
+               !endif
+               !if (trim(job%bset(imodes-1)%type)=='FOURIER_PURE') then
+               !  !
+               !  k = (nu_search(Nmodes)+1)/2
+               !  if (k/=l) do_count = .false.
+               !  !
+               !endif
+             endif
+             !
+             if (do_count) then 
+                !
+                isum = isum +1
+                !
+                !write(out,"('isum,-> nu_search',20i4)") isum,nu_search(:)
+                !
+                if (present(index_nu)) then 
+                   if (isum>dm2) then 
+                      write(out,"('PTnu_index_with_singularity: isum > size of Index_nu:',2i8)") isum,dm2
+                      stop 'PTnu_index_with_singularity: isum > size of Index_nu'
+                   endif 
+                   index_nu(:,isum) = nu_search(:)
+                endif
+              endif 
+           endif
+           !
+           if (all(nu_target(:)==nu_search(:))) flag_go = .false.
+           !
+        else
+           !
+           ! go to the next mode (imodes+1)
+           !
+           call gsum(Nmodes,Npol,imodes+1_ik,nu_search,l,isum)
+        endif 
+        nu_t = nu_t +1 
+        !
+        ! Check the current value for the polyad number 
+        !
+        nu_search(imodes) = nu_t
+        !
+        Npol_t = PTpolyadRules(nu_search)
+        !
+     enddo
+     nu_search(imodes:Nmodes)=0
+   end subroutine gsum
+   !
+   !
+  end function PTnu_index_with_singularity
+
 
 
 
