@@ -638,7 +638,7 @@ module perturbation
       !
       write(out,"(/'Rotational basis: ',a)") trim(bs_t(0)%type)
       write(out,"( 'range for J ',2i5)")  bs_t(0)%range(1:2) 
-      write(out,"( 'dvr points:',i0)") bs_t(0)%dvrpoints
+      write(out,"( 'dvr points:',i0)") bs_t(0)%lmax
     endif 
     !
     ! Verbose (resonanses):  
@@ -661,7 +661,7 @@ module perturbation
     !
     do imode = 1,Nmodes
       PT%range(:,imode) = bs_t(imode)%range(:)
-      PT%overlap(imode) = bs_t(imode)%dvrpoints
+      PT%overlap(imode) = bs_t(imode)%lmax
       PT%res_coeffs(imode) = bs_t(imode)%res_coeffs
     enddo
     !
@@ -670,7 +670,7 @@ module perturbation
     !
     PT%range(1,0) =  0 
     PT%range(2,0) =  jrot*2
-    PT%overlap(0) = bs_t(0)%dvrpoints*2
+    PT%overlap(0) = bs_t(0)%lmax*2
     !
     PT%maxoverlap =  maxval(PT%overlap(1:Nmodes))
     !
@@ -1603,7 +1603,7 @@ module perturbation
      integer(ik),intent(in)    :: Nmodes
      integer(ik),intent(in)    :: Npol,imodes
      integer(ik),intent(inout) :: l
-     integer(ik) :: nu_t,Npol_t,isum,v,lmax,k
+     integer(ik) :: nu_t,Npol_t,isum,v,lmax=0,k
      !
      integer(ik)            :: nu_search(size(nu_target))
      real(rk)  :: ener0
@@ -1628,7 +1628,7 @@ module perturbation
              if (job%bset_prop(imodes-2)%singular .and.job%bset(imodes-1)%class==job%bset(imodes-2)%class) then 
                !
                ! here we assume the real Fourier basis for imode=Nmode defined following 
-               lmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+               lmax = job%bset(imodes-2)%lmax !(job%bset(trove%Nmodes)%range(2)+1)/2
                v = nu_search(imodes-1)
                l = mod(v,lmax+1)
                !n = (v-l)/(lmax+1)
@@ -1652,7 +1652,7 @@ module perturbation
                ! n = 2: cos(1*tau); k=1
                ! Therefore k = (n+1)/2
                k = (nu_search(Nmodes)+1)/2
-               if (k/=l) do_count = .false.
+               if (k/=l.and.k<lmax) do_count = .false.
                !
                !endif
                !if (trim(job%bset(imodes-1)%type)=='FOURIER_PURE') then
@@ -2907,7 +2907,7 @@ module perturbation
        do imode = 0,PT%Nmodes
          bs_t(imode)%range(:) = 0 
          bs_t(imode)%res_coeffs = 10000.0
-         bs_t(imode)%dvrpoints = 1
+         bs_t(imode)%lmax = 1
        enddo
        !
        PTuse_gauss_quadrature = .false.
@@ -2932,7 +2932,7 @@ module perturbation
          imode = PT%mode_class(iclasses,i)
          bs_t(imode)%range(:) = job%bset(imode)%range(:) 
          bs_t(imode)%res_coeffs = job%bset(imode)%res_coeffs !/res_min
-         bs_t(imode)%dvrpoints = job%bset(imode)%dvrpoints
+         bs_t(imode)%lmax = job%bset(imode)%lmax
          !
          ! if specified in the input we solve  a reduced quadratic model  
          ! hamiltonian fully separated from other modes
@@ -3143,7 +3143,7 @@ module perturbation
        !
        do imode = 1,PT%Nmodes
          PT%range(:,imode) = job%bset(imode)%range(:)
-         PT%overlap(imode) = job%bset(imode)%dvrpoints
+         PT%overlap(imode) = job%bset(imode)%lmax
          PT%res_coeffs(imode) = job%bset(imode)%res_coeffs
        enddo
        !
@@ -3242,7 +3242,7 @@ module perturbation
          !
          bs_t(imode)%range(:) = job%bset(imode)%range(:) 
          bs_t(imode)%res_coeffs = 1
-         bs_t(imode)%dvrpoints = job%bset(imode)%dvrpoints
+         bs_t(imode)%lmax = job%bset(imode)%lmax
          !
        enddo
        !
@@ -6616,7 +6616,7 @@ module perturbation
    !
    do imode = 1,Nmodes
      PT%range(:,imode) = job%bset(imode)%range(:)
-     PT%overlap(imode) = job%bset(imode)%dvrpoints
+     PT%overlap(imode) = job%bset(imode)%lmax ! lmax is meant as dvrpoints <- historical 
      PT%res_coeffs(imode) = job%bset(imode)%res_coeffs
    enddo
    !
@@ -6625,7 +6625,7 @@ module perturbation
    !
    PT%range(1,0) =  0
    PT%range(2,0) =  job%bset(0)%range(2)
-   PT%overlap(0) =  job%bset(0)%dvrpoints*2
+   PT%overlap(0) =  job%bset(0)%lmax*2
    !
    PT%maxoverlap =  maxval(PT%overlap(1:Nmodes))
    !
@@ -26479,7 +26479,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       ! size of the dvr grid
       !
-      dvr_size = max(bs(imode)%dvrpoints,bs(imode)%range(2)+1)
+      dvr_size = max(bs(imode)%lmax,bs(imode)%range(2)+1)
       !
       allocate (dvr%abcissa(ispecies)%coeff1d(dvr_size),dvr%weight(ispecies)%coeff1d(dvr_size),stat=alloc)
       call ArrayStart('dvr-abcisssa-weight',alloc,size(dvr%abcissa(ispecies)%coeff1d),kind(dvr%abcissa(ispecies)%coeff1d))
@@ -26493,7 +26493,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       bs_size = bs(imode)%range(2)
       !
-      !dvr_size = max(bs(imode)%dvrpoints,bs(imode)%range(2))
+      !dvr_size = max(bs(imode)%lmax,bs(imode)%range(2))
       !
       mpoints = dvr_size
       !
@@ -27608,7 +27608,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do imode=1,PT%Nmodes
       !
-      dvr%nsize(imode) = bs(imode)%dvrpoints
+      dvr%nsize(imode) = bs(imode)%lmax
       !
     enddo 
     !
@@ -27865,7 +27865,7 @@ end subroutine read_contr_matelem_expansion_classN
      real(ark)   :: chi(trove%Nmodes)
      character(len=cl)            :: dir
      !
-     do i=1,bs(imode)%dvrpoints
+     do i=1,bs(imode)%lmax
         !
         k_src(imode) = i
         !
@@ -31849,7 +31849,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        imode = PT%mode_species(ispecies,1)
        !
-       dvr_size = max(job%bset(imode)%dvrpoints,job%bset(imode)%range(2)+1)
+       dvr_size = max(job%bset(imode)%lmax,job%bset(imode)%range(2)+1)
        bs_size = job%bset(imode)%range(2)
        !
        read(chkptIO) ispecies_,dvr_size_,npoints,bs_size_
@@ -32671,7 +32671,7 @@ end subroutine read_contr_matelem_expansion_classN
     character(len=cl):: diagonalizer_used
     real(rk)  :: upper_ener,factor
     !
-    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvr0,ipot
     !
     type(PTcoeffsT),pointer    ::  cf
     !
@@ -33460,7 +33460,7 @@ end subroutine read_contr_matelem_expansion_classN
     character(len=cl):: diagonalizer_used
     real(rk)  :: upper_ener,factor
     !
-    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvr0,ipot
     !
     type(PTcoeffsT),pointer    ::  cf
     !

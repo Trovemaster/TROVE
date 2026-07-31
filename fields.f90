@@ -130,7 +130,7 @@ module fields
      logical                    :: periodic     ! change to the periodic boundary condition
      integer(ik)                :: iperiod      ! the period for the periodic tretament 
      character(len=cl)          :: dvr          ! Identifying type    of the dvr representation
-     integer(ik)                :: dvrpoints    ! number of dvr-integration points for each mode 
+     integer(ik)                :: lmax         ! Lmax  - vibrational angular momentum
      logical                    :: postprocess  ! Post-diagonalization of the contracted basis set
      logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
      logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
@@ -2077,7 +2077,8 @@ module fields
                   !
                 endif 
                 !
-                if (job%bset(imode)%dvrpoints==0) job%bset(imode)%dvrpoints = job%bset(imode)%range(2)+1
+                ! obsolete lmax is meant dvrpoints here 
+                if (job%bset(imode)%lmax==0) job%bset(imode)%lmax = job%bset(imode)%range(2)+1
                 !
               case("JROT")
                 !
@@ -2098,25 +2099,33 @@ module fields
                 !
                 ! we use range(1) to store the Jrot value 
                 !
-                job%bset(imode)%range(2) = i_t
-                trove%krot = i_t
-                if (trove%kmax==0) trove%kmax = i_t
-                krot_defined = .true.
+                job%bset(imode)%lmax = i_t
+                !
+                if (imode == 0) then
+                  job%bset(imode)%range(2) = i_t
+                  trove%krot = i_t
+                  if (trove%kmax==0) trove%kmax = i_t
+                  krot_defined = .true.
+                endif
                 !
               case("KMAX")
                 !
-                call readi(i_t)
+                if (imode /= 0) then 
+                  write(out,"('input: illegal keyword KMAX in BASIS for a non-rotational mode ',i7)") imode
+                  stop 'illegal keyword KMAX in BASIS for a non-rotational mode'
+                endif
                 !
+                call readi(i_t)
                 trove%kmax = i_t
                 !
               case("OVRLP","DVRPOINTS","DPOINTS")
                 !
-                call readi(job%bset(imode)%dvrpoints)
+                call readi(job%bset(imode)%lmax)
                 !
-                if (job%bset(imode)%dvrpoints==0) then 
-                  write(out,"('illegal number of dvrpoins:',i7)") job%bset(imode)%dvrpoints
-                  stop 'input: illegal number of dvrpoins'
-                endif 
+                !if (job%bset(imode)%lmax==0) then 
+                !  write(out,"('illegal number of dvrpoins:',i7)") job%bset(imode)%lmax
+                !  stop 'input: illegal number of dvrpoins'
+                !endif 
                 !
               case("REDUCED","RED","R","J")
                 !
@@ -2202,7 +2211,7 @@ module fields
             case ('SINRHO-LEGENDRE-K-SING')
                !
                ! here we assume the real Fourier basis for imode=Nmode defined following 
-               kmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+               kmax =  job%bset(i)%lmax   ! (job%bset(trove%Nmodes)%range(2)+1)/2
                ! k is transformed to n as
                ! n = 0: cos(0*tau); k=0
                ! n = 1: sin(1*tau); k=1 
@@ -2231,7 +2240,7 @@ module fields
             !
             if (job%bset(i)%type       ==job%bset(i-1)%type       .and.job%bset(i)%dim        ==job%bset(i-1)%dim.and.&
                 job%bset(i)%coord_kinet==job%bset(i-1)%coord_kinet.and.job%bset(i)%coord_poten==job%bset(i-1)%coord_poten.and.&
-                job%bset(i)%class      ==job%bset(i-1)%class      .and.job%bset(i)%dvrpoints  ==job%bset(i-1)%dvrpoints.and.&
+                job%bset(i)%class      ==job%bset(i-1)%class      .and. & ! job%bset(i)%dvrpoints  ==job%bset(i-1)%dvrpoints.and.&
                 job%bset(i)%range(1)   ==job%bset(i-1)%range(1)   .and.job%bset(i)%range(2)   ==job%bset(i-1)%range(2).and.&
                 job%bset(i)%borders(1) ==job%bset(i-1)%borders(1) .and.job%bset(i)%borders(2) ==job%bset(i-1)%borders(2).and.&
                 job%bset(i)%res_coeffs ==job%bset(i-1)%res_coeffs .and.job%bset(i)%npoints    ==job%bset(i-1)%npoints .and.&
@@ -5459,6 +5468,28 @@ module fields
      write(out,"('Input error: LEGENDRE or SINRHO are currently only working with Natoms=3 or 4')") 
      stop 'Illegal usage of LEGENDRE or SINRHO'
    endif
+   !
+   do i=1,Nmodes
+      !
+      select case (trim(job%bset(i)%type)) 
+         !
+      case ('SINRHO-LEGENDRE-K-SING')
+         !
+         if (trim(job%bset(trove%Nmodes)%type)/='FOURIER-UNOPTIMISED') then 
+           write(out,"('Input error: SINRHO-LEGENDRE-K-SING can only work with FOURIER-UNOPTIMISED not',a)") &
+                  trim(job%bset(trove%Nmodes)%type)
+           stop 'Input error: SINRHO-LEGENDRE-K-SING can only work with FOURIER-UNOPTIMISED'
+         endif
+         !
+         ! reset lmax to the smallest allowed value
+         kmax =   min(job%bset(i)%lmax,(job%bset(trove%Nmodes)%range(2)+1)/2)
+         !
+         job%bset(i)%lmax = kmax
+         job%bset(i)%range(2) = ( job%bset(i)%range(2)+1 )*( kmax+1 )-1
+         !
+      end select
+      !
+   enddo
    !
    ! For the compact form of the pre-defined KEO, the "READ" option is not supported. It must be
    ! always re-computed 
@@ -19283,7 +19314,7 @@ end subroutine check_read_save_none
       !
       write(chkptIO,"(a10,' ',a10,' ',a10,' ',a10)") trove%internal_coords,trove%coords_transform,trove%symmetry,trove%Moltype
       !
-      write(chkptIO,"('BASIS:   i  type     coord_kinet coord_poten model dim species class range dvrpoints',1x,&
+      write(chkptIO,"('BASIS:   i  type     coord_kinet coord_poten model dim species class range lmax     ',1x,&
                        &'res_coeffs npoints borders periodic period')") 
       !
       write(chkptIO,"(i8,'   <- Jrot, rotational angular momentum')") bset%dscr(0)%range(1)
@@ -21312,7 +21343,7 @@ end subroutine check_read_save_none
              ! n = 1: sin(1*tau); k=1 
              ! n = 2: cos(1*tau); k=1
              ! Therefore k = (n+1)/2 and
-             kmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+             kmax = job%bset(nu_i)%lmax  ! (job%bset(trove%Nmodes)%range(2)+1)/2
              nmax = bs%Size
              if ( kmax/=0 ) then
                nmax = (bs%Size+1)/(kmax+1)-1
