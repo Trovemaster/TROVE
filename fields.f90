@@ -2197,33 +2197,6 @@ module fields
          !
          call readu(w)
          !
-         ! special case of Assoc Legendre or SINRHO-polynomials 
-         !
-         do i=1,Nmodes
-            !
-            select case (trim(job%bset(i)%type)) 
-               !
-            case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
-               !
-               job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
-               job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
-               !
-            case ('SINRHO-LEGENDRE-K-SING')
-               !
-               ! here we assume the real Fourier basis for imode=Nmode defined following 
-               kmax =  job%bset(i)%lmax   ! (job%bset(trove%Nmodes)%range(2)+1)/2
-               ! k is transformed to n as
-               ! n = 0: cos(0*tau); k=0
-               ! n = 1: sin(1*tau); k=1 
-               ! n = 2: cos(1*tau); k=1
-               ! I.e. n=(k+1)/2; now for v of tje sing-mode assuming l=k:
-               job%bset(i)%range(2) = ( job%bset(i)%range(2)+1 )*( kmax+1 )-1
-               job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(trove%Nmodes)%range(2)+1),ark)
-               !
-            end select
-            !
-         enddo
-         !
          if (imode/=Nmodes.or.(trim(w)/="".and.trim(w)/="END")) then 
             !
             write (out,"('FLinput: wrong number of rows in Basis for Nmodes =',i8,': ',i8)") Nmodes,imode
@@ -5473,6 +5446,11 @@ module fields
       !
       select case (trim(job%bset(i)%type)) 
          !
+      case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
+         !
+         job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
+         job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
+          !
       case ('SINRHO-LEGENDRE-K-SING')
          !
          if (trim(job%bset(trove%Nmodes)%type)/='FOURIER-UNOPTIMISED') then 
@@ -5486,6 +5464,7 @@ module fields
          !
          job%bset(i)%lmax = kmax
          job%bset(i)%range(2) = ( job%bset(i)%range(2)+1 )*( kmax+1 )-1
+         job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(trove%Nmodes)%range(2)+1),ark)
          !
       end select
       !
@@ -21104,6 +21083,16 @@ end subroutine check_read_save_none
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
            case ('FOURIER-UNOPTIMISED')
+             !
+             deallocate (bs%matelements,bs%ener0)
+             call ArrayStop('bs%matelements')
+             call ArrayStop('bs%ener0')
+             !
+             allocate (bs%matelements(-1:3,0:maxpower,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size),stat=alloc)
+             call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
+             call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
+             !
+             bs%matelements = 0 
              !
              call ME_Fourier_unoptimised(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)

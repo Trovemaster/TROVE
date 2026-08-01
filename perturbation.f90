@@ -1652,7 +1652,7 @@ module perturbation
                ! n = 2: cos(1*tau); k=1
                ! Therefore k = (n+1)/2
                k = (nu_search(Nmodes)+1)/2
-               if (k/=l.and.k<lmax) do_count = .false.
+               if (k/=l.and.(k<lmax.or.l<lmax)) do_count = .false.
                !
                !endif
                !if (trim(job%bset(imodes-1)%type)=='FOURIER_PURE') then
