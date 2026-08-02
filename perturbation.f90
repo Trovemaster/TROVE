@@ -2850,7 +2850,7 @@ module perturbation
     real(ark)                     :: r_t(-Nr_t:Nr_t),func_t(-Nr_t:Nr_t)
 
     integer(ik)        :: Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift,kmode
-    integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
+    integer(ik)        :: v,bs_size,ilevel,k,l,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
     integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in,ierror
     character(len=cl)  :: unitfname,diag_
     real(ark)          :: f_value,f_prim,f_t
@@ -3757,6 +3757,20 @@ module perturbation
              if (PT%mode_iclass(iclasses)>1) then
                imode = PT%mode_class(iclasses,2)
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+             endif
+             !
+             if (singular_2D) then 
+                !extract the k=l value add assign lquant of the bending and torsional modes, respectively
+                ! The Fourier basis is with the same k for odd (sin(k*tau)) and even (cos(k*tau)):
+                k = ( contr(iclasses)%eigen(ilevel)%nu(Nmodes)+1 )/2
+                contr(iclasses)%eigen(ilevel)%lquant  = k
+                ! which we use to assign the normal mode for thhe torsion:
+                contr(iclasses)%eigen(ilevel)%normal(Nmodes) = k
+                ! actual vibrational QN of the bending mode is n = (v-l)/(lmax+1) with l = k
+                ! we allow fro k>lmax which is why l is defined as min(k,job%bset(Nmodes-1)%lmax
+                v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-1)
+                l = min(k,job%bset(Nmodes-1)%lmax)
+                contr(iclasses)%eigen(ilevel)%normal(Nmodes-1) = ( v-l )/( job%bset(Nmodes-1)%lmax+1 )
              endif
              !
              cf => contr(iclasses)%eigen(ilevel)

@@ -14664,7 +14664,12 @@ end subroutine check_read_save_none
        imode = bs1%mode(1)
        write(bs1%name,"(a2,a,' #',i4)") trim(job%bset(imode)%dim),trim(job%bset(imode)%type),job%bset(imode)%species
        bs1%type = job%bset(imode)%type
-    enddo 
+    enddo
+    !
+    ! Now we know orders of all fields, kinetic, potential and external and can get the value of the maximal order:
+    !
+    !
+    trove%MaxOrder = max(trove%NKinOrder,trove%NPotOrder,trove%NExtOrder)
     !
     ! Verbose: 
     !
@@ -14678,7 +14683,6 @@ end subroutine check_read_save_none
        enddo
        !
     endif
-
     !
     ! Inititialization of the rotation type 
     !
@@ -16814,7 +16818,7 @@ end subroutine check_read_save_none
         real(ark)            :: field_, rho
         real(rk)             :: exp_coeff_thresh
         !
-        integer(ik) :: i, j,  iterm, total_terms, cur_term , k(trove%Nmodes)
+        integer(ik) :: i, j,  iterm, total_terms, cur_term , k(trove%Nmodes), imode
         !
         unitfname ='Check point of the kinetic'
         ! 
@@ -17283,11 +17287,11 @@ end subroutine check_read_save_none
         !
         call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
         !
-        if (trove%NKinOrder<maxpower) then 
-           trove%NKinOrder = maxpower
-        endif
+        do imode = 1,Nmodes
+          maxpower = max(molec%basic_function_list(imode)%numfunc,maxpower)
+        enddo
         !
-        trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+        trove%NKinOrder = maxpower
         !
         close(chkptIO,status='keep')
         call IOStop(trim(unitfname))
@@ -17313,7 +17317,7 @@ end subroutine check_read_save_none
         real(ark)            :: field_, rho, mass_inverse
         real(rk)             :: exp_coeff_thresh
         !
-        integer(ik) :: i, j,  iterm, total_terms, cur_term , k(trove%Nmodes)
+        integer(ik) :: i, j,  iterm, total_terms, cur_term , k(trove%Nmodes), imode
         !
         unitfname ='Check point of the kinetic'
         ! 
@@ -17798,11 +17802,11 @@ end subroutine check_read_save_none
         !
         call FLCombine_compacted_fields_sparse(fl,"g_vib",trove%pseudo,"pseudo")
         !
-        if (trove%NKinOrder<maxpower) then 
-           trove%NKinOrder = maxpower
-        endif
+        do imode = 1,Nmodes
+          maxpower = max(molec%basic_function_list(imode)%numfunc,maxpower)
+        enddo
         !
-        trove%MaxOrder = max(trove%MaxOrder,trove%NKinOrder)
+        trove%NKinOrder = maxpower
         !
         close(chkptIO,status='keep')
         call IOStop(trim(unitfname))
@@ -18292,8 +18296,6 @@ end subroutine check_read_save_none
           trove%NPotOrder_modes(imode) =  maxval(fl%IndexQ(imode,:))
         enddo
         !
-        trove%MaxOrder = max(trove%MaxOrder,trove%NPotOrder)
-        !
         close(chkptIO,status='keep')
         call IOStop(trim(unitfname))
         !
@@ -18469,8 +18471,6 @@ end subroutine check_read_save_none
             !
           enddo
         enddo
-        !
-        trove%MaxOrder = max(trove%MaxOrder,trove%NExtOrder)
         !
         close(chkptIO,status='keep')
         call IOStop(trim(unitfname))
@@ -19740,7 +19740,7 @@ end subroutine check_read_save_none
 
     integer(ik)                 :: MatrixSize,imode,k,ipower,jpower,iterm,Nmodes,Tcoeff,ialloc,irho_eq,icoeff,jmode
     integer(ik)                 :: imu,alloc,alloc_p,nu_i,powers(trove%Nmodes),npoints,vl,vr,k1,k2,i,i_,isingular,jrot,krot,&
-                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j
+                                   kmax,nmax,krot1,krot2,krot11,krot21,k_l,k_r,i1,i2,j,nu_i_
     integer(ik)                 :: nl,nr,irho
     type(FLpolynomT),pointer    :: fl,gl,gzl
     type(Basis1DT), pointer     :: bs           ! 1D bset
@@ -19809,12 +19809,28 @@ end subroutine check_read_save_none
          !
     end select     
     !
+    ! The actual mode for the primitive functions to be generated is nu_i
+    !
+    nu_i =bs%mode(1)
+    !
+    ! We need to know the maximal expansion order of SoP fields in order to allocate and use an array with 
+    ! primitive matrix elemenents. We start with trove%NPotOrder,trove%NExtOrder,trove%NKinorder
+    ! and optmise them using the basi-cfunction construct if used
+    !
+    if(molec%mode_list_present) then
+       maxpower = molec%basic_function_list(nu_i)%numfunc
+    else 
+       maxpower = trove%NKinorder
+    endif
+    !
+    maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
+    !
     if (job%verbose>=6) then
       write (out,"(' Basis type ',a,' needs ',f12.5,' Mbytes of memory (plus a bit)')") &
              trim(bs%name), real(rk*MatrixSize,kind=rk)/(1024.0_rk**2)
     end if
     !
-    allocate (bs%matelements(-1:3,0:trove%MaxOrder,0:BSsize,0:BSsize),bs%ener0(0:BSsize),stat=alloc)
+    allocate (bs%matelements(-1:3,0:maxpower,0:BSsize,0:BSsize),bs%ener0(0:BSsize),stat=alloc)
     call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
     call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
     !
@@ -19950,16 +19966,16 @@ end subroutine check_read_save_none
     !
     do imode = 1,bs%imodes
        !
-       nu_i = bs%mode(imode)
+       nu_i_ = bs%mode(imode)
        !
-       if (trim(bset%dscr(nu_i)%dvr)=='HERMITE') then
+       if (trim(bset%dscr(nu_i_)%dvr)=='HERMITE') then
          !
          irho_eq = 0 
          !
          if (manifold/=0) irho_eq = mod(nint( ( molec%chi_eq(trove%Nmodes)-trove%rho_border(1) )/&
                                                 (trove%rhostep),kind=ik ),trove%npoints)
          !
-         powers = 0 ; powers(nu_i) = 2
+         powers = 0 ; powers(nu_i_) = 2
          k = FLQindex(trove%Nmodes_e,powers)
          !
          if (trove%sparse) then
@@ -19970,38 +19986,26 @@ end subroutine check_read_save_none
            !
            if (i/=0) f2(1) = trove%poten%field(i,irho_eq)
            !
-           g2(1) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+           g2(1) = trove%g_vib(nu_i_,nu_i_)%field(1,irho_eq)
            !
-           if (abs(g2(1))<sqrt(small_).or.trove%g_vib(nu_i,nu_i)%ifromsparse(1)/=1) then 
+           if (abs(g2(1))<sqrt(small_).or.trove%g_vib(nu_i_,nu_i_)%ifromsparse(1)/=1) then 
              write(out,"('FLbset1DNew: g(2)=0 in the sparse-field or inconsistent sparse-recored/=1',i8)") &
-                   trove%g_vib(nu_i,nu_i)%ifromsparse(1)
+                   trove%g_vib(nu_i_,nu_i_)%ifromsparse(1)
              stop 'FLbset1DNew: g(2)=0 in the sparse-field'
            endif
            !
          else
            !
            f2(1) = trove%poten%field(k,irho_eq)
-           g2(1) = trove%g_vib(nu_i,nu_i)%field(1,irho_eq)
+           g2(1) = trove%g_vib(nu_i_,nu_i_)%field(1,irho_eq)
            !
          endif
          !
-         trove%coord_f(nu_i) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )
+         trove%coord_f(nu_i_) = sqrt( sqrt( g2(1)/( 2.0_ark*f2(1) ) ) )
          !
        endif
        !
     enddo 
-    !
-    ! These are grid-based coordinates 
-    !
-    if(molec%mode_list_present) then
-       maxpower = molec%basic_function_list(nu_i)%numfunc
-    else 
-       maxpower = trove%NKinorder
-    endif
-    !
-    maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
-    !
-    nu_i = bs%mode(1)
     !
     npoints = bset%dscr(nu_i)%npoints
     !
@@ -21189,58 +21193,13 @@ end subroutine check_read_save_none
              !
            endif 
            !
-           if (.not.trove%DVR) then
-             !
-             call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
-             !
-             call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
-             !
-             call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
-             !
-             call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,p1drho,muzz)
-             !
-             !xi_n(:,:,1) = xton(:,:)
-             !
-           else 
-             !
-             ! DVR 
-             !
-             reduced_model = .false.
-             !
-             chi = 0
-             !
-             nu_i = bs%mode(1)
-             !
-             rho =  trove%chi0_ref(nu_i)
-             !
-             rho_kin0 = MLcoord_direct(rho,1,nu_i)
-             rho_pot0 = MLcoord_direct(rho,2,nu_i)
-             rho_ext0 = MLcoord_direct(rho,3,nu_i)
-             !
-             do i = 0,Npoints
-               !
-               rho =  rho_b(1)+real(i,kind=ark)*step
-               !
-               !chi(nu_i) = rho_b(1)+real(i,kind=rk)*step-trove%chi0_ref(nu_i)
-               !
-               chi(nu_i) = rho_b(1)+real(i,kind=ark)*step-trove%chi_ref(nu_i,irho_eq)
-               !
-               call FLcalc_poten_kinet_dvr(chi,irho_eq,poten_t,gvib_t,grot_t,gcor_t,extF_t,reduced_model)
-               !
-               g1drho(i) = gvib_t(nu_i,nu_i)
-               f1drho(i) = poten_t
-               !
-               rho_kin = MLcoord_direct(rho,1,nu_i)-rho_kin0
-               rho_pot = MLcoord_direct(rho,2,nu_i)-rho_pot0
-               rho_ext = MLcoord_direct(rho,3,nu_i)-rho_ext0
-               !
-               drho(i,1) = rho_kin
-               drho(i,2) = rho_pot
-               drho(i,3) = rho_ext
-               !
-             enddo
-             !
-           endif
+           call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
+           !
+           call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
+           !
+           call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,g1d,p1d,g1z)
+           !
+           call generate_1D_kinetic_fields(irho_eq,rho_b,Npoints,g1d,p1d,g1z,xton,drho,g1drho,p1drho,muzz)
            !
            bs%params    = 0
            bs%params(1) = 0
@@ -21339,16 +21298,6 @@ end subroutine check_read_save_none
              endif
              !
              chi_b(:) = rho_b(:) - rho_b(1)
-             !
-             deallocate (bs%matelements,bs%ener0)
-             call ArrayStop('bs%matelements')
-             call ArrayStop('bs%ener0')
-             !
-             allocate (bs%matelements(-1:3,0:maxpower,0:bs%Size,0:bs%Size),bs%ener0(0:bs%Size),stat=alloc)
-             call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
-             call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
-             !
-             bs%matelements = 0 
              !
              call ME_sqrt_sinrho_sinnrho_Legendre_k(nu_i,kmax,bs%Size,maxpower,chi_b,isingular,npoints,drho,xi_n(:,0:maxpower,1:3),&
                                        f1drho,g1drho,muzz,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
@@ -21463,6 +21412,11 @@ end subroutine check_read_save_none
           maxpower = molec%basic_function_list(nu_)%numfunc
        else
           maxpower = min(trove%NKinOrder,max(bset%dscr(nu_)%model-2,0))
+       endif
+       !
+       if (maxpower>trove%NKinOrder) then 
+          write(out,"('generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder',2i)") maxpower>trove%NKinOrder
+          stop 'generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder'
        endif
        !
        fl => trove%pseudo
