@@ -5449,7 +5449,7 @@ module fields
       case ('LEGENDRE','SINRHO-LEGENDRE','LAGUERRE-K','SINRHO-LAGUERRE-K','SINRHO-2XLAGUERRE-K')
          !
          job%bset(i)%range(2) = (job%bset(i)%range(2)+1)*(job%bset(0)%range(2)+1)-1
-         job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
+         job%bset(i)%res_coeffs = job%bset(i)%res_coeffs/real((job%bset(0)%range(2)+1),ark)
           !
       case ('SINRHO-LEGENDRE-K-SING')
          !
