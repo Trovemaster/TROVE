@@ -8849,14 +8849,15 @@ module me_bnd
 
 
   !
-  ! Matrix elements with sinrho-laguerre-k basis 
+  ! Eigenfunctions of the 1D Laguerre problem: optimized using the sinrho-laguerre-k basis 
+  ! This version does not compute any matrix elements, matelem are set to zero
   !
   subroutine ME_laguerre_k(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,f_m,pseudo,icoord,verbose,&
-                                  g_numerov,energy)
+                                  matelem,energy)
    !
    implicit none
    integer(ik),intent(in) :: vmax,kmax,maxorder,npoints,isingular
-   real(ark),intent(out)    :: g_numerov(-1:3,0:maxorder,0:vmax,0:vmax)
+   real(ark),intent(out)    :: matelem(-1:3,0:maxorder,0:vmax,0:vmax)
    real(ark),intent(out)    :: energy(0:vmax)
    !
    real(ark),intent(in) :: rho_b_(2)
@@ -8867,12 +8868,12 @@ module me_bnd
    real(ark)            :: rho_,rhostep,potmin,C_l,C_r,zpe,g,f,factor,alpha,ener_,ener_t
    real(ark)            :: psipsi_t,characvalue,rho_b(2),h_t,sigma_t,sigma,rms,C1,C2,C3,C4,cross_prod,mu_zz_t,mu_rr_t,ps_t
    !
-   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,k_
+   integer(ik) :: vl,vr,nl,nr,il,ir,nmax,lambda,alloc,i,k,rec_len,n,imin,io_slot,lmax,nmax1,ireflect,k_,m
    !
    real(ark),allocatable :: phil(:),phir(:),dphil(:),dphir(:),phivphi(:),rho_kinet(:),rho_poten(:),rho_extF(:),phi(:)
    real(ark),allocatable :: phil_s(:),phir_s(:)
-   real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),rho_m(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
-                            phi_rho(:),dphi_rho(:),Lm(:,:)
+   real(ark),allocatable :: L(:,:),dL(:,:),dphi(:),x(:),cosrho(:),vect(:,:),rho(:),psi(:,:),dpsi(:,:),&
+                            phi_rho(:),dphi_rho(:),Lm(:,:),rho_k(:)
    real(ark),allocatable  :: h(:,:),ener(:)
    !real(ark),allocatable  :: h_ark(:,:),ener_ark(:)
    !
@@ -8889,11 +8890,14 @@ module me_bnd
      !
      allocate(phil(0:npoints),phir(0:npoints),dphil(0:npoints),dphir(0:npoints), &
               phivphi(0:npoints),rho_kinet(0:npoints),rho_poten(0:npoints),rho_extF(0:npoints),&
-              x(0:npoints),rho_m(0:npoints),cosrho(0:npoints),rho(0:npoints),phil_s(0:npoints),phir_s(0:npoints),stat=alloc)
+              x(0:npoints),rho_k(0:npoints),cosrho(0:npoints),rho(0:npoints),&
+              phil_s(0:npoints),phir_s(0:npoints),stat=alloc)
      if (alloc/=0) then 
        write (out,"('phi - out of memory')")
        stop 'phi - out of memory'
-     endif 
+     endif
+     !
+     matelem = 0
      !
      rho_b = rho_b_
      !
@@ -8956,10 +8960,8 @@ module me_bnd
         rho_ = rho_b(1)+real(i,kind=ark)*rhostep
         x(i) = f_m*rho_**2
         rho(i) = rho_
-        rho_m(i) = sqrt(x(i))
         !
      enddo
-     !
      !
      ! define the rho-type coordinate 
      !
@@ -8998,10 +9000,8 @@ module me_bnd
        !
        if (verbose>=4) write(out,"(' K = ',i8)") k
        !
-       k_ = 0 ; if (k>0) k_ = 1
-       !
-       rho_m = 1.0_ark      ! factor for K = 0
-       if (k>0) rho_m = rho ! factor for all K>0
+       rho_k = 1.0_ark      ! factor for K = 0
+       if (k>0) rho_k = rho ! factor for all K>0
        !
        allocate(L(0:npoints,0:nmax+k),dL(0:npoints,0:nmax+k),Lm(0:npoints,0:nmax+k-1),stat=alloc)
        call ArrayStart('laguerre',alloc,size(L),kind(L))
@@ -9039,7 +9039,7 @@ module me_bnd
        !
        do vl =  0,nmax
          !
-         Psi(vl+1,:) = L(:,vl)*sqrt(rho(:))*rho_m(:)
+         Psi(vl+1,:) = L(:,vl)*sqrt(rho(:))*rho_k(:)
          !
        enddo
        !
@@ -9081,16 +9081,16 @@ module me_bnd
        !
        do vl = 0,nmax
           !
-          phil(:)  = L(:,vl)*sqrt(rho(:))*rho_m(:)
-          phil_s(:)= L(:,vl)*rho_m(:)
-          dphil(:) = dL(:,vl)*rho_m(:)
+          phil(:)  = L(:,vl)*sqrt(rho(:))*rho_k(:)
+          phil_s(:)= L(:,vl)*rho_k(:)
+          dphil(:) = dL(:,vl)*rho_k(:)
           if (k>0) dphil(:) = dphil(:) + L(:,vl)
           !
           do vr = vl,nmax
               !
-              phir(:)  = L(:,vr)*sqrt(rho(:))*rho_m(:)
-              phir_s(:)= L(:,vr)*rho_m(:)
-              dphir(:) = dL(:,vr)*rho_m(:)
+              phir(:)  = L(:,vr)*sqrt(rho(:))*rho_k(:)
+              phir_s(:)= L(:,vr)*rho_k(:)
+              dphir(:) = dL(:,vr)*rho_k(:)
               if (k>0) dphir(:) = dphir(:) + L(:,vr)
               !
               ! check orthogonality and normalisation
@@ -9116,8 +9116,6 @@ module me_bnd
               ! momenta-quadratic part 
               !
               phivphi(:) =-dphil(:)*mu_rr(:)*dphir(:)*rho(:)
-              !
-              !phivphi(:) =-mu_rr(:)*( dphil(:)*dphir(:)*rho_m(:)- &
               !                        cosrho(:)*real(k,ark)*( dphil(:)*L(:,vr)+L(:,vl)*dphir(:) ) )
               !
               mu_rr_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
@@ -9214,7 +9212,7 @@ module me_bnd
              !
              phi_rho(vl+1)  = L(i,vl)
              !dphi_rho(vl+1) = dL(i,vl)
-             dphi_rho(vl+1) = dL(i,vl)*rho_m(i)
+             dphi_rho(vl+1) = dL(i,vl)*rho_k(i)
              if (k>0) dphi_rho(vl+1)= dphi_rho(vl+1) + L(i,vl)
              !
           enddo
@@ -9246,20 +9244,20 @@ module me_bnd
               !
               ! check orthogonality and normalisation
               !
-              phivphi(:) = phil(:)*phir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = phil(:)*phir(:)*rho(:)*rho_k(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
               ! <vl|poten|vr> and use to check the solution of the Schroedinger eq-n 
               ! obtained above by the Numerov
               !
-              phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = phil(:)*poten(:)*phir(:)*rho(:)*rho_k(:)**2
               !
               h_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! pseudo-part
               !
-              phivphi(:) = phil(:)*pseudo(:)*phir(:)*rho_m(:)**2
+              phivphi(:) = phil(:)*pseudo(:)*phir(:)*rho_k(:)**2
               ps_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! momenta-quadratic part 
@@ -9314,98 +9312,6 @@ module me_bnd
                 endif 
               endif 
               !
-              psipsi_t = 0 
-              !
-              do lambda = 0,maxorder
-                 !
-                 ! momenta-free part in potential part
-                 !
-                 if (lambda==0) then 
-                    phivphi(:) = phil(:)*phir(:)
-                 else
-                    phivphi(:) = phil(:)*rho_poten(:)**lambda*phir(:)
-                 endif
-                 !
-                 g_numerov(0,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                 !
-                 ! external field expansion
-                 !
-                 if (lambda==0) then 
-                    phivphi(:) = phil(:)*phir(:)
-                 else
-                    phivphi(:) = phil(:)*rho_extF(:)**lambda*phir(:)
-                 endif
-                 !
-                 g_numerov(3,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                 if (il/=ir) g_numerov(3,lambda,ir,il) = g_numerov(3,lambda,il,ir)
-                 !
-                 ! momenta-free in kinetic part 
-                 !
-                 if (lambda==0) then 
-                    phivphi(:) = phil(:)*phir(:)
-                 else
-                    phivphi(:) = phil(:)*rho_kinet(:)**lambda*phir(:)
-                 endif
-                 !
-                 g_numerov(-1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                 !
-                 ! We also control the orthogonality of the basis set 
-                 !
-                 if (lambda==0) psipsi_t = g_numerov(0,lambda,vl,vr)
-                 !
-                 if (il/=ir) g_numerov(-1:0,lambda,ir,il) = g_numerov(-1:0,lambda,il,ir)
-                 !
-                 ! momenta-quadratic part 
-                 !
-                 if (lambda==0) then 
-                    phivphi(:) =-dphil(:)*dphir(:)
-                 else
-                    phivphi(:) =-dphil(:)*rho_kinet(:)**lambda*dphir(:)
-                 endif
-                 !
-                 g_numerov(2,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                 !
-                 if (vl/=vr) g_numerov(2,lambda,ir,il) = g_numerov(2,lambda,il,ir)
-                 !
-                 ! momenta-linear part:
-                 ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
-                 !
-                 !
-                 if (lambda==0) then 
-                    phivphi(:) = phil(:)*dphir(:)
-                 else
-                    phivphi(:) = phil(:)*rho_kinet(:)**lambda*dphir(:)
-                 endif
-                 !
-                 g_numerov(1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                 !
-                 if (vl/=vr) then
-                    !
-                    if (lambda==0) then 
-                       phivphi(:) = dphil(:)*phir(:)
-                    else
-                       phivphi(:) = dphil(:)*rho_kinet(:)**lambda*phir(:)
-                    endif
-                    !
-                    g_numerov(1,lambda,ir,il) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                    !
-                 endif 
-                 !
-                 if (verbose>=7) then 
-                     write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)
-                     write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(1,lambda,vl,vr)
-                     write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(2,lambda,vl,vr)
-                     write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(3,lambda,vl,vr)
-                     if (vl/=vr) then 
-                       write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(0,lambda,vr,vl)
-                       write(out,"('g_numerov(1,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(1,lambda,vr,vl)
-                       write(out,"('g_numerov(2,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(2,lambda,vr,vl)
-                       write(out,"('g_numerov(3,',i4,i4,i4,') = ',f18.8)") lambda,vr,vl,g_numerov(3,lambda,vr,vl)
-                     endif 
-                 endif 
-                 !
-              enddo 
-              !
           enddo
           !
           if (verbose>=6) then 
@@ -9425,7 +9331,6 @@ module me_bnd
        call ArrayStop('laguerre')
        !
      enddo loop_k
-     !
      ! cleanup
      !
      deallocate(h,ener,phi,dphi,vect)
@@ -9434,7 +9339,7 @@ module me_bnd
      deallocate(psi,dpsi,phi_rho,dphi_rho)
      call ArrayStop('psi-laguerre')
      !
-     deallocate(phil,phir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,rho_m,cosrho,rho)
+     deallocate(phil,phir,phil_s,phir_s,dphil,dphir,phivphi,rho_kinet,rho_poten,rho_extF,x,rho_k,cosrho,rho)
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
@@ -9446,7 +9351,7 @@ module me_bnd
   !
   ! Matrix elements with sinrho-laguerre-k basis; this version is fully diagonal in K
   !
-  subroutine ME_laguerre_k_diagonal(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,f_m,pseudo,icoord,verbose,&
+  subroutine ME_laguerre_k_v0(vmax,kmax,maxorder,rho_b_,isingular,npoints,drho,poten,mu_rr,mu_zz,f_m,pseudo,icoord,verbose,&
                                   g_numerov,energy)
    !
    implicit none
@@ -9510,7 +9415,7 @@ module me_bnd
      !
      if (kmax>lmax) then
        write(out,"('ME_laguere_k error: illegal kmax>max ',2i8)") kmax,lmax
-       stop 'ME_laguerre_k_diagonal error: illegal kmax>lmax'
+       stop 'ME_laguerre_k_v0 error: illegal kmax>lmax'
      endif
      !
      potmin = huge(1.0_ark)
@@ -9525,15 +9430,15 @@ module me_bnd
      enddo
      !
      if (imin<0.or.imin>npoints) then 
-         write(out,"('ME_laguerre_k_diagonal: pot_eff has no minimum',i8)") 
-         stop 'ME_laguerre_k_diagonal: pot_eff has no minimum'
+         write(out,"('ME_laguerre_k_v0: pot_eff has no minimum',i8)") 
+         stop 'ME_laguerre_k_v0: pot_eff has no minimum'
      endif 
      !
      !g = mu_rr(imin)
      !
      !if (g<small_) then 
-     !  write(out,"('ME_laguerre_k_diagonal: mu_rr(imin) cannot be zero ',g18.8)") mu_rr(imin)
-     !  stop 'ME_laguerre_k_diagonal: illegal mu_rr(imin)'
+     !  write(out,"('ME_laguerre_k_v0: mu_rr(imin) cannot be zero ',g18.8)") mu_rr(imin)
+     !  stop 'ME_laguerre_k_v0: illegal mu_rr(imin)'
      !endif
      !
      !if (imin>0.and.imin<npoints) then
@@ -9543,7 +9448,7 @@ module me_bnd
      !elseif (imin == npoints ) then
      !  f = ( 2.0_ark*poten(npoints-1)-poten(npoints) )/rhostep**2 
      !else 
-     !  stop 'ME_laguerre_k_diagonal: illegal imin'
+     !  stop 'ME_laguerre_k_v0: illegal imin'
      !endif
      !
      do i=0,npoints
@@ -9888,13 +9793,13 @@ module me_bnd
               ! Now we test the h_t = <vl|h|vr> matrix elements and check if Numerov cracked
               ! the Schroedinger all right
               if (vl/=vr.and.abs(h_t)>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_laguerre_k_diagonal: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
+                 write(out,"('ME_laguerre_k_v0: wrong solution for <',i4,'|H|',i4,'> = ',f20.10)") vl,vr,h_t
                  stop 'ME_numerov: bad Numerov solution'
               endif 
               !
               if (vl==vr.and.abs(h_t-ener(vl+1))>sqrt(small_)*abs(characvalue)*1e4) then 
-                 write(out,"('ME_laguerre_k_diagonal: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
-                 stop 'ME_laguerre_k_diagonal: bad solution'
+                 write(out,"('ME_laguerre_k_v0: wrong <',i4,'|H|',i4,'> (',f16.6,') =/= energy (',f16.6,')')") vl,vr,h_t,ener(vl+1)
+                 stop 'ME_laguerre_k_v0: bad solution'
               endif 
               !
               ! Reporting the quality of the matrix elemenst 
@@ -10033,7 +9938,7 @@ module me_bnd
      !
      if (verbose>=3) write (out,"(/20('*'),' ... done!')")
      !
-  end subroutine ME_laguerre_k_diagonal
+  end subroutine ME_laguerre_k_v0
 
 
 
