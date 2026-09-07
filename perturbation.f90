@@ -31425,6 +31425,12 @@ end subroutine read_contr_matelem_expansion_classN
      !
      ilevel = 0 
      !
+     if (maxval(PT%contractive_space(0:PT%Nclasses,PT%Maxsymcoeffs))>=1000000) then
+        write(out,"('Error writing quanta: too large record contractive_space',i12)") & 
+                maxval(PT%contractive_space(0:PT%Nclasses,PT%Maxsymcoeffs))
+        stop 'Error writing quanta: too large record contractive_space'
+     endif
+     !
      do icoeff = 1,PT%Maxsymcoeffs
        !
        write(chkptIO,'(i8,'//fmt%Nclasses//')')  PT%Index_deg(icoeff)%size1,PT%contractive_space(0:PT%Nclasses,icoeff)

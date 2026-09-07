@@ -147,7 +147,8 @@ contains
        !
        do icase = 1, ncases
           !
-          read(iounit,*) nlambdas, bset_contr(jind)%contractive_space(0:nclasses, icase)
+          write(my_fmt,'(a,i0,a)') "(i8,i6,",nclasses,"i6)"
+          read(iounit,my_fmt) nlambdas, bset_contr(jind)%contractive_space(0:nclasses, icase)
           !
           bset_contr(jind)%index_deg(icase)%size1 = nlambdas
           !
@@ -177,8 +178,10 @@ contains
              bset_contr(jind)%icontr2icase(icontr, 2)      = ilambda
              bset_contr(jind)%icase2icontr(icase, ilambda) = icontr
 
-             if (iroot /= icontr) stop 'read_contrind error: wrong indexing'
-
+             if (iroot /= icontr) then 
+                 write(out,"('read_contrind error: wrong indexing iroot /= icontr',2i12)") iroot,icontr
+                 stop 'read_contrind error: wrong indexing'
+             endif
           end do
 
        end do
