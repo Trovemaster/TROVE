@@ -42,7 +42,7 @@ module kin_abcd
    real(ark)            :: mX1,mX2,mY1,mY2
    integer(ik) :: info,Nterms
    integer(ik),parameter :: nlines = 33
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&
@@ -381,7 +381,7 @@ module kin_abcd
    real(ark)            :: mX1,mX2,mY1,mY2
    integer(ik) :: info,Nterms
    integer(ik),parameter :: nlines = 35
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&
@@ -720,12 +720,10 @@ module kin_abcd
    integer(ik),intent(out)   ::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
                                  ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
    !
-   !type(FLpolynomT),pointer ::  g_vib(:,:) 
-   !
    real(ark)            :: mX1,mX2,mY1,mY2
    integer(ik) :: info,Nterms
    integer(ik),parameter :: nlines = 34
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&
@@ -1078,12 +1076,10 @@ module kin_abcd
    integer(ik),intent(out)   ::  ig_vib(nmodes,nmodes,ntermmax,nmodes),ig_rot(3,3,ntermmax,nmodes),&
                                  ig_cor(nmodes,3,ntermmax,nmodes),ipseudo(ntermmax,nmodes)
    !
-   !type(FLpolynomT),pointer ::  g_vib(:,:) 
-   !
    real(ark)            :: mX1,mX2,mY1,mY2
    integer(ik) :: info,Nterms
    integer(ik),parameter :: nlines = 31
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&

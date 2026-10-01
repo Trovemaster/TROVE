@@ -721,7 +721,7 @@ module kin_xy2
    real(ark)            :: mX,mY
    integer(ik) :: info,Nterms,NMax
    integer(ik),parameter :: nlines = 15
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&
@@ -896,7 +896,7 @@ module kin_xy2
    real(ark)            :: mX,mY
    integer(ik) :: info,Nterms,NMax
    integer(ik),parameter :: nlines = 15
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&
@@ -1046,7 +1046,7 @@ module kin_xy2
    integer(ik) :: info,Nterms,NMax
 
    integer(ik),parameter :: nlines = 18
-   character(len=wl) :: constructor(nlines) = (/&
+   character(len=wl) :: constructor(nlines) = (/ character(len=wl) :: &
       'Mode 1 2',&
       '1 1 -1 I 1 1',&
       '2 1 -2 I 1 1',&

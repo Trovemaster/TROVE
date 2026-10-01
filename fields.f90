@@ -21415,7 +21415,7 @@ end subroutine check_read_save_none
        endif
        !
        if (maxpower>trove%NKinOrder) then 
-          write(out,"('generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder',2i)") maxpower>trove%NKinOrder
+          write(out,"('generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder',2i)") maxpower,trove%NKinOrder
           stop 'generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder'
        endif
        !
@@ -21463,7 +21463,7 @@ end subroutine check_read_save_none
               !
               f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
               !
-              if (abs(f2_term>small_)) then 
+              if (abs(f2_term)>small_) then 
                 !
                 do i = 1, trove%Nmodes_e
                   ! 
@@ -21495,7 +21495,7 @@ end subroutine check_read_save_none
               !
               g2_term  =  gl%field(j,irho_eq_)
               !
-              if (abs(g2_term>small_)) then 
+              if (abs(g2_term)>small_) then 
                 !
                 do i = 1, size(powers)
                   if(i == nu_i) cycle
