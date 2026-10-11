@@ -15472,26 +15472,32 @@ end subroutine check_read_save_none
       ! we use this routine to pack all numerov basis functions into a single check point file together.
       ! we read all records from the scratch files and copy the into one place. 
       !
-      subroutine numerovSave
+     subroutine numerovSave
         !
         character(len=cl)  :: unitfname
         integer(ik)        :: chkptIO,io_slot,itype,imode
-        type(Basis1DT),pointer ::  bs
-        integer(ik)        :: rec_len,vrec,v,maxpoints,npoints,alloc,bs_size,i
-        real(ark) ,allocatable     :: bs_funct(:),dbs_funct(:)
+        type(Basis1DT),pointer :: bs
+        integer(ik)        :: rec_len,vrec,v,maxpoints,max_v,npoints,alloc,bs_size,i
+        real(ark),allocatable :: bs_funct(:),dbs_funct(:)
         !
         maxpoints = 0
+        max_v = 0
         !
         do itype = 1,bset%n_bset1D_max
-           !
            bs => bset%bs1D(itype)
-           !
            imode = bs%mode(1)
-           !
            maxpoints = max(maxpoints,job%bset(imode)%npoints)
-           !
-        enddo 
+           if (job%bset_prop(imode)%numerical) then
+              bs_size = job%bset(imode)%range(2)
+              if (bset%dscr(imode)%type=='NUMEROV') then
+                 max_v = max(max_v, bs_size + 1)
+              else
+                 max_v = max(max_v, bs_size)
+              endif
+           endif
+        enddo
         !
+        if (max_v == 0 .and. all(.not.job%bset_prop(:)%numerical)) return
         !
         allocate (bs_funct(0:maxpoints),dbs_funct(0:maxpoints),stat=alloc)
         if (alloc/=0) then
@@ -15505,41 +15511,35 @@ end subroutine check_read_save_none
         call IOStart(trim(unitfname),chkptIO)
         open(chkptIO,action='write',status='replace',file=trove%chk_numerov_fname,access='direct',recl=rec_len)
         !
-        do itype = 1,bset%n_bset1D_max
-          !
-          bs => bset%bs1D(itype)
-          !
-          imode = bs%mode(1)
-          !
-          if( .not.job%bset_prop(imode)%numerical ) cycle
-          !
-          write(unitfname,"('Numerov basis set # ',i6)") imode
-          ! get the i/o unit with stored numerov basis functions
-          call IOStart(trim(unitfname),io_slot)
-          !open(unit=io_slot,status='scratch',access='direct',recl=rec_len)
-          !
-          npoints = job%bset(imode)%npoints
-          !
-          bs_size  = job%bset(imode)%range(2) 
-          !
-          do v = 0,bs_size+1
+        do v = 0,max_v
+          do itype = 1,bset%n_bset1D_max
             !
-            if(v>bs_size.and.bset%dscr(imode)%type/='NUMEROV') cycle
+            bs => bset%bs1D(itype)
+            imode = bs%mode(1)
+            npoints = job%bset(imode)%npoints
+            bs_size = job%bset(imode)%range(2)
+            vrec = itype + v*bset%n_bset1D_max
             !
-            ! copy:
+            if (.not.job%bset_prop(imode)%numerical .or. &
+                v > bs_size + 1 .or. &
+                (v > bs_size .and. bset%dscr(imode)%type/='NUMEROV')) then
+              ! Write a zero record so no record numbers are skipped (no sparse holes)
+              bs_funct(0:npoints) = 0.0_ark
+              dbs_funct(0:npoints) = 0.0_ark
+              write (chkptIO,rec=vrec) (bs_funct(i),i=0,npoints),(dbs_funct(i),i=0,npoints)
+              cycle
+            endif
+            !
+            write(unitfname,"('Numerov basis set # ',i6)") imode
+            call IOStart(trim(unitfname),io_slot)
+            !
             read (io_slot,rec=v+1) (bs_funct(i),i=0,npoints),(dbs_funct(i),i=0,npoints)
-            !
-            ! and paste:
-            vrec = itype+v*bset%n_bset1D_max
-            !
             write (chkptIO,rec=vrec) (bs_funct(i),i=0,npoints),(dbs_funct(i),i=0,npoints)
             !
           enddo
-           !
-        enddo 
+        enddo
         !
         deallocate (bs_funct,dbs_funct)
-        !
         close(chkptIO,status='keep')
         !
       end subroutine numerovSave

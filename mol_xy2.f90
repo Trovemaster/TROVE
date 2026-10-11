@@ -713,7 +713,7 @@ module mol_xy2
           dst(3) = pi-src(3)
        endif
        !
-    case('R1-Z-R2-RHO-ABS')
+    case('R1-Z-R2-RHO-ABS','R2-Z-R1-RHO-ABS')
        !
        if (direct) then 
           dst(1:2) = src(1:2)
