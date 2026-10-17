@@ -24,7 +24,17 @@ for benchmark in H2CO; do
   # Create output folder & move necessary files
   wd=outputs/$benchmark
   mkdir -p $wd
-  cp $exe $wd
+  if ldd $exe 2>/dev/null | grep -q "not found"; then
+    if command -v trove.exe >/dev/null 2>&1; then
+      cp "$(command -v trove.exe)" $wd/$exe_name
+    elif [ -x "$HOME/bin/trove.exe" ]; then
+      cp "$HOME/bin/trove.exe" $wd/$exe_name
+    else
+      cp $exe $wd
+    fi
+  else
+    cp $exe $wd
+  fi
   cp benchmarks/$benchmark/input/*.inp $wd
   cp scripts/$benchmark/run_benchmark.sh $wd
 
