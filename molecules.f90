@@ -25,7 +25,7 @@ module molecules
   use pot_zxy2
   use pot_zxy3
   use pot_xy4
-  use pot_ch3oh,only : MLpoten_ch3oh_sym,MLpoten_ch3oh_ref,MLpoten_ch3oh_sym_IV
+  use pot_ch3oh,only : MLpoten_ch3oh_sym,MLpoten_ch3oh_ref,MLpoten_ch3oh_sym_IV,MLpoten_ch3oh_sym_V
   use pot_c2h4, only : ML_dipole_c2h4_4m_dummy,MLpoten_c2h4_88, MLpoten_c2h4_lee,MLpoten_c2h4_886666
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
@@ -210,6 +210,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_abcd_morse_cos_angle_cosntau
          !
+    case('POTEN_ABCD_MORSE_COSALPHA_ALPHA_COSNTAU-SIN-SIN') 
+         !
+         MLpotentialfunc => MLpoten_abcd_morse_cos_angle_cosntau_sin_sin
+         !
     case('POTEN_ABCD') 
          !
          MLpotentialfunc => MLpoten_hsoh
@@ -317,6 +321,10 @@ module molecules
     case('POTEN_XY2_TYUTEREV') 
          !
          MLpotentialfunc => MLpoten_xy2_tyuterev
+         !
+    case('POTEN_XY2_MORSE_POWERS') 
+         !
+         MLpotentialfunc => MLpoten_xy2_morse_powers 
          !
     case('POTEN_XY2_TYUTEREV_ALPHA') 
          !
@@ -438,6 +446,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_ch3oh_sym_IV
          !
+    case('POTEN_CH3OH_SYM_V') 
+         !
+         MLpotentialfunc => MLpoten_ch3oh_sym_V
+         !
     case('POTEN_SOHF') 
          !
          MLpotentialfunc => MLpoten_sohf
@@ -517,6 +529,9 @@ end subroutine MLdefine_potenfunc
   subroutine MLdefine_kinetic_subroutine
    !
    if (verbose>=6) write(out,"(/'MLdefine_kinetic_subroutine/start')") 
+    !
+    ! The compact cases are treated directly in fields.f90
+    if (molec%kinetic_compact) return
     !
     select case(trim(molec%kinetic_type))
     case default
@@ -742,6 +757,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdms2pqr_xyz_z_bond
         !
+    case('DIPOLE_PQR_XYZ_Z-BOND_PP')
+        !
+        MLextF_func => MLdms2pqr_xyz_z_bond_pp
+        !
     case('DIPOLE_PQR_XYZ_BISECTING')
         !
         MLextF_func => MLdms2pqr_xyz_bisecting
@@ -750,6 +769,10 @@ end function ML_MEPfunc
         !
         MLextF_func => MLdipole_bisect_s1s2theta_xy2
         !
+    case('DIPOLE_PQR_XY2_SYM_EXP')
+        !
+        MLextF_func => MLdms2pqr_xy2_sym_expansion
+       !
     case('XY2_QMOM_SYM')
         !
         MLextF_func => prop_xy2_qmom_sym
@@ -3451,9 +3474,9 @@ end subroutine polintark
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    integer(ik),optional   :: iorder
-   integer(ik)            :: i,jorder
+   integer(ik)            :: i,jorder,nexpon,icount
    real(ark)              :: rhoe,v,amorse
-   real(ark)              :: y,z
+   real(ark)              :: y,z,xe,x0
      !
      if (verbose>=6) write(out,"(/'MLcoord_direct/start')") 
      !
@@ -3502,6 +3525,42 @@ end subroutine polintark
         rhoe =  molec%local_eq(imode)
         !
         v = cos(rhoe+x)-cos(rhoe)
+        !
+     case('COSX0-COSX') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe)-cos(rhoe+x)
+        !
+     case('COS(X)-COS(X0)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(x)-cos(rhoe)
+        !
+     case('COS(X0)-COS(X)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = cos(rhoe)-cos(x)
+        !
+     case('COS(RHOE)-COS(RHO)','COS(ALPHAE)-COS(ALPHA)') 
+        !
+        xe =  molec%chi_eq(imode)
+        !
+        v = cos(xe)-cos(x)
+        !
+     case('COS(RHO)-COS(RHOE)','COS(ALPHA)-COS(ALPHAE)') 
+        !
+        xe =  molec%chi_eq(imode)
+        !
+        v = cos(x)-cos(xe)
+        !
+     case('-COS(X0)-COS(X)') 
+        !
+        rhoe =  molec%local_eq(imode)
+        !
+        v = -cos(rhoe)-cos(x)
         !
      case('SIN(X)-SIN(X0)') 
         !
@@ -3557,11 +3616,20 @@ end subroutine polintark
         !
         v = 1.0_ark-exp( -amorse*( x ) )
         !
+     case('MORSE(X-XE)') 
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        v = 1.0_ark-exp( -amorse*( x-xe ) )
+        !
      case('RATIONAL') 
         !
         v = x
         !
-     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER','AUTO-SINGULAR')
+     case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER','AUTO-SINGULAR',&
+         '(COS(A0)-COS(A))*SINA','(COS(A)-COS(A0))*SINA','AUTO','POT-AUTO','EXT-AUTO')
         !
         v = x
         !
@@ -3605,18 +3673,43 @@ end subroutine polintark
           !
           v = 1.0_ark
           if(iorder == 0)  return
-          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          !
+          ! if the order does not exist set the term to zero 
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
           !
           y = 1.0_ark
           do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
             !
             z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
-                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+                (x+molec%local_eq(imode))**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
             call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
             v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
           end do      
           !
-          ! The following version is the same as "automatic" but with the singular which we distinguish using negative values of "iorder"
+       case('AUTO')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          if(iorder == 0)  return
+          if(iorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
+          !
+          y = 1.0_ark
+          do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+            !
+            z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff*&
+                (x)**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon
+            call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
+          end do      
+          !
+          ! The following version is the same as "auto" but with the singular which we distinguish using negative values of "iorder"
        case('AUTO-SINGULAR')
           ! 
           v = 1.0_ark
@@ -3624,13 +3717,16 @@ end subroutine polintark
           !
           jorder = abs(iorder)
           !
-          if(jorder > size(molec%basic_function_list(imode)%mode_set(:))) return 
+          if(jorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif 
           !
           y = 1.0_ark
           do i = 1, molec%basic_function_list(imode)%mode_set(jorder)%num_terms
             !
             z = molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%coeff*&
-                (molec%local_eq(imode)+x)**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%inner_expon
+                (x)**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%inner_expon
                 !
             if (iorder>0) then 
                call molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%func_pointer(z, y)
@@ -3639,6 +3735,64 @@ end subroutine polintark
             endif
             !
             v = v*y**molec%basic_function_list(imode)%mode_set(jorder)%func_set(i)%outer_expon
+          end do      
+          !
+       case('POT-AUTO')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          !
+          if(iorder+1 > size(molec%basic_function_pot_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif
+          !
+          ! for potential the power = iorder is related to the count as 
+          !
+          icount = iorder + 1
+          !
+          nexpon = molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%outer_expon
+          !
+          x0 = molec%chi_eq(imode)
+          !
+          call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,x0,nexpon,imode,v)
+          !
+          do i = 2, molec%basic_function_pot_list(imode)%mode_set(icount)%num_terms
+            !
+            z = molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%coeff*&
+                (x)**molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%inner_expon
+            call molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_pot_list(imode)%mode_set(icount)%func_set(i)%outer_expon
+          end do      
+          !
+       case('EXT-AUTO')
+          ! 
+          if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
+          !
+          v = 1.0_ark
+          !
+          if(iorder+1 > size(molec%basic_function_ext_list(imode)%mode_set(:))) then
+            v = 0
+            return
+          endif
+          !
+          ! for potential the power = iorder is related to the count as 
+          !
+          icount = iorder + 1
+          !
+          nexpon = molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(1)%outer_expon
+          !
+          x0 = molec%Ext_chi_eq(imode)
+          !
+          call molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(1)%func_pointer_exp(x,x0,nexpon,imode,v)
+          !
+          do i = 2, molec%basic_function_ext_list(imode)%mode_set(icount)%num_terms
+            !
+            z = molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(i)%coeff*&
+                (x)**molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(i)%inner_expon
+            call molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(i)%func_pointer(z, y)
+            v = v*y**molec%basic_function_ext_list(imode)%mode_set(icount)%func_set(i)%outer_expon
           end do      
           !
         case('BOND-LENGTH')
@@ -3726,9 +3880,33 @@ end subroutine polintark
        case('FOURIER') 
            !
            if (iorder<0) then 
-             v = sin( real(iorder,4)*( molec%local_eq(imode) + x ) )
+             v = sin( real(-iorder,4)*( x ) )
            else
-             v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+             v = cos( real(iorder,4)*( x ) )
+           endif
+           !
+       case('(COS(A0)-COS(A))*SINA') 
+           !
+           xe =  molec%chi_eq(imode)
+           !
+           jorder = abs(iorder)
+           !
+           if (iorder<0) then 
+             v = sin(x)*( cos(xe)-cos(x) )**jorder
+           else
+             v = (cos(xe)-cos(x))**jorder
+           endif
+           !
+       case('(COS(A)-COS(A0))*SINA') 
+           !
+           xe =  molec%chi_eq(imode)
+           !
+           jorder = abs(iorder)
+           !
+           if (iorder<0) then 
+             v = sin(x)*( cos(x)-cos(xe) )**jorder
+           else
+             v = (cos(x)-cos(xe))**jorder
            endif
            !
         case('ANGLE-X2Y2')
@@ -3822,7 +4000,7 @@ end subroutine polintark
    integer(ik),intent(in)  :: imode
 
    integer(ik)            :: itype
-   real(ark)            ::  rhoe,dxi_dchi,amorse,chi
+   real(ark)            ::  rhoe,dxi_dchi,amorse,chi,xe
 
      if (verbose>=6) write(out,"(/'MLcoord_firstderiv/start')") 
      !
@@ -3852,9 +4030,13 @@ end subroutine polintark
         !
         dxi_dchi = cos(chi)
         !
-     case('COSX-COSX0') 
+     case('COSX-COSX0','COS(X)-COS(X0)') 
         !
         dxi_dchi = -sin(chi)
+        !
+     case('COSX0-COSX','COS(X0)-COS(X)') 
+        !
+        dxi_dchi = sin(chi)
         !
      case('LINCOSRHO') 
         !
@@ -3878,6 +4060,17 @@ end subroutine polintark
         !
         dxi_dchi = amorse*exp( -amorse*( chi ) )
         !
+     case('MORSE(X-XE)')
+        !
+        write (out,"(a)") 'error: MLcoord_firstderiv:MORSE(X-XE): check before using'
+        stop 'error: MLcoord_firstderiv:MORSE(X-XE): check before using'
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        dxi_dchi = exp( -amorse*( chi-xe ) )
+        !
      end select 
      !
      if (verbose>=6) write(out,"('MLcoord_firstderiv/end')") 
@@ -3897,7 +4090,7 @@ end subroutine polintark
    integer(ik),intent(in) :: itype
    integer(ik),intent(in) :: imode
    
-   real(ark) :: chi,amorse,rhoe
+   real(ark) :: chi,amorse,rhoe,xe
 
    if (verbose>=6) write(out,"(/'MLcoord_invert/start')")
     
@@ -3905,8 +4098,10 @@ end subroutine polintark
 
    select case(trim(molec%coordinates(itype,imode)))
    case default
+        !
         write (out,"('MLcoord_invert: coordinate type ',a,' unknown')") trim(molec%coordinates(itype,imode))
         stop 'MLcoord_invert - bad coordinate-type'
+        !
    case('MORSE') 
         !
         ! xi(i) = 1/( i*amorse )
@@ -3914,6 +4109,14 @@ end subroutine polintark
         amorse = molec%specparam(imode)
         !
         chi = -log(1.0_ark-xi(imode))/amorse
+        !
+     case('MORSE(X-XE)') 
+        !
+        amorse = molec%specparam(imode)
+        !
+        xe = molec%chi_eq(imode)
+        !
+        chi =xe-log(1.0_ark-xi(imode))/amorse
         !
     case('HARMONIC','NORMAL','LINEAR','SAME') 
         !
@@ -4007,16 +4210,16 @@ end subroutine polintark
         !
         if (rhoe>0.5_ark*pi.and.chi<0.5_ark*pi) chi = pi - chi
         !
-     case('COSX-COSX0')
+     case('COSX-COSX0','COSX0-COSX','COS(X)-COS(X0)','COS(X0)-COS(X)')
         !
-        write(out,"('MLcoord_invert error: COSX-COSX0 case has not been tested')")
-        stop 'MLcoord_invert error: COSX-COSX0 case has not been tested'
+        write(out,"('MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested')")
+        stop 'MLcoord_invert error: COSX-COSX0 and COSX0-COSX case has not been tested'
         !
         rhoe = molec%chi_eq(imode)
         !
         if (abs(cos(rhoe)-xi(imode))>1.0_ark) then 
             !
-            write (out,"('MLcoord_invert: |sin x| = sin rhoe -xi  > 1: ',f18.8)") cos(rhoe)-xi(imode)
+            write (out,"('MLcoord_invert: |cos x| = cos rhoe -xi  > 1: ',f18.8)") cos(rhoe)-xi(imode)
             write (out,"('Consider change difftype ')")
             stop 'MLcoord_invert - bad sin x'
             !
@@ -4073,7 +4276,7 @@ end subroutine polintark
    case default
         write (out,"('ML_check_steps4coordinvert: coordinate type ',a,' unknown')") trim(molec%coordinates(itype,imode))
         stop 'ML_check_steps4coordinvert - bad coordinate-type'
-   case('MORSE') 
+   case('MORSE','MORSE(X-XE)') 
         !
         fstep(1:2) = 1.0_ark
         !
@@ -4095,6 +4298,10 @@ end subroutine polintark
             fstep(1) = 0.0_ark
             !
         endif 
+        !
+     case('COSX-COSX0','COSX0-COSX','COS(X)-COS(X0)','COS(X0)-COS(X)') 
+        !
+        fstep(1:2) = 1.0_ark
         !
      case('COSTAU') 
         !

@@ -537,7 +537,7 @@ module me_str
     deallocate(g_t)  
     !
     if (verbose>=1) write (out,"(20('*'),' Harmonic matrix elements calculations/end')")
-  !
+    !
   end subroutine  ME_harmonic
 
 

@@ -638,7 +638,7 @@ module perturbation
       !
       write(out,"(/'Rotational basis: ',a)") trim(bs_t(0)%type)
       write(out,"( 'range for J ',2i5)")  bs_t(0)%range(1:2) 
-      write(out,"( 'dvr points:',i0)") bs_t(0)%dvrpoints
+      write(out,"( 'dvr points:',i0)") bs_t(0)%lmax
     endif 
     !
     ! Verbose (resonanses):  
@@ -661,7 +661,7 @@ module perturbation
     !
     do imode = 1,Nmodes
       PT%range(:,imode) = bs_t(imode)%range(:)
-      PT%overlap(imode) = bs_t(imode)%dvrpoints
+      PT%overlap(imode) = bs_t(imode)%lmax
       PT%res_coeffs(imode) = bs_t(imode)%res_coeffs
     enddo
     !
@@ -670,7 +670,7 @@ module perturbation
     !
     PT%range(1,0) =  0 
     PT%range(2,0) =  jrot*2
-    PT%overlap(0) = bs_t(0)%dvrpoints*2
+    PT%overlap(0) = bs_t(0)%lmax*2
     !
     PT%maxoverlap =  maxval(PT%overlap(1:Nmodes))
     !
@@ -1427,7 +1427,18 @@ module perturbation
      integer(ik)            :: nu_search(size(nu_target))
      integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2,l
      logical     :: flag_go
-
+      !
+      ! For singular case call the 2D singular version if PTnu_index
+      !
+      if (trim(job%bset(trove%Nmodes-1)%type)=='SINRHO-LEGENDRE-K-SING'.and.&
+           trim(job%bset(trove%Nmodes)%type)=='FOURIER-UNOPTIMISED') then
+        !
+        isum = PTnu_index_with_singularity(nu_target,npol,Index_nu)
+        !
+        return 
+        !       
+      endif     
+      !         
       if (present(Index_nu)) then 
         dm1 = size(Index_nu,dim=1)
         dm2 = size(Index_nu,dim=2)
@@ -1437,15 +1448,15 @@ module perturbation
             stop 'number of modes in Index_nu /= Nmodes'
         endif 
       endif 
-
-
+      !
       ipol = PTpolyadRules(nu_target)
       if (ipol<npol) then 
           write(out,"('PTnu_index: ipol<npol:',2i8)") ipol,npol
           stop 'PTnu_index: ipol<npol'
       endif 
-
+      !
       imodes = 1
+      !
       Nmodes = size(nu_target)
       !
       nu_search = 0 
@@ -1537,6 +1548,160 @@ module perturbation
    !
    !
   end function PTnu_index
+
+
+
+
+!
+! We transform the Nmodes-dimension nu-quanta object 
+! into a 1D array 
+! By default PTnu_index computes the number of (nu1,nu2,nu3...) quanta in the 1D array 
+! Index_nu(i,j) is optional, it gives the nu(i) quantum corresponding to the j-number in the 1D quanta-array 
+! This version is with 2D singularit, i.e. a 2D coupled class, with imode= nmodes-1 singular 
+!
+  function PTnu_index_with_singularity(nu_target,npol,Index_nu) result (isum)
+
+     integer(ik),intent(in) :: nu_target(:)
+     integer(ik),intent(in) :: npol
+     integer(ik),intent(inout), optional  :: Index_nu(:,:)
+
+     integer(ik)            :: nu_search(size(nu_target))
+     integer(ik) :: ipol,imodes,Nmodes,isum,dm1,dm2,l
+     logical     :: flag_go
+
+      if (present(Index_nu)) then 
+        dm1 = size(Index_nu,dim=1)
+        dm2 = size(Index_nu,dim=2)
+        ! Must explode if wrong 
+        if (size(nu_target)/=dm1) then 
+            write(out,"('PTnu_index_with_singularity: number of modes in Index_nu /= Nmodes:',2i8)") dm1,size(nu_target)
+            stop 'number of modes in Index_nu /= Nmodes'
+        endif 
+      endif 
+
+
+      ipol = PTpolyadRules(nu_target)
+      if (ipol<npol) then 
+          write(out,"('PTnu_index_with_singularity: ipol<npol:',2i8)") ipol,npol
+          stop 'PTnu_index_with_singularity: ipol<npol'
+      endif 
+
+      imodes = 1
+      Nmodes = size(nu_target)
+      !
+      nu_search = 0 
+      flag_go = .true.
+      !
+      ! l is the vibrational quantum number in case it is needed; l = -1, it is not needed
+      l = -1
+      isum = 0 
+      call gsum(Nmodes,npol,imodes,nu_search,l,isum) 
+      !
+  contains
+   ! 
+   recursive subroutine gsum(Nmodes,Npol,imodes,nu_search,l,isum)
+     integer(ik),intent(in)    :: Nmodes
+     integer(ik),intent(in)    :: Npol,imodes
+     integer(ik),intent(inout) :: l
+     integer(ik) :: nu_t,Npol_t,isum,v,lmax=0,k
+     !
+     integer(ik)            :: nu_search(size(nu_target))
+     real(rk)  :: ener0
+     logical   :: do_count = .false.
+
+     ! start cycle for the current-level nu-mode from 0 and untill npol_t<Npol
+     nu_t = 0
+     Npol_t   = PTpolyadRules(nu_search)
+     !
+     do while (npol_t<=Npol.and.flag_go.and.nu_search(imodes)<=nu_target(imodes))
+        !
+        !if (job%bset_prop(imodes-1)%singular) then
+        !  lmax = job%bset(0)%range(2)
+        !  v = nu_search(imodes)
+        !  l = mod(v,lmax+1)
+        !endif
+        !
+        if (imodes == Nmodes) then
+           if (npol_t==Npol) then
+             !
+             ! This is a 2D singular case
+             if (job%bset_prop(imodes-2)%singular .and.job%bset(imodes-1)%class==job%bset(imodes-2)%class) then 
+               !
+               ! here we assume the real Fourier basis for imode=Nmode defined following 
+               lmax = job%bset(imodes-2)%lmax !(job%bset(trove%Nmodes)%range(2)+1)/2
+               v = nu_search(imodes-1)
+               l = mod(v,lmax+1)
+               !n = (v-l)/(lmax+1)
+               !
+             endif 
+             !
+             ener0 = FLenergy_zero(nu_search(:))
+             !
+             do_count = .false.
+             !
+             if (ener0<=job%enercut) do_count = .true.
+             !
+             ! Here we combine the ith-mode basis with the nmode basis using k(nmode) = l(ith)
+             if (l/=-1) then
+               !if (trim(job%bset(imodes-1)%type)=='SINRHO-LEGENDRE-K-SING'.and.&
+               !    trim(job%bset(imodes)%type)=='FOURIER-UNOPTIMISED') then
+               !
+               ! here we assume that the Fourier basis as 
+               ! n = 0: cos(0*tau) 
+               ! n = 1: sin(1*tau); k=1 
+               ! n = 2: cos(1*tau); k=1
+               ! Therefore k = (n+1)/2
+               k = (nu_search(Nmodes)+1)/2
+               if (k/=l.and.(k<lmax.or.l<lmax)) do_count = .false.
+               !
+               !endif
+               !if (trim(job%bset(imodes-1)%type)=='FOURIER_PURE') then
+               !  !
+               !  k = (nu_search(Nmodes)+1)/2
+               !  if (k/=l) do_count = .false.
+               !  !
+               !endif
+             endif
+             !
+             if (do_count) then 
+                !
+                isum = isum +1
+                !
+                !write(out,"('isum,-> nu_search',20i4)") isum,nu_search(:)
+                !
+                if (present(index_nu)) then 
+                   if (isum>dm2) then 
+                      write(out,"('PTnu_index_with_singularity: isum > size of Index_nu:',2i8)") isum,dm2
+                      stop 'PTnu_index_with_singularity: isum > size of Index_nu'
+                   endif 
+                   index_nu(:,isum) = nu_search(:)
+                endif
+              endif 
+           endif
+           !
+           if (all(nu_target(:)==nu_search(:))) flag_go = .false.
+           !
+        else
+           !
+           ! go to the next mode (imodes+1)
+           !
+           call gsum(Nmodes,Npol,imodes+1_ik,nu_search,l,isum)
+        endif 
+        nu_t = nu_t +1 
+        !
+        ! Check the current value for the polyad number 
+        !
+        nu_search(imodes) = nu_t
+        !
+        Npol_t = PTpolyadRules(nu_search)
+        !
+     enddo
+     nu_search(imodes:Nmodes)=0
+   end subroutine gsum
+   !
+   !
+  end function PTnu_index_with_singularity
+
 
 
 
@@ -2685,7 +2850,7 @@ module perturbation
     real(ark)                     :: r_t(-Nr_t:Nr_t),func_t(-Nr_t:Nr_t)
 
     integer(ik)        :: Nclasses,imode,i,iclasses,dimen,alloc,npoints,io_slot,pshift,kmode
-    integer(ik)        :: v,bs_size,ilevel,k,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
+    integer(ik)        :: v,bs_size,ilevel,k,l,ipol,ib,nu(0:PT%Nmodes),i_eq(PT%Nmodes),Nirr(sym%Nrepresen)
     integer(ik)        :: ipoint_t,iroot,gamma,info,jlevel,iroot_in,ierror
     character(len=cl)  :: unitfname,diag_
     real(ark)          :: f_value,f_prim,f_t
@@ -2694,7 +2859,7 @@ module perturbation
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
     integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
-    logical           ::  reduced_model,diagonal
+    logical           ::  reduced_model,diagonal,singular_2D
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
     !
@@ -2742,7 +2907,7 @@ module perturbation
        do imode = 0,PT%Nmodes
          bs_t(imode)%range(:) = 0 
          bs_t(imode)%res_coeffs = 10000.0
-         bs_t(imode)%dvrpoints = 1
+         bs_t(imode)%lmax = 1
        enddo
        !
        PTuse_gauss_quadrature = .false.
@@ -2751,6 +2916,7 @@ module perturbation
        res_min = huge(1)
        !
        reduced_model = .false.
+       singular_2D = .false.
        !
        do i = 1,PT%mode_iclass(iclasses)
          !
@@ -2766,7 +2932,7 @@ module perturbation
          imode = PT%mode_class(iclasses,i)
          bs_t(imode)%range(:) = job%bset(imode)%range(:) 
          bs_t(imode)%res_coeffs = job%bset(imode)%res_coeffs !/res_min
-         bs_t(imode)%dvrpoints = job%bset(imode)%dvrpoints
+         bs_t(imode)%lmax = job%bset(imode)%lmax
          !
          ! if specified in the input we solve  a reduced quadratic model  
          ! hamiltonian fully separated from other modes
@@ -2777,6 +2943,13 @@ module perturbation
          if (bs_t(imode)%model /= 1000) then 
            !
            reduced_model = .true.
+           !
+         endif 
+         !
+         ! special case of a 2D basis with a singularity
+         if (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==2) then 
+           !
+           singular_2D = .true.
            !
          endif 
          !
@@ -2919,6 +3092,26 @@ module perturbation
            !
          endif
          !
+         ! 2D signularity: e.g. Fourier basis cos(k*tau) and sin(k*tau) and Associated Legendre(l,n)
+         ! with the l=k contraint 
+         !
+       elseif (singular_2D) then 
+         !
+         diagonal = .false.
+         !
+         dimen = size(PT%Htotal%coeffs,dim=1)
+         !
+         diag_='SYEV'
+         !
+         call PThamiltonianMat_singular(jrot,nroots,diag_,job%enercutoff%contr)
+         !
+         if (nroots<1) then 
+           !
+           write(out,"('No eigensolutions found')") 
+           stop 'No eigensolutions found'
+           !
+         endif 
+         !
        else 
          !
          diagonal = .false.
@@ -2950,7 +3143,7 @@ module perturbation
        !
        do imode = 1,PT%Nmodes
          PT%range(:,imode) = job%bset(imode)%range(:)
-         PT%overlap(imode) = job%bset(imode)%dvrpoints
+         PT%overlap(imode) = job%bset(imode)%lmax
          PT%res_coeffs(imode) = job%bset(imode)%res_coeffs
        enddo
        !
@@ -3049,7 +3242,7 @@ module perturbation
          !
          bs_t(imode)%range(:) = job%bset(imode)%range(:) 
          bs_t(imode)%res_coeffs = 1
-         bs_t(imode)%dvrpoints = job%bset(imode)%dvrpoints
+         bs_t(imode)%lmax = job%bset(imode)%lmax
          !
        enddo
        !
@@ -3564,6 +3757,20 @@ module perturbation
              if (PT%mode_iclass(iclasses)>1) then
                imode = PT%mode_class(iclasses,2)
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
+             endif
+             !
+             if (singular_2D) then 
+                !extract the k=l value add assign lquant of the bending and torsional modes, respectively
+                ! The Fourier basis is with the same k for odd (sin(k*tau)) and even (cos(k*tau)):
+                k = ( contr(iclasses)%eigen(ilevel)%nu(Nmodes)+1 )/2
+                contr(iclasses)%eigen(ilevel)%lquant  = k
+                ! which we use to assign the normal mode for thhe torsion:
+                contr(iclasses)%eigen(ilevel)%normal(Nmodes) = k
+                ! actual vibrational QN of the bending mode is n = (v-l)/(lmax+1) with l = k
+                ! we allow fro k>lmax which is why l is defined as min(k,job%bset(Nmodes-1)%lmax
+                v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-1)
+                l = min(k,job%bset(Nmodes-1)%lmax)
+                contr(iclasses)%eigen(ilevel)%normal(Nmodes-1) = ( v-l )/( job%bset(Nmodes-1)%lmax+1 )
              endif
              !
              cf => contr(iclasses)%eigen(ilevel)
@@ -6423,7 +6630,7 @@ module perturbation
    !
    do imode = 1,Nmodes
      PT%range(:,imode) = job%bset(imode)%range(:)
-     PT%overlap(imode) = job%bset(imode)%dvrpoints
+     PT%overlap(imode) = job%bset(imode)%lmax ! lmax is meant as dvrpoints <- historical 
      PT%res_coeffs(imode) = job%bset(imode)%res_coeffs
    enddo
    !
@@ -6432,7 +6639,7 @@ module perturbation
    !
    PT%range(1,0) =  0
    PT%range(2,0) =  job%bset(0)%range(2)
-   PT%overlap(0) =  job%bset(0)%dvrpoints*2
+   PT%overlap(0) =  job%bset(0)%lmax*2
    !
    PT%maxoverlap =  maxval(PT%overlap(1:Nmodes))
    !
@@ -26286,7 +26493,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       ! size of the dvr grid
       !
-      dvr_size = max(bs(imode)%dvrpoints,bs(imode)%range(2)+1)
+      dvr_size = max(bs(imode)%lmax,bs(imode)%range(2)+1)
       !
       allocate (dvr%abcissa(ispecies)%coeff1d(dvr_size),dvr%weight(ispecies)%coeff1d(dvr_size),stat=alloc)
       call ArrayStart('dvr-abcisssa-weight',alloc,size(dvr%abcissa(ispecies)%coeff1d),kind(dvr%abcissa(ispecies)%coeff1d))
@@ -26300,7 +26507,7 @@ end subroutine read_contr_matelem_expansion_classN
       !
       bs_size = bs(imode)%range(2)
       !
-      !dvr_size = max(bs(imode)%dvrpoints,bs(imode)%range(2))
+      !dvr_size = max(bs(imode)%lmax,bs(imode)%range(2))
       !
       mpoints = dvr_size
       !
@@ -26331,7 +26538,8 @@ end subroutine read_contr_matelem_expansion_classN
          !
          continue
          !
-      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K')
+      case ('NUMEROV','LEGENDRE','FOURIER','BOX','SINRHO','LAGUERRE-K','SINC','SINRHO-LAGUERRE-K','FOURIER-UNOPTIMISED',&
+            'SINRHO-LEGENDRE-K-SING')
          !
          if (dvr_size>bs(imode)%npoints) then 
            !
@@ -27414,7 +27622,7 @@ end subroutine read_contr_matelem_expansion_classN
     !
     do imode=1,PT%Nmodes
       !
-      dvr%nsize(imode) = bs(imode)%dvrpoints
+      dvr%nsize(imode) = bs(imode)%lmax
       !
     enddo 
     !
@@ -27671,7 +27879,7 @@ end subroutine read_contr_matelem_expansion_classN
      real(ark)   :: chi(trove%Nmodes)
      character(len=cl)            :: dir
      !
-     do i=1,bs(imode)%dvrpoints
+     do i=1,bs(imode)%lmax
         !
         k_src(imode) = i
         !
@@ -31217,6 +31425,12 @@ end subroutine read_contr_matelem_expansion_classN
      !
      ilevel = 0 
      !
+     if (maxval(PT%contractive_space(0:PT%Nclasses,PT%Maxsymcoeffs))>=1000000) then
+        write(out,"('Error writing quanta: too large record contractive_space',i12)") & 
+                maxval(PT%contractive_space(0:PT%Nclasses,PT%Maxsymcoeffs))
+        stop 'Error writing quanta: too large record contractive_space'
+     endif
+     !
      do icoeff = 1,PT%Maxsymcoeffs
        !
        write(chkptIO,'(i8,'//fmt%Nclasses//')')  PT%Index_deg(icoeff)%size1,PT%contractive_space(0:PT%Nclasses,icoeff)
@@ -31655,7 +31869,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        imode = PT%mode_species(ispecies,1)
        !
-       dvr_size = max(job%bset(imode)%dvrpoints,job%bset(imode)%range(2)+1)
+       dvr_size = max(job%bset(imode)%lmax,job%bset(imode)%range(2)+1)
        bs_size = job%bset(imode)%range(2)
        !
        read(chkptIO) ispecies_,dvr_size_,npoints,bs_size_
@@ -32477,7 +32691,7 @@ end subroutine read_contr_matelem_expansion_classN
     character(len=cl):: diagonalizer_used
     real(rk)  :: upper_ener,factor
     !
-    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvrpoints(PT%Nmodes),idvr0,ipot
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvr0,ipot
     !
     type(PTcoeffsT),pointer    ::  cf
     !
@@ -33251,6 +33465,317 @@ end subroutine read_contr_matelem_expansion_classN
   end subroutine PThamiltonianMat
 
 
+! Here we construct the primitve matrix and diagonalize it
+! This case is specifically for singular basis with 2D contraction
+!
+  subroutine PThamiltonianMat_singular(jrot,nroots,diagonalizer_,uv_syevr_,postprocess_)
+
+    integer(ik),intent(in) :: jrot ! rotational quantum number
+    integer(ik),intent(out):: nroots ! number of roots found
+    character(len=cl),intent(in),optional  :: diagonalizer_
+    real(rk),intent(in),optional  :: uv_syevr_
+    logical,intent(in),optional   :: postprocess_
+    !
+    integer(ik) :: alloc,i0,dimen,MaxTerm
+    character(len=cl):: diagonalizer_used
+    real(rk)  :: upper_ener,factor
+    !
+    integer(ik) :: nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes),nu(0:PT%Nmodes),ipol,ib,jb,i,j,tau_j,Nmodes,idvr0,ipot
+    !
+    type(PTcoeffsT),pointer    ::  cf
+    !
+    real(rk) :: mat_elem,MaxEigenvects,termvalue,ZPE,mat_elem_
+    !
+    double precision :: vrange(2)
+    real(rk),allocatable :: b(:),a(:,:),c(:,:),d(:,:),e(:)
+    integer  :: nroot_t,lquant,Nmodes1,itrial
+    double precision,allocatable :: work(:)
+    integer,allocatable :: iwork(:)
+    integer          :: info,lwork,liwork
+    character(len=1)   :: rng
+    double precision   :: alpha = 1.0d0,beta=0.0d0
+    integer(ik),allocatable       :: count_index(:,:),count_degen(:)
+    integer(ik)        :: icount,ideg,jdeg,jroot,iroot_in,iroot,Ndeg,Ncount
+    real(rk)           :: largest_coeff
+    logical            :: postprocess
+    integer(ik)        :: kmax, nmax,n_i,n_j,v_i,v_j,k_i,k_j,imode,jmode
+    character(len=cl)  :: my_fmt1,my_fmt2 !format for I/O specification
+    !
+    Nmodes = PT%Nmodes
+    !
+    if (Jrot>0) then 
+        write(out,"('PThamiltonianMat_singular error: illegal usage for J>0',i8)") Jrot
+        stop 'PThamiltonianMat_singular error: illegal usage for J>0'
+    endif
+    !
+    if (job%verbose>=4) write(out,"(/'PThamiltonianMat_singular/start: variational solution '/)") 
+    !
+    if (present(diagonalizer_)) then 
+        diagonalizer_used = diagonalizer_
+    else 
+        diagonalizer_used = job%diagonalizer
+    endif 
+    !
+    if (present(uv_syevr_)) then 
+        upper_ener = uv_syevr_
+    else 
+        upper_ener = job%upper_ener
+    endif 
+    !
+    if (present(postprocess_)) then
+        postprocess = postprocess_
+    else 
+        postprocess = .false.
+    endif 
+    !
+    if (job%verbose>=5) write(out,"( 'Diagonalizer used: ',a)") trim(diagonalizer_used)
+    !
+    call TimerStart('PThamil..Mat')
+    !
+    if (size(PT%BasissetType)/=PT%Nmodes+1) then 
+       write(out,"('PTzeroorder: size(BasissetType)/=PT%Nmodes+1',2i8)") size(PT%BasissetType),PT%Nmodes+1
+       stop 'PTzeroorder: size(BasissetType)/=PT%Nmodes+1'
+    endif
+    !
+    cf => PT%Htotal
+    !
+    dimen = size(cf%coeffs,dim=1)
+    !
+    if (job%verbose>=0) then 
+        write (out,"('Size of the variational matrix  = ',i7,' out of ',i7,' elements.')") dimen,PT%Maxcoeffs
+    endif
+    !
+    allocate (a(dimen,dimen),b(dimen),stat=alloc)
+    call ArrayStart('PThamiltonianMat_singular_a',alloc,size(a),kind(a))
+    call ArrayStart('PThamiltonianMat_singular_b',alloc,size(b),kind(b))
+    !
+    a = 0
+    !
+    ! vibrational angular momentum
+    !
+    if (jrot<0) then
+     allocate (c(dimen,dimen),stat=alloc)
+     call ArrayStart('PThamiltonianMat_singular_c',alloc,size(c),kind(c))
+    endif
+    !
+    kmax = job%bset(trove%Nmodes)%range(2)
+    nmax = job%bset(Nmodes)%range(2)
+    if ( kmax/=0 ) then 
+      nmax = (job%bset(Nmodes)%range(2)+1)/(kmax+1)-1
+    endif
+    !
+    if (job%verbose>=3) then 
+       write(out,"(/'Primitive matrix elements calculations...')")
+    endif
+    !
+    !$omp parallel do private(i,j,nu_i,nu_j,mat_elem) shared(a,b) schedule(dynamic)
+    do i = 1,dimen
+      !
+      if (job%verbose>=5.and.mod(i,100)==0) print("('  i = ',i8)"), i
+      !
+      nu_i(:) = PT%active_space%icoeffs(:,i)
+      !
+      do j = i,dimen
+        !
+        nu_j(:) = PT%active_space%icoeffs(:,j)
+        !
+        ! Matrix elements 
+        !
+        mat_elem = 0
+        !
+        if (all( nu_i(1:)>=PT%range(1,1:) ).and. all( nu_i(1:)<=PT%range(2,1:) ).and. & 
+          !
+          all( nu_j(1:)>=PT%range(1,1:) ).and. all( nu_j(1:)<=PT%range(2,1:) ) ) then
+            !
+            ! J-free calculations
+            mat_elem = PTmatrixelements(0,nu_i,nu_j) 
+            ! 
+        endif
+        !
+        a(i,j) =mat_elem
+        a(j,i) =mat_elem
+        !
+      enddo
+      !
+      b(i) = a(i,i)
+      !
+    enddo 
+    !$omp end parallel do 
+    !
+    ! be verbose
+    !
+    call TimerStop('PThamil..Mat')
+    !
+    ! Diagonalization 
+    !
+    ! The diagonalization will be done with Lapack. 
+    ! We will need matrix "a" prepared in appropriate way 
+    !
+    b = 0
+    !
+    !  diagonalization with lapack_syev
+    !
+    call TimerStart('Diagonalization')
+    !
+    if (job%verbose>=3) then 
+       write(out,"(/'Diagonalization...')")
+    endif 
+    !
+    select case (trim(diagonalizer_used)) 
+    !
+    case default
+      !
+      write (out,"('PThamiltonianMat_singular: type of the diagonalizer  ',a,' unknown')") trim(diagonalizer_used)
+      stop 'PThamiltonianMat_singular - wrong diagonalizer '
+      !
+    case('SYEV') 
+      !
+      !
+      !call lapack_syev(a(1:dimen,1:dimen),b(:))
+      !
+      lwork = 50*size(a,dim=1)
+      !
+      allocate(work(lwork))
+      !
+      call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,info)
+      !
+      if (int(work(1))>size(work)) then 
+        !
+        lwork = int(work(1))
+        !
+        deallocate(work)
+        !
+        allocate(work(lwork))
+        !
+        call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
+        !
+      else
+        !
+        call dsyev('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,info)
+        !
+      endif 
+      !
+      deallocate(work)
+      !
+      if (info/=0) then
+        write (out,"('PThamiltonianMat_singular-dsyev returned ',i8)") info
+        stop 'PThamiltonianMat_singular-lapack_dsyev - dsyev failed'
+      end if
+      !
+      nroots = dimen
+      !
+    case('SYEVD') 
+      !
+      lwork  = 50*size(a,dim=1)
+      liwork = 50*size(a,dim=1)
+      !
+      allocate(work(lwork),iwork(liwork))
+      !
+      call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,-1,iwork,-1,info)
+      !
+      if (int(work(1))>size(work).or.int(iwork(1))>size(iwork)) then 
+        !
+        lwork = int(work(1))
+        liwork = int(iwork(1))
+        !
+        deallocate(work,iwork)
+        !
+        allocate(work(lwork),iwork(liwork))
+        !
+        call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
+        !
+        nroots = dimen
+        !
+      else
+        !
+        call dsyevd('V','U',dimen,a(1:dimen,1:dimen),dimen,b,work,lwork,iwork,liwork,info)
+        !
+      endif 
+      !
+      deallocate(work,iwork)
+      !
+      if (info/=0) then
+        write (out,"('PThamiltonianMat_singular-dsyevd returned ',i8)") info
+        stop 'PThamiltonianMat_singular-lapack_dsyevd - dsyev failed'
+      end if
+      nroots = dimen
+      !
+    case('SYEVR') 
+      !
+      vrange(1) = -100000.0_rk ; vrange(2) = upper_ener+a(1,1)
+      !
+      if (upper_ener/=1e9) then 
+         rng = 'V'
+      else
+         rng = 'A'
+      endif 
+      !
+      call lapack_syevr(a(1:dimen,1:dimen),b(1:dimen),rng,iroots=nroot_t,vrange=vrange) 
+      !
+      nroots= nroot_t 
+      !
+    end select 
+    !
+    call TimerStop('Diagonalization')
+    !
+    cf%coeffs(1:dimen,1:dimen) = a(1:dimen,1:dimen)
+    !
+    ! Store eigenvalues
+    ! ZPE
+    !
+    ZPE  = safe_max
+    MaxTerm  = 1
+    !
+    do jb=1,nroots
+       if (b(jb)<=ZPE) then 
+           ZPE = b(jb)
+           write(out,"(/'Zero-point-energy is ',f18.6)") ZPE
+       endif
+    enddo
+    !
+    ! Determine the assignment of the eigenvectors using the largest coefficient principle 
+    ! 
+    ! and Reporting the final results 
+    !
+    write(out,"(/'Variational eigenvalues:',/'      i        value       quanta')") 
+    !
+    do ib=1,nroots
+       !
+       MaxEigenvects  = small_
+       MaxTerm  = 1
+       !
+       do jb=1,dimen
+          if (abs(a(jb,ib))>=MaxEigenvects) then 
+              MaxEigenvects = abs( a(jb,ib) )
+              MaxTerm = jb
+          endif
+          nu_j(:) = PT%active_space%icoeffs(:,jb)
+          if (job%verbose>=7) write(out,"(2i8,f19.8,30i6)") ib,jb,a(jb,ib), & 
+                       (nu_j(i0),i0=0,min(PT%Nmodes,30))
+          !
+       enddo
+       !
+       nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
+       PT%quanta%icoeffs(ib,:) = nu_i(:)
+       !
+       termvalue = b(ib)-ZPE
+       !
+       PT%largest%coeffs(ib,1) = a(MaxTerm,ib)
+       !
+       write(out,"(i7,f18.8,40i4)") ib,termvalue,(nu_i(i0),i0=0,min(40,PT%Nmodes))
+       !
+    enddo
+    !
+    PT%Ewhole%coeffs(:,1) = b(:)
+    !
+    deallocate(a,b)
+    call ArrayStop('PThamiltonianMat_singular_a')
+    call ArrayStop('PThamiltonianMat_singular_b')
+    !
+    if (job%verbose>=4) write(out,"('PThamiltonianMat_singular/end')") 
+    !
+  end subroutine PThamiltonianMat_singular  
+  
 
 !
 !
@@ -34568,19 +35093,18 @@ end subroutine read_contr_matelem_expansion_classN
                 excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                 !
                 if (excluded_power>0.or.imode1>k1.or.k1>imode2.or.&
-                                        imode1>k2.or.k2>imode2)  &
-                                                  fl%iorder(iterm) = 1
-               !
-               if (imode1>0.and.imode2<=PT%Nmodes) then 
-                 !
-                 excluded_power = sum(k(imode1:imode2))
-                 if (excluded_power>rpower-2) fl%iorder(iterm) = 1
-                 !
-                 if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
-                 !
-                 if (diagonal.and.k1/=k2) fl%iorder(iterm) = 1
-                 !
-               endif 
+                                        imode1>k2.or.k2>imode2) fl%iorder(iterm) = 1
+                !
+                if (imode1>0.and.imode2<=PT%Nmodes) then 
+                  !
+                  excluded_power = sum(k(imode1:imode2))
+                  if (excluded_power>rpower-2) fl%iorder(iterm) = 1
+                  !
+                  if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
+                  !
+                  if (diagonal.and.k1/=k2) fl%iorder(iterm) = 1
+                  !
+                endif 
                 !
              enddo
              ! 

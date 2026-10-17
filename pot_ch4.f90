@@ -101,8 +101,6 @@ module pot_user
      !
  end function MLpoten_xy4_qz_f12
 
-
-
   subroutine potch4_diff_V(n,local,xyz,dF)
     !
     implicit none

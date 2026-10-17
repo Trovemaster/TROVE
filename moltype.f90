@@ -13,7 +13,7 @@ module moltype
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
   public MLtemplate_kinetic_compact
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor
+  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor,ragged_array_lvl_2
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -133,10 +133,11 @@ module moltype
   type basic_function
       procedure(calc_func), pointer, nopass  :: func_pointer     ! basic functions as generic procedures
       procedure(calc_func), pointer, nopass  :: func_singular_pointer ! a special case of basic funcitons for singular modes which are resolved
+      procedure(calc_func_exp), pointer, nopass  :: func_pointer_exp     ! basic functions as generic procedures
       character(len=cl) :: name
       real(ark) :: coeff
-      real(ark) :: inner_expon
-      real(ark) :: outer_expon
+      integer(ik) :: inner_expon
+      integer(ik) :: outer_expon
   end type 
   !
   type ragged_array_lvl_1
@@ -158,6 +159,16 @@ module moltype
       end subroutine 
   end interface
   !
+  abstract interface
+      subroutine calc_func_exp(x,x0,n,imode,y)
+        use accuracy
+        implicit none
+        real(ark) , intent(in) :: x,x0
+        integer(ik), intent(in) :: n,imode
+        real(ark) , intent(inout) :: y
+      end subroutine 
+  end interface
+  !
   type MoleculeT
      !
      character(len=cl) :: moltype   ! Identifying the Molecule type (e.g. XY3)
@@ -168,6 +179,7 @@ module moltype
      real(ark),pointer  :: local_eq(:)
      real(ark),pointer  :: chi_eq(:)
      real(ark),pointer  :: specparam(:)
+     real(ark),pointer  :: Ext_chi_eq(:)
      real(ark)          :: rho_ref  
      real(ark)          :: rho_border(2)
      type(MLZmatrixT),pointer  :: zmatrix(:)       ! 
@@ -181,6 +193,7 @@ module moltype
      integer(ik)               :: N_meppars     ! number of MEP. parameters 
      character(len=cl)         :: potentype     ! type of potential function 
      character(len=cl)         :: kinetic_type  ! type of the kinetic function 
+     logical                   :: kinetic_compact = .false. ! compact or sparce representation of the KEO
      character(len=cl)         :: meptype       ! type of MEP function
      real(ark),pointer         :: force(:)      ! force field
      real(ark),pointer         :: mep_params(:) ! MEP parameters
@@ -194,7 +207,11 @@ module moltype
      character(len=cl)         :: potenname    ! name of the user type potential function (for control purposes)
      !
      type(ragged_array_lvl_2), allocatable :: basic_function_list(:)
+     type(ragged_array_lvl_2), pointer :: basic_function_pot_list(:)
+     type(ragged_array_lvl_2), pointer :: basic_function_ext_list(:)
      logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     logical  :: mode_poten_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     logical  :: mode_extF_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      !
   end type MoleculeT
   !
@@ -335,7 +352,7 @@ module moltype
                                   AtomMasses,local_eq, &
                                   force_,forcename_,ifit_,pot_ind_,specparam,potentype,potenname,kinetic_type,&
                                   IO_primitive,chk_numerov_fname,&
-                                  symmetry_,rho_border,zmatrix_,frame)
+                                  symmetry_,rho_border,zmatrix_,frame,kinetic_compact)
 
 
   character(len=cl),intent(in)  :: Moltype
@@ -358,6 +375,7 @@ module moltype
   real(ark)                     :: rho_border(2)     ! rhomim, rhomax - borders
   type(MLZmatrixT),intent(in)   :: zmatrix_(:)       ! 
   character(len=cl),intent(in)  :: frame   ! coordinate transformation type
+  logical,intent(in)            :: kinetic_compact
   !
   integer(ik)              :: alloc,Ncoords
     !
@@ -416,6 +434,7 @@ module moltype
     molec%potentype = potentype
     molec%potenname = potenname
     molec%kinetic_type = kinetic_type
+    molec%kinetic_compact = kinetic_compact
     molec%atomMasses = AtomMasses
     molec%specparam = specparam
     molec%dihedtype = dihedtype_
@@ -445,17 +464,18 @@ module moltype
 ! Here we define chi_eq - 
 ! equilibrium values of the internal coordinates chi
 !
-  subroutine MLequilibrium_chi(chi_eq)
+  subroutine MLequilibrium_chi(chi_eq,chi_ext_ref)
 
-     real(ark),intent(in)     ::  chi_eq(:)    ! Equilibrium values for the internal coordinates chi 
+     real(ark),intent(in)     ::  chi_eq(:),chi_ext_ref(:)    ! Equilibrium values for the internal coordinates chi 
      integer(ik)  :: alloc
-
 
     if (verbose>=5) write(out,"(/'MLequilibrium_chi/start: chi_eq')") 
 
     allocate (molec%chi_eq(size(chi_eq)),stat=alloc)
+    allocate (molec%Ext_chi_eq(size(chi_eq)),stat=alloc)
     !
     molec%chi_eq = chi_eq
+    molec%Ext_chi_eq = chi_ext_ref
     !
     if (verbose>=5) write(out,"('MLequilibrium_chi/end')") 
 
@@ -2924,7 +2944,6 @@ module moltype
     !type(basic_function), intent(in) :: obj
     y = 1.0_ark !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
   end subroutine  calc_func_1  
-
 
   !
 end module moltype

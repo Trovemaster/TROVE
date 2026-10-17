@@ -168,6 +168,89 @@ module mol_zxy3
           !
        endif
        !
+    case('X-R-BETA-SYM')
+       !
+       if (direct) then
+          !
+          alpha12 = src(5)
+          alpha13 = src(6)
+          alpha23 = src(7)
+          alpha14 = src(8)
+          alpha24 = src(9)
+          !
+          if (size(src)==10) then 
+            !
+            alpha34 = src(10)
+            !
+            cosbeta = (cos(alpha23)-cos(alpha12)*cos(alpha13) )/(sin(alpha12)*sin(alpha13))
+            beta312 = aacos(cosbeta,txt)
+            !
+            cosbeta = (cos(alpha24)-cos(alpha12)*cos(alpha14) )/(sin(alpha12)*sin(alpha14))
+            beta412 = aacos(cosbeta,txt)
+            !
+            cosbeta = (cos(alpha34)-cos(alpha13)*cos(alpha14) )/(sin(alpha13)*sin(alpha14))
+            beta413 = aacos(cosbeta,txt)
+            !
+          else
+            !
+            !alpha34 = calc_alpha34(alpha12,alpha13,alpha14,alpha23,alpha24)
+            !
+            cosbeta = (cos(alpha23)-cos(alpha12)*cos(alpha13) )/(sin(alpha12)*sin(alpha13))
+            beta312 = aacos(cosbeta,txt)
+            !
+            cosbeta = (cos(alpha24)-cos(alpha12)*cos(alpha14) )/(sin(alpha12)*sin(alpha14))
+            beta412 = aacos(cosbeta,txt)
+            !
+            cosa34 = cos(alpha13)*cos(alpha14)+cos(beta312+beta412)*sin(alpha13)*sin(alpha14)
+            alpha34 = aacos(cosa34,txt)
+            !
+          endif 
+          !
+          dst(1)=src(1)
+          dst(2)=src(2)
+          dst(3)=src(3)
+          dst(4)=src(4)
+          dst(5)=src(5)
+          dst(6)=src(6)
+          dst(7)=src(8)
+          !
+          phi1 = beta413 !2.0_ark*pi-(beta312+beta412)
+          phi3 = beta312
+          phi2 = beta412
+          !
+          dst(8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1-phi2-phi3 )
+          dst(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+          !
+       else
+          !
+          !  write(out,*) dsrc
+          !
+          dst(1:4)=src(1:4)
+          dsrc(5:7)=src(5:7)-molec%local_eq(5:7)
+          !
+          call from_sym2alpha(dsrc(5:9),dst(5:9),alpha34)
+          !
+          alpha12 = dst(5)
+          alpha13 = dst(6)
+          alpha23 = dst(7)
+          alpha14 = dst(8)
+          alpha24 = dst(9)
+          !
+          dst(5) = alpha12
+          dst(6) = alpha13
+          dst(7) = alpha23
+          dst(8) = alpha14
+          dst(9) = alpha24
+          !
+          if (size(dst)==10) then 
+            !
+            dst(10) = alpha34
+            !
+          endif 
+          !
+          !
+       endif
+       !
     end select 
     !
     if (verbose>=7) write(out,"('ML_coordinate_transform_zxy3/end')") 
@@ -329,14 +412,14 @@ module mol_zxy3
        write (out,"('ML_coordinate_transform_ZXY2: coord. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'ML_coordinate_transform_ZXY2 - bad coord. type'
        !
-    case('R-BETA-SYM')
+    case('R-BETA-SYM','X-R-BETA-SYM')
        !
        select case(trim(molec%symmetry))
        case default
           write (out,"('ML_symmetry_transformation_ZXY3: symmetry ',a,' unknown')") trim(molec%symmetry)
           stop 'ML_symmetry_transformation_ZXY3 - bad symm. type'
           !
-       case('C3V','C3V(M)')
+       case('C3V','C3V(M)','C3V(M)-2','C3V(M)-3')
            !
          select case(ioper)
            !
@@ -447,7 +530,7 @@ module mol_zxy3
        write (out,"('ML_rotsymmetry_ZXY3: symmetry ',a,' unknown')") trim(molec%symmetry)
        stop 'ML_rotsymmetry_ZXY3 - bad symm. type'
        !
-    case('C3V','C3V(M)')
+    case('C3V','C3V(M)','C3V(M)-2','C3V(M)-3')
        !
        gamma = 0 
        ideg = 1 

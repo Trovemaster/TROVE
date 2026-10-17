@@ -56,6 +56,16 @@ module mol_xy2
        write (out,"('ML_coordinate_transform_XY2: coord. type ',a,' unknown')") trim(molec%coords_transform)
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
+    case('R1-Z-R2-ALPHA-ABS','R2-Z-R1-ALPHA-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = src(3)
+       endif
+       !
     case('C2V-SYMMETRY')
        !
        c_t =  reshape( &
@@ -89,6 +99,26 @@ module mol_xy2
        else
           dst(1:2) = src(1:2)+molec%local_eq(1:2)
           dst(3) = src(3)+molec%local_eq(3)
+       endif
+       !
+    case('R-ALPHA-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = src(3)
+       endif
+       !
+    case('R-RHO-ABS','R-RHO-Z-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  pi-src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = pi-src(3)
        endif
        !
     case('R-RHO-HALF')
@@ -430,10 +460,13 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1 = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+               /(mX+mY1+mY2)
+          s2 = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+              /(mX+mY1+mY2)
           !
-          cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
+          cs3 = (csb*r1*r2*mX**2+mX*csb*r1*r2*mY1-mX*r1**2*mY1-mY2*r2**2*mX+csb*r1*r2*mX*mY2-r1**2*mY1*mY2+&
+                 2.0_ark*csb*r1*r2*mY1*mY2-mY1*mY2*r2**2)/(s1*s2*M**2);
           !
           if (cs3<-1.0_ark) cs3 = -1.0_ark
           !
@@ -443,8 +476,10 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+                /(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+                /(mX+mY1+mY2)
           !
           !cs3 = (-cos(beta)*r1*r2*mX*mY2+mY2*mY1*r2**2+mY2*r1**2*mY1+mY2*r2**2*mX-2*mY2*cos(beta)*r1*r2*mY1-cos(beta)*r1*r2*mX**2-cos(beta)*r1*r2*mX*mY1+r1**2*mX*mY1)/(s1*s2*M**2);
           !s3e = acos(cs3)
@@ -460,8 +495,10 @@ module mol_xy2
           !
           csb = cos(beta)
           !
-          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)/(mX+mY1+mY2)
-          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)/(mX+mY1+mY2)
+          s1e = sqrt(-2.0_ark*csb*r1*r2*mX*mY2-2.0_ark*mY2**2*csb*r1*r2+mY2**2*r1**2+mY2**2*r2**2+r1**2*mX**2+2.0_ark*mX*mY2*r1**2)&
+                /(mX+mY1+mY2)
+          s2e = sqrt( 2.0_ark*mY1*r2**2*mX+r2**2*mX**2-2.0_ark*csb*r1*r2*mY1**2+mY1**2*r2**2-2.0_ark*mX*csb*r1*r2*mY1+r1**2*mY1**2)&
+                /(mX+mY1+mY2)
           !
           s1 = src(1)+molec%chi_eq(1)+s1e
           s2 = src(2)+molec%chi_eq(2)+s2e
@@ -471,7 +508,8 @@ module mol_xy2
           !
           r1=sqrt(2.0_ark*s1*mY2*s2*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX**2+2.0_ark*s1**2*mX*mY1+mY1**2*s1**2+mY2**2*s2**2)/mX
           r2=sqrt(2.0_ark*s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s2**2*mX**2+2.0_ark*s2**2*mX*mY2+mY1**2*s1**2+mY2**2*s2**2)/mX
-          cosalpha=(s1*s2*cs3*mX**2+s1*mY2*s2*cs3*mX+s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX*mY1+mY1**2*s1**2+s2**2*mX*mY2+mY2**2*s2**2)/(R1*R2*mX**2)
+          cosalpha=(s1*s2*cs3*mX**2+s1*mY2*s2*cs3*mX+s2*mY1*s1*cs3*mX+2.0_ark*mY1*s1*mY2*s2*cs3+s1**2*mX*mY1+mY1**2*s1**2+&
+                    s2**2*mX*mY2+mY2**2*s2**2)/(R1*R2*mX**2)
           !
           if (cosalpha<-1.0_ark) cosalpha = -1.0_ark
           !
@@ -675,6 +713,16 @@ module mol_xy2
           dst(3) = pi-src(3)
        endif
        !
+    case('R1-Z-R2-RHO-ABS','R2-Z-R1-RHO-ABS')
+       !
+       if (direct) then 
+          dst(1:2) = src(1:2)
+          dst(3) =  pi-src(3)
+       else
+          dst(1:2) = src(1:2)
+          dst(3) = pi-src(3)
+       endif
+       !
     case('R1-Z-R2-ALPHA','R2-Z-R1-ALPHA')
        !
        if (direct) then 
@@ -796,7 +844,7 @@ module mol_xy2
       select case(trim(molec%frame))
       case default
          !
-      case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z')
+      case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z','R-RHO-Z-ABS')
          !
          if (Nangles>0) then
            alphaeq = molec%alphaeq(1)
@@ -960,7 +1008,7 @@ module mol_xy2
          !b0(:,1,0) = sqrt(0.5_ark)*( a0(:,1)+a0(:,2) )
          !b0(:,2,0) = sqrt(0.5_ark)*( a0(:,1)-a0(:,2) )
          !
-       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
+       case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R1-Z-R2-RHO-ABS')
          !
          b0(1,1,0) = 0
          b0(1,2,0) = 0
@@ -1018,7 +1066,7 @@ module mol_xy2
            b0(:,i,0) = b0(:,i,0) - CM_shift
          enddo 
          !
-       case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+       case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
          !
          b0(1,1,0) = 0
          b0(1,2,0) = 0
@@ -1162,7 +1210,8 @@ module mol_xy2
             g1 = 1.0_ark - a / (a+b-a*b)
             g2 = 1.0_ark - a / (1.0_ark-b+a*b)
             !
-         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R2-Z-R1-RHO','R1-Z-R2-RHO-MEP')
+         case('R1-Z-R2-RHO','R1-Z-R2-ALPHA','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z',&
+              'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP','R1-Z-R2-RHO-ABS')
             !
             rho_ref = 0.0_ark
             rho0 = 0.0_ark
@@ -1184,7 +1233,7 @@ module mol_xy2
                   !
             case ('R-RHO','R12-RHO','R13-RHO','R-RHO-Z','R-PHI-RHO','R-PHI-RHO-Z',&
                   'R1-Z-R2-RHO','R-RHO-Z-ECKART','R1-Z-R2-RHO-ECKART','RADAU-R-ALPHA-Z','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-                  'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP','JACOBI-BISECT_R1_R2_RHO')
+                  'R2-Z-R1-RHO','R1-Z-R2-RHO-MEP','JACOBI-BISECT_R1_R2_RHO','R1-Z-R2-RHO-ABS','R-RHO-Z-ABS','R-RHO-ABS')
                   !
                   alpha = pi-rho
                   !
@@ -1277,7 +1326,7 @@ module mol_xy2
             !
             select case(trim(molec%frame))
                !
-            case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z')
+            case('R-RHO-Z','R-PHI-RHO-Z','R-RHO-Z-ECKART','R-RHO-HALF','BISECT-Z','R-RHO-Z-ABS','R-RHO-ABS')
                !
                b0(1,3,i) = 0.0_ark
                b0(1,2,i) = 0.0_ark
@@ -1412,7 +1461,7 @@ module mol_xy2
                b0(3,2,i) = 0.0_ark
                b0(3,1,i) =-m1/m*re13*cos(alphae_h)
                !
-             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z')
+             case('R1-Z-R2-ALPHA','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R1-R2-PHI1-PHI2-Z','R1-Z-R2-RHO-ABS')
                !
                b0(1,1,i) = 0
                b0(1,2,i) = 0
@@ -1470,7 +1519,7 @@ module mol_xy2
                  b0(:,ix,i) = b0(:,ix,i) - CM_shift
                enddo 
                !
-             case('R2-Z-R1-ALPHA','R2-Z-R1-RHO')
+             case('R2-Z-R1-ALPHA','R2-Z-R1-RHO','R2-Z-R1-ALPHA-ABS')
                !
                if (Nangles>0) then
                  alphaeq = molec%alphaeq(1)
@@ -1658,7 +1707,7 @@ module mol_xy2
        stop 'ML_coordinate_transform_XY2 - bad coord. type'
        !
     case('R-RHO','R-EXPRHO','RADAU','R-RHO-Z','R12-RHO','R13-RHO','R-PHI1','R-PHI1-Z','R-RHO-HALF','R-RHO-Z-ECKART',&
-         'RADAU-R-ALPHA-Z','R-ALPHA','JACOBI-BISECT_R1_R2_RHO')
+         'RADAU-R-ALPHA-Z','R-ALPHA','JACOBI-BISECT_R1_R2_RHO','R-ALPHA-ABS','R-RHO-Z-ABS','R-RHO-ABS')
        !
        select case(trim(molec%symmetry))
        case default
@@ -3038,7 +3087,7 @@ module mol_xy2
        end select       
        !
     case('R1-Z-R2-ALPHA','R1-R2-ALPHA-Z','R1-Z-R2-RHO','R1-Z-R2-RHO-ECKART','R-RHO-Z-M2-M3','R-RHO-Z-M2-M3-BISECT',&
-         'R2-Z-R1-RHO','R2-Z-R1-ALPHA')
+         'R2-Z-R1-RHO','R2-Z-R1-ALPHA','R1-Z-R2-RHO-ABS','R2-Z-R1-ALPHA-ABS')
        !
        select case(trim(molec%symmetry))
        case default
@@ -3347,7 +3396,7 @@ module mol_xy2
          !
       end select
       !
-    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z','R-BISECT','BISECT-Z')
+    case('R-RHO-Z','R-RHO-Z-ECKART','RADAU-R-ALPHA-Z','R-BISECT','BISECT-Z','R-RHO-ABS','R-RHO-Z-ABS')
       !
       select case(trim(molec%symmetry))
       case default

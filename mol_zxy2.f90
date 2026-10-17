@@ -150,6 +150,38 @@ module mol_zxy2
           !
       endif
        !
+    case('R-THETA-TAU-ABS')
+       !
+       if (direct) then
+         !
+         if (size(src)==7) then
+           !
+           dst(1:3) = src(1:3)
+           dst(4:5) = src(4:5)
+           dst(6)   = src(7)
+           !
+         else
+           ! 
+           dst(:) = src(:)
+           !
+         endif 
+          !
+       else    ! not direct
+          !
+         if (size(dst)==7) then
+           !
+           dst(1:3) = src(1:3)
+           dst(4:5) = src(4:5)
+           dst(7)   = src(6)
+           !
+         else
+           ! 
+           dst(:) = src(:)
+           !
+         endif 
+          !
+      endif
+      !
     case('R-THETA-TAU-MEP')
        !
        delta = src(6)
@@ -1172,7 +1204,7 @@ module mol_zxy2
           !
        end select
        !
-    case('R-THETA-TAU','R-THETA-TAU-MEP','R-THETA-DELTA')
+    case('R-THETA-TAU','R-THETA-TAU-MEP','R-THETA-DELTA','R-THETA-TAU-ABS')
        !
        select case(trim(molec%symmetry))
        case default

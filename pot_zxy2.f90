@@ -3127,7 +3127,7 @@ recursive subroutine MLdms2xyz_zxy2_symadap_powers_tmp(rank,ncoords,natoms,local
     !
     select case(trim(molec%coords_transform))
        !
-    case('R-THETA-TAU')
+    case('R-THETA-TAU','R-THETA-TAU-ABS')
        ! 
        a0(2,3) = r(1)
        !
