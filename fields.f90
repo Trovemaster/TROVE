@@ -21415,7 +21415,7 @@ end subroutine check_read_save_none
        endif
        !
        if (maxpower>trove%NKinOrder) then 
-          write(out,"('generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder',2i)") maxpower,trove%NKinOrder
+          write(out,"('generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder',2i8)") maxpower,trove%NKinOrder
           stop 'generate_1D_kinetic_expansions: maxpower cannot be large than NKinOrder'
        endif
        !
