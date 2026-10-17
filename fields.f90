@@ -20413,7 +20413,7 @@ end subroutine check_read_save_none
               !
               do j = 1, size(fl%ifromsparse)
                 !
-                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,j)
                 !
                 ipower = powers(nu_i)
                 !
@@ -20449,7 +20449,7 @@ end subroutine check_read_save_none
               !
               do j = 1, size(gl%ifromsparse)
                 !
-                powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+                powers(1:Nmodes) = gl%IndexQ(1:Nmodes,j)
                 !
                 ipower = powers(nu_i)
                 !
@@ -20477,7 +20477,7 @@ end subroutine check_read_save_none
               !
               do j = 1, size(fl%ifromsparse)
                 !
-                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,j)
                 !
                 ipower = powers(nu_i)
                 !
@@ -20504,7 +20504,7 @@ end subroutine check_read_save_none
               !
               do j = 1, size(gzl%ifromsparse)
                 !
-                powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
+                powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,j)
                 !
                 ipower = powers(nu_i)
                 !
@@ -20520,7 +20520,7 @@ end subroutine check_read_save_none
                   !
                 enddo
                 !
-                muzz(:) = muzz(:) + g2_term*gzl%field(j,:)
+                muzz(:) = muzz(:) + gz_term*gzl%field(j,:)
                 !
               enddo
               !
@@ -21427,7 +21427,12 @@ end subroutine check_read_save_none
            gzl => trove%g_vib(Nmodes,Nmodes)
        endif
        !
-       if (trove%kinetic_compact.or.trove%kinetic_with_modes) then 
+       if (trove%kinetic_compact.or.trove%kinetic_with_modes.or.&
+           any(job%bset(1:trove%Nmodes)%coord_kinet=='AUTOMATIC').or.&
+           any(job%bset(1:trove%Nmodes)%coord_kinet=='BOND-LENGTH').or.&
+           any(job%bset(1:trove%Nmodes)%coord_kinet=='ANGLE').or.&
+           any(job%bset(1:trove%Nmodes)%coord_kinet=='DIHEDRAL').or.&
+           any(job%bset(1:trove%Nmodes)%coord_kinet=='AUTO-HARMON')) then 
           !
           !do ipower = 0,maxpower
           !
@@ -21453,33 +21458,36 @@ end subroutine check_read_save_none
               !
             endif
             !
-            do j = 1, size(fl%ifromsparse)
-              !
-              f2_term = 0
-              !
-              powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
-              !
-              ipower = powers(nu_i)
-              !
-              f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
-              !
-              if (abs(f2_term)>small_) then 
+            if (trove%kinetic_compact.or.trove%kinetic_with_modes) then
+              do j = 1, size(fl%ifromsparse)
                 !
-                do i = 1, trove%Nmodes_e
-                  ! 
-                  if(i == nu_i) cycle
-                  !
-                  g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
-                  !
-                  f2_term = f2_term*g_term
-                  !
-                enddo
+                f2_term = 0
                 !
-                ps(imode,ipower) = ps(imode,ipower) + f2_term
+                powers(1:Nmodes) = fl%IndexQ(1:Nmodes,j)
                 !
-              endif
-              !
-            enddo
+                ipower = powers(nu_i)
+                if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
+                !
+                f2_term  =  fl%field(j,irho_eq_)
+                !
+                if (abs(f2_term)>small_) then 
+                  !
+                  do i = 1, trove%Nmodes_e
+                    ! 
+                    if(i == nu_i) cycle
+                    !
+                    g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
+                    !
+                    f2_term = f2_term*g_term
+                    !
+                  enddo
+                  !
+                  ps(imode,ipower) = ps(imode,ipower) + f2_term
+                  !
+                endif
+                !
+              enddo
+            endif
             !
             ! g-term
             !
@@ -21489,9 +21497,10 @@ end subroutine check_read_save_none
               !
               !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
               !
-              powers(1:Nmodes) = gl%IndexQ(1:Nmodes,gl%ifromsparse(j))
+              powers(1:Nmodes) = gl%IndexQ(1:Nmodes,j)
               !
               ipower = powers(nu_i)
+              if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
               !
               g2_term  =  gl%field(j,irho_eq_)
               !
@@ -21518,9 +21527,10 @@ end subroutine check_read_save_none
               !
               !powers = powers_from_index(Nmodes, gl%ifromsparse(j))
               !
-              powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,gzl%ifromsparse(j))
+              powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,j)
               !
               ipower = powers(nu_i)
+              if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
               !
               gz_term  =  gzl%field(j,irho_eq_)
               !
@@ -21848,11 +21858,11 @@ end subroutine check_read_save_none
               !
               f2_term = 0
               !
-              powers(1:Nmodes) = fl%IndexQ(1:Nmodes,fl%ifromsparse(j))
+              powers(1:Nmodes) = fl%IndexQ(1:Nmodes,j)
               !
               ipower = powers(nu_i)
               !
-              f2_term  =  fl%field(fl%ifromsparse(j),irho_eq_)
+              f2_term  =  fl%field(j,irho_eq_)
               !
               do i = 1, trove%Nmodes_e
                 ! 

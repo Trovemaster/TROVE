@@ -13,14 +13,14 @@ if [ ! -f $exe ]; then
 fi
 
 # If benchmarks haven't been downloaded, download them
-if [ ! -d benchmarks ]; then
+if [ ! -d benchmarks/H2CO ]; then
   echo "Downloading benchmarks"
   ./download_benchmarks.sh
   tar xzf benchmarks.tar.gz
 fi
 
 # Run series of benchmarks
-for benchmark in H2CO; do
+for benchmark in H2CO H2CS; do
   # Create output folder & move necessary files
   wd=outputs/$benchmark
   mkdir -p $wd
@@ -36,6 +36,9 @@ for benchmark in H2CO; do
     cp $exe $wd
   fi
   cp benchmarks/$benchmark/input/*.inp $wd
+  if ls benchmarks/$benchmark/input/*.chk >/dev/null 2>&1; then
+    cp benchmarks/$benchmark/input/*.chk $wd
+  fi
   cp scripts/$benchmark/run_benchmark.sh $wd
 
   # Run benchmark

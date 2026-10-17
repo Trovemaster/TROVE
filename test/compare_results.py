@@ -20,7 +20,7 @@ def extract_quantum_block(lines):
     """Extracts only the quantum block from a chk file"""
     idxs = find_start_end_block(lines, "Quantum")
     temp = lines[idxs[0]+4:idxs[-1]]
-    return [line.split() for line in temp]
+    return [line.split() for line in temp if not line.strip().startswith("Class #")]
 
 def extract_quantum_energies(block):
     return [float(line[QUANTUM_ENERGY_IDX]) for line in block]
