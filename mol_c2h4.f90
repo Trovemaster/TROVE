@@ -156,6 +156,66 @@ module mol_c2h4
         !
       endif
       !
+    case('C2H4_SPAR')
+      !
+      if (direct) then ! transform from Z-matrix coords to TROVE coords (chi)
+        !
+        b1_zmat   = src(10)
+        tau1_zmat = src(11)
+        b2_zmat   = src(12)
+        !
+        db1 = b1_zmat - pi
+        db2 = b2_zmat - pi
+        !
+        do while (tau1_zmat < 0.0_ark)
+          tau1_zmat = tau1_zmat + 2.0_ark * pi
+        enddo
+        do while (tau1_zmat >= 2.0_ark * pi)
+          tau1_zmat = tau1_zmat - 2.0_ark * pi
+        enddo
+        !
+        if (tau1_zmat > pi) then
+          tau1 = 2.0_ark * pi - tau1_zmat
+        elseif (tau1_zmat < pi) then
+          tau1 = -tau1_zmat
+        else
+          tau1 = 0.0_ark
+        endif
+        !
+        dst(1:9) = src(1:9) - molec%local_eq(1:9)
+        dst(10) = 2.0_ark * tau1 + db1 + db2
+        dst(11) = db1 + db2
+        dst(12) = db1 - db2
+        !
+      else ! transform from TROVE coords (chi) to Z-matrix coords
+        !
+        db1  =  0.5_ark * (src(11) + src(12))
+        db2  =  0.5_ark * (src(11) - src(12))
+        tau1 =  0.5_ark * (src(10) - src(11))
+        !
+        b1_zmat = db1 + pi
+        b2_zmat = db2 + pi
+        !
+        if (tau1 > 0.0_ark) then
+          tau1_zmat = 2.0_ark * pi - tau1
+        elseif (tau1 < 0.0_ark) then
+          tau1_zmat = -tau1
+        else
+          tau1_zmat = 0.0_ark
+        endif
+        !
+        do while (tau1_zmat < 0.0_ark)
+          tau1_zmat = tau1_zmat + 2.0_ark * pi
+        enddo
+        do while (tau1_zmat >= 2.0_ark * pi)
+          tau1_zmat = tau1_zmat - 2.0_ark * pi
+        enddo
+        !
+        dst(1:9) = src(1:9) + molec%local_eq(1:9)
+        dst(10:12) = (/b1_zmat, tau1_zmat, b2_zmat/)
+        !
+      endif
+      !
     case('R_ALPHA_4TAU')
       !
       if (direct) then
@@ -793,6 +853,139 @@ module mol_c2h4
         !
       end select
       !
+    case('C2H4_SPAR')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_symmetry_transformation_C2H4 error: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_symmetry_transformation_C2H4 error: bad symmetry type'
+        !
+      case('D2H','D2H(M)')
+        !
+        select case(ioper)
+          !
+        case default
+          !
+          write(out, '(/a,1x,i3,1x,a)') &
+          'ML_symmetry_transformation_C2H4 error: symmetry operation ', ioper, 'is unknown'
+          stop 'ML_symmetry_transformation_C2H4 error: bad symmetry operation type'
+          !
+        case (1) ! E
+          !
+          dst(1:12) = src(1:12)
+          !
+        case (2) ! C2a == (34)(56)
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(2)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          dst(6) = src(7)
+          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          dst(10) =  src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)
+          !
+        case (3) ! C2b == (35)(46)(12)
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(5)
+          dst(4) = src(2)
+          dst(5) = src(3)
+          dst(6) = src(8)
+          dst(7) = src(9)
+          dst(8) = src(6)
+          dst(9) = src(7)
+          dst(10) =  src(10)
+          dst(11) =  src(11)
+          dst(12) = -src(12)
+          !
+        case (4) ! C2c == (36)(45)(12)
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(2)
+          dst(6) = src(9)
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(6)
+          dst(10) =  src(10)
+          dst(11) = -src(11)
+          dst(12) =  src(12)
+          !
+        case (5) ! sigma_ab == E*
+          !
+          dst(1) = src(1)
+          dst(2) = src(2)
+          dst(3) = src(3)
+          dst(4) = src(4)
+          dst(5) = src(5)
+          dst(6) = src(6)
+          dst(7) = src(7)
+          dst(8) = src(8)
+          dst(9) = src(9)
+          dst(10) = -src(10)
+          dst(11) = -src(11)
+          dst(12) = -src(12)
+          !
+        case (6) ! sigma_ac == (34)(56)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(3)
+          dst(3) = src(2)
+          dst(4) = src(5)
+          dst(5) = src(4)
+          dst(6) = src(7)
+          dst(7) = src(6)
+          dst(8) = src(9)
+          dst(9) = src(8)
+          dst(10) = -src(10)
+          dst(11) =  src(11)
+          dst(12) =  src(12)
+          !
+        case (7) ! sigma_bc == (35)(46)(12)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(4)
+          dst(3) = src(5)
+          dst(4) = src(2)
+          dst(5) = src(3)
+          dst(6) = src(8)
+          dst(7) = src(9)
+          dst(8) = src(6)
+          dst(9) = src(7)
+          dst(10) = -src(10)
+          dst(11) = -src(11)
+          dst(12) =  src(12)
+          !
+        case (8) ! i == (36)(45)(12)*
+          !
+          dst(1) = src(1)
+          dst(2) = src(5)
+          dst(3) = src(4)
+          dst(4) = src(3)
+          dst(5) = src(2)
+          dst(6) = src(9)
+          dst(7) = src(8)
+          dst(8) = src(7)
+          dst(9) = src(6)
+          dst(10) = -src(10)
+          dst(11) =  src(11)
+          dst(12) = -src(12)
+          !
+        end select
+        !
+      end select
+      !
     case('R_ALPHA_4TAU')
       !
       select case(trim(molec%symmetry))
@@ -1074,7 +1267,7 @@ module mol_c2h4
       stop 'ML_rotsymmetry_C2H4 error: bad coordinate type'
       !
       !
-    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU')
+    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU','C2H4_SPAR')
       !
       select case(trim(molec%symmetry))
         !

@@ -5,7 +5,7 @@
 module perturbation 
   use accuracy
   use molecules, only : MOrepres_arkT,MLsymmetry_transform_func,polintark,MLrotsymmetry_func,MLrotsymmetry_generate
-  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark
+  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark,molec
   use lapack
   !use plasma
   use fields
@@ -4368,6 +4368,11 @@ module perturbation
        call FLread_fields_dimensions(poten_N,gvib_N,grot_N,gcor_N,potorder,kinorder,extForder,jmax,extF_N,L2vib_N)
        !
        MaxExpOrder= max(potorder,kinorder,extForder)
+       if (molec%mode_list_present) then
+          do imode = 1, trove%Nmodes
+             MaxExpOrder = max(MaxExpOrder, molec%basic_function_list(imode)%numfunc)
+          enddo
+       endif
        !
        do k2 = -1,1
          !
@@ -25415,7 +25420,22 @@ end subroutine read_contr_matelem_expansion_classN
       !
       Ncoeffs = max(poten_N,gvib_N,grot_N,gcor_N,L2vib_N)
       MaxExpOrder= max(potorder,kinorder,extForder)
-      MaxExpOrder= trove%MaxOrder
+      MaxExpOrder= max(MaxExpOrder,trove%MaxOrder)
+      if (molec%mode_list_present) then
+         do imode = 1, trove%Nmodes
+            MaxExpOrder = max(MaxExpOrder, molec%basic_function_list(imode)%numfunc)
+         enddo
+      endif
+      if (molec%mode_poten_list_present) then
+         do imode = 1, trove%Nmodes
+            MaxExpOrder = max(MaxExpOrder, molec%basic_function_pot_list(imode)%numfunc)
+         enddo
+      endif
+      if (molec%mode_extF_list_present) then
+         do imode = 1, trove%Nmodes
+            MaxExpOrder = max(MaxExpOrder, molec%basic_function_ext_list(imode)%numfunc)
+         enddo
+      endif
       PT%Nterms%maximal = Ncoeffs
       !
       if (job%verbose>=5) write(out,"('  Allocating and reading me%vibmode objects with primitive matrix elements ...')") 
@@ -35091,16 +35111,19 @@ end subroutine read_contr_matelem_expansion_classN
                 k(:) = fl%IndexQ(:,iterm)
                 !
                 excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
+                if (molec%mode_list_present) excluded_power = 0
                 !
                 if (excluded_power>0.or.imode1>k1.or.k1>imode2.or.&
                                         imode1>k2.or.k2>imode2) fl%iorder(iterm) = 1
                 !
                 if (imode1>0.and.imode2<=PT%Nmodes) then 
                   !
-                  excluded_power = sum(k(imode1:imode2))
-                  if (excluded_power>rpower-2) fl%iorder(iterm) = 1
-                  !
-                  if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
+                  if (.not.molec%mode_list_present) then
+                    excluded_power = sum(k(imode1:imode2))
+                    if (excluded_power>rpower-2) fl%iorder(iterm) = 1
+                    !
+                    if (diagonal.and..not.any(excluded_power==k(imode1:imode2))) fl%iorder(iterm) = 1
+                  endif
                   !
                   if (diagonal.and.k1/=k2) fl%iorder(iterm) = 1
                   !
@@ -35128,16 +35151,18 @@ end subroutine read_contr_matelem_expansion_classN
                   !
                   k(:) = fl%IndexQ(:,iterm)
                   !
-                  excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
-                  !
-                  if (excluded_power>0) fl%iorder(iterm) = 1
-                  !
-                  if (imode1>0.and.imode2<=PT%Nmodes) then 
+                  if (.not.molec%mode_list_present) then
+                    excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
                     !
-                    excluded_power = sum(k(imode1:imode2))
-                    if (excluded_power>rpower-2) fl%iorder(iterm) = 1
+                    if (excluded_power>0) fl%iorder(iterm) = 1
                     !
-                  endif 
+                    if (imode1>0.and.imode2<=PT%Nmodes) then 
+                      !
+                      excluded_power = sum(k(imode1:imode2))
+                      if (excluded_power>rpower-2) fl%iorder(iterm) = 1
+                      !
+                    endif 
+                  endif
                   !
                enddo
                ! 
@@ -35158,10 +35183,11 @@ end subroutine read_contr_matelem_expansion_classN
                   k(:) = fl%IndexQ(:,iterm)
                   !
                   excluded_power = sum(k(1:imode1-1)) + sum(k(imode2+1:PT%Nmodes))
+                  if (molec%mode_list_present) excluded_power = 0
                   !
                   if (excluded_power>0.or.imode1>k1.or.k1>imode2) fl%iorder(iterm) = 1
                   !
-                  if (imode1>0.and.imode2<=PT%Nmodes) then 
+                  if (imode1>0.and.imode2<=PT%Nmodes.and..not.molec%mode_list_present) then 
                     !
                     excluded_power = sum(k(imode1:imode2))
                     if (excluded_power>rpower-2) fl%iorder(iterm) = 1
