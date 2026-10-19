@@ -67,7 +67,7 @@ module perturbation
    type PTintcoeffsT       
       !
       character(len=cl)     :: type          ! type/name
-      integer(ik),pointer   :: icoeffs(:,:)  ! iCoeffs indexes - arbitrary information
+      integer(ik),pointer   :: icoeffs(:,:) => null()  ! iCoeffs indexes - arbitrary information
       integer(ik)           :: size1,size2
       !
    end type PTintcoeffsT
@@ -77,41 +77,41 @@ module perturbation
 ! Here we collect only information relevant for the running perturbation order, say, #N
 !
    type PTcoeffsT                        ! PT stands for perturbation theory
-      real(rk),pointer   :: coeffs(:,:)  ! Coeffs, indexes:
+      real(rk),pointer   :: coeffs(:,:) => null()  ! Coeffs, indexes:
                                          ! 1) <bra| alpha1,alpha2,alpha3... - quanta within the polyad P
                                          ! 2) |ket> beta1,beta2, ... all basis set qunta, 
                                          !    reachable at the Ntp pert. order
    end type PTcoeffsT
 
    type PTcoeffs_arkT
-      real(ark),pointer   :: coeffs(:,:)  
+      real(ark),pointer   :: coeffs(:,:) => null()  
    end type PTcoeffs_arkT
 
    type PTcoeffs1dT
-      real(ark),pointer :: coeff1d(:)
+      real(ark),pointer :: coeff1d(:) => null()
    end type PTcoeffs1dT
 
    type PTcoeffs2dT
-      real(rk),pointer :: coeff2d(:,:)
+      real(rk),pointer :: coeff2d(:,:) => null()
    end type PTcoeffs2dT
 
    type PTcoeffs3dT
-      real(rk),pointer :: coeff3d(:,:,:)
+      real(rk),pointer :: coeff3d(:,:,:) => null()
    end type PTcoeffs3dT
 
    type PTintcoeffs1dT
       integer(ik)      :: isize(1)
-      integer(ik),pointer :: imat(:)
+      integer(ik),pointer :: imat(:) => null()
    end type PTintcoeffs1dT
 
    type PTintcoeffs2dT
       integer(ik)      :: isize(2)
-      integer(ik),pointer :: iimat(:,:)
+      integer(ik),pointer :: iimat(:,:) => null()
    end type PTintcoeffs2dT
 
    type PTintcoeffs3dT
       integer(ik)      :: isize(3)
-      integer(ik),pointer :: iiimat(:,:,:)
+      integer(ik),pointer :: iiimat(:,:,:) => null()
    end type PTintcoeffs3dT
 
 !
@@ -120,24 +120,24 @@ module perturbation
    type PTcontrME
       integer(ik)          :: isize        ! Number of expansion coeffs.
       !real(rk),pointer     :: icoeff(:,:)  ! Expansion powers 
-      real(rk),pointer     :: me(:,:)      ! matrix elements 
+      real(rk),pointer     :: me(:,:) => null()      ! matrix elements 
       !
    end type PTcontrME
 
    type PTcoeffT
       integer(ik)          :: Ncoeff
       integer(ik)          :: MaxNterms
-      integer(ik),pointer  :: iorder(:)     
-      real(rk),pointer     :: coeff(:,:,:) 
-      integer(ik),pointer  :: IndexQ(:,:) 
-      integer(ik),pointer  :: ifromsparse(:)
+      integer(ik),pointer  :: iorder(:) => null()     
+      real(rk),pointer     :: coeff(:,:,:) => null() 
+      integer(ik),pointer  :: IndexQ(:,:) => null()
+      integer(ik),pointer  :: ifromsparse(:) => null()
       !integer(ik),pointer  :: itosparse(:)
-      type(PTintcoeffs1dT),pointer  :: icoeff(:)
-      type(PTintcoeffs1dT),pointer  :: iuniq(:)
-      integer(ik),pointer  :: ifield(:)
-      integer(ik),pointer  :: nterms(:) 
-      integer(ik),pointer  :: iterm(:,:) 
-      integer(ik),pointer  :: uniq(:,:) 
+      type(PTintcoeffs1dT),pointer  :: icoeff(:) => null()
+      type(PTintcoeffs1dT),pointer  :: iuniq(:) => null()
+      integer(ik),pointer  :: ifield(:) => null()
+      integer(ik),pointer  :: nterms(:) => null() 
+      integer(ik),pointer  :: iterm(:,:) => null() 
+      integer(ik),pointer  :: uniq(:,:) => null()
    end type PTcoeffT
 
    !
@@ -145,30 +145,30 @@ module perturbation
    !
    type PTdvrT
      logical                     :: initialized = .false.
-     type(PTcoeffs1dT),pointer   :: abcissa(:) 
-     type(PTcoeffs1dT),pointer   :: weight(:) 
+     type(PTcoeffs1dT),pointer   :: abcissa(:) => null() 
+     type(PTcoeffs1dT),pointer   :: weight(:) => null() 
      !type(PTcoeffs3dT),pointer   :: deriv(:) 
-     real(rk),pointer            :: poten(:) 
-     real(rk),pointer            :: gvib(:,:,:) 
-     real(rk),pointer            :: grot(:,:,:) 
-     real(rk),pointer            :: gcor(:,:,:) 
-     real(rk),pointer            :: extF(:,:) 
-     real(rk),pointer            :: L2(:,:,:)  ! Vibrational angular momentum L2
-     type(PTcoeffsT),pointer :: prim_func(:)
-     type(PTcoeffsT),pointer :: prim_dfunc(:)
-     integer(ik),pointer         :: kindex(:,:)   ! distribution of the points between modes
-     integer(ik),pointer         :: kindex2c(:,:) ! distribution of the points between classes
-     integer(ik),pointer         :: icheck_deriv(:,:)  
-     integer(ik),pointer         :: nsize(:)    ! number of points along each mode 
+     real(rk),pointer            :: poten(:) => null() 
+     real(rk),pointer            :: gvib(:,:,:) => null() 
+     real(rk),pointer            :: grot(:,:,:) => null() 
+     real(rk),pointer            :: gcor(:,:,:) => null() 
+     real(rk),pointer            :: extF(:,:) => null() 
+     real(rk),pointer            :: L2(:,:,:) => null()  ! Vibrational angular momentum L2
+     type(PTcoeffsT),pointer :: prim_func(:) => null()
+     type(PTcoeffsT),pointer :: prim_dfunc(:) => null()
+     integer(ik),pointer         :: kindex(:,:) => null()   ! distribution of the points between modes
+     integer(ik),pointer         :: kindex2c(:,:) => null() ! distribution of the points between classes
+     integer(ik),pointer         :: icheck_deriv(:,:) => null()  
+     integer(ik),pointer         :: nsize(:) => null()    ! number of points along each mode 
      integer(hik)                :: total_size  ! total size of the dvr basis set
-     real(ark),pointer           :: drho(:)     ! dvr integration step
+     real(ark),pointer           :: drho(:) => null()     ! dvr integration step
 
    end type PTdvrT
 
 
    type PTswapT 
-      real(rk),pointer    :: vec(:)
-      integer(ik),pointer :: icoeff(:)
+      real(rk),pointer    :: vec(:) => null()
+      integer(ik),pointer :: icoeff(:) => null()
       integer(ik)         :: cdimen
    end type PTswapT
 
@@ -177,15 +177,15 @@ module perturbation
    type PTprimMET
       !
       type(PTcoeffT),pointer :: poten
-      type(PTcoeffT),pointer :: gvib(:,:)
-      type(PTcoeffT),pointer :: grot(:,:)
-      type(PTcoeffT),pointer :: gcor(:,:)
-      type(PTcoeffT),pointer :: L2(:,:)   ! vibrational angulal momentum L2
-      type(PTcoeffT),pointer :: rot (:) 
-      type(PTcoeffT),pointer :: vibmode(:,:)  ! the imode    primitive vibrational matrix elemenits
-      type(PTcoeffT),pointer :: vib(:,:)      ! the ispecies primitive vibrational matrix elemenits
-      type(PTcoeffT),pointer :: extF(:)   ! arbitrary external field or function, e.g. dipole moment
-      real(rk),pointer       :: rot_contr(:,:,:,:,:)
+      type(PTcoeffT),pointer :: gvib(:,:) => null()
+      type(PTcoeffT),pointer :: grot(:,:) => null()
+      type(PTcoeffT),pointer :: gcor(:,:) => null()
+      type(PTcoeffT),pointer :: L2(:,:) => null()   ! vibrational angulal momentum L2
+      type(PTcoeffT),pointer :: rot (:) => null() 
+      type(PTcoeffT),pointer :: vibmode(:,:) => null()  ! the imode    primitive vibrational matrix elemenits
+      type(PTcoeffT),pointer :: vib(:,:) => null()      ! the ispecies primitive vibrational matrix elemenits
+      type(PTcoeffT),pointer :: extF(:) => null()   ! arbitrary external field or function, e.g. dipole moment
+      real(rk),pointer       :: rot_contr(:,:,:,:,:) => null()
       !
    end type PTprimMET
 
@@ -193,12 +193,12 @@ module perturbation
  type PTeigenT
     integer(ik)          :: ndeg
     integer(ik)          :: igamma
-    integer(ik), pointer :: irec(:)
-    integer(ik), pointer :: iroot(:)
+    integer(ik), pointer :: irec(:) => null()
+    integer(ik), pointer :: iroot(:) => null()
     integer(ik)          :: ilevel
-    integer(ik), pointer :: quanta(:)
-    integer(ik), pointer :: normal(:)
-    character(len=4), pointer :: cgamma(:)
+    integer(ik), pointer :: quanta(:) => null()
+    integer(ik), pointer :: normal(:) => null()
+    character(len=4), pointer :: cgamma(:) => null()
     real(rk)             :: energy
     integer(ik)          :: jind
     integer(ik)          :: icoeff
@@ -206,7 +206,7 @@ module perturbation
     integer(ik)          :: krot
     integer(ik)          :: taurot
     real(rk)             :: largest_coeff     ! the largest coeff. in the expansion of the eigenvector
-    integer(ik), pointer :: cnu(:)
+    integer(ik), pointer :: cnu(:) => null()
  end type PTeigenT
 
 
@@ -220,13 +220,13 @@ module perturbation
    type PTelementsT     ! PT stands for perturbation theory
       integer(ik)         :: Norder         ! Number of PT orders
       integer(ik)         :: Nmodes         ! Number of modes = 3*Natoms-6
-      real(ark),pointer   ::  res_coeffs(:) ! coeffitients that define poliads number or resonanses 
+      real(ark),pointer   ::  res_coeffs(:) => null() ! coeffitients that define poliads number or resonanses 
                                             ! P = sum( res_coeffs(:)*nu(:) )
       integer(ik)         :: Npolyads       ! polyad number at the zero-order
       integer(ik)         :: Polyad_max     ! actual number of polyad 
-      integer(ik),pointer :: quant_max(:)   ! maximal quanta for every mode, size = Nmodes
+      integer(ik),pointer :: quant_max(:) => null()   ! maximal quanta for every mode, size = Nmodes
       integer(ik),pointer :: range   (:,:)  ! Index range for the given mode 
-      integer(ik),pointer :: overlap (:)    ! Index overlaping  for the given mode <v|q|v+overlap>
+      integer(ik),pointer :: overlap (:) => null()    ! Index overlaping  for the given mode <v|q|v+overlap>
       integer(ik)         :: maxoverlap     ! maximal value  of the overlapping = maxval(PT%overlap)
       !integer(ik),pointer :: nu_max(:)     ! maximal quanta
 
@@ -240,8 +240,8 @@ module perturbation
       integer(ik)         :: max_deg_size   ! Maximal number of degenerate elements 
       !
       integer(ik),pointer :: Max_sym_levels(:) ! Maximal number of symm. coeffs at the maximal Polyad and highest PT order
-      integer(ik),pointer :: MaxIndex_nu(:) ! Max number of different main nu modes vs the Polyad number 
-      integer(ik),pointer ::  RangeOrder(:)   ! Max number of different quanta at different orders: icoeffs(RangeOrder(N-1)..RangeOrder(N))
+      integer(ik),pointer :: MaxIndex_nu(:) => null() ! Max number of different main nu modes vs the Polyad number 
+      integer(ik),pointer ::  RangeOrder(:) => null()   ! Max number of different quanta at different orders: icoeffs(RangeOrder(N-1)..RangeOrder(N))
       character(len=cl),pointer  :: BasissetType(:) ! Defines type of the basis set functions, e.g. 'HARMONIC'
       type(PTintcoeffsT),pointer :: Index_nu(:)  ! main polyads-index number of coeffs -> nu(i), (Polyad)%icoeffs(Nmodes,Maxcoeffs) - 
       type(PTintcoeffsT),pointer :: Index_deg(:)  ! stores the degeneracy of Index_nu
@@ -310,19 +310,19 @@ module perturbation
       integer(ik)            :: dimen      ! size of the primitive basis set
       integer(ik)            :: nroots     ! how many roots found (all including degenerate)
       integer(ik)            :: nlevels    ! how many eigenvalues found (not including degenerate)
-      type(PTlevelT),pointer :: eigen(:)   ! all found levels 
+      type(PTlevelT),pointer :: eigen(:) => null()   ! all found levels 
       type(PTintcoeffsT)     :: prim_bs    ! quantum numbers of the primitive basis set
       integer(ik)            :: max_degen  ! maximal degeneracy, or size of the degeneracy matrix
                                             ! different objects for matrix elemenst 
                                             ! in the contracted basis set representation 
-      type(PTcoeffs3dT),pointer :: rot(:)     ! rotational part
+      type(PTcoeffs3dT),pointer :: rot(:) => null()    ! rotational part
       !
-      integer(ik),pointer      :: ilevel_chk(:) ! selection of the vectors for calculations from the set stored to the checkpoint file 
+      integer(ik),pointer      :: ilevel_chk(:) => null() ! selection of the vectors for calculations from the set stored to the checkpoint file 
       !
-      integer(ik),pointer      :: ilevel(:)
-      integer(ik),pointer      :: ideg(:)
-      integer(ik),pointer      :: iroot(:,:)
-      integer(ik),pointer      :: dvr_kindex(:,:)
+      integer(ik),pointer      :: ilevel(:) => null()
+      integer(ik),pointer      :: ideg(:) => null()
+      integer(ik),pointer      :: iroot(:,:) => null()
+      integer(ik),pointer      :: dvr_kindex(:,:) => null()
       integer(ik)              :: Ndvrpoints
       !
    end type PSolutionT 
@@ -331,12 +331,12 @@ module perturbation
 ! This is for the irreducibale representation 
 !
    type PTrepresT
-      real(rk),pointer     :: repres(:,:,:)  
-      integer(ik),pointer  :: N(:)
+      real(rk),pointer     :: repres(:,:,:) => null()  
+      integer(ik),pointer  :: N(:) => null()
    end type PTrepresT
 
    type PTrepres_arkT
-      real(ark),pointer     :: repres(:,:,:)  
+      real(ark),pointer     :: repres(:,:,:) => null()  
    end type PTrepres_arkT
 
 
@@ -8617,13 +8617,15 @@ module perturbation
       !
     endif
     !
-    ! free more memory 
-    do ielem =1,size(contr(0)%rot(:))
-      if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
-    enddo 
-    call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
-    call ArrayStop('contr(0)-rot-coeff3d')
-    !
+    ! free more memory
+    if (associated(contr(0)%rot)) then
+      do ielem =1,size(contr(0)%rot(:))
+        if (associated(contr(0)%rot(ielem)%coeff3d)) deallocate(contr(0)%rot(ielem)%coeff3d)
+      enddo
+      deallocate(contr(0)%rot)
+      call ArrayStart('contr(0)-rot-coeff3d',0,1,4)
+      call ArrayStop('contr(0)-rot-coeff3d')
+    endif     !
     deallocate(ijterm,k_row)
     call ArrayStop('PThamiltonian_contract:ijterm')
     !
