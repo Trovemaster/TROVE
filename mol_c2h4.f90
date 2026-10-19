@@ -1267,7 +1267,7 @@ module mol_c2h4
       stop 'ML_rotsymmetry_C2H4 error: bad coordinate type'
       !
       !
-    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU','C2H4_SPAR')
+    case('ZMAT_2BETA_1TAU','C2H4_2BETA_1TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -1300,7 +1300,7 @@ module mol_c2h4
       end select
       !
       !
-    case('R_ALPHA_4TAU')
+    case('R_ALPHA_4TAU','C2H4_SPAR')
       !
       select case(trim(molec%symmetry))
         !
