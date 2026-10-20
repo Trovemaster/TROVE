@@ -415,7 +415,7 @@ module pot_xy4
         !
         xi(1:14) = y(1:14)**k_ind(1:14)
         !
-        f = f + g(iterm)*product(xi(1:14))
+        f = f + force(iterm)*product(xi(1:14))
         !
       enddo
       !

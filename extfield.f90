@@ -1203,7 +1203,6 @@ subroutine read_vibme_spinrot_xy2()
        ' me(nelem_s,ncontr_t,ncontr_t)', 'ncontr_t, nelem_s =', ncontr_t, nelem_s
     stop 'STOP, error in extfield/read_vibme_spinrot_xy2'
   endif
-  extf_vib_me = 0
 
   do ielem=1, nelem_s
     
@@ -2065,7 +2064,7 @@ nirrep = tens%nirrep
 dimen1 = bset_contr(jind1)%Maxcontracts
 dimen2 = bset_contr(jind2)%Maxcontracts
 
-num_threads = omp_get_max_threads() - 2 ! to have headroom for monitoring, etc
+num_threads = omp_get_max_threads()
 
 write(out, '(/1x,a,1x,i3)') 'number of parallel threads:', num_threads
 
@@ -2242,7 +2241,7 @@ do jdeg=1, ndeg2
 do ideg=1, ndeg1
 if (any(abs(me(1:nirrep,ideg,jdeg,ithread))>print_tol)) then
 !$omp critical
-write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f20.22))') ilevel_, jlevel_, ideg, jdeg, &
+write(iounit_me,'(i8,1x,i8,1x,i4,1x,i4,100(1x,f20.12))') ilevel_, jlevel_, ideg, jdeg, &
 me(1:nirrep,ideg,jdeg,ithread)
 !$omp end critical
 endif
@@ -2278,7 +2277,7 @@ subroutine half1_rovib_me_MCRB(tens, jind1, ndeg1, dimen1, nelem1, ind1, coefs1,
   real(rk), allocatable :: tvec(:,:,:)
 
   nirrep = tens%nirrep
-  num_threads = omp_get_max_threads() - 2 ! to have headroom for monitoring, etc
+  num_threads = omp_get_max_threads()
 
   allocate(tvec(nelem1,nirrep,0:num_threads-1), stat=info)
   if (info/=0) then

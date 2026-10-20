@@ -3269,6 +3269,7 @@ module perturbation
        !call calc_overlap(iclasses)
        !
        count_index = 0
+       count_degen = 0
        count_index(1,1) = 1
        count_degen(1) = 1
        !
@@ -26619,13 +26620,30 @@ end subroutine read_contr_matelem_expansion_classN
          !
          irho_eq = 0 
          !
-         if (npoints/=0) irho_eq = mod(&
+         if (trove%npoints/=0) irho_eq = mod(&
                           nint( ( trove%chi_eq(trove%Nmodes)-trove%rho_border(1) )/(trove%rhostep),kind=ik ),trove%npoints)
          !
          powers = 0 ; powers(imode) = 2
          k = FLQindex(trove%Nmodes_e,powers)
-         f2 = trove%poten%field(k,irho_eq)
-         g2 = trove%g_vib(imode,imode)%field(1,irho_eq)
+         if (trove%sparse) then
+           f2 = 0
+           do i = 1,trove%poten%Ncoeff
+             if (trove%poten%ifromsparse(i)==k) then
+               f2 = trove%poten%field(i,irho_eq)
+               exit
+             endif
+           enddo
+           g2 = 0
+           do i = 1,trove%g_vib(imode,imode)%Ncoeff
+             if (trove%g_vib(imode,imode)%ifromsparse(i)==1) then
+               g2 = trove%g_vib(imode,imode)%field(i,irho_eq)
+               exit
+             endif
+           enddo
+         else
+           f2 = trove%poten%field(k,irho_eq)
+           g2 = trove%g_vib(imode,imode)%field(1,irho_eq)
+         endif
          c_t = sqrt( sqrt( g2/( 2.0_ark*f2 ) ) )
          !
          call gauher(y,w,dvr_size)
@@ -26690,9 +26708,9 @@ end subroutine read_contr_matelem_expansion_classN
               !
               do ipoint = 0,Npoints
                 !
-                xval = xi(i)
+                xval = xi(ipoint)
                 !
-                call Harmonic_polinom(v,c_t,xval,phi0(i),dfval)
+                call Harmonic_polinom(v,c_t,xval,phi0(ipoint),dfval)
                 !
               enddo
               !
@@ -28167,7 +28185,7 @@ end subroutine read_contr_matelem_expansion_classN
    real(ark) function rtbis_ab_pol(np,pol,x1,x2,xacc)
      !
      integer(ik),intent(in) :: np
-     real(ark),intent(in)   :: pol(1:2,0:np),x1,x2
+     real(ark),intent(in)   :: pol(1:3,0:np),x1,x2
      real(rk),intent(in)    :: xacc
      integer(ik)            :: j,k(0:np)
      real(ark)              :: dx,f,fmid,xmid
@@ -33169,6 +33187,7 @@ end subroutine read_contr_matelem_expansion_classN
         call ArrayStart('PThamiltonianMat:count_degen',alloc,size(count_degen),kind(count_degen))
         !
         count_index = 0
+        count_degen = 0
         count_index(1,1) = 1
         count_degen(1) = 1
         !

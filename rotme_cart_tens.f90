@@ -1010,6 +1010,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
               img_k(nimg_k) = .true.
             elseif (all(.not.img_elem(1:nimg_elem))) then
               img_k(nimg_k) = .false.
+            elseif (trim(tens%name)=='Wigner') then
+              img_k(nimg_k) = .false.
             else
               write(out, '(/a/a,6(1x,i3))') 'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has ',&
                          'mixed real- and imaginary-valued elements', &!
@@ -1032,6 +1034,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
           img_j(nimg_j) = .true.
         elseif (all(.not.img_k(1:nimg_k))) then
           img_j(nimg_j) = .false.
+        elseif (trim(tens%name)=='Wigner') then
+          img_j(nimg_j) = .false.
         else
           write(out, '(/a,a/a,2(1x,i3))') &!
           'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&
@@ -1048,6 +1052,8 @@ subroutine init_rotme_cart_tens_type(tens, jmin, jmax, dj, verbose)
     tens%kmat_cmplx = -1 ! imaginary numbers
   elseif (all(.not.img_j(1:nimg_j))) then
     tens%kmat_cmplx = 0 ! real numbers
+  elseif (trim(tens%name)=='Wigner') then
+    tens%kmat_cmplx = 0
   else
     write(out, '(/a,a)') &!
     'rotme_cart_tens/init_rotme_cart_tens_type error: K-tensor has mixed real- and imaginary-valued elements',&

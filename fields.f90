@@ -1058,7 +1058,9 @@ module fields
             job%bset_prop(i)%singular = .false.
          enddo
          !
-         job%iswap(1) = 1 ; job%iswap(2) =  (3+Nmodes)*3
+         if (job%iswap(1)/=0) then
+            job%iswap(1) = 1 ; job%iswap(2) =  (3+Nmodes)*3
+         endif
          !
          allocate (trove%PotPolyad(1:Nmodes),stat=alloc)
          !
@@ -5264,7 +5266,7 @@ module fields
         !
         if ( intensity%gns(i)/=intensity%gns(intensity%isym_pairs(i)) ) then 
           !
-          write(out,"('FLinput: selection rules do not agree with Gns',3i4)") i,intensity%gns(i),intensity%gns(intensity%isym_pairs(i))
+          write(out,"('FLinput: selection rules do not agree with Gns',i4,2f8.2)") i,intensity%gns(i),intensity%gns(intensity%isym_pairs(i))
           stop 'FLinput: selection rules do not agree with Gns!'
           !
         endif   
@@ -6476,7 +6478,7 @@ end subroutine check_read_save_none
         !
         call print_kinetic
         !
-        if (.not.trove%kinetic_with_modes) then
+        if (trove%separate_store.and..not.trove%kinetic_with_modes) then
            !
            call compact_sparse_kinetic
            !
@@ -9192,7 +9194,7 @@ end subroutine check_read_save_none
            call print_poten
         endif 
         !
-        if (trove%sparse.and..not.trove%potential_with_modes) then
+        if (trove%separate_store.and.trove%sparse.and..not.trove%potential_with_modes) then
            !
           call FLCompact_a_field_sparse(trove%poten,"poten")
           !
@@ -9592,6 +9594,8 @@ end subroutine check_read_save_none
     character(len=4)             :: txt
     character(len=cl)            :: my_fmt !format for I/O specification
     !
+    if (.not.FLextF_coeffs)  return
+    !
     ! If the potentil function has been stored we can just read it from the hard disk and leave...
     !
     if (trim(trove%IO_ext_coeff)=='READ'.or.trim(trove%IO_hamiltonian)=='READ') then 
@@ -9609,8 +9613,6 @@ end subroutine check_read_save_none
     npoints   = trove%Npoints
     nmodes    = trove%Nmodes
     rank      = extF%rank
-    !
-    if (.not.FLextF_coeffs)  return
     !
     if (job%verbose>=3) write(out,"(/'Expansion of the external field ...')")   
     !
@@ -15712,37 +15714,52 @@ end subroutine check_read_save_none
         write(chkptIO) trove%dBmatrho
         !
         write(chkptIO) 'g_vib'
-        write(chkptIO) trove%g_vib(1,1)%Ncoeff
+        if (.not.trove%sparse) write(chkptIO) trove%g_vib(1,1)%Ncoeff
         !
         do k1 = 1,Nmodes
            do k2 = 1,Nmodes
               !
-              write(chkptIO) trove%g_vib(k1,k2)%field
-              write(chkptIO) trove%g_vib(k1,k2)%iorder
+              fl => trove%g_vib(k1,k2)
+              if (trove%sparse) write(chkptIO) fl%Ncoeff
+              if (fl%Ncoeff>0) then
+                 write(chkptIO) fl%field
+                 write(chkptIO) fl%iorder
+                 if (trove%sparse) write(chkptIO) fl%ifromsparse
+              endif
               !
            enddo
         enddo
         !
         write(chkptIO) 'g_rot'
-        write(chkptIO) trove%g_rot(1,1)%Ncoeff
+        if (.not.trove%sparse) write(chkptIO) trove%g_rot(1,1)%Ncoeff
         !
         do k1 = 1,3
            do k2 = 1,3
               !
-              write(chkptIO) trove%g_rot(k1,k2)%field
-              write(chkptIO) trove%g_rot(k1,k2)%iorder
+              fl => trove%g_rot(k1,k2)
+              if (trove%sparse) write(chkptIO) fl%Ncoeff
+              if (fl%Ncoeff>0) then
+                 write(chkptIO) fl%field
+                 write(chkptIO) fl%iorder
+                 if (trove%sparse) write(chkptIO) fl%ifromsparse
+              endif
               !
            enddo
         enddo
         !
         write(chkptIO) 'g_cor'
-        write(chkptIO) trove%g_cor(1,1)%Ncoeff
+        if (.not.trove%sparse) write(chkptIO) trove%g_cor(1,1)%Ncoeff
         !
         do k1 = 1,Nmodes
            do k2 = 1,3
               !
-              write(chkptIO) trove%g_cor(k1,k2)%field
-              write(chkptIO) trove%g_cor(k1,k2)%iorder
+              fl => trove%g_cor(k1,k2)
+              if (trove%sparse) write(chkptIO) fl%Ncoeff
+              if (fl%Ncoeff>0) then
+                 write(chkptIO) fl%field
+                 write(chkptIO) fl%iorder
+                 if (trove%sparse) write(chkptIO) fl%ifromsparse
+              endif
               !
            enddo
         enddo
@@ -15751,19 +15768,27 @@ end subroutine check_read_save_none
         !
         write(chkptIO) 'pseudo'
         write(chkptIO) trove%pseudo%Ncoeff
-        write(chkptIO) trove%pseudo%field
-        write(chkptIO) trove%pseudo%iorder
+        if (trove%pseudo%Ncoeff>0) then
+           write(chkptIO) trove%pseudo%field
+           write(chkptIO) trove%pseudo%iorder
+           if (trove%sparse) write(chkptIO) trove%pseudo%ifromsparse
+        endif
         !
         if (FLl2_coeffs) then
           !
           write(chkptIO) 'L2_vib'
-          write(chkptIO) trove%L2_vib(1,1)%Ncoeff
+          if (.not.trove%sparse) write(chkptIO) trove%L2_vib(1,1)%Ncoeff
           !
           do k1 = 1,Nmodes
              do k2 = 1,Nmodes
                 !
-                write(chkptIO) trove%L2_vib(k1,k2)%field
-                write(chkptIO) trove%L2_vib(k1,k2)%iorder
+                fl => trove%L2_vib(k1,k2)
+                if (trove%sparse) write(chkptIO) fl%Ncoeff
+                if (fl%Ncoeff>0) then
+                   write(chkptIO) fl%field
+                   write(chkptIO) fl%iorder
+                   if (trove%sparse) write(chkptIO) fl%ifromsparse
+                endif
                 !
              enddo
           enddo
@@ -15774,20 +15799,28 @@ end subroutine check_read_save_none
         !
         write(chkptIO) 'poten'
         write(chkptIO) trove%poten%Ncoeff
-        write(chkptIO) trove%poten%field
-        write(chkptIO) trove%poten%iorder
+        if (trove%poten%Ncoeff>0) then
+           write(chkptIO) trove%poten%field
+           write(chkptIO) trove%poten%iorder
+           if (trove%sparse) write(chkptIO) trove%poten%ifromsparse
+        endif
         !
         write(chkptIO) 'End Hamiltonian objects'
         !
         if (trim(trove%IO_ext_coeff)=='SAVE') then
           !
           write(chkptIO) 'extF'
-          write(chkptIO) trove%extF(1)%Ncoeff
+          if (.not.trove%sparse) write(chkptIO) trove%extF(1)%Ncoeff
           !
           do k1 = 1,extF%rank
              !
-             write(chkptIO) trove%extF(k1)%field
-             write(chkptIO) trove%extF(k1)%iorder
+             fl => trove%extF(k1)
+             if (trove%sparse) write(chkptIO) fl%Ncoeff
+             if (fl%Ncoeff>0) then
+                write(chkptIO) fl%field
+                write(chkptIO) fl%iorder
+                if (trove%sparse) write(chkptIO) fl%ifromsparse
+             endif
              !
           enddo
           !
@@ -16379,17 +16412,30 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_vib'
         end if
         !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) read(chkptIO) Tcoeff
         !
         do k1 = 1,Nmodes
            do k2 = 1,Nmodes
               !
               fl => trove%g_vib(k1,k2)
+              if (trove%sparse) read(chkptIO) Tcoeff
               fl%Ncoeff = Tcoeff
               !
-              call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
-              read(chkptIO) fl%field     
-              read(chkptIO) fl%iorder 
+              if (Tcoeff>0) then
+                 call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_vib')
+                 read(chkptIO) fl%field     
+                 read(chkptIO) fl%iorder 
+                 if (trove%sparse) then
+                    read(chkptIO) fl%ifromsparse
+                    fl%IndexQ(:,1:Tcoeff) = FLIndexQ(:,fl%ifromsparse(1:Tcoeff))
+                    fl%sparse = .true.
+                 endif
+              else
+                 fl%Orders = 0
+                 fl%Npoints = Npoints
+                 fl%sparse = trove%sparse
+                 nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+              endif
               !
            enddo
         enddo
@@ -16400,17 +16446,30 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_rot'
         end if
         !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) read(chkptIO) Tcoeff
         !
         do k1 = 1,3
            do k2 = 1,3
               !
               fl => trove%g_rot(k1,k2)
+              if (trove%sparse) read(chkptIO) Tcoeff
               fl%Ncoeff = Tcoeff
               !
-              call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
-              read(chkptIO) fl%field  
-              read(chkptIO) fl%iorder
+              if (Tcoeff>0) then
+                 call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_rot')
+                 read(chkptIO) fl%field  
+                 read(chkptIO) fl%iorder
+                 if (trove%sparse) then
+                    read(chkptIO) fl%ifromsparse
+                    fl%IndexQ(:,1:Tcoeff) = FLIndexQ(:,fl%ifromsparse(1:Tcoeff))
+                    fl%sparse = .true.
+                 endif
+              else
+                 fl%Orders = 0
+                 fl%Npoints = Npoints
+                 fl%sparse = trove%sparse
+                 nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+              endif
               !
            enddo
         enddo
@@ -16421,17 +16480,30 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_cor'
         end if
         !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) read(chkptIO) Tcoeff
         !
         do k1 = 1,Nmodes
            do k2 = 1,3
               !
               fl => trove%g_cor(k1,k2)
+              if (trove%sparse) read(chkptIO) Tcoeff
               fl%Ncoeff = Tcoeff
               !
-              call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
-              read(chkptIO) fl%field  
-              read(chkptIO) fl%iorder 
+              if (Tcoeff>0) then
+                 call polynom_initialization(fl,trove%NKinOrder,Tcoeff,Npoints,'g_cor')
+                 read(chkptIO) fl%field  
+                 read(chkptIO) fl%iorder 
+                 if (trove%sparse) then
+                    read(chkptIO) fl%ifromsparse
+                    fl%IndexQ(:,1:Tcoeff) = FLIndexQ(:,fl%ifromsparse(1:Tcoeff))
+                    fl%sparse = .true.
+                 endif
+              else
+                 fl%Orders = 0
+                 fl%Npoints = Npoints
+                 fl%sparse = trove%sparse
+                 nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+              endif
               !
            enddo
         enddo
@@ -16444,12 +16516,23 @@ end subroutine check_read_save_none
         !
         read(chkptIO) Tcoeff
         !
-        call polynom_initialization(trove%pseudo,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
-        !
         fl => trove%pseudo
-        !
-        read(chkptIO) fl%field
-        read(chkptIO) fl%iorder
+        fl%Ncoeff = Tcoeff
+        if (Tcoeff>0) then
+           call polynom_initialization(trove%pseudo,trove%NKinOrder,Tcoeff,Npoints,'pseudo')
+           read(chkptIO) fl%field
+           read(chkptIO) fl%iorder
+           if (trove%sparse) then
+              read(chkptIO) fl%ifromsparse
+              fl%IndexQ(:,1:Tcoeff) = FLIndexQ(:,fl%ifromsparse(1:Tcoeff))
+              fl%sparse = .true.
+           endif
+        else
+           fl%Orders = 0
+           fl%Npoints = Npoints
+           fl%sparse = trove%sparse
+           nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+        endif
         !
         if (FLl2_coeffs) then 
           !
@@ -16527,17 +16610,30 @@ end subroutine check_read_save_none
                !
             endif
             !
-            read(chkptIO) Tcoeff
+            if (.not.trove%sparse) read(chkptIO) Tcoeff
             !
             do k1 = 1,Nmodes
                do k2 = 1,Nmodes
                   !
                   fl => trove%L2_vib(k1,k2)
+                  if (trove%sparse) read(chkptIO) Tcoeff
                   fl%Ncoeff = Tcoeff
                   !
-                  call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
-                  read(chkptIO) fl%field     
-                  read(chkptIO) fl%iorder 
+                  if (Tcoeff>0) then
+                     call polynom_initialization(fl,max(trove%NKinOrder,2),Tcoeff,Npoints,'L2_vib')
+                     read(chkptIO) fl%field     
+                     read(chkptIO) fl%iorder 
+                     if (trove%sparse) then
+                        read(chkptIO) fl%ifromsparse
+                        fl%IndexQ(:,1:Tcoeff) = FLIndexQ(:,fl%ifromsparse(1:Tcoeff))
+                        fl%sparse = .true.
+                     endif
+                  else
+                     fl%Orders = 0
+                     fl%Npoints = Npoints
+                     fl%sparse = trove%sparse
+                     nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+                  endif
                   !
                enddo
             enddo
@@ -18102,20 +18198,29 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_vib'
         end if
         !
-        isize = size(trove%g_vib(1,1)%field)
-        allocate(array(isize),stat=alloc)
-        !
-        isize = size(trove%g_vib(1,1)%iorder)
-        allocate(iarray(isize),stat=alloc)
-        !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) then
+          isize = size(trove%g_vib(1,1)%field)
+          allocate(array(isize),stat=alloc)
+          !
+          isize = size(trove%g_vib(1,1)%iorder)
+          allocate(iarray(isize),stat=alloc)
+          !
+          read(chkptIO) Tcoeff
+        endif
         !
         do k1 = 1,Nmodes
            do k2 = 1,Nmodes
-              !
-              read(chkptIO) array     
-              read(chkptIO) iarray
-              !
+              if (trove%sparse) then
+                 read(chkptIO) Tcoeff
+                 if (Tcoeff>0) then
+                    read(chkptIO)
+                    read(chkptIO)
+                    read(chkptIO)
+                 endif
+              else
+                 read(chkptIO) array     
+                 read(chkptIO) iarray
+              endif
            enddo
         enddo
         !
@@ -18125,14 +18230,21 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_rot'
         end if
         !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) read(chkptIO) Tcoeff
         !
         do k1 = 1,3
            do k2 = 1,3
-              !
-              read(chkptIO) array     
-              read(chkptIO) iarray
-              !
+              if (trove%sparse) then
+                 read(chkptIO) Tcoeff
+                 if (Tcoeff>0) then
+                    read(chkptIO)
+                    read(chkptIO)
+                    read(chkptIO)
+                 endif
+              else
+                 read(chkptIO) array     
+                 read(chkptIO) iarray
+              endif
            enddo
         enddo
         !
@@ -18142,14 +18254,21 @@ end subroutine check_read_save_none
           stop 'check_point_Hamiltonian - bogus file format g_cor'
         end if
         !
-        read(chkptIO) Tcoeff
+        if (.not.trove%sparse) read(chkptIO) Tcoeff
         !
         do k1 = 1,Nmodes
            do k2 = 1,3
-              !
-              read(chkptIO) array     
-              read(chkptIO) iarray
-              !
+              if (trove%sparse) then
+                 read(chkptIO) Tcoeff
+                 if (Tcoeff>0) then
+                    read(chkptIO)
+                    read(chkptIO)
+                    read(chkptIO)
+                 endif
+              else
+                 read(chkptIO) array     
+                 read(chkptIO) iarray
+              endif
            enddo
         enddo
         !
@@ -18161,8 +18280,16 @@ end subroutine check_read_save_none
         !
         read(chkptIO) Tcoeff
         !
-        read(chkptIO) array     
-        read(chkptIO) iarray
+        if (trove%sparse) then
+          if (Tcoeff>0) then
+             read(chkptIO)
+             read(chkptIO)
+             read(chkptIO)
+          endif
+        else
+          read(chkptIO) array     
+          read(chkptIO) iarray
+        endif
         !
         if (FLl2_coeffs) then 
           !
@@ -18190,14 +18317,21 @@ end subroutine check_read_save_none
                !
             endif
             !
-            read(chkptIO) Tcoeff
+            if (.not.trove%sparse) read(chkptIO) Tcoeff
             !
             do k1 = 1,Nmodes
                do k2 = 1,Nmodes
-                  !
-                  read(chkptIO) array     
-                  read(chkptIO) iarray
-                  !
+                  if (trove%sparse) then
+                     read(chkptIO) Tcoeff
+                     if (Tcoeff>0) then
+                        read(chkptIO)
+                        read(chkptIO)
+                        read(chkptIO)
+                     endif
+                  else
+                     read(chkptIO) array     
+                     read(chkptIO) iarray
+                  endif
                enddo
             enddo
              !
@@ -18205,8 +18339,10 @@ end subroutine check_read_save_none
           !
         endif
         !
-        deallocate(array)
-        deallocate(iarray)
+        if (.not.trove%sparse) then
+          deallocate(array)
+          deallocate(iarray)
+        endif
         !
         call MemoryReport
         !
@@ -18236,12 +18372,24 @@ end subroutine check_read_save_none
         !
         read(chkptIO) Ncoeff
         !
-        call polynom_initialization(trove%poten,trove%NPotOrder,Ncoeff,trove%Npoints,'poten')
-        !
         fl => trove%poten
+        fl%Ncoeff = Ncoeff
         !
-        read(chkptIO) fl%field
-        read(chkptIO) fl%iorder
+        if (Ncoeff>0) then
+           call polynom_initialization(trove%poten,trove%NPotOrder,Ncoeff,trove%Npoints,'poten')
+           read(chkptIO) fl%field
+           read(chkptIO) fl%iorder
+           if (trove%sparse) then
+              read(chkptIO) fl%ifromsparse
+              fl%IndexQ(:,1:Ncoeff) = FLIndexQ(:,fl%ifromsparse(1:Ncoeff))
+              fl%sparse = .true.
+           endif
+        else
+           fl%Orders = 0
+           fl%Npoints = trove%Npoints
+           fl%sparse = trove%sparse
+           nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+        endif
         !
         read(chkptIO) buf
         !
@@ -18711,16 +18859,29 @@ end subroutine check_read_save_none
            !
         endif 
         !
-        read(chkptIO) nterms
+        if (.not.trove%sparse) read(chkptIO) nterms
         !
         do imu = 1,extF%rank
            !
            fl => trove%extF(imu)
+           if (trove%sparse) read(chkptIO) nterms
            fl%Ncoeff = nterms
            !
-           call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
-           read(chkptIO) fl%field     
-           read(chkptIO) fl%iorder 
+           if (nterms>0) then
+              call polynom_initialization(fl,extF%maxord(imu),nterms,trove%Npoints,'extF')
+              read(chkptIO) fl%field     
+              read(chkptIO) fl%iorder 
+              if (trove%sparse) then
+                 read(chkptIO) fl%ifromsparse
+                 fl%IndexQ(:,1:nterms) = FLIndexQ(:,fl%ifromsparse(1:nterms))
+                 fl%sparse = .true.
+              endif
+           else
+              fl%Orders = 0
+              fl%Npoints = trove%Npoints
+              fl%sparse = trove%sparse
+              nullify(fl%field,fl%iorder,fl%me,fl%ifromsparse,fl%IndexQ)
+           endif
            !
         enddo
         !
@@ -20507,7 +20668,7 @@ end subroutine check_read_save_none
            !
            ! This NUMEROV for the last (could be also non-rigid) coordinate
            !
-           allocate (drho(0:Npoints,3),stat=alloc)
+           if (.not.allocated(drho)) allocate (drho(0:Npoints,3),stat=alloc)
            if (alloc/=0) then
               write (out,"(' Error ',i9,' trying to allocate drho')") alloc
               stop 'FLbset1DNew, drho - out of memory'
@@ -21862,10 +22023,12 @@ end subroutine check_read_save_none
                  !
                else
                  !
-                 f2(imode) = fl%field(k,irho_eq_)
-                 g2(imode) = gl%field(k,irho_eq_)
-                 !
-                 gz(imode) = gzl%field(k,irho_eq_)
+                 f2(imode) = 0
+                 g2(imode) = 0
+                 gz(imode) = 0
+                 if (k<=fl%Ncoeff) f2(imode) = fl%field(k,irho_eq_)
+                 if (k<=gl%Ncoeff) g2(imode) = gl%field(k,irho_eq_)
+                 if (k<=gzl%Ncoeff) gz(imode) = gzl%field(k,irho_eq_)
                  !
                endif
                !
@@ -24587,7 +24750,7 @@ end subroutine check_read_save_none
             !
             if (fl%iorder(iterm)/=0) cycle
             !
-            k(:) = FLIndexQ(:,iterm)
+            k(:) = fl%IndexQ(:,iterm)
             !
             f_t = product(xi(:)**k(:))
             !
@@ -24613,7 +24776,7 @@ end subroutine check_read_save_none
             !
             if (fl%iorder(iterm)/=0) cycle
             !
-            k(:) = FLIndexQ(:,iterm)
+            k(:) = fl%IndexQ(:,iterm)
             !
             f_t = product(xi(:)**k(:))
             !
@@ -24638,7 +24801,7 @@ end subroutine check_read_save_none
                   !
                   if (fl%iorder(iterm)/=0) cycle
                   !
-                  k(:) = FLIndexQ(:,iterm)
+                  k(:) = fl%IndexQ(:,iterm)
                   !
                   f_t = product(xi(:)**k(:))
                   !
@@ -24666,7 +24829,7 @@ end subroutine check_read_save_none
                   !
                   if (fl%iorder(iterm)/=0) cycle
                   !
-                  k(:) = FLIndexQ(:,iterm)
+                  k(:) = fl%IndexQ(:,iterm)
                   !
                   f_t = product(xi(:)**k(:))
                   !
@@ -24691,7 +24854,7 @@ end subroutine check_read_save_none
                   !
                   if (fl%iorder(iterm)/=0) cycle
                   !
-                  k(:) = FLIndexQ(:,iterm)
+                  k(:) = fl%IndexQ(:,iterm)
                   !
                   f_t = product(xi(:)**k(:))
                   !
@@ -30029,6 +30192,11 @@ end subroutine check_read_save_none
      igamma_pair = 1
      return 
      ! 
+   elseif (trim(intensity%action)=='FIELD_ME') then
+     !
+     forall(igammaI=1:sym%Nrepresen) igamma_pair(igammaI) = igammaI
+     return
+     !
    endif
    !
    do igammaI = 1,sym%Nrepresen

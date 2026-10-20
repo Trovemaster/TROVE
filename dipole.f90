@@ -3741,12 +3741,12 @@ contains
          do kI = 0,jmax
            do itauI = 0,min(kI,1)
              !
-             termI = 2*kI+itauI ; if (kI==0) termI = termI + 1
+             termI = 2*kI+itauI ; if (kI==0) termI = 1
              !
              do kF = 0,jmax
-               do itauF = 0,1
+               do itauF = 0,min(kF,1)
                  !
-                 termF = 2*kF+itauF ; if (kF==0) termF = termF + 1
+                 termF = 2*kF+itauF ; if (kF==0) termF = 1
                  !
                  ! rotational density in the rotated (primitve cluster) frame
                  !
@@ -5247,6 +5247,11 @@ contains
         igamma_pair = 1
         return 
         ! 
+      elseif (trim(intensity%action)=='FIELD_ME') then
+        !
+        forall(igammaI=1:sym%Nrepresen) igamma_pair(igammaI) = igammaI
+        return
+        !
       endif
       !
       do igammaI = 1,sym%Nrepresen
@@ -6734,7 +6739,7 @@ contains
                ktau = bset_contr(indF)%ktau(irootF)
                tauF  = mod(ktau,2_ik)
                kF = bset_contr(indF)%k(irootF)
-               termF = 2*kF+tauF ; if (kF==0) termF = termF + 1
+               termF = 2*kF+tauF ; if (kF==0) termF = 1
                !
                !cnu_i(:) = bset_contr(indI)%contractive_space(:, irow)
                !deg_i(:) = bset_contr(indI)%index_deg(icase)%icoeffs(:,ib)
@@ -6761,7 +6766,7 @@ contains
                   !
                   ktau = bset_contr(indI)%ktau(irootI)
                   tauI  = mod(ktau,2_ik)
-                  termI = 2*kI+tauI ; if (kI==0) termI = termI + 1
+                  termI = 2*kI+tauI ; if (kI==0) termI = 1
                   !
                   if (icontrI==icontrF ) then 
                      !
