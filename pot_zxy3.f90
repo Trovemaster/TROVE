@@ -143,7 +143,7 @@ module pot_zxy3
         !
       endif 
       !
-   case('R-BETA-SYM')
+   case('R-BETA-SYM','X-R-BETA-SYM')
       !
       alpha12 = local(5)
       alpha13 = local(6)
@@ -223,7 +223,11 @@ module pot_zxy3
       phi2 = beta412
       !
       xi(8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1-phi2-phi3 )
-      xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+      if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+         xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi3-phi2 )
+      else
+         xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+      endif
       !
    end select 
    !
@@ -378,7 +382,7 @@ module pot_zxy3
          !
        endif 
        !
-    case('R-BETA-SYM')
+    case('R-BETA-SYM','X-R-BETA-SYM')
        !
        alpha12 = local(5)
        alpha13 = local(6)
@@ -458,7 +462,11 @@ module pot_zxy3
        phi2 = beta412
        !
        xi(8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1-phi2-phi3 )
-       xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+       if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+          xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi3-phi2 )
+       else
+          xi(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+       endif
        !
     end select 
     !
@@ -582,7 +590,7 @@ module pot_zxy3
          !
          stop 'R-BETA-TAU is not working yet'
          !
-      case('R-BETA-SYM')
+      case('R-BETA-SYM','X-R-BETA-SYM')
          !
          alpha12 = local(5)
          alpha13 = local(6)
@@ -968,20 +976,37 @@ module pot_zxy3
     repres ( 1,:,:)= reshape((/ e, o,  & 
                                 o, e/),(/2,2/))
     !
-    repres ( 3,:,:)= reshape((/-a,-b,  &
-                                b,-a/),(/2,2/))
-    !
-    repres ( 2,:,:)= reshape((/-a, b,  &
-                               -b,-a/),(/2,2/))
-    !
-    repres ( 4,:,:)= reshape((/ e, o,  &
-                                o,-e/),(/2,2/))
-    !
-    repres ( 6,:,:)= reshape((/-a, b,  &
-                                b, a/),(/2,2/))
-    !
-    repres ( 5,:,:)= reshape((/-a,-b,  &
-                               -b, a/),(/2,2/))
+    if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+       repres ( 2,:,:)= reshape((/-a,-b,  &
+                                   b,-a/),(/2,2/))
+       !
+       repres ( 3,:,:)= reshape((/-a, b,  &
+                                  -b,-a/),(/2,2/))
+       !
+       repres ( 4,:,:)= reshape((/ e, o,  &
+                                   o,-e/),(/2,2/))
+       !
+       repres ( 5,:,:)= reshape((/-a, b,  &
+                                   b, a/),(/2,2/))
+       !
+       repres ( 6,:,:)= reshape((/-a,-b,  &
+                                  -b, a/),(/2,2/))
+    else
+       repres ( 3,:,:)= reshape((/-a,-b,  &
+                                   b,-a/),(/2,2/))
+       !
+       repres ( 2,:,:)= reshape((/-a, b,  &
+                                  -b,-a/),(/2,2/))
+       !
+       repres ( 4,:,:)= reshape((/ e, o,  &
+                                   o,-e/),(/2,2/))
+       !
+       repres ( 6,:,:)= reshape((/-a, b,  &
+                                   b, a/),(/2,2/))
+       !
+       repres ( 5,:,:)= reshape((/-a,-b,  &
+                                  -b, a/),(/2,2/))
+    endif
     !
     dst(8) = repres(ioper,1,1)*src(8)+repres(ioper,1,2)*src(9)
     dst(9) = repres(ioper,2,1)*src(8)+repres(ioper,2,2)*src(9)

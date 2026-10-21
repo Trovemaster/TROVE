@@ -15025,7 +15025,7 @@ end subroutine check_read_save_none
         integer(ik)        :: chkptIO,itype,alloc,imode,jmax
         type(Basis1DT),pointer    ::  bs
         type(FLpolynomT),pointer    :: fl
-        integer(ik)          :: Nmodes,Npoints,k1,k2,Tcoeff,isize,jmax_t,i,imu
+        integer(ik)          :: Nmodes,Npoints,k1,k2,Tcoeff,isize,jmax_t,i,imu,maxpower
         integer(hik)         :: totalsize 
         real(ark),allocatable :: matelements_t(:,:,:,:),ener0_t(:)
         real(ark)             :: b_param_t(1:3)
@@ -15154,7 +15154,14 @@ end subroutine check_read_save_none
                !
                isize = job%bset(imode)%range(2)
                !
-               allocate (matelements_t(-1:3,0:trove%MaxOrder,0:bs%size,0:bs%size),ener0_t(0:bs%size),stat=alloc)
+               if(molec%mode_list_present) then
+                  maxpower = molec%basic_function_list(imode)%numfunc
+               else 
+                  maxpower = trove%NKinorder
+               endif
+               maxpower = max(trove%NPotOrder,trove%NExtOrder,maxpower)
+               !
+               allocate (matelements_t(-1:3,0:maxpower,0:bs%size,0:bs%size),ener0_t(0:bs%size),stat=alloc)
                !
              endif 
              !
@@ -15173,11 +15180,11 @@ end subroutine check_read_save_none
                !
                ! Only the first imode within the givem type is unique  
                !
-               allocate (bs%matelements(-1:3,0:trove%MaxOrder,0:isize,0:isize),bs%ener0(0:isize),stat=alloc)
+               allocate (bs%matelements(-1:3,0:maxpower,0:isize,0:isize),bs%ener0(0:isize),stat=alloc)
                call ArrayStart('bs%matelements',alloc,1_ik,kind(bs%matelements),size(bs%matelements,kind=hik))
                call ArrayStart('bs%ener0',alloc,size(bs%ener0),kind(bs%ener0))
                !
-               bs%matelements(-1:3,0:trove%MaxOrder,0:isize,0:isize) = matelements_t(-1:3,0:trove%MaxOrder,0:isize,0:isize)
+               bs%matelements(-1:3,0:maxpower,0:isize,0:isize) = matelements_t(-1:3,0:maxpower,0:isize,0:isize)
                bs%params(1:3) = b_param_t(1:3)
                bs%ener0(0:isize) = ener0_t(0:isize)
                !

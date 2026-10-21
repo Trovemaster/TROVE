@@ -219,14 +219,20 @@ module mol_zxy3
           phi2 = beta412
           !
           dst(8) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1-phi2-phi3 )
-          dst(9) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+          dst(9) = 1.0_ark/sqrt(2.0_ark)*(              phi3-phi2 )
           !
        else
           !
           !  write(out,*) dsrc
           !
           dst(1:4)=src(1:4)
-          dsrc(5:7)=src(5:7)-molec%local_eq(5:7)
+          if (size(molec%local_eq)==10) then
+             dsrc(5) = src(5) - molec%local_eq(5)
+             dsrc(6) = src(6) - molec%local_eq(6)
+             dsrc(7) = src(7) - molec%local_eq(8)
+          else
+             dsrc(5:7)=src(5:7)-molec%local_eq(5:7)
+          endif
           !
           call from_sym2alpha(dsrc(5:9),dst(5:9),alpha34)
           !
@@ -314,10 +320,15 @@ module mol_zxy3
       b0(3,2,0) = 0
       b0(3,3,0) = reYX*cos(rho)
       b0(4,1,0) = -reYX*sin(rho)/2.0_ark
-      b0(4,2,0) = sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
+      if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+         b0(4,2,0) = -sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
+         b0(5,2,0) =  sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
+      else
+         b0(4,2,0) =  sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
+         b0(5,2,0) = -sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
+      endif
       b0(4,3,0) = reYX*cos(rho)
       b0(5,1,0) = -reYX*sin(rho)/2.0_ark
-      b0(5,2,0) = -sqrt(3.0_ark)*reYX*sin(rho)/2.0_ark
       b0(5,3,0) = reYX*cos(rho)
       !
       do i = 1,3
@@ -427,45 +438,85 @@ module mol_zxy3
            !
            dst = src
            !
-         case (3) ! (123)
+         case (3) ! (123) for R-BETA-SYM, (321) for X-R-BETA-SYM
            !
-           dst(2) = src(3)
-           dst(3) = src(4)
-           dst(4) = src(2)
+           if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+              dst(2) = src(4)
+              dst(3) = src(2)
+              dst(4) = src(3)
+              !
+              dst(5) = src(7)
+              dst(6) = src(5)
+              dst(7) = src(6)
+           else
+              dst(2) = src(3)
+              dst(3) = src(4)
+              dst(4) = src(2)
+              !
+              dst(5) = src(6)
+              dst(6) = src(7)
+              dst(7) = src(5)
+           endif
            !
-           dst(5) = src(6)
-           dst(6) = src(7)
-           dst(7) = src(5)
+         case (2) ! (321) for R-BETA-SYM, (123) for X-R-BETA-SYM
            !
-         case (2) ! (321)
+           if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+              dst(2) = src(3)
+              dst(3) = src(4)
+              dst(4) = src(2)
+              !
+              dst(5) = src(6)
+              dst(6) = src(7)
+              dst(7) = src(5)
+           else
+              dst(2) = src(4)
+              dst(3) = src(2)
+              dst(4) = src(3)
+              !
+              dst(5) = src(7)
+              dst(6) = src(5)
+              dst(7) = src(6)
+           endif
            !
-           dst(2) = src(4)
-           dst(3) = src(2)
-           dst(4) = src(3)
+         case (6) ! (12) for R-BETA-SYM, (13) for X-R-BETA-SYM
            !
-           dst(5) = src(7)
-           dst(6) = src(5)
-           dst(7) = src(6)
+           if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+              dst(2) = src(4)
+              dst(3) = src(3)
+              dst(4) = src(2)
+              !
+              dst(5) = src(7)
+              dst(6) = src(6)
+              dst(7) = src(5)
+           else
+              dst(2) = src(3)
+              dst(3) = src(2)
+              dst(4) = src(4)
+              !
+              dst(5) = src(6)
+              dst(6) = src(5)
+              dst(7) = src(7)
+           endif
            !
-         case (6) ! (12)
+         case (5) ! (13) for R-BETA-SYM, (12) for X-R-BETA-SYM
            !
-           dst(2) = src(3)
-           dst(3) = src(2)
-           dst(4) = src(4)
-           !
-           dst(5) = src(6)
-           dst(6) = src(5)
-           dst(7) = src(7)
-           !
-         case (5) ! (13)
-           !
-           dst(2) = src(4)
-           dst(3) = src(3)
-           dst(4) = src(2)
-           !
-           dst(5) = src(7)
-           dst(6) = src(6)
-           dst(7) = src(5)
+           if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+              dst(2) = src(3)
+              dst(3) = src(2)
+              dst(4) = src(4)
+              !
+              dst(5) = src(6)
+              dst(6) = src(5)
+              dst(7) = src(7)
+           else
+              dst(2) = src(4)
+              dst(3) = src(3)
+              dst(4) = src(2)
+              !
+              dst(5) = src(7)
+              dst(6) = src(6)
+              dst(7) = src(5)
+           endif
            !
          case (4) ! (23)
            !
@@ -693,14 +744,22 @@ module mol_zxy3
        !
        dst(1)=alpha12-molec%local_eq(5)
        dst(2)=alpha13-molec%local_eq(6)
-       dst(3)=alpha14-molec%local_eq(8)
+       if (size(molec%local_eq)==10) then
+          dst(3)=alpha14-molec%local_eq(8)
+       else
+          dst(3)=alpha14-molec%local_eq(7)
+       endif
        !
        phi1 = beta413 ! 2.0_ark*pi-(beta312+beta412)
        phi3 = beta312
        phi2 = beta412
        !
        dst(4) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1-phi2-phi3 )
-       dst(5) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+       if (trim(molec%coords_transform)=='X-R-BETA-SYM') then
+          dst(5) = 1.0_ark/sqrt(2.0_ark)*(              phi3-phi2 )
+       else
+          dst(5) = 1.0_ark/sqrt(2.0_ark)*(              phi2-phi3 )
+       endif
        !
       end subroutine calc_sym_from_alpha
       !
