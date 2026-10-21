@@ -2424,8 +2424,7 @@ module mol_ch3oh
       'ML_rotsymmetry_CH3OH error: coordinate type =', trim(molec%coords_transform), 'is unknown'
       stop 'ML_rotsymmetry_CH3OH error: bad coordinate type'
       !
-    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU','R-ALPHA-THETA-S-TAU','DR-DALPHA-S-TAU',&
-         'R-ALPHA132-THETA-S-TAU')
+    case('R-ALPHA-THETA-TAU','R-ALPHA-BETA-TAU-THETA','R-ALPHA-BETA-THETA-TAU','R-ALPHA-THETA-S-TAU','DR-DALPHA-S-TAU')
       !
       select case(trim(molec%symmetry))
         !
@@ -2454,6 +2453,31 @@ module mol_ch3oh
          if (mod(K+3,3)/=0.and.tau==1) then 
             gamma = 3 ; ideg = 2
          endif 
+        !
+      end select
+      !
+    case('R-ALPHA132-THETA-S-TAU')
+      !
+      select case(trim(molec%symmetry))
+        !
+      case default
+        !
+        write(out, '(/a,1x,a,1x,a)') &
+        'ML_rotsymmetry_CH3OH: symmetry =', trim(molec%symmetry), 'is unknown'
+        stop 'ML_rotsymmetry_CH3OH error: bad symmetry type'
+        !
+      case('C','C(M)')
+        !
+        gamma = 1
+        ideg = 1
+        !
+      case('C3V','C3V(M)','C3V-2','C3V(M)-2','C3V(M)-3')
+         !
+         gamma = 0 
+         ideg = 1 
+         !
+         if (tau==0) gamma = 1
+         if (tau==1) gamma = 2
         !
       end select
       !

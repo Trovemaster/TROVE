@@ -3629,7 +3629,7 @@ end subroutine polintark
         v = x
         !
      case('BOND-LENGTH', 'ANGLE', 'DIHEDRAL', 'AUTOMATIC','COSNX','FOURIER','AUTO-SINGULAR',&
-         '(COS(A0)-COS(A))*SINA','(COS(A)-COS(A0))*SINA','AUTO','POT-AUTO','EXT-AUTO')
+         '(COS(A0)-COS(A))*SINA','(COS(A)-COS(A0))*SINA','AUTO','AUTO-HARMON','POT-AUTO','EXT-AUTO')
         !
         v = x
         !
@@ -3689,7 +3689,7 @@ end subroutine polintark
             v = v*y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon
           end do      
           !
-       case('AUTO')
+       case('AUTO','AUTO-HARMON')
           ! 
           if(iorder < 0) stop 'MLcoord_direct error: negative iorder'
           !

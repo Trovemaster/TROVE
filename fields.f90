@@ -2020,8 +2020,12 @@ module fields
                  !
               case default 
                  !
-                 job%bset(imode)%coord_kinet = job%bset(imode)%type
-                 job%bset(imode)%coord_poten = job%bset(imode)%type
+                 if (trim(job%bset(imode)%coord_kinet)/='AUTO'.and.&
+                     trim(job%bset(imode)%coord_kinet)/='AUTOMATIC'.and.&
+                     trim(job%bset(imode)%coord_kinet)/='AUTO-HARMON') then
+                    job%bset(imode)%coord_kinet = job%bset(imode)%type
+                    job%bset(imode)%coord_poten = job%bset(imode)%type
+                 endif
                  !
                  job%bset_prop(imode)%numerical = .false.
                  !
@@ -14575,7 +14579,10 @@ end subroutine check_read_save_none
        select case(trim(job%bset(imode)%type))
        !
        case('LAGUERRE','NORMAL','MORSE','HARMONIC') 
-         if ( job%bset(imode)%coord_kinet/=job%bset(imode)%coord_poten  ) then 
+         if ( job%bset(imode)%coord_kinet/=job%bset(imode)%coord_poten .and. &
+              trim(job%bset(imode)%coord_kinet)/='AUTO' .and. &
+              trim(job%bset(imode)%coord_kinet)/='AUTOMATIC' .and. &
+              trim(job%bset(imode)%coord_kinet)/='AUTO-HARMON' ) then 
             write(out,"('FLbsetInit: Wrong definition of coordinates:')")
             write(out,"('the kinetic and potential parts must be the same for the non-numerical basis sets, while')")
             write(out,"('The kinetic   coordinate is :',a)") trim(job%bset(imode)%coord_kinet)
@@ -21823,7 +21830,7 @@ end subroutine check_read_save_none
                 powers(1:Nmodes) = fl%IndexQ(1:Nmodes,j)
                 !
                 ipower = powers(nu_i)
-                if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
+                if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
                 !
                 f2_term  =  fl%field(j,irho_eq_)
                 !
@@ -21831,7 +21838,7 @@ end subroutine check_read_save_none
                   !
                   do i = 1, trove%Nmodes_e
                     ! 
-                    if(i == nu_i) cycle
+                    if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
                     !
                     g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
                     !
@@ -21857,14 +21864,14 @@ end subroutine check_read_save_none
               powers(1:Nmodes) = gl%IndexQ(1:Nmodes,j)
               !
               ipower = powers(nu_i)
-              if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
+              if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
               !
               g2_term  =  gl%field(j,irho_eq_)
               !
               if (abs(g2_term)>small_) then 
                 !
                 do i = 1, size(powers)
-                  if(i == nu_i) cycle
+                  if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
                   !
                   g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
                   !
@@ -21887,14 +21894,14 @@ end subroutine check_read_save_none
               powers(1:Nmodes) = gzl%IndexQ(1:Nmodes,j)
               !
               ipower = powers(nu_i)
-              if (job%bset(nu_i)%coord_kinet=='AUTO-HARMON'.and.ipower>0) cycle
+              if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
               !
               gz_term  =  gzl%field(j,irho_eq_)
               !
               if (abs(gz_term)>small_) then 
                 !
                 do i = 1, size(powers)
-                  if(i == nu_i) cycle
+                  if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
                   !
                   gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
                   !
