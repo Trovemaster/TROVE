@@ -1,7 +1,9 @@
 Kinetic energy operators
 ========================
 
-There are several options for kinetic energy operators (KEO) in TROVE:
+For the current operator-function constructor and a validated small example,
+see :doc:`spar`. This chapter also describes the earlier coordinate-specific
+KEO routes. The available kinetic energy operator (KEO) routes include:
 
 - **Linearised KEO**: Automatically constructed KEO using the Eckart frame (rigid) or Eckart/Saywitz frame (1D non-rigid) as a Taylor expansion in terms of linearised coordinates;
 - **Curvilinear KEO**: Preprogrammed analytic KEO (exact or non-exact) using curvilinear (valence) coordinates and different frames;
@@ -17,6 +19,7 @@ This is a standard KEO constructed using a general black-boxed algorithm applica
 Linearised KEO is a default option in TROVE. It requires the following components to be present in the TROVE code:
 
 - Coordinate transformation (``TRANSFORM``) between the Z-matrix curvilinear coordinates :math:`\xi_{i}^{\rm Zmat}` and the target curvilinear coordinates :math:`\xi_i` used to generate the linearised coordinates :math:`\xi_i^{\rm lin}`. For example, for the Z-matrix used for NH\ :sub:`3` (see :doc:`molecules`):
+
 ::
 
 
@@ -115,25 +118,47 @@ Non-rigid quasi-linear triatomic molecules's KEOs
 
 The non-rigid quasi-linear KEOs for triatomic molecules implemented in TROVE include:
 
-.. table:: t-KEOs
+.. _t-KEOs:
 
-     Kinetic energy types implemented with associated basis set and frame types: non-rigid quasi-linear triatomics.
+.. list-table:: Non-rigid quasi-linear triatomic KEOs
+   :header-rows: 1
 
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-| ``MolType``    | ``kinetic_type``                    |  basis set          |    frames/``transrom``   | BASIS expansion |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XY2         |   ``KINETIC_XY2_EKE_BISECT``        |``laguerre-k``       |  ``R-RHO-Z``             | ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XY2         |   ``KINETIC_XY2_EKE_BISECT_SINRHO`` |``sinrho-laguerre-k``|  ``R-RHO-Z``             | ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_bisect``        |``laguerre-k``       |  ``R-RHO-Z-M2-M3-BISECT``| ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND``          |``laguerre-k``       |  ``R1-Z-R2-RHO``         | ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND_SINRHO``   |``sinrho-laguerre-k``|  ``R-RHO-Z-M2-M3-BISECT``| ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
-|    XYZ         |   ``KINETIC_XYZ_EKE_BOND-R2``       |``laguerre-k``       |  ``R2-Z-R1-RHO``         | ``rational``    |
-+----------------+-------------------------------------+---------------------+--------------------------+-----------------+
+   * - ``MolType``
+     - ``kinetic_type``
+     - basis set
+     - frames/``transrom``
+     - BASIS expansion
+   * - XY2
+     - ``KINETIC_XY2_EKE_BISECT``
+     - ``laguerre-k``
+     - ``R-RHO-Z``
+     - ``rational``
+   * - XY2
+     - ``KINETIC_XY2_EKE_BISECT_SINRHO``
+     - ``sinrho-laguerre-k``
+     - ``R-RHO-Z``
+     - ``rational``
+   * - XYZ
+     - ``KINETIC_XYZ_EKE_bisect``
+     - ``laguerre-k``
+     - ``R-RHO-Z-M2-M3-BISECT``
+     - ``rational``
+   * - XYZ
+     - ``KINETIC_XYZ_EKE_BOND``
+     - ``laguerre-k``
+     - ``R1-Z-R2-RHO``
+     - ``rational``
+   * - XYZ
+     - ``KINETIC_XYZ_EKE_BOND_SINRHO``
+     - ``sinrho-laguerre-k``
+     - ``R-RHO-Z-M2-M3-BISECT``
+     - ``rational``
+   * - XYZ
+     - ``KINETIC_XYZ_EKE_BOND-R2``
+     - ``laguerre-k``
+     - ``R2-Z-R1-RHO``
+     - ``rational``
+
 
 These are included in the module ``kin_xy2.f90``.
 
@@ -145,7 +170,7 @@ All these analytic KEO are given in a sum-of-products of 1D terms, i.e. similar 
 
 for the KEO coordinates chosen as :math:`r_1`, :math:`r_2` and :math:`\rho`. Once all the matrix elements of :math:`f_{l}(r_1)`, :math:`f_{m}(r_2)` and :math:`f_{n}(\alpha)` are computed, the same TROVE pipeline can be used for any types of  coordinates, regardless of if they are linearised or curvilinear.
 
-In the case of analytic ``XYZ`` and ``XY2`` KEOs from :numref:`Table %s <t-KEOs>` above, the corresponding KEO terms :math:`G_{\lambda,\lambda'}` or pseudo-potential function :math:`U` depend on :math:`r_1` and :math:`r_2` as inverse expressions,  :math:`1/r_1`, :math:`1/r_1^2`, :math:`1/r_2`, :math:`1/r_2^2` and :math:`1/(r_1 r_2)`. We therefore represent them as sum-of-products expansions in terms of these 1D functions around the non-rigid configuration along the angle :math:`\rho`:
+In the case of analytic ``XYZ`` and ``XY2`` KEOs from the table above, the corresponding KEO terms :math:`G_{\lambda,\lambda'}` or pseudo-potential function :math:`U` depend on :math:`r_1` and :math:`r_2` as inverse expressions,  :math:`1/r_1`, :math:`1/r_1^2`, :math:`1/r_2`, :math:`1/r_2^2` and :math:`1/(r_1 r_2)`. We therefore represent them as sum-of-products expansions in terms of these 1D functions around the non-rigid configuration along the angle :math:`\rho`:
 
 .. math::
     :label: e-G
@@ -200,15 +225,24 @@ Analytic KEOs for rigid non-linear triatomic molecules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. table:: t-KEOs-rigid
+.. _t-KEOs-rigid:
 
-     Kinetic energy types with associated basis set and frame types: rigid triatomics:
+.. list-table:: Rigid-reference bent triatomic KEO
+   :header-rows: 1
 
-+----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
-| ``MolType``    | ``kinetic_type``                          |     basis set       |      frames      | ``TRANSFORM``  | ``BASIS``       |
-+----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
-|    XY2         | ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID``  |   ``numerov``       |  ``BISECT-Z``    |  ``R-ALPHA``   | ``automatic``   |
-+----------------+-------------------------------------------+---------------------+------------------+----------------+-----------------+
+   * - ``MolType``
+     - ``kinetic_type``
+     - basis set
+     - frames
+     - ``TRANSFORM``
+     - ``BASIS``
+   * - XY2
+     - ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID``
+     - ``numerov``
+     - ``BISECT-Z``
+     - ``R-ALPHA``
+     - ``automatic``
+
 
 It is included in the module ``kin_xy2.f90``.
 
@@ -221,7 +255,7 @@ The following sum-of-products expansion is assumed:
 
 where :math:`f_{n}(\alpha)` is one of the basic-functions types.
 
-The KEO type ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID`` is explained in detail in :doc:`basic_functions_example.rst`.
+The KEO type ``KINETIC_XY2_EKE_BISECT_COMPACT_RIGID`` is explained in detail in :doc:`basic_functions_example`.
 
 
 
@@ -289,7 +323,7 @@ For example, for the Taylor expansion in Eq. :eq:`e-Taylor`, the basis-functions
            & \ldots  \\
        \end{split}
 
-In the example from the exact KEO of the quasi-linear molecule from Eq. :math:`e-G`, the basic functions are
+In the example from the exact KEO of the quasi-linear molecule from Eq. :eq:`e-G`, the basic functions are
 
 .. math::
 
@@ -430,195 +464,76 @@ Basic-Function: External sum-of-products KEO of general type
 
 
 
-Let us now formalise the "basic-functions" concept by representing the 1D basic functions :math:`u_{l}(q_i)` in Eq. :eq:`e-G-sum-of-prod`  in the following generic form:
-
-.. math::
-
-      u_{l}(q_i) = f^{(\lambda)}( a_i q^{k_i} )^{n_i}
-
-where :math:`f^{(\lambda)}(x)` is a predefined 1D analytic form implemented in TROVE. This form allows user to formalise a generic KEO by defining it in the input file and associated kinetic.chk. To this end, the ``BASIC-FUNCTION`` builder is used.
-
-As an illustration, let us consider the H\ :sub:`2`\ CS example and reconstruct its KEO using the ``BASIC-FUNCTION`` feature.
-
-
-``BASIC-FUNCTION`` is a TROVE block defining the shape of the KEO expansions in Eq. :eq:`e-G-H2CS` as follows. Using the same example of H\ :sub:`2`\ CS, we now introduce the basic coordinates using the following constructor:
-::
-
-     BASIC-FUNCTION
-     Mode 1 2
-     1 1 -1 I 1 1
-     2 1 -2 I 1 1
-     Mode 2 2
-     1 1 -1 I 1 1
-     2 1 -2 I 1 1
-     Mode 3 2
-     1 1 -1 I 1 1
-     2 1 -2 I 1 1
-     Mode 4 7
-     1 1 1 Cos 1 1
-     2 1 1 Cot 1 1
-     3 1 1 Csc 1 1
-     4 1 1 Sin 1 1
-     5 1 2 Cot 1 1
-     6 2 1 Cot 1 1 1 Csc 1 1
-     7 1 2 Csc 1 1
-     Mode 5 7
-     1 1 1 Cos 1 1
-     2 1 1 Cot 1 1
-     3 1 1 Csc 1 1
-     4 1 1 Sin 1 1
-     5 1 2 Cot 1 1
-     6 2 1 Cot 1 1 1 Csc 1 1
-     7 1 2 Csc 1 1
-     Mode 6 5
-     1 1 1 Cos 0.5 1
-     2 1 1 Sin 0.5 1
-     3 1 2 Cos 0.5 1
-     4 2 1 Cos 0.5 1 1 Sin 0.5 1
-     5 1 2 Sin 0.5 1
-     END
-
-
-We assume that each   1D contributing term :math:`u_{l}{q_i}` for a given mode :math:`q_i` in the expansion of Eq. :eq:`e-G-H2CS` can be represented using the following general form:
-
-.. math::
-
-      u(q_1,q_2,q_3,..) = f^{(\lambda)}( a_1 q_1^{k_1} )^{n_1} f^{(\mu)}( a_2 q_2^{k_2} )^{n_2} \ldots
-
-
-
-The basis functions can be combined together as a product to form a composed expansion type, e.g.
-
-.. math::
-
-      u_{1}(\xi_1..) = f^{(\lambda)}( a_1 \xi_1^{k_1} )^{n_1} f^{(\mu)}( a_2 \xi_1^{k_2} )^{n_2}
-
-
-For example, for mode 1 (:math:`r_1`), two expansion types are selected: :math:`f^{(1)}(r_1) = \frac{1}{r_1}` and :math:`f^{(2)}(r_1) = \frac{1}{r_1^2}`, which are summarised in the following table:
-
-+-------+-----------------------+-------------+-------+------------+-------------+
-|                               |        mode |:math:`N_{\rm func}`|             |
-+-------+-----------------------+-------------+-------+------------+-------------+
-|       |  ``Mode``             |           1 |       2            |             |
-+-------+-----------------------+-------------+-------+------------+-------------+
-|   #   |  :math:`N_{\rm contr}`| :math:`n_i` | type  |:math:`a_i` | :math:`k_i` |
-+-------+-----------------------+-------------+-------+------------+-------------+
-|   1   |          1            |  -1         |  I    |  1         |     1       |
-+-------+-----------------------+-------------+-------+------------+-------------+
-|   2   |          1            |  -2         |  I    |  1         |     1       |
-+-------+-----------------------+-------------+-------+------------+-------------+
-
-Here ``I`` indicates the simple "identity" function of :math:`r_1`, i.e.
-
-.. math::
-
-   f^{\rm (I)}(r) = r
-
-
-For mode 4 (:math:`\alpha_1`) however 7 basic functions are used:
-
-.. math::
-
-    \begin{split}
-      f^{(1)} & = \cos(\tau/2) \\
-      f^{(2)} & = \sin(\tau/2) \\
-      f^{(3)} & = \cos^2(\tau/2) \\
-      f^{(4)} & = \cos(\tau/2)\sin(\tau/2) \\
-      f^{(4)} & = \sin^2(\tau/2)
-    \end{split}
-
-
-
-which is summarised in the following table:
-
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|                               |        mode |:math:`N_{\rm func}`|             |                    |                         |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|       |  ``Mode``             |           4 |     7              |             |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   #   |  :math:`N_{\rm contr}`| :math:`n_i` | type  |:math:`a_i` | :math:`k_i` | :math:`m_i` | type |:math:`b_i`| :math:`l_i` |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   1   |          1            |   1         |  Cos  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   2   |          1            |   1         |  Cot  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   3   |          1            |   1         |  Csc  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   4   |          1            |   1         |  Sin  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   5   |          1            |   2         |  Cot  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   6   |          2            |   1         |  Cot  |  1         |     1       |        1    | Csc  |    1      |     1       |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   7   |          1            |   2         |  Csc  |  1         |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-
-
-And for the last mode 6 (:math:`\tau`), the basic coordinates
-
-.. math::
-
-    \begin{split}
-       f^{(1)} & = \cos\alpha_1 \\
-       f^{(2)} & = \cot\alpha_1 \\
-       f^{(3)} & = \csc\alpha_1 \\
-       f^{(4)} & = \sin\alpha_1 \\
-       f^{(5)} & = \cot^2\alpha_1 \\
-       f^{(6)} & = \cot\alpha_1\csc\alpha_1 \\
-       f^{(7)} & = \csc^2\alpha_1
-    \end{split}
-
-which is summarised in the following table:
-
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|                               |        mode |:math:`N_{\rm func}`|             |                    |                         |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|       |  ``Mode``             |           6 |     5              |             |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   #   |  :math:`N_{\rm contr}`| :math:`n_i` | type  |:math:`a_i` | :math:`k_i` | :math:`m_i` | type |:math:`b_i`| :math:`l_i` |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   1   |          1            |   1         |  Cos  |  0.5       |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   2   |          1            |   1         |  Sin  |  0.5       |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   3   |          1            |   1         |  Cos  |  0.5       |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   4   |          1            |   2         |  Cos  |  0.5       |     1       |       1     |Sin   |    0.5    |     1       |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-|   5   |          1            |   1         |  Sin  |  0.5       |     1       |             |      |           |             |
-+-------+-----------------------+-------------+-------+------------+-------------+-------------+------+-----------+-------------+
-
-Available basic function types
+Explicit H2CS function library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following basic function types are currently available for the KEO ``Automatic`` type to be used with the ``BASIC-FUNCTION`` constructor:
+The current ``BASIC-FUNCTION`` grammar is described in :doc:`spar_input`.
+For the H2CS ``R-THETA-TAU`` coordinates, the corresponding library is:
 
-+-------+---------+------------------+
-|   #   | Keyword | Function         |
-+-------+---------+------------------+
-+-------+---------+------------------+
-|   1   |  I      |  :math:`x`       |
-+-------+---------+------------------+
-|   2   |  cos    |  :math:`\cos(x)` |
-+-------+---------+------------------+
-|   3   |  sin    |  :math:`\sin(x)` |
-+-------+---------+------------------+
-|   4   |  tan    |  :math:`\tan(x)` |
-+-------+---------+------------------+
-|   5   |  csc    |  :math:`\csc(x)` |
-+-------+---------+------------------+
-|   6   |  cot    | :math:`\cot(x)`  |
-+-------+---------+------------------+
-|   7   |  csc    |  :math:`\sec(x)` |
-+-------+---------+------------------+
+.. code-block:: text
 
-These basic functions are associated with the  ``BASIS`` expansion type ``automatic``, see below.
+   BASIC-FUNCTION KINETIC
+   Mode 1 2
+   1 1 R -1 1
+   2 1 R -2 1
+   Mode 2 2
+   1 1 R -1 1
+   2 1 R -2 1
+   Mode 3 2
+   1 1 R -1 1
+   2 1 R -2 1
+   Mode 4 7
+   1 1 COS 1 1
+   2 1 COT 1 1
+   3 1 CSC 1 1
+   4 1 SIN 1 1
+   5 1 COT 2 1
+   6 2 COT 1 1 CSC 1 1
+   7 1 CSC 2 1
+   Mode 5 7
+   1 1 COS 1 1
+   2 1 COT 1 1
+   3 1 CSC 1 1
+   4 1 SIN 1 1
+   5 1 COT 2 1
+   6 2 COT 1 1 CSC 1 1
+   7 1 CSC 2 1
+   Mode 6 5
+   1 1 COS 1 0.5
+   2 1 SIN 1 0.5
+   3 1 COS 2 0.5
+   4 2 COS 1 0.5 SIN 1 0.5
+   5 1 SIN 2 0.5
+   END
+
+Modes 1--3 contain :math:`1/r` and :math:`1/r^2`. Modes 4 and 5
+contain, in order,
+
+.. math::
+
+   \cos\alpha,\quad\cot\alpha,\quad\csc\alpha,\quad\sin\alpha,
+   \quad\cot^2\alpha,\quad\cot\alpha\csc\alpha,\quad\csc^2\alpha.
+
+Mode 6 contains
+
+.. math::
+
+   \cos(\tau/2),\quad\sin(\tau/2),\quad\cos^2(\tau/2),
+   \quad\cos(\tau/2)\sin(\tau/2),\quad\sin^2(\tau/2).
+
+The mode lists are not interchangeable: the kinetic checkpoint uses these
+indices to identify functions. ``SEC`` denotes secant; ``CSC`` denotes
+cosecant. The identity index 0 is implicit. When supplying an explicit
+constructor, use the matching ``automatic`` kinetic expansion settings.
+This block is a syntax and function-map reference, not a standalone
+calculation. See :doc:`molecule_catalogue` for the dependencies and current
+validation status of the H2CS model.
 
 
 Structure of kinetic.chk
 ------------------------
 
-For the Basic-Function feature,  we use the extended format of the checkpoint file kinetic.chk, see :doc:`checkpoints. It has the following form
+For the Basic-Function feature,  we use the extended format of the checkpoint file kinetic.chk, see :doc:`checkpoints`. It has the following form
 ::
 
        0   7   93    <--- Gvib Npoints,Norder,Ncoeff
@@ -693,10 +608,3 @@ For more on the basic functions with examples see below.
 
 
    basic_functions_example.rst
-
-
-
-
-
-
-

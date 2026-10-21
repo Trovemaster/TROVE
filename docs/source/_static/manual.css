@@ -1,0 +1,17 @@
+/* Explanatory tables should remain readable in the narrow manual panel. */
+.rst-content table.wrap-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.rst-content table.wrap-table td,
+.rst-content table.wrap-table th {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.rst-content table.wrap-table code,
+.rst-content table.wrap-table code span.pre {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

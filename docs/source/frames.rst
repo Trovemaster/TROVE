@@ -50,6 +50,7 @@ For quasi-linear triatomic molecules, it is also possible to use exact curviline
 
 
 - ``R-RHO-Z`` is used for (quasi-)linear molecules of the XY\ :sub:`2` type. it defined the curvilinear vibrational coordinates as the two bond angles :math:`r_1` and :math:`r_2` with  the bending mode described by the angle :math:`\rho = \pi - \alpha`, where :math:`\alpha` is the interbond angle (:math:`\rho = 0 \ldots \rho_{\rm max}`). The exact orientation of the frame relative to the instantaneous position of the nuclei is critical for representing the dipole moment vectors.
+
 For the rigid reference frame (``REFER-CONF RIGID``), the actual internal coordinates are the displacements of :math:`r_1`, :math:`r_2` and :math:`\rho` from the corresponding equilibrium:
 
 .. math::
@@ -101,6 +102,7 @@ This ``Transform`` (``frame``) type is very similar to ``R-RHO-Z``, but with the
 ^^^^^^^^^^^^^
 
 - ``R-ALPHA-Z`` is very similar to ``R-RHO-Z`` with the difference in the bending coordinate, which in the interbond angle :math:`\alpha` in this case. In the ``Rigid`` reference configuration, it is a displacement from the equilibrium value :math:`\alpha_{\rm e}`:
+
 .. math::
 
     \begin{split}
@@ -677,7 +679,7 @@ A chain ABCD type molecule  (hydrogen peroxide type)
 
 
 ``R-ALPHA-TAU``
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 The six internal coordinates for the ``frame R-ALPHA-TAU`` type consist of three stretching, two bending and one dihedral coordinates as given by
 
@@ -737,7 +739,7 @@ In MEP, the 5 internal coordinate displacements :math:`\xi_i` are defined around
     \xi_6 &= \delta,
     \end{split}
 
-where :math: the MEP values are given by a parameterised expansion, for example
+where the MEP values are given by a parameterised expansion, for example
 
 .. math::
 
@@ -908,8 +910,8 @@ are as follows:
 - :math:`r_2`, :math:`\beta_{2}`, :math:`\alpha_{12}`
 - :math:`r_3`, :math:`\beta_{3}`, :math:`\alpha_{13}`
 
-where \alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed
-to :math:`\tau_{12}, \tau_{23}, \tau_{13} ` via the following trigonometric rules:
+where :math:`\alpha_{12}` and :math:`\alpha_{13}` are interbond angles between the bonds X-Y\ :sub:`i`.  The Z-matrix coordinates are transformed
+to :math:`\tau_{12}, \tau_{23}, \tau_{13}` via the following trigonometric rules:
 
 .. math::
 
@@ -942,7 +944,7 @@ Six-atomic molecules
 
 
 The C\ :sub:`2`\ H\ :sub:`4` molecule and the ``C2H4`` type
----------------------------------------------------------
+-----------------------------------------------------------
 ::
 
        MolType C2H4
@@ -1008,5 +1010,3 @@ where
 
 
 This type can be used both for rigid and non-rigid molecule types. The non-rigid coordinate is  :math:`\xi_{12}` in the latter case.
-
-

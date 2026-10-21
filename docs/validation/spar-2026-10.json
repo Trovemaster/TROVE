@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-20",
+  "source_commit": "7831d55f39662f4a4b2782e89a2011929cc25b01",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "compiler": "Intel ifx 2025.3.2",
+  "mkl": "2025.3 sequential LP64",
+  "fortran_flags": [
+    "/nologo",
+    "/c",
+    "/O1",
+    "/fpp",
+    "/Qopenmp",
+    "/D_EXTFIELD_DEBUG_",
+    "/heap-arrays:0",
+    "/traceback"
+  ],
+  "pot_user": "pot_H2O_Conway",
+  "executable_sha256": "2b13927b6c230e0571926f4efea43c2d41ca6524adde150a9c0f7cb793e6bfac",
+  "input_path": "docs/source/input/H2S_EKE_basic-functions_step1.inp",
+  "input_sha256": "b73201175ee381f5ad4bd442f17a8f10024b1c8d10f71238be1d17cb6cb7af16",
+  "spar_reference_commit": "fdd5680a5841afaaf8c90451aa06096f635cd81e",
+  "paper_doi": "10.1063/5.0339739",
+  "supplement_article_id": 33197481,
+  "supplement_file_id": 67399173,
+  "supplement_md5": "67757716279610b78fd8015f1759a1eb",
+  "energy_comparison_absolute_tolerance_cm-1": 1e-08,
+  "cartesian_metric_absolute_tolerance": 2e-08,
+  "results": {
+    "explicit-step1": {
+      "seconds": 0.7649999999557622
+    },
+    "explicit-step2": {
+      "seconds": 0.5150000000139698
+    },
+    "explicit-step3": {
+      "seconds": 0.5619999999762513
+    },
+    "builtin-step1": {
+      "seconds": 0.7970000000204891
+    },
+    "builtin-step2": {
+      "seconds": 0.5470000000204891
+    },
+    "builtin-step3": {
+      "seconds": 0.5310000000172295
+    },
+    "external-step1": {
+      "seconds": 0.7970000000204891
+    },
+    "external-step2": {
+      "seconds": 0.48499999998603016
+    },
+    "external-step3": {
+      "seconds": 0.5309999999590218
+    },
+    "comparison": {
+      "J0": {
+        "count": 35,
+        "max_difference_cm-1": 0.0,
+        "lowest_energies_cm-1": [
+          3291.158747830407,
+          4473.744285421963,
+          5645.221217182077,
+          5905.579668246764,
+          5919.638884892092,
+          6813.789483773502
+        ],
+        "external_checkpoint_max_difference_cm-1": 1.8189894035458565e-11
+      },
+      "J1": {
+        "count": 105,
+        "max_difference_cm-1": 0.0,
+        "lowest_energies_cm-1": [
+          3304.905173544121,
+          3306.248772447235,
+          3310.534275456753,
+          4487.637296667411,
+          4489.132933521582,
+          4493.688073000912
+        ],
+        "external_checkpoint_max_difference_cm-1": 2.3646862246096134e-11
+      },
+      "kinetic_section_records": [
+        11,
+        14,
+        4,
+        13
+      ],
+      "cartesian_metric_max_absolute_error": 7.410805302754397e-11
+    }
+  },
+  "scope_excluded": [
+    "mass-factorised KEO reader",
+    "singular-coordinate models",
+    "external PEF/DMF readers",
+    "dipole intensities",
+    "basis convergence"
+  ],
+  "known_workarounds": [
+    "Include kin_zxy2.f90 and kin_abcd.f90 in validation build",
+    "Regenerate primitive basis in stages 2 and 3",
+    "Remove built-in KINETIC block when reading external KEO"
+  ]
+}

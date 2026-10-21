@@ -99,13 +99,14 @@ The number after ``weight`` (aka ``resc``) gives the weighting :math:`a_i` of th
 
 The second use of the coordinate grids defined by these tow cards is in the symmetrisation sampling procedure. Therefore these cards must be defined even for non Numerov-Cooley integration method.
 
-The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`output`.
+The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`outputs`.
 
 Other non-standard options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  - ``Reduced`` (alias ``r``): this card allows to reduce the expansion order of PEF when used to generate the basis set. It is sometimes more efficient for symmetry purposes to use a quadratic-type expansion in place of the full expansion with the order defined by ``PotOrder``.
  - ``Periodic`` indicates that the potential is periodic and defines the periodicity. This property can be used to integrate the 1D problem on a smaller range and then extend by applying the periodic boundary conditions. Example:
+
  ::
 
      5,'fourier','linear', 'linear', range 0,17,  weight  1.0, points  500, borders,0.d0,720.d0 deg, periodic 2
@@ -117,6 +118,7 @@ Other non-standard options
 
 
  - ``Postprocess`` (``post``): this option is used to postprocess the contracted vibrational basis set generated on a reduced potential or Hamiltonian for the full PEF. It helps improve the basis set by re-optimising it. For example, for the ``lvib``-constructed contracted basis functions, i.e. generated as eigenfunctions of :math:`\hat{l}^2`,  they can be post-processed by eigen-solving a reduced Hamiltonian to obtain a more efficient basis and keep :math:`l` as a quantum number. Example (from C\ :sub:`2`\ H\ :sub:`2`):
+
 ::
 
     BASIS
@@ -133,7 +135,8 @@ Other non-standard options
 Here, the ``harmonic`` basis set was used for the sub-group 4 combing four linearised bending degrees of freedom of C\ :sub:`2`\ H\ :sub:`2` as the basis for eigen-solving for the vibrational angular momentum :math:`\hat{l}^2` (``lvib``). After the new wavefunctions are obtained as classified by :math:`l`, they are re-optimised (``post``) for the given :math:`l` by solving an eigenvalue problem for a reduced 4D Hamiltonian with a  quadratic PEF (``r 2``).
 
 
- - ``Nocheck`` is used to suppress checking of the symmetry equivalence of the modes within the same sub-group. This is necessary for the modes which are dynamically symmetry equivalent. For example, when treating molecule CH\ :sub:`3`\ OH can be treat a C\ :subs:`3v`\ (M) molecule, the individual stretching CH modes   are not equivalent at any fixed torsional configuration and would not be allowed in TROVE to be used for generating the basis sets. Instead, TROVE would choose the 1st mode at some reference torsional angle to generate a reference basis set and will used it for all three modes. For example:
+ - ``Nocheck`` is used to suppress checking of the symmetry equivalence of the modes within the same sub-group. This is necessary for the modes which are dynamically symmetry equivalent. For example, when treating molecule CH\ :sub:`3`\ OH can be treat a C\ :sub:`3v`\ (M) molecule, the individual stretching CH modes   are not equivalent at any fixed torsional configuration and would not be allowed in TROVE to be used for generating the basis sets. Instead, TROVE would choose the 1st mode at some reference torsional angle to generate a reference basis set and will used it for all three modes. For example:
+
  ::
 
     3, 'numerov', 'linear', 'morse', range  0, 4 , weight 1.0,points 1000,borders -0.4,  2.23 nocheck
@@ -243,8 +246,3 @@ The coefficients :math:`T_{n,k}^{(J,\Gamma)}` are generated based on the symmetr
         rotsym        euler
         model j=0
      END
-
-
-
-
-

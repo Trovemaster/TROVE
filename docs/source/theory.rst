@@ -13,6 +13,7 @@ The TROVE Approach
 The Schrödinger equation for a molecule within the Born-Oppenheimer (BO) approximation can be written in laboratory-fixed :math:`XYZ` Cartesian coordinates as
 
 .. math::
+    :label: schrodinger_lab_cart
 
     \left(-\frac{\ \hbar^2}{2} \sum_{i=1}^N \frac{1}{m_i} \nabla^2_i + V \right) \Psi_{trv} = E_{trv} \Psi_{trv}
 
@@ -34,7 +35,7 @@ Numerical Construction of Kinetic Energy Operator
 =================================================
 .. _numerical_T:
 
-To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation :eq:`schrodiger_lab_cart` in terms of the generalised coordinates
+To construct the kinetic energy operator TROVE expresses the Hamiltonian in equation :eq:`schrodinger_lab_cart` in terms of the generalised coordinates
 
 
 .. math::
@@ -89,14 +90,14 @@ To utilise equation :eq:`generalT` the expansion terms :math:`G_{\lambda,\lambda
 
 Thus, we can write
 
-.. math:
+.. math::
     :label: G_expansion
 
     G_{\lambda,\lambda'} = \sum_{l_1,l_2,l_3,\cdots} G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots
 
 and
 
-.. math:
+.. math::
    :label: U_expansion
 
    U = \sum_{l_1,l_2,l_3,\cdots} U_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'} g_1^{l_1} g_2^{l_2} g_3^{l_3} \cdots
@@ -106,6 +107,7 @@ where :math:`G_{l_1,l_2,l_3,\cdots}^{\lambda,\lambda'}` and :math:`U_{l_1,l_2,l_
 
 .. math::
    :label: V_expansion
+
    V = \sum_{l_1,l_2,l_3,\cdots} V_{l_1,l_2,l_3,\cdots} f_1^{l_1} f_2^{l_2} f_3^{l_3} \cdots
 
 where :math:`V_{l_1,l_2,l_3}` are constant expansion coefficients in terms of convenient expansion functions
@@ -120,7 +122,7 @@ for bond stretches and :math:`\xi_n` is used itself for bends.
 
 The method of actually finding the expansion coefficients introduced above will now be discussed. This is arguably the most technical part of the TROVE approach and could be skipped on first (or even second!) reading. It is based on a paper by Sorensen [Sorensen]_.
 
-To go from the expression for the kinetic energy in equation :eq:`schrodiger_lab_cart` to that in equation :eq:`generalT` we start by noting that :math:`\hat{T}` in the former equation can be expressed as
+To go from the expression for the kinetic energy in equation :eq:`schrodinger_lab_cart` to that in equation :eq:`generalT` we start by noting that :math:`\hat{T}` in the former equation can be expressed as
 
 
 .. math::
@@ -133,6 +135,7 @@ where the momentum vector :math:`\hat{\mathbf{P}}_{iF}` has the :math:`XYZ` coor
 
 .. math::
     :label: chain_hermit
+
     \hat{P}_{iF} = \frac{1}{2} \sum_{\lambda = 1}^{3N} \left( s_{\lambda,iF} \hat{\Pi}_{\lambda} + \hat{\Pi}_{\lambda}s_{\lambda,iF} \right)
 
 with
@@ -140,6 +143,7 @@ with
 
 .. math::
     :label: def_s
+
     s_{\lambda,iF} = \frac{\partial \Xi_{\lambda} }{\partial R_{iF} }.
 
 This relation states that the momentum in the :math:`XYZ` lab-fixed coordinate system :math:`\hat{P}_{iF}` can be expressed in terms of the generalised momenta :math:`\hat{\Pi}` with the derivative of the generalised coordinates :math:`\Xi` with respect to a given lab-fixed coordinate :math:`R_{iF}` linking them. The Jacobian-matrix elements :math:`s_{\lambda,iF}` (:math:`F = X,Y,Z`) define vectors and so the vector from of equation :eq:`chain_hermit` is
@@ -191,7 +195,7 @@ At this point further technical details of how to solve equation :eq:`chain_s_t`
 
 Sorensen [Sorensen]_ showed what values the various components of the :math:`\mathbf{t}_{i,\lambda'}` vectors have, consistent with Eckart conditions, which achieve optimum separation of rotational and vibrational motion. Equation :eq:`chain_s_t` can then be solved numerically. Components of the :math:`\mathbf{s}_{\lambda,i}` and :math:`\mathbf{t}_{i,\lambda'}` are expanded as a power series in :math:`g_n({\xi_n})` (from equation :eq:`func_of_xi` above) to a given order (this is what the integer after \verb|kinetic| refers to in the TROVE input file). When these power series are substituted into equation :eq:`chain_s_t` and coefficients up to a given order are collected, a system of linear equations is obtained of form :math:`\mathbf{T}\mathbf{x} = \mathbf{b}`. The systems of equations can be set up and solved numerically by making use of the fact that values of :math:`\mathbf{t}_{i,\lambda'}` are known.
 
-The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :math:`U` given in equations :eq:`G_with_s` and :eq:`U_with_s` are expressed in terms of products of :math:`g_n(\xi_n)` raised to powers and multiplied by expansion coefficients which are found from the linear equations described. This ultimately means that we can write :math:`\hat{T}` in terms of molecule-fixed :math:`xyz` coordinates as in equation :eq:`generalT:. The entire procedure
+The result of all this is that equations for :math:`G_{\lambda,\lambda'}` and :math:`U` given in equations :eq:`G_with_s` and :eq:`U_with_s` are expressed in terms of products of :math:`g_n(\xi_n)` raised to powers and multiplied by expansion coefficients which are found from the linear equations described. This ultimately means that we can write :math:`\hat{T}` in terms of molecule-fixed :math:`xyz` coordinates as in equation :eq:`generalT`.. The entire procedure
 (although complicated) is a numerical one and thus does not require any analytic algebra to define the kinetic energy operator for a given molecular shape. This is what makes TROVE general.
 
 
@@ -273,7 +277,7 @@ Vibrational Basis Functions and Matrix Elements
 
 TROVE solves the Schrödinger equation using the variational method. This requires a suitable choice of basis functions for the method to be efficient. TROVE builds basis functions, starting from one-dimensional basis sets for each vibrational motion. These are then combined and truncated to build up a basis for the full dimensionality of the molecule. The details of this process are given here.
 
-From the previous sections the rotation-vibration Hamiltonian expanded in terms of molecule-fixed :math:`xyz` coordinates is given (in notation introduced in equation :eq:`V_expand:) as
+From the previous sections the rotation-vibration Hamiltonian expanded in terms of molecule-fixed :math:`xyz` coordinates is given (in notation introduced in equation :eq:`V_expansion`) as
 
 
 .. math::
@@ -508,7 +512,7 @@ The Einstein-A coefficient for a particular transition from the initial state :m
 
 where :math:`J_i` is the rotation quantum number for the initial state, :math:`h` is Planck's constant, :math:`\nu_{if}` is the transition frequency (:math:`hc \cdot \nu_{if} = E_f - E_i`) and :math:`\Psi^f` and :math:`\Psi^i` are the initial and final rovibrational states respectively. Since matrix elements of the dipole between states are pre-computed by TROVE this integral becomes a sum of terms. Technical details of how these integrals are evaluated is given in the GAIN paper [GAIN]_.
 
-The Einstein-A coefficients are costly to compute but note that they are temperature independent. Once computed for transitions between all states of interest (usually to some value of :math:`J`), the transition intensities (and spectra) for any temperature can be computed relatively straightforwardly (using Exocross [Exocross]_ for example).
+The Einstein-A coefficients are costly to compute but note that they are temperature independent. Once computed for transitions between all states of interest (usually to some value of :math:`J`), the transition intensities (and spectra) for any temperature can be computed relatively straightforwardly (using Exocross [ExoCross]_ for example).
 
 The absolute absorption intensities are given by
 
@@ -538,14 +542,14 @@ where :math:`g_j` is the total degeneracy of the ro-vibrational state with energ
 .. math::
       :label: e-gns
 
-        g_j = g_{\rm ns}^{(j)} J_j(J_j+1)
+        g_j = g_{\rm ns}^{(j)} (2J_j+1)
 
 
 and the sum runs over all energy levels of the molecule. In Eq. :eq:`e-gns` :math:`J_j` is the rotational angular momentum quantum number :math:`J` of the state :math:`j` and :math:`g_{\rm ns}^{(j)}` is the nuclear statistical weight or nuclear degeneracy.
 
 
 
-The main ingredients to compute the ro-vibrational line strengths  :math:`S(f \leftarrow i)` are (i) the dipole moment surfaces (DMS) and  ro-vibrational wavefunctions :math:` \Phi^i_{\rm rv}`:
+The main ingredients for the rovibrational line strengths :math:`S(f \leftarrow i)` are the dipole moment surfaces (DMS) and rovibrational wavefunctions :math:`\Psi_{\rm rv}^{(i)}`:
 
 .. math::
       :label: e-linestrength
@@ -570,7 +574,7 @@ In TROVE, the variationally computed rovibration wavefunctions :math:`|\Psi_{\rm
 
          \vert  \Psi_{\rm rv}^{(i)} \rangle = \sum_{v k } C_{v k}^{(i)} \, |v\rangle |J \, k, \, m\rangle ,
 
-where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. :eq:`e-RVwi` into  Eq. :label:`e-linestrength)` both for the initial and final state wavefunctions, one obtains
+where :math:`C_{v k}^{(i)}` are the  expansion coefficients obtained as eigenvector components in the diagonalisation of the Hamiltonian matrix and :math:`|v\rangle` is a generic vibrational basis function  with :math:`v`  used as a short-hand notation for all the vibrational quantum numbers :math:`v_1`, :math:`v_2`, \ldots, :math:`v_M`, vibrational symmetry labels :math:`\Gamma_{\rm vib}` etc. Substituting :math:`|\Psi_{\rm rv}^{(i)}\rangle` from Eq. :eq:`e-RVwi` into  Eq. :eq:`e-linestrength` both for the initial and final state wavefunctions, one obtains
 
 .. math::
      :label: e-linestrength-deg-irrtens
@@ -608,5 +612,3 @@ where
 
 
 is the standard 3j-symbol.
-
-

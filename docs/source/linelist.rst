@@ -159,6 +159,7 @@ A more efficient way to divide a selection into sub-selections is by the lower s
 
 
  By setting ``wallclock`` to a value in hours which is less than the HPC wallclock, TROVE will do a control stop and report marks describing the calculation stage to be used in the restart. When time is close to wallclock, TROVE will let the current group (all transitions starting from the same lower state) of intensities to finish and provide the following report (e.g.):
+
 ::
 
         ... [wall-clock stop]: last lower-state     1189 out of            15462 (           15462), processed =     1189 states;
@@ -333,7 +334,7 @@ Intensities with GAIN
 
 As discussed in Chapter Quickstart_, TROVE is capable of calculating transition intensities once the relevant eigenfunctions and dipole matrix elements have been calculated. This procedure was used in early line list papers using TROVE.
 
-A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (GPU Accelerated INtensities) is a program which was written by Ahmed Al-Rafaie (see GAIN_). It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using conventional TROVE.
+A more efficient way of calculating intensities is to make use of the GAIN program. GAIN (GPU Accelerated INtensities) is a program which was written by Ahmed Al-Rafaie (see [GAIN]_). It uses graphical processing units (GPUs) to calculate intensities far quicker than can be achieved using conventional TROVE.
 
 GAIN uses the same input file as TROVE but only the ``intensity`` block is actually used to control the calculation. GAIN requires the eigenvectors, eigen description and eigen quanta files for the states of interest. It also requires the eigen descrption and eigen quanta of the :math:`J = 0` state and extfield file for the dipole matrix elements (note that currently GAIN cannot accept split dipole files, these must be stitched together).
 
@@ -503,6 +504,3 @@ ExoCross_ has other options for simulating spectra. Examples include accounting 
 .. _Theory: https://spectrove.readthedocs.io/en/latest/theory.html#intensity-calculations-in-trove
 
 .. _gitGAIN: https://github.com/ExoMol/GAIN-MPI
-
-
-

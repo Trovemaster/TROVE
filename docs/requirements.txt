@@ -1,3 +1,2 @@
-sphinx_rtd_theme>=0.5.1
-nbsphinx>=0.8.1
-readthedocs-sphinx-search>=0.1.0
+sphinx==8.2.3
+sphinx-rtd-theme==3.0.2

@@ -96,7 +96,7 @@ TROVE uses the rigid rotor wavefunctions :math:`|J,k,m\rangle`, where :math:`J` 
      m,k = -J,-J-1,\ldots,0,\ldots,J-1,J.
 
 
-In calculations of ro-vibrational energy, :math:`m` plays no direct role and can be ignored. The :math:`k` quantum number is however a critical quantity,  defined by the choice of the :math:`z`-axes. For asymmetric tops, it is common in spectroscopic applications to choose :math:`z` along the axis with the smallest moment of inertia, such as frames ``R-RHO-Z`` or ``R-ALPHA-Z`` used for quasi-linear XY\ :sun:`2` molecules. For symmetric tops, the :math:`z` axis is taken as the symmetry axis, such as the ``R-ALPHA`` and ``R-S-DELTA`` frames used for the XY\ :sub:`3` type. The spherical top XY\ :sub:`4` will be discussed separately.
+In calculations of ro-vibrational energy, :math:`m` plays no direct role and can be ignored. The :math:`k` quantum number is however a critical quantity,  defined by the choice of the :math:`z`-axes. For asymmetric tops, it is common in spectroscopic applications to choose :math:`z` along the axis with the smallest moment of inertia, such as frames ``R-RHO-Z`` or ``R-ALPHA-Z`` used for quasi-linear XY\ :sub:`2` molecules. For symmetric tops, the :math:`z` axis is taken as the symmetry axis, such as the ``R-ALPHA`` and ``R-S-DELTA`` frames used for the XY\ :sub:`3` type. The spherical top XY\ :sub:`4` will be discussed separately.
 
 
 TROVE uses symmetry adapted rotational basis functions. For asymmetric  and symmetric tops, these are the  so-called Wang functions :math:`|J,K,\tau\rangle`\ ), which are given by
@@ -305,7 +305,9 @@ The ro-vibrational calculations in the :math:`J=0` representation (step 3) are c
 
       \phi_{J,K,v_1,v_2,v_3, \ldots  \Gamma_{\rm tot}} = \{| v_1, v_2, v_3, \ldots  \Gamma_{\rm vib} \rangle  \otimes | J,K,\Gamma_{\rm rot} \rangle \}^{\Gamma_{\rm tot}}
 
-Phi_{\lambda}^{(J=0)} |J,K,\tau\rangle,
+.. math::
+
+   \Phi_{\lambda}^{(J=0)} |J,K,\tau\rangle,
 
 where  :math:`| J,K,\Gamma_{\rm rot} \rangle` is a rigid rotor basis function. Therefore, in this case the energy output has a slightly different form:
 ::
@@ -476,8 +478,3 @@ Here we assume that all other TROVE components (especially ``matelem``) have bee
 
 
 where the second vibrational QN section now contains the correct normal mode quantum numbers as in the tables above. One can notice that the last QN is kept  zero on this case. This field can be useful for an additional quantum number, e.g. the vibrational angular momentum :math:`l`, required for the linear molecular normal mode classification or in other cases. The normal mode QN are then prorogated to all other energy outputs, including step 3 (ro-vibrational eigenvalues) and step 4 (line list  calculations).
-
-
-
-
-

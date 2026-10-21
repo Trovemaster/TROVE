@@ -28,7 +28,7 @@ Here we introduce different ingredients available for triatomic molecules, inclu
 
 
 
-Hydrogen sulfide, SiH\ :sub:`2`
+Silylene, SiH\ :sub:`2`
 ================================
 
 Symmetry: :math:`C_{2v}`
@@ -364,6 +364,7 @@ Primitive basis set has the same structure as for the XY\ :math:`2`:
      1,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      2,'numerov','rational', 'morse',  range 0,36,r 8, resc 1.0, points  4000, borders -0.40,1.55
      3,'laguerre-k','linear','linear', range 0,56, resc 1.0, points  12000, borders  0.,150.0 deg
+
    END
 
 
@@ -1075,8 +1076,7 @@ Dipole moment surface expansion: CCSD(T)/aug-cc-pVTZ *ab initio* dipole data fit
 Results: Room temperature line list for up to :math:`J = 60`.
 
 .. Note:: The room temperature line list for this molecule is not complete but could be easily extended using the methods applied
+
 to SO\ :sub:`3` and C\ :sub:`2`\ H\ :sub:`4`.
 
 Reference: [19MaChYa]_.
-
-

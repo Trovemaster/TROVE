@@ -1,8 +1,12 @@
 Dipole moment functions
 =======================
 
+For SPAR property data, see :doc:`spar_input` and :doc:`spar_checkpoints`.
+The ``BASIC-FUNCTION EXTERNAL`` library and coefficient file must preserve
+the dipole-component and body-fixed-frame conventions of the model.
 
-TROVE provides a larger number of dipole moment functions (DMFs) for different molecules already implemented. Most of these PEFs are in modules ``pot_*`` contained in  file ``pot_*.f90``.
+
+TROVE provides a larger number of dipole moment functions (DMFs) for different molecules already implemented. Most of these DMFs are in modules ``pot_*`` contained in  file ``pot_*.f90``.
 
  - ``pot_xy2.f90``
  - ``pot_xy3.f90``
@@ -10,7 +14,7 @@ TROVE provides a larger number of dipole moment functions (DMFs) for different m
  - ``pot_abcd.f90``
  - ``pot_xy4.f90``
  - ``pot_zxy3.f90``
- - ........
+
 
 These are a part of the standard TROVE compilation set. Alternatively, a user-defined DMF can be included into the TROVE compilation as a generic 'user-defined' module ``pot_user``.
 
@@ -154,6 +158,7 @@ where
 
  - 'Labels' are the parameter name,  for printing purposes only;
  - :math:`i`, :math:`j`, :math:`k` are the 'powers' of an expansion term;
+
   - 'Index' is a switch to indicate if the corresponding parameter was fitted or can be fitted, with no impact on any evaluations of the PEF values. It is not present in the ``compact`` form.
   - 'Values' are the actual dipole parameters. For ``powers``, their order is not important.
 
@@ -216,7 +221,7 @@ and the :math:`Q_{ij\ldots}^{(i)}` and :math:`P_{ij\ldots}^{(i)}` are molecular 
 
 The implementation can be found in :code:`subroutine MLdms2pqr_xy2` from the module pot_xy2.f90. The transformation between the TROVE frame and the frame of the specifc dipole of the XY\ :sub:`2` is perfomed in the :code:`subroutine MLloc2pqr_xy2`, e.g.:
 
-.. code:: c
+.. code:: fortran
 
     !
     select case(trim(molec%frame))
@@ -381,7 +386,7 @@ This a bisector dipole frame for the XYZ type molecules. It is defined by
       \vec{p} &= \vec{q}\times \vec{y}
       \end{split}
 
-The exapnsion of the dipole moment components in terms of :math:`r_1`, :math:`r_2` and :math:`\alpha` as in Eq. :eq:`e-muQ-exp-2`. See :download:`7Li-16O-1H__OYT7__TROVE.model` for an example of a TROVE input. 
+The exapnsion of the dipole moment components in terms of :math:`r_1`, :math:`r_2` and :math:`\alpha` as in Eq. :eq:`e-muQ-exp-2`. See :download:`7Li-16O-1H__OYT7__TROVE.model <input/7Li-16O-1H__OYT7__TROVE.model>` for an example of a TROVE input.
 
 
 
@@ -484,7 +489,7 @@ XY3_MB
        Rigid XY\ :sub:`3` frame for ``XY3_MB``.
 
 
-This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__. 
+This DMF is implemented as a subroutine :code:`MLdms2xyz_xy3_mb` and was reported in [06YuCaTh]_. This form was used to produce a line list for PH\ :sub:`3` in [13SoYuTe]_. An input example is in :download:`31P-1H3__SAlTY__TROVE.model <input/31P-1H3__SAlTY__TROVE.model>` and can be also found at `<https://exomol.com/models/PH3/31P-1H3/SAlTY/>`__.
 
 
 Consider the :math:`r_i` as the instantaneous value of the distance between X and Y\ :math:`_i`, where Y\ :math:`_i` is the nucleus labeled :math:`i` (= 1, 2, or 3); :math:`\alpha_i` denotes the bond angle :math:`\angle` (Y\ :math:`_j`\ XY\ :math:`_k`) where :math:`(i,j,k)` is a permutation of the numbers (1,2,3).
@@ -803,7 +808,7 @@ See :download:`./input/39K-16O-1H__OYT4_model_TROVE.inp`
 
 
 ZXY\ :sub:`2`
-------------
+-------------
 
 - ``ZXY2_SYMADAP``
 
@@ -815,17 +820,18 @@ ZXY3_SYM
 ^^^^^^^^
 
 C\ :sub:`2`\ H\ :sub:`4`
------------------------
+------------------------
 
 - ``DIPOLE_C2H4_4M``
 
 
 Properties 
-----------
+-----------
 
 - ``XY2_SR-BISECT``
 
 - ``XY2_SS_DIPOLE_YY``
+
 ^^^^^^^^^^^^^^^^
 
 - ``XY2_G-BISECT``
@@ -845,5 +851,3 @@ Properties
 
 
 - ``COORDINATES``
-
-

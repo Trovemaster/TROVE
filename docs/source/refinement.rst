@@ -109,6 +109,7 @@ Thus the structure of the ``external`` parameter section is just a repeat of the
   ..Note:: Only linear parameters like :math:`\Delta f_{ijk...}` can be fitted in TROVE. Non-linear parameters such as equilibrium positions, structural parameters currently cannot be refined in TROVE.
 
  A typical fitting ``external`` section has the following form
+
 ::
 
      external
@@ -152,6 +153,7 @@ Here
   - ``fix`` and ``fit`` are the keywords to distinguish the parameters to fix and parameters to fit. It is important that all structural parameters are marked with the ``fix`` card. This will insure that the derivatives and expansions of :math:`\left(\xi_1^i \xi_2^j \xi_3^k ...\right)^A` are evaluated correctly. ``fit`` needs to be set only to the parameters that will need t o be varied.
 
   .. Note:: It is important to ``fix`` all structural parameters in the ``external`` section. For the example above, the potential function it is linked to has the ``pot_type`` ``POTEN_XY2_MORSE_COS`` and is defined as follows
+
 ::
 
     POTEN
@@ -235,6 +237,7 @@ Calculation steps
 At step 1 and 2, for the ``external`` field to be processed, the ``control`` block has to include the card ``external``:
 
 - Step 1:
+
 ::
 
     Control
@@ -243,6 +246,7 @@ At step 1 and 2, for the ``external`` field to be processed, the ``control`` blo
     end
 
 - Step 2:
+
 ::
 
     Control
@@ -407,6 +411,7 @@ The meaning of the columns is as follows.
 
 The format of the ``geometry`` file is as illustrated in the example below:
 ::
+
       -----  -------- --------------- --------- --------------
         1       2           3               4         5
       -----  -------- --------------- --------- --------------
@@ -425,6 +430,7 @@ where
  - col 1-3: geometries in the input (usually valence) coordinates, the same as used to define the TROVE internal coordinates, in Angstrom for the bond lengths and radians for the angles for all :math:`M=3N-6` vibrational degrees of freedom.
  - col 4: Values of the reference "*ab initio*" PES for each geometry (cm\ :sup:`-1`);
  - col 5: Fitting weights; usually estimated using the  form suggested by Partridge and Schwenke, [97PaSc]_
+
  .. math::
      :label: eq-weights
 
@@ -605,11 +611,3 @@ Running Refinement
 ------------------
 
 **In progress**
-
-
-
-
-
-
-
-

@@ -223,6 +223,7 @@ The system was studied in [18MaYaTe]_.
 
 
 - Type 3-100: any number :math:`N` between 3 and 100 means that instead of a dihedral angle, another bond angle is introduced; the "type" card is treated as an additional connector in order to define the bond angle. As example, the following Z-matrix (see the figure) uses a dihedral angle free definition of the vibrational coordinates of CH\ :sub:`4`:
+
 ::
 
     ZMAT
@@ -232,6 +233,3 @@ The system was studied in [18MaYaTe]_.
         H   1  2  3  0   1.007825035
         H   1  2  3  4   1.007825035
     end
-
-
-

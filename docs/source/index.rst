@@ -24,12 +24,14 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
    basissets.rst
    checkpoints.rst
    quantumnumbers.rst
+   spar.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: TROVE systems
 
    molecules.rst
+   molecule_catalogue.rst
    potentials.rst
    kinetic.rst
    dipoles.rst
@@ -54,7 +56,7 @@ TROVE (Theoretical ROtational Vibrational Energies) is a suite of programs prima
    license
 
 
-Please report issues at github_ or contact Sergey Yurchenko via s.yurchenko@ucl.ac.uk for any questions.
+Please report issues on `GitHub <https://github.com/Trovemaster/TROVE/issues>`__ or contact Sergey Yurchenko via s.yurchenko@ucl.ac.uk.
 
 
 * :ref:`genindex`

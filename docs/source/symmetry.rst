@@ -159,7 +159,7 @@ The D\ :sub:`3h`\ (M) group has been used for NH\ :sub:`3` [10CoYuTe]_, CH\ :sub
 
 
 ``R-S-DELTA``
-^^^^^^^^^^^^^
+-------------
 
 This is a non-rigid frame with 3 valence stretching coordinates :math:`r_1`, :math:`r_2`, :math:`r_3`, a symmetry adapted bending vector :math:`(S_a,S_b)` and an umbrella coordinate :math:`\delta`, where
 
@@ -339,25 +339,45 @@ where for :math:`E_r''`, :math:`r` = 1, 2, \dots, :math:`\frac{n-1}{2}`.
 
 The following table gives the correspondence between the :math:`g/u` (gerade/ungerade) notation of the irreps of D\ :sub:`nh`  (even :math:`n`) and the :math:`'/''` notation of the irreps of D\ :sub:`nh`  (odd :math:`n`), based on :math:`K` (the absolute value of the projection, in units of :math:`\hbar`, onto the molecule-fixed :math:`z`-axis of the rotational angular momentum).
 
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|:math:`K`        | :math:`\Gamma` (even :math:`n`) | :math:`\Gamma` (odd :math:`n`) | D\ :math:`\infty h`                                         |
-+=================+=================================+================================+===========================================================+
-|    0            | :math:`A_{1{\rm g}}`            | :math:`A_{1}^{'}`              | :math:`\Sigma_{\rm g}{}^+`                                |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|    0            | :math:`A_{1{\rm u}}`            | :math:`A_{1}^{''}`             | :math:`\Sigma_{\rm u}{}^+`                                |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|    0            | :math:`A_{2{\rm g}}`            | :math:`A_{2}^{'}`              | :math:`\Sigma_{\rm g}{}^-`                                |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|    0            | :math:`A_{2{\rm u}}`            | :math:`A_{2}^{''}`             | :math:`\Sigma_{\rm u}{}^-`                                |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|:math:`>0`, even | :math:`E_{k{\rm g}}`            | :math:`E_{k}^{'}`              | :math:`\Delta_{\rm g}, \Gamma_{\rm g}, I_{\rm g} \cdots`  |
-+                 +---------------------------------+--------------------------------+-----------------------------------------------------------+
-|                 | :math:`E_{k{\rm u}}`            | :math:`E_{k}^{''}`             | :math:`\Delta_{\rm u}, \Gamma_{\rm u}, I_{\rm u} \cdots`  |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|:math:`>0`, odd  | :math:`E_{k{\rm g}}`            | :math:`E_{k}^{''}`             | :math:`\Pi_{\rm g}, \Phi_{\rm g}, H_{\rm g} \cdots`       |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
-|                 | :math:`E_{k{\rm u}}`            | :math:`E_{k}^{'}`              |  :math:`\Pi_{\rm u}, \Phi_{\rm u}, H_{\rm u} \cdots`      |
-+-----------------+---------------------------------+--------------------------------+-----------------------------------------------------------+
+.. list-table::
+   :header-rows: 1
+
+   * - :math:`K`
+     - :math:`\Gamma` (even :math:`n`)
+     - :math:`\Gamma` (odd :math:`n`)
+     - D\ :math:`\infty h`
+   * - 0
+     - :math:`A_{1{\rm g}}`
+     - :math:`A_{1}^{'}`
+     - :math:`\Sigma_{\rm g}{}^+`
+   * - 0
+     - :math:`A_{1{\rm u}}`
+     - :math:`A_{1}^{''}`
+     - :math:`\Sigma_{\rm u}{}^+`
+   * - 0
+     - :math:`A_{2{\rm g}}`
+     - :math:`A_{2}^{'}`
+     - :math:`\Sigma_{\rm g}{}^-`
+   * - 0
+     - :math:`A_{2{\rm u}}`
+     - :math:`A_{2}^{''}`
+     - :math:`\Sigma_{\rm u}{}^-`
+   * - :math:`>0`, even
+     - :math:`E_{k{\rm g}}`
+     - :math:`E_{k}^{'}`
+     - :math:`\Delta_{\rm g}, \Gamma_{\rm g}, I_{\rm g} \cdots`
+   * - :math:`>0`, even
+     - :math:`E_{k{\rm u}}`
+     - :math:`E_{k}^{''}`
+     - :math:`\Delta_{\rm u}, \Gamma_{\rm u}, I_{\rm u} \cdots`
+   * - :math:`>0`, odd
+     - :math:`E_{k{\rm g}}`
+     - :math:`E_{k}^{''}`
+     - :math:`\Pi_{\rm g}, \Phi_{\rm g}, H_{\rm g} \cdots`
+   * - :math:`>0`, odd
+     - :math:`E_{k{\rm u}}`
+     - :math:`E_{k}^{'}`
+     - :math:`\Pi_{\rm u}, \Phi_{\rm u}, H_{\rm u} \cdots`
 
 
 
@@ -368,7 +388,7 @@ Artificial symmetries (AEM)
 The concept of artificial molecular symmetries was introduced in [21MeYuJe]_.
 
 C\ :sub:`2vn`\ (AEM)
--------------------
+--------------------
 
 
 Linear molecules usually represent a special case in rotational-vibrational calculations due to a singularity of the kinetic energy operator that arises from the rotation about the :math:`a` (the principal axis of least moment of inertia, becoming the molecular axis at the linear equilibrium geometry) being undefined. Assuming the standard ro-vibrational basis functions, in the :math:`3N-6` approach,  of the form :math:`|\nu_1, \nu_2, \nu_3^{l_3}; J, k, m\rangle`, tackling the unique difficulties of linear molecules involves constraining the vibrational and rotational functions with :math:`k=l_3`,  which are the projections, in units of :math:`\hbar`, of the corresponding angular momenta onto the molecular axis. These basis functions are assigned to irreps of the C\ :math:`_{2{\rm v}}`\ (M) molecular symmetry group. This, in turn, necessitates purpose-built codes that specifically deal with linear molecules. In the present work, we describe an alternative scheme and introduce an (artificial) group that ensures that the condition :math:`l_3 =k` is automatically applied solely through symmetry group algebra. The advantage of such an approach is that the application of symmetry group algebra in ro-vibrational calculations is ubiquitous, and so this method can be used to enable ro-vibrational calculations of linear molecules in polyatomic codes with fairly minimal modifications.
@@ -416,42 +436,44 @@ Examples of character tables for :math:`n=4` are given in Table below
 
 IN TROVE outputs, three-character labels :math:`A_1^l`, :math:`B_2^l`, :math:`A_2^l` and :math:`B_1^l` for :math:`l>0`  are replaced with the two-character shortcuts :math:`e`,  :math:`f`, :math:`g` and :math:`h`, respectively:
 
-+---------------------+-------------+
-|C\ :sub:`2vn`\ (AEM) | TROVE output|
-+=====================+=============+
-|       :math:`A_1^0` | ``A1``      |
-+---------------------+-------------+
-|       :math:`B_1^0` | ``B1``      |
-+---------------------+-------------+
-|       :math:`A_2^0` | ``A2``      |
-+---------------------+-------------+
-|       :math:`B_2^0` | ``B2``      |
-+---------------------+-------------+
-|       :math:`A_1^1` | ``e1``      |
-+---------------------+-------------+
-|       :math:`B_2^1` | ``f1``      |
-+---------------------+-------------+
-|       :math:`A_2^1` | ``g1``      |
-+---------------------+-------------+
-|       :math:`B_1^1` | ``h1``      |
-+---------------------+-------------+
-|     ......          |  ...        |
-+---------------------+-------------+
-|       :math:`A_1^4` | ``e4``      |
-+---------------------+-------------+
-|       :math:`B_2^4` | ``f4``      |
-+---------------------+-------------+
-|       :math:`A_2^4` | ``g4``      |
-+---------------------+-------------+
-|       :math:`B_1^4` | ``h4``      |
-+---------------------+-------------+
+.. list-table::
+   :header-rows: 1
+
+   * - C\ :sub:`2vn`\ (AEM)
+     - TROVE output
+   * - :math:`A_1^0`
+     - ``A1``
+   * - :math:`B_1^0`
+     - ``B1``
+   * - :math:`A_2^0`
+     - ``A2``
+   * - :math:`B_2^0`
+     - ``B2``
+   * - :math:`A_1^1`
+     - ``e1``
+   * - :math:`B_2^1`
+     - ``f1``
+   * - :math:`A_2^1`
+     - ``g1``
+   * - :math:`B_1^1`
+     - ``h1``
+   * - Further entries
+     - Further entries
+   * - :math:`A_1^4`
+     - ``e4``
+   * - :math:`B_2^4`
+     - ``f4``
+   * - :math:`A_2^4`
+     - ``g4``
+   * - :math:`B_1^4`
+     - ``h4``
 
 
 
 
 
 How to use C\ :sub:`2vn`\ (AEM)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An artificial symmetry C\ :sub:`2vn`\ (AEM)    is invoked via the following card places anywhere (but before the ``diagonalizer`` section):
 ::
@@ -511,8 +533,3 @@ An artificial symmetry C\ :sub:`ns`\ (AEM) is invoked via the following card pla
     SYMGROUP Csn 18
 
 The integer number :math:`n=18` corresponds to the maximal value of the vibrational angular momentum :math:`l_{\rm max}` and therefore to the maximal value of the rotational quantum number :math:`k` due to the constraint :math:`k=l` used for linear triatomic molecules (case 3N-6). This number muster coincide with the value of the ``k`` or ``kmax`` cards in the ``BASIS`` block (rotational basis line) (see above).
-
-
-
-
-

@@ -1,10 +1,12 @@
 Additional Features
 *******************
-.. _newfeat
+.. _newfeat:
 
 This chapter discusses the latest additions to TROVE and their implementation. Many of these different features are still being tested and developed and so this chapter, even more than others, should be treated as subject to change. These features have already proven important however and so will likely remain a part of TROVE but perhaps with a different implementation.
 
-Most of these  features are for dealing with larger molecules in TROVE.
+For the current SPAR operator interface, including its function libraries,
+mass conventions, migration notes, and a numerical tutorial, see :doc:`spar`.
+The features below concern storage, calculation stages, and other workflows.
 
 
 Splitting and Stitching
@@ -32,8 +34,9 @@ To convert these files to the ``J=0`` representation, use
 
 This will produce ``j0_matelemI.chk`` files. This can be used in subsequent calculations using ``read`` as usual, as long as ``split`` is specified also so that the keyword should be set to
 ::
-matelem  read  split
-\end{verse}
+
+   matelem  read  split
+
 
 Matrix elements of the dipole are converted in the same way. For the dipole it may be necessary to combine the split extmatelem files however using the ``stitch`` option as currently the GAIN program does not accept split files. To carry this out, after the three extmatelem files have been calculated, re-run TROVE with
 ::
@@ -141,4 +144,3 @@ Iron-out
 --------
 
 ``IRON-OUT``: the card to switch on an automatic smoothing of all expansion terms of the PEF, DMF, KEO and external field when expanded around a non-rigid reference configuration. TROVE does not use this feature by default. It can however recommend to use it in the case of to large errors in the derivatives of these fields. The card needs to be place anywhere in the main body of the step 1 input.
-

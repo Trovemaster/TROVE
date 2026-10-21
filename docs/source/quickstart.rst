@@ -79,6 +79,7 @@ Control block
 For standard calculations (for relatively simple cases with no special tricks), the control block ``Control`` can be used to set the calculation step, 1, 2, 3, 4, 5, 6 as follows
 
 - Step 1:
+
 ::
 
     Control
@@ -87,6 +88,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     end
 
 - Step 2:
+
 ::
 
     Control
@@ -94,6 +96,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     end
 
 - Step 3:
+
 ::
 
     Control
@@ -109,6 +112,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     end
 
 - Step 4:
+
 ::
 
     Control
@@ -117,6 +121,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     end
 
 - Step 5:
+
 ::
 
     Control
@@ -124,6 +129,7 @@ For standard calculations (for relatively simple cases with no special tricks), 
     end
 
 - Step 6:
+
 ::
 
     Control
@@ -343,7 +349,7 @@ The numbers after ``range`` specify the range of vibrational quantum numbers of 
 
 ``points`` and   ``borders`` specify the number of points and the starting points for the Numerov-Cooley integration. Generating these one-dimensional functions is fast and so many points should be taken.  The borders should be set far enough into the classically forbidden region of the potential such that  the results are not sensitive to slightly larger or lower values. The units for ``borders`` are the same as those used that the potential was expanded in (Morse for stretches and angles in radians for bends in this example).
 
-The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`output`.
+The details of the primitive basis sets are given in the TROVE output file and will be discussed in :doc:`outputs`.
 
 Checkpoint Block
 ----------------
@@ -404,6 +410,7 @@ Similarly, vibrational elements of the DMS can be saved using the keyword ``extm
 If the eigenfunction of the calculation are required (for example for transition moment calculations) then the ``EIGENFUNC`` keyword should be set to save.
 This generates ``eigen_vectors[J].chk`` files and human readable ``eigen_descr[J].chk`` files, where J is the rotational quantum number. The eigenfunctions are used to for generating basis functions for :math:`J>0` calculations as discussed below, e.g.
 ::
+
      check_point
      ....
      EIGENFUNC   save
@@ -413,14 +420,19 @@ This generates ``eigen_vectors[J].chk`` files and human readable ``eigen_descr[J
 
 .. note::
    The Step 1 in the ``control`` block
+
 ::
+
    control
      Step 1
+
    end
 
 
    corresponds to and replaces the following configuration of the ``check_point`` block:
+
 ::
+
      check_point
      kinetic     save
      potential   save
@@ -475,6 +487,7 @@ Poten Block
 
 The ``Poten`` block is used to specify the PES. For PF:math:`_3` the first few lines are
 ::
+
      POTEN
      NPARAM   304
      POT_TYPE  poten_xy3_morbid_10
@@ -490,6 +503,7 @@ The ``Poten`` block is used to specify the PES. For PF:math:`_3` the first few l
 ``NPARAM`` is used to specify the number of parameters used to define the PES. ``POT_TYPE`` is the name of the potential energy surface being used which is defined in the ``pot_*.f90`` file. The ``COEFF`` keyword specifies whether the potential is given as a simple list or if the powers or the expansion are given. This depends on how the potential has been set up. The list of PES parameters is then given. A new ``compact`` form can be used without the second column:
 
 ::
+
      POTEN
      compact
      POT_TYPE  poten_xy3_morbid_10
@@ -640,6 +654,7 @@ depending on the expansion orders of the kinetic energy, PES and DMS. As mention
 
 The basis set checkpoint files are usually generated next. In the Checkpoint block this is specified by
 ::
+
      check_point
      ...
      basis_set   save
@@ -855,5 +870,3 @@ As a more sophisticating alternative to the ``Control`` block, the following ``C
     extmatelem  none
     EIGENFUNC   none
     END
-
-

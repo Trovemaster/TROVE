@@ -81,11 +81,13 @@ List of checkpoints
   while contr_matelem.chk contains the matrix elements of the pure vibrational part of the Hamiltonian operator, i.e. vibrational KEO + PEF. The ``split`` option allows one to compute all these 13 parts of ``matelems`` separately, which is especially useful for larger molecules. Historically, the ``matelem`` step the main bottleneck in the TROVE pipeline in the case of large molecules and the ``split`` feature allows one to at least partly mitigate this issue. An example of the ``split`` option is
 
   - To process all 13 parts of the Hamiltonian:
+
   ::
 
    contract  save split
 
   - To process individual parts of the Hamiltonian (from 0 to 6):
+
   ::
 
    contract  save split 0 6
@@ -93,6 +95,7 @@ List of checkpoints
    here 0 stands for the pure vibrational part of the Hamiltonian operator.
 
   - To process a single part of the Hamiltonian (from 11 to 11):
+
   ::
 
      contract  save split 11 11
@@ -652,7 +655,7 @@ For the example of a 2nd order expansion, the body of ``potential.chk`` has the 
 Where 
 
 - col 1: the 1D expansion index :math:`n`;
-- col 2: the non-rigid expansion index :max:`k = 0\ldots N_{\rm points}` (:math:`N_{\rm points} = 0` for the `Rigid` case);
+- col 2: the non-rigid expansion index :math:`k = 0\ldots N_{\rm points}` (:math:`N_{\rm points} = 0` for the `Rigid` case);
 - col 3: the value of the expansion parameter :math:`f_{n}(\alpha_k)`. 
 
 .. note:: The format is not sensitive to the exact position of the columns the exact format of the values in the last column with spaces as separators between then.  The order of the column however is important, but the order of the rows is not!
@@ -711,7 +714,7 @@ Kinetic Energy Operator checkpoint
 The KEO has the following general form:
 
 .. math::
-       :label: e-H-total
+       :label: e-H-total-checkpoint
 
        \begin{split}
        \hat{T}
@@ -746,7 +749,7 @@ as described for ``potential.chk``, and after the last section, the file ends wi
 
 
 Vibrational part
-^^^^^^^^^^^^^^^^
+----------------
 
 The first part of ``kinetic.chk`` has the following format
 ::
@@ -780,7 +783,7 @@ The first part of ``kinetic.chk`` has the following format
 
 
 Rotational part
-^^^^^^^^^^^^^^^^
+---------------
 
 The vibrational part is followed by the rotational part using the same structure: 
 ::
@@ -806,7 +809,7 @@ The vibrational part is followed by the rotational part using the same structure
 For the zero-order expansion, only the diagonal elements are present in the KEO of XY\ :sub:`2`.
 
 Coriolis part
-^^^^^^^^^^^^^
+-------------
 
 The next part of ``kinetic.chk`` list the expansion parameters of :math:`G_{\alpha,\lambda}^{\rm Cor}`. Sice this part is absent for the zero order expansion case, let us increase :math:`N` to 1 for the sake of an illustration:  
 ::
@@ -835,7 +838,7 @@ The next part of ``kinetic.chk`` list the expansion parameters of :math:`G_{\alp
 
 
 Pseudo-potential part 
-^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The last,  pseudo-potential part, contains expansion coefficient of :math:`U(\xi)`. For the :math:`N=1` case it is given by:
 ::
@@ -854,7 +857,7 @@ The last,  pseudo-potential part, contains expansion coefficient of :math:`U(\xi
 - col 5: Value of the expansion parameter :math:`u[n](\alpha_k)`.
 
 Final footer
-^^^^^^^^^^^^
+------------
 
 The  final part is the footer as examined above:
 ::
@@ -941,11 +944,3 @@ As before, the checkpoint file ends with the footer
     
 
 An ``external.chk`` example for  H\ :sub:`2`\ S   can be downloaded from :download:`external.chk <./input/external.chk>`.
-
-
-
-
-
-
-.. literalinclude:: 
-

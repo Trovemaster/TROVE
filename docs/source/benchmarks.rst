@@ -69,6 +69,7 @@ The input file has the structure described in detail in the following.
 
  
  - Stand-alone keywords, memory, verbosity level, expansion order of KEO and PEF, sparse methods. 
+
 :: 
      
      mem 64 gb
@@ -83,7 +84,9 @@ The input file has the structure described in detail in the following.
      sparse
 
 - More stand-alone keywords: 
+
  - Finite difference steps, general coordinates type (``linear``-ised or ``local``), TROVE coordinates, Molecule type, the molecule name (only for printing), reference configuration: 
+
  ::
      
      dstep   0.01
@@ -94,11 +97,13 @@ The input file has the structure described in detail in the following.
      REFER-CONF RIGID
      
  - Molecular symmetry group 
+
  ::
           
      SYMGROUP C3v(M)
 
 - Primitive basis block:      
+
 ::
          
      PRIMITIVES
@@ -107,6 +112,7 @@ The input file has the structure described in detail in the following.
      END
      
 - Contracted basis block:
+
 ::
           
      CONTRACTION
@@ -119,6 +125,7 @@ The input file has the structure described in detail in the following.
      END
           
 - Eigensolver (diagonalizer) block: 
+
 ::
      
      DIAGONALIZER
@@ -127,6 +134,7 @@ The input file has the structure described in detail in the following.
      end
      
 - Zmatrix block defining the structure and masses:
+
 :: 
           
      ZMAT
@@ -146,6 +154,7 @@ The input file has the structure described in detail in the following.
      
      
 - Basis set block defining the order of the primitive basis set functions and how their grouped into the contracted basis sets:
+
 ::
      
      BASIS
@@ -159,6 +168,7 @@ The input file has the structure described in detail in the following.
      END
      
 - Equilibrium structure block:
+
 ::
      
      EQUILIBRIUM
@@ -171,6 +181,7 @@ The input file has the structure described in detail in the following.
      end
      
 - "Special" parameters block, mostly used to define the Morse stretching parameters and in some cases harmonic frequencies or Laguerre structural parameter. 
+
 ::
      
      SPECPARAM
@@ -180,6 +191,7 @@ The input file has the structure described in detail in the following.
      END
      
 - Potential energy function block:
+
 :: 
      
      POTEN
@@ -195,6 +207,7 @@ The input file has the structure described in detail in the following.
      end
      
 - Dipole moment function block 
+
 :: 
      
      DIPOLE
@@ -229,7 +242,7 @@ This is another pyramid-type molecule but with a non-rigid umbrella degree of fr
 
 
 SiH\ :sub:`2` Refinement 
-========================
+=========================
 
 Two directories SiH2-1 and SiH2-2 provide examples of the TROVE refinement for a rigid XY\ :sub:`2` type system:
 ::
@@ -289,11 +302,4 @@ This TROVE calculation represents the following steps:
 
  - Step 1: Produce the initial smaller J=0 HAMILTONIAN matrix and diagonalize it using DSYEV (``HCN_step1.inp``)
  - Step 2: Convert to :math:`J=0` representation; prepare matrix elements for  :math:`J>0`  calculations (``HCN_step2.inp``)
- - Step 3: Generate a :math:`J=0-2`  energies and eigenfunctions  (``HCN_step3_J<0,1,2>.inp``) by diagonalising  double real, symmetric matrices for each :math:`J` using  DSYEV. 
-
-
-
-
-
-
-
+ - Step 3: Generate a :math:`J=0-2`  energies and eigenfunctions  (``HCN_step3_J<0,1,2>.inp``) by diagonalising  double real, symmetric matrices for each :math:`J` using  DSYEV.

@@ -113,4 +113,9 @@ References
 
 - .. [06YuCaTh] S.N. Yurchenko, M. Carvajal, W. Thiel, and Per Jensen. *J. Mol. Spectrosc.*, **239**, 71 (2006), Ab initio dipole moment and theoretical rovibrational intensities in the electronic ground state of PH\ :sub:`3`.  `doi:10.1016/j.jms.2006.06.001  <http://dx.doi.org/10.1016/j.jms.2006.06.001>`__.
 
-- .. [11LoTePo]  L. Lodi, J. Tennyson and O.L Polyansky, *J. Chem. Phys*, **135**, 034113 (2011), A global, high accuracy ab initio dipole moment surface for the electronic ground state of the water molecule 
+- .. [11LoTePo]  L. Lodi, J. Tennyson and O.L Polyansky, *J. Chem. Phys*, **135**, 034113 (2011), A global, high accuracy ab initio dipole moment surface for the electronic ground state of the water molecule
+
+- .. [26SmMeYu] O. A. Smola, T. M. Mellor, and S. N. Yurchenko,
+     A transferable sum-of-products Hamiltonian formalism for variational
+     rovibrational calculations of polyatomic molecules, *J. Chem. Phys.*
+     **165**, 094113 (2026). `doi:10.1063/5.0339739 <https://doi.org/10.1063/5.0339739>`__.

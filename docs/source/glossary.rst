@@ -4,7 +4,7 @@ Glossary
 ========
 
 .. glossary::
-    :sorted:
+   :sorted:
 
    KinOrder
       Expansion order of the KEO
@@ -14,15 +14,20 @@ Glossary
       Expansion order of the PEF.
 
 
-   Natoms: Number of atoms (nuclei) :math:`N`.
-   Nmodes: Number of modes or degrees of freedom :math:`M` (here :math:`M=3N-6`).
-   SYMGROUP: Molecular symmetry group.
-   verbose: Verbosity level controlling amount of information in the standard output.
-    ``dstep``: numerical difference step size used in finite differences (Angstrom or radian).
-      Stand-alone keywords
+   Natoms
+      Number of atoms (nuclei).
 
-   For more information, refer to :doc:`quickstart`.
+   Nmodes
+      Number of vibrational coordinates; normally 3N-6 in the nonlinear formulation.
 
+   SYMGROUP
+      Molecular symmetry group.
+
+   verbose
+      Verbosity level controlling the standard output.
+
+   dstep
+      Numerical difference step size (angstroms or radians).
 
    Coords
       Type of the coordinate, ``linear`` (``linearised``) or ``local`` (``curvilinear``). 
@@ -54,13 +59,11 @@ Glossary
       block defining parameters of the primitive bases.
 
    Npolyads   
-      Maximal number of polyads.
+      Polyad cutoff in the PRIMITIVES or CONTRACTION block, respectively.
 
    CONTRACTION
       Block defining parameters of the contracted basis set.
 
-   Npolyads
-      Maximal number of polyads in the contracted basis.
 
    sample_points
       number of sampling points in the symmetrisation procedure.
@@ -98,5 +101,3 @@ Glossary
 
    DIPOLE
       Dipole moment block (or ``external`` field block)
-
-
