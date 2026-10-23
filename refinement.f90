@@ -455,7 +455,7 @@ contains
        !
        allocate (potparam(parmax),nampar(parmax),ivar(parmax),ifitparam(parmax),&
                  al(parmax,parmax),ai(parmax,parmax),bl(parmax),dx(parmax),sterr(parmax),&
-                 Tsing(parmax),pot_terms(extF%rank),al_ark(parmax,parmax),ai_ark(parmax,parmax),stat=info)
+                 Tsing(parmax),pot_terms(molec%parmax),al_ark(parmax,parmax),ai_ark(parmax,parmax),stat=info)
        call ArrayStart('potparam-mat',info,size(potparam),kind(potparam))
        call ArrayStart('potparam-mat',info,size(ivar),kind(ivar))
        call ArrayStart('potparam-dx',info,size(dx),kind(dx))
@@ -639,6 +639,8 @@ contains
           !
           if (do_deriv) then
             !
+            pot_terms = 0
+            !
             do i = 1,parmax
               !
               if (ivar(i)<0) then 
@@ -690,7 +692,8 @@ contains
             !
             ! Reconstruct the potential expansion from the local to linearized coords.
             !
-            pot_terms = potparam
+            pot_terms = 0
+            pot_terms(1:parmax) = potparam(1:parmax)
             !
             eps = 0
             !
@@ -1223,6 +1226,8 @@ contains
             dummy_xyz = 0
             !
             !pot_terms(1:parmax) = molec%force(1:parmax) + potparam(1:parmax)
+            !
+            pot_terms(1:molec%parmax) = molec%force(1:molec%parmax)
             !
             do i = 1,parmax
               !
