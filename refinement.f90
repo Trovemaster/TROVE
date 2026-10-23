@@ -991,7 +991,7 @@ contains
                           !
                           ientry  = fitting%obs(iener)%N ;  if (ientry>nroots.or.isym>sym%Nrepresen) cycle 
                           !
-                          call dgemv('N',Nentries,Nentries,1.0d0,dmat,Nentries,mat(:,ientry),1,0.0d0,vector,1)
+                          vector = matmul(dmat,mat(:,ientry))
                           !
                           deriv(ientry,ncol)= dot_product(mat(:,ientry),vector(:))
                           !
@@ -2383,7 +2383,7 @@ contains
                           !
                           ientry  = fitting%obs(iener)%N ;  if (ientry>nroots.or.isym>sym%Nrepresen) cycle 
                           !
-                          call dgemv('N',Nentries,Nentries,1.0d0,dmat,Nentries,mat(:,ientry),1,0.0d0,vector,1)
+                          vector = matmul(dmat,mat(:,ientry))
                           !
                           deriv(ientry,ncol)= dot_product(mat(:,ientry),vector(:))
                           !

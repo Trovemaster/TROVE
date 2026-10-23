@@ -9795,7 +9795,11 @@ end subroutine check_read_save_none
           !
           do imu = 1,rank
             !
+            if (all(abs(extF_points(:,imu))<=small_)) cycle
+            !
             do iterm = trove%extF(imu)%Ncoeff,1,-1
+             !
+             if (all(abs(extF_points(:,imu))<=small_)) exit
              !
              kindex(:) = FLIndexQ(:,iterm)
              !
@@ -9828,15 +9832,17 @@ end subroutine check_read_save_none
                  !
                  extF_t(iterm) = df/factor
                  !
-                 do i=1,N_extFpoint
-                    !
-                    xi_t(:) = extF%fdstep(:)*real(ipoint_address(i,:),ark)
-                    !
-                    factor = product(xi_t(:)**kindex(:))
-                    !
-                    extF_points(i,imu) = extF_points(i,imu) - extF_t(iterm)*factor
-                    !
-                 enddo
+                 if (abs(extF_t(iterm))>small_) then
+                   do i=1,N_extFpoint
+                      !
+                      xi_t(:) = extF%fdstep(:)*real(ipoint_address(i,:),ark)
+                      !
+                      factor = product(xi_t(:)**kindex(:))
+                      !
+                      extF_points(i,imu) = extF_points(i,imu) - extF_t(iterm)*factor
+                      !
+                   enddo
+                 endif
                  !
                  trove%extF(imu)%field(iterm,irho) = extF_t(iterm)
                  !
@@ -9943,7 +9949,7 @@ end subroutine check_read_save_none
        integer(ik) :: imu
        type(FLpolynomT),pointer     :: fl
        !
-       if (.not.trove%extF_with_modes) return
+       if (trove%extF_with_modes) return
        !
        do imu = 1, extF%rank
           !
@@ -20495,6 +20501,7 @@ end subroutine check_read_save_none
           !
           f_t=bs%params(1)
           omega_t = bs%params(2)
+          trove%coord_f(bs%mode(1:bs%imodes)) = f_t
           !
           if (molec%mode_list_present) then
              !

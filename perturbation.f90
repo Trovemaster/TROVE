@@ -42291,7 +42291,7 @@ subroutine PTstore_contr_matelem(jrot)
             !
             iterm = trove%extF(ipar)%ifromsparse(icoeff)
 
-            c = real(trove%extF(ipar)%field(iterm,0),kind=rk)
+            c = real(trove%extF(ipar)%field(icoeff,0),kind=rk)
             if (abs(c)<coef_thresh) cycle
             match = .false.
             ! loop over combinations of classes
