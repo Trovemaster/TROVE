@@ -463,6 +463,9 @@ module perturbation
    type(me_class), allocatable :: gcor_class(:,:)
    type(me_class), allocatable :: extF_class(:)
    !
+   logical :: me2d_s4s5_active = .false.
+   real(rk), allocatable :: me2d_s4s5(:,:,:,:,:,:,:,:)
+   !
   contains
 !
 !
@@ -4035,7 +4038,7 @@ module perturbation
        !
        !if ((bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model<=2).and.job%Npolyads_contr<PT%Npolyads) then
        !
-       if ( bs_t(kmode)%postprocess.and.job%Npolyads_contr<PT%Npolyads ) then
+       if ( bs_t(kmode)%postprocess.and.job%Npolyads_contr<=PT%Npolyads ) then
          !
          call PThamiltonianMat_contracted_reduced(jrot,iclasses,nroots)
          !
@@ -25150,7 +25153,7 @@ end subroutine read_contr_matelem_expansion_classN
       integer(ik),intent(in)         :: k1,k2
       real(rk)                       :: gvib
       !
-      integer(ik)                   :: imode
+      integer(ik)                   :: imode,iop4,iop5
       real(rk)                      :: mat(PT%Nmodes)
 
          if (verbose>=6) write(out,"(/'gvib_contr_matelem_single_term/start: matrix elemnts for the hamiltonian ')") 
@@ -25159,6 +25162,33 @@ end subroutine read_contr_matelem_expansion_classN
          if (im2<im1) return
          !
          do imode = im1,im2
+            !
+            if (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+              if (imode==4) then
+                if (k1/=4.and.k2/=4) then
+                  iop4 = 0
+                elseif (k2/=4) then
+                  iop4 = 2
+                elseif (k1/=4) then
+                  iop4 = 1
+                else
+                  iop4 = 3
+                endif
+                if (k1/=5.and.k2/=5) then
+                  iop5 = 0
+                elseif (k2/=5) then
+                  iop5 = 2
+                elseif (k1/=5) then
+                  iop5 = 1
+                else
+                  iop5 = 3
+                endif
+                mat(4) = me2d_s4s5(iop4,iop5,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+              else
+                mat(5) = 1.0_rk
+              endif
+              cycle
+            endif
             !
             !if (imode==PT%Nmodes) then
             !   !
@@ -25505,6 +25535,16 @@ end subroutine read_contr_matelem_expansion_classN
       enddo
       !
       if (job%verbose>=5) write(out,"('  ...done!')") 
+      inquire(file='keo_2d_s4s5.chk', exist=me2d_s4s5_active)
+      if (me2d_s4s5_active) then
+         if (allocated(me2d_s4s5)) deallocate(me2d_s4s5)
+         open(newunit=imu, file='keo_2d_s4s5.chk', status='old', access='stream', form='unformatted', action='read')
+         read(imu) k1, k2
+         allocate(me2d_s4s5(0:3, 0:3, 0:k1, 0:k1, 0:k2, 0:k2, 0:k2, 0:k2), stat=alloc)
+         read(imu) me2d_s4s5
+         close(imu)
+         write(out, "(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk: kmax=',i3,', vmax=',i3/)") k1, k2
+      endif
       if (job%verbose>=5) write(out,"('  Allocating objects for the contracted matrix elements ...')") 
       !
       bsize = job%bset(PT%Nmodes)%range(2)
@@ -25785,7 +25825,7 @@ end subroutine read_contr_matelem_expansion_classN
       integer(ik),intent(in),optional  :: j
       real(rk)                      :: mat_elem,f_Jk
 
-      integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes)
+      integer(ik)                   :: imode,i,iterm,k1,k2,k(PT%Nmodes),iop4,iop5
       integer(ik)                   :: vl,vr,tau_i,tau_j,k_i,k_j,jk,dk
       real(rk)                      :: pot_t,gvib_t,mat(PT%Nmodes),grot_t,gcor_t
       type(PTcoeffT),pointer        :: fl
@@ -25856,6 +25896,30 @@ end subroutine read_contr_matelem_expansion_classN
                              !
                              mat(imode) = fl%coeff(iterm,vl,vr)
                              !
+                          elseif (me2d_s4s5_active.and.(imode==4.or.imode==5)) then
+                             if (imode==4) then
+                                if (k1/=4.and.k2/=4) then
+                                   iop4 = 0
+                                elseif (k1==4.and.k2/=4) then
+                                   iop4 = 2
+                                elseif (k1/=4.and.k2==4) then
+                                   iop4 = 1
+                                else
+                                   iop4 = 3
+                                endif
+                                if (k1/=5.and.k2/=5) then
+                                   iop5 = 0
+                                elseif (k1==5.and.k2/=5) then
+                                   iop5 = 2
+                                elseif (k1/=5.and.k2==5) then
+                                   iop5 = 1
+                                else
+                                   iop5 = 3
+                                endif
+                                mat(4) = me2d_s4s5(iop4,iop5,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                             else
+                                mat(5) = 1.0_rk
+                             endif
                           else
                              !
                              if    (k1/=imode.and.k2/=imode) then 
@@ -28921,7 +28985,7 @@ end subroutine read_contr_matelem_expansion_classN
       real(rk),intent(out),optional  :: gcor
       !
       integer(ik)                   :: k(PT%Nmodes)  
-      integer(ik)                   :: vl,vr,imode,iterm
+      integer(ik)                   :: vl,vr,imode,iterm,iop4,iop5
       real(rk)                      :: mat(PT%Nmodes)
       type(PTcoeffT),pointer        :: fl
 
@@ -28995,6 +29059,30 @@ end subroutine read_contr_matelem_expansion_classN
                       !
                       !mat(imode) = fl%me(iterm,vl,vr)
                       !
+                   elseif (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+                      if (imode==4) then
+                         if (k1/=4.and.k2/=4) then
+                            iop4 = 0
+                         elseif (k1==4.and.k2/=4) then
+                            iop4 = 2
+                         elseif (k1/=4.and.k2==4) then
+                            iop4 = 1
+                         else
+                            iop4 = 3
+                         endif
+                         if (k1/=5.and.k2/=5) then
+                            iop5 = 0
+                         elseif (k1==5.and.k2/=5) then
+                            iop5 = 2
+                         elseif (k1/=5.and.k2==5) then
+                            iop5 = 1
+                         else
+                            iop5 = 3
+                         endif
+                         mat(4) = me2d_s4s5(iop4,iop5,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                      else
+                         mat(5) = 1.0_rk
+                      endif
                    else
                       !
                       if    (k1/=imode.and.k2/=imode) then 
@@ -33443,7 +33531,7 @@ end subroutine read_contr_matelem_expansion_classN
              MaxTerm  = 1
              !
              MaxEigenvects = maxval(cf%coeffs(:,i)**2,dim=1)-small_
-             MaxTerm = maxloc(cf%coeffs(:,i)**2,dim=1,mask=cf%coeffs(:,i).ge.MaxEigenvects)
+             MaxTerm = maxloc(cf%coeffs(:,i)**2,dim=1,mask=cf%coeffs(:,i)**2.ge.MaxEigenvects)
              !
              nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
              PT%quanta%icoeffs(i,:) = nu_i(:)
@@ -34431,7 +34519,7 @@ end subroutine read_contr_matelem_expansion_classN
        !
        nu_i(:) = PT%quanta%icoeffs(ilevel,:)
        !
-       contr(iclasses)%eigen(ilevel)%vect(:,:) = eigen(ilevel,:,:)
+       contr(iclasses)%eigen(ilevel)%vect(:,1:level_degen) = eigen(ilevel,:,1:level_degen)
        contr(iclasses)%eigen(ilevel)%degeneracy = sym%degen(gamma)
        contr(iclasses)%eigen(ilevel)%nu(:) = nu_i(:)
        contr(iclasses)%eigen(ilevel)%normal = nu_i
@@ -38696,10 +38784,14 @@ subroutine calc_contr_matelem_expansion_p0(iclass, func_tag, nterms, terms, me_c
       do jprim=1, nprim
         nu_j(imode1:imode2) = contr(iclass)%prim_bs%icoeffs(imode1:imode2,jprim)
         do iterm=1, nterms
-          do jmode=imode1, imode2
-            me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
-          enddo
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          if (me2d_s4s5_active.and.imode1==4.and.imode2==5) then
+            me_contr(iterm,iprim,jprim) = me2d_s4s5(0,0,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+          else
+            do jmode=imode1, imode2
+              me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+            enddo
+            me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          endif
         enddo
       enddo
     enddo
@@ -38798,16 +38890,24 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
       do jprim=1, nprim
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
-          do jmode=imode1, imode2
-            if (jmode==imode) then
-              me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+          if (me2d_s4s5_active.and.imode1==4.and.imode2==5) then
+            if (imode==4) then
+              me_contr(iterm,iprim,jprim) = me2d_s4s5(1,0,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
             else
-              me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              me_contr(iterm,iprim,jprim) = me2d_s4s5(0,1,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
             endif
+          else
+            do jmode=imode1, imode2
+              if (jmode==imode) then
+                me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              else
+                me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              endif
+              !
+            enddo
             !
-          enddo
-          !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+            me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          endif
           !
         enddo
         !
@@ -38885,7 +38985,7 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   real(rk), intent(out) :: me_contr(:,:,:)
 
   integer(ik) :: kmode,info,iterm,ideg,nprim,iprim,jprim,nroots,ilevel,iroot,&
-                 nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p
+                 nu_i(PT%Nmodes),nu_j(PT%Nmodes),imode1,imode2,nmodes,alloc_p,iop4,iop5
   real(rk), allocatable :: prim_coefs(:,:), tmat(:,:)
   real(rk) :: me_term(PT%Nmodes)
   !
@@ -38925,24 +39025,46 @@ subroutine calc_contr_matelem_expansion_p2(imode, jmode, iclass, func_tag, nterm
   !
   ! compute matrix elements between products of 1D functions
   !
-  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,iterm,me_term) shared(me_contr) schedule(dynamic)
+  !$omp parallel do private(iprim,jprim,nu_i,nu_j,kmode,iterm,me_term,iop4,iop5) shared(me_contr) schedule(dynamic)
   do iprim=1, nprim
     nu_i(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,iprim)
     do jprim=1, nprim
       nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
       do iterm=1, nterms
-        do kmode=imode1, imode2
-          if (kmode/=imode.and.kmode/=jmode) then
-            me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
-          elseif (kmode/=jmode) then
-            me_term(kmode) =-me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
-          elseif (kmode/=imode) then
-            me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+        if (me2d_s4s5_active.and.imode1==4.and.imode2==5) then
+          if (imode/=4.and.jmode/=4) then
+            iop4 = 0
+          elseif (jmode/=4) then
+            iop4 = 2
+          elseif (imode/=4) then
+            iop4 = 1
           else
-            me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            iop4 = 3
           endif
-        enddo
-        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          if (imode/=5.and.jmode/=5) then
+            iop5 = 0
+          elseif (jmode/=5) then
+            iop5 = 2
+          elseif (imode/=5) then
+            iop5 = 1
+          else
+            iop5 = 3
+          endif
+          me_contr(iterm,iprim,jprim) = me2d_s4s5(iop4,iop5,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+        else
+          do kmode=imode1, imode2
+            if (kmode/=imode.and.kmode/=jmode) then
+              me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            elseif (kmode/=jmode) then
+              me_term(kmode) =-me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_j(kmode),nu_i(kmode))
+            elseif (kmode/=imode) then
+              me_term(kmode) = me%vibmode(kmode,1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            else
+              me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+            endif
+          enddo
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+        endif
       enddo
     enddo
   enddo

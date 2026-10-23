@@ -1264,6 +1264,86 @@ module mol_xy3
           !
       endif
        !
+    case('R-SYMPHI-BETA')
+       !
+       ! Exact analytical trisector coordinate transform between unshifted local (r1,r2,r3,alpha3,alpha2,alpha1[,delta])
+       ! and unshifted SPAR internal coordinates (r1,r2,r3,s4,s5,beta) where:
+       !   s4 = 1/sqrt(6)*(2*phi1 - phi2 - phi3)
+       !   s5 = 1/sqrt(2)*(phi2 - phi3)
+       !   beta = angle between each P-H_i bond and the trisector z-axis (beta in (0, pi))
+       !   sin(alpha_i/2) = sin(beta)*sin(phi_i/2), phi1 + phi2 + phi3 = 2*pi
+       !
+       if (direct) then
+          !
+          dst(1:3) = src(1:3)
+          !
+          if (size(src)==6 .or. size(src)==7) then
+             !
+             alpha3 = src(4)
+             alpha2 = src(5)
+             alpha1 = src(6)
+             !
+             sinbeta1 = sin(alpha1*0.5_ark)
+             sinbeta2 = sin(alpha2*0.5_ark)
+             sinbeta3 = sin(alpha3*0.5_ark)
+             !
+             sinphi = (sinbeta2**2 + sinbeta3**2 - sinbeta1**2)/(2.0_ark*sinbeta2*sinbeta3)
+             sinphi = max(-1.0_ark, min(1.0_ark, sinphi))
+             phi1 = 2.0_ark*acos(sinphi)
+             !
+             sinphi = (sinbeta1**2 + sinbeta3**2 - sinbeta2**2)/(2.0_ark*sinbeta1*sinbeta3)
+             sinphi = max(-1.0_ark, min(1.0_ark, sinphi))
+             phi2 = 2.0_ark*acos(sinphi)
+             !
+             phi3 = 2.0_ark*pi - phi1 - phi2
+             !
+             dst(4) = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1 - phi2 - phi3 )
+             dst(5) = 1.0_ark/sqrt(2.0_ark)*(                phi2 - phi3 )
+             !
+             sinrho = sinbeta1/sin(phi1*0.5_ark)
+             sinrho = max(-1.0_ark, min(1.0_ark, sinrho))
+             !
+             if (size(src)==7) then
+                if (src(7)<0.0_ark) then
+                   dst(6) = pi - asin(sinrho)
+                else
+                   dst(6) = asin(sinrho)
+                endif
+             else
+                dst(6) = asin(sinrho)
+             endif
+             !
+          else
+             !
+             write (out,"('MLcoordinate_transform_func: wrong number of coordinates: ',i6)") size(src)
+             stop 'MLcoordinate_transform_func - wrong number of coords'
+             !
+          endif
+          !
+       else    ! not direct (inverse: (r1,r2,r3,s4,s5,beta) -> (r1,r2,r3,alpha3,alpha2,alpha1[,delta]))
+          !
+          dst(1:3) = src(1:3)
+          !
+          beta = src(6)
+          !
+          phi1 = (sqrt(6.0_ark)*src(4) + 2.0_ark*pi)/3.0_ark
+          phi2 = (sqrt(2.0_ark)*src(5) + 2.0_ark*pi - phi1)/2.0_ark
+          phi3 = 2.0_ark*pi - phi1 - phi2
+          !
+          alpha1 = 2.0_ark*asin(max(-1.0_ark, min(1.0_ark, sin(phi1*0.5_ark)*sin(beta))))
+          alpha2 = 2.0_ark*asin(max(-1.0_ark, min(1.0_ark, sin(phi2*0.5_ark)*sin(beta))))
+          alpha3 = 2.0_ark*asin(max(-1.0_ark, min(1.0_ark, sin(phi3*0.5_ark)*sin(beta))))
+          !
+          dst(6) = alpha1
+          dst(5) = alpha2
+          dst(4) = alpha3
+          !
+          if (size(dst)==7) then
+             dst(7) = 0.5_ark*pi - beta
+          endif
+          !
+       endif
+       !
     case('R-SYMPHI-DELTA-MEP')
        !
        if (direct) then
@@ -2547,7 +2627,7 @@ module mol_xy3
            dst(6) = src(6) 
            !
            !
-       case('R-SYMPHI-DELTA','R-SYMPHI-TAU','R-S-DELTA-MEP')
+       case('R-SYMPHI-DELTA','R-SYMPHI-TAU','R-S-DELTA-MEP','R-SYMPHI-BETA')
            !
            !
            select case(ioper)
@@ -2593,19 +2673,19 @@ module mol_xy3
            repres ( 1,:,:)= reshape((/ e, o,  & 
                                        o, e/),(/2,2/))
            !
-           repres ( 2,:,:)= reshape((/-a,-b,  &
+           repres ( 3,:,:)= reshape((/-a,-b,  &
                                        b,-a/),(/2,2/))
            !
-           repres ( 3,:,:)= reshape((/-a, b,  &
+           repres ( 2,:,:)= reshape((/-a, b,  &
                                       -b,-a/),(/2,2/))
            !
            repres ( 4,:,:)= reshape((/ e, o,  &
                                        o,-e/),(/2,2/))
            !
-           repres ( 5,:,:)= reshape((/-a, b,  &
+           repres ( 6,:,:)= reshape((/-a, b,  &
                                        b, a/),(/2,2/))
            !
-           repres ( 6,:,:)= reshape((/-a,-b,  &
+           repres ( 5,:,:)= reshape((/-a,-b,  &
                                       -b, a/),(/2,2/))
            !
            dst(4) = repres(ioper,1,1)*src(4)+repres(ioper,1,2)*src(5)
@@ -2623,7 +2703,7 @@ module mol_xy3
            write (out,"('ML_symmetry_transformation_XY3: coord_transf ',a,' unknown')") trim(molec%coords_transform)
            stop 'ML_symmetry_transformation_XY3 - bad coord. type'
            !
-       case('R-S-DELTA','R-SYMPHI-DELTA','R-SYMPHI-TAU','R-S-DELTA-MEP')
+       case('R-S-DELTA','R-SYMPHI-DELTA','R-SYMPHI-TAU','R-S-DELTA-MEP','R-SYMPHI-BETA')
            !
            a = 0.5_ark ; b = 0.5_ark*sqrt(3.0_ark) ; e = 1.0_ark ; o = 0.0_ark
            !
@@ -2657,7 +2737,14 @@ module mol_xy3
            dst(4) = repres(ioper,1,1)*src(4)+repres(ioper,1,2)*src(5)
            dst(5) = repres(ioper,2,1)*src(4)+repres(ioper,2,2)*src(5)
            !
-           dst(6) = src(6) ; if (ioper>=4.and.ioper<=9) dst(6) = -dst(6)
+           dst(6) = src(6)
+           if (ioper>=4.and.ioper<=9) then
+              if (trim(molec%coords_transform)=='R-SYMPHI-BETA') then
+                 dst(6) = pi - dst(6)
+              else
+                 dst(6) = -dst(6)
+              endif
+           endif
            !
            select case(ioper)
            !
@@ -3122,7 +3209,7 @@ module mol_xy3
 
          end select 
          !
-       case('R-SYMPHI-DELTA-MEP','R-SYMPHI-DELTA','R-S-DELTA')
+       case('R-SYMPHI-DELTA-MEP','R-SYMPHI-DELTA','R-S-DELTA','R-SYMPHI-BETA')
           !
          select case(ioper)
 
@@ -3137,7 +3224,11 @@ module mol_xy3
            dst(3) = src(2)
            dst(4) = src(4)
            dst(5) =-src(5)
-           dst(6) =-src(6)
+           if (trim(molec%coords_transform)=='R-SYMPHI-BETA') then
+              dst(6) = pi - src(6)
+           else
+              dst(6) =-src(6)
+           endif
 
          case (3) ! (E*)
 
@@ -3146,7 +3237,11 @@ module mol_xy3
            dst(3) = src(3)
            dst(4) = src(4)
            dst(5) = src(5)
-           dst(6) =-src(6)
+           if (trim(molec%coords_transform)=='R-SYMPHI-BETA') then
+              dst(6) = pi - src(6)
+           else
+              dst(6) =-src(6)
+           endif
 
          case (4) ! (12)*
 
