@@ -25559,16 +25559,6 @@ end subroutine read_contr_matelem_expansion_classN
       enddo
       !
       if (job%verbose>=5) write(out,"('  ...done!')") 
-      inquire(file='keo_2d_s4s5.chk', exist=me2d_s4s5_active)
-      if (me2d_s4s5_active) then
-         if (allocated(me2d_s4s5)) deallocate(me2d_s4s5)
-         open(newunit=imu, file='keo_2d_s4s5.chk', status='old', access='stream', form='unformatted', action='read')
-         read(imu) k1, k2
-         allocate(me2d_s4s5(0:3, 0:3, 0:k1, 0:k1, 0:k2, 0:k2, 0:k2, 0:k2), stat=alloc)
-         read(imu) me2d_s4s5
-         close(imu)
-         write(out, "(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk: kmax=',i3,', vmax=',i3/)") k1, k2
-      endif
       if (job%verbose>=5) write(out,"('  Allocating objects for the contracted matrix elements ...')") 
       !
       bsize = job%bset(PT%Nmodes)%range(2)
@@ -25725,6 +25715,10 @@ end subroutine read_contr_matelem_expansion_classN
       !
       deallocate(extF_N)
       !
+      ! Optional exact 2D (s4,s5) integrals of the KEO terms for modes 4 and 5 (keo_2d_s4s5.chk)
+      !
+      call PTread_me2d_s4s5
+      !
       if (job%verbose>=5) write(out,"('  ... done!')") 
       !
       if (job%verbose>=5) write(out,"('PTget_primitive_matelements/done!')") 
@@ -25734,6 +25728,96 @@ end subroutine read_contr_matelem_expansion_classN
       call TimerStop('Primitive matelements')
       !
   end subroutine PTget_primitive_matelements
+  !
+  !
+  ! If the file keo_2d_s4s5.chk is present in the working directory, read the table of exact 2D integrals
+  ! me2d_s4s5(iop4,iop5,k4,k5,v4,v4',v5,v5') of the KEO terms over modes 4 and 5 (s4,s5), which then replace
+  ! the products of the 1D matrix elements of these two modes. The table must be consistent with the
+  ! basis set and with the KEO expansion (kinetic.chk); otherwise stop with an error rather than read
+  ! outside the table.
+  !
+  subroutine PTread_me2d_s4s5
+    !
+    integer(ik) :: iunit,info,alloc,kmax,vmax,kmax_used,k1,k2,iclass
+    !
+      inquire(file='keo_2d_s4s5.chk',exist=me2d_s4s5_active)
+      !
+      if (.not.me2d_s4s5_active) return
+      !
+      if (PT%Nmodes<5) then
+        write(out,"(/'PTread_me2d_s4s5: keo_2d_s4s5.chk requires at least 5 modes, Nmodes = ',i4)") PT%Nmodes
+        stop 'PTread_me2d_s4s5: keo_2d_s4s5.chk requires at least 5 modes'
+      endif
+      !
+      ! Modes 4 and 5 must form a separate contracted class
+      !
+      iclass = job%bset(4)%class
+      if (job%bset(5)%class/=iclass.or.count(job%bset(1:PT%Nmodes)%class==iclass)/=2) then
+        write(out,"(/'PTread_me2d_s4s5: modes 4 and 5 must form a separate class to use keo_2d_s4s5.chk')")
+        stop 'PTread_me2d_s4s5: modes 4 and 5 must form a separate class'
+      endif
+      !
+      open(newunit=iunit,file='keo_2d_s4s5.chk',status='old',access='stream',form='unformatted',action='read',iostat=info)
+      if (info/=0) then
+        write(out,"(/'PTread_me2d_s4s5: cannot open keo_2d_s4s5.chk, iostat = ',i8)") info
+        stop 'PTread_me2d_s4s5: cannot open keo_2d_s4s5.chk'
+      endif
+      !
+      read(iunit,iostat=info) kmax,vmax
+      if (info/=0.or.kmax<0.or.vmax<0) then
+        write(out,"(/'PTread_me2d_s4s5: cannot read kmax, vmax from keo_2d_s4s5.chk, iostat = ',i8)") info
+        stop 'PTread_me2d_s4s5: cannot read the header of keo_2d_s4s5.chk'
+      endif
+      !
+      ! The table must cover the primitive basis sets of modes 4 and 5 ...
+      !
+      if (vmax<job%bset(4)%range(2).or.vmax<job%bset(5)%range(2)) then
+        write(out,"(/'PTread_me2d_s4s5: vmax = ',i4,' in keo_2d_s4s5.chk is smaller than the basis set of modes 4,5: ',2i4)") &
+              vmax,job%bset(4)%range(2),job%bset(5)%range(2)
+        stop 'PTread_me2d_s4s5: vmax in keo_2d_s4s5.chk is too small for the basis set of modes 4,5'
+      endif
+      !
+      ! ... and all expansion indices of modes 4 and 5 in the KEO terms
+      !
+      kmax_used = 0
+      !
+      do k1 = 1,PT%Nmodes
+        do k2 = 1,PT%Nmodes
+          if (me%gvib(k1,k2)%Ncoeff>0) kmax_used = max(kmax_used,maxval(me%gvib(k1,k2)%IndexQ(4:5,:)))
+        enddo
+        do k2 = 1,3
+          if (me%gcor(k1,k2)%Ncoeff>0) kmax_used = max(kmax_used,maxval(me%gcor(k1,k2)%IndexQ(4:5,:)))
+        enddo
+      enddo
+      !
+      do k1 = 1,3
+        do k2 = 1,3
+          if (me%grot(k1,k2)%Ncoeff>0) kmax_used = max(kmax_used,maxval(me%grot(k1,k2)%IndexQ(4:5,:)))
+        enddo
+      enddo
+      !
+      if (kmax<kmax_used) then
+        write(out,"(/'PTread_me2d_s4s5: kmax = ',i4,' in keo_2d_s4s5.chk is smaller than the largest KEO index of modes 4,5: ',i4)") &
+              kmax,kmax_used
+        stop 'PTread_me2d_s4s5: kmax in keo_2d_s4s5.chk is too small for the KEO expansion'
+      endif
+      !
+      if (allocated(me2d_s4s5)) deallocate(me2d_s4s5)
+      !
+      allocate(me2d_s4s5(0:3,0:3,0:kmax,0:kmax,0:vmax,0:vmax,0:vmax,0:vmax),stat=alloc)
+      call ArrayStart('me2d_s4s5',alloc,size(me2d_s4s5),kind(me2d_s4s5))
+      !
+      read(iunit,iostat=info) me2d_s4s5
+      if (info/=0) then
+        write(out,"(/'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk, iostat = ',i8)") info
+        stop 'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk'
+      endif
+      !
+      close(iunit)
+      !
+      write(out,"(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk: kmax=',i3,', vmax=',i3/)") kmax,vmax
+      !
+  end subroutine PTread_me2d_s4s5
 
    !
    ! Matrix elements calculations of the fields on the product of the primitive (1D) eigenfunctions
