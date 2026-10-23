@@ -25246,6 +25246,14 @@ end subroutine read_contr_matelem_expansion_classN
          !
          do imode = im1,im2
             !
+            if (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+               if (imode==4) then
+                  mat(4) = me2d_s4s5(0,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+               else
+                  mat(5) = 1.0_rk
+               endif
+               cycle
+            endif
             !if (imode/=PT%Nmodes) then
             !
             mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
@@ -25291,6 +25299,22 @@ end subroutine read_contr_matelem_expansion_classN
          !
          do imode = im1,im2
            !
+           if (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+              if (imode==4) then
+                 if (k1==4) then
+                    mat(4) = me2d_s4s5(1,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                            +me2d_s4s5(2,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                 elseif (k1==5) then
+                    mat(4) = me2d_s4s5(0,1,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                            +me2d_s4s5(0,2,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                 else
+                    mat(4) = me2d_s4s5(0,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                 endif
+              else
+                 mat(5) = 1.0_rk
+              endif
+              cycle
+           endif
            !if (imode/=PT%Nmodes) then
               !
               if (k1/=imode) then 
@@ -29154,7 +29178,15 @@ end subroutine read_contr_matelem_expansion_classN
                    !
                    if (imode/=PT%Nmodes) then
                       !
-                      mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                      if (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+                         if (imode==4) then
+                            mat(4) = me2d_s4s5(0,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                         else
+                            mat(5) = 1.0_rk
+                         endif
+                      else
+                         mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                      endif
                       !
                       !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
                       !
@@ -29191,20 +29223,36 @@ end subroutine read_contr_matelem_expansion_classN
                   !
                   if (imode/=PT%Nmodes) then
                      !
-                     if (k1/=imode) then 
-                        !
-                        mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
-                        !
-                        !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
-                        !
+                     if (me2d_s4s5_active.and.im1<=4.and.im2>=5.and.(imode==4.or.imode==5)) then
+                        if (imode==4) then
+                           if (k1==4) then
+                              mat(4) = me2d_s4s5(1,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                                      +me2d_s4s5(2,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                           elseif (k1==5) then
+                              mat(4) = me2d_s4s5(0,1,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                                      +me2d_s4s5(0,2,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                           else
+                              mat(4) = me2d_s4s5(0,0,k(4),k(5),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
+                           endif
+                        else
+                           mat(5) = 1.0_rk
+                        endif
                      else
-                        !
-                        mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
-                                     me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
-                        !
-                        !mat(imode) =bs%matelements(1,k(imode),nu_i(imode),nu_j(imode))-&
-                        !            bs%matelements(1,k(imode),nu_j(imode),nu_i(imode))
-                        !
+                        if (k1/=imode) then 
+                           !
+                           mat(imode) = me%vibmode(imode,-1)%coeff(k(imode),nu_i(imode),nu_j(imode))
+                           !
+                           !mat(imode) = bs%matelements(-1,k(imode),nu_i(imode),nu_j(imode))
+                           !
+                        else
+                           !
+                           mat(imode) = me%vibmode(imode,1)%coeff(k(imode),nu_i(imode),nu_j(imode))-&
+                                        me%vibmode(imode,1)%coeff(k(imode),nu_j(imode),nu_i(imode))
+                           !
+                           !mat(imode) =bs%matelements(1,k(imode),nu_i(imode),nu_j(imode))-&
+                           !            bs%matelements(1,k(imode),nu_j(imode),nu_i(imode))
+                           !
+                        endif
                      endif
                      !
                   else
@@ -38926,16 +38974,26 @@ subroutine calc_contr_matelem_expansion_p1(imode, iclass, func_tag, nterms, term
         !
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
-          do jmode=imode1, imode2
-            if (jmode==imode) then
-              me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))&
-                              -me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+          if (me2d_s4s5_active.and.imode1==4.and.imode2==5) then
+            if (imode==4) then
+              me_contr(iterm,iprim,jprim) = me2d_s4s5(1,0,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                                           +me2d_s4s5(2,0,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
             else
-              me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              me_contr(iterm,iprim,jprim) = me2d_s4s5(0,1,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5)) &
+                                           +me2d_s4s5(0,2,terms(4,iterm),terms(5,iterm),nu_i(4),nu_j(4),nu_i(5),nu_j(5))
             endif
-          enddo
-          !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          else
+            do jmode=imode1, imode2
+              if (jmode==imode) then
+                me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))&
+                                -me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_j(jmode),nu_i(jmode))
+              else
+                me_term(jmode) = me%vibmode(jmode,-1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
+              endif
+            enddo
+            !
+            me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))
+          endif
           !
         enddo
         !
