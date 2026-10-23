@@ -25736,10 +25736,21 @@ end subroutine read_contr_matelem_expansion_classN
   ! basis set and with the KEO expansion (kinetic.chk); otherwise stop with an error rather than read
   ! outside the table.
   !
+  ! Two formats are recognised: ASCII files start with the keyword keo_2d_s4s5, followed by a line with
+  ! kmax, vmax and the number of entries N, a description line, a column-header line and N lines
+  ! 'iop4 iop5 k4 k5 v4 v4' v5 v5' value' for the non-zero elements; binary (stream) files contain
+  ! the 4-byte integers kmax, vmax followed by the whole array in Fortran order.
+  !
   subroutine PTread_me2d_s4s5
     !
     integer(ik) :: iunit,info,alloc,kmax,vmax,kmax_used,k1,k2,iclass
-    !
+    integer(ik) :: iop4,iop5,i4,i5,v4,v4_,v5,v5_
+    integer(hik) :: nentries,ientry
+    real(rk) :: f
+    logical :: ascii
+    character(len=11) :: keyword
+    character(len=cl) :: line
+      !
       inquire(file='keo_2d_s4s5.chk',exist=me2d_s4s5_active)
       !
       if (.not.me2d_s4s5_active) return
@@ -25763,9 +25774,32 @@ end subroutine read_contr_matelem_expansion_classN
         stop 'PTread_me2d_s4s5: cannot open keo_2d_s4s5.chk'
       endif
       !
-      read(iunit,iostat=info) kmax,vmax
+      ! An ASCII file starts with the keyword keo_2d_s4s5, a binary file with the integers kmax and vmax
+      !
+      keyword = ' '
+      nentries = 0
+      read(iunit,iostat=info) keyword
+      ascii = (info==0.and.keyword=='keo_2d_s4s5')
+      !
+      if (ascii) then
+        !
+        close(iunit)
+        open(newunit=iunit,file='keo_2d_s4s5.chk',status='old',form='formatted',action='read',iostat=info)
+        if (info==0) read(iunit,"(a)",iostat=info) line
+        if (info==0) read(iunit,*,iostat=info) kmax,vmax,nentries
+        if (info==0) read(iunit,"(a)",iostat=info) line
+        if (info==0) read(iunit,"(a)",iostat=info) line
+        if (info/=0.or.nentries<0) kmax = -1
+        !
+      else
+        !
+        rewind(iunit)
+        read(iunit,iostat=info) kmax,vmax
+        !
+      endif
+      !
       if (info/=0.or.kmax<0.or.vmax<0) then
-        write(out,"(/'PTread_me2d_s4s5: cannot read kmax, vmax from keo_2d_s4s5.chk, iostat = ',i8)") info
+        write(out,"(/'PTread_me2d_s4s5: cannot read the header of keo_2d_s4s5.chk, iostat = ',i8)") info
         stop 'PTread_me2d_s4s5: cannot read the header of keo_2d_s4s5.chk'
       endif
       !
@@ -25807,15 +25841,53 @@ end subroutine read_contr_matelem_expansion_classN
       allocate(me2d_s4s5(0:3,0:3,0:kmax,0:kmax,0:vmax,0:vmax,0:vmax,0:vmax),stat=alloc)
       call ArrayStart('me2d_s4s5',alloc,size(me2d_s4s5),kind(me2d_s4s5))
       !
-      read(iunit,iostat=info) me2d_s4s5
-      if (info/=0) then
-        write(out,"(/'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk, iostat = ',i8)") info
-        stop 'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk'
+      if (ascii) then
+        !
+        me2d_s4s5 = 0
+        !
+        do ientry = 1,nentries
+          !
+          read(iunit,*,iostat=info) iop4,iop5,i4,i5,v4,v4_,v5,v5_,f
+          !
+          if (info/=0) then
+            write(out,"(/'PTread_me2d_s4s5: cannot read entry ',i12,' of keo_2d_s4s5.chk, iostat = ',i8)") ientry,info
+            stop 'PTread_me2d_s4s5: cannot read an entry of keo_2d_s4s5.chk'
+          endif
+          !
+          if (min(iop4,iop5,i4,i5,v4,v4_,v5,v5_)<0.or.max(iop4,iop5)>3.or.max(i4,i5)>kmax.or.max(v4,v4_,v5,v5_)>vmax) then
+            write(out,"(/'PTread_me2d_s4s5: entry ',i12,' of keo_2d_s4s5.chk is out of range: ',8i5)") &
+                  ientry,iop4,iop5,i4,i5,v4,v4_,v5,v5_
+            stop 'PTread_me2d_s4s5: an entry of keo_2d_s4s5.chk is out of range'
+          endif
+          !
+          me2d_s4s5(iop4,iop5,i4,i5,v4,v4_,v5,v5_) = f
+          !
+        enddo
+        !
+        read(iunit,"(a)",iostat=info) line
+        if (info/=0.or.line(1:3)/='End') then
+          write(out,"(/'PTread_me2d_s4s5: keo_2d_s4s5.chk does not end after the ',i12,' entries given in its header')") nentries
+          stop 'PTread_me2d_s4s5: inconsistent number of entries in keo_2d_s4s5.chk'
+        endif
+        !
+      else
+        !
+        read(iunit,iostat=info) me2d_s4s5
+        if (info/=0) then
+          write(out,"(/'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk, iostat = ',i8)") info
+          stop 'PTread_me2d_s4s5: cannot read the 2D integrals from keo_2d_s4s5.chk'
+        endif
+        !
       endif
       !
       close(iunit)
       !
-      write(out,"(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk: kmax=',i3,', vmax=',i3/)") kmax,vmax
+      if (ascii) then
+        write(out,"(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk (ASCII): kmax=',i3,', vmax=',i3,&
+                    &', entries=',i12/)") kmax,vmax,nentries
+      else
+        write(out,"(/1x,'Loaded exact 2D (s4,s5) KEO integrals from keo_2d_s4s5.chk: kmax=',i3,', vmax=',i3/)") kmax,vmax
+      endif
       !
   end subroutine PTread_me2d_s4s5
 

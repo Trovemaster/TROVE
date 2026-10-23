@@ -60,6 +60,26 @@ TROVE stops with an error message if modes 4 and 5 are not a separate class, or
 if `keo_2d_s4s5.chk` does not cover the basis set of modes 4 and 5 or the (i4, i5)
 indices of the G-matrix terms.
 
+## Format of keo_2d_s4s5.chk
+
+The file holds the integrals
+
+    me2d(iop4, iop5, i4, i5, v4, v4', v5, v5') =
+        Int ds4 ds5 D(iop4)[v4,v4'](s4) D(iop5)[v5,v5'](s5) phi(i4,i5)(s4,s5)
+
+where phi(i4,i5) are the 2D functions of the KEO terms (phi(0,0) = 1), and
+D(0) = psi_v psi_v', D(1) = psi_v psi_v'', D(2) = -psi_v' psi_v', D(3) = -psi_v' psi_v''
+(psi_v are the harmonic-oscillator functions of modes 4 and 5; a prime on psi denotes its
+derivative, so iop = 1, 2, 3 places the momentum on the right, left or both functions).
+
+By default the file is ASCII: a keyword line starting with `keo_2d_s4s5`, a line with
+kmax, vmax and the number of entries N, a line describing how the table was made, a
+column-header line, N lines `iop4 iop5 i4 i5 v4 v4' v5 v5' value` (the non-zero
+elements, 17 significant digits) and the line `End of keo_2d_s4s5`. The ASCII file
+for this example is about 83 MB. `--binary` writes a smaller binary stream file
+instead (4-byte integers kmax, vmax followed by the array in Fortran order, about
+25 MB). TROVE recognises either format.
+
 `--mode taylor --kmax N` writes the 2D integrals of the monomials s4^i4 s5^i5
 (i4 + i5 <= N) instead. With a Taylor-expanded (SPAR) `kinetic.chk` of order N
 this reproduces the standard 1D x 1D integration of TROVE exactly, which is a

@@ -429,13 +429,33 @@ def compute_me2d_s4s5(phi_dict, kmax, vmax, ft, s4_grid, s5_grid, w_grid):
   return me2d
 
 
-def save_keo_2d_s4s5_chk(filepath, me2d, kmax, vmax):
-  """Writes keo_2d_s4s5.chk as Fortran unformatted stream (int32 kmax, vmax + float64 Fortran-order array)."""
-  header = np.array([kmax, vmax], dtype=np.int32)
-  data_f = np.asfortranarray(me2d, dtype=np.float64)
-  with open(filepath, "wb") as f:
-    f.write(header.tobytes())
-    f.write(data_f.tobytes(order="F"))
+def save_keo_2d_s4s5_chk(filepath, me2d, kmax, vmax, binary=False, info=""):
+  """Writes keo_2d_s4s5.chk with the table me2d(iop4, iop5, i4, i5, v4, v4', v5, v5').
+
+  ASCII (default): the keyword line 'keo_2d_s4s5 ...', a line with kmax, vmax and the number of
+  entries N, a line describing how the table was made, a column-header line, N lines
+  'iop4 iop5 i4 i5 v4 v4' v5 v5' value' for the non-zero elements (17 significant digits, so
+  the binary values are reproduced exactly) and the line 'End of keo_2d_s4s5'.
+  Binary (binary=True): Fortran stream file with int32 kmax, vmax followed by the float64 array in
+  Fortran order.
+  """
+  if binary:
+    header = np.array([kmax, vmax], dtype=np.int32)
+    data_f = np.asfortranarray(me2d, dtype=np.float64)
+    with open(filepath, "wb") as f:
+      f.write(header.tobytes())
+      f.write(data_f.tobytes(order="F"))
+    return
+  idx = np.nonzero(me2d)
+  vals = me2d[idx]
+  table = np.column_stack([np.asarray(i, dtype=np.float64) for i in idx] + [vals])
+  with open(filepath, "w", encoding="utf-8") as f:
+    f.write("keo_2d_s4s5   2D (s4,s5) integrals of the KEO terms of modes 4 and 5\n")
+    f.write(f"{kmax:6d}{vmax:6d}{len(vals):12d}   <- kmax, vmax, number of entries\n")
+    f.write(f" {info}\n")
+    f.write(" iop4 iop5  i4  i5  v4 v4'  v5 v5'                   value\n")
+    np.savetxt(f, table, fmt="%5d%5d%4d%4d%4d%4d%4d%4d %24.16e")
+    f.write("End of keo_2d_s4s5\n")
 
 
 def get_i4_i5_pairs(rank=63, kmax=8):
@@ -450,7 +470,8 @@ def get_i4_i5_pairs(rank=63, kmax=8):
   raise ValueError(f"Cannot fit rank={rank} in kmax={kmax}")
 
 
-def generate_exact_2d_keo(out_dir, vmax=6, kmax=8, rank=63, ft=0.2865833376039929, R_max=2.45, n_rho=80, n_theta=96):
+def generate_exact_2d_keo(out_dir, vmax=6, kmax=8, rank=63, ft=0.2865833376039929, R_max=2.45, n_rho=80, n_theta=96,
+                          binary=False):
   """Generates kinetic.chk and keo_2d_s4s5.chk for the exact 2D (s4,s5) KEO."""
   t0 = time.time()
   s4_grid, s5_grid, w_grid, rho_grid = build_polar_grid(R_max, n_rho, n_theta)
@@ -515,7 +536,8 @@ def generate_exact_2d_keo(out_dir, vmax=6, kmax=8, rank=63, ft=0.286583337603992
   # Compute 2D integrals me2d_s4s5 and save keo_2d_s4s5.chk
   me2d = compute_me2d_s4s5(phi_dict, kmax, vmax, ft, s4_grid, s5_grid, w_grid)
   keo2d_path = os.path.join(out_dir, "keo_2d_s4s5.chk")
-  save_keo_2d_s4s5_chk(keo2d_path, me2d, kmax, vmax)
+  info = f"mode=exact ft={ft!r} rmax={R_max!r} n_rho={n_rho} n_theta={n_theta} rank={rank}"
+  save_keo_2d_s4s5_chk(keo2d_path, me2d, kmax, vmax, binary=binary, info=info)
   print(f"[{time.time() - t0:.2f}s] Wrote {keo2d_path} (kmax={kmax}, vmax={vmax}, rank={rank})")
 
   # Write kinetic.chk with exact equilibrium values at (0,0) and `rank` SVD coefficients at pairs_r
@@ -585,7 +607,8 @@ def generate_exact_2d_keo(out_dir, vmax=6, kmax=8, rank=63, ft=0.286583337603992
   print(f"[{time.time() - t0:.2f}s] Wrote {kin_path} ({n_written} exact 1D+2D terms)")
 
 
-def generate_taylor_keo_2d_chk(out_dir, kmax=4, vmax=6, ft=0.2865833376039929, R_max=2.45, n_rho=80, n_theta=96):
+def generate_taylor_keo_2d_chk(out_dir, kmax=4, vmax=6, ft=0.2865833376039929, R_max=2.45, n_rho=80, n_theta=96,
+                               binary=False):
   """Generates keo_2d_s4s5.chk for Taylor monomials s4^i4 * s5^i5 (0 <= i4+i5 <= kmax)."""
   t0 = time.time()
   s4_grid, s5_grid, w_grid, _ = build_polar_grid(R_max, n_rho, n_theta)
@@ -595,7 +618,8 @@ def generate_taylor_keo_2d_chk(out_dir, kmax=4, vmax=6, ft=0.2865833376039929, R
       phi_dict[(i4, i5)] = (s4_grid**i4) * (s5_grid**i5)
   me2d = compute_me2d_s4s5(phi_dict, kmax, vmax, ft, s4_grid, s5_grid, w_grid)
   keo2d_path = os.path.join(out_dir, "keo_2d_s4s5.chk")
-  save_keo_2d_s4s5_chk(keo2d_path, me2d, kmax, vmax)
+  info = f"mode=taylor ft={ft!r} rmax={R_max!r} n_rho={n_rho} n_theta={n_theta}"
+  save_keo_2d_s4s5_chk(keo2d_path, me2d, kmax, vmax, binary=binary, info=info)
   print(f"[{time.time() - t0:.2f}s] Wrote Taylor {keo2d_path} (kmax={kmax}, vmax={vmax})")
 
 
@@ -607,10 +631,13 @@ if __name__ == "__main__":
   parser.add_argument("--ft", type=float, default=0.2865833376039929)
   parser.add_argument("--rmax", type=float, default=2.45)
   parser.add_argument("--out-dir", type=str, default=".")
+  parser.add_argument("--binary", action="store_true",
+                      help="write keo_2d_s4s5.chk as a binary stream file instead of ASCII")
   args = parser.parse_args()
 
   os.makedirs(args.out_dir, exist_ok=True)
   if args.mode == "taylor":
-    generate_taylor_keo_2d_chk(args.out_dir, kmax=args.kmax, vmax=args.vmax, ft=args.ft, R_max=args.rmax)
+    generate_taylor_keo_2d_chk(args.out_dir, kmax=args.kmax, vmax=args.vmax, ft=args.ft, R_max=args.rmax,
+                               binary=args.binary)
   else:
-    generate_exact_2d_keo(args.out_dir, vmax=args.vmax, ft=args.ft, R_max=args.rmax)
+    generate_exact_2d_keo(args.out_dir, vmax=args.vmax, ft=args.ft, R_max=args.rmax, binary=args.binary)
