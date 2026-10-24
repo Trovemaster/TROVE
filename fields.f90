@@ -693,6 +693,8 @@ module fields
    logical :: eof,zmat_defined,basis_defined,equil_defined,pot_defined,symmetry_defined,extF_defined,refer_defined,chk_defined
    logical :: kinetic_defined,pot_form_compact = .false.,extF_form_compact = .false.,ext_refer_defined = .false.
    logical :: krot_defined = .false.
+   logical :: control_defined   ! the checkpoints are defined via the CONTROL section (steps)
+   integer(ik) :: control_range(2) ! range of the expansion terms in CONTROL/EXTERNAL (used at step 5)
    character(len=cl) :: Molecule,pot_coeff_type,exfF_coeff_type,chk_type,controlstep
    character(len=wl) :: w,ioname,w_t
    real(rk)    :: lfact,f_t
@@ -764,6 +766,8 @@ module fields
    equil_defined = .false.
    refer_defined = .false.
    chk_defined = .false.
+   control_defined = .false.
+   controlstep = ''
    pot_defined   = .false.
    kinetic_defined = .false.
    extF_defined  = .false.
@@ -3406,6 +3410,7 @@ module fields
          endif
          !
          chk_defined = .true.
+         control_defined = .true.
          !
          do while (trim(w)/="".and.trim(w)/="END")
            !
@@ -3531,26 +3536,17 @@ module fields
              !
              call readu(w)
              !
+           case('KINETIC','KINET')
+             !
+             ! KINETIC, POTENTIAL, EXTERNAL WITH-MODES: kinetic.chk, potential.chk, external.chk are given in the
+             ! mode-indexed (with-modes) format. Their SAVE/READ actions for the current step are finalised after
+             ! the whole input has been read, see control_with_modes_checkpoints.
+             !
+             call read_control_options('KINETIC',trove%kinetic_with_modes)
+             !
            case('POTENTIAL','POTEN')
              !
-             if (nitems>=2) then
-               !
-               call readu(w)
-               !
-               select case(trim(w))
-               !
-               case('WITH-MODES','WITH_MODES')
-                 !
-                 trove%potential_with_modes = .true.
-                 !
-               case default 
-                 !
-                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CONTROL/POTEN'
-                 stop 'FLinput - illegal key CONTROL/POTEN'
-                 !
-               end select 
-               !
-             endif
+             call read_control_options('POTENTIAL',trove%potential_with_modes)
              !
            case('EXTERNAL','DIPOLE')
              ! 
@@ -3579,31 +3575,16 @@ module fields
                job%IOextF_divide = .true.
                job%IOfitpot_divide = .true.
                !
-               if (Nitems>2) then
-                  call readi(fitting%iparam(1))
-                  call readi(fitting%iparam(2))
-               endif
-               !
              end select
              !
-             if (nitems>=2) then
-               !
-               call readu(w)
-               !
-               select case(trim(w))
-               !
-               case('WITH-MODES','WITH_MODES')
-                 !
-                 trove%extF_with_modes = .true.
-                 !
-               case default 
-                 !
-                 write (out,"('FLinput: illegal key ',a,' in section ',a)") trim(w),'CONTROL/EXTERNAL'
-                 stop 'FLinput - illegal key CONTROL/EXTERNAL'
-                 !
-               end select 
-               !
-             endif
+             ! Optional entries in any order: the range of the expansion terms (only used at step 5,
+             ! e.g. "external 3 60") and WITH-MODES
+             !
+             control_range = fitting%iparam
+             !
+             call read_control_options('EXTERNAL',trove%extF_with_modes,control_range)
+             !
+             if (trim(controlstep)=="5") fitting%iparam = control_range
              !
            case('JROT','J')
              !
@@ -5479,6 +5460,12 @@ module fields
       !
    enddo
    !
+   ! CONTROL: make the SAVE/READ actions defined by the step consistent with the with-modes objects.
+   ! This is done here, once the whole input has been processed, because the with-modes attributes can
+   ! also be set in other sections (BASIC-FUNCTION, CHECK_POINT), which can appear before or after CONTROL.
+   !
+   if (control_defined) call control_with_modes_checkpoints
+   !
    ! For the compact form of the pre-defined KEO, the "READ" option is not supported. It must be
    ! always re-computed 
    if (trove%kinetic_compact) then
@@ -5504,6 +5491,108 @@ module fields
    if (job%verbose>=4) write(out,"('FLReadInput/end')")  
    !
    contains
+   !
+   ! Optional entries of the KINETIC, POTENTIAL and EXTERNAL cards of the CONTROL section, in any order:
+   !   WITH-MODES - the checkpoint file of this object (kinetic.chk, potential.chk or external.chk) is
+   !                mode-indexed, i.e. lists the powers of all modes for each expansion term;
+   !   integers   - only if irange is present (EXTERNAL): the range of the expansion terms (used at step 5).
+   !
+   subroutine read_control_options(card,with_modes,irange)
+     !
+     character(len=*),intent(in)        :: card
+     logical,intent(inout)              :: with_modes
+     integer(ik),intent(inout),optional :: irange(2)
+     !
+     character(len=wl) :: key
+     integer(ik)       :: ivalue,nvalues
+     integer           :: info
+     !
+     nvalues = 0
+     !
+     do while (item<nitems)
+       !
+       call readu(key)
+       !
+       select case(trim(key))
+       !
+       case('WITH-MODES','WITH_MODES')
+         !
+         with_modes = .true.
+         !
+       case default
+         !
+         info = -1
+         if (present(irange)) read(key,*,iostat=info) ivalue
+         !
+         if (info/=0) then
+           write (out,"('FLinput: illegal key ',a,' in section CONTROL/',a)") trim(key),trim(card)
+           stop 'FLinput - illegal key in CONTROL'
+         endif
+         !
+         nvalues = nvalues + 1
+         if (nvalues<=2) irange(nvalues) = ivalue
+         !
+       end select
+       !
+     enddo
+     !
+   end subroutine read_control_options
+   !
+   ! The CONTROL steps assume that KEO, PES and the external field are computed and saved at step 1 and read
+   ! at all the subsequent steps. This does not apply to the objects given with modes (WITH-MODES in CONTROL or
+   ! CHECK_POINT, or the corresponding BASIC-FUNCTION sections): their mode-indexed checkpoint files are input to
+   ! TROVE, which can read them but cannot produce them; SAVE would recompute the object from the input and
+   ! overwrite the file in the standard (not mode-indexed) format, which then cannot be used at the next steps.
+   ! These objects are therefore read (with the with-modes readers) at all steps, including step 1.
+   ! The built-in compact KEO (KINETIC COMPACT) is always recomputed and saved with modes, see below.
+   !
+   subroutine control_with_modes_checkpoints
+     !
+     if (trove%kinetic_with_modes.and..not.trove%kinetic_compact) then
+       call with_modes_to_read('KINETIC',trove%IO_kinetic,trove%chk_kinet_fname)
+     endif
+     !
+     if (trove%potential_with_modes) then
+       call with_modes_to_read('POTENTIAL',trove%IO_potential,trove%chk_poten_fname)
+     endif
+     !
+     ! The external field is only processed at the steps with the EXTERNAL card
+     !
+     if (trove%extF_with_modes.and.FLextF_coeffs) then
+       call with_modes_to_read('EXTERNAL',trove%IO_ext_coeff,trove%chk_external_fname)
+     endif
+     !
+   end subroutine control_with_modes_checkpoints
+   !
+   subroutine with_modes_to_read(object,io_action,fname)
+     !
+     character(len=*),intent(in)    :: object,fname
+     character(len=*),intent(inout) :: io_action
+     logical                        :: file_exists
+     !
+     if (trim(io_action)=='SAVE') then
+       !
+       io_action = 'READ'
+       !
+       write(out,"('CONTROL: ',a,' is given with modes (',a,'): SAVE is changed to READ')") trim(object),trim(fname)
+       !
+     endif
+     !
+     ! Unlike the standard checkpoints, a with-modes checkpoint is not created at step 1 and has to be supplied
+     !
+     if (trim(controlstep)=='1'.and.trim(io_action)=='READ') then
+       !
+       inquire(file=trim(fname),exist=file_exists)
+       !
+       if (.not.file_exists) then
+         write(out,"('CONTROL step 1: ',a,' is given with modes, but ',a,' does not exist;')") trim(object),trim(fname)
+         write(out,"('a with-modes checkpoint file is not generated by TROVE and must be provided')")
+         stop 'FLinput - CONTROL: the with-modes checkpoint file is missing'
+       endif
+       !
+     endif
+     !
+   end subroutine with_modes_to_read
    !
    subroutine print_symmetries
      integer(ik) :: igamma,iclass,ioper,ielem
