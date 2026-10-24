@@ -20769,7 +20769,7 @@ end subroutine check_read_save_none
            ! standard case of a non-singular pseudo-function
            !
            f1drho(0:npoints) = trove%poten%field(1,0:npoints)
-           p1drho = trove%pseudo%field(1,0:npoints)
+           p1drho(0:npoints) = trove%pseudo%field(1,0:npoints)
            !
            if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
                                  trim(bs%type)=='SINRHO-LEGENDRE-K1'.or.trim(bs%type)=='SINRHO-LEGENDRE-K'.or.&
@@ -20931,7 +20931,7 @@ end subroutine check_read_save_none
                         rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
                         f_t = f_t*rho_kin0
                      enddo
-                     g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                     g1drho(0:npoints) = g1drho(0:npoints) + f_t*fl%field(icoeff,0:npoints)
                      !
                    enddo
                    !
@@ -20949,7 +20949,7 @@ end subroutine check_read_save_none
                      rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
                      f_t = f_t*rho_kin0
                   enddo
-                  g1drho = g1drho + f_t*fl%field(icoeff,0:npoints)
+                  g1drho(0:npoints) = g1drho(0:npoints) + f_t*fl%field(icoeff,0:npoints)
                   !
                 enddo
                 !
@@ -21027,7 +21027,8 @@ end subroutine check_read_save_none
            
            case ('NUMEROV')
              !
-             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho,xi_n(:,0:maxpower,1:3),f1drho,g1drho,nu_i,&
+             call ME_numerov(bs%Size,maxpower,rho_b,isingular,npoints,numerpoints,drho(0:npoints,1:3),&
+                             xi_n(0:npoints,0:maxpower,1:3),f1drho(0:npoints),g1drho(0:npoints),nu_i,&
                              job%bset(nu_i)%iperiod,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
              !
              if (job%bset(nu_i)%iperiod/=0) then
@@ -21043,6 +21044,11 @@ end subroutine check_read_save_none
                allocate (func(0:bs%Size+1,0:npoints),dfunc(0:bs%Size+1,0:npoints),stat=alloc)
                call ArrayStart('numerov-bs_funct' ,alloc,size(func),kind(func))
                call ArrayStart('numerov-bs_funct' ,alloc,size(dfunc),kind(dfunc))
+               !
+               allocate (phil(0:trove%Npoints),dphil(0:trove%Npoints),phivphi(0:trove%Npoints),stat=alloc)
+               call ArrayStart('numerov-bs_funct' ,alloc,size(phil),kind(phil))
+               call ArrayStart('numerov-bs_funct' ,alloc,size(dphil),kind(dphil))
+               call ArrayStart('numerov-bs_funct' ,alloc,size(phivphi),kind(phivphi))
                !
                do vl = 0,bs%Size+1
                   !
@@ -21183,7 +21189,7 @@ end subroutine check_read_save_none
                npoints = trove%Npoints
                rho_b  = trove%rho_border
                !
-               deallocate(func,dfunc)
+               deallocate(func,dfunc,phil,dphil,phivphi)
                call ArrayStop('numerov-bs_funct')
                !
              endif 

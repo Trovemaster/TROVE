@@ -290,6 +290,8 @@ module me_numer
        !
        do vr = 0,vl-1
          !
+         if (iperiod/=0.and.mod(abs(vl-vr),2)==1) cycle
+         !
          phivphi(:) = psi(:,vl)*psi(:,vr)
          cross_prod = integral_rect_ark(npoints_,rho_b(2)-rho_b(1),phivphi)
          !
