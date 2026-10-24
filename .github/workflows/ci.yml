@@ -15,13 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-20.04 # Required for intel-mkl
+          - ubuntu-22.04 # intel-mkl from the Ubuntu archive (the ubuntu-20.04 runners have been retired)
         arch:
           - x64
         compiler:
           - gfortran
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       #- name: Cache benchmark data
         #uses: actions/cache@v2
@@ -32,13 +32,16 @@ jobs:
           #key: benchmark-data
 
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
           architecture: x64
 
       - name: Install Intel MKL
-        run: sudo apt-get install -y intel-mkl
+        run: |
+          sudo add-apt-repository -y multiverse
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-mkl
 
       - name: Install pipenv environment
         run: cd test && pip install pipenv && pipenv install
