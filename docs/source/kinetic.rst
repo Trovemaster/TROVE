@@ -8,7 +8,8 @@ KEO routes. The available kinetic energy operator (KEO) routes include:
 - **Linearised KEO**: Automatically constructed KEO using the Eckart frame (rigid) or Eckart/Saywitz frame (1D non-rigid) as a Taylor expansion in terms of linearised coordinates;
 - **Curvilinear KEO**: Preprogrammed analytic KEO (exact or non-exact) using curvilinear (valence) coordinates and different frames;
 - **External Numerical Taylor-type KEO**: Externally generated KEO as a Taylor-type numerical expansion in terms of any user-defined coordinates;
-- **External sum-of-products KEO**: Externally generated KEO as a generic sum-of-products expansion via the TROVE KEO builder.
+- **External sum-of-products KEO**: Externally generated KEO as a generic sum-of-products expansion via the TROVE KEO builder;
+- **External sum-of-products KEO with a 2D factor**: As above, but each term may contain one non-separable function of a pair of modes, whose matrix elements are read from a precomputed table (currently modes 4 and 5). See :doc:`spar_xy3` for the XY\ :sub:`3` (PH\ :sub:`3`) example with both the 1D-based and the 2D-based operators.
 
 
 Linearised KEO
@@ -597,6 +598,8 @@ Finally, the expansion basic functions now have to be specified in the kinetic p
 
 This will make sure that the correct expansion functions are used when computing KEO matrix elements.
 
+Coordinate transformations that return absolute values rather than displacements (for example ``R-SYMPHI-BETA`` for XY\ :sub:`3`) use the related types ``AUTO`` and, for a harmonic basis, ``AUTO-HARMON``; see :doc:`spar_input` and :doc:`spar_xy3`.
+
 
 For more on the basic functions with examples see below.
 
@@ -608,3 +611,4 @@ For more on the basic functions with examples see below.
 
 
    basic_functions_example.rst
+   spar_xy3.rst

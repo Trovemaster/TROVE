@@ -71,6 +71,14 @@ This is why ``R -1 1`` represents an inverse bond length in the tutorial.
 The separate ``AUTO`` expansion option evaluates the raw variable without
 that shift; these names are not interchangeable coordinate conventions.
 
+Use ``AUTO`` when the coordinate transformation itself returns absolute
+values rather than displacements, as ``R-SYMPHI-BETA`` does for the bond
+lengths and the umbrella angle (see :doc:`spar_xy3`). ``AUTO-HARMON``
+evaluates the functions in the same way and is used for modes with the
+``harmonic`` primitive basis. For such modes TROVE evaluates the KEO at the
+reference geometry, including the harmonic mode itself, to obtain the
+harmonic-oscillator parameters printed on the ``params`` line.
+
 Potential and external-property functions
 -----------------------------------------
 

@@ -9,7 +9,10 @@ functions (DMFs). The representation can be exact, approximate, or hybrid.
 
 The pages below describe the input reader in TROVE revision ``7831d55``
 (7 September 2026). Published examples and older inputs can use different
-constructor syntax; see :doc:`spar_input` before adapting them.
+constructor syntax; see :doc:`spar_input` before adapting them. The XY3
+page, :doc:`spar_xy3`, describes the ``R-SYMPHI-BETA`` coordinates and the
+two-dimensional KEO factors added on the ``xy3-exact-2d-keo`` branch
+(commit ``a3902fd``, 23 October 2026).
 
 .. toctree::
    :maxdepth: 2
@@ -17,6 +20,7 @@ constructor syntax; see :doc:`spar_input` before adapting them.
    spar_input
    spar_checkpoints
    basic_functions_example
+   spar_xy3
 
 From an operator to one-dimensional integrals
 ---------------------------------------------
@@ -51,6 +55,31 @@ Their placement and the associated pseudopotential must follow the chosen
 Hamiltonian convention; specifying a set of scalar functions alone does not
 define a KEO. TROVE stores separate vibrational, rotational, Coriolis, and
 pseudopotential contributions (see :doc:`spar_checkpoints`).
+
+One- and two-dimensional factors
+--------------------------------
+
+In Eq. :eq:`spar-sop` every factor depends on one coordinate. We call such
+an operator *1D-based*. In some coordinate systems a pair of coordinates
+enters the exact operator only through functions that do not factorise.
+The pair can then be Taylor-expanded, which keeps the 1D-based form, or it
+can be kept as a single two-dimensional factor:
+
+.. math::
+   :label: spar-sop-2d
+
+   F(q_1,\ldots,q_D)=\sum_{L} a_L\,
+      \Phi_{\ell_4(L)\ell_5(L)}(q_4,q_5)
+      \prod_{k\ne4,5} f^{(k)}_{\ell_k(L)}(q_k).
+
+We call this form *2D-based*. The matrix elements of :math:`\Phi` in the
+product basis of the two modes are no longer products of 1D integrals.
+They are computed outside TROVE and read from a table. The current
+implementation supports this for modes 4 and 5, which must form their own
+contracted class with a harmonic-oscillator basis. The table file is
+``keo_2d_s4s5.chk``. The KEO file keeps its column layout, but
+:math:`\ell_4,\ell_5` then label 2D functions instead of 1D functions. See
+:doc:`spar_xy3` for the XY3 operators that use both forms.
 
 Accuracy and convergence
 ------------------------
@@ -119,6 +148,8 @@ The methodological reference is [26SmMeYu]_. The associated
 The public `SPAR repository <https://github.com/Trovemaster/SPAR>`__ contains
 further examples and conversion tools. Record the repository commit when
 using them; the input conventions must be reconciled with the TROVE revision.
+The generators of the PH3 operators on :doc:`spar_xy3` are distributed with
+this manual and in ``inputs/PH3``.
 
 The constructor description in this manual was checked against ``FLReadInput``
 in ``fields.f90`` and the current HOPO input in ``inputs/HOPO``. The compact

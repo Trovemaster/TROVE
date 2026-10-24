@@ -89,6 +89,10 @@ See :doc:`checkpoints` for the other checkpoint objects and the staged
 TROVE workflow. Reusing wavefunctions or matrix elements requires compatible
 dimensions and conventions as well as compatible files.
 
+A ``BASIC-FUNCTION`` block (``KINETIC`` or ``MASS``) selects the mode-indexed
+reader by itself, so ``kinetic read`` is sufficient and ``with_modes`` is
+optional. The PH3 inputs of :doc:`spar_xy3` use ``kinetic read``.
+
 Do not retain ``KINETIC COMPACT`` when intending to read an external file:
 at this revision that option unconditionally changes ``KINETIC READ`` to
 ``SAVE`` for the built-in construction route. In the H2S round-trip test,
@@ -97,6 +101,56 @@ library is retained, and ``kinetic read with_modes`` is specified after
 the ``CONTROL`` block. The saved ``kinetic.chk`` is copied into the fresh
 run directory. This exercises the external reader instead of rebuilding
 the operator. See :doc:`basic_functions_example`.
+
+Two-dimensional KEO integrals
+-----------------------------
+
+A 2D-based KEO (Eq. :eq:`spar-sop-2d` of :doc:`spar`) needs a second file,
+``keo_2d_s4s5.chk``, with the integrals of its 2D functions over modes 4
+and 5. TROVE reads it whenever it exists in the working directory; there is
+no input keyword. The element
+``me2d(iop4, iop5, i4, i5, v4, v4', v5, v5')`` is the integral
+:math:`I^{(o_4o_5)}_{k_4k_5}(v_4v_4';v_5v_5')` defined on :doc:`spar_xy3`,
+with :math:`o_4=` ``iop4``, :math:`o_5=` ``iop5``, :math:`k_4=` ``i4`` and
+:math:`k_5=` ``i5``.
+``iop4`` and ``iop5`` (0--3) give the placement of the derivatives, ``i4`` and
+``i5`` are the labels of the 2D function used in columns ``l4`` and ``l5`` of
+``kinetic.chk``, and ``v4``, ``v4'``, ``v5``, ``v5'`` are harmonic-oscillator
+quantum numbers. Two formats are recognised from the first bytes of the
+file.
+
+The ASCII format, written by default, looks like this::
+
+   keo_2d_s4s5   2D (s4,s5) integrals of the KEO terms of modes 4 and 5
+        8     6     1382976   <- kmax, vmax, number of entries
+    mode=exact ft=0.2865833376039929 rmax=2.45 n_rho=80 n_theta=96 rank=63
+    iop4 iop5  i4  i5  v4 v4'  v5 v5'                   value
+       0    0   0   0   0   0   0   0   9.9999999999999356e-01
+   ...
+   End of keo_2d_s4s5
+
+The first line must start with ``keo_2d_s4s5``. The second gives
+:math:`k_{\max}`, :math:`v_{\max}` and the number :math:`N` of entries. The
+third line is free text; the generator records its parameters there. The
+fourth line is a column header. Then follow :math:`N` lines
+``iop4 iop5 i4 i5 v4 v4' v5 v5' value`` for the non-zero elements, and the
+line ``End of keo_2d_s4s5``. Missing elements are zero. Values with 17
+significant digits reproduce the double-precision numbers exactly. TROVE
+stops if an entry lies outside the ranges in the header or if ``End`` does
+not follow the :math:`N` entries.
+
+The binary format (``exact_2d_keo.py --binary``) is a stream file without
+record markers. It contains two 4-byte integers, :math:`k_{\max}` and
+:math:`v_{\max}`, followed by the 8-byte real array
+``me2d(0:3, 0:3, 0:kmax, 0:kmax, 0:vmax, 0:vmax, 0:vmax, 0:vmax)`` in Fortran
+order and native byte order.
+
+For PH3 with :math:`k_{\max}=8` and :math:`v_{\max}=6`, the ASCII file has
+1 382 976 entries (about 83 MB) and the binary file is 25 MB; TROVE gave the
+same energies with both. A ``kinetic.chk`` whose ``l4``, ``l5`` columns hold
+2D labels is meaningful only together with the ``keo_2d_s4s5.chk`` generated
+with it. The consistency checks performed by TROVE, and those left to the
+user, are listed on :doc:`spar_xy3`.
 
 Potential and dipole files
 --------------------------

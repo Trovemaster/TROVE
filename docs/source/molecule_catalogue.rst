@@ -3,7 +3,7 @@ Molecular models and example status
 
 A molecular formula does not uniquely specify a TROVE model. Coordinates,
 frame, kinetic representation, surface parameters, and basis settings must
-be considered together. This catalogue starts with three models that help
+be considered together. This catalogue starts with four models that help
 explain those choices; the broader historical coverage is in :doc:`molecules`.
 
 The entries below distinguish code/input inspection from numerical
@@ -82,6 +82,30 @@ uses ``POTEN_ZXY2_MORSE_COS``. These are different model specifications;
 sharing a formula and coordinate family does not make the surfaces
 interchangeable. Both remain reference inputs pending complete numerical
 validation and dependency packaging.
+
+Phosphine: PH3 with external SPAR KEOs
+--------------------------------------
+
+The :doc:`spar_xy3` page uses ``MOLTYPE XY3``, ``C3v(M)`` symmetry, the SPAR
+coordinates ``R-SYMPHI-BETA`` :math:`(r_1,r_2,r_3,s_4,s_5,\beta)`, and a
+rigid reference configuration. The nuclear mass order is P, H, H, H. The
+KEO is not built in; it is generated outside TROVE in two forms: a
+1D-based operator (Taylor expansion of order 4 in :math:`(s_4,s_5)`, exact in
+the bond lengths and :math:`\beta`) and a 2D-based operator (exact in
+:math:`(s_4,s_5)`, with 2D integrals read from ``keo_2d_s4s5.chk``). Both
+``kinetic.chk`` files use the mass-factorised ``BASIC-FUNCTION MASS``
+format. The potential is ``poten_xy3_morbid_10`` with the parameters
+given in the inputs.
+
+The downloadable 1D-based inputs are at polyad 14; polyad-6 examples for
+both the 1D-based (``inputs/PH3/1D_SPAR``, :math:`N=8`) and 2D-based
+(``inputs/PH3/2D_exact``) routes are also in ``inputs/PH3``. Numerical
+status: J = 0--4 energies and
+symmetry labels of the 1D-based model were compared with a calculation
+using the built-in linearised KEO; J = 0 and 1 were computed with the
+2D-based model at polyads 6 and 14. Intensities have not been validated.
+The code is in ``mol_xy3.f90`` (coordinates and symmetry) and
+``perturbation.f90`` (2D integration).
 
 Adding another entry
 --------------------
