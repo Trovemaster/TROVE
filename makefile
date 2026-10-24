@@ -78,7 +78,7 @@ SRCDIR=.
 OBJDIR=.
 user_pot_dir=.
 
-SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 kin_x2y2.f90 lapack.f90 \
+SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigxjpf.f90 input.f90 kin_xy2.f90 kin_x2y2.f90 kin_zxy2.f90 kin_abcd.f90 lapack.f90 \
 	me_bnd.f90 me_numer.f90 me_rot.f90 me_str.f90 \
 	mol_abcd.f90 mol_c2h4.f90 mol_c2h6.f90 mol_c3h6.f90 mol_ch3oh.f90 mol_xy.f90 \
 	mol_xy2.f90 mol_xy3.f90 mol_xy4.f90 mol_zxy2.f90 mol_zxy3.f90 mol_x2y2.f90 \
@@ -150,6 +150,8 @@ grid.o: grid.f90 accuracy.o fields.o splines.o iso_c_binding.o iso_c_binding.o
 input.o: input.f90 
 kin_xy2.o: kin_xy2.f90 accuracy.o moltype.o
 kin_x2y2.o: kin_x2y2.f90 accuracy.o moltype.o
+kin_zxy2.o: kin_zxy2.f90 accuracy.o moltype.o timer.o
+kin_abcd.o: kin_abcd.f90 accuracy.o moltype.o timer.o
 lapack.o: lapack.f90 accuracy.o timer.o
 ltp2011_water_dipole_surface.o: ltp2011_water_dipole_surface.f90 
 me_bnd.o: me_bnd.f90 accuracy.o me_numer.o molecules.o timer.o lapack.o moltype.o
@@ -162,8 +164,8 @@ mol_c2h6.o: mol_c2h6.f90 accuracy.o moltype.o
 mol_c3h6.o: mol_c3h6.f90 accuracy.o moltype.o
 mol_ch3oh.o: mol_ch3oh.f90 accuracy.o moltype.o lapack.o pot_ch3oh.o
 mol_ch4.o: mol_ch4.f90 accuracy.o moltype.o lapack.o symmetry.o
-molecules.o: molecules.f90 accuracy.o lapack.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o mol_x2y2.o pot_xy2.o pot_xy3.o pot_abcd.o pot_zxy2.o pot_zxy3.o pot_xy4.o pot_ch3oh.o pot_c2h4.o pot_c2h6.o pot_c3h6.o pot_x2y2.o prop_xy2.o prop_xy2_quad.o prop_xy2_spinrot.o prop_xy2_spinspin.o kin_xy2.o kin_x2y2.o  symmetry.o $(pot_user).o
-moltype.o: moltype.f90 accuracy.o lapack.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o accuracy.o
+molecules.o: molecules.f90 accuracy.o lapack.o moltype.o mol_xy.o mol_xy2.o mol_xy3.o mol_xy4.o mol_zxy2.o mol_zxy3.o mol_ch3oh.o mol_abcd.o mol_c2h4.o mol_c2h6.o mol_c3h6.o mol_x2y2.o pot_xy2.o pot_xy3.o pot_abcd.o pot_zxy2.o pot_zxy3.o pot_xy4.o pot_ch3oh.o pot_c2h4.o pot_c2h6.o pot_c3h6.o pot_x2y2.o prop_xy2.o prop_xy2_quad.o prop_xy2_spinrot.o prop_xy2_spinspin.o kin_xy2.o kin_x2y2.o kin_zxy2.o kin_abcd.o  symmetry.o $(pot_user).o
+moltype.o: moltype.f90 accuracy.o lapack.o input.o
 mol_user.o: mol_user.f90 accuracy.o moltype.o lapack.o symmetry.o
 mol_xy2.o: mol_xy2.f90 accuracy.o moltype.o symmetry.o
 mol_xy3.o: mol_xy3.f90 accuracy.o moltype.o lapack.o
@@ -171,7 +173,7 @@ mol_xy4.o: mol_xy4.f90 accuracy.o moltype.o lapack.o symmetry.o pot_xy4.o
 mol_xy.o: mol_xy.f90 accuracy.o moltype.o
 mol_zxy2.o: mol_zxy2.f90 accuracy.o moltype.o
 mol_zxy3.o: mol_zxy3.f90 accuracy.o moltype.o lapack.o
-mol_x2y2.o: mol_x2y2.f90 accuracy.o moltype.o lapack.o
+mol_x2y2.o: mol_x2y2.f90 accuracy.o moltype.o lapack.o pot_abcd.o symmetry.o
 perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasma.o fields.o timer.o symmetry.o me_numer.o diag.o
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
