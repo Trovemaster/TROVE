@@ -699,9 +699,9 @@ module fields
    real(ark)   :: func_coef
    integer(ik) :: i,iatom,imode,jmode,ifunc,jfunc,iexpo,numterms,numfunc,in_expo,out_expo,Nexpo,Nexpo_min,kmax
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords,natoms,alloc,Nparam,iparam,i_t,i_tt
-   character(len=4) :: char_j, func_name
+   character(len=4) :: char_j
    character(len=3) :: basic_type
-   character(len=cl) :: func_name_pot
+   character(len=cl) :: func_name, func_name_pot
    integer :: arg_status, arg_length, arg_unit
    character(:), allocatable :: arg
    type(ragged_array_lvl_2),pointer :: basic_func
@@ -2313,6 +2313,9 @@ module fields
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
                      case("SEC")
                        molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_sec
+                     case("DELTA_XY3","SYMPHI_DELTA","DELTA_S4S5","DLXY")
+                       molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_delta_xy3
+                       molec%basic_2d_s4s5 = .true.
                      case default 
                        write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
                        stop 'read_basic_function_constructor-error: unkown basic function'
@@ -15161,7 +15164,7 @@ end subroutine check_read_save_none
                isize = job%bset(imode)%range(2)
                !
                if(molec%mode_list_present) then
-                  maxpower = molec%basic_function_list(imode)%numfunc
+                  maxpower = maxval(molec%basic_function_list(bs%mode(1:bs%imodes))%numfunc)
                else 
                   maxpower = trove%NKinorder
                endif
@@ -15193,6 +15196,7 @@ end subroutine check_read_save_none
                bs%matelements(-1:3,0:maxpower,0:isize,0:isize) = matelements_t(-1:3,0:maxpower,0:isize,0:isize)
                bs%params(1:3) = b_param_t(1:3)
                bs%ener0(0:isize) = ener0_t(0:isize)
+               trove%coord_f(bs%mode(1:bs%imodes)) = b_param_t(1)
                !
              endif
              !
@@ -20203,7 +20207,7 @@ end subroutine check_read_save_none
     ! and optmise them using the basi-cfunction construct if used
     !
     if(molec%mode_list_present) then
-       maxpower = molec%basic_function_list(nu_i)%numfunc
+       maxpower = maxval(molec%basic_function_list(bs%mode(1:bs%imodes))%numfunc)
     else 
        maxpower = trove%NKinorder
     endif
@@ -30126,6 +30130,14 @@ end subroutine check_read_save_none
     real(ark), intent(inout) :: y
     y = 1.0_ark
   end subroutine  calc_func_1  
+
+  subroutine calc_func_delta_xy3(x, y)
+    real(ark), intent(in) :: x
+    real(ark), intent(inout) :: y
+    ! 1D symmetric slice (s4 = 0, s5 = x) of the XY3 trisector projection Jacobian
+    ! Delta(s4,s5) = sin(phi3-phi2) + sin(phi1-phi3) + sin(phi2-phi1); at x=0, Delta(0,0) = 3*sqrt(3)/2.
+    y = 0.5_ark*sqrt(3.0_ark)*(1.0_ark + 2.0_ark*cos(x/sqrt(2.0_ark)))
+  end subroutine calc_func_delta_xy3
 
   subroutine calc_func_x_minus_xe(x,x0,n,imode,y) 
     real(ark), intent(in) :: x,x0

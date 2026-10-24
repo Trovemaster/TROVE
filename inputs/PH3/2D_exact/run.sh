@@ -10,7 +10,6 @@ if [ -z "$EXE" ]; then
   if [ -x "$HERE/../../../j-trove.x" ]; then EXE="$HERE/../../../j-trove.x"; else EXE=j-trove.x; fi
 fi
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-8}
-[ -f keo_2d_s4s5.chk ] || xz -dk keo_2d_s4s5.chk.xz
 for inp in PH3_P6_J0 PH3_P6_J1; do
   echo "running $inp"
   "$EXE" < $inp.inp > $inp.out

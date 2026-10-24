@@ -13,7 +13,7 @@ module moltype
   public MLtemplate_poten,MLtemplate_potential,MLtemplate_coord_transform,MLtemplate_b0,MLtemplate_extF,MLtemplate_kinetic
   public MLtemplate_kinetic_compact
   public MLtemplate_symmetry_transformation,MLtemplate_rotsymmetry,ML_rjacobi_fit_ark,ML_splint,ML_splint_quint,ML_spline
-  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor,ragged_array_lvl_2
+  public MLorienting_a0_across_dadrho,manifold,read_basic_function_constructor,ragged_array_lvl_2,eval_basic_func_2d_s4s5
          !
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
 
@@ -212,6 +212,7 @@ module moltype
      logical  :: mode_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      logical  :: mode_poten_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
      logical  :: mode_extF_list_present = .false.          ! Whether the kinetic file has the list of modes for expansion term   
+     logical  :: basic_2d_s4s5 = .false.              ! Whether 2D (s4,s5) basic functions (e.g. DELTA_XY3) are present
      !
   end type MoleculeT
   !
@@ -2790,7 +2791,7 @@ module moltype
     logical :: eof
     character(len=wl) :: ioname,w
     integer(ik)       :: ic,imode,ifunc,numfunc,numterms,out_expo,in_expo
-    character(len=4)  :: func_name
+    character(len=cl) :: func_name
     real(rk)          :: func_coef
     !
     ! only needed if basic_function_list has not been defined and allocated yet 
@@ -2861,6 +2862,9 @@ module moltype
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_cot
              case("CSC_")
                molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_csc
+             case("DELTA_XY3","SYMPHI_DELTA","DELTA_S4S5","DLXY")
+               molec%basic_function_list(imode)%mode_set(ifunc)%func_set(j)%func_pointer=> calc_func_delta_xy3
+               molec%basic_2d_s4s5 = .true.
              case default
                write(out,"('read_basic_function_constructor-error: unkown basic function',a)") func_name
                stop 'read_basic_function_constructor-error: unkown basic function'
@@ -2944,6 +2948,57 @@ module moltype
     !type(basic_function), intent(in) :: obj
     y = 1.0_ark !(obj%coeff*(x**obj%inner_expon))**obj%outer_expon
   end subroutine  calc_func_1  
+
+  subroutine calc_func_delta_xy3(x, y)
+    real(ark), intent(in) :: x
+    real(ark), intent(inout) :: y
+    ! 1D symmetric slice (s4 = 0, s5 = x) of the XY3 trisector projection Jacobian
+    ! Delta(s4,s5) = sin(phi3-phi2) + sin(phi1-phi3) + sin(phi2-phi1); at x=0, Delta(0,0) = 3*sqrt(3)/2.
+    y = 0.5_ark*sqrt(3.0_ark)*(1.0_ark + 2.0_ark*cos(x/sqrt(2.0_ark)))
+  end subroutine calc_func_delta_xy3
+
+  function eval_basic_func_2d_s4s5(imode, iorder, s4, s5) result(v)
+    integer(ik), intent(in) :: imode, iorder
+    real(ark), intent(in)   :: s4, s5
+    real(ark)               :: v
+    integer(ik)             :: i
+    real(ark)               :: x, y, z, delta_val, twopi3, a4, a5
+    !
+    v = 1.0_ark
+    if (iorder <= 0) return
+    if (.not.allocated(molec%basic_function_list)) then
+      v = 0.0_ark
+      return
+    endif
+    if (iorder > size(molec%basic_function_list(imode)%mode_set(:))) then
+      v = 0.0_ark
+      return
+    endif
+    !
+    if (imode == 4) then
+      x = s4
+    else
+      x = s5
+    endif
+    !
+    twopi3 = 2.0_ark*pi/3.0_ark
+    a4 = 1.0_ark/sqrt(6.0_ark)
+    a5 = 1.0_ark/sqrt(2.0_ark)
+    delta_val = sin(twopi3 + 2.0_ark*a4*s4) + 2.0_ark*sin(twopi3 - a4*s4)*cos(a5*s5)
+    !
+    do i = 1, molec%basic_function_list(imode)%mode_set(iorder)%num_terms
+      select case (trim(molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%name))
+      case ("DELTA_XY3","SYMPHI_DELTA","DELTA_S4S5","DLXY")
+        y = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff * &
+            (delta_val**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon)
+      case default
+        z = molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%coeff * &
+            (x**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%inner_expon)
+        call molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%func_pointer(z, y)
+      end select
+      v = v * (y**molec%basic_function_list(imode)%mode_set(iorder)%func_set(i)%outer_expon)
+    enddo
+  end function eval_basic_func_2d_s4s5
 
   !
 end module moltype

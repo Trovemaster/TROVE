@@ -5,7 +5,7 @@
 module perturbation 
   use accuracy
   use molecules, only : MOrepres_arkT,MLsymmetry_transform_func,polintark,MLrotsymmetry_func,MLrotsymmetry_generate
-  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark,molec
+  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark,molec,eval_basic_func_2d_s4s5
   use lapack
   !use plasma
   use fields
@@ -25747,25 +25747,32 @@ end subroutine read_contr_matelem_expansion_classN
     integer(ik) :: iop4,iop5,i4,i5,v4,v4_,v5,v5_
     integer(hik) :: nentries,ientry
     real(rk) :: f
-    logical :: ascii
+    logical :: ascii,file_exists
     character(len=11) :: keyword
     character(len=cl) :: line
       !
-      inquire(file='keo_2d_s4s5.chk',exist=me2d_s4s5_active)
+      inquire(file='keo_2d_s4s5.chk',exist=file_exists)
+      !
+      me2d_s4s5_active = (file_exists.or.molec%basic_2d_s4s5)
       !
       if (.not.me2d_s4s5_active) return
       !
       if (PT%Nmodes<5) then
-        write(out,"(/'PTread_me2d_s4s5: keo_2d_s4s5.chk requires at least 5 modes, Nmodes = ',i4)") PT%Nmodes
-        stop 'PTread_me2d_s4s5: keo_2d_s4s5.chk requires at least 5 modes'
+        write(out,"(/'PTread_me2d_s4s5: 2D (s4,s5) KEO requires at least 5 modes, Nmodes = ',i4)") PT%Nmodes
+        stop 'PTread_me2d_s4s5: 2D (s4,s5) KEO requires at least 5 modes'
       endif
       !
       ! Modes 4 and 5 must form a separate contracted class
       !
       iclass = job%bset(4)%class
       if (job%bset(5)%class/=iclass.or.count(job%bset(1:PT%Nmodes)%class==iclass)/=2) then
-        write(out,"(/'PTread_me2d_s4s5: modes 4 and 5 must form a separate class to use keo_2d_s4s5.chk')")
+        write(out,"(/'PTread_me2d_s4s5: modes 4 and 5 must form a separate class to use 2D (s4,s5) KEO')")
         stop 'PTread_me2d_s4s5: modes 4 and 5 must form a separate class'
+      endif
+      !
+      if (.not.file_exists.and.molec%basic_2d_s4s5) then
+        call PTcompute_me2d_s4s5
+        return
       endif
       !
       open(newunit=iunit,file='keo_2d_s4s5.chk',status='old',access='stream',form='unformatted',action='read',iostat=info)
@@ -25890,6 +25897,275 @@ end subroutine read_contr_matelem_expansion_classN
       endif
       !
   end subroutine PTread_me2d_s4s5
+
+  !
+  ! Compute the exact 2D (s4,s5) KEO matrix elements me2d_s4s5(iop4,iop5,k4,k5,v4,v4',v5,v5')
+  ! directly in memory from the BASIC-FUNCTION definitions of modes 4 and 5 using a C3v(M)-invariant
+  ! 2D polar Gauss-Legendre x Fourier quadrature grid.
+  !
+  subroutine PTcompute_me2d_s4s5
+    !
+    integer(ik), parameter :: n_rho = 80_ik, n_theta = 96_ik
+    real(ark),   parameter :: R_max = 2.45_ark
+    integer(ik) :: nquad,alloc,kmax4,kmax5,vmax,k1,k2,ir,itheta,q,v,i4,i5,v4,v4_,v5,v5_,v4_max,v5_max,ipair,iop,iterm,npairs
+    integer(ik) :: op_pairs(2,6)
+    integer(ik) :: iop4,iop5,id4,id5
+    real(ark)   :: ft4,ft5,w_theta,theta,xi,pi4,p1,p2,p3,exp_fac,rv,rvm1
+    real(rk)    :: val
+    real(ark), allocatable :: rho_pts(:),w_rho(:),s4_grid(:),s5_grid(:),sw_grid(:)
+    real(ark), allocatable :: psi4(:,:),dpsi4(:,:),psi5(:,:),dpsi5(:,:)
+    real(ark), allocatable :: f4_grid(:,:),f5_grid(:,:)
+    real(rk),  allocatable :: D4(:,:,:,:),D5(:,:,:,:),F_pair(:,:),tmp_q(:),cmat(:,:,:,:)
+    logical,   allocatable :: pair_active(:,:)
+    integer(ik), allocatable :: pair_i4(:),pair_i5(:)
+      !
+      vmax = max(job%bset(4)%range(2),job%bset(5)%range(2))
+      !
+      kmax4 = 0
+      kmax5 = 0
+      if (molec%mode_list_present) then
+        kmax4 = molec%basic_function_list(4)%numfunc
+        kmax5 = molec%basic_function_list(5)%numfunc
+      endif
+      !
+      do k1 = 1,PT%Nmodes
+        do k2 = 1,PT%Nmodes
+          if (me%gvib(k1,k2)%Ncoeff>0) then
+            kmax4 = max(kmax4,maxval(me%gvib(k1,k2)%IndexQ(4,:)))
+            kmax5 = max(kmax5,maxval(me%gvib(k1,k2)%IndexQ(5,:)))
+          endif
+        enddo
+        do k2 = 1,3
+          if (me%gcor(k1,k2)%Ncoeff>0) then
+            kmax4 = max(kmax4,maxval(me%gcor(k1,k2)%IndexQ(4,:)))
+            kmax5 = max(kmax5,maxval(me%gcor(k1,k2)%IndexQ(5,:)))
+          endif
+        enddo
+      enddo
+      !
+      do k1 = 1,3
+        do k2 = 1,3
+          if (me%grot(k1,k2)%Ncoeff>0) then
+            kmax4 = max(kmax4,maxval(me%grot(k1,k2)%IndexQ(4,:)))
+            kmax5 = max(kmax5,maxval(me%grot(k1,k2)%IndexQ(5,:)))
+          endif
+        enddo
+      enddo
+      !
+      allocate(pair_active(0:kmax4,0:kmax5),stat=alloc)
+      pair_active = .false.
+      pair_active(0,0) = .true.
+      do k1 = 1,PT%Nmodes
+        do k2 = 1,PT%Nmodes
+          do iterm = 1,me%gvib(k1,k2)%Ncoeff
+            pair_active(me%gvib(k1,k2)%IndexQ(4,iterm),me%gvib(k1,k2)%IndexQ(5,iterm)) = .true.
+          enddo
+        enddo
+        do k2 = 1,3
+          do iterm = 1,me%gcor(k1,k2)%Ncoeff
+            pair_active(me%gcor(k1,k2)%IndexQ(4,iterm),me%gcor(k1,k2)%IndexQ(5,iterm)) = .true.
+          enddo
+        enddo
+      enddo
+      do k1 = 1,3
+        do k2 = 1,3
+          do iterm = 1,me%grot(k1,k2)%Ncoeff
+            pair_active(me%grot(k1,k2)%IndexQ(4,iterm),me%grot(k1,k2)%IndexQ(5,iterm)) = .true.
+          enddo
+        enddo
+      enddo
+      npairs = count(pair_active)
+      allocate(pair_i4(npairs),pair_i5(npairs),stat=alloc)
+      ipair = 0
+      do i5 = 0,kmax5
+        do i4 = 0,kmax4
+          if (pair_active(i4,i5)) then
+            ipair = ipair + 1
+            pair_i4(ipair) = i4
+            pair_i5(ipair) = i5
+          endif
+        enddo
+      enddo
+      !
+      ft4 = bset%bs1D(job%bset(4)%species)%params(1)
+      ft5 = bset%bs1D(job%bset(5)%species)%params(1)
+      if (ft4<=small_) ft4 = trove%coord_f(4)
+      if (ft5<=small_) ft5 = trove%coord_f(5)
+      !
+      if (ft4<=small_.or.ft5<=small_) then
+        write(out,"(/'PTcompute_me2d_s4s5: invalid harmonic scaling parameter ft4, ft5 = ',2g16.8)") ft4,ft5
+        stop 'PTcompute_me2d_s4s5: invalid harmonic scaling parameter ft'
+      endif
+      !
+      if (allocated(me2d_s4s5)) deallocate(me2d_s4s5)
+      allocate(me2d_s4s5(0:3,0:3,0:kmax4,0:kmax5,0:vmax,0:vmax,0:vmax,0:vmax),stat=alloc)
+      call ArrayStart('me2d_s4s5',alloc,size(me2d_s4s5),kind(me2d_s4s5))
+      me2d_s4s5 = 0.0_rk
+      !
+      nquad = n_rho*n_theta
+      allocate(rho_pts(n_rho),w_rho(n_rho),s4_grid(nquad),s5_grid(nquad),sw_grid(nquad),stat=alloc)
+      allocate(psi4(0:vmax,nquad),dpsi4(0:vmax,nquad),psi5(0:vmax,nquad),dpsi5(0:vmax,nquad),stat=alloc)
+      allocate(f4_grid(nquad,0:kmax4),f5_grid(nquad,0:kmax5),F_pair(nquad,npairs),stat=alloc)
+      allocate(D4(nquad,0:vmax,0:vmax,3),D5(nquad,0:vmax,0:vmax,3),stat=alloc)
+      !
+      call gaulegf(0.0_ark,R_max,rho_pts,w_rho,n_rho)
+      w_theta = 2.0_ark*pi/real(n_theta,ark)
+      !
+      q = 0
+      do ir = 1,n_rho
+        do itheta = 1,n_theta
+          q = q + 1
+          theta = w_theta*real(itheta-1,ark)
+          s4_grid(q) = rho_pts(ir)*cos(theta)
+          s5_grid(q) = rho_pts(ir)*sin(theta)
+          sw_grid(q) = sqrt(w_rho(ir)*rho_pts(ir)*w_theta)
+        enddo
+      enddo
+      !
+      ! Evaluate 1D harmonic oscillator basis functions and derivatives on the 2D grid
+      !
+      pi4 = 1.0_ark/sqrt(sqrt(pi))
+      do q = 1,nquad
+        ! Mode 4
+        xi = s4_grid(q)/ft4
+        p1 = pi4/sqrt(ft4)
+        p2 = 0.0_ark
+        psi4(0,q)  = p1
+        dpsi4(0,q) = 0.0_ark
+        do v = 1,vmax
+          rv   = real(v,ark)
+          rvm1 = real(v-1,ark)
+          p3 = p2
+          p2 = p1
+          p1 = xi*sqrt(2.0_ark/rv)*p2 - sqrt(rvm1/rv)*p3
+          psi4(v,q)  = p1
+          dpsi4(v,q) = p2*sqrt(2.0_ark*rv)/ft4
+        enddo
+        exp_fac = exp(-0.5_ark*xi*xi)
+        psi4(:,q)  = exp_fac*psi4(:,q)
+        dpsi4(:,q) = exp_fac*dpsi4(:,q) - (s4_grid(q)/(ft4*ft4))*psi4(:,q)
+        !
+        ! Mode 5
+        xi = s5_grid(q)/ft5
+        p1 = pi4/sqrt(ft5)
+        p2 = 0.0_ark
+        psi5(0,q)  = p1
+        dpsi5(0,q) = 0.0_ark
+        do v = 1,vmax
+          rv   = real(v,ark)
+          rvm1 = real(v-1,ark)
+          p3 = p2
+          p2 = p1
+          p1 = xi*sqrt(2.0_ark/rv)*p2 - sqrt(rvm1/rv)*p3
+          psi5(v,q)  = p1
+          dpsi5(v,q) = p2*sqrt(2.0_ark*rv)/ft5
+        enddo
+        exp_fac = exp(-0.5_ark*xi*xi)
+        psi5(:,q)  = exp_fac*psi5(:,q)
+        dpsi5(:,q) = exp_fac*dpsi5(:,q) - (s5_grid(q)/(ft5*ft5))*psi5(:,q)
+      enddo
+      !
+      ! Build operator densities for id=1 (iop=0: psi*psi), id=2 (iop=1: psi*dpsi), id=3 (iop=3: -dpsi*dpsi)
+      !
+      do v4_ = 0,vmax
+        do v4 = 0,vmax
+          D4(:,v4,v4_,1) = real( psi4(v4,:)*psi4(v4_,:),rk)
+          D4(:,v4,v4_,2) = real( psi4(v4,:)*dpsi4(v4_,:),rk)
+          D4(:,v4,v4_,3) = real(-dpsi4(v4,:)*dpsi4(v4_,:),rk)
+          D5(:,v4,v4_,1) = real( psi5(v4,:)*psi5(v4_,:),rk)
+          D5(:,v4,v4_,2) = real( psi5(v4,:)*dpsi5(v4_,:),rk)
+          D5(:,v4,v4_,3) = real(-dpsi5(v4,:)*dpsi5(v4_,:),rk)
+        enddo
+      enddo
+      !
+      ! Evaluate Mode 4 and Mode 5 basic functions on the 2D grid (multiplied by sqrt(w_q))
+      !
+      do i4 = 0,kmax4
+        do q = 1,nquad
+          f4_grid(q,i4) = sw_grid(q)*eval_basic_func_2d_s4s5(4_ik,i4,s4_grid(q),s5_grid(q))
+        enddo
+      enddo
+      !
+      do i5 = 0,kmax5
+        do q = 1,nquad
+          f5_grid(q,i5) = sw_grid(q)*eval_basic_func_2d_s4s5(5_ik,i5,s4_grid(q),s5_grid(q))
+        enddo
+      enddo
+      !
+      do ipair = 1,npairs
+        i4 = pair_i4(ipair)
+        i5 = pair_i5(ipair)
+        F_pair(:,ipair) = real(f4_grid(:,i4)*f5_grid(:,i5),rk)
+      enddo
+      !
+      ! 6 independent operator pairs (iop4,iop5): (0,0), (1,0), (0,1), (3,0), (0,3), (1,1)
+      !
+      op_pairs(:,1) = (/0_ik, 0_ik/)
+      op_pairs(:,2) = (/1_ik, 0_ik/)
+      op_pairs(:,3) = (/0_ik, 1_ik/)
+      op_pairs(:,4) = (/3_ik, 0_ik/)
+      op_pairs(:,5) = (/0_ik, 3_ik/)
+      op_pairs(:,6) = (/1_ik, 1_ik/)
+      !
+      allocate(tmp_q(nquad),cmat(0:vmax,0:vmax,0:vmax,0:vmax),stat=alloc)
+      !
+      do iop = 1,6
+        iop4 = op_pairs(1,iop)
+        iop5 = op_pairs(2,iop)
+        id4 = 1_ik ; if (iop4==1) id4 = 2_ik ; if (iop4==3) id4 = 3_ik
+        id5 = 1_ik ; if (iop5==1) id5 = 2_ik ; if (iop5==3) id5 = 3_ik
+        !
+        !$omp parallel do private(ipair,i4,i5,v5_,v5,v5_max,v4_,v4,v4_max,tmp_q,val,cmat) schedule(dynamic)
+        do ipair = 1,npairs
+          i4 = pair_i4(ipair)
+          i5 = pair_i5(ipair)
+          do v5_ = 0,vmax
+            v5_max = vmax ; if (id5/=2_ik) v5_max = v5_
+            do v5 = 0,v5_max
+              tmp_q(:) = F_pair(:,ipair)*D5(:,v5,v5_,id5)
+              do v4_ = 0,vmax
+                v4_max = vmax ; if (id4/=2_ik) v4_max = v4_
+                do v4 = 0,v4_max
+                  val = sum(tmp_q(:)*D4(:,v4,v4_,id4))
+                  cmat(v4,v4_,v5,v5_) = val
+                  if (id4/=2_ik .and. v4/=v4_) cmat(v4_,v4,v5,v5_) = val
+                enddo
+              enddo
+              if (id5/=2_ik .and. v5/=v5_) then
+                cmat(:,:,v5_,v5) = cmat(:,:,v5,v5_)
+              endif
+            enddo
+          enddo
+          !
+          do v5_ = 0,vmax
+            do v5 = 0,vmax
+              do v4_ = 0,vmax
+                do v4 = 0,vmax
+                  me2d_s4s5(iop4,iop5,i4,i5,v4,v4_,v5,v5_) = cmat(v4,v4_,v5,v5_)
+                  if (iop4==1.and.iop5==0) then
+                    me2d_s4s5(2,0,i4,i5,v4,v4_,v5,v5_) = -cmat(v4_,v4,v5,v5_)
+                  elseif (iop4==0.and.iop5==1) then
+                    me2d_s4s5(0,2,i4,i5,v4,v4_,v5,v5_) = -cmat(v4,v4_,v5_,v5)
+                  elseif (iop4==1.and.iop5==1) then
+                    me2d_s4s5(1,2,i4,i5,v4,v4_,v5,v5_) = -cmat(v4,v4_,v5_,v5)
+                    me2d_s4s5(2,1,i4,i5,v4,v4_,v5,v5_) = -cmat(v4_,v4,v5,v5_)
+                    me2d_s4s5(2,2,i4,i5,v4,v4_,v5,v5_) =  cmat(v4_,v4,v5_,v5)
+                  endif
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+        !$omp end parallel do
+      enddo
+      !
+      deallocate(rho_pts,w_rho,s4_grid,s5_grid,sw_grid,psi4,dpsi4,psi5,dpsi5,&
+                 f4_grid,f5_grid,F_pair,D4,D5,tmp_q,cmat,pair_active,pair_i4,pair_i5)
+      !
+      write(out,"(/1x,'Computed exact 2D (s4,s5) KEO integrals from BASIC-FUNCTION: kmax=(',i3,',',i3,'), active pairs=',i4,', vmax=',i3/)") &
+            kmax4,kmax5,npairs,vmax
+      !
+  end subroutine PTcompute_me2d_s4s5
 
    !
    ! Matrix elements calculations of the fields on the product of the primitive (1D) eigenfunctions
