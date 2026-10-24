@@ -137,7 +137,7 @@ module mol_c2h6
         dst(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
         !
         dst(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
-        dst(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+        dst(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
         !
       else !  transform from TROVE coords to Z-matrix coords
         !
@@ -1171,7 +1171,7 @@ module mol_c2h6
           !dst(16:17) = matmul(c132,src(16:17))
           !!
           dst(14:15) = matmul(c123,src(14:15))
-          dst(16:17) = matmul(c123,src(16:17))
+          dst(16:17) = matmul(c132,src(16:17))
           !
           ! a02
           !dst(14:15) = matmul(c132,src(14:15))
@@ -1204,11 +1204,11 @@ module mol_c2h6
           dst(11:13) = matmul(i2,src(8:10))
           !
           ! a02
-          !dst(14:15) = src(16:17)
-          !dst(16:17) = src(14:15)
+          dst(14:15) = src(16:17)
+          dst(16:17) = src(14:15)
           !!
-          dst(14:15) = matmul(sxy,src(16:17))
-          dst(16:17) = matmul(sxy,src(14:15))
+          !dst(14:15) = matmul(sxy,src(16:17))
+          !dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) =  4.0_ark*pi - src(18)
           !
@@ -1233,7 +1233,7 @@ module mol_c2h6
           dst(11:13) = matmul(a123,src(11:13))
           !!
           dst(14:15) = matmul(c132,src(14:15))
-          dst(16:17) = matmul(c123,src(16:17))
+          dst(16:17) = matmul(c132,src(16:17))
           !
           !a07,a08
           !dst(14:15) = matmul(c123,src(14:15))
@@ -1253,12 +1253,12 @@ module mol_c2h6
           dst(8:10) = matmul(i,src(11:13))
           dst(11:13) = matmul(i,src(8:10))
           !!
-          dst(14:15) = src(16:17)
-          dst(16:17) = src(14:15)
+          !dst(14:15) = src(16:17)
+          !dst(16:17) = src(14:15)
           !
           !a02
-          !dst(14:15) = matmul(sxy,src(16:17))
-          !dst(16:17) = matmul(sxy,src(14:15))
+          dst(14:15) = matmul(sxy,src(16:17))
+          dst(16:17) = matmul(sxy,src(14:15))
           !!
           dst(18) = src(18)
           !

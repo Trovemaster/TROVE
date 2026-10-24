@@ -2527,8 +2527,8 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     r3 = local(4)
     r4 = local(6)
     r5 = local(3)
-    r6 = local(7)
-    r7 = local(5)
+    r6 = local(5)
+    r7 = local(7)
     !
     xi(1)=1.0_ark-exp(-a*(r1-r1e))
     xi(2)=1.0_ark-exp(-b*(r2-r2e))
@@ -2542,8 +2542,8 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     xi(9)  = local(10) - betae
     xi(10) = local(12) - betae
     xi(11) = local(9)  - betae
-    xi(12) = local(13) - betae
-    xi(13) = local(11) - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
     !
     tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -2575,7 +2575,7 @@ function MLpoten_c2h6_88_cos3tau_G36(ncoords, natoms, local, xyz, force) result(
     xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
     xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
     xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
-    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
     !
     rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !
@@ -3183,8 +3183,8 @@ function MLpoten_c2h6_88_cos3tau_sin3tau_G36(ncoords, natoms, local, xyz, force)
     r3 = local(4)
     r4 = local(6)
     r5 = local(3)
-    r6 = local(7)
-    r7 = local(5)
+    r6 = local(5)
+    r7 = local(7)
     !
     xi(1)=1.0_ark-exp(-a*(r1-r1e))
     xi(2)=1.0_ark-exp(-b*(r2-r2e))
@@ -3198,8 +3198,8 @@ function MLpoten_c2h6_88_cos3tau_sin3tau_G36(ncoords, natoms, local, xyz, force)
     xi(9)  = local(10) - betae
     xi(10) = local(12) - betae
     xi(11) = local(9)  - betae
-    xi(12) = local(13) - betae
-    xi(13) = local(11) - betae
+    xi(12) = local(11) - betae
+    xi(13) = local(13) - betae
     !
     tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -3231,7 +3231,7 @@ function MLpoten_c2h6_88_cos3tau_sin3tau_G36(ncoords, natoms, local, xyz, force)
     xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
     xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
     xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
-    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
     !
     rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !
@@ -3303,15 +3303,15 @@ subroutine coordinate_transformation(ncoords,nmodes,local,xi)
     xi(3)=local(4)
     xi(4)=local(6)
     xi(5)=local(3)
-    xi(6)=local(7)
-    xi(7)=local(5)
+    xi(6)=local(5)
+    xi(7)=local(7)
     !
     xi(8)  = local(8) 
     xi(9)  = local(10)
     xi(10) = local(12)
     xi(11) = local(9) 
-    xi(12) = local(13)
-    xi(13) = local(11)
+    xi(12) = local(11)
+    xi(13) = local(13)
     !
     tau14 = mod(local(14)+4.0_ark*pi,4.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -3324,7 +3324,7 @@ subroutine coordinate_transformation(ncoords,nmodes,local,xi)
        tau36 = tau36 + 2.0_ark*pi
     endif
     !
-    !rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
+    rhobar  = ( tau14+tau25+tau36 )/(3.0_ark)
     !
     tau14 = mod(local(14)+2.0_ark*pi,2.0_ark*pi)
     tau24 = mod(local(15)+2.0_ark*pi,2.0_ark*pi)
@@ -3343,9 +3343,9 @@ subroutine coordinate_transformation(ncoords,nmodes,local,xi)
     xi(14)  = ( 2.0_ark*theta23 - theta13 - theta12 )/sqrt(6.0_ark)
     xi(15)  = (                   theta13 - theta12 )/sqrt(2.0_ark)
     xi(16)  = ( 2.0_ark*theta56 - theta45 - theta46 )/sqrt(6.0_ark)
-    xi(17)  = (                   theta45 - theta46 )/sqrt(2.0_ark)
+    xi(17)  = (                   theta46 - theta45 )/sqrt(2.0_ark)
     !
-    rhobar = ( tau14+tau25+tau36 )/3.0_ark
+    !rhobar = ( tau14+tau25+tau36 )/3.0_ark
     !
     xi(18) = rhobar
     !
