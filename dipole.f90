@@ -1802,7 +1802,7 @@ contains
                                !'(1x,f16.8,1x,3i1)))' 
                                !
        write(my_fmt1,'(a,i0,a,i0,a,i0,a,i0,a)') &
-                                  "(/t4,a1,t6,a8,t17,a1,t19,a5,t2,5a3,t35,a2,t42,a2,t52,a2,t65,a5,t84,",nclasses,"(3x),1x",nmodes,&
+                                  "(/t4,a1,t6,a8,t17,a1,t19,a5,t25,a3,t35,a2,t42,a2,t52,a2,t65,a5,t84,",nclasses,"(3x),1x,",nmodes,&
                                   &"(3x),9x,a2,8x,",nclasses,"(3x),1x,",nmodes,"(3x),17x,a8,8x,a1,12x,a1,18x,a1,18x,a1)"
        !
        write(out,my_fmt1) 'J','Gamma <-','J','Gamma','Typ','Ef','<-','Ei','nu_if','<-','TM(f<-i)','N','x','y','z'
