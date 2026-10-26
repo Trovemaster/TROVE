@@ -108,6 +108,8 @@ example, a sine factor.
      - Powers of a coordinate displacement
    * - ``MORSE(X-XE)``
      - Powers of a Morse coordinate
+   * - ``SPF(X-XE)``, ``SPF``
+     - Powers of the Simons--Parr--Finlan coordinate :math:`(r-r_0)/r`
    * - ``COS(A)-COS(A0)``, ``COS(A0)-COS(A)``
      - Powers of a cosine difference, with the indicated sign
    * - ``COSNX``, ``SINNX``
@@ -118,6 +120,17 @@ expansion settings. Do not append equilibrium values using the portable
 SPAR listing syntax. Additional factors accept ``SIN``, ``COS``, ``TAN``,
 ``CSC``, ``COT``, and ``SEC``; their four-field order differs from the KEO
 three-field order.
+
+``SPF(X-XE)`` evaluates :math:`[(r-r_0)/r]^n`, the coordinate of potential
+energy functions such as those of J. Koput for linear triatomics. The bond
+length is reconstructed as :math:`r = x - \chi_{\rm e} + r_{\rm e}` and the
+expansion centre as :math:`r_0 = x_0 - \chi_{\rm e} + r_{\rm e}`, where
+:math:`r_{\rm e}` is the ``EQUILIBRIUM`` value of the mode and
+:math:`\chi_{\rm e}` its transformed reference value. The function can
+therefore be used both with transforms that return displacements (e.g.
+``R1-Z-R2-RHO``) and with those that return absolute bond lengths (e.g.
+``R1-Z-R2-RHO-ABS``). The mode must be a bond length whose reference value is
+the ``EQUILIBRIUM`` entry with the same index.
 
 For example, the current HOPO input defines nine stretching functions with::
 

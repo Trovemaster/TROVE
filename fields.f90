@@ -2435,6 +2435,8 @@ module fields
                      basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_x_minus_xe
                    case("MORSE(X-XE)") 
                      basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_morse_x_xe
+                   case("SPF(X-XE)","SPF") 
+                     basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_spf_x_xe
                    case("COS(A)-COS(A0)")
                      basic_func%mode_set(jfunc)%func_set(1)%func_pointer_exp=> calc_func_cosx_cosx0
                    case("COS(A0)-COS(A)")
@@ -15476,10 +15478,11 @@ end subroutine check_read_save_none
         !
         trove%poten%Ncoeff = Tcoeff
         !
+        fl => trove%poten
+        !
         allocate (trove%poten%me(trove%poten%Ncoeff,0:bs%Size,0:bs%Size),stat=alloc)
         call ArrayStart('trove%poten%me',alloc,1_ik,kind(fl%me),size(fl%me,kind=hik))
         !
-        fl => trove%poten
         read(chkptIO) fl%me  
         !
         !
@@ -19249,6 +19252,11 @@ end subroutine check_read_save_none
      target_index(1) = trove%NKinOrder 
      Ncoeffmax= FLQindex(trove%Nmodes_e,target_index)
      !
+     ! The fields can have fewer coefficients than NKinOrder implies, e.g. when restored from a
+     ! kinetic.chk written with a smaller number of terms (non-rigid EKE). Do not go beyond them.
+     !
+     Ncoeffmax = min(Ncoeffmax,Ncoeff1,Ncoeff2)
+     !
      ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
      !
      iterm = 0
@@ -19392,6 +19400,11 @@ end subroutine check_read_save_none
      target_index = 0
      target_index(1) = trove%NKinOrder 
      Ncoeffmax= FLQindex(trove%Nmodes_e,target_index)
+     !
+     ! The fields can have fewer coefficients than NKinOrder implies, e.g. when restored from a
+     ! kinetic.chk written with a smaller number of terms (non-rigid EKE). Do not go beyond them.
+     !
+     Ncoeffmax = min(Ncoeffmax,Ncoeff1,Ncoeff2,Ncoeff3)
      !
      ! Count large elements (using exp_coeff_thresh as threshold) and store in a sparse representation
      !
@@ -30250,6 +30263,32 @@ end subroutine check_read_save_none
     y = (1.0_ark-exp( -amorse*( x-x0 ) ))**n
     !
   end subroutine calc_func_morse_x_xe
+  !
+  ! Simons-Parr-Finlan (SPF) stretching coordinate ((r-r0)/r)**n, where r is the bond length
+  ! and r0 is the expansion centre, both in absolute units:
+  !   r  = x  - chi_eq(imode) + local_eq(imode)
+  !   r0 = x0 - chi_eq(imode) + local_eq(imode)
+  ! This is valid both for the coordinate transforms returning bond-length displacements
+  ! (chi_eq = 0, e.g. R1-Z-R2-RHO) and absolute bond lengths (chi_eq = local_eq, e.g.
+  ! R1-Z-R2-RHO-ABS), provided that mode imode is the bond with the reference value local_eq(imode).
+  !
+  subroutine calc_func_spf_x_xe(x,x0,n,imode,y) 
+    real(ark), intent(in) :: x,x0
+    integer(ik), intent(in) :: n,imode
+    real(ark), intent(inout) :: y
+    !
+    real(ark) :: r
+    !
+    r = x - molec%chi_eq(imode) + molec%local_eq(imode)
+    !
+    if (r<=0.0_ark) then
+      write(out,"('calc_func_spf_x_xe: illegal (non-positive) bond length ',es18.8,' for mode ',i4)") r,imode
+      stop 'calc_func_spf_x_xe: illegal (non-positive) bond length'
+    endif
+    !
+    y = ( (x-x0)/r )**n
+    !
+  end subroutine calc_func_spf_x_xe
   !
   subroutine calc_func_cosx_cosx0(x,x0,n,imode,y) 
     real(ark), intent(in) :: x,x0
