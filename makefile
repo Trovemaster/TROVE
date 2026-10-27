@@ -83,7 +83,7 @@ SRCS := timer.f90 accuracy.f90 diag.f90 dipole.f90 extfield.f90 fields.f90 fwigx
 	mol_abcd.f90 mol_c2h4.f90 mol_c2h6.f90 mol_c3h6.f90 mol_ch3oh.f90 mol_xy.f90 \
 	mol_xy2.f90 mol_xy3.f90 mol_xy4.f90 mol_zxy2.f90 mol_zxy3.f90 mol_x2y2.f90 \
 	molecules.f90 moltype.f90 perturbation.f90 plasma.f90 \
-	pot_abcd.f90 pot_c2h4.f90 pot_c2h6.f90 pot_c3h6.f90 pot_ch3oh.f90 \
+	dms_c2h6_g36.f90 pot_abcd.f90 pot_c2h4.f90 pot_c2h6.f90 pot_c3h6.f90 pot_ch3oh.f90 \
 	pot_xy2.f90 pot_xy3.f90 pot_xy4.f90 pot_zxy2.f90 pot_zxy3.f90 pot_x2y2.f90 \
 	prop_xy2.f90 prop_xy2_quad.f90 prop_xy2_spinrot.f90 prop_xy2_spinspin.f90 \
 	refinement.f90 richmol_data.f90 rotme_cart_tens.f90 symmetry.f90 tran.f90 trove.f90 $(pot_user).f90
@@ -178,7 +178,8 @@ perturbation.o: perturbation.f90 accuracy.o molecules.o moltype.o lapack.o plasm
 plasma.o: plasma.f90 accuracy.o timer.o
 pot_abcd.o: pot_abcd.f90 accuracy.o moltype.o lapack.o
 pot_c2h4.o: pot_c2h4.f90 accuracy.o moltype.o
-pot_c2h6.o: pot_c2h6.f90 accuracy.o moltype.o mol_c2h6.o
+dms_c2h6_g36.o: dms_c2h6_g36.f90
+pot_c2h6.o: pot_c2h6.f90 accuracy.o moltype.o mol_c2h6.o dms_c2h6_g36.o
 pot_c3h6.o: pot_c3h6.f90 accuracy.o moltype.o
 pot_ch3oh.o: pot_ch3oh.f90 accuracy.o moltype.o lapack.o
 pot_xy2.o: pot_xy2.f90 accuracy.o moltype.o

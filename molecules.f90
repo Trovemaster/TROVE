@@ -30,7 +30,7 @@ module molecules
   use pot_c2h6, only : MLpoten_c2h6_88,MLpoten_c2h6_88_cos3tau,MLpoten_c2h6_88_cos3tau_142536,&
                        MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan,&
                        MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36,&
-                       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36
+                       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36,MLdms2xyz_c2h6_g36
   use pot_c3h6, only : MLpoten_c3h6_harmtest,MLpoten_c3h6_sym_II
   !
   use prop_xy2,      only : prop_xy2_qmom_sym,MLdipole_h2o_lpt2011, prop_xy2_alpha_sym
@@ -165,6 +165,10 @@ module molecules
     case('POTEN_XY3_SEARS')
          !
          MLpotentialfunc => MLpoten_xy3_sears
+         !
+    case('POTEN_XY3_SPAR_SYM')
+         !
+         MLpotentialfunc => MLpoten_xy3_spar_sym
          !
     case('POTEN_ZXY2_MLT')
          !
@@ -912,6 +916,10 @@ end function ML_MEPfunc
     case('ALPHA_C2H6_ZERO') 
        !
        MLextF_func => ML_alpha_C2H6_zero_order  ! alpha polarizablity of a zero order type 
+       !
+    case('DMS_C2H6_G36','DIPOLE_C2H6_G36')
+       !
+       MLextF_func => MLdms2xyz_c2h6_g36
        !
     case('DIPOLE','USER','GENERAL','DIPOLE_USER')
        !

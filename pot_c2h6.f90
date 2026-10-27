@@ -4,13 +4,14 @@ module pot_c2h6
 use accuracy
 use moltype
 use mol_c2h6
+use dms_c2h6_g36, only : eval_c2h6_dms, eval_c2h6_dms_basis, N_PARAMS_Z, N_PARAMS_XY, N_PARAMS_DMS
 
 implicit none
 
 public MLpoten_c2h6_88,ML_dipole_c2h6_4m_dummy,MLpoten_c2h6_88_cos3tau,&
        MLpoten_c2h6_88_cos3tau_142536,MLpoten_c2h6_88_cos3tau_sym,MLpoten_c2h6_Duncan
 public MLpoten_c2h6_88_cos3tau_G36,ML_alpha_C2H6_zero_order,MLpoten_c2h6_88_cos3tau_sin3tau_G36,&
-       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36
+       MLpoten_c2h6_explct_M2_P6,MLpoten_c2h6_Morse_displace_fourier_G36,MLdms2xyz_c2h6_g36
 
 private
 
@@ -3565,6 +3566,58 @@ subroutine coordinate_transformation(ncoords,nmodes,local,xi)
   end select
   !
   end subroutine coordinate_transformation
+
+
+  recursive subroutine MLdms2xyz_c2h6_g36(rank, ncoords, natoms, local, xyz, f)
+    !
+    ! G_36(EM) symmetry-adapted electric dipole moment surface for C2H6
+    ! (70 A_4s parallel z parameters + 109 E_2d perpendicular x,y parameters)
+    !
+    integer(ik), intent(in) :: rank, ncoords, natoms
+    real(ark), intent(in)   :: local(ncoords), xyz(natoms, 3)
+    real(ark), intent(out)  :: f(rank)
+    !
+    real(ark) :: xi(18), r1e, r2e, betae, rad_loc
+    real(rk)  :: xi_rk(18), params_z(N_PARAMS_Z), params_xy(N_PARAMS_XY), mu_rk(3)
+    integer(ik) :: n1, n2
+    !
+    rad_loc = pi / 180.0_ark
+    r1e   = extF%coef(1, 1)
+    r2e   = extF%coef(2, 1)
+    betae = extF%coef(3, 1) * rad_loc
+    !
+    call coordinate_transformation(ncoords, 18_ik, local, xi)
+    !
+    xi(1)    = xi(1)    - r1e
+    xi(2:7)  = xi(2:7)  - r2e
+    xi(8:13) = xi(8:13) - betae
+    !
+    xi_rk(1:18) = real(xi(1:18), kind=rk)
+    params_z  = 0.0_rk
+    params_xy = 0.0_rk
+    n1 = size(extF%coef, 1)
+    n2 = size(extF%coef, 2)
+    !
+    if (n1 >= 3 + N_PARAMS_DMS) then
+      params_z(1:N_PARAMS_Z)   = real(extF%coef(4:3+N_PARAMS_Z, 1), kind=rk)
+      params_xy(1:N_PARAMS_XY) = real(extF%coef(4+N_PARAMS_Z:3+N_PARAMS_DMS, 1), kind=rk)
+    else
+      if (n1 >= 3 + N_PARAMS_XY) then
+        params_xy(1:N_PARAMS_XY) = real(extF%coef(4:3+N_PARAMS_XY, 1), kind=rk)
+      endif
+      if (n2 >= 3 .and. n1 >= 3 + N_PARAMS_Z) then
+        params_z(1:N_PARAMS_Z) = real(extF%coef(4:3+N_PARAMS_Z, 3), kind=rk)
+      endif
+    endif
+    !
+    call eval_c2h6_dms(xi_rk, params_z, params_xy, mu_rk)
+    !
+    f = 0.0_ark
+    f(1) = real(mu_rk(1), kind=ark)
+    f(2) = real(mu_rk(2), kind=ark)
+    f(3) = real(mu_rk(3), kind=ark)
+    !
+  end subroutine MLdms2xyz_c2h6_g36
 
 
 end module pot_c2h6

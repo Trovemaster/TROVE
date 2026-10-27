@@ -14,6 +14,7 @@ module pot_xy3
   public MLspinspin_xy3_mb
   public MLpoten_oh3p_mep,ML_MEP_NH3,MLpoten_xy3_HSL,MLpoten_xy3_morbid_11
   public MLpoten_xy3_morbid_morphing
+  public MLpoten_xy3_spar_sym
 
   private
  
@@ -8899,6 +8900,101 @@ function poten_xy3_Per_1D(y1,y2,y3,y4,y5,coro,force) result (f)
 
 
   end function poten_xy3_Per_1D
+
+
+  function MLpoten_xy3_spar_sym(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+   !
+   integer(ik)            ::  i,ioper,m,Ncoeff,p(6)
+   real(ark)              ::  r1,r2,r3,alpha1,alpha2,alpha3,re,betae,a0
+   real(ark)              ::  sinbeta1,sinbeta2,sinbeta3,sinphi,phi1,phi2,phi3,s4,s5,sinrho,beta
+   real(ark)              ::  xi(6),chi(6,6),a,b,term,prod_val
+   !
+   r1     = local(1)
+   r2     = local(2)
+   r3     = local(3)
+   alpha3 = local(4)
+   alpha2 = local(5)
+   alpha1 = local(6)
+   !
+   sinbeta1 = sin(alpha1*0.5_ark)
+   sinbeta2 = sin(alpha2*0.5_ark)
+   sinbeta3 = sin(alpha3*0.5_ark)
+   !
+   sinphi = (sinbeta2**2 + sinbeta3**2 - sinbeta1**2)/(2.0_ark*sinbeta2*sinbeta3)
+   sinphi = max(-1.0_ark, min(1.0_ark, sinphi))
+   phi1 = 2.0_ark*acos(sinphi)
+   !
+   sinphi = (sinbeta1**2 + sinbeta3**2 - sinbeta2**2)/(2.0_ark*sinbeta1*sinbeta3)
+   sinphi = max(-1.0_ark, min(1.0_ark, sinphi))
+   phi2 = 2.0_ark*acos(sinphi)
+   !
+   phi3 = 2.0_ark*pi - phi1 - phi2
+   !
+   s4 = 1.0_ark/sqrt(6.0_ark)*( 2.0_ark*phi1 - phi2 - phi3 )
+   s5 = 1.0_ark/sqrt(2.0_ark)*(                phi2 - phi3 )
+   !
+   sinrho = sinbeta1/sin(phi1*0.5_ark)
+   sinrho = max(-1.0_ark, min(1.0_ark, sinrho))
+   if (ncoords>=7) then
+      if (local(7)<0.0_ark) then
+         beta = pi - asin(sinrho)
+      else
+         beta = asin(sinrho)
+      endif
+   else
+      beta = asin(sinrho)
+   endif
+   !
+   re    = force(1)
+   betae = force(2)*pi/180.0_ark
+   a0    = force(3)
+   !
+   xi(1) = 1.0_ark - exp(-a0*(r1 - re))
+   xi(2) = 1.0_ark - exp(-a0*(r2 - re))
+   xi(3) = 1.0_ark - exp(-a0*(r3 - re))
+   xi(4) = s4
+   xi(5) = s5
+   xi(6) = beta - betae
+   !
+   a = 0.5_ark
+   b = 0.5_ark*sqrt(3.0_ark)
+   !
+   ! 1: E
+   chi(1:6,1) = (/ xi(1), xi(2), xi(3),  xi(4),             xi(5),            xi(6) /)
+   ! 2: (321)
+   chi(1:6,2) = (/ xi(3), xi(1), xi(2), -a*xi(4)-b*xi(5),  b*xi(4)-a*xi(5),  xi(6) /)
+   ! 3: (123)
+   chi(1:6,3) = (/ xi(2), xi(3), xi(1), -a*xi(4)+b*xi(5), -b*xi(4)-a*xi(5),  xi(6) /)
+   ! 4: (23)*
+   chi(1:6,4) = (/ xi(1), xi(3), xi(2),  xi(4),            -xi(5),            xi(6) /)
+   ! 5: (13)*
+   chi(1:6,5) = (/ xi(3), xi(2), xi(1), -a*xi(4)-b*xi(5), -b*xi(4)+a*xi(5),  xi(6) /)
+   ! 6: (12)*
+   chi(1:6,6) = (/ xi(2), xi(1), xi(3), -a*xi(4)+b*xi(5),  b*xi(4)+a*xi(5),  xi(6) /)
+   !
+   Ncoeff = size(force)
+   f = 0.0_ark
+   do i = 4, Ncoeff
+      p(1:6) = molec%pot_ind(1:6,i)
+      if (all(p(1:6)==0)) cycle
+      term = 0.0_ark
+      do ioper = 1, 6
+         prod_val = 1.0_ark
+         do m = 1, 6
+            if (p(m) > 0) prod_val = prod_val * (chi(m,ioper)**p(m))
+         enddo
+         term = term + prod_val
+      enddo
+      f = f + force(i)*term
+   enddo
+   !
+  end function MLpoten_xy3_spar_sym
 
 
 end module pot_xy3   
