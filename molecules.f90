@@ -238,6 +238,14 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c2h2_morse
          !
+     case('POTEN_C2H2_MORSE_KAPPA') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_morse_kappa
+         !
+     case('POTEN_C2H2_MORSE_COSALPHA_COSNTAU-SIN-SIN') 
+         !
+         MLpotentialfunc => MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin
+         !
      case('POTEN_C2H2_MORSE_SINALPHA_COSNTAU') 
          !
          MLpotentialfunc => poten_c2h2_morse_sinalpha_cosntau

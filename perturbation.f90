@@ -724,6 +724,13 @@ module perturbation
     ! 
     nu_min(1:Nmodes) = int(real(PT%Npolyads,rk)/PT%res_coeffs(1:Nmodes),ik)
     !
+    do imode = 1,Nmodes
+       if (trim(job%bset(imode)%type)=='SINRHO-LEGENDRE-K-SING') then
+          nu_min(imode) = (int(real(PT%Npolyads,rk)/(PT%res_coeffs(imode)*real(job%bset(imode)%lmax+1,rk))+small_,ik)+1)*&
+                          (job%bset(imode)%lmax+1)-1
+       endif
+    enddo
+    !
     ! make sure that it doesn't exceed the PT%range 
     !
     nu_min(1:Nmodes) = min(PT%range(2,1:Nmodes),nu_min(1:Nmodes))
@@ -740,6 +747,11 @@ module perturbation
     ! Now we can estimte the highest polyad for our active space
     !
     pol_t(1:Nmodes) = int(real(nu_max(1:Nmodes),rk)*PT%res_coeffs(1:Nmodes),ik)
+    do imode = 1,Nmodes
+       if (trim(job%bset(imode)%type)=='SINRHO-LEGENDRE-K-SING') then
+          pol_t(imode) = int(real(nu_max(imode)-mod(nu_max(imode),job%bset(imode)%lmax+1),rk)*PT%res_coeffs(imode)+small_,ik)
+       endif
+    enddo
     !
     !pol_t(Nmodes) = pol_t(Nmodes)/(kmax+1)
     !
@@ -1342,9 +1354,21 @@ module perturbation
   function PTpolyadRules(nu) result(polynom)
     !
     integer(ik),intent(in) :: nu(:)
-    integer(ik) :: polynom
+    integer(ik) :: polynom,imode,nu_eff(size(nu))
     !
-    polynom  = int(sum( PT%res_coeffs(:)*real(nu(:),rk) ),ik)
+    nu_eff(:) = nu(:)
+    if (size(nu)==trove%Nmodes+1) then
+      do imode = 1,trove%Nmodes
+        if (trim(job%bset(imode)%type)=='SINRHO-LEGENDRE-K-SING') then
+          nu_eff(imode+1) = nu_eff(imode+1) - mod(nu_eff(imode+1),job%bset(imode)%lmax+1)
+        endif
+      enddo
+      if (any(job%bset_prop(:)%singular)) then
+        nu_eff(trove%Nmodes+1) = 2*((nu_eff(trove%Nmodes+1)+1)/2)
+      endif
+    endif
+    !
+    polynom  = int(sum( PT%res_coeffs(:)*real(nu_eff(:),rk) )+small_,ik)
     !
     !if (job%bset(0)%range(2)>0) then
     !    polynom = polynom/(job%bset(0)%range(2)+1)
@@ -1606,7 +1630,7 @@ module perturbation
      integer(ik),intent(in)    :: Nmodes
      integer(ik),intent(in)    :: Npol,imodes
      integer(ik),intent(inout) :: l
-     integer(ik) :: nu_t,Npol_t,isum,v,lmax=0,k
+     integer(ik) :: nu_t,Npol_t,isum,v,lmax=0,k,v2,l2,lmax2=0
      !
      integer(ik)            :: nu_search(size(nu_target))
      real(rk)  :: ener0
@@ -1627,7 +1651,9 @@ module perturbation
         if (imodes == Nmodes) then
            if (npol_t==Npol) then
              !
-             ! This is a 2D singular case
+             ! This is a 2D or 3D singular case
+             l = -1
+             l2 = -1
              if (job%bset_prop(imodes-2)%singular .and.job%bset(imodes-1)%class==job%bset(imodes-2)%class) then 
                !
                ! here we assume the real Fourier basis for imode=Nmode defined following 
@@ -1635,6 +1661,14 @@ module perturbation
                v = nu_search(imodes-1)
                l = mod(v,lmax+1)
                !n = (v-l)/(lmax+1)
+               !
+               if (imodes>=4) then
+                 if (job%bset_prop(imodes-3)%singular .and. job%bset(imodes-1)%class==job%bset(imodes-3)%class) then
+                   lmax2 = job%bset(imodes-3)%lmax
+                   v2 = nu_search(imodes-2)
+                   l2 = mod(v2,lmax2+1)
+                 endif
+               endif
                !
              endif 
              !
@@ -1646,24 +1680,18 @@ module perturbation
              !
              ! Here we combine the ith-mode basis with the nmode basis using k(nmode) = l(ith)
              if (l/=-1) then
-               !if (trim(job%bset(imodes-1)%type)=='SINRHO-LEGENDRE-K-SING'.and.&
-               !    trim(job%bset(imodes)%type)=='FOURIER-UNOPTIMISED') then
-               !
-               ! here we assume that the Fourier basis as 
-               ! n = 0: cos(0*tau) 
-               ! n = 1: sin(1*tau); k=1 
-               ! n = 2: cos(1*tau); k=1
-               ! Therefore k = (n+1)/2
-               k = (nu_search(Nmodes)+1)/2
-               if (k/=l.and.(k<lmax.or.l<lmax)) do_count = .false.
-               !
-               !endif
-               !if (trim(job%bset(imodes-1)%type)=='FOURIER_PURE') then
-               !  !
-               !  k = (nu_search(Nmodes)+1)/2
-               !  if (k/=l) do_count = .false.
-               !  !
-               !endif
+               if (l2/=-1) then
+                 call PTsingular_3D_L1L2K(nu_search(2:Nmodes),l2,l,k,v,do_count)
+                 if (ener0>job%enercut) do_count = .false.
+               else
+                 ! here we assume that the Fourier basis as 
+                 ! n = 0: cos(0*tau) 
+                 ! n = 1: sin(1*tau); k=1 
+                 ! n = 2: cos(1*tau); k=1
+                 ! Therefore k = (n+1)/2
+                 k = (nu_search(Nmodes)+1)/2
+                 if (k/=l.and.(k<lmax.or.l<lmax)) do_count = .false.
+               endif
              endif
              !
              if (do_count) then 
@@ -1876,7 +1904,7 @@ module perturbation
           !
           !if (trim(job%bset(PT%Nmodes)%type)=='SINRHO'.and.krot>0) krot = min(krot,1)
           !
-          if (trove%lincoord/=0) then 
+          if (trove%lincoord/=0.or.count(job%bset_prop(:)%singular)>=2) then 
             !
             ! assume that the vib. angular momentum is not zero only for one class or that 
             ! the total vib. ang. momenum is the sum of from each class, which will need to be veryfied 
@@ -1898,7 +1926,7 @@ module perturbation
           endif
           !
           switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
-          if (trove%triatom_sing_resolve) then
+          if (trove%triatom_sing_resolve.or.count(job%bset_prop(:)%singular)>=2) then
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
                 !switch = switch.and.( lquant==krot )
@@ -1979,7 +2007,7 @@ module perturbation
           !krot = PT%rot_primindex(v_search(0)-1)%k
           krot = PT%rot_index(v_search(Nclasses),1)%k
           !
-          if (trove%lincoord/=0) then 
+          if (trove%lincoord/=0.or.count(job%bset_prop(:)%singular)>=2) then 
             !
             ! assume that the vib. angular momentum is not zero only for one class or that 
             ! the total vib. ang. momenum is the sum of from each class, which will need to be veryfied 
@@ -1998,7 +2026,7 @@ module perturbation
           !
           if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & 
               ! LINEAR MOLECULE -> requires optimization !!!
-              .and.( trove%lincoord==0.or.( lquant==krot.or.jrot==0 ) ) ) then
+              .and.( (trove%lincoord==0.and.count(job%bset_prop(:)%singular)<2).or.( lquant==krot.or.jrot==0 ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
              ! .and.(trove%lincoord==0.or.( v_search(0)==contr(0)%nlevels.or.v_search(0)==contr(0)%nlevels-1 ) ) ) then
             !
@@ -2862,7 +2890,7 @@ module perturbation
     integer(ik)        :: ipoint,jpoint,jdeg,im1,im2,level_degen,Nelem,ielem,jroot,kroot,iroot_t,nmodes
     type(PTlevelT),pointer    ::  cf
     integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
-    logical           ::  reduced_model,diagonal,singular_2D
+    logical           ::  reduced_model,diagonal,singular_2D,singular_3D
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
     !
@@ -2920,6 +2948,7 @@ module perturbation
        !
        reduced_model = .false.
        singular_2D = .false.
+       singular_3D = .false.
        !
        do i = 1,PT%mode_iclass(iclasses)
          !
@@ -2949,10 +2978,14 @@ module perturbation
            !
          endif 
          !
-         ! special case of a 2D basis with a singularity
+         ! special case of a 2D or 3D basis with a singularity
          if (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==2) then 
            !
            singular_2D = .true.
+           !
+         elseif (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==3) then
+           !
+           singular_3D = .true.
            !
          endif 
          !
@@ -3095,10 +3128,10 @@ module perturbation
            !
          endif
          !
-         ! 2D signularity: e.g. Fourier basis cos(k*tau) and sin(k*tau) and Associated Legendre(l,n)
-         ! with the l=k contraint 
+         ! 2D or 3D singularity: e.g. Fourier basis cos(k*tau) and sin(k*tau) and Associated Legendre(l,n)
+         ! with the l=k constraint 
          !
-       elseif (singular_2D) then 
+       elseif (singular_2D .or. singular_3D) then 
          !
          diagonal = .false.
          !
@@ -3296,7 +3329,7 @@ module perturbation
          if ( ipol>job%Npolyads_contr.and.spread>job%cluster.and. &
               .not.( bs_t(kmode)%postprocess.and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model/=1000.and..not.trove%DVR ).and.&
               .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in ).and.& 
-              .not.( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1==iroot_in ) &  
+              .not.( (FLl2_coeffs.or.singular_3D) .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1==iroot_in ) &  
               ) then
             !
             cycle 
@@ -3309,7 +3342,7 @@ module perturbation
          endif
          !
          ! check if a co-degenerate component is already out and remove 
-         if  ( FLl2_coeffs .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1/=iroot_in ) then 
+         if  ( (FLl2_coeffs.or.singular_3D) .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1/=iroot_in ) then 
             cycle 
          endif
          !
@@ -3321,7 +3354,7 @@ module perturbation
          endif
          !
          if ( abs(PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot_in,1))<job%degen_threshold.and. &
-            (.not.FLl2_coeffs.or.( abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot_in,1) )==0 ) ) ) then 
+            (.not.(FLl2_coeffs.or.singular_3D).or.( abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot_in,1) )==0 ) ) ) then 
             !
             ideg = ideg + 1
             !
@@ -3520,7 +3553,7 @@ module perturbation
                       !
                       ipoint_t = nint( ( xval-job%bset(imode)%borders(1) )/rhostep(imode),kind=ik )
                       !
-                      if (ipoint_t>npoints.or.ipoint_t<0) then 
+                      if (ipoint_t>job%bset(imode)%npoints.or.ipoint_t<0) then 
                          !
                          info = max(info,1)
                          !
@@ -3763,18 +3796,29 @@ module perturbation
                contr(iclasses)%eigen(ilevel)%normal(imode) = contr(iclasses)%eigen(ilevel)%lquant
              endif
              !
-             if (singular_2D) then 
-                !extract the k=l value add assign lquant of the bending and torsional modes, respectively
-                ! The Fourier basis is with the same k for odd (sin(k*tau)) and even (cos(k*tau)):
-                k = ( contr(iclasses)%eigen(ilevel)%nu(Nmodes)+1 )/2
-                contr(iclasses)%eigen(ilevel)%lquant  = k
-                ! which we use to assign the normal mode for thhe torsion:
-                contr(iclasses)%eigen(ilevel)%normal(Nmodes) = k
-                ! actual vibrational QN of the bending mode is n = (v-l)/(lmax+1) with l = k
-                ! we allow fro k>lmax which is why l is defined as min(k,job%bset(Nmodes-1)%lmax
-                v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-1)
-                l = min(k,job%bset(Nmodes-1)%lmax)
-                contr(iclasses)%eigen(ilevel)%normal(Nmodes-1) = ( v-l )/( job%bset(Nmodes-1)%lmax+1 )
+             if (singular_2D .or. singular_3D) then 
+                if (singular_3D) then
+                   call PTsingular_3D_L1L2K(contr(iclasses)%eigen(ilevel)%nu(1:Nmodes),im1,im2,k,l,diagonal)
+                   contr(iclasses)%eigen(ilevel)%lquant = k
+                   contr(iclasses)%eigen(ilevel)%normal(0) = k
+                   contr(iclasses)%eigen(ilevel)%normal(Nmodes) = l
+                   v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-1)
+                   contr(iclasses)%eigen(ilevel)%normal(Nmodes-1) = ( v-im2 )/( job%bset(Nmodes-1)%lmax+1 )
+                   v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-2)
+                   contr(iclasses)%eigen(ilevel)%normal(Nmodes-2) = ( v-im1 )/( job%bset(Nmodes-2)%lmax+1 )
+                else
+                   !extract the k=l value add assign lquant of the bending and torsional modes, respectively
+                   ! The Fourier basis is with the same k for odd (sin(k*tau)) and even (cos(k*tau)):
+                   k = ( contr(iclasses)%eigen(ilevel)%nu(Nmodes)+1 )/2
+                   contr(iclasses)%eigen(ilevel)%lquant  = k
+                   ! which we use to assign the normal mode for thhe torsion:
+                   contr(iclasses)%eigen(ilevel)%normal(Nmodes) = k
+                   ! actual vibrational QN of the bending mode is n = (v-l)/(lmax+1) with l = k
+                   ! we allow fro k>lmax which is why l is defined as min(k,job%bset(Nmodes-1)%lmax
+                   v = contr(iclasses)%eigen(ilevel)%nu(Nmodes-1)
+                   l = min(k,job%bset(Nmodes-1)%lmax)
+                   contr(iclasses)%eigen(ilevel)%normal(Nmodes-1) = ( v-l )/( job%bset(Nmodes-1)%lmax+1 )
+                endif
              endif
              !
              cf => contr(iclasses)%eigen(ilevel)
@@ -8698,7 +8742,7 @@ module perturbation
       !
       read(chkptIO) ncontr
       !
-      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(.not.trove%triatom_sing_resolve ) ) then
+      if (jrot==0.and.PT%Maxcontracts/=ncontr.and.(.not.trove%triatom_sing_resolve).and.count(job%bset_prop(:)%singular)<2 ) then
         write (out,"(' Vib. kinetic checkpoint file ',a)") job%kinetmat_file
         write (out,"(' Actual and stored basis sizes at J=0 do not agree  ',2i0)") PT%Maxcontracts,ncontr
         stop 'PTrestore_rot_kinetic_matrix_elements - in file - illegal nroots '
@@ -16580,10 +16624,25 @@ module perturbation
         integer(ik) :: icoeff,icase,ilambda,jcoeff,jcase,jlambda,ideg,jdeg,ilevel,jlevel
         integer(ik) :: iroot,jroot,Maxcontracts,Nclasses
         integer(hik):: ib,ib0
-        real(rk)    :: f_t,f_prod(PT%Nclasses)
+        real(rk)    :: f_t,f_prod(PT%Nclasses),me6_val
+        logical     :: is_gvib,is_poten,is_grot,is_gcor
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
+        !
+        is_poten = associated(fl,me%poten)
+        is_gvib  = .false.
+        is_grot  = .false.
+        is_gcor  = .false.
+        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
+          is_gvib = associated(fl,me%gvib(k1,k2))
+        endif
+        if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
+          is_grot = associated(fl,me%grot(k1,k2))
+        endif
+        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
+          is_gcor = associated(fl,me%gcor(k1,k2))
+        endif
         !
         k(:) = fl%IndexQ(:,iterm)
         !
@@ -16621,7 +16680,7 @@ module perturbation
             !
           else
             !
-            !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
+            !$omp parallel do private(iprim,jprim,nu_i,nu_j,me6_val) shared(me_t)
             do jprim=1,contr(iclasses)%dimen
               !
               nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,jprim)
@@ -16634,7 +16693,18 @@ module perturbation
                 !
                 me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
                 !
-                me_t(iprim,jprim) = me_t(iprim,jprim)*fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                if (is_poten) then
+                  call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                elseif (is_gvib) then
+                  call PTsingular_3D_me6(k1,k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                elseif (is_grot) then
+                  call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                elseif (is_gcor) then
+                  call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                else
+                  me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                endif
+                me_t(iprim,jprim) = me_t(iprim,jprim)*me6_val
                 !
                 !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                 !
@@ -17925,12 +17995,27 @@ module perturbation
         integer(ik) :: icoeff,icase,ilambda,jcoeff,jcase,jlambda,ideg,jdeg,ilevel,jlevel
         integer(ik) :: iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
         integer(hik):: ib,ib0,i
-        real(rk)    :: f_t,f_prod(PT%Nclasses)
+        real(rk)    :: f_t,f_prod(PT%Nclasses),me6_val
+        logical     :: is_gvib,is_poten,is_grot,is_gcor
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
         integer :: info_p
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
+        !
+        is_poten = associated(fl,me%poten)
+        is_gvib  = .false.
+        is_grot  = .false.
+        is_gcor  = .false.
+        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
+          is_gvib = associated(fl,me%gvib(k1,k2))
+        endif
+        if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
+          is_grot = associated(fl,me%grot(k1,k2))
+        endif
+        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
+          is_gcor = associated(fl,me%gcor(k1,k2))
+        endif
         !
         allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
         call ArrayStart('calc_contract_matrix_elements_III:me_t',alloc,dimen_p_max**2,kind(me_t))
@@ -17987,7 +18072,7 @@ module perturbation
                !
              else
                !
-               !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
+               !$omp parallel do private(iprim,jprim,nu_i,nu_j,me6_val) shared(me_t)
                do jprim=1,contr(iclasses)%dimen
                  !
                  nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,jprim)
@@ -18000,7 +18085,18 @@ module perturbation
                    !
                    me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
                    !
-                   me_t(iprim,jprim) = me_t(iprim,jprim)*fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                   if (is_poten) then
+                     call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                   elseif (is_gvib) then
+                     call PTsingular_3D_me6(k1,k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                   elseif (is_grot) then
+                     call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                   elseif (is_gcor) then
+                     call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                   else
+                     me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
+                   endif
+                   me_t(iprim,jprim) = me_t(iprim,jprim)*me6_val
                    !
                    !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                    !
@@ -21489,7 +21585,7 @@ module perturbation
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
-      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
@@ -21593,7 +21689,7 @@ module perturbation
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
-      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       !grotme(nclass)%me(:,:,:) = 0
@@ -22051,7 +22147,7 @@ module perturbation
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
-      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
@@ -22153,7 +22249,7 @@ module perturbation
       !
       ! compute contracted matrix elements for operators: G, p_i*G
       !
-      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_Trot_Nclass(func_tag,imode,jmode,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call store_contr_matelem_expansion_classN(imode,jmode,nclass,func_tag,nmodes,nmodes,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       grotme(nclass)%me(:,:,:) = 0
@@ -26213,7 +26309,7 @@ end subroutine read_contr_matelem_expansion_classN
                    else
                       !
                       !
-                      mat(imode) =  me%grot(k1,k2)%coeff(iterm,vl,vr)
+                      call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),me%grot(k1,k2)%coeff,mat(imode))
                       !
                    endif
                    ! 
@@ -26252,7 +26348,7 @@ end subroutine read_contr_matelem_expansion_classN
                       !
                    else
                       !
-                      mat(imode) =  me%gcor(k1,k2)%coeff(iterm,vl,vr)
+                      call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),me%gcor(k1,k2)%coeff,mat(imode))
                       !                        !
                    endif
                    ! 
@@ -26317,7 +26413,7 @@ end subroutine read_contr_matelem_expansion_classN
                     !
                     if (imode==PT%Nmodes) then
                        !
-                       mat(imode) = fl%coeff(iterm,vl,vr)
+                       call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                        !
                     else
                        !
@@ -26350,7 +26446,7 @@ end subroutine read_contr_matelem_expansion_classN
                           !
                           if (imode==PT%Nmodes) then
                              !
-                             mat(imode) = fl%coeff(iterm,vl,vr)
+                             call PTsingular_3D_me6(k1,k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                              !
                           elseif (me2d_s4s5_active.and.(imode==4.or.imode==5)) then
                              if (imode==4) then
@@ -29475,7 +29571,7 @@ end subroutine read_contr_matelem_expansion_classN
                    !
                    if (imode==PT%Nmodes) then
                       !
-                      mat(imode) = fl%coeff(iterm,vl,vr)
+                      call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                       !
                       !mat(imode) = fl%me(iterm,vl,vr)
                       !
@@ -29511,7 +29607,7 @@ end subroutine read_contr_matelem_expansion_classN
                    !
                    if (imode==PT%Nmodes) then
                       !
-                      mat(imode) = fl%coeff(iterm,vl,vr)
+                      call PTsingular_3D_me6(k1,k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                       !
                       !mat(imode) = fl%me(iterm,vl,vr)
                       !
@@ -29624,7 +29720,7 @@ end subroutine read_contr_matelem_expansion_classN
                       !
                    else
                       !
-                      mat(imode) = fl%coeff(iterm,vl,vr)
+                      call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                       !
                       !mat(imode) = fl%me(iterm,vl,vr)
                       !
@@ -29689,7 +29785,7 @@ end subroutine read_contr_matelem_expansion_classN
                      !
                   else
                      !
-                     mat(imode) = fl%coeff(iterm,vl,vr)
+                     call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,mat(imode))
                      !
                      !mat(imode) = fl%me(iterm,vl,vr)
                      !
@@ -33019,7 +33115,7 @@ end subroutine read_contr_matelem_expansion_classN
            contr(iclasses)%eigen(ilevel)%nu(0:PT%Nmodes) = nu(0:PT%Nmodes)
            contr(iclasses)%eigen(ilevel)%normal(0:PT%Nmodes) = normal(0:PT%Nmodes)
            !
-           if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
+           if ((trove%triatom_sing_resolve.or.count(job%bset_prop(:)%singular)>=2).and.job%bset(0)%range(2)/=0) then
                contr(iclasses)%eigen(ilevel)%lquant = normal(0)
            endif
            !
@@ -34366,6 +34462,10 @@ end subroutine read_contr_matelem_expansion_classN
        !
        nu_i(:) = PT%active_space%icoeffs(:,MaxTerm)
        PT%quanta%icoeffs(ib,:) = nu_i(:)
+       if (count(job%bset_prop(:)%singular)>=2) then
+         call PTsingular_3D_L1L2K(nu_i(1:PT%Nmodes),n_i,n_j,k_i,k_j,postprocess)
+         PT%lquant%icoeffs(ib,1) = k_i
+       endif
        !
        termvalue = b(ib)-ZPE
        !
@@ -34384,6 +34484,241 @@ end subroutine read_contr_matelem_expansion_classN
     if (job%verbose>=4) write(out,"('PThamiltonianMat_singular/end')") 
     !
   end subroutine PThamiltonianMat_singular  
+
+  subroutine PTsingular_3D_L1L2K(nu,l1,l2,k,kl,valid)
+    integer(ik),intent(in)  :: nu(:)
+    integer(ik),intent(out) :: l1,l2,k,kl
+    logical,intent(out)     :: valid
+    integer(ik) :: m1,m2,m3,lmax1,lmax2,kl_ext,k1,k2,kmax
+    !
+    m3 = size(nu)
+    m2 = m3 - 1
+    m1 = m3 - 2
+    lmax1 = job%bset(m1)%lmax
+    lmax2 = job%bset(m2)%lmax
+    l1 = mod(nu(m1),lmax1+1)
+    l2 = mod(nu(m2),lmax2+1)
+    kl = (nu(m3)+1)/2
+    if (job%bset(m3)%borders(2)>2.0_rk*pi) then
+      kl_ext = kl
+    else
+      kl_ext = 2*kl
+    endif
+    kmax = max(job%bset(0)%range(2),trove%kmax)
+    k1 = abs(l1-l2)
+    k2 = l1+l2
+    k  = k1+k2-kl_ext
+    valid = ((kl_ext==k1 .or. kl_ext==k2) .and. k>=0 .and. k<=kmax)
+    if (k>0 .and. kl>0 .and. mod(nu(m3),2)==1) valid = .false.
+  end subroutine PTsingular_3D_L1L2K
+
+  subroutine PTsingular_3D_me6(k1_mode,k2_mode,iterm,k,nu_i,nu_j,flcoeff,val)
+    integer(ik),intent(in) :: k1_mode,k2_mode,iterm,k(:),nu_i(:),nu_j(:)
+    real(rk),intent(in)    :: flcoeff(:,0:,0:)
+    real(rk),intent(out)   :: val
+    integer(ik) :: m1,m2,m3,l1_l,l2_l,k_l,kl_l,l1_r,l2_r,k_r,kl_r,sl,cl,sr,cr,dk_op,sig_l,sig_r
+    integer(ik) :: iterm_rot,iterm_cor,k_mode,iterm_p,pm
+    real(rk)    :: grot_val,c_cor,sgn_p,val_p1,val_p2
+    logical     :: valid_l,valid_r,coupled_l,coupled_r,is_even_op,same_tau
+    type(PTcoeffT),pointer :: fl_p
+    !
+    m3 = PT%Nmodes
+    if (count(job%bset_prop(:)%singular)<2) then
+      val = flcoeff(iterm,nu_i(m3),nu_j(m3))
+      return
+    endif
+    call PTsingular_3D_L1L2K(nu_i(1:m3),l1_l,l2_l,k_l,kl_l,valid_l)
+    call PTsingular_3D_L1L2K(nu_j(1:m3),l1_r,l2_r,k_r,kl_r,valid_r)
+    if (.not.valid_l .or. .not.valid_r) then
+      val = 0.0_rk
+      return
+    endif
+    m2 = m3 - 1
+    m1 = m3 - 2
+    sig_l = 0
+    if (l1_l>l2_l) sig_l = 1
+    if (l1_l<l2_l) sig_l = -1
+    sig_r = 0
+    if (l1_r>l2_r) sig_r = 1
+    if (l1_r<l2_r) sig_r = -1
+    coupled_l = (k_l>0 .and. kl_l>0)
+    coupled_r = (k_r>0 .and. kl_r>0)
+    sl = 2*kl_l - 1
+    cl = 2*kl_l
+    sr = 2*kl_r - 1
+    cr = 2*kl_r
+    if ((k1_mode==-3 .and. k2_mode==-3) .or. (k1_mode>0 .and. k2_mode==-3)) then
+      val = 0.0_rk
+      return
+    endif
+    if ((k1_mode<0 .and. k2_mode<0 .and. abs(k1_mode)/=abs(k2_mode) .and. (abs(k1_mode)==3 .or. abs(k2_mode)==3)) .or. &
+        (k1_mode>0 .and. (k2_mode==-1 .or. k2_mode==-2))) then
+      dk_op = 1
+    else
+      dk_op = 0
+    endif
+    if (dk_op==1) then
+      if (abs(k_l-k_r)/=1) then
+        val = 0.0_rk
+        return
+      endif
+      if (k(m1)==0 .and. k1_mode/=m1 .and. l1_l/=l1_r) then
+        val = 0.0_rk
+        return
+      endif
+      if (k(m2)==0 .and. k1_mode/=m2 .and. l2_l/=l2_r) then
+        val = 0.0_rk
+        return
+      endif
+      fl_p => null()
+      sgn_p = 1.0_rk
+      is_even_op = .true.
+      if (k1_mode<0 .and. k2_mode<0) then
+        if (min(abs(k1_mode),abs(k2_mode))==1) then
+          is_even_op = .true.
+          if (associated(me%grot)) fl_p => me%grot(2,3)
+          sgn_p = 1.0_rk
+        else
+          is_even_op = .false.
+          if (associated(me%grot)) fl_p => me%grot(1,3)
+          sgn_p = -1.0_rk
+        endif
+      elseif (k1_mode>0) then
+        if (k2_mode==-2) then
+          is_even_op = .true.
+          if (associated(me%gcor)) fl_p => me%gcor(k1_mode,1)
+          sgn_p = -1.0_rk
+        else
+          is_even_op = .false.
+          if (associated(me%gcor)) fl_p => me%gcor(k1_mode,2)
+          sgn_p = 1.0_rk
+        endif
+      endif
+      same_tau = (mod(nu_i(m3),2) == mod(nu_j(m3),2))
+      if (same_tau .neqv. is_even_op) then
+        val = 0.0_rk
+        return
+      endif
+      if (.not.coupled_l .and. .not.coupled_r) then
+        val = flcoeff(iterm,nu_i(m3),nu_j(m3))
+        return
+      endif
+      pm = k_r - k_l
+      val_p1 = 0.0_rk
+      val_p2 = 0.0_rk
+      if (associated(fl_p)) then
+        if (associated(fl_p%coeff)) then
+          do iterm_p = 1, fl_p%Ncoeff
+            if (all(fl_p%IndexQ(1:m3-1,iterm_p)==k(1:m3-1))) then
+              if (coupled_l .and. coupled_r) then
+                val_p1 = val_p1 + fl_p%coeff(iterm_p,cl,sr)
+                val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,cr)
+              elseif (.not.coupled_l .and. coupled_r) then
+                val_p1 = val_p1 + fl_p%coeff(iterm_p,nu_i(m3),sr)
+              elseif (coupled_l .and. .not.coupled_r) then
+                val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,nu_j(m3))
+              endif
+              exit
+            endif
+          enddo
+        endif
+      endif
+      if (coupled_l .and. coupled_r) then
+        val = 0.5_rk*(flcoeff(iterm,cl,cr) + real(sig_l*sig_r,rk)*flcoeff(iterm,sl,sr) &
+            + sgn_p*real(pm,rk)*(real(sig_r,rk)*val_p1 - real(sig_l,rk)*val_p2))
+      elseif (.not.coupled_l .and. coupled_r) then
+        val = (flcoeff(iterm,nu_i(m3),cr) + sgn_p*real(pm*sig_r,rk)*val_p1)/sqrt(2.0_rk)
+      else
+        val = (flcoeff(iterm,cl,nu_j(m3)) - sgn_p*real(pm*sig_l,rk)*val_p2)/sqrt(2.0_rk)
+      endif
+      return
+    endif
+    if (k_l/=k_r) then
+      val = 0.0_rk
+      return
+    endif
+    if (k(m1)==0 .and. k(m3)==0 .and. k1_mode/=m1 .and. k2_mode/=m1 .and. l1_l/=l1_r) then
+      val = 0.0_rk
+      return
+    endif
+    if (k(m2)==0 .and. k(m3)==0 .and. k1_mode/=m2 .and. k2_mode/=m2 .and. l2_l/=l2_r) then
+      val = 0.0_rk
+      return
+    endif
+    if (k1_mode==m3 .and. k2_mode==m3) then
+      if (k(m1)>0 .and. k(m2)==0 .and. k(m3)==0) then
+        if (nu_i(m3)==nu_j(m3) .and. l1_l==l1_r .and. l2_l==l2_r) then
+          val = -real(l1_l*l1_l,rk)*trove%g_vib(m3,m3)%field(iterm,0) - 2.0_rk*trove%pseudo%field(iterm,0)
+        else
+          val = 0.0_rk
+        endif
+        return
+      elseif (k(m1)==0 .and. k(m2)>0 .and. k(m3)==0) then
+        if (nu_i(m3)==nu_j(m3) .and. l1_l==l1_r .and. l2_l==l2_r) then
+          val = -real(l2_l*l2_l,rk)*trove%g_vib(m3,m3)%field(iterm,0) - 2.0_rk*trove%pseudo%field(iterm,0)
+        else
+          val = 0.0_rk
+        endif
+        return
+      endif
+    endif
+    if (k_l==0) then
+      val = flcoeff(iterm,nu_i(m3),nu_j(m3))
+      return
+    endif
+    if (.not.coupled_l .and. .not.coupled_r) then
+      if (l1_l==l1_r .and. l2_l==l2_r) then
+        val = flcoeff(iterm,nu_i(m3),nu_j(m3))
+      else
+        val = 0.0_rk
+      endif
+    elseif (coupled_l .neqv. coupled_r) then
+      val = flcoeff(iterm,nu_i(m3),nu_j(m3))/sqrt(2.0_rk)
+    else
+      val = 0.5_rk*(flcoeff(iterm,cl,cr) + real(sig_l*sig_r,rk)*flcoeff(iterm,sl,sr))
+    endif
+    if (k1_mode==m3 .and. k2_mode==m3 .and. k(m1)>0 .and. k(m2)>0) then
+      if (associated(me%grot(3,3)%coeff)) then
+        do iterm_rot = 1, me%grot(3,3)%Ncoeff
+          if (all(me%grot(3,3)%IndexQ(1:m3,iterm_rot)==k(1:m3))) then
+            if (.not.coupled_l .and. .not.coupled_r) then
+              if (l1_l==l1_r .and. l2_l==l2_r) then
+                grot_val = me%grot(3,3)%coeff(iterm_rot,nu_i(m3),nu_j(m3))
+              else
+                grot_val = 0.0_rk
+              endif
+            elseif (coupled_l .neqv. coupled_r) then
+              grot_val = me%grot(3,3)%coeff(iterm_rot,nu_i(m3),nu_j(m3))/sqrt(2.0_rk)
+            else
+              grot_val = 0.5_rk*(me%grot(3,3)%coeff(iterm_rot,cl,cr) + real(sig_l*sig_r,rk)*me%grot(3,3)%coeff(iterm_rot,sl,sr))
+            endif
+            val = val - real(k_l*k_l,rk)*grot_val
+            exit
+          endif
+        enddo
+      endif
+    elseif ((k1_mode>0 .and. k1_mode<m3 .and. k2_mode==m3) .or. (k1_mode==m3 .and. k2_mode>0 .and. k2_mode<m3)) then
+      k_mode = min(k1_mode,k2_mode)
+      if (associated(me%gcor(k_mode,3)%coeff)) then
+        do iterm_cor = 1, me%gcor(k_mode,3)%Ncoeff
+          if (all(me%gcor(k_mode,3)%IndexQ(1:m3,iterm_cor)==k(1:m3))) then
+            if (coupled_l .and. coupled_r) then
+              c_cor = 0.5_rk*real(k_l,rk)*(real(sig_l,rk)*me%gcor(k_mode,3)%coeff(iterm_cor,sl,cr) &
+                                         - real(sig_r,rk)*me%gcor(k_mode,3)%coeff(iterm_cor,cl,sr))
+            elseif (coupled_l .and. .not.coupled_r) then
+              c_cor = real(k_l*sig_l,rk)*me%gcor(k_mode,3)%coeff(iterm_cor,sl,nu_j(m3))/sqrt(2.0_rk)
+            elseif (.not.coupled_l .and. coupled_r) then
+              c_cor = -real(k_l*sig_r,rk)*me%gcor(k_mode,3)%coeff(iterm_cor,nu_i(m3),sr)/sqrt(2.0_rk)
+            else
+              c_cor = 0.0_rk
+            endif
+            val = val + c_cor
+            exit
+          endif
+        enddo
+      endif
+    endif
+  end subroutine PTsingular_3D_me6  
   
 
 !
@@ -36417,7 +36752,7 @@ end subroutine read_contr_matelem_expansion_classN
           contr(1)%eigen(ilevel)%largest_coeff    = eigen(ilevel)%largest_coeff
           contr(1)%eigen(ilevel)%lquant = sym%lquant(contr(1)%eigen(ilevel)%isym)
           !
-          if (trove%triatom_sing_resolve.and.job%bset(0)%range(2)/=0) then
+          if ((trove%triatom_sing_resolve.or.count(job%bset_prop(:)%singular)>=2).and.job%bset(0)%range(2)/=0) then
             contr(1)%eigen(ilevel)%lquant = eigen(ilevel)%normal(0)
           endif
           !
@@ -38548,11 +38883,11 @@ end subroutine split_terms_comb
 
 
 
-subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoeff,prim_vect,me_contr)
+subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,imode,jmode,nterms,terms,FLcoeff,prim_vect,me_contr)
   implicit none 
 
   character(cl), intent(in) :: func_tag
-  integer(ik), intent(in) :: nterms, terms(:,:)
+  integer(ik), intent(in) :: imode, jmode, nterms, terms(:,:)
   real(rk), intent(in)  :: FLcoeff(:,0:,0:)
   real(rk), intent(in) :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
@@ -38596,7 +38931,8 @@ subroutine calc_contr_matelem_expansion_Trot_Nclass(func_tag,nterms,terms,FLcoef
          do kmode=imode1, imode2
             me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
         enddo
-        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        call PTsingular_3D_me6(-imode,-jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
       enddo
     enddo
   enddo  
@@ -38669,7 +39005,8 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
            me_term(kmode) = me%vibmode(kmode,0)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
          enddo
          !
-         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+         call PTsingular_3D_me6(0_ik,0_ik,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
          !
       enddo
       !
@@ -38827,7 +39164,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass(func_tag,imode,jmode,nterms,
            endif
         enddo
         !
-        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
         !
       enddo
       !
@@ -38904,7 +39242,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,nterm
              me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -38934,7 +39273,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_3(func_tag,imode,jmode,nterm
              endif
           enddo
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -39010,7 +39350,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
           do kmode=imode1,imode2
              me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
         enddo
         !
       enddo
@@ -39026,11 +39367,12 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
         nu_j(1:nmodes) = contr(iclass)%prim_bs%icoeffs(1:nmodes,jprim)
         do iterm=1, nterms
           do kmode=imode1,imode2
-             me_term(kmode) = me%vibmode(imode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
+             me_term(kmode) = me%vibmode(kmode,-1)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
           me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -39051,7 +39393,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
           enddo
           me_term(imode) = -me%vibmode(imode,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -39077,7 +39420,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
           me_term(imode) = -me%vibmode(imode,1)%coeff(terms(imode,iterm),nu_j(imode),nu_i(imode))
           me_term(jmode) = me%vibmode(jmode,1)%coeff(terms(jmode,iterm),nu_i(jmode),nu_j(jmode))
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -39099,7 +39443,8 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
              me_term(kmode) = me%vibmode(kmode,2)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
           enddo
           !
-          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+          call PTsingular_3D_me6(imode,jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+          me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
           !
         enddo
         !
@@ -39125,10 +39470,10 @@ subroutine calc_contr_matelem_expansion_Tvib_Nclass_2(func_tag,imode,jmode,nterm
 end subroutine calc_contr_matelem_expansion_Tvib_Nclass_2
 
 
-subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,FLcoeff,prim_vect,me_contr)
+subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,jmode,nterms,terms,FLcoeff,prim_vect,me_contr)
 
   character(cl), intent(in) :: func_tag
-  integer(ik), intent(in) :: imode, nterms, terms(:,:)
+  integer(ik), intent(in) :: imode, jmode, nterms, terms(:,:)
   real(rk), intent(in)  :: FLcoeff(:,0:,0:)
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
@@ -39180,7 +39525,8 @@ subroutine calc_contr_matelem_expansion_Tcor_Nclass(func_tag,imode,nterms,terms,
             !
         enddo
         !
-        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        call PTsingular_3D_me6(imode,-jmode,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
         !
       enddo
       !

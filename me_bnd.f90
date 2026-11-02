@@ -6239,7 +6239,7 @@ module me_bnd
           dpsil(:) = dPsi(vl+1,:)
           psil_sin(:) = psil(:)*rho_m(:)
           phil(:) = psil_sin(:)*sqrt( sinrho(:) )
-          dphil(:) = rho_m(:)*dpsil(:)+cosrho(:)*0.5_ark*psil_sin(:)
+          dphil(:) = sinrho(:)*dpsil(:)+cosrho(:)*0.5_ark*psil_sin(:)
           !
           ! Here we save the complete basis functions phi but incomplte derivatives
           ! dphil = (d psi/ d rho) 1/sqrt(sin(rho))
@@ -6268,7 +6268,7 @@ module me_bnd
              dpsir = dPsi(vr+1,:)
              psir_sin(:) = psir(:)*rho_m(:)
              phir(:) = psir_sin(:)*sqrt( sinrho(:) )
-             dphir(:) = rho_m(:)*dpsir(:)+cosrho(:)*0.5_ark*psir_sin(:)
+             dphir(:) = sinrho(:)*dpsir(:)+cosrho(:)*0.5_ark*psir_sin(:)
              !
              ! check orthogonality and normalisation
              !
@@ -6346,6 +6346,15 @@ module me_bnd
        !
      enddo loop_k
      !
+     ! kinetic coordinate powers on the grid: they do not depend on the basis functions and
+     ! therefore are computed once here and not inside the (vl,k,m,vr) loops below
+     !
+     do ipower = 0, maxorder 
+        do i = 0 ,npoints
+           xton(i,ipower) = MLcoord_direct(rho_kinet(i),1,imode,ipower)
+        enddo
+     enddo
+     !
      ! start a new large loop over k
      !
      do k = kmin,kmax
@@ -6377,7 +6386,7 @@ module me_bnd
             rho_m = 1.0_ark         ! factor for m = 0
             if (m>0) rho_m = sinrho ! factor for all m>0
             !
-            do vr = vl,nmax
+            do vr = 0,nmax
                 !
                 ir = vr*(kmax+1)+m
                 !
@@ -6397,12 +6406,6 @@ module me_bnd
                 psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                 !
                 psipsi_t = 0 
-                !
-                do ipower = 0, maxorder 
-                   do i = 0 ,npoints
-                      xton(i,ipower) = MLcoord_direct(rho_kinet(i),1,imode,ipower)
-                   enddo
-                enddo
                 !
                 do lambda = 0,maxorder
                    !
@@ -6425,7 +6428,6 @@ module me_bnd
                    endif
                    !
                    g_numerov(3,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                   if (il/=ir) g_numerov(3,lambda,ir,il) = g_numerov(3,lambda,il,ir)
                    !
                    ! momenta-free in kinetic part 
                    !
@@ -6460,7 +6462,11 @@ module me_bnd
                    endif
                    !
                    if (Is_it_one_over_sin2) then 
-                      phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)*sinrho(:)
+                      if (k==0.or.m==0.or.k/=m) then
+                         phivphi(:) = 0
+                      else
+                         phivphi(:) = psil(:)*xi_n(:,lambda,1)*psir(:)*sinrho(:)
+                      endif
                    elseif(Is_it_one_over_sin) then
                       phivphi(:) = psil_sin(:)*xi_n(:,lambda,1)*psir_sin(:)
                    else
@@ -6469,27 +6475,11 @@ module me_bnd
                    !
                    g_numerov(-1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
                    !
-                   ! We also control the symmetry of the non-diagonal matrix elements 
-                   !
-                   if (il/=ir) g_numerov(-1:0,lambda,ir,il) = g_numerov(-1:0,lambda,il,ir)
-                   !
                    ! momenta-quadratic part 
                    !
                    phivphi(:) =-dpsil(:)*xi_n(:,lambda,1)*dpsir(:)*sinrho(:) 
                    !
                    g_numerov(2,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                   !
-                   ! The gvib term can be combined with the pseudopotential part.
-                   ! It will allow us to spare additional array and i.e. memory
-                   ! and it is also necessary in case of the singular solution to do so.
-                   !
-                   !phivphi(:) =-2.0_ark*psil_sin(:)*rho_kinet(:)**lambda*psir_sin(:)
-                   !
-                   !U_t =  integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                   !
-                   !g_numerov(2,lambda,il,ir) = g_numerov(2,lambda,il,ir) + U_t
-                   !
-                   if (vl/=vr) g_numerov(2,lambda,ir,il) = g_numerov(2,lambda,il,ir)
                    !
                    ! momenta-linear part:
                    ! < vl | d/dx g(x) | vr > = - < vr | g(x) d/dx | vl >
@@ -6504,33 +6494,6 @@ module me_bnd
                    endif
                    !
                    g_numerov(1,lambda,il,ir) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                   !
-                   !if (lambda==0) then 
-                   !   phivphi(:) = psil(:)*dphir(:)*sinrho(:)
-                   !else
-                   !   phivphi(:) = psil(:)*xi_n(:,lambda,1)*dphir(:)*sinrho(:)
-                   !endif
-                   !
-                   if (vl/=vr) then
-                      !
-                      if (Is_it_one_over_sin2) then 
-                        ! Momenta-linear part cannot be singular squared, the matrix elements are set to zero 
-                        phivphi = 0 
-                      elseif(Is_it_one_over_sin) then
-                         phivphi(:) = dphil(:)*xi_n(:,lambda,1)*psir(:)
-                      else
-                         phivphi(:) = dphil(:)*xi_n(:,lambda,1)*psir_sin(:)
-                      endif
-                      !
-                      !if (lambda==0) then 
-                      !   phivphi(:) = -dphil(:)*psir(:)*sinrho(:)
-                      !else
-                      !   phivphi(:) = -dphil(:)*xi_n(:,lambda,1)*psir(:)*sinrho(:)
-                      !endif
-                      !
-                      g_numerov(1,lambda,ir,il) = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-                      !
-                   endif 
                    !
                    if (verbose>=7) then 
                        write(out,"('g_numerov(0,',i4,i4,i4,') = ',f18.8)") lambda,vl,vr,g_numerov(0,lambda,vl,vr)

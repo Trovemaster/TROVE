@@ -17,7 +17,8 @@ module pot_abcd
          MLpoten_c2h2_7_q2q1q4q3_linearized,MLdms_HCCH_7D_local,MLpoten_c2h2_7_q2q1q4q3_linearized_morphing,MLdms_HCCH_7D_7ORDER,&
          MLdms_HCCH_7D_7ORDER_linear,MLalpha_hooh_MB,poten_c2h2_morse_sinalpha_cosntau
   public MLalpha_iso_c2h2_7_q2q1q4q3,MLpoten_abcd_morse_cos_angle_cosntau,MLdms2xyz_abcd_r_alpha_rho_tau,&
-         MLpoten_abcd_morse_cos_angle_cosntau_sin_sin
+         MLpoten_abcd_morse_cos_angle_cosntau_sin_sin,MLpoten_c2h2_morse_kappa,&
+         MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin
   !
   private
 
@@ -1005,32 +1006,17 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
            !
            x6 = cos(tau)*sin(x4)*sin(x5)
            !
-           !if (abs(x6-q(6))>sqrt(small_)) then
-           !  !
-           !  continue
-           !  !
-           !endif
-
-           !
          endif
          !
-         !cosalpha1 =  v2(3)/rc1h1
-         !cosalpha2 = -v3(3)/rc2h2
+      elseif (ncoords==6) then
          !
-         !x4 = aacos(cosalpha1,txt)
-         !x5 = aacos(cosalpha2,txt)
-         !
-         !x6 = (v2(1)*v3(1)+v2(2)*v3(2))/(rc1h1*rc2h2)
-         !
-         !e4 = cos(e4)
-         !
-         !
-         !n3(:) = MLvector_product(v12(:),v31(:))
-         !
-         !sintau =  sqrt( sum( n3(:)**2 ) )
-         !costau = -sum( v12(:)*v31(:) )
-         !
-         !tau = atan2(sintau,costau)
+         x1 = local(1)
+         x2 = local(2)
+         x3 = local(3)
+         x4 = local(4)
+         x5 = local(5)
+         tau = local(6)
+         x6 = cos(tau)*sin(x4)*sin(x5)
          !
       else
         !
@@ -1081,6 +1067,187 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
       f = vpot
       !
   end function MLpoten_c2h2_morse_kappa
+
+
+  !
+  ! Symmetric C2H2 (HCCH) potential with exact linear-geometry degeneracy resolution:
+  !   V(q) = sum c_{ijklmn} f1^i (f2^j f3^k f4^l f5^m + sym) cos(n*tau) * { sin(rho1)*sin(rho2) (n>0), 1 (n=0) }
+  ! where:
+  !   f1 = 1 - exp(-a1*(R_CC - R_CC_eq))
+  !   f2 = 1 - exp(-a2*(r1   - r_CH_eq))
+  !   f3 = 1 - exp(-a2*(r2   - r_CH_eq))
+  !   f4 = cos(rho1_eq) - cos(rho1) = cos(alpha1) - cos(alpha1_eq)  [= 1 - cos(rho1) for linear eq]
+  !   f5 = cos(rho2_eq) - cos(rho2) = cos(alpha2) - cos(alpha2_eq)  [= 1 - cos(rho2) for linear eq]
+  !
+  function MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin(ncoords,natoms,local,xyz,force) result(f)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  f
+      !
+      integer(ik)          ::  i,k_ind(6)
+      real(ark)    :: x1,x2,x3,x4,x5,e1,e2,e4,e6,vpot,q(6),y(6),a1,a2,pd,rc1c2,rc1h1,rc2h2,delta1x,delta1y,delta2x,&
+                      delta2y,tau
+      real(ark)    :: alpha1,alpha2,sinalpha2,sinalpha1,tau1,tau2,v1(3),v2(3),v3(3),v12(3),v31(3),r21,r31,n3(3),sintau,&
+                      costau,cosalpha1,cosalpha2
+      character(len=cl)  :: txt = 'MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin'
+      !
+      pd=pi/180.0_ark
+      e1=force(1)
+      e2=force(2)
+      if (abs(force(3))>2.0_ark*pi) then
+        e4=force(3)*pd
+      else
+        e4=force(3)
+      endif
+      e6=force(4)*pd
+      !
+      a1 = force(5)
+      a2 = force(6)
+      !
+      rc1c2    = local(1)
+      rc1h1    = local(2)
+      rc2h2    = local(3)
+      !
+      if (molec%zmatrix(3)%connect(4)==101) then
+         !
+         delta1x = local(4)
+         delta1y = local(5)
+         delta2x = local(6)
+         delta2y = local(7)
+         !
+         tau1 = pi-atan2(sin(delta1y),-sin(delta1x))
+         tau2 = pi-atan2(sin(delta2y),-sin(delta2x))
+         tau = tau2-tau1
+         !
+         sinalpha1 = sqrt(sin(delta1x)**2+sin(delta1y)**2)
+         sinalpha2 = sqrt(sin(delta2x)**2+sin(delta2y)**2)
+         !
+         alpha1 = pi-asin(sinalpha1)
+         alpha2 = pi-asin(sinalpha2)
+         !
+         x1 = rc1c2
+         x3 = rc1h1
+         x2 = rc2h2
+         x5 = alpha1
+         x4 = alpha2
+         !
+      elseif (molec%zmatrix(3)%connect(4)==102) then
+         !
+         delta1x = local(4)
+         delta1y = local(5)
+         delta2x = local(6)
+         delta2y = local(7)
+         !
+         tau1 = pi-atan2((delta1y),-(delta1x))
+         tau2 = pi-atan2((delta2y),-(delta2x))
+         tau = tau2-tau1
+         !
+         sinalpha1 = sqrt((delta1x)**2+(delta1y)**2)
+         sinalpha2 = sqrt((delta2x)**2+(delta2y)**2)
+         !
+         alpha1 = pi-asin(sinalpha1)
+         alpha2 = pi-asin(sinalpha2)
+         !
+         x1 = rc1c2
+         x3 = rc1h1
+         x2 = rc2h2
+         x5 = alpha1
+         x4 = alpha2
+         !
+      elseif (molec%zmatrix(3)%connect(4)==103) then
+         !
+         v1(:) = xyz(2,:)-xyz(1,:)
+         v2(:) = xyz(3,:)-xyz(1,:)
+         v3(:) = xyz(4,:)-xyz(2,:)
+         !
+         x1 = sqrt(sum(v1(:)**2))
+         x2 = sqrt(sum(v2(:)**2))
+         x3 = sqrt(sum(v3(:)**2))
+         !
+         cosalpha1 = sum( v1(:)*v2(:))/(x1*x2)
+         cosalpha2 = sum(-v1(:)*v3(:))/(x1*x3)
+         !
+         x4 = aacos(cosalpha1,txt)
+         x5 = aacos(cosalpha2,txt)
+         !
+         v12(:) = MLvector_product(v2(:),v1(:))
+         v31(:) = MLvector_product(v3(:),v1(:))
+         !
+         v12(:) = v12(:)/(x1*x2)
+         v31(:) = v31(:)/(x1*x3)
+         !
+         r21 = sqrt(sum(v12(:)**2))
+         r31 = sqrt(sum(v31(:)**2))
+         !
+         tau = 0.0_ark
+         if (r21>sqrt(small_).and.r31>sqrt(small_)) then
+           v12(:) = v12(:)/r21
+           v31(:) = v31(:)/r31
+           n3(:) = MLvector_product(v12(:),v31(:))
+           sintau =  sqrt( sum( n3(:)**2 ) )
+           costau = -sum( v12(:)*v31(:) )
+           tau = atan2(sintau,costau)
+         endif
+         !
+      elseif (ncoords==6) then
+         !
+         x1  = local(1)
+         x2  = local(2)
+         x3  = local(3)
+         x4  = local(4)
+         x5  = local(5)
+         tau = local(6)
+         !
+      else
+         !
+         write(out,"('MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin: unsupported ncoords = ',i6)") ncoords
+         stop 'MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin: unsupported ncoords'
+         !
+      endif
+      !
+      q(1) = 1.0_ark-exp(-a1*(x1-e1))
+      q(2) = 1.0_ark-exp(-a2*(x2-e2))
+      q(3) = 1.0_ark-exp(-a2*(x3-e2))
+      !
+      ! Since rho_i = pi - alpha_i and rho_e = pi - e4,
+      ! cos(rho_e) - cos(rho_i) = cos(alpha_i) - cos(e4) [= 1 - cos(rho_i) for e4 = pi]
+      !
+      q(4) = cos(x4) - cos(e4)
+      q(5) = cos(x5) - cos(e4)
+      q(6) = tau
+      !
+      vpot = 0.0_ark
+      !
+      do i=7,molec%parmax
+        !
+        y(1:5) = q(1:5)**molec%pot_ind(1:5,i)
+        y(6)   = cos(real(molec%pot_ind(6,i),ark)*tau)
+        !
+        if (molec%pot_ind(6,i)/=0) y(6) = y(6)*sin(x4)*sin(x5)
+        !
+        vpot = vpot + force(i)*product(y(1:6))
+        !
+        if (molec%pot_ind(2,i)/=molec%pot_ind(3,i).or.molec%pot_ind(4,i)/=molec%pot_ind(5,i)) then
+          !
+          k_ind(2) = molec%pot_ind(3,i)
+          k_ind(3) = molec%pot_ind(2,i)
+          k_ind(4) = molec%pot_ind(5,i)
+          k_ind(5) = molec%pot_ind(4,i)
+          !
+          y(2:5) = q(2:5)**k_ind(2:5)
+          !
+          vpot = vpot + force(i)*product(y(1:6))
+          !
+        endif
+        !
+      enddo
+      !
+      f = vpot
+      !
+  end function MLpoten_c2h2_morse_cos_angle_cosntau_sin_sin
 
 
 

@@ -115,6 +115,38 @@ module mol_abcd
           !
       endif
       !
+    case('R1-R2-R3-RHO1-RHO2-TAU')
+       !
+       if (direct) then
+          ! 
+          dst(1:3) = dsrc(1:3)
+          dst(4:5) = molec%local_eq(4:5)-src(4:5)
+          dst(6) = src(6)
+          !
+      else ! not direct
+          !
+          dst(1:3) = src(1:3)+molec%local_eq(1:3)
+          dst(4:5) = -src(4:5)+molec%local_eq(4:5)
+          dst(6) = src(6)
+          !
+      endif
+       !
+    case('R1-R2-R3-RHO1-RHO2-TAU-ABS')
+       !
+       if (direct) then
+          ! 
+          dst(1:3) = src(1:3)
+          dst(4:5) = pi-src(4:5)
+          dst(6) = src(6)
+          !
+      else ! not direct
+          !
+          dst(1:3) = src(1:3)
+          dst(4:5) = pi-src(4:5)
+          dst(6) = src(6)
+          !
+      endif
+      !
     case('R-ALPHA-R-TAU')
        !
        if (direct) then
@@ -1178,7 +1210,7 @@ module mol_abcd
        return 
     endif
     !
-    if (molec%rho_border(2)>2.0_ark*pi) extended = .true.
+    extended = (molec%rho_border(2)>2.0_ark*pi)
     !
     select case(trim(molec%coords_transform))
         !
@@ -1505,7 +1537,7 @@ module mol_abcd
          !
        end select
        !
-    case('R-ALPHA-TAU-REF','R-ALPHA-TAU')
+    case('R-ALPHA-TAU-REF','R-ALPHA-TAU','R1-R2-R3-RHO1-RHO2-TAU','R1-R2-R3-RHO1-RHO2-TAU-ABS')
        !
        select case(trim(molec%symmetry))
        case default
@@ -3656,6 +3688,21 @@ module mol_abcd
           if (mod(K+2,2)/=0.and.tau==0) gamma = 4 !4 !3 !2 !4 !2 !3 ; return
           if (mod(K+2,2)/=0.and.tau==1) gamma = 2 !3 !2 !3 !2 !4 !4 ; return
           !
+       case('D2H(M)')
+          !
+          gamma = 0 
+          ideg = 1
+          if (mod(K+2,2)==0.and.tau==0) gamma = 1
+          if (mod(K+2,2)==0.and.tau==1) gamma = 3
+          if (trim(molec%coords_transform)=='R1-R2-R3-RHO1-RHO2-TAU'.or.&
+              trim(molec%coords_transform)=='R1-R2-R3-RHO1-RHO2-TAU-ABS') then
+             if (mod(K+2,2)/=0.and.tau==0) gamma = 7
+             if (mod(K+2,2)/=0.and.tau==1) gamma = 5
+          else
+             if (mod(K+2,2)/=0.and.tau==0) gamma = 5
+             if (mod(K+2,2)/=0.and.tau==1) gamma = 7
+          endif
+          !
        end select
        !
     case default
@@ -3734,8 +3781,14 @@ module mol_abcd
           ideg = 1
           if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !; return
           if (mod(K+2,2)==0.and.tau==1) gamma = 3 !3 !; return
-          if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
-          if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
+          if (trim(molec%coords_transform)=='R1-R2-R3-RHO1-RHO2-TAU'.or.&
+              trim(molec%coords_transform)=='R1-R2-R3-RHO1-RHO2-TAU-ABS') then
+             if (mod(K+2,2)/=0.and.tau==0) gamma = 7 !; return
+             if (mod(K+2,2)/=0.and.tau==1) gamma = 5 !; return
+          else
+             if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
+             if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
+          endif
           !
        case('DNH','DNH(M)')
           !

@@ -1370,7 +1370,11 @@ module moltype
            !
            f_t = sqrt(sum(n3(:)**2))
            !
-           n3 = n3/f_t
+           if (f_t > small_) then
+              n3 = n3/f_t
+           else
+              n3 = (/0.0_ark,-1.0_ark,0.0_ark/)
+           endif
            !
            n1 = MLvector_product(n2,n3)
            !
@@ -1394,7 +1398,11 @@ module moltype
            !
            f_t = sqrt(sum(n3(:)**2))
            !
-           n3 = n3/f_t
+           if (f_t > small_) then
+              n3 = n3/f_t
+           else
+              n3 = (/0.0_ark,1.0_ark,0.0_ark/)
+           endif
            !
            n1 = MLvector_product(n2,n3)
            !

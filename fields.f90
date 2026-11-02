@@ -2127,6 +2127,11 @@ module fields
                 !
                 call readi(i_t)
                 trove%kmax = i_t
+                if (.not.krot_defined) then
+                  job%bset(imode)%range(2) = i_t
+                  trove%krot = i_t
+                  krot_defined = .true.
+                endif
                 !
               case("OVRLP","DVRPOINTS","DPOINTS")
                 !
@@ -5451,12 +5456,18 @@ module fields
            stop 'Input error: SINRHO-LEGENDRE-K-SING can only work with FOURIER-UNOPTIMISED'
          endif
          !
-         ! reset lmax to the smallest allowed value
-         kmax =   min(job%bset(i)%lmax,(job%bset(trove%Nmodes)%range(2)+1)/2)
+         ! reset lmax to the smallest allowed value (accounting for Kmax and extended 4*pi torsion range)
+         kmax = (job%bset(trove%Nmodes)%range(2)+1)/2
+         if (abs(job%bset(trove%Nmodes)%borders(2)-job%bset(trove%Nmodes)%borders(1)-4.0_ark*pi)<0.1_ark) then
+            kmax = (kmax + max(job%bset(0)%range(2),trove%kmax))/2
+         else
+            kmax = kmax + (max(job%bset(0)%range(2),trove%kmax)+1)/2
+         endif
+         kmax = min(job%bset(i)%lmax,kmax)
          !
          job%bset(i)%lmax = kmax
          job%bset(i)%range(2) = ( job%bset(i)%range(2)+1 )*( kmax+1 )-1
-         job%bset(i)%res_coeffs = job%bset(imode)%res_coeffs/real((job%bset(trove%Nmodes)%range(2)+1),ark)
+         job%bset(i)%res_coeffs = job%bset(i)%res_coeffs/real((kmax+1),ark)
          !
       end select
       !
@@ -5799,7 +5810,7 @@ end subroutine check_read_save_none
       trove%manifold_rank(:) = 0
       trove%npoints=0
       trove%rhostep = 0
-      trove%rho_border(1:2) = 0
+      trove%rho_border(1:2) = job%bset(Nmodes)%borders(1:2)
       trove%periodic = job%bset(Nmodes)%periodic
       !
     case (1) ! non-rigid case, expansion around a rank=1 manifold
@@ -14813,6 +14824,17 @@ end subroutine check_read_save_none
     !
     ! If the basis set has been stored we can just read it from the hard disk and leave
     !
+    if (count(job%bset_prop(:)%singular)>=2) then
+       if (associated(trove%g_rot(3,3)%field)) then
+          do i = 1, trove%g_rot(3,3)%Ncoeff
+             if (trove%g_rot(3,3)%IndexQ(Nmodes-2,i)==0 .or. trove%g_rot(3,3)%IndexQ(Nmodes-1,i)==0) then
+                trove%g_rot(3,3)%field(i,:) = 0
+             endif
+          enddo
+       endif
+       if (associated(trove%g_cor(Nmodes,3)%field)) trove%g_cor(Nmodes,3)%field = 0
+    endif
+    !
     if (trim(trove%IO_hamiltonian)=='READ'.or.&
         trim(trove%IO_basisset)=='READ') then 
         !
@@ -14839,6 +14861,17 @@ end subroutine check_read_save_none
       !
       if (FLrotation) call FLRotbset_new(job%bset(0)%range(1))
       !
+    endif
+    !
+    if (count(job%bset_prop(:)%singular)>=2) then
+       if (associated(trove%g_rot(3,3)%me)) then
+          do i = 1, trove%g_rot(3,3)%Ncoeff
+             if (trove%g_rot(3,3)%IndexQ(Nmodes-2,i)==0 .or. trove%g_rot(3,3)%IndexQ(Nmodes-1,i)==0) then
+                trove%g_rot(3,3)%me(i,:,:) = 0
+             endif
+          enddo
+       endif
+       if (associated(trove%g_cor(Nmodes,3)%me)) trove%g_cor(Nmodes,3)%me = 0
     endif
     !
     bset_initialized = .true.
@@ -20952,6 +20985,13 @@ end subroutine check_read_save_none
                   !
                   if (i == nu_i) cycle
                   !
+                  ! terms singular at the reference geometry of mode i (e.g. 1/sin(rho_i) at rho_eq=0 for the singular
+                  ! bending modes coupled to the last mode) are excluded from the 1D zero-order problem
+                  if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                    g2_term = 0
+                    exit
+                  endif
+                  !
                   coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
                   !
                   g2_term = g2_term*coeff_term 
@@ -20980,6 +21020,13 @@ end subroutine check_read_save_none
                   !
                   if (i == nu_i) cycle
                   !
+                  ! terms singular at the reference geometry of mode i (e.g. 1/sin(rho_i) at rho_eq=0 for the singular
+                  ! bending modes coupled to the last mode) are excluded from the 1D zero-order problem
+                  if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                    f2_term = 0
+                    exit
+                  endif
+                  !
                   coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
                   !
                   f2_term = f2_term*coeff_term 
@@ -21006,6 +21053,13 @@ end subroutine check_read_save_none
                 do i = 1, trove%Nmodes_e
                   !
                   if (i == nu_i) cycle
+                  !
+                  ! terms singular at the reference geometry of mode i (e.g. 1/sin(rho_i) at rho_eq=0 for the singular
+                  ! bending modes coupled to the last mode) are excluded from the 1D zero-order problem
+                  if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                    gz_term = 0
+                    exit
+                  endif
                   !
                   coeff_term = MLcoord_direct(trove%chi_eq(i), 1, i, powers(i))
                   !
@@ -21892,7 +21946,9 @@ end subroutine check_read_save_none
        real(ark) :: f2(1:trove%Nmodes),g2(1:trove%Nmodes),gz(1:trove%Nmodes),f_t,g_t,rho_ref_,f2_term
        real(ark) :: gz_term,step,rho_kin0,rho_pot0,rho_ext0,rho_kin,rho_pot,rho_ext,f,g_term
        integer(ik) :: ipower,imode,nu_i,powers(trove%Nmodes),nmodes
-       integer(ik) :: jmode,i,k,j,irho_eq_,nu_,alloc
+       integer(ik) :: jmode,i,k,j,irho_eq_,nu_,alloc,iterm,b_func_outer_expon
+       character(len=20) :: b_func_type
+       logical :: skip_term,is_sin1,is_sin2
        type(FLpolynomT),pointer    :: fl,gl,gzl
        !
        p1d = 0 
@@ -21958,19 +22014,39 @@ end subroutine check_read_save_none
                 ipower = powers(nu_i)
                 if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
                 !
+                if (job%bset_prop(nu_i)%singular .and. molec%mode_list_present) then
+                  is_sin1 = .false.
+                  if (ipower>0 .and. ipower<=molec%basic_function_list(nu_i)%numfunc) then
+                    do iterm = 1, molec%basic_function_list(nu_i)%mode_set(ipower)%num_terms
+                      b_func_type = molec%basic_function_list(nu_i)%mode_set(ipower)%func_set(iterm)%name
+                      b_func_outer_expon = molec%basic_function_list(nu_i)%mode_set(ipower)%func_set(iterm)%outer_expon
+                      if ((b_func_type=='CSC_'.or.b_func_type=='COT_').and.b_func_outer_expon==1) is_sin1 = .true.
+                    enddo
+                  endif
+                  if (.not.is_sin1) cycle
+                endif
+                !
                 f2_term  =  fl%field(j,irho_eq_)
                 !
                 if (abs(f2_term)>small_) then 
                   !
+                  skip_term = .false.
                   do i = 1, trove%Nmodes_e
                     ! 
                     if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
+                    !
+                    ! skip terms singular at the reference geometry of the frozen mode i (e.g. 1/sin(rho) at rho_eq=0)
+                    if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                      skip_term = .true.
+                      exit
+                    endif
                     !
                     g_term = MLcoord_direct(trove%chi_eq(i), 1, i,powers(i)) 
                     !
                     f2_term = f2_term*g_term
                     !
                   enddo
+                  if (skip_term) cycle
                   !
                   ps(imode,ipower) = ps(imode,ipower) + f2_term
                   !
@@ -21992,16 +22068,35 @@ end subroutine check_read_save_none
               ipower = powers(nu_i)
               if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
               !
+              if (job%bset_prop(nu_i)%singular .and. molec%mode_list_present) then
+                skip_term = .false.
+                if (ipower>0 .and. ipower<=molec%basic_function_list(nu_i)%numfunc) then
+                  do iterm = 1, molec%basic_function_list(nu_i)%mode_set(ipower)%num_terms
+                    b_func_type = molec%basic_function_list(nu_i)%mode_set(ipower)%func_set(iterm)%name
+                    if (b_func_type=='CSC_'.or.b_func_type=='COT_') skip_term = .true.
+                  enddo
+                endif
+                if (skip_term) cycle
+              endif
+              !
               g2_term  =  gl%field(j,irho_eq_)
               !
               if (abs(g2_term)>small_) then 
                 !
+                skip_term = .false.
                 do i = 1, size(powers)
                   if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
+                  !
+                  ! skip terms singular at the reference geometry of the frozen mode i (e.g. 1/sin(rho) at rho_eq=0)
+                  if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                    skip_term = .true.
+                    exit
+                  endif
                   !
                   g2_term = g2_term*MLcoord_direct(trove%chi_eq(i), 1, i, powers(i)) 
                   !
                 enddo
+                if (skip_term) cycle
                 !
                 gvib(imode,ipower) = gvib(imode,ipower) + g2_term
                 !
@@ -22022,16 +22117,36 @@ end subroutine check_read_save_none
               ipower = powers(nu_i)
               if (trim(bs%type)=='HARMONIC'.or.job%bset(nu_i)%coord_kinet=='AUTO-HARMON') ipower = 0
               !
+              if (job%bset_prop(nu_i)%singular .and. molec%mode_list_present) then
+                is_sin2 = .false.
+                if (ipower>0 .and. ipower<=molec%basic_function_list(nu_i)%numfunc) then
+                  do iterm = 1, molec%basic_function_list(nu_i)%mode_set(ipower)%num_terms
+                    b_func_type = molec%basic_function_list(nu_i)%mode_set(ipower)%func_set(iterm)%name
+                    b_func_outer_expon = molec%basic_function_list(nu_i)%mode_set(ipower)%func_set(iterm)%outer_expon
+                    if ((b_func_type=='CSC_'.or.b_func_type=='COT_').and.b_func_outer_expon==2) is_sin2 = .true.
+                  enddo
+                endif
+                if (.not.is_sin2) cycle
+              endif
+              !
               gz_term  =  gzl%field(j,irho_eq_)
               !
               if (abs(gz_term)>small_) then 
                 !
+                skip_term = .false.
                 do i = 1, size(powers)
                   if(i == nu_i .and. trim(bs%type)/='HARMONIC' .and. job%bset(nu_i)%coord_kinet/='AUTO-HARMON') cycle
+                  !
+                  ! skip terms singular at the reference geometry of the frozen mode i (e.g. 1/sin(rho) at rho_eq=0)
+                  if (FL_basic_function_singular_at(i,powers(i),trove%chi_eq(i))) then
+                    skip_term = .true.
+                    exit
+                  endif
                   !
                   gz_term = gz_term*MLcoord_direct(trove%chi_eq(i),1,i,powers(i)) 
                   !
                 enddo
+                if (skip_term) cycle
                 !
                 grot(imode,ipower) = grot(imode,ipower) + gz_term
                 !
@@ -22282,7 +22397,7 @@ end subroutine check_read_save_none
              !
              if (present(muzz)) then
                !
-               if (abs(g1d(ipower))>small_) then 
+               if (abs(g1z(ipower))>small_) then 
                  f = MLcoord_direct(rho,1,nu_i,jpower)
                  muzz(i) = muzz(i) + g1z(ipower)*f
                endif
@@ -24196,13 +24311,13 @@ end subroutine check_read_save_none
     !
     Bx = 0 ; By = 0 ; Bz = 0 
     !
-    if (trove%lincoord/=1) Bx = factor/Ix
-    if (trove%lincoord/=2) By = factor/Iy
-    if (trove%lincoord/=3) Bz = factor/Iz
+    if (trove%lincoord/=1 .and. Ix>=sqrt(small_)) Bx = factor/Ix
+    if (trove%lincoord/=2 .and. Iy>=sqrt(small_)) By = factor/Iy
+    if (trove%lincoord/=3 .and. Iz>=sqrt(small_)) Bz = factor/Iz
     !
     Inertm = (/Ix,Iy,Iz/)
     do jx = 1,3
-      if (Inertm(jx)<sqrt(small_).and.trove%lincoord/=jx) then
+      if (Inertm(jx)<sqrt(small_).and.trove%lincoord/=jx.and..not.any(job%bset_prop(:)%singular)) then
         write (out,"('Too small Ix,Iy,Iz: ',3f14.6,'; if it is linear molecule change lincoord ',i0)") Ix,Iy,Iz,trove%lincoord
         stop 'Vanishing Ix,Iy,Iz'
       endif
@@ -27943,6 +28058,7 @@ end subroutine check_read_save_none
         a_t2(:) = cartesian(n2,:) - cartesian(n0,:)
         !
         cosa = sum(a_t1(:)*a_t2(:) )/( rcon(n1,n0)*rcon(n2,n0) )
+        cosa = max(-1.0_ark,min(1.0_ark,cosa))
         !
         r(trove%Nbonds+iangle) = acos(cosa)
         !
@@ -28057,18 +28173,8 @@ end subroutine check_read_save_none
           cosu = sum( u(:)*w(:) )
           cosv =-sum( v(:)*w(:) )
           !
-          sinu = sqrt(1.0_ark-cosu**2)
-          sinv = sqrt(1.0_ark-cosv**2)
-          !
-          B = sum( dvec1(:)*dvec2(:) )/( sinu*sinv )
-          !
-          tau_sign = 0
-          !
-          do iy =1,3
-            do iz =1,3
-               tau_sign = tau_sign - sum(epsil(:,iy,iz)*w(:)*dvec1(iy)*dvec2(iz))
-            enddo
-          enddo
+          sinu = sqrt(max(0.0_ark,1.0_ark-cosu**2))
+          sinv = sqrt(max(0.0_ark,1.0_ark-cosv**2))
           !
           dvec1(:) = MLvector_product(u(:),w(:))
           dvec2(:) = MLvector_product(v(:),w(:))
@@ -28076,22 +28182,25 @@ end subroutine check_read_save_none
           vec1 = sqrt( sum(dvec1(:)**2) )
           vec2 = sqrt( sum(dvec2(:)**2) )
           !
-          dvec1 = dvec1/vec1
-          dvec2 = dvec2/vec2
-          !
-          B = sum( dvec1(:)*dvec2(:) )
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          tau_sign = -sum( w(:)*a_t(:) )
-          !
-          cosdelta = B
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          sindelta = sqrt(sum(a_t(:)**2))
-          !
-          delta = atan2(sindelta,cosdelta)
+          if (vec1>small_ .and. vec2>small_) then
+            dvec1 = dvec1/vec1
+            dvec2 = dvec2/vec2
+            !
+            B = sum( dvec1(:)*dvec2(:) )
+            !
+            a_t = MLvector_product(dvec1(:),dvec2(:))
+            !
+            tau_sign = -sum( w(:)*a_t(:) )
+            !
+            cosdelta = B
+            !
+            sindelta = sqrt(sum(a_t(:)**2))
+            !
+            delta = atan2(sindelta,cosdelta)
+          else
+            delta = trove%local_eq(trove%Nbonds+trove%Nangles+iangle)
+            tau_sign = 0.0_ark
+          endif
           !
           !
           !if (abs(tau_sign)<(small_)) tau_sign = small_a
@@ -28165,18 +28274,8 @@ end subroutine check_read_save_none
           cosu = sum( u(:)*w(:) )
           cosv =-sum( v(:)*w(:) )
           !
-          sinu = sqrt(1.0_ark-cosu**2)
-          sinv = sqrt(1.0_ark-cosv**2)
-          !
-          B = sum( dvec1(:)*dvec2(:) )/( sinu*sinv )
-          !
-          tau_sign = 0
-          !
-          do iy =1,3
-            do iz =1,3
-               tau_sign = tau_sign - sum(epsil(:,iy,iz)*w(:)*dvec1(iy)*dvec2(iz))
-            enddo
-          enddo
+          sinu = sqrt(max(0.0_ark,1.0_ark-cosu**2))
+          sinv = sqrt(max(0.0_ark,1.0_ark-cosv**2))
           !
           dvec1(:) = MLvector_product(u(:),w(:))
           dvec2(:) = MLvector_product(v(:),w(:))
@@ -28184,22 +28283,25 @@ end subroutine check_read_save_none
           vec1 = sqrt( sum(dvec1(:)**2) )
           vec2 = sqrt( sum(dvec2(:)**2) )
           !
-          dvec1 = dvec1/vec1
-          dvec2 = dvec2/vec2
-          !
-          B = sum( dvec1(:)*dvec2(:) )
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          tau_sign = -sum( w(:)*a_t(:) )
-          !
-          cosdelta = B
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          sindelta = sqrt(sum(a_t(:)**2))
-          !
-          delta = atan2(sindelta,cosdelta)
+          if (vec1>small_ .and. vec2>small_) then
+            dvec1 = dvec1/vec1
+            dvec2 = dvec2/vec2
+            !
+            B = sum( dvec1(:)*dvec2(:) )
+            !
+            a_t = MLvector_product(dvec1(:),dvec2(:))
+            !
+            tau_sign = -sum( w(:)*a_t(:) )
+            !
+            cosdelta = B
+            !
+            sindelta = sqrt(sum(a_t(:)**2))
+            !
+            delta = atan2(sindelta,cosdelta)
+          else
+            delta = trove%local_eq(trove%Nbonds+trove%Nangles+iangle)
+            tau_sign = 0.0_ark
+          endif
           !
           !u0(:) = trove%b0(n4,:,0) - trove%b0(n3,:,0) 
           !v0(:) = trove%b0(n1,:,0) - trove%b0(n2,:,0) 
@@ -28290,18 +28392,8 @@ end subroutine check_read_save_none
           cosu = sum( u(:)*w(:) )
           cosv =-sum( v(:)*w(:) )
           !
-          sinu = sqrt(1.0_ark-cosu**2)
-          sinv = sqrt(1.0_ark-cosv**2)
-          !
-          B = sum( dvec1(:)*dvec2(:) )/( sinu*sinv )
-          !
-          tau_sign = 0
-          !
-          do iy =1,3
-            do iz =1,3
-               tau_sign = tau_sign - sum(epsil(:,iy,iz)*w(:)*dvec1(iy)*dvec2(iz))
-            enddo
-          enddo
+          sinu = sqrt(max(0.0_ark,1.0_ark-cosu**2))
+          sinv = sqrt(max(0.0_ark,1.0_ark-cosv**2))
           !
           dvec1(:) = MLvector_product(u(:),w(:))
           dvec2(:) = MLvector_product(v(:),w(:))
@@ -28309,22 +28401,25 @@ end subroutine check_read_save_none
           vec1 = sqrt( sum(dvec1(:)**2) )
           vec2 = sqrt( sum(dvec2(:)**2) )
           !
-          dvec1 = dvec1/vec1
-          dvec2 = dvec2/vec2
-          !
-          B = sum( dvec1(:)*dvec2(:) )
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          tau_sign = -sum( w(:)*a_t(:) )
-          !
-          cosdelta = B
-          !
-          a_t = MLvector_product(dvec1(:),dvec2(:))
-          !
-          sindelta = sqrt(sum(a_t(:)**2))
-          !
-          delta = atan2(sindelta,cosdelta)
+          if (vec1>small_ .and. vec2>small_) then
+            dvec1 = dvec1/vec1
+            dvec2 = dvec2/vec2
+            !
+            B = sum( dvec1(:)*dvec2(:) )
+            !
+            a_t = MLvector_product(dvec1(:),dvec2(:))
+            !
+            tau_sign = -sum( w(:)*a_t(:) )
+            !
+            cosdelta = B
+            !
+            sindelta = sqrt(sum(a_t(:)**2))
+            !
+            delta = atan2(sindelta,cosdelta)
+          else
+            delta = trove%local_eq(trove%Nbonds+trove%Nangles+iangle)
+            tau_sign = 0.0_ark
+          endif
           !
           !u0(:) = trove%b0(n4,:,0) - trove%b0(n3,:,0) 
           !v0(:) = trove%b0(n1,:,0) - trove%b0(n2,:,0) 
@@ -30240,6 +30335,41 @@ end subroutine check_read_save_none
     ! Delta(s4,s5) = sin(phi3-phi2) + sin(phi1-phi3) + sin(phi2-phi1); at x=0, Delta(0,0) = 3*sqrt(3)/2.
     y = 0.5_ark*sqrt(3.0_ark)*(1.0_ark + 2.0_ark*cos(x/sqrt(2.0_ark)))
   end subroutine calc_func_delta_xy3
+  !
+  ! Returns .true. if the kinetic basic function #ipower of mode imode contains a 1/sin-type factor
+  ! (csc or cot, with or without the underscore marking the resolved singular terms) which is singular
+  ! at the coordinate value x. This happens e.g. for linear equilibrium geometries (rho_eq = 0) of
+  ! the singular bending modes, where the terms 1/sin(rho_i) are infinite at the reference geometry.
+  ! Such terms are excluded from the frozen-coordinate (1D) zero-order Hamiltonians used to generate
+  ! the primitive basis functions of the other modes; the full Hamiltonian is not affected.
+  !
+  function FL_basic_function_singular_at(imode,ipower,x) result(singular)
+    integer(ik),intent(in) :: imode,ipower
+    real(ark),intent(in)   :: x
+    logical                :: singular
+    integer(ik)            :: iterm
+    real(ark)              :: z,xx
+    !
+    singular = .false.
+    !
+    if (.not.molec%mode_list_present) return
+    if (.not.allocated(molec%basic_function_list)) return
+    if (ipower<=0.or.ipower>molec%basic_function_list(imode)%numfunc) return
+    !
+    ! 'AUTOMATIC' basic functions are defined for the absolute values of the coordinates
+    xx = x
+    if (trim(molec%coordinates(1,imode))=='AUTOMATIC') xx = x+molec%local_eq(imode)
+    !
+    do iterm = 1,molec%basic_function_list(imode)%mode_set(ipower)%num_terms
+      select case (trim(molec%basic_function_list(imode)%mode_set(ipower)%func_set(iterm)%name))
+      case ('CSC','CSC_','COT','COT_')
+        z = molec%basic_function_list(imode)%mode_set(ipower)%func_set(iterm)%coeff*&
+            xx**molec%basic_function_list(imode)%mode_set(ipower)%func_set(iterm)%inner_expon
+        if (abs(sin(z))<1.0e-8_ark) singular = .true.
+      end select
+    enddo
+    !
+  end function FL_basic_function_singular_at
 
   subroutine calc_func_x_minus_xe(x,x0,n,imode,y) 
     real(ark), intent(in) :: x,x0

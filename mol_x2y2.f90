@@ -716,8 +716,8 @@ module mol_x2y2
        ideg = 1
        if (mod(K+2,2)==0.and.tau==0) gamma = 1 !1 !; return
        if (mod(K+2,2)==0.and.tau==1) gamma = 3 !3 !; return
-       if (mod(K+2,2)/=0.and.tau==0) gamma = 5 !7 !; return
-       if (mod(K+2,2)/=0.and.tau==1) gamma = 7 !5 !; return
+       if (mod(K+2,2)/=0.and.tau==0) gamma = 7 !5 !; return
+       if (mod(K+2,2)/=0.and.tau==1) gamma = 5 !7 !; return
        !
     case('DNH','DNH(M)')
        !
