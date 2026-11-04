@@ -129,7 +129,13 @@ contains
        !restore vibrational contracted matrix elements
        !for all  dipole moment vector components
        !
-       call restore_vib_matrix_elements
+       if (trim(intensity%action)=='TM' .and. job%IOextF_divide .and. &
+           (.not.intensity%tdm_replace) .and. job%IOvector_symm .and. &
+           nJ==1 .and. Jval(1)==0) then
+         write(out,"(/'Component-streaming TM mode enabled: reading extmatelem1..3.chk one component at a time.')")
+       else
+         call restore_vib_matrix_elements
+       endif
        !
        if (intensity%tdm_replace) then
          !
@@ -1057,9 +1063,14 @@ contains
     real(rk)       :: energyI, energyF, nu_if,linestr,linestr_deg(sym%Maxdegen,sym%Maxdegen),f_t,ener_,energy_low_min
     real(rk)       :: time_per_line,real_time,total_time_predict,cpu_time,memory_now_,time_per_ilevel
     real(rk)       :: tm_deg(3,sym%Maxdegen,sym%Maxdegen)
-    logical        :: passed,passed_
+    logical        :: passed,passed_,stream_tm
     logical        :: vector_diagonal = .false.
     integer(ik)    :: ID_I
+    integer(ik), parameter   :: max_stream_cols = 3500_ik
+    integer(ik)              :: batch_end_ilevel, nbatch_stream, ncols_stream, ndegF_
+    logical,     allocatable :: active_low(:)
+    integer(ik), allocatable :: ilevel_to_col(:), batch_levels(:)
+    real(rk),    allocatable :: half_tm_batch(:,:,:), half_tm_sym(:,:,:,:,:)
     !
     integer(ik), allocatable :: istored(:),isave(:),isaved(:),iID(:)
     integer(ik), allocatable :: nlevelsG(:,:),ram_size(:,:),ilevelsG(:,:),iram(:,:)
@@ -1449,11 +1460,20 @@ contains
     !
     f_t = f_t/real(nlevels,rk)
     !
+    stream_tm = (trim(intensity%action)=='TM' .and. job%IOextF_divide .and. &
+                 (.not.intensity%tdm_replace) .and. job%IOvector_symm .and. &
+                 nJ==1 .and. Jval(1)==0)
+    !
     ! memory now + expected 
     !
     memory_now_ = memory_now+real((2*dimenmax+nsizemax_+dimenmax*nJ*sym%Maxdegen*3+&
                   dimenmax*nJ*sym%Maxdegen*3)*8+&                  
                   nlevels*4+dimenmax)/1024.0_rk**3
+    !
+    if (stream_tm) then
+      memory_now_ = memory_now_ + (real(dimenmax,rk)**2 * 8.0_rk + &
+                    real(dimenmax,rk) * real(max_stream_cols,rk) * 5.0_rk * 8.0_rk) / 1024.0_rk**3
+    endif
     !
     num_threads = omp_get_max_threads()
     !
@@ -1816,6 +1836,31 @@ contains
     itransit = 0
     ilevels_lower = 0
     nlevelI_ = 0
+    batch_end_ilevel = 0
+    !
+    if (trim(intensity%action)=='TM') then
+      allocate(half_tm_sym(max(nsizemax,1_ik), 3, sym%Maxdegen, sym%Maxdegen, Nrepresen), stat=info)
+      call ArrayStart('half_tm_sym', info, size(half_tm_sym), kind(half_tm_sym))
+      half_tm_sym = 0.0_rk
+    endif
+    !
+    if (stream_tm) then
+      allocate(active_low(nlevels), ilevel_to_col(nlevels), batch_levels(nlevels), stat=info)
+      if (info /= 0) stop 'dm_intensity_symmvec: out of memory allocating stream_tm index arrays'
+      active_low = .false.
+      ilevel_to_col = 0
+      do ilevelI = 1, nlevels
+        jI = eigen(ilevelI)%jval
+        energyI = eigen(ilevelI)%energy
+        normalI(0:nmodes) = eigen(ilevelI)%normal(0:nmodes)
+        call energy_filter_lower(jI, energyI, normalI(0), passed)
+        if (.not.passed) cycle
+        nlevelI_ = nlevelI_ + 1
+        if (nlevelI_<intensity%istate_count(1).or.nlevelI_>intensity%istate_count(2)) cycle
+        active_low(ilevelI) = .true.
+      enddo
+      nlevelI_ = 0
+    endif
     !
     call TimerStart('Intensity loop')
     !
@@ -1852,6 +1897,38 @@ contains
       ! ilevels_lower counts actual lower state energies after all filters 
       !
       ilevels_lower = ilevels_lower + 1
+      !
+      if (stream_tm .and. ilevelI > batch_end_ilevel) then
+        nbatch_stream = 0
+        ncols_stream = 0
+        batch_end_ilevel = nlevels
+        do ilevelI_ = ilevelI, nlevels
+          if (.not.active_low(ilevelI_)) cycle
+          if (nbatch_stream > 0 .and. ncols_stream + eigen(ilevelI_)%ndeg > max_stream_cols) then
+            batch_end_ilevel = ilevelI_ - 1
+            exit
+          endif
+          nbatch_stream = nbatch_stream + 1
+          batch_levels(nbatch_stream) = ilevelI_
+          ilevel_to_col(ilevelI_) = ncols_stream
+          ncols_stream = ncols_stream + eigen(ilevelI_)%ndeg
+        enddo
+        if (allocated(half_tm_batch)) then
+          if (size(half_tm_batch, 2) < ncols_stream) then
+            deallocate(half_tm_batch)
+            call ArrayStop('half_tm_batch')
+          endif
+        endif
+        if (.not.allocated(half_tm_batch)) then
+          matsize = int(dimenmax, hik) * int(ncols_stream, hik) * 3_hik
+          allocate(half_tm_batch(dimenmax, ncols_stream, 3), stat=info)
+          call ArrayStart('half_tm_batch', info, 1, kind(half_tm_batch), matsize)
+        endif
+        call stream_batch_half_tm_symmvec(1_ik, 1_ik, nbatch_stream, batch_levels(1:nbatch_stream), &
+                                          ilevel_to_col, ncols_stream, nsizemax, dimenmax, &
+                                          Jeigenvec_unit, istored, isaved, vec_ram, ijterm, &
+                                          half_tm_batch(:, 1:ncols_stream, :))
+      endif
       !
       ! where the eigenvector is stored 
       !
@@ -2057,36 +2134,42 @@ contains
           !
         case('TM')
             !
-            do idegI = 1, ndegI
-              !
-              !$omp parallel do private(irootI,irow,ib,iterm,dtemp0,nelem,ielem,isrootI) shared(vec) schedule(static)
-              do irootI = 1,dimenI
-                 !
-                 irow = bset_contr(indI)%icontr2icase(irootI,1)
-                 ib   = bset_contr(indI)%icontr2icase(irootI,2)
-                 !
-                 iterm = ijterm(indI)%kmat(irow,igammaI)
-                 !
-                 dtemp0 = 0
-                 !
-                 nelem = bset_contr(indI)%irr(igammaI)%N(irow)
-                 !
-                 do ielem = 1,nelem
-                    !
-                    isrootI = iterm+ielem 
-                    !
-                    dtemp0 = dtemp0 + vecI(isrootI)*bset_contr(indI)%irr(igammaI)%repres(isrootI,idegI,ib)
-                    !
-                 enddo
-                 !
-                 vec(irootI) = dtemp0
-                 !
+            if (stream_tm) then
+              do idegI = 1, ndegI
+                half_linestr(1:dimenF,indF,idegI,1:3) = half_tm_batch(1:dimenF, ilevel_to_col(ilevelI)+idegI, 1:3)
               enddo
-              !$omp end parallel do
-              !
-              call do_1st_half_tm_symmvec(indI,indF,vec,&
-                                     half_linestr(:,indF,idegI,:))
-            enddo
+            else
+              do idegI = 1, ndegI
+                !
+                !$omp parallel do private(irootI,irow,ib,iterm,dtemp0,nelem,ielem,isrootI) shared(vec) schedule(static)
+                do irootI = 1,dimenI
+                   !
+                   irow = bset_contr(indI)%icontr2icase(irootI,1)
+                   ib   = bset_contr(indI)%icontr2icase(irootI,2)
+                   !
+                   iterm = ijterm(indI)%kmat(irow,igammaI)
+                   !
+                   dtemp0 = 0
+                   !
+                   nelem = bset_contr(indI)%irr(igammaI)%N(irow)
+                   !
+                   do ielem = 1,nelem
+                      !
+                      isrootI = iterm+ielem 
+                      !
+                      dtemp0 = dtemp0 + vecI(isrootI)*bset_contr(indI)%irr(igammaI)%repres(isrootI,idegI,ib)
+                      !
+                   enddo
+                   !
+                   vec(irootI) = dtemp0
+                   !
+                enddo
+                !$omp end parallel do
+                !
+                call do_1st_half_tm_symmvec(indI,indF,vec,&
+                                       half_linestr(:,indF,idegI,:))
+              enddo
+            endif
             !
         end select
         !
@@ -2094,12 +2177,43 @@ contains
       !
       call TimerStop('Half_linestrength')
       !
+      if (trim(intensity%action)=='TM') then
+        half_tm_sym = 0.0_rk
+        !$omp parallel do private(igammaF,ndegF_,icontrF,irow,ib,iterm,nelem,ielem,isrootF,idegF,idegI,imu,dtemp0) &
+        !$omp& shared(half_tm_sym,half_linestr,bset_contr,ijterm,sym,Nrepresen,ndegI) schedule(dynamic,1)
+        do igammaF = 1, Nrepresen
+          ndegF_ = sym%degen(igammaF)
+          do icontrF = 1, bset_contr(1)%Maxcontracts
+            irow  = bset_contr(1)%icontr2icase(icontrF, 1)
+            ib    = bset_contr(1)%icontr2icase(icontrF, 2)
+            nelem = bset_contr(1)%irr(igammaF)%N(irow)
+            if (nelem <= 0) cycle
+            iterm = ijterm(1)%kmat(irow, igammaF)
+            do ielem = 1, nelem
+              isrootF = iterm + ielem
+              do idegF = 1, ndegF_
+                dtemp0 = bset_contr(1)%irr(igammaF)%repres(isrootF, idegF, ib)
+                if (dtemp0 == 0.0_rk) cycle
+                do idegI = 1, ndegI
+                  do imu = 1, 3
+                    half_tm_sym(isrootF, imu, idegI, idegF, igammaF) = &
+                      half_tm_sym(isrootF, imu, idegI, idegF, igammaF) + &
+                      half_linestr(icontrF, 1, idegI, imu) * dtemp0
+                  enddo
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+        !$omp end parallel do
+      endif
+      !
       A_einst_cache = -1.0_rk
       nu_if_cache = 0
       !
       ! Loop over final states
       !
-      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state) shared(A_einst_cache,nu_if_cache)
+      !$omp parallel private(vecF,vec_,alloc_p) reduction(max:max_intens_state) shared(A_einst_cache,nu_if_cache,half_tm_sym)
       allocate(vecF(nsizemax),vec_(dimenmax),stat = alloc_p)
       if (alloc_p/=0) then
           write (out,"(' dipole: ',i9,' trying to allocate array -vecF')") alloc_p
@@ -2108,7 +2222,7 @@ contains
       !
       !$omp do private(ilevelF,indF,dimenF,jF,energyF,igammaF,normalF,ndegF,nsizeF,unitF,passed,branch,&
       !$omp& nu_if,irec,iram_,linestr_deg,idegF,irootF,irow,ib,iterm,nelem,dtemp0,ielem,isrootF,idegI,linestr,A_einst,boltz_fc,&
-      !$omp& absorption_int,tm_deg,dmu,icontrF) reduction(+:itransit) schedule(static)
+      !$omp& absorption_int,tm_deg,dmu,icontrF,imu) reduction(+:itransit) schedule(static)
       Flevels_loop: do ilevelF = 1,nlevels
          !
          indF = eigen(ilevelF)%jind
@@ -2356,48 +2470,17 @@ contains
              !
              tm_deg = 0
              !
-             !loops over degenerate states
+             !loops over degenerate states (using pre-folded symmetrised half_tm_sym)
              !
-             do idegI = 1, ndegI
-               do idegF = 1, ndegF
-                !
-                ! complete the tm
-                !
-                dmu = 0
-                !
-                !omp parallel do private(icontrF,irow,ib,iterm,dtemp0,nelem,ielem,isrootF) reduction(+:dmu) schedule(guided)
-                do icontrF = 1,bset_contr(1)%Maxcontracts
-                   !
-                   irow = bset_contr(1)%icontr2icase(icontrF,1)
-                   ib   = bset_contr(1)%icontr2icase(icontrF,2)
-                   !
-                   !icontrF = bset_contr(indF)%iroot_correlat_j0(irootF)
-                   !
-                   iterm = ijterm(1)%kmat(irow,igammaF)
-                   !
-                   dtemp0 = 0
-                   !
-                   nelem = bset_contr(1)%irr(igammaF)%N(irow)
-                   !
-                   do ielem = 1,nelem
-                      !
-                      isrootF = iterm+ielem 
-                      !
-                      dtemp0 = dtemp0 + vecF(isrootF)*bset_contr(indF)%irr(igammaF)%repres(isrootF,idegF,ib)
-                      !
+             if (nsizeF > 0) then
+               do idegI = 1, ndegI
+                 do idegF = 1, ndegF
+                   do imu = 1, 3
+                     tm_deg(imu, idegI, idegF) = ddot(nsizeF, half_tm_sym(1, imu, idegI, idegF, igammaF), 1, vecF(1), 1)
                    enddo
-                   !
-                   !dtemp = dtemp + half_linestr(idegI,1,icontrF)*dtemp0
-                   !
-                   dmu(:) = dmu(:) + half_linestr(icontrF,indF,idegI,:)*dtemp0
-                   !
-                enddo
-                !omp end parallel do
-                !
-                tm_deg(:,idegI,idegF) = dmu(:) 
-                !
+                 end do
                end do
-             end do
+             endif
              !
              !sum up all degenerate components
              !
@@ -2726,6 +2809,18 @@ contains
     !
     deallocate(half_linestr)
     call ArrayStop('half_linestr')
+    !
+    if (allocated(half_tm_batch)) then
+      deallocate(half_tm_batch)
+      call ArrayStop('half_tm_batch')
+    endif
+    if (allocated(half_tm_sym)) then
+      deallocate(half_tm_sym)
+      call ArrayStop('half_tm_sym')
+    endif
+    if (allocated(active_low)) deallocate(active_low)
+    if (allocated(ilevel_to_col)) deallocate(ilevel_to_col)
+    if (allocated(batch_levels)) deallocate(batch_levels)
     !
     do irep = 1,Nrepresen
      do jind = 1,nJ
@@ -6133,6 +6228,208 @@ contains
 
 
       end subroutine do_1st_half_tm_symmvec
+
+
+      subroutine stream_batch_half_tm_symmvec(indI, indF, nbatch, batch_levels, ilevel_to_col, &
+                                              ncols, nsizemax, dimenmax, Jeigenvec_unit, &
+                                              istored, isaved, vec_ram, ijterm, half_tm_batch)
+        implicit none
+        integer(ik), intent(in)  :: indI, indF, nbatch, ncols, nsizemax, dimenmax
+        integer(ik), intent(in)  :: batch_levels(nbatch), ilevel_to_col(:), istored(:), isaved(:)
+        integer(ik), pointer     :: Jeigenvec_unit(:,:)
+        type(DmatT), pointer     :: vec_ram(:,:)
+        type(DkmatT), pointer    :: ijterm(:)
+        real(rk), intent(out)    :: half_tm_batch(dimenmax, ncols, 3)
+
+        integer(ik) :: ncontr_t, dimenI, dimenF, alloc, chkptIO, imu
+        integer(ik) :: ib_lvl, ilvl, igammaI_, ndegI_, nsizeI_, unitI_, irec_, iram_, idegI_, col
+        integer(ik) :: irootI, irootF, irow, ib, iterm, nelem, ielem, isrootI, icase, ilambda, icontrI, icontrF
+        integer(ik) :: c1, c2, k1, k2, m, c, k
+        integer(hik) :: rootsize2, matsize_v
+        real(rk) :: dtemp0, s0, s1, s2, s3
+        logical  :: staged_mode, file_ready
+        character(len=cl) :: job_is, filename, ready_file, done_file
+        character(len=4)  :: buf4, jchar
+        real(rk), allocatable :: V_j0(:,:), H_T(:,:), dipole_me_1(:,:), vecI_loc(:), vec_loc(:)
+
+        ncontr_t = bset_contr(1)%Maxcontracts
+        dimenI   = bset_contr(indI)%Maxcontracts
+        dimenF   = bset_contr(indF)%Maxcontracts
+        rootsize2 = int(ncontr_t, hik) * int(ncontr_t, hik)
+        matsize_v = int(ncontr_t, hik) * int(ncols, hik)
+
+        if (job%verbose >= 4) then
+          write(out, "(/'stream_batch_half_tm_symmvec: unfolding ',i0,' lower states (',i0,' cols), Ncontr = ',i0)") &
+                nbatch, ncols, ncontr_t
+        endif
+
+        allocate(V_j0(ncontr_t, ncols), stat=alloc)
+        call ArrayStart('V_j0_stream', alloc, 1, kind(V_j0), matsize_v)
+        allocate(vecI_loc(max(nsizemax, 1_ik)), vec_loc(max(dimenI, 1_ik)), stat=alloc)
+        if (alloc /= 0) stop 'stream_batch_half_tm_symmvec: out of memory allocating vec_loc'
+
+        V_j0 = 0.0_rk
+
+        do ib_lvl = 1, nbatch
+          ilvl     = batch_levels(ib_lvl)
+          igammaI_ = eigen(ilvl)%igamma
+          ndegI_   = eigen(ilvl)%ndeg
+          nsizeI_  = bset_contr(indI)%nsize(igammaI_)
+          unitI_   = Jeigenvec_unit(indI, igammaI_)
+          if (unitI_ == -1) stop 'stream_batch_half_tm_symmvec: invalid eigenvector unit'
+          if (istored(ilvl) == 0) then
+            irec_ = isaved(ilvl)
+            read(unitI_, rec=irec_) vecI_loc(1:nsizeI_)
+          else
+            iram_ = istored(ilvl)
+            vecI_loc(1:nsizeI_) = vec_ram(indI, igammaI_)%mat(1:nsizeI_, iram_)
+          endif
+
+          do idegI_ = 1, ndegI_
+            col = ilevel_to_col(ilvl) + idegI_
+            !$omp parallel do private(irootI,irow,ib,iterm,dtemp0,nelem,ielem,isrootI) shared(vec_loc) schedule(static)
+            do irootI = 1, dimenI
+              irow  = bset_contr(indI)%icontr2icase(irootI, 1)
+              ib    = bset_contr(indI)%icontr2icase(irootI, 2)
+              iterm = ijterm(indI)%kmat(irow, igammaI_)
+              nelem = bset_contr(indI)%irr(igammaI_)%N(irow)
+              dtemp0 = 0.0_rk
+              do ielem = 1, nelem
+                isrootI = iterm + ielem
+                dtemp0 = dtemp0 + vecI_loc(isrootI) * bset_contr(indI)%irr(igammaI_)%repres(isrootI, idegI_, ib)
+              enddo
+              vec_loc(irootI) = dtemp0
+            enddo
+            !$omp end parallel do
+
+            do irootI = 1, dimenI
+              icase   = bset_contr(indI)%icontr2icase(irootI, 1)
+              ilambda = bset_contr(indI)%icontr2icase(irootI, 2)
+              icontrI = bset_contr(indI)%icontr_correlat_j0(icase, ilambda)
+              V_j0(icontrI, col) = V_j0(icontrI, col) + vec_loc(irootI)
+            enddo
+          enddo
+        enddo
+
+        deallocate(vecI_loc, vec_loc)
+
+        allocate(H_T(ncols, ncontr_t), stat=alloc)
+        call ArrayStart('H_T_stream', alloc, 1, kind(H_T), matsize_v)
+
+        if (job%verbose >= 4) then
+          write(out, "('stream_batch_half_tm_symmvec: allocating single-component dipole_me_1 (',i0,' elements, ',f10.3,' GiB)...')") &
+                rootsize2, real(rootsize2, rk) * 8.0_rk / 1024.0_rk**3
+        endif
+        allocate(dipole_me_1(ncontr_t, ncontr_t), stat=alloc)
+        call ArrayStart('dipole_me_stream', alloc, 1, kind(dipole_me_1), rootsize2)
+
+        job_is = 'external field contracted matrix elements for J=0'
+        call IOStart(trim(job_is), chkptIO)
+
+        inquire(file='extmatelem_staged.mode', exist=staged_mode)
+        if (staged_mode .and. job%verbose >= 4) then
+          write(out, "('  extmatelem_staged.mode detected: staging 1 component at a time in work_dir.')")
+          flush(out)
+        endif
+
+        half_tm_batch = 0.0_rk
+
+        do imu = 1, 3
+          write(jchar, '(i4)') imu
+          filename   = trim(job%extmat_suffix)//trim(adjustl(jchar))//'.chk'
+          ready_file = trim(filename)//'.ready'
+          done_file  = trim(filename)//'.done'
+          if (staged_mode) then
+            inquire(file=ready_file, exist=file_ready)
+            do while (.not. file_ready)
+              call sleep(1)
+              inquire(file=ready_file, exist=file_ready)
+            enddo
+          endif
+          if (job%verbose >= 4) then
+            write(out, "('  streaming imu = ',i2,' from ',a,' ...')") imu, trim(filename)
+            flush(out)
+          endif
+
+          open(chkptIO, form='unformatted', action='read', position='rewind', status='old', file=filename)
+          read(chkptIO) buf4
+          if (buf4 /= 'extF') then
+            write(out, "(' stream_batch_half_tm_symmvec ',a,' has bogus header: ',a)") trim(filename), buf4
+            stop 'stream_batch_half_tm_symmvec - bogus header'
+          endif
+          read(chkptIO) dipole_me_1
+          read(chkptIO) buf4
+          if (buf4 /= 'extF') then
+            write(out, "(' stream_batch_half_tm_symmvec ',a,' has bogus footer: ',a)") trim(filename), buf4
+            stop 'stream_batch_half_tm_symmvec - bogus footer'
+          endif
+          if (staged_mode) then
+            close(chkptIO, status='delete')
+            open(chkptIO, form='formatted', action='read', status='old', file=ready_file)
+            close(chkptIO, status='delete')
+            open(chkptIO, form='formatted', action='write', status='replace', file=done_file)
+            write(chkptIO, '(i0)') imu
+            close(chkptIO, status='keep')
+          else
+            close(chkptIO, status='keep')
+          endif
+
+          H_T = 0.0_rk
+          do c1 = 1, ncols, 128
+            c2 = min(ncols, c1 + 127)
+            do k1 = 1, ncontr_t, 2048
+              k2 = min(ncontr_t, k1 + 2047)
+              !$omp parallel do private(m, c, k, s0, s1, s2, s3) schedule(static, 16)
+              do m = 1, ncontr_t
+                c = c1
+                do while (c + 3 <= c2)
+                  s0 = 0.0_rk; s1 = 0.0_rk; s2 = 0.0_rk; s3 = 0.0_rk
+                  !$omp simd reduction(+:s0,s1,s2,s3)
+                  do k = k1, k2
+                    s0 = s0 + dipole_me_1(k, m) * V_j0(k, c)
+                    s1 = s1 + dipole_me_1(k, m) * V_j0(k, c+1)
+                    s2 = s2 + dipole_me_1(k, m) * V_j0(k, c+2)
+                    s3 = s3 + dipole_me_1(k, m) * V_j0(k, c+3)
+                  enddo
+                  H_T(c,   m) = H_T(c,   m) + s0
+                  H_T(c+1, m) = H_T(c+1, m) + s1
+                  H_T(c+2, m) = H_T(c+2, m) + s2
+                  H_T(c+3, m) = H_T(c+3, m) + s3
+                  c = c + 4
+                enddo
+                do while (c <= c2)
+                  s0 = 0.0_rk
+                  !$omp simd reduction(+:s0)
+                  do k = k1, k2
+                    s0 = s0 + dipole_me_1(k, m) * V_j0(k, c)
+                  enddo
+                  H_T(c, m) = H_T(c, m) + s0
+                  c = c + 1
+                enddo
+              enddo
+              !$omp end parallel do
+            enddo
+          enddo
+
+          !$omp parallel do private(irootF, icase, ilambda, icontrF) schedule(static)
+          do irootF = 1, dimenF
+            icase   = bset_contr(indF)%icontr2icase(irootF, 1)
+            ilambda = bset_contr(indF)%icontr2icase(irootF, 2)
+            icontrF = bset_contr(indF)%icontr_correlat_j0(icase, ilambda)
+            half_tm_batch(irootF, 1:ncols, imu) = H_T(1:ncols, icontrF)
+          enddo
+          !$omp end parallel do
+        enddo
+
+        deallocate(dipole_me_1)
+        call ArrayStop('dipole_me_stream')
+        deallocate(H_T)
+        call ArrayStop('H_T_stream')
+        deallocate(V_j0)
+        call ArrayStop('V_j0_stream')
+
+        if (job%verbose >= 4) write(out, "('stream_batch_half_tm_symmvec: done streaming all 3 components.'/)")
+      end subroutine stream_batch_half_tm_symmvec
 
 
 
