@@ -17,6 +17,12 @@ This folder also includes the $G_{36}(\text{EM})$ PES fitting programs
 inputs and outputs (`C2H6_2D-pot4_July2021_v8_32.inp`, `C2H6_3D_v8_46.inp`,
 `C2H6_3D_v8_46.res`), as well as earlier non-SPAR TROVE inputs.
 
+The subfolder `abinitio_PES_DMS/` contains an example in which the potential energy and
+dipole moment surfaces are also read from checkpoints in the SPAR format (`potential.chk`,
+`external.chk`): the *ab initio* CCSD(T)/CBS PES and CCSD(T)/aug-cc-pVTZ DMS of
+$\text{C}_2\text{H}_6$, used to compute $J = 0$ energies and vibrational transition moments
+(see `abinitio_PES_DMS/README.md`).
+
 ## Files
 
 | File | Purpose |
@@ -30,6 +36,7 @@ inputs and outputs (`C2H6_2D-pot4_July2021_v8_32.inp`, `C2H6_3D_v8_46.inp`,
 | `C2H6_2D-pot4_July2021_v8_32.inp`, `C2H6_3D_v8_46.inp`, `C2H6_3D_v8_46.res` | Ab initio PES fitting input files and fitted output (`C2H6_3D_v8_46.res`). |
 | `C2H6_tau*.inp` | Earlier TROVE inputs for $\text{C}_2\text{H}_6$ with the same coordinates, symmetry group and potential, but with the TROVE-expanded (non-SPAR) KEO and larger basis sets. |
 | `run.sh` | Runs the SPAR $G_{36}(\text{EM})$ workflow for $J = 0..4$. |
+| `abinitio_PES_DMS/` | Example with the *ab initio* PES (`potential.chk`) and DMS (`external.chk`) in the SPAR format: $J = 0$ energies and vibrational transition moments. |
 
 ## Running
 
