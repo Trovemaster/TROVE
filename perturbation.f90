@@ -16625,7 +16625,7 @@ module perturbation
         integer(ik) :: iroot,jroot,Maxcontracts,Nclasses
         integer(hik):: ib,ib0
         real(rk)    :: f_t,f_prod(PT%Nclasses),me6_val
-        logical     :: is_gvib,is_poten,is_grot,is_gcor
+        logical     :: is_gvib,is_poten,is_grot,is_gcor,is_extf
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
@@ -16634,14 +16634,24 @@ module perturbation
         is_gvib  = .false.
         is_grot  = .false.
         is_gcor  = .false.
-        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
-          is_gvib = associated(fl,me%gvib(k1,k2))
+        is_extf  = .false.
+        if (associated(me%gvib)) then
+          if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
+            is_gvib = associated(fl,me%gvib(k1,k2))
+          endif
         endif
-        if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
-          is_grot = associated(fl,me%grot(k1,k2))
+        if (associated(me%grot)) then
+          if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
+            is_grot = associated(fl,me%grot(k1,k2))
+          endif
         endif
-        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
-          is_gcor = associated(fl,me%gcor(k1,k2))
+        if (associated(me%gcor)) then
+          if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
+            is_gcor = associated(fl,me%gcor(k1,k2))
+          endif
+        endif
+        if (associated(me%extF)) then
+          if (k1>=1 .and. k1<=size(me%extF)) is_extf = associated(fl,me%extF(k1))
         endif
         !
         k(:) = fl%IndexQ(:,iterm)
@@ -16701,6 +16711,8 @@ module perturbation
                   call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                 elseif (is_gcor) then
                   call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                elseif (is_extf) then
+                  call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                 else
                   me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                 endif
@@ -17996,7 +18008,7 @@ module perturbation
         integer(ik) :: iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
         integer(hik):: ib,ib0,i
         real(rk)    :: f_t,f_prod(PT%Nclasses),me6_val
-        logical     :: is_gvib,is_poten,is_grot,is_gcor
+        logical     :: is_gvib,is_poten,is_grot,is_gcor,is_extf
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
         integer :: info_p
         !
@@ -18007,14 +18019,24 @@ module perturbation
         is_gvib  = .false.
         is_grot  = .false.
         is_gcor  = .false.
-        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
-          is_gvib = associated(fl,me%gvib(k1,k2))
+        is_extf  = .false.
+        if (associated(me%gvib)) then
+          if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=PT%Nmodes) then
+            is_gvib = associated(fl,me%gvib(k1,k2))
+          endif
         endif
-        if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
-          is_grot = associated(fl,me%grot(k1,k2))
+        if (associated(me%grot)) then
+          if (k1>=1 .and. k1<=3 .and. k2>=1 .and. k2<=3) then
+            is_grot = associated(fl,me%grot(k1,k2))
+          endif
         endif
-        if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
-          is_gcor = associated(fl,me%gcor(k1,k2))
+        if (associated(me%gcor)) then
+          if (k1>=1 .and. k1<=PT%Nmodes .and. k2>=1 .and. k2<=3) then
+            is_gcor = associated(fl,me%gcor(k1,k2))
+          endif
+        endif
+        if (associated(me%extF)) then
+          if (k1>=1 .and. k1<=size(me%extF)) is_extf = associated(fl,me%extF(k1))
         endif
         !
         allocate(me_t(dimen_p_max,dimen_p_max),stat=alloc)
@@ -18093,6 +18115,8 @@ module perturbation
                      call PTsingular_3D_me6(-k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                    elseif (is_gcor) then
                      call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                   elseif (is_extf) then
+                     call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                    else
                      me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                    endif
@@ -22042,7 +22066,7 @@ module perturbation
         !
       enddo
       !
-      call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_extF_Nclass(func_tag,ipar,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call store_contr_matelem_expansion_classN(ipar,1,nclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       extFme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
@@ -22575,7 +22599,7 @@ module perturbation
         !
       enddo
       !
-      call calc_contr_matelem_expansion_extF_Nclass(func_tag,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
+      call calc_contr_matelem_expansion_extF_Nclass(func_tag,ipar,fl%Ncoeff,fl%IndexQ,fl%coeff,prim_vect,me_contr)
       !call store_contr_matelem_expansion_classN(ipar,1,nclass,func_tag,extF_rank,1,dimen,fl%Ncoeff,nterms_field,me_contr)
       !
       !extFme(nclass)%me(1:,1:dimen,1:dimen) = me_contr(1:,1:dimen,1:dimen)
@@ -34552,7 +34576,8 @@ end subroutine read_contr_matelem_expansion_classN
       return
     endif
     if ((k1_mode<0 .and. k2_mode<0 .and. abs(k1_mode)/=abs(k2_mode) .and. (abs(k1_mode)==3 .or. abs(k2_mode)==3)) .or. &
-        (k1_mode>0 .and. (k2_mode==-1 .or. k2_mode==-2))) then
+        (k1_mode>0 .and. (k2_mode==-1 .or. k2_mode==-2)) .or. &
+        (k1_mode==-11 .or. k1_mode==-12)) then
       dk_op = 1
     else
       dk_op = 0
@@ -34593,6 +34618,14 @@ end subroutine read_contr_matelem_expansion_classN
           if (associated(me%gcor)) fl_p => me%gcor(k1_mode,2)
           sgn_p = 1.0_rk
         endif
+      elseif (k1_mode==-11) then
+        is_even_op = .true.
+        if (associated(me%extF)) fl_p => me%extF(2)
+        sgn_p = 1.0_rk
+      elseif (k1_mode==-12) then
+        is_even_op = .false.
+        if (associated(me%extF)) fl_p => me%extF(1)
+        sgn_p = -1.0_rk
       endif
       same_tau = (mod(nu_i(m3),2) == mod(nu_j(m3),2))
       if (same_tau .neqv. is_even_op) then
@@ -39032,10 +39065,10 @@ subroutine calc_contr_matelem_expansion_vpot_Nclass(func_tag,nterms,terms,FLcoef
 end subroutine calc_contr_matelem_expansion_vpot_Nclass
 
 
-subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoeff,prim_vect,me_contr)
+subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,ipar,nterms,terms,FLcoeff,prim_vect,me_contr)
 
   character(cl), intent(in) :: func_tag
-  integer(ik), intent(in) :: nterms, terms(:,:)
+  integer(ik), intent(in) :: ipar, nterms, terms(:,:)
   real(rk), intent(in)  :: FLcoeff(:,0:,0:)
   real(rk), intent(in)  :: prim_vect(:,:)
   real(rk), intent(out) :: me_contr(:,:,:)
@@ -39081,7 +39114,8 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,nterms,terms,FLcoef
             me_term(kmode) = me%vibmode(kmode,3)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
         enddo
         !
-        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*Flcoeff(iterm,nu_i(Nmodes),nu_j(Nmodes))
+        call PTsingular_3D_me6(-10_ik-ipar,0_ik,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
         !
       enddo
       !

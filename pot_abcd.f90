@@ -1226,7 +1226,7 @@ function MLpoten_c2h2_morse_kappa(ncoords,natoms,local,xyz,force) result(f)
         y(1:5) = q(1:5)**molec%pot_ind(1:5,i)
         y(6)   = cos(real(molec%pot_ind(6,i),ark)*tau)
         !
-        if (molec%pot_ind(6,i)/=0) y(6) = y(6)*sin(x4)*sin(x5)
+        if (molec%pot_ind(6,i)>0) y(6) = y(6)*(sin(x4)*sin(x5))**molec%pot_ind(6,i)
         !
         vpot = vpot + force(i)*product(y(1:6))
         !
