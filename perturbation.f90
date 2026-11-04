@@ -5,7 +5,7 @@
 module perturbation 
   use accuracy
   use molecules, only : MOrepres_arkT,MLsymmetry_transform_func,polintark,MLrotsymmetry_func,MLrotsymmetry_generate
-  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark,molec,eval_basic_func_2d_s4s5
+  use moltype, only : MLlinur,MLlinurark,ML_rjacobi_fit_ark,molec,eval_basic_func_2d_s4s5,extF
   use lapack
   !use plasma
   use fields
@@ -16712,7 +16712,11 @@ module perturbation
                 elseif (is_gcor) then
                   call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                 elseif (is_extf) then
-                  call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                  if (trim(extF%ftype)=='POTENTIAL' .or. trim(extF%ftype)=='POTEN') then
+                    call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                  else
+                    call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                  endif
                 else
                   me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                 endif
@@ -18116,7 +18120,11 @@ module perturbation
                    elseif (is_gcor) then
                      call PTsingular_3D_me6(k1,-k2,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
                    elseif (is_extf) then
-                     call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                     if (trim(extF%ftype)=='POTENTIAL' .or. trim(extF%ftype)=='POTEN') then
+                       call PTsingular_3D_me6(0_ik,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                     else
+                       call PTsingular_3D_me6(-10_ik-k1,0_ik,iterm,k,nu_i(1:PT%Nmodes),nu_j(1:PT%Nmodes),fl%coeff,me6_val)
+                     endif
                    else
                      me6_val = fl%coeff(iterm,nu_i(PT%Nmodes),nu_j(PT%Nmodes))
                    endif
@@ -39114,7 +39122,11 @@ subroutine calc_contr_matelem_expansion_extF_Nclass(func_tag,ipar,nterms,terms,F
             me_term(kmode) = me%vibmode(kmode,3)%coeff(terms(kmode,iterm),nu_i(kmode),nu_j(kmode))
         enddo
         !
-        call PTsingular_3D_me6(-10_ik-ipar,0_ik,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        if (trim(extF%ftype)=='POTENTIAL' .or. trim(extF%ftype)=='POTEN') then
+          call PTsingular_3D_me6(0_ik,0_ik,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        else
+          call PTsingular_3D_me6(-10_ik-ipar,0_ik,iterm,terms(:,iterm),nu_i,nu_j,Flcoeff,me_term(Nmodes))
+        endif
         me_contr(iterm,iprim,jprim) = product(me_term(imode1:imode2))*me_term(Nmodes)
         !
       enddo
