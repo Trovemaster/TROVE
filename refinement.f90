@@ -4261,14 +4261,14 @@ contains
      character(len=20)  :: buf20
      integer(ik)        :: ncontr_t,iterm,nelem,ielem,isrootI,irow,ib,ideg_rot
      integer(ik)        :: rootsize_t,imu,imu_t,dimen,nsize,irec,cdimen_,idimen,j,iterm1,iterm2,ktau,icontr,k,itau
-     integer(ik)        :: num_rlevels,rot_size
+     integer(ik)        :: num_rlevels,rot_size,sub_n
      integer(hik)       :: rootsize,rootsize2,matsize,matsize2
      real(rk),allocatable  :: pot_matrix(:,:)
-     real(rk),allocatable  :: poten_(:,:)
+     real(rk),allocatable  :: poten_(:,:),pot_sub(:,:)
      logical               :: do_calc = .true.
      real(rk),allocatable  :: vec(:)
      type(coeffT),allocatable :: tmat(:)
-     integer(ik),allocatable  :: cdimen(:)
+     integer(ik),allocatable  :: cdimen(:),ktau_nnz(:),ktau_idx(:,:)
      real(rk),allocatable     :: psi(:,:,:),mat_t(:,:)
      double precision,parameter :: alpha = 1.0d0,beta0=0.0d0,beta=1.0d0
      !
@@ -4369,7 +4369,7 @@ contains
           write(out,"(/'prepare_pot_matrix...: Number of elements: ',i8)") ncontr_t
        end if
        !
-       allocate(poten_(ncontr_t,ncontr_t),stat=alloc)
+       allocate(poten_(ncontr_t,ncontr_t),pot_sub(ncontr_t,ncontr_t),stat=alloc)
        call ArrayStart('poten_',alloc,1,kind(poten_),rootsize2)
        !
        !if (job%IOfitpot_action=='SPLIT') close(chkptIO)
@@ -4554,6 +4554,19 @@ contains
               !
               deallocate(vec)
               !
+              allocate(ktau_nnz(lbound(psi,3):ubound(psi,3)),ktau_idx(ncontr_t,lbound(psi,3):ubound(psi,3)))
+              do ktau = lbound(psi,3),ubound(psi,3)
+                 sub_n = 0
+                 do icontr = 1,ncontr_t
+                    if (any(psi(icontr,:,ktau) /= 0.0_rk)) then
+                       sub_n = sub_n + 1
+                       ktau_idx(sub_n,ktau) = icontr
+                       if (sub_n < icontr) psi(sub_n,:,ktau) = psi(icontr,:,ktau)
+                    endif
+                 enddo
+                 ktau_nnz(ktau) = sub_n
+              enddo
+              !
             else
               !
               write(out,"('SLOW option in prepare_pot_matrix is not working after adding sym_vec')")
@@ -4681,11 +4694,18 @@ contains
                      do itau = 1,sym%maxdegen
                         !
                         ktau = sym%maxdegen*(k-1)+itau
+                        sub_n = ktau_nnz(ktau)
+                        if (sub_n < 1) cycle
+                        do i2 = 1,sub_n
+                           do i1 = 1,sub_n
+                              pot_sub(i1,i2) = poten_(ktau_idx(i1,ktau),ktau_idx(i2,ktau))
+                           enddo
+                        enddo
                         !
-                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-                                    poten_,ncontr_t,beta0,mat_t,Nentries)
-                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        call dgemm('T','N',Nentries,sub_n,sub_n,alpha,psi(1,1,ktau),ncontr_t,& 
+                                    pot_sub,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,sub_n,alpha,mat_t,Nentries,& 
+                                    psi(1,1,ktau),ncontr_t,beta,pot_matrix,Nentries)
                         !
                         !
                      enddo
@@ -4700,11 +4720,18 @@ contains
                         !if (k==0.and.mod(jrot,2)/=itau) cycle
                         !
                         ktau = 2*k+itau
+                        sub_n = ktau_nnz(ktau)
+                        if (sub_n < 1) cycle
+                        do i2 = 1,sub_n
+                           do i1 = 1,sub_n
+                              pot_sub(i1,i2) = poten_(ktau_idx(i1,ktau),ktau_idx(i2,ktau))
+                           enddo
+                        enddo
                         !
-                        call dgemm('T','N',Nentries,ncontr_t,ncontr_t,alpha,psi(:,:,ktau),ncontr_t,& 
-                                    poten_,ncontr_t,beta0,mat_t,Nentries)
-                        call dgemm('N','N',Nentries,Nentries,ncontr_t,alpha,mat_t,Nentries,& 
-                                    psi(:,:,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                        call dgemm('T','N',Nentries,sub_n,sub_n,alpha,psi(1,1,ktau),ncontr_t,& 
+                                    pot_sub,ncontr_t,beta0,mat_t,Nentries)
+                        call dgemm('N','N',Nentries,Nentries,sub_n,alpha,mat_t,Nentries,& 
+                                    psi(1,1,ktau),ncontr_t,beta,pot_matrix,Nentries)
                         !
                         !
                      enddo
@@ -4785,6 +4812,7 @@ contains
              !
              deallocate(psi)
              call ArrayStop('psi')
+             deallocate(ktau_nnz,ktau_idx)
              !
            else
              !
@@ -4802,7 +4830,7 @@ contains
          !
        end do
        !
-       deallocate(poten_)
+       deallocate(poten_,pot_sub)
        !
        if (.not.job%IOextF_divide) then
          close(chkptIO,status='keep')
