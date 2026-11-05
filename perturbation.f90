@@ -17407,6 +17407,59 @@ module perturbation
             !
             ! ----------------- FBR ------------------
             !
+            if (treat_vibration .and. .not.job%IOmatelem_divide .and. .not.job%IOmatelem_split .and. &
+                .not.job%matelem_append .and. .not.job%IOmatelem_dump) then
+              !
+              ! Single-buffer direct accumulation into hvib%me (eliminates 2x RAM hvib_t/gvib_t copies)
+              !
+              if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
+              if (job%verbose>=3) write(out,"(/'Number of gvib terms  = ',i8)") gvib_N
+              if (job%verbose>=4) write(out,"('  allocating hvib, ',i0,' elements...')") rootsize
+              !
+              allocate(hvib%me(mdimen,mdimen),stat=alloc)
+              call ArrayStart('hvib%me',alloc,1,kind(f_t),rootsize)
+              !
+              !$omp parallel do private(icoeff) shared(hvib) schedule(static)
+              do icoeff=1,mdimen
+                hvib%me(:,icoeff) = 0.0_rk
+              enddo
+              !$omp end parallel do
+              !
+              if (job%verbose>=5) call MemoryReport
+              !
+              job_is = 'gvib'
+              do k1 = 1,PT%Nmodes
+                do k2 = 1,PT%Nmodes
+                  fl => me%gvib(k1,k2)
+                  if (job%verbose>=4) write(out,"('k1,k2 = ',2i8)") k1,k2
+                  gvib_N = FLread_fields_dimension_field(job_is,k1,k2)
+                  if (gvib_N>0) then
+                    call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,gvib_N,k1,k2,fl,hvib%me,&
+                                                           gvib_contr_matelem_single_term,icontr_vs_isym,scale_in=-0.5_rk)
+                  endif
+                enddo
+              enddo
+              !
+              job_is = 'poten'
+              poten_N = FLread_fields_dimension_field(job_is,k1,k2)
+              if (job%verbose>=2) write(out,"(/'Potential function...')")
+              if (job%verbose>=3) write(out,"(/'Number of pot terms  = ',i8)") poten_N
+              fl => me%poten
+              if (poten_N>0) then
+                call calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,poten_N,1,1,fl,hvib%me,&
+                                                       poten_contr_matelem_single_term,icontr_vs_isym,scale_in=1.0_rk)
+              endif
+              !
+              !$omp parallel do private(icoeff,jcoeff) shared(hvib) schedule(dynamic)
+              do icoeff=1,mdimen
+                do jcoeff=1,icoeff-1
+                  hvib%me(icoeff,jcoeff) = hvib%me(jcoeff,icoeff)
+                enddo
+              enddo
+              !$omp end parallel do
+              !
+            else
+            !
             if (job%verbose>=2) write(out,"(/'Vibrational kinetic part...')")
             if (job%verbose>=3) write(out,"(/'Number of gvib terms  = ',i8)") gvib_N
             !
@@ -17638,6 +17691,8 @@ module perturbation
             deallocate(hvib_t)
             call ArrayStop('PTcontracted_matelem:hvib')
             !
+            endif ! single-buffer vs legacy hvib_t/gvib_t
+            !
           endif 
           !
           call TimerReport
@@ -17710,7 +17765,11 @@ module perturbation
               !
               if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
               !
-              extF_t = 0 
+              !$omp parallel do private(icoeff) shared(extF_t) schedule(static)
+              do icoeff=1,mdimen
+                extF_t(:,icoeff) = 0.0_rk
+              enddo
+              !$omp end parallel do
               !
               extF_N_ = FLread_fields_dimension_field(job_is,imu,0)
               !
@@ -17990,7 +18049,7 @@ module perturbation
       ! a general way.
       !
       subroutine calc_contract_matrix_elements_III(dimen_p_max,nroots_max,icoeff2iroot,tmat,Nterms,k1,k2,fl,field,func,&
-                                                   icontr_vs_isym)
+                                                   icontr_vs_isym,scale_in)
 
         integer(ik),intent(in) :: dimen_p_max,nroots_max,k1,k2,Nterms
         type(PTcoeffsT),intent(in)  :: tmat(PT%Nclasses)
@@ -17999,22 +18058,30 @@ module perturbation
         real(rk),intent(inout) :: field(:,:)
         real(rk),external      :: func
         integer(ik),intent(in),optional :: icontr_vs_isym(sym%Nrepresen,PT%Maxcontracts)
+        real(rk),intent(in),optional    :: scale_in
         real(rk),allocatable :: me_t(:,:)    
-        real(rk),allocatable :: mat_t(:,:),f_terms(:),mat_(:,:)
+        real(rk),allocatable :: mat_t(:,:),mat_(:,:)
         type(PTcoeffs3dT)    :: mat_tt(PT%Nclasses)   
         !
-        !real(rk)               :: matclass(1:,1:,1:)
-        !integer(ik),intent(in) :: icoeff2iroot(PT%Nclasses,PT%Maxcontracts)
-        !
+        integer(ik),parameter :: MAX_MASK_CLASSES = 12_ik
         integer(ik) :: k(PT%Nmodes)  
         integer(ik) :: iclasses,nroots,dimen_p,im1,im2,iprim,jprim,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
-        integer(ik) :: icoeff,icase,ilambda,jcoeff,jcase,jlambda,ideg,jdeg,ilevel,jlevel
-        integer(ik) :: iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
-        integer(hik):: ib,ib0,i
-        real(rk)    :: f_t,f_prod(PT%Nclasses),me6_val
+        integer(ik) :: icoeff,jcoeff,iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
+        real(rk)    :: f_t,me6_val,scale_val,c0_me,max_abs_me,max_offdiag_me,max_diag_diff
+        real(rk)    :: max_off_s,max_diag_s,val_me,acc_val,prod_val
         logical     :: is_gvib,is_poten,is_grot,is_gcor,is_extf
+        logical     :: class_orthonormal(PT%Nclasses),term_zero(max(1_ik,Nterms)),use_mask_table,use_sym_bitmask
+        integer(ik) :: term_active_mask(max(1_ik,Nterms)),surv_iterm(max(1_ik,Nterms)),surv_not_mask(max(1_ik,Nterms))
+        integer(ik) :: Nsurv,nmasks,dmask,union_active_mask,nt,idx,isurv,irrep_i,sym_mask_i
+        integer(ik) :: bclasses(PT%Nclasses),bstrides(PT%Nclasses),n_bclasses,nbuckets,ibc,best_c,best_nroots,b_idx
+        logical     :: class_picked(PT%Nclasses)
+        integer(ik) :: iroot_i(PT%Nclasses),jroot_j(PT%Nclasses)
+        integer(ik),allocatable :: n_mask(:),mask_terms(:,:),sym_mask(:),coeff_bucket(:),head_bucket(:),next_in_bucket(:)
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
-        integer :: info_p
+        !
+        scale_val = 1.0_rk
+        if (present(scale_in)) scale_val = scale_in
+        if (Nterms<=0 .or. scale_val==0.0_rk) return
         !
         Nclasses = PT%Nclasses
         Maxcontracts = PT%Maxcontracts
@@ -18055,6 +18122,9 @@ module perturbation
           call ArrayStart('calc_contract_matrix_elements_III:mat_tt',alloc,1,kind(f_t),size(mat_tt(iclasses)%coeff3d,kind=hik))
         enddo
         !
+        term_zero(1:Nterms) = .false.
+        term_active_mask(1:Nterms) = 0
+        !
         do iclasses = 1,PT%Nclasses
           !
           nroots  = contr(iclasses)%nroots
@@ -18064,31 +18134,43 @@ module perturbation
           !
           im2 = min(PT%Nmodes-1,im2)
           !
-          nroots  = contr(iclasses)%nroots
-          !
           allocate(mat_(nroots,nroots),stat=alloc)
           call ArrayStart('calc_contract_matrix_elements_III:mat_',alloc,size(mat_),kind(f_t))
           !
+          ! Check whether contracted basis vectors for this class are orthonormal: T^T T = I
+          call dgemm('T','N',nroots,nroots,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,&
+                      tmat(iclasses)%coeffs,dimen_p,beta,mat_,nroots)
+          max_off_s = 0.0_rk
+          max_diag_s = 0.0_rk
+          do jroot = 1,nroots
+            do iroot = 1,nroots
+              if (iroot==jroot) then
+                max_diag_s = max(max_diag_s, abs(mat_(iroot,iroot)-1.0_rk))
+              else
+                max_off_s = max(max_off_s, abs(mat_(iroot,jroot)))
+              endif
+            enddo
+          enddo
+          class_orthonormal(iclasses) = (max_off_s <= 1.0d-11 .and. max_diag_s <= 1.0d-11)
+          !
           do iterm = 1,Nterms
+             !
+             if (term_zero(iterm)) cycle
              !
              k(:) = fl%IndexQ(:,iterm)
              !
              if (job%verbose>=4) call TimerStart('contract_matrix')
              !
-             me_t = 0 
-             !
              if (iclasses/=PT%Nclasses) then 
                !
                !$omp parallel do private(iprim,jprim,nu_i,nu_j) shared(me_t)
-               do jprim=1,contr(iclasses)%dimen
+               do jprim=1,dimen_p
                  !
                  nu_j(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,jprim)
                  !
-                 do iprim=1,contr(iclasses)%dimen
+                 do iprim=1,dimen_p
                    !
                    nu_i(im1:im2) = contr(iclasses)%prim_bs%icoeffs(im1:im2,iprim)
-                   !
-                   ! Primitive matrix elements of all Hamiltonian components ....
                    !
                    me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
                    !
@@ -18099,15 +18181,13 @@ module perturbation
              else
                !
                !$omp parallel do private(iprim,jprim,nu_i,nu_j,me6_val) shared(me_t)
-               do jprim=1,contr(iclasses)%dimen
+               do jprim=1,dimen_p
                  !
                  nu_j(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,jprim)
                  !
-                 do iprim=1,contr(iclasses)%dimen
+                 do iprim=1,dimen_p
                    !
                    nu_i(im1:im2+1) = contr(iclasses)%prim_bs%icoeffs(im1:im2+1,iprim)
-                   !
-                   ! Primitive matrix elements of all Hamiltonian components ....
                    !
                    me_t(iprim,jprim) = func(iterm,im1,im2,nu_i,nu_j,k,k1,k2)
                    !
@@ -18130,35 +18210,68 @@ module perturbation
                    endif
                    me_t(iprim,jprim) = me_t(iprim,jprim)*me6_val
                    !
-                   !me_t(iprim,jprim) = Hobject(nu_i(PT%Nmodes),nu_j(PT%Nmodes))
-                   !
                  enddo
                enddo
                !$omp end parallel do
                !
              endif 
              !
+             c0_me = me_t(1,1)
+             max_abs_me = 0.0_rk
+             max_offdiag_me = 0.0_rk
+             max_diag_diff = 0.0_rk
+             !$omp parallel do private(iprim,jprim,val_me) &
+             !$omp& reduction(max:max_abs_me,max_offdiag_me,max_diag_diff)
+             do jprim=1,dimen_p
+               do iprim=1,dimen_p
+                 val_me = abs(me_t(iprim,jprim))
+                 if (val_me>max_abs_me) max_abs_me = val_me
+                 if (iprim==jprim) then
+                   val_me = abs(me_t(iprim,iprim)-c0_me)
+                   if (val_me>max_diag_diff) max_diag_diff = val_me
+                 else
+                   if (val_me>max_offdiag_me) max_offdiag_me = val_me
+                 endif
+               enddo
+             enddo
+             !$omp end parallel do
+             !
              if (job%verbose>=4) call TimerStop('contract_matrix')
              !
-             if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
-             !
-             call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
-                         me_t,dimen_p_max,beta,mat_t,nroots_max)
-             call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
-                         tmat(iclasses)%coeffs,dimen_p,beta,mat_,nroots)
-                         !
-                         !tmat(iclasses)%coeffs,dimen_p,beta,mat_tt(iclasses)%coeff3d(iterm,:,:),nroots)
-             !
-             mat_tt(iclasses)%coeff3d(iterm,:,:) = mat_
-             !
-             !matclass(iclasses,1:nroots,1:nroots) = mat_tt(iclasses)%coeffs
-             !
-             !call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,& 
-             !            me_t(1:dimen_p,1:dimen_p),dimen_p,beta,mat_t(1:nroots,1:dimen_p),nroots)
-             !call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t(1:nroots,1:dimen_p),nroots,& 
-             !            tmat(iclasses)%coeffs(1:dimen_p,1:nroots),dimen_p,beta,mat_tt(iclasses)%coeffs(1:nroots,1:nroots),nroots)
-             !
-             if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
+             if (max_abs_me == 0.0_rk) then
+               term_zero(iterm) = .true.
+               mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
+             elseif (class_orthonormal(iclasses) .and. &
+                     max_offdiag_me <= 1.0d-12*abs(c0_me) .and. &
+                     max_diag_diff  <= 1.0d-12*abs(c0_me)) then
+               ! Operator is c0_me * Identity on this class; exact T^T (c0 I) T = c0 I
+               mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
+               do iroot = 1,nroots
+                 mat_tt(iclasses)%coeff3d(iterm,iroot,iroot) = c0_me
+               enddo
+             else
+               if (job%verbose>=4) call TimerStart('contract_matrix_dgemm')
+               call dgemm('T','N',nroots,dimen_p,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,& 
+                           me_t,dimen_p_max,beta,mat_t,nroots_max)
+               call dgemm('N','N',nroots,nroots,dimen_p,alpha,mat_t,nroots_max,& 
+                           tmat(iclasses)%coeffs,dimen_p,beta,mat_,nroots)
+               mat_tt(iclasses)%coeff3d(iterm,:,:) = mat_
+               max_abs_me = 0.0_rk
+               max_off_s = 0.0_rk
+               do jroot = 1,nroots
+                 do iroot = 1,nroots
+                   val_me = abs(mat_(iroot,jroot))
+                   if (val_me>max_abs_me) max_abs_me = val_me
+                   if (iroot/=jroot .and. val_me>max_off_s) max_off_s = val_me
+                 enddo
+               enddo
+               if (max_abs_me == 0.0_rk) then
+                 term_zero(iterm) = .true.
+               elseif (max_off_s > 0.0_rk .and. iclasses <= 30) then
+                 term_active_mask(iterm) = ibset(term_active_mask(iterm), iclasses - 1)
+               endif
+               if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
+             endif
              !
           enddo 
           !
@@ -18169,108 +18282,175 @@ module perturbation
         !
         if (job%verbose>=4) call TimerStart('contract_matrix_sum_field')
         !
-        !$omp parallel private(info_p,icoeff,isym,i,jcoeff,f_terms,f_prod,iclasses,iroot,jroot,f_t) shared(field)
-        allocate(f_terms(Nterms),stat=info_p)
-        if (info_p/=0) then
-           write (out,"(' Error ',i9,' calc_contract_matrix_elements_III:f_terms')") info_p
-           stop 'calc_contract_matrix_elements_III:f_terms'
-        end if
-        !
-        !$omp do schedule(dynamic)
-        do icoeff=1,Maxcontracts
-          !
-          if (.not.debug_check_symmetries) then
-            !
-            if (present(icontr_vs_isym)) then 
-              !
-              isym = icontr_vs_isym(:,icoeff)
-              !
-              where(isym==0) isym = -1
-              !
-            endif
-            !
+        Nsurv = 0
+        union_active_mask = 0
+        do iterm = 1,Nterms
+          if (.not.term_zero(iterm)) then
+            Nsurv = Nsurv + 1
+            surv_iterm(Nsurv) = iterm
+            surv_not_mask(Nsurv) = not(term_active_mask(iterm))
+            union_active_mask = ior(union_active_mask, term_active_mask(iterm))
           endif
-          !
-          do jcoeff=1,icoeff
-            !
-            if (.not.debug_check_symmetries) then 
-              !
-              if (present(icontr_vs_isym)) then
-                !
-                if ( all( isym(:)/=icontr_vs_isym(:,jcoeff) ) ) cycle
-                !
-              endif
-              !
-            endif
-            !
-            !iroot = icoeff2iroot(1,icoeff)
-            !jroot = icoeff2iroot(1,jcoeff)
-            !
-            !f_t = matclass(1,iroot,jroot)
-            !
-            f_terms = 1.0_rk
-            !
-            do iclasses = 1,Nclasses
-              !
-              iroot = icoeff2iroot(iclasses,icoeff)
-              jroot = icoeff2iroot(iclasses,jcoeff)
-              !
-              !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
-              !
-              !print*,icoeff,jcoeff,iclasses,iroot,jroot
-              !
-              !f_t = f_t*matclass(iclasses,iroot,jroot)
-              !
-              f_terms(:) = mat_tt(iclasses)%coeff3d(:,iroot,jroot)*f_terms(:)
-              !
-              !f_t = f_t*mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
-              !
-            enddo
-            !
-            !do iterm = 1,Nterms
-            !  !
-            !  !f_prod(1) = mat_tt(1)%coeff3d(iterm,iroot,jroot)
-            !  !
-            !  !f_t = 1.0_rk
-            !  !
-            !  do iclasses = 1,Nclasses
-            !    !
-            !    iroot = icoeff2iroot(iclasses,icoeff)
-            !    jroot = icoeff2iroot(iclasses,jcoeff)
-            !    !
-            !    !f_prod(iclasses) = mat_tt(iclasses)%coeffs(iroot,jroot)
-            !    !
-            !    !print*,icoeff,jcoeff,iclasses,iroot,jroot
-            !    !
-            !    !f_t = f_t*matclass(iclasses,iroot,jroot)
-            !    !
-            !    f_prod(iclasses) = mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
-            !    !
-            !    !f_t = f_t*mat_tt(iclasses)%coeff3d(iterm,iroot,jroot)
-            !    !
-            !  enddo
-            !  !
-            !  !f_t = product(matclass(1:Nclasses,icoeff2iroot(1:Nclasses,icoeff),icoeff2iroot(1:Nclasses,jcoeff)))
-            !  !
-            !  !field(jcoeff,icoeff) = field(jcoeff,icoeff)+f_t
-            !  !
-            !  f_t = product(f_prod)
-            !  !
-            !  field(jcoeff,icoeff) = field(jcoeff,icoeff) + f_t
-            !  !
-            !enddo
-            !
-            field(jcoeff,icoeff) = field(jcoeff,icoeff) + sum(f_terms)
-            !
-          enddo
         enddo
-        !$omp end do
+        if (Nsurv == 0) goto 900
         !
-        deallocate(f_terms)
-        !$omp end parallel 
-        !call ArrayStop('calc_contract_matrix_elements_III:f_terms')
+        use_sym_bitmask = (.not.debug_check_symmetries .and. present(icontr_vs_isym) .and. sym%Nrepresen <= 30)
+        if (use_sym_bitmask) then
+          allocate(sym_mask(Maxcontracts),stat=alloc)
+          !$omp parallel do private(icoeff,irrep_i,sym_mask_i) shared(sym_mask) schedule(static)
+          do icoeff = 1,Maxcontracts
+            sym_mask_i = 0
+            do irrep_i = 1,sym%Nrepresen
+              if (icontr_vs_isym(irrep_i,icoeff) > 0) sym_mask_i = ibset(sym_mask_i, irrep_i - 1)
+            enddo
+            sym_mask(icoeff) = sym_mask_i
+          enddo
+          !$omp end parallel do
+        endif
         !
+        use_mask_table = (Nclasses <= MAX_MASK_CLASSES)
+        nbuckets = 1
+        n_bclasses = 0
+        if (use_mask_table) then
+          nmasks = ishft(1_ik, Nclasses)
+          allocate(n_mask(0:nmasks-1), mask_terms(Nsurv,0:nmasks-1), stat=alloc)
+          do dmask = 0, nmasks - 1
+            nt = 0
+            do isurv = 1, Nsurv
+              if (iand(dmask, surv_not_mask(isurv)) == 0) then
+                nt = nt + 1
+                mask_terms(nt, dmask) = surv_iterm(isurv)
+              endif
+            enddo
+            n_mask(dmask) = nt
+          enddo
+          class_picked(:) = .false.
+          do ibc = 1, Nclasses
+            best_c = 0
+            best_nroots = 1
+            do iclasses = 1, Nclasses
+              if (.not.class_picked(iclasses) .and. .not.btest(union_active_mask, iclasses - 1)) then
+                if (contr(iclasses)%nroots > best_nroots) then
+                  best_nroots = contr(iclasses)%nroots
+                  best_c = iclasses
+                endif
+              endif
+            enddo
+            if (best_c == 0) exit
+            if (int(nbuckets,hik)*int(best_nroots,hik) > 1048576_hik) exit
+            class_picked(best_c) = .true.
+            n_bclasses = n_bclasses + 1
+            bclasses(n_bclasses) = best_c
+            bstrides(n_bclasses) = nbuckets
+            nbuckets = nbuckets * best_nroots
+          enddo
+          if (nbuckets > 1) then
+            allocate(coeff_bucket(Maxcontracts), head_bucket(nbuckets), next_in_bucket(Maxcontracts), stat=alloc)
+            !$omp parallel do private(icoeff,ibc,b_idx) shared(coeff_bucket) schedule(static)
+            do icoeff = 1, Maxcontracts
+              b_idx = 1
+              do ibc = 1, n_bclasses
+                b_idx = b_idx + (icoeff2iroot(bclasses(ibc), icoeff) - 1) * bstrides(ibc)
+              enddo
+              coeff_bucket(icoeff) = b_idx
+            enddo
+            !$omp end parallel do
+            head_bucket(:) = 0
+            do icoeff = Maxcontracts, 1, -1
+              b_idx = coeff_bucket(icoeff)
+              next_in_bucket(icoeff) = head_bucket(b_idx)
+              head_bucket(b_idx) = icoeff
+            enddo
+          endif
+        endif
         !
+        !$omp parallel do private(icoeff,jcoeff,isym,sym_mask_i,iroot_i,jroot_j,iclasses,&
+        !$omp& dmask,nt,idx,isurv,iterm,acc_val,prod_val) shared(field) schedule(dynamic,64)
+        do icoeff=1,Maxcontracts
+          if (use_sym_bitmask) then
+            sym_mask_i = sym_mask(icoeff)
+            if (sym_mask_i == 0) cycle
+          elseif (.not.debug_check_symmetries .and. present(icontr_vs_isym)) then
+            isym = icontr_vs_isym(:,icoeff)
+            where(isym==0) isym = -1
+          endif
+          iroot_i(1:Nclasses) = icoeff2iroot(1:Nclasses,icoeff)
+          if (use_mask_table) then
+            if (nbuckets > 1) then
+              jcoeff = head_bucket(coeff_bucket(icoeff))
+            else
+              jcoeff = 1
+            endif
+            do while (jcoeff > 0 .and. jcoeff <= icoeff)
+              if (use_sym_bitmask) then
+                if (iand(sym_mask_i, sym_mask(jcoeff)) == 0) goto 110
+              elseif (.not.debug_check_symmetries .and. present(icontr_vs_isym)) then
+                if (all(isym(:) /= icontr_vs_isym(:,jcoeff))) goto 110
+              endif
+              dmask = 0
+              do iclasses = 1, Nclasses
+                jroot_j(iclasses) = icoeff2iroot(iclasses,jcoeff)
+                if (iroot_i(iclasses) /= jroot_j(iclasses)) dmask = ibset(dmask, iclasses - 1)
+              enddo
+              nt = n_mask(dmask)
+              if (nt > 0) then
+                acc_val = 0.0_rk
+                do idx = 1, nt
+                  iterm = mask_terms(idx, dmask)
+                  prod_val = mat_tt(1)%coeff3d(iterm, iroot_i(1), jroot_j(1))
+                  do iclasses = 2, Nclasses
+                    prod_val = prod_val * mat_tt(iclasses)%coeff3d(iterm, iroot_i(iclasses), jroot_j(iclasses))
+                  enddo
+                  acc_val = acc_val + prod_val
+                enddo
+                if (acc_val /= 0.0_rk) field(jcoeff,icoeff) = field(jcoeff,icoeff) + scale_val * acc_val
+              endif
+  110         continue
+              if (nbuckets > 1) then
+                jcoeff = next_in_bucket(jcoeff)
+              else
+                jcoeff = jcoeff + 1
+              endif
+            enddo
+          else
+            do jcoeff = 1, icoeff
+              if (use_sym_bitmask) then
+                if (iand(sym_mask_i, sym_mask(jcoeff)) == 0) cycle
+              elseif (.not.debug_check_symmetries .and. present(icontr_vs_isym)) then
+                if (all(isym(:) /= icontr_vs_isym(:,jcoeff))) cycle
+              endif
+              dmask = 0
+              do iclasses = 1, min(Nclasses, 30_ik)
+                jroot_j(iclasses) = icoeff2iroot(iclasses,jcoeff)
+                if (iroot_i(iclasses) /= jroot_j(iclasses)) dmask = ibset(dmask, iclasses - 1)
+              enddo
+              do iclasses = 31, Nclasses
+                jroot_j(iclasses) = icoeff2iroot(iclasses,jcoeff)
+              enddo
+              acc_val = 0.0_rk
+              do isurv = 1, Nsurv
+                if (iand(dmask, surv_not_mask(isurv)) /= 0) cycle
+                iterm = surv_iterm(isurv)
+                prod_val = mat_tt(1)%coeff3d(iterm, iroot_i(1), jroot_j(1))
+                do iclasses = 2, Nclasses
+                  prod_val = prod_val * mat_tt(iclasses)%coeff3d(iterm, iroot_i(iclasses), jroot_j(iclasses))
+                enddo
+                acc_val = acc_val + prod_val
+              enddo
+              if (acc_val /= 0.0_rk) field(jcoeff,icoeff) = field(jcoeff,icoeff) + scale_val * acc_val
+            enddo
+          endif
+        enddo
+        !$omp end parallel do
+        !
+        if (allocated(n_mask)) deallocate(n_mask)
+        if (allocated(mask_terms)) deallocate(mask_terms)
+        if (allocated(sym_mask)) deallocate(sym_mask)
+        if (allocated(coeff_bucket)) deallocate(coeff_bucket)
+        if (allocated(head_bucket)) deallocate(head_bucket)
+        if (allocated(next_in_bucket)) deallocate(next_in_bucket)
+        !
+  900   continue
         deallocate(me_t)
         call ArrayStop('calc_contract_matrix_elements_III:me_t')
         !

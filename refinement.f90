@@ -916,6 +916,59 @@ contains
                  !
                  call TimerStop('Energy calculations')
                  !
+                 ! correct the addresses of the energy before computing derivatives
+                 !
+                 if (abs(fitting%threshold_lock)>0) then 
+                   !
+                   if (fitting%threshold_lock<0)  maxiter_as = 1
+                   !
+                   i0 = 1
+                   !
+                   iJ = fitting%obs(1)%Jrot ; igamma = fitting%obs(1)%symmetry
+                   !
+                   do iener = 1,en_npts
+                     !
+                     iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
+                     !
+                     if (iJ==Jrot.and.igamma==isym) then
+                       !
+                       mark(iener) = '*'
+                       i0 = max(fitting%obs(iener)%N-25,1)
+                       !
+                       loop_thresh : do iter_th = 1,maxiter_as
+                         !
+                         loop_i : do i=i0,nroots
+                            !
+                            do jener = max(iener-25,1),iener-1
+                              !
+                              if (fitting%obs(jener)%jrot/=Jrot.or.fitting%obs(jener)%symmetry/=isym) cycle
+                              !
+                              if (fitting%obs(jener)%N == i) cycle loop_i
+                              !
+                            enddo
+                            !
+                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
+                            quanta(0) = eigen(fit(isym,j)%ilevel(ilargest(i)))%krot
+                            !
+                            if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
+                                .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
+                                !
+                                fitting%obs(iener)%N = i
+                                mark(iener) = ' '
+                                exit loop_thresh
+                                !
+                            endif 
+                            !
+                         enddo loop_i
+                         !
+                       enddo loop_thresh
+                       !
+                     endif 
+                     !
+                   enddo
+                   !
+                 endif
+                 !
                  ! Check we if we need to computed the derivatives 
                  !
                  do_deriv = .false.
@@ -1038,62 +1091,6 @@ contains
                  !
                  deallocate(mat)
                  call ArrayStop('fitting-mat')
-                 !
-                 ! correct the addresses of the energy
-                 !
-                 if (abs(fitting%threshold_lock)>0) then 
-                   !
-                   if (fitting%threshold_lock<0)  maxiter_as = 1
-                   !
-                   i0 = 1
-                   !
-                   iJ = fitting%obs(1)%Jrot ; igamma = fitting%obs(1)%symmetry
-                   !
-                   do iener = 1,en_npts
-                     !
-                     mark(iener) = '*'
-                     !
-                     !if (iJ/=fitting%obs(iener)%jrot.or.igamma /= fitting%obs(iener)%symmetry) i0 = 1
-                     !
-                     iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
-                     !
-                     if (iJ==Jrot.and.igamma==isym) then
-                       !
-                       loop_thresh : do iter_th = 1,maxiter_as
-                         !
-                         loop_i : do i=i0,nroots
-                            !
-                            do jener = max(iener-10,1),iener-1
-                              !
-                              if (fitting%obs(jener)%jrot/=Jrot.or.fitting%obs(jener)%symmetry/=isym) cycle
-                              !
-                              if (fitting%obs(jener)%N == i) cycle loop_i
-                              !
-                            enddo
-                            !
-                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
-                            quanta(0) = eigen(fit(isym,j)%ilevel(ilargest(i)))%krot
-                            !
-                            if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
-                                .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
-                                !
-                                fitting%obs(iener)%N = i
-                                mark(iener) = ' '
-                                exit loop_thresh
-                                !
-                            endif 
-                            !
-                         enddo loop_i
-                         !
-                       enddo loop_thresh
-                       !
-                       if (mark(iener) == ' ')  i0 = max(fitting%obs(iener)%N-10,1)
-                       !
-                     endif 
-                     !
-                   enddo
-                   !
-                 endif
                  !
                  do iener = 1,en_npts
                    !
@@ -1867,7 +1864,7 @@ contains
       real(rk) :: ezero_,a_wats = 1.0_rk
       integer(ik)  :: iener1,iener2,i,numpar,itmax,j,jlistmax,rank,ncol,nroots
       integer(ik)  :: iJ,isym,jsym,iener,jener,irow,icolumn,l,ndigits,jlevel
-      integer(ik)  :: potunit,enunit,quanta(1:FLNmodes)
+      integer(ik)  :: potunit,enunit,quanta(0:FLNmodes)
       integer(ik)  :: nlevels,ilevel,Nentries,ientry,jentry,k,imode,iunit,irange(2),icontr,icase,icase1,j0ener_total_plus,imu_t
       integer(ik)  :: jcase,jlambda,jcontr,j0ener_max,nroots_j0(sym%Nrepresen),j0Neners,ilambda,j0ener_fit_plus,i0,iter_th
       real(rk)     :: vrange(2),f_t,v_l,v_r
@@ -2304,6 +2301,59 @@ contains
                  !
                  call TimerStop('Energy calculations')
                  !
+                 ! correct the addresses of the energy before computing derivatives
+                 !
+                 if (abs(fitting%threshold_lock)>0) then 
+                   !
+                   if (fitting%threshold_lock<0)  maxiter_as = 1
+                   !
+                   i0 = 1
+                   !
+                   iJ = fitting%obs(1)%Jrot ; igamma = fitting%obs(1)%symmetry
+                   !
+                   do iener = 1,en_npts
+                     !
+                     iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
+                     !
+                     if (iJ==Jrot.and.igamma==isym) then
+                       !
+                       mark(iener) = '*'
+                       i0 = max(fitting%obs(iener)%N-25,1)
+                       !
+                       loop_thresh : do iter_th = 1,maxiter_as
+                         !
+                         loop_i : do i=i0,nroots
+                            !
+                            do jener = max(iener-25,1),iener-1
+                              !
+                              if (fitting%obs(jener)%jrot/=Jrot.or.fitting%obs(jener)%symmetry/=isym) cycle
+                              !
+                              if (fitting%obs(jener)%N == i) cycle loop_i
+                              !
+                            enddo
+                            !
+                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
+                            quanta(0) = eigen(fit(isym,j)%ilevel(ilargest(i)))%krot
+                            !
+                            if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*abs(fitting%threshold_lock) &
+                                .and.all(quanta(0:nmodes)==fitting%obs(iener)%quanta(0:nmodes))) then 
+                                !
+                                fitting%obs(iener)%N = i
+                                mark(iener) = ' '
+                                exit loop_thresh
+                                !
+                            endif 
+                            !
+                         enddo loop_i
+                         !
+                       enddo loop_thresh
+                       !
+                     endif 
+                     !
+                   enddo
+                   !
+                 endif
+                 !
                  ! Check we if we need to computed the derivatives 
                  !
                  do_deriv = .false.
@@ -2430,52 +2480,6 @@ contains
                  !
                  deallocate(mat)
                  call ArrayStop('fitting-mat')
-                 !
-                 ! correct the addresses of the energy
-                 !
-                 if (fitting%threshold_lock>0) then 
-                   !
-                   i0 = 1
-                   !
-                   do iener = 1,en_npts
-                     !
-                     iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
-                     mark(iener) = '*'
-                     !
-                     if (iJ==Jrot.and.igamma==isym) then
-                       !
-                       loop_thresh : do iter_th = 1,maxiter_as
-                         !
-                         loop_i : do i=i0,nroots
-                            !
-                            do jener = max(iener-10,1),iener-1
-                              !
-                              if (fitting%obs(jener)%N == i) cycle loop_i
-                              !
-                            enddo
-                            !
-                            quanta(1:nmodes) = eigen(fit(isym,j)%ilevel(ilargest(i)))%quanta(1:nmodes)
-                            !
-                            if (abs( fitting%obs(iener)%energy-(energy_(i)-ezero_) )<=real(iter_th,8)*fitting%threshold_lock.and.&
-                                all(quanta(1:nmodes)==fitting%obs(iener)%quanta(1:nmodes))) then 
-                                !
-                                fitting%obs(iener)%N = i
-                                mark(iener) = ' '
-                                exit loop_thresh
-                                !
-                            endif 
-                            !
-                         enddo loop_i
-                         !
-                       enddo loop_thresh
-                       !
-                       if (mark(iener) == ' ')  i0 = max(fitting%obs(iener)%N-10,1)
-                       !
-                     endif 
-                     !
-                   enddo
-                   !
-                 endif
                  !
                  write(my_fmt,'(a,i0,a)') "(3i5,2x,a3,1x,3f13.4,2x,e9.2,2x,a1,i3,a1,1x,a1,",nmodes,"(1x, i3),a1,a)"
                  !
