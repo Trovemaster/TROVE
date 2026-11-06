@@ -36,4 +36,21 @@ if [ "${RUN_P12:-0}" = "1" ]; then
   "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P12_J5.inp > C2H2_sing3D_D2h_Refined_P12_J5_run.out
 fi
 
+# Optional (RUN_P12_DMS=1 ./run.sh): 6th-order CCSD(T)/CBS DMS (external_CBS_6th.chk) intensities
+# on the refined Pmax=12 (K <= 5) basis for J = 0..5. All energy runs (EIGENFUNC save) come first;
+# the DMS J=0 step writes its primitive basis to prim_bset_dms.chk (chk_file), so prim_bset.chk is kept.
+if [ "${RUN_P12_DMS:-0}" = "1" ]; then
+  echo "=== 6. Refined Pmax=12 (K <= 5) J=0..5 + 6th-order CBS DMS contraction and J=0..5 intensities ==="
+  cp -f potential_Refined_P12.chk potential.chk
+  cp -f external.chk external_benchmark_backup.chk
+  cp -f external_CBS_6th.chk external.chk
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P12_J0_kmax5.inp > C2H2_sing3D_D2h_Refined_P12_J0_kmax5_run.out
+  for J in 1 2 3 4 5; do
+    "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P12_J${J}.inp > C2H2_sing3D_D2h_Refined_P12_J${J}_run.out
+  done
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P12_DMS_J0_kmax5.inp > C2H2_sing3D_D2h_Refined_P12_DMS_J0_kmax5_run.out
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P12_intens.inp > C2H2_sing3D_D2h_Refined_P12_intens_run.out
+  mv -f external_benchmark_backup.chk external.chk
+fi
+
 mv -f potential_test_backup.chk potential.chk
