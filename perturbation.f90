@@ -34841,7 +34841,7 @@ end subroutine read_contr_matelem_expansion_classN
     real(rk),intent(in)    :: flcoeff(:,0:,0:)
     real(rk),intent(out)   :: val
     integer(ik) :: m1,m2,m3,l1_l,l2_l,k_l,kl_l,l1_r,l2_r,k_r,kl_r,sl,cl,sr,cr,dk_op,sig_l,sig_r
-    integer(ik) :: iterm_rot,iterm_cor,k_mode,iterm_p,pm
+    integer(ik) :: iterm_rot,iterm_cor,k_mode,iterm_p,pm,jfunc1,jfunc2,lam1,lam2
     real(rk)    :: grot_val,c_cor,sgn_p,val_p1,val_p2
     logical     :: valid_l,valid_r,coupled_l,coupled_r,is_even_op,same_tau
     type(PTcoeffT),pointer :: fl_p
@@ -34895,6 +34895,42 @@ end subroutine read_contr_matelem_expansion_classN
         val = 0.0_rk
         return
       endif
+      if ((k1_mode==-11 .or. k1_mode==-12) .and. molec%mode_extf_list_present) then
+        lam1 = -1
+        jfunc1 = k(m1) + 1
+        if (jfunc1>=1 .and. jfunc1<=molec%basic_function_ext_list(m1)%numfunc) then
+          if (molec%basic_function_ext_list(m1)%mode_set(jfunc1)%num_terms==1) then
+            lam1 = 0
+          elseif (molec%basic_function_ext_list(m1)%mode_set(jfunc1)%num_terms>=2) then
+            if (trim(molec%basic_function_ext_list(m1)%mode_set(jfunc1)%func_set(2)%name)=='SIN') then
+              lam1 = molec%basic_function_ext_list(m1)%mode_set(jfunc1)%func_set(2)%outer_expon
+            endif
+          endif
+        endif
+        if (lam1>=0) then
+          if (abs(l1_l-l1_r)>lam1 .or. mod(abs(l1_l-l1_r),2)/=mod(lam1,2)) then
+            val = 0.0_rk
+            return
+          endif
+        endif
+        lam2 = -1
+        jfunc2 = k(m2) + 1
+        if (jfunc2>=1 .and. jfunc2<=molec%basic_function_ext_list(m2)%numfunc) then
+          if (molec%basic_function_ext_list(m2)%mode_set(jfunc2)%num_terms==1) then
+            lam2 = 0
+          elseif (molec%basic_function_ext_list(m2)%mode_set(jfunc2)%num_terms>=2) then
+            if (trim(molec%basic_function_ext_list(m2)%mode_set(jfunc2)%func_set(2)%name)=='SIN') then
+              lam2 = molec%basic_function_ext_list(m2)%mode_set(jfunc2)%func_set(2)%outer_expon
+            endif
+          endif
+        endif
+        if (lam2>=0) then
+          if (abs(l2_l-l2_r)>lam2 .or. mod(abs(l2_l-l2_r),2)/=mod(lam2,2)) then
+            val = 0.0_rk
+            return
+          endif
+        endif
+      endif
       fl_p => null()
       sgn_p = 1.0_rk
       is_even_op = .true.
@@ -34941,19 +34977,28 @@ end subroutine read_contr_matelem_expansion_classN
       val_p2 = 0.0_rk
       if (associated(fl_p)) then
         if (associated(fl_p%coeff)) then
-          do iterm_p = 1, fl_p%Ncoeff
-            if (all(fl_p%IndexQ(1:m3-1,iterm_p)==k(1:m3-1))) then
-              if (coupled_l .and. coupled_r) then
-                val_p1 = val_p1 + fl_p%coeff(iterm_p,cl,sr)
-                val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,cr)
-              elseif (.not.coupled_l .and. coupled_r) then
-                val_p1 = val_p1 + fl_p%coeff(iterm_p,nu_i(m3),sr)
-              elseif (coupled_l .and. .not.coupled_r) then
-                val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,nu_j(m3))
+          iterm_p = 0
+          if (iterm>=1 .and. iterm<=fl_p%Ncoeff) then
+            if (all(fl_p%IndexQ(1:m3-1,iterm)==k(1:m3-1))) iterm_p = iterm
+          endif
+          if (iterm_p==0) then
+            do iterm_rot = 1, fl_p%Ncoeff
+              if (all(fl_p%IndexQ(1:m3-1,iterm_rot)==k(1:m3-1))) then
+                iterm_p = iterm_rot
+                exit
               endif
-              exit
+            enddo
+          endif
+          if (iterm_p>0) then
+            if (coupled_l .and. coupled_r) then
+              val_p1 = val_p1 + fl_p%coeff(iterm_p,cl,sr)
+              val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,cr)
+            elseif (.not.coupled_l .and. coupled_r) then
+              val_p1 = val_p1 + fl_p%coeff(iterm_p,nu_i(m3),sr)
+            elseif (coupled_l .and. .not.coupled_r) then
+              val_p2 = val_p2 + fl_p%coeff(iterm_p,sl,nu_j(m3))
             endif
-          enddo
+          endif
         endif
       endif
       if (coupled_l .and. coupled_r) then

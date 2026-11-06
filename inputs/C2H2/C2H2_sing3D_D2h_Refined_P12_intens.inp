@@ -5,7 +5,7 @@ PotOrder  10  (Max order in the potential energy expansion)
 Natoms 4      (Number of atoms)
 Nmodes 6      (Number of modes = 3*Natoms-6)
 
-(C2H2 6D singular_3D calculation on the empirically refined P12 PES with the 6th-order CCSD(T)/CBS(aug-TZ,aug-QZ) 6D DMS fitted to 19263 geometries (external.chk))
+(C2H2 6D singular_3D calculation on the empirically refined P12 PES with the 6th-order CCSD(T)/CBS(aug-TZ,aug-QZ) 6D DMS fitted to 19263 geometries (external_CBS_6th.chk))
 
 PRIMITIVES
   Npolyads      12      (how many polyads we calculate)
@@ -70,16 +70,20 @@ Mode 2 7
 1, 0 : 6, x-xe
 Mode 3 7
 1, 0 : 6, x-xe
-Mode 4 14
+Mode 4 28
 1, 0 : 6, cos(a0)-cos(a)
 2, 0 : 6, cos(a0)-cos(a), 1 sin 1.0 1
-Mode 5 14
+2, 0 : 6, cos(a0)-cos(a), 2 sin 1.0 1
+2, 0 : 6, cos(a0)-cos(a), 3 sin 1.0 1
+Mode 5 28
 1, 0 : 6, cos(a0)-cos(a)
 2, 0 : 6, cos(a0)-cos(a), 1 sin 1.0 1
-Mode 6 9
+2, 0 : 6, cos(a0)-cos(a), 2 sin 1.0 1
+2, 0 : 6, cos(a0)-cos(a), 3 sin 1.0 1
+Mode 6 13
 1, 0 : 6, cosnx
-2, 0 : 0, cosnx, 1 cos 0.5 1
-2, 0 : 0, cosnx, 1 sin 0.5 1
+2, 0 : 2, cosnx, 1 cos 0.5 1
+2, 0 : 2, cosnx, 1 sin 0.5 1
 end
 
 BASIC-FUNCTION POTEN
