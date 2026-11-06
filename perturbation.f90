@@ -18066,16 +18066,19 @@ module perturbation
         integer(ik),parameter :: MAX_MASK_CLASSES = 12_ik
         integer(ik) :: k(PT%Nmodes)  
         integer(ik) :: iclasses,nroots,dimen_p,im1,im2,iprim,jprim,nu_i(0:PT%Nmodes),nu_j(0:PT%Nmodes)
-        integer(ik) :: icoeff,jcoeff,iroot,jroot,Maxcontracts,Nclasses,alloc,iterm,isym(sym%Nrepresen)
-        real(rk)    :: f_t,me6_val,scale_val,c0_me,max_abs_me,max_offdiag_me,max_diag_diff
+        integer(ik) :: icoeff,jcoeff,iroot,jroot,Maxcontracts,Nclasses,alloc,alloc_p,iterm,isym(sym%Nrepresen)
+        real(rk)    :: f_t,me6_val,scale_val,c0_me,c_mode,max_abs_me,max_offdiag_me,max_diag_diff
         real(rk)    :: max_off_s,max_diag_s,val_me,acc_val,prod_val
-        logical     :: is_gvib,is_poten,is_grot,is_gcor,is_extf
-        logical     :: class_orthonormal(PT%Nclasses),term_zero(max(1_ik,Nterms)),use_mask_table,use_sym_bitmask
+        logical     :: is_gvib,is_poten,is_grot,is_gcor,is_extf,is_id_class
+        logical     :: class_id0_ok(PT%Nclasses),class_all_unit,term_zero(max(1_ik,Nterms)),use_mask_table,use_sym_bitmask
+        real(rk)    :: class_id0_val(PT%Nclasses)
+        integer(ik) :: op0,imode_c,bsize_c,n_mult,mult_classes(PT%Nclasses),im_c,c1,c2
         integer(ik) :: term_active_mask(max(1_ik,Nterms)),surv_iterm(max(1_ik,Nterms)),surv_not_mask(max(1_ik,Nterms))
         integer(ik) :: Nsurv,nmasks,dmask,union_active_mask,nt,idx,isurv,irrep_i,sym_mask_i
         integer(ik) :: bclasses(PT%Nclasses),bstrides(PT%Nclasses),n_bclasses,nbuckets,ibc,best_c,best_nroots,b_idx
         logical     :: class_picked(PT%Nclasses)
         integer(ik) :: iroot_i(PT%Nclasses),jroot_j(PT%Nclasses)
+        real(rk),allocatable    :: prod_vec(:)
         integer(ik),allocatable :: n_mask(:),mask_terms(:,:),sym_mask(:),coeff_bucket(:),head_bucket(:),next_in_bucket(:)
         double precision,parameter :: alpha = 1.0d0,beta=0.0d0
         !
@@ -18125,6 +18128,15 @@ module perturbation
         term_zero(1:Nterms) = .false.
         term_active_mask(1:Nterms) = 0
         !
+        op0 = -99_ik
+        if (is_poten) then
+          op0 = 0_ik
+        elseif (is_extf) then
+          op0 = 3_ik
+        elseif (is_gvib .or. is_grot .or. is_gcor) then
+          op0 = -1_ik
+        endif
+        !
         do iclasses = 1,PT%Nclasses
           !
           nroots  = contr(iclasses)%nroots
@@ -18137,27 +18149,71 @@ module perturbation
           allocate(mat_(nroots,nroots),stat=alloc)
           call ArrayStart('calc_contract_matrix_elements_III:mat_',alloc,size(mat_),kind(f_t))
           !
-          ! Check whether contracted basis vectors for this class are orthonormal: T^T T = I
-          call dgemm('T','N',nroots,nroots,dimen_p,alpha,tmat(iclasses)%coeffs,dimen_p,&
-                      tmat(iclasses)%coeffs,dimen_p,beta,mat_,nroots)
-          max_off_s = 0.0_rk
-          max_diag_s = 0.0_rk
-          do jroot = 1,nroots
-            do iroot = 1,nroots
-              if (iroot==jroot) then
-                max_diag_s = max(max_diag_s, abs(mat_(iroot,iroot)-1.0_rk))
-              else
-                max_off_s = max(max_off_s, abs(mat_(iroot,jroot)))
-              endif
-            enddo
-          enddo
-          class_orthonormal(iclasses) = (max_off_s <= 1.0d-11 .and. max_diag_s <= 1.0d-11)
+          ! Check whether k(im1:im2)==0 (no derivatives on im1:im2) is algebraically c0 * Identity on 1D primitive basis
+          class_id0_ok(iclasses) = .false.
+          class_id0_val(iclasses) = 1.0_rk
+          if (iclasses < PT%Nclasses .and. op0 >= -1_ik) then
+            if (im2 < im1) then
+              class_id0_ok(iclasses) = .true.
+              class_id0_val(iclasses) = 1.0_rk
+            elseif (.not.(me2d_s4s5_active .and. im1<=4 .and. im2>=5 .and. .not.is_poten .and. .not.is_extf)) then
+              class_id0_ok(iclasses) = .true.
+              class_id0_val(iclasses) = 1.0_rk
+              do imode_c = im1,im2
+                bsize_c = ubound(me%vibmode(imode_c,op0)%coeff,dim=2)
+                c_mode = me%vibmode(imode_c,op0)%coeff(0,0,0)
+                max_off_s = 0.0_rk
+                max_diag_s = 0.0_rk
+                do jprim = 0,bsize_c
+                  do iprim = 0,bsize_c
+                    if (iprim==jprim) then
+                      max_diag_s = max(max_diag_s, abs(me%vibmode(imode_c,op0)%coeff(0,iprim,iprim)-c_mode))
+                    else
+                      max_off_s = max(max_off_s, abs(me%vibmode(imode_c,op0)%coeff(0,iprim,jprim)))
+                    endif
+                  enddo
+                enddo
+                if (max_off_s <= 1.0d-12*abs(c_mode) .and. max_diag_s <= 1.0d-12*abs(c_mode)) then
+                  class_id0_val(iclasses) = class_id0_val(iclasses) * c_mode
+                else
+                  class_id0_ok(iclasses) = .false.
+                  exit
+                endif
+              enddo
+            endif
+          endif
           !
           do iterm = 1,Nterms
              !
              if (term_zero(iterm)) cycle
              !
              k(:) = fl%IndexQ(:,iterm)
+             !
+             is_id_class = .false.
+             if (class_id0_ok(iclasses)) then
+               if (im2 < im1) then
+                 is_id_class = .true.
+               elseif (is_poten .or. is_grot .or. is_extf) then
+                 is_id_class = all(k(im1:im2) == 0)
+               elseif (is_gvib) then
+                 is_id_class = (all(k(im1:im2) == 0) .and. (k1 < im1 .or. k1 > im2) .and. (k2 < im1 .or. k2 > im2))
+               elseif (is_gcor) then
+                 is_id_class = (all(k(im1:im2) == 0) .and. (k1 < im1 .or. k1 > im2))
+               endif
+             endif
+             if (is_id_class) then
+               c0_me = class_id0_val(iclasses)
+               if (c0_me == 0.0_rk) then
+                 term_zero(iterm) = .true.
+                 mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
+               else
+                 mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
+                 do iroot = 1,nroots
+                   mat_tt(iclasses)%coeff3d(iterm,iroot,iroot) = c0_me
+                 enddo
+               endif
+               cycle
+             endif
              !
              if (job%verbose>=4) call TimerStart('contract_matrix')
              !
@@ -18241,10 +18297,9 @@ module perturbation
              if (max_abs_me == 0.0_rk) then
                term_zero(iterm) = .true.
                mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
-             elseif (class_orthonormal(iclasses) .and. &
-                     max_offdiag_me <= 1.0d-12*abs(c0_me) .and. &
+             elseif (max_offdiag_me <= 1.0d-12*abs(c0_me) .and. &
                      max_diag_diff  <= 1.0d-12*abs(c0_me)) then
-               ! Operator is c0_me * Identity on this class; exact T^T (c0 I) T = c0 I
+               ! Operator is c0_me * Identity on this class; contracted states are algebraically orthonormal
                mat_tt(iclasses)%coeff3d(iterm,:,:) = 0.0_rk
                do iroot = 1,nroots
                  mat_tt(iclasses)%coeff3d(iterm,iroot,iroot) = c0_me
@@ -18267,7 +18322,7 @@ module perturbation
                enddo
                if (max_abs_me == 0.0_rk) then
                  term_zero(iterm) = .true.
-               elseif (max_off_s > 0.0_rk .and. iclasses <= 30) then
+               elseif (max_off_s > 1.0d-12*max_abs_me .and. iclasses <= 30) then
                  term_active_mask(iterm) = ibset(term_active_mask(iterm), iclasses - 1)
                endif
                if (job%verbose>=4) call TimerStop('contract_matrix_dgemm')
@@ -18293,6 +18348,27 @@ module perturbation
           endif
         enddo
         if (Nsurv == 0) goto 900
+        !
+        n_mult = 0
+        do iclasses = 1,Nclasses
+          class_all_unit = (.not.btest(union_active_mask, iclasses - 1))
+          if (class_all_unit) then
+            nroots = contr(iclasses)%nroots
+            outer_u: do isurv = 1,Nsurv
+              iterm = surv_iterm(isurv)
+              do iroot = 1,nroots
+                if (abs(mat_tt(iclasses)%coeff3d(iterm,iroot,iroot) - 1.0_rk) > 1.0d-14) then
+                  class_all_unit = .false.
+                  exit outer_u
+                endif
+              enddo
+            enddo outer_u
+          endif
+          if (.not.class_all_unit) then
+            n_mult = n_mult + 1
+            mult_classes(n_mult) = iclasses
+          endif
+        enddo
         !
         use_sym_bitmask = (.not.debug_check_symmetries .and. present(icontr_vs_isym) .and. sym%Nrepresen <= 30)
         if (use_sym_bitmask) then
@@ -18337,7 +18413,7 @@ module perturbation
               endif
             enddo
             if (best_c == 0) exit
-            if (int(nbuckets,hik)*int(best_nroots,hik) > 1048576_hik) exit
+            if (int(nbuckets,hik)*int(best_nroots,hik) > min(16777216_hik, max(1024_hik, 4_hik*int(Maxcontracts,hik)))) exit
             class_picked(best_c) = .true.
             n_bclasses = n_bclasses + 1
             bclasses(n_bclasses) = best_c
@@ -18355,7 +18431,11 @@ module perturbation
               coeff_bucket(icoeff) = b_idx
             enddo
             !$omp end parallel do
-            head_bucket(:) = 0
+            !$omp parallel do private(b_idx) shared(head_bucket) schedule(static)
+            do b_idx = 1, nbuckets
+              head_bucket(b_idx) = 0
+            enddo
+            !$omp end parallel do
             do icoeff = Maxcontracts, 1, -1
               b_idx = coeff_bucket(icoeff)
               next_in_bucket(icoeff) = head_bucket(b_idx)
@@ -18364,8 +18444,11 @@ module perturbation
           endif
         endif
         !
-        !$omp parallel do private(icoeff,jcoeff,isym,sym_mask_i,iroot_i,jroot_j,iclasses,&
-        !$omp& dmask,nt,idx,isurv,iterm,acc_val,prod_val) shared(field) schedule(dynamic,64)
+        !$omp parallel private(alloc_p,prod_vec,icoeff,jcoeff,isym,sym_mask_i,iroot_i,jroot_j,iclasses,&
+        !$omp& dmask,nt,idx,isurv,iterm,acc_val,prod_val,im_c,c1,c2) shared(field)
+        allocate(prod_vec(max(1_ik,Nsurv)),stat=alloc_p)
+        if (alloc_p/=0) stop 'calc_contract_matrix_elements_III:prod_vec'
+        !$omp do schedule(dynamic,64)
         do icoeff=1,Maxcontracts
           if (use_sym_bitmask) then
             sym_mask_i = sym_mask(icoeff)
@@ -18394,15 +18477,42 @@ module perturbation
               enddo
               nt = n_mask(dmask)
               if (nt > 0) then
-                acc_val = 0.0_rk
-                do idx = 1, nt
-                  iterm = mask_terms(idx, dmask)
-                  prod_val = mat_tt(1)%coeff3d(iterm, iroot_i(1), jroot_j(1))
-                  do iclasses = 2, Nclasses
-                    prod_val = prod_val * mat_tt(iclasses)%coeff3d(iterm, iroot_i(iclasses), jroot_j(iclasses))
+                if (n_mult == 0) then
+                  acc_val = real(nt, rk)
+                elseif (n_mult == 1) then
+                  c1 = mult_classes(1)
+                  acc_val = 0.0_rk
+                  do idx = 1, nt
+                    acc_val = acc_val + mat_tt(c1)%coeff3d(mask_terms(idx, dmask), iroot_i(c1), jroot_j(c1))
                   enddo
-                  acc_val = acc_val + prod_val
-                enddo
+                elseif (n_mult == 2) then
+                  c1 = mult_classes(1)
+                  c2 = mult_classes(2)
+                  acc_val = 0.0_rk
+                  do idx = 1, nt
+                    iterm = mask_terms(idx, dmask)
+                    acc_val = acc_val + mat_tt(c1)%coeff3d(iterm, iroot_i(c1), jroot_j(c1)) * &
+                                        mat_tt(c2)%coeff3d(iterm, iroot_i(c2), jroot_j(c2))
+                  enddo
+                else
+                  c1 = mult_classes(1)
+                  do idx = 1, nt
+                    prod_vec(idx) = mat_tt(c1)%coeff3d(mask_terms(idx, dmask), iroot_i(c1), jroot_j(c1))
+                  enddo
+                  do im_c = 2, n_mult - 1
+                    iclasses = mult_classes(im_c)
+                    do idx = 1, nt
+                      prod_vec(idx) = prod_vec(idx) * mat_tt(iclasses)%coeff3d(mask_terms(idx, dmask), &
+                                                                               iroot_i(iclasses), jroot_j(iclasses))
+                    enddo
+                  enddo
+                  iclasses = mult_classes(n_mult)
+                  acc_val = 0.0_rk
+                  do idx = 1, nt
+                    acc_val = acc_val + prod_vec(idx) * mat_tt(iclasses)%coeff3d(mask_terms(idx, dmask), &
+                                                                                 iroot_i(iclasses), jroot_j(iclasses))
+                  enddo
+                endif
                 if (acc_val /= 0.0_rk) field(jcoeff,icoeff) = field(jcoeff,icoeff) + scale_val * acc_val
               endif
   110         continue
@@ -18441,7 +18551,9 @@ module perturbation
             enddo
           endif
         enddo
-        !$omp end parallel do
+        !$omp end do
+        deallocate(prod_vec)
+        !$omp end parallel
         !
         if (allocated(n_mask)) deallocate(n_mask)
         if (allocated(mask_terms)) deallocate(mask_terms)
