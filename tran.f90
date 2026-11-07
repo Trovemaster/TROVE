@@ -431,23 +431,19 @@ contains
     end do
     !
     ! Introduce the address-index matrix for correspondence between 1d and 2d (i<j) index arrays
+    ! Note: i2d_to_1d is unused (its only call sites below are commented out since field(:,:) is 2D)
+    ! and would waste 4*Maxcontracts^2 bytes (~79.3 GiB at Ncontr=145938) plus wrap 32-bit integer(ik).
     !
-    dimen  = bset_contr(1)%Maxcontracts
-    !
-    allocate(i2d_to_1d(dimen,dimen), stat = info)
-    call ArrayStart('i2d_to_1d',info,1,kind(i2d_to_1d),size(i2d_to_1d,kind=hik))
-    !
-    do icontr = 1,dimen
-      !
-      do jcontr = 1,dimen
-        !
-        irow = max(icontr, jcontr)
-        icol = min(icontr, jcontr)
-        !
-        i2d_to_1d(icontr,jcontr) = ( irow * (irow - 1) )/ 2 + icol
-        !
-      enddo
-    enddo
+    !dimen  = bset_contr(1)%Maxcontracts
+    !allocate(i2d_to_1d(dimen,dimen), stat = info)
+    !call ArrayStart('i2d_to_1d',info,1,kind(i2d_to_1d),size(i2d_to_1d,kind=hik))
+    !do icontr = 1,dimen
+    !  do jcontr = 1,dimen
+    !    irow = max(icontr, jcontr)
+    !    icol = min(icontr, jcontr)
+    !    i2d_to_1d(icontr,jcontr) = ( irow * (irow - 1) )/ 2 + icol
+    !  enddo
+    !enddo
     !
     if (job%verbose>=2) write(out,"('...done!')")
     !

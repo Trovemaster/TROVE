@@ -7569,6 +7569,15 @@ module perturbation
        !
     endif 
 
+    if (trim(job%IOkinet_action)=='NONE'.and.trim(job%IOeigen_action)=='READ'.and.&
+        (trim(job%IOextF_action)=='SAVE'.or.trim(job%IOextF_action)=='SPLIT')) then
+       !
+       write(out,"('For MATELEM NONE + EIGENFUNC READ + EXTMATELEM SAVE the eigenvalue problem is skipped ')")
+       !
+       return
+       !
+    endif
+
     !
     ! check if we only need to store matrices, not diagonalize them
     !
@@ -15677,6 +15686,15 @@ module perturbation
         !
       endif 
       !
+      ! Skip kinetic/potential vibrational matrix assembly when only external field
+      ! contracted matrix elements are requested and J=0 eigenfunctions are already stored
+      if (trim(job%IOkinet_action)=='NONE'.and.treat_exfF.and.trim(job%IOeigen_action)=='READ') then
+        !
+        treat_vibration = .false.
+        treat_rotation = .false.
+        !
+      endif 
+      !
       if (treat_vibration.or.treat_exfF.or.treat_rotation) then 
         !
         if ((trim(job%IOkinet_action)=='SAVE'.or.trim(job%IOkinet_action)=='VIB_SAVE').and.&
@@ -16947,6 +16965,15 @@ module perturbation
       ! the matrix elements of the J=0 part of Hamiltonian
       !
       if (trim(job%IOkinet_action)=='READ'.or.trim(job%IOkinet_action)=='VIB_READ') then
+        !
+        treat_vibration = .false.
+        treat_rotation = .false.
+        !
+      endif 
+      !
+      ! Skip kinetic/potential vibrational matrix assembly when only external field
+      ! contracted matrix elements are requested and J=0 eigenfunctions are already stored
+      if (trim(job%IOkinet_action)=='NONE'.and.treat_exfF.and.trim(job%IOeigen_action)=='READ') then
         !
         treat_vibration = .false.
         treat_rotation = .false.
