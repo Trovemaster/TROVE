@@ -53,4 +53,30 @@ if [ "${RUN_P12_DMS:-0}" = "1" ]; then
   mv -f external_benchmark_backup.chk external.chk
 fi
 
+# Optional (RUN_P14=1 ./run.sh): converged Pmax=14 (lmax=7, kmax=7) Empirically Refined PES examples.
+if [ "${RUN_P14:-0}" = "1" ]; then
+  echo "=== 7. Running converged Pmax=14 (lmax=7, kmax=7) Empirically Refined PES examples: J=0, 1, 2, 5, 10, 15, 20 ==="
+  cp -f potential_Refined_P14.chk potential.chk
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_J0_kmax7.inp > C2H2_sing3D_D2h_Refined_P14_J0_kmax7_run.out
+  for J in 1 2 5 10 15 20; do
+    "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_J${J}.inp > C2H2_sing3D_D2h_Refined_P14_J${J}_run.out
+  done
+fi
+
+# Optional (RUN_P14_DMS=1 ./run.sh): 6th-order CCSD(T)/CBS DMS (external_CBS_6th.chk) intensities
+# on the refined Pmax=14 (lmax=7, kmax=7) basis for J = 0..5.
+if [ "${RUN_P14_DMS:-0}" = "1" ]; then
+  echo "=== 8. Refined Pmax=14 (lmax=7, kmax=7) J=0..5 + 6th-order CBS DMS contraction and J=0..5 intensities ==="
+  cp -f potential_Refined_P14.chk potential.chk
+  cp -f external.chk external_benchmark_backup.chk
+  cp -f external_CBS_6th.chk external.chk
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_J0_kmax7.inp > C2H2_sing3D_D2h_Refined_P14_J0_kmax7_run.out
+  for J in 1 2 3 4 5; do
+    "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_J${J}.inp > C2H2_sing3D_D2h_Refined_P14_J${J}_run.out
+  done
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_DMS_J0_kmax7.inp > C2H2_sing3D_D2h_Refined_P14_DMS_J0_kmax7_run.out
+  "$TROVE_BIN" < C2H2_sing3D_D2h_Refined_P14_intens.inp > C2H2_sing3D_D2h_Refined_P14_intens_run.out
+  mv -f external_benchmark_backup.chk external.chk
+fi
+
 mv -f potential_test_backup.chk potential.chk
