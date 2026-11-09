@@ -2979,11 +2979,14 @@ module perturbation
          endif 
          !
          ! special case of a 2D or 3D basis with a singularity
-         if (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==2) then 
+         ! (designed for a singular bend + torsion class of tetratomics; for triatomics, e.g. a merged
+         !  (R, gamma) class of HCN/HNC with a K-blocked singular bending basis, the regular solver is used and
+         !  K = mod(v_bend,kmax+1) is assigned in PThamiltonianMat)
+         if (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==2 .and. .not.trove%triatom_sing_resolve) then 
            !
            singular_2D = .true.
            !
-         elseif (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==3) then
+         elseif (job%bset_prop(imode)%singular .and. PT%mode_iclass(iclasses)==3 .and. .not.trove%triatom_sing_resolve) then
            !
            singular_3D = .true.
            !

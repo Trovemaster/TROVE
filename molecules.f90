@@ -44,7 +44,7 @@ module molecules
   use kin_xy2, only  : MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
                        MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
                        MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,&
-                       MLkinetic_xyz_Jacobi_bisect_EKE
+                       MLkinetic_xyz_Jacobi_bisect_EKE,MLkinetic_xyz_Jacobi_EKE_sinrho
 
   use kin_x2y2, only  : MLkinetic_x2y2_bisect_EKE_sinrho,MLkinetic_compact_x2y2_bisect_EKE_sinrho_rigid
   !
@@ -530,6 +530,10 @@ module molecules
          !
          MLpotentialfunc => MLpoten_c3h6_sym_II
          !
+    case('POTEN_XYZ_JACOBI_MORSE_COS_MEP')
+         !
+         MLpotentialfunc => MLpoten_xyz_jacobi_morse_cos_mep
+         !
     end select
     !
    if (verbose>=6) write(out,"('MLdefine_potenfunc/end')") 
@@ -590,6 +594,10 @@ end subroutine MLdefine_potenfunc
     case('KINETIC_XYZ_EKE_BOND_SINRHO') 
          !
          MLkineticfunc => MLkinetic_xyz_EKE_sinrho
+         !
+    case('KINETIC_XYZ_EKE_JACOBI_SINRHO') 
+         !
+         MLkineticfunc => MLkinetic_xyz_Jacobi_EKE_sinrho
          !
     case('KINETIC_X2Y2_EKE_BISECT_SINRHO') 
          !
@@ -710,6 +718,11 @@ end function ML_MEPfunc
        !
        write(out, '(/2(1x, a))') 'MLextF_func error: unknown type of extF:', trim(extF%ftype)
        stop 'MLextF_func error: unknown type of extF'
+        !
+    case('DIPOLE_XYZ_JACOBI_MEP')
+        !
+        ! HCN/HNC Jacobi-frame DMS (z || N->C, x towards H), MEP-referenced Morse x cos/sin series
+        MLextF_func => MLdms_xyz_jacobi_mep
         !
     case('DIPOLE_PQR_XYZ_Z-FRAME')
         !
@@ -1137,7 +1150,7 @@ end function ML_MEPfunc
          MLsymmetry_transform_func => ML_symmetry_transformation_ZXY3
          MLrotsymmetry_func => ML_rotsymmetry_ZXY3
          !
-    case('XY2') 
+    case('XY2','XYZ') 
          !
          MLcoordinate_transform_func =>  ML_coordinate_transform_XY2
          MLequilibrium_xyz => ML_b0_XY2
@@ -1267,7 +1280,7 @@ end function ML_MEPfunc
          write (out,"('MLrotsymmetry_func: molecule type ',a,' unknown')") trim(molec%moltype)
          stop 'MLrotsymmetry_func - bad molecule'
          !
-    case('XY2') 
+    case('XY2','XYZ') 
          !
          call  ML_rotsymmetry_XY2(J,K,tau,gamma,ideg)
          !
@@ -3887,9 +3900,9 @@ end subroutine polintark
            !
        case('COSNX') 
            !
-           if (iorder<0) stop 'MLcoord_direct error: negative iorder'
+           jorder = abs(iorder)
            !
-           v = cos( real(iorder,4)*( molec%local_eq(imode) + x ) )
+           v = cos( real(jorder,ark)*( molec%local_eq(imode) + x ) )
            !
            !stop 'Error: COSNX is not working with 1D integrals  - check!'
            !
@@ -4134,7 +4147,7 @@ end subroutine polintark
         !
         chi =xe-log(1.0_ark-xi(imode))/amorse
         !
-    case('HARMONIC','NORMAL','LINEAR','SAME') 
+    case('HARMONIC','NORMAL','LINEAR','SAME','ANGLE','COSNX','RATIONAL') 
         !
         chi = xi(imode)
         !

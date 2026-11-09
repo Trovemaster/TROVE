@@ -17,7 +17,8 @@ module pot_xy2
   public MLpoten_xy2_morse_cos,MLpoten_xyz_Koput,MLdipole_bisect_s1s2theta_xy2,MLloc2pqr_xyz,MLpoten_xy2_sym_morse
   public MLdms_c3_Schroeder,MLpoten_xy2_morse_powers,MLdms2pqr_xyz_z_frame_sinrho,MLdms_Schroeder_xyz_Eckart,&
          MLpoten_o3_oleg,MLpoten_xyz_morse_cos_mep,MLdms2pqr_xyz_z_bond,MLdms2pqr_xyz_bisecting,MLdipole_ames1_xyz,&
-         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_cosrho,MLdms2pqr_xy2_sym_expansion,MLdms2pqr_xyz_z_bond_pp
+         MLpoten_xyz_morse_fourier_mep,MLpoten_xyz_polynom_cosrho,MLdms2pqr_xy2_sym_expansion,MLdms2pqr_xyz_z_bond_pp,&
+         MLpoten_xyz_jacobi_morse_cos_mep,MLdms_xyz_jacobi_mep
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -4203,7 +4204,7 @@ endif
 
 
   !
-  ! B. Schröder and P. Sebald, JCP 2016 http://dx.doi.org/10.1063/1.4940780]
+  ! B. Schroeder and P. Sebald, JCP 2016 http://dx.doi.org/10.1063/1.4940780]
   !
   function MLpoten_c3_R_theta(ncoords,natoms,local,xyz,force) result(f) 
    !
@@ -9819,6 +9820,143 @@ endif
  end subroutine MLdms2pqr_xy2_sym_expansion
 
 
+  !
+  ! General MEP-referenced Morse-Cosine PES in Jacobi coordinates (r1 = r_CN, r2 = R, gamma = local(3))
+  ! driven by molec%pot_ind(1:3, iparam):
+  !   - pot_ind(1, i) == -1: r1_mep(gamma) += force(i) * cos(pot_ind(3, i) * gamma)
+  !   - pot_ind(1, i) == -2: r2_mep(gamma) += force(i) * cos(pot_ind(3, i) * gamma)
+  !   - pot_ind(1, i) >= 0 and pot_ind(2, i) >= 0:
+  !       V += force(i) * u1**pot_ind(1, i) * u2**pot_ind(2, i) * cos(pot_ind(3, i) * gamma)
+  !     where u1 = 1 - exp(-a1*(r1 - r1_mep(gamma))), u2 = 1 - exp(-a2*(r2 - r2_mep(gamma))).
+  !
+  function MLpoten_xyz_jacobi_morse_cos_mep(ncoords,natoms,local,xyz,force) result(pot)
+   !
+   integer(ik),intent(in) ::  ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords)
+   real(ark),intent(in)   ::  xyz(natoms,3)
+   real(ark),intent(in)   ::  force(:)
+   real(ark)              ::  pot
+   !
+   real(ark)              ::  r1,r2,gamma,r1_mep,r2_mep,a1,a2,u1,u2,v
+   integer(ik)            ::  i,p1,p2,m
+   logical                ::  has_r1_mep,has_r2_mep
+   !
+   r1    = local(1)
+   r2    = local(2)
+   gamma = local(3)
+   !
+   a1 = molec%specparam(1)
+   a2 = molec%specparam(2)
+   !
+   r1_mep = 0.0_ark
+   r2_mep = 0.0_ark
+   has_r1_mep = .false.
+   has_r2_mep = .false.
+   !
+   do i = 1, size(force)
+     p1 = molec%pot_ind(1,i)
+     m  = molec%pot_ind(3,i)
+     if (p1 == -1) then
+       r1_mep = r1_mep + force(i)*cos(real(m,ark)*gamma)
+       has_r1_mep = .true.
+     elseif (p1 == -2) then
+       r2_mep = r2_mep + force(i)*cos(real(m,ark)*gamma)
+       has_r2_mep = .true.
+     endif
+   enddo
+   !
+   if (.not.has_r1_mep) r1_mep = molec%local_eq(1)
+   if (.not.has_r2_mep) r2_mep = molec%local_eq(2)
+   !
+   u1 = 1.0_ark - exp(-a1*(r1 - r1_mep))
+   u2 = 1.0_ark - exp(-a2*(r2 - r2_mep))
+   !
+   v = 0.0_ark
+   do i = 1, size(force)
+     p1 = molec%pot_ind(1,i)
+     p2 = molec%pot_ind(2,i)
+     m  = molec%pot_ind(3,i)
+     if (p1 >= 0 .and. p2 >= 0) then
+       v = v + force(i)*(u1**p1)*(u2**p2)*cos(real(m,ark)*gamma)
+     endif
+   enddo
+   !
+   pot = v
+   !
+  end function MLpoten_xyz_jacobi_morse_cos_mep
+
+
+  !
+  ! Jacobi-frame dipole moment surface for the isomerising HCN/HNC system
+  ! (extF type DIPOLE_XYZ_JACOBI_MEP, to be used with KINETIC_XYZ_EKE_JACOBI_SINRHO and
+  ! TRANSFORM R1-Z-R2-ALPHA, COORDS LOCAL):
+  !   local(1) = r (C-N, Angstrom), local(2) = R (H-CM(CN), Angstrom), local(3) = gamma (rad),
+  !   gamma = 0: H-C-N, gamma = pi: C-N-H.
+  ! Body frame = KEO frame: z || r (N->C), x perpendicular to r in the molecular plane towards H.
+  !   u1 = 1 - exp(-b1*(r - r_mep(gamma))),  u2 = 1 - exp(-b2*(R - R_mep(gamma)))
+  !   mu_x = sum_t cx_t u1**i u2**j sin(k*gamma)      (component 1, k >= 1)
+  !   mu_y = 0
+  !   mu_z = sum_t cz_t u1**i u2**j cos(k*gamma)      (component 3)
+  ! with (i,j,k) = extF%term(1:3,t,imu). Special rows (any component, normally 3):
+  !   i = 91: r_mep(gamma) += c*cos(k*gamma);  i = 92: R_mep(gamma) += c*cos(k*gamma)
+  !   i = 93: Morse exponents, j = 1 -> b1, j = 2 -> b2 (1/Angstrom).
+  ! Units: Debye.
+  !
+  recursive subroutine MLdms_xyz_jacobi_mep(rank,ncoords,natoms,local,xyz,f)
+   !
+   integer(ik),intent(in) ::  rank,ncoords,natoms
+   real(ark),intent(in)   ::  local(ncoords),xyz(natoms,3)
+   real(ark),intent(out)  ::  f(rank)
+   !
+   integer(ik)            ::  imu,it,i,j,k
+   real(ark)              ::  r,bigr,gamma,r_mep,bigr_mep,b1,b2,u1,u2,c,mu(3)
+   !
+   r     = local(1)
+   bigr  = local(2)
+   gamma = local(3)
+   !
+   r_mep = 0.0_ark ; bigr_mep = 0.0_ark ; b1 = 1.0_ark ; b2 = 1.0_ark
+   !
+   do imu = 1,extF%rank
+     do it = 1,extF%nterms(imu)
+       i = extF%term(1,it,imu) ; j = extF%term(2,it,imu) ; k = extF%term(3,it,imu)
+       c = extF%coef(it,imu)
+       select case (i)
+       case (91)
+         r_mep = r_mep + c*cos(real(k,ark)*gamma)
+       case (92)
+         bigr_mep = bigr_mep + c*cos(real(k,ark)*gamma)
+       case (93)
+         if (j==1) b1 = c
+         if (j==2) b2 = c
+       end select
+     enddo
+   enddo
+   !
+   u1 = 1.0_ark - exp(-b1*(r - r_mep))
+   u2 = 1.0_ark - exp(-b2*(bigr - bigr_mep))
+   !
+   mu = 0.0_ark
+   do imu = 1,min(3,extF%rank)
+     if (imu==2) cycle
+     do it = 1,extF%nterms(imu)
+       i = extF%term(1,it,imu)
+       if (i>=90) cycle
+       j = extF%term(2,it,imu) ; k = extF%term(3,it,imu)
+       c = extF%coef(it,imu)
+       if (imu==1) then
+         mu(1) = mu(1) + c*(u1**i)*(u2**j)*sin(real(k,ark)*gamma)
+       else
+         mu(3) = mu(3) + c*(u1**i)*(u2**j)*cos(real(k,ark)*gamma)
+       endif
+     enddo
+   enddo
+   !
+   f = 0.0_ark
+   f(1) = mu(1)
+   if (rank>=3) f(3) = mu(3)
+   !
+  end subroutine MLdms_xyz_jacobi_mep
 
 
 end module pot_xy2

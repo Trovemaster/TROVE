@@ -76,50 +76,67 @@ module pot_user
                  x(natoms,3),xyz0(natoms,3),cos_theta,alpha,mu(3),u1(3),u2(3),u3(3),bigr,smallr
 
     !
+    if (trim(molec%coords_transform)=='R1-Z-R2-ALPHA') then
+      !
+      smallr = local(1)/bohr
+      bigr   = local(2)/bohr
+      cos_theta = cos(local(3))
+      !
+      f(1) = x_comp_dpl(cos_theta, bigr, smallr)/0.393430_ark
+      f(2) = 0.0_ark
+      f(3) = z_comp_dpl(cos_theta, bigr, smallr)/0.393430_ark
+      return
+      !
+    elseif (trim(molec%coords_transform)=='R1-Z-R2-RHO') then
+      !
+      smallr = local(1)/bohr
+      bigr   = local(2)/bohr
+      cos_theta = cos(pi - local(3))
+      !
+      f(1) = x_comp_dpl(cos_theta, bigr, smallr)/0.393430_ark
+      f(2) = 0.0_ark
+      f(3) = z_comp_dpl(cos_theta, bigr, smallr)/0.393430_ark
+      return
+      !
+    endif
+    !
     ! xyz are undefined for the local case
     if (all(abs(xyz)<small_)) then 
       !
       xyz0 = MLloc2pqr_xyz(local)
       !
-      x(1,:) = xyz0(2,:) - xyz0(1,:)
+      x(1,:) = xyz0(1,:) - xyz0(2,:)
       x(2,:) = xyz0(3,:) - xyz0(1,:)
       !
     else
       !
-      x(1,:) = xyz(2,:) - xyz(1,:)
+      x(1,:) = xyz(1,:) - xyz(2,:)
       x(2,:) = xyz(3,:) - xyz(1,:)
       !
     endif
     !
+    CN_CM = -(x(1,:)*molec%AtomMasses(2))/(molec%AtomMasses(1)+molec%AtomMasses(2))
+    !
     r1 = sqrt(sum(x(1,:)**2))
-    r2 = sqrt(sum(x(2,:)**2))
+    r2 = sqrt(sum((x(2,:)-CN_CM(:))**2))
     !
     n1 = x(1,:) / r1
-    n2 = x(2,:) / r2
+    n2 = (x(2,:)-CN_CM(:)) / r2
     !
-    alpha = acos(sum(n1*n2))
+    alpha = acos(max(-1.0_ark,min(1.0_ark,sum(n1*n2))))
     !
     cos_theta = sum(n1*n2)
     !
-    bigr  = r1/bohr
-    smallr = r2/bohr
+    smallr = r1/bohr
+    bigr   = r2/bohr
     !
     mu(1)=x_comp_dpl(cos_theta, bigr, smallr)
     mu(3)=z_comp_dpl(cos_theta, bigr, smallr)
     !
     mu(2) = 0
     !
-    CN_CM = (x(2,:)*molec%AtomMasses(3))/(sum(molec%AtomMasses(:)))
-    !
-    u3 = x(1,:)-CN_CM
-    !
-    u3 = u3 / sqrt(sum(u3(:)**2))
-    !
+    u3 = n1
     u2 = (/0._ark,1.0_ark,0._ark/)
-    !
-    !u2 = n2
-    !u2 = u2 / sqrt(sum(u2(:)**2))
-    !
     u1 = MLvector_product(u2,u3)
     !
     tmat(1, :) = u1
@@ -197,36 +214,52 @@ function MLpoten_HCN_Harris(ncoords,natoms,local,xyz,force) result(f)
       integer(ik) :: icoefref, i,j,k
 
 
-      !
-      ! xyz are undefined for the local case
-      if (all(abs(xyz)<small_)) then 
+      if (trim(molec%coords_transform)=='R1-Z-R2-ALPHA') then
         !
-        xyz0 = MLloc2pqr_xyz(local)
+        smallr = local(1)/bohr
+        bigr   = local(2)/bohr
+        gamma  = local(3)
+        xgamma = cos(gamma)
         !
-        x(1,:) = xyz0(2,:) - xyz0(1,:)
-        x(2,:) = xyz0(3,:) - xyz0(1,:)
+      elseif (trim(molec%coords_transform)=='R1-Z-R2-RHO') then
+        !
+        smallr = local(1)/bohr
+        bigr   = local(2)/bohr
+        gamma  = pi - local(3)
+        xgamma = cos(gamma)
         !
       else
         !
-        x(1,:) = xyz(2,:) - xyz(1,:)
-        x(2,:) = xyz(3,:) - xyz(1,:)
+        ! xyz are undefined for the local case
+        if (all(abs(xyz)<small_)) then 
+          !
+          xyz0 = MLloc2pqr_xyz(local)
+          !
+          x(1,:) = xyz0(1,:) - xyz0(2,:)
+          x(2,:) = xyz0(3,:) - xyz0(1,:)
+          !
+        else
+          !
+          x(1,:) = xyz(1,:) - xyz(2,:)
+          x(2,:) = xyz(3,:) - xyz(1,:)
+          !
+        endif
+        !
+        CN_CM = -(x(1,:)*molec%AtomMasses(2))/(molec%AtomMasses(1)+molec%AtomMasses(2))
+        !
+        r1 = sqrt(sum(x(1,:)**2))
+        smallr = r1/bohr
+        !
+        r2 = sqrt(sum((x(2,:)-CN_CM(:))**2))
+        bigr  = r2/bohr
+        !
+        n1 = x(1,:) / r1
+        n2 = (x(2,:)-CN_CM(:)) / r2
+        !
+        xgamma = max(-1.0_ark,min(1.0_ark,sum(n1*n2)))
+        gamma = acos(xgamma)
         !
       endif
-      !
-      CN_CM = (x(1,:)*molec%AtomMasses(2))/(sum(molec%AtomMasses(:)))
-      !
-      r1 = sqrt(sum(x(1,:)**2))
-      smallr = r1/bohr
-      !
-      r2 = sqrt(sum((x(2,:)-CN_CM(:))**2))
-      bigr  = r2/bohr
-      !
-      n1 = x(1,:) / r1
-      n2 = (x(2,:)-CN_CM(:)) / r2
-      !
-      gamma = acos(sum(n1*n2))
-      !
-      xgamma = cos(gamma)
       !
       coeff(1)=0.14940421045032473d0
       coeff(2)=0.217900654326183458d0

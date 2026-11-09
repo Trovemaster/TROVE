@@ -134,6 +134,9 @@ module fields
      logical                    :: postprocess  ! Post-diagonalization of the contracted basis set
      logical                    :: Lvib         ! Using the angualr vibrational momentum for symmetrization and building contracted classes
      logical                    :: check_sym    ! check that the corresponding 1D Hamiltonians from a class are identical in 
+     logical                    :: relaxed = .false. ! Non-rigid (rank-1) systems: generate the 1D primitive basis on a relaxed
+                                                     ! 1D Hamiltonian: stretches - the envelope min_rho V(x;rho); the last
+                                                     ! (non-rigid) mode - V and G along the minimum-energy path rho -> chi_min(rho)
    end type  FLbasissetT 
 
 
@@ -677,9 +680,10 @@ module fields
    character(len=cl),parameter :: coords_ = 'LINEAR' ! default internal coordinates 
    !
    type(FLbasissetT),parameter :: vibbasisset_= FLbasissetT('HARMONIC','HARMONIC','HARMONIC',1000,'1D',100,1,(/0,20/),&
-                                                             1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.,.true.)
+                                                             1.0,0,(/-1.0,1.0/),.false.,0,'NUMEROV-POL',0,.false.,.false.,.true.,&
+                                                             .false.)
    type(FLbasissetT),parameter :: rotbasisset_= FLbasissetT('JKTAU', 'xxxxxx','xxxxxx',1000,'1D',0,0,(/0,0 /),0.0,0,(/0.0,0.0/),&
-                                                            .false.,0,'xxxxxx',0,.false.,.false.,.true.)
+                                                            .false.,0,'xxxxxx',0,.false.,.false.,.true.,.false.)
 
    integer(ik),parameter :: nroots_=1e6
    real(rk),parameter    :: uv_syevr_=1e9
@@ -2177,6 +2181,10 @@ module fields
               case("NOCHECK")
                 !
                 job%bset(imode)%check_sym =.false.
+                !
+              case("RELAXED")
+                !
+                job%bset(imode)%relaxed =.true.
                 !
               case("BORDERS")
                 !
@@ -18698,7 +18706,7 @@ end subroutine check_read_save_none
            !
            if (iterm==987654321) then
              !
-             allocate (pot%field(total_terms,0:Npoints),pot%IndexQ(trove%Nmodes,total_terms),stat=alloc)
+             allocate (pot%field(total_terms+1,0:Npoints),pot%IndexQ(trove%Nmodes,total_terms+1),stat=alloc)
              call ArrayStart("pot%field",alloc,size(pot%field),kind(pot%field))
              call ArrayStart("pot%field",alloc,size(pot%IndexQ),kind(pot%IndexQ))
              !
@@ -18729,8 +18737,6 @@ end subroutine check_read_save_none
           !
           cur_term = n
           !
-          pot%IndexQ(1:Nmodes_e, n) = mode_list(1:Nmodes_e)
-          !
           if (Npoints > 0) then
             do_k_find_match : do k=1,n-1
                if ( all( mode_list(1:Nmodes_e) == pot%IndexQ( 1:Nmodes_e,k ) ) ) then 
@@ -18740,6 +18746,8 @@ end subroutine check_read_save_none
                endif
             enddo do_k_find_match
             !
+            pot%IndexQ(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
+            !
             do j = 0, Npoints 
               rho =  trove%rho_border(1)+real(j,kind=ark)*trove%rhostep
               pot%field(cur_term,j) = pot%field(cur_term,j) +  field_*MLcoord_direct(rho,2, Nmodes, mode_list(Nmodes))
@@ -18747,6 +18755,7 @@ end subroutine check_read_save_none
             !
           else
             !
+            pot%IndexQ(1:Nmodes_e, cur_term) = mode_list(1:Nmodes_e)
             pot%field(cur_term,i) = field_
             !pot%IndexQ(iterm,1:Ncoeff) = FLIndexQ(iterm,1:Ncoeff)
             !
@@ -19823,7 +19832,7 @@ end subroutine check_read_save_none
       !
       do imode = 0,trove%Nmodes
         write(chkptIO,"(6x,i4,1x,3(a10,1x),i5,3x,a2,3x,i2,5x,i2,1x,2i4,2x,f6.1,&
-          &2x,i9,1x,2f9.3,1x,L5,1x,i2,1x,a10,i9,L5,L5,L5)") &
+          &2x,i9,1x,2f9.3,1x,L5,1x,i2,1x,a10,i9,L5,L5,L5,L5)") &
                       imode, bset%dscr(imode)
       enddo
       !
@@ -20276,6 +20285,7 @@ end subroutine check_read_save_none
     !
     real(ark),allocatable        :: f1drho(:),g1drho(:),drho(:,:),muzz(:),sinrho(:),cosrho(:),p1drho(:),&
                                     mrho(:),xton(:,:),xi_n(:,:,:)
+    real(ark),allocatable        :: chi_relaxed(:,:)  ! RELAXED last mode: stretch displacements along the MEP, (0:npoints,Nmodes)
     !
     integer(ik),parameter        ::  Nperiod_max = 10 
     real(ark)                    :: f_period(1:trove%Nmodes,Nperiod_max)
@@ -20911,6 +20921,7 @@ end subroutine check_read_save_none
            p1drho(0:npoints) = trove%pseudo%field(1,0:npoints)
            !
            if (isingular>=0.and.(trim(bs%type)=='SINRHO-LEGENDRE'.or.trim(bs%type)=='LAGUERRE-K'.or.&
+                                 trim(bs%type)=='SINRHO-LAGUERRE-K'.or.trim(bs%type)=='SINRHO-2XLAGUERRE-K'.or.&
                                  trim(bs%type)=='SINRHO-LEGENDRE-K1'.or.trim(bs%type)=='SINRHO-LEGENDRE-K'.or.&
                                  trim(bs%type)=='SINRHO-LEGENDRE-K-SING')) then 
                p1drho = 0
@@ -21115,6 +21126,23 @@ end subroutine check_read_save_none
                 !
               endif
               !
+           endif
+           !
+           ! RELAXED last (non-rigid) mode: the 1D problem is solved along the minimum-energy path, i.e. at every
+           ! rho the other (stretching) coordinates are moved to the minimum of V(chi;rho); the 1D potential and
+           ! the kinetic factors (g_vib, pseudo, g_rot(z,z)) are evaluated there. For HCN/HNC this puts the HNC
+           ! well of the 1D bending problem at the right energy and width.
+           !
+           if (job%bset(nu_i)%relaxed) then
+             !
+             if (.not.(trove%potential_with_modes.and.(trove%kinetic_compact.or.trove%kinetic_with_modes.or.&
+                                                       trove%sparse))) then
+               write(out,"('FLbset1DNew: RELAXED for the last mode needs POTENTIAL ... WITH_MODES and a compact/sparse KEO')")
+               stop 'FLbset1DNew: RELAXED for the last mode needs POTENTIAL WITH_MODES and a compact/sparse KEO'
+             endif
+             !
+             call relaxed_rho_fields(npoints,f1drho,g1drho,p1drho,muzz)
+             !
            endif
            !
            reduced_model = .false.
@@ -21458,10 +21486,9 @@ end subroutine check_read_save_none
                call find_isparse_from_ifull(fl%Ncoeff,fl%ifromsparse,1,i1)
                call find_isparse_from_ifull(gl%Ncoeff,gl%ifromsparse,1,i2)
                !
-               if (i1==0.or.i2==0) then 
+               if (i1==0) then 
                   !
                   muzz = 0 
-                  p1drho = 0
                   !
                   do icoeff = 1, fl%Ncoeff 
                      f_t = 1.0_ark
@@ -21472,6 +21499,22 @@ end subroutine check_read_save_none
                        f_t = f_t*rho_kin0
                     enddo
                     muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                    !
+                  enddo
+                  !
+               endif
+               if (i2==0) then
+                  !
+                  p1drho = 0
+                  !
+                  do icoeff = 1, gl%Ncoeff 
+                     f_t = 1.0_ark
+                     do imode  = 1,Nmodes
+                       rho =  trove%chi_eq(imode)
+                       ipower = gl%IndexQ(imode,icoeff)
+                       rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                       f_t = f_t*rho_kin0
+                    enddo
                     p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                     !
                   enddo
@@ -21492,10 +21535,27 @@ end subroutine check_read_save_none
                     f_t = f_t*rho_kin0
                  enddo
                  muzz   = muzz   + f_t*fl%field(icoeff,0:npoints)
+                 !
+               enddo
+               do icoeff = 1, gl%Ncoeff 
+                  f_t = 1.0_ark
+                  do imode  = 1,Nmodes
+                    rho =  trove%chi_eq(imode)
+                    ipower = gl%IndexQ(imode,icoeff)
+                    rho_kin0 = MLcoord_direct(rho,1,imode,ipower)
+                    f_t = f_t*rho_kin0
+                 enddo
                  p1drho = p1drho + f_t*gl%field(icoeff,0:npoints)
                  !
                enddo
                !
+             endif
+             !
+             ! RELAXED: g_rot(z,z) and the pseudo-potential along the minimum-energy path as well
+             !
+             if (job%bset(nu_i)%relaxed) then
+               call relaxed_rho_kinetic(trove%g_rot(3,3),npoints,muzz)
+               call relaxed_rho_kinetic(trove%pseudo,npoints,p1drho)
              endif
              !
              g_t = g1drho(trove%ipotmin)
@@ -21619,8 +21679,8 @@ end subroutine check_read_save_none
                   !
                endif
                !
-               f_m1 = sqrt(f_t1/g_t1)
-               f_m2 = sqrt(f_t2/g_t2)
+               f_m1 = sqrt(max(f_t1,0.0_ark)/g_t1)
+               f_m2 = sqrt(max(f_t2,0.0_ark)/g_t2)
                !
                call ME_sinrho_2xlaguerre_k(bs%Size,kmax,maxpower,rho_b,isingular,npoints,drho,f1drho,g1drho,muzz,&
                                            f_m1,f_m2,p1drho,nu_i,job%verbose,bs%matelements(:,0:maxpower,:,:),bs%ener0)
@@ -21749,6 +21809,14 @@ end subroutine check_read_save_none
            call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
            !
            call generate_potential_1d_field(irho_eq,rho_b,npoints,f1d,f1drho)
+           !
+           ! RELAXED (non-rigid systems): replace the reference cut by the envelope min_rho V(x;rho)
+           ! (other stretches at their reference values). Useful when the stretching minimum moves strongly
+           ! along rho, e.g. R(H-CN) between HCN and HNC.
+           !
+           if (job%bset(nu_i)%relaxed.and.manifold==1) then
+             call relaxed_stretch_potential(irho_eq,rho_b,npoints,f1d,f1drho)
+           endif
            !
            call generate_1D_kinetic_expansions(irho_eq,rho_b,Npoints,maxpower,g1d,p1d,g1z)
            !
@@ -22642,6 +22710,253 @@ end subroutine check_read_save_none
        !
      end subroutine generate_potential_1d_field
      !
+     !
+     ! RELAXED stretching basis: f1drho(x) = min over the rho grid of V(x;rho), other stretches at the reference.
+     ! Values below the minimum of the reference cut are ignored (protection against holes of the expansion).
+     !
+     subroutine relaxed_stretch_potential(irho_eq,rho_b,npoints,f1d,f1drho)
+       !
+       integer(ik),intent(in)    :: irho_eq,npoints
+       real(ark),intent(in)      :: rho_b(2)
+       real(ark),intent(inout)   :: f1d(0:trove%NPotOrder)
+       real(ark),intent(inout)   :: f1drho(0:npoints)
+       !
+       real(ark),allocatable     :: f_t(:)
+       real(ark)                 :: vmin_ref,x_t
+       integer(ik)               :: irho_,i_,alloc_,irho_min(0:npoints)
+       !
+       allocate(f_t(0:npoints),stat=alloc_)
+       if (alloc_/=0) stop 'relaxed_stretch_potential: out of memory'
+       !
+       vmin_ref = minval(f1drho(0:npoints))
+       irho_min = irho_eq
+       !
+       do irho_ = 0,trove%npoints
+         !
+         call generate_potential_1d_expansion(irho_,rho_b,npoints,f1d)
+         call generate_potential_1d_field(irho_,rho_b,npoints,f1d,f_t)
+         !
+         do i_ = 0,npoints
+           if (f_t(i_)>=vmin_ref.and.f_t(i_)<f1drho(i_)) then
+             f1drho(i_) = f_t(i_)
+             irho_min(i_) = irho_
+           endif
+         enddo
+         !
+       enddo
+       !
+       ! restore the reference-point expansion (f1d) for the rest of the code
+       !
+       call generate_potential_1d_expansion(irho_eq,rho_b,npoints,f1d)
+       !
+       if (job%verbose>=4) then
+         write(out,"(/'RELAXED stretching basis for mode ',i3,': envelope min_rho V(x;rho)')") nu_i
+         write(out,"('      x (displacement)      V_env (1/cm)     rho_min (deg)')")
+         do i_ = 0,npoints,max(1,npoints/40)
+           x_t = rho_b(1)+real(i_,ark)*(rho_b(2)-rho_b(1))/real(npoints,ark)
+           write(out,"(f18.8,f18.4,f14.3)") x_t,f1drho(i_),(trove%rho_border(1)+real(irho_min(i_),ark)*trove%rhostep)*rad
+         enddo
+       endif
+       !
+       deallocate(f_t)
+       !
+     end subroutine relaxed_stretch_potential
+     !
+     !
+     ! RELAXED last mode: minimum-energy path chi_min(rho) of the stretching coordinates and the 1D fields along it
+     !
+     subroutine relaxed_rho_fields(npoints,f1drho,g1drho,p1drho,muzz)
+       !
+       integer(ik),intent(in)    :: npoints
+       real(ark),intent(inout)   :: f1drho(0:npoints),g1drho(0:npoints),p1drho(0:npoints),muzz(0:npoints)
+       !
+       real(ark)                 :: chi_r(trove%Nmodes),chi_t(trove%Nmodes),grad_(2),hess_(2,2),step_(2),v0_,v1_
+       real(ark)                 :: vp_(2),vm_(2),vpp_,vpm_,vmp_,vmm_,det_,lam_,h_
+       integer(ik)               :: k_,it_,ils_,im_(2),nm_,i_,ia_,alloc_
+       !
+       nm_ = 0
+       do i_ = 1,trove%Nmodes_e
+         if (i_==nu_i) cycle
+         nm_ = nm_ + 1
+         if (nm_<=2) im_(nm_) = i_
+       enddo
+       !
+       if (nm_/=2) then
+         write(out,"('relaxed_rho_fields: implemented for exactly two stretching modes, not ',i4)") nm_
+         stop 'relaxed_rho_fields: implemented for exactly two stretching modes'
+       endif
+       !
+       if (allocated(chi_relaxed)) deallocate(chi_relaxed)
+       allocate(chi_relaxed(0:npoints,trove%Nmodes),stat=alloc_)
+       if (alloc_/=0) stop 'relaxed_rho_fields: out of memory'
+       !
+       h_ = 1.0e-4_ark
+       chi_r = trove%chi_eq
+       !
+       do k_ = 0,npoints
+         !
+         ! Newton minimisation of V(chi;rho_k) in the two stretching coordinates, starting from the previous point
+         !
+         do it_ = 1,200
+           !
+           v0_ = pot_at(chi_r,k_)
+           !
+           do ia_ = 1,2
+             chi_t = chi_r ; chi_t(im_(ia_)) = chi_r(im_(ia_))+h_ ; vp_(ia_) = pot_at(chi_t,k_)
+             chi_t = chi_r ; chi_t(im_(ia_)) = chi_r(im_(ia_))-h_ ; vm_(ia_) = pot_at(chi_t,k_)
+             grad_(ia_) = (vp_(ia_)-vm_(ia_))/(2.0_ark*h_)
+             hess_(ia_,ia_) = (vp_(ia_)-2.0_ark*v0_+vm_(ia_))/h_**2
+           enddo
+           !
+           chi_t = chi_r ; chi_t(im_(1)) = chi_r(im_(1))+h_ ; chi_t(im_(2)) = chi_r(im_(2))+h_ ; vpp_ = pot_at(chi_t,k_)
+           chi_t = chi_r ; chi_t(im_(1)) = chi_r(im_(1))+h_ ; chi_t(im_(2)) = chi_r(im_(2))-h_ ; vpm_ = pot_at(chi_t,k_)
+           chi_t = chi_r ; chi_t(im_(1)) = chi_r(im_(1))-h_ ; chi_t(im_(2)) = chi_r(im_(2))+h_ ; vmp_ = pot_at(chi_t,k_)
+           chi_t = chi_r ; chi_t(im_(1)) = chi_r(im_(1))-h_ ; chi_t(im_(2)) = chi_r(im_(2))-h_ ; vmm_ = pot_at(chi_t,k_)
+           hess_(1,2) = (vpp_-vpm_-vmp_+vmm_)/(4.0_ark*h_**2)
+           hess_(2,1) = hess_(1,2)
+           !
+           det_ = hess_(1,1)*hess_(2,2)-hess_(1,2)**2
+           !
+           if (hess_(1,1)>0.0_ark.and.det_>0.0_ark) then
+             step_(1) = -( hess_(2,2)*grad_(1)-hess_(1,2)*grad_(2))/det_
+             step_(2) = -(-hess_(2,1)*grad_(1)+hess_(1,1)*grad_(2))/det_
+           else
+             step_(1:2) = -grad_(1:2)/max(abs(hess_(1,1)),abs(hess_(2,2)),1.0e4_ark)
+           endif
+           !
+           lam_ = 1.0_ark
+           if (maxval(abs(step_))>0.02_ark) lam_ = 0.02_ark/maxval(abs(step_))
+           !
+           v1_ = v0_
+           do ils_ = 1,40
+             chi_t = chi_r
+             chi_t(im_(1)) = chi_r(im_(1))+lam_*step_(1)
+             chi_t(im_(2)) = chi_r(im_(2))+lam_*step_(2)
+             v1_ = pot_at(chi_t,k_)
+             if (v1_<=v0_) exit
+             lam_ = lam_*0.5_ark
+           enddo
+           !
+           if (v1_>v0_) exit
+           !
+           chi_r = chi_t
+           !
+           if (maxval(abs(lam_*step_))<1.0e-10_ark) exit
+           !
+         enddo
+         !
+         chi_relaxed(k_,:) = chi_r(:)
+         !
+         f1drho(k_) = pot_at(chi_r,k_)
+         g1drho(k_) = kin_at(trove%g_vib(nu_i,nu_i),chi_r,k_)
+         p1drho(k_) = kin_at(trove%pseudo,chi_r,k_)
+         muzz(k_)   = kin_at(trove%g_rot(3,3),chi_r,k_)
+         !
+       enddo
+       !
+       if (job%verbose>=4) then
+         write(out,"(/'RELAXED last-mode basis: minimum-energy path (stretch displacements), V_mep, g_vib along it')")
+         write(out,"('   rho (deg)        dchi_',i1,'           dchi_',i1,'          V_mep (1/cm)       g_vib')") im_(1:2)
+         do k_ = 0,npoints,max(1,npoints/36)
+           write(out,"(f10.3,2f16.8,f18.4,g18.8)") (trove%rho_border(1)+real(k_,ark)*trove%rhostep)*rad,&
+                 chi_relaxed(k_,im_(1:2)),f1drho(k_),g1drho(k_)
+         enddo
+       endif
+       !
+     end subroutine relaxed_rho_fields
+     !
+     !
+     ! RELAXED last mode: re-evaluate a kinetic-type 1D field (e.g. g_rot(z,z), pseudo) along the stored MEP
+     !
+     subroutine relaxed_rho_kinetic(fk_,npoints,f_)
+       !
+       type(FLpolynomT),intent(in) :: fk_
+       integer(ik),intent(in)      :: npoints
+       real(ark),intent(inout)     :: f_(0:npoints)
+       integer(ik)                 :: k_
+       !
+       if (.not.allocated(chi_relaxed)) stop 'relaxed_rho_kinetic: the relaxed path is not defined'
+       !
+       do k_ = 0,npoints
+         f_(k_) = kin_at(fk_,chi_relaxed(k_,:),k_)
+       enddo
+       !
+     end subroutine relaxed_rho_kinetic
+     !
+     !
+     ! potential (with modes) at the stretching displacements chi and the rho-grid point k
+     !
+     function pot_at(chi_,k_) result(v_)
+       !
+       real(ark),intent(in)   :: chi_(trove%Nmodes)
+       integer(ik),intent(in) :: k_
+       real(ark)              :: v_
+       !
+       type(FLpolynomT),pointer :: fp_
+       integer(ik)            :: j_,i_,p_,pmin_,pmax_
+       real(ark)              :: t_
+       real(ark),allocatable  :: pw_(:,:)
+       !
+       fp_ => trove%poten
+       !
+       pmin_ = minval(fp_%IndexQ(1:trove%Nmodes_e,1:size(fp_%ifromsparse)))
+       pmax_ = maxval(fp_%IndexQ(1:trove%Nmodes_e,1:size(fp_%ifromsparse)))
+       !
+       allocate(pw_(trove%Nmodes_e,pmin_:pmax_))
+       !
+       do i_ = 1,trove%Nmodes_e
+         if (i_==nu_i) cycle
+         do p_ = pmin_,pmax_
+           pw_(i_,p_) = MLcoord_direct(chi_(i_),2,i_,p_)
+         enddo
+       enddo
+       !
+       v_ = 0
+       !
+       do j_ = 1,size(fp_%ifromsparse)
+         t_ = fp_%field(j_,k_)
+         do i_ = 1,trove%Nmodes_e
+           if (i_==nu_i) cycle
+           t_ = t_*pw_(i_,fp_%IndexQ(i_,j_))
+         enddo
+         v_ = v_ + t_
+       enddo
+       !
+       deallocate(pw_)
+       !
+     end function pot_at
+     !
+     !
+     ! kinetic-type field (g_vib, pseudo, g_rot) at the stretching displacements chi and the rho-grid point k
+     !
+     function kin_at(fk_,chi_,k_) result(v_)
+       !
+       type(FLpolynomT),intent(in) :: fk_
+       real(ark),intent(in)   :: chi_(trove%Nmodes)
+       integer(ik),intent(in) :: k_
+       real(ark)              :: v_
+       !
+       integer(ik)            :: j_,i_,p_
+       real(ark)              :: t_
+       !
+       v_ = 0
+       !
+       do j_ = 1,size(fk_%field,dim=1)
+         t_ = fk_%field(j_,k_)
+         do i_ = 1,trove%Nmodes_e
+           if (i_==nu_i) cycle
+           p_ = fk_%IndexQ(i_,j_)
+           if (FL_basic_function_singular_at(i_,p_,trove%chi_eq(i_))) then
+             t_ = 0
+             exit
+           endif
+           t_ = t_*MLcoord_direct(chi_(i_),1,i_,p_)
+         enddo
+         v_ = v_ + t_
+       enddo
+       !
+     end function kin_at
+     !
   end subroutine FLbset1DNew
 
 
@@ -23471,7 +23786,7 @@ end subroutine check_read_save_none
             stop 'FLbset1DNew: phil_leg - out of memory'
          endif 
          !
-         !$omp do private(vl,unitfname,io_slot,i,rho,k,vr,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
+         !$omp do private(vl,unitfname,io_slot,i,rho,k,vr,Tcoeff,iterm,k1,k2,imu,mat_t,krot1,krot2,nl,nr) schedule(dynamic)
          do vl = 0,bs%Size
             !
             write(unitfname,"('Numerov basis set # ',i6)") nu_i
@@ -23802,7 +24117,7 @@ end subroutine check_read_save_none
             stop 'FLbset1DNew, phivphi_t  - out of memory'
          end if
          !
-         !$omp do private(vl,unitfname,io_slot,i,rho,k,vr,Tcoeff,iterm,k1,k2,imu,mat_t) schedule(dynamic)
+         !$omp do private(vl,unitfname,io_slot,i,rho,k,vr,Tcoeff,iterm,k1,k2,imu,mat_t,krot1,krot2,nl,nr) schedule(dynamic)
          do vl = 0,bs%Size
             !
             write(unitfname,"('Numerov basis set # ',i6)") nu_i

@@ -4323,7 +4323,7 @@ module me_bnd
               !
               ! check orthogonality and normalisation
               !
-              phivphi(:) = psil(:)*psir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = psil(:)*psir(:)*sinrho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
@@ -4967,7 +4967,7 @@ module me_bnd
               !
               ! check orthogonality and normalisation
               !
-              phivphi(:) = psil(:)*psir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = psil(:)*psir(:)*sinrho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
@@ -8055,7 +8055,7 @@ module me_bnd
               !
               ! check orthogonality and normalisation
               !
-              phivphi(:) = psil(:)*psir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = psil(:)*psir(:)*sinrho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 
@@ -8402,20 +8402,17 @@ module me_bnd
        chi = 0
        dPhi = 0
        !
-       !call lm_polynomial(npoints+1,nmax, k,x,chi(0:,0:))
+       call p_polynomial_value(npoints+1,nmax,cosrho(0:),chi(0:,0:))
        !
        do vl =  0,nmax
          !
+         ! Multiply Legendre polynomial P_vl(cos(rho)) by a smooth, positive-definite
+         ! two-well weight (with uniform baseline 1.0 so the isomerisation barrier
+         ! near rho ~ 74 deg never underflows) and sin(rho)^(k-1) for k > 0.
          !
-         chi(:,vl) = cosrho(:)**vl
-         !
-         ! L = chi = Polynom x sin(rho)^(k-1)
-         !
-         factor = exp(faclog(vl)-faclog(vl+k))
-         !
-         C_l = sqrt(2.0_ark*factor)
-         !
-         chi(:,vl)  =  chi(:,vl)*( exp(-0.5_ark*x1(:))*C_l*(sqrt(f_m1))**(k+1)+exp(-0.5_ark*x2(:))*C_l*(sqrt(f_m2))**(k+1))
+         if (f_m1 > 0.0_ark .or. f_m2 > 0.0_ark) then
+           chi(:,vl) = chi(:,vl)*( 1.0_ark + 0.5_ark*(exp(-0.5_ark*x1(:)) + exp(-0.5_ark*x2(:))) )
+         endif
          !
          if (k>0) chi(:,vl) = chi(:,vl)*sinrho(:)**(k-1)
          !
@@ -8427,40 +8424,33 @@ module me_bnd
          !
        enddo
        !
-       ! orthogonalisation
+       ! Two-pass Modified Gram-Schmidt orthogonalisation for machine-precision orthogonality
        !
        do vl =  0,nmax
          !
          phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
          cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
          !
-         !cross_prod = sum(psi(vl+1,:)*psi(vl+1,:))*rhostep
-         !
          factor = 1.0_ark/sqrt(cross_prod)
          !
          psi(vl+1,:) = psi(vl+1,:)*factor
          chi(:,vl)  =  chi(:,vl)*factor
-         !dPhi(:,vl) = dPhi(:,vl)*factor
          !
-         do vr = 0,vl-1
-           !
-           phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
-           cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-           !
-           !cross_prod = sum(psi(vl+1,:)*psi(vr+1,:))*rhostep
-           !
-           psi(vl+1,:) = psi(vl+1,:)-cross_prod*psi(vr+1,:)
+         do imin = 1, 2
+           do vr = 0,vl-1
+             !
+             phivphi(:) = psi(vl+1,:)*psi(vr+1,:)
+             cross_prod = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
+             !
+             psi(vl+1,:) = psi(vl+1,:)-cross_prod*psi(vr+1,:)
+             chi(:,vl)   = chi(:,vl)-cross_prod*chi(:,vr)
+             !
+           enddo
            !
            phivphi(:) = psi(vl+1,:)*psi(vl+1,:)
-           factor = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
-           !
-           !factor = sum(psi(vr+1,:)*psi(vr+1,:))*rhostep
-           !
-           factor = 1.0_ark/sqrt(factor)
+           factor = 1.0_ark/sqrt(integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi))
            psi(vl+1,:) = psi(vl+1,:)*factor
-           chi(:,vl)   = ( chi(:,vl)-cross_prod* chi(:,vr))*factor
-           !dPhi(:,vl)  = (dPhi(:,vl)-cross_prod*dPhi(:,vr))*factor
-           ! 
+           chi(:,vl)   = chi(:,vl)*factor
          enddo
          !
          phi(:) = chi(:,vl) !*rho_m(:)
@@ -8614,7 +8604,7 @@ module me_bnd
               !
               ! check orthogonality and normalisation
               !
-              phivphi(:) = psil(:)*psir(:)*rho(:)*rho_m(:)**2
+              phivphi(:) = psil(:)*psir(:)*sinrho(:)*rho_m(:)**2
               psipsi_t = integral_rect_ark(npoints,rho_b(2)-rho_b(1),phivphi)
               !
               ! Here we prepare integrals of the potential 

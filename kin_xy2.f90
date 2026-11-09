@@ -10,7 +10,8 @@ module kin_xy2
   public MLkinetic_xy2_bisect_EKE,MLkinetic_xyz_bisect_EKE,MLkinetic_xy2_bisect_EKE_sinrho,&
          MLkinetic_xy2_Radau_bisect_EKE,MLkinetic_xyz_EKE_sinrho,MLkinetic_xyz_bond_EKE,MLkinetic_xyz_bond_EKE_r2,&
          MLkinetic_xyz_Radau_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid,MLkinetic_compact_xyz_alpha_bond2_EKE_rigid,&
-         MLkinetic_xyz_Jacobi_bisect_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid_singular_rho
+         MLkinetic_xyz_Jacobi_bisect_EKE,MLkinetic_compact_xy2_bisect_EKE_rigid_singular_rho,&
+         MLkinetic_xyz_Jacobi_EKE_sinrho
   private
  
   integer(ik), parameter :: verbose     = 4                          ! Verbosity level
@@ -585,6 +586,58 @@ module kin_xy2
      pseudo(4) =  sin(rho)*cos(rho)/(mX)
      !
    end subroutine  MLkinetic_xyz_EKE_sinrho
+
+
+  !
+  ! Exact Jacobi kinetic energy operator for XYZ triatomics (e.g. HCN/HNC isomerisation)
+  ! with body-fixed z-axis embedded along the heavy diatomic vector r1 = r_X - r_Y
+  ! (Mode 1: r1 = r_XY, Mode 2: r2 = R_{Z-CM(XY)}, Mode 3: rho = gamma in [0, pi]).
+  ! Singularities at rho = 0 and rho = pi are removed analytically via the sin(rho)
+  ! formalism (g_rot(3,3) multiplied by sin^2(rho), g_rot(1,3) & g_rot(3,1) by sin(rho),
+  ! and exact spherical kinetic integration by parts with pseudo = 0).
+  !
+  subroutine MLkinetic_xyz_Jacobi_EKE_sinrho(nmodes,Nterms,rho,g_vib,g_rot,g_cor,pseudo)
+   !
+   integer(ik),intent(in) ::  nmodes,Nterms
+   real(ark),intent(in)   ::  rho
+   real(ark),intent(out)  ::  g_vib(nmodes,nmodes,Nterms),g_rot(3,3,Nterms),g_cor(nmodes,3,Nterms),pseudo(Nterms)
+   !
+   real(ark)            :: mX,mY,mZ,mu1,mu2
+     !
+     if (manifold/=1) then
+       write(out,"('MLkinetic_xyz_Jacobi_EKE_sinrho-error: can be used with non-rigid case only')")
+       stop 'MLkinetic_xyz_Jacobi_EKE_sinrho can be used only with npoints>0'
+     endif
+     !
+     mX = molec%AtomMasses(1)
+     mY = molec%AtomMasses(2)
+     mZ = molec%AtomMasses(3)
+     !
+     mu1 = (mX + mY)/(mX*mY)
+     mu2 = (mX + mY + mZ)/((mX + mY)*mZ)
+     !
+     g_vib = 0
+     g_rot = 0
+     g_cor = 0
+     pseudo = 0
+     !
+     g_vib(1,1,1) =  mu1
+     g_vib(2,2,1) =  mu2
+     g_vib(3,3,4) =  mu2
+     g_vib(3,3,6) =  mu1
+     !
+     g_rot(1,1,6) =  mu1
+     g_rot(2,2,6) =  mu1
+     !
+     g_cor(3,2,6) = -mu1
+     !
+     g_rot(1,3,6) =  cos(rho)*mu1
+     g_rot(3,1,6) =  cos(rho)*mu1
+     !
+     g_rot(3,3,4) =  mu2
+     g_rot(3,3,6) =  cos(rho)**2*mu1
+     !
+   end subroutine MLkinetic_xyz_Jacobi_EKE_sinrho
 
 
 
